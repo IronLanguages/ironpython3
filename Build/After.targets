@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <StageItem Include="$(TargetPath)" />
+    <StageItem Include="$(DocumentationFile)" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <PlatformStageDir>$(StageDir)\lib\$(ReferencedPlatform)</PlatformStageDir>
+    <UnsignedItems>@(StageItem->'$(OutputPath)\%(Filename)%(Extension)')</UnsignedItems>
+    <UnsignedStaged>@(StageItem->'$(PlatformStageDir)\%(Filename)%(Extension)')</UnsignedStaged>
+  </PropertyGroup>
+
+  <Target Name="Stage"
+          DependsOnTargets="CoreBuild"
+          Inputs="$(UnsignedItems)"
+          Outputs="$(UnsignedStaged)"
+          Condition=" '$(Staging)' == 'true' ">
+    <Error Text="StageDir is not set." Condition=" '$(StageDir)' == '' " />
+    <Copy SourceFiles="$(UnsignedItems)" DestinationFolder="$(PlatformStageDir)" />
+  </Target>
+</Project>
+

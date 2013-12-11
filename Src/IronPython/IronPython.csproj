@@ -1,0 +1,519 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <Import Project="$(ProjectDir)..\..\Build\Common.proj" />
+  <PropertyGroup>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{95289EA9-5778-489D-AB48-F81F2CE2DA32}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>IronPython</RootNamespace>
+    <AssemblyName>IronPython</AssemblyName>
+    <BaseAddress>879755264</BaseAddress>
+    <CodeAnalysisRuleSet>$(AssemblyName).ruleset</CodeAnalysisRuleSet>
+    <DocumentationFile>$(OutputPath)\$(AssemblyName).xml</DocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Win8Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Win8Release|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Release|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight5Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight5Release|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'AndroidDebug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'AndroidRelease|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Compiler\Ast\AndExpression.cs" />
+    <Compile Include="Compiler\Ast\Arg.cs" />
+    <Compile Include="Compiler\Ast\DynamicConvertExpression.cs" />
+    <Compile Include="Compiler\Ast\DynamicGetMemberExpression.cs" />
+    <Compile Include="Compiler\Ast\GetGlobalContextExpression.cs" />
+    <Compile Include="Compiler\Ast\GetParentContextFromFunctionExpression.cs" />
+    <Compile Include="Compiler\Ast\PythonConstantExpression.cs" />
+    <Compile Include="Compiler\Ast\SerializedScopeStatement.cs" />
+    <Compile Include="Compiler\Ast\SetExpression.cs" />
+    <Compile Include="Compiler\CollectableCompilationMode.cs" />
+    <Compile Include="Compiler\Ast\AssertStatement.cs" />
+    <Compile Include="Compiler\Ast\AssignmentStatement.cs" />
+    <Compile Include="Compiler\Ast\AstMethods.cs" />
+    <Compile Include="Compiler\Ast\BinaryExpression.Generated.cs" />
+    <Compile Include="Compiler\Ast\ILoopStatement.cs" />
+    <Compile Include="Compiler\PythonDynamicExpression.cs" />
+    <Compile Include="Compiler\UncollectableCompilationMode.Generated.cs" />
+    <Compile Include="Compiler\RunnableScriptCode.cs" />
+    <Compile Include="Modules\unicodedata.cs" />
+    <Compile Include="Modules\_ast.cs" />
+    <Compile Include="Properties\BuildInfo.Generated.cs" />
+    <Compile Include="Properties\CurrentVersion.Generated.cs" />
+    <Compile Include="Runtime\Binding\IPythonExpandable.cs" />
+    <Compile Include="Runtime\Binding\PythonExtensionBinder.cs" />
+    <Compile Include="Runtime\BuiltinPythonModule.cs" />
+    <Compile Include="Runtime\ConstantDictionaryStorage.cs" />
+    <Compile Include="Runtime\DictionaryTypeInfoAttribute.cs" />
+    <Compile Include="Modules\imp.cs" />
+    <Compile Include="Runtime\DebuggerDictionaryStorage.cs" />
+    <Compile Include="Runtime\Binding\IComConvertible.cs" />
+    <Compile Include="Runtime\CodeContext.cs" />
+    <Compile Include="Runtime\CollectionDebugView.cs" />
+    <Compile Include="Runtime\DontMapIEnumerableToIterAttribute.cs" />
+    <Compile Include="Compiler\UncollectableCompilationMode.cs" />
+    <Compile Include="Runtime\Binding\ContextArgBuilder.cs" />
+    <Compile Include="Runtime\Binding\IFastSettable.cs" />
+    <Compile Include="Runtime\Binding\PythonBinder.Create.cs" />
+    <Compile Include="Runtime\Binding\PythonOverloadResolver.cs" />
+    <Compile Include="Runtime\Binding\SiteLocalStorageBuilder.cs" />
+    <Compile Include="Compiler\ClosureExpression.cs" />
+    <Compile Include="Compiler\ClosureInfo.cs" />
+    <Compile Include="Compiler\GeneratorRewriter.cs" />
+    <Compile Include="Compiler\LazyCode.cs" />
+    <Compile Include="Runtime\DontMapGetMemberNamesToDirAttribute.cs" />
+    <Compile Include="Runtime\DontMapICollectionToLenAttribute.cs" />
+    <Compile Include="Runtime\DontMapIDisposableToContextManagerAttribute.cs" />
+    <Compile Include="Runtime\DontMapIEnumerableToContainsAttribute.cs" />
+    <Compile Include="Runtime\EmptyDictionaryStorage.cs" />
+    <Compile Include="Runtime\Exceptions\ApplicationException.cs" />
+    <Compile Include="Runtime\Exceptions\AttributeErrorException.cs" />
+    <Compile Include="Runtime\Exceptions\BufferException.Generated.cs" />
+    <Compile Include="Runtime\Exceptions\PythonException.cs" />
+    <Compile Include="Runtime\Exceptions\SystemException.cs" />
+    <Compile Include="Runtime\Exceptions\TypeErrorException.cs" />
+    <Compile Include="Runtime\Exceptions\ValueErrorException.cs" />
+    <Compile Include="Runtime\Exceptions\Win32Exception.cs" />
+    <Compile Include="Runtime\ExtensionMethodSet.cs" />
+    <Compile Include="Runtime\FutureBuiltins.cs" />
+    <Compile Include="Runtime\Binding\IPythonConvertible.cs" />
+    <Compile Include="Runtime\IBufferProtocol.cs" />
+    <Compile Include="Runtime\Implementation.cs" />
+    <Compile Include="Runtime\InstancedModuleDictionaryStorage.cs" />
+    <Compile Include="Runtime\MemoryView.cs" />
+    <Compile Include="Runtime\Method.Generated.cs" />
+    <Compile Include="Runtime\Operations\MarshalOps.cs" />
+    <Compile Include="Runtime\PythonDocumentationProvider.cs" />
+    <Compile Include="Runtime\PythonHiddenBaseClassAttribute.cs" />
+    <Compile Include="Runtime\SequenceTypeInfoAttribute.cs" />
+    <Compile Include="Runtime\ModuleContext.cs" />
+    <Compile Include="Runtime\ModuleGlobalCache.cs" />
+    <Compile Include="Runtime\ModuleOptions.cs" />
+    <Compile Include="Runtime\ObjectDebugView.cs" />
+    <Compile Include="Runtime\Profiler.cs" />
+    <Compile Include="Compiler\CompilationMode.cs" />
+    <Compile Include="Compiler\Ast\AugmentedAssignStatement.cs" />
+    <Compile Include="Compiler\Ast\BackQuoteExpression.cs" />
+    <Compile Include="Compiler\Ast\BinaryExpression.cs" />
+    <Compile Include="Compiler\Ast\BreakStatement.cs" />
+    <Compile Include="Compiler\Ast\CallExpression.cs" />
+    <Compile Include="Compiler\Ast\ClassDefinition.cs" />
+    <Compile Include="Compiler\Ast\ConditionalExpression.cs" />
+    <Compile Include="Compiler\Ast\ConstantExpression.cs" />
+    <Compile Include="Compiler\Ast\ContinueStatement.cs" />
+    <Compile Include="Compiler\Ast\DelStatement.cs" />
+    <Compile Include="Compiler\Ast\DictionaryExpression.cs" />
+    <Compile Include="Compiler\Ast\DottedName.cs" />
+    <Compile Include="Compiler\Ast\EmptyStatement.cs" />
+    <Compile Include="Compiler\Ast\ErrorExpression.cs" />
+    <Compile Include="Compiler\Ast\ExecStatement.cs" />
+    <Compile Include="Compiler\Ast\Expression.cs" />
+    <Compile Include="Compiler\Ast\ExpressionStatement.cs" />
+    <Compile Include="Compiler\Ast\FlowChecker.cs" />
+    <Compile Include="Compiler\Ast\ForStatement.cs" />
+    <Compile Include="Compiler\Ast\FromImportStatement.cs" />
+    <Compile Include="Compiler\Ast\FunctionDefinition.cs" />
+    <Compile Include="Compiler\Ast\GeneratorExpression.cs" />
+    <Compile Include="Compiler\Ast\GlobalStatement.cs" />
+    <Compile Include="Compiler\Ast\IfStatement.cs" />
+    <Compile Include="Compiler\Ast\IfStatementTest.cs" />
+    <Compile Include="Compiler\Ast\ImportStatement.cs" />
+    <Compile Include="Compiler\Ast\IndexExpression.cs" />
+    <Compile Include="Compiler\Ast\LambdaExpression.cs" />
+    <Compile Include="Compiler\Ast\Comprehension.cs" />
+    <Compile Include="Compiler\Ast\ComprehensionFor.cs" />
+    <Compile Include="Compiler\Ast\ComprehensionIf.cs" />
+    <Compile Include="Compiler\Ast\ListExpression.cs" />
+    <Compile Include="Compiler\LookupCompilationMode.cs" />
+    <Compile Include="Compiler\Ast\MemberExpression.cs" />
+    <Compile Include="Compiler\Ast\ModuleName.cs" />
+    <Compile Include="Compiler\Ast\NameExpression.cs" />
+    <Compile Include="Compiler\Ast\Node.cs" />
+    <Compile Include="Compiler\ReducableDynamicExpression.cs" />
+    <Compile Include="Compiler\PythonSavableScriptCode.cs" />
+    <Compile Include="Compiler\Ast\OrExpression.cs" />
+    <Compile Include="Compiler\Ast\Parameter.cs" />
+    <Compile Include="Compiler\Ast\ParenthesisExpression.cs" />
+    <Compile Include="Compiler\Ast\PrintStatement.cs" />
+    <Compile Include="Compiler\Ast\PythonAst.cs" />
+    <Compile Include="Compiler\Ast\PythonNameBinder.cs" />
+    <Compile Include="Compiler\Ast\PythonOperator.cs" />
+    <Compile Include="Compiler\Ast\PythonReference.cs" />
+    <Compile Include="Compiler\Ast\RaiseStatement.cs" />
+    <Compile Include="Compiler\Ast\RelativeModuleName.cs" />
+    <Compile Include="Compiler\Ast\ReturnStatement.cs" />
+    <Compile Include="Compiler\Ast\ScopeStatement.cs" />
+    <Compile Include="Compiler\Ast\SequenceExpression.cs" />
+    <Compile Include="Compiler\Ast\SliceExpression.cs" />
+    <Compile Include="Compiler\Ast\Statement.cs" />
+    <Compile Include="Compiler\Ast\SuiteStatement.cs" />
+    <Compile Include="Compiler\Ast\TryStatement.cs" />
+    <Compile Include="Compiler\Ast\TupleExpression.cs" />
+    <Compile Include="Compiler\Ast\UnaryExpression.cs" />
+    <Compile Include="Compiler\Ast\PythonVariable.cs" />
+    <Compile Include="Compiler\Ast\PythonWalker.Generated.cs" />
+    <Compile Include="Compiler\Ast\VariableKind.cs" />
+    <Compile Include="Compiler\Ast\WhileStatement.cs" />
+    <Compile Include="Compiler\Ast\WithStatement.cs" />
+    <Compile Include="Compiler\Ast\YieldExpression.cs" />
+    <Compile Include="Compiler\OnDiskScriptCode.cs" />
+    <Compile Include="Runtime\Binding\FastBindResult.cs" />
+    <Compile Include="Runtime\Binding\FastGetBase.cs" />
+    <Compile Include="Runtime\Binding\FastSetBase.cs" />
+    <Compile Include="Runtime\Binding\IFastGettable.cs" />
+    <Compile Include="Runtime\Binding\IFastInvokable.cs" />
+    <Compile Include="Runtime\Binding\BinaryRetTypeBinder.cs" />
+    <Compile Include="Runtime\Binding\BinaryRetTypeBinder.Generated.cs" />
+    <Compile Include="Runtime\BuiltinsDictionaryStorage.cs" />
+    <Compile Include="Runtime\CustomDictionaryStorage.cs" />
+    <Compile Include="Runtime\GlobalDictionaryStorage.cs" />
+    <Compile Include="Compiler\ToDiskCompilationMode.cs" />
+    <Compile Include="Compiler\PythonGlobal.cs" />
+    <Compile Include="Compiler\PythonGlobalVariableExpression.cs" />
+    <Compile Include="Compiler\PythonScriptCode.cs" />
+    <Compile Include="Compiler\RuntimeScriptCode.cs" />
+    <Compile Include="Hosting\PythonService.cs" />
+    <Compile Include="MaybeNotImplementedAttribute.cs" />
+    <Compile Include="Runtime\BindingWarnings.cs" />
+    <Compile Include="Runtime\Binding\Binders.cs" />
+    <Compile Include="Runtime\Binding\CompatibilityInvokeBinder.cs" />
+    <Compile Include="Runtime\Binding\CreateFallbackBinder.cs" />
+    <Compile Include="Runtime\Binding\IPythonOperable.cs" />
+    <Compile Include="Runtime\Binding\PythonBinaryOperationBinder.cs" />
+    <Compile Include="Runtime\Binding\PythonDeleteIndexBinder.cs" />
+    <Compile Include="Runtime\Binding\PythonDeleteSliceBinder.cs" />
+    <Compile Include="Runtime\Binding\PythonGetIndexBinder.cs" />
+    <Compile Include="Runtime\Binding\PythonGetMemberBinder.cs" />
+    <Compile Include="Runtime\Binding\PythonDeleteMemberBinder.cs" />
+    <Compile Include="Runtime\Binding\IPythonInvokable.cs" />
+    <Compile Include="Runtime\Binding\IPythonGetable.cs" />
+    <Compile Include="Runtime\Binding\IPythonSite.cs" />
+    <Compile Include="Runtime\Binding\PythonGetSliceBinder.cs" />
+    <Compile Include="Runtime\Binding\PythonIndexType.cs" />
+    <Compile Include="Runtime\Binding\PythonProtocol.cs" />
+    <Compile Include="Runtime\Binding\PythonProtocol.Operations.cs" />
+    <Compile Include="Runtime\Binding\PythonSetIndexBinder.cs" />
+    <Compile Include="Runtime\Binding\PythonSetMemberBinder.cs" />
+    <Compile Include="Runtime\Binding\BindingHelpers.cs" />
+    <Compile Include="Runtime\Binding\ConditionalBuilder.cs" />
+    <Compile Include="Runtime\Binding\MetaUserObject.cs" />
+    <Compile Include="Runtime\Binding\MetaUserObject.Members.cs" />
+    <Compile Include="Runtime\Binding\PythonSetSliceBinder.cs" />
+    <Compile Include="Runtime\Binding\PythonOperationKind.cs" />
+    <Compile Include="Runtime\Binding\PythonUnaryOperationBinder.cs" />
+    <Compile Include="Runtime\Binding\SlotOrFunction.cs" />
+    <Compile Include="Runtime\ByteArray.cs" />
+    <Compile Include="Runtime\Bytes.cs" />
+    <Compile Include="Runtime\ClassMethodAttribute.cs" />
+    <Compile Include="Runtime\ClrModule.cs" />
+    <Compile Include="Runtime\Exceptions\BytesWarningException.cs" />
+    <Compile Include="Runtime\Index.cs" />
+    <Compile Include="Runtime\NewStringFormatter.cs" />
+    <Compile Include="Runtime\Operations\ByteOps.cs" />
+    <Compile Include="Runtime\Operations\IListOfByteOps.cs" />
+    <Compile Include="Runtime\BytesConversionAttribute.cs" />
+    <Compile Include="Runtime\Python3Warning.cs" />
+    <Compile Include="Runtime\PythonContext.Generated.cs" />
+    <Compile Include="Runtime\PythonDynamicStackFrame.cs" />
+    <Compile Include="Runtime\PythonFunction.Generated.cs" />
+    <Compile Include="Runtime\PythonOptions.cs" />
+    <Compile Include="Runtime\CompiledLoader.cs" />
+    <Compile Include="Runtime\NoLineFeedSourceContentProvider.cs" />
+    <Compile Include="Runtime\ModuleLoader.cs" />
+    <Compile Include="Runtime\PythonTracebackListener.cs" />
+    <Compile Include="Runtime\Reversed.cs" />
+    <Compile Include="Runtime\PythonHiddenAttribute.cs" />
+    <Compile Include="Runtime\PythonModuleAttribute.cs" />
+    <Compile Include="Runtime\PythonTypeAttribute.cs" />
+    <Compile Include="Runtime\RuntimeVariablesDictionaryStorage.cs" />
+    <Compile Include="Runtime\SetStorage.cs" />
+    <Compile Include="Runtime\SiteLocalStorage.cs" />
+    <Compile Include="Runtime\StringFormatSpec.cs" />
+    <Compile Include="Runtime\SysModuleDictionaryStorage.cs" />
+    <Compile Include="Runtime\Types\CachedNewTypeInfo.cs" />
+    <Compile Include="Runtime\Types\DynamicBaseTypeAttribute.cs" />
+    <Compile Include="Runtime\Types\InstanceCreator.cs" />
+    <Compile Include="Runtime\Types\NameConverter.cs" />
+    <Compile Include="Runtime\Types\NewTypeInfo.cs" />
+    <Compile Include="Runtime\Types\NewTypeMaker.cs" />
+    <Compile Include="Hosting\PythonCodeDomCodeGen.cs" />
+    <Compile Include="Compiler\PythonCompilerOptions.cs" />
+    <Compile Include="Compiler\Parser.cs" />
+    <Compile Include="Compiler\Token.cs" />
+    <Compile Include="Compiler\Tokenizer.cs" />
+    <Compile Include="Compiler\Tokenizer.Generated.cs" />
+    <Compile Include="Compiler\TokenKind.Generated.cs" />
+    <Compile Include="GlobalSuppressions.cs" />
+    <Compile Include="Hosting\PythonCommandLine.cs" />
+    <Compile Include="Hosting\PythonConsoleOptions.cs" />
+    <Compile Include="Hosting\PythonOptionsParser.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\Visibility.cs" />
+    <Compile Include="Hosting\Python.cs" />
+    <Compile Include="Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Runtime\Binding\PythonInvokeBinder.cs" />
+    <Compile Include="Runtime\Binding\ConversionBinder.cs" />
+    <Compile Include="Compiler\PythonCallTargets.cs" />
+    <Compile Include="Runtime\CommonDictionaryStorage.cs" />
+    <Compile Include="Runtime\DictionaryStorage.cs" />
+    <Compile Include="Runtime\ErrorCodes.cs" />
+    <Compile Include="Runtime\Exceptions\AssertionException.Generated.cs" />
+    <Compile Include="Runtime\Exceptions\DeprecationWarningException.Generated.cs" />
+    <Compile Include="Runtime\Exceptions\EnvironmentException.Generated.cs" />
+    <Compile Include="Runtime\Exceptions\FloatingPointException.Generated.cs" />
+    <Compile Include="Runtime\Exceptions\FutureWarningException.Generated.cs" />
+    <Compile Include="Runtime\Exceptions\GeneratorExitException.cs" />
+    <Compile Include="Runtime\Exceptions\ImportException.Generated.cs" />
+    <Compile Include="Runtime\Exceptions\ImportWarningException.Generated.cs" />
+    <Compile Include="Runtime\Exceptions\IndentationException.cs" />
+    <Compile Include="Runtime\Exceptions\IPythonException.cs" />
+    <Compile Include="Runtime\Exceptions\LookupException.Generated.cs" />
+    <Compile Include="Runtime\Exceptions\ObjectException.cs" />
+    <Compile Include="Runtime\Exceptions\OldInstanceException.cs" />
+    <Compile Include="Runtime\Exceptions\OSException.Generated.cs" />
+    <Compile Include="Runtime\Exceptions\PendingDeprecationWarningException.Generated.cs" />
+    <Compile Include="Runtime\Exceptions\PythonExceptions.cs" />
+    <Compile Include="Runtime\Exceptions\PythonExceptions.Generated.cs" />
+    <Compile Include="Runtime\Exceptions\ReferenceException.Generated.cs" />
+    <Compile Include="Runtime\Exceptions\RuntimeException.Generated.cs" />
+    <Compile Include="Runtime\Exceptions\RuntimeWarningException.Generated.cs" />
+    <Compile Include="Runtime\Exceptions\StopIterationException.Generated.cs" />
+    <Compile Include="Runtime\Exceptions\SyntaxWarningException.Generated.cs" />
+    <Compile Include="Runtime\Exceptions\SystemExitException.cs" />
+    <Compile Include="Runtime\Exceptions\TabException.cs" />
+    <Compile Include="Runtime\Exceptions\UnicodeException.Generated.cs" />
+    <Compile Include="Runtime\Exceptions\UnicodeTranslateException.Generated.cs" />
+    <Compile Include="Runtime\Exceptions\UnicodeWarningException.Generated.cs" />
+    <Compile Include="Runtime\Exceptions\UserWarningException.Generated.cs" />
+    <Compile Include="Runtime\Exceptions\WarningException.Generated.cs" />
+    <Compile Include="Runtime\IParameterSequence.cs" />
+    <Compile Include="Runtime\KwCallInfo.cs" />
+    <Compile Include="Runtime\Binding\MetaBuiltinFunction.cs" />
+    <Compile Include="Runtime\Binding\MetaBuiltinMethodDescriptor.cs" />
+    <Compile Include="Runtime\Binding\MetaMethod.cs" />
+    <Compile Include="Runtime\Binding\MetaOldClass.cs" />
+    <Compile Include="Runtime\Binding\MetaOldInstance.cs" />
+    <Compile Include="Runtime\Binding\MetaPythonFunction.cs" />
+    <Compile Include="Runtime\Binding\MetaPythonType.Calls.cs" />
+    <Compile Include="Runtime\Binding\MetaPythonObject.cs" />
+    <Compile Include="Runtime\Binding\MetaPythonType.cs" />
+    <Compile Include="Runtime\Binding\MetaPythonType.Members.cs" />
+    <Compile Include="Runtime\Binding\PythonOperationBinder.cs" />
+    <Compile Include="Runtime\MissingParameter.cs" />
+    <Compile Include="Runtime\ModuleDictionaryStorage.cs" />
+    <Compile Include="Runtime\Operations\DBNullOps.cs" />
+    <Compile Include="Runtime\Operations\DictionaryOfTOps.cs" />
+    <Compile Include="Runtime\Operations\ListOfTOps.cs" />
+    <Compile Include="Runtime\StringDictionaryStorage.cs" />
+    <Compile Include="Runtime\NameType.cs" />
+    <Compile Include="Runtime\Operations\ComOps.cs" />
+    <Compile Include="Runtime\Operations\PythonTypeOps.cs" />
+    <Compile Include="Runtime\PythonAsciiEncoding.cs" />
+    <Compile Include="Modules\Builtin.cs" />
+    <Compile Include="Modules\Builtin.Generated.cs" />
+    <Compile Include="Runtime\ClassMethodDescriptor.cs" />
+    <Compile Include="Runtime\CompileFlags.cs" />
+    <Compile Include="Runtime\DefaultContext.cs" />
+    <Compile Include="Runtime\Descriptors.cs" />
+    <Compile Include="Runtime\PythonFunction.cs" />
+    <Compile Include="Runtime\FunctionAttributes.cs" />
+    <Compile Include="Runtime\FunctionCode.cs" />
+    <Compile Include="Runtime\Method.cs" />
+    <Compile Include="Runtime\Binding\PythonBinder.cs" />
+    <Compile Include="Runtime\CompareUtil.cs" />
+    <Compile Include="Runtime\ConversionWrappers.cs" />
+    <Compile Include="Runtime\Converter.cs" />
+    <Compile Include="Runtime\PythonDictionary.cs" />
+    <Compile Include="Runtime\DictionaryOps.cs" />
+    <Compile Include="Runtime\Types\DocBuilder.cs" />
+    <Compile Include="Runtime\Enumerate.cs" />
+    <Compile Include="Runtime\Exceptions\TraceBack.cs" />
+    <Compile Include="Runtime\Generator.cs" />
+    <Compile Include="Runtime\Importer.cs" />
+    <Compile Include="Runtime\Interfaces.cs" />
+    <Compile Include="Runtime\List.cs" />
+    <Compile Include="Runtime\LiteralParser.cs" />
+    <Compile Include="Runtime\ObjectAttributesAdapter.cs" />
+    <Compile Include="Runtime\Operations\ArrayOps.cs" />
+    <Compile Include="Runtime\Operations\BoolOps.cs" />
+    <Compile Include="Runtime\Types\BuiltinFunctionOverloadMapper.cs" />
+    <Compile Include="Runtime\Operations\CharOps.cs" />
+    <Compile Include="Runtime\Operations\ComplexOps.cs" />
+    <Compile Include="Runtime\Operations\CustomTypeDescHelpers.cs" />
+    <Compile Include="Runtime\Operations\DecimalOps.cs" />
+    <Compile Include="Runtime\Operations\EnumOps.cs" />
+    <Compile Include="Runtime\Operations\FloatOps.cs" />
+    <Compile Include="Runtime\Operations\InstanceOps.cs" />
+    <Compile Include="Runtime\Operations\IntOps.cs" />
+    <Compile Include="Runtime\Operations\IntOps.Generated.cs" />
+    <Compile Include="Runtime\Operations\LongOps.cs" />
+    <Compile Include="Runtime\Operations\ObjectOps.cs" />
+    <Compile Include="Runtime\Operations\PythonOps.cs" />
+    <Compile Include="Runtime\Operations\PythonOps.Generated.cs" />
+    <Compile Include="Runtime\Operations\PythonCalls.cs" />
+    <Compile Include="Runtime\Operations\NamespaceTrackerOps.cs" />
+    <Compile Include="Runtime\Operations\StringOps.cs" />
+    <Compile Include="Runtime\Operations\TypeTrackerOps.cs" />
+    <Compile Include="Runtime\Operations\TypeGroupOps.cs" />
+    <Compile Include="Runtime\Operations\UserTypeOps.cs" />
+    <Compile Include="Runtime\OutputWriter.cs" />
+    <Compile Include="Runtime\PythonBuffer.cs" />
+    <Compile Include="Runtime\PythonContext.cs" />
+    <Compile Include="Runtime\PythonFile.cs" />
+    <Compile Include="Runtime\PythonScopeExtension.cs" />
+    <Compile Include="Runtime\PythonNarrowing.cs" />
+    <Compile Include="Runtime\ScopeDictionaryStorage.cs" />
+    <Compile Include="Runtime\Set.cs" />
+    <Compile Include="Runtime\Slice.cs" />
+    <Compile Include="Runtime\StringFormatter.cs" />
+    <Compile Include="Runtime\Super.cs" />
+    <Compile Include="Runtime\Symbols.Generated.cs" />
+    <Compile Include="Runtime\PythonTuple.cs" />
+    <Compile Include="Modules\sys.cs" />
+    <Compile Include="Runtime\ThrowingErrorSink.cs" />
+    <Compile Include="Runtime\Types\CustomAttributeTracker.cs" />
+    <Compile Include="Runtime\Types\CustomInstanceDictionaryStorage.cs" />
+    <Compile Include="Runtime\Operations\DelegateOps.cs" />
+    <Compile Include="Runtime\Types\DictProxy.cs" />
+    <Compile Include="Runtime\Types\FunctionType.cs" />
+    <Compile Include="Runtime\Types\OperatorMapping.cs" />
+    <Compile Include="Runtime\Types\ParameterInfoWrapper.cs" />
+    <Compile Include="Runtime\Types\PythonSiteCache.cs" />
+    <Compile Include="Runtime\Types\PythonType.Generated.cs" />
+    <Compile Include="Runtime\Types\PythonTypeDataSlot.cs" />
+    <Compile Include="Runtime\Types\ResolvedMember.cs" />
+    <Compile Include="Runtime\Types\SlotFieldAttribute.cs" />
+    <Compile Include="Runtime\Types\PythonTypeDictSlot.cs" />
+    <Compile Include="Runtime\Types\PythonTypeTypeSlot.cs" />
+    <Compile Include="Runtime\Types\PythonTypeUserDescriptorSlot.cs" />
+    <Compile Include="Runtime\Types\PythonTypeWeakRefSlot.cs" />
+    <Compile Include="Runtime\Types\EmptyType.cs" />
+    <Compile Include="Runtime\Types\Mro.cs" />
+    <Compile Include="Runtime\Types\OldClass.cs" />
+    <Compile Include="Runtime\Types\OldInstance.cs" />
+    <Compile Include="Runtime\Types\OldInstance.Generated.cs" />
+    <Compile Include="Runtime\Types\PythonAssemblyOps.cs" />
+    <Compile Include="Runtime\PythonModule.cs" />
+    <Compile Include="Runtime\Types\ReflectedSlotProperty.cs" />
+    <Compile Include="Runtime\Types\StaticUnderlyingSystemType.cs" />
+    <Compile Include="Runtime\Types\TypeCache.Generated.cs" />
+    <Compile Include="Runtime\Types\PythonTypeInfo.cs" />
+    <Compile Include="Runtime\Types\PythonTypeInfo.Generated.cs" />
+    <Compile Include="Runtime\Types\BuiltinFunction.cs" />
+    <Compile Include="Runtime\Types\BuiltinMethodDescriptor.cs" />
+    <Compile Include="Runtime\Types\ConstructorFunction.cs" />
+    <Compile Include="Runtime\Types\ReflectedEvent.cs" />
+    <Compile Include="Runtime\Types\ReflectedExtensionProperty.cs" />
+    <Compile Include="Runtime\Types\ReflectedField.cs" />
+    <Compile Include="Runtime\Types\ReflectedGetterSetter.cs" />
+    <Compile Include="Runtime\Types\ReflectedIndexer.cs" />
+    <Compile Include="Runtime\Types\ReflectedProperty.cs" />
+    <Compile Include="Runtime\Types\PythonType.cs" />
+    <Compile Include="Runtime\Types\ExtensionPropertyInfo.cs" />
+    <Compile Include="Runtime\Types\IPythonObject.cs" />
+    <Compile Include="Runtime\Types\PythonTypeSlot.cs" />
+    <Compile Include="Runtime\Types\DynamicHelpers.cs" />
+    <Compile Include="Runtime\UnboundNameException.cs" />
+    <Compile Include="Runtime\WarningInfo.cs" />
+    <Compile Include="Runtime\WeakRef.cs" />
+    <Compile Include="Runtime\Win32Native.cs" />
+    <Compile Include="Runtime\WrapperDescriptorAttribute.cs" />
+    <Compile Include="Runtime\WrapperDictionary.cs" />
+    <Compile Include="Runtime\XamlObjectWriterSettings.cs" />
+    <Compile Include="Runtime\XRange.cs" />
+    <Compile Include="..\AssemblyVersion.cs">
+      <Link>Properties\AssemblyVersion.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Lib\site.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Lib\iptest\assert_util.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Lib\iptest\cominterop_util.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Lib\iptest\console_util.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Lib\iptest\file_util.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Lib\iptest\misc_util.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Lib\iptest\process_util.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Lib\iptest\runner.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Lib\iptest\test_env.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Lib\iptest\type_util.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Lib\iptest\util.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Lib\iptest\warning_util.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Lib\iptest\__init__.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Lib\runpy.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Lib\__future__.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources.resx">
+      <SubType>Designer</SubType>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="IronPython.ruleset" />
+    <EmbeddedResource Include="Modules\unicodedata\IPyUnicodeData.txt.gz" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(IsFullFramework)' == 'true' ">
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Runtime.Remoting" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(ReferencedPlatform)' == 'V4'">
+    <Reference Include="System.Xaml" />
+  </ItemGroup>
+
+  <Import Project="$(CSharpTargets)" />
+  <Import Project="$(BeforeTargetFiles)" />
+  <Target Name="BeforeBuild" DependsOnTargets="$(BeforeTargets);GenerateCurrentVersion" />
+</Project>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(ReferencedPlatform)' == 'Android'">
+    <FrameworkReferences Condition="'$(FrameworkReferences)' == ''">$(SolutionDir)..\Util\References\MonoAndroid\1.0</FrameworkReferences>
+    <NoStdLib>true</NoStdLib>
+    <TargetFrameworkIdentifier>MonoAndroid</TargetFrameworkIdentifier>
+    <TargetFrameworkVersion>v2.2</TargetFrameworkVersion>
+    <MonoAndroidVersion>v1.0</MonoAndroidVersion>
+    <AndroidLinkMode Condition="'$(AndroidLinkMode)' == ''">SdkOnly</AndroidLinkMode>
+    <Features>FEATURE_CUSTOM_MODIFIERS;FEATURE_FUNCS_5_16;FEATURE_SERIALIZATION;FEATURE_ASSEMBLY_RESOLVE;FEATURE_DBNULL;FEATURE_FILESYSTEM;FEATURE_THREAD;FEATURE_STACK_TRACE;FEATURE_REFEMIT;FEATURE_NUMERICS;FEATURE_VALUE_EQUALITY;FEATURE_COMPRESSION;FEATURE_APTCA;FEATURE_WIN32EXCEPTION;FEATURE_ASSEMBLY_LOCATION;FEATURE_ENUM_NAMES_VALUES;FEATURE_OS_SERVICEPACK;FEATURE_APPLICATIONEXCEPTION;FEATURE_STOPWATCH;FEATURE_APARTMENTSTATE;FEATURE_GETINVALIDFILENAMECHARS;FEATURE_LOADWITHPARTIALNAME;FEATURE_DRIVENOTFOUNDEXCEPTION;FEATURE_ASSEMBLY_CODEBASE;FEATURE_FULL_NET;FEATURE_FULL_CRYPTO;FEATURE_ICLONEABLE;FEATURE_ANSICP;FEATURE_TIMEZONE;FEATURE_SORTKEY</Features>
+    <PlatformSymbols>ANDROID</PlatformSymbols>
+    <IsSilverlight>false</IsSilverlight>
+    <IsFullFramework>false</IsFullFramework>
+    <FeatureCoreDlr>false</FeatureCoreDlr>
+  </PropertyGroup>
+  
+  <ItemGroup Condition="'$(ReferencedPlatform)' == 'Android'">
+    <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
+      <SpecificVersion>True</SpecificVersion>
+      <HintPath>$(FrameworkReferences)\mscorlib.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
+      <SpecificVersion>True</SpecificVersion>
+      <HintPath>$(FrameworkReferences)\System.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Core, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
+      <SpecificVersion>True</SpecificVersion>
+      <HintPath>$(FrameworkReferences)\System.Core.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Numerics, Version=2.0.5.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(FrameworkReferences)\System.Numerics.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Mono.Security, Version=2.0.5.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(FrameworkReferences)\Mono.Security.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

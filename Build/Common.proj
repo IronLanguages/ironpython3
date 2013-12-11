@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+  Settings imported by all *.csproj files. 
+-->
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <!-- These are normally set by Build.proj, except when building from VS. -->
+    <RootDir Condition=" '$(RootDir)' == '' ">$(MSBuildThisFileDirectory)..</RootDir>
+    <BuildSysDir Condition=" '$(BuildSysDir)' == '' ">$(RootDir)\Build</BuildSysDir>
+
+    <Mono Condition=" '$(Mono)' == '' and '$(OS)' != 'Windows_NT'">true</Mono>
+    
+    <!-- The following two lines prevent csc.rsp and Microsoft.NETFramework.props from adding
+         additional assembly references. -->
+    <NoConfig>true</NoConfig>
+    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
+  </PropertyGroup>
+
+  <!-- Signing -->
+  <PropertyGroup>
+    <PublicKey>$(MSBuildThisFileDirectory)\Key.snk</PublicKey>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="Exists('$(PublicKey)') and '$(AssemblyOriginatorKeyFile)'==''">
+    <AssemblyOriginatorKeyFile>$(PublicKey)</AssemblyOriginatorKeyFile>
+    <SignAssembly Condition="'$(SignAssembly)' == ''">true</SignAssembly>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <BeforeTargetFiles>$(BuildSysDir)\Versioning.targets</BeforeTargetFiles>
+    <BeforeTargets>GenerateBuildInfo</BeforeTargets>
+    <AfterTargetFiles>$(BuildSysDir)\After.targets</AfterTargetFiles>
+    <AfterTargets>Stage</AfterTargets>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+  </PropertyGroup>
+
+  <!-- Normally BuildFlavour and ReferencedPlatform are set by the build system,
+       but they are not when building in Visual Studio (because Build.proj is not
+       used). Fill then in here based on the selected configuration. -->
+  <PropertyGroup Condition=" '$(BuildFlavour)' == '' ">
+    <BuildFlavour>Debug</BuildFlavour>
+    <BuildFlavour Condition="'$(Configuration)' == 'FxCop'">Release</BuildFlavour>
+    <BuildFlavour Condition="'$(Configuration)' == 'Release'">Release</BuildFlavour>
+    <BuildFlavour Condition="'$(Configuration)' == 'v2Release'">Release</BuildFlavour>
+    <BuildFlavour Condition="'$(Configuration)' == 'v45Release'">Release</BuildFlavour>
+    <BuildFlavour Condition="'$(Configuration)' == 'Win8Release'">Release</BuildFlavour>
+    <BuildFlavour Condition="'$(Configuration)' == 'Silverlight5Release'">Release</BuildFlavour>
+    <BuildFlavour Condition="'$(Configuration)' == 'AndroidRelease'">Release</BuildFlavour>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(ReferencedPlatform)' == ''">
+    <ReferencedPlatform>net40</ReferencedPlatform>
+    <ReferencedPlatform
+        Condition="'$(Configuration)' == 'v2Release' or '$(Configuration)' == 'v2Debug'">
+      net35
+    </ReferencedPlatform>
+    <ReferencedPlatform
+        Condition="'$(Configuration)' == 'v45Release' or '$(Configuration)' == 'v45Debug'">
+      net45
+    </ReferencedPlatform>
+    <ReferencedPlatform
+        Condition="'$(Configuration)' == 'Win8Release' or '$(Configuration)' == 'Win8Debug'">
+      wincore45
+    </ReferencedPlatform>
+    <ReferencedPlatform
+        Condition="'$(Configuration)' == 'Silverlight5Release' or '$(Configuration)' == 'Silverlight5Debug'">
+      sl5
+    </ReferencedPlatform>
+    <ReferencedPlatform
+        Condition="'$(Configuration)' == 'AndroidRelease' or '$(Configuration)' == 'AndroidDebug'">
+      android
+    </ReferencedPlatform>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Mono)' == 'true'">
+    <CscToolExeSuffix Condition="'$(OS)' == 'Windows_NT'">.bat</CscToolExeSuffix>
+    <CscToolExeSuffix Condition="'$(OS)' != 'Windows_NT'"></CscToolExeSuffix>
+
+    <CscToolExe>mcs$(CscToolExeSuffix)</CscToolExe>
+    <CscToolExe Condition="'$(ReferencedPlatform)' == 'net35'">gmcs$(CscToolExeSuffix)</CscToolExe>
+    <CscToolExe Condition="'$(ReferencedPlatform)' == 'net40'">dmcs$(CscToolExeSuffix)</CscToolExe>
+
+    <CSharpTargets Condition="'$(CSharpTargets)' == ''">$(MSBuildBinPath)\Microsoft.CSharp.targets</CSharpTargets>
+    <CSharpTargets Condition="'$(CSharpTargets)' == '' and '$(ReferencedPlatform)' == 'android'">$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets</CSharpTargets>
+
+    <DlrReferences>$(RootDir)\Util\References\DynamicLanguageRuntime\lib\$(ReferencedPlatform)</DlrReferences>
+  </PropertyGroup>
+
+  <!-- References -->
+  <Import Project="$(BuildSysDir)\$(ReferencedPlatform).props" />
+  
+  <PropertyGroup>
+    <BaseOutputPath>$(RootDir)\bin\$(Configuration)</BaseOutputPath>
+    <OutputPath>$(BaseOutputPath)</OutputPath>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>618;429;219;1717;162;414</WarningsNotAsErrors>
+    <NoWarn>1591;1584;1574;1685;1573</NoWarn>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <RunCodeAnalysis Condition="'$(Configuration)' == 'FxCop'">true</RunCodeAnalysis>
+  </PropertyGroup>
+
+  <!-- Release -->
+  <PropertyGroup Condition="'$(BuildFlavour)' == 'Release'">
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
+    <DefineConstants>$(Features);$(SignedSym);$(PlatformSymbols);TRACE</DefineConstants>
+  </PropertyGroup>
+
+  <!-- Debug -->
+  <PropertyGroup Condition="'$(BuildFlavour)' == 'Debug'">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <!-- TODO: Python & zlib.net need some work -->
+    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
+    <DefineConstants>$(Features);$(SignedSym);$(PlatformSymbols);DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+  
+  <!-- Include the DLR references here since they're a bit complicated.
+       If a project doesn't need them it can set 'ExcludeDlrReferences=true'. -->
+  <ItemGroup Condition=" '$(ExcludeDlrReferences)' != 'true' and '$(FeatureCoreDlr)' != 'true' ">
+    <Reference Include="Microsoft.Scripting.Core">
+      <HintPath>$(DlrReferences)\Microsoft.Scripting.Core.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(ExcludeDlrReferences)' != 'true' ">
+    <Reference Include="Microsoft.Scripting">
+      <HintPath>$(DlrReferences)\Microsoft.Scripting.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Dynamic">
+      <HintPath>$(DlrReferences)\Microsoft.Dynamic.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>
+

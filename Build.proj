@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+
+  <PropertyGroup>
+    <BuildFlavour Condition=" '$(BuildFlavour)' == '' ">Debug</BuildFlavour>
+    <Mono Condition="'$(OS)' != 'Windows_NT'">true</Mono>
+
+    <RootDir>$(MSBuildThisFileDirectory)</RootDir>
+    <Solution>$(RootDir)\IronPython.sln</Solution>
+    <UtilDir>$(RootDir)\Util</UtilDir>
+    <BinDir>$(RootDir)\bin</BinDir>
+    <BuildSysDir>$(RootDir)\Build</BuildSysDir>
+  </PropertyGroup>
+    
+  <Import Project="$(BuildSysDir)\Versioning.targets" />
+  
+  <PropertyGroup>
+    <StageDir>$(RootDir)\Stage\$(BuildFlavour)\IronPython-$(PackageVersion)</StageDir>
+    <PackageDir>$(RootDir)\Package\$(BuildFlavour)\IronPython-$(PackageVersion)</PackageDir>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <BuildProperties>
+      RootDir=$(RootDir);
+      Solution=$(Solution);
+      BuildFlavour=$(BuildFlavour);
+      BinDir=$(BinDir);
+      StageDir=$(StageDir);
+      BuildSysDir=$(BuildSysDir);
+      Mono=$(Mono)
+    </BuildProperties>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <ReferencedPlatform Include="net35">
+      <BuildPrefix>v2</BuildPrefix>
+    </ReferencedPlatform>
+    <ReferencedPlatform Include="net40">
+      <BuildPrefix></BuildPrefix>
+    </ReferencedPlatform>
+    <!-- Mono 3.2 is missing necessary bits for 4.5. -->
+    <ReferencedPlatform Include="net45" Condition=" '$(Mono)' != 'true' ">
+      <BuildPrefix>v45</BuildPrefix>
+    </ReferencedPlatform>
+  </ItemGroup>
+
+  <Target Name="Build">
+    <MSBuild 
+      Projects="$(Solution)" 
+      Targets="Build"
+      Properties="$(BuildProperties);ReferencedPlatform=%(ReferencedPlatform.Identity);Configuration=%(ReferencedPlatform.BuildPrefix)$(BuildFlavour)" />
+  </Target>
+
+  <Target Name="Rebuild">
+    <MSBuild 
+      Projects="$(Solution)" 
+      Targets="Rebuild" 
+      Properties="$(BuildProperties);ReferencedPlatform=%(ReferencedPlatform.Identity);Configuration=%(ReferencedPlatform.BuildPrefix)$(BuildFlavour)" />
+  </Target>
+
+  <Target Name="Clean">
+    <MSBuild 
+      Projects="$(Solution)" 
+      Targets="Clean" 
+      Properties="$(BuildProperties);ReferencedPlatform=%(ReferencedPlatform.Identity);Configuration=%(ReferencedPlatform.BuildPrefix)$(BuildFlavour)" />
+  </Target>
+
+  <Target Name="Stage">
+    <MSBuild 
+      Projects="$(Solution)" 
+      Targets="Build" 
+      Properties="$(BuildProperties);ReferencedPlatform=%(ReferencedPlatform.Identity);Configuration=%(ReferencedPlatform.BuildPrefix)$(BuildFlavour);Staging=true" />
+  </Target>
+  
+  <Target Name="Package" DependsOnTargets="ZipPackage;NuGetPackage" />
+
+  <Target Name="MakePackageDir">
+    <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')" />
+  </Target>
+
+  <PropertyGroup>
+    <NuGet>$(UtilDir)\NuGet\NuGet.exe</NuGet>
+    <NuGet Condition=" '$(Mono)' != '' ">mono $(NuGet)</NuGet>
+
+    <Zip Condition="'$(OS)' == 'Windows_NT'">$(UtilDir)\Misc\zip.exe</Zip>
+    <Zip Condition="'$(OS)' != 'Windows_NT'">zip</Zip>
+
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Package Include="IronPython">
+      <NuSpecDir>$(RootDir)</NuSpecDir>
+    </Package>
+  </ItemGroup>
+
+  <Target Name="NuGetPackage" DependsOnTargets="Stage;MakePackageDir"
+          Inputs="@(NuSpec);@(StageOutputs)"
+          Outputs="@(NuSpec->'$(PackageDir)\$(Filename).$(PackageVersion).nupkg')">
+    <Exec Command="$(NuGet) pack -Version $(PackageVersion) &quot;%(Package.NuSpecDir)\%(Package.Identity).nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />
+  </Target>
+
+  <Target Name="ZipPackage" DependsOnTargets="Stage;MakePackageDir"
+          Inputs="@(StageOutputs)"
+          Outputs="$(PackageDir)\dlr-$(PackageVersion).zip">
+    <Exec Command="$(Zip) -9 -r &quot;$(PackageDir)\IronPython-$(PackageVersion).zip&quot; &quot;IronPython-$(PackageVersion)&quot;" WorkingDirectory="$(StageDir)\.." />
+  </Target>
+</Project>
+

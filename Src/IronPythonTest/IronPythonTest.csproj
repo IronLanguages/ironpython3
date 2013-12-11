@@ -1,0 +1,71 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <Import Project="$(ProjectDir)..\..\Build\Common.proj" />
+  <PropertyGroup>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{B6B42537-07F8-4F6C-A99A-B155CAEB124E}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>IronPythonTest</RootNamespace>
+    <AssemblyName>IronPythonTest</AssemblyName>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="AttrInjectorTest.cs" />
+    <Compile Include="ExtensionMethodTest.cs" />
+    <Compile Include="LightExceptionTests.cs" />
+    <Compile Include="MemberOverloadTest.cs" />
+    <Compile Include="BinderTest.cs" />
+    <Compile Include="BindTest.cs" />
+    <Compile Include="ClrType.cs" />
+    <Compile Include="Cmplx.cs" />
+    <Compile Include="Conversions.cs" />
+    <Compile Include="DefaultParams.cs" />
+    <Compile Include="DelegateTest.cs" />
+    <Compile Include="DeTest.cs" />
+    <Compile Include="DynamicRegressions.cs" />
+    <Compile Include="MemberMappingTests.cs" />
+    <Compile Include="Stress\Engine.cs" />
+    <Compile Include="EngineTest.cs" />
+    <Compile Include="Enums.cs" />
+    <Compile Include="Events.cs" />
+    <Compile Include="ExceptionConverter.cs" />
+    <Compile Include="Exceptions.cs" />
+    <Compile Include="Explicit.cs" />
+    <Compile Include="GenMeth.cs" />
+    <Compile Include="Indexable.cs" />
+    <Compile Include="InheritTest.cs" />
+    <Compile Include="IntegerTest.cs" />
+    <Compile Include="LoadTest.cs" />
+    <Compile Include="IronMath.cs" />
+    <Compile Include="NestedClass.cs" />
+    <Compile Include="NullableTest.cs" />
+    <Compile Include="OperatorTest.cs" />
+    <Compile Include="ProtocolTest.cs" />
+    <Compile Include="StaticTest.cs" />
+    <Compile Include="StringDictionaryStorage.cs" />
+    <Compile Include="TestBuiltinModule.cs" />
+    <Compile Include="TypeDescriptor.cs" />
+    <AppDesigner Include="Properties\" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(IsFullFramework)' == 'true' and '$(TargetFrameworkVersion)' != 'v3.5'" >
+    <Reference Include="System.Xaml" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\IronPython\IronPython.csproj">
+      <Project>{95289EA9-5778-489D-AB48-F81F2CE2DA32}</Project>
+      <Name>IronPython</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+</Project>

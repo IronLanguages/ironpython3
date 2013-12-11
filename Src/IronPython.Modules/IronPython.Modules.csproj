@@ -1,0 +1,152 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <Import Project="$(ProjectDir)..\..\Build\Common.proj" />
+  <PropertyGroup>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{155CE436-1669-4A48-8095-410F2430237F}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>IronPython.Modules</RootNamespace>
+    <AssemblyName>IronPython.Modules</AssemblyName>
+    <BaseAddress>885063680</BaseAddress>
+    <CodeAnalysisRuleSet>$(AssemblyName).ruleset</CodeAnalysisRuleSet>
+    <DocumentationFile>$(OutputPath)\$(AssemblyName).xml</DocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Win8Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Win8Release|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Release|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight5Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight5Release|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'AndroidDebug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'AndroidRelease|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="array.cs" />
+    <Compile Include="binascii.cs" />
+    <Compile Include="bz2\BZ2Compressor.cs" />
+    <Compile Include="bz2\BZ2Decompressor.cs" />
+    <Compile Include="bz2\BZ2File.cs" />
+    <Compile Include="bz2\BZ2Module.cs" />
+    <Compile Include="bz2\dotnetzip\BZip2\BitWriter.cs" />
+    <Compile Include="bz2\dotnetzip\BZip2\BZip2Compressor.cs" />
+    <Compile Include="bz2\dotnetzip\BZip2\BZip2InputStream.cs" />
+    <Compile Include="bz2\dotnetzip\BZip2\BZip2OutputStream.cs" />
+    <Compile Include="bz2\dotnetzip\BZip2\CRC32.cs" />
+    <Compile Include="bz2\dotnetzip\BZip2\ParallelBZip2OutputStream.cs" />
+    <Compile Include="bz2\dotnetzip\BZip2\Rand.cs" />
+    <Compile Include="cmath.cs" />
+    <Compile Include="msvcrt.cs" />
+    <Compile Include="GlobalSuppressions.cs" />
+    <Compile Include="mmap.cs" />
+    <Compile Include="NtSignalState.cs" />
+    <Compile Include="SimpleSignalState.cs" />
+    <Compile Include="ResourceMetaPathImporter.cs" />
+    <Compile Include="signal.cs" />
+    <Compile Include="winsound.cs" />
+    <Compile Include="zipimport.cs" />
+    <Compile Include="zlib\Compress.cs" />
+    <Compile Include="zlib\Decompress.cs" />
+    <Compile Include="zlib\ZlibModule.cs" />
+    <Compile Include="_bisect.cs" />
+    <Compile Include="_codecs.cs" />
+    <Compile Include="ModuleOps.cs" />
+    <Compile Include="_bytesio.cs" />
+    <Compile Include="_codecs_cn.cs" />
+    <Compile Include="_collections.cs" />
+    <Compile Include="copy_reg.cs" />
+    <Compile Include="cPickle.cs" />
+    <Compile Include="cStringIO.cs" />
+    <Compile Include="datetime.cs" />
+    <Compile Include="errno.cs" />
+    <Compile Include="gc.cs" />
+    <Compile Include="IterTools.cs" />
+    <Compile Include="_csv.cs" />
+    <Compile Include="_io.cs" />
+    <Compile Include="_locale.cs" />
+    <Compile Include="marshal.cs" />
+    <Compile Include="math.cs" />
+    <Compile Include="math.Generated.cs" />
+    <Compile Include="_fileio.cs" />
+    <Compile Include="_md5.cs" />
+    <Compile Include="nt.cs" />
+    <Compile Include="operator.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="re.cs" />
+    <Compile Include="select.cs" />
+    <Compile Include="_multibytecodec.cs" />
+    <Compile Include="_sha.cs" />
+    <Compile Include="_sha256.cs" />
+    <Compile Include="_sha512.cs" />
+    <Compile Include="socket.cs" />
+    <Compile Include="_ctypes\LocalOrArg.cs" />
+    <Compile Include="_ctypes\MarshalCleanup.cs" />
+    <Compile Include="_ctypes\MemoryHolder.cs" />
+    <Compile Include="_ctypes\NativeFunctions.cs" />
+    <Compile Include="_ctypes\SimpleTypeKind.cs" />
+    <Compile Include="_ctypes\_ctypes.cs" />
+    <Compile Include="_ctypes\Array.cs" />
+    <Compile Include="_ctypes\ArrayType.cs" />
+    <Compile Include="_ctypes\CData.cs" />
+    <Compile Include="_ctypes\CFuncPtr.cs" />
+    <Compile Include="_ctypes\CFuncPtrType.cs" />
+    <Compile Include="_ctypes\Extensions.cs" />
+    <Compile Include="_ctypes\Field.cs" />
+    <Compile Include="_ctypes\INativeType.cs" />
+    <Compile Include="_ctypes\NativeArgument.cs" />
+    <Compile Include="_ctypes\Pointer.cs" />
+    <Compile Include="_ctypes\PointerType.cs" />
+    <Compile Include="_ctypes\SimpleCData.cs" />
+    <Compile Include="_ctypes\SimpleType.cs" />
+    <Compile Include="_ctypes\StructType.cs" />
+    <Compile Include="_ctypes\Structure.cs" />
+    <Compile Include="_ctypes\Union.cs" />
+    <Compile Include="_ctypes\UnionType.cs" />
+    <Compile Include="_ctypes_test.cs" />
+    <Compile Include="_heapq.cs" />
+    <Compile Include="_struct.cs" />
+    <Compile Include="thread.cs" />
+    <Compile Include="time.cs" />
+    <Compile Include="xxsubtype.cs" />
+    <Compile Include="_functools.cs" />
+    <Compile Include="_random.cs" />
+    <Compile Include="_sre.cs" />
+    <Compile Include="_ssl.cs" />
+    <Compile Include="_subprocess.cs" />
+    <Compile Include="_warnings.cs" />
+    <Compile Include="_weakref.cs" />
+    <Compile Include="..\AssemblyVersion.cs">
+      <Link>Properties\AssemblyVersion.cs</Link>
+    </Compile>
+    <Compile Include="_winreg.cs" />
+    <Compile Include="_weakref.Generated.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="IronPython.Modules.ruleset" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\IronPython\IronPython.csproj">
+      <Project>{95289EA9-5778-489D-AB48-F81F2CE2DA32}</Project>
+      <Name>IronPython</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="bz2\dotnetzip\source.txt" />
+  </ItemGroup>
+  <Import Project="$(CSharpTargets)" />
+  <Import Project="$(BeforeTargetFiles)" />
+  <Target Name="BeforeBuild" DependsOnTargets="$(BeforeTargets)" />
+</Project>

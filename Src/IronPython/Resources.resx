@@ -1,0 +1,241 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="CantFindMember" xml:space="preserve">
+    <value>couldn't find member {0}</value>
+  </data>
+  <data name="DefaultRequired" xml:space="preserve">
+    <value>default value must be specified here</value>
+  </data>
+  <data name="DuplicateArgumentInFuncDef" xml:space="preserve">
+    <value>duplicate argument '{0}' in function definition</value>
+  </data>
+  <data name="DuplicateKeywordArg" xml:space="preserve">
+    <value>duplicate keyword argument</value>
+  </data>
+  <data name="EofInString" xml:space="preserve">
+    <value>&lt;eof&gt; while reading string</value>
+  </data>
+  <data name="EofInTripleQuotedString" xml:space="preserve">
+    <value>EOF while scanning triple-quoted string</value>
+  </data>
+  <data name="EolInSingleQuotedString" xml:space="preserve">
+    <value>EOL while scanning single-quoted string</value>
+  </data>
+  <data name="ExpectedIndentation" xml:space="preserve">
+    <value>expected an indented block</value>
+  </data>
+  <data name="ExpectedName" xml:space="preserve">
+    <value>expected name</value>
+  </data>
+  <data name="ExpectingIdentifier" xml:space="preserve">
+    <value>Expecting identifier:</value>
+  </data>
+  <data name="InconsistentWhitespace" xml:space="preserve">
+    <value>inconsistent use of tabs and spaces in indentation</value>
+  </data>
+  <data name="IndentationMismatch" xml:space="preserve">
+    <value>unindent does not match any outer indentation level</value>
+  </data>
+  <data name="InvalidArgumentValue" xml:space="preserve">
+    <value>Invalid argument value.</value>
+  </data>
+  <data name="InvalidOperation_MakeGenericOnNonGeneric" xml:space="preserve">
+    <value>MakeGenericType on non-generic type</value>
+  </data>
+  <data name="InvalidParameters" xml:space="preserve">
+    <value>Invalid parameter collection for the function.</value>
+  </data>
+  <data name="InvalidSyntax" xml:space="preserve">
+    <value>invalid syntax</value>
+  </data>
+  <data name="KeywordCreateUnavailable" xml:space="preserve">
+    <value>object ({0}) is not creatable w/ keyword arguments</value>
+  </data>
+  <data name="KeywordOutOfSequence" xml:space="preserve">
+    <value>keywords must come before * args</value>
+  </data>
+  <data name="MemberDoesNotExist" xml:space="preserve">
+    <value>type does not have {0} field</value>
+  </data>
+  <data name="MisplacedFuture" xml:space="preserve">
+    <value>from __future__ imports must occur at the beginning of the file</value>
+  </data>
+  <data name="MisplacedReturn" xml:space="preserve">
+    <value>'return' outside function</value>
+  </data>
+  <data name="MisplacedYield" xml:space="preserve">
+    <value>'yield' outside function</value>
+  </data>
+  <data name="NewLineInDoubleQuotedString" xml:space="preserve">
+    <value>NEWLINE in double-quoted string</value>
+  </data>
+  <data name="NewLineInSingleQuotedString" xml:space="preserve">
+    <value>NEWLINE in single-quoted string</value>
+  </data>
+  <data name="NoFutureStar" xml:space="preserve">
+    <value>future statement does not support import *</value>
+  </data>
+  <data name="NonKeywordAfterKeywordArg" xml:space="preserve">
+    <value>non-keyword arg after keyword arg</value>
+  </data>
+  <data name="NotAChance" xml:space="preserve">
+    <value>not a chance</value>
+    <comment>Reported when user does "from __future__ import braces"</comment>
+  </data>
+  <data name="NotImplemented" xml:space="preserve">
+    <value>The method or operation is not implemented.</value>
+  </data>
+  <data name="OneKeywordArgOnly" xml:space="preserve">
+    <value>only one ** allowed</value>
+  </data>
+  <data name="OneListArgOnly" xml:space="preserve">
+    <value>only one * allowed</value>
+  </data>
+  <data name="PythonContextRequired" xml:space="preserve">
+    <value>Context must be PythonCompilerContext</value>
+  </data>
+  <data name="Slot_CantDelete" xml:space="preserve">
+    <value>cannot delete slot</value>
+  </data>
+  <data name="Slot_CantGet" xml:space="preserve">
+    <value>cannot get slot</value>
+  </data>
+  <data name="Slot_CantSet" xml:space="preserve">
+    <value>cannot set slot</value>
+  </data>
+  <data name="StaticAccessFromInstanceError" xml:space="preserve">
+    <value>static property '{0}' of '{1}' can only be read through a type, not an instance</value>
+  </data>
+  <data name="StaticAssignmentFromInstanceError" xml:space="preserve">
+    <value>static property '{0}' of '{1}' can only be assigned to through a type, not an instance</value>
+  </data>
+  <data name="TokenHasNoValue" xml:space="preserve">
+    <value>no value for this token</value>
+  </data>
+  <data name="TooManyVersions" xml:space="preserve">
+    <value>too many versions</value>
+  </data>
+  <data name="UnexpectedToken" xml:space="preserve">
+    <value>unexpected token '{0}'</value>
+  </data>
+  <data name="UnknownFutureFeature" xml:space="preserve">
+    <value>future feature is not defined:</value>
+  </data>
+</root>

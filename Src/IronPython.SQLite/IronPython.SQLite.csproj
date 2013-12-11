@@ -1,0 +1,162 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(ProjectDir)..\..\Build\Common.proj" />
+  <PropertyGroup>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{4A617A40-2BA7-4713-AAFE-F90C4325C581}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <OutputPath>$(OutputPath)\DLLs</OutputPath>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>IronPython.SQLite</RootNamespace>
+    <AssemblyName>IronPython.SQLite</AssemblyName>
+    <DocumentationFile>$(OutputPath)\$(AssemblyName).xml</DocumentationFile>
+    <SQLiteCommon>SQLITE_DEBUG;TRUE;WIN32;_MSC_VER;SQLITE_ASCII;SQLITE_MEM_POOL;SQLITE_ENABLE_COLUMN_METADATA;SQLITE_OS_WIN;SQLITE_SYSTEM_MALLOC;VDBE_PROFILE_OFF</SQLiteCommon>
+    <SQLiteCommonOmit>SQLITE_OMIT_AUTHORIZATION;SQLITE_OMIT_DEPRECATED;SQLITE_OMIT_GET_TABLE;SQLITE_OMIT_INCRBLOB;SQLITE_OMIT_LOOKASIDE;SQLITE_OMIT_SHARED_CACHE;SQLITE_OMIT_UTF16;SQLITE_OMIT_WAL</SQLiteCommonOmit>
+    <NoWarn>$(NoWarn);0168;0169;0414;0618;0649;1587;219</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
+    <DefineConstants>NET_40;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_W32;SQLITE_THREADSAFE;NDEBUG</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DefineConstants>NET_40;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_W32;SQLITE_THREADSAFE;SQLITE_ENABLE_OVERSIZE_CELL_CHECK</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DefineConstants>NET_40;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_W32;SQLITE_THREADSAFE;NDEBUG</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Debug|AnyCPU' ">
+    <DefineConstants>NET_35;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_W32;SQLITE_THREADSAFE;SQLITE_ENABLE_OVERSIZE_CELL_CHECK</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Release|AnyCPU' ">
+    <DefineConstants>NET_35;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_W32;SQLITE_THREADSAFE;NDEBUG</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v45Debug|AnyCPU' ">
+    <DefineConstants>NET_40;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_W32;SQLITE_THREADSAFE;SQLITE_ENABLE_OVERSIZE_CELL_CHECK</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v45Release|AnyCPU' ">
+    <DefineConstants>NET_40;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_W32;SQLITE_THREADSAFE;NDEBUG</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight5Debug|AnyCPU' ">
+    <DefineConstants>SQLITE_SILVERLIGHT;NET_40;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_OMIT;SQLITE_ENABLE_OVERSIZE_CELL_CHECK</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight5Release|AnyCPU' ">
+    <DefineConstants>SQLITE_SILVERLIGHT;NET_40;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_OMIT;NDEBUG</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'AndroidDebug|AnyCPU' ">
+    <DefineConstants>NET_35;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_W32;SQLITE_THREADSAFE;SQLITE_DEBUG;SQLITE_ENABLE_OVERSIZE_CELL_CHECK</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'AndroidRelease|AnyCPU' ">
+    <DefineConstants>NET_35;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_W32;SQLITE_THREADSAFE;NDEBUG</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\IronPython\IronPython.csproj">
+      <Project>{95289EA9-5778-489D-AB48-F81F2CE2DA32}</Project>
+      <Name>IronPython</Name>
+      <Private>False</Private>
+    </ProjectReference>
+    <Reference Include="System.Management" Condition=" '$(IsFullFramework)' == 'true'" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\AssemblyVersion.cs">
+      <Link>Properties\AssemblyVersion.cs</Link>
+    </Compile>
+    <Compile Include="c#sqlite\alter_c.cs" />
+    <Compile Include="c#sqlite\analyze_c.cs" />
+    <Compile Include="c#sqlite\attach_c.cs" />
+    <Compile Include="c#sqlite\auth_c.cs" />
+    <Compile Include="c#sqlite\backup_c.cs" />
+    <Compile Include="c#sqlite\bitvec_c.cs" />
+    <Compile Include="c#sqlite\btmutex_c.cs" />
+    <Compile Include="c#sqlite\BtreeInt_h.cs" />
+    <Compile Include="c#sqlite\btree_c.cs" />
+    <Compile Include="c#sqlite\Btree_h.cs" />
+    <Compile Include="c#sqlite\build_c.cs" />
+    <Compile Include="c#sqlite\callback_c.cs" />
+    <Compile Include="c#sqlite\complete_c.cs" />
+    <Compile Include="c#sqlite\crypto.cs" />
+    <Compile Include="c#sqlite\ctime_c.cs" />
+    <Compile Include="c#sqlite\date_c.cs" />
+    <Compile Include="c#sqlite\Delegates.cs" />
+    <Compile Include="c#sqlite\delete_c.cs" />
+    <Compile Include="c#sqlite\expr_c.cs" />
+    <Compile Include="c#sqlite\fault_c.cs" />
+    <Compile Include="c#sqlite\fkey_c.cs" />
+    <Compile Include="c#sqlite\func_c.cs" />
+    <Compile Include="c#sqlite\global_c.cs" />
+    <Compile Include="c#sqlite\hash_c.cs" />
+    <Compile Include="c#sqlite\Hash_h.cs" />
+    <Compile Include="c#sqlite\hwtime_c.cs" />
+    <Compile Include="c#sqlite\insert_c.cs" />
+    <Compile Include="c#sqlite\journal_c.cs" />
+    <Compile Include="c#sqlite\keywordhash_h.cs" />
+    <Compile Include="c#sqlite\legacy_c.cs" />
+    <Compile Include="c#sqlite\loadext_c.cs" />
+    <Compile Include="c#sqlite\main_c.cs" />
+    <Compile Include="c#sqlite\malloc_c.cs" />
+    <Compile Include="c#sqlite\memjournal_c.cs" />
+    <Compile Include="c#sqlite\mem_Pool.cs" />
+    <Compile Include="c#sqlite\mutex_c.cs" />
+    <Compile Include="c#sqlite\mutex_h.cs" />
+    <Compile Include="c#sqlite\mutex_noop_c.cs" />
+    <Compile Include="c#sqlite\mutex_w32.cs" />
+    <Compile Include="c#sqlite\notify_c.cs" />
+    <Compile Include="c#sqlite\opcodes_c.cs" />
+    <Compile Include="c#sqlite\opcodes_h.cs" />
+    <Compile Include="c#sqlite\os_c.cs" />
+    <Compile Include="c#sqlite\os_common_h.cs" />
+    <Compile Include="c#sqlite\os_h.cs" />
+    <Compile Include="c#sqlite\os_win_c.cs" />
+    <Compile Include="c#sqlite\pager_c.cs" />
+    <Compile Include="c#sqlite\pager_h.cs" />
+    <Compile Include="c#sqlite\parse_c.cs" />
+    <Compile Include="c#sqlite\parse_h.cs" />
+    <Compile Include="c#sqlite\pcache1_c.cs" />
+    <Compile Include="c#sqlite\pcache_c.cs" />
+    <Compile Include="c#sqlite\pcache_h.cs" />
+    <Compile Include="c#sqlite\pragma_c.cs" />
+    <Compile Include="c#sqlite\prepare_c.cs" />
+    <Compile Include="c#sqlite\printf_c.cs" />
+    <Compile Include="c#sqlite\random_c.cs" />
+    <Compile Include="c#sqlite\resolve_c.cs" />
+    <Compile Include="c#sqlite\rowset_c.cs" />
+    <Compile Include="c#sqlite\select_c.cs" />
+    <Compile Include="c#sqlite\sqlite3_h.cs" />
+    <Compile Include="c#sqlite\sqliteInt_h.cs" />
+    <Compile Include="c#sqlite\sqliteLimit_h.cs" />
+    <Compile Include="c#sqlite\wal_c.cs" />
+    <Compile Include="c#sqlite\wal_h.cs" />
+    <Compile Include="Extensions.cs" />
+    <Compile Include="Properties\BuildInfo.Generated.cs" />
+    <Compile Include="Row.cs" />
+    <Compile Include="Statement.cs" />
+    <Compile Include="c#sqlite\status_c.cs" />
+    <Compile Include="c#sqlite\table_c.cs" />
+    <Compile Include="c#sqlite\tokenize_c.cs" />
+    <Compile Include="c#sqlite\trigger_c.cs" />
+    <Compile Include="c#sqlite\update_c.cs" />
+    <Compile Include="c#sqlite\utf_c.cs" />
+    <Compile Include="c#sqlite\util_c.cs" />
+    <Compile Include="c#sqlite\vacuum_c.cs" />
+    <Compile Include="c#sqlite\vdbeapi_c.cs" />
+    <Compile Include="c#sqlite\vdbeaux_c.cs" />
+    <Compile Include="c#sqlite\vdbeblob_c.cs" />
+    <Compile Include="c#sqlite\VdbeInt_h.cs" />
+    <Compile Include="c#sqlite\vdbemem_c.cs" />
+    <Compile Include="c#sqlite\vdbetrace_c.cs" />
+    <Compile Include="c#sqlite\vdbe_c.cs" />
+    <Compile Include="c#sqlite\Vdbe_h.cs" />
+    <Compile Include="c#sqlite\vtab_c.cs" />
+    <Compile Include="c#sqlite\walker_c.cs" />
+    <Compile Include="c#sqlite\where_c.cs" />
+    <Compile Include="c#sqlite\_Custom.cs" />
+    <Compile Include="Connection.cs" />
+    <Compile Include="Contants.cs" />
+    <Compile Include="Cursor.cs" />
+    <Compile Include="Exceptions.cs" />
+    <Compile Include="Util.cs" />
+    <Compile Include="_sqlite.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <Import Project="$(CSharpTargets)" />
+  <Import Project="$(BeforeTargetFiles)" />
+  <Target Name="BeforeBuild" DependsOnTargets="$(BeforeTargets)" />
+</Project>

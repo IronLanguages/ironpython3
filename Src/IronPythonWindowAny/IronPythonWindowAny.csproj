@@ -50,4 +50,6 @@
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Import Project="$(BeforeTargetFiles)" />
   <Target Name="BeforeBuild" DependsOnTargets="$(BeforeTargets)" />
+  <Import Project="$(AfterTargetFiles)" />
+  <Target Name="AfterBuild" DependsOnTargets="$(AfterTargets)" />
 </Project>

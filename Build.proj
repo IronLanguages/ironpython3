@@ -3,6 +3,7 @@
 
   <PropertyGroup>
     <BuildFlavour Condition=" '$(BuildFlavour)' == '' ">Debug</BuildFlavour>
+    <MainPlatform Condition=" '$(MainPlatform)' == '' ">net40</MainPlatform>
     <Mono Condition="'$(OS)' != 'Windows_NT'">true</Mono>
 
     <RootDir>$(MSBuildThisFileDirectory)</RootDir>
@@ -27,7 +28,8 @@
       BinDir=$(BinDir);
       StageDir=$(StageDir);
       BuildSysDir=$(BuildSysDir);
-      Mono=$(Mono)
+      Mono=$(Mono);
+      MainPlatform=$(MainPlatform)
     </BuildProperties>
   </PropertyGroup>
   
@@ -42,6 +44,11 @@
     <ReferencedPlatform Include="net45" Condition=" '$(Mono)' != 'true' ">
       <BuildPrefix>v45</BuildPrefix>
     </ReferencedPlatform>
+  </ItemGroup>
+
+  <ItemGroup>
+    <MainStageFiles Include="$(RootDir)\README" />
+    <MainStageFiles Include="$(RootDir)\LICENSE" />
   </ItemGroup>
 
   <Target Name="Build">
@@ -65,12 +72,70 @@
       Properties="$(BuildProperties);ReferencedPlatform=%(ReferencedPlatform.Identity);Configuration=%(ReferencedPlatform.BuildPrefix)$(BuildFlavour)" />
   </Target>
 
-  <Target Name="Stage">
+  <Target Name="_MakeStageDir">
+    <MakeDir Directories="$(StageDir)" Condition="!Exists('$(StageDir)')" />
+  </Target>
+
+  <Target Name="_PlatformStage" DependsOnTargets="_MakeStageDir">
     <MSBuild 
       Projects="$(Solution)" 
       Targets="Build" 
       Properties="$(BuildProperties);ReferencedPlatform=%(ReferencedPlatform.Identity);Configuration=%(ReferencedPlatform.BuildPrefix)$(BuildFlavour);Staging=true" />
   </Target>
+
+  <Target Name="_CopyDlrPlatformReferences" DependsOnTargets="_PlatformStage">
+    <ItemGroup>
+      <DlrPlatformReferenceFiles
+          Include="$(UtilDir)\References\DynamicLanguageRuntime\lib\**\Microsoft.Scripting.Core.*" />
+      <DlrPlatformReferenceFiles
+          Include="$(UtilDir)\References\DynamicLanguageRuntime\lib\**\Microsoft.Scripting.dll" />
+      <DlrPlatformReferenceFiles
+          Include="$(UtilDir)\References\DynamicLanguageRuntime\lib\**\Microsoft.Scripting.xml" />
+      <DlrPlatformReferenceFiles
+          Include="$(UtilDir)\References\DynamicLanguageRuntime\lib\**\Microsoft.Dynamic.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(DlrPlatformReferenceFiles)"
+          DestinationFiles="@(DlrPlatformReferenceFiles->'$(StageDir)\Platforms\%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+
+  <Target Name="_CopyDlrMainReferences" DependsOnTargets="_MakeStageDir">
+    <ItemGroup>
+      <DlrMainReferenceFiles
+          Include="$(UtilDir)\References\DynamicLanguageRuntime\lib\$(MainPlatform)\Microsoft.Scripting.Core.dll"
+          Condition=" Exists('$(UtilDir)\References\DynamicLanguageRuntime\lib\$(MainPlatform)\Microsoft.Scripting.Core.dll')" />
+      <DlrMainReferenceFiles
+          Include="$(UtilDir)\References\DynamicLanguageRuntime\lib\$(MainPlatform)\Microsoft.Scripting.dll" />
+      <DlrMainReferenceFiles
+          Include="$(UtilDir)\References\DynamicLanguageRuntime\lib\$(MainPlatform)\Microsoft.Dynamic.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(DlrMainReferenceFiles)"
+          DestinationFolder="$(StageDir)" />
+  </Target>
+
+  <Target Name="_CopyMainStageFiles" DependsOnTargets="_MakeStageDir">
+    <Copy SourceFiles="@(MainStageFiles)" DestinationFolder="$(StageDir)" />
+  </Target>
+
+  <Target Name="_RemoveDocFiles" DependsOnTargets="_PlatformStage">
+    <ItemGroup>
+      <UnneededDocXMLFiles Include="$(StageDir)\*.xml" />
+      <UnneededDocXMLFiles Include="$(StageDir)\DLLs\*.xml" />
+    </ItemGroup>
+    <Delete Files="@(UnneededDocXMLFiles)" />
+  </Target>
+
+  <PropertyGroup>
+    <StageDependsOn>
+      _MakeStageDir;
+      _PlatformStage;
+      _CopyDlrPlatformReferences;
+      _CopyDlrMainReferences;
+      _CopyMainStageFiles;
+      _RemoveDocFiles
+    </StageDependsOn>
+  </PropertyGroup>
+
+  <Target Name="Stage" DependsOnTargets="$(StageDependsOn)" />
   
   <Target Name="Package" DependsOnTargets="ZipPackage;NuGetPackage" />
 

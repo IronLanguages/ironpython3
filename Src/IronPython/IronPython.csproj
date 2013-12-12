@@ -516,4 +516,6 @@
   <Import Project="$(CSharpTargets)" />
   <Import Project="$(BeforeTargetFiles)" />
   <Target Name="BeforeBuild" DependsOnTargets="$(BeforeTargets);GenerateCurrentVersion" />
+  <Import Project="$(AfterTargetFiles)" />
+  <Target Name="AfterBuild" DependsOnTargets="$(AfterTargets)" />
 </Project>

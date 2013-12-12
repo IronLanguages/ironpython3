@@ -34,7 +34,7 @@
 
   <Target Name="GenerateCurrentVersion"
           DependsOnTargets="Bootstrap"
-          Inputs="$(CurrentVersionFile);@(CurrentVersionTemplate);$(MSBuildThisFile)"
+          Inputs="$(CurrentVersionFile);@(CurrentVersionTemplate);$(MSBuildThisFileFullPath)"
           Outputs="Properties\CurrentVersion.Generated.cs">
     <FormatTemplate TemplateFile="@(CurrentVersionTemplate)"
                     OutputFile="Properties\CurrentVersion.Generated.cs"
@@ -43,7 +43,7 @@
 
   <Target Name="GenerateBuildInfo"
           DependsOnTargets="Bootstrap"
-          Inputs="$(CurrentVersionFile);@(BuildInfoTemplate);$(MSBuildThisFile)"
+          Inputs="$(CurrentVersionFile);@(BuildInfoTemplate);$(MSBuildThisFileFullPath)"
           Outputs="Properties\BuildInfo.Generated.cs">
     <FormatTemplate TemplateFile="@(BuildInfoTemplate)"
                     OutputFile="Properties\BuildInfo.Generated.cs"

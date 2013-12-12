@@ -1,23 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <ItemGroup>
-    <StageItem Include="$(TargetPath)" />
-    <StageItem Include="$(DocumentationFile)" />
-  </ItemGroup>
+  <Choose>
+    <When Condition=" '$(OutputType)' == 'Library' ">
+      <ItemGroup>
+        <StageItem Include="$(TargetPath)" />
+        <StageItem Include="$(DocumentationFile)" />
+      </ItemGroup>
+    </When>
+    <When Condition=" '$(OutputType)' == 'Exe' or '$(OutputType)' == 'WinExe' ">
+      <ItemGroup>
+        <StageItem Include="$(TargetPath)" />
+        <StageItem Include="$(TargetPath).config" Condition=" Exists('$(TargetPath).config') " />
+      </ItemGroup>
+    </When>
+  </Choose>
 
   <PropertyGroup>
-    <PlatformStageDir>$(StageDir)\lib\$(ReferencedPlatform)</PlatformStageDir>
+    <MainStageDir>$(StageDir)</MainStageDir>
+    <MainStageDir Condition=" '$(StoreInDLLs)' == 'true' ">$(StageDir)\DLLs</MainStageDir>
+    <PlatformStageDir>$(StageDir)\Platforms\$(ReferencedPlatform)</PlatformStageDir>
     <UnsignedItems>@(StageItem->'$(OutputPath)\%(Filename)%(Extension)')</UnsignedItems>
-    <UnsignedStaged>@(StageItem->'$(PlatformStageDir)\%(Filename)%(Extension)')</UnsignedStaged>
+    <UnsignedPlatformStaged>@(StageItem->'$(PlatformStageDir)\%(Filename)%(Extension)')</UnsignedPlatformStaged>
+    <UnsignedMainStaged>@(StageItem->'$(MainStageDir)\%(Filename)%(Extension)')</UnsignedMainStaged>
   </PropertyGroup>
 
-  <Target Name="Stage"
+  <Target Name="_PlatformStage"
           DependsOnTargets="CoreBuild"
           Inputs="$(UnsignedItems)"
-          Outputs="$(UnsignedStaged)"
+          Outputs="$(UnsignedPlatformStaged)">
+    <Copy SourceFiles="$(UnsignedItems)" DestinationFolder="$(PlatformStageDir)" />
+  </Target>
+
+  <Target Name="_MainStage"
+          DependsOnTargets="CoreBuild"
+          Inputs="$(UnsignedItems)"
+          Outputs="$(UnsignedMainStaged)"
+          Condition=" '$(ReferencedPlatform)' == '$(MainPlatform)' ">
+    <Copy SourceFiles="$(UnsignedItems)" DestinationFolder="$(MainStageDir)" />
+  </Target>
+
+  <Target Name="Stage"
+          DependsOnTargets="_MainStage;_PlatformStage"
           Condition=" '$(Staging)' == 'true' ">
     <Error Text="StageDir is not set." Condition=" '$(StageDir)' == '' " />
-    <Copy SourceFiles="$(UnsignedItems)" DestinationFolder="$(PlatformStageDir)" />
+    <Error Text="MainPlatform is not set." Condition=" '$(MainPlatform)' == '' " />
   </Target>
 </Project>
 

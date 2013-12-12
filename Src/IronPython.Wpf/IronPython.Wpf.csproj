@@ -11,6 +11,7 @@
     <AssemblyName>IronPython.Wpf</AssemblyName>
     <DocumentationFile>$(OutputPath)\$(AssemblyName).xml</DocumentationFile>
     <BaseAddress>885063680</BaseAddress>
+    <StoreInDLLs>true</StoreInDLLs>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
   </PropertyGroup>
@@ -55,5 +56,7 @@
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Import Project="$(BeforeTargetFiles)" />
   <Target Name="BeforeBuild" DependsOnTargets="$(BeforeTargets)" />
+  <Import Project="$(AfterTargetFiles)" />
+  <Target Name="AfterBuild" DependsOnTargets="$(AfterTargets)" />
 </Project>
 

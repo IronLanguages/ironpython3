@@ -88,6 +88,7 @@
     <CSharpTargets Condition="'$(CSharpTargets)' == '' and '$(ReferencedPlatform)' == 'android'">$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets</CSharpTargets>
 
     <DlrReferences>$(RootDir)\Util\References\DynamicLanguageRuntime\lib\$(ReferencedPlatform)</DlrReferences>
+    <WpfReferences>$(RootDir)\Util\References\WPF\4.0</WpfReferences>
   </PropertyGroup>
 
   <!-- References -->

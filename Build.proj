@@ -33,6 +33,14 @@
     </BuildProperties>
   </PropertyGroup>
   
+  <PropertyGroup>
+    <NuGet>$(UtilDir)\NuGet\nuget.exe</NuGet>
+    <NuGet Condition=" '$(Mono)' != '' ">mono $(NuGet)</NuGet>
+
+    <Zip Condition="'$(OS)' == 'Windows_NT'">$(UtilDir)\Misc\zip.exe</Zip>
+    <Zip Condition="'$(OS)' != 'Windows_NT'">zip</Zip>
+  </PropertyGroup>
+
   <ItemGroup>
     <ReferencedPlatform Include="net35">
       <BuildPrefix>v2</BuildPrefix>
@@ -155,25 +163,24 @@
     <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')" />
   </Target>
 
-  <PropertyGroup>
-    <NuGet>$(UtilDir)\NuGet\NuGet.exe</NuGet>
-    <NuGet Condition=" '$(Mono)' != '' ">mono $(NuGet)</NuGet>
-
-    <Zip Condition="'$(OS)' == 'Windows_NT'">$(UtilDir)\Misc\zip.exe</Zip>
-    <Zip Condition="'$(OS)' != 'Windows_NT'">zip</Zip>
-
-  </PropertyGroup>
-
   <ItemGroup>
     <Package Include="IronPython">
       <NuSpecDir>$(RootDir)</NuSpecDir>
     </Package>
+    <Package Include="IronPython.StdLib">
+      <NuSpecDir>$(RootDir)</NuSpecDir>
+    </Package>
   </ItemGroup>
 
+  <PropertyGroup>
+    <NuSpecInputs>@(Package->'%(Package.NuSpecDir)\%(Package.Identity).nuspec')</NuSpecInputs>
+    <NuPkgOutputs>@(Package->'$(PackageDir)\%(Package.Identity).$(PackageVersion).nupkg')</NuPkgOutputs>
+  </PropertyGroup>
+
   <Target Name="NuGetPackage" DependsOnTargets="Stage;MakePackageDir"
-          Inputs="@(NuSpec);@(StageOutputs)"
-          Outputs="@(NuSpec->'$(PackageDir)\$(Filename).$(PackageVersion).nupkg')">
-    <Exec Command="$(NuGet) pack -Version $(PackageVersion) &quot;%(Package.NuSpecDir)\%(Package.Identity).nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot;" />
+          Inputs="$(NuSpecInputs);@(StageOutputs)"
+          Outputs="$(NuPkgOutputs)">
+    <Exec Command="$(NuGet) pack &quot;%(Package.NuSpecDir)\%(Package.Identity).nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot; -Version $(PackageVersion)" />
   </Target>
 
   <Target Name="ZipPackage" DependsOnTargets="Stage;MakePackageDir"

@@ -1,0 +1,15 @@
+Process for upgrading the stdlib to a new cpython version
+==========================================================
+
+(Based on the method used by PyPy.)
+
+0. Update a CPython checkout to latest.
+1. git checkout python-stdlib
+2. ./Src/StdLib/upgrade-stdlib.sh ~/path/to/cpython
+3. git checkout -b update-stdlib master
+4. git merge --no-ff python-stdlib
+5. Fix conflicts, etc.
+6. commit
+7. git checkout master
+8. git merge update-stdlib && git branch -d update-stdlib
+

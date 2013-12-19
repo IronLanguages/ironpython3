@@ -116,6 +116,16 @@
     <Copy SourceFiles="@(MainStageFiles)" DestinationFolder="$(StageDir)" />
   </Target>
 
+  <Target Name="_CopyStdLib" DependsOnTargets="_MakeStageDir">
+    <MSBuild Projects="$(RootDir)\Src\StdLib\StdLib.pyproj"
+             Properties="OutputPath=$(StageDir)"
+             Targets="Stage" />
+  </Target>
+
+  <Target Name="_ZipStdLib" DependsOnTargets="_CopyStdLib">
+    <Exec Command="$(Zip) -9 -r &quot;$(StageDir)\..\IronPython.StdLib-$(PackageVersion).zip&quot; &quot;Lib&quot;" WorkingDirectory="$(StageDir)" />
+  </Target>
+
   <Target Name="_RemoveDocFiles" DependsOnTargets="_PlatformStage">
     <ItemGroup>
       <UnneededDocXMLFiles Include="$(StageDir)\*.xml" />
@@ -131,6 +141,8 @@
       _CopyDlrPlatformReferences;
       _CopyDlrMainReferences;
       _CopyMainStageFiles;
+      _CopyStdLib;
+      _ZipStdLib;
       _RemoveDocFiles
     </StageDependsOn>
   </PropertyGroup>

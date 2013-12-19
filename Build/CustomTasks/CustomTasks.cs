@@ -81,42 +81,5 @@ namespace CustomTasks
             return true;
         }
     }
-
-    /// <summary>
-    /// Replaces the inline task from StdLib.proj, because xbuild doesn't do inline tasks.
-    /// </summary>
-    public class CopyStdLib : Task {
-        [Required]
-        public ITaskItem[] SourceFiles { get; set; }
-
-        [Required]
-        public string Destination { get; set; }
-
-        [Required]
-        public string BasePath { get; set; }
-
-        public override bool Execute() {
-            if (!Directory.Exists(Destination)) {
-		Log.LogMessage(MessageImportance.Low, "Creating directory '{0}' ...", Destination);
-                Directory.CreateDirectory(Destination);
-            }
-
-            foreach (var item in SourceFiles) {
-                var dest = item.ItemSpec.Replace(BasePath, Destination);
-                if (!Directory.Exists(Path.GetDirectoryName(dest))) {
-                    Log.LogMessage(MessageImportance.Low, "Creating directory '{0}' ...", Path.GetDirectoryName(dest));
-                    Directory.CreateDirectory(Path.GetDirectoryName(dest));
-                }
-
-                Log.LogMessage(MessageImportance.Low, "Copying '{0}' -> '{1}' ...", item.ItemSpec, dest);
-
-                File.Copy(item.ItemSpec, dest, true);
-            }
-
-            return true;
-        }
-    }
 }
-
-
 

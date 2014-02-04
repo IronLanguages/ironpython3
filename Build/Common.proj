@@ -83,7 +83,9 @@
     <CscToolExe>mcs$(CscToolExeSuffix)</CscToolExe>
     <CscToolExe Condition="'$(ReferencedPlatform)' == 'net35'">gmcs$(CscToolExeSuffix)</CscToolExe>
     <CscToolExe Condition="'$(ReferencedPlatform)' == 'net40'">dmcs$(CscToolExeSuffix)</CscToolExe>
+  </PropertyGroup>
 
+  <PropertyGroup>
     <CSharpTargets Condition="'$(CSharpTargets)' == ''">$(MSBuildBinPath)\Microsoft.CSharp.targets</CSharpTargets>
     <CSharpTargets Condition="'$(CSharpTargets)' == '' and '$(ReferencedPlatform)' == 'android'">$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets</CSharpTargets>
 

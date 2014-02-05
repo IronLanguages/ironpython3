@@ -4,6 +4,7 @@
   <PropertyGroup>
     <BuildFlavour Condition=" '$(BuildFlavour)' == '' ">Debug</BuildFlavour>
     <MainPlatform Condition=" '$(MainPlatform)' == '' ">net40</MainPlatform>
+    <DlrVersion>1.5.0</DlrVersion>
     <Mono Condition="'$(OS)' != 'Windows_NT'">true</Mono>
 
     <RootDir>$(MSBuildThisFileDirectory)</RootDir>
@@ -49,9 +50,11 @@
       <BuildPrefix></BuildPrefix>
     </ReferencedPlatform>
     <!-- Mono 3.2 is missing necessary bits for 4.5. -->
+    <!---
     <ReferencedPlatform Include="net45" Condition=" '$(Mono)' != 'true' ">
       <BuildPrefix>v45</BuildPrefix>
     </ReferencedPlatform>
+    -->
   </ItemGroup>
 
   <ItemGroup>
@@ -59,14 +62,20 @@
     <MainStageFiles Include="$(RootDir)\LICENSE" />
   </ItemGroup>
 
-  <Target Name="Build">
+  <Target Name="RestoreReferences"
+          Condition=" !Exists('$(ReferenceDir)') "
+          Inputs="$(RootDir)\NuGt.config;$(RootDir)\packages.config">
+    <Exec Command="$(NuGet) restore packages.config" WorkingDirectory="$(RootDir)" />
+  </Target>
+  
+  <Target Name="Build" DependsOnTargets="RestoreReferences">
     <MSBuild 
       Projects="$(Solution)" 
       Targets="Build"
       Properties="$(BuildProperties);ReferencedPlatform=%(ReferencedPlatform.Identity);Configuration=%(ReferencedPlatform.BuildPrefix)$(BuildFlavour)" />
   </Target>
 
-  <Target Name="Rebuild">
+  <Target Name="Rebuild" DependsOnTargets="RestoreReferences">
     <MSBuild 
       Projects="$(Solution)" 
       Targets="Rebuild" 
@@ -84,7 +93,7 @@
     <MakeDir Directories="$(StageDir)" Condition="!Exists('$(StageDir)')" />
   </Target>
 
-  <Target Name="_PlatformStage" DependsOnTargets="_MakeStageDir">
+  <Target Name="_PlatformStage" DependsOnTargets="RestoreReferences;_MakeStageDir">
     <MSBuild 
       Projects="$(Solution)" 
       Targets="Build" 
@@ -94,13 +103,13 @@
   <Target Name="_CopyDlrPlatformReferences" DependsOnTargets="_PlatformStage">
     <ItemGroup>
       <DlrPlatformReferenceFiles
-          Include="$(UtilDir)\References\DynamicLanguageRuntime\lib\**\Microsoft.Scripting.Core.*" />
+          Include="$(UtilDir)\References\DynamicLanguageRuntime.$(DlrVersion)\lib\**\Microsoft.Scripting.Core.*" />
       <DlrPlatformReferenceFiles
-          Include="$(UtilDir)\References\DynamicLanguageRuntime\lib\**\Microsoft.Scripting.dll" />
+          Include="$(UtilDir)\References\DynamicLanguageRuntime.$(DlrVersion)\lib\**\Microsoft.Scripting.dll" />
       <DlrPlatformReferenceFiles
-          Include="$(UtilDir)\References\DynamicLanguageRuntime\lib\**\Microsoft.Scripting.xml" />
+          Include="$(UtilDir)\References\DynamicLanguageRuntime.$(DlrVersion)\lib\**\Microsoft.Scripting.xml" />
       <DlrPlatformReferenceFiles
-          Include="$(UtilDir)\References\DynamicLanguageRuntime\lib\**\Microsoft.Dynamic.*" />
+          Include="$(UtilDir)\References\DynamicLanguageRuntime.$(DlrVersion)\lib\**\Microsoft.Dynamic.*" />
     </ItemGroup>
     <Copy SourceFiles="@(DlrPlatformReferenceFiles)"
           DestinationFiles="@(DlrPlatformReferenceFiles->'$(StageDir)\Platforms\%(RecursiveDir)%(Filename)%(Extension)')" />
@@ -109,12 +118,12 @@
   <Target Name="_CopyDlrMainReferences" DependsOnTargets="_MakeStageDir">
     <ItemGroup>
       <DlrMainReferenceFiles
-          Include="$(UtilDir)\References\DynamicLanguageRuntime\lib\$(MainPlatform)\Microsoft.Scripting.Core.dll"
-          Condition=" Exists('$(UtilDir)\References\DynamicLanguageRuntime\lib\$(MainPlatform)\Microsoft.Scripting.Core.dll')" />
+          Include="$(UtilDir)\References\DynamicLanguageRuntime.$(DlrVersion)\lib\$(MainPlatform)\Microsoft.Scripting.Core.dll"
+          Condition=" Exists('$(UtilDir)\References\DynamicLanguageRuntime.$(DlrVersion)\lib\$(MainPlatform)\Microsoft.Scripting.Core.dll')" />
       <DlrMainReferenceFiles
-          Include="$(UtilDir)\References\DynamicLanguageRuntime\lib\$(MainPlatform)\Microsoft.Scripting.dll" />
+          Include="$(UtilDir)\References\DynamicLanguageRuntime.$(DlrVersion)\lib\$(MainPlatform)\Microsoft.Scripting.dll" />
       <DlrMainReferenceFiles
-          Include="$(UtilDir)\References\DynamicLanguageRuntime\lib\$(MainPlatform)\Microsoft.Dynamic.dll" />
+          Include="$(UtilDir)\References\DynamicLanguageRuntime.$(DlrVersion)\lib\$(MainPlatform)\Microsoft.Dynamic.dll" />
     </ItemGroup>
     <Copy SourceFiles="@(DlrMainReferenceFiles)"
           DestinationFolder="$(StageDir)" />

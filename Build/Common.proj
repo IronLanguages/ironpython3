@@ -7,6 +7,7 @@
     <!-- These are normally set by Build.proj, except when building from VS. -->
     <RootDir Condition=" '$(RootDir)' == '' ">$(MSBuildThisFileDirectory)..</RootDir>
     <BuildSysDir Condition=" '$(BuildSysDir)' == '' ">$(RootDir)\Build</BuildSysDir>
+    <DlrVersion>1.5.0</DlrVersion>
 
     <Mono Condition=" '$(Mono)' == '' and '$(OS)' != 'Windows_NT'">true</Mono>
     
@@ -89,7 +90,7 @@
     <CSharpTargets Condition="'$(CSharpTargets)' == ''">$(MSBuildBinPath)\Microsoft.CSharp.targets</CSharpTargets>
     <CSharpTargets Condition="'$(CSharpTargets)' == '' and '$(ReferencedPlatform)' == 'android'">$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets</CSharpTargets>
 
-    <DlrReferences>$(RootDir)\Util\References\DynamicLanguageRuntime\lib\$(ReferencedPlatform)</DlrReferences>
+    <DlrReferences>$(RootDir)\Util\References\DynamicLanguageRuntime.$(DlrVersion)\lib\$(ReferencedPlatform)</DlrReferences>
     <WpfReferences>$(RootDir)\Util\References\WPF\4.0</WpfReferences>
   </PropertyGroup>
 

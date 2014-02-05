@@ -63,8 +63,7 @@
   </ItemGroup>
 
   <Target Name="RestoreReferences"
-          Condition=" !Exists('$(ReferenceDir)') "
-          Inputs="$(RootDir)\NuGt.config;$(RootDir)\packages.config">
+          Condition=" !Exists('$(ReferenceDir)') ">
     <Exec Command="$(NuGet) restore packages.config" WorkingDirectory="$(RootDir)" />
   </Target>
   

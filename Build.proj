@@ -74,6 +74,11 @@
           DependsOnTargets="_EnsureNuGetConfig"
           Condition=" !Exists('$(ReferenceDir)') ">
     <Exec Command="$(NuGet) restore packages.config -PackagesDirectory &quot;$(ReferenceDir)&quot; -ConfigFile &quot;$(NuGetConfig)&quot;" WorkingDirectory="$(RootDir)" />
+    <OnError ExecuteTargets="_RestoreReferencesError" />
+  </Target>
+  
+  <Target Name="_RestoreReferencesError">
+    <Error Text="Most likely you have not set a local DLR location. Use the set-dlr-source script to set the location of the DLR repository." />
   </Target>
   
   <Target Name="Build" DependsOnTargets="RestoreReferences">

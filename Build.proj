@@ -10,6 +10,7 @@
     <RootDir>$(MSBuildThisFileDirectory)</RootDir>
     <Solution>$(RootDir)\IronPython.sln</Solution>
     <UtilDir>$(RootDir)\Util</UtilDir>
+    <ReferenceDir>$(RootDir)\Util\References</ReferenceDir>
     <BinDir>$(RootDir)\bin</BinDir>
     <BuildSysDir>$(RootDir)\Build</BuildSysDir>
   </PropertyGroup>
@@ -37,6 +38,8 @@
   <PropertyGroup>
     <NuGet>$(UtilDir)\NuGet\nuget.exe</NuGet>
     <NuGet Condition=" '$(Mono)' != '' ">mono $(NuGet)</NuGet>
+    
+    <NuGetConfig>$(RootDir)\NuGet.config</NuGetConfig>
 
     <Zip Condition="'$(OS)' == 'Windows_NT'">$(UtilDir)\Misc\zip.exe</Zip>
     <Zip Condition="'$(OS)' != 'Windows_NT'">zip</Zip>
@@ -62,9 +65,15 @@
     <MainStageFiles Include="$(RootDir)\LICENSE" />
   </ItemGroup>
 
+  <Target Name="_EnsureNuGetConfig"
+          Condition=" !Exists('$(NuGetConfig)') ">
+    <Touch Files="$(NuGetConfig)" AlwaysCreate="true" />
+  </Target>
+
   <Target Name="RestoreReferences"
+          DependsOnTargets="_EnsureNuGetConfig"
           Condition=" !Exists('$(ReferenceDir)') ">
-    <Exec Command="$(NuGet) restore packages.config" WorkingDirectory="$(RootDir)" />
+    <Exec Command="$(NuGet) restore packages.config -PackagesDirectory &quot;$(ReferenceDir)&quot; -ConfigFile &quot;$(NuGetConfig)&quot;" WorkingDirectory="$(RootDir)" />
   </Target>
   
   <Target Name="Build" DependsOnTargets="RestoreReferences">

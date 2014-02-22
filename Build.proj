@@ -4,7 +4,7 @@
   <PropertyGroup>
     <BuildFlavour Condition=" '$(BuildFlavour)' == '' ">Debug</BuildFlavour>
     <MainPlatform Condition=" '$(MainPlatform)' == '' ">net40</MainPlatform>
-    <DlrVersion>1.5.0</DlrVersion>
+    <DlrVersion>1.2.0-alpha0</DlrVersion>
     <Mono Condition="'$(OS)' != 'Windows_NT'">true</Mono>
 
     <RootDir>$(MSBuildThisFileDirectory)</RootDir>

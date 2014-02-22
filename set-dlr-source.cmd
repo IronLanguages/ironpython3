@@ -12,7 +12,7 @@ set _nuget_config=%_root%NuGet.config
 set _dlr_root=%~dpn1
 
 :: Should probably allow switching between Debug and Release
-set _dlr_src=%_dlr_root%\Package\Release\dlr-1.5.0
+set _dlr_src=%_dlr_root%\Package\Release\dlr-1.2.0-alpha0
 
 if exist "%_nuget_config%" (call :check-config-size %_nuget_config%) else (call :fill-config)
 

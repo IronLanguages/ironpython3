@@ -418,12 +418,13 @@ def _call_with_frames_removed(f, *args, **kwds):
 #     Python 3.4a1  3280 (remove implicit class argument)
 #     Python 3.4a4  3290 (changes to __qualname__ computation)
 #     Python 3.4a4  3300 (more changes to __qualname__ computation)
+#     Python 3.4rc2 3310 (alter __qualname__ computation)
 #
 # MAGIC must change whenever the bytecode emitted by the compiler may no
 # longer be understood by older implementations of the eval loop (usually
 # due to the addition of new opcodes).
 
-MAGIC_NUMBER = (3300).to_bytes(2, 'little') + b'\r\n'
+MAGIC_NUMBER = (3310).to_bytes(2, 'little') + b'\r\n'
 _RAW_MAGIC_NUMBER = int.from_bytes(MAGIC_NUMBER, 'little')  # For import.c
 
 _PYCACHE = '__pycache__'
@@ -564,7 +565,11 @@ def _requires_frozen(fxn):
 
 def _find_module_shim(self, fullname):
     """Try to find a loader for the specified module by delegating to
-    self.find_loader()."""
+    self.find_loader().
+
+    This method is deprecated in favor of finder.find_spec().
+
+    """
     # Call find_loader(). If it returns a string (indicating this
     # is a namespace package portion), generate a warning and
     # return None.
@@ -576,8 +581,11 @@ def _find_module_shim(self, fullname):
 
 
 def _load_module_shim(self, fullname):
-    """Load the specified module into sys.modules and return it."""
-    # XXX Deprecation Warning here...
+    """Load the specified module into sys.modules and return it.
+
+    This method is deprecated.  Use loader.exec_module instead.
+
+    """
     spec = spec_from_loader(fullname, self)
     methods = _SpecMethods(spec)
     if fullname in sys.modules:
@@ -683,7 +691,9 @@ def _module_repr(module):
     # The implementation of ModuleType__repr__().
     loader = getattr(module, '__loader__', None)
     if hasattr(loader, 'module_repr'):
-        # XXX Deprecation Warning here...
+        # As soon as BuiltinImporter, FrozenImporter, and NamespaceLoader
+        # drop their implementations for module_repr. we can add a
+        # deprecation warning here.
         try:
             return loader.module_repr(module)
         except Exception:
@@ -985,24 +995,10 @@ class _SpecMethods:
     """Convenience wrapper around spec objects to provide spec-specific
     methods."""
 
+    # The various spec_from_* functions could be made factory methods here.
+
     def __init__(self, spec):
         self.spec = spec
-
-    @classmethod
-    def from_module(cls, module):
-        """Create a spec from a module's attributes."""
-        try:
-            spec = module.__spec__
-        except AttributeError:
-            try:
-                loader = spec.__loader__
-            except AttributeError:
-                spec = _find_spec(module.__name__)
-                if spec is None:
-                    spec = spec_from_loader(module.__name__, loader)
-            else:
-                spec = spec_from_loader(module.__name__, loader)
-        return cls(spec)
 
     def module_repr(self):
         """Return the repr to use for the module."""
@@ -1149,17 +1145,21 @@ class _SpecMethods:
                 return module
             self.init_module_attrs(module, _override=True)
             if not hasattr(self.spec.loader, 'exec_module'):
-                # XXX DeprecationWarning goes here...
+                # (issue19713) Once BuiltinImporter and ExtensionFileLoader
+                # have exec_module() implemented, we can add a deprecation
+                # warning here.
                 self.spec.loader.load_module(name)
             else:
                 self._exec(module)
         return sys.modules[name]
 
     def _load_backward_compatible(self):
-        # XXX DeprecationWarning goes here...
+        # (issue19713) Once BuiltinImporter and ExtensionFileLoader
+        # have exec_module() implemented, we can add a deprecation
+        # warning here.
         spec = self.spec
-        # The module must be in sys.modules!
         spec.loader.load_module(spec.name)
+        # The module must be in sys.modules at this point!
         module = sys.modules[spec.name]
         if getattr(module, '__loader__', None) is None:
             try:
@@ -1182,15 +1182,6 @@ class _SpecMethods:
             except AttributeError:
                 pass
         return module
-
-    # XXX If we don't end up using this for pythonrun.c/runpy, we should
-    #     get rid of it.
-    def _load_existing(self, module):
-        """Exec the spec'ed module into an existing module's namespace."""
-        # For use by runpy.
-        with _installed_safely(module):
-            loaded = self.exec(module)
-        return loaded
 
     def _load_unlocked(self):
         # A helper for direct use by the import system.
@@ -1242,7 +1233,11 @@ class BuiltinImporter:
 
     @staticmethod
     def module_repr(module):
-        # XXX deprecate
+        """Return repr for the module.
+
+        The method is deprecated.  The import machinery does the job itself.
+
+        """
         return '<module {!r} (built-in)>'.format(module.__name__)
 
     @classmethod
@@ -1260,6 +1255,8 @@ class BuiltinImporter:
 
         If 'path' is ever specified then the search is considered a failure.
 
+        This method is deprecated.  Use find_spec() instead.
+
         """
         spec = cls.find_spec(fullname, path)
         return spec.loader if spec is not None else None
@@ -1268,6 +1265,8 @@ class BuiltinImporter:
     @_requires_builtin
     def load_module(cls, fullname):
         """Load a built-in module."""
+        # Once an exec_module() implementation is added we can also
+        # add a deprecation warning here.
         with _ManageReload(fullname):
             module = _call_with_frames_removed(_imp.init_builtin, fullname)
         module.__loader__ = cls
@@ -1290,7 +1289,6 @@ class BuiltinImporter:
     @_requires_builtin
     def is_package(cls, fullname):
         """Return False as built-in modules are never packages."""
-        # XXX DeprecationWarning here...
         return False
 
 
@@ -1305,7 +1303,11 @@ class FrozenImporter:
 
     @staticmethod
     def module_repr(m):
-        # XXX deprecate
+        """Return repr for the module.
+
+        The method is deprecated.  The import machinery does the job itself.
+
+        """
         return '<module {!r} (frozen)>'.format(m.__name__)
 
     @classmethod
@@ -1317,7 +1319,11 @@ class FrozenImporter:
 
     @classmethod
     def find_module(cls, fullname, path=None):
-        """Find a frozen module."""
+        """Find a frozen module.
+
+        This method is deprecated.  Use find_spec() instead.
+
+        """
         return cls if _imp.is_frozen(fullname) else None
 
     @staticmethod
@@ -1331,7 +1337,11 @@ class FrozenImporter:
 
     @classmethod
     def load_module(cls, fullname):
-        """Load a frozen module."""
+        """Load a frozen module.
+
+        This method is deprecated.  Use exec_module() instead.
+
+        """
         return _load_module_shim(cls, fullname)
 
     @classmethod
@@ -1389,7 +1399,6 @@ class WindowsRegistryFinder:
 
     @classmethod
     def find_spec(cls, fullname, path=None, target=None):
-        # XXX untested! Need a Windows person to write tests (otherwise mock out appropriately)
         filepath = cls._search_registry(fullname)
         if filepath is None:
             return None
@@ -1405,8 +1414,12 @@ class WindowsRegistryFinder:
 
     @classmethod
     def find_module(cls, fullname, path=None):
-        """Find module named in the registry."""
-        spec = self.find_spec(fullname, path)
+        """Find module named in the registry.
+
+        This method is deprecated.  Use exec_module() instead.
+
+        """
+        spec = cls.find_spec(fullname, path)
         if spec is not None:
             return spec.loader
         else:
@@ -1418,7 +1431,6 @@ class _LoaderBasics:
     """Base class of common code needed by both SourceLoader and
     SourcelessFileLoader."""
 
-    # XXX deprecate?
     def is_package(self, fullname):
         """Concrete implementation of InspectLoader.is_package by checking if
         the path returned by get_filename has a filename of '__init__.py'."""
@@ -1559,11 +1571,21 @@ class FileLoader:
         self.name = fullname
         self.path = path
 
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__ and
+                self.__dict__ == other.__dict__)
+
+    def __hash__(self):
+        return hash(self.name) ^ hash(self.path)
+
     @_check_name
     def load_module(self, fullname):
-        """Load a module from a file."""
-        # The only reason for this method is for the name check.
+        """Load a module from a file.
 
+        This method is deprecated.  Use exec_module() instead.
+
+        """
+        # The only reason for this method is for the name check.
         # Issue #14857: Avoid the zero-argument form of super so the implementation
         # of that form can be updated without breaking the frozen module
         return super(FileLoader, self).load_module(fullname)
@@ -1653,9 +1675,18 @@ class ExtensionFileLoader:
         self.name = name
         self.path = path
 
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__ and
+                self.__dict__ == other.__dict__)
+
+    def __hash__(self):
+        return hash(self.name) ^ hash(self.path)
+
     @_check_name
     def load_module(self, fullname):
         """Load an extension module."""
+        # Once an exec_module() implementation is added we can also
+        # add a deprecation warning here.
         with _ManageReload(fullname):
             module = _call_with_frames_removed(_imp.load_dynamic,
                                                fullname, self.path)
@@ -1750,9 +1781,13 @@ class _NamespaceLoader:
     def __init__(self, name, path, path_finder):
         self._path = _NamespacePath(name, path, path_finder)
 
-    # XXX Deprecate
     @classmethod
     def module_repr(cls, module):
+        """Return repr for the module.
+
+        The method is deprecated.  The import machinery does the job itself.
+
+        """
         return '<module {!r} (namespace)>'.format(module.__name__)
 
     def is_package(self, fullname):
@@ -1764,9 +1799,16 @@ class _NamespaceLoader:
     def get_code(self, fullname):
         return compile('', '<string>', 'exec', dont_inherit=True)
 
-    # XXX Deprecate
+    def exec_module(self, module):
+        pass
+
     def load_module(self, fullname):
-        """Load a namespace module."""
+        """Load a namespace module.
+
+        This method is deprecated.  Use exec_module() instead.
+
+        """
+        # The import system never calls this method.
         _verbose_message('namespace module loaded with path {!r}', self._path)
         return _load_module_shim(self, fullname)
 
@@ -1821,6 +1863,8 @@ class PathFinder:
 
     @classmethod
     def _legacy_get_spec(cls, fullname, finder):
+        # This would be a good place for a DeprecationWarning if
+        # we ended up going that route.
         if hasattr(finder, 'find_loader'):
             loader, portions = finder.find_loader(fullname)
         else:
@@ -1889,8 +1933,11 @@ class PathFinder:
     @classmethod
     def find_module(cls, fullname, path=None):
         """find the module on sys.path or 'path' based on sys.path_hooks and
-        sys.path_importer_cache."""
-        # XXX Deprecation warning here.
+        sys.path_importer_cache.
+
+        This method is deprecated.  Use find_spec() instead.
+
+        """
         spec = cls.find_spec(fullname, path)
         if spec is None:
             return None
@@ -1928,21 +1975,20 @@ class FileFinder:
 
     def find_loader(self, fullname):
         """Try to find a loader for the specified module, or the namespace
-        package portions. Returns (loader, list-of-portions)."""
+        package portions. Returns (loader, list-of-portions).
+
+        This method is deprecated.  Use find_spec() instead.
+
+        """
         spec = self.find_spec(fullname)
         if spec is None:
             return None, []
         return spec.loader, spec.submodule_search_locations or []
 
-    def _get_spec(self, loader_class, fullname, path, submodule_search_locations, target):
+    def _get_spec(self, loader_class, fullname, path, smsl, target):
         loader = loader_class(fullname, path)
-        try:
-            get_spec = loader._get_spec
-        except AttributeError:
-            return spec_from_file_location(fullname, path, loader=loader,
-                                           submodule_search_locations=submodule_search_locations)
-        else:
-            return get_spec(fullname, path, submodule_search_locations, target)
+        return spec_from_file_location(fullname, path, loader=loader,
+                                       submodule_search_locations=smsl)
 
     def find_spec(self, fullname, target=None):
         """Try to find a loader for the specified module, or the namespace
@@ -2066,6 +2112,15 @@ def _resolve_name(name, package, level):
     return '{}.{}'.format(base, name) if name else base
 
 
+def _find_spec_legacy(finder, name, path):
+    # This would be a good place for a DeprecationWarning if
+    # we ended up going that route.
+    loader = finder.find_module(name, path)
+    if loader is None:
+        return None
+    return spec_from_loader(name, loader)
+
+
 def _find_spec(name, path, target=None):
     """Find a module's loader."""
     if not sys.meta_path:
@@ -2079,10 +2134,9 @@ def _find_spec(name, path, target=None):
             try:
                 find_spec = finder.find_spec
             except AttributeError:
-                loader = finder.find_module(name, path)
-                if loader is None:
+                spec = _find_spec_legacy(finder, name, path)
+                if spec is None:
                     continue
-                spec = spec_from_loader(name, loader)
             else:
                 spec = find_spec(name, path, target)
         if spec is not None:

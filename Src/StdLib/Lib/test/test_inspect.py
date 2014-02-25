@@ -1,29 +1,32 @@
-import re
-import sys
-import types
-import unittest
-import inspect
-import linecache
-import datetime
 import collections
-import os
-import shutil
+import datetime
 import functools
 import importlib
+import inspect
+import io
+import linecache
+import os
 from os.path import normcase
+import _pickle
+import re
+import shutil
+import sys
+import types
+import unicodedata
+import unittest
+import unittest.mock
+
 try:
     from concurrent.futures import ThreadPoolExecutor
 except ImportError:
     ThreadPoolExecutor = None
 
-from test.support import run_unittest, TESTFN, DirsOnSysPath
+from test.support import run_unittest, TESTFN, DirsOnSysPath, cpython_only
 from test.support import MISSING_C_DOCSTRINGS
 from test.script_helper import assert_python_ok, assert_python_failure
 from test import inspect_fodder as mod
 from test import inspect_fodder2 as mod2
 
-# C module for test_findsource_binary
-import unicodedata
 
 # Functions tested in this suite:
 # ismodule, isclass, ismethod, isfunction, istraceback, isframe, iscode,
@@ -316,6 +319,16 @@ class TestRetrievingSourceCode(GetSourceBase):
     def test_getfile(self):
         self.assertEqual(inspect.getfile(mod.StupidGit), mod.__file__)
 
+    def test_getfile_class_without_module(self):
+        class CM(type):
+            @property
+            def __module__(cls):
+                raise AttributeError
+        class C(metaclass=CM):
+            pass
+        with self.assertRaises(TypeError):
+            inspect.getfile(C)
+
     def test_getmodule_recursion(self):
         from types import ModuleType
         name = '__inspect_dummy'
@@ -565,6 +578,96 @@ class TestClassesAndFunctions(unittest.TestCase):
                                      kwonlyargs_e=['arg'],
                                      formatted='(*, arg)')
 
+    def test_argspec_api_ignores_wrapped(self):
+        # Issue 20684: low level introspection API must ignore __wrapped__
+        @functools.wraps(mod.spam)
+        def ham(x, y):
+            pass
+        # Basic check
+        self.assertArgSpecEquals(ham, ['x', 'y'], formatted='(x, y)')
+        self.assertFullArgSpecEquals(ham, ['x', 'y'], formatted='(x, y)')
+        self.assertFullArgSpecEquals(functools.partial(ham),
+                                     ['x', 'y'], formatted='(x, y)')
+        # Other variants
+        def check_method(f):
+            self.assertArgSpecEquals(f, ['self', 'x', 'y'],
+                                        formatted='(self, x, y)')
+        class C:
+            @functools.wraps(mod.spam)
+            def ham(self, x, y):
+                pass
+            pham = functools.partialmethod(ham)
+            @functools.wraps(mod.spam)
+            def __call__(self, x, y):
+                pass
+        check_method(C())
+        check_method(C.ham)
+        check_method(C().ham)
+        check_method(C.pham)
+        check_method(C().pham)
+
+        class C_new:
+            @functools.wraps(mod.spam)
+            def __new__(self, x, y):
+                pass
+        check_method(C_new)
+
+        class C_init:
+            @functools.wraps(mod.spam)
+            def __init__(self, x, y):
+                pass
+        check_method(C_init)
+
+    def test_getfullargspec_signature_attr(self):
+        def test():
+            pass
+        spam_param = inspect.Parameter('spam', inspect.Parameter.POSITIONAL_ONLY)
+        test.__signature__ = inspect.Signature(parameters=(spam_param,))
+
+        self.assertFullArgSpecEquals(test, args_e=['spam'], formatted='(spam)')
+
+    def test_getfullargspec_signature_annos(self):
+        def test(a:'spam') -> 'ham': pass
+        spec = inspect.getfullargspec(test)
+        self.assertEqual(test.__annotations__, spec.annotations)
+
+        def test(): pass
+        spec = inspect.getfullargspec(test)
+        self.assertEqual(test.__annotations__, spec.annotations)
+
+    @unittest.skipIf(MISSING_C_DOCSTRINGS,
+                     "Signature information for builtins requires docstrings")
+    def test_getfullargspec_builtin_methods(self):
+        self.assertFullArgSpecEquals(_pickle.Pickler.dump,
+                                     args_e=['self', 'obj'], formatted='(self, obj)')
+
+        self.assertFullArgSpecEquals(_pickle.Pickler(io.BytesIO()).dump,
+                                     args_e=['self', 'obj'], formatted='(self, obj)')
+
+        self.assertFullArgSpecEquals(
+             os.stat,
+             args_e=['path'],
+             kwonlyargs_e=['dir_fd', 'follow_symlinks'],
+             kwonlydefaults_e={'dir_fd': None, 'follow_symlinks': True},
+             formatted='(path, *, dir_fd=None, follow_symlinks=True)')
+
+    @cpython_only
+    @unittest.skipIf(MISSING_C_DOCSTRINGS,
+                     "Signature information for builtins requires docstrings")
+    def test_getfullagrspec_builtin_func(self):
+        import _testcapi
+        builtin = _testcapi.docstring_with_signature_with_defaults
+        spec = inspect.getfullargspec(builtin)
+        self.assertEqual(spec.defaults[0], 'avocado')
+
+    @cpython_only
+    @unittest.skipIf(MISSING_C_DOCSTRINGS,
+                     "Signature information for builtins requires docstrings")
+    def test_getfullagrspec_builtin_func_no_signature(self):
+        import _testcapi
+        builtin = _testcapi.docstring_no_signature
+        with self.assertRaises(TypeError):
+            inspect.getfullargspec(builtin)
 
     def test_getargspec_method(self):
         class A(object):
@@ -594,6 +697,10 @@ class TestClassesAndFunctions(unittest.TestCase):
             md = _BrokenMethodDescriptor()
 
         attrs = attrs_wo_objs(A)
+
+        self.assertIn(('__new__', 'method', object), attrs, 'missing __new__')
+        self.assertIn(('__init__', 'method', object), attrs, 'missing __init__')
+
         self.assertIn(('s', 'static method', A), attrs, 'missing static method')
         self.assertIn(('c', 'class method', A), attrs, 'missing class method')
         self.assertIn(('p', 'property', A), attrs, 'missing property')
@@ -1509,11 +1616,13 @@ class TestSignatureObject(unittest.TestCase):
 
         self.assertEqual(str(S()), '()')
 
-        def test(po, pk, *args, ko, **kwargs):
+        def test(po, pk, pod=42, pkd=100, *args, ko, **kwargs):
             pass
         sig = inspect.signature(test)
         po = sig.parameters['po'].replace(kind=P.POSITIONAL_ONLY)
+        pod = sig.parameters['pod'].replace(kind=P.POSITIONAL_ONLY)
         pk = sig.parameters['pk']
+        pkd = sig.parameters['pkd']
         args = sig.parameters['args']
         ko = sig.parameters['ko']
         kwargs = sig.parameters['kwargs']
@@ -1535,6 +1644,15 @@ class TestSignatureObject(unittest.TestCase):
         kwargs2 = kwargs.replace(name='args')
         with self.assertRaisesRegex(ValueError, 'duplicate parameter name'):
             S((po, pk, args, kwargs2, ko))
+
+        with self.assertRaisesRegex(ValueError, 'follows default argument'):
+            S((pod, po))
+
+        with self.assertRaisesRegex(ValueError, 'follows default argument'):
+            S((po, pkd, pk))
+
+        with self.assertRaisesRegex(ValueError, 'follows default argument'):
+            S((pkd, pk))
 
     def test_signature_immutability(self):
         def test(a):
@@ -1580,22 +1698,95 @@ class TestSignatureObject(unittest.TestCase):
                            ('kwargs', ..., int, "var_keyword")),
                           ...))
 
-    def test_signature_on_unsupported_builtins(self):
-        with self.assertRaisesRegex(ValueError, 'not supported by signature'):
-            inspect.signature(type)
-        with self.assertRaisesRegex(ValueError, 'not supported by signature'):
-            # support for 'wrapper_descriptor'
-            inspect.signature(type.__call__)
-        with self.assertRaisesRegex(ValueError, 'not supported by signature'):
-            # support for 'method-wrapper'
-            inspect.signature(min.__call__)
-
+    @cpython_only
     @unittest.skipIf(MISSING_C_DOCSTRINGS,
                      "Signature information for builtins requires docstrings")
     def test_signature_on_builtins(self):
-        self.assertEqual(inspect.signature(min), None)
-        signature = inspect.signature(os.stat)
-        self.assertTrue(isinstance(signature, inspect.Signature))
+        import _testcapi
+
+        def test_unbound_method(o):
+            """Use this to test unbound methods (things that should have a self)"""
+            signature = inspect.signature(o)
+            self.assertTrue(isinstance(signature, inspect.Signature))
+            self.assertEqual(list(signature.parameters.values())[0].name, 'self')
+            return signature
+
+        def test_callable(o):
+            """Use this to test bound methods or normal callables (things that don't expect self)"""
+            signature = inspect.signature(o)
+            self.assertTrue(isinstance(signature, inspect.Signature))
+            if signature.parameters:
+                self.assertNotEqual(list(signature.parameters.values())[0].name, 'self')
+            return signature
+
+        signature = test_callable(_testcapi.docstring_with_signature_with_defaults)
+        def p(name): return signature.parameters[name].default
+        self.assertEqual(p('s'), 'avocado')
+        self.assertEqual(p('b'), b'bytes')
+        self.assertEqual(p('d'), 3.14)
+        self.assertEqual(p('i'), 35)
+        self.assertEqual(p('n'), None)
+        self.assertEqual(p('t'), True)
+        self.assertEqual(p('f'), False)
+        self.assertEqual(p('local'), 3)
+        self.assertEqual(p('sys'), sys.maxsize)
+        self.assertEqual(p('exp'), sys.maxsize - 1)
+
+        test_callable(object)
+
+        # normal method
+        # (PyMethodDescr_Type, "method_descriptor")
+        test_unbound_method(_pickle.Pickler.dump)
+        d = _pickle.Pickler(io.StringIO())
+        test_callable(d.dump)
+
+        # static method
+        test_callable(str.maketrans)
+        test_callable('abc'.maketrans)
+
+        # class method
+        test_callable(dict.fromkeys)
+        test_callable({}.fromkeys)
+
+        # wrapper around slot (PyWrapperDescr_Type, "wrapper_descriptor")
+        test_unbound_method(type.__call__)
+        test_unbound_method(int.__add__)
+        test_callable((3).__add__)
+
+        # _PyMethodWrapper_Type
+        # support for 'method-wrapper'
+        test_callable(min.__call__)
+
+        # This doesn't work now.
+        # (We don't have a valid signature for "type" in 3.4)
+        with self.assertRaisesRegex(ValueError, "no signature found"):
+            class ThisWorksNow:
+                __call__ = type
+            test_callable(ThisWorksNow())
+
+    @cpython_only
+    @unittest.skipIf(MISSING_C_DOCSTRINGS,
+                     "Signature information for builtins requires docstrings")
+    def test_signature_on_decorated_builtins(self):
+        import _testcapi
+        func = _testcapi.docstring_with_signature_with_defaults
+
+        def decorator(func):
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs) -> int:
+                return func(*args, **kwargs)
+            return wrapper
+
+        decorated_func = decorator(func)
+
+        self.assertEqual(inspect.signature(func),
+                         inspect.signature(decorated_func))
+
+    @cpython_only
+    def test_signature_on_builtins_no_signature(self):
+        import _testcapi
+        with self.assertRaisesRegex(ValueError, 'no signature found for builtin'):
+            inspect.signature(_testcapi.docstring_no_signature)
 
     def test_signature_on_non_function(self):
         with self.assertRaisesRegex(TypeError, 'is not a callable object'):
@@ -1604,17 +1795,111 @@ class TestSignatureObject(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, 'is not a Python function'):
             inspect.Signature.from_function(42)
 
-    def test_signature_on_method(self):
-        class Test:
-            def foo(self, arg1, arg2=1) -> int:
+    def test_signature_from_builtin_errors(self):
+        with self.assertRaisesRegex(TypeError, 'is not a Python builtin'):
+            inspect.Signature.from_builtin(42)
+
+    def test_signature_from_functionlike_object(self):
+        def func(a,b, *args, kwonly=True, kwonlyreq, **kwargs):
+            pass
+
+        class funclike:
+            # Has to be callable, and have correct
+            # __code__, __annotations__, __defaults__, __name__,
+            # and __kwdefaults__ attributes
+
+            def __init__(self, func):
+                self.__name__ = func.__name__
+                self.__code__ = func.__code__
+                self.__annotations__ = func.__annotations__
+                self.__defaults__ = func.__defaults__
+                self.__kwdefaults__ = func.__kwdefaults__
+                self.func = func
+
+            def __call__(self, *args, **kwargs):
+                return self.func(*args, **kwargs)
+
+        sig_func = inspect.Signature.from_function(func)
+
+        sig_funclike = inspect.Signature.from_function(funclike(func))
+        self.assertEqual(sig_funclike, sig_func)
+
+        sig_funclike = inspect.signature(funclike(func))
+        self.assertEqual(sig_funclike, sig_func)
+
+        # If object is not a duck type of function, then
+        # signature will try to get a signature for its '__call__'
+        # method
+        fl = funclike(func)
+        del fl.__defaults__
+        self.assertEqual(self.signature(fl),
+                         ((('args', ..., ..., "var_positional"),
+                           ('kwargs', ..., ..., "var_keyword")),
+                           ...))
+
+        # Test with cython-like builtins:
+        _orig_isdesc = inspect.ismethoddescriptor
+        def _isdesc(obj):
+            if hasattr(obj, '_builtinmock'):
+                return True
+            return _orig_isdesc(obj)
+
+        with unittest.mock.patch('inspect.ismethoddescriptor', _isdesc):
+            builtin_func = funclike(func)
+            # Make sure that our mock setup is working
+            self.assertFalse(inspect.ismethoddescriptor(builtin_func))
+            builtin_func._builtinmock = True
+            self.assertTrue(inspect.ismethoddescriptor(builtin_func))
+            self.assertEqual(inspect.signature(builtin_func), sig_func)
+
+    def test_signature_functionlike_class(self):
+        # We only want to duck type function-like objects,
+        # not classes.
+
+        def func(a,b, *args, kwonly=True, kwonlyreq, **kwargs):
+            pass
+
+        class funclike:
+            def __init__(self, marker):
                 pass
 
-        meth = Test().foo
+            __name__ = func.__name__
+            __code__ = func.__code__
+            __annotations__ = func.__annotations__
+            __defaults__ = func.__defaults__
+            __kwdefaults__ = func.__kwdefaults__
 
-        self.assertEqual(self.signature(meth),
+        with self.assertRaisesRegex(TypeError, 'is not a Python function'):
+            inspect.Signature.from_function(funclike)
+
+        self.assertEqual(str(inspect.signature(funclike)), '(marker)')
+
+    def test_signature_on_method(self):
+        class Test:
+            def __init__(*args):
+                pass
+            def m1(self, arg1, arg2=1) -> int:
+                pass
+            def m2(*args):
+                pass
+            def __call__(*, a):
+                pass
+
+        self.assertEqual(self.signature(Test().m1),
                          ((('arg1', ..., ..., "positional_or_keyword"),
                            ('arg2', 1, ..., "positional_or_keyword")),
                           int))
+
+        self.assertEqual(self.signature(Test().m2),
+                         ((('args', ..., ..., "var_positional"),),
+                          ...))
+
+        self.assertEqual(self.signature(Test),
+                         ((('args', ..., ..., "var_positional"),),
+                          ...))
+
+        with self.assertRaisesRegex(ValueError, 'invalid method signature'):
+            self.signature(Test())
 
     def test_signature_on_classmethod(self):
         class Test:
@@ -1809,6 +2094,38 @@ class TestSignatureObject(unittest.TestCase):
         ba = inspect.signature(_foo).bind(12, 14)
         self.assertEqual(_foo(*ba.args, **ba.kwargs), (12, 14, 13))
 
+    def test_signature_on_partialmethod(self):
+        from functools import partialmethod
+
+        class Spam:
+            def test():
+                pass
+            ham = partialmethod(test)
+
+        with self.assertRaisesRegex(ValueError, "has incorrect arguments"):
+            inspect.signature(Spam.ham)
+
+        class Spam:
+            def test(it, a, *, c) -> 'spam':
+                pass
+            ham = partialmethod(test, c=1)
+
+        self.assertEqual(self.signature(Spam.ham),
+                         ((('it', ..., ..., 'positional_or_keyword'),
+                           ('a', ..., ..., 'positional_or_keyword'),
+                           ('c', 1, ..., 'keyword_only')),
+                          'spam'))
+
+        self.assertEqual(self.signature(Spam().ham),
+                         ((('a', ..., ..., 'positional_or_keyword'),
+                           ('c', 1, ..., 'keyword_only')),
+                          'spam'))
+
+    def test_signature_on_fake_partialmethod(self):
+        def foo(a): pass
+        foo._partialmethod = 'spam'
+        self.assertEqual(str(inspect.signature(foo)), '(a)')
+
     def test_signature_on_decorated(self):
         import functools
 
@@ -1950,6 +2267,49 @@ class TestSignatureObject(unittest.TestCase):
                            ('bar', 2, ..., "keyword_only")),
                           ...))
 
+    @unittest.skipIf(MISSING_C_DOCSTRINGS,
+                     "Signature information for builtins requires docstrings")
+    def test_signature_on_class_without_init(self):
+        # Test classes without user-defined __init__ or __new__
+        class C: pass
+        self.assertEqual(str(inspect.signature(C)), '()')
+        class D(C): pass
+        self.assertEqual(str(inspect.signature(D)), '()')
+
+        # Test meta-classes without user-defined __init__ or __new__
+        class C(type): pass
+        class D(C): pass
+        with self.assertRaisesRegex(ValueError, "callable.*is not supported"):
+            self.assertEqual(inspect.signature(C), None)
+        with self.assertRaisesRegex(ValueError, "callable.*is not supported"):
+            self.assertEqual(inspect.signature(D), None)
+
+    @unittest.skipIf(MISSING_C_DOCSTRINGS,
+                     "Signature information for builtins requires docstrings")
+    def test_signature_on_builtin_class(self):
+        self.assertEqual(str(inspect.signature(_pickle.Pickler)),
+                         '(file, protocol=None, fix_imports=True)')
+
+        class P(_pickle.Pickler): pass
+        class EmptyTrait: pass
+        class P2(EmptyTrait, P): pass
+        self.assertEqual(str(inspect.signature(P)),
+                         '(file, protocol=None, fix_imports=True)')
+        self.assertEqual(str(inspect.signature(P2)),
+                         '(file, protocol=None, fix_imports=True)')
+
+        class P3(P2):
+            def __init__(self, spam):
+                pass
+        self.assertEqual(str(inspect.signature(P3)), '(spam)')
+
+        class MetaP(type):
+            def __call__(cls, foo, bar):
+                pass
+        class P4(P2, metaclass=MetaP):
+            pass
+        self.assertEqual(str(inspect.signature(P4)), '(foo, bar)')
+
     def test_signature_on_callable_objects(self):
         class Foo:
             def __call__(self, a):
@@ -1970,12 +2330,6 @@ class TestSignatureObject(unittest.TestCase):
         self.assertEqual(self.signature(Bar()),
                          ((('a', ..., ..., "positional_or_keyword"),),
                           ...))
-
-        class ToFail:
-            __call__ = type
-        with self.assertRaisesRegex(ValueError, "not supported by signature"):
-            inspect.signature(ToFail())
-
 
         class Wrapped:
             pass
@@ -2060,6 +2414,7 @@ class TestSignatureObject(unittest.TestCase):
 
     def test_signature_str_positional_only(self):
         P = inspect.Parameter
+        S = inspect.Signature
 
         def test(a_po, *, b, **kwargs):
             return a_po, kwargs
@@ -2070,14 +2425,20 @@ class TestSignatureObject(unittest.TestCase):
         test.__signature__ = sig.replace(parameters=new_params)
 
         self.assertEqual(str(inspect.signature(test)),
-                         '(<a_po>, *, b, **kwargs)')
+                         '(a_po, /, *, b, **kwargs)')
 
-        sig = inspect.signature(test)
-        new_params = list(sig.parameters.values())
-        new_params[0] = new_params[0].replace(name=None)
-        test.__signature__ = sig.replace(parameters=new_params)
-        self.assertEqual(str(inspect.signature(test)),
-                         '(<0>, *, b, **kwargs)')
+        self.assertEqual(str(S(parameters=[P('foo', P.POSITIONAL_ONLY)])),
+                         '(foo, /)')
+
+        self.assertEqual(str(S(parameters=[
+                                P('foo', P.POSITIONAL_ONLY),
+                                P('bar', P.VAR_KEYWORD)])),
+                         '(foo, /, **bar)')
+
+        self.assertEqual(str(S(parameters=[
+                                P('foo', P.POSITIONAL_ONLY),
+                                P('bar', P.VAR_POSITIONAL)])),
+                         '(foo, /, *bar)')
 
     def test_signature_replace_anno(self):
         def test() -> 42:
@@ -2091,6 +2452,22 @@ class TestSignatureObject(unittest.TestCase):
         sig = sig.replace(return_annotation=42)
         self.assertEqual(sig.return_annotation, 42)
         self.assertEqual(sig, inspect.signature(test))
+
+    def test_signature_on_mangled_parameters(self):
+        class Spam:
+            def foo(self, __p1:1=2, *, __p2:2=3):
+                pass
+        class Ham(Spam):
+            pass
+
+        self.assertEqual(self.signature(Spam.foo),
+                         ((('self', ..., ..., "positional_or_keyword"),
+                           ('_Spam__p1', 2, 1, "positional_or_keyword"),
+                           ('_Spam__p2', 3, 2, "keyword_only")),
+                          ...))
+
+        self.assertEqual(self.signature(Spam.foo),
+                         self.signature(Ham.foo))
 
 
 class TestParameterObject(unittest.TestCase):
@@ -2116,9 +2493,12 @@ class TestParameterObject(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'not a valid parameter name'):
             inspect.Parameter('1', kind=inspect.Parameter.VAR_KEYWORD)
 
-        with self.assertRaisesRegex(ValueError,
-                                     'non-positional-only parameter'):
+        with self.assertRaisesRegex(TypeError, 'name must be a str'):
             inspect.Parameter(None, kind=inspect.Parameter.VAR_KEYWORD)
+
+        with self.assertRaisesRegex(ValueError,
+                                    'is not a valid parameter name'):
+            inspect.Parameter('$', kind=inspect.Parameter.VAR_KEYWORD)
 
         with self.assertRaisesRegex(ValueError, 'cannot have default values'):
             inspect.Parameter('a', default=42,
@@ -2168,7 +2548,8 @@ class TestParameterObject(unittest.TestCase):
         self.assertEqual(p2.name, 'bar')
         self.assertNotEqual(p2, p)
 
-        with self.assertRaisesRegex(ValueError, 'not a valid parameter name'):
+        with self.assertRaisesRegex(ValueError,
+                                    'name is a required attribute'):
             p2 = p2.replace(name=p2.empty)
 
         p2 = p2.replace(name='foo', default=None)
@@ -2190,14 +2571,11 @@ class TestParameterObject(unittest.TestCase):
         self.assertEqual(p2, p)
 
     def test_signature_parameter_positional_only(self):
-        p = inspect.Parameter(None, kind=inspect.Parameter.POSITIONAL_ONLY)
-        self.assertEqual(str(p), '<>')
-
-        p = p.replace(name='1')
-        self.assertEqual(str(p), '<1>')
+        with self.assertRaisesRegex(TypeError, 'name must be a str'):
+            inspect.Parameter(None, kind=inspect.Parameter.POSITIONAL_ONLY)
 
     def test_signature_parameter_immutability(self):
-        p = inspect.Parameter(None, kind=inspect.Parameter.POSITIONAL_ONLY)
+        p = inspect.Parameter('spam', kind=inspect.Parameter.KEYWORD_ONLY)
 
         with self.assertRaises(AttributeError):
             p.foo = 'bar'
@@ -2395,6 +2773,15 @@ class TestSignatureBind(unittest.TestCase):
         self.assertEqual(self.call(test, 1, 2, 4, 5, bar=6),
                          (1, 2, 4, 5, 6, {}))
 
+        self.assertEqual(self.call(test, 1, 2),
+                         (1, 2, 3, 42, 50, {}))
+
+        self.assertEqual(self.call(test, 1, 2, foo=4, bar=5),
+                         (1, 2, 3, 4, 5, {}))
+
+        with self.assertRaisesRegex(TypeError, "but was passed as a keyword"):
+            self.call(test, 1, 2, foo=4, bar=5, c_po=10)
+
         with self.assertRaisesRegex(TypeError, "parameter is positional only"):
             self.call(test, 1, 2, c_po=4)
 
@@ -2410,6 +2797,22 @@ class TestSignatureBind(unittest.TestCase):
         self.assertEqual(ba.args, (1, 2, 3))
         ba = sig.bind(1, self=2, b=3)
         self.assertEqual(ba.args, (1, 2, 3))
+
+    def test_signature_bind_vararg_name(self):
+        def test(a, *args):
+            return a, args
+        sig = inspect.signature(test)
+
+        with self.assertRaisesRegex(TypeError, "too many keyword arguments"):
+            sig.bind(a=0, args=1)
+
+        def test(*args, **kwargs):
+            return args, kwargs
+        self.assertEqual(self.call(test, args=1), ((), {'args': 1}))
+
+        sig = inspect.signature(test)
+        ba = sig.bind(args=1)
+        self.assertEqual(ba.arguments, {'kwargs': {'args': 1}})
 
 
 class TestBoundArguments(unittest.TestCase):
@@ -2436,6 +2839,70 @@ class TestBoundArguments(unittest.TestCase):
         def bar(b): pass
         ba4 = inspect.signature(bar).bind(1)
         self.assertNotEqual(ba, ba4)
+
+
+class TestSignaturePrivateHelpers(unittest.TestCase):
+    def test_signature_get_bound_param(self):
+        getter = inspect._signature_get_bound_param
+
+        self.assertEqual(getter('($self)'), 'self')
+        self.assertEqual(getter('($self, obj)'), 'self')
+        self.assertEqual(getter('($cls, /, obj)'), 'cls')
+
+    def _strip_non_python_syntax(self, input,
+        clean_signature, self_parameter, last_positional_only):
+        computed_clean_signature, \
+            computed_self_parameter, \
+            computed_last_positional_only = \
+            inspect._signature_strip_non_python_syntax(input)
+        self.assertEqual(computed_clean_signature, clean_signature)
+        self.assertEqual(computed_self_parameter, self_parameter)
+        self.assertEqual(computed_last_positional_only, last_positional_only)
+
+    def test_signature_strip_non_python_syntax(self):
+        self._strip_non_python_syntax(
+            "($module, /, path, mode, *, dir_fd=None, " +
+                "effective_ids=False,\n       follow_symlinks=True)",
+            "(module, path, mode, *, dir_fd=None, " +
+                "effective_ids=False, follow_symlinks=True)",
+            0,
+            0)
+
+        self._strip_non_python_syntax(
+            "($module, word, salt, /)",
+            "(module, word, salt)",
+            0,
+            2)
+
+        self._strip_non_python_syntax(
+            "(x, y=None, z=None, /)",
+            "(x, y=None, z=None)",
+            None,
+            2)
+
+        self._strip_non_python_syntax(
+            "(x, y=None, z=None)",
+            "(x, y=None, z=None)",
+            None,
+            None)
+
+        self._strip_non_python_syntax(
+            "(x,\n    y=None,\n      z = None  )",
+            "(x, y=None, z=None)",
+            None,
+            None)
+
+        self._strip_non_python_syntax(
+            "",
+            "",
+            None,
+            None)
+
+        self._strip_non_python_syntax(
+            None,
+            None,
+            None,
+            None)
 
 
 class TestUnwrap(unittest.TestCase):
@@ -2543,7 +3010,8 @@ def test_main():
         TestGetcallargsFunctions, TestGetcallargsMethods,
         TestGetcallargsUnboundMethods, TestGetattrStatic, TestGetGeneratorState,
         TestNoEOL, TestSignatureObject, TestSignatureBind, TestParameterObject,
-        TestBoundArguments, TestGetClosureVars, TestUnwrap, TestMain
+        TestBoundArguments, TestSignaturePrivateHelpers, TestGetClosureVars,
+        TestUnwrap, TestMain
     )
 
 if __name__ == "__main__":

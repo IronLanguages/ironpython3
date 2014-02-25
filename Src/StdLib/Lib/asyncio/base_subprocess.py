@@ -6,11 +6,6 @@ from . import tasks
 from . import transports
 
 
-STDIN = 0
-STDOUT = 1
-STDERR = 2
-
-
 class BaseSubprocessTransport(transports.SubprocessTransport):
 
     def __init__(self, loop, protocol, args, shell,
@@ -22,11 +17,11 @@ class BaseSubprocessTransport(transports.SubprocessTransport):
 
         self._pipes = {}
         if stdin == subprocess.PIPE:
-            self._pipes[STDIN] = None
+            self._pipes[0] = None
         if stdout == subprocess.PIPE:
-            self._pipes[STDOUT] = None
+            self._pipes[1] = None
         if stderr == subprocess.PIPE:
-            self._pipes[STDERR] = None
+            self._pipes[2] = None
         self._pending_calls = collections.deque()
         self._finished = False
         self._returncode = None
@@ -75,33 +70,33 @@ class BaseSubprocessTransport(transports.SubprocessTransport):
         proc = self._proc
         loop = self._loop
         if proc.stdin is not None:
-            transp, proto = yield from loop.connect_write_pipe(
-                lambda: WriteSubprocessPipeProto(self, STDIN),
+            _, pipe = yield from loop.connect_write_pipe(
+                lambda: WriteSubprocessPipeProto(self, 0),
                 proc.stdin)
+            self._pipes[0] = pipe
         if proc.stdout is not None:
-            transp, proto = yield from loop.connect_read_pipe(
-                lambda: ReadSubprocessPipeProto(self, STDOUT),
+            _, pipe = yield from loop.connect_read_pipe(
+                lambda: ReadSubprocessPipeProto(self, 1),
                 proc.stdout)
+            self._pipes[1] = pipe
         if proc.stderr is not None:
-            transp, proto = yield from loop.connect_read_pipe(
-                lambda: ReadSubprocessPipeProto(self, STDERR),
+            _, pipe = yield from loop.connect_read_pipe(
+                lambda: ReadSubprocessPipeProto(self, 2),
                 proc.stderr)
-        if not self._pipes:
-            self._try_connected()
+            self._pipes[2] = pipe
+
+        assert self._pending_calls is not None
+
+        self._loop.call_soon(self._protocol.connection_made, self)
+        for callback, data in self._pending_calls:
+            self._loop.call_soon(callback, *data)
+        self._pending_calls = None
 
     def _call(self, cb, *data):
         if self._pending_calls is not None:
             self._pending_calls.append((cb, data))
         else:
             self._loop.call_soon(cb, *data)
-
-    def _try_connected(self):
-        assert self._pending_calls is not None
-        if all(p is not None and p.connected for p in self._pipes.values()):
-            self._loop.call_soon(self._protocol.connection_made, self)
-            for callback, data in self._pending_calls:
-                self._loop.call_soon(callback, *data)
-            self._pending_calls = None
 
     def _pipe_connection_lost(self, fd, exc):
         self._call(self._protocol.pipe_connection_lost, fd, exc)
@@ -114,7 +109,6 @@ class BaseSubprocessTransport(transports.SubprocessTransport):
         assert returncode is not None, returncode
         assert self._returncode is None, self._returncode
         self._returncode = returncode
-        self._loop._subprocess_closed(self)
         self._call(self._protocol.process_exited)
         self._try_finish()
 
@@ -137,26 +131,25 @@ class BaseSubprocessTransport(transports.SubprocessTransport):
 
 
 class WriteSubprocessPipeProto(protocols.BaseProtocol):
-    pipe = None
 
     def __init__(self, proc, fd):
         self.proc = proc
         self.fd = fd
-        self.connected = False
+        self.pipe = None
         self.disconnected = False
-        proc._pipes[fd] = self
 
     def connection_made(self, transport):
-        self.connected = True
         self.pipe = transport
-        self.proc._try_connected()
 
     def connection_lost(self, exc):
         self.disconnected = True
         self.proc._pipe_connection_lost(self.fd, exc)
 
-    def eof_received(self):
-        pass
+    def pause_writing(self):
+        self.proc._protocol.pause_writing()
+
+    def resume_writing(self):
+        self.proc._protocol.resume_writing()
 
 
 class ReadSubprocessPipeProto(WriteSubprocessPipeProto,

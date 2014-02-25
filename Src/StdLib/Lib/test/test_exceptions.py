@@ -148,6 +148,19 @@ class ExceptionTests(unittest.TestCase):
         ckmsg(s, "'continue' not properly in loop")
         ckmsg("continue\n", "'continue' not properly in loop")
 
+    def testSyntaxErrorOffset(self):
+        def check(src, lineno, offset):
+            with self.assertRaises(SyntaxError) as cm:
+                compile(src, '<fragment>', 'exec')
+            self.assertEqual(cm.exception.lineno, lineno)
+            self.assertEqual(cm.exception.offset, offset)
+
+        check('def fact(x):\n\treturn x!\n', 2, 10)
+        check('1 +\n', 1, 4)
+        check('def spam():\n  print(1)\n print(2)', 3, 10)
+        check('Python = "Python" +', 1, 20)
+        check('Python = "\u1e54\xfd\u0163\u0125\xf2\xf1" +', 1, 20)
+
     @cpython_only
     def testSettingException(self):
         # test that setting an exception at the C level works even if the
@@ -253,8 +266,8 @@ class ExceptionTests(unittest.TestCase):
             (OSError, ('foo', 'bar', 'baz'),
                 {'args' : ('foo', 'bar'), 'filename' : 'baz',
                  'errno' : 'foo', 'strerror' : 'bar'}),
-            (OSError, ('foo', 'bar', 'baz', 'quux'),
-                {'args' : ('foo', 'bar', 'baz', 'quux')}),
+            (OSError, ('foo', 'bar', 'baz', None, 'quux'),
+                {'args' : ('foo', 'bar'), 'filename' : 'baz', 'filename2': 'quux'}),
             (OSError, ('errnoStr', 'strErrorStr', 'filenameStr'),
                 {'args' : ('errnoStr', 'strErrorStr'),
                  'strerror' : 'strErrorStr', 'errno' : 'errnoStr',
@@ -819,6 +832,7 @@ class ExceptionTests(unittest.TestCase):
         self.assertIn("maximum recursion depth exceeded", str(v))
 
 
+    @cpython_only
     def test_MemoryError(self):
         # PyErr_NoMemory always raises the same exception instance.
         # Check that the traceback is not doubled.
@@ -877,6 +891,7 @@ class ExceptionTests(unittest.TestCase):
         self.assertEqual(error5.a, 1)
         self.assertEqual(error5.__doc__, "")
 
+    @cpython_only
     def test_memory_error_cleanup(self):
         # Issue #5437: preallocated MemoryError instances should not keep
         # traceback objects alive.

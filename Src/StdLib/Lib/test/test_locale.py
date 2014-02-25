@@ -365,6 +365,117 @@ class TestEnUSCollation(BaseLocalizedTest, TestCollation):
         self.assertLess(locale.strxfrm('à'), locale.strxfrm('b'))
 
 
+class NormalizeTest(unittest.TestCase):
+    def check(self, localename, expected):
+        self.assertEqual(locale.normalize(localename), expected, msg=localename)
+
+    def test_locale_alias(self):
+        for localename, alias in locale.locale_alias.items():
+            with self.subTest(locale=(localename, alias)):
+                self.check(localename, alias)
+
+    def test_empty(self):
+        self.check('', '')
+
+    def test_c(self):
+        self.check('c', 'C')
+        self.check('posix', 'C')
+
+    def test_english(self):
+        self.check('en', 'en_US.ISO8859-1')
+        self.check('EN', 'en_US.ISO8859-1')
+        self.check('en.iso88591', 'en_US.ISO8859-1')
+        self.check('en_US', 'en_US.ISO8859-1')
+        self.check('en_us', 'en_US.ISO8859-1')
+        self.check('en_GB', 'en_GB.ISO8859-1')
+        self.check('en_US.UTF-8', 'en_US.UTF-8')
+        self.check('en_US.utf8', 'en_US.UTF-8')
+        self.check('en_US:UTF-8', 'en_US.UTF-8')
+        self.check('en_US.ISO8859-1', 'en_US.ISO8859-1')
+        self.check('en_US.US-ASCII', 'en_US.ISO8859-1')
+        self.check('en_US.88591', 'en_US.ISO8859-1')
+        self.check('en_US.885915', 'en_US.ISO8859-15')
+        self.check('english', 'en_EN.ISO8859-1')
+        self.check('english_uk.ascii', 'en_GB.ISO8859-1')
+
+    def test_hyphenated_encoding(self):
+        self.check('az_AZ.iso88599e', 'az_AZ.ISO8859-9E')
+        self.check('az_AZ.ISO8859-9E', 'az_AZ.ISO8859-9E')
+        self.check('tt_RU.koi8c', 'tt_RU.KOI8-C')
+        self.check('tt_RU.KOI8-C', 'tt_RU.KOI8-C')
+        self.check('lo_LA.cp1133', 'lo_LA.IBM-CP1133')
+        self.check('lo_LA.ibmcp1133', 'lo_LA.IBM-CP1133')
+        self.check('lo_LA.IBM-CP1133', 'lo_LA.IBM-CP1133')
+        self.check('uk_ua.microsoftcp1251', 'uk_UA.CP1251')
+        self.check('uk_ua.microsoft-cp1251', 'uk_UA.CP1251')
+        self.check('ka_ge.georgianacademy', 'ka_GE.GEORGIAN-ACADEMY')
+        self.check('ka_GE.GEORGIAN-ACADEMY', 'ka_GE.GEORGIAN-ACADEMY')
+        self.check('cs_CZ.iso88592', 'cs_CZ.ISO8859-2')
+        self.check('cs_CZ.ISO8859-2', 'cs_CZ.ISO8859-2')
+
+    def test_euro_modifier(self):
+        self.check('de_DE@euro', 'de_DE.ISO8859-15')
+        self.check('en_US.ISO8859-15@euro', 'en_US.ISO8859-15')
+        self.check('de_DE.utf8@euro', 'de_DE.UTF-8')
+
+    def test_latin_modifier(self):
+        self.check('be_BY.UTF-8@latin', 'be_BY.UTF-8@latin')
+        self.check('sr_RS.UTF-8@latin', 'sr_RS.UTF-8@latin')
+        self.check('sr_RS.UTF-8@latn', 'sr_RS.UTF-8@latin')
+
+    def test_valencia_modifier(self):
+        self.check('ca_ES.UTF-8@valencia', 'ca_ES.UTF-8@valencia')
+        self.check('ca_ES@valencia', 'ca_ES.ISO8859-1@valencia')
+        self.check('ca@valencia', 'ca_ES.ISO8859-1@valencia')
+
+    def test_devanagari_modifier(self):
+        self.check('ks_IN.UTF-8@devanagari', 'ks_IN.UTF-8@devanagari')
+        self.check('ks_IN@devanagari', 'ks_IN.UTF-8@devanagari')
+        self.check('ks@devanagari', 'ks_IN.UTF-8@devanagari')
+        self.check('ks_IN.UTF-8', 'ks_IN.UTF-8')
+        self.check('ks_IN', 'ks_IN.UTF-8')
+        self.check('ks', 'ks_IN.UTF-8')
+        self.check('sd_IN.UTF-8@devanagari', 'sd_IN.UTF-8@devanagari')
+        self.check('sd_IN@devanagari', 'sd_IN.UTF-8@devanagari')
+        self.check('sd@devanagari', 'sd_IN.UTF-8@devanagari')
+        self.check('sd_IN.UTF-8', 'sd_IN.UTF-8')
+        self.check('sd_IN', 'sd_IN.UTF-8')
+        self.check('sd', 'sd_IN.UTF-8')
+
+    def test_euc_encoding(self):
+        self.check('ja_jp.euc', 'ja_JP.eucJP')
+        self.check('ja_jp.eucjp', 'ja_JP.eucJP')
+        self.check('ko_kr.euc', 'ko_KR.eucKR')
+        self.check('ko_kr.euckr', 'ko_KR.eucKR')
+        self.check('zh_cn.euc', 'zh_CN.eucCN')
+        self.check('zh_tw.euc', 'zh_TW.eucTW')
+        self.check('zh_tw.euctw', 'zh_TW.eucTW')
+
+    def test_japanese(self):
+        self.check('ja', 'ja_JP.eucJP')
+        self.check('ja.jis', 'ja_JP.JIS7')
+        self.check('ja.sjis', 'ja_JP.SJIS')
+        self.check('ja_jp', 'ja_JP.eucJP')
+        self.check('ja_jp.ajec', 'ja_JP.eucJP')
+        self.check('ja_jp.euc', 'ja_JP.eucJP')
+        self.check('ja_jp.eucjp', 'ja_JP.eucJP')
+        self.check('ja_jp.iso-2022-jp', 'ja_JP.JIS7')
+        self.check('ja_jp.iso2022jp', 'ja_JP.JIS7')
+        self.check('ja_jp.jis', 'ja_JP.JIS7')
+        self.check('ja_jp.jis7', 'ja_JP.JIS7')
+        self.check('ja_jp.mscode', 'ja_JP.SJIS')
+        self.check('ja_jp.pck', 'ja_JP.SJIS')
+        self.check('ja_jp.sjis', 'ja_JP.SJIS')
+        self.check('ja_jp.ujis', 'ja_JP.eucJP')
+        self.check('ja_jp.utf8', 'ja_JP.UTF-8')
+        self.check('japan', 'ja_JP.eucJP')
+        self.check('japanese', 'ja_JP.eucJP')
+        self.check('japanese-euc', 'ja_JP.eucJP')
+        self.check('japanese.euc', 'ja_JP.eucJP')
+        self.check('japanese.sjis', 'ja_JP.SJIS')
+        self.check('jp_jp', 'ja_JP.eucJP')
+
+
 class TestMiscellaneous(unittest.TestCase):
     def test_getpreferredencoding(self):
         # Invoke getpreferredencoding to make sure it does not cause exceptions.

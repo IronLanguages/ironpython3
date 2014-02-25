@@ -17,7 +17,6 @@ import stat
 import tempfile
 import unittest
 import warnings
-import _testcapi
 
 _DUMMY_SYMLINK = os.path.join(tempfile.gettempdir(),
                               support.TESTFN + '-dummy-symlink')
@@ -283,9 +282,21 @@ class PosixTester(unittest.TestCase):
     def test_writev(self):
         fd = os.open(support.TESTFN, os.O_RDWR | os.O_CREAT)
         try:
-            os.writev(fd, (b'test1', b'tt2', b't3'))
+            n = os.writev(fd, (b'test1', b'tt2', b't3'))
+            self.assertEqual(n, 10)
+
             os.lseek(fd, 0, os.SEEK_SET)
             self.assertEqual(b'test1tt2t3', posix.read(fd, 10))
+
+            # Issue #20113: empty list of buffers should not crash
+            try:
+                size = posix.writev(fd, [])
+            except OSError:
+                # writev(fd, []) raises OSError(22, "Invalid argument")
+                # on OpenIndiana
+                pass
+            else:
+                self.assertEqual(size, 0)
         finally:
             os.close(fd)
 
@@ -298,6 +309,16 @@ class PosixTester(unittest.TestCase):
             buf = [bytearray(i) for i in [5, 3, 2]]
             self.assertEqual(posix.readv(fd, buf), 10)
             self.assertEqual([b'test1', b'tt2', b't3'], [bytes(i) for i in buf])
+
+            # Issue #20113: empty list of buffers should not crash
+            try:
+                size = posix.readv(fd, [])
+            except OSError:
+                # readv(fd, []) raises OSError(22, "Invalid argument")
+                # on OpenIndiana
+                pass
+            else:
+                self.assertEqual(size, 0)
         finally:
             os.close(fd)
 
@@ -595,7 +616,12 @@ class PosixTester(unittest.TestCase):
         except OSError:
             pass
 
+    @support.cpython_only
+    @unittest.skipUnless(hasattr(os, 'pipe2'), "test needs os.pipe2()")
+    @support.requires_linux_version(2, 6, 27)
+    def test_pipe2_c_limits(self):
         # Issue 15989
+        import _testcapi
         self.assertRaises(OverflowError, os.pipe2, _testcapi.INT_MAX + 1)
         self.assertRaises(OverflowError, os.pipe2, _testcapi.UINT_MAX + 1)
 
@@ -1094,6 +1120,23 @@ class PosixTester(unittest.TestCase):
                 # For instance:
                 # http://lists.freebsd.org/pipermail/freebsd-amd64/2012-January/014332.html
                 raise unittest.SkipTest("OSError raised!")
+
+    def test_path_error2(self):
+        """
+        Test functions that call path_error2(), providing two filenames in their exceptions.
+        """
+        for name in ("rename", "replace", "link", "symlink"):
+            function = getattr(os, name, None)
+
+            if function:
+                for dst in ("noodly2", support.TESTFN):
+                    try:
+                        function('doesnotexistfilename', dst)
+                    except OSError as e:
+                        self.assertIn("'doesnotexistfilename' -> '{}'".format(dst), str(e))
+                        break
+                else:
+                    self.fail("No valid path_error2() test for os." + name)
 
 class PosixGroupsTester(unittest.TestCase):
 

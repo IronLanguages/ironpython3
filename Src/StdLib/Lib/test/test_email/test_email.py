@@ -124,12 +124,6 @@ class TestMessageAPI(TestEmailBase):
         msg.set_payload([])
         self.assertEqual(msg.get_payload(), [])
 
-    def test_set_payload_with_non_ascii_and_no_charset_raises(self):
-        data = b'\xd0\x90\xd0\x91\xd0\x92'.decode('utf-8')
-        msg = Message()
-        with self.assertRaises(TypeError):
-            msg.set_payload(data)
-
     def test_get_charsets(self):
         eq = self.assertEqual
 
@@ -596,10 +590,20 @@ class TestMessageAPI(TestEmailBase):
         self.assertIsInstance(msg.defects[0],
                               errors.InvalidBase64CharactersDefect)
 
+    def test_broken_unicode_payload(self):
+        # This test improves coverage but is not a compliance test.
+        # The behavior in this situation is currently undefined by the API.
+        x = 'this is a br\xf6ken thing to do'
+        msg = Message()
+        msg['content-type'] = 'text/plain'
+        msg['content-transfer-encoding'] = '8bit'
+        msg.set_payload(x)
+        self.assertEqual(msg.get_payload(decode=True),
+                         bytes(x, 'raw-unicode-escape'))
+
     def test_questionable_bytes_payload(self):
         # This test improves coverage but is not a compliance test,
-        # since it involves poking inside the black box in a way
-        # that actually breaks the model invariants.
+        # since it involves poking inside the black box.
         x = 'this is a quéstionable thing to do'.encode('utf-8')
         msg = Message()
         msg['content-type'] = 'text/plain; charset="utf-8"'
@@ -1741,7 +1745,8 @@ From: bperson@dom.ain
 
 --BOUNDARY
 
---BOUNDARY--''')
+--BOUNDARY--
+''')
 
     def test_no_parts_in_a_multipart_with_empty_epilogue(self):
         outer = MIMEBase('multipart', 'mixed')
@@ -1786,7 +1791,8 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
 
 hello world
---BOUNDARY--''')
+--BOUNDARY--
+''')
 
     def test_seq_parts_in_a_multipart_with_empty_preamble(self):
         eq = self.ndiffAssertEqual
@@ -1812,7 +1818,8 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
 
 hello world
---BOUNDARY--''')
+--BOUNDARY--
+''')
 
 
     def test_seq_parts_in_a_multipart_with_none_preamble(self):
@@ -1838,7 +1845,8 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
 
 hello world
---BOUNDARY--''')
+--BOUNDARY--
+''')
 
 
     def test_seq_parts_in_a_multipart_with_none_epilogue(self):
@@ -1864,7 +1872,8 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
 
 hello world
---BOUNDARY--''')
+--BOUNDARY--
+''')
 
 
     def test_seq_parts_in_a_multipart_with_empty_epilogue(self):
@@ -3525,7 +3534,7 @@ Here's the message body
         self.assertTrue(msg.get_payload(0).get_payload().endswith('\r\n'))
 
 
-class Test8BitBytesHandling(unittest.TestCase):
+class Test8BitBytesHandling(TestEmailBase):
     # In Python3 all input is string, but that doesn't work if the actual input
     # uses an 8bit transfer encoding.  To hack around that, in email 5.1 we
     # decode byte streams using the surrogateescape error handler, and
@@ -3777,6 +3786,16 @@ class Test8BitBytesHandling(unittest.TestCase):
         out = StringIO()
         email.generator.Generator(out).flatten(msg)
         self.assertEqual(out.getvalue(), self.non_latin_bin_msg_as7bit_wrapped)
+
+    def test_str_generator_should_not_mutate_msg_when_handling_8bit(self):
+        msg = email.message_from_bytes(self.non_latin_bin_msg)
+        out = BytesIO()
+        BytesGenerator(out).flatten(msg)
+        orig_value = out.getvalue()
+        Generator(StringIO()).flatten(msg) # Should not mutate msg!
+        out = BytesIO()
+        BytesGenerator(out).flatten(msg)
+        self.assertEqual(out.getvalue(), orig_value)
 
     def test_bytes_generator_with_unix_from(self):
         # The unixfrom contains a current date, so we can't check it
@@ -4245,6 +4264,11 @@ class TestQuopri(unittest.TestCase):
 
     def test_encode_one_line_eol(self):
         self._test_encode('hello\n', 'hello\r\n', eol='\r\n')
+
+    def test_encode_one_line_eol_after_non_ascii(self):
+        # issue 20206; see changeset 0cf700464177 for why the encode/decode.
+        self._test_encode('hello\u03c5\n'.encode('utf-8').decode('latin1'),
+                          'hello=CF=85\r\n', eol='\r\n')
 
     def test_encode_one_space(self):
         self._test_encode(' ', '=20')
@@ -5042,6 +5066,26 @@ Content-Type: application/x-foo; name*0=\"Frank's\"; name*1=\" Document\"
         param = msg.get_param('name')
         self.assertNotIsInstance(param, tuple)
         self.assertEqual(param, "Frank's Document")
+
+    def test_rfc2231_missing_tick(self):
+        m = '''\
+Content-Disposition: inline;
+\tfilename*0*="'This%20is%20broken";
+'''
+        msg = email.message_from_string(m)
+        self.assertEqual(
+            msg.get_filename(),
+            "'This is broken")
+
+    def test_rfc2231_missing_tick_with_encoded_non_ascii(self):
+        m = '''\
+Content-Disposition: inline;
+\tfilename*0*="'This%20is%E2broken";
+'''
+        msg = email.message_from_string(m)
+        self.assertEqual(
+            msg.get_filename(),
+            "'This is\ufffdbroken")
 
     # test_headerregistry.TestContentTypeHeader.rfc2231_single_quote_in_value_with_charset_and_lang
     def test_rfc2231_tick_attack_extended(self):

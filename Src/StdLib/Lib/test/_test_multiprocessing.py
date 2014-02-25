@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 #
 # Unit tests for the multiprocessing package
 #
@@ -696,9 +694,6 @@ class _TestQueue(BaseTestCase):
 
     def test_task_done(self):
         queue = self.JoinableQueue()
-
-        if sys.version_info < (2, 5) and not hasattr(queue, 'task_done'):
-            self.skipTest("requires 'queue.task_done()' method")
 
         workers = [self.Process(target=self._test_task_done, args=(queue,))
                    for i in range(4)]
@@ -3656,7 +3651,7 @@ class TestSemaphoreTracker(unittest.TestCase):
         _multiprocessing.sem_unlink(name1)
         p.terminate()
         p.wait()
-        time.sleep(1.0)
+        time.sleep(2.0)
         with self.assertRaises(OSError) as ctx:
             _multiprocessing.sem_unlink(name2)
         # docs say it should be ENOENT, but OSX seems to give EINVAL

@@ -110,6 +110,13 @@ class PyPIRCCommand(Command):
 
         return {}
 
+    def _read_pypi_response(self, response):
+        """Read and decode a PyPI HTTP response."""
+        import cgi
+        content_type = response.getheader('content-type', 'text/plain')
+        encoding = cgi.parse_header(content_type)[1].get('charset', 'ascii')
+        return response.read().decode(encoding)
+
     def initialize_options(self):
         """Initialize options."""
         self.repository = None

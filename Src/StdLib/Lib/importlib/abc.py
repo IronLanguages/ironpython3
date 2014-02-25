@@ -43,15 +43,21 @@ class MetaPathFinder(Finder):
     # We don't define find_spec() here since that would break
     # hasattr checks we do to support backward compatibility.
 
-    # XXX Deprecate
     def find_module(self, fullname, path):
         """Return a loader for the module.
 
         If no module is found, return None.  The fullname is a str and
         the path is a list of strings or None.
 
+        This method is deprecated in favor of finder.find_spec(). If find_spec()
+        exists then backwards-compatible functionality is provided for this
+        method.
+
         """
-        return None
+        if not hasattr(self, 'find_spec'):
+            return None
+        found = self.find_spec(fullname, path)
+        return found.loader if found is not None else None
 
     def invalidate_caches(self):
         """An optional method for clearing the finder's cache, if any.
@@ -69,7 +75,6 @@ class PathEntryFinder(Finder):
     # We don't define find_spec() here since that would break
     # hasattr checks we do to support backward compatibility.
 
-    # XXX Deprecate.
     def find_loader(self, fullname):
         """Return (loader, namespace portion) for the path entry.
 
@@ -81,10 +86,22 @@ class PathEntryFinder(Finder):
         The portion will be discarded if another path entry finder
         locates the module as a normal module or package.
 
-        """
-        return None, []
+        This method is deprecated in favor of finder.find_spec(). If find_spec()
+        is provided than backwards-compatible functionality is provided.
 
-    # XXX Deprecate.
+        """
+        if not hasattr(self, 'find_spec'):
+            return None, []
+        found = self.find_spec(fullname)
+        if found is not None:
+            if not found.submodule_search_locations:
+                portions = []
+            else:
+                portions = found.submodule_search_locations
+            return found.loader, portions
+        else:
+            return None, []
+
     find_module = _bootstrap._find_module_shim
 
     def invalidate_caches(self):
@@ -115,7 +132,6 @@ class Loader(metaclass=abc.ABCMeta):
     # We don't define exec_module() here since that would break
     # hasattr checks we do to support backward compatibility.
 
-    # XXX Deprecate.
     def load_module(self, fullname):
         """Return the loaded module.
 
@@ -124,15 +140,22 @@ class Loader(metaclass=abc.ABCMeta):
 
         ImportError is raised on failure.
 
-        """
-        raise ImportError
+        This method is deprecated in favor of loader.exec_module(). If
+        exec_module() exists then it is used to provide a backwards-compatible
+        functionality for this method.
 
-    # XXX Deprecate.
+        """
+        if not hasattr(self, 'exec_module'):
+            raise ImportError
+        return _bootstrap._load_module_shim(self, fullname)
+
     def module_repr(self, module):
         """Return a module's repr.
 
         Used by the module type when the method does not raise
         NotImplementedError.
+
+        This method is deprecated.
 
         """
         # The exception will cause ModuleType.__repr__ to ignore this method.

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from test import support
 from test.support import bigmemtest, _4G
 
@@ -686,7 +685,7 @@ class BZ2DecompressorTest(BaseTest):
         self.assertRaises(EOFError, bz2d.decompress, b"anything")
         self.assertRaises(EOFError, bz2d.decompress, b"")
 
-    @bigmemtest(size=_4G + 100, memuse=3)
+    @bigmemtest(size=_4G + 100, memuse=3.3)
     def testDecompress4G(self, size):
         # "Test BZ2Decompressor.decompress() with >4GiB input"
         blocksize = 10 * 1024 * 1024

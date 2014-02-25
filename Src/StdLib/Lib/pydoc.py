@@ -137,6 +137,19 @@ def _is_some_method(obj):
             inspect.isbuiltin(obj) or
             inspect.ismethoddescriptor(obj))
 
+def _is_bound_method(fn):
+    """
+    Returns True if fn is a bound method, regardless of whether
+    fn was implemented in Python or in C.
+    """
+    if inspect.ismethod(fn):
+        return True
+    if inspect.isbuiltin(fn):
+        self = getattr(fn, '__self__', None)
+        return not (inspect.ismodule(self) or (self is None))
+    return False
+
+
 def allmethods(cl):
     methods = {}
     for key, value in inspect.getmembers(cl, _is_some_method):
@@ -225,34 +238,38 @@ def synopsis(filename, cache={}):
     mtime = os.stat(filename).st_mtime
     lastupdate, result = cache.get(filename, (None, None))
     if lastupdate is None or lastupdate < mtime:
-        try:
-            file = tokenize.open(filename)
-        except OSError:
-            # module can't be opened, so skip it
-            return None
-        binary_suffixes = importlib.machinery.BYTECODE_SUFFIXES[:]
-        binary_suffixes += importlib.machinery.EXTENSION_SUFFIXES[:]
-        if any(filename.endswith(x) for x in binary_suffixes):
-            # binary modules have to be imported
-            file.close()
-            if any(filename.endswith(x) for x in
-                    importlib.machinery.BYTECODE_SUFFIXES):
-                loader = importlib.machinery.SourcelessFileLoader('__temp__',
-                                                                  filename)
-            else:
-                loader = importlib.machinery.ExtensionFileLoader('__temp__',
-                                                                 filename)
+        # Look for binary suffixes first, falling back to source.
+        if filename.endswith(tuple(importlib.machinery.BYTECODE_SUFFIXES)):
+            loader_cls = importlib.machinery.SourcelessFileLoader
+        elif filename.endswith(tuple(importlib.machinery.EXTENSION_SUFFIXES)):
+            loader_cls = importlib.machinery.ExtensionFileLoader
+        else:
+            loader_cls = None
+        # Now handle the choice.
+        if loader_cls is None:
+            # Must be a source file.
             try:
-                module = loader.load_module('__temp__')
+                file = tokenize.open(filename)
+            except OSError:
+                # module can't be opened, so skip it
+                return None
+            # text modules can be directly examined
+            with file:
+                result = source_synopsis(file)
+        else:
+            # Must be a binary module, which has to be imported.
+            loader = loader_cls('__temp__', filename)
+            # XXX We probably don't need to pass in the loader here.
+            spec = importlib.util.spec_from_file_location('__temp__', filename,
+                                                          loader=loader)
+            _spec = importlib._bootstrap._SpecMethods(spec)
+            try:
+                module = _spec.load()
             except:
                 return None
-            result = (module.__doc__ or '').splitlines()[0]
             del sys.modules['__temp__']
-        else:
-            # text modules can be directly examined
-            result = source_synopsis(file)
-            file.close()
-
+            result = (module.__doc__ or '').splitlines()[0]
+        # Cache the result.
         cache[filename] = (mtime, result)
     return result
 
@@ -277,8 +294,11 @@ def importfile(path):
         loader = importlib._bootstrap.SourcelessFileLoader(name, path)
     else:
         loader = importlib._bootstrap.SourceFileLoader(name, path)
+    # XXX We probably don't need to pass in the loader here.
+    spec = importlib.util.spec_from_file_location(name, path, loader=loader)
+    _spec = importlib._bootstrap._SpecMethods(spec)
     try:
-        return loader.load_module(name)
+        return _spec.load()
     except:
         raise ErrorDuringImport(path, sys.exc_info())
 
@@ -891,7 +911,7 @@ class HTMLDoc(Doc):
         anchor = (cl and cl.__name__ or '') + '-' + name
         note = ''
         skipdocs = 0
-        if inspect.ismethod(object):
+        if _is_bound_method(object):
             imclass = object.__self__.__class__
             if cl:
                 if imclass is not cl:
@@ -902,7 +922,6 @@ class HTMLDoc(Doc):
                         object.__self__.__class__, mod)
                 else:
                     note = ' unbound %s method' % self.classlink(imclass,mod)
-            object = object.__func__
 
         if name == realname:
             title = '<a name="%s"><strong>%s</strong></a>' % (anchor, realname)
@@ -917,8 +936,11 @@ class HTMLDoc(Doc):
             title = '<a name="%s"><strong>%s</strong></a> = %s' % (
                 anchor, name, reallink)
         argspec = None
-        if inspect.isfunction(object) or inspect.isbuiltin(object):
-            signature = inspect.signature(object)
+        if inspect.isroutine(object):
+            try:
+                signature = inspect.signature(object)
+            except (ValueError, TypeError):
+                signature = None
             if signature:
                 argspec = str(signature)
                 if realname == '<lambda>':
@@ -1234,9 +1256,12 @@ location listed above.
                         doc = getdoc(value)
                     else:
                         doc = None
-                    push(self.docother(
-                        getattr(object, name, None) or homecls.__dict__[name],
-                        name, mod, maxlen=70, doc=doc) + '\n')
+                    try:
+                        obj = getattr(object, name)
+                    except AttributeError:
+                        obj = homecls.__dict__[name]
+                    push(self.docother(obj, name, mod, maxlen=70, doc=doc) +
+                         '\n')
             return attrs
 
         attrs = [(name, kind, cls, value)
@@ -1291,7 +1316,7 @@ location listed above.
         name = name or realname
         note = ''
         skipdocs = 0
-        if inspect.ismethod(object):
+        if _is_bound_method(object):
             imclass = object.__self__.__class__
             if cl:
                 if imclass is not cl:
@@ -1302,7 +1327,6 @@ location listed above.
                         object.__self__.__class__, mod)
                 else:
                     note = ' unbound %s method' % classname(imclass,mod)
-            object = object.__func__
 
         if name == realname:
             title = self.bold(realname)
@@ -1312,8 +1336,12 @@ location listed above.
                 skipdocs = 1
             title = self.bold(name) + ' = ' + realname
         argspec = None
-        if inspect.isfunction(object) or inspect.isbuiltin(object):
-            signature = inspect.signature(object)
+
+        if inspect.isroutine(object):
+            try:
+                signature = inspect.signature(object)
+            except (ValueError, TypeError):
+                signature = None
             if signature:
                 argspec = str(signature)
                 if realname == '<lambda>':
@@ -2008,10 +2036,11 @@ class ModuleScanner:
                 callback(None, modname, '')
             else:
                 try:
-                    loader = importer.find_module(modname)
+                    spec = pkgutil._get_spec(importer, modname)
                 except SyntaxError:
                     # raised by tests for bad coding cookies or BOM
                     continue
+                loader = spec.loader
                 if hasattr(loader, 'get_source'):
                     try:
                         source = loader.get_source(modname)
@@ -2025,8 +2054,9 @@ class ModuleScanner:
                     else:
                         path = None
                 else:
+                    _spec = importlib._bootstrap._SpecMethods(spec)
                     try:
-                        module = loader.load_module(modname)
+                        module = _spec.load()
                     except ImportError:
                         if onerror:
                             onerror(modname)

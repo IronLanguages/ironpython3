@@ -69,7 +69,9 @@ class ProactorSocketTransportTests(unittest.TestCase):
         tr = _ProactorSocketTransport(self.loop, self.sock, self.protocol)
         tr._fatal_error = unittest.mock.Mock()
         tr._loop_reading()
-        tr._fatal_error.assert_called_with(err)
+        tr._fatal_error.assert_called_with(
+                            err,
+                            'Fatal read error on pipe transport')
 
     def test_loop_reading_aborted_closing(self):
         self.loop._proactor.recv.side_effect = ConnectionAbortedError()
@@ -105,7 +107,9 @@ class ProactorSocketTransportTests(unittest.TestCase):
         tr = _ProactorSocketTransport(self.loop, self.sock, self.protocol)
         tr._fatal_error = unittest.mock.Mock()
         tr._loop_reading()
-        tr._fatal_error.assert_called_with(err)
+        tr._fatal_error.assert_called_with(
+                            err,
+                            'Fatal read error on pipe transport')
 
     def test_write(self):
         tr = _ProactorSocketTransport(self.loop, self.sock, self.protocol)
@@ -142,7 +146,9 @@ class ProactorSocketTransportTests(unittest.TestCase):
         tr._fatal_error = unittest.mock.Mock()
         tr._buffer = [b'da', b'ta']
         tr._loop_writing()
-        tr._fatal_error.assert_called_with(err)
+        tr._fatal_error.assert_called_with(
+                            err,
+                            'Fatal write error on pipe transport')
         tr._conn_lost = 1
 
         tr.write(b'data')
@@ -207,13 +213,13 @@ class ProactorSocketTransportTests(unittest.TestCase):
         test_utils.run_briefly(self.loop)
         self.assertFalse(self.protocol.connection_lost.called)
 
-    @unittest.mock.patch('asyncio.proactor_events.logger')
+    @unittest.mock.patch('asyncio.base_events.logger')
     def test_fatal_error(self, m_logging):
         tr = _ProactorSocketTransport(self.loop, self.sock, self.protocol)
         tr._force_close = unittest.mock.Mock()
         tr._fatal_error(None)
         self.assertTrue(tr._force_close.called)
-        self.assertTrue(m_logging.exception.called)
+        self.assertTrue(m_logging.error.called)
 
     def test_force_close(self):
         tr = _ProactorSocketTransport(self.loop, self.sock, self.protocol)
@@ -402,7 +408,7 @@ class BaseProactorEventLoopTests(unittest.TestCase):
             NotImplementedError, BaseProactorEventLoop, self.proactor)
 
     def test_make_socket_transport(self):
-        tr = self.loop._make_socket_transport(self.sock, unittest.mock.Mock())
+        tr = self.loop._make_socket_transport(self.sock, asyncio.Protocol())
         self.assertIsInstance(tr, _ProactorSocketTransport)
 
     def test_loop_self_reading(self):
@@ -432,7 +438,7 @@ class BaseProactorEventLoopTests(unittest.TestCase):
     def test_process_events(self):
         self.loop._process_events([])
 
-    @unittest.mock.patch('asyncio.proactor_events.logger')
+    @unittest.mock.patch('asyncio.base_events.logger')
     def test_create_server(self, m_log):
         pf = unittest.mock.Mock()
         call_soon = self.loop.call_soon = unittest.mock.Mock()
@@ -458,7 +464,7 @@ class BaseProactorEventLoopTests(unittest.TestCase):
         fut.result.side_effect = OSError()
         loop(fut)
         self.assertTrue(self.sock.close.called)
-        self.assertTrue(m_log.exception.called)
+        self.assertTrue(m_log.error.called)
 
     def test_create_server_cancel(self):
         pf = unittest.mock.Mock()

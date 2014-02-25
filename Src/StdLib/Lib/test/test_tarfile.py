@@ -43,6 +43,7 @@ class TarTest:
     tarname = tarname
     suffix = ''
     open = io.FileIO
+    taropen = tarfile.TarFile.taropen
 
     @property
     def mode(self):
@@ -53,18 +54,21 @@ class GzipTest:
     tarname = gzipname
     suffix = 'gz'
     open = gzip.GzipFile if gzip else None
+    taropen = tarfile.TarFile.gzopen
 
 @support.requires_bz2
 class Bz2Test:
     tarname = bz2name
     suffix = 'bz2'
     open = bz2.BZ2File if bz2 else None
+    taropen = tarfile.TarFile.bz2open
 
 @support.requires_lzma
 class LzmaTest:
     tarname = xzname
     suffix = 'xz'
     open = lzma.LZMAFile if lzma else None
+    taropen = tarfile.TarFile.xzopen
 
 
 class ReadTest(TarTest):
@@ -215,6 +219,86 @@ class LzmaUstarReadTest(LzmaTest, UstarReadTest):
     pass
 
 
+class ListTest(ReadTest, unittest.TestCase):
+
+    # Override setUp to use default encoding (UTF-8)
+    def setUp(self):
+        self.tar = tarfile.open(self.tarname, mode=self.mode)
+
+    def test_list(self):
+        tio = io.TextIOWrapper(io.BytesIO(), 'ascii', newline='\n')
+        with support.swap_attr(sys, 'stdout', tio):
+            self.tar.list(verbose=False)
+        out = tio.detach().getvalue()
+        self.assertIn(b'ustar/conttype', out)
+        self.assertIn(b'ustar/regtype', out)
+        self.assertIn(b'ustar/lnktype', out)
+        self.assertIn(b'ustar' + (b'/12345' * 40) + b'67/longname', out)
+        self.assertIn(b'./ustar/linktest2/symtype', out)
+        self.assertIn(b'./ustar/linktest2/lnktype', out)
+        # Make sure it puts trailing slash for directory
+        self.assertIn(b'ustar/dirtype/', out)
+        self.assertIn(b'ustar/dirtype-with-size/', out)
+        # Make sure it is able to print unencodable characters
+        def conv(b):
+            s = b.decode(self.tar.encoding, 'surrogateescape')
+            return s.encode('ascii', 'backslashreplace')
+        self.assertIn(conv(b'ustar/umlauts-\xc4\xd6\xdc\xe4\xf6\xfc\xdf'), out)
+        self.assertIn(conv(b'misc/regtype-hpux-signed-chksum-'
+                           b'\xc4\xd6\xdc\xe4\xf6\xfc\xdf'), out)
+        self.assertIn(conv(b'misc/regtype-old-v7-signed-chksum-'
+                           b'\xc4\xd6\xdc\xe4\xf6\xfc\xdf'), out)
+        self.assertIn(conv(b'pax/bad-pax-\xe4\xf6\xfc'), out)
+        self.assertIn(conv(b'pax/hdrcharset-\xe4\xf6\xfc'), out)
+        # Make sure it prints files separated by one newline without any
+        # 'ls -l'-like accessories if verbose flag is not being used
+        # ...
+        # ustar/conttype
+        # ustar/regtype
+        # ...
+        self.assertRegex(out, br'ustar/conttype ?\r?\n'
+                              br'ustar/regtype ?\r?\n')
+        # Make sure it does not print the source of link without verbose flag
+        self.assertNotIn(b'link to', out)
+        self.assertNotIn(b'->', out)
+
+    def test_list_verbose(self):
+        tio = io.TextIOWrapper(io.BytesIO(), 'ascii', newline='\n')
+        with support.swap_attr(sys, 'stdout', tio):
+            self.tar.list(verbose=True)
+        out = tio.detach().getvalue()
+        # Make sure it prints files separated by one newline with 'ls -l'-like
+        # accessories if verbose flag is being used
+        # ...
+        # ?rw-r--r-- tarfile/tarfile     7011 2003-01-06 07:19:43 ustar/conttype
+        # ?rw-r--r-- tarfile/tarfile     7011 2003-01-06 07:19:43 ustar/regtype
+        # ...
+        self.assertRegex(out, (br'\?rw-r--r-- tarfile/tarfile\s+7011 '
+                               br'\d{4}-\d\d-\d\d\s+\d\d:\d\d:\d\d '
+                               br'ustar/\w+type ?\r?\n') * 2)
+        # Make sure it prints the source of link with verbose flag
+        self.assertIn(b'ustar/symtype -> regtype', out)
+        self.assertIn(b'./ustar/linktest2/symtype -> ../linktest1/regtype', out)
+        self.assertIn(b'./ustar/linktest2/lnktype link to '
+                      b'./ustar/linktest1/regtype', out)
+        self.assertIn(b'gnu' + (b'/123' * 125) + b'/longlink link to gnu' +
+                      (b'/123' * 125) + b'/longname', out)
+        self.assertIn(b'pax' + (b'/123' * 125) + b'/longlink link to pax' +
+                      (b'/123' * 125) + b'/longname', out)
+
+
+class GzipListTest(GzipTest, ListTest):
+    pass
+
+
+class Bz2ListTest(Bz2Test, ListTest):
+    pass
+
+
+class LzmaListTest(LzmaTest, ListTest):
+    pass
+
+
 class CommonReadTest(ReadTest):
 
     def test_empty_tarfile(self):
@@ -233,6 +317,12 @@ class CommonReadTest(ReadTest):
             self.assertListEqual(tar.getmembers(), [])
         finally:
             tar.close()
+
+    def test_non_existent_tarfile(self):
+        # Test for issue11513: prevent non-existent gzipped tarfiles raising
+        # multiple exceptions.
+        with self.assertRaisesRegex(FileNotFoundError, "xxx"):
+            tarfile.open("xxx", self.mode)
 
     def test_null_tarfile(self):
         # Test for issue6123: Allow opening empty archives.
@@ -282,6 +372,16 @@ class MiscReadTestBase(CommonReadTest):
         fobj.name = ""
         with tarfile.open(fileobj=fobj, mode=self.mode) as tar:
             self.assertEqual(tar.name, None)
+
+    def test_illegal_mode_arg(self):
+        with open(tmpname, 'wb'):
+            pass
+        with self.assertRaisesRegex(ValueError, 'mode must be '):
+            tar = self.taropen(tmpname, 'q')
+        with self.assertRaisesRegex(ValueError, 'mode must be '):
+            tar = self.taropen(tmpname, 'rw')
+        with self.assertRaisesRegex(ValueError, 'mode must be '):
+            tar = self.taropen(tmpname, '')
 
     def test_fileobj_with_offset(self):
         # Skip the first member and store values from the second member
@@ -446,11 +546,7 @@ class MiscReadTest(MiscReadTestBase, unittest.TestCase):
     test_fail_comp = None
 
 class GzipMiscReadTest(GzipTest, MiscReadTestBase, unittest.TestCase):
-    def test_non_existent_targz_file(self):
-        # Test for issue11513: prevent non-existent gzipped tarfiles raising
-        # multiple exceptions.
-        with self.assertRaisesRegex(FileNotFoundError, "xxx"):
-            tarfile.open("xxx", self.mode)
+    pass
 
 class Bz2MiscReadTest(Bz2Test, MiscReadTestBase, unittest.TestCase):
     def test_no_name_argument(self):
@@ -841,6 +937,12 @@ class WriteTestBase(TarTest):
         tar.addfile(tarfile.TarInfo("foo"))
         tar.close()
         self.assertFalse(fobj.closed, "external fileobjs must never closed")
+        # Issue #20238: Incomplete gzip output with mode="w:gz"
+        data = fobj.getvalue()
+        del tar
+        support.gc_collect()
+        self.assertFalse(fobj.closed)
+        self.assertEqual(data, fobj.getvalue())
 
 
 class WriteTest(WriteTestBase, unittest.TestCase):
@@ -1134,6 +1236,22 @@ class WriteTest(WriteTestBase, unittest.TestCase):
                 tar.close()
         finally:
             os.chdir(cwd)
+
+    def test_open_nonwritable_fileobj(self):
+        for exctype in OSError, EOFError, RuntimeError:
+            class BadFile(io.BytesIO):
+                first = True
+                def write(self, data):
+                    if self.first:
+                        self.first = False
+                        raise exctype
+
+            f = BadFile()
+            with self.assertRaises(exctype):
+                tar = tarfile.open(tmpname, self.mode, fileobj=f,
+                                   format=tarfile.PAX_FORMAT,
+                                   pax_headers={'non': 'empty'})
+            self.assertFalse(f.closed)
 
 class GzipWriteTest(GzipTest, WriteTest):
     pass
@@ -1728,8 +1846,9 @@ class MiscTest(unittest.TestCase):
 
 class CommandLineTest(unittest.TestCase):
 
-    def tarfilecmd(self, *args):
-        rc, out, err = script_helper.assert_python_ok('-m', 'tarfile', *args)
+    def tarfilecmd(self, *args, **kwargs):
+        rc, out, err = script_helper.assert_python_ok('-m', 'tarfile', *args,
+                                                      **kwargs)
         return out.replace(os.linesep.encode(), b'\n')
 
     def tarfilecmd_failure(self, *args):
@@ -1777,24 +1896,26 @@ class CommandLineTest(unittest.TestCase):
                     support.unlink(tmpname)
 
     def test_list_command(self):
-        self.make_simple_tarfile(tmpname)
-        with support.captured_stdout() as t:
-            with tarfile.open(tmpname, 'r') as tf:
-                tf.list(verbose=False)
-        expected = t.getvalue().encode(sys.getfilesystemencoding())
-        for opt in '-l', '--list':
-            out = self.tarfilecmd(opt, tmpname)
-            self.assertEqual(out, expected)
+        for tar_name in testtarnames:
+            with support.captured_stdout() as t:
+                with tarfile.open(tar_name, 'r') as tf:
+                    tf.list(verbose=False)
+            expected = t.getvalue().encode('ascii', 'backslashreplace')
+            for opt in '-l', '--list':
+                out = self.tarfilecmd(opt, tar_name,
+                                      PYTHONIOENCODING='ascii')
+                self.assertEqual(out, expected)
 
     def test_list_command_verbose(self):
-        self.make_simple_tarfile(tmpname)
-        with support.captured_stdout() as t:
-            with tarfile.open(tmpname, 'r') as tf:
-                tf.list(verbose=True)
-        expected = t.getvalue().encode(sys.getfilesystemencoding())
-        for opt in '-v', '--verbose':
-            out = self.tarfilecmd(opt, '-l', tmpname)
-            self.assertEqual(out, expected)
+        for tar_name in testtarnames:
+            with support.captured_stdout() as t:
+                with tarfile.open(tar_name, 'r') as tf:
+                    tf.list(verbose=True)
+            expected = t.getvalue().encode('ascii', 'backslashreplace')
+            for opt in '-v', '--verbose':
+                out = self.tarfilecmd(opt, '-l', tar_name,
+                                      PYTHONIOENCODING='ascii')
+                self.assertEqual(out, expected)
 
     def test_list_command_invalid_file(self):
         zipname = support.findfile('zipdir.zip')

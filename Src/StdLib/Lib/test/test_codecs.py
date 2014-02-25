@@ -1,4 +1,3 @@
-import _testcapi
 import codecs
 import contextlib
 import io
@@ -148,19 +147,20 @@ class ReadTest(MixInCheckStateHandling):
         self.assertEqual(readalllines(s, True, 10), sexpected)
         self.assertEqual(readalllines(s, False, 10), sexpectednoends)
 
+        lineends = ("\n", "\r\n", "\r", "\u2028")
         # Test long lines (multiple calls to read() in readline())
         vw = []
         vwo = []
-        for (i, lineend) in enumerate("\n \r\n \r \u2028".split()):
-            vw.append((i*200)*"\3042" + lineend)
-            vwo.append((i*200)*"\3042")
-        self.assertEqual(readalllines("".join(vw), True), "".join(vw))
-        self.assertEqual(readalllines("".join(vw), False),"".join(vwo))
+        for (i, lineend) in enumerate(lineends):
+            vw.append((i*200+200)*"\u3042" + lineend)
+            vwo.append((i*200+200)*"\u3042")
+        self.assertEqual(readalllines("".join(vw), True), "|".join(vw))
+        self.assertEqual(readalllines("".join(vw), False), "|".join(vwo))
 
         # Test lines where the first read might end with \r, so the
         # reader has to look ahead whether this is a lone \r or a \r\n
         for size in range(80):
-            for lineend in "\n \r\n \r \u2028".split():
+            for lineend in lineends:
                 s = 10*(size*"a" + lineend + "xxx\n")
                 reader = getreader(s)
                 for i in range(10):
@@ -168,12 +168,54 @@ class ReadTest(MixInCheckStateHandling):
                         reader.readline(keepends=True),
                         size*"a" + lineend,
                     )
+                    self.assertEqual(
+                        reader.readline(keepends=True),
+                        "xxx\n",
+                    )
                 reader = getreader(s)
                 for i in range(10):
                     self.assertEqual(
                         reader.readline(keepends=False),
                         size*"a",
                     )
+                    self.assertEqual(
+                        reader.readline(keepends=False),
+                        "xxx",
+                    )
+
+    def test_mixed_readline_and_read(self):
+        lines = ["Humpty Dumpty sat on a wall,\n",
+                 "Humpty Dumpty had a great fall.\r\n",
+                 "All the king's horses and all the king's men\r",
+                 "Couldn't put Humpty together again."]
+        data = ''.join(lines)
+        def getreader():
+            stream = io.BytesIO(data.encode(self.encoding))
+            return codecs.getreader(self.encoding)(stream)
+
+        # Issue #8260: Test readline() followed by read()
+        f = getreader()
+        self.assertEqual(f.readline(), lines[0])
+        self.assertEqual(f.read(), ''.join(lines[1:]))
+        self.assertEqual(f.read(), '')
+
+        # Issue #16636: Test readline() followed by readlines()
+        f = getreader()
+        self.assertEqual(f.readline(), lines[0])
+        self.assertEqual(f.readlines(), lines[1:])
+        self.assertEqual(f.read(), '')
+
+        # Test read() followed by read()
+        f = getreader()
+        self.assertEqual(f.read(size=40, chars=5), data[:5])
+        self.assertEqual(f.read(), data[5:])
+        self.assertEqual(f.read(), '')
+
+        # Issue #12446: Test read() followed by readlines()
+        f = getreader()
+        self.assertEqual(f.read(size=40, chars=5), data[:5])
+        self.assertEqual(f.readlines(), [lines[0][5:]] + lines[1:])
+        self.assertEqual(f.read(), '')
 
     def test_bug1175396(self):
         s = [
@@ -848,6 +890,9 @@ class CP65001Test(ReadTest, unittest.TestCase):
                          "\U00010fff\uD800")
         self.assertTrue(codecs.lookup_error("surrogatepass"))
 
+    def test_readline(self):
+        self.skipTest("issue #20571: code page 65001 codec does not "
+                      "support partial decoder yet")
 
 
 class UTF7Test(ReadTest, unittest.TestCase):
@@ -855,13 +900,40 @@ class UTF7Test(ReadTest, unittest.TestCase):
 
     def test_partial(self):
         self.check_partial(
-            "a+-b",
+            'a+-b\x00c\x80d\u0100e\U00010000f',
             [
-                "a",
-                "a",
-                "a+",
-                "a+-",
-                "a+-b",
+                'a',
+                'a',
+                'a+',
+                'a+-',
+                'a+-b',
+                'a+-b',
+                'a+-b',
+                'a+-b',
+                'a+-b',
+                'a+-b\x00',
+                'a+-b\x00c',
+                'a+-b\x00c',
+                'a+-b\x00c',
+                'a+-b\x00c',
+                'a+-b\x00c',
+                'a+-b\x00c\x80',
+                'a+-b\x00c\x80d',
+                'a+-b\x00c\x80d',
+                'a+-b\x00c\x80d',
+                'a+-b\x00c\x80d',
+                'a+-b\x00c\x80d',
+                'a+-b\x00c\x80d\u0100',
+                'a+-b\x00c\x80d\u0100e',
+                'a+-b\x00c\x80d\u0100e',
+                'a+-b\x00c\x80d\u0100e',
+                'a+-b\x00c\x80d\u0100e',
+                'a+-b\x00c\x80d\u0100e',
+                'a+-b\x00c\x80d\u0100e',
+                'a+-b\x00c\x80d\u0100e',
+                'a+-b\x00c\x80d\u0100e',
+                'a+-b\x00c\x80d\u0100e\U00010000',
+                'a+-b\x00c\x80d\u0100e\U00010000f',
             ]
         )
 
@@ -1717,7 +1789,7 @@ broken_incremental_coders = broken_unicode_with_streams + [
 
 class BasicUnicodeTest(unittest.TestCase, MixInCheckStateHandling):
     def test_basics(self):
-        s = "abc123" # all codecs should be able to encode these
+        s = "abc123"  # all codecs should be able to encode these
         for encoding in all_unicode_encodings:
             name = codecs.lookup(encoding).name
             if encoding.endswith("_codec"):
@@ -1729,9 +1801,9 @@ class BasicUnicodeTest(unittest.TestCase, MixInCheckStateHandling):
             with support.check_warnings():
                 # unicode-internal has been deprecated
                 (b, size) = codecs.getencoder(encoding)(s)
-                self.assertEqual(size, len(s), "%r != %r (encoding=%r)" % (size, len(s), encoding))
+                self.assertEqual(size, len(s), "encoding=%r" % encoding)
                 (chars, size) = codecs.getdecoder(encoding)(b)
-                self.assertEqual(chars, s, "%r != %r (encoding=%r)" % (chars, s, encoding))
+                self.assertEqual(chars, s, "encoding=%r" % encoding)
 
             if encoding not in broken_unicode_with_streams:
                 # check stream reader/writer
@@ -1749,15 +1821,13 @@ class BasicUnicodeTest(unittest.TestCase, MixInCheckStateHandling):
                 for c in encodedresult:
                     q.write(bytes([c]))
                     decodedresult += reader.read()
-                self.assertEqual(decodedresult, s, "%r != %r (encoding=%r)" % (decodedresult, s, encoding))
+                self.assertEqual(decodedresult, s, "encoding=%r" % encoding)
 
             if encoding not in broken_incremental_coders:
-                # check incremental decoder/encoder (fetched via the Python
-                # and C API) and iterencode()/iterdecode()
+                # check incremental decoder/encoder and iterencode()/iterdecode()
                 try:
                     encoder = codecs.getincrementalencoder(encoding)()
-                    cencoder = _testcapi.codec_incrementalencoder(encoding)
-                except LookupError: # no IncrementalEncoder
+                except LookupError:  # no IncrementalEncoder
                     pass
                 else:
                     # check incremental decoder/encoder
@@ -1770,45 +1840,71 @@ class BasicUnicodeTest(unittest.TestCase, MixInCheckStateHandling):
                     for c in encodedresult:
                         decodedresult += decoder.decode(bytes([c]))
                     decodedresult += decoder.decode(b"", True)
-                    self.assertEqual(decodedresult, s, "%r != %r (encoding=%r)" % (decodedresult, s, encoding))
-
-                    # check C API
-                    encodedresult = b""
-                    for c in s:
-                        encodedresult += cencoder.encode(c)
-                    encodedresult += cencoder.encode("", True)
-                    cdecoder = _testcapi.codec_incrementaldecoder(encoding)
-                    decodedresult = ""
-                    for c in encodedresult:
-                        decodedresult += cdecoder.decode(bytes([c]))
-                    decodedresult += cdecoder.decode(b"", True)
-                    self.assertEqual(decodedresult, s, "%r != %r (encoding=%r)" % (decodedresult, s, encoding))
+                    self.assertEqual(decodedresult, s,
+                                     "encoding=%r" % encoding)
 
                     # check iterencode()/iterdecode()
-                    result = "".join(codecs.iterdecode(codecs.iterencode(s, encoding), encoding))
-                    self.assertEqual(result, s, "%r != %r (encoding=%r)" % (result, s, encoding))
+                    result = "".join(codecs.iterdecode(
+                            codecs.iterencode(s, encoding), encoding))
+                    self.assertEqual(result, s, "encoding=%r" % encoding)
 
                     # check iterencode()/iterdecode() with empty string
-                    result = "".join(codecs.iterdecode(codecs.iterencode("", encoding), encoding))
+                    result = "".join(codecs.iterdecode(
+                            codecs.iterencode("", encoding), encoding))
                     self.assertEqual(result, "")
 
                 if encoding not in ("idna", "mbcs"):
                     # check incremental decoder/encoder with errors argument
                     try:
                         encoder = codecs.getincrementalencoder(encoding)("ignore")
-                        cencoder = _testcapi.codec_incrementalencoder(encoding, "ignore")
-                    except LookupError: # no IncrementalEncoder
+                    except LookupError:  # no IncrementalEncoder
                         pass
                     else:
                         encodedresult = b"".join(encoder.encode(c) for c in s)
                         decoder = codecs.getincrementaldecoder(encoding)("ignore")
-                        decodedresult = "".join(decoder.decode(bytes([c])) for c in encodedresult)
-                        self.assertEqual(decodedresult, s, "%r != %r (encoding=%r)" % (decodedresult, s, encoding))
+                        decodedresult = "".join(decoder.decode(bytes([c]))
+                                                for c in encodedresult)
+                        self.assertEqual(decodedresult, s,
+                                         "encoding=%r" % encoding)
 
+    @support.cpython_only
+    def test_basics_capi(self):
+        from _testcapi import codec_incrementalencoder, codec_incrementaldecoder
+        s = "abc123"  # all codecs should be able to encode these
+        for encoding in all_unicode_encodings:
+            if encoding not in broken_incremental_coders:
+                # check incremental decoder/encoder (fetched via the C API)
+                try:
+                    cencoder = codec_incrementalencoder(encoding)
+                except LookupError:  # no IncrementalEncoder
+                    pass
+                else:
+                    # check C API
+                    encodedresult = b""
+                    for c in s:
+                        encodedresult += cencoder.encode(c)
+                    encodedresult += cencoder.encode("", True)
+                    cdecoder = codec_incrementaldecoder(encoding)
+                    decodedresult = ""
+                    for c in encodedresult:
+                        decodedresult += cdecoder.decode(bytes([c]))
+                    decodedresult += cdecoder.decode(b"", True)
+                    self.assertEqual(decodedresult, s,
+                                     "encoding=%r" % encoding)
+
+                if encoding not in ("idna", "mbcs"):
+                    # check incremental decoder/encoder with errors argument
+                    try:
+                        cencoder = codec_incrementalencoder(encoding, "ignore")
+                    except LookupError:  # no IncrementalEncoder
+                        pass
+                    else:
                         encodedresult = b"".join(cencoder.encode(c) for c in s)
-                        cdecoder = _testcapi.codec_incrementaldecoder(encoding, "ignore")
-                        decodedresult = "".join(cdecoder.decode(bytes([c])) for c in encodedresult)
-                        self.assertEqual(decodedresult, s, "%r != %r (encoding=%r)" % (decodedresult, s, encoding))
+                        cdecoder = codec_incrementaldecoder(encoding, "ignore")
+                        decodedresult = "".join(cdecoder.decode(bytes([c]))
+                                                for c in encodedresult)
+                        self.assertEqual(decodedresult, s,
+                                         "encoding=%r" % encoding)
 
     def test_seek(self):
         # all codecs should be able to encode these
@@ -2335,7 +2431,7 @@ transform_aliases = {
 try:
     import zlib
 except ImportError:
-    pass
+    zlib = None
 else:
     bytes_transform_encodings.append("zlib_codec")
     transform_aliases["zlib_codec"] = ["zip", "zlib"]
@@ -2370,8 +2466,6 @@ class TransformCodecTest(unittest.TestCase):
 
     def test_readline(self):
         for encoding in bytes_transform_encodings:
-            if encoding in ['uu_codec', 'zlib_codec']:
-                continue
             with self.subTest(encoding=encoding):
                 sin = codecs.encode(b"\x80", encoding)
                 reader = codecs.getreader(encoding)(io.BytesIO(sin))
@@ -2440,6 +2534,7 @@ class TransformCodecTest(unittest.TestCase):
                     bad_input.decode("rot_13")
                 self.assertIsNone(failure.exception.__cause__)
 
+    @unittest.skipUnless(zlib, "Requires zlib support")
     def test_custom_zlib_error_is_wrapped(self):
         # Check zlib codec gives a good error for malformed input
         msg = "^decoding with 'zlib_codec' codec failed"
@@ -2521,6 +2616,7 @@ class ExceptionChainingTest(unittest.TestCase):
         with self.assertRaisesRegex(exc_type, full_msg) as caught:
             yield caught
         self.assertIsInstance(caught.exception.__cause__, exc_type)
+        self.assertIsNotNone(caught.exception.__cause__.__traceback__)
 
     def raise_obj(self, *args, **kwds):
         # Helper to dynamically change the object raised by a test codec

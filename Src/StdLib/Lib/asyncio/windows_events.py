@@ -1,11 +1,11 @@
-"""Selector and proactor eventloops for Windows."""
+"""Selector and proactor event loops for Windows."""
 
-import errno
-import socket
-import subprocess
-import weakref
-import struct
 import _winapi
+import errno
+import math
+import socket
+import struct
+import weakref
 
 from . import events
 from . import base_subprocess
@@ -155,9 +155,13 @@ class ProactorEventLoop(proactor_events.BaseProactorEventLoop):
                 if pipe is None:
                     return
                 f = self._proactor.accept_pipe(pipe)
-            except OSError:
+            except OSError as exc:
                 if pipe and pipe.fileno() != -1:
-                    logger.exception('Pipe accept failed')
+                    self.call_exception_handler({
+                        'message': 'Pipe accept failed',
+                        'exception': exc,
+                        'pipe': pipe,
+                    })
                     pipe.close()
             except futures.CancelledError:
                 if pipe:
@@ -168,21 +172,15 @@ class ProactorEventLoop(proactor_events.BaseProactorEventLoop):
         self.call_soon(loop)
         return [server]
 
-    def _stop_serving(self, server):
-        server.close()
-
     @tasks.coroutine
     def _make_subprocess_transport(self, protocol, args, shell,
                                    stdin, stdout, stderr, bufsize,
                                    extra=None, **kwargs):
         transp = _WindowsSubprocessTransport(self, protocol, args, shell,
                                              stdin, stdout, stderr, bufsize,
-                                             extra=None, **kwargs)
+                                             extra=extra, **kwargs)
         yield from transp._post_init()
         return transp
-
-    def _subprocess_closed(self, transport):
-        pass
 
 
 class IocpProactor:
@@ -260,7 +258,19 @@ class IocpProactor:
             conn.settimeout(listener.gettimeout())
             return conn, conn.getpeername()
 
-        return self._register(ov, listener, finish_accept)
+        @tasks.coroutine
+        def accept_coro(future, conn):
+            # Coroutine closing the accept socket if the future is cancelled
+            try:
+                yield from future
+            except futures.CancelledError:
+                conn.close()
+                raise
+
+        future = self._register(ov, listener, finish_accept)
+        coro = accept_coro(future, conn)
+        tasks.async(coro, loop=self._loop)
+        return future
 
     def connect(self, conn, address):
         self._register_with_iocp(conn)
@@ -319,7 +329,9 @@ class IocpProactor:
         if timeout is None:
             ms = _winapi.INFINITE
         else:
-            ms = int(timeout * 1000 + 0.5)
+            # RegisterWaitForSingleObject() has a resolution of 1 millisecond,
+            # round away from zero to wait *at least* timeout seconds.
+            ms = math.ceil(timeout * 1e3)
 
         # We only create ov so we can use ov.address as a key for the cache.
         ov = _overlapped.Overlapped(NULL)
@@ -390,7 +402,9 @@ class IocpProactor:
         elif timeout < 0:
             raise ValueError("negative timeout")
         else:
-            ms = int(timeout * 1000 + 0.5)
+            # GetQueuedCompletionStatus() has a resolution of 1 millisecond,
+            # round away from zero to wait *at least* timeout seconds.
+            ms = math.ceil(timeout * 1e3)
             if ms >= INFINITE:
                 raise ValueError("timeout too big")
         while True:

@@ -16,6 +16,7 @@ import stat
 import sys
 import types
 import unittest
+import warnings
 
 from test.support import make_legacy_pyc, unload
 
@@ -27,6 +28,11 @@ class SimpleTest(abc.LoaderTests):
 
     """
 
+    def setUp(self):
+        self.name = 'spam'
+        self.filepath = os.path.join('ham', self.name + '.py')
+        self.loader = self.machinery.SourceFileLoader(self.name, self.filepath)
+
     def test_load_module_API(self):
         class Tester(self.abc.FileLoader):
             def get_source(self, _): return 'attr = 42'
@@ -34,7 +40,9 @@ class SimpleTest(abc.LoaderTests):
 
         loader = Tester('blah', 'blah.py')
         self.addCleanup(unload, 'blah')
-        module = loader.load_module()  # Should not raise an exception.
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', DeprecationWarning)
+            module = loader.load_module()  # Should not raise an exception.
 
     def test_get_filename_API(self):
         # If fullname is not set then assume self.path is desired.
@@ -53,11 +61,21 @@ class SimpleTest(abc.LoaderTests):
         with self.assertRaises(ImportError):
             loader.get_filename(name + 'XXX')
 
+    def test_equality(self):
+        other = self.machinery.SourceFileLoader(self.name, self.filepath)
+        self.assertEqual(self.loader, other)
+
+    def test_inequality(self):
+        other = self.machinery.SourceFileLoader('_' + self.name, self.filepath)
+        self.assertNotEqual(self.loader, other)
+
     # [basic]
     def test_module(self):
         with source_util.create_modules('_temp') as mapping:
             loader = self.machinery.SourceFileLoader('_temp', mapping['_temp'])
-            module = loader.load_module('_temp')
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', DeprecationWarning)
+                module = loader.load_module('_temp')
             self.assertIn('_temp', sys.modules)
             check = {'__name__': '_temp', '__file__': mapping['_temp'],
                      '__package__': ''}
@@ -68,7 +86,9 @@ class SimpleTest(abc.LoaderTests):
         with source_util.create_modules('_pkg.__init__') as mapping:
             loader = self.machinery.SourceFileLoader('_pkg',
                                                  mapping['_pkg.__init__'])
-            module = loader.load_module('_pkg')
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', DeprecationWarning)
+                module = loader.load_module('_pkg')
             self.assertIn('_pkg', sys.modules)
             check = {'__name__': '_pkg', '__file__': mapping['_pkg.__init__'],
                      '__path__': [os.path.dirname(mapping['_pkg.__init__'])],
@@ -81,7 +101,9 @@ class SimpleTest(abc.LoaderTests):
         with source_util.create_modules('_pkg.__init__', '_pkg.mod')as mapping:
             loader = self.machinery.SourceFileLoader('_pkg.mod',
                                                     mapping['_pkg.mod'])
-            module = loader.load_module('_pkg.mod')
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', DeprecationWarning)
+                module = loader.load_module('_pkg.mod')
             self.assertIn('_pkg.mod', sys.modules)
             check = {'__name__': '_pkg.mod', '__file__': mapping['_pkg.mod'],
                      '__package__': '_pkg'}
@@ -95,12 +117,16 @@ class SimpleTest(abc.LoaderTests):
     def test_module_reuse(self):
         with source_util.create_modules('_temp') as mapping:
             loader = self.machinery.SourceFileLoader('_temp', mapping['_temp'])
-            module = loader.load_module('_temp')
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', DeprecationWarning)
+                module = loader.load_module('_temp')
             module_id = id(module)
             module_dict_id = id(module.__dict__)
             with open(mapping['_temp'], 'w') as file:
                 file.write("testing_var = 42\n")
-            module = loader.load_module('_temp')
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', DeprecationWarning)
+                module = loader.load_module('_temp')
             self.assertIn('testing_var', module.__dict__,
                          "'testing_var' not in "
                             "{0}".format(list(module.__dict__.keys())))
@@ -125,7 +151,9 @@ class SimpleTest(abc.LoaderTests):
             for attr in attributes:
                 self.assertEqual(getattr(orig_module, attr), value)
             with self.assertRaises(SyntaxError):
-                loader.load_module(name)
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore', DeprecationWarning)
+                    loader.load_module(name)
             for attr in attributes:
                 self.assertEqual(getattr(orig_module, attr), value)
 
@@ -136,7 +164,9 @@ class SimpleTest(abc.LoaderTests):
                 file.write('=')
             loader = self.machinery.SourceFileLoader('_temp', mapping['_temp'])
             with self.assertRaises(SyntaxError):
-                loader.load_module('_temp')
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore', DeprecationWarning)
+                    loader.load_module('_temp')
             self.assertNotIn('_temp', sys.modules)
 
     def test_file_from_empty_string_dir(self):
@@ -148,7 +178,9 @@ class SimpleTest(abc.LoaderTests):
         try:
             with util.uncache('_temp'):
                 loader = self.machinery.SourceFileLoader('_temp', file_path)
-                mod = loader.load_module('_temp')
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore', DeprecationWarning)
+                    mod = loader.load_module('_temp')
                 self.assertEqual(file_path, mod.__file__)
                 self.assertEqual(self.util.cache_from_source(file_path),
                                  mod.__cached__)
@@ -183,7 +215,9 @@ class SimpleTest(abc.LoaderTests):
             self.assertTrue(os.path.exists(compiled))
             os.unlink(compiled)
             # PEP 302
-            mod = loader.load_module('_temp') # XXX
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', DeprecationWarning)
+                mod = loader.load_module('_temp') # XXX
             # Sanity checks.
             self.assertEqual(mod.__cached__, compiled)
             self.assertEqual(mod.x, 5)
@@ -197,7 +231,9 @@ class SimpleTest(abc.LoaderTests):
         with self.assertRaises(ImportError):
             loader.exec_module(module)
         with self.assertRaises(ImportError):
-            loader.load_module('bad name')
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', DeprecationWarning)
+                loader.load_module('bad name')
 
 Frozen_SimpleTest, Source_SimpleTest = util.test_both(
         SimpleTest, importlib=importlib, machinery=machinery, abc=importlib_abc,
@@ -208,7 +244,10 @@ class BadBytecodeTest:
 
     def import_(self, file, module_name):
         loader = self.loader(module_name, file)
-        module = loader.load_module(module_name)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', DeprecationWarning)
+            # XXX Change to use exec_module().
+            module = loader.load_module(module_name)
         self.assertIn(module_name, sys.modules)
 
     def manipulate_bytecode(self, name, mapping, manipulator, *,
@@ -319,7 +358,9 @@ class BadBytecodeTestPEP302(BadBytecodeTest):
 
     def import_(self, file, module_name):
         loader = self.loader(module_name, file)
-        module = loader.load_module(module_name)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', DeprecationWarning)
+            module = loader.load_module(module_name)
         self.assertIn(module_name, sys.modules)
 
 

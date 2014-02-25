@@ -7,7 +7,7 @@ This module allows high-level and efficient I/O multiplexing, built upon the
 
 from abc import ABCMeta, abstractmethod
 from collections import namedtuple, Mapping
-import functools
+import math
 import select
 import sys
 
@@ -79,7 +79,7 @@ class BaseSelector(metaclass=ABCMeta):
 
     A selector can use various implementations (select(), poll(), epoll()...)
     depending on the platform. The default `Selector` class uses the most
-    performant implementation on the current platform.
+    efficient implementation on the current platform.
     """
 
     @abstractmethod
@@ -351,7 +351,14 @@ if hasattr(select, 'poll'):
             return key
 
         def select(self, timeout=None):
-            timeout = None if timeout is None else max(int(1000 * timeout), 0)
+            if timeout is None:
+                timeout = None
+            elif timeout <= 0:
+                timeout = 0
+            else:
+                # poll() has a resolution of 1 millisecond, round away from
+                # zero to wait *at least* timeout seconds.
+                timeout = math.ceil(timeout * 1e3)
             ready = []
             try:
                 fd_event_list = self._poll.poll(timeout)
@@ -403,7 +410,14 @@ if hasattr(select, 'epoll'):
             return key
 
         def select(self, timeout=None):
-            timeout = -1 if timeout is None else max(timeout, 0)
+            if timeout is None:
+                timeout = -1
+            elif timeout <= 0:
+                timeout = 0
+            else:
+                # epoll_wait() has a resolution of 1 millisecond, round away
+                # from zero to wait *at least* timeout seconds.
+                timeout = math.ceil(timeout * 1e3) * 1e-3
             max_ev = len(self._fd_to_key)
             ready = []
             try:

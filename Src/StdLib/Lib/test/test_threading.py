@@ -3,7 +3,7 @@ Tests for the threading module.
 """
 
 import test.support
-from test.support import verbose, strip_python_stderr, import_module
+from test.support import verbose, strip_python_stderr, import_module, cpython_only
 from test.script_helper import assert_python_ok
 
 import random
@@ -11,7 +11,6 @@ import re
 import sys
 _thread = import_module('_thread')
 threading = import_module('threading')
-import _testcapi
 import time
 import unittest
 import weakref
@@ -617,51 +616,7 @@ class ThreadTests(BaseTestCase):
                 t.join()
             self.assertRaises(ValueError, bs.release)
 
-    def test_locals_at_exit(self):
-        # Issue #19466: thread locals must not be deleted before destructors
-        # are called
-        rc, out, err = assert_python_ok("-c", """if 1:
-            import threading
-
-            class Atexit:
-                def __del__(self):
-                    print("thread_dict.atexit = %r" % thread_dict.atexit)
-
-            thread_dict = threading.local()
-            thread_dict.atexit = "atexit"
-
-            atexit = Atexit()
-        """)
-        self.assertEqual(out.rstrip(), b"thread_dict.atexit = 'atexit'")
-
-    def test_warnings_at_exit(self):
-        # Issue #19466: try to call most destructors at Python shutdown before
-        # destroying Python thread states
-        filename = __file__
-        rc, out, err = assert_python_ok("-Wd", "-c", """if 1:
-            import time
-            import threading
-
-            def open_sleep():
-                # a warning will be emitted when the open file will be
-                # destroyed (without being explicitly closed) while the daemon
-                # thread is destroyed
-                fileobj = open(%a, 'rb')
-                start_event.set()
-                time.sleep(60.0)
-
-            start_event = threading.Event()
-
-            thread = threading.Thread(target=open_sleep)
-            thread.daemon = True
-            thread.start()
-
-            # wait until the thread started
-            start_event.wait()
-        """ % filename)
-        self.assertRegex(err.rstrip(),
-                         b"^sys:1: ResourceWarning: unclosed file ")
-
+    @cpython_only
     def test_frame_tstate_tracing(self):
         # Issue #14432: Crash when a generator is created in a C thread that is
         # destroyed while the generator is still used. The issue was that a
@@ -690,6 +645,7 @@ class ThreadTests(BaseTestCase):
             threading.settrace(noop_trace)
 
             # Create a generator in a C thread which exits after the call
+            import _testcapi
             _testcapi.call_in_temporary_c_thread(callback)
 
             # Call the generator in a different Python thread, check that the
@@ -785,10 +741,6 @@ class ThreadJoinOnShutdown(BaseTestCase):
             import sys
             import time
             import threading
-            import warnings
-
-            # ignore "unclosed file ..." warnings
-            warnings.filterwarnings('ignore', '', ResourceWarning)
 
             thread_has_run = set()
 
@@ -928,6 +880,7 @@ class SubinterpThreadingTests(BaseTestCase):
         # The thread was joined properly.
         self.assertEqual(os.read(r, 1), b"x")
 
+    @cpython_only
     def test_daemon_threads_fatal_error(self):
         subinterp_code = r"""if 1:
             import os

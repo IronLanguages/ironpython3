@@ -17,6 +17,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <LibOutputDir>$(OutputPath)\Lib</LibOutputDir>
     <ExcludedPackages>
       Lib\idlelib\**\*.*;
       Lib\tkinter\**\*.*;
@@ -35,12 +36,21 @@
 
   <Import Project="$(MSBuildBinPath)\Microsoft.Common.targets" />
 
-  <Target Name="Build" DependsOnTargets="_CopyDeployFilesToOutputDirectory" />
-  <Target Name="Clean">
-    <RemoveDir Directories="$(OutputPath)\Lib" />
+  <Target Name="_CopyToOutput">
+    <Copy SourceFiles="@(Content)"
+          DestinationFiles="@(Content->'$(LibOutputDir)\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
   </Target>
+  
+  <Target Name="Build" DependsOnTargets="_CopyToOutput" />
+  
+  <Target Name="Clean">
+    <RemoveDir Directories="$(LibOutputDir)" />
+  </Target>
+  
   <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
 
-  <Target Name="Stage" DependsOnTargets="_CopyDeployFilesToOutputDirectory" />
+  <Target Name="Stage" DependsOnTargets="Build" />
 </Project>
 

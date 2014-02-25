@@ -7,7 +7,7 @@
     <!-- These are normally set by Build.proj, except when building from VS. -->
     <RootDir Condition=" '$(RootDir)' == '' ">$(MSBuildThisFileDirectory)..</RootDir>
     <BuildSysDir Condition=" '$(BuildSysDir)' == '' ">$(RootDir)\Build</BuildSysDir>
-    <DlrVersion>1.5.0</DlrVersion>
+    <DlrVersion>1.2.0-alpha0</DlrVersion>
 
     <Mono Condition=" '$(Mono)' == '' and '$(OS)' != 'Windows_NT'">true</Mono>
     
@@ -56,25 +56,15 @@
   <PropertyGroup Condition="'$(ReferencedPlatform)' == ''">
     <ReferencedPlatform>net40</ReferencedPlatform>
     <ReferencedPlatform
-        Condition="'$(Configuration)' == 'v2Release' or '$(Configuration)' == 'v2Debug'">
-      net35
-    </ReferencedPlatform>
+        Condition="'$(Configuration)' == 'v2Release' or '$(Configuration)' == 'v2Debug'">net35</ReferencedPlatform>
     <ReferencedPlatform
-        Condition="'$(Configuration)' == 'v45Release' or '$(Configuration)' == 'v45Debug'">
-      net45
-    </ReferencedPlatform>
+        Condition="'$(Configuration)' == 'v45Release' or '$(Configuration)' == 'v45Debug'">net45</ReferencedPlatform>
     <ReferencedPlatform
-        Condition="'$(Configuration)' == 'Win8Release' or '$(Configuration)' == 'Win8Debug'">
-      wincore45
-    </ReferencedPlatform>
+        Condition="'$(Configuration)' == 'Win8Release' or '$(Configuration)' == 'Win8Debug'">wincore45</ReferencedPlatform>
     <ReferencedPlatform
-        Condition="'$(Configuration)' == 'Silverlight5Release' or '$(Configuration)' == 'Silverlight5Debug'">
-      sl5
-    </ReferencedPlatform>
+        Condition="'$(Configuration)' == 'Silverlight5Release' or '$(Configuration)' == 'Silverlight5Debug'">sl5</ReferencedPlatform>
     <ReferencedPlatform
-        Condition="'$(Configuration)' == 'AndroidRelease' or '$(Configuration)' == 'AndroidDebug'">
-      android
-    </ReferencedPlatform>
+        Condition="'$(Configuration)' == 'AndroidRelease' or '$(Configuration)' == 'AndroidDebug'">android</ReferencedPlatform>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Mono)' == 'true'">

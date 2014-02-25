@@ -20,7 +20,7 @@ pyrepo=$1
 hgrev=$(hg -R "$pyrepo" id -i)
 stdlibdir=$(dirname $0)
 
-rsync -qcr --delete --exclude="plat-*" ~/repos/cpython/Lib "$stdlibdir"
+rsync -qcr --delete --exclude="plat-*" --exclude="__pycache__" --exclude="*.pyc" ~/repos/cpython/Lib "$stdlibdir"
 
 git update-index --refresh -q > /dev/null
 git add -A "$stdlibdir/Lib"

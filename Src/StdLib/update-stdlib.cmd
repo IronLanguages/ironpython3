@@ -25,7 +25,7 @@ if "%_curbranch%" NEQ "python-stdlib" (
     goto :fail
 )
 
-robocopy "%_pyrepo%\Lib" "%_stdlibdir%Lib" /MIR /R:1 /W:1 /XD plat-*
+robocopy "%_pyrepo%\Lib" "%_stdlibdir%Lib" /MIR /R:1 /W:1 /XD plat-* /XD __pycache__ /XF *.pyc
 
 git update-index --refresh -q > NUL
 git add -A "%_stdlibdir%/Lib"

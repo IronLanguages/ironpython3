@@ -295,8 +295,8 @@ namespace IronPython.Runtime {
                     path.append(Path.Combine(entry, "DLLs"));
 
 #if DEBUG
-                    // For developer use, add External.LCA_RESTRICTED/Languages/IronPython/27/Lib
-                    string devStdLib = Path.Combine(entry, @"../../External.LCA_RESTRICTED/Languages/IronPython/27/Lib");
+                    // For developer use, add Src/StdLib/Lib
+                    string devStdLib = Path.Combine(entry, @"../../Src/StdLib/Lib");
                     if (Directory.Exists(devStdLib))
                         path.append(devStdLib);
 #endif

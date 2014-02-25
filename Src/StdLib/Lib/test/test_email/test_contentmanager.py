@@ -208,11 +208,12 @@ class TestRawDataManager(TestEmailBase):
                          "Basìc tëxt.\n")
 
     def test_get_text_plain_utf8_base64_recoverable_bad_CTE_data(self):
-        m = self._bytes_msg(textwrap.dedent("""\
+        m = self._str_msg(textwrap.dedent("""\
             Content-Type: text/plain; charset="utf8"
             Content-Transfer-Encoding: base64
 
-            QmFzw6xjIHTDq3h0Lgo""").encode('ascii') + b'\xFF=\n')
+            QmFzw6xjIHTDq3h0Lgo\xFF=
+            """))
         self.assertEqual(raw_data_manager.get_content(m, errors='ignore'),
                          "Basìc tëxt.\n")
 
@@ -535,8 +536,8 @@ class TestRawDataManager(TestEmailBase):
             From: victim@monty.org
             Subject: Help
             Content-Type: text/plain; charset="utf-8"
-            MIME-Version: 1.0
             Content-Transfer-Encoding: base64
+            MIME-Version: 1.0
 
             aidhaSB1biBwcm9ibMOobWUgZGUgcHl0aG9uLiBpbCBlc3Qgc29ydGkgZGUgc29uIHZpdmFyaXVt
             Lgo=

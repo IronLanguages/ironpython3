@@ -303,12 +303,6 @@ class Message:
         """
         if hasattr(payload, 'encode'):
             if charset is None:
-                try:
-                    payload.encode('ascii', 'surrogateescape')
-                except UnicodeError:
-                    raise TypeError("charset argument must be specified"
-                        " when non-ASCII characters are used in the"
-                        " payload") from None
                 self._payload = payload
                 return
             if not isinstance(charset, Charset):
@@ -356,7 +350,16 @@ class Message:
             try:
                 cte(self)
             except TypeError:
-                self._payload = charset.body_encode(self.get_payload(decode=True))
+                # This 'if' is for backward compatibility, it allows unicode
+                # through even though that won't work correctly if the
+                # message is serialized.
+                payload = self._payload
+                if payload:
+                    try:
+                        payload = payload.encode('ascii', 'surrogateescape')
+                    except UnicodeError:
+                        payload = payload.encode(charset.output_charset)
+                self._payload = charset.body_encode(payload)
                 self.add_header('Content-Transfer-Encoding', cte)
 
     def get_charset(self):

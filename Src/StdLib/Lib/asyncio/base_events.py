@@ -41,6 +41,34 @@ class _StopError(BaseException):
     """Raised to stop the event loop."""
 
 
+def _check_resolved_address(sock, address):
+    # Ensure that the address is already resolved to avoid the trap of hanging
+    # the entire event loop when the address requires doing a DNS lookup.
+    family = sock.family
+    if family == socket.AF_INET:
+        host, port = address
+    elif family == socket.AF_INET6:
+        host, port = address[:2]
+    else:
+        return
+
+    type_mask = 0
+    if hasattr(socket, 'SOCK_NONBLOCK'):
+        type_mask |= socket.SOCK_NONBLOCK
+    if hasattr(socket, 'SOCK_CLOEXEC'):
+        type_mask |= socket.SOCK_CLOEXEC
+    # Use getaddrinfo(AI_NUMERICHOST) to ensure that the address is
+    # already resolved.
+    try:
+        socket.getaddrinfo(host, port,
+                           family=family,
+                           type=(sock.type & ~type_mask),
+                           proto=sock.proto,
+                           flags=socket.AI_NUMERICHOST)
+    except socket.gaierror as err:
+        raise ValueError("address must be resolved (IP address), got %r: %s"
+                         % (address, err))
+
 def _raise_stop_error(*args):
     raise _StopError
 
@@ -96,6 +124,9 @@ class BaseEventLoop(events.AbstractEventLoop):
         self._default_executor = None
         self._internal_fds = 0
         self._running = False
+        self._clock_resolution = time.get_clock_info('monotonic').resolution
+        self._exception_handler = None
+        self._debug = False
 
     def _make_socket_transport(self, sock, protocol, waiter=None, *,
                                extra=None, server=None):
@@ -226,7 +257,9 @@ class BaseEventLoop(events.AbstractEventLoop):
 
     def call_at(self, when, callback, *args):
         """Like call_later(), but uses an absolute time."""
-        timer = events.TimerHandle(when, callback, args)
+        if tasks.iscoroutinefunction(callback):
+            raise TypeError("coroutines cannot be used with call_at()")
+        timer = events.TimerHandle(when, callback, args, self)
         heapq.heappush(self._scheduled, timer)
         return timer
 
@@ -240,7 +273,9 @@ class BaseEventLoop(events.AbstractEventLoop):
         Any positional arguments after the callback will be passed to
         the callback when it is called.
         """
-        handle = events.make_handle(callback, args)
+        if tasks.iscoroutinefunction(callback):
+            raise TypeError("coroutines cannot be used with call_soon()")
+        handle = events.Handle(callback, args, self)
         self._ready.append(handle)
         return handle
 
@@ -251,6 +286,8 @@ class BaseEventLoop(events.AbstractEventLoop):
         return handle
 
     def run_in_executor(self, executor, callback, *args):
+        if tasks.iscoroutinefunction(callback):
+            raise TypeError("coroutines cannot be used with run_in_executor()")
         if isinstance(callback, events.Handle):
             assert not args
             assert not isinstance(callback, events.TimerHandle)
@@ -375,6 +412,13 @@ class BaseEventLoop(events.AbstractEventLoop):
 
         sock.setblocking(False)
 
+        transport, protocol = yield from self._create_connection_transport(
+            sock, protocol_factory, ssl, server_hostname)
+        return transport, protocol
+
+    @tasks.coroutine
+    def _create_connection_transport(self, sock, protocol_factory, ssl,
+                                     server_hostname):
         protocol = protocol_factory()
         waiter = futures.Future(loop=self)
         if ssl:
@@ -551,25 +595,132 @@ class BaseEventLoop(events.AbstractEventLoop):
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                          universal_newlines=False, shell=True, bufsize=0,
                          **kwargs):
-        assert not universal_newlines, "universal_newlines must be False"
-        assert shell, "shell must be True"
-        assert isinstance(cmd, str), cmd
+        if not isinstance(cmd, (bytes, str)):
+            raise ValueError("cmd must be a string")
+        if universal_newlines:
+            raise ValueError("universal_newlines must be False")
+        if not shell:
+            raise ValueError("shell must be True")
+        if bufsize != 0:
+            raise ValueError("bufsize must be 0")
         protocol = protocol_factory()
         transport = yield from self._make_subprocess_transport(
             protocol, cmd, True, stdin, stdout, stderr, bufsize, **kwargs)
         return transport, protocol
 
     @tasks.coroutine
-    def subprocess_exec(self, protocol_factory, *args, stdin=subprocess.PIPE,
-                        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                        universal_newlines=False, shell=False, bufsize=0,
-                        **kwargs):
-        assert not universal_newlines, "universal_newlines must be False"
-        assert not shell, "shell must be False"
+    def subprocess_exec(self, protocol_factory, program, *args,
+                        stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE, universal_newlines=False,
+                        shell=False, bufsize=0, **kwargs):
+        if universal_newlines:
+            raise ValueError("universal_newlines must be False")
+        if shell:
+            raise ValueError("shell must be False")
+        if bufsize != 0:
+            raise ValueError("bufsize must be 0")
+        popen_args = (program,) + args
+        for arg in popen_args:
+            if not isinstance(arg, (str, bytes)):
+                raise TypeError("program arguments must be "
+                                "a bytes or text string, not %s"
+                                % type(arg).__name__)
         protocol = protocol_factory()
         transport = yield from self._make_subprocess_transport(
-            protocol, args, False, stdin, stdout, stderr, bufsize, **kwargs)
+            protocol, popen_args, False, stdin, stdout, stderr,
+            bufsize, **kwargs)
         return transport, protocol
+
+    def set_exception_handler(self, handler):
+        """Set handler as the new event loop exception handler.
+
+        If handler is None, the default exception handler will
+        be set.
+
+        If handler is a callable object, it should have a
+        matching signature to '(loop, context)', where 'loop'
+        will be a reference to the active event loop, 'context'
+        will be a dict object (see `call_exception_handler()`
+        documentation for details about context).
+        """
+        if handler is not None and not callable(handler):
+            raise TypeError('A callable object or None is expected, '
+                            'got {!r}'.format(handler))
+        self._exception_handler = handler
+
+    def default_exception_handler(self, context):
+        """Default exception handler.
+
+        This is called when an exception occurs and no exception
+        handler is set, and can be called by a custom exception
+        handler that wants to defer to the default behavior.
+
+        context parameter has the same meaning as in
+        `call_exception_handler()`.
+        """
+        message = context.get('message')
+        if not message:
+            message = 'Unhandled exception in event loop'
+
+        exception = context.get('exception')
+        if exception is not None:
+            exc_info = (type(exception), exception, exception.__traceback__)
+        else:
+            exc_info = False
+
+        log_lines = [message]
+        for key in sorted(context):
+            if key in {'message', 'exception'}:
+                continue
+            log_lines.append('{}: {!r}'.format(key, context[key]))
+
+        logger.error('\n'.join(log_lines), exc_info=exc_info)
+
+    def call_exception_handler(self, context):
+        """Call the current event loop exception handler.
+
+        context is a dict object containing the following keys
+        (new keys maybe introduced later):
+        - 'message': Error message;
+        - 'exception' (optional): Exception object;
+        - 'future' (optional): Future instance;
+        - 'handle' (optional): Handle instance;
+        - 'protocol' (optional): Protocol instance;
+        - 'transport' (optional): Transport instance;
+        - 'socket' (optional): Socket instance.
+
+        Note: this method should not be overloaded in subclassed
+        event loops.  For any custom exception handling, use
+        `set_exception_handler()` method.
+        """
+        if self._exception_handler is None:
+            try:
+                self.default_exception_handler(context)
+            except Exception:
+                # Second protection layer for unexpected errors
+                # in the default implementation, as well as for subclassed
+                # event loops with overloaded "default_exception_handler".
+                logger.error('Exception in default exception handler',
+                             exc_info=True)
+        else:
+            try:
+                self._exception_handler(self, context)
+            except Exception as exc:
+                # Exception in the user set custom exception handler.
+                try:
+                    # Let's try default handler.
+                    self.default_exception_handler({
+                        'message': 'Unhandled error in exception handler',
+                        'exception': exc,
+                        'context': context,
+                    })
+                except Exception:
+                    # Guard 'default_exception_handler' in case it's
+                    # overloaded.
+                    logger.error('Exception in default exception handler '
+                                 'while handling an unexpected error '
+                                 'in custom exception handler',
+                                 exc_info=True)
 
     def _add_callback(self, handle):
         """Add a Handle to ready or scheduled."""
@@ -610,22 +761,28 @@ class BaseEventLoop(events.AbstractEventLoop):
                 timeout = min(timeout, deadline)
 
         # TODO: Instrumentation only in debug mode?
-        t0 = self.time()
-        event_list = self._selector.select(timeout)
-        t1 = self.time()
-        argstr = '' if timeout is None else '{:.3f}'.format(timeout)
-        if t1-t0 >= 1:
-            level = logging.INFO
+        if logger.isEnabledFor(logging.INFO):
+            t0 = self.time()
+            event_list = self._selector.select(timeout)
+            t1 = self.time()
+            if t1-t0 >= 1:
+                level = logging.INFO
+            else:
+                level = logging.DEBUG
+            if timeout is not None:
+                logger.log(level, 'poll %.3f took %.3f seconds',
+                           timeout, t1-t0)
+            else:
+                logger.log(level, 'poll took %.3f seconds', t1-t0)
         else:
-            level = logging.DEBUG
-        logger.log(level, 'poll%s took %.3f seconds', argstr, t1-t0)
+            event_list = self._selector.select(timeout)
         self._process_events(event_list)
 
         # Handle 'later' callbacks that are ready.
-        now = self.time()
+        end_time = self.time() + self._clock_resolution
         while self._scheduled:
             handle = self._scheduled[0]
-            if handle._when > now:
+            if handle._when >= end_time:
                 break
             handle = heapq.heappop(self._scheduled)
             self._ready.append(handle)
@@ -642,3 +799,9 @@ class BaseEventLoop(events.AbstractEventLoop):
             if not handle._cancelled:
                 handle._run()
         handle = None  # Needed to break cycles when an exception occurs.
+
+    def get_debug(self):
+        return self._debug
+
+    def set_debug(self, enabled):
+        self._debug = enabled

@@ -47,7 +47,6 @@ class TestEPoll(unittest.TestCase):
         self.serverSocket.listen(1)
         self.connections = [self.serverSocket]
 
-
     def tearDown(self):
         for skt in self.connections:
             skt.close()

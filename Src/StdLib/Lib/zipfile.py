@@ -475,13 +475,15 @@ class _ZipDecrypter:
                     crc = ((crc >> 1) & 0x7FFFFFFF)
             table[i] = crc
         return table
-    crctable = _GenerateCRCTable()
+    crctable = None
 
     def _crc32(self, ch, crc):
         """Compute the CRC32 primitive on one byte."""
         return ((crc >> 8) & 0xffffff) ^ self.crctable[(crc ^ ch) & 0xff]
 
     def __init__(self, pwd):
+        if _ZipDecrypter.crctable is None:
+            _ZipDecrypter.crctable = _ZipDecrypter._GenerateCRCTable()
         self.key0 = 305419896
         self.key1 = 591751049
         self.key2 = 878082192
@@ -860,6 +862,8 @@ class ZipExtFile(io.BufferedIOBase):
 
         data = self._fileobj.read(n)
         self._compress_left -= len(data)
+        if not data:
+            raise EOFError
 
         if self._decrypter is not None:
             data = bytes(map(self._decrypter, data))
@@ -1100,10 +1104,10 @@ class ZipFile:
         if not isinstance(comment, bytes):
             raise TypeError("comment: expected bytes, got %s" % type(comment))
         # check for valid comment length
-        if len(comment) >= ZIP_MAX_COMMENT:
-            if self.debug:
-                print('Archive comment is too long; truncating to %d bytes'
-                      % ZIP_MAX_COMMENT)
+        if len(comment) > ZIP_MAX_COMMENT:
+            import warnings
+            warnings.warn('Archive comment is too long; truncating to %d bytes'
+                          % ZIP_MAX_COMMENT, stacklevel=2)
             comment = comment[:ZIP_MAX_COMMENT]
         self._comment = comment
         self._didModify = True
@@ -1292,8 +1296,8 @@ class ZipFile:
     def _writecheck(self, zinfo):
         """Check for errors before writing a file to the archive."""
         if zinfo.filename in self.NameToInfo:
-            if self.debug:      # Warning for duplicate names
-                print("Duplicate name:", zinfo.filename)
+            import warnings
+            warnings.warn('Duplicate name: %r' % zinfo.filename, stacklevel=3)
         if self.mode not in ("w", "a"):
             raise RuntimeError('write() requires mode "w" or "a"')
         if not self.fp:

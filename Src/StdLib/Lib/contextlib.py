@@ -298,11 +298,17 @@ class ExitStack(object):
         # we were actually nesting multiple with statements
         frame_exc = sys.exc_info()[1]
         def _fix_exception_context(new_exc, old_exc):
+            # Context may not be correct, so find the end of the chain
             while 1:
                 exc_context = new_exc.__context__
-                if exc_context in (None, frame_exc):
+                if exc_context is old_exc:
+                    # Context is already set correctly (see issue 20317)
+                    return
+                if exc_context is None or exc_context is frame_exc:
                     break
                 new_exc = exc_context
+            # Change the end of the chain to point to the exception
+            # we expect it to reference
             new_exc.__context__ = old_exc
 
         # Callbacks are invoked in LIFO order to match the behaviour of

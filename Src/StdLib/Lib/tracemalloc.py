@@ -1,6 +1,7 @@
 from collections import Sequence
 from functools import total_ordering
 import fnmatch
+import linecache
 import os.path
 import pickle
 
@@ -182,8 +183,10 @@ class Traceback(Sequence):
         return len(self._frames)
 
     def __getitem__(self, index):
-        trace = self._frames[index]
-        return Frame(trace)
+        if isinstance(index, slice):
+            return tuple(Frame(trace) for trace in self._frames[index])
+        else:
+            return Frame(self._frames[index])
 
     def __contains__(self, frame):
         return frame._frame in self._frames
@@ -202,6 +205,18 @@ class Traceback(Sequence):
 
     def __repr__(self):
         return "<Traceback %r>" % (tuple(self),)
+
+    def format(self, limit=None):
+        lines = []
+        if limit is not None and limit < 0:
+            return lines
+        for frame in self[:limit]:
+            lines.append('  File "%s", line %s'
+                         % (frame.filename, frame.lineno))
+            line = linecache.getline(frame.filename, frame.lineno).strip()
+            if line:
+                lines.append('    %s' % line)
+        return lines
 
 
 def get_object_traceback(obj):
@@ -259,8 +274,10 @@ class _Traces(Sequence):
         return len(self._traces)
 
     def __getitem__(self, index):
-        trace = self._traces[index]
-        return Trace(trace)
+        if isinstance(index, slice):
+            return tuple(Trace(trace) for trace in self._traces[index])
+        else:
+            return Trace(self._traces[index])
 
     def __contains__(self, trace):
         return trace._trace in self._traces

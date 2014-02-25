@@ -686,6 +686,58 @@ class DecimalToRatioTest(unittest.TestCase):
         for d in (Decimal('NAN'), Decimal('sNAN'), Decimal('INF')):
             self.assertRaises(ValueError, statistics._decimal_to_ratio, d)
 
+    def test_sign(self):
+        # Test sign is calculated correctly.
+        numbers = [Decimal("9.8765e12"), Decimal("9.8765e-12")]
+        for d in numbers:
+            # First test positive decimals.
+            assert d > 0
+            num, den = statistics._decimal_to_ratio(d)
+            self.assertGreaterEqual(num, 0)
+            self.assertGreater(den, 0)
+            # Then test negative decimals.
+            num, den = statistics._decimal_to_ratio(-d)
+            self.assertLessEqual(num, 0)
+            self.assertGreater(den, 0)
+
+    def test_negative_exponent(self):
+        # Test result when the exponent is negative.
+        t = statistics._decimal_to_ratio(Decimal("0.1234"))
+        self.assertEqual(t, (1234, 10000))
+
+    def test_positive_exponent(self):
+        # Test results when the exponent is positive.
+        t = statistics._decimal_to_ratio(Decimal("1.234e7"))
+        self.assertEqual(t, (12340000, 1))
+
+    def test_regression_20536(self):
+        # Regression test for issue 20536.
+        # See http://bugs.python.org/issue20536
+        t = statistics._decimal_to_ratio(Decimal("1e2"))
+        self.assertEqual(t, (100, 1))
+        t = statistics._decimal_to_ratio(Decimal("1.47e5"))
+        self.assertEqual(t, (147000, 1))
+
+
+class CheckTypeTest(unittest.TestCase):
+    # Test _check_type private function.
+
+    def test_allowed(self):
+        # Test that a type which should be allowed is allowed.
+        allowed = set([int, float])
+        statistics._check_type(int, allowed)
+        statistics._check_type(float, allowed)
+
+    def test_not_allowed(self):
+        # Test that a type which should not be allowed raises.
+        allowed = set([int, float])
+        self.assertRaises(TypeError, statistics._check_type, Decimal, allowed)
+
+    def test_add_to_allowed(self):
+        # Test that a second type will be added to the allowed set.
+        allowed = set([int])
+        statistics._check_type(float, allowed)
+        self.assertEqual(allowed, set([int, float]))
 
 
 # === Tests for public functions ===
@@ -881,40 +933,11 @@ class TestSum(NumericTestCase, UnivariateCommonMixin, UnivariateTypeMixin):
         self.assertRaises(TypeError, self.func, [1, 2, 3, b'999'])
 
     def test_mixed_sum(self):
-        # Mixed sums are allowed.
-
-        # Careful here: order matters. Can't mix Fraction and Decimal directly,
-        # only after they're converted to float.
-        data = [1, 2, Fraction(1, 2), 3.0, Decimal("0.25")]
-        self.assertEqual(self.func(data), 6.75)
-
-
-class SumInternalsTest(NumericTestCase):
-    # Test internals of the sum function.
-
-    def test_ignore_instance_float_method(self):
-        # Test that __float__ methods on data instances are ignored.
-
-        # Python typically calls __dunder__ methods on the class, not the
-        # instance. The ``sum`` implementation calls __float__ directly. To
-        # better match the behaviour of Python, we call it only on the class,
-        # not the instance. This test will fail if somebody "fixes" that code.
-
-        # Create a fake __float__ method.
-        def __float__(self):
-            raise AssertionError('test fails')
-
-        # Inject it into an instance.
-        class MyNumber(Fraction):
-            pass
-        x = MyNumber(3)
-        x.__float__ = types.MethodType(__float__, x)
-
-        # Check it works as expected.
-        self.assertRaises(AssertionError, x.__float__)
-        self.assertEqual(float(x), 3.0)
-        # And now test the function.
-        self.assertEqual(statistics._sum([1.0, 2.0, x, 4.0]), 10.0)
+        # Mixed input types are not (currently) allowed.
+        # Check that mixed data types fail.
+        self.assertRaises(TypeError, self.func, [1, 2.0, Fraction(1, 2)])
+        # And so does mixed start argument.
+        self.assertRaises(TypeError, self.func, [1, 2.0], Decimal(1))
 
 
 class SumTortureTest(NumericTestCase):
@@ -1082,6 +1105,12 @@ class TestMean(NumericTestCase, AverageMixin, UnivariateTypeMixin):
         expected = self.func(data)
         actual = self.func(data*2)
         self.assertApproxEqual(actual, expected)
+
+    def test_regression_20561(self):
+        # Regression test for issue 20561.
+        # See http://bugs.python.org/issue20561
+        d = Decimal('1e4')
+        self.assertEqual(statistics.mean([d]), d)
 
 
 class TestMedian(NumericTestCase, AverageMixin):
@@ -1354,6 +1383,14 @@ class TestMode(NumericTestCase, AverageMixin, UnivariateTypeMixin):
         # This test is necessary because the implementation of mode uses
         # collections.Counter, which accepts None and returns an empty dict.
         self.assertRaises(TypeError, self.func, None)
+
+    def test_counter_data(self):
+        # Test that a Counter is treated like any other iterable.
+        data = collections.Counter([1, 1, 1, 2])
+        # Since the keys of the counter are treated as data points, not the
+        # counts, this should raise.
+        self.assertRaises(statistics.StatisticsError, self.func, data)
+
 
 
 # === Tests for variances and standard deviations ===

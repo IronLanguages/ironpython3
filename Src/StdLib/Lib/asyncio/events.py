@@ -9,17 +9,18 @@ __all__ = ['AbstractEventLoopPolicy',
            ]
 
 import subprocess
-import sys
 import threading
 import socket
-
-from .log import logger
 
 
 class Handle:
     """Object returned by callback registration methods."""
 
-    def __init__(self, callback, args):
+    __slots__ = ['_callback', '_args', '_cancelled', '_loop']
+
+    def __init__(self, callback, args, loop):
+        assert not isinstance(callback, Handle), 'A Handle is not a callback'
+        self._loop = loop
         self._callback = callback
         self._args = args
         self._cancelled = False
@@ -36,24 +37,25 @@ class Handle:
     def _run(self):
         try:
             self._callback(*self._args)
-        except Exception:
-            logger.exception('Exception in callback %s %r',
-                             self._callback, self._args)
+        except Exception as exc:
+            msg = 'Exception in callback {}{!r}'.format(self._callback,
+                                                        self._args)
+            self._loop.call_exception_handler({
+                'message': msg,
+                'exception': exc,
+                'handle': self,
+            })
         self = None  # Needed to break cycles when an exception occurs.
-
-
-def make_handle(callback, args):
-    # TODO: Inline this?  Or make it a private EventLoop method?
-    assert not isinstance(callback, Handle), 'A Handle is not a callback'
-    return Handle(callback, args)
 
 
 class TimerHandle(Handle):
     """Object returned by timed callback registration methods."""
 
-    def __init__(self, when, callback, args):
+    __slots__ = ['_when']
+
+    def __init__(self, when, callback, args, loop):
         assert when is not None
-        super().__init__(callback, args)
+        super().__init__(callback, args, loop)
 
         self._when = when
 
@@ -221,6 +223,32 @@ class AbstractEventLoop:
         """
         raise NotImplementedError
 
+    def create_unix_connection(self, protocol_factory, path, *,
+                               ssl=None, sock=None,
+                               server_hostname=None):
+        raise NotImplementedError
+
+    def create_unix_server(self, protocol_factory, path, *,
+                           sock=None, backlog=100, ssl=None):
+        """A coroutine which creates a UNIX Domain Socket server.
+
+        The return value is a Server object, which can be used to stop
+        the service.
+
+        path is a str, representing a file systsem path to bind the
+        server socket to.
+
+        sock can optionally be specified in order to use a preexisting
+        socket object.
+
+        backlog is the maximum number of queued connections passed to
+        listen() (defaults to 100).
+
+        ssl can be set to an SSLContext to enable SSL over the
+        accepted connections.
+        """
+        raise NotImplementedError
+
     def create_datagram_endpoint(self, protocol_factory,
                                  local_addr=None, remote_addr=None, *,
                                  family=0, proto=0, flags=0):
@@ -229,7 +257,7 @@ class AbstractEventLoop:
     # Pipes and subprocesses.
 
     def connect_read_pipe(self, protocol_factory, pipe):
-        """Register read pipe in eventloop.
+        """Register read pipe in event loop.
 
         protocol_factory should instantiate object with Protocol interface.
         pipe is file-like object already switched to nonblocking.
@@ -242,7 +270,7 @@ class AbstractEventLoop:
         raise NotImplementedError
 
     def connect_write_pipe(self, protocol_factory, pipe):
-        """Register write pipe in eventloop.
+        """Register write pipe in event loop.
 
         protocol_factory should instantiate object with BaseProtocol interface.
         Pipe is file-like object already switched to nonblocking.
@@ -301,6 +329,25 @@ class AbstractEventLoop:
         raise NotImplementedError
 
     def remove_signal_handler(self, sig):
+        raise NotImplementedError
+
+    # Error handlers.
+
+    def set_exception_handler(self, handler):
+        raise NotImplementedError
+
+    def default_exception_handler(self, context):
+        raise NotImplementedError
+
+    def call_exception_handler(self, context):
+        raise NotImplementedError
+
+    # Debug flag management.
+
+    def get_debug(self):
+        raise NotImplementedError
+
+    def set_debug(self, enabled):
         raise NotImplementedError
 
 

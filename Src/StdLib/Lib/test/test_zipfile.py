@@ -297,6 +297,36 @@ class AbstractTestsWithSourceFile:
                     buf = fp.read(test_size)
                     self.assertEqual(len(buf), test_size)
 
+    def test_truncated_zipfile(self):
+        fp = io.BytesIO()
+        with zipfile.ZipFile(fp, mode='w') as zipf:
+            zipf.writestr('strfile', self.data, compress_type=self.compression)
+            end_offset = fp.tell()
+        zipfiledata = fp.getvalue()
+
+        fp = io.BytesIO(zipfiledata)
+        with zipfile.ZipFile(fp) as zipf:
+            with zipf.open('strfile') as zipopen:
+                fp.truncate(end_offset - 20)
+                with self.assertRaises(EOFError):
+                    zipopen.read()
+
+        fp = io.BytesIO(zipfiledata)
+        with zipfile.ZipFile(fp) as zipf:
+            with zipf.open('strfile') as zipopen:
+                fp.truncate(end_offset - 20)
+                with self.assertRaises(EOFError):
+                    while zipopen.read(100):
+                        pass
+
+        fp = io.BytesIO(zipfiledata)
+        with zipfile.ZipFile(fp) as zipf:
+            with zipf.open('strfile') as zipopen:
+                fp.truncate(end_offset - 20)
+                with self.assertRaises(EOFError):
+                    while zipopen.read1(100):
+                        pass
+
     def tearDown(self):
         unlink(TESTFN)
         unlink(TESTFN2)
@@ -392,6 +422,7 @@ class StoredTestsWithSourceFile(AbstractTestsWithSourceFile,
         os.utime(TESTFN, (0, 0))
         with zipfile.ZipFile(TESTFN2, "w") as zipfp:
             self.assertRaises(ValueError, zipfp.write, TESTFN)
+
 
 @requires_zlib
 class DeflateTestsWithSourceFile(AbstractTestsWithSourceFile,
@@ -615,7 +646,7 @@ class PyZipFileTests(unittest.TestCase):
             self.assertTrue('SyntaxError' not in reportStr)
 
             # then check that the filter works on individual files
-            with captured_stdout() as reportSIO:
+            with captured_stdout() as reportSIO, self.assertWarns(UserWarning):
                 zipfp.writepy(packagedir, filterfunc=lambda fn:
                                                      'bad' not in fn)
             reportStr = reportSIO.getvalue()
@@ -865,7 +896,9 @@ class OtherTests(unittest.TestCase):
         # Create the ZIP archive
         with zipfile.ZipFile(TESTFN2, "w", zipfile.ZIP_STORED) as zipfp:
             zipfp.writestr("name", "foo")
-            zipfp.writestr("name", "bar")
+            with self.assertWarns(UserWarning):
+                zipfp.writestr("name", "bar")
+            self.assertEqual(zipfp.namelist(), ["name"] * 2)
 
         with zipfile.ZipFile(TESTFN2, "r") as zipfp:
             infos = zipfp.infolist()
@@ -1182,7 +1215,8 @@ class OtherTests(unittest.TestCase):
 
         # check a comment that is too long is truncated
         with zipfile.ZipFile(TESTFN, mode="w") as zipf:
-            zipf.comment = comment2 + b'oops'
+            with self.assertWarns(UserWarning):
+                zipf.comment = comment2 + b'oops'
             zipf.writestr("foo.txt", "O, for a Muse of Fire!")
         with zipfile.ZipFile(TESTFN, mode="r") as zipfr:
             self.assertEqual(zipfr.comment, comment2)

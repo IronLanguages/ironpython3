@@ -1,6 +1,8 @@
 import importlib
 import importlib.abc
+import importlib.util
 import os
+from platform import python_version
 import re
 import string
 import sys
@@ -659,20 +661,20 @@ class EditorWindow(object):
             return
         # XXX Ought to insert current file's directory in front of path
         try:
-            loader = importlib.find_loader(name)
+            spec = importlib.util.find_spec(name)
         except (ValueError, ImportError) as msg:
             tkMessageBox.showerror("Import error", str(msg), parent=self.text)
             return
-        if loader is None:
+        if spec is None:
             tkMessageBox.showerror("Import error", "module not found",
                                    parent=self.text)
             return
-        if not isinstance(loader, importlib.abc.SourceLoader):
+        if not isinstance(spec.loader, importlib.abc.SourceLoader):
             tkMessageBox.showerror("Import error", "not a source-based module",
                                    parent=self.text)
             return
         try:
-            file_path = loader.get_filename(name)
+            file_path = spec.loader.get_filename(name)
         except AttributeError:
             tkMessageBox.showerror("Import error",
                                    "loader does not support get_filename",
@@ -955,11 +957,14 @@ class EditorWindow(object):
         self.undo.reset_undo()
 
     def short_title(self):
+        pyversion = "Python " + python_version() + ": "
         filename = self.io.filename
         if filename:
             filename = os.path.basename(filename)
+        else:
+            filename = "Untitled"
         # return unicode string to display non-ASCII chars correctly
-        return self._filename_to_unicode(filename)
+        return pyversion + self._filename_to_unicode(filename)
 
     def long_title(self):
         # return unicode string to display non-ASCII chars correctly

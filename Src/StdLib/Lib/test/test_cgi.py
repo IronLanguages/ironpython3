@@ -137,6 +137,13 @@ class CgiTests(unittest.TestCase):
         fs.list.append(namedtuple('MockFieldStorage', 'name')('fieldvalue'))
         self.assertTrue(fs)
 
+    def test_fieldstorage_invalid(self):
+        self.assertRaises(TypeError, cgi.FieldStorage, "not-a-file-obj",
+                                                            environ={"REQUEST_METHOD":"PUT"})
+        self.assertRaises(TypeError, cgi.FieldStorage, "foo", "bar")
+        fs = cgi.FieldStorage(headers={'content-type':'text/plain'})
+        self.assertRaises(TypeError, bool, fs)
+
     def test_escape(self):
         # cgi.escape() is deprecated.
         with warnings.catch_warnings():
@@ -220,7 +227,7 @@ class CgiTests(unittest.TestCase):
         # if we're not chunking properly, readline is only called twice
         # (by read_binary); if we are chunking properly, it will be called 5 times
         # as long as the chunksize is 1 << 16.
-        self.assertTrue(f.numcalls > 2)
+        self.assertGreater(f.numcalls, 2)
         f.close()
 
     def test_fieldstorage_multipart(self):

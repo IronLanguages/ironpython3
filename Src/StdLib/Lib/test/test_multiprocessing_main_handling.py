@@ -15,9 +15,11 @@ from test.script_helper import (
     assert_python_ok, assert_python_failure, temp_dir,
     spawn_python, kill_python)
 
-# We look inside the context module to find out which
-# start methods we can check
-from multiprocessing.context import _concrete_contexts
+# Skip tests if _multiprocessing wasn't built.
+_multiprocessing = support.import_module('_multiprocessing')
+# Look up which start methods are available to test
+import multiprocessing
+AVAILABLE_START_METHODS = set(multiprocessing.get_all_start_methods())
 
 verbose = support.verbose
 
@@ -51,7 +53,7 @@ if __name__ == '__main__':
     p = Pool(5)
     results = []
     p.map_async(f, [1, 2, 3], callback=results.extend)
-    deadline = time.time() + 2 # up to 2 s to report the results
+    deadline = time.time() + 10 # up to 10 s to report the results
     while not results:
         time.sleep(0.05)
         if time.time() > deadline:
@@ -79,7 +81,7 @@ set_start_method(start_method)
 p = Pool(5)
 results = []
 p.map_async(int, [1, 4, 9], callback=results.extend)
-deadline = time.time() + 2 # up to 2 s to report the results
+deadline = time.time() + 10 # up to 10 s to report the results
 while not results:
     time.sleep(0.05)
     if time.time() > deadline:
@@ -130,10 +132,9 @@ def _make_launch_script(script_dir, script_basename, module_name, path=None):
 class MultiProcessingCmdLineMixin():
     maxDiff = None # Show full tracebacks on subprocess failure
 
-    def setupClass(cls):
-        if cls.start_method not in _concrete_contexts:
-            raise unittest.SkipTest("%r start method not available" %
-                                                          cls.start_method)
+    def setUp(self):
+        if self.start_method not in AVAILABLE_START_METHODS:
+            self.skipTest("%r start method not available" % self.start_method)
 
     def _check_output(self, script_name, exit_code, out, err):
         if verbose > 1:
@@ -277,11 +278,8 @@ class ForkServerCmdLineTest(MultiProcessingCmdLineMixin, unittest.TestCase):
     start_method = 'forkserver'
     main_in_children_source = test_source_main_skipped_in_children
 
-def test_main():
-    support.run_unittest(SpawnCmdLineTest,
-                         ForkCmdLineTest,
-                         ForkServerCmdLineTest)
+def tearDownModule():
     support.reap_children()
 
 if __name__ == '__main__':
-    test_main()
+    unittest.main()

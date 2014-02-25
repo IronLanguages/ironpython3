@@ -1,5 +1,7 @@
 from importlib import util
 from . import util as test_util
+frozen_init, source_init = test_util.import_importlib('importlib')
+frozen_machinery, source_machinery = test_util.import_importlib('importlib.machinery')
 frozen_util, source_util = test_util.import_importlib('importlib.util')
 
 import os
@@ -41,14 +43,14 @@ class ModuleForLoaderTests:
     @classmethod
     def module_for_loader(cls, func):
         with warnings.catch_warnings():
-            warnings.simplefilter('ignore', PendingDeprecationWarning)
+            warnings.simplefilter('ignore', DeprecationWarning)
             return cls.util.module_for_loader(func)
 
     def test_warning(self):
         # Should raise a PendingDeprecationWarning when used.
         with warnings.catch_warnings():
-            warnings.simplefilter('error', PendingDeprecationWarning)
-            with self.assertRaises(PendingDeprecationWarning):
+            warnings.simplefilter('error', DeprecationWarning)
+            with self.assertRaises(DeprecationWarning):
                 func = self.util.module_for_loader(lambda x: x)
 
     def return_module(self, name):
@@ -172,7 +174,9 @@ class SetPackageTests:
         passing through set_package."""
         fxn = lambda: module
         wrapped = self.util.set_package(fxn)
-        wrapped()
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', DeprecationWarning)
+            wrapped()
         self.assertTrue(hasattr(module, '__package__'))
         self.assertEqual(expect, module.__package__)
 
@@ -212,7 +216,9 @@ class SetPackageTests:
 
     def test_decorator_attrs(self):
         def fxn(module): pass
-        wrapped = self.util.set_package(fxn)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', DeprecationWarning)
+            wrapped = self.util.set_package(fxn)
         self.assertEqual(wrapped.__name__, fxn.__name__)
         self.assertEqual(wrapped.__qualname__, fxn.__qualname__)
 
@@ -236,19 +242,25 @@ class SetLoaderTests:
             del loader.module.__loader__
         except AttributeError:
             pass
-        self.assertEqual(loader, loader.load_module('blah').__loader__)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', DeprecationWarning)
+            self.assertEqual(loader, loader.load_module('blah').__loader__)
 
     def test_attribute_is_None(self):
         loader = self.DummyLoader()
         loader.module = types.ModuleType('blah')
         loader.module.__loader__ = None
-        self.assertEqual(loader, loader.load_module('blah').__loader__)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', DeprecationWarning)
+            self.assertEqual(loader, loader.load_module('blah').__loader__)
 
     def test_not_reset(self):
         loader = self.DummyLoader()
         loader.module = types.ModuleType('blah')
         loader.module.__loader__ = 42
-        self.assertEqual(42, loader.load_module('blah').__loader__)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', DeprecationWarning)
+            self.assertEqual(42, loader.load_module('blah').__loader__)
 
 class Frozen_SetLoaderTests(SetLoaderTests, unittest.TestCase):
     class DummyLoader:
@@ -298,6 +310,151 @@ class ResolveNameTests:
 Frozen_ResolveNameTests, Source_ResolveNameTests = test_util.test_both(
         ResolveNameTests,
         util=[frozen_util, source_util])
+
+
+class FindSpecTests:
+
+    class FakeMetaFinder:
+        @staticmethod
+        def find_spec(name, path=None, target=None): return name, path, target
+
+    def test_sys_modules(self):
+        name = 'some_mod'
+        with test_util.uncache(name):
+            module = types.ModuleType(name)
+            loader = 'a loader!'
+            spec = self.machinery.ModuleSpec(name, loader)
+            module.__loader__ = loader
+            module.__spec__ = spec
+            sys.modules[name] = module
+            found = self.util.find_spec(name)
+            self.assertEqual(found, spec)
+
+    def test_sys_modules_without___loader__(self):
+        name = 'some_mod'
+        with test_util.uncache(name):
+            module = types.ModuleType(name)
+            del module.__loader__
+            loader = 'a loader!'
+            spec = self.machinery.ModuleSpec(name, loader)
+            module.__spec__ = spec
+            sys.modules[name] = module
+            found = self.util.find_spec(name)
+            self.assertEqual(found, spec)
+
+    def test_sys_modules_spec_is_None(self):
+        name = 'some_mod'
+        with test_util.uncache(name):
+            module = types.ModuleType(name)
+            module.__spec__ = None
+            sys.modules[name] = module
+            with self.assertRaises(ValueError):
+                self.util.find_spec(name)
+
+    def test_sys_modules_loader_is_None(self):
+        name = 'some_mod'
+        with test_util.uncache(name):
+            module = types.ModuleType(name)
+            spec = self.machinery.ModuleSpec(name, None)
+            module.__spec__ = spec
+            sys.modules[name] = module
+            found = self.util.find_spec(name)
+            self.assertEqual(found, spec)
+
+    def test_sys_modules_spec_is_not_set(self):
+        name = 'some_mod'
+        with test_util.uncache(name):
+            module = types.ModuleType(name)
+            try:
+                del module.__spec__
+            except AttributeError:
+                pass
+            sys.modules[name] = module
+            with self.assertRaises(ValueError):
+                self.util.find_spec(name)
+
+    def test_success(self):
+        name = 'some_mod'
+        with test_util.uncache(name):
+            with test_util.import_state(meta_path=[self.FakeMetaFinder]):
+                self.assertEqual((name, None, None),
+                                 self.util.find_spec(name))
+
+#    def test_success_path(self):
+#        # Searching on a path should work.
+#        name = 'some_mod'
+#        path = 'path to some place'
+#        with test_util.uncache(name):
+#            with test_util.import_state(meta_path=[self.FakeMetaFinder]):
+#                self.assertEqual((name, path, None),
+#                                 self.util.find_spec(name, path))
+
+    def test_nothing(self):
+        # None is returned upon failure to find a loader.
+        self.assertIsNone(self.util.find_spec('nevergoingtofindthismodule'))
+
+    def test_find_submodule(self):
+        name = 'spam'
+        subname = 'ham'
+        with test_util.temp_module(name, pkg=True) as pkg_dir:
+            fullname, _ = test_util.submodule(name, subname, pkg_dir)
+            spec = self.util.find_spec(fullname)
+            self.assertIsNot(spec, None)
+            self.assertIn(name, sorted(sys.modules))
+            self.assertNotIn(fullname, sorted(sys.modules))
+            # Ensure successive calls behave the same.
+            spec_again = self.util.find_spec(fullname)
+            self.assertEqual(spec_again, spec)
+
+    def test_find_submodule_parent_already_imported(self):
+        name = 'spam'
+        subname = 'ham'
+        with test_util.temp_module(name, pkg=True) as pkg_dir:
+            self.init.import_module(name)
+            fullname, _ = test_util.submodule(name, subname, pkg_dir)
+            spec = self.util.find_spec(fullname)
+            self.assertIsNot(spec, None)
+            self.assertIn(name, sorted(sys.modules))
+            self.assertNotIn(fullname, sorted(sys.modules))
+            # Ensure successive calls behave the same.
+            spec_again = self.util.find_spec(fullname)
+            self.assertEqual(spec_again, spec)
+
+    def test_find_relative_module(self):
+        name = 'spam'
+        subname = 'ham'
+        with test_util.temp_module(name, pkg=True) as pkg_dir:
+            fullname, _ = test_util.submodule(name, subname, pkg_dir)
+            relname = '.' + subname
+            spec = self.util.find_spec(relname, name)
+            self.assertIsNot(spec, None)
+            self.assertIn(name, sorted(sys.modules))
+            self.assertNotIn(fullname, sorted(sys.modules))
+            # Ensure successive calls behave the same.
+            spec_again = self.util.find_spec(fullname)
+            self.assertEqual(spec_again, spec)
+
+    def test_find_relative_module_missing_package(self):
+        name = 'spam'
+        subname = 'ham'
+        with test_util.temp_module(name, pkg=True) as pkg_dir:
+            fullname, _ = test_util.submodule(name, subname, pkg_dir)
+            relname = '.' + subname
+            with self.assertRaises(ValueError):
+                self.util.find_spec(relname)
+            self.assertNotIn(name, sorted(sys.modules))
+            self.assertNotIn(fullname, sorted(sys.modules))
+
+
+class Frozen_FindSpecTests(FindSpecTests, unittest.TestCase):
+    init = frozen_init
+    machinery = frozen_machinery
+    util = frozen_util
+
+class Source_FindSpecTests(FindSpecTests, unittest.TestCase):
+    init = source_init
+    machinery = source_machinery
+    util = source_util
 
 
 class MagicNumberTests:

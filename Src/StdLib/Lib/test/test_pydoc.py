@@ -6,6 +6,7 @@ import difflib
 import inspect
 import pydoc
 import keyword
+import _pickle
 import pkgutil
 import re
 import string
@@ -21,7 +22,7 @@ from test.script_helper import assert_python_ok
 from test.support import (
     TESTFN, rmtree,
     reap_children, reap_threads, captured_output, captured_stdout,
-    captured_stderr, unlink
+    captured_stderr, unlink, requires_docstrings
 )
 from test import pydoc_mod
 
@@ -386,6 +387,16 @@ class PydocDocTest(unittest.TestCase):
             print_diffs(expected_text, result)
             self.fail("outputs are not equal, see diff above")
 
+    def test_text_enum_member_with_value_zero(self):
+        # Test issue #20654 to ensure enum member with value 0 can be
+        # displayed. It used to throw KeyError: 'zero'.
+        import enum
+        class BinaryInteger(enum.IntEnum):
+            zero = 0
+            one = 1
+        doc = pydoc.render_doc(BinaryInteger)
+        self.assertIn('<BinaryInteger.zero: 0>', doc)
+
     def test_issue8225(self):
         # Test issue8225 to ensure no doc link appears for xml.etree
         result, doc_loc = get_pydoc_text(xml.etree)
@@ -486,6 +497,13 @@ class PydocDocTest(unittest.TestCase):
                 print('line 2: hi"""', file=script)
             synopsis = pydoc.synopsis(TESTFN, {})
             self.assertEqual(synopsis, 'line 1: h\xe9')
+
+    def test_synopsis_sourceless(self):
+        expected = os.__doc__.splitlines()[0]
+        filename = os.__cached__
+        synopsis = pydoc.synopsis(filename)
+
+        self.assertEqual(synopsis, expected)
 
     def test_splitdoc_with_description(self):
         example_string = "I Am A Doc\n\n\nHere is my description"
@@ -600,6 +618,55 @@ class PydocImportTest(PydocBaseTest):
         self.assertEqual(out.getvalue(), '')
         self.assertEqual(err.getvalue(), '')
 
+    @unittest.skip('causes undesireable side-effects (#20128)')
+    def test_modules(self):
+        # See Helper.listmodules().
+        num_header_lines = 2
+        num_module_lines_min = 5  # Playing it safe.
+        num_footer_lines = 3
+        expected = num_header_lines + num_module_lines_min + num_footer_lines
+
+        output = StringIO()
+        helper = pydoc.Helper(output=output)
+        helper('modules')
+        result = output.getvalue().strip()
+        num_lines = len(result.splitlines())
+
+        self.assertGreaterEqual(num_lines, expected)
+
+    @unittest.skip('causes undesireable side-effects (#20128)')
+    def test_modules_search(self):
+        # See Helper.listmodules().
+        expected = 'pydoc - '
+
+        output = StringIO()
+        helper = pydoc.Helper(output=output)
+        with captured_stdout() as help_io:
+            helper('modules pydoc')
+        result = help_io.getvalue()
+
+        self.assertIn(expected, result)
+
+    @unittest.skip('some buildbots are not cooperating (#20128)')
+    def test_modules_search_builtin(self):
+        expected = 'gc - '
+
+        output = StringIO()
+        helper = pydoc.Helper(output=output)
+        with captured_stdout() as help_io:
+            helper('modules garbage')
+        result = help_io.getvalue()
+
+        self.assertTrue(result.startswith(expected))
+
+    def test_importfile(self):
+        loaded_pydoc = pydoc.importfile(pydoc.__file__)
+
+        self.assertIsNot(loaded_pydoc, pydoc)
+        self.assertEqual(loaded_pydoc.__name__, 'pydoc')
+        self.assertEqual(loaded_pydoc.__file__, pydoc.__file__)
+        self.assertEqual(loaded_pydoc.__spec__, pydoc.__spec__)
+
 
 class TestDescriptions(unittest.TestCase):
 
@@ -634,6 +701,42 @@ class TestDescriptions(unittest.TestCase):
                      'builtins.str.trrranslate'):
             self.assertIsNone(pydoc.locate(name))
             self.assertRaises(ImportError, pydoc.render_doc, name)
+
+    @staticmethod
+    def _get_summary_line(o):
+        text = pydoc.plain(pydoc.render_doc(o))
+        lines = text.split('\n')
+        assert len(lines) >= 2
+        return lines[2]
+
+    # these should include "self"
+    def test_unbound_python_method(self):
+        self.assertEqual(self._get_summary_line(textwrap.TextWrapper.wrap),
+            "wrap(self, text)")
+
+    @requires_docstrings
+    def test_unbound_builtin_method(self):
+        self.assertEqual(self._get_summary_line(_pickle.Pickler.dump),
+            "dump(self, obj, /)")
+
+    # these no longer include "self"
+    def test_bound_python_method(self):
+        t = textwrap.TextWrapper()
+        self.assertEqual(self._get_summary_line(t.wrap),
+            "wrap(text) method of textwrap.TextWrapper instance")
+
+    @requires_docstrings
+    def test_bound_builtin_method(self):
+        s = StringIO()
+        p = _pickle.Pickler(s)
+        self.assertEqual(self._get_summary_line(p.dump),
+            "dump(obj, /) method of _pickle.Pickler instance")
+
+    # this should *never* include self!
+    @requires_docstrings
+    def test_module_level_callable(self):
+        self.assertEqual(self._get_summary_line(os.stat),
+            "stat(path, *, dir_fd=None, follow_symlinks=True)")
 
 
 @unittest.skipUnless(threading, 'Threading required for this test.')
@@ -826,6 +929,7 @@ class PydocWithMetaClasses(unittest.TestCase):
         if result != expected_text:
             print_diffs(expected_text, result)
             self.fail("outputs are not equal, see diff above")
+
 
 @reap_threads
 def test_main():

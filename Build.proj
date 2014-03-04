@@ -67,11 +67,18 @@
           Condition=" !Exists('$(NuGetConfig)') ">
     <Touch Files="$(NuGetConfig)" AlwaysCreate="true" />
   </Target>
+  
+  <Target Name="_MakeReferenceDir"
+          Condition=" !Exists('$(ReferenceDir)') ">
+    <MakeDir Directories="$(ReferenceDir)"  />
+  </Target>
 
   <Target Name="RestoreReferences"
-          DependsOnTargets="_EnsureNuGetConfig"
-          Condition=" !Exists('$(ReferenceDir)') ">
+            DependsOnTargets="_EnsureNuGetConfig;_MakeReferenceDir"
+            Inputs="$(RootDir)\packages.config"
+            Outputs="$(ReferenceDir)\updated">
     <Exec Command="$(NuGet) restore packages.config -PackagesDirectory &quot;$(ReferenceDir)&quot; -ConfigFile &quot;$(NuGetConfig)&quot;" WorkingDirectory="$(RootDir)" />
+    <Touch Files="$(ReferenceDir)\updated" AlwaysCreate="true" />
     <OnError ExecuteTargets="_RestoreReferencesError" />
   </Target>
   

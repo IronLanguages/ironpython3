@@ -1,0 +1,153 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: package interop.net.type</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="interop.html"><font color="#ffffff">interop</font></a>.<a href="interop.net.html"><font color="#ffffff">net</font></a>.type</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:e:\vslrft\dlr\languages\ironpython\tests\interop\net\type\__init__.py">e:\vslrft\dlr\languages\ironpython\tests\interop\net\type\__init__.py</a></font></td></tr></table>
+    <p><tt>-------------------------------------------------------------------------------<br>
+ACCESSING&nbsp;TYPES<br>
+&nbsp;<br>
+"Simple"&nbsp;type<br>
+*&nbsp;How&nbsp;can&nbsp;you&nbsp;get&nbsp;different&nbsp;types:&nbsp;value&nbsp;type&nbsp;/&nbsp;reference&nbsp;type,&nbsp;interface,&nbsp;<br>
+&nbsp;&nbsp;delegate,&nbsp;&nbsp;enum,&nbsp;nullable<br>
+&nbsp;<br>
+Type&nbsp;location<br>
+*&nbsp;How&nbsp;to&nbsp;get&nbsp;types&nbsp;living&nbsp;in&nbsp;mscorlib,&nbsp;system.dll&nbsp;(pre-loaded),&nbsp;and&nbsp;other&nbsp;<br>
+&nbsp;&nbsp;user&nbsp;assemblies?&nbsp;From&nbsp;GAC?<br>
+&nbsp;<br>
+Nested&nbsp;type<br>
+*&nbsp;How&nbsp;can&nbsp;you&nbsp;get&nbsp;the&nbsp;nested&nbsp;type?<br>
+&nbsp;<br>
+Namespace<br>
+*&nbsp;How&nbsp;can&nbsp;you&nbsp;get&nbsp;types&nbsp;decorated&nbsp;with&nbsp;namespace,&nbsp;or&nbsp;without&nbsp;namespace?<br>
+*&nbsp;Where&nbsp;namespace&nbsp;has&nbsp;the&nbsp;same&nbsp;name&nbsp;as&nbsp;type,&nbsp;or&nbsp;member?<br>
+&nbsp;<br>
+Accessibility&nbsp;<br>
+*&nbsp;The&nbsp;impact&nbsp;of&nbsp;accessibility&nbsp;(public&nbsp;/&nbsp;assembly&nbsp;/&nbsp;family&nbsp;/&nbsp;private&nbsp;/&nbsp;...)<br>
+*&nbsp;The&nbsp;visibility&nbsp;of&nbsp;namespace&nbsp;which&nbsp;does&nbsp;not&nbsp;have&nbsp;public&nbsp;types<br>
+&nbsp;<br>
+Array&nbsp;type<br>
+*&nbsp;How&nbsp;can&nbsp;you&nbsp;get&nbsp;array?&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;One&nbsp;dimensional,&nbsp;Multi-dimensional,&nbsp;jagged,&nbsp;Non-zero&nbsp;lower&nbsp;bound<br>
+&nbsp;<br>
+Generic&nbsp;type&nbsp;<br>
+*&nbsp;How&nbsp;can&nbsp;you&nbsp;get&nbsp;the&nbsp;open&nbsp;generic&nbsp;type,&nbsp;closed&nbsp;generic&nbsp;type?<br>
+&nbsp;&nbsp;-&nbsp;When&nbsp;one&nbsp;assembly&nbsp;contains&nbsp;non-generic&nbsp;type&nbsp;G,&nbsp;and&nbsp;generic&nbsp;type&nbsp;G`1<br>
+&nbsp;&nbsp;-&nbsp;When&nbsp;one&nbsp;assembly&nbsp;contains&nbsp;generic&nbsp;type&nbsp;G`2,&nbsp;and&nbsp;G`3<br>
+&nbsp;<br>
+Generic&nbsp;type&nbsp;with&nbsp;constraint&nbsp;<br>
+*&nbsp;How&nbsp;can&nbsp;you&nbsp;get&nbsp;the&nbsp;closed&nbsp;generic&nbsp;type?&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;What&nbsp;if&nbsp;the&nbsp;generic&nbsp;arguments&nbsp;are&nbsp;not&nbsp;valid?<br>
+&nbsp;<br>
+Generic&nbsp;parameter<br>
+*&nbsp;Not&nbsp;applicable<br>
+&nbsp;<br>
+Type&nbsp;which&nbsp;causes&nbsp;TypeLoadException<br>
+*&nbsp;Can&nbsp;you&nbsp;hold&nbsp;other&nbsp;types&nbsp;even&nbsp;if&nbsp;one&nbsp;type&nbsp;in&nbsp;the&nbsp;assembly&nbsp;caused&nbsp;<br>
+&nbsp;&nbsp;TypeLoadException?<br>
+&nbsp;<br>
+Type&nbsp;from&nbsp;Reflection.Emit<br>
+*&nbsp;How&nbsp;can&nbsp;you&nbsp;hold&nbsp;types&nbsp;created&nbsp;by&nbsp;reflection.emit&nbsp;(not&nbsp;saved&nbsp;to&nbsp;disk&nbsp;yet)?<br>
+&nbsp;<br>
+Type&nbsp;forwarder<br>
+*&nbsp;How&nbsp;can&nbsp;you&nbsp;hold&nbsp;the&nbsp;correct&nbsp;forwarded&nbsp;type?&nbsp;Both&nbsp;positive&nbsp;and&nbsp;negative&nbsp;<br>
+&nbsp;&nbsp;scenarios.<br>
+&nbsp;<br>
+Type/Namespace&nbsp;having&nbsp;interesting&nbsp;names<br>
+*&nbsp;language&nbsp;keywords&nbsp;as&nbsp;type&nbsp;name/namespace<br>
+*&nbsp;weird&nbsp;chars,&nbsp;space,&nbsp;inside<br>
+*&nbsp;number/digits<br>
+&nbsp;<br>
+Type&nbsp;Group<br>
+Able&nbsp;to&nbsp;get&nbsp;the&nbsp;generic&nbsp;type,&nbsp;and&nbsp;non-generic&nbsp;type<br>
+&nbsp;<br>
+COM&nbsp;Type<br>
+*&nbsp;To&nbsp;be&nbsp;covered&nbsp;elsewhere<br>
+&nbsp;<br>
+------------------------------------------------------------------------------<br>
+UTILIZATION&nbsp;OF&nbsp;TYPES<br>
+&nbsp;<br>
+Object&nbsp;creation&nbsp;<br>
+*&nbsp;Against&nbsp;special&nbsp;types:<br>
+&nbsp;&nbsp;-&nbsp;static&nbsp;class,&nbsp;abstract&nbsp;class,&nbsp;interface,&nbsp;enum<br>
+&nbsp;&nbsp;-&nbsp;Generic&nbsp;type&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;with&nbsp;constraints<br>
+&nbsp;&nbsp;-&nbsp;delegate&nbsp;to&nbsp;be&nbsp;covered&nbsp;in&nbsp;events<br>
+*&nbsp;Constructor&nbsp;overloads:&nbsp;choose&nbsp;which&nbsp;one<br>
+&nbsp;&nbsp;-&nbsp;Ref/out&nbsp;modifiers,&nbsp;params,&nbsp;params&nbsp;dictionary&nbsp;(see&nbsp;more&nbsp;detail&nbsp;in&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;"On&nbsp;method"&nbsp;section)<br>
+&nbsp;&nbsp;-&nbsp;Static&nbsp;constructor<br>
+&nbsp;&nbsp;-&nbsp;(python)&nbsp;__new__/__init__&nbsp;overload&nbsp;resolution&nbsp;on&nbsp;Python&nbsp;built-ins.<br>
+&nbsp;&nbsp;-&nbsp;Bugs:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Passing&nbsp;object[]&nbsp;to&nbsp;ctor&nbsp;which&nbsp;asks&nbsp;for&nbsp;object[],&nbsp;<br>
+*&nbsp;(python)&nbsp;call&nbsp;different&nbsp;argument&nbsp;list&nbsp;style<br>
+&nbsp;&nbsp;-&nbsp;And&nbsp;__call__/__new__?<br>
+*&nbsp;(python)&nbsp;keyword&nbsp;argument&nbsp;to&nbsp;set&nbsp;field/property&nbsp;along&nbsp;the&nbsp;creation&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;Against&nbsp;value&nbsp;type/reference&nbsp;type<br>
+&nbsp;&nbsp;-&nbsp;Constructors&nbsp;with&nbsp;0,&nbsp;1,&nbsp;2&nbsp;parameters,&nbsp;params,&nbsp;params&nbsp;dictionary([ParamDict])<br>
+&nbsp;&nbsp;-&nbsp;Set&nbsp;bad&nbsp;field/property<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;literal,&nbsp;read-only&nbsp;field<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;read-only&nbsp;property<br>
+&nbsp;&nbsp;-&nbsp;Field/property&nbsp;with&nbsp;such&nbsp;keyword&nbsp;name&nbsp;does&nbsp;not&nbsp;exist.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;static&nbsp;field/property&nbsp;name&nbsp;as&nbsp;keyword<br>
+&nbsp;&nbsp;-&nbsp;Name&nbsp;collision:&nbsp;argument,&nbsp;field/property<br>
+&nbsp;&nbsp;-&nbsp;Keyword&nbsp;argument&nbsp;for&nbsp;property/field&nbsp;comes&nbsp;before&nbsp;the&nbsp;normal&nbsp;keyword&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;argument&nbsp;for&nbsp;ctor&nbsp;argument<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;how&nbsp;it&nbsp;is&nbsp;related&nbsp;to&nbsp;*,&nbsp;**&nbsp;args<br>
+&nbsp;&nbsp;-&nbsp;ctor&nbsp;overloads:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;same&nbsp;argument&nbsp;but&nbsp;declared&nbsp;with&nbsp;different&nbsp;types<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;argument&nbsp;name/position:&nbsp;(C&nbsp;arg1,&nbsp;D&nbsp;arg2),&nbsp;(C&nbsp;arg2,&nbsp;D&nbsp;arg1)<br>
+&nbsp;<br>
+Default&nbsp;member&nbsp;(Default&nbsp;Indexer)<br>
+*&nbsp;DefaultMemberAttribute&nbsp;can&nbsp;be&nbsp;defined&nbsp;at&nbsp;struct,&nbsp;class,&nbsp;interface<br>
+&nbsp;&nbsp;-&nbsp;Generic&nbsp;type&nbsp;(where&nbsp;member&nbsp;could&nbsp;be&nbsp;of&nbsp;type&nbsp;T)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+*&nbsp;Member&nbsp;could&nbsp;be&nbsp;field,&nbsp;property,&nbsp;indexer,&nbsp;method,&nbsp;or&nbsp;event<br>
+&nbsp;&nbsp;-&nbsp;Single/multiple&nbsp;default&nbsp;members&nbsp;(same/different&nbsp;MemberType)<br>
+*&nbsp;Static&nbsp;default&nbsp;member<br>
+&nbsp;&nbsp;-&nbsp;Vb&nbsp;does&nbsp;not&nbsp;allow<br>
+*&nbsp;Accessing&nbsp;from&nbsp;the&nbsp;derived&nbsp;type,&nbsp;or&nbsp;current&nbsp;type<br>
+*&nbsp;How&nbsp;to&nbsp;different&nbsp;it&nbsp;from&nbsp;the&nbsp;ctor&nbsp;call?<br>
+*&nbsp;The&nbsp;reality:<br>
+&nbsp;&nbsp;-&nbsp;Only&nbsp;default&nbsp;indexer&nbsp;member&nbsp;will&nbsp;likely&nbsp;work.&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;Make&nbsp;sure&nbsp;no&nbsp;bad&nbsp;thing&nbsp;could&nbsp;happen&nbsp;with&nbsp;other&nbsp;default&nbsp;members<br>
+References:<br>
+*&nbsp;<a href="http://msdn2.microsoft.com/en-us/library/system.type.getdefaultmembers.aspx">http://msdn2.microsoft.com/en-us/library/system.type.getdefaultmembers.aspx</a><br>
+*&nbsp;<a href="http://msdn2.microsoft.com/en-us/library/system.reflection.defaultmemberattribute.aspx">http://msdn2.microsoft.com/en-us/library/system.reflection.defaultmemberattribute.aspx</a>&nbsp;<br>
+&nbsp;<br>
+CLR&nbsp;bjects&nbsp;from&nbsp;the&nbsp;.NET&nbsp;world<br>
+*&nbsp;Return&nbsp;values:&nbsp;null,&nbsp;clr&nbsp;number,&nbsp;enum,&nbsp;self-defined&nbsp;value&nbsp;type,&nbsp;reference&nbsp;<br>
+&nbsp;&nbsp;type,&nbsp;nullable&nbsp;type,&nbsp;delegate,&nbsp;array&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;Conversions<br>
+*&nbsp;Interesting&nbsp;one&nbsp;-&nbsp;whose&nbsp;type&nbsp;is&nbsp;private&nbsp;type:&nbsp;Define&nbsp;a&nbsp;public/private&nbsp;<br>
+&nbsp;&nbsp;interface&nbsp;or&nbsp;base&nbsp;class&nbsp;which&nbsp;exercises&nbsp;every&nbsp;operation&nbsp;allowed&nbsp;<br>
+&nbsp;&nbsp;in&nbsp;C#&nbsp;(i.e.,&nbsp;private/public/static&nbsp;members,&nbsp;properties,&nbsp;events,&nbsp;etc).&nbsp;&nbsp;<br>
+&nbsp;&nbsp;Provide&nbsp;a&nbsp;private&nbsp;implementation&nbsp;of&nbsp;this&nbsp;in&nbsp;C#.&nbsp;&nbsp;Instantiate&nbsp;the&nbsp;private&nbsp;<br>
+&nbsp;&nbsp;class&nbsp;from&nbsp;the&nbsp;dynamic&nbsp;language&nbsp;and&nbsp;exercise&nbsp;every&nbsp;method/member&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;interface&nbsp;or&nbsp;base&nbsp;class&nbsp;defines<br>
+&nbsp;&nbsp;-&nbsp;What&nbsp;about&nbsp;a&nbsp;combination&nbsp;of&nbsp;base&nbsp;classes&nbsp;and&nbsp;interfaces&nbsp;which&nbsp;might&nbsp;clash?<br>
+&nbsp;&nbsp;-&nbsp;Calling&nbsp;members&nbsp;on&nbsp;it<br>
+&nbsp;<br>
+-------------------------------------------------------------------------------<br>
+SPECIAL&nbsp;CASES<br>
+*&nbsp;Visibility:&nbsp;ShowCLS&nbsp;flag&nbsp;<br>
+*&nbsp;-X:PrivateBinding:&nbsp;Type,&nbsp;Nested&nbsp;Type,&nbsp;Method,&nbsp;Field,&nbsp;Property,&nbsp;Event,&nbsp;Indexer<br>
+&nbsp;&nbsp;-&nbsp;Impact&nbsp;on&nbsp;the&nbsp;derivation&nbsp;scenario</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Package Contents</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="interop.net.type.test_assembly.html">test_assembly</a><br>
+<a href="interop.net.type.test_clr_array.html">test_clr_array</a><br>
+</td><td width="25%" valign=top><a href="interop.net.type.test_ctor.html">test_ctor</a><br>
+<a href="interop.net.type.test_defaultmember.html">test_defaultmember</a><br>
+</td><td width="25%" valign=top><a href="interop.net.type.test_reachtype.html">test_reachtype</a><br>
+</td><td width="25%" valign=top></td></tr></table></td></tr></table>
+</body></html>

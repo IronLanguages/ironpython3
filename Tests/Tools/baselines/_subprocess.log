@@ -1,0 +1,14 @@
+Implement rest of _subprocess module
+
+
+IP VERSION AFFECTED: 2.7
+FLAGS PASSED TO IPY.EXE: None
+OPERATING SYSTEMS AFFECTED: All
+
+DESCRIPTION
+-------------------------------------------------------
+Complete list of module attributes that should be removed 
+from IronPython:
+    _subprocess  CREATE_NEW_PROCESS_GROUP      
+    _subprocess  PIPE                          
+    _subprocess  STDOUT                        

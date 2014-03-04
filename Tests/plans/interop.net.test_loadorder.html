@@ -1,0 +1,136 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module interop.net.test_loadorder</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="interop.html"><font color="#ffffff">interop</font></a>.<a href="interop.net.html"><font color="#ffffff">net</font></a>.test_loadorder</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:e:\vslrft\dlr\languages\ironpython\tests\interop\net\test_loadorder.py">e:\vslrft\dlr\languages\ironpython\tests\interop\net\test_loadorder.py</a></font></td></tr></table>
+    <p><tt>INTERESTING&nbsp;LOAD&nbsp;SEQUENCES<br>
+&nbsp;<br>
+Simply&nbsp;Load<br>
+*&nbsp;What&nbsp;should&nbsp;become&nbsp;visible?<br>
+*&nbsp;What&nbsp;should&nbsp;not?<br>
+&nbsp;&nbsp;-&nbsp;Type/namespaces&nbsp;in&nbsp;the&nbsp;referenced&nbsp;assembly<br>
+&nbsp;&nbsp;-&nbsp;<br>
+Type&nbsp;with&nbsp;static&nbsp;constructor<br>
+*&nbsp;Thread-safety:&nbsp;we&nbsp;could&nbsp;run&nbsp;the&nbsp;static&nbsp;ctor&nbsp;while&nbsp;initializing&nbsp;the&nbsp;package&nbsp;<br>
+&nbsp;&nbsp;and&nbsp;we&nbsp;shouldn't&nbsp;have&nbsp;any&nbsp;locks&nbsp;held&nbsp;when&nbsp;that&nbsp;happens.<br>
+&nbsp;<br>
+Different&nbsp;loading&nbsp;approaches<br>
+*&nbsp;clr.AddReferenceXXX<br>
+*&nbsp;Assembly.LoadXXX<br>
+*&nbsp;?<br>
+&nbsp;<br>
+Loading&nbsp;the&nbsp;same&nbsp;assembly&nbsp;multiple&nbsp;times<br>
+*&nbsp;Loading&nbsp;one&nbsp;assembly&nbsp;simultaneously&nbsp;<br>
+*&nbsp;Loading&nbsp;multiple&nbsp;assemblies&nbsp;simultaneously<br>
+*&nbsp;Fetching&nbsp;types&nbsp;in&nbsp;one&nbsp;assembly&nbsp;simultaneously<br>
+&nbsp;&nbsp;-&nbsp;From&nbsp;mscorlib,&nbsp;or&nbsp;from&nbsp;user&nbsp;assembly<br>
+&nbsp;&nbsp;-&nbsp;"old",&nbsp;or&nbsp;new<br>
+&nbsp;<br>
+Loading&nbsp;one&nbsp;.NET&nbsp;assembly&nbsp;after&nbsp;another&nbsp;.NET&nbsp;assembly<br>
+The&nbsp;loaded&nbsp;type&nbsp;is&nbsp;NS.C,&nbsp;now&nbsp;you&nbsp;try&nbsp;to&nbsp;load<br>
+*&nbsp;non-generic&nbsp;type&nbsp;which&nbsp;has&nbsp;type&nbsp;name&nbsp;NS<br>
+*&nbsp;generic&nbsp;type&nbsp;which&nbsp;has&nbsp;type&nbsp;name&nbsp;NS<br>
+The&nbsp;loaded&nbsp;non-generic&nbsp;type&nbsp;is&nbsp;C,&nbsp;now&nbsp;you&nbsp;try&nbsp;to&nbsp;load<br>
+*&nbsp;type&nbsp;which&nbsp;has&nbsp;namespace&nbsp;C<br>
+The&nbsp;loaded&nbsp;generic&nbsp;type&nbsp;is&nbsp;C`1,&nbsp;now&nbsp;you&nbsp;try&nbsp;to&nbsp;load<br>
+*&nbsp;&nbsp;type&nbsp;which&nbsp;has&nbsp;namespace&nbsp;C<br>
+The&nbsp;loaded&nbsp;type&nbsp;is&nbsp;non-generic&nbsp;type,&nbsp;now&nbsp;you&nbsp;try&nbsp;to&nbsp;load<br>
+*&nbsp;non-generic&nbsp;type,&nbsp;or&nbsp;generic&nbsp;type&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;&nbsp;which&nbsp;has&nbsp;different&nbsp;namespace,&nbsp;different&nbsp;name<br>
+&nbsp;&nbsp;-&nbsp;which&nbsp;has&nbsp;different&nbsp;namespace,&nbsp;same&nbsp;name<br>
+&nbsp;&nbsp;-&nbsp;which&nbsp;has&nbsp;same&nbsp;namespace,&nbsp;different&nbsp;name<br>
+&nbsp;&nbsp;-&nbsp;which&nbsp;has&nbsp;same&nbsp;namespace,&nbsp;same&nbsp;name<br>
+The&nbsp;loaded&nbsp;type&nbsp;is&nbsp;generic&nbsp;type,&nbsp;now&nbsp;you&nbsp;try&nbsp;to&nbsp;<br>
+*&nbsp;non-generic&nbsp;type,&nbsp;or&nbsp;generic&nbsp;type&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;&nbsp;which&nbsp;has&nbsp;different&nbsp;namespace,&nbsp;different&nbsp;name<br>
+&nbsp;&nbsp;-&nbsp;which&nbsp;has&nbsp;different&nbsp;namespace,&nbsp;same&nbsp;name<br>
+&nbsp;&nbsp;-&nbsp;which&nbsp;has&nbsp;same&nbsp;namespace,&nbsp;different&nbsp;name<br>
+&nbsp;&nbsp;-&nbsp;which&nbsp;has&nbsp;same&nbsp;namespace,&nbsp;same&nbsp;name<br>
+The&nbsp;loaded&nbsp;"type"&nbsp;C&nbsp;is&nbsp;already&nbsp;a&nbsp;merged&nbsp;non-generic&nbsp;type&nbsp;C&nbsp;and&nbsp;generic&nbsp;type&nbsp;<br>
+C`1&nbsp;(if&nbsp;supported),&nbsp;now&nbsp;you&nbsp;try&nbsp;to&nbsp;load<br>
+*&nbsp;non-generic&nbsp;type&nbsp;which&nbsp;has&nbsp;same&nbsp;namespace,&nbsp;same&nbsp;name<br>
+*&nbsp;generic&nbsp;type&nbsp;which&nbsp;has&nbsp;same&nbsp;namespace,&nbsp;same&nbsp;name<br>
+The&nbsp;loaded&nbsp;"type"&nbsp;C&nbsp;is&nbsp;already&nbsp;a&nbsp;merged&nbsp;generic&nbsp;type&nbsp;C`1&nbsp;and&nbsp;generic&nbsp;type&nbsp;<br>
+C`2&nbsp;(if&nbsp;supported),&nbsp;now&nbsp;you&nbsp;try&nbsp;to&nbsp;load<br>
+*&nbsp;non-generic&nbsp;type&nbsp;which&nbsp;has&nbsp;same&nbsp;namespace,&nbsp;same&nbsp;name<br>
+*&nbsp;generic&nbsp;type&nbsp;which&nbsp;has&nbsp;same&nbsp;namespace,&nbsp;same&nbsp;name<br>
+&nbsp;<br>
+Reload&nbsp;scenario&nbsp;(or&nbsp;think&nbsp;loading&nbsp;2&nbsp;assemblies&nbsp;in&nbsp;different&nbsp;angle)<br>
+The&nbsp;updated&nbsp;assembly&nbsp;now&nbsp;has<br>
+*&nbsp;one&nbsp;top-level&nbsp;type&nbsp;removed,&nbsp;added,&nbsp;unchanged,&nbsp;changed<br>
+*&nbsp;one&nbsp;nested&nbsp;type&nbsp;removed,&nbsp;add,&nbsp;unchanged,&nbsp;changed<br>
+*&nbsp;one&nbsp;type&nbsp;under&nbsp;namespace&nbsp;removed,&nbsp;added,&nbsp;unchanged,&nbsp;changed<br>
+*&nbsp;one&nbsp;whole&nbsp;namespace&nbsp;removed,&nbsp;added,&nbsp;unchanged,&nbsp;changed&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+*&nbsp;one&nbsp;member&nbsp;(method,&nbsp;field,&nbsp;...)&nbsp;removed,&nbsp;added,&nbsp;unchanged,&nbsp;changed&nbsp;under&nbsp;one&nbsp;<br>
+&nbsp;&nbsp;type<br>
+&nbsp;<br>
+Loading&nbsp;one&nbsp;interesting&nbsp;.NET&nbsp;assembly&nbsp;after&nbsp;another&nbsp;DLR&nbsp;module&nbsp;<br>
+The&nbsp;loaded&nbsp;DLR&nbsp;module&nbsp;is&nbsp;C,&nbsp;now&nbsp;you&nbsp;try&nbsp;to&nbsp;load<br>
+*&nbsp;a&nbsp;non-generic&nbsp;type&nbsp;which&nbsp;has&nbsp;type&nbsp;name&nbsp;C<br>
+*&nbsp;a&nbsp;generic&nbsp;type&nbsp;which&nbsp;has&nbsp;type&nbsp;name&nbsp;C`2<br>
+*&nbsp;a&nbsp;type&nbsp;which&nbsp;has&nbsp;namespace&nbsp;C<br>
+&nbsp;<br>
+Loading&nbsp;one&nbsp;interesting&nbsp;DLR&nbsp;module&nbsp;after&nbsp;another&nbsp;.NET&nbsp;assembly<br>
+The&nbsp;loaded&nbsp;type&nbsp;is&nbsp;NS.C,&nbsp;now&nbsp;you&nbsp;try&nbsp;to&nbsp;load&nbsp;<br>
+*&nbsp;a&nbsp;DLR&nbsp;module&nbsp;"NS"<br>
+The&nbsp;loaded&nbsp;non-generic&nbsp;type&nbsp;is&nbsp;C,&nbsp;now&nbsp;you&nbsp;try&nbsp;to&nbsp;load<br>
+*&nbsp;a&nbsp;DLR&nbsp;module&nbsp;"C"<br>
+The&nbsp;loaded&nbsp;generic&nbsp;type&nbsp;is&nbsp;C`3,&nbsp;now&nbsp;you&nbsp;try&nbsp;to&nbsp;load<br>
+*&nbsp;a&nbsp;DLR&nbsp;module&nbsp;"C"</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="clr.html">clr</a><br>
+<a href="iptest.file_util.html">iptest.file_util</a><br>
+</td><td width="25%" valign=top><a href="logging.html">logging</a><br>
+<a href="nt.html">nt</a><br>
+</td><td width="25%" valign=top><a href="sys.html">sys</a><br>
+<a href="time.html">time</a><br>
+</td><td width="25%" valign=top><a href="iptest.type_util.html">iptest.type_util</a><br>
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-test_all"><strong>test_all</strong></a>()</dt></dl>
+</td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#55aa55">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><strong>MAX_FAILURE_RETRY</strong> = 3<br>
+<strong>System</strong> = &lt;module 'System' (CLS module, 4 assemblies loaded)&gt;<br>
+<strong>colon</strong> = ':'<br>
+<strong>ironpython_dlls</strong> = ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'Microsoft.Scripting.Internal.dll', 'IronPython.Modules.dll', 'IronPython.dll']<br>
+<strong>is_32</strong> = True<br>
+<strong>is_64</strong> = False<br>
+<strong>is_cli</strong> = True<br>
+<strong>is_cli32</strong> = True<br>
+<strong>is_cli64</strong> = False<br>
+<strong>is_cpython</strong> = False<br>
+<strong>is_debug</strong> = True<br>
+<strong>is_ironpython</strong> = True<br>
+<strong>is_orcas</strong> = True<br>
+<strong>is_peverify_run</strong> = False<br>
+<strong>is_silverlight</strong> = False<br>
+<strong>is_snap</strong> = False<br>
+<strong>is_stress</strong> = False<br>
+<strong>is_vista</strong> = False<br>
+<strong>newline</strong> = '<font color="#c040c0">\r\n</font>'<br>
+<strong>one_arg_params</strong> = ('-X:Optimize', '-W', '-c', '-X:MaxRecursion', '-X:AssembliesDir')<br>
+<strong>separator</strong> = r'\'</td></tr></table>
+</body></html>

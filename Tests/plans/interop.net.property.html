@@ -1,0 +1,49 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: package interop.net.property</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="interop.html"><font color="#ffffff">interop</font></a>.<a href="interop.net.html"><font color="#ffffff">net</font></a>.property</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:e:\vslrft\dlr\languages\ironpython\tests\interop\net\property\__init__.py">e:\vslrft\dlr\languages\ironpython\tests\interop\net\property\__init__.py</a></font></td></tr></table>
+    <p><tt>*&nbsp;Where&nbsp;the&nbsp;property/indexer&nbsp;is&nbsp;defined<br>
+&nbsp;&nbsp;-&nbsp;interface<br>
+*&nbsp;Property/Indexer&nbsp;type<br>
+&nbsp;&nbsp;-&nbsp;Same&nbsp;as&nbsp;described&nbsp;in&nbsp;the&nbsp;"field"<br>
+*&nbsp;How&nbsp;the&nbsp;property&nbsp;is&nbsp;defined<br>
+&nbsp;&nbsp;-&nbsp;Static&nbsp;/&nbsp;instance<br>
+&nbsp;&nbsp;-&nbsp;Read-write,&nbsp;read-only,&nbsp;write-only&nbsp;properties<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Derivation&nbsp;scenario:&nbsp;base&nbsp;/&nbsp;derived&nbsp;type&nbsp;each&nbsp;has&nbsp;different&nbsp;accessor.<br>
+&nbsp;&nbsp;-&nbsp;As&nbsp;interface&nbsp;implementation&nbsp;(interface-type&nbsp;.&nbsp;identifier)<br>
+*&nbsp;How&nbsp;the&nbsp;indexer&nbsp;is&nbsp;defined<br>
+&nbsp;&nbsp;-&nbsp;Static&nbsp;/&nbsp;instance<br>
+&nbsp;&nbsp;-&nbsp;this[parameter-list],&nbsp;or&nbsp;VB&nbsp;style,&nbsp;name[parameter-list]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;signature&nbsp;again:&nbsp;ref,&nbsp;params<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;overloads<br>
+&nbsp;&nbsp;-&nbsp;As&nbsp;interface&nbsp;implementation&nbsp;(interface-type.this[xxx],&nbsp;interface-type.Foo[xxx])<br>
+*&nbsp;set/get&nbsp;via&nbsp;Type|object&nbsp;(dot)&nbsp;(Static|Intance)&nbsp;Property|Indexer<br>
+*&nbsp;Set&nbsp;value&nbsp;with&nbsp;different&nbsp;type&nbsp;to&nbsp;the&nbsp;property/indexer,&nbsp;try&nbsp;None<br>
+*&nbsp;How&nbsp;Indexer&nbsp;choose&nbsp;the&nbsp;overload?<br>
+&nbsp;&nbsp;-&nbsp;Incorrect&nbsp;argument&nbsp;number,&nbsp;type<br>
+&nbsp;&nbsp;-&nbsp;(python)&nbsp;Overloaded&nbsp;index&nbsp;properties&nbsp;in&nbsp;general:&nbsp;foo['xyz'],&nbsp;foo['xyz',&nbsp;'def'],&nbsp;(foo[]&nbsp;?)<br>
+*&nbsp;repeating&nbsp;from&nbsp;the&nbsp;derived&nbsp;class&nbsp;or&nbsp;its&nbsp;instance<br>
+*&nbsp;(python)&nbsp;__set__/__get__...<br>
+*&nbsp;Negative&nbsp;scenario:&nbsp;property&nbsp;as&nbsp;By-ref&nbsp;argument<br>
+*&nbsp;Able&nbsp;to&nbsp;call&nbsp;the&nbsp;actual&nbsp;underlying&nbsp;methods<br>
+*&nbsp;Other&nbsp;operations&nbsp;against&nbsp;them<br>
+&nbsp;&nbsp;-&nbsp;Call,&nbsp;dot,</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Package Contents</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="interop.net.property.test_indexercs.html">test_indexercs</a><br>
+</td><td width="25%" valign=top><a href="interop.net.property.test_indexervb.html">test_indexervb</a><br>
+</td><td width="25%" valign=top><a href="interop.net.property.test_property.html">test_property</a><br>
+</td><td width="25%" valign=top></td></tr></table></td></tr></table>
+</body></html>

@@ -1,0 +1,119 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: package debugging.mdbg_tool</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="debugging.html"><font color="#ffffff">debugging</font></a>.mdbg_tool</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:e:\vslprf\dlr\languages\ironpython\tests\debugging\mdbg_tool\__init__.py">e:\vslprf\dlr\languages\ironpython\tests\debugging\mdbg_tool\__init__.py</a></font></td></tr></table>
+    <p><tt>AREA&nbsp;BREAKDOWN<br>
+&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;COMMANDS&nbsp;(see&nbsp;<a href="http://msdn.microsoft.com/en-us/library/ms229861.aspx">http://msdn.microsoft.com/en-us/library/ms229861.aspx</a>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Below&nbsp;is&nbsp;a&nbsp;list&nbsp;of&nbsp;all&nbsp;commands&nbsp;offered&nbsp;by&nbsp;the&nbsp;mdbg&nbsp;tool.&nbsp;Obviously&nbsp;not&nbsp;all<br>
+&nbsp;&nbsp;&nbsp;&nbsp;commands&nbsp;will&nbsp;be&nbsp;relevant&nbsp;for&nbsp;testing&nbsp;IP's&nbsp;debugging&nbsp;feature,&nbsp;but&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;they&nbsp;are&nbsp;called&nbsp;out&nbsp;here&nbsp;for&nbsp;brevity.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;ap[rocess]&nbsp;[number]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;a[ttach]&nbsp;[pid]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;b[reak]&nbsp;[ClassName.Method&nbsp;|&nbsp;FileName:LineNo]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;COVERED&nbsp;IN&nbsp;IP&nbsp;2.0<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;ca[tch]&nbsp;[exceptionType]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;COVERED&nbsp;IN&nbsp;IP&nbsp;2.0<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;conf[ig]&nbsp;[option&nbsp;value]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;del[ete]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;COVERED&nbsp;IN&nbsp;IP&nbsp;2.0<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;de[tach]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;d[own]&nbsp;[frames]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;echo<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;ex[it]&nbsp;[exitcode]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;fo[reach]&nbsp;[OtherCommand]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;f[unceval]&nbsp;[-ad&nbsp;Num]&nbsp;functionName&nbsp;[args&nbsp;...&nbsp;]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;g[o]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;COVERED&nbsp;IN&nbsp;IP&nbsp;2.0<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;h[elp]&nbsp;[command]&nbsp;or&nbsp;?&nbsp;[command]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;ig[nore]&nbsp;[event]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;COVERED&nbsp;IN&nbsp;IP&nbsp;2.0<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;int[ercept]&nbsp;FrameNumber<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;k[ill]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;l[ist]&nbsp;[modules|appdomains|assemblies]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;lo[ad]&nbsp;assemblyName<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;mo[de]&nbsp;[option&nbsp;on/off]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sets&nbsp;different&nbsp;debugger&nbsp;options.&nbsp;The&nbsp;option&nbsp;parameter&nbsp;should&nbsp;be&nbsp;a&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;two-letter&nbsp;pair.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;newo[bj]&nbsp;typeName&nbsp;[arguments...]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;n[ext]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;COVERED&nbsp;IN&nbsp;IP&nbsp;2.0<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;o[ut]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;pa[th]&nbsp;[pathName]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;p[rint]&nbsp;[var]&nbsp;|&nbsp;[-d]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;pro[cessenum]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;q[uit]&nbsp;[exitcode]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;re[sume]&nbsp;[*|[~]threadNumber]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;r[un]&nbsp;[-d(ebug)&nbsp;|&nbsp;-o(ptimize)&nbsp;|&nbsp;-enc]&nbsp;[[path_to_exe]&nbsp;[args_to_exe]]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;COVERED&nbsp;IN&nbsp;IP&nbsp;2.0<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;Set&nbsp;variable=value<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;Setip&nbsp;[-il]&nbsp;number<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;sh[ow]&nbsp;[lines]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;COVERED&nbsp;IN&nbsp;IP&nbsp;2.0<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;s[tep]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;su[spend]&nbsp;[*|[~]threadNumber]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;sy[mbol]&nbsp;commandName&nbsp;[commandValue]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;t[hread]&nbsp;[newThread][-nick&nbsp;name]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;u[p]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;when<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;w[here]&nbsp;[-v]&nbsp;[-c&nbsp;depth]&nbsp;[threadID]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;x&nbsp;[-c&nbsp;numSymbols]&nbsp;[module[!pattern]]<br>
+&nbsp;&nbsp;-&nbsp;SCENARIOS<br>
+&nbsp;&nbsp;&nbsp;&nbsp;TODO&nbsp;(7/30/2009):&nbsp;this&nbsp;section&nbsp;needs&nbsp;to&nbsp;be&nbsp;revisited.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;MdbgClassMethod<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;able&nbsp;to&nbsp;break&nbsp;into/step&nbsp;through&nbsp;new-style&nbsp;class's&nbsp;__init__&nbsp;and&nbsp;other&nbsp;class<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;method<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;MdbgDeclarations<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;step-through&nbsp;behavior&nbsp;when&nbsp;defining&nbsp;function,&nbsp;nested&nbsp;function&nbsp;and&nbsp;class<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;MdbgImport<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;able&nbsp;to&nbsp;break&nbsp;into&nbsp;the&nbsp;imported&nbsp;module&nbsp;file<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;MdbgInheritance<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;able&nbsp;to&nbsp;break&nbsp;into&nbsp;the&nbsp;base&nbsp;class's&nbsp;__init__&nbsp;and&nbsp;other&nbsp;method&nbsp;when&nbsp;calling&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;derived&nbsp;class's&nbsp;corresponding&nbsp;methods<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;MdbgInterop&nbsp;(not&nbsp;enabled&nbsp;yet)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;able&nbsp;to&nbsp;break&nbsp;into&nbsp;the&nbsp;C#&nbsp;code&nbsp;from&nbsp;the&nbsp;python&nbsp;code<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;able&nbsp;to&nbsp;break&nbsp;back&nbsp;into&nbsp;the&nbsp;python&nbsp;code&nbsp;from&nbsp;the&nbsp;C#&nbsp;code<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;MdbgNameError<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;able&nbsp;to&nbsp;catch&nbsp;runtime&nbsp;exception&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;verify&nbsp;the&nbsp;behavior&nbsp;when&nbsp;the&nbsp;runtime&nbsp;exception&nbsp;not&nbsp;caught&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;MdbgNested<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;able&nbsp;to&nbsp;break&nbsp;into&nbsp;simple&nbsp;function&nbsp;call,&nbsp;and&nbsp;python&nbsp;function&nbsp;calls&nbsp;another&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;python&nbsp;function<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;MdbgPyLang<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;verify&nbsp;the&nbsp;step-through&nbsp;behavior&nbsp;on&nbsp;the&nbsp;following&nbsp;language&nbsp;structures<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;generator<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;list&nbsp;comprehension&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;"exec"<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Decorator<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Lambda&nbsp;call<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;MdbgRecursive<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Able&nbsp;to&nbsp;break&nbsp;into&nbsp;the&nbsp;python&nbsp;code&nbsp;of&nbsp;a&nbsp;recursive&nbsp;function<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;MdbgRegression<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Some&nbsp;regression&nbsp;scenarios:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;225309:&nbsp;unable&nbsp;to&nbsp;set&nbsp;bp&nbsp;on&nbsp;augmented&nbsp;assignment&nbsp;statements<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;227218:&nbsp;the&nbsp;last&nbsp;line&nbsp;again&nbsp;when&nbsp;the&nbsp;nest&nbsp;try&nbsp;does&nbsp;not&nbsp;catch&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;exception<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;MdbgStepThrough<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;More&nbsp;step-through&nbsp;coverage&nbsp;on&nbsp;if&nbsp;/while&nbsp;/for&nbsp;/try-statement&nbsp;and&nbsp;their&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;combinations<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Step-through&nbsp;behavior&nbsp;for&nbsp;parallel&nbsp;assignment&nbsp;(aka.&nbsp;multiple-target&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assignments)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;MdbgTryCatch&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;step-through&nbsp;behavior&nbsp;when&nbsp;exception&nbsp;is&nbsp;not&nbsp;thrown,&nbsp;and&nbsp;when&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;exception&nbsp;is&nbsp;thrown(again)</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Package Contents</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top></td><td width="25%" valign=top></td><td width="25%" valign=top></td><td width="25%" valign=top></td></tr></table></td></tr></table>
+</body></html>

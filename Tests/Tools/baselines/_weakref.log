@@ -1,0 +1,23 @@
+Implement rest of _weakref module
+
+
+IP VERSION AFFECTED: 2.7
+FLAGS PASSED TO IPY.EXE: None
+OPERATING SYSTEMS AFFECTED: All
+
+DESCRIPTION
+-------------------------------------------------------
+Complete list of module attributes IronPython is still 
+missing implementations for:
+    _weakref.CallableProxyType    __cmp__                       # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17463
+    _weakref.ProxyType    __cmp__                               # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17463
+
+
+
+-------------------------------------------------------
+Complete list of module attributes that should be removed 
+from IronPython:
+    _weakref.CallableProxyType    __eq__                        # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17463
+    _weakref.CallableProxyType    __ne__                        # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17463
+    _weakref.ProxyType    __eq__                                # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17463
+    _weakref.ProxyType    __ne__                                # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17463

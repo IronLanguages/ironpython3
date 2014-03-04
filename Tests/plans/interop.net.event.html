@@ -1,0 +1,75 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: package interop.net.event</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="interop.html"><font color="#ffffff">interop</font></a>.<a href="interop.net.html"><font color="#ffffff">net</font></a>.event</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:e:\vslrft\dlr\languages\ironpython\tests\interop\net\event\__init__.py">e:\vslrft\dlr\languages\ironpython\tests\interop\net\event\__init__.py</a></font></td></tr></table>
+    <p><tt>Delegate<br>
+*&nbsp;How&nbsp;the&nbsp;delegate&nbsp;is&nbsp;defined?<br>
+&nbsp;&nbsp;-&nbsp;Different&nbsp;signatures&nbsp;(return&nbsp;type,&nbsp;argument&nbsp;list,&nbsp;params,&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;params&nbsp;dictionary,&nbsp;ref/out&nbsp;args)<br>
+&nbsp;&nbsp;-&nbsp;Generic&nbsp;delegate&nbsp;type&nbsp;<br>
+&nbsp;<br>
+*&nbsp;Instantiation<br>
+&nbsp;&nbsp;-&nbsp;With&nbsp;static/Instance&nbsp;(variable&nbsp;or&nbsp;literal)&nbsp;CLR&nbsp;method&nbsp;on&nbsp;value&nbsp;type/reference&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;type,&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;When&nbsp;Type.Method&nbsp;has&nbsp;overloads<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;No&nbsp;match&nbsp;or&nbsp;more&nbsp;than&nbsp;one&nbsp;matching&nbsp;method&nbsp;found.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Type|Instance&nbsp;(dot)&nbsp;StaticMethod|InstanceMethod<br>
+&nbsp;&nbsp;-&nbsp;Another&nbsp;delegate<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Type&nbsp;compatible,&nbsp;or&nbsp;not<br>
+*&nbsp;Pri&nbsp;2:&nbsp;it&nbsp;might&nbsp;be&nbsp;interesting&nbsp;to&nbsp;support&nbsp;some&nbsp;"light-weight&nbsp;coercion"&nbsp;here&nbsp;<br>
+&nbsp;&nbsp;where&nbsp;compatible&nbsp;delegates&nbsp;cast&nbsp;w/o&nbsp;new&nbsp;code&nbsp;gen.&nbsp;&nbsp;It's&nbsp;a&nbsp;feature,&nbsp;but&nbsp;just&nbsp;<br>
+&nbsp;&nbsp;adding&nbsp;some&nbsp;minimal&nbsp;tests&nbsp;of&nbsp;coercible&nbsp;delegates&nbsp;would&nbsp;be&nbsp;interesting.&nbsp;&nbsp;For&nbsp;<br>
+&nbsp;&nbsp;example&nbsp;a&nbsp;delegate&nbsp;object&nbsp;foo(subclass&nbsp;a)&nbsp;could&nbsp;have&nbsp;a&nbsp;otherclass&nbsp;bar(baseclass&nbsp;a)&nbsp;<br>
+&nbsp;&nbsp;cast&nbsp;to&nbsp;it&nbsp;-&nbsp;such&nbsp;conversions&nbsp;should&nbsp;be&nbsp;implicit.<br>
+&nbsp;&nbsp;-&nbsp;Others:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;a&nbsp;type,&nbsp;indexer,&nbsp;field,&nbsp;operator,&nbsp;property,&nbsp;NULL<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;interface.Method,&nbsp;...?<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Language&nbsp;function/methods<br>
+&nbsp;&nbsp;-&nbsp;Possible&nbsp;need&nbsp;for&nbsp;type&nbsp;conversion<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Static&nbsp;type&nbsp;should&nbsp;not&nbsp;be&nbsp;in&nbsp;the&nbsp;signature<br>
+&nbsp;&nbsp;-&nbsp;C#&nbsp;reference:&nbsp;<a href="http://msdn2.microsoft.com/en-us/library/aa691347(VS.71).aspx">http://msdn2.microsoft.com/en-us/library/aa691347(VS.71).aspx</a>&nbsp;<br>
+*&nbsp;Operations&nbsp;on&nbsp;delegate&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;+,&nbsp;+=,&nbsp;-,&nbsp;-=<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Add&nbsp;the&nbsp;same&nbsp;method&nbsp;multiple&nbsp;times<br>
+*&nbsp;Removing&nbsp;once&nbsp;-&nbsp;the&nbsp;last&nbsp;occurrence&nbsp;is&nbsp;the&nbsp;one&nbsp;actually&nbsp;removed<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Removing&nbsp;the&nbsp;same&nbsp;method&nbsp;multiple&nbsp;times&nbsp;<br>
+*&nbsp;Impossible&nbsp;removal&nbsp;is&nbsp;benign<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Becomes&nbsp;empty&nbsp;invocation&nbsp;list&nbsp;after&nbsp;removing.<br>
+&nbsp;&nbsp;-&nbsp;invocation<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;call&nbsp;expression,&nbsp;__call__,&nbsp;"Invoke"<br>
+&nbsp;&nbsp;-&nbsp;other&nbsp;wild&nbsp;operations<br>
+&nbsp;<br>
+Event&nbsp;<br>
+*&nbsp;Where&nbsp;it&nbsp;is&nbsp;defined<br>
+&nbsp;&nbsp;-&nbsp;Interface<br>
+*&nbsp;How&nbsp;it&nbsp;is&nbsp;defined<br>
+&nbsp;&nbsp;-&nbsp;Add&nbsp;only,&nbsp;remove&nbsp;only,&nbsp;different&nbsp;accessibility&nbsp;/&nbsp;modifiers<br>
+&nbsp;&nbsp;-&nbsp;Static&nbsp;or&nbsp;instance<br>
+&nbsp;&nbsp;-&nbsp;Explicit&nbsp;event&nbsp;from&nbsp;interface<br>
+*&nbsp;Operations&nbsp;on&nbsp;Type|object&nbsp;(dot)&nbsp;(Static|Intance)&nbsp;Event<br>
+&nbsp;&nbsp;-&nbsp;+=,&nbsp;-=,&nbsp;=,&nbsp;Add/Remove&nbsp;(?)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;The&nbsp;choices&nbsp;of&nbsp;the&nbsp;right&nbsp;side:&nbsp;<br>
+*&nbsp;delegate,&nbsp;method,&nbsp;others<br>
+*&nbsp;compatible,&nbsp;not&nbsp;compatible&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;(python)&nbsp;__add__,&nbsp;__iadd__,&nbsp;__sub__,&nbsp;__isub__&nbsp;direct&nbsp;calls<br>
+&nbsp;&nbsp;-&nbsp;call&nbsp;operator,&nbsp;explicit&nbsp;"invoke"?<br>
+&nbsp;&nbsp;-&nbsp;Other&nbsp;operations:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Use&nbsp;it&nbsp;as&nbsp;the&nbsp;right-hand&nbsp;operand&nbsp;somewhere&nbsp;else?</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Package Contents</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="interop.net.event.test_delegate.html">test_delegate</a><br>
+</td><td width="25%" valign=top><a href="interop.net.event.test_event.html">test_event</a><br>
+</td><td width="25%" valign=top></td><td width="25%" valign=top></td></tr></table></td></tr></table>
+</body></html>

@@ -1,0 +1,96 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: package interop.net.derivation</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="interop.html"><font color="#ffffff">interop</font></a>.<a href="interop.net.html"><font color="#ffffff">net</font></a>.derivation</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:e:\vslrft\dlr\languages\ironpython\tests\interop\net\derivation\__init__.py">e:\vslrft\dlr\languages\ironpython\tests\interop\net\derivation\__init__.py</a></font></td></tr></table>
+    <p><tt>*&nbsp;Derive&nbsp;from:<br>
+&nbsp;&nbsp;-&nbsp;struct,&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;delegate&nbsp;type,&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;Interface&nbsp;(which&nbsp;can&nbsp;declare&nbsp;property,&nbsp;indexer,&nbsp;event,&nbsp;method),&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;PythonTypeA&nbsp;&lt;&nbsp;interfaceTwo&nbsp;&lt;&nbsp;interfaceOne<br>
+&nbsp;&nbsp;-&nbsp;Reference&nbsp;types&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;sealed&nbsp;ref&nbsp;type<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;abstract<br>
+&nbsp;&nbsp;-&nbsp;generic&nbsp;type:&nbsp;open/closed<br>
+&nbsp;&nbsp;-&nbsp;System.Delegate,&nbsp;System.Enum,&nbsp;System.ValueType,&nbsp;System.Array<br>
+&nbsp;&nbsp;-&nbsp;System.MarshalByRefObject<br>
+&nbsp;&nbsp;-&nbsp;Literal&nbsp;(int,&nbsp;str)&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;Extensbile&lt;T&gt;<br>
+&nbsp;&nbsp;-&nbsp;non-sense&nbsp;object&nbsp;(expression/simply&nbsp;variable)<br>
+&nbsp;&nbsp;-&nbsp;derive&nbsp;from&nbsp;multiple&nbsp;types<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;pure&nbsp;clr&nbsp;types:&nbsp;Interesting&nbsp;scenario&nbsp;example,&nbsp;such&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;as&nbsp;"class&nbsp;X&nbsp;(System.ValueType,&nbsp;IOneInterface):&nbsp;pass"<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;mixed&nbsp;clr&nbsp;type&nbsp;and&nbsp;language&nbsp;type<br>
+&nbsp;&nbsp;-&nbsp;Derive&nbsp;again&nbsp;from&nbsp;the&nbsp;same&nbsp;.net&nbsp;type:&nbsp;any&nbsp;visible&nbsp;impact?<br>
+&nbsp;&nbsp;-&nbsp;deep&nbsp;derivation&nbsp;chain:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;language&nbsp;type&nbsp;A&nbsp;derives&nbsp;from&nbsp;.NET&nbsp;type&nbsp;B,&nbsp;another&nbsp;language&nbsp;type&nbsp;C&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;derives&nbsp;from&nbsp;A<br>
+&nbsp;&nbsp;-&nbsp;deriving&nbsp;from&nbsp;something&nbsp;throw,&nbsp;and&nbsp;derive&nbsp;again&nbsp;(bug)<br>
+*&nbsp;Body<br>
+&nbsp;&nbsp;-&nbsp;(python)&nbsp;__new__,&nbsp;__init__<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Deal&nbsp;with&nbsp;base&nbsp;type's&nbsp;ctor&nbsp;overload<br>
+&nbsp;&nbsp;-&nbsp;Derive&nbsp;with&nbsp;complete&nbsp;or&nbsp;Incomplete&nbsp;implementation<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Each&nbsp;language&nbsp;might&nbsp;need&nbsp;support&nbsp;defining&nbsp;event/property/indexer<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Where&nbsp;there&nbsp;is&nbsp;no&nbsp;need&nbsp;to&nbsp;implement&nbsp;anything<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Completely&nbsp;implement&nbsp;the&nbsp;direct&nbsp;base&nbsp;type/interface,&nbsp;but&nbsp;not&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;grandparent.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;(python)&nbsp;Incomplete&nbsp;implementations&nbsp;should&nbsp;only&nbsp;throw&nbsp;an&nbsp;error&nbsp;at&nbsp;runtime&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;the&nbsp;functionality&nbsp;is&nbsp;used<br>
+&nbsp;&nbsp;-&nbsp;Support&nbsp;explicit&nbsp;interface&nbsp;implementation?&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Possible&nbsp;duplicate&nbsp;method&nbsp;names...<br>
+&nbsp;&nbsp;-&nbsp;Try&nbsp;to&nbsp;access&nbsp;all&nbsp;private/protected/public&nbsp;members&nbsp;(including&nbsp;operators,&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;op_implicit...)&nbsp;from&nbsp;the&nbsp;base&nbsp;(clr&nbsp;or&nbsp;lang)&nbsp;type<br>
+&nbsp;&nbsp;-&nbsp;(python)&nbsp;Defining&nbsp;field&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;"new"&nbsp;field&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;existing&nbsp;name<br>
+&nbsp;&nbsp;-&nbsp;(python)&nbsp;Defining&nbsp;method&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;"new"&nbsp;method<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;overriding&nbsp;the&nbsp;existing&nbsp;virtual/override&nbsp;method<br>
+*&nbsp;able&nbsp;to&nbsp;call&nbsp;base&nbsp;types'&nbsp;method<br>
+*&nbsp;compatible&nbsp;and&nbsp;incompatible&nbsp;method&nbsp;signatures<br>
+&nbsp;&nbsp;-&nbsp;Params&nbsp;&lt;=&gt;&nbsp;*arg<br>
+&nbsp;&nbsp;-&nbsp;Ref&nbsp;arg<br>
+*&nbsp;Such&nbsp;methods&nbsp;to&nbsp;be&nbsp;called&nbsp;by&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;the&nbsp;base&nbsp;type,&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;other&nbsp;method&nbsp;in&nbsp;the&nbsp;current&nbsp;type<br>
+&nbsp;&nbsp;-&nbsp;(python)&nbsp;__slots__,&nbsp;__metaclass__<br>
+&nbsp;&nbsp;-&nbsp;__slots__&nbsp;and&nbsp;overriding&nbsp;virtual&nbsp;members<br>
+&nbsp;&nbsp;-&nbsp;Supported&nbsp;operators&nbsp;we&nbsp;treated&nbsp;like&nbsp;python...&nbsp;(big)<br>
+*&nbsp;Inspect&nbsp;the&nbsp;new&nbsp;type<br>
+*&nbsp;Consume&nbsp;it&nbsp;after&nbsp;creating&nbsp;such&nbsp;object<br>
+&nbsp;&nbsp;-&nbsp;Try&nbsp;to&nbsp;access&nbsp;private/protected/public&nbsp;members&nbsp;from&nbsp;the&nbsp;base&nbsp;type<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;(python)&nbsp;protected&nbsp;members&nbsp;should&nbsp;be&nbsp;available&nbsp;on&nbsp;derived&nbsp;types,&nbsp;but&nbsp;not&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;on&nbsp;non-derived&nbsp;types<br>
+x&nbsp;=&nbsp;object()<br>
+x.MemberwiseClone()&nbsp;#&nbsp;error<br>
+class&nbsp;foo(object):&nbsp;pass<br>
+foo().MemberwiseClone()&nbsp;#&nbsp;works<br>
+&nbsp;&nbsp;-&nbsp;Try&nbsp;to&nbsp;access&nbsp;the&nbsp;newly&nbsp;defined&nbsp;members<br>
+&nbsp;&nbsp;-&nbsp;pass&nbsp;it&nbsp;back&nbsp;to&nbsp;.NET&nbsp;world,&nbsp;where&nbsp;someone&nbsp;is&nbsp;calling<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;the&nbsp;new&nbsp;interface&nbsp;method<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;the&nbsp;new&nbsp;virtual&nbsp;method<br>
+*&nbsp;Versioning<br>
+&nbsp;&nbsp;-&nbsp;Where&nbsp;the&nbsp;type/interface&nbsp;comes&nbsp;with&nbsp;new&nbsp;member<br>
+&nbsp;&nbsp;-&nbsp;Mostly&nbsp;related&nbsp;to&nbsp;derivation</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Package Contents</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="interop.net.derivation.test_ctor_override.html">test_ctor_override</a><br>
+<a href="interop.net.derivation.test_event_override.html">test_event_override</a><br>
+</td><td width="25%" valign=top><a href="interop.net.derivation.test_method_override.html">test_method_override</a><br>
+<a href="interop.net.derivation.test_method_signature.html">test_method_signature</a><br>
+</td><td width="25%" valign=top><a href="interop.net.derivation.test_property_override.html">test_property_override</a><br>
+<a href="interop.net.derivation.test_simplederive.html">test_simplederive</a><br>
+</td><td width="25%" valign=top><a href="interop.net.derivation.test_special_method.html">test_special_method</a><br>
+</td></tr></table></td></tr></table>
+</body></html>

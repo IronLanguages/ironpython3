@@ -1,0 +1,15 @@
+Implement rest of select module
+
+
+IP VERSION AFFECTED: 2.7
+FLAGS PASSED TO IPY.EXE: None
+OPERATING SYSTEMS AFFECTED: All
+
+DESCRIPTION
+-------------------------------------------------------
+Complete list of module attributes IronPython is still 
+missing implementations for:
+    select  __file__                      # select is a .pyd in CPython, built-in in IronPython, not a bug.
+
+
+

@@ -1,0 +1,15 @@
+Implement rest of _functools module
+
+
+IP VERSION AFFECTED: 3.0
+FLAGS PASSED TO IPY.EXE: None
+OPERATING SYSTEMS AFFECTED: All
+
+DESCRIPTION
+-------------------------------------------------------
+Complete list of module attributes IronPython is still 
+missing implementations for:
+    _functools.partial    __setstate__                  
+
+
+

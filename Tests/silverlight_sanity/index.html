@@ -1,0 +1,35 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" >
+
+<head>
+  <style type="text/css">
+    html, body {
+      height: 100%;
+      overflow: auto;
+    }
+    body {
+      padding: 0;
+      margin: 0;
+      background-color: #000000;
+    }
+    #silverlightControlHost {
+	  position: absolute;
+	  left: 300px;
+	  top: 300px;
+    }
+  </style>
+
+</head>
+
+<body>
+  <div id="silverlightControlHost">
+    <object data="data:application/x-silverlight," type="application/x-silverlight-2" width="70" height="16">
+      <param name="source" value="app.xap"/>
+      <param name="background" value="#FFFFFFFF" />
+      <param name="initParams" value="debug=false" />
+      <param name="windowless" value="true" />
+    </object>
+    <iframe style='visibility:hidden;height:0;width:0;border:0px'></iframe>
+  </div>
+</body>
+</html>

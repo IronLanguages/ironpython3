@@ -22,6 +22,8 @@
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="AttrInjectorTest.cs" />
     <Compile Include="ExtensionMethodTest.cs" />
+    <Compile Include="Cases\IronPythonCases.cs" />
+    <Compile Include="Cases\CPythonCases.cs" />
     <Compile Include="LightExceptionTests.cs" />
     <Compile Include="MemberOverloadTest.cs" />
     <Compile Include="BinderTest.cs" />
@@ -55,9 +57,11 @@
     <Compile Include="StringDictionaryStorage.cs" />
     <Compile Include="TestBuiltinModule.cs" />
     <Compile Include="TypeDescriptor.cs" />
+    <Compile Include="Util\IniParser.cs" />
+    <Compile Include="Util\TestManifest.cs" />
     <AppDesigner Include="Properties\" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(IsFullFramework)' == 'true' and '$(TargetFrameworkVersion)' != 'v3.5'" >
+  <ItemGroup Condition=" '$(IsFullFramework)' == 'true' and '$(TargetFrameworkVersion)' != 'v3.5'">
     <Reference Include="System.Xaml" />
     <Reference Include="WindowsBase" />
   </ItemGroup>

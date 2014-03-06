@@ -12,28 +12,16 @@ using NUnit.Framework.Api;
 namespace IronPythonTest.Cases {
     [TestFixture(Category="IronPython")]
     public class IronPythonCases {
-        ScriptEngine engine;
+        private CaseExecuter executor;
 
         [TestFixtureSetUp]
         public void FixtureSetUp() {
-            this.engine = Python.CreateEngine(new Dictionary<string, object> {
-                {"Debug", true },
-                {"Frames", true},
-                {"FullFrames", true}
-            });
-
-            var executable = System.Reflection.Assembly.GetEntryAssembly().Location;
-            this.engine.SetHostVariables(
-                Path.GetDirectoryName(executable),
-                executable,
-                "");
+            this.executor = new CaseExecuter();
         }
 
         [Test, TestCaseSource(typeof(IronPythonCaseGenerator))]
         public int IronPythonTests(TestInfo testcase) {
-            var source = this.engine.CreateScriptSourceFromString(
-                testcase.Text, testcase.Path, SourceCodeKind.File);
-            return source.ExecuteProgram();
+            return this.executor.RunTest(testcase);
         }
     }
 

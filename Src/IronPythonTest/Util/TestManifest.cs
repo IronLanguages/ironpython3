@@ -22,6 +22,15 @@ namespace IronPythonTest.Util {
         }
     }
 
+    public enum TestIsolationLevel {
+        DEFAULT = 1,
+        SCOPE = 1,
+        ENGINE,
+        RUNTIME,
+        APPDOMAIN,
+        PROCESS
+    }
+
     public class TestOptions {
         string testName;
         IniParser manifest;
@@ -33,8 +42,33 @@ namespace IronPythonTest.Util {
 
         public bool Ignore {
             get {
-                return this.manifest.GetBool(this.testName, "Ignore");
+                return this.manifest.GetBool(this.testName, "Ignore", false);
+            }
+        }
+
+        public TestIsolationLevel IsolationLevel {
+            get {
+                return this.manifest.GetEnum<TestIsolationLevel>(this.testName, "IsolationLevel", TestIsolationLevel.DEFAULT);
+            }
+        }
+
+        public bool Debug {
+            get {
+                return this.manifest.GetBool(this.testName, "Debug", false);
+            }
+        }
+
+        public bool Frames {
+            get {
+                return this.manifest.GetBool(this.testName, "Frames", false);
+            }
+        }
+
+        public bool FullFrames {
+            get {
+                return this.manifest.GetBool(this.testName, "FullFrames", false);
             }
         }
     }
+
 }

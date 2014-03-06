@@ -39,6 +39,18 @@ namespace IronPythonTest.Util {
             return GetValue(sectionName, key).AsBool();
         }
 
+        public bool GetBool(string sectionName, string key, bool @default) {
+            return GetValue(sectionName, key, @default ? "t" : "f").AsBool();
+        }
+
+        public TEnum GetEnum<TEnum>(string sectionName, string key) {
+            return this.GetValue(sectionName, key).AsEnum<TEnum>();
+        }
+
+        public TEnum GetEnum<TEnum>(string sectionName, string key, TEnum @default) {
+            return this.GetValue(sectionName, key, @default.ToString()).AsEnum<TEnum>();
+        }
+
         private static OptionStore Parse(IEnumerable<string> lines) {
             Section currentSection = new Section();
             OptionStore options = new OptionStore(StringComparer.OrdinalIgnoreCase) { { "DEFAULT", currentSection } };
@@ -78,6 +90,10 @@ namespace IronPythonTest.Util {
         static HashSet<string> Falsey = new HashSet<string> { "0", "f", "false", "n", "no" };
 
         public static bool AsBool(this string s) {
+            if (s == null) {
+                throw new ArgumentNullException("s");
+            }
+
             var l = s.ToLowerInvariant();
             if (Truthy.Contains(l)) {
                 return true;
@@ -86,6 +102,10 @@ namespace IronPythonTest.Util {
             } else {
                 throw new ArgumentException(string.Format("'{0}' is neither true nor false.", s));
             }
+        }
+
+        public static TEnum AsEnum<TEnum>(this string s) {
+            return (TEnum)Enum.Parse(typeof(TEnum), s);
         }
     }
 }

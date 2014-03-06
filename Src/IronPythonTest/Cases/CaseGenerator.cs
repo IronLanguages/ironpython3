@@ -14,13 +14,13 @@ namespace IronPythonTest.Cases {
             this.Path = path;
             this.Text = LoadTest(path);
             this.Name = GetName(path);
-            this.TestOptions = testManifest[this.Name];
+            this.Options = testManifest[this.Name];
         }
 
         public string Path { get; private set; }
         public string Text { get; private set; }
         public string Name { get; private set; }
-        public TestOptions TestOptions { get; private set; }
+        public TestOptions Options { get; private set; }
 
         private static string LoadTest(string path) {
             return File.ReadAllText(path);
@@ -46,7 +46,7 @@ namespace IronPythonTest.Cases {
                     .SetName(testcase.Name)
                     .Returns(0);
 
-                if (testcase.TestOptions.Ignore)
+                if (testcase.Options.Ignore)
                     result.Ignore();
 
                 yield return result;

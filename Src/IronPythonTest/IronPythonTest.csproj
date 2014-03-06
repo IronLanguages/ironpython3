@@ -21,6 +21,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="AttrInjectorTest.cs" />
+    <Compile Include="Cases\CaseExecuter.cs" />
     <Compile Include="Cases\CaseGenerator.cs" />
     <Compile Include="ExtensionMethodTest.cs" />
     <Compile Include="Cases\IronPythonCases.cs" />

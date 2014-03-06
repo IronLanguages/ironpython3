@@ -14,39 +14,36 @@ using NUnit.Framework.Api;
 namespace IronPythonTest.Cases {
     [TestFixture(Category = "CPython")]
     class CPythonCases {
-        private ScriptEngine engine;
+        private CaseExecuter executor;
 
         [TestFixtureSetUp]
         public void FixtureSetUp() {
-            this.engine = Python.CreateEngine(new Dictionary<string, object> {
-                {"Debug", true },
-                {"Frames", true},
-                {"FullFrames", true}
-            });
-
-            var executable = System.Reflection.Assembly.GetEntryAssembly().Location;
-            this.engine.SetHostVariables(
-                Path.GetDirectoryName(executable),
-                executable,
-                "");
+            this.executor = new CaseExecuter();
         }
 
         [Test, TestCaseSource(typeof(StandardCPythonCases))]
         public int StandardCPythonTests(TestInfo testcase) {
-            var source = this.engine.CreateScriptSourceFromString(
-                testcase.Text, testcase.Path, SourceCodeKind.File);
-
             try {
-                return source.ExecuteProgram();
+                return this.executor.RunTest(testcase);
             } catch (SyntaxErrorException e) {
-                Assert.Fail("SyntaxError ({0}, {1}): {2}", e.RawSpan.Start.Line, e.RawSpan.Start.Column, e.Message);
+                Assert.Fail("SyntaxError: {3}({0}, {1}): {2}", e.Line, e.Column, e.Message, e.SourcePath);
+                return -1;
+            }
+        }
+
+        [Test, TestCaseSource(typeof(AllCPythonCases)), Category("AllCPythonTest")]
+        public int AllCPythonTests(TestInfo testcase) {
+            try {
+                return this.executor.RunTest(testcase);
+            } catch (SyntaxErrorException e) {
+                Assert.Fail("SyntaxError: {3}({0}, {1}): {2}", e.Line, e.Column, e.Message, e.SourcePath);
                 return -1;
             }
         }
     }
 
     class StandardCPythonCases : CommonCaseGenerator<CPythonCases> {
-        private static readonly string[] STDTESTS = {
+        internal static readonly ISet<string> STDTESTS = new HashSet<String> {
             "test_grammar",
             "test_opcodes",
             "test_dict",
@@ -62,6 +59,17 @@ namespace IronPythonTest.Cases {
         protected override IEnumerable<TestInfo> GetTests() {
             var stdlib = @"..\..\Src\StdLib\Lib\test";
             return STDTESTS.Select(test => new TestInfo(Path.GetFullPath(Path.Combine(stdlib, test) + ".py"), this.manifest));
+        }
+    }
+
+    class AllCPythonCases : CommonCaseGenerator<CPythonCases> {
+        protected override IEnumerable<TestInfo> GetTests() {
+            var stdlib = @"..\..\Src\StdLib\Lib\test";
+            return Directory.GetFiles(stdlib, "test_*.py", SearchOption.AllDirectories)
+                .Where(file => !StandardCPythonCases.STDTESTS.Contains(Path.GetFileNameWithoutExtension(file)))
+                .Select(file => new TestInfo(Path.GetFullPath(file), this.manifest))
+                .OrderBy(testcase => testcase.Name)
+                .Take(2);
         }
     }
 }

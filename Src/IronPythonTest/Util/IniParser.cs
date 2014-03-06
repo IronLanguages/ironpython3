@@ -6,7 +6,7 @@ namespace IronPythonTest.Util {
     using Section = Dictionary<string, string>;
     using OptionStore = Dictionary<string, Dictionary<string, string>>;
 
-    class IniParser {
+    public class IniParser {
         OptionStore options;
 
         public IniParser(Stream source) {

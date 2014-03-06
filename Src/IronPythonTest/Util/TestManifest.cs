@@ -5,12 +5,12 @@ using System.Linq;
 using System.Text;
 
 namespace IronPythonTest.Util {
-    class TestManifest {
+    public class TestManifest {
         IniParser manifest;
 
         public TestManifest(Type parent) {
             var file = parent.Assembly.GetManifestResourceStream(
-                string.Format("IronPythonTest.{0}Manifest.ini", parent.Name));
+                string.Format("IronPythonTest.Cases.{0}Manifest.ini", parent.Name));
 
             this.manifest = new IniParser(file);
         }
@@ -22,7 +22,7 @@ namespace IronPythonTest.Util {
         }
     }
 
-    class TestOptions {
+    public class TestOptions {
         string testName;
         IniParser manifest;
 
@@ -31,9 +31,9 @@ namespace IronPythonTest.Util {
             this.testName = testName;
         }
 
-        public bool Skip {
+        public bool Ignore {
             get {
-                return this.manifest.GetBool(this.testName, "Skip");
+                return this.manifest.GetBool(this.testName, "Ignore");
             }
         }
     }

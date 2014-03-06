@@ -7,6 +7,7 @@
     <!-- These are normally set by Build.proj, except when building from VS. -->
     <RootDir Condition=" '$(RootDir)' == '' ">$(MSBuildThisFileDirectory)..</RootDir>
     <BuildSysDir Condition=" '$(BuildSysDir)' == '' ">$(RootDir)\Build</BuildSysDir>
+    <ReferenceDir Condition=" '$(ReferenceDir)' == '' ">$(RootDir)\Util\References</ReferenceDir>
     <DlrVersion>1.2.0-alpha0</DlrVersion>
 
     <Mono Condition=" '$(Mono)' == '' and '$(OS)' != 'Windows_NT'">true</Mono>

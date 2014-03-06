@@ -32,14 +32,20 @@ namespace IronPythonTest.Cases {
         }
 
         [Test, TestCaseSource(typeof(StandardCPythonCases))]
-        public int StandardCPythonTests(IronPythonCase testcase) {
+        public int StandardCPythonTests(TestInfo testcase) {
             var source = this.engine.CreateScriptSourceFromString(
                 testcase.Text, testcase.Path, SourceCodeKind.File);
-            return source.ExecuteProgram();
+
+            try {
+                return source.ExecuteProgram();
+            } catch (SyntaxErrorException e) {
+                Assert.Fail("SyntaxError ({0}, {1}): {2}", e.RawSpan.Start.Line, e.RawSpan.Start.Column, e.Message);
+                return -1;
+            }
         }
     }
 
-    class StandardCPythonCases : IEnumerable {
+    class StandardCPythonCases : CommonCaseGenerator<CPythonCases> {
         private static readonly string[] STDTESTS = {
             "test_grammar",
             "test_opcodes",
@@ -53,19 +59,9 @@ namespace IronPythonTest.Cases {
             "test_support"
         };
 
-        public IEnumerator GetEnumerator() {
-            foreach (var testcase in GetTests()) {
-                var result = new TestCaseData(testcase)
-                    .SetName(testcase.Name)
-                    .Returns(0);
-
-                yield return result;
-            }
-        }
-
-        private IEnumerable<IronPythonCase> GetTests() {
-            var stdlib = @"..\..\External.LCA_RESTRICTED\Languages\IronPython\27\Lib\test";
-            return STDTESTS.Select(test => new IronPythonCase(Path.GetFullPath(Path.Combine(stdlib, test) + ".py")));
+        protected override IEnumerable<TestInfo> GetTests() {
+            var stdlib = @"..\..\Src\StdLib\Lib\test";
+            return STDTESTS.Select(test => new TestInfo(Path.GetFullPath(Path.Combine(stdlib, test) + ".py"), this.manifest));
         }
     }
 }

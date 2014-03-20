@@ -1,0 +1,153 @@
+Implement rest of types_only module
+
+
+IP VERSION AFFECTED: 2.7
+FLAGS PASSED TO IPY.EXE: None
+OPERATING SYSTEMS AFFECTED: All
+
+DESCRIPTION # 23356 http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=23356
+-------------------------------------------------------
+Complete list of module attributes IronPython is still 
+missing implementations for:
+    Type: <type 'builtin_function_or_method'>  __eq__                        
+    Type: <type 'builtin_function_or_method'>  __ne__                        
+    Type: <type 'builtin_function_or_method'>  __eq__                        
+    Type: <type 'builtin_function_or_method'>  __ne__                        
+    Type: <type 'builtin_function_or_method'>  __eq__                        
+    Type: <type 'builtin_function_or_method'>  __ne__                        
+    Type: <type 'datetime.datetime'>  strptime                      
+    Type: <type 'datetime.timedelta'>  __rdiv__                      
+    Type: <type 'datetime.timedelta'>  __rfloordiv__                 
+    Type: <type 'dictproxy'>  __cmp__                       
+    Type: <type 'dictproxy'>  __ge__                        
+    Type: <type 'dictproxy'>  __gt__                        
+    Type: <type 'dictproxy'>  __le__                        
+    Type: <type 'dictproxy'>  __lt__                        
+    Type: <type 'file'>  errors                        
+    Type: <type 'file'>  readinto                      
+    Type: <type 'getset_descriptor'>  __delete__                    
+    Type: <type 'getset_descriptor'>  __name__                      
+    Type: <type 'getset_descriptor'>  __objclass__                  
+    Type: <type 'getset_descriptor'>  __set__                       
+    Type: <type 'instancemethod'>  __cmp__                       
+    Type: <type 'method-wrapper'>/Type: <type 'builtin_function_or_method'>  __objclass__                  
+    Type: <type 'str'>/Type: <type 'bytes'>  __getnewargs__                
+    Type: <type 'str'>/Type: <type 'bytes'>  __getslice__                  
+    Type: <type 'str'>/Type: <type 'bytes'>  __mod__                       
+    Type: <type 'str'>/Type: <type 'bytes'>  __rmod__                      
+    Type: <type 'str'>/Type: <type 'bytes'>  _formatter_field_name_split   
+    Type: <type 'str'>/Type: <type 'bytes'>  _formatter_parser             
+    Type: <type 'str'>/Type: <type 'bytes'>  encode                        
+    Type: <type 'str'>/Type: <type 'bytes'>  format                        
+    Type: <type 'type'>  __abstractmethods__           
+    Type: <type 'type'>  __basicsize__                 
+    Type: <type 'type'>  __dictoffset__                
+    Type: <type 'type'>  __eq__                        
+    Type: <type 'type'>  __itemsize__                  
+    Type: <type 'type'>  __ne__                        
+    Type: <type 'type'>  __weakrefoffset__             
+    Type: <type 'wrapper_descriptor'>  __call__                      
+    Type: <type 'wrapper_descriptor'>  __name__                      
+    Type: <type 'wrapper_descriptor'>  __objclass__                  
+
+
+
+-------------------------------------------------------
+Complete list of module attributes that should be removed 
+from IronPython:
+    Type: <type 'basestring'>/Type: <type 'str'>  __add__                       
+    Type: <type 'basestring'>/Type: <type 'str'>  __contains__                  
+    Type: <type 'basestring'>/Type: <type 'str'>  __eq__                        
+    Type: <type 'basestring'>/Type: <type 'str'>  __ge__                        
+    Type: <type 'basestring'>/Type: <type 'str'>  __getitem__                   
+    Type: <type 'basestring'>/Type: <type 'str'>  __getnewargs__                
+    Type: <type 'basestring'>/Type: <type 'str'>  __getslice__                  
+    Type: <type 'basestring'>/Type: <type 'str'>  __gt__                        
+    Type: <type 'basestring'>/Type: <type 'str'>  __le__                        
+    Type: <type 'basestring'>/Type: <type 'str'>  __len__                       
+    Type: <type 'basestring'>/Type: <type 'str'>  __lt__                        
+    Type: <type 'basestring'>/Type: <type 'str'>  __mod__                       
+    Type: <type 'basestring'>/Type: <type 'str'>  __mul__                       
+    Type: <type 'basestring'>/Type: <type 'str'>  __ne__                        
+    Type: <type 'basestring'>/Type: <type 'str'>  __radd__                      
+    Type: <type 'basestring'>/Type: <type 'str'>  __rmod__                      
+    Type: <type 'basestring'>/Type: <type 'str'>  __rmul__                      
+    Type: <type 'basestring'>/Type: <type 'str'>  _formatter_field_name_split   
+    Type: <type 'basestring'>/Type: <type 'str'>  _formatter_parser             
+    Type: <type 'basestring'>/Type: <type 'str'>  capitalize                    
+    Type: <type 'basestring'>/Type: <type 'str'>  center                        
+    Type: <type 'basestring'>/Type: <type 'str'>  count                         
+    Type: <type 'basestring'>/Type: <type 'str'>  decode                        
+    Type: <type 'basestring'>/Type: <type 'str'>  encode                        
+    Type: <type 'basestring'>/Type: <type 'str'>  endswith                      
+    Type: <type 'basestring'>/Type: <type 'str'>  expandtabs                    
+    Type: <type 'basestring'>/Type: <type 'str'>  find                          
+    Type: <type 'basestring'>/Type: <type 'str'>  format                        
+    Type: <type 'basestring'>/Type: <type 'str'>  index                         
+    Type: <type 'basestring'>/Type: <type 'str'>  isalnum                       
+    Type: <type 'basestring'>/Type: <type 'str'>  isalpha                       
+    Type: <type 'basestring'>/Type: <type 'str'>  isdecimal                     
+    Type: <type 'basestring'>/Type: <type 'str'>  isdigit                       
+    Type: <type 'basestring'>/Type: <type 'str'>  islower                       
+    Type: <type 'basestring'>/Type: <type 'str'>  isnumeric                     
+    Type: <type 'basestring'>/Type: <type 'str'>  isspace                       
+    Type: <type 'basestring'>/Type: <type 'str'>  istitle                       
+    Type: <type 'basestring'>/Type: <type 'str'>  isunicode                     
+    Type: <type 'basestring'>/Type: <type 'str'>  isupper                       
+    Type: <type 'basestring'>/Type: <type 'str'>  join                          
+    Type: <type 'basestring'>/Type: <type 'str'>  ljust                         
+    Type: <type 'basestring'>/Type: <type 'str'>  lower                         
+    Type: <type 'basestring'>/Type: <type 'str'>  lstrip                        
+    Type: <type 'basestring'>/Type: <type 'str'>  partition                     
+    Type: <type 'basestring'>/Type: <type 'str'>  replace                       
+    Type: <type 'basestring'>/Type: <type 'str'>  rfind                         
+    Type: <type 'basestring'>/Type: <type 'str'>  rindex                        
+    Type: <type 'basestring'>/Type: <type 'str'>  rjust                         
+    Type: <type 'basestring'>/Type: <type 'str'>  rpartition                    
+    Type: <type 'basestring'>/Type: <type 'str'>  rsplit                        
+    Type: <type 'basestring'>/Type: <type 'str'>  rstrip                        
+    Type: <type 'basestring'>/Type: <type 'str'>  split                         
+    Type: <type 'basestring'>/Type: <type 'str'>  splitlines                    
+    Type: <type 'basestring'>/Type: <type 'str'>  startswith                    
+    Type: <type 'basestring'>/Type: <type 'str'>  strip                         
+    Type: <type 'basestring'>/Type: <type 'str'>  swapcase                      
+    Type: <type 'basestring'>/Type: <type 'str'>  title                         
+    Type: <type 'basestring'>/Type: <type 'str'>  translate                     
+    Type: <type 'basestring'>/Type: <type 'str'>  upper                         
+    Type: <type 'basestring'>/Type: <type 'str'>  zfill                         
+    Type: <type 'bool'>  __eq__                        
+    Type: <type 'bool'>  __ne__                        
+    Type: <type 'bool'>  bit_length                    
+    Type: <type 'builtin_function_or_method'>  __get__                       
+    Type: <type 'builtin_function_or_method'>  __get__                       
+    Type: <type 'builtin_function_or_method'>  __get__                       
+    Type: <type 'datetime.date'>  __getnewargs__                
+    Type: <type 'datetime.datetime'>  __getnewargs__                
+    Type: <type 'datetime.timedelta'>  __getnewargs__                
+    Type: <type 'dict'>  viewitems                     
+    Type: <type 'dict'>  viewkeys                      
+    Type: <type 'dict'>  viewvalues                    
+    Type: <type 'instancemethod'>  __eq__                        
+    Type: <type 'instancemethod'>  __ne__                        
+    Type: <type 'int'>  bit_length                    
+    Type: <type 'list'>  __radd__                      
+    Type: <type 'long'>  bit_length                    
+    Type: <type 'method-wrapper'>/Type: <type 'builtin_function_or_method'>  __ge__                        
+    Type: <type 'method-wrapper'>/Type: <type 'builtin_function_or_method'>  __get__                       
+    Type: <type 'method-wrapper'>/Type: <type 'builtin_function_or_method'>  __gt__                        
+    Type: <type 'method-wrapper'>/Type: <type 'builtin_function_or_method'>  __le__                        
+    Type: <type 'method-wrapper'>/Type: <type 'builtin_function_or_method'>  __lt__                        
+    Type: <type 'method-wrapper'>/Type: <type 'builtin_function_or_method'>  __module__                    
+    Type: <type 'method_descriptor'>  __cmp__                       
+    Type: <type 'str'>  __radd__                      
+    Type: <type 'str'>  isdecimal                     
+    Type: <type 'str'>  isnumeric                     
+    Type: <type 'str'>  isunicode                     
+    Type: <type 'str'>/Type: <type 'bytes'>  __radd__                      
+    Type: <type 'str'>/Type: <type 'bytes'>  fromhex                       
+    Type: <type 'tuple'>  __radd__                      
+    Type: <type 'type'>  __dir__                       
+    Type: <type 'type'>  __getitem__                   
+    Type: <type 'unicode'>/Type: <type 'str'>  __radd__                      
+    Type: <type 'unicode'>/Type: <type 'str'>  isunicode                     
+    Type: <type 'wrapper_descriptor'>/Type: <type 'method_descriptor'>  __cmp__                       

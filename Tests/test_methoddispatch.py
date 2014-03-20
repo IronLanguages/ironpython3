@@ -1,0 +1,1424 @@
+#####################################################################################
+#
+#  Copyright (c) Microsoft Corporation. All rights reserved.
+#
+# This source code is subject to terms and conditions of the Apache License, Version 2.0. A
+# copy of the license can be found in the License.html file at the root of this distribution. If
+# you cannot locate the  Apache License, Version 2.0, please send an email to
+# ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound
+# by the terms of the Apache License, Version 2.0.
+#
+# You must not remove this notice, or any other, from this software.
+#
+#
+#####################################################################################
+
+from iptest.assert_util import *
+skiptest("win32")
+
+import clr
+import System
+
+load_iron_python_test()
+from IronPythonTest import *
+
+#A few minimal checks for error messages - using bad exact match rules
+#???These tests should be rewritten to capture essence of errors without details
+def test_sanity():
+    md = MixedDispatch("hi")
+    AssertErrorWithMessage(TypeError, "Combine() takes exactly 2 arguments (1 given)", MixedDispatch.Combine, md)
+    AssertErrorWithMessage(TypeError, "Combine() takes at least 1 argument (0 given)", md.Combine)
+    md.Combine(md)
+
+    x = BindingTestClass.Bind("Hello")
+    Assert(x == "Hello")
+    x = BindingTestClass.Bind(10)
+    Assert(x == 10)
+    x = BindingTestClass.Bind(False)
+    Assert(x == False)
+
+    b = InheritedBindingSub()
+    Assert(b.Bind(True) == "Subclass bool")
+    Assert(b.Bind("Hi") == "Subclass string")
+    Assert(b.Bind(10) == "Subclass int")
+
+    x = "this is a string"
+    y = x.Split(' ')
+    Assert(y[0] == "this")
+    Assert(y[1] == "is")
+    Assert(y[2] == "a")
+    Assert(y[3] == "string")
+
+    def verify_complex(x, xx):
+        Assert(x.Real == xx.real)
+        Assert(x.Imag == xx.imag)
+
+    i  = Cmplx(3, 4)
+    ii = (3 + 4j)
+    j  = Cmplx(2, 1)
+    jj = (2 + 1j)
+
+    verify_complex(i, ii)
+    verify_complex(j, jj)
+    
+    verify_complex(i + j, ii + jj)
+    verify_complex(i - j, ii - jj)
+    verify_complex(i * j, ii * jj)
+    verify_complex(i / j, ii / jj)
+
+    verify_complex(i + 2.5, ii + 2.5)
+    verify_complex(i - 2.5, ii - 2.5)
+    verify_complex(i * 2.5, ii * 2.5)
+    verify_complex(i / 2.5, ii / 2.5)
+    
+    verify_complex(2.5 + j, 2.5 + jj)
+    verify_complex(2.5 - j, 2.5 - jj)
+    verify_complex(2.5 * j, 2.5 * jj)
+    verify_complex(2.5 / j, 2.5 / jj)
+    
+    verify_complex(i + 2, ii + 2)
+    verify_complex(i - 2, ii - 2)
+    verify_complex(i * 2, ii * 2)
+    verify_complex(i / 2, ii / 2)
+
+    verify_complex(2 + j, 2 + jj)
+    verify_complex(2 - j, 2 - jj)
+    verify_complex(2 * j, 2 * jj)
+    verify_complex(2 / j, 2 / jj)
+    
+    verify_complex(-i, -ii)
+    verify_complex(-j, -jj)
+
+    i *= j
+    ii *= jj
+    verify_complex(i, ii)
+
+    i /= j
+    ii /= jj
+    verify_complex(i, ii)
+
+    i += j
+    ii += jj
+    verify_complex(i, ii)
+
+    i -= j
+    ii -= jj
+    verify_complex(i, ii)
+
+    i -= 2
+    ii -= 2
+    verify_complex(i, ii)
+
+    i += 2
+    ii += 2
+    verify_complex(i, ii)
+    
+    i *= 2
+    ii *= 2
+    verify_complex(i, ii)
+
+    i /= 2
+    ii /= 2
+    verify_complex(i, ii)
+
+    class D(Infinite):
+        pass
+
+    class E(D):
+        def __cmp__(self, other):
+            return super(E, self).__cmp__(other)
+
+    e = E()
+    result = E.__cmp__(e, 20)
+    retuls = e.__cmp__(20)
+
+    class F(Infinite):
+        def __cmp__(self, other):
+            return super(F, self).__cmp__(other)
+
+    f = F()
+    result = F.__cmp__(f, 20)
+    result = f.__cmp__(20)
+
+@skip("silverlight")
+def test_system_drawing():
+    clr.AddReferenceByPartialName("System.Drawing")
+    from System.Drawing import Rectangle
+    r = Rectangle(0, 0, 3, 7)
+    s = Rectangle(3, 0, 8, 14)
+    
+    # calling the static method
+    i = Rectangle.Intersect(r, s)
+    AreEqual(i, Rectangle(3, 0, 0, 7))
+    AreEqual(r, Rectangle(0, 0, 3, 7))
+    AreEqual(s, Rectangle(3, 0, 8, 14))
+    
+    # calling the instance
+    i = r.Intersect(s)
+    AreEqual(i, None)
+    AreEqual(r, Rectangle(3, 0, 0, 7))
+    AreEqual(s, Rectangle(3, 0, 8, 14))
+    
+    # calling instance w/ StrongBox
+    r = Rectangle(0, 0, 3, 7)
+    box = clr.StrongBox[Rectangle](r)
+    i = box.Intersect(s)
+    AreEqual(i, None)
+    AreEqual(box.Value, Rectangle(3, 0, 0, 7))
+    AreEqual(s, Rectangle(3, 0, 8, 14))
+    
+    # should be able to access properties through the box
+    AreEqual(box.X, 3)
+    
+    # multiple sites should produce the same function
+    i = box.Intersect
+    j = box.Intersect
+
+def test_io_memorystream():
+    s = System.IO.MemoryStream()
+    a = System.Array.CreateInstance(System.Byte, 10)
+    b = System.Array.CreateInstance(System.Byte, a.Length)
+    for i in range(a.Length):
+        a[i] = a.Length - i
+    s.Write(a, 0, a.Length)
+    result = s.Seek(0, System.IO.SeekOrigin.Begin)
+    r = s.Read(b, 0, b.Length)
+    Assert(r == b.Length)
+    for i in range(a.Length):
+        AreEqual(a[i], b[i])
+
+def test_types():
+    global type
+    BoolType    = (System.Boolean, BindTest.BoolValue,    BindResult.Bool)
+    ByteType    = (System.Byte,    BindTest.ByteValue,    BindResult.Byte)
+    CharType    = (System.Char,    BindTest.CharValue,    BindResult.Char)
+    DecimalType = (System.Decimal, BindTest.DecimalValue, BindResult.Decimal)
+    DoubleType  = (System.Double,  BindTest.DoubleValue,  BindResult.Double)
+    FloatType   = (System.Single,  BindTest.FloatValue,   BindResult.Float)
+    IntType     = (System.Int32,   BindTest.IntValue,     BindResult.Int)
+    LongType    = (System.Int64,   BindTest.LongValue,    BindResult.Long)
+    ObjectType  = (System.Object,  BindTest.ObjectValue,  BindResult.Object)
+    SByteType   = (System.SByte,   BindTest.SByteValue,   BindResult.SByte)
+    ShortType   = (System.Int16,   BindTest.ShortValue,   BindResult.Short)
+    StringType  = (System.String,  BindTest.StringValue,  BindResult.String)
+    UIntType    = (System.UInt32,  BindTest.UIntValue,    BindResult.UInt)
+    ULongType   = (System.UInt64,  BindTest.ULongValue,   BindResult.ULong)
+    UShortType  = (System.UInt16,  BindTest.UShortValue,  BindResult.UShort)
+    
+    saveType = type
+
+    for binding in [BoolType, ByteType, CharType, DecimalType, DoubleType,
+                    FloatType, IntType, LongType, ObjectType, SByteType,
+                    ShortType, StringType, UIntType, ULongType, UShortType]:
+        type   = binding[0]
+        value  = binding[1]
+        expect = binding[2]
+
+        # Select using System.Type object
+        select = BindTest.Bind.Overloads[type]
+        result = select(value)
+        AreEqual(expect, result)
+    
+        # Select using ReflectedType object
+        select = BindTest.Bind.Overloads[type]
+        result = select(value)
+        AreEqual(expect, result)
+
+        # Make simple call
+        result = BindTest.Bind(value)
+        if not binding is CharType:
+            AreEqual(expect, result)
+
+        result, output = BindTest.BindRef(value)
+        if not binding is CharType:
+            AreEqual(expect | BindResult.Ref, result)
+    
+        # MakeArrayType and MakeByRefType are SecurityCritical and thus cannot be called via reflection in silverlight,
+        # so disable these in interpreted mode.
+        if not (is_silverlight):
+            # Select using Array type
+            arrtype = System.Type.MakeArrayType(type)
+            select = BindTest.Bind.Overloads[arrtype]
+            array  = System.Array.CreateInstance(type, 1)
+            array[0] = value
+            result = select(array)
+            AreEqual(expect | BindResult.Array, result)
+    
+            # Select using ByRef type
+            reftype = System.Type.MakeByRefType(type)
+            select = BindTest.Bind.Overloads[reftype]
+            result, output = select()
+            AreEqual(expect | BindResult.Out, result)
+    
+            select = BindTest.BindRef.Overloads[reftype]
+            result, output = select(value)
+            AreEqual(expect | BindResult.Ref, result)
+
+    type = saveType
+
+    select = BindTest.Bind.Overloads[()]
+    result = select()
+    AreEqual(BindResult.None, result)
+
+
+def test_enum():
+
+    class MyEnumTest(EnumTest):
+        def TestDaysInt(self):
+            return DaysInt.Weekdays
+
+        def TestDaysShort(self):
+            return DaysShort.Weekdays
+
+        def TestDaysLong(self):
+            return DaysLong.Weekdays
+
+        def TestDaysSByte(self):
+            return DaysSByte.Weekdays
+
+        def TestDaysByte(self):
+            return DaysByte.Weekdays
+
+        def TestDaysUShort(self):
+            return DaysUShort.Weekdays
+    
+        def TestDaysUInt(self):
+            return DaysUInt.Weekdays
+
+        def TestDaysULong(self):
+            return DaysULong.Weekdays
+
+    et = MyEnumTest()
+
+    AreEqual(et.TestDaysInt(), DaysInt.Weekdays)
+    AreEqual(et.TestDaysShort(), DaysShort.Weekdays)
+    AreEqual(et.TestDaysLong(), DaysLong.Weekdays)
+    AreEqual(et.TestDaysSByte(), DaysSByte.Weekdays)
+    AreEqual(et.TestDaysByte(), DaysByte.Weekdays)
+    AreEqual(et.TestDaysUShort(), DaysUShort.Weekdays)
+    AreEqual(et.TestDaysUInt(), DaysUInt.Weekdays)
+    AreEqual(et.TestDaysULong(), DaysULong.Weekdays)
+
+    for l in range(10):
+        a = System.Array.CreateInstance(str, l)
+        r = []
+        for i in range(l):
+            a[i] = "ip" * i
+            r.append("IP" * i)
+        m = map(str.upper, a)
+        AreEqual(m, r)
+
+    methods = [
+        MyEnumTest.TestEnumInt,
+        MyEnumTest.TestEnumShort,
+        MyEnumTest.TestEnumLong,
+        MyEnumTest.TestEnumSByte,
+        MyEnumTest.TestEnumUInt,
+        MyEnumTest.TestEnumUShort,
+        MyEnumTest.TestEnumULong,
+        MyEnumTest.TestEnumByte,
+        #MyEnumTest.TestEnumBoolean,
+    ]
+
+    parameters = [
+        DaysInt.Weekdays,
+        DaysShort.Weekdays,
+        DaysLong.Weekdays,
+        DaysSByte.Weekdays,
+        DaysByte.Weekdays,
+        DaysUShort.Weekdays,
+        DaysUInt.Weekdays,
+        DaysULong.Weekdays,
+    ]
+
+    for p in parameters:
+        #No implicit conversions from enum to numeric types are allowed
+        for m in methods:
+            AssertError(TypeError, m, p)
+        x = int(p)
+        x = bool(p)
+
+######################################################################################
+
+def Check(flagValue, func, *args):
+    Dispatch.Flag = 0
+    func(*args)
+    Assert(Dispatch.Flag == flagValue)
+
+d = Dispatch()
+
+#======================================================================
+#        public void M1(int arg) { Flag = 101; }
+#        public void M1(DispatchHelpers.Color arg) { Flag = 201; }
+#======================================================================
+
+Check(101, d.M1, 1)
+Check(201, d.M1, DispatchHelpers.Color.Red)
+AssertError(TypeError, d.M1, None)
+
+#======================================================================
+#        public void M2(int arg) { Flag = 102; }
+#        public void M2(int arg, params int[] arg2) { Flag = 202; }
+#======================================================================
+
+Check(102, d.M2, 1)
+Check(202, d.M2, 1, 1)
+Check(202, d.M2, 1, 1, 1)
+Check(202, d.M2, 1, None)
+AssertError(TypeError, d.M2, 1, 1, "string", 1)
+AssertError(TypeError, d.M2, None, None)
+AssertError(TypeError, d.M2, None)
+
+#======================================================================
+#        public void M3(int arg) { Flag = 103; }
+#        public void M3(int arg, int arg2) { Flag = 203; }
+#======================================================================
+
+AssertError(TypeError, d.M3, DispatchHelpers.Color.Red)
+Check(103, d.M3, 1)
+Check(203, d.M3, 1, 1)
+AssertError(TypeError, d.M3, None, None)
+AssertError(TypeError, d.M4, None)
+
+#======================================================================
+#        public void M4(int arg) { Flag = 104; }
+#        public void M4(int arg, __arglist) { Flag = 204; }
+#======================================================================
+
+AssertError(TypeError, DispatchHelpers.Color.Red)
+Check(104, d.M4, 1)
+#VarArgs methods can not be called from IronPython by design
+AssertError(TypeError, d.M4, 1, 1)
+AssertError(TypeError, d.M4, None, None)
+AssertError(TypeError, d.M4, None)
+
+#======================================================================
+#        public void M5(float arg) { Flag = 105; }
+#        public void M5(double arg) { Flag = 205; }
+#======================================================================
+
+#!!! easy way to get M5(float) invoked
+Check(105, d.M5, System.Single.Parse("3.14"))
+Check(205, d.M5, 3.14)
+AssertError(TypeError, d.M5, None)
+
+#======================================================================
+#        public void M6(char arg) { Flag = 106; }
+#        public void M6(string arg) { Flag = 206; }
+#======================================================================
+
+#!!! no way to invoke M6(char)
+Check(206, d.M6, 'a')
+Check(206, d.M6, 'hello')
+Check(206, d.M6, 'hello'[0])
+Check(206, d.M6, None)
+
+#======================================================================
+#        public void M7(int arg) { Flag = 107; }
+#        public void M7(params int[] args) { Flag = 207; }
+#======================================================================
+Check(207, d.M7)
+Check(107, d.M7, 1)
+Check(207, d.M7, 1, 1)
+Check(207, d.M7, None)
+
+#======================================================================
+#        public void M8(int arg) { Flag = 108; }
+#        public void M8(ref int arg) { Flag = 208; arg = 999; }
+#        public void M10(ref int arg) { Flag = 210; arg = 999; }
+#======================================================================
+Check(108, d.M8, 1);
+
+Assert(d.M10(1) == 999)
+Check(210, d.M10, 1);
+AssertError(TypeError, d.M10, None)
+
+#======================================================================
+#        public void M11(int arg, int arg2) { Flag = 111; }
+#        public void M11(DispatchHelpers.Color arg, int arg2) { Flag = 211; }
+#======================================================================
+
+Check(111, d.M11, 1, 1)
+AssertError(TypeError, d.M11, 1, DispatchHelpers.Color.Red)
+Check(211, d.M11, DispatchHelpers.Color.Red, 1)
+AssertError(TypeError, d.M11, DispatchHelpers.Color.Red, DispatchHelpers.Color.Red)
+
+#======================================================================
+#        public void M12(int arg, DispatchHelpers.Color arg2) { Flag = 112; }
+#        public void M12(DispatchHelpers.Color arg, int arg2) { Flag = 212; }
+#======================================================================
+
+AssertError(TypeError, d.M12, 1, 1)
+Check(112, d.M12, 1, DispatchHelpers.Color.Red)
+Check(212, d.M12, DispatchHelpers.Color.Red, 1)
+AssertError(TypeError, d.M12, DispatchHelpers.Color.Red, DispatchHelpers.Color.Red)
+
+#======================================================================
+#        public void M20(DispatchHelpers.B arg) { Flag = 120; }
+#======================================================================
+
+Check(120, d.M20, None)
+
+#======================================================================
+#        public void M22(DispatchHelpers.B arg) { Flag = 122; }
+#        public void M22(DispatchHelpers.D arg) { Flag = 222; }
+#======================================================================
+
+Check(222, d.M22, None)
+Check(122, d.M22, DispatchHelpers.B())
+Check(222, d.M22, DispatchHelpers.D())
+
+#======================================================================
+#        public void M23(DispatchHelpers.I arg) { Flag = 123; }
+#        public void M23(DispatchHelpers.C2 arg) { Flag = 223; }
+#======================================================================
+
+Check(123, d.M23, DispatchHelpers.C1())
+Check(223, d.M23, DispatchHelpers.C2())
+
+#======================================================================
+# Bug 20 - public void M50(params DispatchHelpers.B[] args) { Flag = 150; }
+#======================================================================
+
+Check(150, d.M50, DispatchHelpers.B())
+Check(150, d.M50, DispatchHelpers.D())
+Check(150, d.M50, DispatchHelpers.B(), DispatchHelpers.B())
+Check(150, d.M50, DispatchHelpers.B(), DispatchHelpers.D())
+Check(150, d.M50, DispatchHelpers.D(), DispatchHelpers.D())
+
+#======================================================================
+#        public void M51(params DispatchHelpers.B[] args) { Flag = 151; }
+#        public void M51(params DispatchHelpers.D[] args) { Flag = 251; }
+#======================================================================
+
+Check(151, d.M51, DispatchHelpers.B())
+Check(251, d.M51, DispatchHelpers.D())
+Check(151, d.M51, DispatchHelpers.B(), DispatchHelpers.B())
+Check(151, d.M51, DispatchHelpers.B(), DispatchHelpers.D())
+Check(251, d.M51, DispatchHelpers.D(), DispatchHelpers.D())
+
+#======================================================================
+#        public void M60(int? arg) { Flag = 160; }
+#======================================================================
+Check(160, d.M60, 1)
+Check(160, d.M60, None)
+
+#======================================================================
+#        public void M70(Dispatch arg) { Flag = 170; }
+#======================================================================
+Check(170, d.M70, d)
+AssertError(TypeError, Dispatch.M70, d)
+AssertError(TypeError, d.M70, d, d)
+Check(170, Dispatch.M70, d, d)
+
+#======================================================================
+#        public static void M71(Dispatch arg) { Flag = 171; }
+#======================================================================
+Check(171, d.M71, d)
+Check(171, Dispatch.M71, d)
+AssertError(TypeError, d.M71, d, d)
+AssertError(TypeError, Dispatch.M71, d, d)
+
+#======================================================================
+#        public static void M81(Dispatch arg, int arg2) { Flag = 181; }
+#        public void M81(int arg) { Flag = 281; }
+#======================================================================
+AssertError(TypeError, d.M81, d, 1)
+Check(181, Dispatch.M81, d, 1)
+Check(281, d.M81, 1)
+AssertError(TypeError, Dispatch.M81, 1)
+
+#======================================================================
+#        public static void M82(bool arg) { Flag = 182; }
+#        public static void M82(string arg) { Flag = 282; }
+#======================================================================
+Check(182, d.M82, True)
+Check(282, d.M82, "True")
+Check(182, Dispatch.M82, True)
+Check(282, Dispatch.M82, "True")
+
+#======================================================================
+#        public void M83(bool arg) { Flag = 183; }
+#        public void M83(string arg) { Flag = 283; }
+#======================================================================
+Check(183, d.M83, True)
+Check(283, d.M83, "True")
+AssertError(TypeError, Dispatch.M83, True)
+AssertError(TypeError, Dispatch.M83, "True")
+AssertError(TypeError, d.M83, d, True)
+AssertError(TypeError, d.M83, d, "True")
+Check(183, Dispatch.M83, d, True)
+Check(283, Dispatch.M83, d, "True")
+
+
+#======================================================================
+#        public void M90<T>(int arg) { Flag = 190; }
+#======================================================================
+AssertError(TypeError, d.M90, 1)
+Check(191, d.M91, 1)
+
+#======================================================================
+#======================================================================
+
+d = DispatchDerived()
+Check(201, d.M1, 1)
+
+Check(102, d.M2, 1)
+Check(202, d.M2, DispatchHelpers.Color.Red)
+
+Check(103, d.M3, 1)
+Check(203, d.M3, "hello")
+
+Check(104, d.M4, 100)
+Check(204, d.M4, "python")
+
+Check(205, d.M5, 1)
+Check(106, d.M6, 1)
+
+#======================================================================
+# ConversionDispatch - Test binding List / Tuple to array/enum/IList/ArrayList/etc...
+#======================================================================
+
+cd = ConversionDispatch()
+
+###########################################
+# checker functions - verify the result of the test
+
+def Check(res, orig):
+    if hasattr(res, "__len__"):
+        AreEqual(len(res), len(orig))
+    i = 0
+    for a in res:
+        AreEqual(a, orig[i])
+        i = i+1
+    AreEqual(i, len(orig))
+
+def len_helper(o):
+    if hasattr(o, 'Count'): return o.Count
+    return len(o)
+
+def clear_helper(o):
+    if hasattr(o, 'Clear'):
+        o.Clear()
+    else:
+        del o[:]
+
+def CheckModify(res, orig):
+    Check(res, orig)
+
+    index = len_helper(res)
+    res.Add(orig[0])
+    Check(res, orig)
+
+    res.RemoveAt(index)
+    Check(res, orig)
+
+    x = res[0]
+    res.Remove(orig[0])
+    Check(res, orig)
+
+    res.Insert(0, x)
+    Check(res, orig)
+
+    if(hasattr(res, "sort")):
+        res.sort()
+        Check(res, orig)
+
+    clear_helper(res)
+    Check(res, orig)
+
+def keys_helper(o):
+    if hasattr(o, 'keys'): return o.keys()
+    
+    return o.Keys
+    
+def CheckDict(res, orig):
+    if hasattr(res, "__len__"):
+        AreEqual(len(res), len(orig))
+    i = 0
+    
+    for a in keys_helper(res):
+        AreEqual(res[a], orig[a])
+        i = i+1
+    AreEqual(i, len(orig))
+
+
+###################################
+# test data sets used for all the checks
+
+
+# list/tuple data
+inttuple = (2,3,4,5)
+strtuple = ('a', 'b', 'c', 'd')
+othertuple = (['a', 2], ['c', 'd', 3], 5)
+
+
+intlist = [2,3,4,5]
+strlist = ['a', 'b', 'c', 'd']
+otherlist = [('a', 2), ('c', 'd', 3), 5]
+
+intdict = {2:5, 7:8, 9:10}
+strdict = {'abc': 'def', 'xyz':'abc', 'mno':'prq'}
+objdict = { (2,3) : (4,5), (1,2):(3,4), (8,9):(1,4)}
+mixeddict = {'abc': 2, 'def': 9, 'qrs': 8}
+
+objFunctions = [cd.Array,cd.ObjIList, cd.Enumerable]
+objData = [inttuple, strtuple, othertuple]
+
+intFunctions = [cd.IntEnumerable, cd.IntIList]
+intData = [inttuple, intlist]
+
+intTupleFunctions = [cd.IntArray]
+intTupleData = [inttuple]
+
+strFunctions = [cd.StringEnumerable, cd.StringIList]
+strData = [strtuple, strlist]
+
+strTupleFunctions = [cd.StringArray]
+strTupleData = [strtuple]
+
+# dictionary data
+
+objDictFunctions = [cd.DictTest]
+objDictData = [intdict, strdict, objdict, mixeddict]
+
+intDictFunctions = [cd.IntDictTest]
+intDictData = [intdict]
+
+strDictFunctions = [cd.StringDictTest]
+strDictData = [strdict]
+
+mixedDictFunctions = [cd.MixedDictTest]
+mixedDictData = [mixeddict]
+
+modCases = [ (cd.ObjIList, (intlist, strlist, otherlist)),
+             ( cd.IntIList, (intlist,) ),
+             ( cd.StringIList, (strlist,) ),
+              ]
+
+testCases = [ [objFunctions, objData],
+              [intFunctions, intData],
+              [strFunctions, strData],
+              [intTupleFunctions, intTupleData],
+              [strTupleFunctions, strTupleData] ]
+
+dictTestCases = ( (objDictFunctions, objDictData ),
+                  (intDictFunctions, intDictData ),
+                  (strDictFunctions, strDictData),
+                  (mixedDictFunctions, mixedDictData) )
+
+############################################3
+# run the test cases:
+
+# verify all conversions succeed properly
+
+for cases in testCases:
+    for func in cases[0]:
+        for data in cases[1]:
+            Check(func(data), data)
+
+
+# verify that modifications show up as appropriate.
+
+for case in modCases:
+    for data in case[1]:
+        newData = list(data)
+        CheckModify(case[0](newData), newData)
+
+
+# verify dictionary test cases
+
+for case in dictTestCases:
+    for data in case[1]:
+        for func in case[0]:
+            newData = dict(data)
+            CheckDict(func(newData), newData)
+
+
+x = FieldTest()
+y = System.Collections.Generic.List[System.Type]()
+x.Field = y
+
+# verify we can bind w/ add & radd
+AreEqual(x.Field, y)
+
+a = Cmplx(2, 3)
+b = Cmplx2(3, 4)
+
+x = a + b
+y = b + a
+
+
+#############################################################
+# Verify combinaions of instance / no instance
+
+a = MixedDispatch("one")
+b = MixedDispatch("two")
+c = MixedDispatch("three")
+d = MixedDispatch("four")
+
+
+
+x= a.Combine(b)
+y = MixedDispatch.Combine(a,b)
+
+AreEqual(x.called, "instance")
+AreEqual(y.called, "static")
+
+x= a.Combine2(b)
+y = MixedDispatch.Combine2(a,b)
+z = MixedDispatch.Combine2(a,b,c,d)
+v = a.Combine2(b,c,d)
+
+AreEqual(x.called, "instance")
+AreEqual(y.called, "static")
+AreEqual(z.called, "instance_three")
+AreEqual(v.called, "instance_three")
+
+
+###########################################################
+# verify non-instance built-in's don't get bound
+
+class C:
+    mycmp = cmp
+    
+a = C()
+AreEqual(a.mycmp(0,0), 0)
+
+####################################################################################
+# Default parameter value tests
+def test_default_value():
+    tst = DefaultValueTest()
+
+
+    AreEqual(tst.Test_Enum(), BindResult.Bool)
+    AreEqual(tst.Test_BigEnum(), BigEnum.BigValue)
+    AreEqual(tst.Test_String(), 'Hello World')
+    AreEqual(tst.Test_Int(), 5)
+    AreEqual(tst.Test_UInt(), 4294967295)
+    AreEqual(tst.Test_Bool(), True)
+    AreEqual(str(tst.Test_Char()), 'A')
+    AreEqual(tst.Test_Byte(), 2)
+    AreEqual(tst.Test_SByte(), 2)
+    AreEqual(tst.Test_Short(), 2)
+    AreEqual(tst.Test_UShort(), 2)
+    AreEqual(tst.Test_Long(), 9223372036854775807)
+    AreEqual(tst.Test_ULong(), 18446744073709551615)
+
+    r = clr.Reference[object]("Hi")
+    s = clr.Reference[object]("Hello")
+    t = clr.Reference[object]("Ciao")
+
+    AreEqual(tst.Test_ByRef_Object(), "System.Reflection.Missing; System.Reflection.Missing; System.Reflection.Missing")
+    AreEqual(tst.Test_ByRef_Object(r), "Hi; System.Reflection.Missing; System.Reflection.Missing")
+    AreEqual(tst.Test_ByRef_Object(r, s), "Hi; Hello; System.Reflection.Missing")
+    AreEqual(tst.Test_ByRef_Object(r, s, t), "Hi; Hello; Ciao")
+    AreEqual(tst.Test_ByRef_Object("Hi", "Hello", "Ciao"), ("Hi; Hello; Ciao"))
+    AssertError(TypeError, tst.Test_ByRef_Object, "Hi")
+    
+    AreEqual(tst.Test_Default_Cast(), "1")
+    AreEqual(tst.Test_Default_Cast("Hello"), ("Hello", "Hello"))
+    AreEqual(tst.Test_Default_Cast(None), ("(null)", None))
+
+    AreEqual(tst.Test_Default_ValueType(), "1")
+    AreEqual(tst.Test_Default_ValueType("Hello"), "Hello")
+    AreEqual(tst.Test_Default_ValueType(None), "(null)")
+
+####################################################################################
+# test missing parameter
+def test_missing_value():
+    tst = MissingValueTest()
+
+    AreEqual(tst.Test_1(), "(bool)False")
+    AreEqual(tst.Test_2(), "(bool)False")
+    AreEqual(tst.Test_3(), "(sbyte)0")
+    AreEqual(tst.Test_4(), "(sbyte)0")
+    AreEqual(tst.Test_5(), "(byte)0")
+    AreEqual(tst.Test_6(), "(byte)0")
+    AreEqual(tst.Test_7(), "(short)0")
+    AreEqual(tst.Test_8(), "(short)0")
+    AreEqual(tst.Test_9(), "(ushort)0")
+    AreEqual(tst.Test_10(), "(ushort)0")
+    AreEqual(tst.Test_11(), "(int)0")
+    AreEqual(tst.Test_12(), "(int)0")
+    AreEqual(tst.Test_13(), "(uint)0")
+    AreEqual(tst.Test_14(), "(uint)0")
+    AreEqual(tst.Test_15(), "(long)0")
+    AreEqual(tst.Test_16(), "(long)0")
+    AreEqual(tst.Test_17(), "(ulong)0")
+    AreEqual(tst.Test_18(), "(ulong)0")
+    AreEqual(tst.Test_19(), "(decimal)0")
+    AreEqual(tst.Test_20(), "(decimal)0")
+    AreEqual(tst.Test_21(), "(float)0")
+    AreEqual(tst.Test_22(), "(float)0")
+    AreEqual(tst.Test_23(), "(double)0")
+    AreEqual(tst.Test_24(), "(double)0")
+    AreEqual(tst.Test_25(), "(DaysByte)None")
+    AreEqual(tst.Test_26(), "(DaysByte)None")
+    AreEqual(tst.Test_27(), "(DaysSByte)None")
+    AreEqual(tst.Test_28(), "(DaysSByte)None")
+    AreEqual(tst.Test_29(), "(DaysShort)None")
+    AreEqual(tst.Test_30(), "(DaysShort)None")
+    AreEqual(tst.Test_31(), "(DaysUShort)None")
+    AreEqual(tst.Test_32(), "(DaysUShort)None")
+    AreEqual(tst.Test_33(), "(DaysInt)None")
+    AreEqual(tst.Test_34(), "(DaysInt)None")
+    AreEqual(tst.Test_35(), "(DaysUInt)None")
+    AreEqual(tst.Test_36(), "(DaysUInt)None")
+    AreEqual(tst.Test_37(), "(DaysLong)None")
+    AreEqual(tst.Test_38(), "(DaysLong)None")
+    AreEqual(tst.Test_39(), "(DaysULong)None")
+    AreEqual(tst.Test_40(), "(DaysULong)None")
+    AreEqual(tst.Test_41(), "(char)\x00")
+    AreEqual(tst.Test_42(), "(char)\x00")
+    AreEqual(tst.Test_43(), "(Structure)IronPythonTest.Structure")
+    AreEqual(tst.Test_44(), "(Structure)IronPythonTest.Structure")
+    AreEqual(tst.Test_45(), "(EnumSByte)Zero")
+    AreEqual(tst.Test_46(), "(EnumSByte)Zero")
+    AreEqual(tst.Test_47(), "(EnumByte)Zero")
+    AreEqual(tst.Test_48(), "(EnumByte)Zero")
+    AreEqual(tst.Test_49(), "(EnumShort)Zero")
+    AreEqual(tst.Test_50(), "(EnumShort)Zero")
+    AreEqual(tst.Test_51(), "(EnumUShort)Zero")
+    AreEqual(tst.Test_52(), "(EnumUShort)Zero")
+    AreEqual(tst.Test_53(), "(EnumInt)MinUShort")
+    AreEqual(tst.Test_54(), "(EnumInt)MinUShort")
+    AreEqual(tst.Test_55(), "(EnumUInt)MinUInt")
+    AreEqual(tst.Test_56(), "(EnumUInt)MinUInt")
+    AreEqual(tst.Test_57(), "(EnumLong)MinUInt")
+    AreEqual(tst.Test_58(), "(EnumLong)MinUInt")
+    AreEqual(tst.Test_59(), "(EnumULong)MinUInt")
+    AreEqual(tst.Test_60(), "(EnumULong)MinUInt")
+    AreEqual(tst.Test_61(), "(string)(null)")
+    AreEqual(tst.Test_62(), "(string)(null)")
+    AreEqual(tst.Test_63(), "(object)System.Reflection.Missing")
+    AreEqual(tst.Test_64(), "(object)System.Reflection.Missing")
+    AreEqual(tst.Test_65(), "(MissingValueTest)(null)")
+    AreEqual(tst.Test_66(), "(MissingValueTest)(null)")
+
+####################################################################################
+# coverage
+def test_function():
+
+    def testfunctionhelper(c, o):
+        ############ OptimizedFunctionX ############
+        line = ""
+        for i in range(6):
+            args = ",".join(['1'] * i)
+            line += 'AreEqual(o.IM%d(%s), "IM%d")\n' % (i, args, i)
+            line += 'AreEqual(c.IM%d(o,%s), "IM%d")\n' % (i, args, i)
+            if i > 0:
+                line += 'try: o.IM%d(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (i, ",".join(['1'] * (i-1)))
+                line += 'try: c.IM%d(o, %s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (i, ",".join(['1'] * (i-1)))
+            line += 'try: o.IM%d(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (i, ",".join(['1'] * (i+1)))
+            line += 'try: c.IM%d(o, %s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (i, ",".join(['1'] * (i+1)))
+                
+            line += 'AreEqual(o.SM%d(%s), "SM%d")\n' % (i, args, i)
+            line += 'AreEqual(c.SM%d(%s), "SM%d")\n' % (i, args, i)
+            
+            if i > 0:
+                line += 'try: o.SM%d(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (i, ",".join(['1'] * (i-1)))
+                line += 'try: c.SM%d(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (i, ",".join(['1'] * (i-1)))
+            line += 'try: o.SM%d(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (i, ",".join(['1'] * (i+1)))
+            line += 'try: c.SM%d(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (i, ",".join(['1'] * (i+1)))
+        
+        #print line
+        exec line in globals(), locals()
+
+        ############ OptimizedFunctionAny ############
+        ## 1
+        line = ""
+        for i in range(7):
+            args = ",".join(['1'] * i)
+            if i in [0, 3, 4]:
+                line += 'AreEqual(o.IDM0(%s), "IDM0-%d")\n' % (args, i)
+                line += 'AreEqual(c.IDM0(o,%s), "IDM0-%d")\n' % (args, i)
+            else:
+                line += 'try: o.IDM0(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (args)
+                line += 'try: c.IDM0(o, %s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (args)
+            
+        #print line
+        exec line in globals(), locals()
+    
+        line = ""
+        for i in range(7):
+            args = ",".join(['1'] * i)
+            if i in [0, 3]:
+                line += 'AreEqual(o.SDM0(%s), "SDM0-%d")\n' % (args, i)
+                line += 'AreEqual(c.SDM0(%s), "SDM0-%d")\n' % (args, i)
+            else:
+                line += 'try: o.SDM0(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (args)
+                line += 'try: c.SDM0(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (args)
+            
+        #print line
+        exec line in globals(), locals()
+
+        ## 2
+        line = ""
+        for i in range(7):
+            args = ",".join(['1'] * i)
+            if i in [1]:
+                line += 'AreEqual(o.IDM1(%s), "IDM1-%d")\n' % (args, i)
+                line += 'AreEqual(c.IDM1(o,%s), "IDM1-%d")\n' % (args, i)
+                line += 'AreEqual(o.SDM1(%s), "SDM1-%d")\n' % (args, i)
+                line += 'AreEqual(c.SDM1(%s), "SDM1-%d")\n' % (args, i)
+            else:
+                line += 'AreEqual(o.IDM1(%s), "IDM1-x")\n' % (args)
+                line += 'AreEqual(c.IDM1(o,%s), "IDM1-x")\n' % (args)
+                line += 'AreEqual(o.SDM1(%s), "SDM1-x")\n' % (args)
+                line += 'AreEqual(c.SDM1(%s), "SDM1-x")\n' % (args)
+                
+        #print line
+        exec line in globals(), locals()
+    
+        line = ""
+        for i in range(7):
+            args = ",".join(['1'] * i)
+            if i in [2]:
+                line += 'AreEqual(o.IDM4(%s), "IDM4-%d")\n' % (args, i)
+                line += 'AreEqual(c.IDM4(o,%s), "IDM4-%d")\n' % (args, i)
+                line += 'AreEqual(o.SDM4(%s), "SDM4-%d")\n' % (args, i)
+                line += 'AreEqual(c.SDM4(%s), "SDM4-%d")\n' % (args, i)
+            else:
+                line += 'AreEqual(o.IDM4(%s), "IDM4-x")\n' % (args)
+                line += 'AreEqual(c.IDM4(o,%s), "IDM4-x")\n' % (args)
+                line += 'AreEqual(o.SDM4(%s), "SDM4-x")\n' % (args)
+                line += 'AreEqual(c.SDM4(%s), "SDM4-x")\n' % (args)
+            
+        #print line
+        exec line in globals(), locals()
+
+        ## 3
+        line = ""
+        for i in range(7):
+            args = ",".join(['1'] * i)
+            if i in range(5):
+                line += 'AreEqual(o.IDM2(%s), "IDM2-%d")\n' % (args, i)
+                line += 'AreEqual(c.IDM2(o,%s), "IDM2-%d")\n' % (args, i)
+            else:
+                line += 'try: o.IDM2(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (args)
+                line += 'try: c.IDM2(o, %s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (args)
+        #print line
+        exec line in globals(), locals()
+    
+        line = ""
+        for i in range(7):
+            args = ",".join(['1'] * i)
+            if i in range(6):
+                line += 'AreEqual(o.SDM2(%s), "SDM2-%d")\n' % (args, i)
+                line += 'AreEqual(c.SDM2(%s), "SDM2-%d")\n' % (args, i)
+            else:
+                line += 'try: o.SDM2(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (args)
+                line += 'try: c.SDM2(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (args)
+
+        #print line
+        exec line in globals(), locals()
+    
+        ## 4
+        line = ""
+        for i in range(7):
+            args = ",".join(['1'] * i)
+            if i in [0, 5]:
+                line += 'AreEqual(o.IDM5(%s), "IDM5-%d")\n' % (args, i)
+                line += 'AreEqual(c.IDM5(o,%s), "IDM5-%d")\n' % (args, i)
+            else:
+                line += 'try: o.IDM5(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (args)
+                line += 'try: c.IDM5(o, %s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (args)
+
+        #print line
+        exec line in globals(), locals()
+
+        line = ""
+        for i in range(7):
+            args = ",".join(['1'] * i)
+            if i in [0, 6]:
+                line += 'AreEqual(o.SDM5(%s), "SDM5-%d")\n' % (args, i)
+                line += 'AreEqual(c.SDM5(%s), "SDM5-%d")\n' % (args, i)
+            else:
+                line += 'try: o.SDM5(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (args)
+                line += 'try: c.SDM5(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (args)
+
+        #print line
+        exec line in globals(), locals()
+
+        ## 5
+        line = ""
+        for i in range(7):
+            args = ",".join(['1'] * i)
+            if i in range(5):
+                line += 'AreEqual(o.IDM3(%s), "IDM3-%d")\n' % (args, i)
+                line += 'AreEqual(c.IDM3(o,%s), "IDM3-%d")\n' % (args, i)
+            else:
+                line += 'AreEqual(o.IDM3(%s), "IDM3-x")\n' % (args)
+                line += 'AreEqual(c.IDM3(o,%s), "IDM3-x")\n' % (args)
+            
+        #print line
+        exec line in globals(), locals()
+    
+        line = ""
+        for i in range(7):
+            args = ",".join(['1'] * i)
+            if i in range(6):
+                line += 'AreEqual(o.SDM3(%s), "SDM3-%d")\n' % (args, i)
+                line += 'AreEqual(c.SDM3(%s), "SDM3-%d")\n' % (args, i)
+            else:
+                line += 'AreEqual(o.SDM3(%s), "SDM3-x")\n' % (args)
+                line += 'AreEqual(c.SDM3(%s), "SDM3-x")\n' % (args)
+            
+        #print line
+        exec line in globals(), locals()
+
+        ############ OptimizedFunctionN ############
+        line = ""
+        for i in range(6):
+            args = ",".join(['1'] * i)
+            line +=  'AreEqual(o.IPM0(%s), "IPM0-%d")\n' % (args, i)
+            line +=  'AreEqual(o.SPM0(%s), "SPM0-%d")\n' % (args, i)
+            line +=  'AreEqual(c.IPM0(o,%s), "IPM0-%d")\n' % (args, i)
+            line +=  'AreEqual(c.SPM0(%s), "SPM0-%d")\n' % (args, i)
+            
+            line +=  'AreEqual(o.SPM1(0,%s), "SPM1-%d")\n' % (args, i)
+            line +=  'AreEqual(o.IPM1(0,%s), "IPM1-%d")\n' % (args, i)
+            line +=  'AreEqual(c.IPM1(o, 0,%s), "IPM1-%d")\n' % (args, i)
+            line +=  'AreEqual(c.SPM1(0,%s), "SPM1-%d")\n' % (args, i)
+
+        #print line
+        exec line in globals(), locals()
+        
+    class DispatchAgain2(DispatchAgain): pass
+    
+    testfunctionhelper(DispatchAgain, DispatchAgain())
+    testfunctionhelper(DispatchAgain2, DispatchAgain2())
+    
+    AreEqual(type(BindTest.ReturnTest('char')), System.Char)
+    AreEqual(type(BindTest.ReturnTest('null')), type(None))
+    AreEqual(type(BindTest.ReturnTest('object')), object)
+    if not is_silverlight and not is_net40: #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=25897
+        Assert(repr(BindTest.ReturnTest("com")).startswith('<System.__ComObject'))
+
+#####################################################################
+## testing multicall generator
+def test_multicall_generator():
+    c = MultiCall()
+
+    def AllEqual(exp, meth, passins):
+        for arg in passins:
+            #print meth, arg
+            AreEqual(meth(*arg), exp)
+
+    def AllAssert(type, meth, passins):
+        for arg in passins:
+            #print meth, arg
+            AssertError(type, meth, arg)
+
+    import sys
+    maxint = sys.maxint
+    import System
+    maxlong1 = System.Int64.MaxValue
+    maxlong2 = long(str(maxlong1))
+
+    class MyInt(int):
+        def __repr__(self):
+            return "MyInt(%s)" % super(MyInt, self).__repr__()
+
+    myint = MyInt(10)
+
+    #############################################################################################
+    #        public int M0(int arg) { return 1; }
+    #        public int M0(long arg) { return 2; }
+
+    func = c.M0
+    AllEqual(1, func, [(0,), (1,), (maxint,), (myint,)])
+    AllEqual(2, func, [(maxint + 1,), (-maxint-10,), (10L,)])
+    AllAssert(TypeError, func, [
+                                (-10.2,),
+                                (1+2j,),
+                                ("10",),
+                                (System.Byte.Parse("2"),),
+                ])
+    
+    #############################################################################################
+    #        public int M1(int arg) { return 1; }
+    #        public int M1(long arg) { return 2; }
+    #        public int M1(object arg) { return 3; }
+
+    func = c.M1
+    AllEqual(1, func, [
+                        (0,),
+                        (1,),
+                        (maxint,),
+                        (System.Byte.Parse("2"),),
+                        (myint, ),
+                        #(10L,),
+                        #(-1234.0,),
+            ])
+    AllEqual(2, func, [
+                        #(maxint + 1,),
+                        #(-maxint-10,),
+                        ])
+    AllEqual(3, func, [(-10.2,), (1+2j,), ("10",),])
+
+    #############################################################################################
+    #        public int M2(int arg1, int arg2) { return 1; }
+    #        public int M2(long arg1, int arg2) { return 2; }
+    #        public int M2(int arg1, long arg2) { return 3; }
+    #        public int M2(long arg1, long arg2) { return 4; }
+    #        public int M2(object arg1, object arg2) { return 5; }
+    
+    func = c.M2
+    AllEqual(1, func, [
+        (0, 0), (1, maxint), (maxint, 1), (maxint, maxint),
+        #(10L, 0),
+        ])
+    
+    AllEqual(2, func, [
+        #(maxint+1, 0),
+        #(maxint+10, 10),
+        #(maxint+10, 10L),
+        #(maxlong1, 0),
+        #(maxlong2, 0),
+        ])
+
+    AllEqual(3, func, [
+        #(0, maxint+1),
+        #(10, maxint+10),
+        #(10L, maxint+10),
+        ])
+    
+    AllEqual(4, func, [
+        #(maxint+10, maxint+1),
+        #(-maxint-10, maxint+10),
+        #(-maxint-10L, maxint+100),
+        #(maxlong1, maxlong1),
+        #(maxlong2, maxlong1),
+        ])
+    
+    AllEqual(5, func, [
+        (maxlong1 + 1, 1),
+        (maxlong2 + 1, 1),
+        (maxint, maxlong1 + 10),
+        (maxint, maxlong2 + 10),
+        (1, "100L"),
+        (10.2, 1),
+        ])
+    
+    #############################################################################################
+    #        public int M4(int arg1, int arg2, int arg3, int arg4) { return 1; }
+    #        public int M4(object arg1, object arg2, object arg3, object arg4) { return 2; }
+    
+    if not is_silverlight:
+        one = [t.Parse("5") for t in [System.Byte, System.SByte, System.UInt16, System.Int16, System.UInt32, System.Int32,
+                System.UInt32, System.Int32, System.UInt64, System.Int64,
+                System.Char, System.Decimal, System.Single, System.Double] ]
+    else: one = []
+    
+    one.extend([True, False, 5L, DispatchHelpers.Color.Red ])
+    
+    if not is_silverlight:
+        two = [t.Parse("5.5") for t in [ System.Decimal, System.Single, System.Double] ]
+    else: two = []
+    
+    two.extend([None, "5", "5.5", maxint * 2, ])
+    
+    together = []
+    together.extend(one)
+    together.extend(two)
+    
+    ignore = '''
+    for a1 in together:
+        for a2 in together:
+            for a3 in together:
+                for a4 in together:
+                    # print a1, a2, a3, a4, type(a1), type(a1), type(a2), type(a3), type(a4)
+                    if a1 in two or a2 is two or a3 in two or a4 in two:
+                        AreEqual(c.M4(a1, a2, a3, a4), 2)
+                    else :
+                        AreEqual(c.M4(a1, a2, a3, a4), 1)
+    '''
+
+    #############################################################################################
+    #        public int M5(DispatchHelpers.B arg1, DispatchHelpers.B args) { return 1; }
+    #        public int M5(DispatchHelpers.D arg1, DispatchHelpers.B args) { return 2; }
+    #        public int M5(object arg1, object args) { return 3; }
+    b = DispatchHelpers.B()
+    d = DispatchHelpers.D()
+    
+    func = c.M5
+    
+    AllEqual(1, func, [(b, b), (b, d)])
+    AllEqual(2, func, [(d, b), (d, d)])
+    AllEqual(3, func, [(1, 2)])
+    
+    #############################################################################################
+    #        public int M6(DispatchHelpers.B arg1, DispatchHelpers.B args) { return 1; }
+    #        public int M6(DispatchHelpers.B arg1, DispatchHelpers.D args) { return 2; }
+    #        public int M6(object arg1, DispatchHelpers.D args) { return 3; }
+    
+    func = c.M6
+
+    AllEqual(1, func, [(b, b), (d, b)])
+    AllEqual(2, func, [(b, d), (d, d)])
+    AllEqual(3, func, [(1, d), (6L, d)])
+    AllAssert(TypeError, func, [(1,1), (None, None), (None, d), (3, b)])
+    
+    #############################################################################################
+    #        public int M7(DispatchHelpers.B arg1, DispatchHelpers.B args) { return 1; }
+    #        public int M7(DispatchHelpers.B arg1, DispatchHelpers.D args) { return 2; }
+    #        public int M7(DispatchHelpers.D arg1, DispatchHelpers.B args) { return 3; }
+    #        public int M7(DispatchHelpers.D arg1, DispatchHelpers.D args) { return 4; }
+
+    func = c.M7
+    AllEqual(1, func, [(b, b)])
+    AllEqual(2, func, [(b, d)])
+    AllEqual(3, func, [(d, b)])
+    AllEqual(4, func, [(d, d)])
+    AllAssert(TypeError, func, [(1,1), (None, None), (None, d)])
+
+    #############################################################################################
+    #        public int M8(int arg1, int arg2) { return 1;}
+    #        public int M8(DispatchHelpers.B arg1, DispatchHelpers.B args) { return 2; }
+    #        public int M8(object arg1, object arg2) { return 3; }
+    
+    func = c.M8
+    AllEqual(1, func, [(1, 2), ]) #(maxint, 2L)])
+    AllEqual(2, func, [(b, b), (b, d), (d, b), (d, d)])
+    AllEqual(3, func, [(5.1, b), (1, d), (d, 1), (d, maxlong2), (maxlong1, d), (None, 3), (3, None)])
+
+    #############################################################################################
+    # public static int M92(out int i, out int j, out int k, bool boolIn)
+    AreEqual(Dispatch.M92(True), (4, 1,2,3))
+    AreEqual(Dispatch.Flag, 192)
+
+    #############################################################################################
+    # public int M93(out int i, out int j, out int k, bool boolIn)
+    AreEqual(Dispatch().M93(True), (4, 1,2,3))
+    AreEqual(Dispatch.Flag, 193)
+
+    #############################################################################################
+    # public int M94(out int i, out int j, bool boolIn, out int k)
+    AreEqual(Dispatch().M94(True), (4, 1,2,3))
+    AreEqual(Dispatch.Flag, 194)
+
+    #############################################################################################
+    # public static int M95(out int i, out int j, bool boolIn, out int k)
+    AreEqual(Dispatch.M95(True), (4, 1,2,3))
+    AreEqual(Dispatch.Flag, 195)
+
+    #############################################################################################
+    # public static int M96(out int x, out int j, params int[] extras)
+    AreEqual(Dispatch.M96(), (0, 1,2))
+    AreEqual(Dispatch.Flag, 196)
+    AreEqual(Dispatch.M96(1,2), (3, 1,2))
+    AreEqual(Dispatch.Flag, 196)
+    AreEqual(Dispatch.M96(1,2,3), (6, 1,2))
+    AreEqual(Dispatch.Flag, 196)
+
+    #############################################################################################
+    # public int M97(out int x, out int j, params int[] extras)
+    AreEqual(Dispatch().M97(), (0, 1,2))
+    AreEqual(Dispatch.Flag, 197)
+    AreEqual(Dispatch().M97(1,2), (3, 1,2))
+    AreEqual(Dispatch.Flag, 197)
+    AreEqual(Dispatch().M97(1,2,3), (6, 1,2))
+    AreEqual(Dispatch.Flag, 197)
+
+
+    #############################################################################################
+    # public void M98(string a, string b, string c, string d, out int x, ref Dispatch di)
+    a = Dispatch()
+    x = a.M98('1', '2', '3', '4', a)
+    AreEqual(x[0], 10)
+    AreEqual(x[1], a)
+    # doc for this method should have the out & ref params as return values
+    AreEqual(a.M98.__doc__, 'M98(self: Dispatch, a: str, b: str, c: str, d: str, di: Dispatch) -> (int, Dispatch)\r\n')
+    
+    #DDB 76340
+    if not is_silverlight:
+        # call type.InvokeMember on String.ToString - all methods have more arguments than max args.
+        res = clr.GetClrType(str).InvokeMember('ToString',
+                                               System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.Public|System.Reflection.BindingFlags.InvokeMethod,
+                                               None,
+                                               'abc',
+                                               ())
+        AreEqual(res, 'abc')
+
+
+# verify calling a generic method w/o args throws a reasonable exception
+def test_missing_generic_args():
+    import System
+    #TODO specify clearly which exception is appropriate here
+    AssertError(Exception, System.Collections.Generic.List)
+
+# verify calls to explicit interface implementations
+def test_explicit():
+    x = ExplicitTest()
+    Assert(not hasattr(x, "A"))
+    try:
+        x.A()
+    except AttributeError:
+        pass
+    else:
+        Fail("Expected AttributeError, got none")
+        
+    AreEqual(x.B(), "ExplicitTest.B")
+    
+    Assert(not hasattr(x, "C"))
+    try:
+        x.C()
+    except AttributeError:
+        pass
+    else:
+        Fail("Expected AttributeError, got none")
+    
+    AreEqual(x.D(), "ExplicitTest.D")
+    
+    AreEqual(IExplicitTest1.A(x), "ExplicitTest.IExplicitTest1.A")
+    AreEqual(IExplicitTest1.B(x), "ExplicitTest.IExplicitTest1.B")
+    AreEqual(IExplicitTest1.C(x), "ExplicitTest.IExplicitTest1.C")
+    AreEqual(IExplicitTest1.D(x), "ExplicitTest.D")
+    AreEqual(IExplicitTest2.A(x), "ExplicitTest.IExplicitTest2.A")
+    AreEqual(IExplicitTest2.B(x), "ExplicitTest.B")
+    
+    x = ExplicitTestArg()
+    try:
+        x.M()
+    except AttributeError:
+        pass
+    else:
+        Fail("Expected AttributeError, got none")
+
+    AreEqual(IExplicitTest3.M(x), 3)
+    AreEqual(IExplicitTest4.M(x, 7), 4)
+
+@skip("silverlight")
+def test_security_crypto():
+    AreEqual(type(System.Security.Cryptography.MD5.Create("MD5")),
+             System.Security.Cryptography.MD5CryptoServiceProvider)
+    AreEqual(type(System.Security.Cryptography.MD5.Create()),
+             System.Security.Cryptography.MD5CryptoServiceProvider)
+
+@skip("silverlight") #no AssertErrorWithMessage
+def test_array_error_message():
+    import clr
+    
+    x = BinderTest.CNoOverloads()
+    AssertErrorWithMessage(TypeError, 'expected Array[int], got Array[Byte]', x.M500, System.Array[System.Byte]([1,2,3]))
+
+@skip("silverlight") #no AssertErrorWithMessage
+def test_max_args():
+    """verify the correct number of max args are reported, this may need to be updated if file ever takes more args"""
+    AssertErrorWithMatch(TypeError, '.*takes at most 4 arguments.*', file, 2, 3, 4, 5, 6, 7, 8, 9)
+
+
+def test_enumerator_conversions():
+    AssertError(TypeError, cd.StringEnumerator, 'abc')
+    for seq in ((2,3,4), [2,3,4]):
+        AssertError(TypeError, cd.ObjectEnumerator, seq)
+        AssertError(TypeError, cd.NonGenericEnumerator, seq)
+
+def test_property_conversions():
+    d = Dispatch()
+    d.P01 = 2.0
+    AreEqual(d.P01, 2.0)
+
+run_test(__name__)

@@ -1,0 +1,213 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: package interop.net</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="interop.html"><font color="#ffffff">interop</font></a>.net</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:e:\vslrft\dlr\languages\ironpython\tests\interop\net\__init__.py">e:\vslrft\dlr\languages\ironpython\tests\interop\net\__init__.py</a></font></td></tr></table>
+    <p><tt>-------------------------------------------------------------------------------<br>
+OVERVIEW<br>
+&nbsp;<br>
+The&nbsp;goal&nbsp;of&nbsp;this&nbsp;test&nbsp;package&nbsp;is&nbsp;to&nbsp;provide&nbsp;a&nbsp;framework&nbsp;to&nbsp;exhaustively&nbsp;<br>
+verify&nbsp;IronPython's&nbsp;.NET&nbsp;interop&nbsp;capabilities.&nbsp;&nbsp;From&nbsp;a&nbsp;high-level,&nbsp;this&nbsp;means<br>
+we&nbsp;will&nbsp;be&nbsp;checking&nbsp;that:<br>
+-&nbsp;IronPython&nbsp;can&nbsp;utilize&nbsp;objects&nbsp;and&nbsp;types&nbsp;that&nbsp;have&nbsp;been&nbsp;implemented&nbsp;in&nbsp;some<br>
+&nbsp;&nbsp;other&nbsp;CLR-supported&nbsp;language.&nbsp;&nbsp;The&nbsp;goal&nbsp;here&nbsp;is&nbsp;to&nbsp;test&nbsp;all&nbsp;language&nbsp;features<br>
+&nbsp;&nbsp;of&nbsp;IL<br>
+-&nbsp;other&nbsp;CLR-supported&nbsp;languages&nbsp;can&nbsp;utilize&nbsp;IronPython&nbsp;objects&nbsp;and&nbsp;types&nbsp;via<br>
+&nbsp;&nbsp;the&nbsp;DLR&nbsp;hosting&nbsp;APIs&nbsp;and&nbsp;the&nbsp;new&nbsp;'dynamic'&nbsp;keyword&nbsp;in&nbsp;C-sharp.&nbsp;&nbsp;Please&nbsp;note&nbsp;<br>
+&nbsp;&nbsp;that&nbsp;the&nbsp;goal&nbsp;of&nbsp;this&nbsp;testing&nbsp;is&nbsp;to&nbsp;find&nbsp;bugs&nbsp;in&nbsp;IronPython's&nbsp;IDynamicObject<br>
+&nbsp;&nbsp;implementation(s);&nbsp;not&nbsp;other&nbsp;CLR-supported&nbsp;languages'&nbsp;utilization&nbsp;of&nbsp;IDynamic<br>
+&nbsp;&nbsp;objects.&nbsp;&nbsp;A&nbsp;test&nbsp;plan&nbsp;specifically&nbsp;for&nbsp;this&nbsp;scenario&nbsp;has&nbsp;been&nbsp;created&nbsp;by&nbsp;the<br>
+&nbsp;&nbsp;DLR&nbsp;-&nbsp;see&nbsp;the&nbsp;"Testing&nbsp;Cross&nbsp;Language&nbsp;Operations&nbsp;on&nbsp;the&nbsp;DLR"&nbsp;document.<br>
+&nbsp;<br>
+While&nbsp;there&nbsp;are&nbsp;other&nbsp;key&nbsp;testing&nbsp;aspects,&nbsp;at&nbsp;the&nbsp;highest&nbsp;level&nbsp;utilization&nbsp;of&nbsp;<br>
+.NET&nbsp;types&nbsp;from&nbsp;IronPython&nbsp;can&nbsp;be&nbsp;broken&nbsp;up&nbsp;into&nbsp;three&nbsp;key&nbsp;areas:&nbsp;<br>
+-&nbsp;getting&nbsp;.NET&nbsp;types<br>
+-&nbsp;creating&nbsp;instances&nbsp;of&nbsp;.NET&nbsp;types&nbsp;and&nbsp;performing&nbsp;operations&nbsp;on&nbsp;them<br>
+-&nbsp;subclassing/implementing&nbsp;.NET&nbsp;classes/interfaces&nbsp;from&nbsp;Python<br>
+&nbsp;<br>
+&nbsp;<br>
+EDITORS&nbsp;NOTE<br>
+Throughout&nbsp;this&nbsp;document&nbsp;you&nbsp;will&nbsp;find&nbsp;references&nbsp;to&nbsp;documentation&nbsp;in<br>
+other&nbsp;packages&nbsp;similar&nbsp;to&nbsp;"See&nbsp;documentation&nbsp;for&nbsp;interop.net.field".&nbsp;&nbsp;This&nbsp;simply<br>
+means&nbsp;that&nbsp;relative&nbsp;to&nbsp;this&nbsp;package&nbsp;(i.e.,&nbsp;interop.net),&nbsp;you&nbsp;should&nbsp;follow<br>
+the&nbsp;'field&nbsp;(package)'&nbsp;link&nbsp;at&nbsp;the&nbsp;bottom&nbsp;of&nbsp;this&nbsp;page.<br>
+&nbsp;<br>
+------------------------------------------------------------------------------<br>
+GETTING&nbsp;THE&nbsp;.NET&nbsp;TYPE<br>
+&nbsp;<br>
+KEY&nbsp;POINTS<br>
+*&nbsp;Can&nbsp;you&nbsp;get&nbsp;a&nbsp;type&nbsp;and&nbsp;how?<br>
+*&nbsp;What&nbsp;should&nbsp;happen&nbsp;when&nbsp;a&nbsp;naming&nbsp;conflict&nbsp;occurs?&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;Merge&nbsp;or&nbsp;simply&nbsp;replace<br>
+&nbsp;&nbsp;-&nbsp;Possible&nbsp;conflicts:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;.NET&nbsp;namespace<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Type&nbsp;name<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Generics<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;IronPython&nbsp;module<br>
+*&nbsp;When&nbsp;is&nbsp;the&nbsp;type&nbsp;is&nbsp;"visible"?&nbsp;&nbsp;When&nbsp;should&nbsp;it&nbsp;be&nbsp;"invisible"?<br>
+&nbsp;<br>
+INTERESTING&nbsp;TYPES<br>
+See&nbsp;documentation&nbsp;for&nbsp;interop.net.type<br>
+&nbsp;<br>
+-------------------------------------------------------------------------------<br>
+UTILIZATION&nbsp;OF&nbsp;.NET&nbsp;OBJECTS<br>
+&nbsp;<br>
+TYPES<br>
+See&nbsp;documentation&nbsp;for&nbsp;interop.net.type<br>
+&nbsp;<br>
+METHODS<br>
+See&nbsp;documentation&nbsp;for&nbsp;interop.net.method<br>
+&nbsp;<br>
+FIELDS<br>
+See&nbsp;documentation&nbsp;for&nbsp;interop.net.field<br>
+&nbsp;<br>
+PROPERTIES/INDEXERS<br>
+See&nbsp;documentation&nbsp;for&nbsp;interop.net.property<br>
+&nbsp;<br>
+EVENTS/DELEGATES<br>
+See&nbsp;documentation&nbsp;for&nbsp;interop.net.event<br>
+&nbsp;<br>
+-------------------------------------------------------------------------------<br>
+DERIVING&nbsp;FROM&nbsp;.NET&nbsp;TYPES<br>
+See&nbsp;documentation&nbsp;for&nbsp;interop.net.derivation.<br>
+&nbsp;<br>
+-------------------------------------------------------------------------------<br>
+PYTHON&nbsp;CHARACTERISTICS&nbsp;OF&nbsp;.NET&nbsp;OBJECTS<br>
+*&nbsp;standard&nbsp;attributes&nbsp;(i.e.,&nbsp;__init__,&nbsp;__doc__,&nbsp;etc)<br>
+*&nbsp;help&nbsp;and&nbsp;documentation&nbsp;strings<br>
+*&nbsp;dir(xyz)&nbsp;vs.&nbsp;getattr(xyz,&nbsp;'abc')&nbsp;vs&nbsp;vs&nbsp;xyz.abc&nbsp;-&nbsp;all&nbsp;three&nbsp;should&nbsp;have&nbsp;<br>
+&nbsp;&nbsp;equivalent&nbsp;results<br>
+*&nbsp;setattr(xyz,&nbsp;'abc',&nbsp;foo)&nbsp;vs&nbsp;xyz.abc&nbsp;=&nbsp;foo&nbsp;-&nbsp;should&nbsp;have&nbsp;equivalent&nbsp;results<br>
+*&nbsp;look&nbsp;at&nbsp;interop.com.dlrcomlib.pytraits&nbsp;for&nbsp;more&nbsp;ideas<br>
+&nbsp;<br>
+-------------------------------------------------------------------------------<br>
+PERFORMANCE<br>
+To&nbsp;be&nbsp;revisited.<br>
+*&nbsp;simple&nbsp;method&nbsp;invocations<br>
+*&nbsp;importing&nbsp;from&nbsp;.NET&nbsp;namespaces<br>
+*&nbsp;loading&nbsp;assemblies<br>
+&nbsp;<br>
+-------------------------------------------------------------------------------<br>
+STRESS<br>
+*&nbsp;run&nbsp;.NET&nbsp;interop&nbsp;tests&nbsp;with&nbsp;gcstress&nbsp;environment&nbsp;variables&nbsp;set<br>
+*&nbsp;run&nbsp;.NET&nbsp;interop&nbsp;tests&nbsp;with&nbsp;Managed&nbsp;Debugging&nbsp;Assistants&nbsp;turned&nbsp;on<br>
+*&nbsp;run&nbsp;.NET&nbsp;interop&nbsp;tests&nbsp;with&nbsp;IronPython/DLR&nbsp;binaries&nbsp;installed&nbsp;into&nbsp;the<br>
+&nbsp;&nbsp;global&nbsp;assembly&nbsp;cache<br>
+*&nbsp;check&nbsp;for&nbsp;memory&nbsp;leaks<br>
+*&nbsp;huge&nbsp;number&nbsp;of&nbsp;method&nbsp;parameters&nbsp;on&nbsp;a&nbsp;.NET&nbsp;method<br>
+&nbsp;<br>
+-------------------------------------------------------------------------------<br>
+LOCALIZATION/GLOBALIZATION<br>
+To&nbsp;be&nbsp;revisited.<br>
+*&nbsp;tests&nbsp;should&nbsp;be&nbsp;run&nbsp;on&nbsp;a&nbsp;non-ENU&nbsp;operating&nbsp;system<br>
+&nbsp;<br>
+-------------------------------------------------------------------------------<br>
+DEBUGGING&nbsp;EXPERIENCE<br>
+To&nbsp;be&nbsp;revisited.&nbsp;&nbsp;No&nbsp;special&nbsp;requirements?<br>
+&nbsp;<br>
+-------------------------------------------------------------------------------<br>
+COMPATIBILITY<br>
+*&nbsp;does&nbsp;the&nbsp;latest&nbsp;version&nbsp;of&nbsp;IronPython&nbsp;pass&nbsp;the&nbsp;previous&nbsp;version's&nbsp;.NET&nbsp;<br>
+&nbsp;&nbsp;interop&nbsp;tests?<br>
+*&nbsp;is&nbsp;IronPython&nbsp;compatible&nbsp;with&nbsp;Python&nbsp;for&nbsp;.NET&nbsp;(<a href="http://pythonnet.sourceforge.net/">http://pythonnet.sourceforge.net/</a>)?<br>
+*&nbsp;is&nbsp;.NET&nbsp;interop&nbsp;the&nbsp;same&nbsp;under&nbsp;x86&nbsp;and&nbsp;x64&nbsp;CLR?<br>
+*&nbsp;is&nbsp;.NET&nbsp;interop&nbsp;the&nbsp;same&nbsp;under&nbsp;different&nbsp;operating&nbsp;systems?<br>
+*&nbsp;is&nbsp;.NET&nbsp;interop&nbsp;the&nbsp;same&nbsp;under&nbsp;interactive&nbsp;sessions&nbsp;versus&nbsp;Python&nbsp;modules?<br>
+&nbsp;<br>
+-------------------------------------------------------------------------------<br>
+SECURITY<br>
+To&nbsp;be&nbsp;revisited.&nbsp;&nbsp;As&nbsp;IronPython&nbsp;is&nbsp;quite&nbsp;simply&nbsp;just&nbsp;another&nbsp;.NET&nbsp;program<br>
+running&nbsp;under&nbsp;the&nbsp;Common&nbsp;Language&nbsp;Runtime,&nbsp;CLR&nbsp;threat&nbsp;models&nbsp;should&nbsp;apply.<br>
+&nbsp;<br>
+-------------------------------------------------------------------------------<br>
+CODE&nbsp;COVERAGE<br>
+Block&nbsp;coverage&nbsp;of&nbsp;the&nbsp;.NET&nbsp;binder&nbsp;should&nbsp;be&nbsp;maintained&nbsp;at&nbsp;80%&nbsp;or&nbsp;higher.&nbsp;&nbsp;As&nbsp;of<br>
+May&nbsp;2009,&nbsp;the&nbsp;.NET&nbsp;binder&nbsp;resides&nbsp;in&nbsp;the&nbsp;IronPython.Runtime.Binding&nbsp;namespace<br>
+and&nbsp;we're&nbsp;sitting&nbsp;at&nbsp;88.8%&nbsp;block&nbsp;coverage.<br>
+&nbsp;<br>
+-------------------------------------------------------------------------------<br>
+ACCESSIBILITY<br>
+To&nbsp;be&nbsp;revisited.<br>
+&nbsp;<br>
+-------------------------------------------------------------------------------<br>
+MISC.&nbsp;INTERESTING&nbsp;CASES<br>
+*&nbsp;Are&nbsp;certain&nbsp;CLR&nbsp;Exceptions&nbsp;interchangable&nbsp;with&nbsp;Python&nbsp;builtin&nbsp;exceptions?<br>
+*&nbsp;How&nbsp;does&nbsp;IronPython&nbsp;treats&nbsp;the&nbsp;following&nbsp;types:<br>
+&nbsp;&nbsp;-&nbsp;IList,&nbsp;List,&nbsp;ArrayList<br>
+&nbsp;&nbsp;-&nbsp;Hashtable,&nbsp;Dictionary`2,&nbsp;IDictionary<br>
+&nbsp;&nbsp;-&nbsp;IEnumerable,&nbsp;IEnumerator<br>
+&nbsp;&nbsp;-&nbsp;IComparable<br>
+*&nbsp;Operations&nbsp;on&nbsp;.NET&nbsp;namespaces<br>
+&nbsp;&nbsp;-&nbsp;the&nbsp;top&nbsp;level<br>
+&nbsp;&nbsp;-&nbsp;the&nbsp;nested&nbsp;level<br>
+&nbsp;&nbsp;-&nbsp;the&nbsp;bottom&nbsp;level<br>
+*&nbsp;Operations&nbsp;on&nbsp;nested&nbsp;classes<br>
+*&nbsp;Operations&nbsp;on&nbsp;the&nbsp;Assembly/AssemblyBuilder&nbsp;type&nbsp;and&nbsp;instances<br>
+&nbsp;<br>
+Special&nbsp;DLR&nbsp;Types<br>
+*&nbsp;Extensible&lt;T&gt;&nbsp;-&nbsp;Python&nbsp;currently&nbsp;provides&nbsp;implementations&nbsp;for&nbsp;a&nbsp;bunch&nbsp;of&nbsp;<br>
+&nbsp;&nbsp;members&nbsp;on&nbsp;the&nbsp;Extensible&nbsp;type&nbsp;(for&nbsp;some&nbsp;types)&nbsp;but&nbsp;they&nbsp;shouldn't&nbsp;be&nbsp;<br>
+&nbsp;&nbsp;necessary.&nbsp;&nbsp;A&nbsp;raw&nbsp;Extensible&lt;Xyz&gt;&nbsp;should&nbsp;be&nbsp;have&nbsp;the&nbsp;same&nbsp;as&nbsp;an&nbsp;Xyz&nbsp;<br>
+&nbsp;<br>
+-------------------------------------------------------------------------------<br>
+EXISTING&nbsp;TESTS&nbsp;WHICH&nbsp;NEED&nbsp;TO&nbsp;BE&nbsp;FOLDED&nbsp;INTO&nbsp;interop.net:<br>
+*&nbsp;test_cliclass.py<br>
+*&nbsp;test_delegate.py<br>
+*&nbsp;test_inheritance.py<br>
+*&nbsp;test_methodbinder1.py<br>
+*&nbsp;test_methodbinder2.py<br>
+*&nbsp;test_methoddispatch.py<br>
+*&nbsp;test_static.py<br>
+&nbsp;<br>
+-------------------------------------------------------------------------------<br>
+AREAS&nbsp;TARGETED&nbsp;FOR&nbsp;MORE&nbsp;TEST&nbsp;COVERAGE&nbsp;(February&nbsp;2009)<br>
+*&nbsp;.NET&nbsp;classes&nbsp;created&nbsp;using&nbsp;Visual&nbsp;Basic&nbsp;which&nbsp;use&nbsp;IL&nbsp;features&nbsp;that&nbsp;cannot&nbsp;<br>
+&nbsp;&nbsp;presently&nbsp;be&nbsp;hit&nbsp;from&nbsp;C#-based&nbsp;assemblies<br>
+&nbsp;&nbsp;-&nbsp;optional&nbsp;parameters<br>
+*&nbsp;running&nbsp;__builtin__&nbsp;methods&nbsp;(isinstance,&nbsp;issubclass,&nbsp;len,&nbsp;help,&nbsp;dir,&nbsp;etc)<br>
+&nbsp;&nbsp;against&nbsp;.NET&nbsp;types/objects<br>
+*&nbsp;Python&nbsp;methods&nbsp;attached&nbsp;to&nbsp;.NET&nbsp;types:<br>
+&nbsp;&nbsp;-&nbsp;Dictionary().next()<br>
+&nbsp;&nbsp;-&nbsp;Indexing&nbsp;on&nbsp;System.Xml.XmlDocument().SelectSingleNode(...).Attributes["something"]&nbsp;(DefaultMemberAttribute)<br>
+&nbsp;&nbsp;-&nbsp;__cmp__,&nbsp;__lt__,&nbsp;__gt__,&nbsp;etc&nbsp;when&nbsp;one&nbsp;operand&nbsp;is&nbsp;a&nbsp;native&nbsp;Python&nbsp;type<br>
+*&nbsp;Event&nbsp;handlers&nbsp;implemented&nbsp;in&nbsp;Python:<br>
+&nbsp;&nbsp;-&nbsp;removing<br>
+&nbsp;&nbsp;-&nbsp;re-attaching<br>
+&nbsp;&nbsp;-&nbsp;memory&nbsp;leaks<br>
+&nbsp;&nbsp;-&nbsp;anything&nbsp;callable&nbsp;in&nbsp;Python&nbsp;should&nbsp;be&nbsp;capable&nbsp;of&nbsp;being&nbsp;used&nbsp;as&nbsp;a&nbsp;delegate<br>
+*&nbsp;Passing&nbsp;various&nbsp;Python&nbsp;objects&nbsp;to&nbsp;C#&nbsp;functions:<br>
+&nbsp;&nbsp;-&nbsp;new-style&nbsp;class&nbsp;dictionaries&nbsp;used&nbsp;as&nbsp;IDictionary<br>
+&nbsp;&nbsp;-&nbsp;setting&nbsp;integer&nbsp;properties&nbsp;with&nbsp;Python&nbsp;longs<br>
+&nbsp;&nbsp;-&nbsp;objects&nbsp;implementing&nbsp;special&nbsp;methods&nbsp;such&nbsp;__int__<br>
+&nbsp;&nbsp;-&nbsp;list&nbsp;objects&nbsp;should&nbsp;not&nbsp;be&nbsp;usable&nbsp;for&nbsp;IEnumerators<br>
+*&nbsp;Public&nbsp;vs&nbsp;protected&nbsp;methods&nbsp;with&nbsp;ref/out&nbsp;parameters<br>
+*&nbsp;.NET&nbsp;4.0&nbsp;features<br>
+&nbsp;<br>
+-------------------------------------------------------------------------------<br>
+EXECUTION&nbsp;PLAN<br>
+To&nbsp;be&nbsp;revisited&nbsp;when&nbsp;more&nbsp;test&nbsp;resources&nbsp;become&nbsp;available.</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Package Contents</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="interop.net.derivation.html"><strong>derivation</strong>&nbsp;(package)</a><br>
+<a href="interop.net.event.html"><strong>event</strong>&nbsp;(package)</a><br>
+<a href="interop.net.field.html"><strong>field</strong>&nbsp;(package)</a><br>
+</td><td width="25%" valign=top><a href="interop.net.insert_csharp.html">insert_csharp</a><br>
+<a href="interop.net.method.html"><strong>method</strong>&nbsp;(package)</a><br>
+<a href="interop.net.property.html"><strong>property</strong>&nbsp;(package)</a><br>
+</td><td width="25%" valign=top><a href="interop.net.test_accessibility.html">test_accessibility</a><br>
+<a href="interop.net.test_dynamicobjectmodel.html">test_dynamicobjectmodel</a><br>
+<a href="interop.net.test_loadorder.html">test_loadorder</a><br>
+</td><td width="25%" valign=top><a href="interop.net.type.html"><strong>type</strong>&nbsp;(package)</a><br>
+</td></tr></table></td></tr></table>
+</body></html>

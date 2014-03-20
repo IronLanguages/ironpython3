@@ -1,0 +1,12 @@
+Implement rest of _struct module
+
+
+IP VERSION AFFECTED: 2.7
+FLAGS PASSED TO IPY.EXE: None
+OPERATING SYSTEMS AFFECTED: All
+
+DESCRIPTION
+-------------------------------------------------------
+Complete list of module attributes that should be removed 
+from IronPython:
+    _struct  _PY_STRUCT_OVERFLOW_MASKING   

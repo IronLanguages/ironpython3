@@ -1,0 +1,16 @@
+Implement rest of signal module
+
+
+IP VERSION AFFECTED: 2.7
+FLAGS PASSED TO IPY.EXE: None
+OPERATING SYSTEMS AFFECTED: All
+
+DESCRIPTION
+-------------------------------------------------------
+Complete list of module attributes IronPython is still 
+missing implementations for:
+    signal  CTRL_BREAK_EVENT              
+    signal  CTRL_C_EVENT                  
+
+
+

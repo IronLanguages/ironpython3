@@ -1,0 +1,16 @@
+Implement rest of thread module
+
+
+IP VERSION AFFECTED: 2.7
+FLAGS PASSED TO IPY.EXE: None
+OPERATING SYSTEMS AFFECTED: All
+
+DESCRIPTION
+-------------------------------------------------------
+Complete list of module attributes that should be removed 
+from IronPython:
+    thread.LockType    __enter__                     # CPython's LockType object actually has these you just need an instance to find them
+    thread.LockType    __exit__                      # CPython's LockType object actually has these you just need an instance to find them
+    thread.LockType    acquire                       # CPython's LockType object actually has these you just need an instance to find them
+    thread.LockType    locked                        # CPython's LockType object actually has these you just need an instance to find them
+    thread.LockType    release                       # CPython's LockType object actually has these you just need an instance to find them

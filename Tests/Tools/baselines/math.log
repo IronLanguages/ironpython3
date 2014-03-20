@@ -1,0 +1,16 @@
+Implement rest of math module
+
+
+IP VERSION AFFECTED: 2.7
+FLAGS PASSED TO IPY.EXE: None
+OPERATING SYSTEMS AFFECTED: All
+
+DESCRIPTION
+-------------------------------------------------------
+Complete list of module attributes that should be removed 
+from IronPython:
+    math  erf                           
+    math  erfc                          
+    math  expm1                         
+    math  gamma                         
+    math  lgamma                        

@@ -1,0 +1,145 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: package interop.net.method</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="interop.html"><font color="#ffffff">interop</font></a>.<a href="interop.net.html"><font color="#ffffff">net</font></a>.method</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:e:\vslrft\dlr\languages\ironpython\tests\interop\net\method\__init__.py">e:\vslrft\dlr\languages\ironpython\tests\interop\net\method\__init__.py</a></font></td></tr></table>
+    <p><tt>General<br>
+*&nbsp;Where&nbsp;it&nbsp;is&nbsp;defined<br>
+*&nbsp;How&nbsp;it&nbsp;is&nbsp;defined<br>
+&nbsp;&nbsp;-&nbsp;Static&nbsp;and&nbsp;instance&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;Explicit&nbsp;interface&nbsp;method&nbsp;implementation<br>
+&nbsp;&nbsp;-&nbsp;Virtual,&nbsp;new,&nbsp;override<br>
+&nbsp;<br>
+Passing&nbsp;arguments&nbsp;with&nbsp;different&nbsp;parameter&nbsp;lists<br>
+In&nbsp;C#,&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;public&nbsp;void&nbsp;M1(int&nbsp;x,&nbsp;int&nbsp;y)&nbsp;{&nbsp;}<br>
+&nbsp;&nbsp;&nbsp;&nbsp;public&nbsp;void&nbsp;M2(int&nbsp;x,&nbsp;params&nbsp;int[]&nbsp;y)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;public&nbsp;void&nbsp;M3(int&nbsp;x,&nbsp;[DefaultParameterValue(5)]&nbsp;int&nbsp;y)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;public&nbsp;void&nbsp;M6([Optional]&nbsp;int&nbsp;x,&nbsp;[Optional]&nbsp;object&nbsp;y)&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;public&nbsp;void&nbsp;M7([Out]&nbsp;int&nbsp;x)&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;public&nbsp;void&nbsp;M7([ParamsDictionary]&nbsp;IattributesCollection&nbsp;dict)&nbsp;<br>
+*&nbsp;Methods&nbsp;with&nbsp;&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;one&nbsp;of&nbsp;such&nbsp;special&nbsp;parameter,&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;two&nbsp;of&nbsp;such&nbsp;special&nbsp;parameters<br>
+&nbsp;&nbsp;-&nbsp;one&nbsp;normal,&nbsp;the&nbsp;other&nbsp;special&nbsp;parameter.&nbsp;And&nbsp;different&nbsp;orders.<br>
+&nbsp;&nbsp;-&nbsp;3+&nbsp;parameters&nbsp;with&nbsp;mixed&nbsp;kind<br>
+*&nbsp;Where&nbsp;DefaultParameterValue/Optional&nbsp;Attributes&nbsp;are&nbsp;not&nbsp;the&nbsp;last&nbsp;parameters.<br>
+*&nbsp;Different&nbsp;parameter&nbsp;types&nbsp;-&nbsp;string,&nbsp;int,&nbsp;Boolean,&nbsp;Object,&nbsp;self-defined&nbsp;<br>
+&nbsp;&nbsp;struct,&nbsp;class,&nbsp;variables.<br>
+*&nbsp;Check&nbsp;optional&nbsp;(missing)&nbsp;value<br>
+*&nbsp;Argument&nbsp;name&nbsp;are&nbsp;language&nbsp;special:<br>
+&nbsp;&nbsp;-&nbsp;(python)&nbsp;True,&nbsp;def<br>
+*&nbsp;Params&nbsp;as&nbsp;an&nbsp;intermediate&nbsp;parameter&nbsp;(only&nbsp;via&nbsp;params&nbsp;setter?&nbsp;&nbsp;Or&nbsp;also&nbsp;via&nbsp;<br>
+&nbsp;&nbsp;IL&nbsp;or&nbsp;direct&nbsp;attr?)<br>
+(Python)<br>
+*&nbsp;try&nbsp;with&nbsp;different&nbsp;parameter&nbsp;lists:<br>
+&nbsp;&nbsp;-&nbsp;positional&nbsp;argument,&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;keyword&nbsp;argument,&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;*tuple&nbsp;style,&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;*dictionary&nbsp;style,&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;Mixed&nbsp;of&nbsp;them.<br>
+*&nbsp;Argument&nbsp;for&nbsp;the&nbsp;default&nbsp;value&nbsp;parameter&nbsp;(provide,&nbsp;not&nbsp;provide...)<br>
+*&nbsp;Negative&nbsp;scenarios<br>
+&nbsp;&nbsp;-&nbsp;"params"&nbsp;could&nbsp;not&nbsp;be&nbsp;"keyword"&nbsp;argument?<br>
+&nbsp;&nbsp;-&nbsp;Provide&nbsp;parameter&nbsp;more&nbsp;than&nbsp;once&nbsp;(such&nbsp;as&nbsp;positional,&nbsp;and&nbsp;keyword...)<br>
+&nbsp;<br>
+Passing&nbsp;arguments&nbsp;for&nbsp;By-ref&nbsp;parameters<br>
+In&nbsp;C#,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;public&nbsp;void&nbsp;M1(int&nbsp;x,&nbsp;ref&nbsp;int&nbsp;y)&nbsp;{&nbsp;...&nbsp;}<br>
+&nbsp;&nbsp;&nbsp;&nbsp;public&nbsp;void&nbsp;M2(int&nbsp;x,&nbsp;out&nbsp;int&nbsp;y)&nbsp;{&nbsp;...&nbsp;}<br>
+*&nbsp;Methods&nbsp;with<br>
+&nbsp;&nbsp;-&nbsp;Similar&nbsp;aspect&nbsp;as&nbsp;the&nbsp;previous&nbsp;scenario<br>
+&nbsp;&nbsp;-&nbsp;Consider&nbsp;mixing&nbsp;with&nbsp;default&nbsp;value/&nbsp;params&nbsp;arguments<br>
+&nbsp;&nbsp;-&nbsp;Ref,&nbsp;out&nbsp;parameters&nbsp;are&nbsp;not&nbsp;at&nbsp;last.<br>
+*&nbsp;Same&nbsp;for&nbsp;constructor.<br>
+(Python)<br>
+*&nbsp;call&nbsp;each&nbsp;of&nbsp;them&nbsp;with&nbsp;different&nbsp;parameter&nbsp;lists&nbsp;(similar&nbsp;to&nbsp;previous&nbsp;matrix)<br>
+*&nbsp;pay&nbsp;attention&nbsp;to:&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;clr.Reference<br>
+&nbsp;&nbsp;-&nbsp;Whether&nbsp;you&nbsp;need&nbsp;pass&nbsp;argument<br>
+&nbsp;&nbsp;-&nbsp;What&nbsp;kind&nbsp;of&nbsp;argument<br>
+&nbsp;&nbsp;-&nbsp;Mix&amp;match&nbsp;is&nbsp;not&nbsp;supported<br>
+*&nbsp;Negative&nbsp;scenarios.&nbsp;<br>
+&nbsp;<br>
+Method&nbsp;Overloads<br>
+*&nbsp;Related&nbsp;to&nbsp;method&nbsp;signatures<br>
+*&nbsp;Related&nbsp;to&nbsp;argument&nbsp;values/types<br>
+*&nbsp;(python?)&nbsp;Related&nbsp;to&nbsp;return&nbsp;values&nbsp;(specifically&nbsp;conversions&nbsp;on&nbsp;returns,&nbsp;<br>
+&nbsp;&nbsp;nullable&nbsp;types,&nbsp;etc...)<br>
+*&nbsp;Methods&nbsp;with&nbsp;different&nbsp;parameters<br>
+*&nbsp;Non-generic&nbsp;/&nbsp;generic&nbsp;methods&nbsp;have&nbsp;the&nbsp;same&nbsp;name&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;Activator.CreateInstance&nbsp;scenario<br>
+&nbsp;&nbsp;-&nbsp;G&lt;T&gt;.M(int),&nbsp;G&lt;T&gt;.M(T)<br>
+&nbsp;&nbsp;-&nbsp;G.M(int),&nbsp;G.M&lt;T&gt;(T)<br>
+*&nbsp;Static&nbsp;method&nbsp;and&nbsp;instance&nbsp;method&nbsp;have&nbsp;the&nbsp;same&nbsp;name<br>
+&nbsp;&nbsp;-&nbsp;instance&nbsp;M(C),&nbsp;static&nbsp;M(thisType,&nbsp;C)<br>
+*&nbsp;Same&nbsp;name&nbsp;as&nbsp;explicit&nbsp;interface&nbsp;method<br>
+&nbsp;<br>
+Operator&nbsp;Overloading<br>
+*&nbsp;all&nbsp;supported&nbsp;overloads&nbsp;(well-behavior)<br>
+&nbsp;&nbsp;-&nbsp;<a href="http://msdn2.microsoft.com/en-us/library/2sk3x8a7(vs.71).aspx">http://msdn2.microsoft.com/en-us/library/2sk3x8a7(vs.71).aspx</a>&nbsp;<br>
+*&nbsp;unary/binary&nbsp;overloads&nbsp;(not&nbsp;defined&nbsp;as&nbsp;usual)<br>
+&nbsp;&nbsp;-&nbsp;positive<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;instance&nbsp;method<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;static&nbsp;method&nbsp;where&nbsp;the&nbsp;first&nbsp;parameter&nbsp;is&nbsp;not&nbsp;the&nbsp;declaring&nbsp;type<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;has&nbsp;CodeContext&nbsp;as&nbsp;the&nbsp;first&nbsp;argument<br>
+&nbsp;&nbsp;-&nbsp;negative<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;unary&nbsp;operator&nbsp;has&nbsp;&nbsp;0,&nbsp;2,&nbsp;3&nbsp;parameter<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;binary&nbsp;operator&nbsp;has&nbsp;0,&nbsp;1,&nbsp;3&nbsp;parameters<br>
+*&nbsp;Call&nbsp;the&nbsp;operator&nbsp;explicitly<br>
+*&nbsp;Provide&nbsp;one-side&nbsp;comparison&nbsp;operator&nbsp;overload,&nbsp;but&nbsp;access&nbsp;the&nbsp;reverse-side&nbsp;<br>
+&nbsp;&nbsp;operator<br>
+*&nbsp;Provide&nbsp;simple&nbsp;operator&nbsp;overload,&nbsp;but&nbsp;call&nbsp;in-place&nbsp;operator&nbsp;&nbsp;<br>
+*&nbsp;Overloads&nbsp;<br>
+*&nbsp;Value&nbsp;type&nbsp;which&nbsp;has&nbsp;operator&nbsp;overloads<br>
+*&nbsp;Something&nbsp;Python&nbsp;is&nbsp;unable&nbsp;to&nbsp;practice:<br>
+&nbsp;&nbsp;-&nbsp;op_Assign,&nbsp;...<br>
+*&nbsp;Something&nbsp;decorated&nbsp;with&nbsp;special&nbsp;attribute&nbsp;(GetItem,&nbsp;GetBoundMember...)<br>
+(Python)<br>
+*&nbsp;__xxx__&nbsp;call&nbsp;style<br>
+&nbsp;<br>
+User-defined&nbsp;conversions<br>
+*&nbsp;TODO<br>
+&nbsp;<br>
+Implicit&nbsp;conversion&nbsp;operator<br>
+*&nbsp;Where&nbsp;it&nbsp;is&nbsp;applied:&nbsp;only&nbsp;passing&nbsp;as&nbsp;argument&nbsp;to&nbsp;method<br>
+*&nbsp;Where&nbsp;it&nbsp;is&nbsp;defined:<br>
+&nbsp;&nbsp;-&nbsp;Value&nbsp;type,&nbsp;reference&nbsp;type,&nbsp;generics&nbsp;<br>
+*&nbsp;How&nbsp;it&nbsp;is&nbsp;defined:&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;Instance&nbsp;op_Implicit&nbsp;method<br>
+&nbsp;&nbsp;-&nbsp;Overload&nbsp;scenario<br>
+*&nbsp;(python)&nbsp;Implicit&nbsp;vs.&nbsp;Explicit:&nbsp;when&nbsp;do&nbsp;we&nbsp;use&nbsp;what<br>
+*&nbsp;C#:&nbsp;<a href="http://msdn2.microsoft.com/en-us/library/aa691280(VS.71).aspx">http://msdn2.microsoft.com/en-us/library/aa691280(VS.71).aspx</a>&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;Implicit&nbsp;enumeration&nbsp;conversions&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;Implicit&nbsp;reference&nbsp;conversions&nbsp;<br>
+&nbsp;&nbsp;-&nbsp;Boxing&nbsp;conversions&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Check&nbsp;the&nbsp;pass-in&nbsp;value/identity?<br>
+&nbsp;&nbsp;-&nbsp;User-defined&nbsp;implicit&nbsp;conversions<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Builtin&nbsp;number/char/string/bool/enum&nbsp;-&gt;&nbsp;class/struct&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Class/struct&nbsp;-&gt;&nbsp;class/struct&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Generic&nbsp;types&nbsp;(G&lt;T&gt;,&nbsp;G&lt;int&gt;,&nbsp;GOfInt,&nbsp;G&lt;K,&nbsp;V&gt;)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;Conversion&nbsp;among&nbsp;base/derived&nbsp;types<br>
+&nbsp;<br>
+Explicit&nbsp;conversion&nbsp;operator<br>
+*&nbsp;Not&nbsp;supported&nbsp;by&nbsp;the&nbsp;language&nbsp;yet,&nbsp;tracking&nbsp;as&nbsp;bug&nbsp;314284<br>
+*&nbsp;(python)&nbsp;__int__,&nbsp;__long__,&nbsp;__float__,&nbsp;__complex__,&nbsp;__nonzero__</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Package Contents</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="interop.net.method.test_arguments.html">test_arguments</a><br>
+<a href="interop.net.method.test_op_explicit.html">test_op_explicit</a><br>
+</td><td width="25%" valign=top><a href="interop.net.method.test_op_implicit.html">test_op_implicit</a><br>
+<a href="interop.net.method.test_operators.html">test_operators</a><br>
+</td><td width="25%" valign=top><a href="interop.net.method.test_returnvalue.html">test_returnvalue</a><br>
+</td><td width="25%" valign=top></td></tr></table></td></tr></table>
+</body></html>

@@ -1,0 +1,2242 @@
+
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module interop.net.derivation.test_method_override</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="interop.html"><font color="#ffffff">interop</font></a>.<a href="interop.net.html"><font color="#ffffff">net</font></a>.<a href="interop.net.derivation.html"><font color="#ffffff">derivation</font></a>.test_method_override</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:e:\vslrft\dlr\languages\ironpython\tests\interop\net\derivation\test_method_override.py">e:\vslrft\dlr\languages\ironpython\tests\interop\net\derivation\test_method_override.py</a></font></td></tr></table>
+    <p><tt>How&nbsp;to&nbsp;re-define&nbsp;a&nbsp;method&nbsp;in&nbsp;Python.</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="clr.html">clr</a><br>
+<a href="iptest.file_util.html">iptest.file_util</a><br>
+</td><td width="25%" valign=top><a href="logging.html">logging</a><br>
+<a href="nt.html">nt</a><br>
+</td><td width="25%" valign=top><a href="sys.html">sys</a><br>
+<a href="time.html">time</a><br>
+</td><td width="25%" valign=top><a href="iptest.type_util.html">iptest.type_util</a><br>
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IEmpty
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IEvent10
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IGenericEmpty[T]
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IIndexer20
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IIndexer21
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IIndexer22
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IInterface110a
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IInterface110c(Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IInterface110a, Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IInterface110b)
+</font></dt></dl>
+</dd>
+<dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IInterface110b
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IInterface21
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IInterface24
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IInterface25(Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IInterface24, Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IInterface21, Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IInterface22)
+</font></dt></dl>
+</dd>
+</dl>
+</dd>
+<dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IInterface22
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IInterface23
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IInterface250
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IInterface251
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IInterface26
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IInterface260[T]
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IInterface42
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IInterface600
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.INotEmpty
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IProperty10
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IProperty11
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IProperty12
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.IType20
+</font></dt><dt><font face="helvetica, arial">System in mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Enum(<a href="__builtin__.html#object">__builtin__.object</a>)
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.EmptyEnum
+</font></dt></dl>
+</dd>
+<dt><font face="helvetica, arial">System in mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.MulticastDelegate(System in mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Delegate)
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.EmptyDelegate
+</font></dt></dl>
+</dd>
+<dt><font face="helvetica, arial"><a href="__builtin__.html#object">__builtin__.object</a>
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial">Merlin.Testing in rowantest.typesamples, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.Helper
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.AbstractEmptyClass
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.AbstractNotEmptyClass
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.C
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.CCtor10
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.CCtor20
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.CCtor21
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.CCtor22
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.CCtor30
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.CCtor31
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.CCtor32
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.CCtor40
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.CCtor50
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.CCtor51
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.CEvent40
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.CIndexer40
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.CProperty30
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.CProperty32
+</font></dt></dl>
+</dd>
+<dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.CProperty31
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.CProperty33
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.CType10
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.CType11
+</font></dt></dl>
+</dd>
+<dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.CType21
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.Callback
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.Class200a
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.Class200b
+</font></dt></dl>
+</dd>
+<dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.Class210a
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.Class210b
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.Class210c
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.Class210d
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.Class210e
+</font></dt></dl>
+</dd>
+<dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.Class300
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.Class310
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.Class320[T]
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.Class41
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.Class42
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.Class43
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.Class44
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.Class500
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.EmptyClass
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.EmptyGenericClass[T]
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.EmptyStruct
+</font></dt><dt><font face="helvetica, arial">Merlin.Testing.BaseClass in rowantest.baseclasscs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null.SealedClass
+</font></dt></dl>
+</dd>
+</dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="AbstractEmptyClass">class <strong>AbstractEmptyClass</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="AbstractEmptyClass-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#AbstractEmptyClass-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="AbstractNotEmptyClass">class <strong>AbstractNotEmptyClass</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="AbstractNotEmptyClass-M1"><strong>M1</strong></a>(...)</dt><dd><tt><a href="#AbstractNotEmptyClass-M1">M1</a>(self)</tt></dd></dl>
+
+<dl><dt><a name="AbstractNotEmptyClass-M2"><strong>M2</strong></a>(...)</dt><dd><tt><a href="#AbstractNotEmptyClass-M2">M2</a>(self)</tt></dd></dl>
+
+<dl><dt><a name="AbstractNotEmptyClass-M3"><strong>M3</strong></a>(...)</dt><dd><tt><a href="#AbstractNotEmptyClass-M3">M3</a>(self)</tt></dd></dl>
+
+<dl><dt><a name="AbstractNotEmptyClass-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#AbstractNotEmptyClass-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>P</strong></dt>
+<dd><tt>Get:&nbsp;int&nbsp;P(self)<br>
+Set:&nbsp;P(self)&nbsp;=&nbsp;value</tt></dd>
+</dl>
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="C">class <strong>C</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#C">C</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="C-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#C-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>Act</strong></dt>
+</dl>
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="CCtor10">class <strong>CCtor10</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#CCtor10">CCtor10</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="CCtor10-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#CCtor10-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="CCtor20">class <strong>CCtor20</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#CCtor20">CCtor20</a>(int&nbsp;arg)<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="CCtor20-__new__"><strong>__new__</strong></a>(...)</dt><dd><tt><a href="#CCtor20-__new__">__new__</a>(cls,&nbsp;int&nbsp;arg)</tt></dd></dl>
+
+<dl><dt><a name="CCtor20-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#CCtor20-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="CCtor21">class <strong>CCtor21</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>int&nbsp;<a href="#CCtor21">CCtor21</a>(int&nbsp;arg)<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="CCtor21-__new__"><strong>__new__</strong></a>(...)</dt><dd><tt>int&nbsp;<a href="#CCtor21-__new__">__new__</a>(cls,&nbsp;int&nbsp;arg)</tt></dd></dl>
+
+<dl><dt><a name="CCtor21-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#CCtor21-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="CCtor22">class <strong>CCtor22</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>int&nbsp;<a href="#CCtor22">CCtor22</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="CCtor22-__new__"><strong>__new__</strong></a>(...)</dt><dd><tt>int&nbsp;<a href="#CCtor22-__new__">__new__</a>(cls)</tt></dd></dl>
+
+<dl><dt><a name="CCtor22-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#CCtor22-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="CCtor30">class <strong>CCtor30</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#CCtor30">CCtor30</a>(Array[int]&nbsp;args)<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="CCtor30-__new__"><strong>__new__</strong></a>(...)</dt><dd><tt><a href="#CCtor30-__new__">__new__</a>(cls,&nbsp;Array[int]&nbsp;args)</tt></dd></dl>
+
+<dl><dt><a name="CCtor30-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#CCtor30-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="CCtor31">class <strong>CCtor31</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#CCtor31">CCtor31</a>(Array[int]&nbsp;args)<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="CCtor31-__new__"><strong>__new__</strong></a>(...)</dt><dd><tt><a href="#CCtor31-__new__">__new__</a>(cls,&nbsp;Array[int]&nbsp;args)</tt></dd></dl>
+
+<dl><dt><a name="CCtor31-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#CCtor31-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="CCtor32">class <strong>CCtor32</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#CCtor32">CCtor32</a>(int&nbsp;arg1,&nbsp;Array[int]&nbsp;args)<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="CCtor32-__new__"><strong>__new__</strong></a>(...)</dt><dd><tt><a href="#CCtor32-__new__">__new__</a>(cls,&nbsp;int&nbsp;arg1,&nbsp;Array[int]&nbsp;args)</tt></dd></dl>
+
+<dl><dt><a name="CCtor32-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#CCtor32-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="CCtor40">class <strong>CCtor40</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#CCtor40">CCtor40</a>(int&nbsp;arg1,&nbsp;int&nbsp;arg2,&nbsp;int&nbsp;arg3,&nbsp;int&nbsp;arg4,&nbsp;int&nbsp;arg5)<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="CCtor40-__new__"><strong>__new__</strong></a>(...)</dt><dd><tt><a href="#CCtor40-__new__">__new__</a>(cls,&nbsp;int&nbsp;arg1,&nbsp;int&nbsp;arg2,&nbsp;int&nbsp;arg3,&nbsp;int&nbsp;arg4,&nbsp;int&nbsp;arg5)</tt></dd></dl>
+
+<dl><dt><a name="CCtor40-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#CCtor40-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="CCtor50">class <strong>CCtor50</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#CCtor50">CCtor50</a>(int&nbsp;arg)<br>
+<a href="#CCtor50">CCtor50</a>(int&nbsp;arg1,&nbsp;int&nbsp;arg2)<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="CCtor50-__new__"><strong>__new__</strong></a>(...)</dt><dd><tt><a href="#CCtor50-__new__">__new__</a>(cls,&nbsp;int&nbsp;arg)<br>
+<a href="#CCtor50-__new__">__new__</a>(cls,&nbsp;int&nbsp;arg1,&nbsp;int&nbsp;arg2)</tt></dd></dl>
+
+<dl><dt><a name="CCtor50-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#CCtor50-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="CCtor51">class <strong>CCtor51</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#CCtor51">CCtor51</a>(int&nbsp;arg)<br>
+<a href="#CCtor51">CCtor51</a>(Array[int]&nbsp;args)<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="CCtor51-__new__"><strong>__new__</strong></a>(...)</dt><dd><tt><a href="#CCtor51-__new__">__new__</a>(cls,&nbsp;int&nbsp;arg)<br>
+<a href="#CCtor51-__new__">__new__</a>(cls,&nbsp;Array[int]&nbsp;args)</tt></dd></dl>
+
+<dl><dt><a name="CCtor51-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#CCtor51-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="CEvent40">class <strong>CEvent40</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#CEvent40">CEvent40</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="CEvent40-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#CEvent40-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>Act</strong></dt>
+</dl>
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="CIndexer40">class <strong>CIndexer40</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#CIndexer40">CIndexer40</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="CIndexer40-__getitem__"><strong>__getitem__</strong></a>(...)</dt><dd><tt>x.<a href="#CIndexer40-__getitem__">__getitem__</a>(y)&nbsp;&lt;==&gt;&nbsp;x[y]</tt></dd></dl>
+
+<dl><dt><a name="CIndexer40-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#CIndexer40-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+<dl><dt><a name="CIndexer40-__setitem__"><strong>__setitem__</strong></a>(...)</dt><dd><tt>x.<a href="#CIndexer40-__setitem__">__setitem__</a>(i,&nbsp;y)&nbsp;&lt;==&gt;&nbsp;x[i]=</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="CProperty30">class <strong>CProperty30</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#CProperty30">CProperty30</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="CProperty30-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#CProperty30-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>Property</strong></dt>
+<dd><tt>Get:&nbsp;int&nbsp;Property(self)<br>
+Set:&nbsp;Property(self)&nbsp;=&nbsp;value</tt></dd>
+</dl>
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="CProperty31">class <strong>CProperty31</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="CProperty31-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#CProperty31-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>Property</strong></dt>
+<dd><tt>Get:&nbsp;int&nbsp;Property(self)<br>
+Set:&nbsp;Property(self)&nbsp;=&nbsp;value</tt></dd>
+</dl>
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="CProperty32">class <strong>CProperty32</strong></a>(CProperty30)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#CProperty32">CProperty32</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd>CProperty32</dd>
+<dd>CProperty30</dd>
+<dd><a href="__builtin__.html#object">__builtin__.object</a></dd>
+</dl>
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>Property</strong></dt>
+<dd><tt>Get:&nbsp;int&nbsp;Property(self)<br>
+Set:&nbsp;Property(self)&nbsp;=&nbsp;value</tt></dd>
+</dl>
+<hr>
+Methods inherited from CProperty30:<br>
+<dl><dt><a name="CProperty32-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#CProperty32-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="CProperty33">class <strong>CProperty33</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#CProperty33">CProperty33</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="CProperty33-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#CProperty33-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>Property</strong></dt>
+<dd><tt>Get:&nbsp;int&nbsp;Property()<br>
+Set:&nbsp;Property()&nbsp;=&nbsp;value</tt></dd>
+</dl>
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="CType10">class <strong>CType10</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#CType10">CType10</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="CType10-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#CType10-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+<dl><dt><a name="CType10-m1"><strong>m1</strong></a>(...)</dt><dd><tt><a href="#CType10-m1">m1</a>(self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="CType11">class <strong>CType11</strong></a>(CType10)</font></td></tr>
+    
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd>CType11</dd>
+<dd>CType10</dd>
+<dd><a href="__builtin__.html#object">__builtin__.object</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="CType11-m2"><strong>m2</strong></a>(...)</dt><dd><tt><a href="#CType11-m2">m2</a>(self)</tt></dd></dl>
+
+<hr>
+Methods inherited from CType10:<br>
+<dl><dt><a name="CType11-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#CType11-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+<dl><dt><a name="CType11-m1"><strong>m1</strong></a>(...)</dt><dd><tt><a href="#CType11-m1">m1</a>(self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="CType21">class <strong>CType21</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="CType21-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#CType21-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+<dl><dt><a name="CType21-m1"><strong>m1</strong></a>(...)</dt><dd><tt><a href="#CType21-m1">m1</a>(self)</tt></dd></dl>
+
+<dl><dt><a name="CType21-m2"><strong>m2</strong></a>(...)</dt><dd><tt><a href="#CType21-m2">m2</a>(self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Callback">class <strong>Callback</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#Callback">Callback</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Callback-On"><strong>On</strong></a>(...)</dt><dd><tt><a href="#Callback-On">On</a>(<a href="#IEvent10">IEvent10</a>&nbsp;arg)<br>
+<a href="#Callback-On">On</a>(<a href="#CIndexer40">CIndexer40</a>&nbsp;arg)<br>
+<a href="#Callback-On">On</a>(<a href="#CType21">CType21</a>&nbsp;arg)<br>
+<a href="#Callback-On">On</a>(<a href="#CType11">CType11</a>&nbsp;arg)<br>
+<a href="#Callback-On">On</a>(<a href="#CProperty30">CProperty30</a>&nbsp;arg)<br>
+int&nbsp;<a href="#Callback-On">On</a>(<a href="#Class210a">Class210a</a>&nbsp;arg)<br>
+<a href="#Callback-On">On</a>(<a href="#CProperty32">CProperty32</a>&nbsp;arg)<br>
+<a href="#Callback-On">On</a>(<a href="#CProperty31">CProperty31</a>&nbsp;arg)</tt></dd></dl>
+
+<dl><dt><a name="Callback-On1"><strong>On1</strong></a>(...)</dt><dd><tt><a href="#Callback-On1">On1</a>(<a href="#IIndexer20">IIndexer20</a>&nbsp;arg)</tt></dd></dl>
+
+<dl><dt><a name="Callback-On2"><strong>On2</strong></a>(...)</dt><dd><tt><a href="#Callback-On2">On2</a>(<a href="#IIndexer20">IIndexer20</a>&nbsp;arg)</tt></dd></dl>
+
+<dl><dt><a name="Callback-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#Callback-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Class200a">class <strong>Class200a</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Class200a-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#Class200a-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+<dl><dt><a name="Class200a-m200"><strong>m200</strong></a>(...)</dt><dd><tt>int&nbsp;<a href="#Class200a-m200">m200</a>(self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Class200b">class <strong>Class200b</strong></a>(Class200a)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#Class200b">Class200b</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd>Class200b</dd>
+<dd>Class200a</dd>
+<dd><a href="__builtin__.html#object">__builtin__.object</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="Class200b-m200"><strong>m200</strong></a>(...)</dt><dd><tt>int&nbsp;<a href="#Class200b-m200">m200</a>(self)</tt></dd></dl>
+
+<hr>
+Methods inherited from Class200a:<br>
+<dl><dt><a name="Class200b-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#Class200b-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Class210a">class <strong>Class210a</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#Class210a">Class210a</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Class210a-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#Class210a-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+<dl><dt><a name="Class210a-m210"><strong>m210</strong></a>(...)</dt><dd><tt>int&nbsp;<a href="#Class210a-m210">m210</a>(self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Class210b">class <strong>Class210b</strong></a>(Class210a)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#Class210b">Class210b</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd>Class210b</dd>
+<dd>Class210a</dd>
+<dd><a href="__builtin__.html#object">__builtin__.object</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="Class210b-m210"><strong>m210</strong></a>(...)</dt><dd><tt>int&nbsp;<a href="#Class210b-m210">m210</a>(self)</tt></dd></dl>
+
+<hr>
+Methods inherited from Class210a:<br>
+<dl><dt><a name="Class210b-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#Class210b-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Class210c">class <strong>Class210c</strong></a>(Class210a)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#Class210c">Class210c</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd>Class210c</dd>
+<dd>Class210a</dd>
+<dd><a href="__builtin__.html#object">__builtin__.object</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="Class210c-m210"><strong>m210</strong></a>(...)</dt><dd><tt>int&nbsp;<a href="#Class210c-m210">m210</a>(self)</tt></dd></dl>
+
+<hr>
+Methods inherited from Class210a:<br>
+<dl><dt><a name="Class210c-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#Class210c-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Class210d">class <strong>Class210d</strong></a>(Class210a)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#Class210d">Class210d</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd>Class210d</dd>
+<dd>Class210a</dd>
+<dd><a href="__builtin__.html#object">__builtin__.object</a></dd>
+</dl>
+<hr>
+Methods inherited from Class210a:<br>
+<dl><dt><a name="Class210d-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#Class210d-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+<dl><dt><a name="Class210d-m210"><strong>m210</strong></a>(...)</dt><dd><tt>int&nbsp;<a href="#Class210d-m210">m210</a>(self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Class210e">class <strong>Class210e</strong></a>(Class210a)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#Class210e">Class210e</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd>Class210e</dd>
+<dd>Class210a</dd>
+<dd><a href="__builtin__.html#object">__builtin__.object</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="Class210e-m210"><strong>m210</strong></a>(...)</dt><dd><tt>int&nbsp;<a href="#Class210e-m210">m210</a>(self)</tt></dd></dl>
+
+<hr>
+Methods inherited from Class210a:<br>
+<dl><dt><a name="Class210e-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#Class210e-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Class300">class <strong>Class300</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Class300-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#Class300-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+<dl><dt><a name="Class300-m300"><strong>m300</strong></a>(...)</dt><dd><tt>int&nbsp;m300[T](self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Class310">class <strong>Class310</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#Class310">Class310</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Class310-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#Class310-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+<dl><dt><a name="Class310-m310a"><strong>m310a</strong></a>(...)</dt><dd><tt>int&nbsp;m310a[T](self,&nbsp;T&nbsp;arg)</tt></dd></dl>
+
+<dl><dt><a name="Class310-m310b"><strong>m310b</strong></a>(...)</dt><dd><tt>int&nbsp;m310b[(K,&nbsp;V)](self,&nbsp;K&nbsp;arg1,&nbsp;V&nbsp;arg2)</tt></dd></dl>
+
+<dl><dt><a name="Class310-m310c"><strong>m310c</strong></a>(...)</dt><dd><tt>int&nbsp;m310c[T](self,&nbsp;int&nbsp;arg)<br>
+int&nbsp;<a href="#Class310-m310c">m310c</a>(self,&nbsp;int&nbsp;arg)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><strong>Class320</strong> = <a name="Class320">class Class320[T]</a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#Class320">Class320</a>[T]()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Class320[T]-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#Class320-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+<dl><dt><a name="Class320[T]-m320"><strong>m320</strong></a>(...)</dt><dd><tt>int&nbsp;<a href="#Class320-m320">m320</a>(self,&nbsp;T&nbsp;arg)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Class41">class <strong>Class41</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#Class41">Class41</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Class41-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#Class41-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+<dl><dt><a name="Class41-m41"><strong>m41</strong></a>(...)</dt><dd><tt>int&nbsp;<a href="#Class41-m41">m41</a>(self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Class42">class <strong>Class42</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#Class42">Class42</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Class42-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#Class42-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+<dl><dt><a name="Class42-m42"><strong>m42</strong></a>(...)</dt><dd><tt>int&nbsp;<a href="#Class42-m42">m42</a>(self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Class43">class <strong>Class43</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#Class43">Class43</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Class43-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#Class43-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+<dl><dt><a name="Class43-m26"><strong>m26</strong></a>(...)</dt><dd><tt>int&nbsp;<a href="#Class43-m26">m26</a>(self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Class44">class <strong>Class44</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#Class44">Class44</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Class44-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#Class44-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+<dl><dt><a name="Class44-m26"><strong>m26</strong></a>(...)</dt><dd><tt>int&nbsp;<a href="#Class44-m26">m26</a>(self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Class500">class <strong>Class500</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#Class500">Class500</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Class500-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#Class500-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+<dl><dt><a name="Class500-m500a"><strong>m500a</strong></a>(...)</dt><dd><tt>int&nbsp;<a href="#Class500-m500a">m500a</a>()</tt></dd></dl>
+
+<dl><dt><a name="Class500-m500b"><strong>m500b</strong></a>(...)</dt><dd><tt>int&nbsp;m500b[T]()</tt></dd></dl>
+
+<dl><dt><a name="Class500-m500c"><strong>m500c</strong></a>(...)</dt><dd><tt>int&nbsp;m500c[T]()<br>
+int&nbsp;<a href="#Class500-m500c">m500c</a>()</tt></dd></dl>
+
+<dl><dt><a name="Class500-m500d"><strong>m500d</strong></a>(...)</dt><dd><tt>int&nbsp;m500d[(K,&nbsp;V)]()<br>
+int&nbsp;m500d[T]()</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="EmptyClass">class <strong>EmptyClass</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#EmptyClass">EmptyClass</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="EmptyClass-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#EmptyClass-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="EmptyDelegate">class <strong>EmptyDelegate</strong></a>(System in mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.MulticastDelegate)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#EmptyDelegate">EmptyDelegate</a>(<a href="__builtin__.html#object">object</a>&nbsp;<a href="__builtin__.html#object">object</a>,&nbsp;IntPtr&nbsp;method)<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd>EmptyDelegate</dd>
+<dd>System in mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.MulticastDelegate</dd>
+<dd>System in mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Delegate</dd>
+<dd><a href="__builtin__.html#object">__builtin__.object</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="EmptyDelegate-BeginInvoke"><strong>BeginInvoke</strong></a>(...)</dt><dd><tt>IAsyncResult&nbsp;<a href="#EmptyDelegate-BeginInvoke">BeginInvoke</a>(self,&nbsp;AsyncCallback&nbsp;callback,&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;<a href="__builtin__.html#object">object</a>)</tt></dd></dl>
+
+<dl><dt><a name="EmptyDelegate-EndInvoke"><strong>EndInvoke</strong></a>(...)</dt><dd><tt><a href="#EmptyDelegate-EndInvoke">EndInvoke</a>(self,&nbsp;IAsyncResult&nbsp;result)</tt></dd></dl>
+
+<dl><dt><a name="EmptyDelegate-Invoke"><strong>Invoke</strong></a>(...)</dt><dd><tt><a href="#EmptyDelegate-Invoke">Invoke</a>(self)</tt></dd></dl>
+
+<dl><dt><a name="EmptyDelegate-__new__"><strong>__new__</strong></a>(...)</dt><dd><tt><a href="#EmptyDelegate-__new__">__new__</a>(cls,&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;<a href="__builtin__.html#object">object</a>,&nbsp;IntPtr&nbsp;method)</tt></dd></dl>
+
+<dl><dt><a name="EmptyDelegate-__reduce_ex__"><strong>__reduce_ex__</strong></a>(...)</dt><dd><tt>helper&nbsp;for&nbsp;pickle</tt></dd></dl>
+
+<hr>
+Methods inherited from System in mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.MulticastDelegate:<br>
+<dl><dt><a name="EmptyDelegate-CombineImpl"><strong>CombineImpl</strong></a>(...)</dt><dd><tt>Delegate&nbsp;<a href="#EmptyDelegate-CombineImpl">CombineImpl</a>(self,&nbsp;Delegate&nbsp;follow)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Combines&nbsp;this&nbsp;System.Delegate&nbsp;with&nbsp;the&nbsp;specified&nbsp;System.Delegate&nbsp;to&nbsp;<br>
+&nbsp;form&nbsp;a&nbsp;new&nbsp;delegate.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+follow:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;delegate&nbsp;to&nbsp;combine&nbsp;with&nbsp;this&nbsp;delegate.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;System.Delegate&nbsp;that&nbsp;is&nbsp;the&nbsp;new&nbsp;root&nbsp;of&nbsp;the&nbsp;<br>
+&nbsp;System.MulticastDelegate&nbsp;invocation&nbsp;list.</tt></dd></dl>
+
+<dl><dt><a name="EmptyDelegate-Equals"><strong>Equals</strong></a>(...)</dt><dd><tt>bool&nbsp;<a href="#EmptyDelegate-Equals">Equals</a>(self,&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;obj)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Determines&nbsp;whether&nbsp;this&nbsp;multicast&nbsp;delegate&nbsp;and&nbsp;the&nbsp;specified&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;<br>
+&nbsp;are&nbsp;equal.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+obj:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;to&nbsp;compare&nbsp;with&nbsp;this&nbsp;instance.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;true&nbsp;if&nbsp;obj&nbsp;and&nbsp;this&nbsp;instance&nbsp;have&nbsp;the&nbsp;same&nbsp;invocation&nbsp;lists;&nbsp;otherwise,&nbsp;false.</tt></dd></dl>
+
+<dl><dt><a name="EmptyDelegate-GetHashCode"><strong>GetHashCode</strong></a>(...)</dt><dd><tt>int&nbsp;<a href="#EmptyDelegate-GetHashCode">GetHashCode</a>(self)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns&nbsp;the&nbsp;hash&nbsp;code&nbsp;for&nbsp;this&nbsp;instance.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;32-bit&nbsp;signed&nbsp;integer&nbsp;hash&nbsp;code.</tt></dd></dl>
+
+<dl><dt><a name="EmptyDelegate-GetInvocationList"><strong>GetInvocationList</strong></a>(...)</dt><dd><tt>Array[Delegate]&nbsp;<a href="#EmptyDelegate-GetInvocationList">GetInvocationList</a>(self)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns&nbsp;the&nbsp;invocation&nbsp;list&nbsp;of&nbsp;this&nbsp;multicast&nbsp;delegate,&nbsp;in&nbsp;<br>
+&nbsp;invocation&nbsp;order.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;array&nbsp;of&nbsp;delegates&nbsp;whose&nbsp;invocation&nbsp;lists&nbsp;collectively&nbsp;match&nbsp;the&nbsp;<br>
+&nbsp;invocation&nbsp;list&nbsp;of&nbsp;this&nbsp;instance.</tt></dd></dl>
+
+<dl><dt><a name="EmptyDelegate-GetMethodImpl"><strong>GetMethodImpl</strong></a>(...)</dt><dd><tt>MethodInfo&nbsp;<a href="#EmptyDelegate-GetMethodImpl">GetMethodImpl</a>(self)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns&nbsp;a&nbsp;static&nbsp;method&nbsp;represented&nbsp;by&nbsp;the&nbsp;current&nbsp;<br>
+&nbsp;System.MulticastDelegate.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;System.Reflection.MethodInfo&nbsp;describing&nbsp;a&nbsp;static&nbsp;method&nbsp;<br>
+&nbsp;represented&nbsp;by&nbsp;the&nbsp;current&nbsp;System.MulticastDelegate.</tt></dd></dl>
+
+<dl><dt><a name="EmptyDelegate-GetObjectData"><strong>GetObjectData</strong></a>(...)</dt><dd><tt><a href="#EmptyDelegate-GetObjectData">GetObjectData</a>(self,&nbsp;SerializationInfo&nbsp;info,&nbsp;StreamingContext&nbsp;context)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Populates&nbsp;a&nbsp;System.Runtime.Serialization.SerializationInfo&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;<br>
+&nbsp;with&nbsp;all&nbsp;the&nbsp;data&nbsp;needed&nbsp;to&nbsp;serialize&nbsp;this&nbsp;instance.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+info:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;that&nbsp;holds&nbsp;all&nbsp;the&nbsp;data&nbsp;needed&nbsp;to&nbsp;serialize&nbsp;or&nbsp;<br>
+&nbsp;deserialize&nbsp;this&nbsp;instance.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+context:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(Reserved)&nbsp;The&nbsp;location&nbsp;where&nbsp;serialized&nbsp;data&nbsp;is&nbsp;stored&nbsp;and&nbsp;<br>
+&nbsp;retrieved.</tt></dd></dl>
+
+<dl><dt><a name="EmptyDelegate-RemoveImpl"><strong>RemoveImpl</strong></a>(...)</dt><dd><tt>Delegate&nbsp;<a href="#EmptyDelegate-RemoveImpl">RemoveImpl</a>(self,&nbsp;Delegate&nbsp;value)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Removes&nbsp;an&nbsp;element&nbsp;from&nbsp;the&nbsp;invocation&nbsp;list&nbsp;of&nbsp;this&nbsp;<br>
+&nbsp;System.MulticastDelegate&nbsp;that&nbsp;is&nbsp;equal&nbsp;to&nbsp;the&nbsp;specified&nbsp;delegate.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+value:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;delegate&nbsp;to&nbsp;search&nbsp;for&nbsp;in&nbsp;the&nbsp;invocation&nbsp;list.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;If&nbsp;value&nbsp;is&nbsp;found&nbsp;in&nbsp;the&nbsp;invocation&nbsp;list&nbsp;for&nbsp;this&nbsp;instance,&nbsp;then&nbsp;a&nbsp;<br>
+&nbsp;new&nbsp;System.Delegate&nbsp;without&nbsp;value&nbsp;in&nbsp;its&nbsp;invocation&nbsp;list;&nbsp;otherwise,&nbsp;this&nbsp;instance&nbsp;with&nbsp;<br>
+&nbsp;its&nbsp;original&nbsp;invocation&nbsp;list.</tt></dd></dl>
+
+<dl><dt><a name="EmptyDelegate-__eq__"><strong>__eq__</strong></a>(...)</dt><dd><tt>x.<a href="#EmptyDelegate-__eq__">__eq__</a>(y)&nbsp;&lt;==&gt;&nbsp;x==y</tt></dd></dl>
+
+<dl><dt><a name="EmptyDelegate-__ne__"><strong>__ne__</strong></a>(...)</dt><dd><tt>bool&nbsp;<a href="#EmptyDelegate-__ne__">__ne__</a>(MulticastDelegate&nbsp;d1,&nbsp;MulticastDelegate&nbsp;d2)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Determines&nbsp;whether&nbsp;two&nbsp;System.MulticastDelegate&nbsp;objects&nbsp;are&nbsp;not&nbsp;<br>
+&nbsp;equal.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+d1:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;left&nbsp;operand.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+d2:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;right&nbsp;operand.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;true&nbsp;if&nbsp;d1&nbsp;and&nbsp;d2&nbsp;do&nbsp;not&nbsp;have&nbsp;the&nbsp;same&nbsp;invocation&nbsp;lists;&nbsp;otherwise,&nbsp;false.</tt></dd></dl>
+
+<hr>
+Methods inherited from System in mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Delegate:<br>
+<dl><dt><a name="EmptyDelegate-Call"><strong>Call</strong></a>(...)</dt><dd><tt><a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyDelegate-Call">Call</a>(Delegate&nbsp;delegate,&nbsp;dict&nbsp;dict,&nbsp;Array[<a href="__builtin__.html#object">object</a>]&nbsp;args)<br>
+<a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyDelegate-Call">Call</a>(Delegate&nbsp;delegate,&nbsp;Array[<a href="__builtin__.html#object">object</a>]&nbsp;args)</tt></dd></dl>
+
+<dl><dt><a name="EmptyDelegate-Clone"><strong>Clone</strong></a>(...)</dt><dd><tt><a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyDelegate-Clone">Clone</a>(self)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creates&nbsp;a&nbsp;shallow&nbsp;copy&nbsp;of&nbsp;the&nbsp;delegate.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;shallow&nbsp;copy&nbsp;of&nbsp;the&nbsp;delegate.</tt></dd></dl>
+
+<dl><dt><a name="EmptyDelegate-Combine"><strong>Combine</strong></a>(...)</dt><dd><tt>Delegate&nbsp;<a href="#EmptyDelegate-Combine">Combine</a>(Array[Delegate]&nbsp;delegates)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Concatenates&nbsp;the&nbsp;invocation&nbsp;lists&nbsp;of&nbsp;an&nbsp;array&nbsp;of&nbsp;delegates.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;delegates:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;array&nbsp;of&nbsp;delegates&nbsp;to&nbsp;combine.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;new&nbsp;delegate&nbsp;with&nbsp;an&nbsp;invocation&nbsp;list&nbsp;that&nbsp;concatenates&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;invocation&nbsp;lists&nbsp;of&nbsp;the&nbsp;delegates&nbsp;in&nbsp;the&nbsp;delegates&nbsp;array.&nbsp;Returns&nbsp;null&nbsp;if&nbsp;delegates&nbsp;is&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;null,&nbsp;if&nbsp;delegates&nbsp;contains&nbsp;zero&nbsp;elements,&nbsp;or&nbsp;if&nbsp;every&nbsp;entry&nbsp;in&nbsp;delegates&nbsp;is&nbsp;null.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<br>
+Delegate&nbsp;<a href="#EmptyDelegate-Combine">Combine</a>(Delegate&nbsp;a,&nbsp;Delegate&nbsp;b)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Concatenates&nbsp;the&nbsp;invocation&nbsp;lists&nbsp;of&nbsp;two&nbsp;delegates.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;a:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;delegate&nbsp;whose&nbsp;invocation&nbsp;list&nbsp;comes&nbsp;first.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;b:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;delegate&nbsp;whose&nbsp;invocation&nbsp;list&nbsp;comes&nbsp;last.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;new&nbsp;delegate&nbsp;with&nbsp;an&nbsp;invocation&nbsp;list&nbsp;that&nbsp;concatenates&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;invocation&nbsp;lists&nbsp;of&nbsp;a&nbsp;and&nbsp;b&nbsp;in&nbsp;that&nbsp;order.&nbsp;Returns&nbsp;a&nbsp;if&nbsp;b&nbsp;is&nbsp;null,&nbsp;returns&nbsp;b&nbsp;if&nbsp;a&nbsp;is&nbsp;a&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;null&nbsp;reference,&nbsp;and&nbsp;returns&nbsp;a&nbsp;null&nbsp;reference&nbsp;if&nbsp;both&nbsp;a&nbsp;and&nbsp;b&nbsp;are&nbsp;null&nbsp;references.</tt></dd></dl>
+
+<dl><dt><a name="EmptyDelegate-CreateDelegate"><strong>CreateDelegate</strong></a>(...)</dt><dd><tt>Delegate&nbsp;<a href="#EmptyDelegate-CreateDelegate">CreateDelegate</a>(Type&nbsp;type,&nbsp;MethodInfo&nbsp;method)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creates&nbsp;a&nbsp;delegate&nbsp;of&nbsp;the&nbsp;specified&nbsp;type&nbsp;to&nbsp;represent&nbsp;the&nbsp;specified&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;static&nbsp;method.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;type:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;System.Type&nbsp;of&nbsp;delegate&nbsp;to&nbsp;create.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;method:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;System.Reflection.MethodInfo&nbsp;describing&nbsp;the&nbsp;static&nbsp;or&nbsp;instance&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;method&nbsp;the&nbsp;delegate&nbsp;is&nbsp;to&nbsp;represent.&nbsp;Only&nbsp;static&nbsp;methods&nbsp;are&nbsp;supported&nbsp;in&nbsp;the&nbsp;.NET&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Framework&nbsp;version&nbsp;1.0&nbsp;and&nbsp;1.1.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;delegate&nbsp;of&nbsp;the&nbsp;specified&nbsp;type&nbsp;to&nbsp;represent&nbsp;the&nbsp;specified&nbsp;static&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;method.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<br>
+Delegate&nbsp;<a href="#EmptyDelegate-CreateDelegate">CreateDelegate</a>(Type&nbsp;type,&nbsp;Type&nbsp;target,&nbsp;str&nbsp;method,&nbsp;bool&nbsp;ignoreCase,&nbsp;bool&nbsp;throwOnBindFailure)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creates&nbsp;a&nbsp;delegate&nbsp;of&nbsp;the&nbsp;specified&nbsp;type&nbsp;that&nbsp;represents&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;specified&nbsp;static&nbsp;method&nbsp;of&nbsp;the&nbsp;specified&nbsp;class,&nbsp;with&nbsp;the&nbsp;specified&nbsp;case-sensitivity&nbsp;and&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;specified&nbsp;behavior&nbsp;on&nbsp;failure&nbsp;to&nbsp;bind.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;type:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;System.Type&nbsp;of&nbsp;delegate&nbsp;to&nbsp;create.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;target:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;System.Type&nbsp;representing&nbsp;the&nbsp;class&nbsp;that&nbsp;implements&nbsp;method.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;method:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;name&nbsp;of&nbsp;the&nbsp;static&nbsp;method&nbsp;that&nbsp;the&nbsp;delegate&nbsp;is&nbsp;to&nbsp;represent.&nbsp;<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ignoreCase:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;Boolean&nbsp;indicating&nbsp;whether&nbsp;to&nbsp;ignore&nbsp;the&nbsp;case&nbsp;when&nbsp;comparing&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;name&nbsp;of&nbsp;the&nbsp;method.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;throwOnBindFailure:&nbsp;true&nbsp;to&nbsp;throw&nbsp;an&nbsp;exception&nbsp;if&nbsp;method&nbsp;cannot&nbsp;be&nbsp;bound;&nbsp;otherwise,&nbsp;false.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;delegate&nbsp;of&nbsp;the&nbsp;specified&nbsp;type&nbsp;that&nbsp;represents&nbsp;the&nbsp;specified&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;static&nbsp;method&nbsp;of&nbsp;the&nbsp;specified&nbsp;class.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<br>
+Delegate&nbsp;<a href="#EmptyDelegate-CreateDelegate">CreateDelegate</a>(Type&nbsp;type,&nbsp;MethodInfo&nbsp;method,&nbsp;bool&nbsp;throwOnBindFailure)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creates&nbsp;a&nbsp;delegate&nbsp;of&nbsp;the&nbsp;specified&nbsp;type&nbsp;to&nbsp;represent&nbsp;the&nbsp;specified&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;static&nbsp;method,&nbsp;with&nbsp;the&nbsp;specified&nbsp;behavior&nbsp;on&nbsp;failure&nbsp;to&nbsp;bind.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;type:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;System.Type&nbsp;of&nbsp;delegate&nbsp;to&nbsp;create.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;method:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;System.Reflection.MethodInfo&nbsp;describing&nbsp;the&nbsp;static&nbsp;or&nbsp;instance&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;method&nbsp;the&nbsp;delegate&nbsp;is&nbsp;to&nbsp;represent.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;throwOnBindFailure:&nbsp;true&nbsp;to&nbsp;throw&nbsp;an&nbsp;exception&nbsp;if&nbsp;method&nbsp;cannot&nbsp;be&nbsp;bound;&nbsp;otherwise,&nbsp;false.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;delegate&nbsp;of&nbsp;the&nbsp;specified&nbsp;type&nbsp;to&nbsp;represent&nbsp;the&nbsp;specified&nbsp;static&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;method.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<br>
+Delegate&nbsp;<a href="#EmptyDelegate-CreateDelegate">CreateDelegate</a>(Type&nbsp;type,&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;firstArgument,&nbsp;MethodInfo&nbsp;method,&nbsp;bool&nbsp;throwOnBindFailure)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creates&nbsp;a&nbsp;delegate&nbsp;of&nbsp;the&nbsp;specified&nbsp;type&nbsp;that&nbsp;represents&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;specified&nbsp;static&nbsp;or&nbsp;instance&nbsp;method,&nbsp;with&nbsp;the&nbsp;specified&nbsp;first&nbsp;argument&nbsp;and&nbsp;the&nbsp;specified&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;behavior&nbsp;on&nbsp;failure&nbsp;to&nbsp;bind.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;type:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;System.Type&nbsp;representing&nbsp;the&nbsp;type&nbsp;of&nbsp;delegate&nbsp;to&nbsp;create.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;firstArgument:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;System.Object&nbsp;that&nbsp;is&nbsp;the&nbsp;first&nbsp;argument&nbsp;of&nbsp;the&nbsp;method&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;delegate&nbsp;represents.&nbsp;For&nbsp;instance&nbsp;methods,&nbsp;it&nbsp;must&nbsp;be&nbsp;compatible&nbsp;with&nbsp;the&nbsp;instance&nbsp;type.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;method:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;System.Reflection.MethodInfo&nbsp;describing&nbsp;the&nbsp;static&nbsp;or&nbsp;instance&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;method&nbsp;the&nbsp;delegate&nbsp;is&nbsp;to&nbsp;represent.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;throwOnBindFailure:&nbsp;true&nbsp;to&nbsp;throw&nbsp;an&nbsp;exception&nbsp;if&nbsp;method&nbsp;cannot&nbsp;be&nbsp;bound;&nbsp;otherwise,&nbsp;false.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;delegate&nbsp;of&nbsp;the&nbsp;specified&nbsp;type&nbsp;that&nbsp;represents&nbsp;the&nbsp;specified&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;static&nbsp;or&nbsp;instance&nbsp;method,&nbsp;or&nbsp;null&nbsp;if&nbsp;throwOnBindFailure&nbsp;is&nbsp;false&nbsp;and&nbsp;the&nbsp;delegate&nbsp;cannot&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;be&nbsp;bound&nbsp;to&nbsp;method.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<br>
+Delegate&nbsp;<a href="#EmptyDelegate-CreateDelegate">CreateDelegate</a>(Type&nbsp;type,&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;firstArgument,&nbsp;MethodInfo&nbsp;method)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creates&nbsp;a&nbsp;delegate&nbsp;of&nbsp;the&nbsp;specified&nbsp;type&nbsp;that&nbsp;represents&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;specified&nbsp;static&nbsp;or&nbsp;instance&nbsp;method,&nbsp;with&nbsp;the&nbsp;specified&nbsp;first&nbsp;argument.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;type:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;System.Type&nbsp;of&nbsp;delegate&nbsp;to&nbsp;create.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;firstArgument:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;to&nbsp;which&nbsp;the&nbsp;delegate&nbsp;is&nbsp;bound,&nbsp;or&nbsp;null&nbsp;to&nbsp;treat&nbsp;method&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;as&nbsp;static&nbsp;(Shared&nbsp;in&nbsp;Visual&nbsp;Basic).&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;method:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;System.Reflection.MethodInfo&nbsp;describing&nbsp;the&nbsp;static&nbsp;or&nbsp;instance&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;method&nbsp;the&nbsp;delegate&nbsp;is&nbsp;to&nbsp;represent.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;delegate&nbsp;of&nbsp;the&nbsp;specified&nbsp;type&nbsp;that&nbsp;represents&nbsp;the&nbsp;specified&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;static&nbsp;or&nbsp;instance&nbsp;method.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<br>
+Delegate&nbsp;<a href="#EmptyDelegate-CreateDelegate">CreateDelegate</a>(Type&nbsp;type,&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;target,&nbsp;str&nbsp;method,&nbsp;bool&nbsp;ignoreCase)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creates&nbsp;a&nbsp;delegate&nbsp;of&nbsp;the&nbsp;specified&nbsp;type&nbsp;that&nbsp;represents&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;specified&nbsp;instance&nbsp;method&nbsp;to&nbsp;invoke&nbsp;on&nbsp;the&nbsp;specified&nbsp;class&nbsp;instance&nbsp;with&nbsp;the&nbsp;specified&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;case-sensitivity.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;type:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;System.Type&nbsp;of&nbsp;delegate&nbsp;to&nbsp;create.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;target:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;class&nbsp;instance&nbsp;on&nbsp;which&nbsp;method&nbsp;is&nbsp;invoked.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;method:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;name&nbsp;of&nbsp;the&nbsp;instance&nbsp;method&nbsp;that&nbsp;the&nbsp;delegate&nbsp;is&nbsp;to&nbsp;represent.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ignoreCase:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;Boolean&nbsp;indicating&nbsp;whether&nbsp;to&nbsp;ignore&nbsp;the&nbsp;case&nbsp;when&nbsp;comparing&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;name&nbsp;of&nbsp;the&nbsp;method.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;delegate&nbsp;of&nbsp;the&nbsp;specified&nbsp;type&nbsp;that&nbsp;represents&nbsp;the&nbsp;specified&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;instance&nbsp;method&nbsp;to&nbsp;invoke&nbsp;on&nbsp;the&nbsp;specified&nbsp;class&nbsp;instance.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<br>
+Delegate&nbsp;<a href="#EmptyDelegate-CreateDelegate">CreateDelegate</a>(Type&nbsp;type,&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;target,&nbsp;str&nbsp;method)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creates&nbsp;a&nbsp;delegate&nbsp;of&nbsp;the&nbsp;specified&nbsp;type&nbsp;that&nbsp;represents&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;specified&nbsp;instance&nbsp;method&nbsp;to&nbsp;invoke&nbsp;on&nbsp;the&nbsp;specified&nbsp;class&nbsp;instance.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;type:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;System.Type&nbsp;of&nbsp;delegate&nbsp;to&nbsp;create.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;target:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;class&nbsp;instance&nbsp;on&nbsp;which&nbsp;method&nbsp;is&nbsp;invoked.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;method:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;name&nbsp;of&nbsp;the&nbsp;instance&nbsp;method&nbsp;that&nbsp;the&nbsp;delegate&nbsp;is&nbsp;to&nbsp;represent.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;delegate&nbsp;of&nbsp;the&nbsp;specified&nbsp;type&nbsp;that&nbsp;represents&nbsp;the&nbsp;specified&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;instance&nbsp;method&nbsp;to&nbsp;invoke&nbsp;on&nbsp;the&nbsp;specified&nbsp;class&nbsp;instance.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<br>
+Delegate&nbsp;<a href="#EmptyDelegate-CreateDelegate">CreateDelegate</a>(Type&nbsp;type,&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;target,&nbsp;str&nbsp;method,&nbsp;bool&nbsp;ignoreCase,&nbsp;bool&nbsp;throwOnBindFailure)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creates&nbsp;a&nbsp;delegate&nbsp;of&nbsp;the&nbsp;specified&nbsp;type&nbsp;that&nbsp;represents&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;specified&nbsp;instance&nbsp;method&nbsp;to&nbsp;invoke&nbsp;on&nbsp;the&nbsp;specified&nbsp;class&nbsp;instance,&nbsp;with&nbsp;the&nbsp;specified&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;case-sensitivity&nbsp;and&nbsp;the&nbsp;specified&nbsp;behavior&nbsp;on&nbsp;failure&nbsp;to&nbsp;bind.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;type:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;System.Type&nbsp;of&nbsp;delegate&nbsp;to&nbsp;create.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;target:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;class&nbsp;instance&nbsp;on&nbsp;which&nbsp;method&nbsp;is&nbsp;invoked.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;method:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;name&nbsp;of&nbsp;the&nbsp;instance&nbsp;method&nbsp;that&nbsp;the&nbsp;delegate&nbsp;is&nbsp;to&nbsp;represent.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ignoreCase:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;Boolean&nbsp;indicating&nbsp;whether&nbsp;to&nbsp;ignore&nbsp;the&nbsp;case&nbsp;when&nbsp;comparing&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;name&nbsp;of&nbsp;the&nbsp;method.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;throwOnBindFailure:&nbsp;true&nbsp;to&nbsp;throw&nbsp;an&nbsp;exception&nbsp;if&nbsp;method&nbsp;cannot&nbsp;be&nbsp;bound;&nbsp;otherwise,&nbsp;false.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;delegate&nbsp;of&nbsp;the&nbsp;specified&nbsp;type&nbsp;that&nbsp;represents&nbsp;the&nbsp;specified&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;instance&nbsp;method&nbsp;to&nbsp;invoke&nbsp;on&nbsp;the&nbsp;specified&nbsp;class&nbsp;instance.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<br>
+Delegate&nbsp;<a href="#EmptyDelegate-CreateDelegate">CreateDelegate</a>(Type&nbsp;type,&nbsp;Type&nbsp;target,&nbsp;str&nbsp;method,&nbsp;bool&nbsp;ignoreCase)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creates&nbsp;a&nbsp;delegate&nbsp;of&nbsp;the&nbsp;specified&nbsp;type&nbsp;that&nbsp;represents&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;specified&nbsp;static&nbsp;method&nbsp;of&nbsp;the&nbsp;specified&nbsp;class,&nbsp;with&nbsp;the&nbsp;specified&nbsp;case-sensitivity.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;type:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;System.Type&nbsp;of&nbsp;delegate&nbsp;to&nbsp;create.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;target:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;System.Type&nbsp;representing&nbsp;the&nbsp;class&nbsp;that&nbsp;implements&nbsp;method.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;method:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;name&nbsp;of&nbsp;the&nbsp;static&nbsp;method&nbsp;that&nbsp;the&nbsp;delegate&nbsp;is&nbsp;to&nbsp;represent.&nbsp;<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ignoreCase:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;Boolean&nbsp;indicating&nbsp;whether&nbsp;to&nbsp;ignore&nbsp;the&nbsp;case&nbsp;when&nbsp;comparing&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;name&nbsp;of&nbsp;the&nbsp;method.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;delegate&nbsp;of&nbsp;the&nbsp;specified&nbsp;type&nbsp;that&nbsp;represents&nbsp;the&nbsp;specified&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;static&nbsp;method&nbsp;of&nbsp;the&nbsp;specified&nbsp;class.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<br>
+Delegate&nbsp;<a href="#EmptyDelegate-CreateDelegate">CreateDelegate</a>(Type&nbsp;type,&nbsp;Type&nbsp;target,&nbsp;str&nbsp;method)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creates&nbsp;a&nbsp;delegate&nbsp;of&nbsp;the&nbsp;specified&nbsp;type&nbsp;that&nbsp;represents&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;specified&nbsp;static&nbsp;method&nbsp;of&nbsp;the&nbsp;specified&nbsp;class.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;type:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;System.Type&nbsp;of&nbsp;delegate&nbsp;to&nbsp;create.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;target:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;System.Type&nbsp;representing&nbsp;the&nbsp;class&nbsp;that&nbsp;implements&nbsp;method.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;method:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;name&nbsp;of&nbsp;the&nbsp;static&nbsp;method&nbsp;that&nbsp;the&nbsp;delegate&nbsp;is&nbsp;to&nbsp;represent.&nbsp;<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;delegate&nbsp;of&nbsp;the&nbsp;specified&nbsp;type&nbsp;that&nbsp;represents&nbsp;the&nbsp;specified&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;static&nbsp;method&nbsp;of&nbsp;the&nbsp;specified&nbsp;class.</tt></dd></dl>
+
+<dl><dt><a name="EmptyDelegate-DynamicInvoke"><strong>DynamicInvoke</strong></a>(...)</dt><dd><tt><a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyDelegate-DynamicInvoke">DynamicInvoke</a>(self,&nbsp;Array[<a href="__builtin__.html#object">object</a>]&nbsp;args)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Dynamically&nbsp;invokes&nbsp;(late-bound)&nbsp;the&nbsp;method&nbsp;represented&nbsp;by&nbsp;the&nbsp;<br>
+&nbsp;current&nbsp;delegate.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+args:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;array&nbsp;of&nbsp;objects&nbsp;that&nbsp;are&nbsp;the&nbsp;arguments&nbsp;to&nbsp;pass&nbsp;to&nbsp;the&nbsp;method&nbsp;<br>
+&nbsp;represented&nbsp;by&nbsp;the&nbsp;current&nbsp;delegate.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-or-&nbsp;<br>
+&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;null,&nbsp;if&nbsp;the&nbsp;method&nbsp;represented&nbsp;by&nbsp;the&nbsp;current&nbsp;delegate&nbsp;does&nbsp;not&nbsp;require&nbsp;<br>
+&nbsp;arguments.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;returned&nbsp;by&nbsp;the&nbsp;method&nbsp;represented&nbsp;by&nbsp;the&nbsp;delegate.</tt></dd></dl>
+
+<dl><dt><a name="EmptyDelegate-DynamicInvokeImpl"><strong>DynamicInvokeImpl</strong></a>(...)</dt><dd><tt><a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyDelegate-DynamicInvokeImpl">DynamicInvokeImpl</a>(self,&nbsp;Array[<a href="__builtin__.html#object">object</a>]&nbsp;args)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Dynamically&nbsp;invokes&nbsp;(late-bound)&nbsp;the&nbsp;method&nbsp;represented&nbsp;by&nbsp;the&nbsp;<br>
+&nbsp;current&nbsp;delegate.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+args:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;array&nbsp;of&nbsp;objects&nbsp;that&nbsp;are&nbsp;the&nbsp;arguments&nbsp;to&nbsp;pass&nbsp;to&nbsp;the&nbsp;method&nbsp;<br>
+&nbsp;represented&nbsp;by&nbsp;the&nbsp;current&nbsp;delegate.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-or-&nbsp;<br>
+&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;null,&nbsp;if&nbsp;the&nbsp;method&nbsp;represented&nbsp;by&nbsp;the&nbsp;current&nbsp;delegate&nbsp;does&nbsp;not&nbsp;require&nbsp;<br>
+&nbsp;arguments.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;returned&nbsp;by&nbsp;the&nbsp;method&nbsp;represented&nbsp;by&nbsp;the&nbsp;delegate.</tt></dd></dl>
+
+<dl><dt><a name="EmptyDelegate-InPlaceAdd"><strong>InPlaceAdd</strong></a>(...)</dt><dd><tt>Delegate&nbsp;<a href="#EmptyDelegate-InPlaceAdd">InPlaceAdd</a>(Delegate&nbsp;self,&nbsp;Delegate&nbsp;other)</tt></dd></dl>
+
+<dl><dt><a name="EmptyDelegate-InPlaceSubtract"><strong>InPlaceSubtract</strong></a>(...)</dt><dd><tt>Delegate&nbsp;<a href="#EmptyDelegate-InPlaceSubtract">InPlaceSubtract</a>(Delegate&nbsp;self,&nbsp;Delegate&nbsp;other)</tt></dd></dl>
+
+<dl><dt><a name="EmptyDelegate-Remove"><strong>Remove</strong></a>(...)</dt><dd><tt>Delegate&nbsp;<a href="#EmptyDelegate-Remove">Remove</a>(Delegate&nbsp;source,&nbsp;Delegate&nbsp;value)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Removes&nbsp;the&nbsp;last&nbsp;occurrence&nbsp;of&nbsp;the&nbsp;invocation&nbsp;list&nbsp;of&nbsp;a&nbsp;delegate&nbsp;<br>
+&nbsp;from&nbsp;the&nbsp;invocation&nbsp;list&nbsp;of&nbsp;another&nbsp;delegate.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+source:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;delegate&nbsp;from&nbsp;which&nbsp;to&nbsp;remove&nbsp;the&nbsp;invocation&nbsp;list&nbsp;of&nbsp;value.&nbsp;<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+value:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;delegate&nbsp;that&nbsp;supplies&nbsp;the&nbsp;invocation&nbsp;list&nbsp;to&nbsp;remove&nbsp;from&nbsp;the&nbsp;<br>
+&nbsp;invocation&nbsp;list&nbsp;of&nbsp;source.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;new&nbsp;delegate&nbsp;with&nbsp;an&nbsp;invocation&nbsp;list&nbsp;formed&nbsp;by&nbsp;taking&nbsp;the&nbsp;<br>
+&nbsp;invocation&nbsp;list&nbsp;of&nbsp;source&nbsp;and&nbsp;removing&nbsp;the&nbsp;last&nbsp;occurrence&nbsp;of&nbsp;the&nbsp;invocation&nbsp;list&nbsp;of&nbsp;<br>
+&nbsp;value,&nbsp;if&nbsp;the&nbsp;invocation&nbsp;list&nbsp;of&nbsp;value&nbsp;is&nbsp;found&nbsp;within&nbsp;the&nbsp;invocation&nbsp;list&nbsp;of&nbsp;source.&nbsp;<br>
+&nbsp;Returns&nbsp;source&nbsp;if&nbsp;value&nbsp;is&nbsp;null&nbsp;or&nbsp;if&nbsp;the&nbsp;invocation&nbsp;list&nbsp;of&nbsp;value&nbsp;is&nbsp;not&nbsp;found&nbsp;within&nbsp;<br>
+&nbsp;the&nbsp;invocation&nbsp;list&nbsp;of&nbsp;source.&nbsp;Returns&nbsp;a&nbsp;null&nbsp;reference&nbsp;if&nbsp;the&nbsp;invocation&nbsp;list&nbsp;of&nbsp;value&nbsp;<br>
+&nbsp;is&nbsp;equal&nbsp;to&nbsp;the&nbsp;invocation&nbsp;list&nbsp;of&nbsp;source&nbsp;or&nbsp;if&nbsp;source&nbsp;is&nbsp;a&nbsp;null&nbsp;reference.</tt></dd></dl>
+
+<dl><dt><a name="EmptyDelegate-RemoveAll"><strong>RemoveAll</strong></a>(...)</dt><dd><tt>Delegate&nbsp;<a href="#EmptyDelegate-RemoveAll">RemoveAll</a>(Delegate&nbsp;source,&nbsp;Delegate&nbsp;value)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Removes&nbsp;all&nbsp;occurrences&nbsp;of&nbsp;the&nbsp;invocation&nbsp;list&nbsp;of&nbsp;a&nbsp;delegate&nbsp;from&nbsp;<br>
+&nbsp;the&nbsp;invocation&nbsp;list&nbsp;of&nbsp;another&nbsp;delegate.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+source:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;delegate&nbsp;from&nbsp;which&nbsp;to&nbsp;remove&nbsp;the&nbsp;invocation&nbsp;list&nbsp;of&nbsp;value.&nbsp;<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+value:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;delegate&nbsp;that&nbsp;supplies&nbsp;the&nbsp;invocation&nbsp;list&nbsp;to&nbsp;remove&nbsp;from&nbsp;the&nbsp;<br>
+&nbsp;invocation&nbsp;list&nbsp;of&nbsp;source.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;new&nbsp;delegate&nbsp;with&nbsp;an&nbsp;invocation&nbsp;list&nbsp;formed&nbsp;by&nbsp;taking&nbsp;the&nbsp;<br>
+&nbsp;invocation&nbsp;list&nbsp;of&nbsp;source&nbsp;and&nbsp;removing&nbsp;all&nbsp;occurrences&nbsp;of&nbsp;the&nbsp;invocation&nbsp;list&nbsp;of&nbsp;value,&nbsp;<br>
+&nbsp;if&nbsp;the&nbsp;invocation&nbsp;list&nbsp;of&nbsp;value&nbsp;is&nbsp;found&nbsp;within&nbsp;the&nbsp;invocation&nbsp;list&nbsp;of&nbsp;source.&nbsp;Returns&nbsp;<br>
+&nbsp;source&nbsp;if&nbsp;value&nbsp;is&nbsp;null&nbsp;or&nbsp;if&nbsp;the&nbsp;invocation&nbsp;list&nbsp;of&nbsp;value&nbsp;is&nbsp;not&nbsp;found&nbsp;within&nbsp;the&nbsp;<br>
+&nbsp;invocation&nbsp;list&nbsp;of&nbsp;source.&nbsp;Returns&nbsp;a&nbsp;null&nbsp;reference&nbsp;if&nbsp;the&nbsp;invocation&nbsp;list&nbsp;of&nbsp;value&nbsp;is&nbsp;<br>
+&nbsp;equal&nbsp;to&nbsp;the&nbsp;invocation&nbsp;list&nbsp;of&nbsp;source,&nbsp;if&nbsp;source&nbsp;contains&nbsp;only&nbsp;a&nbsp;series&nbsp;of&nbsp;invocation&nbsp;<br>
+&nbsp;lists&nbsp;that&nbsp;are&nbsp;equal&nbsp;to&nbsp;the&nbsp;invocation&nbsp;list&nbsp;of&nbsp;value,&nbsp;or&nbsp;if&nbsp;source&nbsp;is&nbsp;a&nbsp;null&nbsp;reference.</tt></dd></dl>
+
+<dl><dt><a name="EmptyDelegate-__call__"><strong>__call__</strong></a> = Call(...)</dt><dd><tt><a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyDelegate-Call">Call</a>(Delegate&nbsp;delegate,&nbsp;dict&nbsp;dict,&nbsp;Array[<a href="__builtin__.html#object">object</a>]&nbsp;args)<br>
+<a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyDelegate-Call">Call</a>(Delegate&nbsp;delegate,&nbsp;Array[<a href="__builtin__.html#object">object</a>]&nbsp;args)</tt></dd></dl>
+
+<dl><dt><a name="EmptyDelegate-__iadd__"><strong>__iadd__</strong></a>(...)</dt><dd><tt>Delegate&nbsp;<a href="#EmptyDelegate-__iadd__">__iadd__</a>(Delegate&nbsp;self,&nbsp;Delegate&nbsp;other)</tt></dd></dl>
+
+<dl><dt><a name="EmptyDelegate-__isub__"><strong>__isub__</strong></a>(...)</dt><dd><tt>Delegate&nbsp;<a href="#EmptyDelegate-__isub__">__isub__</a>(Delegate&nbsp;self,&nbsp;Delegate&nbsp;other)</tt></dd></dl>
+
+<dl><dt><a name="EmptyDelegate-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#EmptyDelegate-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+<hr>
+Data descriptors inherited from System in mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Delegate:<br>
+<dl><dt><strong>Method</strong></dt>
+<dd><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Gets&nbsp;the&nbsp;method&nbsp;represented&nbsp;by&nbsp;the&nbsp;delegate.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+Get:&nbsp;MethodInfo&nbsp;Method(self)</tt></dd>
+</dl>
+<dl><dt><strong>Target</strong></dt>
+<dd><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Gets&nbsp;the&nbsp;class&nbsp;instance&nbsp;on&nbsp;which&nbsp;the&nbsp;current&nbsp;delegate&nbsp;invokes&nbsp;the&nbsp;instance&nbsp;method.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+Get:&nbsp;object&nbsp;Target(self)</tt></dd>
+</dl>
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="EmptyEnum">class <strong>EmptyEnum</strong></a>(System in mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Enum)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><br>
+enum&nbsp;<a href="#EmptyEnum">EmptyEnum</a>,&nbsp;values:<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd>EmptyEnum</dd>
+<dd>System in mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Enum</dd>
+<dd><a href="__builtin__.html#object">__builtin__.object</a></dd>
+<dd>System in mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.IComparable</dd>
+<dd>System in mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.IFormattable</dd>
+<dd>System in mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.IConvertible</dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="EmptyEnum-__format__"><strong>__format__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#EmptyEnum-__format__">__format__</a>(IFormattable&nbsp;formattable,&nbsp;str&nbsp;format)</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-__reduce_ex__"><strong>__reduce_ex__</strong></a>(...)</dt><dd><tt>helper&nbsp;for&nbsp;pickle</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-__str__"><strong>__str__</strong></a>(...)</dt><dd><tt>x.<a href="#EmptyEnum-__str__">__str__</a>()&nbsp;&lt;==&gt;&nbsp;str(x)</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>value__</strong></dt>
+<dd><tt></tt></dd>
+</dl>
+<hr>
+Methods inherited from System in mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.Enum:<br>
+<dl><dt><a name="EmptyEnum-CompareTo"><strong>CompareTo</strong></a>(...)</dt><dd><tt>int&nbsp;<a href="#EmptyEnum-CompareTo">CompareTo</a>(self,&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;target)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Compares&nbsp;this&nbsp;instance&nbsp;to&nbsp;a&nbsp;specified&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;and&nbsp;returns&nbsp;an&nbsp;<br>
+&nbsp;indication&nbsp;of&nbsp;their&nbsp;relative&nbsp;values.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+target:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;to&nbsp;compare,&nbsp;or&nbsp;null.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;signed&nbsp;number&nbsp;indicating&nbsp;the&nbsp;relative&nbsp;values&nbsp;of&nbsp;this&nbsp;instance&nbsp;and&nbsp;<br>
+&nbsp;target.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Return&nbsp;Value&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Description&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Less&nbsp;than&nbsp;zero&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;value&nbsp;of&nbsp;this&nbsp;instance&nbsp;is&nbsp;less&nbsp;than&nbsp;the&nbsp;value&nbsp;of&nbsp;target.&nbsp;<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Zero&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;<br>
+&nbsp;value&nbsp;of&nbsp;this&nbsp;instance&nbsp;is&nbsp;equal&nbsp;to&nbsp;the&nbsp;value&nbsp;of&nbsp;target.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Greater&nbsp;than&nbsp;zero&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;value&nbsp;of&nbsp;this&nbsp;<br>
+&nbsp;instance&nbsp;is&nbsp;greater&nbsp;than&nbsp;the&nbsp;value&nbsp;of&nbsp;target.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-or-&nbsp;<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;target&nbsp;is&nbsp;null.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-Equals"><strong>Equals</strong></a>(...)</dt><dd><tt>bool&nbsp;<a href="#EmptyEnum-Equals">Equals</a>(self,&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;obj)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns&nbsp;a&nbsp;value&nbsp;indicating&nbsp;whether&nbsp;this&nbsp;instance&nbsp;is&nbsp;equal&nbsp;to&nbsp;a&nbsp;<br>
+&nbsp;specified&nbsp;<a href="__builtin__.html#object">object</a>.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+obj:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;to&nbsp;compare&nbsp;with&nbsp;this&nbsp;instance,&nbsp;or&nbsp;null.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;true&nbsp;if&nbsp;obj&nbsp;is&nbsp;an&nbsp;System.Enum&nbsp;with&nbsp;the&nbsp;same&nbsp;underlying&nbsp;type&nbsp;and&nbsp;value&nbsp;as&nbsp;this&nbsp;instance;&nbsp;<br>
+&nbsp;otherwise,&nbsp;false.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-Format"><strong>Format</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#EmptyEnum-Format">Format</a>(Type&nbsp;enumType,&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;value,&nbsp;str&nbsp;format)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Converts&nbsp;the&nbsp;specified&nbsp;value&nbsp;of&nbsp;a&nbsp;specified&nbsp;enumerated&nbsp;type&nbsp;to&nbsp;its&nbsp;<br>
+&nbsp;equivalent&nbsp;string&nbsp;representation&nbsp;according&nbsp;to&nbsp;the&nbsp;specified&nbsp;format.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+enumType:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;enumeration&nbsp;type&nbsp;of&nbsp;the&nbsp;value&nbsp;to&nbsp;convert.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+value:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;value&nbsp;to&nbsp;convert.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+format:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;output&nbsp;format&nbsp;to&nbsp;use.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;string&nbsp;representation&nbsp;of&nbsp;value.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-GetHashCode"><strong>GetHashCode</strong></a>(...)</dt><dd><tt>int&nbsp;<a href="#EmptyEnum-GetHashCode">GetHashCode</a>(self)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns&nbsp;the&nbsp;hash&nbsp;code&nbsp;for&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;32-bit&nbsp;signed&nbsp;integer&nbsp;hash&nbsp;code.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-GetName"><strong>GetName</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#EmptyEnum-GetName">GetName</a>(Type&nbsp;enumType,&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;value)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Retrieves&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;constant&nbsp;in&nbsp;the&nbsp;specified&nbsp;enumeration&nbsp;<br>
+&nbsp;that&nbsp;has&nbsp;the&nbsp;specified&nbsp;value.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+enumType:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;enumeration&nbsp;type.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+value:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;value&nbsp;of&nbsp;a&nbsp;particular&nbsp;enumerated&nbsp;constant&nbsp;in&nbsp;terms&nbsp;of&nbsp;its&nbsp;<br>
+&nbsp;underlying&nbsp;type.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;string&nbsp;containing&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;enumerated&nbsp;constant&nbsp;in&nbsp;enumType&nbsp;<br>
+&nbsp;whose&nbsp;value&nbsp;is&nbsp;value,&nbsp;or&nbsp;null&nbsp;if&nbsp;no&nbsp;such&nbsp;constant&nbsp;is&nbsp;found.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-GetNames"><strong>GetNames</strong></a>(...)</dt><dd><tt>Array[str]&nbsp;<a href="#EmptyEnum-GetNames">GetNames</a>(Type&nbsp;enumType)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Retrieves&nbsp;an&nbsp;array&nbsp;of&nbsp;the&nbsp;names&nbsp;of&nbsp;the&nbsp;constants&nbsp;in&nbsp;a&nbsp;specified&nbsp;<br>
+&nbsp;enumeration.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+enumType:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;enumeration&nbsp;type.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;string&nbsp;array&nbsp;of&nbsp;the&nbsp;names&nbsp;of&nbsp;the&nbsp;constants&nbsp;in&nbsp;enumType.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-GetTypeCode"><strong>GetTypeCode</strong></a>(...)</dt><dd><tt>TypeCode&nbsp;<a href="#EmptyEnum-GetTypeCode">GetTypeCode</a>(self)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns&nbsp;the&nbsp;underlying&nbsp;System.TypeCode&nbsp;for&nbsp;this&nbsp;instance.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;System.TypeCode&nbsp;for&nbsp;this&nbsp;instance.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-GetUnderlyingType"><strong>GetUnderlyingType</strong></a>(...)</dt><dd><tt>Type&nbsp;<a href="#EmptyEnum-GetUnderlyingType">GetUnderlyingType</a>(Type&nbsp;enumType)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns&nbsp;the&nbsp;underlying&nbsp;type&nbsp;of&nbsp;the&nbsp;specified&nbsp;enumeration.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+enumType:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;enumeration&nbsp;type.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;underlying&nbsp;System.Type&nbsp;of&nbsp;enumType.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-GetValues"><strong>GetValues</strong></a>(...)</dt><dd><tt>Array&nbsp;<a href="#EmptyEnum-GetValues">GetValues</a>(Type&nbsp;enumType)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Retrieves&nbsp;an&nbsp;array&nbsp;of&nbsp;the&nbsp;values&nbsp;of&nbsp;the&nbsp;constants&nbsp;in&nbsp;a&nbsp;specified&nbsp;<br>
+&nbsp;enumeration.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+enumType:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;enumeration&nbsp;type.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;System.Array&nbsp;of&nbsp;the&nbsp;values&nbsp;of&nbsp;the&nbsp;constants&nbsp;in&nbsp;enumType.&nbsp;The&nbsp;<br>
+&nbsp;elements&nbsp;of&nbsp;the&nbsp;array&nbsp;are&nbsp;sorted&nbsp;by&nbsp;the&nbsp;binary&nbsp;values&nbsp;of&nbsp;the&nbsp;enumeration&nbsp;constants.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-IsDefined"><strong>IsDefined</strong></a>(...)</dt><dd><tt>bool&nbsp;<a href="#EmptyEnum-IsDefined">IsDefined</a>(Type&nbsp;enumType,&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;value)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns&nbsp;an&nbsp;indication&nbsp;whether&nbsp;a&nbsp;constant&nbsp;with&nbsp;a&nbsp;specified&nbsp;value&nbsp;<br>
+&nbsp;exists&nbsp;in&nbsp;a&nbsp;specified&nbsp;enumeration.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+enumType:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;enumeration&nbsp;type.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+value:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;value&nbsp;or&nbsp;name&nbsp;of&nbsp;a&nbsp;constant&nbsp;in&nbsp;enumType.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;true&nbsp;if&nbsp;a&nbsp;constant&nbsp;in&nbsp;enumType&nbsp;has&nbsp;a&nbsp;value&nbsp;equal&nbsp;to&nbsp;value;&nbsp;otherwise,&nbsp;false.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-Parse"><strong>Parse</strong></a>(...)</dt><dd><tt><a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyEnum-Parse">Parse</a>(Type&nbsp;enumType,&nbsp;str&nbsp;value,&nbsp;bool&nbsp;ignoreCase)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Converts&nbsp;the&nbsp;string&nbsp;representation&nbsp;of&nbsp;the&nbsp;name&nbsp;or&nbsp;numeric&nbsp;value&nbsp;of&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;one&nbsp;or&nbsp;more&nbsp;enumerated&nbsp;constants&nbsp;to&nbsp;an&nbsp;equivalent&nbsp;enumerated&nbsp;<a href="__builtin__.html#object">object</a>.&nbsp;A&nbsp;parameter&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;specifies&nbsp;whether&nbsp;the&nbsp;operation&nbsp;is&nbsp;case-sensitive.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;enumType:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;System.Type&nbsp;of&nbsp;the&nbsp;enumeration.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;value:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;string&nbsp;containing&nbsp;the&nbsp;name&nbsp;or&nbsp;value&nbsp;to&nbsp;convert.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ignoreCase:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;If&nbsp;true,&nbsp;ignore&nbsp;case;&nbsp;otherwise,&nbsp;regard&nbsp;case.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;of&nbsp;type&nbsp;enumType&nbsp;whose&nbsp;value&nbsp;is&nbsp;represented&nbsp;by&nbsp;value.<br>
+&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<br>
+<a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyEnum-Parse">Parse</a>(Type&nbsp;enumType,&nbsp;str&nbsp;value)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Converts&nbsp;the&nbsp;string&nbsp;representation&nbsp;of&nbsp;the&nbsp;name&nbsp;or&nbsp;numeric&nbsp;value&nbsp;of&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;one&nbsp;or&nbsp;more&nbsp;enumerated&nbsp;constants&nbsp;to&nbsp;an&nbsp;equivalent&nbsp;enumerated&nbsp;<a href="__builtin__.html#object">object</a>.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;enumType:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;System.Type&nbsp;of&nbsp;the&nbsp;enumeration.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;value:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;string&nbsp;containing&nbsp;the&nbsp;name&nbsp;or&nbsp;value&nbsp;to&nbsp;convert.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;of&nbsp;type&nbsp;enumType&nbsp;whose&nbsp;value&nbsp;is&nbsp;represented&nbsp;by&nbsp;value.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-ToObject"><strong>ToObject</strong></a>(...)</dt><dd><tt><a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyEnum-ToObject">ToObject</a>(Type&nbsp;enumType,&nbsp;UInt32&nbsp;value)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns&nbsp;an&nbsp;instance&nbsp;of&nbsp;the&nbsp;specified&nbsp;enumeration&nbsp;type&nbsp;set&nbsp;to&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;specified&nbsp;32-bit&nbsp;unsigned&nbsp;integer&nbsp;value.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;enumType:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;enumeration&nbsp;for&nbsp;which&nbsp;to&nbsp;create&nbsp;a&nbsp;value.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;value:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;value&nbsp;to&nbsp;set.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;instance&nbsp;of&nbsp;the&nbsp;enumeration&nbsp;set&nbsp;to&nbsp;value.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyEnum-ToObject">ToObject</a>(Type&nbsp;enumType,&nbsp;UInt16&nbsp;value)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns&nbsp;an&nbsp;instance&nbsp;of&nbsp;the&nbsp;specified&nbsp;enumeration&nbsp;type&nbsp;set&nbsp;to&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;specified&nbsp;16-bit&nbsp;unsigned&nbsp;integer&nbsp;value.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;enumType:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;enumeration&nbsp;for&nbsp;which&nbsp;to&nbsp;create&nbsp;a&nbsp;value.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;value:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;value&nbsp;to&nbsp;set.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;instance&nbsp;of&nbsp;the&nbsp;enumeration&nbsp;set&nbsp;to&nbsp;value.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyEnum-ToObject">ToObject</a>(Type&nbsp;enumType,&nbsp;UInt64&nbsp;value)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns&nbsp;an&nbsp;instance&nbsp;of&nbsp;the&nbsp;specified&nbsp;enumeration&nbsp;type&nbsp;set&nbsp;to&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;specified&nbsp;64-bit&nbsp;unsigned&nbsp;integer&nbsp;value.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;enumType:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;enumeration&nbsp;for&nbsp;which&nbsp;to&nbsp;create&nbsp;a&nbsp;value.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;value:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;value&nbsp;to&nbsp;set.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;instance&nbsp;of&nbsp;the&nbsp;enumeration&nbsp;set&nbsp;to&nbsp;value.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyEnum-ToObject">ToObject</a>(Type&nbsp;enumType,&nbsp;Int64&nbsp;value)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns&nbsp;an&nbsp;instance&nbsp;of&nbsp;the&nbsp;specified&nbsp;enumeration&nbsp;type&nbsp;set&nbsp;to&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;specified&nbsp;64-bit&nbsp;signed&nbsp;integer&nbsp;value.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;enumType:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;enumeration&nbsp;for&nbsp;which&nbsp;to&nbsp;create&nbsp;a&nbsp;value.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;value:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;value&nbsp;to&nbsp;set.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;instance&nbsp;of&nbsp;the&nbsp;enumeration&nbsp;set&nbsp;to&nbsp;value.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyEnum-ToObject">ToObject</a>(Type&nbsp;enumType,&nbsp;Byte&nbsp;value)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns&nbsp;an&nbsp;instance&nbsp;of&nbsp;the&nbsp;specified&nbsp;enumeration&nbsp;type&nbsp;set&nbsp;to&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;specified&nbsp;8-bit&nbsp;unsigned&nbsp;integer&nbsp;value.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;enumType:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;enumeration&nbsp;for&nbsp;which&nbsp;to&nbsp;create&nbsp;a&nbsp;value.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;value:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;value&nbsp;to&nbsp;set.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;instance&nbsp;of&nbsp;the&nbsp;enumeration&nbsp;set&nbsp;to&nbsp;value.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyEnum-ToObject">ToObject</a>(Type&nbsp;enumType,&nbsp;SByte&nbsp;value)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns&nbsp;an&nbsp;instance&nbsp;of&nbsp;the&nbsp;specified&nbsp;enumeration&nbsp;type&nbsp;set&nbsp;to&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;specified&nbsp;8-bit&nbsp;signed&nbsp;integer&nbsp;value.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;enumType:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;enumeration&nbsp;for&nbsp;which&nbsp;to&nbsp;create&nbsp;a&nbsp;value.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;value:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;value&nbsp;to&nbsp;set.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;instance&nbsp;of&nbsp;the&nbsp;enumeration&nbsp;set&nbsp;to&nbsp;value.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyEnum-ToObject">ToObject</a>(Type&nbsp;enumType,&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;value)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns&nbsp;an&nbsp;instance&nbsp;of&nbsp;the&nbsp;specified&nbsp;enumeration&nbsp;set&nbsp;to&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;specified&nbsp;value.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;enumType:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;enumeration.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;value:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;value.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;enumeration&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;whose&nbsp;value&nbsp;is&nbsp;value.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyEnum-ToObject">ToObject</a>(Type&nbsp;enumType,&nbsp;int&nbsp;value)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns&nbsp;an&nbsp;instance&nbsp;of&nbsp;the&nbsp;specified&nbsp;enumeration&nbsp;type&nbsp;set&nbsp;to&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;specified&nbsp;32-bit&nbsp;signed&nbsp;integer&nbsp;value.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;enumType:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;enumeration&nbsp;for&nbsp;which&nbsp;to&nbsp;create&nbsp;a&nbsp;value.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;value:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;value&nbsp;to&nbsp;set.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;instance&nbsp;of&nbsp;the&nbsp;enumeration&nbsp;set&nbsp;to&nbsp;value.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyEnum-ToObject">ToObject</a>(Type&nbsp;enumType,&nbsp;Int16&nbsp;value)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns&nbsp;an&nbsp;instance&nbsp;of&nbsp;the&nbsp;specified&nbsp;enumeration&nbsp;type&nbsp;set&nbsp;to&nbsp;the&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;specified&nbsp;16-bit&nbsp;signed&nbsp;integer&nbsp;value.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;enumType:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;enumeration&nbsp;for&nbsp;which&nbsp;to&nbsp;create&nbsp;a&nbsp;value.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;value:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;value&nbsp;to&nbsp;set.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;instance&nbsp;of&nbsp;the&nbsp;enumeration&nbsp;set&nbsp;to&nbsp;value.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-ToString"><strong>ToString</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#EmptyEnum-ToString">ToString</a>(self,&nbsp;str&nbsp;format)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Converts&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance&nbsp;to&nbsp;its&nbsp;equivalent&nbsp;string&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;representation&nbsp;using&nbsp;the&nbsp;specified&nbsp;format.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;format:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;format&nbsp;string.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;string&nbsp;representation&nbsp;of&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance&nbsp;as&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;specified&nbsp;by&nbsp;format.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<br>
+str&nbsp;<a href="#EmptyEnum-ToString">ToString</a>(self,&nbsp;IFormatProvider&nbsp;provider)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;This&nbsp;method&nbsp;overload&nbsp;is&nbsp;obsolete;&nbsp;use&nbsp;System.Enum.ToString.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;provider:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(obsolete)&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+str&nbsp;<a href="#EmptyEnum-ToString">ToString</a>(self)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Converts&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance&nbsp;to&nbsp;its&nbsp;equivalent&nbsp;string&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;representation.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;string&nbsp;representation&nbsp;of&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+<br>
+str&nbsp;<a href="#EmptyEnum-ToString">ToString</a>(self,&nbsp;str&nbsp;format,&nbsp;IFormatProvider&nbsp;provider)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;This&nbsp;method&nbsp;overload&nbsp;is&nbsp;obsolete;&nbsp;use&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.Enum.<a href="#EmptyEnum-ToString">ToString</a>(System.String).<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;format:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;format&nbsp;specification.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;provider:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(obsolete)</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-__and__"><strong>__and__</strong></a>(...)</dt><dd><tt><a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyEnum-__and__">__and__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self,&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;other)</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-__eq__"><strong>__eq__</strong></a>(...)</dt><dd><tt>x.<a href="#EmptyEnum-__eq__">__eq__</a>(y)&nbsp;&lt;==&gt;&nbsp;x==y</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-__invert__"><strong>__invert__</strong></a>(...)</dt><dd><tt><a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyEnum-__invert__">__invert__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-__ne__"><strong>__ne__</strong></a>(...)</dt><dd><tt>bool&nbsp;<a href="#EmptyEnum-__ne__">__ne__</a>(<a href="__builtin__.html#object">object</a>&nbsp;x,&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;y)</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-__nonzero__"><strong>__nonzero__</strong></a>(...)</dt><dd><tt>bool&nbsp;<a href="#EmptyEnum-__nonzero__">__nonzero__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-__or__"><strong>__or__</strong></a>(...)</dt><dd><tt><a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyEnum-__or__">__or__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self,&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;other)</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-__rand__"><strong>__rand__</strong></a>(...)</dt><dd><tt><a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyEnum-__rand__">__rand__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self,&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;other)</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#EmptyEnum-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-__ror__"><strong>__ror__</strong></a>(...)</dt><dd><tt><a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyEnum-__ror__">__ror__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self,&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;other)</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-__rxor__"><strong>__rxor__</strong></a>(...)</dt><dd><tt><a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyEnum-__rxor__">__rxor__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self,&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;other)</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-__xor__"><strong>__xor__</strong></a>(...)</dt><dd><tt><a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyEnum-__xor__">__xor__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self,&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;other)</tt></dd></dl>
+
+<hr>
+Methods inherited from System in mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089.IConvertible:<br>
+<dl><dt><a name="EmptyEnum-ToBoolean"><strong>ToBoolean</strong></a>(...)</dt><dd><tt>bool&nbsp;<a href="#EmptyEnum-ToBoolean">ToBoolean</a>(self,&nbsp;IFormatProvider&nbsp;provider)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Converts&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance&nbsp;to&nbsp;an&nbsp;equivalent&nbsp;Boolean&nbsp;value&nbsp;<br>
+&nbsp;using&nbsp;the&nbsp;specified&nbsp;culture-specific&nbsp;formatting&nbsp;information.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+provider:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;System.IFormatProvider&nbsp;interface&nbsp;implementation&nbsp;that&nbsp;supplies&nbsp;<br>
+&nbsp;culture-specific&nbsp;formatting&nbsp;information.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;Boolean&nbsp;value&nbsp;equivalent&nbsp;to&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-ToByte"><strong>ToByte</strong></a>(...)</dt><dd><tt>Byte&nbsp;<a href="#EmptyEnum-ToByte">ToByte</a>(self,&nbsp;IFormatProvider&nbsp;provider)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Converts&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance&nbsp;to&nbsp;an&nbsp;equivalent&nbsp;8-bit&nbsp;unsigned&nbsp;<br>
+&nbsp;integer&nbsp;using&nbsp;the&nbsp;specified&nbsp;culture-specific&nbsp;formatting&nbsp;information.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+provider:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;System.IFormatProvider&nbsp;interface&nbsp;implementation&nbsp;that&nbsp;supplies&nbsp;<br>
+&nbsp;culture-specific&nbsp;formatting&nbsp;information.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;8-bit&nbsp;unsigned&nbsp;integer&nbsp;equivalent&nbsp;to&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-ToChar"><strong>ToChar</strong></a>(...)</dt><dd><tt>Char&nbsp;<a href="#EmptyEnum-ToChar">ToChar</a>(self,&nbsp;IFormatProvider&nbsp;provider)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Converts&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance&nbsp;to&nbsp;an&nbsp;equivalent&nbsp;Unicode&nbsp;<br>
+&nbsp;character&nbsp;using&nbsp;the&nbsp;specified&nbsp;culture-specific&nbsp;formatting&nbsp;information.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+provider:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;System.IFormatProvider&nbsp;interface&nbsp;implementation&nbsp;that&nbsp;supplies&nbsp;<br>
+&nbsp;culture-specific&nbsp;formatting&nbsp;information.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;Unicode&nbsp;character&nbsp;equivalent&nbsp;to&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-ToDateTime"><strong>ToDateTime</strong></a>(...)</dt><dd><tt>DateTime&nbsp;<a href="#EmptyEnum-ToDateTime">ToDateTime</a>(self,&nbsp;IFormatProvider&nbsp;provider)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Converts&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance&nbsp;to&nbsp;an&nbsp;equivalent&nbsp;<br>
+&nbsp;System.DateTime&nbsp;using&nbsp;the&nbsp;specified&nbsp;culture-specific&nbsp;formatting&nbsp;information.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+provider:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;System.IFormatProvider&nbsp;interface&nbsp;implementation&nbsp;that&nbsp;supplies&nbsp;<br>
+&nbsp;culture-specific&nbsp;formatting&nbsp;information.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;System.DateTime&nbsp;instance&nbsp;equivalent&nbsp;to&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;<br>
+&nbsp;instance.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-ToDecimal"><strong>ToDecimal</strong></a>(...)</dt><dd><tt>Decimal&nbsp;<a href="#EmptyEnum-ToDecimal">ToDecimal</a>(self,&nbsp;IFormatProvider&nbsp;provider)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Converts&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance&nbsp;to&nbsp;an&nbsp;equivalent&nbsp;System.Decimal&nbsp;<br>
+&nbsp;number&nbsp;using&nbsp;the&nbsp;specified&nbsp;culture-specific&nbsp;formatting&nbsp;information.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+provider:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;System.IFormatProvider&nbsp;interface&nbsp;implementation&nbsp;that&nbsp;supplies&nbsp;<br>
+&nbsp;culture-specific&nbsp;formatting&nbsp;information.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;System.Decimal&nbsp;number&nbsp;equivalent&nbsp;to&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-ToDouble"><strong>ToDouble</strong></a>(...)</dt><dd><tt>float&nbsp;<a href="#EmptyEnum-ToDouble">ToDouble</a>(self,&nbsp;IFormatProvider&nbsp;provider)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Converts&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance&nbsp;to&nbsp;an&nbsp;equivalent&nbsp;<br>
+&nbsp;double-precision&nbsp;floating-point&nbsp;number&nbsp;using&nbsp;the&nbsp;specified&nbsp;culture-specific&nbsp;formatting&nbsp;<br>
+&nbsp;information.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+provider:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;System.IFormatProvider&nbsp;interface&nbsp;implementation&nbsp;that&nbsp;supplies&nbsp;<br>
+&nbsp;culture-specific&nbsp;formatting&nbsp;information.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;double-precision&nbsp;floating-point&nbsp;number&nbsp;equivalent&nbsp;to&nbsp;the&nbsp;value&nbsp;of&nbsp;<br>
+&nbsp;this&nbsp;instance.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-ToInt16"><strong>ToInt16</strong></a>(...)</dt><dd><tt>Int16&nbsp;<a href="#EmptyEnum-ToInt16">ToInt16</a>(self,&nbsp;IFormatProvider&nbsp;provider)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Converts&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance&nbsp;to&nbsp;an&nbsp;equivalent&nbsp;16-bit&nbsp;signed&nbsp;<br>
+&nbsp;integer&nbsp;using&nbsp;the&nbsp;specified&nbsp;culture-specific&nbsp;formatting&nbsp;information.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+provider:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;System.IFormatProvider&nbsp;interface&nbsp;implementation&nbsp;that&nbsp;supplies&nbsp;<br>
+&nbsp;culture-specific&nbsp;formatting&nbsp;information.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;16-bit&nbsp;signed&nbsp;integer&nbsp;equivalent&nbsp;to&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-ToInt32"><strong>ToInt32</strong></a>(...)</dt><dd><tt>int&nbsp;<a href="#EmptyEnum-ToInt32">ToInt32</a>(self,&nbsp;IFormatProvider&nbsp;provider)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Converts&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance&nbsp;to&nbsp;an&nbsp;equivalent&nbsp;32-bit&nbsp;signed&nbsp;<br>
+&nbsp;integer&nbsp;using&nbsp;the&nbsp;specified&nbsp;culture-specific&nbsp;formatting&nbsp;information.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+provider:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;System.IFormatProvider&nbsp;interface&nbsp;implementation&nbsp;that&nbsp;supplies&nbsp;<br>
+&nbsp;culture-specific&nbsp;formatting&nbsp;information.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;32-bit&nbsp;signed&nbsp;integer&nbsp;equivalent&nbsp;to&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-ToInt64"><strong>ToInt64</strong></a>(...)</dt><dd><tt>Int64&nbsp;<a href="#EmptyEnum-ToInt64">ToInt64</a>(self,&nbsp;IFormatProvider&nbsp;provider)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Converts&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance&nbsp;to&nbsp;an&nbsp;equivalent&nbsp;64-bit&nbsp;signed&nbsp;<br>
+&nbsp;integer&nbsp;using&nbsp;the&nbsp;specified&nbsp;culture-specific&nbsp;formatting&nbsp;information.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+provider:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;System.IFormatProvider&nbsp;interface&nbsp;implementation&nbsp;that&nbsp;supplies&nbsp;<br>
+&nbsp;culture-specific&nbsp;formatting&nbsp;information.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;64-bit&nbsp;signed&nbsp;integer&nbsp;equivalent&nbsp;to&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-ToSByte"><strong>ToSByte</strong></a>(...)</dt><dd><tt>SByte&nbsp;<a href="#EmptyEnum-ToSByte">ToSByte</a>(self,&nbsp;IFormatProvider&nbsp;provider)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Converts&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance&nbsp;to&nbsp;an&nbsp;equivalent&nbsp;8-bit&nbsp;signed&nbsp;<br>
+&nbsp;integer&nbsp;using&nbsp;the&nbsp;specified&nbsp;culture-specific&nbsp;formatting&nbsp;information.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+provider:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;System.IFormatProvider&nbsp;interface&nbsp;implementation&nbsp;that&nbsp;supplies&nbsp;<br>
+&nbsp;culture-specific&nbsp;formatting&nbsp;information.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;8-bit&nbsp;signed&nbsp;integer&nbsp;equivalent&nbsp;to&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-ToSingle"><strong>ToSingle</strong></a>(...)</dt><dd><tt>Single&nbsp;<a href="#EmptyEnum-ToSingle">ToSingle</a>(self,&nbsp;IFormatProvider&nbsp;provider)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Converts&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance&nbsp;to&nbsp;an&nbsp;equivalent&nbsp;<br>
+&nbsp;single-precision&nbsp;floating-point&nbsp;number&nbsp;using&nbsp;the&nbsp;specified&nbsp;culture-specific&nbsp;formatting&nbsp;<br>
+&nbsp;information.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+provider:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;System.IFormatProvider&nbsp;interface&nbsp;implementation&nbsp;that&nbsp;supplies&nbsp;<br>
+&nbsp;culture-specific&nbsp;formatting&nbsp;information.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A&nbsp;single-precision&nbsp;floating-point&nbsp;number&nbsp;equivalent&nbsp;to&nbsp;the&nbsp;value&nbsp;of&nbsp;<br>
+&nbsp;this&nbsp;instance.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-ToType"><strong>ToType</strong></a>(...)</dt><dd><tt><a href="__builtin__.html#object">object</a>&nbsp;<a href="#EmptyEnum-ToType">ToType</a>(self,&nbsp;Type&nbsp;conversionType,&nbsp;IFormatProvider&nbsp;provider)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Converts&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance&nbsp;to&nbsp;an&nbsp;System.Object&nbsp;of&nbsp;the&nbsp;<br>
+&nbsp;specified&nbsp;System.Type&nbsp;that&nbsp;has&nbsp;an&nbsp;equivalent&nbsp;value,&nbsp;using&nbsp;the&nbsp;specified&nbsp;culture-specific&nbsp;<br>
+&nbsp;formatting&nbsp;information.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+conversionType:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;System.Type&nbsp;to&nbsp;which&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance&nbsp;is&nbsp;converted.&nbsp;<br>
+&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+provider:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;System.IFormatProvider&nbsp;interface&nbsp;implementation&nbsp;that&nbsp;supplies&nbsp;<br>
+&nbsp;culture-specific&nbsp;formatting&nbsp;information.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;System.Object&nbsp;instance&nbsp;of&nbsp;type&nbsp;conversionType&nbsp;whose&nbsp;value&nbsp;is&nbsp;<br>
+&nbsp;equivalent&nbsp;to&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-ToUInt16"><strong>ToUInt16</strong></a>(...)</dt><dd><tt>UInt16&nbsp;<a href="#EmptyEnum-ToUInt16">ToUInt16</a>(self,&nbsp;IFormatProvider&nbsp;provider)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Converts&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance&nbsp;to&nbsp;an&nbsp;equivalent&nbsp;16-bit&nbsp;<br>
+&nbsp;unsigned&nbsp;integer&nbsp;using&nbsp;the&nbsp;specified&nbsp;culture-specific&nbsp;formatting&nbsp;information.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+provider:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;System.IFormatProvider&nbsp;interface&nbsp;implementation&nbsp;that&nbsp;supplies&nbsp;<br>
+&nbsp;culture-specific&nbsp;formatting&nbsp;information.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;16-bit&nbsp;unsigned&nbsp;integer&nbsp;equivalent&nbsp;to&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;<br>
+&nbsp;instance.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-ToUInt32"><strong>ToUInt32</strong></a>(...)</dt><dd><tt>UInt32&nbsp;<a href="#EmptyEnum-ToUInt32">ToUInt32</a>(self,&nbsp;IFormatProvider&nbsp;provider)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Converts&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance&nbsp;to&nbsp;an&nbsp;equivalent&nbsp;32-bit&nbsp;<br>
+&nbsp;unsigned&nbsp;integer&nbsp;using&nbsp;the&nbsp;specified&nbsp;culture-specific&nbsp;formatting&nbsp;information.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+provider:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;System.IFormatProvider&nbsp;interface&nbsp;implementation&nbsp;that&nbsp;supplies&nbsp;<br>
+&nbsp;culture-specific&nbsp;formatting&nbsp;information.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;32-bit&nbsp;unsigned&nbsp;integer&nbsp;equivalent&nbsp;to&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;<br>
+&nbsp;instance.</tt></dd></dl>
+
+<dl><dt><a name="EmptyEnum-ToUInt64"><strong>ToUInt64</strong></a>(...)</dt><dd><tt>UInt64&nbsp;<a href="#EmptyEnum-ToUInt64">ToUInt64</a>(self,&nbsp;IFormatProvider&nbsp;provider)<br>
+&nbsp;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Converts&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;instance&nbsp;to&nbsp;an&nbsp;equivalent&nbsp;64-bit&nbsp;<br>
+&nbsp;unsigned&nbsp;integer&nbsp;using&nbsp;the&nbsp;specified&nbsp;culture-specific&nbsp;formatting&nbsp;information.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+provider:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;System.IFormatProvider&nbsp;interface&nbsp;implementation&nbsp;that&nbsp;supplies&nbsp;<br>
+&nbsp;culture-specific&nbsp;formatting&nbsp;information.&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;<br>
+&nbsp;<br>
+Returns:&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;An&nbsp;64-bit&nbsp;unsigned&nbsp;integer&nbsp;equivalent&nbsp;to&nbsp;the&nbsp;value&nbsp;of&nbsp;this&nbsp;<br>
+&nbsp;instance.</tt></dd></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><strong>EmptyGenericClass</strong> = <a name="EmptyGenericClass">class EmptyGenericClass[T]</a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#EmptyGenericClass">EmptyGenericClass</a>[T]()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="EmptyGenericClass[T]-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#EmptyGenericClass-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+</td></tr></table> <strong>EmptyStruct</strong> = &lt;type 'EmptyStruct'&gt; <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Helper">class <strong>Helper</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#Helper">Helper</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Helper-Sum"><strong>Sum</strong></a>(...)</dt><dd><tt>int&nbsp;<a href="#Helper-Sum">Sum</a>(Array[int]&nbsp;args)</tt></dd></dl>
+
+<dl><dt><a name="Helper-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#Helper-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+</td></tr></table> <strong>IEmpty</strong> = &lt;type 'IEmpty'&gt; <strong>IEvent10</strong> = &lt;type 'IEvent10'&gt; <strong>IGenericEmpty</strong> = &lt;type 'IGenericEmpty[T]'&gt; <strong>IIndexer20</strong> = &lt;type 'IIndexer20'&gt; <strong>IIndexer21</strong> = &lt;type 'IIndexer21'&gt; <strong>IIndexer22</strong> = &lt;type 'IIndexer22'&gt; <strong>IInterface110a</strong> = &lt;type 'IInterface110a'&gt; <strong>IInterface110b</strong> = &lt;type 'IInterface110b'&gt; <strong>IInterface110c</strong> = &lt;type 'IInterface110c'&gt; <strong>IInterface21</strong> = &lt;type 'IInterface21'&gt; <strong>IInterface22</strong> = &lt;type 'IInterface22'&gt; <strong>IInterface23</strong> = &lt;type 'IInterface23'&gt; <strong>IInterface24</strong> = &lt;type 'IInterface24'&gt; <strong>IInterface25</strong> = &lt;type 'IInterface25'&gt; <strong>IInterface250</strong> = &lt;type 'IInterface250'&gt; <strong>IInterface251</strong> = &lt;type 'IInterface251'&gt; <strong>IInterface26</strong> = &lt;type 'IInterface26'&gt; <strong>IInterface260</strong> = &lt;type 'IInterface260[T]'&gt; <strong>IInterface42</strong> = &lt;type 'IInterface42'&gt; <strong>IInterface600</strong> = &lt;type 'IInterface600'&gt; <strong>INotEmpty</strong> = &lt;type 'INotEmpty'&gt; <strong>IProperty10</strong> = &lt;type 'IProperty10'&gt; <strong>IProperty11</strong> = &lt;type 'IProperty11'&gt; <strong>IProperty12</strong> = &lt;type 'IProperty12'&gt; <strong>IType20</strong> = &lt;type 'IType20'&gt; <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="SealedClass">class <strong>SealedClass</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt><a href="#SealedClass">SealedClass</a>()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="SealedClass-__repr__"><strong>__repr__</strong></a>(...)</dt><dd><tt>str&nbsp;<a href="#SealedClass-__repr__">__repr__</a>(<a href="__builtin__.html#object">object</a>&nbsp;self)</tt></dd></dl>
+
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-test_abstract_methods"><strong>test_abstract_methods</strong></a>()</dt></dl>
+ <dl><dt><a name="-test_class_simple_method"><strong>test_class_simple_method</strong></a>()</dt></dl>
+ <dl><dt><a name="-test_final_methods"><strong>test_final_methods</strong></a>()</dt></dl>
+ <dl><dt><a name="-test_generic_method_from_class"><strong>test_generic_method_from_class</strong></a>()</dt></dl>
+ <dl><dt><a name="-test_interface_methods"><strong>test_interface_methods</strong></a>()</dt></dl>
+ <dl><dt><a name="-test_interface_simple_defined"><strong>test_interface_simple_defined</strong></a>()</dt></dl>
+ <dl><dt><a name="-test_long_hierarchy"><strong>test_long_hierarchy</strong></a>()</dt><dd><tt>#&nbsp;incomplete...</tt></dd></dl>
+ <dl><dt><a name="-test_method_inside_generic_interfaces"><strong>test_method_inside_generic_interfaces</strong></a>()</dt></dl>
+ <dl><dt><a name="-test_methods_from_generic_class"><strong>test_methods_from_generic_class</strong></a>()</dt></dl>
+ <dl><dt><a name="-test_static_methods"><strong>test_static_methods</strong></a>()</dt></dl>
+ <dl><dt><a name="-test_super"><strong>test_super</strong></a>()</dt></dl>
+ <dl><dt><a name="-test_virtual_override_method"><strong>test_virtual_override_method</strong></a>()</dt></dl>
+</td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#55aa55">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><strong>Accessibility</strong> = &lt;module 'Accessibility' (CLS module from rowante...n=0.0.0.0, Culture=neutral, PublicKeyToken=null)&gt;<br>
+<strong>BaseClass</strong> = &lt;module 'BaseClass' (CLS module from rowantest.b...n=0.0.0.0, Culture=neutral, PublicKeyToken=null)&gt;<br>
+<strong>DynamicObjectModel</strong> = &lt;module 'DynamicObjectModel' (CLS module from ro...n=0.0.0.0, Culture=neutral, PublicKeyToken=null)&gt;<br>
+<strong>EmptyTypeGroup1</strong> = &lt;types 'EmptyTypeGroup1[T]', 'EmptyTypeGroup1[K, V]'&gt;<br>
+<strong>EmptyTypeGroup2</strong> = &lt;types 'EmptyTypeGroup2', 'EmptyTypeGroup2[T]'&gt;<br>
+<strong>Flag</strong> = &lt;types 'Flag', 'Flag[T1]', 'Flag[T1, T2]', 'Flag...T6, T7]', 'Flag[T1, T2, T3, T4, T5, T6, T7, T8]'&gt;<br>
+<strong>IInterfaceGroup1</strong> = &lt;types 'IInterfaceGroup1', 'IInterfaceGroup1[T]'&gt;<br>
+<strong>IInterfaceGroup2</strong> = &lt;types 'IInterfaceGroup2', 'IInterfaceGroup2[T]'&gt;<br>
+<strong>MAX_FAILURE_RETRY</strong> = 3<br>
+<strong>System</strong> = &lt;module 'System' (CLS module, 4 assemblies loaded)&gt;<br>
+<strong>TypeSample</strong> = &lt;module 'TypeSample' (CLS module from rowantest....n=0.0.0.0, Culture=neutral, PublicKeyToken=null)&gt;<br>
+<strong>colon</strong> = ':'<br>
+<strong>ironpython_dlls</strong> = ['Microsoft.Scripting.Core.dll', 'Microsoft.Scripting.dll', 'Microsoft.Scripting.Internal.dll', 'IronPython.Modules.dll', 'IronPython.dll']<br>
+<strong>is_32</strong> = True<br>
+<strong>is_64</strong> = False<br>
+<strong>is_cli</strong> = True<br>
+<strong>is_cli32</strong> = True<br>
+<strong>is_cli64</strong> = False<br>
+<strong>is_cpython</strong> = False<br>
+<strong>is_debug</strong> = True<br>
+<strong>is_ironpython</strong> = True<br>
+<strong>is_orcas</strong> = True<br>
+<strong>is_peverify_run</strong> = False<br>
+<strong>is_silverlight</strong> = False<br>
+<strong>is_snap</strong> = False<br>
+<strong>is_stress</strong> = False<br>
+<strong>is_vista</strong> = False<br>
+<strong>newline</strong> = '<font color="#c040c0">\r\n</font>'<br>
+<strong>separator</strong> = r'\'<br>
+<strong>test_explicit_implementation_required_in_csharp</strong> = None<br>
+<strong>test_generic_method_from_abstract_class</strong> = None<br>
+<strong>test_generic_method_inside_interface</strong> = None</td></tr></table>
+</body></html>

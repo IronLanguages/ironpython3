@@ -1,0 +1,32 @@
+Implement rest of msvcrt module
+
+
+IP VERSION AFFECTED: 2.7
+FLAGS PASSED TO IPY.EXE: None
+OPERATING SYSTEMS AFFECTED: All
+
+DESCRIPTION
+-------------------------------------------------------
+Complete list of module attributes IronPython is still 
+missing implementations for:
+    msvcrt  CRT_ASSEMBLY_VERSION          
+    msvcrt  LIBRARIES_ASSEMBLY_NAME_PREFIX
+    msvcrt  LK_LOCK                       
+    msvcrt  LK_NBLCK                      
+    msvcrt  LK_NBRLCK                     
+    msvcrt  LK_RLCK                       
+    msvcrt  LK_UNLCK                      
+    msvcrt  VC_ASSEMBLY_PUBLICKEYTOKEN    
+    msvcrt  getche                        
+    msvcrt  getwch                        
+    msvcrt  getwche                       
+    msvcrt  heapmin                       
+    msvcrt  kbhit                         
+    msvcrt  locking                       
+    msvcrt  putch                         
+    msvcrt  putwch                        
+    msvcrt  ungetch                       
+    msvcrt  ungetwch                      
+
+
+

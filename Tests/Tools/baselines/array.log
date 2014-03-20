@@ -1,0 +1,13 @@
+Implement rest of array module
+
+
+IP VERSION AFFECTED: 2.7
+FLAGS PASSED TO IPY.EXE: None
+OPERATING SYSTEMS AFFECTED: All
+
+DESCRIPTION
+-------------------------------------------------------
+Complete list of module attributes that should be removed 
+from IronPython:
+    array.ArrayType    __radd__                  # codeplex bug #23354 http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=23354    
+    array.array    __radd__                      # codeplex bug #23354 http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=23354

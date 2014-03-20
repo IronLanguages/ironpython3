@@ -1,0 +1,47 @@
+Implement rest of itertools module
+
+
+IP VERSION AFFECTED: 2.7
+FLAGS PASSED TO IPY.EXE: None
+OPERATING SYSTEMS AFFECTED: All
+
+DESCRIPTION
+-------------------------------------------------------
+Complete list of module attributes that should be removed 
+from IronPython:
+    itertools  combinations_with_replacement 
+    itertools  compress                      
+    itertools.count    __class__                     
+    itertools.count    __delattr__                   
+    itertools.count    __doc__                       
+    itertools.count    __format__                    
+    itertools.count    __getattribute__              
+    itertools.count    __hash__                      
+    itertools.count    __init__                      
+    itertools.count    __iter__                      
+    itertools.count    __new__                       
+    itertools.count    __reduce__                    
+    itertools.count    __reduce_ex__                 
+    itertools.count    __repr__                      
+    itertools.count    __setattr__                   
+    itertools.count    __sizeof__                    
+    itertools.count    __str__                       
+    itertools.count    __subclasshook__              
+    itertools.count    next                          
+    itertools.count    __class__                     
+    itertools.count    __delattr__                   
+    itertools.count    __doc__                       
+    itertools.count    __format__                    
+    itertools.count    __getattribute__              
+    itertools.count    __hash__                      
+    itertools.count    __init__                      
+    itertools.count    __iter__                      
+    itertools.count    __new__                       
+    itertools.count    __reduce__                    
+    itertools.count    __reduce_ex__                 
+    itertools.count    __repr__                      
+    itertools.count    __setattr__                   
+    itertools.count    __sizeof__                    
+    itertools.count    __str__                       
+    itertools.count    __subclasshook__              
+    itertools.count    next                          

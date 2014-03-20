@@ -90,6 +90,13 @@ IronPythonTestConsole.exe IronPythonTest -result:all-result.xml
 popd
 goto :exit
 
+:test-custom
+pushd bin\Debug
+shift
+IronPythonTestConsole.exe IronPythonTest -result:custom-result.xml %1 %2 %3 %4 %5 %6 %7 %8 %9
+popd
+goto :exit
+
 :restore
 set _target=RestoreReferences
 set _flavour=Release

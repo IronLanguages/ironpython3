@@ -82,7 +82,10 @@
     <EmbeddedResource Include="Cases\IronPythonCasesManifest.ini" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Cases\CPythonCasesManifest.ini" />
+    <EmbeddedResource Include="Cases\AllCPythonCasesManifest.ini" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Cases\StandardCPythonCasesManifest.ini" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

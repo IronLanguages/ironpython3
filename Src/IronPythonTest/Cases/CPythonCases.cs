@@ -12,8 +12,8 @@ using NUnit.Framework;
 using NUnit.Framework.Api;
 
 namespace IronPythonTest.Cases {
-    [TestFixture(Category = "CPython")]
-    class CPythonCases {
+    [TestFixture(Category = "StandardCPython")]
+    class StandardCPythonCases {
         private CaseExecuter executor;
 
         [TestFixtureSetUp]
@@ -21,7 +21,7 @@ namespace IronPythonTest.Cases {
             this.executor = new CaseExecuter();
         }
 
-        [Test, TestCaseSource(typeof(StandardCPythonCases))]
+        [Test, TestCaseSource(typeof(StandardCPythonCaseGenerator))]
         public int StandardCPythonTests(TestInfo testcase) {
             try {
                 return this.executor.RunTest(testcase);
@@ -30,8 +30,18 @@ namespace IronPythonTest.Cases {
                 return -1;
             }
         }
+    }
 
-        [Test, TestCaseSource(typeof(AllCPythonCases)), Category("AllCPythonTest")]
+    [TestFixture(Category = "AllCPython")]
+    class AllCPythonCases {
+        private CaseExecuter executor;
+
+        [TestFixtureSetUp]
+        public void FixtureSetUp() {
+            this.executor = new CaseExecuter();
+        }
+
+        [Test, TestCaseSource(typeof(AllCPythonCaseGenerator))]
         public int AllCPythonTests(TestInfo testcase) {
             try {
                 return this.executor.RunTest(testcase);
@@ -42,8 +52,8 @@ namespace IronPythonTest.Cases {
         }
     }
 
-    class StandardCPythonCases : CommonCaseGenerator<CPythonCases> {
-        internal static readonly ISet<string> STDTESTS = new HashSet<String> {
+    class StandardCPythonCaseGenerator : CommonCaseGenerator<StandardCPythonCases> {
+        internal static readonly HashSet<string> STDTESTS = new HashSet<String> {
             "test_grammar",
             "test_opcodes",
             "test_dict",
@@ -62,14 +72,13 @@ namespace IronPythonTest.Cases {
         }
     }
 
-    class AllCPythonCases : CommonCaseGenerator<CPythonCases> {
+    class AllCPythonCaseGenerator : CommonCaseGenerator<AllCPythonCases> {
         protected override IEnumerable<TestInfo> GetTests() {
             var stdlib = @"..\..\Src\StdLib\Lib\test";
             return Directory.GetFiles(stdlib, "test_*.py", SearchOption.AllDirectories)
-                .Where(file => !StandardCPythonCases.STDTESTS.Contains(Path.GetFileNameWithoutExtension(file)))
+                .Where(file => !StandardCPythonCaseGenerator.STDTESTS.Contains(Path.GetFileNameWithoutExtension(file)))
                 .Select(file => new TestInfo(Path.GetFullPath(file), this.manifest))
-                .OrderBy(testcase => testcase.Name)
-                .Take(2);
+                .OrderBy(testcase => testcase.Name);
         }
     }
 }

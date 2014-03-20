@@ -57,7 +57,37 @@ echo No target 'package'. Try 'package-release'.
 goto :exit
 
 :test
-Test\test-ipy-tc.cmd /category:Languages\IronPython\IronPython\2.X
+echo No target 'test'. Try 'test-smoke', 'test-ironpython', 'test-cpython', or 'test-all'.
+goto :exit
+
+:test-smoke
+pushd bin\v2Debug
+IronPythonTestConsole.exe IronPythonTest -include:StandardCPython -result:smoke-result-net35.xml
+popd
+pushd bin\Debug
+IronPythonTestConsole.exe IronPythonTest -include:StandardCPython -result:smoke-result-net40.xml
+popd
+pushd bin\v45Debug
+IronPythonTestConsole.exe IronPythonTest -include:StandardCPython -result:smoke-result-net45.xml
+popd
+goto :exit
+
+:test-ironpython
+pushd bin\Debug
+IronPythonTestConsole.exe IronPythonTest -include:IronPython -result:ironpython-result.xml
+popd
+goto :exit
+
+:test-cpython
+pushd bin\Debug
+IronPythonTestConsole.exe IronPythonTest -include:StandardCPython,AllCPython -result:cpython-result.xml
+popd
+goto :exit
+
+:test-all
+pushd bin\Debug
+IronPythonTestConsole.exe IronPythonTest -result:all-result.xml
+popd
 goto :exit
 
 :restore

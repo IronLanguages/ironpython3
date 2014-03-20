@@ -29,8 +29,7 @@ namespace IronPythonTest.Cases {
         protected override IEnumerable<TestInfo> GetTests() {
             return Directory.GetFiles(@"..\..\Tests", "test_*.py")
                 .Select(file => new TestInfo(Path.GetFullPath(file), this.manifest))
-                .OrderBy(testcase => testcase.Name)
-                .Take(2);
+                .OrderBy(testcase => testcase.Name);
         }
     }
 }

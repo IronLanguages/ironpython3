@@ -103,12 +103,12 @@ set _flavour=Release
 goto :main
 
 :distclean
-msbuild /t:DistClean /p:BuildFlavour=Release /verbosity:minimal /nologo
-msbuild /t:DistClean /p:BuildFlavour=Debug /verbosity:minimal /nologo
+msbuild /t:DistClean /p:BuildFlavour=Release /verbosity:minimal /nologo /p:Platform="Any CPU"
+msbuild /t:DistClean /p:BuildFlavour=Debug /verbosity:minimal /nologo /p:Platform="Any CPU"
 goto :main
 
 :main
-msbuild Build.proj /t:%_target% /p:BuildFlavour=%_flavour% /verbosity:minimal /nologo
+msbuild Build.proj /t:%_target% /p:BuildFlavour=%_flavour% /verbosity:minimal /nologo /p:Platform="Any CPU"
 goto :exit
 
 :exit

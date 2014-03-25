@@ -55,7 +55,7 @@ console for testing purposes, and direct input to and from the instance.
             return False
         else:
             self.reader = self.proc.StandardOutput
-            self.reader2 = self.proc.StandardError
+            self.reader2 = self.proc.Exception
             self.writer = self.proc.StandardInput
             self.InitializeErrorWatcher()
             self.EatToPrompt()
@@ -66,7 +66,7 @@ console for testing purposes, and direct input to and from the instance.
             return (False, None, None)
         else:
             self.reader = self.proc.StandardOutput
-            self.reader2 = self.proc.StandardError
+            self.reader2 = self.proc.Exception
             self.writer = self.proc.StandardInput
             # This will hang if the output exceeds the buffer size
             output = self.reader.ReadToEnd()
@@ -75,8 +75,8 @@ console for testing purposes, and direct input to and from the instance.
 
     def EnsureInteractive(self):
         twoPlusTwoResult = self.ExecuteLine("2 + 2", True)
-        if "4" <> twoPlusTwoResult: 
-            raise AssertionError, 'EnsureInteractive failed. 2+2 returned ' + twoPlusTwoResult
+        if "4" != twoPlusTwoResult: 
+            raise AssertionError('EnsureInteractive failed. 2+2 returned ' + twoPlusTwoResult)
 
     # Note that the prompt text could occur in the middle of other output.
     # However, it is important to read all the output from the child process
@@ -120,13 +120,13 @@ console for testing purposes, and direct input to and from the instance.
     def ExecutePartialLine(self, line):
         self.writer.Write(line+"\n")
         ch = self.reader.Read()
-        if ch == -1 or chr(ch) <> '.' : raise AssertionError, 'missing the first dot'
+        if ch == -1 or chr(ch) != '.' : raise AssertionError('missing the first dot')
         ch = self.reader.Read()
-        if ch == -1 or chr(ch) <> '.' : raise AssertionError, 'missing the second dot'
+        if ch == -1 or chr(ch) != '.' : raise AssertionError('missing the second dot')
         ch = self.reader.Read()
-        if ch == -1 or chr(ch) <> '.' : raise AssertionError, 'missing the third dot'
+        if ch == -1 or chr(ch) != '.' : raise AssertionError('missing the third dot')
         ch = self.reader.Read()
-        if ch == -1 or chr(ch) <> ' ' : raise AssertionError, 'missing the last space char'
+        if ch == -1 or chr(ch) != ' ' : raise AssertionError('missing the last space char')
 
     def End(self):
         if 'writer' in dir(self) and 'Close' in dir(self.writer):
@@ -140,22 +140,22 @@ console for testing purposes, and direct input to and from the instance.
         twoPlusTwoResult = self.ExecuteLine("2 + 2", readError)
         if "4" == twoPlusTwoResult: 
             return
-        if "" <> twoPlusTwoResult:
-            raise AssertionError, 'EnsureInteractive failed. 2+2 returned ' + twoPlusTwoResult
+        if "" != twoPlusTwoResult:
+            raise AssertionError('EnsureInteractive failed. 2+2 returned ' + twoPlusTwoResult)
         twoPlusTwoResult = self.EatToMarker("4\r\n")
-        if "4\r\n" <> twoPlusTwoResult:
-            raise AssertionError, 'EnsureInteractive failed. 2+2 returned ' + twoPlusTwoResult
+        if "4\r\n" != twoPlusTwoResult:
+            raise AssertionError('EnsureInteractive failed. 2+2 returned ' + twoPlusTwoResult)
 
     def ExecuteLineRemote(self, line, expectedOutputLines=1):
         """Sometimes remote output can become available after the prompt is printed locally."""
 
         result = self.ExecuteLine(line)
-        if "" <> result:
+        if "" != result:
             return result
-        for i in xrange(expectedOutputLines):
+        for i in range(expectedOutputLines):
             output = self.EatToMarker("\r\n")
             if output == "":
-                raise AssertionError, 'ExecuteLineRemote failed. Returned empty after %s. Error is %s' % (result, self.ReadError())
+                raise AssertionError('ExecuteLineRemote failed. Returned empty after %s. Error is %s' % (result, self.ReadError()))
             result += output
         return result[0:-2]
     
@@ -163,8 +163,8 @@ console for testing purposes, and direct input to and from the instance.
     
     def InitializeErrorWatcher(self):
         from System.Threading import Thread, ThreadStart
-        import thread            
-        self.errorLock = thread.allocate_lock()
+        import _thread            
+        self.errorLock = _thread.allocate_lock()
         self.errorString = ""
         th = Thread(ThreadStart(self.WatchErrorStream))
         th.IsBackground = True

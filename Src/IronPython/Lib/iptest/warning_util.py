@@ -22,7 +22,7 @@ class warning_trapper(object):
         self.warn(message, category)
     
     def get_value(self, dict, key, default=None):
-        if not dict.has_key(key):
+        if key not in dict:
             return default
         return dict[key]
     

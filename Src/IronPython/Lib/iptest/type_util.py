@@ -59,7 +59,7 @@ if sys.platform in ['cli', 'silverlight']:
     # CLR array shortcut
     array_cli       = System.Array
     array_int       = System.Array[int]
-    array_long      = System.Array[long]
+    array_long      = System.Array[int]
     array_object    = System.Array[object]
     array_byte      = System.Array[System.Byte]
     
@@ -84,4 +84,4 @@ if sys.platform in ['cli', 'silverlight']:
 if __name__ == '__main__':
     # for eye check
     for x in dir(types):
-        print "%-25s : %r" % (x, getattr(types, x))
+        print("%-25s : %r" % (x, getattr(types, x)))

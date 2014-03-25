@@ -43,7 +43,7 @@ except:
         def debug(self, stuff):
             pass
         def info(self, stuff):
-            print "INFO -", stuff
+            print("INFO -", stuff)
     l = __L()
 
 
@@ -58,14 +58,14 @@ class options:
 
 #--help
 if "--help" in sys.argv:
-    print """iptest is used to run IronPython tests.
+    print("""iptest is used to run IronPython tests.
 
 Notes:
 - ???
 
 Typical usage would be:
     ipy harness.py interop.net --plan
-"""
+""")
     sys.exit(0)
 
 #--no_testing

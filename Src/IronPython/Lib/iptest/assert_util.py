@@ -17,26 +17,26 @@
 
 import sys
 import time
-import cStringIO
+import io
 
 from iptest.test_env import *
 from iptest import options, l
 
 if not is_silverlight:
     import nt
-    from file_util import *
+    from .file_util import *
  
-from type_util import types
+from .type_util import types
 
 #------------------------------------------------------------------------------
 def usage(code, msg=''):
-    print sys.modules['__main__'].__doc__ or 'No doc provided'
-    if msg: print 'Error message: "%s"' % msg
+    print(sys.modules['__main__'].__doc__ or 'No doc provided')
+    if msg: print('Error message: "%s"' % msg)
     sys.exit(code)
 
 if not is_silverlight:
     def get_environ_variable(key):
-        l = [nt.environ[x] for x in nt.environ.keys() if x.lower() == key.lower()]
+        l = [nt.environ[x] for x in list(nt.environ.keys()) if x.lower() == key.lower()]
         if l: return l[0]
         else: return None
 
@@ -199,7 +199,7 @@ def AreEqual(a, b):
     Assert(a == b, "expected %r, but found %r" % (b, a))
 
 def AreNotEqual(a, b):
-    Assert(a <> b, "expected only one of the values to be %r" % a)
+    Assert(a != b, "expected only one of the values to be %r" % a)
 
 def AssertContains(containing_string, substring):
     Assert(substring in containing_string, "%s should be in %s" % (substring, containing_string))
@@ -209,7 +209,7 @@ def AssertDoesNotContain(containing_string, substring):
 
 def SequencesAreEqual(a, b, m=None):
     Assert(len(a) == len(b), m or 'sequence lengths differ: expected %d, but found %d' % (len(b), len(a)))
-    for i in xrange(len(a)):
+    for i in range(len(a)):
         Assert(a[i] == b[i], m or 'sequences differ at index %d: expected %r, but found %r' % (i, b[i], a[i]))
 
 def AlmostEqual(a, b, tolerance=6):
@@ -242,7 +242,7 @@ def AssertInOrNot(l, in_list, not_in_list):
 def AssertErrorWithMessage(exc, expectedMessage, func, *args, **kwargs):
     Assert(expectedMessage, "expectedMessage cannot be null")
     try:   func(*args, **kwargs)
-    except exc, inst:
+    except exc as inst:
         Assert(expectedMessage == inst.__str__(), \
                "Exception %r message (%r) does not match %r" % (type(inst), inst.__str__(), expectedMessage))
     else:  Assert(False, "Expected %r but got no exception" % exc)
@@ -250,14 +250,14 @@ def AssertErrorWithMessage(exc, expectedMessage, func, *args, **kwargs):
 def AssertErrorWithPartialMessage(exc, expectedMessage, func, *args, **kwargs):
     Assert(expectedMessage, "expectedMessage cannot be null")
     try:   func(*args, **kwargs)
-    except exc, inst:
+    except exc as inst:
         Assert(expectedMessage in inst.__str__(), \
                "Exception %r message (%r) does not contain %r" % (type(inst), inst.__str__(), expectedMessage))
     else:  Assert(False, "Expected %r but got no exception" % exc)
 
 def AssertErrorWithNumber(exc, expectedErrorNo, func, *args, **kwargs):
     try:        func(*args, **kwargs)
-    except exc, e: 
+    except exc as e: 
         AreEqual(e.errno, expectedErrorNo)
     else :      Fail("Expected %r but got no exception" % exc)
     
@@ -272,7 +272,7 @@ def AssertErrorWithMessages(exc, ironPythonMessage, cpythonMessage, func, *args,
 
     Assert(expectedMessage, "expectedMessage cannot be null")
     try:   func(*args, **kwargs)
-    except exc, inst:
+    except exc as inst:
         Assert(expectedMessage == inst.__str__(), \
                "Exception %r message (%r) does not contain %r" % (type(inst), inst.__str__(), expectedMessage))
     else:  Assert(False, "Expected %r but got no exception" % exc)
@@ -298,7 +298,7 @@ else:
         import re
         Assert(expectedMessage, "expectedMessage cannot be null")
         try:   func(*args, **kwargs)
-        except exc, inst:
+        except exc as inst:
             Assert(re.compile(expectedMessage).match(inst.__str__()), \
                    "Exception %r message (%r) does not contain %r" % (type(inst), inst.__str__(), expectedMessage))
         else:  Assert(False, "Expected %r but got no exception" % exc)
@@ -337,7 +337,7 @@ else:
 
 def _do_nothing(*args): 
     for arg in args:
-        print arg
+        print(arg)
     pass
 
 def get_num_iterations():
@@ -361,7 +361,7 @@ class disabled:
     def __init__(self, reason):
         self.reason = reason
     def __call__(self, f):
-        return _do_nothing("Skipping disabled test %s. (Reason: %s)" % (f.func_name, self.reason))
+        return _do_nothing("Skipping disabled test %s. (Reason: %s)" % (f.__name__, self.reason))
     
 class skip:
     def __init__(self, *platforms):
@@ -386,11 +386,11 @@ class skip:
     def __call__(self, f):
         #skip questionable tests
         if is_silverlight and 'silverlightbug?' in self.platforms:
-            msg = '... TODO, investigate Silverlight failure @ %s' % f.func_name
+            msg = '... TODO, investigate Silverlight failure @ %s' % f.__name__
             return _do_nothing(msg)
         elif sys.platform in self.platforms:
             msg = '... Decorated with @skip(%s), skipping %s ...' % (
-                self.platforms, f.func_name)
+                self.platforms, f.__name__)
             return _do_nothing(msg)
 		
         
@@ -399,7 +399,7 @@ class skip:
             platform_test = getattr(self, to_skip + '_test')
             if to_skip in self.platforms and platform_test():
                 msg = '... Decorated with @skip(%s), skipping %s ...' % (
-                    self.platforms, f.func_name)
+                    self.platforms, f.__name__)
                 return _do_nothing(msg)
         return f
    
@@ -419,7 +419,7 @@ class runonly:
         elif sys.platform in self.platforms:
             return f
         else: 
-            return _do_nothing('... Decorated with @runonly(%s), Skipping %s ...' % (self.platforms, f.func_name))
+            return _do_nothing('... Decorated with @runonly(%s), Skipping %s ...' % (self.platforms, f.__name__))
 
 @runonly('win32 silverlight cli')
 def _func(): pass
@@ -428,28 +428,28 @@ def _func(): pass
 def skiptest(*args):
     #hack: skip  questionable tests:
     if is_silverlight and 'silverlightbug?' in args:
-        print '... TODO, whole test module is skipped for Silverlight failure. Need to investigate...' 
+        print('... TODO, whole test module is skipped for Silverlight failure. Need to investigate...') 
         exit_module()
     elif is_silverlight and 'silverlight' in args:
-        print '... %s, skipping whole test module...' % sys.platform
+        print('... %s, skipping whole test module...' % sys.platform)
         exit_module()
     elif is_interactive() and 'interactive' in args:
-        print '... %s, skipping whole test module under "interactive" mode...' % sys.platform
+        print('... %s, skipping whole test module under "interactive" mode...' % sys.platform)
         exit_module()
     elif is_stdlib() and 'stdlib' in args:
-        print '... %s, skipping whole test module under "stdlib" mode...' % sys.platform
+        print('... %s, skipping whole test module under "stdlib" mode...' % sys.platform)
         exit_module()     
     
     elif is_cli64 and 'cli64' in args:
-        print '... %s, skipping whole test module on 64-bit CLI...' % sys.platform
+        print('... %s, skipping whole test module on 64-bit CLI...' % sys.platform)
         exit_module()
     
     elif get_num_iterations() > 1 and 'multiple_execute' in args:
-        print '... %d invocations, skipping whole test module under "multiple_execute" mode...' % get_num_iterations()
+        print('... %d invocations, skipping whole test module under "multiple_execute" mode...' % get_num_iterations())
         exit_module()
     
     if sys.platform in args: 
-        print '... %s, skipping whole test module...' % sys.platform
+        print('... %s, skipping whole test module...' % sys.platform)
         exit_module()
 
 def exit_module():
@@ -457,26 +457,26 @@ def exit_module():
     sys.exit(0)
 
 def print_failures(total, failures):
-    print
+    print()
     for failure in failures:
         name, (extype, ex, tb) = failure
-        print '------------------------------------'
-        print "Test %s failed throwing %s (%s)" % (name, str(extype), str(ex))            
+        print('------------------------------------')
+        print("Test %s failed throwing %s (%s)" % (name, str(extype), str(ex)))            
         while tb:
-            print ' ... %s in %s line %d' % (tb.tb_frame.f_code.co_name, tb.tb_frame.f_code.co_filename, tb.tb_lineno)
+            print(' ... %s in %s line %d' % (tb.tb_frame.f_code.co_name, tb.tb_frame.f_code.co_filename, tb.tb_lineno))
             tb = tb.tb_next	
-        print
+        print()
     
         if is_cli:
             if '-X:ExceptionDetail' in System.Environment.GetCommandLineArgs():
                 load_iron_python_test()
                 from IronPythonTest import TestHelpers
-                print 'CLR Exception: ',
-                print TestHelpers.GetContext().FormatException(ex.clsException)
+                print('CLR Exception: ', end=' ')
+                print(TestHelpers.GetContext().FormatException(ex.clsException))
 
-    print
+    print()
     failcount = len(failures)
-    print '%d total, %d passed, %d failed' % (total, total - failcount, failcount)
+    print('%d total, %d passed, %d failed' % (total, total - failcount, failcount))
 		
 def run_test(mod_name, noOutputPlease=False):
     if not options.RUN_TESTS:
@@ -497,12 +497,12 @@ def run_test(mod_name, noOutputPlease=False):
             if name.endswith("_clionly") and not is_cli: continue
             if name.startswith("test_"): 
                 if not includedTests or name in includedTests:
-                    for i in xrange( get_num_iterations()):
+                    for i in range( get_num_iterations()):
                         if not noOutputPlease: 
                             if hasattr(time, 'clock'):
-                                print ">>> %6.2fs testing %-40s" % (round(time.clock(), 2), name, ), 
+                                print(">>> %6.2fs testing %-40s" % (round(time.clock(), 2), name, ), end=' ') 
                             else:
-                                print ">>> testing %-40s" % name, 
+                                print(">>> testing %-40s" % name, end=' ') 
 						#obj()
 						#catches the error and exit at the end of each test
                         total += 1
@@ -513,25 +513,25 @@ def run_test(mod_name, noOutputPlease=False):
                                 # restore std-in / std-err incase the test corrupted it                
                                 sys.stdout = stdout
                                 sys.stderr = stderr
-                            print
+                            print()
                                 
                         except:
                             failures.append( (name, sys.exc_info()) )
-                            print "FAIL (%s)" % str(sys.exc_info()[0])
+                            print("FAIL (%s)" % str(sys.exc_info()[0]))
 					
                 elif not noOutputPlease:
-                    print ">>> skipping %-40s" % name
+                    print(">>> skipping %-40s" % name)
     if failures:
         print_failures(total, failures)
         if is_cli:
             cmd_line = System.Environment.CurrentDirectory + "> " + System.Environment.CommandLine
-            print "Please run the following command to repro:"
-            print "\t" + cmd_line
+            print("Please run the following command to repro:")
+            print("\t" + cmd_line)
         
         sys.exit(len(failures))
     else:
-        print
-        print '%d tests passed' % total
+        print()
+        print('%d tests passed' % total)
 
 def run_class(mod_name, verbose=False): 
     pass
@@ -557,7 +557,7 @@ def AddReferenceToDlrCore():
 
 class stderr_trapper(object):
     def __init__(self):
-        self.stderr = cStringIO.StringIO()
+        self.stderr = io.StringIO()
     def __enter__(self):
         self.oldstderr = sys.stderr
         sys.stderr = self.stderr
@@ -572,7 +572,7 @@ class stderr_trapper(object):
 
 class stdout_trapper(object):
     def __init__(self):
-        self.stdout = cStringIO.StringIO()
+        self.stdout = io.StringIO()
     def __enter__(self):
         self.oldstdout, sys.stdout = sys.stdout, self.stdout
         return self
@@ -595,17 +595,17 @@ def retry_on_failure(f, *args, **kwargs):
     2. If f() fails, it retries invoking it MAX_FAILURE_RETRY times
     '''
     def t(*args, **kwargs):        
-        for i in xrange(MAX_FAILURE_RETRY):
+        for i in range(MAX_FAILURE_RETRY):
             try:
                 ret_val = f(*args, **kwargs)
                 return ret_val
-            except Exception, e:
-                print "retry_on_failure(%s): failed on attempt '%d':" % (f.__name__, i+1)
-                print e
+            except Exception as e:
+                print("retry_on_failure(%s): failed on attempt '%d':" % (f.__name__, i+1))
+                print(e)
                 excp_info = sys.exc_info()
                 continue
         # raise w/ excep info to preverve the original stack trace
-        raise excp_info[0], excp_info[1], excp_info[2]
+        raise excp_info[0](excp_info[1]).with_traceback(excp_info[2])
                 
     return t
     
@@ -617,6 +617,6 @@ def force_gc():
         gc.collect()
     else:
         import System
-        for i in xrange(100):
+        for i in range(100):
             System.GC.Collect()
         System.GC.WaitForPendingFinalizers()

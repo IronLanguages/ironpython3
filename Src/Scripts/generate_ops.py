@@ -273,7 +273,7 @@ for sym, rsym, name, fullName in groupings:
     ops.append(Grouping(rsym, name, 'r', 'Right' + fullName))
 
 simple = [(',', 'comma'), (':', 'colon'), ('`', 'backquote', 'BackQuote'), (';', 'semicolon'),
-          ('=', 'assign'), ('~', 'twiddle'), ('@', 'at')]
+        ('=', 'assign'), ('~', 'twiddle'), ('@', 'at'), ('=>', 'rarrow', 'RightArrow')]
 for info in simple:
     if len(info) == 2:
         sym, name = info

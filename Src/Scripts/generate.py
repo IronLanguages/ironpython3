@@ -16,6 +16,7 @@
 import re
 import sys
 import nt
+import os.path
 
 def get_parent_directory(path, levels=1):
     while levels:
@@ -26,11 +27,16 @@ def get_parent_directory(path, levels=1):
         levels -= 1
     return path
 
-root_dir = get_parent_directory(sys.prefix, 2)
+def get_root_dir():
+    script = os.path.realpath(__file__)
+    return  os.path.normpath(os.path.join(os.path.dirname(script), "../.."))
+
+root_dir = get_root_dir()
 
 source_directories = [
-    root_dir + "\\Languages\\IronPython",
-    root_dir + "\\Runtime",
+    root_dir + "\\Src\\IronPython",
+    # runtime is gone as part of repo split
+    # root_dir + "\\Runtime",
 ]
 
 exclude_directories = [

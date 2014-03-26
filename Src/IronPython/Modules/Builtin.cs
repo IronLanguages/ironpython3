@@ -42,13 +42,13 @@ using Microsoft.Scripting.Math;
 using Complex = Microsoft.Scripting.Math.Complex64;
 #endif
 
-[assembly: PythonModule("__builtin__", typeof(IronPython.Modules.Builtin))]
+[assembly: PythonModule("builtins", typeof(IronPython.Modules.Builtin))]
 namespace IronPython.Modules {
     [Documentation("")]  // Documentation suppresses XML Doc on startup.
     public static partial class Builtin {
         public const string __doc__ = "Provides access to commonly used built-in functions, exception objects, etc...";
         public const object __package__ = null;
-        public const string __name__ = "__builtin__";
+        public const string __name__ = "builtins";
 
         public static object True {
             get {
@@ -2472,7 +2472,7 @@ namespace IronPython.Modules {
 
             if (!globals.ContainsKey("__builtins__")) {
                 if (setBuiltinsToModule) {
-                    globals["__builtins__"] = python.SystemStateModules["__builtin__"];
+                    globals["__builtins__"] = python.SystemStateModules["builtins"];
                 } else {
                     globals["__builtins__"] = python.BuiltinModuleDict;
                 }

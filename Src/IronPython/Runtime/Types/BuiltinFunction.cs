@@ -649,7 +649,7 @@ namespace IronPython.Runtime.Types {
                 PythonType declaringType = DynamicHelpers.GetPythonTypeFromType(DeclaringType);
 
                 string res = PythonTypeOps.GetModuleName(context, declaringType.UnderlyingSystemType);
-                if (res != "__builtin__" || DeclaringType == typeof(IronPython.Modules.Builtin)) {
+                if (res != "builtins" || DeclaringType == typeof(IronPython.Modules.Builtin)) {
                     return res;
                 }
             }

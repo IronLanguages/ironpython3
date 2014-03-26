@@ -60,7 +60,7 @@ namespace IronPython.Modules {
                 typeof(BlockingIOError),
                 dict,
                 "BlockingIOError",
-                "__builtin__",
+                "builtins",
                 msg => new _BlockingIOErrorException(msg)
             );
             context.EnsureModuleException(

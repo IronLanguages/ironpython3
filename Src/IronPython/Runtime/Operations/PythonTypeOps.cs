@@ -67,7 +67,7 @@ namespace IronPython.Runtime.Operations {
                 return (string)modField.GetRawConstantValue();
             }
 
-            return "__builtin__";
+            return "builtins";
         }
 
         internal static object CallParams(CodeContext/*!*/ context, PythonType cls, params object[] args\u03c4) {

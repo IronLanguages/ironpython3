@@ -117,16 +117,6 @@ namespace IronPython.Compiler {
             }
         }
 
-        public bool PrintFunction {
-            get {
-                return (_module & ModuleOptions.PrintFunction) != 0;
-            }
-            set {
-                if (value) _module |= ModuleOptions.PrintFunction;
-                else _module &= ~ModuleOptions.PrintFunction;
-            }
-        }
-
         public bool UnicodeLiterals {
             get {
                 return (_module & ModuleOptions.UnicodeLiterals) != 0;

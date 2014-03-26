@@ -101,6 +101,9 @@ namespace IronPython.Compiler {
                     }
                     return Tokens.ExclusiveOrToken;
                 case '=':
+                    if (NextChar('>')) {
+                        return Tokens.RightArrowToken;
+                    }
                     if (NextChar('=')) {
                         return Tokens.EqualsToken;
                     }

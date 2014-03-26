@@ -66,10 +66,6 @@ namespace IronPython.Runtime {
         /// </summary>
         SkipFirstLine = 0x0200,
         /// <summary>
-        /// Enable usage of print as a function for better compatibility with Python 3.0.
-        /// </summary>
-        PrintFunction = 0x0400,
-        /// <summary>
         /// Forces the code to be interpreted rather than compiled
         /// </summary>
         Interpret = 0x1000,

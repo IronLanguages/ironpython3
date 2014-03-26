@@ -80,33 +80,33 @@ namespace IronPython.Compiler {
         Assign = 73,
         Twiddle = 74,
         At = 75,
+        RightArrow = 76,
 
         FirstKeyword = KeywordAnd,
         LastKeyword = KeywordWith,
-        KeywordAnd = 76,
-        KeywordAssert = 77,
-        KeywordBreak = 78,
-        KeywordClass = 79,
-        KeywordContinue = 80,
-        KeywordDef = 81,
-        KeywordDel = 82,
-        KeywordElseIf = 83,
-        KeywordElse = 84,
-        KeywordExcept = 85,
-        KeywordExec = 86,
-        KeywordFinally = 87,
-        KeywordFor = 88,
-        KeywordFrom = 89,
-        KeywordGlobal = 90,
-        KeywordIf = 91,
-        KeywordImport = 92,
-        KeywordIn = 93,
-        KeywordIs = 94,
-        KeywordLambda = 95,
-        KeywordNot = 96,
-        KeywordOr = 97,
-        KeywordPass = 98,
-        KeywordPrint = 99,
+        KeywordAnd = 77,
+        KeywordAssert = 78,
+        KeywordBreak = 79,
+        KeywordClass = 80,
+        KeywordContinue = 81,
+        KeywordDef = 82,
+        KeywordDel = 83,
+        KeywordElseIf = 84,
+        KeywordElse = 85,
+        KeywordExcept = 86,
+        KeywordExec = 87,
+        KeywordFinally = 88,
+        KeywordFor = 89,
+        KeywordFrom = 90,
+        KeywordGlobal = 91,
+        KeywordIf = 92,
+        KeywordImport = 93,
+        KeywordIn = 94,
+        KeywordIs = 95,
+        KeywordLambda = 96,
+        KeywordNot = 97,
+        KeywordOr = 98,
+        KeywordPass = 99,
         KeywordRaise = 100,
         KeywordReturn = 101,
         KeywordTry = 102,
@@ -192,6 +192,7 @@ namespace IronPython.Compiler {
         private static readonly Token symAssignToken = new SymbolToken(TokenKind.Assign, "=");
         private static readonly Token symTwiddleToken = new SymbolToken(TokenKind.Twiddle, "~");
         private static readonly Token symAtToken = new SymbolToken(TokenKind.At, "@");
+        private static readonly Token symRightArrowToken = new SymbolToken(TokenKind.RightArrow, "=>");
 
         public static Token AddToken {
             get { return symAddToken; }
@@ -369,6 +370,10 @@ namespace IronPython.Compiler {
             get { return symAtToken; }
         }
 
+        public static Token RightArrowToken {
+            get { return symRightArrowToken; }
+        }
+
         private static readonly Token kwAndToken = new SymbolToken(TokenKind.KeywordAnd, "and");
         private static readonly Token kwAsToken = new SymbolToken(TokenKind.KeywordAs, "as");
         private static readonly Token kwAssertToken = new SymbolToken(TokenKind.KeywordAssert, "assert");
@@ -393,7 +398,6 @@ namespace IronPython.Compiler {
         private static readonly Token kwNotToken = new SymbolToken(TokenKind.KeywordNot, "not");
         private static readonly Token kwOrToken = new SymbolToken(TokenKind.KeywordOr, "or");
         private static readonly Token kwPassToken = new SymbolToken(TokenKind.KeywordPass, "pass");
-        private static readonly Token kwPrintToken = new SymbolToken(TokenKind.KeywordPrint, "print");
         private static readonly Token kwRaiseToken = new SymbolToken(TokenKind.KeywordRaise, "raise");
         private static readonly Token kwReturnToken = new SymbolToken(TokenKind.KeywordReturn, "return");
         private static readonly Token kwTryToken = new SymbolToken(TokenKind.KeywordTry, "try");
@@ -496,10 +500,6 @@ namespace IronPython.Compiler {
 
         public static Token KeywordPassToken {
             get { return kwPassToken; }
-        }
-
-        public static Token KeywordPrintToken {
-            get { return kwPrintToken; }
         }
 
         public static Token KeywordRaiseToken {

@@ -20,7 +20,7 @@ import operator
 kwlist = [
     'and', 'assert', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'exec',
     'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'not', 'or', 'pass',
-    'print', 'raise', 'return', 'try', 'while', 'yield', 'as', 'with'
+    'raise', 'return', 'try', 'while', 'yield', 'as', 'with'
 ]
 
 class Symbol:
@@ -371,16 +371,12 @@ def tokenkinds_generator(cw):
         i += 1
 
 def gen_mark_end(cw, keyword):
-    if keyword == 'print': cw.enter_block('if (!_printFunction)')
-        
     cw.write('MarkTokenEnd();')
     if keyword == 'None':
         cw.write('return Tokens.NoneToken;')
     else:
         cw.write('return Tokens.Keyword%sToken;' % keywordToFriendly(keyword))
     cw.exit_block()
-    
-    if keyword == 'print': cw.exit_block()
 
 def gen_token_tree(cw, tree, keyword):
     cw.write('ch = NextChar();')

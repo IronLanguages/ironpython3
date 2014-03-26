@@ -249,8 +249,6 @@ namespace IronPython.Modules
                     ast = new AugAssign((AugmentedAssignStatement)stmt);
                 else if (stmt is DelStatement)
                     ast = new Delete((DelStatement)stmt);
-                else if (stmt is PrintStatement)
-                    ast = new Print((PrintStatement)stmt);
                 else if (stmt is ExpressionStatement)
                     ast = new Expr((ExpressionStatement)stmt);
                 else if (stmt is ForStatement)
@@ -2839,22 +2837,6 @@ namespace IronPython.Modules
                 _nl = nl;
                 _lineno = lineno;
                 _col_offset = col_offset;
-            }
-
-            internal Print(PrintStatement stmt)
-                : this() {
-                if (stmt.Destination != null)
-                    _dest = Convert(stmt.Destination);
-
-                _values = PythonOps.MakeEmptyList(stmt.Expressions.Count);
-                foreach (AstExpression expr in stmt.Expressions)
-                    _values.Add(Convert(expr));
-
-                _nl = !stmt.TrailingComma;
-            }
-
-            internal override Statement Revert() {
-                return new PrintStatement(expr.Revert(dest), expr.RevertExprs(values), !nl);
             }
 
             public expr dest {

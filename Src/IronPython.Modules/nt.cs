@@ -42,13 +42,34 @@ using Microsoft.Scripting.Math;
 [assembly: PythonModule("nt", typeof(IronPython.Modules.PythonNT))]
 namespace IronPython.Modules {
     public static class PythonNT {
-        public const string __doc__ = "Provides low-level operationg system access for files, the environment, etc...";
+        public const string __doc__ = "Provides low-level operating system access for files, the environment, etc...";
 
 #if FEATURE_PROCESS
         private static Dictionary<int, Process> _processToIdMapping = new Dictionary<int, Process>();
         private static List<int> _freeProcessIds = new List<int>();
         private static int _processCount;
 #endif
+
+        public static List<string> _have_functions = new List<string> {
+            // intelligent guess what it could be in case of ironpython
+            "HAVE_FACCESSAT",
+#if FEATURE_FILESYSTEM
+            "HAVE_FCHDIR",
+            "HAVE_FCHMOD",
+            "HAVE_FDOPENDIR",
+            "HAVE_FUTIMES",
+            "HAVE_MKDIRAT",
+            "HAVE_OPENAT",
+#endif
+            "HAVE_RENAMEAT",
+            "HAVE_FSTATAT",
+#if FEATURE_FILESYSTEM
+            "HAVE_UNLINKAT",
+            "HAVE_UTIMENSAT",
+#endif
+            "MS_WINDOWS"
+        };
+
 
         #region Public API Surface
 

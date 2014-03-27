@@ -695,7 +695,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             if (IsSystemType) {
                 if (PythonTypeOps.IsRuntimeAssembly(UnderlyingSystemType.GetTypeInfo().Assembly) || IsPythonType) {
                     object module = Get__module__(context, this);
-                    if (!module.Equals("__builtin__")) {
+                    if (!module.Equals("builtins")) {
                         return string.Format("<type '{0}.{1}'>", module, Name);
                     }
                 }

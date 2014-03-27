@@ -1831,7 +1831,7 @@ namespace IronPython.Runtime {
 
             _builtins = new PythonModule(dict);
 
-            _modulesDict["__builtin__"] = _builtins;
+            _modulesDict["builtins"] = _builtins;
         }
 
         private Dictionary<string, Type> CreateBuiltinTable() {

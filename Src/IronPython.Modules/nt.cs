@@ -51,22 +51,6 @@ namespace IronPython.Modules {
 #endif
 
         public static List<string> _have_functions = new List<string> {
-            // intelligent guess what it could be in case of ironpython
-            "HAVE_FACCESSAT",
-#if FEATURE_FILESYSTEM
-            "HAVE_FCHDIR",
-            "HAVE_FCHMOD",
-            "HAVE_FDOPENDIR",
-            "HAVE_FUTIMES",
-            "HAVE_MKDIRAT",
-            "HAVE_OPENAT",
-#endif
-            "HAVE_RENAMEAT",
-            "HAVE_FSTATAT",
-#if FEATURE_FILESYSTEM
-            "HAVE_UNLINKAT",
-            "HAVE_UTIMENSAT",
-#endif
             "MS_WINDOWS"
         };
 

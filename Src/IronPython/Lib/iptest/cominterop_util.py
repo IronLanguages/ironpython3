@@ -99,7 +99,6 @@ FPN_VALUES = [   -1.23, -1.0, -0.123, -0.0, 0.123, 1.0, 1.23,
                 0.0000001, 3.14159265, 1E10, 1.0E10 ]
 UINT_VALUES = [ 0, 1, 2, 7, 10, 32]
 INT_VALUES = [ -x for x in UINT_VALUES ] + UINT_VALUES
-LONG_VALUES = [int(x) for x in INT_VALUES]
 COMPLEX_VALUES = [ 3j]
 
 #--Subclasses of Python/.NET types
@@ -176,7 +175,7 @@ def valueErrorTrigger(in_type):
       
     if sys.platform=="win32":
         ret_val["BYTE"] += FPN_VALUES  #Merlin 323751
-        ret_val["BYTE"] = [x for x in ret_val["BYTE"] if type(x) not in [str, str]] #INCOMPAT BUG - should be ValueError
+        ret_val["BYTE"] = [x for x in ret_val["BYTE"] if type(x) not in [str]] #INCOMPAT BUG - should be ValueError
         ret_val["BYTE"] = [x for x in ret_val["BYTE"] if not isinstance(x, KOld)] #INCOMPAT BUG - should be AttributeError
       
         
@@ -358,7 +357,7 @@ def pythonToCOM(in_type):
     ret_val["BYTE"] =  [ [y(x) for y in temp_funcs] for x in temp_values]
 
     ############################################################
-    temp_funcs = [  str, str, # Py_Str, Py_System_String,  
+    temp_funcs = [  str, # Py_Str, Py_System_String,
                     System.String ]
     temp_values = shallow_copy(STRING_VALUES)
     
@@ -383,7 +382,7 @@ def pythonToCOM(in_type):
     ret_val["DOUBLE"] += ret_val["FLOAT"]
     
     ############################################################  
-    temp_funcs = [int, System.UInt16]  # Py_UShort, 
+    temp_funcs = [int, System.UInt16]  # Py_UShort,
     temp_values = pos_num_helper(System.UInt16)
     
     ret_val["USHORT"] =  [ [y(x) for y in temp_funcs] for x in temp_values]
@@ -396,7 +395,7 @@ def pythonToCOM(in_type):
     ret_val["ULONG"] += ret_val["USHORT"]
     
     ############################################################  
-    temp_funcs = [int, int, System.UInt64]  # Py_ULongLong, 
+    temp_funcs = [int, System.UInt64]  # Py_ULongLong,
     temp_values = pos_num_helper(System.UInt64) + pos_num_helper(System.UInt32) + pos_num_helper(System.UInt16)
                 
     ret_val["ULONGLONG"] =  [ [y(x) for y in temp_funcs] for x in temp_values]
@@ -417,7 +416,7 @@ def pythonToCOM(in_type):
     
     
     ############################################################  
-    temp_funcs = [int, int, System.Int64] # Py_LongLong, Dev10 475426
+    temp_funcs = [int, System.Int64] # Py_LongLong, Dev10 475426
     temp_values = pos_num_helper(System.Int64) + pos_num_helper(System.Int32) + pos_num_helper(System.Int16)
                 
     ret_val["LONGLONG"] =  [ [y(x) for y in temp_funcs] for x in temp_values]

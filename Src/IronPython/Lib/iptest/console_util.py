@@ -55,7 +55,7 @@ console for testing purposes, and direct input to and from the instance.
             return False
         else:
             self.reader = self.proc.StandardOutput
-            self.reader2 = self.proc.Exception
+            self.reader2 = self.proc.StandardError
             self.writer = self.proc.StandardInput
             self.InitializeErrorWatcher()
             self.EatToPrompt()
@@ -66,7 +66,7 @@ console for testing purposes, and direct input to and from the instance.
             return (False, None, None)
         else:
             self.reader = self.proc.StandardOutput
-            self.reader2 = self.proc.Exception
+            self.reader2 = self.proc.StandardError
             self.writer = self.proc.StandardInput
             # This will hang if the output exceeds the buffer size
             output = self.reader.ReadToEnd()

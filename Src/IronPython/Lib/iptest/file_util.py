@@ -51,7 +51,7 @@ def file_exists(file):
             return False
         
 def file_exists_in_path(file):
-    full_path = [nt.environ[x] for x in list(nt.environ.keys()) if x.lower() == "path"]
+    full_path = [nt.environ[x] for x in nt.environ.keys() if x.lower() == "path"]
     if len(full_path)==0:
         return False
     else:

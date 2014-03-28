@@ -40,7 +40,7 @@ def test_bool_dir():
 
 
 def test__coerce__():
-    for simple_type in [int, float, str, str, bool, object]:
+    for simple_type in [int, float, str, bool, object]:
         AreEqual(NotImplemented, True.__coerce__(simple_type))
         AreEqual(NotImplemented, False.__coerce__(simple_type))
         
@@ -52,7 +52,7 @@ def test__index__():
     AreEqual(True.__index__(), 1)
     AreEqual(False.__index__(), 0)
     
-def test__long__():
+def test__int__():
     AreEqual(int(True), 1)
     AreEqual(int(False), 0)
     

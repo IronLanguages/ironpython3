@@ -151,7 +151,6 @@
     <Compile Include="Compiler\Ast\OrExpression.cs" />
     <Compile Include="Compiler\Ast\Parameter.cs" />
     <Compile Include="Compiler\Ast\ParenthesisExpression.cs" />
-    <Compile Include="Compiler\Ast\PrintStatement.cs" />
     <Compile Include="Compiler\Ast\PythonAst.cs" />
     <Compile Include="Compiler\Ast\PythonNameBinder.cs" />
     <Compile Include="Compiler\Ast\PythonOperator.cs" />

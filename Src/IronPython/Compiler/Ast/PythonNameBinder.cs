@@ -711,11 +711,6 @@ namespace IronPython.Compiler.Ast {
             return true;
         }
 
-        public override bool Walk(PrintStatement node) {
-            node.Parent = _currentScope;
-            return base.Walk(node);
-        }
-
         public override bool Walk(IfStatement node) {
             node.Parent = _currentScope;
             return base.Walk(node);

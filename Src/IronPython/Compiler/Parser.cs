@@ -495,8 +495,6 @@ namespace IronPython.Compiler {
         */
         private Statement ParseSmallStmt() {
             switch (PeekToken().Kind) {
-                case TokenKind.KeywordPrint:
-                    return ParsePrintStmt();
                 case TokenKind.KeywordPass:
                     return FinishSmallStmt(new EmptyStatement());
                 case TokenKind.KeywordBreak:
@@ -898,8 +896,6 @@ namespace IronPython.Compiler {
                     } else if (name == "absolute_import") {
                         _languageFeatures |= ModuleOptions.AbsoluteImports;
                     } else if (name == "print_function") {
-                        _languageFeatures |= ModuleOptions.PrintFunction;
-                        _tokenizer.PrintFunction = true;
                     } else if (name == "unicode_literals") {
                         _tokenizer.UnicodeLiterals = true;
                         _languageFeatures |= ModuleOptions.UnicodeLiterals;
@@ -1010,36 +1006,6 @@ namespace IronPython.Compiler {
                 message = ParseExpression();
             }
             AssertStatement ret = new AssertStatement(expr, message);
-            ret.SetLoc(_globalParent, start, GetEnd());
-            return ret;
-        }
-
-        //print_stmt: 'print' ( [ expression (',' expression)* [','] ] | '>>' expression [ (',' expression)+ [','] ] )
-        private PrintStatement ParsePrintStmt() {
-            Eat(TokenKind.KeywordPrint);
-            var start = GetStart();
-            Expression dest = null;
-            PrintStatement ret;
-
-            bool needNonEmptyTestList = false;
-            if (MaybeEat(TokenKind.RightShift)) {
-                dest = ParseExpression();
-                if (MaybeEat(TokenKind.Comma)) {
-                    needNonEmptyTestList = true;
-                } else {
-                    ret = new PrintStatement(dest, new Expression[0], false);
-                    ret.SetLoc(_globalParent, start, GetEnd());
-                    return ret;
-                }
-            }
-
-            bool trailingComma;
-            List<Expression> l = ParseExpressionList(out trailingComma);
-            if (needNonEmptyTestList && l.Count == 0) {
-                ReportSyntaxError(_lookahead);
-            }
-            Expression[] exprs = l.ToArray();
-            ret = new PrintStatement(dest, exprs, trailingComma);
             ret.SetLoc(_globalParent, start, GetEnd());
             return ret;
         }

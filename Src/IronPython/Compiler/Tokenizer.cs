@@ -47,7 +47,7 @@ namespace IronPython.Compiler {
         private SourceUnit _sourceUnit;
         private ErrorSink _errors;
         private Severity _indentationInconsistencySeverity;
-        private bool _endContinues, _printFunction, _unicodeLiterals;
+        private bool _endContinues, _unicodeLiterals;
         private List<int> _newLineLocations;
         private SourceLocation _initialLocation;
         private TextReader _reader;
@@ -84,7 +84,6 @@ namespace IronPython.Compiler {
             _verbatim = options.Verbatim;
             _state = new State(null);
             _dontImplyDedent = options.DontImplyDedent;
-            _printFunction = options.PrintFunction;
             _unicodeLiterals = options.UnicodeLiterals;
             _names = new Dictionary<object, NameToken>(128, new TokenEqualityComparer(this));
         }
@@ -311,15 +310,6 @@ namespace IronPython.Compiler {
             }
             tokenString = GetTokenString();
             return true;
-        }
-
-        internal bool PrintFunction {
-            get {
-                return _printFunction;
-            }
-            set {
-                _printFunction = value;
-            }
         }
 
         internal bool UnicodeLiterals {
@@ -1045,19 +1035,9 @@ namespace IronPython.Compiler {
                     }
                 }
             } else if (ch == 'p') {
-                ch = NextChar();
-                if (ch == 'a') {
-                    if (NextChar() == 's' && NextChar() == 's' && !IsNamePart(Peek())) {
-                        MarkTokenEnd();
-                        return Tokens.KeywordPassToken;
-                    }
-                } else if (ch == 'r') {
-                    if (NextChar() == 'i' && NextChar() == 'n' && NextChar() == 't' && !IsNamePart(Peek())) {
-                        if (!_printFunction) {
-                            MarkTokenEnd();
-                            return Tokens.KeywordPrintToken;
-                        }
-                    }
+                if (NextChar() == 'a' && NextChar() == 's' && NextChar() == 's' && !IsNamePart(Peek())) {
+                    MarkTokenEnd();
+                    return Tokens.KeywordPassToken;
                 }
             } else if (ch == 'g') {
                 if (NextChar() == 'l' && NextChar() == 'o' && NextChar() == 'b' && NextChar() == 'a' && NextChar() == 'l' && !IsNamePart(Peek())) {

@@ -187,10 +187,6 @@ namespace IronPython.Compiler.Ast {
         public virtual bool Walk(ImportStatement node) { return true; }
         public virtual void PostWalk(ImportStatement node) { }
 
-        // PrintStatement
-        public virtual bool Walk(PrintStatement node) { return true; }
-        public virtual void PostWalk(PrintStatement node) { }
-
         // PythonAst
         public virtual bool Walk(PythonAst node) { return true; }
         public virtual void PostWalk(PythonAst node) { }
@@ -433,10 +429,6 @@ namespace IronPython.Compiler.Ast {
         // ImportStatement
         public override bool Walk(ImportStatement node) { return false; }
         public override void PostWalk(ImportStatement node) { }
-
-        // PrintStatement
-        public override bool Walk(PrintStatement node) { return false; }
-        public override void PostWalk(PrintStatement node) { }
 
         // PythonAst
         public override bool Walk(PythonAst node) { return false; }

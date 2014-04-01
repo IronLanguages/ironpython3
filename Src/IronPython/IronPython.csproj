@@ -102,6 +102,7 @@
     <Compile Include="Runtime\Operations\MarshalOps.cs" />
     <Compile Include="Runtime\PythonDocumentationProvider.cs" />
     <Compile Include="Runtime\PythonHiddenBaseClassAttribute.cs" />
+    <Compile Include="Runtime\Range.cs" />
     <Compile Include="Runtime\SequenceTypeInfoAttribute.cs" />
     <Compile Include="Runtime\ModuleContext.cs" />
     <Compile Include="Runtime\ModuleGlobalCache.cs" />
@@ -440,7 +441,6 @@
     <Compile Include="Runtime\WrapperDescriptorAttribute.cs" />
     <Compile Include="Runtime\WrapperDictionary.cs" />
     <Compile Include="Runtime\XamlObjectWriterSettings.cs" />
-    <Compile Include="Runtime\XRange.cs" />
     <Compile Include="..\AssemblyVersion.cs">
       <Link>Properties\AssemblyVersion.cs</Link>
     </Compile>

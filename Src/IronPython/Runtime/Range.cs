@@ -1,6 +1,7 @@
 /* ****************************************************************************
  *
- * Copyright (c) Microsoft Corporation. 
+ * Copyright (c) Microsoft Corporation.
+ * Copyright (c) Pawel Jasinski.
  *
  * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
  * copy of the license can be found in the License.html file at the root of this distribution. If 
@@ -16,55 +17,111 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+#if FEATURE_NUMERICS
+using System.Numerics;
+#else
+using Microsoft.Scripting.Math;
+#endif
 
 namespace IronPython.Runtime {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
-    [PythonType("xrange")]
+    [PythonType("range")]
     [DontMapIEnumerableToContains]
-    public sealed class XRange : ICollection, IEnumerable, IEnumerable<int>, ICodeFormattable, IList, IReversible {
-        private int _start, _stop, _step, _length;
+    public sealed class Range : IEnumerable<BigInteger>, ICodeFormattable, IList, IReversible {
+        private BigInteger _start, _stop, _step, _length;
 
-        public XRange(int stop) : this(0, stop, 1) { }
-        public XRange(int start, int stop) : this(start, stop, 1) { }
+        public Range(object stop) : this(BigInteger.Zero, stop, BigInteger.One) { }
+        public Range(object start, object stop) : this(start, stop, BigInteger.One) { }
 
-        public XRange(int start, int stop, int step) {
+        public Range(object start, object stop, object step) {
             Initialize(start, stop, step);
         }
 
-        private void Initialize(int start, int stop, int step) {
-            if (step == 0) {
-                throw PythonOps.ValueError("step must not be zero");
-            } else if (step > 0) {
-                if (start > stop) stop = start;
-            } else {
-                if (start < stop) stop = start;
+        private static BigInteger ConvertToBigintIndex(object value) {
+            var res = ConvertToBigintIndexHelper(value);
+            if (res.HasValue) {
+                return res.Value;
             }
-
-            _start = start;
-            _stop = stop;
-            _step = step;
-            _length = GetLengthHelper();
-            _stop = start + step * _length; // make stop precise
+            object callable;
+            if (!PythonOps.TryGetBoundAttr(value, "__index__", out callable)) {
+                throw PythonOps.TypeError("expected index value, got {0}", DynamicHelpers.GetPythonType(value).Name);
+            }
+            var index = PythonCalls.Call(callable);
+            res = ConvertToBigintIndexHelper(index);
+            if (res.HasValue) {
+                return res.Value;
+            }
+            throw PythonOps.TypeError("__index__ returned bad value: {0}", DynamicHelpers.GetPythonType(index).Name);
         }
 
-        public int Start {
-            [PythonHidden]
+        private static BigInteger? ConvertToBigintIndexHelper(object value) {
+            return ConvertToBigintIndexHelper(value, true);
+        }
+
+        private static BigInteger? ConvertToBigintIndexHelper(object value, bool includeExtensible) {
+            if (value is BigInteger) {
+                return (BigInteger)value;
+            }
+            if (value is int) {
+                return new BigInteger((int)value);
+            }
+            if (value is Int64) {
+                return new BigInteger((Int64)value);
+            }
+            if (!includeExtensible) {
+                return null;
+            }
+            Extensible<BigInteger> ebi;
+            if ((ebi = value as Extensible<BigInteger>) != null) {
+                return ebi.Value;
+            }
+            Extensible<int> eint;
+            if ((eint = value as Extensible<int>) != null) {
+                return new BigInteger(eint.Value);
+            }
+            return null;
+        }
+
+        private void Initialize(object ostart, object ostop, object ostep) {
+            _stop = ConvertToBigintIndex(ostop);
+            _start = ConvertToBigintIndex(ostart);
+            _step = ConvertToBigintIndex(ostep);
+            var stepSign = _step.Sign;
+            if (stepSign == 0) {
+                throw PythonOps.ValueError("step must not be zero");
+            }
+            _length = BigInteger.Zero;
+            if (stepSign == 1) {
+                if (_start < _stop) {
+                    _length = (_stop - _start + _step - BigInteger.One) / _step;
+                }
+            } else {
+                if (_start > _stop) {
+                    _length = (_stop - _start + _step + BigInteger.One) / _step;
+                }
+            }
+        }
+
+        public BigInteger start {
             get {
                 return _start;
             }
         }
 
-        public int Stop {
-            [PythonHidden]
+        public BigInteger stop {
             get {
                 return _stop;
             }
         }
 
-        public int Step {
-            [PythonHidden]
+        public BigInteger step {
             get {
                 return _step;
             }
@@ -72,63 +129,176 @@ namespace IronPython.Runtime {
 
         #region ISequence Members
 
-        public int __len__() {
+        public BigInteger __len__() {
             return _length;
         }
 
-        private int GetLengthHelper() {
-            long temp;
-            if (_step > 0) {
-                temp = (0L + _stop - _start + _step - 1) / _step;
-            } else {
-                temp = (0L + _stop - _start + _step + 1) / _step;
-            }
-
-            if (temp > Int32.MaxValue) {
-                throw PythonOps.OverflowError("xrange() result has too many items");
-            }
-            return (int)temp;
-        }
-
-        public object this[int index] {
+        public object this[BigInteger index] {
             get {
-                if (index < 0) index += _length;
-
-                if (index >= _length || index < 0)
-                    throw PythonOps.IndexError("xrange object index out of range");
-
-                int ind = index * _step + _start;
-                return ScriptingRuntimeHelpers.Int32ToObject(ind);
+                if (index.Sign == -1) {
+                    index += _length;
+                }
+                if (index >= _length || index.Sign == -1) {
+                    throw PythonOps.IndexError("range object index out of range");
+                }
+                return index * _step + _start;
             }
         }
+
 
         public object this[object index] {
             get {
-                return this[Converter.ConvertToIndex(index)];
+                return this[ConvertToBigintIndex(index)];
             }
+        }
+
+        private BigInteger Compute(BigInteger index) {
+            if (index.Sign == -1) {
+                index += _length;
+            }
+            return index * _step + _start;
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public object this[Slice slice] {
             get {
-                throw PythonOps.TypeError("sequence index must be integer");
+                int ostart, ostop, ostep;
+                slice.indices(_length, out ostart, out ostop, out ostep);
+                return new Range(Compute(ostart), Compute(ostop), _step * ostep);
             }
+        }
+
+        public bool __eq__(Range other) {
+            if (_length != other._length) {
+                return false;
+            }
+            if (_length == BigInteger.Zero) {
+                return true;
+            }
+            if (_start != other._start) {
+                return false;
+            }
+            if (_length == BigInteger.One) {
+                return true;
+            }
+            if (Last() != other.Last()) {
+                return false;
+            }
+            return _step == other._step;
+        }
+
+        public bool __ne__(Range other) {
+            return !__eq__(other);
+        }
+
+        public int __hash__() {
+            if (_length == BigInteger.Zero) {
+                return 0;
+            }
+            var hash = _start.GetHashCode();
+            hash ^= _length.GetHashCode();
+            if (_length > BigInteger.One) {
+                hash ^= _step.GetHashCode();
+            }
+            return hash;
+        }
+
+        public bool __lt__(Range other) {
+            throw new TypeErrorException("range does not support < operator");
+        }
+
+        public bool __le__(Range other) {
+            throw new TypeErrorException("range does not support <= operator");
+        }
+
+        public bool __gt__(Range other) {
+            throw new TypeErrorException("range does not support > operator");
+        }
+
+        public bool __ge__(Range other) {
+            throw new TypeErrorException("range does not support >= operator");
+        }
+
+        public bool __contains__(CodeContext context, object item) {
+            var tmp = ConvertToBigintIndexHelper(item, false);
+            if (tmp.HasValue) {
+                return IndexOf(context, tmp.Value) != BigInteger.MinusOne;
+            }
+            return IndexOf(context, item) != BigInteger.MinusOne;
+        }
+
+        private int CountOf(BigInteger value) {
+            if (_length == BigInteger.Zero) {
+                return 0;
+            }
+            if (_start < _stop) {
+                if (value < _start || value >= _stop) {
+                    return 0;
+                }
+            } else if (_start > _stop) {
+                if (value > _start || value <= _stop) {
+                    return 0;
+                }
+            }
+            return (value - _start) % _step == BigInteger.Zero ? 1 : 0;
+        }
+
+        private BigInteger CountOf(CodeContext context, object obj) {
+            var pythonContext = PythonContext.GetContext(context);
+            return this.Count(i => (bool) pythonContext.Operation(PythonOperationKind.Equal, obj, i));
+        }
+
+        private BigInteger IndexOf(CodeContext context, object obj) {
+            var idx = 0;
+            var pythonContext = PythonContext.GetContext(context);
+            foreach (var i in this) {
+                if ((bool)pythonContext.Operation(PythonOperationKind.Equal, obj, i)) {
+                    return idx;
+                }
+                idx++;
+            }
+            return BigInteger.MinusOne;
+        }
+
+        public object count(CodeContext context, object value) {
+            var tmp = ConvertToBigintIndexHelper(value);
+            return tmp.HasValue ? CountOf(tmp.Value) : CountOf(context, value);
+        }
+
+        public object index(CodeContext context, object value) {
+            var tmp = ConvertToBigintIndexHelper(value);
+            if (tmp.HasValue) {
+                if (CountOf(tmp.Value) == 0) {
+                    throw PythonOps.ValueError("{0} is not in range", tmp.Value);
+                }
+                return (tmp.Value - _start) / _step;
+            }
+
+            var idx = IndexOf(context, value);
+            if (idx == BigInteger.MinusOne) {
+                throw PythonOps.ValueError("{0} is not in range");
+            }
+            return idx;
         }
 
         #endregion
 
+        private BigInteger Last() {
+            return _start + (_length - BigInteger.One) * _step;
+        }
+
         public IEnumerator __reversed__() {
-            return new XRangeIterator(new XRange(_stop - _step, _start - _step, -_step));
+            return new RangeIterator(new Range(Last(), _start - _step, -_step));
         }
 
         IEnumerator IEnumerable.GetEnumerator() {
-            return new XRangeIterator(this);
+            return new RangeIterator(this);
         }
 
-        #region IEnumerable<int> Members
+        #region IEnumerable<BigInteger> Members
 
-        IEnumerator<int> IEnumerable<int>.GetEnumerator() {
-            return new XRangeIterator(this);
+        IEnumerator<BigInteger> IEnumerable<BigInteger>.GetEnumerator() {
+            return new RangeIterator(this);
         }
 
         #endregion
@@ -136,29 +306,30 @@ namespace IronPython.Runtime {
         #region ICodeFormattable Members
 
         public string/*!*/ __repr__(CodeContext/*!*/ context) {
-            if (_step == 1) {
-                if (_start == 0) {
-                    return string.Format("xrange({0})", _stop);
-                } else {
-                    return string.Format("xrange({0}, {1})", _start, _stop);
-                }
-            } else {
-                return string.Format("xrange({0}, {1}, {2})", _start, _stop, _step);
-            }
+            return _step == BigInteger.One ?
+                string.Format("range({0}, {1})", _start, _stop) :
+                string.Format("range({0}, {1}, {2})", _start, _stop, _step);
         }
 
         #endregion
 
         #region ICollection Members
-
         void ICollection.CopyTo(Array array, int index) {
-            foreach (object o in this) {
+            if (_length > int.MaxValue) {
+                throw new OverflowException("Number of range elements exceeds maximum array size");
+            }
+            foreach (var o in this) {
                 array.SetValue(o, index++);
             }
         }
 
         int ICollection.Count {
-            get { return _length; }
+            get {
+                if (_length > int.MaxValue) {
+                    throw new OverflowException("Number of range elements exceeds maximum array size");
+                }
+                return (int)_length;
+            }
         }
 
         bool ICollection.IsSynchronized {
@@ -186,12 +357,11 @@ namespace IronPython.Runtime {
         }
 
         int IList.IndexOf(object value) {
-            int index = 0;
+            var index = 0;
             foreach (object o in this) {
                 if (o == value) {
                     return index;
                 }
-
                 index++;
             }
             return -1;
@@ -219,15 +389,13 @@ namespace IronPython.Runtime {
 
         object IList.this[int index] {
             get {
-                int curIndex = 0;
-                foreach (object o in this) {
+                var curIndex = 0;
+                foreach (var o in this) {
                     if (curIndex == index) {
                         return o;
                     }
-
                     curIndex++;
                 }
-
                 throw new IndexOutOfRangeException();
             }
             set {
@@ -239,40 +407,40 @@ namespace IronPython.Runtime {
     }
 
     [PythonType("rangeiterator")]
-    public sealed class XRangeIterator : IEnumerable, IEnumerator, IEnumerator<int> {
-        private XRange _xrange;
-        private int _value;
-        private int _position;
+    public sealed class RangeIterator : IEnumerable<BigInteger>, IEnumerator<BigInteger> {
+        private readonly Range _range;
+        private BigInteger _value;
+        private BigInteger _position;
 
-        public XRangeIterator(XRange xrange) {
-            _xrange = xrange;
-            _value = xrange.Start - xrange.Step; // this could cause overflow, fine
+        public RangeIterator(Range range) {
+            _range = range;
+            _value = range.start - range.step;
         }
 
         public object Current {
             get {
-                return ScriptingRuntimeHelpers.Int32ToObject(_value);
+                return _value;
             }
         }
 
         public bool MoveNext() {
-            if (_position >= _xrange.__len__()) {
+            if (_position >= _range.__len__()) {
                 return false;
             }
 
             _position++;
-            _value = _value + _xrange.Step;
+            _value = _value + _range.step;
             return true;
         }
 
         public void Reset() {
-            _value = _xrange.Start - _xrange.Step;
-            _position = 0;
+            _value = _range.start - _range.step;
+            _position = BigInteger.Zero;
         }
 
-        #region IEnumerator<int> Members
+        #region IEnumerator<BigInteger> Members
 
-        int IEnumerator<int>.Current {
+        BigInteger IEnumerator<BigInteger>.Current {
             get { return _value; }
         }
 
@@ -286,6 +454,10 @@ namespace IronPython.Runtime {
         #endregion
 
         #region IEnumerable Members
+
+        IEnumerator<BigInteger> IEnumerable<BigInteger>.GetEnumerator() {
+            return this;
+        }
 
         public IEnumerator GetEnumerator() {
             return this;

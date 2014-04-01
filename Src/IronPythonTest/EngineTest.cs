@@ -1264,7 +1264,7 @@ al_getattrinst = MyArrayList_getattr()
 ns_getattributeinst = ns_getattribute()
 al_getattributeinst = MyArrayList_getattribute()
 
-xrange = xrange
+range = range
 ", SourceCodeKind.Statements);
 
             src.Execute(scope);
@@ -1526,7 +1526,7 @@ xrange = xrange
             AreEqual(site.Target(site, (object)scope.GetVariable("ns_len1_inst")), false);
 
             site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("ToString", new CallInfo(0)));
-            AreEqual(site.Target(site, (object)scope.GetVariable("xrange")), "FallbackInvokeMember");
+            AreEqual(site.Target(site, (object)scope.GetVariable("range")), "FallbackInvokeMember");
 
             // invoke a function defined as a member of a function
             site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("SubFunc", new CallInfo(0)));

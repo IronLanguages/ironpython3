@@ -108,7 +108,7 @@ def write_to_file(filename, content=''):
         f.write(content)
         f.close()
     except: 
-        raise AssertionError, 'unable to write to file'
+        raise AssertionError('unable to write to file')
     
 def delete_files(*files):
     for f in files: 
@@ -129,7 +129,7 @@ def samefile(file1, file2):
     
 def filecopy(oldpath, newpath):
     if samefile(oldpath, newpath):
-        raise AssertionError, "%s and %s are same" % (oldpath, newpath)
+        raise AssertionError("%s and %s are same" % (oldpath, newpath))
         
     of, nf = None, None
     try: 
@@ -157,7 +157,7 @@ def get_directory_name(file):
     return file[:pos]
     
 def find_peverify():
-    if sys.platform <> 'cli': return None
+    if sys.platform != 'cli': return None
     
     import System
     for d in System.Environment.GetEnvironmentVariable("PATH").split(';'):
@@ -165,11 +165,11 @@ def find_peverify():
         if file_exists(file):
             return file
 
-    print """
+    print("""
 #################################################
 #     peverify.exe not found. Test will fail.   #
 #################################################
-"""
+""")
     return None  
 
 def get_mod_names(filename):

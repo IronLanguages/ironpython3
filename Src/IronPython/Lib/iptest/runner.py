@@ -56,23 +56,23 @@ __CWD = nt.getcwd()
 #here instead.  In any event, these should be moved out of runner.py later.
 def log_debug(msg):
     if LOGGING_LVL <= __DEBUG_LVL:
-        print "DEBUG", str(msg)
+        print("DEBUG", str(msg))
 
 def log_info(msg):
     if LOGGING_LVL <= __INFO_LVL:
-        print "INFO", str(msg)
+        print("INFO", str(msg))
         
 def log_warn(msg):
     if LOGGING_LVL <= __WARN_LVL:
-        print "WARN", str(msg)
+        print("WARN", str(msg))
         
 def log_error(msg):
     if LOGGING_LVL <= __INFO_LVL:
-        print "ERROR", str(msg)
+        print("ERROR", str(msg))
     
 def log_critical(msg):
     if LOGGING_LVL <= __CRITICAL_LVL:
-        print "CRITICAL", str(msg)
+        print("CRITICAL", str(msg))
 
 
 #------------------------------------------------------------------------------
@@ -95,7 +95,7 @@ def run_test_pkg(pkg_name, do_not_run=[]):
     log_debug("Modules found: %s" % (str(module_list)))
     if len(module_list)==0:
         log_warn("No test modules found in the %s test package!" % pkg_name)
-        print ""
+        print("")
     
     if options.GEN_TEST_PLAN:
         l.info("Generating test documentation for '%s' package..." % pkg_name)
@@ -112,10 +112,10 @@ def run_test_pkg(pkg_name, do_not_run=[]):
             log_info("--Testing %s..." % test_module)
             try:
                 __import__(test_module)
-            except SystemExit, e:
+            except SystemExit as e:
                 if e.code!=0: 
                     raise Exception("Importing '%s' caused an unexpected exit code: %s" % (test_module, str(e.code)))
-            print ""
+            print("")
         
         if options.GEN_TEST_PLAN:
             l.info("Generating test documentation for '%s' module..." % test_module)

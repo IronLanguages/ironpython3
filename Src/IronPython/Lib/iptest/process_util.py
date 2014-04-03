@@ -17,7 +17,7 @@
 
 import nt
 import sys
-from assert_util import testpath, is_cli
+from .assert_util import testpath, is_cli
 
 one_arg_params = ("-X:Optimize", "-W", "-c", "-X:MaxRecursion", "-X:AssembliesDir")
 
@@ -77,7 +77,7 @@ def launch_ironpython_changing_extensions(test, add=[], remove=[], additionalScr
     params.append(test)
     params.extend(additionalScriptParams)
     
-    print "Starting process: %s" % params
+    print("Starting process: %s" % params)
     
     return nt.spawnv(0, sys.executable, params)
 
@@ -123,15 +123,15 @@ def run_unregister_com_component(pathToDll):
     return run_tool("regsvr32.exe",  "/s /u "+pathToDll)
 
 def run_csc(args):
-    import file_util
+    from . import file_util
     return run_tool(file_util.path_combine(get_clr_dir(),"csc.exe"), args)
 
 def run_vbc(args):
-    import file_util
+    from . import file_util
     return run_tool(file_util.path_combine(get_clr_dir(),"vbc.exe"), args)
 
 def run_ilasm(args):
-    import file_util
+    from . import file_util
     return run_tool(file_util.path_combine(get_clr_dir(),"ilasm.exe"), args)
 
 def number_of_process(arg):

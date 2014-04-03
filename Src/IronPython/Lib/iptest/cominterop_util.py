@@ -41,9 +41,9 @@ if is_cli:
     
     class MyTraceListener(DefaultTraceListener):
         def Fail(self, msg, detailMsg=''):
-            print "ASSERT FAILED:", msg
+            print("ASSERT FAILED:", msg)
             if detailMsg!='':
-                print "              ", detailMsg
+                print("              ", detailMsg)
             sys.exit(1)
             
     if is_snap:
@@ -75,7 +75,7 @@ STRING_VALUES = [   "", "a", "ab", "abc", "aa",
                     "1", "1.0", "1L", "object", "str", "object()",
                     " ", "_", "abc ", " abc", " abc ", "ab c", "ab  c",
                     "\ta", "a\t", "\n", "\t", "\na", "a\n"]
-STRING_VALUES = [unicode(x) for x in STRING_VALUES] + STRING_VALUES
+STRING_VALUES = [str(x) for x in STRING_VALUES] + STRING_VALUES
 
 def aFunc(): pass
 
@@ -89,8 +89,8 @@ NON_NUMBER_VALUES = [   object,
                         object(), KNew(), KOld(),
                         aFunc, str, eval, type,
                         [], [3.14], ["abc"],
-                        (), (3,), (u"xyz",),
-                        xrange(5), 
+                        (), (3,), ("xyz",),
+                        range(5), 
                         {}, {'a':1},
                         __builtins__,
                      ]
@@ -99,7 +99,6 @@ FPN_VALUES = [   -1.23, -1.0, -0.123, -0.0, 0.123, 1.0, 1.23,
                 0.0000001, 3.14159265, 1E10, 1.0E10 ]
 UINT_VALUES = [ 0, 1, 2, 7, 10, 32]
 INT_VALUES = [ -x for x in UINT_VALUES ] + UINT_VALUES
-LONG_VALUES = [long(x) for x in INT_VALUES]
 COMPLEX_VALUES = [ 3j]
 
 #--Subclasses of Python/.NET types
@@ -176,7 +175,7 @@ def valueErrorTrigger(in_type):
       
     if sys.platform=="win32":
         ret_val["BYTE"] += FPN_VALUES  #Merlin 323751
-        ret_val["BYTE"] = [x for x in ret_val["BYTE"] if type(x) not in [unicode, str]] #INCOMPAT BUG - should be ValueError
+        ret_val["BYTE"] = [x for x in ret_val["BYTE"] if type(x) not in [str]] #INCOMPAT BUG - should be ValueError
         ret_val["BYTE"] = [x for x in ret_val["BYTE"] if not isinstance(x, KOld)] #INCOMPAT BUG - should be AttributeError
       
         
@@ -358,7 +357,7 @@ def pythonToCOM(in_type):
     ret_val["BYTE"] =  [ [y(x) for y in temp_funcs] for x in temp_values]
 
     ############################################################
-    temp_funcs = [  str, unicode, # Py_Str, Py_System_String,  
+    temp_funcs = [  str, # Py_Str, Py_System_String,
                     System.String ]
     temp_values = shallow_copy(STRING_VALUES)
     
@@ -383,7 +382,7 @@ def pythonToCOM(in_type):
     ret_val["DOUBLE"] += ret_val["FLOAT"]
     
     ############################################################  
-    temp_funcs = [int, System.UInt16]  # Py_UShort, 
+    temp_funcs = [int, System.UInt16]  # Py_UShort,
     temp_values = pos_num_helper(System.UInt16)
     
     ret_val["USHORT"] =  [ [y(x) for y in temp_funcs] for x in temp_values]
@@ -396,7 +395,7 @@ def pythonToCOM(in_type):
     ret_val["ULONG"] += ret_val["USHORT"]
     
     ############################################################  
-    temp_funcs = [int, long, System.UInt64]  # Py_ULongLong, 
+    temp_funcs = [int, System.UInt64]  # Py_ULongLong,
     temp_values = pos_num_helper(System.UInt64) + pos_num_helper(System.UInt32) + pos_num_helper(System.UInt16)
                 
     ret_val["ULONGLONG"] =  [ [y(x) for y in temp_funcs] for x in temp_values]
@@ -417,7 +416,7 @@ def pythonToCOM(in_type):
     
     
     ############################################################  
-    temp_funcs = [int, long, System.Int64] # Py_LongLong, Dev10 475426
+    temp_funcs = [int, System.Int64] # Py_LongLong, Dev10 475426
     temp_values = pos_num_helper(System.Int64) + pos_num_helper(System.Int32) + pos_num_helper(System.Int16)
                 
     ret_val["LONGLONG"] =  [ [y(x) for y in temp_funcs] for x in temp_values]
@@ -433,8 +432,8 @@ DEBUG = 1
 
 def assert_helper(in_dict):    
     #add the keys if they're not there
-    if not in_dict.has_key("runonly"): in_dict["runonly"] = True
-    if not in_dict.has_key("skip"): in_dict["skip"] = False
+    if "runonly" not in in_dict: in_dict["runonly"] = True
+    if "skip" not in in_dict: in_dict["skip"] = False
     
     #determine whether this test will be run or not
     run = in_dict["runonly"] and not in_dict["skip"]
@@ -443,13 +442,13 @@ def assert_helper(in_dict):
     for x in ["runonly", "skip"]: in_dict.pop(x)
     
     if not run:
-        if in_dict.has_key("bugid"):
-            print "...skipped an assert due to bug", str(in_dict["bugid"])
+        if "bugid" in in_dict:
+            print("...skipped an assert due to bug", str(in_dict["bugid"]))
             
         elif DEBUG:
-            print "...skipped an assert on", sys.platform
+            print("...skipped an assert on", sys.platform)
     
-    if in_dict.has_key("bugid"): in_dict.pop("bugid")
+    if "bugid" in in_dict: in_dict.pop("bugid")
     return run
 
 def Assert(*args, **kwargs):
@@ -461,22 +460,22 @@ def AreEqual(*args, **kwargs):
 def AssertError(*args, **kwargs):
     try:
         if assert_helper(kwargs): assert_util.AssertError(*args, **kwargs)
-    except Exception, e:
-        print "AssertError(" + str(args) + ", " + str(kwargs) + ") failed!"
+    except Exception as e:
+        print("AssertError(" + str(args) + ", " + str(kwargs) + ") failed!")
         raise e
 
 def AssertErrorWithMessage(*args, **kwargs):
     try:
         if assert_helper(kwargs): assert_util.AssertErrorWithMessage(*args, **kwargs)
-    except Exception, e:
-        print "AssertErrorWithMessage(" + str(args) + ", " + str(kwargs) + ") failed!"
+    except Exception as e:
+        print("AssertErrorWithMessage(" + str(args) + ", " + str(kwargs) + ") failed!")
         raise e
 
 def AssertErrorWithPartialMessage(*args, **kwargs):
     try:
         if assert_helper(kwargs): assert_util.AssertErrorWithPartialMessage(*args, **kwargs)
-    except Exception, e:
-        print "AssertErrorWithPartialMessage(" + str(args) + ", " + str(kwargs) + ") failed!"
+    except Exception as e:
+        print("AssertErrorWithPartialMessage(" + str(args) + ", " + str(kwargs) + ") failed!")
         raise e
 
 def AlmostEqual(*args, **kwargs):
@@ -607,7 +606,7 @@ def genPeverifyInteropAsm(file):
         return
     else:
         mod_name = file.rsplit("\\", 1)[1].split(".py")[0]
-        print "Generating interop assemblies for the", mod_name, "test module which are needed in %TEMP% by peverify..."
+        print("Generating interop assemblies for the", mod_name, "test module which are needed in %TEMP% by peverify...")
         from System.IO import Path
         tempDir = Path.GetTempPath()
         cwd = nt.getcwd()
@@ -629,14 +628,14 @@ def genPeverifyInteropAsm(file):
     
     
     if not file_exists_in_path("tlbimp.exe"):
-        print "ERROR: tlbimp.exe is not in the path!"
+        print("ERROR: tlbimp.exe is not in the path!")
         sys.exit(1)
     
     try:
-        if not module_dll_dict.has_key(mod_name):
-            print "WARNING: cannot determine which interop assemblies to install!"
-            print "         This may affect peverify runs adversely."
-            print
+        if mod_name not in module_dll_dict:
+            print("WARNING: cannot determine which interop assemblies to install!")
+            print("         This may affect peverify runs adversely.")
+            print()
             return
             
         else:
@@ -644,10 +643,10 @@ def genPeverifyInteropAsm(file):
     
             for com_dll in module_dll_dict[mod_name]:
                 if not file_exists(com_dll):
-                    print "\tERROR: %s does not exist!" % (com_dll)
+                    print("\tERROR: %s does not exist!" % (com_dll))
                     continue
     
-                print "\trunning tlbimp on", com_dll
+                print("\trunning tlbimp on", com_dll)
                 run_tlbimp(com_dll)
         
     finally:
@@ -676,10 +675,10 @@ if sys.platform=="win32":
             MinValue = 0
             MaxValue = 4294967295
         class Int64(long):
-            MinValue = -9223372036854775808L
-            MaxValue =  9223372036854775807L
+            MinValue = -9223372036854775808
+            MaxValue =  9223372036854775807
         class UInt64(long):
-            MinValue = 0L 
+            MinValue = 0 
             MaxValue = 18446744073709551615
         class Single(float):
             MinValue = -3.40282e+038

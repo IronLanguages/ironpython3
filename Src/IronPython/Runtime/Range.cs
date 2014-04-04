@@ -70,11 +70,11 @@ namespace IronPython.Runtime {
                 return true;
             }
             if (value is int) {
-                converted = new BigInteger((int)value);
+                converted = (BigInteger)(int)value;
                 return true;
             }
             if (value is Int64) {
-                converted =  new BigInteger((Int64)value);
+                converted =  (BigInteger)(Int64)value;
                 return true;
             }
             if (!includeExtensible) {
@@ -88,7 +88,7 @@ namespace IronPython.Runtime {
             }
             Extensible<int> eint;
             if ((eint = value as Extensible<int>) != null) {
-                converted = new BigInteger(eint.Value);
+                converted = (BigInteger)(eint.Value);
                 return true;
             }
             converted = BigInteger.Zero;
@@ -416,7 +416,7 @@ namespace IronPython.Runtime {
     public sealed class RangeIterator : IEnumerable<BigInteger>, IEnumerator<BigInteger> {
         private readonly Range _range;
         private BigInteger _value;
-        private BigInteger _position;
+        private BigInteger _position = BigInteger.Zero;
 
         public RangeIterator(Range range) {
             _range = range;

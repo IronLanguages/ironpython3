@@ -45,48 +45,54 @@ namespace IronPython.Runtime {
         }
 
         private static BigInteger ConvertToBigintIndex(object value) {
-            var res = ConvertToBigintIndexHelper(value);
-            if (res.HasValue) {
-                return res.Value;
+            BigInteger converted;
+            if (TryConvertToBigintIndexHelper(value, out converted)) {
+                return converted;
             }
             object callable;
             if (!PythonOps.TryGetBoundAttr(value, "__index__", out callable)) {
                 throw PythonOps.TypeError("expected index value, got {0}", DynamicHelpers.GetPythonType(value).Name);
             }
             var index = PythonCalls.Call(callable);
-            res = ConvertToBigintIndexHelper(index);
-            if (res.HasValue) {
-                return res.Value;
+            if (TryConvertToBigintIndexHelper(index, out converted)) {
+                return converted;
             }
             throw PythonOps.TypeError("__index__ returned bad value: {0}", DynamicHelpers.GetPythonType(index).Name);
         }
 
-        private static BigInteger? ConvertToBigintIndexHelper(object value) {
-            return ConvertToBigintIndexHelper(value, true);
+        private static bool TryConvertToBigintIndexHelper(object value, out BigInteger converted) {
+            return TryConvertToBigintIndexHelper(value, true, out converted);
         }
 
-        private static BigInteger? ConvertToBigintIndexHelper(object value, bool includeExtensible) {
+        private static bool TryConvertToBigintIndexHelper(object value, bool includeExtensible, out BigInteger converted) {
             if (value is BigInteger) {
-                return (BigInteger)value;
+                converted = (BigInteger)value;
+                return true;
             }
             if (value is int) {
-                return new BigInteger((int)value);
+                converted = new BigInteger((int)value);
+                return true;
             }
             if (value is Int64) {
-                return new BigInteger((Int64)value);
+                converted =  new BigInteger((Int64)value);
+                return true;
             }
             if (!includeExtensible) {
-                return null;
+                converted = BigInteger.Zero;
+                return false;
             }
             Extensible<BigInteger> ebi;
             if ((ebi = value as Extensible<BigInteger>) != null) {
-                return ebi.Value;
+                converted = ebi.Value;
+                return true;
             }
             Extensible<int> eint;
             if ((eint = value as Extensible<int>) != null) {
-                return new BigInteger(eint.Value);
+                converted = new BigInteger(eint.Value);
+                return true;
             }
-            return null;
+            converted = BigInteger.Zero;
+            return false;
         }
 
         private void Initialize(object ostart, object ostop, object ostep) {
@@ -220,9 +226,9 @@ namespace IronPython.Runtime {
         }
 
         public bool __contains__(CodeContext context, object item) {
-            var tmp = ConvertToBigintIndexHelper(item, false);
-            if (tmp.HasValue) {
-                return IndexOf(context, tmp.Value) != BigInteger.MinusOne;
+            BigInteger tmp;
+            if (TryConvertToBigintIndexHelper(item, false, out tmp)) {
+                return IndexOf(context, tmp) != BigInteger.MinusOne;
             }
             return IndexOf(context, item) != BigInteger.MinusOne;
         }
@@ -261,17 +267,17 @@ namespace IronPython.Runtime {
         }
 
         public object count(CodeContext context, object value) {
-            var tmp = ConvertToBigintIndexHelper(value);
-            return tmp.HasValue ? CountOf(tmp.Value) : CountOf(context, value);
+            BigInteger tmp;
+            return TryConvertToBigintIndexHelper(value, out tmp) ? CountOf(tmp) : CountOf(context, value);
         }
 
         public object index(CodeContext context, object value) {
-            var tmp = ConvertToBigintIndexHelper(value);
-            if (tmp.HasValue) {
-                if (CountOf(tmp.Value) == 0) {
-                    throw PythonOps.ValueError("{0} is not in range", tmp.Value);
+            BigInteger tmp;
+            if (TryConvertToBigintIndexHelper(value, out tmp)) {
+                if (CountOf(tmp) == 0) {
+                    throw PythonOps.ValueError("{0} is not in range", tmp);
                 }
-                return (tmp.Value - _start) / _step;
+                return (tmp - _start) / _step;
             }
 
             var idx = IndexOf(context, value);
@@ -428,7 +434,7 @@ namespace IronPython.Runtime {
                 return false;
             }
 
-            _position++;
+            _position += BigInteger.One;
             _value = _value + _range.step;
             return true;
         }

@@ -41,7 +41,6 @@ namespace IronPython.Runtime {
             Initialize(start, stop, step);
         }
 
-
         private void Initialize(object ostart, object ostop, object ostep) {
             _stop = Converter.ConvertToIndex(ostop);
             _start = Converter.ConvertToIndex(ostart);
@@ -49,20 +48,7 @@ namespace IronPython.Runtime {
             if (_step == 0) {
                 throw PythonOps.ValueError("step must not be zero");
             }
-            long temp = 0;
-            if (_step > 0) {
-                if (_start < _stop) {
-                    temp = (0L + _stop - _start + _step - 1) / _step;
-                }
-            } else {
-                if (_start > _stop) {
-                    temp = (0L + _stop - _start + _step + 1) / _step;
-                }
-            }
-            if (temp > Int32.MaxValue) {
-                throw PythonOps.OverflowError("range() result has too many items");
-            }
-            _length = (int) temp;
+            _length = GetLengthHelper();
         }
 
         public int start {
@@ -81,6 +67,23 @@ namespace IronPython.Runtime {
             get {
                 return _step;
             }
+        }
+
+        private int GetLengthHelper() {
+            long length = 0;
+            if (_step > 0) {
+                if (_start < _stop) {
+                    length = (0L + _stop - _start + _step - 1) / _step;
+                }
+            } else {
+                if (_start > _stop) {
+                    length = (0L + _stop - _start + _step + 1) / _step;
+                }
+            }
+            if (length > Int32.MaxValue) {
+                throw PythonOps.OverflowError("range() result has too many items");
+            }
+            return (int)length;
         }
 
         #region ISequence Members
@@ -159,25 +162,25 @@ namespace IronPython.Runtime {
         }
 
         public bool __lt__(Range other) {
-            throw new TypeErrorException("range does not support < operator");
+            throw new TypeErrorException("unorderable types: range() < range()");
         }
 
         public bool __le__(Range other) {
-            throw new TypeErrorException("range does not support <= operator");
+            throw new TypeErrorException("unorderable types: range() <= range()");
         }
 
         public bool __gt__(Range other) {
-            throw new TypeErrorException("range does not support > operator");
+            throw new TypeErrorException("unorderable types: range() > range()");
         }
 
         public bool __ge__(Range other) {
-            throw new TypeErrorException("range does not support >= operator");
+            throw new TypeErrorException("unorderable types: range() >= range()");
         }
 
         public bool __contains__(CodeContext context, object item) {
-            int tmp;
-            if (TryConvertToInt(item, out tmp)) {
-                return IndexOf(context, tmp) != -1;
+            int intItem;
+            if (TryConvertToInt(item, out intItem)) {
+                return IndexOf(context, intItem) != -1;
             }
             return IndexOf(context, item) != -1;
         }
@@ -239,17 +242,17 @@ namespace IronPython.Runtime {
         }
 
         public object count(CodeContext context, object value) {
-            int tmp;
-            return Converter.TryConvertToIndex(value, out tmp) ? CountOf(tmp) : CountOf(context, value);
+            int intValue;
+            return Converter.TryConvertToIndex(value, out intValue) ? CountOf(intValue) : CountOf(context, value);
         }
 
         public object index(CodeContext context, object value) {
-            int tmp;
-            if (Converter.TryConvertToIndex(value, out tmp)) {
-                if (CountOf(tmp) == 0) {
-                    throw PythonOps.ValueError("{0} is not in range", tmp);
+            int intValue;
+            if (Converter.TryConvertToIndex(value, out intValue)) {
+                if (CountOf(intValue) == 0) {
+                    throw PythonOps.ValueError("{0} is not in range", intValue);
                 }
-                return (tmp - _start) / _step;
+                return (intValue - _start) / _step;
             }
             var idx = IndexOf(context, value);
             if (idx == -1) {

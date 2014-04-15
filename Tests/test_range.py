@@ -19,12 +19,16 @@
 ## * sbs_builtin\test_xrange covers many range corner cases
 ##
 
+
+# IronPython range implementation uses int to represent start, stop and step.
+# As a consequence tests making use of value out of int range
+# will not work. All such a tests are commented out and market with
+# "not valid for int" comment
+
+
 from iptest.assert_util import *
 
 import sys
-import clr
-from System import Int64
-
 
 def test_range():
     Assert(list(range(10)) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
@@ -50,16 +54,6 @@ def test_range_collections():
     Assert(range(0, 100, 2).index(10) == 5)
     Assert(range(0, 100, 2)[5] == 10)
     Assert(str(range(0, 100, 2)[0:5]) == 'range(0, 10, 2)')
-
-def _range_eqv_range(r, o):
-    Assert(len(r) == len(o))
-    for i in range(len(r)):
-        Assert(r[i]==o[i])
-        if (1 - i) == len(r):
-            AssertError(IndexError, lambda: r[1-i])
-            AssertError(IndexError, lambda: o[1-i])
-        else:
-            Assert(r[1-i] == o[1-i])
 
 def test_range_corner_cases():
     x = range(0, sys.maxsize, sys.maxsize-1)
@@ -258,6 +252,7 @@ def test_count_from_stdlib():
     self.assertEqual(len(range(sys.maxsize-10, sys.maxsize)), 10)
 
 def test_user_index_method_from_stdlib():
+    # not valid for int
     # bignum = 2*sys.maxsize
     smallnum = 42
 

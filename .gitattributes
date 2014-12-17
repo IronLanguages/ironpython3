@@ -1,0 +1,36 @@
+# Set the default behavior, in case people don't have core.autocrlf set.
+* text=auto
+
+# Explicitly declare text files you want to always be normalized and converted
+# to native line endings on checkout.
+*.c text
+*.h text
+*.cpp text
+*.def text
+*.cs text
+*.py text
+*.rb text
+*.html text
+
+# Declare files that will always have CRLF line endings on checkout.
+*.bat text eol=crlf
+*.sln text eol=crlf
+*.csproj text eol=crlf
+*.proj text eol=crlf
+*.rtf text eol=crlf
+*.rbproj text eol=crlf
+*.vcxproj text eol=crlf
+*.vdproj text eol=crlf
+
+
+# Denote all files that are truly binary and should not be modified.
+*.png binary
+*.jpg binary
+*.dll binary
+*.pyd binary
+*.exe binary
+*.bmp binary
+*.zip binary
+
+# Do not normalize on commit.
+*.pdf -text

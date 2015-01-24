@@ -172,9 +172,6 @@ namespace IronPython.Runtime {
         internal void DoSliceAssign(SliceAssign assign, int size, object value) {
             int ostart, ostop, ostep;
             indices(size, out ostart, out ostop, out ostep);
-
-            if (this._step == null) throw PythonOps.ValueError("cannot do slice assignment w/ no step");
-
             DoSliceAssign(assign, ostart, ostop, ostep, value);
         }
 

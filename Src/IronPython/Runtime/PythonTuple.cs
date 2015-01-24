@@ -493,12 +493,12 @@ namespace IronPython.Runtime {
             int hash2 = hash1;
 
             for (int i = 0; i < _data.Length; i += 2) {
-                hash1 = ((hash1 << 27) + ((hash2 + 1) << 1) + (hash1 >> 5)) ^ _data[i].GetHashCode();
+                hash1 = ((hash1 << 27) + ((hash2 + 1) << 1) + (hash1 >> 5)) ^ (_data[i] == null ? NoneTypeOps.NoneHashCode : _data[i].GetHashCode());
 
                 if (i == _data.Length - 1) {
                     break;
                 }
-                hash2 = ((hash2 << 5) + ((hash1 - 1) >> 1) + (hash2 >> 27)) ^ _data[i + 1].GetHashCode();
+                hash2 = ((hash2 << 5) + ((hash1 - 1) >> 1) + (hash2 >> 27)) ^ (_data[i + 1] == null ? NoneTypeOps.NoneHashCode : _data[i + 1].GetHashCode());
             }
             return hash1 + (hash2 * 1566083941);
         }

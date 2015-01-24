@@ -186,7 +186,6 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
         internal static TraceBackFrame/*!*/ _getframeImpl(CodeContext/*!*/ context, int depth, List<FunctionStack> stack) {
             if (depth < stack.Count) {
                 TraceBackFrame cur = null;
-                int curTraceFrame = -1;
 
                 for (int i = 0; i < stack.Count - depth; i++) {
                     var elem = stack[i];
@@ -206,8 +205,6 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
 
                         stack[i] = new FunctionStack(elem.Context, elem.Code, cur);
                     }
-
-                    curTraceFrame++;
                 }
                 return cur;
             } 

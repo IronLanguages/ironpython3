@@ -1189,7 +1189,7 @@ namespace IronPython.Runtime.Binding {
                             ),
                             Ast.Block(
                                 Ast.Assign(tmp, info.Args[1].Expression),
-                                DynamicExpression.Dynamic(
+                                Ast.Dynamic(
                                     PythonContext.GetPythonContext(info.Action).InvokeOne,
                                     typeof(object),
                                     AstUtils.Constant(PythonContext.GetPythonContext(info.Action).SharedContext),

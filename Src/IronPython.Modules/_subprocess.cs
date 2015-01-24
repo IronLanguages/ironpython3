@@ -76,7 +76,7 @@ namespace IronPython.Modules {
             object tSec /*subprocess.py passes None*/,
             int? bInheritHandles,
             uint? dwCreationFlags,
-            PythonDictionary lpEnvironment,
+            object lpEnvironment,
             string lpCurrentDirectory,
             object lpStartupInfo /* subprocess.py passes STARTUPINFO*/) {
 
@@ -116,8 +116,8 @@ namespace IronPython.Modules {
                  * there needs to be some conversion done here...*/
             }
 
-            // If needed convert lpEnvironment Dictonary to lpEnvironmentIntPtr
-            string lpEnvironmentStr = EnvironmentToNative(lpEnvironment);
+            // If needed convert lpEnvironment Dictionary to lpEnvironmentIntPtr
+            string lpEnvironmentStr = EnvironmentToNative(context, lpEnvironment);
 
             PROCESS_INFORMATION lpProcessInformation = new PROCESS_INFORMATION();
             bool result = CreateProcessPI(
@@ -147,12 +147,13 @@ namespace IronPython.Modules {
                 pid, tid);
         }
 
-        private static string EnvironmentToNative(PythonDictionary lpEnvironment) {
-            if (lpEnvironment == null) {
+        private static string EnvironmentToNative(CodeContext context, object environment) {
+            if (environment == null) {
                 return null;
             }
-            StringBuilder res = new StringBuilder();
-            foreach (var keyValue in lpEnvironment) {
+            var dict = environment as PythonDictionary ?? new PythonDictionary(context, environment);
+            var res = new StringBuilder();
+            foreach (var keyValue in dict) {
                 res.Append(keyValue.Key);
                 res.Append('=');
                 res.Append(keyValue.Value);

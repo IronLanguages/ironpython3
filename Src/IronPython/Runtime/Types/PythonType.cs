@@ -570,6 +570,16 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return 0;
         }
 
+        // Do not override == and != because it causes lots of spurious warnings
+        // TODO Replace those warnings with .ReferenceEquals calls & overload ==/!=
+        public bool __eq__([NotNull]PythonType other) {
+            return this.__cmp__(other) == 0;
+        }
+
+        public bool __ne__([NotNull]PythonType other) {
+            return this.__cmp__(other) != 0;
+        }
+
         [Python3Warning("type inequality comparisons not supported in 3.x")]
         public static bool operator >(PythonType self, PythonType other) {
             return self.__cmp__(other) > 0;
@@ -1946,23 +1956,14 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             if (IsSystemType) {
                 PythonBinder.GetBinder(context).LookupMembers(context, this, dict);
             } else {
-                foreach (string x in _dict.Keys) {
-                    if (excludeDict && x.ToString() == "__dict__") {
+                foreach (var item in _dict) {
+                    if (excludeDict && item.Key == "__dict__") {
                         continue;
                     }
 
-                    PythonTypeSlot dts;
-                    if (TryLookupSlot(context, x, out dts)) {
-                        //??? why check for DTVS?
-                        object val;
-                        if (dts is PythonTypeUserDescriptorSlot) {
-                            dict[x] = ((PythonTypeUserDescriptorSlot) dts).Value;
-                        } else if (dts.TryGetValue(context, null, this, out val)) {
-                            dict[x] = val;
-                        } else {
-                            dict[x] = dts;
-                        }
-                    }
+                    PythonTypeUserDescriptorSlot dts = item.Value as PythonTypeUserDescriptorSlot;
+                    object val = dts == null ? item.Value : dts.Value;
+                    dict[item.Key] = val;
                 }
             }
             return dict;

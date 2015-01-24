@@ -81,7 +81,7 @@ namespace IronPython.Compiler.Ast {
 
         public void AddInstructions(LightCompiler compiler) {
             compiler.Compile(_target);
-            switch (_binder.Type.GetTypeCode()) {
+            switch (Type.GetTypeCode(_binder.Type)) {
                 case TypeCode.Boolean:
                     compiler.Instructions.Emit(BooleanConversionInstruction.Instance);
                     break;

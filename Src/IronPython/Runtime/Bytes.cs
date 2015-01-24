@@ -142,7 +142,7 @@ namespace IronPython.Runtime {
             throw PythonOps.TypeError("expected bytes or bytearray, got list");
         }
 
-        public string decode(CodeContext/*!*/ context, [Optional]string/*!*/ encoding, [DefaultParameterValue("strict")][NotNull]string/*!*/ errors) {
+        public string decode(CodeContext/*!*/ context, [Optional]object/*!*/ encoding, [DefaultParameterValue("strict")][NotNull]string/*!*/ errors) {
             return StringOps.decode(context, _bytes.MakeString(), encoding, errors);
         }
 
@@ -384,22 +384,22 @@ namespace IronPython.Runtime {
             return new PythonTuple(obj);
         }
 
-        public Bytes replace([BytesConversion]IList<byte>/*!*/ old, [BytesConversion]IList<byte>/*!*/ new_) {
+        public Bytes replace([BytesConversion]IList<byte>/*!*/ old, [BytesConversion]IList<byte>/*!*/ @new) {
             if (old == null) {
                 throw PythonOps.TypeError("expected bytes or bytearray, got NoneType");
             }
 
-            return replace(old, new_, _bytes.Length);
+            return replace(old, @new, _bytes.Length);
         }
 
-        public Bytes replace([BytesConversion]IList<byte>/*!*/ old, [BytesConversion]IList<byte>/*!*/ new_, int maxsplit) {
+        public Bytes replace([BytesConversion]IList<byte>/*!*/ old, [BytesConversion]IList<byte>/*!*/ @new, int count) {
             if (old == null) {
                 throw PythonOps.TypeError("expected bytes or bytearray, got NoneType");
-            } else if (maxsplit == 0) {
+            } else if (count == 0) {
                 return this;
             }
 
-            return new Bytes(_bytes.Replace(old, new_, maxsplit));
+            return new Bytes(_bytes.Replace(old, @new, count));
         }
 
 
@@ -644,6 +644,9 @@ namespace IronPython.Runtime {
         }
 
         public bool __contains__(CodeContext/*!*/ context, object value) {
+            if (value is Extensible<string>) {
+                return __contains__(PythonOps.MakeBytes(((Extensible<string>)value).Value.MakeByteArray()));
+            }
             if (!PythonContext.GetContext(context).PythonOptions.Python30) {
                 throw PythonOps.TypeError("'in <bytes>' requires string or bytes as left operand, not {0}", PythonTypeOps.GetName(value));
             }
@@ -822,11 +825,13 @@ namespace IronPython.Runtime {
         #region Implementation Details
 
         private static Bytes/*!*/ JoinOne(object curVal) {
-            if (!(curVal is IList<byte>)) {
-                throw PythonOps.TypeError("can only join an iterable of bytes");
+            if (curVal is IList<byte>) {
+                return curVal as Bytes ?? new Bytes(curVal as IList<byte>);
             }
-
-            return curVal as Bytes ?? new Bytes(curVal as IList<byte>);
+            if (curVal is string) {
+                return PythonOps.MakeBytes(((string)curVal).MakeByteArray());
+            }
+            throw PythonOps.TypeError("can only join an iterable of bytes");
         }
 
         internal static Bytes/*!*/ Concat(IList<Bytes> list, int length) {

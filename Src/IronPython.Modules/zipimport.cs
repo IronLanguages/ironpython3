@@ -102,7 +102,6 @@ to Zip archives.";
                 }
 
                 path = pathObj as string;
-                input = path;
 
                 if (path.Length == 0)
                     throw MakeError("archive path is empty");
@@ -112,6 +111,7 @@ to Zip archives.";
 
                 string buf = path.Replace(Path.AltDirectorySeparatorChar,
                     Path.DirectorySeparatorChar);
+                input = buf;
 
                 path = string.Empty;
                 prefix = string.Empty;
@@ -288,7 +288,7 @@ the file wasn't found.")]
                 }
 
                 var data = GetData(_archive, __files[path] as PythonTuple);
-                return PythonAsciiEncoding.UTF8.GetString(data, 0, data.Length);
+                return PythonAsciiEncoding.Instance.GetString(data, 0, data.Length);
             }
 
             [Documentation(@"get_code(fullname) -> code object.
@@ -419,8 +419,6 @@ contain the module, but has no source for it.")]
                         data = ZlibModule.Decompress(raw_data, -15);
                     }
 
-                } catch {
-                    throw;
                 } finally {
                     if (fp != null) {
                         fp.Close();
@@ -449,7 +447,7 @@ contain the module, but has no source for it.")]
                     if (isbytecode) {
                         // would put in code to unmarshal the bytecode here...                                     
                     } else {
-                        code = PythonAsciiEncoding.UTF8.GetString(data, 0, data.Length);
+                        code = context.LanguageContext.DefaultEncoding.GetString(data, 0, data.Length);
                     }
                 }
                 return code;
@@ -495,7 +493,7 @@ contain the module, but has no source for it.")]
                         throw MakeError("can't open Zip file: '{0}'", archive);
                     }
 
-                    if (fp.BaseStream.Length < 2) {
+                    if (fp.BaseStream.Length < 22) {
                         throw MakeError("can't read Zip file: '{0}'", archive);
                     }
 
@@ -557,8 +555,6 @@ contain the module, but has no source for it.")]
                         files.Add(name, t);
                         count++;
                     }
-                } catch {
-                    throw;
                 } finally {
                     if (fp != null) {
                         fp.Close();
@@ -597,7 +593,6 @@ contain the module, but has no source for it.")]
             private ModuleStatus GetModuleInfo(CodeContext/*!*/ context, string fullname) {
                 string subname = GetSubName(fullname);
                 string path = MakeFilename(_prefix, subname);
-
                 if (string.IsNullOrEmpty(path))
                     return ModuleStatus.Error;
 

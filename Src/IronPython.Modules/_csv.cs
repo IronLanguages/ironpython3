@@ -740,7 +740,7 @@ in CSV format.")]
                     _state = State.StartRecord;
                     _fields.Clear();
                     _is_numeric_field = false;
-                    _field.Length = 0;
+                    _field.Clear();
                 }
 
                 #endregion
@@ -983,7 +983,7 @@ in CSV format.")]
                     else
                         _fields.Add(field);
 
-                    _field.Length = 0;
+                    _field.Clear();
                 }
             }
 
@@ -1197,4 +1197,15 @@ elements will be converted to string.")]
                 PythonExceptions.StandardError, dict, "Error", "_csv");
         }
     }
+
+#if CLR2
+    static class StringBuilderExtensions
+    {
+        internal static StringBuilder Clear(this StringBuilder sb) 
+        {
+            sb.Length = 0;
+            return sb;
+        }
+    }
+#endif
 }

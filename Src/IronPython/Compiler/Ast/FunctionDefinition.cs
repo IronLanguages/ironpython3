@@ -23,6 +23,7 @@ using System.Threading;
 using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting;
+using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
@@ -840,15 +841,64 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        internal override void RewriteBody(PythonAst.LookupVisitor visitor) {
+        internal override void RewriteBody(MSAst.ExpressionVisitor visitor) {
             _dlrBody = null;    // clear the cached body if we've been reduced
             
             MSAst.Expression funcCode = GlobalParent.Constant(GetOrMakeFunctionCode());
             FuncCodeExpr = funcCode;
             
-            Body = new PythonAst.RewrittenBodyStatement(Body, visitor.Visit(Body));
+            Body = new RewrittenBodyStatement(Body, visitor.Visit(Body));
         }
 
-        
+        internal static readonly ArbitraryGlobalsVisitor ArbitraryGlobalsVisitorInstance = new ArbitraryGlobalsVisitor();
+
+        /// <summary>
+        /// Rewrites the tree for performing lookups against globals instead of being bound
+        /// against the optimized scope. This is used if the user creates a function using public
+        /// PythonFunction ctor.
+        /// </summary>
+        internal class ArbitraryGlobalsVisitor : MSAst.ExpressionVisitor {
+            protected override MSAst.Expression VisitExtension(MSAst.Expression node) {
+
+                // update the global get/set/raw gets variables
+                var global = node as PythonGlobalVariableExpression;
+                if (global != null) {
+                    return new LookupGlobalVariable(
+                        PythonAst._globalContext,
+                        global.Variable.Name,
+                        global.Variable.Kind == VariableKind.Local
+                    );
+                }
+
+                // set covers sets and deletes
+                var setGlobal = node as PythonSetGlobalVariableExpression;
+                if (setGlobal != null) {
+                    if (setGlobal.Value == PythonGlobalVariableExpression.Uninitialized) {
+                        return new LookupGlobalVariable(
+                            PythonAst._globalContext,
+                            setGlobal.Global.Variable.Name,
+                            setGlobal.Global.Variable.Kind == VariableKind.Local
+                        ).Delete();
+                    } else {
+                        return new LookupGlobalVariable(
+                            PythonAst._globalContext,
+                            setGlobal.Global.Variable.Name,
+                            setGlobal.Global.Variable.Kind == VariableKind.Local
+                        ).Assign(Visit(setGlobal.Value));
+                    }
+                }
+
+                var rawValue = node as PythonRawGlobalValueExpression;
+                if (rawValue != null) {
+                    return new LookupGlobalVariable(
+                        PythonAst._globalContext,
+                        rawValue.Global.Variable.Name,
+                        rawValue.Global.Variable.Kind == VariableKind.Local
+                    );
+                }
+
+                return base.VisitExtension(node);
+            }
+        }
     }
 }

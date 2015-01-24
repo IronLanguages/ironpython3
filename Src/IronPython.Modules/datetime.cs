@@ -367,6 +367,10 @@ namespace IronPython.Modules {
             return false;
         }
 
+        internal static int CastToInt(object o) {
+            return o is BigInteger ? (int)(BigInteger)o : (int)o;
+        }
+
         [PythonType]
         public class date : ICodeFormattable {
             internal DateTime _dateTime;
@@ -481,9 +485,9 @@ namespace IronPython.Modules {
                     if (strVal == null) continue;
 
                     switch (strVal) {
-                        case "year": year2 = PythonContext.GetContext(context).ConvertToInt32(kvp.Value); break;
-                        case "month": month2 = PythonContext.GetContext(context).ConvertToInt32(kvp.Value); break;
-                        case "day": day2 = PythonContext.GetContext(context).ConvertToInt32(kvp.Value); break;
+                        case "year": year2 = CastToInt(kvp.Value); break;
+                        case "month": month2 = CastToInt(kvp.Value); break;
+                        case "day": day2 = CastToInt(kvp.Value); break;
                         default: throw PythonOps.TypeError("{0} is an invalid keyword argument for this function", kvp.Key);
                     }
                 }
@@ -805,10 +809,6 @@ namespace IronPython.Modules {
             }
 
             // other constructors, all class methods:
-            public new static object today() {
-                return new datetime(DateTime.Now, 0, null);
-            }
-
             public static object now([DefaultParameterValue(null)]tzinfo tz) {
                 if (tz != null) {
                     return tz.fromutc(new datetime(DateTime.UtcNow, 0, tz));
@@ -820,6 +820,11 @@ namespace IronPython.Modules {
             public static object utcnow() {
                 return new datetime(DateTime.UtcNow, 0, null);
             }
+
+            
+            public new static object today() {
+                return new datetime(DateTime.Now, 0, null);
+            }           
 
             public static object fromtimestamp(double timestamp, [DefaultParameterValue(null)] tzinfo tz) {
                 DateTime dt = PythonTime.TimestampToDateTime(timestamp);
@@ -950,25 +955,25 @@ namespace IronPython.Modules {
 
                     switch (key) {
                         case "year":
-                            lyear = (int)kvp.Value;
+                            lyear = CastToInt(kvp.Value);
                             break;
                         case "month":
-                            lmonth = (int)kvp.Value;
+                            lmonth = CastToInt(kvp.Value);
                             break;
                         case "day":
-                            lday = (int)kvp.Value;
+                            lday = CastToInt(kvp.Value);
                             break;
                         case "hour":
-                            lhour = (int)kvp.Value;
+                            lhour = CastToInt(kvp.Value);
                             break;
                         case "minute":
-                            lminute = (int)kvp.Value;
+                            lminute = CastToInt(kvp.Value);
                             break;
                         case "second":
-                            lsecond = (int)kvp.Value;
+                            lsecond = CastToInt(kvp.Value);
                             break;
                         case "microsecond":
-                            lmicrosecond = (int)kvp.Value;
+                            lmicrosecond = CastToInt(kvp.Value);
                             break;
                         case "tzinfo":
                             tz = kvp.Value as tzinfo;
@@ -1101,15 +1106,12 @@ namespace IronPython.Modules {
             }
 
             public override string strftime(CodeContext/*!*/ context, string dateFormat) {
-                return PythonTime.strftime(context, dateFormat, _dateTime, _lostMicroseconds);
+                return PythonTime.strftime(context, dateFormat, _dateTime, microsecond);
             }
 
             public static datetime strptime(CodeContext/*!*/ context, string date_string, string format) {
-                var res = PythonTime.strptime(context, date_string, format) as PythonTuple;
-                if(res == null)
-                    throw PythonOps.ValueError("time.strptime returned an invalid value.");
-
-                return new datetime((int)res[0], (int)res[1], (int)res[2], (int)res[3], (int)res[4], (int)res[5], 0, null);
+                var packed = PythonTime._strptime(context, date_string, format);
+                return new datetime((DateTime)packed[0]);
             }
 
             #region IRichComparable Members
@@ -1146,6 +1148,7 @@ namespace IronPython.Modules {
 
             public override string/*!*/ __repr__(CodeContext/*!*/ context) {
                 StringBuilder sb = new StringBuilder();
+                // TODO: need to determine how to get the actual class name if a derived type (CP21478)
                 sb.AppendFormat("datetime.datetime({0}, {1}, {2}, {3}, {4}",
                     InternalDateTime.Year,
                     InternalDateTime.Month,
@@ -1316,16 +1319,16 @@ namespace IronPython.Modules {
 
                     switch (key) {
                         case "hour":
-                            lhour = (int)kvp.Value;
+                            lhour = CastToInt(kvp.Value);
                             break;
                         case "minute":
-                            lminute = (int)kvp.Value;
+                            lminute = CastToInt(kvp.Value);
                             break;
                         case "second":
-                            lsecond = (int)kvp.Value;
+                            lsecond = CastToInt(kvp.Value);
                             break;
                         case "microsecond":
-                            lmicrosecond = (int)kvp.Value;
+                            lmicrosecond = CastToInt(kvp.Value);
                             break;
                         case "tzinfo":
                             tz = kvp.Value as tzinfo;

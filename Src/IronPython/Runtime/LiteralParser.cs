@@ -73,7 +73,19 @@ namespace IronPython.Runtime {
                         int max = 16;
                         if (isUni) {
                             if (TryParseInt(text, i, len, max, out val)) {
-                                buf.Append((char)val);
+                                if (val < 0 || val > 0x10ffff) {
+                                    throw PythonOps.StandardError(@"'unicodeescape' codec can't decode bytes in position {0}: illegal Unicode character", i);
+                                }
+
+                                if (val < 0x010000) {
+                                    buf.Append((char)val);
+                                } else {
+#if !SILVERLIGHT
+                                    buf.Append(char.ConvertFromUtf32(val));
+#else
+                                    throw PythonOps.StandardError(@"'unicodeescape' codec can't decode bytes in position {0}: Unicode character out of range (Silverlight)", i);
+#endif
+                                }
                                 i += len;
                             } else {
                                 throw PythonOps.UnicodeEncodeError(@"'unicodeescape' codec can't decode bytes in position {0}: truncated \uXXXX escape", i);

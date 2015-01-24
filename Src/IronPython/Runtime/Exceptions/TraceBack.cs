@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
@@ -66,6 +67,24 @@ namespace IronPython.Runtime.Exceptions {
 
         internal void SetLine(int lineNumber) {
             _line = lineNumber;
+        }
+
+        /// <summary>
+        /// returns string containing human readable representation of traceback
+        /// </summary>
+        internal string Extract() {
+            var sb = new StringBuilder();
+            var tb = this;
+            while (tb != null) {
+                var f = tb._frame;
+                var lineno = tb._line;
+                var co = f.f_code;
+                var filename = co.co_filename;
+                var name = co.co_name;
+                sb.AppendFormat("  File \"{0}\", line {1}, in {2}{3}", filename, lineno, name, Environment.NewLine);
+                tb = tb._next;
+            }
+            return sb.ToString();
         }
     }
 

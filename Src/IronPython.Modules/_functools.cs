@@ -46,14 +46,17 @@ namespace IronPython.Modules {
         /// </summary>
         [PythonType]
         public class partial : IWeakReferenceable {
+            private const string _defaultDoc = "partial(func, *args, **keywords) - new function with partial application\n    of the given arguments and keywords.\n";
+
             private object/*!*/ _function;                                                  // the callable function to dispatch to
             private object[]/*!*/ _args;                                                    // the initially provided arguments
             private IDictionary<object, object> _keywordArgs;                               // the initially provided keyword arguments or null
             private CodeContext/*!*/ _context;                                              // code context from the caller who created us
             private CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>> _dictSite; // the dictionary call site if ever called w/ keyword args
             private CallSite<Func<CallSite, CodeContext, object, object[], object>> _splatSite;      // the position only call site
-            private PythonDictionary _dict;                                            // dictionary for storing extra attributes
+            private PythonDictionary _dict;                                                 // dictionary for storing extra attributes
             private WeakRefTracker _tracker;                                                // tracker so users can use Python weak references
+            private string _doc;                                                            // A custom docstring, if used
 
             #region Constructors
 
@@ -81,6 +84,16 @@ namespace IronPython.Modules {
             #endregion
 
             #region Public Python API
+
+            [SpecialName, PropertyMethod, WrapperDescriptor]
+            public static object Get__doc__(CodeContext context, partial self) {
+                return self._doc ?? _defaultDoc;
+            }
+
+            [SpecialName, PropertyMethod, WrapperDescriptor]
+            public static void Set__doc__(partial self, object value) {
+                self._doc = value as string;
+            }
 
             /// <summary>
             /// Gets the function which will be called

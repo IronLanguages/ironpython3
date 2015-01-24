@@ -117,7 +117,7 @@ namespace IronPython.Runtime {
                     object path;
                     List listPath;
                     if (scope.__dict__._storage.TryGetPath(out path) && (listPath = path as List) != null) {
-                        return ImportNestedModule(context, scope, name, listPath);
+                        return ImportNestedModule(context, scope, new [] {name}, 0, listPath);
                     }
                 } else if ((pt = from as PythonType) != null) {
                     PythonTypeSlot pts;
@@ -142,25 +142,25 @@ namespace IronPython.Runtime {
             throw PythonOps.ImportError("Cannot import name {0}", name);
         }
 
-        private static object ImportModuleFrom(CodeContext/*!*/ context, object from, string name) {
+        private static object ImportModuleFrom(CodeContext/*!*/ context, object from, string[] parts, int current) {
             PythonModule scope = from as PythonModule;
             if (scope != null) {
                 object path;
                 List listPath;
                 if (scope.__dict__._storage.TryGetPath(out path) && (listPath = path as List) != null) {
-                    return ImportNestedModule(context, scope, name, listPath);
+                    return ImportNestedModule(context, scope, parts, current, listPath);
                 }
             }
 
             NamespaceTracker ns = from as NamespaceTracker;
             if (ns != null) {
                 object val;
-                if (ns.TryGetValue(name, out val)) {
+                if (ns.TryGetValue(parts[current], out val)) {
                     return MemberTrackerToPython(context, val);
                 }
             }
 
-            throw PythonOps.ImportError("No module named {0}", name);
+            throw PythonOps.ImportError("No module named {0}", parts[current]);
         }
 
         /// <summary>
@@ -258,7 +258,6 @@ namespace IronPython.Runtime {
                             "Parent module '{0}' not found while handling absolute import",
                             package);
                     }
-
                     newmod = ImportTopAbsolute(context, firstName);
                     finalName = firstName;
                     if (newmod == null) {
@@ -285,7 +284,7 @@ namespace IronPython.Runtime {
                     }
                 } else if (i != 0) {
                     // child module isn't loaded yet, import it.
-                    next = ImportModuleFrom(context, next, parts[i]);
+                    next = ImportModuleFrom(context, next, parts, i);
                 } else {
                     // top-level module doesn't exist in sys.modules, probably
                     // came from some weird meta path hook.
@@ -629,12 +628,26 @@ namespace IronPython.Runtime {
             return null;
         }
 
-        private static bool TryGetNestedModule(CodeContext/*!*/ context, PythonModule/*!*/ scope, string/*!*/ name, out object nested) {
+        private static string [] SubArray(string[] t, int len) {
+            var ret = new string[len];
+            Array.Copy(t, ret, len);
+            return ret;
+        }
+
+        private static bool TryGetNestedModule(CodeContext/*!*/ context, PythonModule/*!*/ scope,
+            string[]/*!*/ parts, int current, out object nested) {
+            string name = parts[current];
             Assert.NotNull(context, scope, name);
-
             if (scope.__dict__.TryGetValue(name, out nested)) {
-                if (nested is PythonModule) return true;
-
+                var pm = nested as PythonModule;
+                if (pm != null) {
+                    var fullPath = ".".join(SubArray(parts, current));
+                    // double check, some packages mess with package namespace
+                    // see cp35116
+                    if (pm.GetName() == fullPath) {
+                        return true;
+                    }
+                }
                 // This allows from System.Math import *
                 PythonType dt = nested as PythonType;
                 if (dt != null && dt.IsSystemType) {
@@ -644,9 +657,10 @@ namespace IronPython.Runtime {
             return false;
         }
 
-        private static object ImportNestedModule(CodeContext/*!*/ context, PythonModule/*!*/ module, string name, List/*!*/ path) {
+        private static object ImportNestedModule(CodeContext/*!*/ context, PythonModule/*!*/ module,
+            string[] parts, int current, List/*!*/ path) {
             object ret;
-
+            string name = parts[current];
             string fullName = CreateFullName(module.GetName() as string, name);
 
             if (TryGetExistingOrMetaPathModule(context, fullName, path, out ret)) {
@@ -654,7 +668,7 @@ namespace IronPython.Runtime {
                 return ret;
             }
 
-            if (TryGetNestedModule(context, module, name, out ret)) {
+            if (TryGetNestedModule(context, module, parts, current, out ret)) {
                 return ret;
             }
 
@@ -852,6 +866,26 @@ namespace IronPython.Runtime {
             }
 
             return null;
+        }
+
+        internal static bool TryImportMainFromZip(CodeContext/*!*/ context, string/*!*/ path, out object importer) {
+            Assert.NotNull(context, path);
+            var importCache = PythonContext.GetContext(context).GetSystemStateValue("path_importer_cache") as IDictionary<object, object>;
+            if (importCache == null) {
+                importer = null;
+                return false;
+            }
+            importCache[path] = importer = FindImporterForPath(context, path);
+            if (importer == null) {
+                return false;
+            }
+            // for consistency with cpython, insert zip as a first entry into sys.path
+            var syspath = PythonContext.GetContext(context).GetSystemStateValue("path") as List;
+            if (syspath != null) {
+                syspath.Insert(0, path);
+            }
+            object dummy;
+            return FindAndLoadModuleFromImporter(context, importer, "__main__", null, out dummy);
         }
 
         private static object LoadFromDisk(CodeContext context, string name, string fullName, string str) {

@@ -791,7 +791,7 @@ namespace IronPython.Compiler.Ast {
             return (ScopeStatement)MemberwiseClone();
         }
 
-        internal virtual void RewriteBody(PythonAst.LookupVisitor visitor) {
+        internal virtual void RewriteBody(MSAst.ExpressionVisitor visitor) {
             _funcCode = null;
         }
 

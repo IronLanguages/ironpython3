@@ -103,7 +103,7 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo GeneratorCheckThrowableAndReturnSendValue = GetMethod((Func<object, object>)PythonOps.GeneratorCheckThrowableAndReturnSendValue);
         
         private static MethodInfo GetMethod(Delegate x) {
-            return x.GetMethodInfo();
+            return x.Method;
         }
     }
 }

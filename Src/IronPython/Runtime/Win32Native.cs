@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 namespace IronPython.Runtime {
 #if FEATURE_NATIVE
@@ -48,6 +49,24 @@ namespace IronPython.Runtime {
         [return: MarshalAs(UnmanagedType.Bool)]
         [DllImport("kernel32")]
         internal static extern bool FindClose(IntPtr handle);
+
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal /*class*/ struct SECURITY_ATTRIBUTES {
+            public int nLength;
+            public IntPtr lpSecurityDescriptor;
+            public int bInheritHandle;
+        }
+
+        [DllImport("kernel32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool CreatePipe(out SafePipeHandle hReadPipe, out SafePipeHandle hWritePipe,
+           ref SECURITY_ATTRIBUTES lpPipeAttributes, uint nSize);
+
+        [DllImport("kernel32.dll", SetLastError=true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool FlushFileBuffers(SafeFileHandle hFile);
+
 
     }
 #endif

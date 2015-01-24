@@ -2307,7 +2307,12 @@ namespace IronPython.Runtime.Operations {
             Exception e = MakeExceptionWorker(context, t[0], t[1], t[2], true);
             return MakeRethrowExceptionWorker(e);
         }
-
+        /// <summary>
+        /// helper function for re-raised exception.
+        /// This entry point is used by 'raise' inside 'with' statement
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
         public static Exception MakeRethrowExceptionWorker(Exception e) {
             e.RemoveTraceBack();
             ExceptionHelpers.UpdateForRethrow(e);
@@ -3780,7 +3785,10 @@ namespace IronPython.Runtime.Operations {
             byte[] ret = new byte[s.Length];
             for (int i = 0; i < s.Length; i++) {
                 if (s[i] < 0x100) ret[i] = (byte)s[i];
-                else throw PythonOps.UnicodeEncodeError("'ascii' codec can't decode byte {0:X} in position {1}: ordinal not in range", (int)ret[i], i);
+                else {
+                    throw PythonOps.UnicodeEncodeError("ascii", s[i], i,
+                        "'ascii' codec can't decode byte {0:X} in position {1}: ordinal not in range", (int)s[i], i);
+                }
             }
             return ret;
         }
@@ -4050,9 +4058,23 @@ namespace IronPython.Runtime.Operations {
             return new System.Text.DecoderFallbackException(string.Format(format, args));
         }
 
+        public static Exception UnicodeDecodeError(string message, byte[] bytesUnknown, int index) {
+            return new System.Text.DecoderFallbackException(message, bytesUnknown, index);
+        }
+
         public static Exception UnicodeEncodeError(string format, params object[] args) {
             return new System.Text.EncoderFallbackException(string.Format(format, args));
         }
+
+        public static Exception UnicodeEncodeError(string encoding, char charUnkown, int index,
+            string format, params object[] args) {
+            var ctor = typeof (EncoderFallbackException).GetConstructor(
+                BindingFlags.NonPublic | BindingFlags.Instance, null, new [] { typeof(string), typeof(char), typeof(int) } , null);
+            var ex = (EncoderFallbackException)ctor.Invoke(new object[] { string.Format(format, args), charUnkown, index });
+            ex.Data["encoding"] = encoding;
+            return ex;
+        }
+
 
         public static Exception IOError(Exception inner) {
             return new System.IO.IOException(inner.Message, inner);
@@ -4265,7 +4287,7 @@ namespace IronPython.Runtime.Operations {
             if (attributeName == "__class__")
                 return PythonOps.TypeError("can't delete __class__ attribute");
 
-            return PythonOps.AttributeError("attribute '{0}' of '{1}' object is read-only", attributeName, typeName);
+            return PythonOps.AttributeError("'{1}' object attribute '{0}' is read-only", attributeName, typeName);
         }
 
         public static Exception AttributeErrorForBuiltinAttributeDeletion(string typeName, string attributeName) {

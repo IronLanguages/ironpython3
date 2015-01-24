@@ -98,10 +98,12 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static void AppendJoin(object value, int index, List<byte> byteList) {
-            IList<byte> strVal;
-
-            if ((strVal = value as IList<byte>) != null) {
-                byteList.AddRange(strVal);
+            IList<byte> bytesValue;
+            string strValue;
+            if ((bytesValue = value as IList<byte>) != null) {
+                byteList.AddRange(bytesValue);
+            } else if ((strValue = value as string) != null) {
+                byteList.AddRange(strValue.MakeByteArray());
             } else {
                 throw PythonOps.TypeError("sequence item {0}: expected bytes or byte array, {1} found", index.ToString(), PythonOps.GetPythonTypeName(value));
             }

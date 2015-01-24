@@ -154,6 +154,9 @@ namespace IronPython.Modules {
 
                     // overwrite head if queue is at max length
                     if (_itemCnt == _maxLen) {
+                        if (_maxLen == 0) {
+                            return;
+                        }
                         _data[_tail++] = x;
                         if (_tail == _data.Length) {
                             _tail = 0;

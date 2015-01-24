@@ -327,7 +327,7 @@ namespace IronPython.Modules {
                 opts.DontImplyDedent = true;
             }
 
-            SourceUnit sourceUnit = null; 
+            SourceUnit sourceUnit = null;
             switch (mode) {
                 case "exec": sourceUnit = context.LanguageContext.CreateSnippet(text, filename, SourceCodeKind.Statements); break;
                 case "eval": sourceUnit = context.LanguageContext.CreateSnippet(text, filename, SourceCodeKind.Expression); break;
@@ -2405,19 +2405,23 @@ namespace IronPython.Modules {
                 pco = DefaultContext.DefaultPythonContext.GetPythonCompilerOptions();
             }
             
-            if (((cflags & (CompileFlags.CO_FUTURE_DIVISION | CompileFlags.CO_FUTURE_ABSOLUTE_IMPORT | CompileFlags.CO_FUTURE_WITH_STATEMENT)) != 0)) {
-                ModuleOptions langFeat = ModuleOptions.None;
-                if ((cflags & CompileFlags.CO_FUTURE_DIVISION) != 0) {
-                    langFeat |= ModuleOptions.TrueDivision;
-                }
-                if ((cflags & CompileFlags.CO_FUTURE_WITH_STATEMENT) != 0) {
-                    langFeat |= ModuleOptions.WithStatement;
-                }
-                if ((cflags & CompileFlags.CO_FUTURE_ABSOLUTE_IMPORT) != 0) {
-                    langFeat |= ModuleOptions.AbsoluteImports;
-                }
-                pco.Module |= langFeat;
-            } 
+            ModuleOptions langFeat = ModuleOptions.None;
+            if ((cflags & CompileFlags.CO_FUTURE_DIVISION) != 0) {
+                langFeat |= ModuleOptions.TrueDivision;
+            }
+            if ((cflags & CompileFlags.CO_FUTURE_WITH_STATEMENT) != 0) {
+                langFeat |= ModuleOptions.WithStatement;
+            }
+            if ((cflags & CompileFlags.CO_FUTURE_ABSOLUTE_IMPORT) != 0) {
+                langFeat |= ModuleOptions.AbsoluteImports;
+            }
+            if ((cflags & CompileFlags.CO_FUTURE_PRINT_FUNCTION) != 0) {
+                // Ignored in Python 3
+            }
+            if ((cflags & CompileFlags.CO_FUTURE_UNICODE_LITERALS) != 0) {
+                langFeat |= ModuleOptions.UnicodeLiterals;
+            }
+            pco.Module |= langFeat;
 
             // The options created this way never creates
             // optimized module (exec, compile)
@@ -2436,7 +2440,8 @@ namespace IronPython.Modules {
         private static CompileFlags GetCompilerFlags(int flags) {
             CompileFlags cflags = (CompileFlags)flags;
             if ((cflags & ~(CompileFlags.CO_NESTED | CompileFlags.CO_GENERATOR_ALLOWED | CompileFlags.CO_FUTURE_DIVISION | CompileFlags.CO_DONT_IMPLY_DEDENT | 
-                CompileFlags.CO_FUTURE_ABSOLUTE_IMPORT | CompileFlags.CO_FUTURE_WITH_STATEMENT)) != 0) {
+                CompileFlags.CO_FUTURE_ABSOLUTE_IMPORT | CompileFlags.CO_FUTURE_WITH_STATEMENT | CompileFlags.CO_FUTURE_PRINT_FUNCTION | 
+                CompileFlags.CO_FUTURE_UNICODE_LITERALS)) != 0) {
                 throw PythonOps.ValueError("unrecognized flags");
             }
 

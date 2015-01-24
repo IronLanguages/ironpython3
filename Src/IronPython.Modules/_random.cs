@@ -78,12 +78,18 @@ namespace IronPython.Modules {
             }
 
             public void seed(object s) {
+                if (s == null) {
+                    seed();
+                    return;
+                }
+
                 int newSeed;
                 if (s is int) {
                     newSeed = (int)s;
                 } else {
                     newSeed = s.GetHashCode();
                 }
+
                 lock (this) {
                     _rnd = new System.Random(newSeed);
                 }

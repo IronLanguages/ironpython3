@@ -331,7 +331,7 @@ namespace IronPython.Runtime.Binding {
                                 Ast.Call(
                                     typeof(PythonOps).GetMethod("TypeErrorForNonIterableObject"),
                                     AstUtils.Convert(
-                                        types[1].Expression,
+                                        types[0].Expression,
                                         typeof(object)
                                     )
                                 ),
@@ -1569,7 +1569,7 @@ namespace IronPython.Runtime.Binding {
                     return TypeError(operation, "'{0}' object doesn't support item deletion", newTypes);
                 }
             }
-            return TypeError(operation, "'{0}' object is unsubscriptable", newTypes);
+            return TypeError(operation, "'{0}' object is not subscriptable", newTypes);
         }
 
         /// <summary>

@@ -114,7 +114,7 @@ namespace IronPython.Modules {
             }
         }
 
-        public static object a2b_base64(CodeContext/*!*/ context, string data) {
+        public static object a2b_base64(CodeContext/*!*/ context, [BytesConversion]string data) {
             if (data == null) throw PythonOps.TypeError("expected string, got NoneType");
             data = RemovePrefix(context, data, Base64DecFunc);
             if (data.Length == 0) return String.Empty;
@@ -123,7 +123,7 @@ namespace IronPython.Modules {
             return res.ToString();
         }
 
-        public static object b2a_base64(string data) {
+        public static object b2a_base64([BytesConversion]string data) {
             if (data == null) throw PythonOps.TypeError("expected string, got NoneType");
             if (data.Length == 0) return String.Empty;
 

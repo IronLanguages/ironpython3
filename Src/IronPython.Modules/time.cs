@@ -192,6 +192,12 @@ namespace IronPython.Modules {
         }
 
         public static object strptime(CodeContext/*!*/ context, string @string, string format) {
+            var packed = _strptime(context, @string, format);
+            return GetDateTimeTuple((DateTime)packed[0], (DayOfWeek?)packed[1]);
+        }
+        
+        // returns object array containing 2 elements: DateTime and DayOfWeek 
+        internal static object[] _strptime(CodeContext/*!*/ context, string @string, string format) {
             bool postProc;
             FoundDateComponents foundDateComp;
             List<FormatInfo> formatInfo = PythonFormatToCLIFormat(format, true, out postProc, out foundDateComp);
@@ -215,34 +221,40 @@ namespace IronPython.Modules {
                     throw PythonOps.ValueError("cannot parse %j, %W, or %U w/ other values");
                 }
             } else {
-                string[] formats = new string[formatInfo.Count];
+                var fIdx = -1;
+                string[] formatParts = new string[formatInfo.Count];
                 for (int i = 0; i < formatInfo.Count; i++) {
                     switch (formatInfo[i].Type) {
-                        case FormatInfoType.UserText: formats[i] = "'" + formatInfo[i].Text + "'"; break;
-                        case FormatInfoType.SimpleFormat: formats[i] = formatInfo[i].Text; break;
+                        case FormatInfoType.UserText: formatParts[i] = "'" + formatInfo[i].Text + "'"; break;
+                        case FormatInfoType.SimpleFormat: formatParts[i] = formatInfo[i].Text; break;
                         case FormatInfoType.CustomFormat:
+                            if (formatInfo[i].Text == "f") {
+                                fIdx = i;
+                            }
                             // include % if we only have one specifier to mark that it's a custom
                             // specifier
                             if (formatInfo.Count == 1 && formatInfo[i].Text.Length == 1) {
-                                formats[i] = "%" + formatInfo[i].Text;
+                                formatParts[i] = "%" + formatInfo[i].Text;
                             } else {
-                                formats[i] = formatInfo[i].Text;
+                                formatParts[i] = formatInfo[i].Text;
                             }
                             break;
                     }
                 }
-
+                var formats =
+                    fIdx == -1 ? new [] { String.Join("", formatParts) } : ExpandMicrosecondFormat(fIdx, formatParts);
                 try {
                     if (!StringUtils.TryParseDateTimeExact(@string,
-                        String.Join("", formats),
+                        formats,
                         PythonLocale.GetLocaleInfo(context).Time.DateTimeFormat,
                         DateTimeStyles.AllowWhiteSpaces | DateTimeStyles.NoCurrentDateDefault,
                         out res)) {
-                        // If TryParseExact fails, fall back to DateTime.Parse which does a better job in some cases...
-                        res = DateTime.Parse(@string, PythonLocale.GetLocaleInfo(context).Time.DateTimeFormat);
+                        throw PythonOps.ValueError("time data does not match format" + Environment.NewLine + 
+                            "data=" + @string + ", fmt=" + format + ", to: " + formats[0]);
                     }
                 } catch (FormatException e) {
-                    throw PythonOps.ValueError(e.Message + Environment.NewLine + "data=" + @string + ", fmt=" + format + ", to: " + String.Join("", formats));
+                    throw PythonOps.ValueError(e.Message + Environment.NewLine + 
+                        "data=" + @string + ", fmt=" + format + ", to: " + formats[0]);
                 }
             }
 
@@ -255,7 +267,18 @@ namespace IronPython.Modules {
                 res = new DateTime(1900, res.Month, res.Day, res.Hour, res.Minute, res.Second, res.Millisecond, res.Kind);
             }
 
-            return GetDateTimeTuple(res, dayOfWeek);
+            return new object[] { res, dayOfWeek };
+        }
+
+        private static string[] ExpandMicrosecondFormat(int fIdx, string [] formatParts) {
+            // for %f number of digits can be anything between 1 and 6
+            string[] formats = new string[6];
+            formats[0] = String.Join("", formatParts);
+            for (var i = 1; i < 6; i++) {
+                formatParts[fIdx] = new String('f', i+1);
+                formats[i] = String.Join("", formatParts);
+            }
+            return formats;
         }
 
         internal static string strftime(CodeContext/*!*/ context, string format, DateTime dt, int? microseconds) {
@@ -473,8 +496,12 @@ namespace IronPython.Modules {
                             postProcess = true; 
                             break;
                         case 'f':
-                            postProcess = true;
-                            newFormat.Add(new FormatInfo(FormatInfoType.UserText, "%f")); 
+                            if (forParse) {
+                                newFormat.Add(new FormatInfo(FormatInfoType.CustomFormat, "f")); 
+                            } else {
+                                postProcess = true;
+                                newFormat.Add(new FormatInfo(FormatInfoType.UserText, "%f"));
+                            }
                             break;
                         case 'W': newFormat.Add(new FormatInfo("\\%W")); postProcess = true; break;
                         case 'U': newFormat.Add(new FormatInfo("\\%U")); postProcess = true; break; // week number
@@ -527,9 +554,7 @@ namespace IronPython.Modules {
         internal static PythonTuple GetDateTimeTuple(DateTime dt, DayOfWeek? dayOfWeek, PythonDateTime.tzinfo tz) {
             int last = -1;
 
-            if (tz == null) {
-                last = -1;
-            } else {
+            if (tz != null) {
                 PythonDateTime.timedelta delta = tz.dst(dt);
                 PythonDateTime.ThrowIfInvalid(delta, "dst");
                 if (delta == null) {
@@ -538,7 +563,6 @@ namespace IronPython.Modules {
                     last = delta.__nonzero__() ? 1 : 0;
                 }
             }
-
             return new struct_time(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, dt.Second, Weekday(dayOfWeek ?? dt.DayOfWeek), dt.DayOfYear, last);
         }
 

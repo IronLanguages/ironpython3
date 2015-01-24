@@ -70,7 +70,7 @@ namespace IronPython.Runtime.Exceptions {
             public _SystemExit() : base(SystemExit) { }
             public _SystemExit(PythonType type) : base(type) { }
 
-            public new static object __new__(PythonType cls, params object[] args) {
+            public new static object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
 
@@ -246,7 +246,7 @@ namespace IronPython.Runtime.Exceptions {
             public _EnvironmentError() : base(EnvironmentError) { }
             public _EnvironmentError(PythonType type) : base(type) { }
 
-            public new static object __new__(PythonType cls, params object[] args) {
+            public new static object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
 
@@ -313,7 +313,7 @@ namespace IronPython.Runtime.Exceptions {
             public _WindowsError() : base(WindowsError) { }
             public _WindowsError(PythonType type) : base(type) { }
 
-            public new static object __new__(PythonType cls, params object[] args) {
+            public new static object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
 
@@ -492,7 +492,7 @@ namespace IronPython.Runtime.Exceptions {
             public _SyntaxError() : base(SyntaxError) { }
             public _SyntaxError(PythonType type) : base(type) { }
 
-            public new static object __new__(PythonType cls, params object[] args) {
+            public new static object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
 
@@ -630,7 +630,7 @@ namespace IronPython.Runtime.Exceptions {
             public _UnicodeDecodeError() : base(UnicodeDecodeError) { }
             public _UnicodeDecodeError(PythonType type) : base(type) { }
 
-            public new static object __new__(PythonType cls, params object[] args) {
+            public new static object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
 
@@ -701,7 +701,7 @@ namespace IronPython.Runtime.Exceptions {
             public _UnicodeEncodeError() : base(UnicodeEncodeError) { }
             public _UnicodeEncodeError(PythonType type) : base(type) { }
 
-            public new static object __new__(PythonType cls, params object[] args) {
+            public new static object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
 
@@ -772,7 +772,7 @@ namespace IronPython.Runtime.Exceptions {
             public _UnicodeTranslateError() : base(UnicodeTranslateError) { }
             public _UnicodeTranslateError(PythonType type) : base(type) { }
 
-            public new static object __new__(PythonType cls, params object[] args) {
+            public new static object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
 

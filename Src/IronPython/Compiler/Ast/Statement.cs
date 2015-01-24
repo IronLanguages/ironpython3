@@ -36,4 +36,32 @@ namespace IronPython.Compiler.Ast {
             }
         }
     }
+
+    internal class RewrittenBodyStatement : Statement {
+        private readonly MSAst.Expression _body;
+        private readonly string _doc;
+        private readonly Statement _originalBody;
+
+        public RewrittenBodyStatement(Statement originalBody, MSAst.Expression body) {
+            _body = body;
+            _doc = originalBody.Documentation;
+            _originalBody = originalBody;
+            SetLoc(originalBody.GlobalParent, originalBody.IndexSpan);
+        }
+
+        public override MSAst.Expression Reduce() {
+            return _body;
+        }
+
+        public override string Documentation {
+            get {
+                return _doc;
+            }
+        }
+
+        public override void Walk(PythonWalker walker) {
+            _originalBody.Walk(walker);
+        }
+    }
+
 }

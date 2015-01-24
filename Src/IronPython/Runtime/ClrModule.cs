@@ -209,6 +209,30 @@ the assembly object.")]
             return scope;
         }
 
+        [Documentation("Converts an array of bytes to a string.")]
+        public static string GetString(byte[] bytes) {
+            return GetString(bytes, bytes.Length);
+        }
+
+        [Documentation("Converts maxCount of an array of bytes to a string")]
+        public static string GetString(byte[] bytes, int maxCount) {
+            int bytesToCopy = Math.Min(bytes.Length, maxCount);            
+            return Encoding.GetEncoding("iso-8859-1").GetString(bytes, 0, bytesToCopy);
+        }
+
+        [Documentation("Converts a string to an array of bytes")]
+        public static byte[] GetBytes(string s) {
+            return GetBytes(s, s.Length);
+        }
+
+        [Documentation("Converts maxCount of a string to an array of bytes")]
+        public static byte[] GetBytes(string s, int maxCount) {
+            int charsToCopy = Math.Min(s.Length, maxCount);
+            byte[] ret = new byte[charsToCopy];
+            Encoding.GetEncoding("iso-8859-1").GetBytes(s, 0, charsToCopy, ret, 0);
+            return ret;
+        }
+
         /// <summary>
         /// Use(path, language) -> module
         /// 
@@ -802,7 +826,7 @@ import Namespace.")]
             PythonContext pc = PythonContext.GetContext(context);
 
             for (int i = 0; i < filenames.Length; i++) {
-                filenames[i] = pc.DomainManager.Platform.GetFullPath(filenames[i]);
+                filenames[i] = Path.GetFullPath(filenames[i]);
             }
 
             Dictionary<string, string> packageMap = BuildPackageMap(filenames);

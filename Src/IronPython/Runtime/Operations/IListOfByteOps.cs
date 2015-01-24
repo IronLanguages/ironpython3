@@ -411,17 +411,17 @@ namespace IronPython.Runtime.Operations {
             return bytes.Substring(start, end - start).StartsWith(prefix);
         }
 
-        internal static List<byte>/*!*/ Replace(this IList<byte>/*!*/ bytes, IList<byte>/*!*/ old, IList<byte>/*!*/ new_, int maxsplit) {
-            if (new_ == null) {
+        internal static List<byte>/*!*/ Replace(this IList<byte>/*!*/ bytes, IList<byte>/*!*/ old, IList<byte>/*!*/ @new, int count) {
+            if (@new == null) {
                 throw PythonOps.TypeError("expected bytes or bytearray, got NoneType");
             }
 
-            if (maxsplit == -1) {
-                maxsplit = old.Count + 1;
+            if (count == -1) {
+                count = old.Count + 1;
             } 
             
             if (old.Count == 0) {
-                return ReplaceEmpty(bytes, new_, maxsplit);
+                return ReplaceEmpty(bytes, @new, count);
             }
 
             List<byte> ret = new List<byte>(bytes.Count);
@@ -429,29 +429,29 @@ namespace IronPython.Runtime.Operations {
             int index;
             int start = 0;
 
-            while (maxsplit > 0 && (index = bytes.IndexOf(old, start)) != -1) {
+            while (count > 0 && (index = bytes.IndexOf(old, start)) != -1) {
                 ret.AddRange(bytes.Substring(start, index - start));
-                ret.AddRange(new_);
+                ret.AddRange(@new);
                 start = index + old.Count;
-                maxsplit--;
+                count--;
             }
             ret.AddRange(bytes.Substring(start));
 
             return ret;
         }
 
-        private static List<byte>/*!*/ ReplaceEmpty(this IList<byte>/*!*/ self, IList<byte>/*!*/ new_, int maxsplit) {
-            int max = maxsplit > self.Count ? self.Count : maxsplit;
-            List<byte> ret = new List<byte>(self.Count * (new_.Count + 1));
+        private static List<byte>/*!*/ ReplaceEmpty(this IList<byte>/*!*/ self, IList<byte>/*!*/ @new, int count) {
+            int max = count > self.Count ? self.Count : count;
+            List<byte> ret = new List<byte>(self.Count * (@new.Count + 1));
             for (int i = 0; i < max; i++) {
-                ret.AddRange(new_);
+                ret.AddRange(@new);
                 ret.Add(self[i]);
             }
             for (int i = max; i < self.Count; i++) {
                 ret.Add(self[i]);
             }
-            if (maxsplit > max) {
-                ret.AddRange(new_);
+            if (count > max) {
+                ret.AddRange(@new);
             }
 
             return ret;

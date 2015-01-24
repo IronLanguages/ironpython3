@@ -95,7 +95,7 @@ namespace IronPython.Runtime.Binding {
                     // string -> byte array, we allow this in Python 2.6
                     return true;
                 }
-            } else if (fromType == typeof(Bytes)) {
+            } else if (fromType == typeof(Bytes) || fromType == typeof(PythonBuffer) || fromType == typeof(ByteArray)) {
                 if (toParameter.Type == typeof(string) &&
                     !Binder.Context.PythonOptions.Python30 &&
                     toParameter.ParameterInfo.IsDefined(typeof(BytesConversionAttribute), false)) {

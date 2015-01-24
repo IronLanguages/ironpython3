@@ -393,7 +393,7 @@ def gen_one_new_exception(cw, exception, parent):
         cw.writeline('public _%s(PythonType type) : base(type) { }' % (exception.name, ))
         cw.writeline('')
         
-        cw.enter_block('public new static object __new__(PythonType cls, params object[] args)')
+        cw.enter_block('public new static object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args)')
         cw.writeline('return Activator.CreateInstance(cls.UnderlyingSystemType, cls);')
         cw.exit_block()
         cw.writeline('')

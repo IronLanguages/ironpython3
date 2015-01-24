@@ -77,7 +77,7 @@ namespace IronPython.Modules {
             int lineno;
             if (PythonContext.GetContext(context).PythonOptions.Frames) {
                 try {
-                    caller = SysModule._getframeImpl(context, stacklevel);
+                    caller = SysModule._getframeImpl(context, stacklevel - 1);
                 } catch (ValueErrorException) { }
             }
             if (caller == null) {

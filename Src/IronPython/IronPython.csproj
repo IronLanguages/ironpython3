@@ -503,6 +503,9 @@
     <None Include="IronPython.ruleset" />
     <EmbeddedResource Include="Modules\unicodedata\IPyUnicodeData.txt.gz" />
   </ItemGroup>
+  <ItemGroup>
+    <PolicyFile Include="policy.$(AssemblyName).config" />
+  </ItemGroup>
   <ItemGroup Condition=" '$(IsFullFramework)' == 'true' ">
     <Reference Include="System.Xml" />
     <Reference Include="System.Configuration" />

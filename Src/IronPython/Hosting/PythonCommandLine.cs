@@ -21,6 +21,7 @@ using System.IO;
 using System.Reflection;
 using System.Threading;
 using IronPython.Compiler;
+using IronPython.Modules;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
@@ -235,8 +236,14 @@ namespace IronPython.Hosting {
                 executable = entryAssembly.Location;
                 prefix = Path.GetDirectoryName(executable);
             }
+
+            // Make sure there an IronPython Lib directory, and if not keep looking up
+            while (prefix != null && !File.Exists(Path.Combine(prefix, "Lib/os.py"))) {
+                prefix = Path.GetDirectoryName(prefix);
+            }
 #endif
-            PythonContext.SetHostVariables(prefix, executable, null);
+
+            PythonContext.SetHostVariables(prefix ?? "", executable, null);
         }
 
         /// <summary>
@@ -463,15 +470,30 @@ namespace IronPython.Hosting {
         }
 
         private int RunCommandWorker(string command) {
-            int result = 1;
-            try {
-                Scope = CreateScope();
-                ExecuteCommand(Engine.CreateScriptSourceFromString(command, SourceCodeKind.File));
-                result = 0;
-            } catch (SystemExitException pythonSystemExit) {
-                result = GetEffectiveExitCode(pythonSystemExit);
+            ScriptCode compiledCode;
+            ModuleOptions trueDiv = (PythonContext.PythonOptions.DivisionOptions == PythonDivisionOptions.New) ?
+                ModuleOptions.TrueDivision : ModuleOptions.None;
+            ModuleOptions modOpt = ModuleOptions.Optimized | ModuleOptions.ModuleBuiltins | trueDiv;
+                ;
+            if (Options.SkipFirstSourceLine) {
+                modOpt |= ModuleOptions.SkipFirstLine;
             }
-            return result;
+            PythonModule module = PythonContext.CompileModule(
+                "", // there is no file, it will be set to <module>
+                "__main__",
+                PythonContext.CreateSnippet(command, SourceCodeKind.File),
+                modOpt,
+                out compiledCode);
+            PythonContext.PublishModule("__main__", module);
+            Scope = module.Scope;
+            try {
+                compiledCode.Run(Scope);
+            } catch (SystemExitException pythonSystemExit) {
+                // disable introspection when exited:
+                Options.Introspection = false;
+                return GetEffectiveExitCode(pythonSystemExit);
+            }
+            return 0;
         }
 
         #endregion
@@ -494,6 +516,23 @@ namespace IronPython.Hosting {
         }        
         
         private int RunFileWorker(string/*!*/ fileName) {
+            try {
+                // There is no PEP for this case, only http://bugs.python.org/issue1739468
+                object importer;
+                if (Importer.TryImportMainFromZip(DefaultContext.Default, fileName, out importer)) {
+                    return 0;
+                }
+                if (importer != null && importer.GetType() != typeof(PythonImport.NullImporter)) {
+                    Console.WriteLine(String.Format("can't find '__main__' module in '{0}'", fileName), Style.Error);
+                    return 0;
+                }
+            } catch (SystemExitException pythonSystemExit) {
+                // disable introspection when exited:
+                Options.Introspection = false;
+                return GetEffectiveExitCode(pythonSystemExit);
+            }
+
+            // classic file
             ScriptCode compiledCode;
             ModuleOptions modOpt = ModuleOptions.Optimized | ModuleOptions.ModuleBuiltins;
             if(Options.SkipFirstSourceLine) {

@@ -139,7 +139,7 @@ namespace IronPython.Runtime {
         public int pop() {
             lock (this) {
                 if (Count == 0) {
-                    throw PythonOps.OverflowError("pop off of empty bytearray");
+                    throw PythonOps.IndexError("pop off of empty bytearray");
                 }
 
                 int res = _bytes[_bytes.Count - 1];
@@ -151,7 +151,7 @@ namespace IronPython.Runtime {
         public int pop(int index) {
             lock (this) {
                 if (Count == 0) {
-                    throw PythonOps.OverflowError("pop off of empty bytearray");
+                    throw PythonOps.IndexError("pop off of empty bytearray");
                 }
 
                 index = PythonOps.FixIndex(index, Count);
@@ -263,7 +263,7 @@ namespace IronPython.Runtime {
             }
         }
         
-        public string decode(CodeContext/*!*/ context, [Optional]string encoding, [DefaultParameterValue("strict")]string errors) {
+        public string decode(CodeContext/*!*/ context, [Optional]object encoding, [DefaultParameterValue("strict")]string errors) {
             return StringOps.decode(context, _bytes.MakeString(), encoding, errors);
         }
 
@@ -536,22 +536,22 @@ namespace IronPython.Runtime {
             return partition(GetBytes(sep));
         }
 
-        public ByteArray/*!*/ replace([BytesConversion]IList<byte>/*!*/ old, [BytesConversion]IList<byte> new_) {
+        public ByteArray/*!*/ replace([BytesConversion]IList<byte>/*!*/ old, [BytesConversion]IList<byte> @new) {
             if (old == null) {
                 throw PythonOps.TypeError("expected bytes or bytearray, got NoneType");
             }
 
-            return replace(old, new_, _bytes.Count);
+            return replace(old, @new, _bytes.Count);
         }
 
-        public ByteArray/*!*/ replace([BytesConversion]IList<byte>/*!*/ old, [BytesConversion]IList<byte>/*!*/ new_, int maxsplit) {
+        public ByteArray/*!*/ replace([BytesConversion]IList<byte>/*!*/ old, [BytesConversion]IList<byte>/*!*/ @new, int count) {
             if (old == null) {
                 throw PythonOps.TypeError("expected bytes or bytearray, got NoneType");
-            } else if (maxsplit == 0) {
+            } else if (count == 0) {
                 return CopyThis();
             }
 
-            return new ByteArray(_bytes.Replace(old, new_, maxsplit));
+            return new ByteArray(_bytes.Replace(old, @new, count));
         }
 
 
@@ -790,25 +790,27 @@ namespace IronPython.Runtime {
         }
 
         public ByteArray/*!*/ translate([BytesConversion]IList<byte>/*!*/ table) {
-            if (table == null) {
-                throw PythonOps.TypeError("expected bytearray or bytes, got NoneType");
-            }
-
+           
             lock (this) {
-                if (table.Count != 256) {
-                    throw PythonOps.ValueError("translation table must be 256 characters long");
-                } else if (Count == 0) {
-                    return CopyThis();
+                if (table != null) {
+                    if (table.Count != 256) {
+                        throw PythonOps.ValueError("translation table must be 256 characters long");
+                    }
+                    else if (Count == 0) {
+                        return CopyThis();
+                    }
                 }
 
                 return new ByteArray(_bytes.Translate(table, null));
             }
         }
 
+
         public ByteArray/*!*/ translate([BytesConversion]IList<byte>/*!*/ table, [BytesConversion]IList<byte>/*!*/ deletechars) {
-            if (table == null) {
+            if (table == null && deletechars == null) {
                 throw PythonOps.TypeError("expected bytearray or bytes, got NoneType");
-            } else if (deletechars == null) {
+            }
+            else if (deletechars == null) {
                 throw PythonOps.TypeError("expected bytes or bytearray, got None");
             }
             
@@ -1272,8 +1274,14 @@ namespace IronPython.Runtime {
                 return (IList<byte>)value;
             }
 
-            if (value is string || value is Extensible<string>) {
-                throw PythonOps.TypeError("unicode argument without an encoding");
+            var strValue = value as string;
+            if (strValue != null) {
+                return strValue.MakeByteArray();
+            }
+
+            var esValue = value as Extensible<string>;
+            if (esValue != null) {
+                return esValue.Value.MakeByteArray();
             }
 
             List<byte> ret = new List<byte>();
@@ -1408,7 +1416,14 @@ namespace IronPython.Runtime {
         }
 
         public override bool Equals(object other) {
-            IList<byte> bytes = other as IList<byte>;
+            IList<byte> bytes ;
+            if (other is string)
+                bytes = PythonOps.MakeBytes(((string)other).MakeByteArray());
+            else if (other is Extensible<string>)
+                bytes = PythonOps.MakeBytes(((Extensible<string>)other).Value.MakeByteArray());
+            else
+                bytes = other as IList<byte>;
+
             if (bytes == null || Count != bytes.Count) {
                 return false;
             } else if (Count == 0) {

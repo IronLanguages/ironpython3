@@ -44,6 +44,12 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
+    <None Include="..\App.Debug.config">
+      <Link>App.Debug.config</Link>
+    </None>
+    <None Include="..\App.Release.config">
+      <Link>App.Release.config</Link>
+    </None>
     <None Include="IronPythonWindow.ruleset" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

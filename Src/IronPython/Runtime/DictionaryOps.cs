@@ -149,37 +149,37 @@ namespace IronPython.Runtime {
             return defaultValue;
         }
 
-        public static void update(CodeContext/*!*/ context, PythonDictionary/*!*/ self, object b) {
+        public static void update(CodeContext/*!*/ context, PythonDictionary/*!*/ self, object other) {
             PythonDictionary pyDict;
 
-            if ((pyDict = b as PythonDictionary) != null) {
+            if ((pyDict = other as PythonDictionary) != null) {
                 pyDict._storage.CopyTo(ref self._storage);
             } else {
-                SlowUpdate(context, self, b);
+                SlowUpdate(context, self, other);
             }
         }
 
-        private static void SlowUpdate(CodeContext/*!*/ context, PythonDictionary/*!*/ self, object b) {
+        private static void SlowUpdate(CodeContext/*!*/ context, PythonDictionary/*!*/ self, object other) {
             object keysFunc;
             DictProxy dictProxy;
             IDictionary dict;
-            if ((dictProxy = b as DictProxy) != null) {
+            if ((dictProxy = other as DictProxy) != null) {
                 update(context, self, dictProxy.Type.GetMemberDictionary(context, false));
-            } else if ((dict = b as IDictionary) != null) {
+            } else if ((dict = other as IDictionary) != null) {
                 IDictionaryEnumerator e = dict.GetEnumerator();
                 while (e.MoveNext()) {
                     self._storage.Add(ref self._storage, e.Key, e.Value);
                 }
-            } else if (PythonOps.TryGetBoundAttr(b, "keys", out keysFunc)) {
+            } else if (PythonOps.TryGetBoundAttr(other, "keys", out keysFunc)) {
                 // user defined dictionary
                 IEnumerator i = PythonOps.GetEnumerator(PythonCalls.Call(context, keysFunc));
                 while (i.MoveNext()) {
-                    self._storage.Add(ref self._storage, i.Current, PythonOps.GetIndex(context, b, i.Current));
+                    self._storage.Add(ref self._storage, i.Current, PythonOps.GetIndex(context, other, i.Current));
                 }
             } else {
                 // list of lists (key/value pairs), list of tuples,
                 // tuple of tuples, etc...
-                IEnumerator i = PythonOps.GetEnumerator(b);
+                IEnumerator i = PythonOps.GetEnumerator(other);
                 int index = 0;
                 while (i.MoveNext()) {
                     if (!AddKeyValue(self, i.Current)) {

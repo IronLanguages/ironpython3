@@ -14,7 +14,7 @@
  * ***************************************************************************/
 
 using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Hosting.Providers;
@@ -65,6 +65,25 @@ internal sealed class PythonConsoleHost : ConsoleHost {
         base.ExecuteInternal();
     }
 
+#if DEBUG
+    private static string[] MaybeAttachDebugger(string[] args) {
+        int attachDebugger = Array.IndexOf(args, "-X:Attach");
+        if (attachDebugger != -1) {
+            // Remove -X:Attach from the arg list, since after this point it's no use
+            string[] newArgs = new string[args.Length - 1];
+            Array.Copy(args, newArgs, attachDebugger);
+            Array.Copy(args, attachDebugger + 1, newArgs, attachDebugger, newArgs.Length - attachDebugger);
+            args = newArgs;
+
+            // Launch a debugger. This seems to be more reliable than
+            // Debugger.Break().
+            if (Debugger.IsAttached == false) Debugger.Launch();
+        }
+
+        return args;
+    }
+#endif
+
     [STAThread]
     public static int Main(string[] args) {
         // Work around issue w/ pydoc - piping to more doesn't work so
@@ -73,6 +92,10 @@ internal sealed class PythonConsoleHost : ConsoleHost {
             Environment.SetEnvironmentVariable("TERM", "dumb");
         }
 
+#if DEBUG
+        args = MaybeAttachDebugger(args);
+#endif
+        
         return new PythonConsoleHost().Run(args);
     }
 }

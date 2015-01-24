@@ -151,7 +151,8 @@ namespace IronPython.Modules {
                     if (errors == "strict" && isDecode) {
                         throw PythonOps.UnicodeDecodeError("'charmap' codec can't decode characters at index {0} because charmap maps to None", i);
                     } else if (!isDecode) {
-                        throw PythonOps.UnicodeEncodeError("'charmap' codec can't encode characters at index {0} because charmap maps to None", i);
+                        throw PythonOps.UnicodeEncodeError("charmap", input[i], i,
+                            "'charmap' codec can't encode characters at index {0} because charmap maps to None", i);
                     }
                     res.Append("\ufffd");
                 } else if (val is string) {
@@ -640,17 +641,21 @@ namespace IronPython.Modules {
 
 #if FEATURE_ENCODING    // DecoderFallback
             encoding = (Encoding)encoding.Clone();
-
             ExceptionFallBack fallback = null;
             if (fAlwaysThrow) {
                 encoding.DecoderFallback = DecoderFallback.ExceptionFallback;
             } else {
-                fallback = new ExceptionFallBack(bytes);
+                fallback = (encoding is UTF8Encoding && DotNet) ?
+                    // This is a workaround for a bug, see ExceptionFallbackBufferUtf8DotNet
+                    // for more details.
+                    new ExceptionFallBackUtf8DotNet(bytes):
+                    new ExceptionFallBack(bytes);
                 encoding.DecoderFallback = fallback;
             }
 #endif
             string decoded = encoding.GetString(bytes, 0, bytes.Length);
             int badByteCount = 0;
+
 
 #if FEATURE_ENCODING    // DecoderFallback
             if (!fAlwaysThrow) {
@@ -664,6 +669,14 @@ namespace IronPython.Modules {
             PythonTuple tuple = PythonTuple.MakeTuple(decoded, bytes.Length - badByteCount);
             return tuple;
         }
+
+
+        internal static readonly bool DotNet;
+
+        static PythonCodecs() {
+            DotNet = Type.GetType("Mono.Runtime") == null;
+        }
+
 
         private static int CheckPreamble(Encoding enc, string buffer) {
             byte[] preamble = enc.GetPreamble();
@@ -722,6 +735,11 @@ namespace IronPython.Modules {
     class ExceptionFallBack : DecoderFallback {
         internal ExceptionFallbackBuffer buffer;
 
+        // This ctor can be removed as soon as workaround for utf8 encoding in .net is
+        // no longer necessary.
+        protected ExceptionFallBack() {
+        }
+
         public ExceptionFallBack(byte[] bytes) {
             buffer = new ExceptionFallbackBuffer(bytes);
         }
@@ -737,16 +755,17 @@ namespace IronPython.Modules {
 
     class ExceptionFallbackBuffer : DecoderFallbackBuffer {
         internal byte[] badBytes;
-        private byte[] inputBytes;
+        protected byte[] inputBytes;
+
         public ExceptionFallbackBuffer(byte[] bytes) {
             inputBytes = bytes;
         }
 
         public override bool Fallback(byte[] bytesUnknown, int index) {
             if (index > 0 && index + bytesUnknown.Length != inputBytes.Length) {
-                throw PythonOps.UnicodeEncodeError("failed to decode bytes at index {0}", index);
+                throw PythonOps.UnicodeDecodeError(
+                    String.Format("failed to decode bytes at index: {0}", index), bytesUnknown, index);
             }
-
             // just some bad bytes at the end
             badBytes = bytesUnknown;
             return false;
@@ -763,6 +782,40 @@ namespace IronPython.Modules {
         public override int Remaining {
             get { return 0; }
         }
+    }
+
+    // This class can be removed as soon as workaround for utf8 encoding in .net is
+    // no longer necessary.
+    class ExceptionFallBackUtf8DotNet : ExceptionFallBack {
+        public ExceptionFallBackUtf8DotNet(byte[] bytes) {
+            buffer = new ExceptionFallbackBufferUtf8DotNet(bytes);
+        }
+    }
+
+    // This class can be removed as soon as workaround for utf8 encoding in .net is
+    // no longer necessary.
+    class ExceptionFallbackBufferUtf8DotNet : ExceptionFallbackBuffer {
+        private bool ignoreNext = false;
+
+        public ExceptionFallbackBufferUtf8DotNet(byte[] bytes) : base(bytes) {
+        }
+
+        public override bool Fallback(byte[] bytesUnknown, int index) {
+            // In case of dot net and utf-8 value of index does not conform to documentation provided by
+            // Microsoft http://msdn.microsoft.com/en-us/library/bdftay9c%28v=vs.100%29.aspx
+            // The value of index is mysteriously decreased by the size of bytesUnknown
+            // Tested on Windows 7 64, .NET 4.0.30319.18408, all recommended patches as of 06.02.2014
+            if (ignoreNext) {
+                // dot net sometimes calls second time after this method returns false
+                // if this is the case, do nothing
+                return false;
+            }
+            // adjust index
+            index = index + bytesUnknown.Length;
+            ignoreNext = true;
+            return base.Fallback(bytesUnknown, index);
+        }
+
     }
 #endif
 

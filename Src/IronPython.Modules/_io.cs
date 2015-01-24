@@ -1871,8 +1871,6 @@ namespace IronPython.Modules {
             public StringIO(
                 CodeContext/*!*/ context,
                 [DefaultParameterValue("")]string initial_value,
-                [DefaultParameterValue("utf-8")]string encoding,
-                [DefaultParameterValue("string")]string errors,
                 [DefaultParameterValue("\n")]string newline
             ) : base(context) {
             }
@@ -1880,11 +1878,11 @@ namespace IronPython.Modules {
             public void __init__(
                 CodeContext/*!*/ context,
                 [DefaultParameterValue("")]string initial_value,
-                [DefaultParameterValue("utf-8")]string encoding,
-                [DefaultParameterValue("string")]string errors,
                 [DefaultParameterValue("\n")]string newline
             ) {
-                base.__init__(context, new BytesIO(context), encoding, errors, newline, false);
+                var buf = new BytesIO(context);
+                buf.__init__(null);
+                base.__init__(context, buf, "utf-8", null, newline, false);
 
                 if (newline == null) {
                     _writeTranslate = false;
@@ -2277,20 +2275,23 @@ namespace IronPython.Modules {
 
                 BigInteger position;
                 if (pos is int) {
-                    position = (BigInteger)pos;
+                    position = (int)pos;
                 } else if (pos is BigInteger) {
                     position = (BigInteger)pos;
                 } else if (!Converter.TryConvertToBigInteger(pos, out position)) {
                     throw PythonOps.TypeError("an integer is required");
                 }
 
+                var savePos = tell(context);
                 seek(context, position, 0);
-                return _bufferTyped != null ?
+                var ret = _bufferTyped != null ?
                     _bufferTyped.truncate(context, null) :
                     GetBigInt(
                         PythonOps.Invoke(context, _buffer, "truncate"),
                         "truncate() should return an integer"
                     );
+                seek(context, savePos, 0);
+                return ret;
             }
 
             public override object detach(CodeContext/*!*/ context) {

@@ -17,6 +17,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
 using IronPython.Runtime.Operations;
 using Microsoft.Scripting.Runtime;
@@ -61,40 +62,15 @@ namespace IronPython.Runtime.Types {
         }
 
         public object keys(CodeContext context) {
-            return new List(_dt.GetMemberDictionary(context, false).Keys);
+            return _dt.GetMemberDictionary(context, false).keys();
         }
 
         public object values(CodeContext context) {
-            List res = new List();
-            foreach (KeyValuePair<object, object> kvp in _dt.GetMemberDictionary(context, false)) {
-                PythonTypeUserDescriptorSlot dts = kvp.Value as PythonTypeUserDescriptorSlot;
-
-                if (dts != null) {
-                    res.AddNoLock(dts.Value);
-                } else {
-                    res.AddNoLock(kvp.Value);
-                }
-            }
-
-            return res;
+            return _dt.GetMemberDictionary(context, false).values();
         }
 
         public List items(CodeContext context) {
-            List res = new List();
-            foreach (KeyValuePair<object, object> kvp in _dt.GetMemberDictionary(context, false)) {
-                PythonTypeUserDescriptorSlot dts = kvp.Value as PythonTypeUserDescriptorSlot;
-
-                object val;
-                if (dts != null) {
-                    val = dts.Value;
-                } else {
-                    val = kvp.Value;
-                }
-
-                res.append(PythonTuple.MakeTuple(kvp.Key, val));
-            }
-
-            return res;
+            return _dt.GetMemberDictionary(context, false).items();
         }
 
         public PythonDictionary copy(CodeContext/*!*/ context) {

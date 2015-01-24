@@ -155,12 +155,18 @@ namespace IronPython.Modules {
             return null;
         }
 
+        private static readonly byte[] FakeZeroLength = { 42 };
+
         public static byte[] TryCheckBytes(object o) {
             Bytes bytes = o as Bytes;
             if (bytes != null) {
+                if (bytes._bytes.Length == 0) {
+                    // OpCodes.Ldelema refuses to get address of empty array
+                    // So we feed it with a fake one (cp34892)
+                    return FakeZeroLength;
+                }
                 return bytes._bytes;
             }
-
             return null;
         }
 
@@ -301,6 +307,10 @@ namespace IronPython.Modules {
 
             if (value is BigInteger) {
                 return new IntPtr((long)(BigInteger)value);
+            }
+
+            if (value is Int64) {
+                return new IntPtr((Int64) value);
             }
 
             if (value == null) {
@@ -485,7 +495,7 @@ namespace IronPython.Modules {
 
         public static int GetUnsignedLong(object value, object type) {
             int? res = Converter.ImplicitConvertToInt32(value);
-            if (res != null && res.Value >= 0) {
+            if (res != null) {
                 return res.Value;
             }
 

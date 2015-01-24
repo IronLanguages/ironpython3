@@ -610,11 +610,15 @@ namespace IronPython.Runtime {
         /// The code is then executed in a specific CodeContext by calling the .Call method.
         /// 
         /// If the code is being used for compile (vs. exec/eval/execfile) then it needs to be
-        /// registered incase our tracing mode changes.
+        /// registered in case our tracing mode changes.
         /// </summary>
         internal static FunctionCode FromSourceUnit(SourceUnit sourceUnit, PythonCompilerOptions options, bool register) {
             var code = PythonContext.CompilePythonCode(sourceUnit, options, ThrowingErrorSink.Default);
-
+            if (sourceUnit.CodeProperties == ScriptCodeParseResult.Empty) {
+                // source span is made up
+                throw new SyntaxErrorException("unexpected EOF while parsing",
+                    sourceUnit, new SourceSpan(new SourceLocation(0, 1, 1), new SourceLocation(0, 1, 1)), 0, Severity.Error);
+            }
             return ((RunnableScriptCode)code).GetFunctionCode(register);
         }
 

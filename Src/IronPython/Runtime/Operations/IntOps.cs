@@ -164,16 +164,16 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(PythonType cls, string s, int radix) {
+        public static object __new__(PythonType cls, string s, int @base) {
             ValidateType(cls);
 
             // radix 16/8/2 allows a 0x/0o/0b preceding it... We either need a whole new
             // integer parser, or special case it here.
-            if (radix == 16 || radix == 8 || radix == 2) {
-                s = TrimRadix(s, radix);
+            if (@base == 16 || @base == 8 || @base == 2) {
+                s = TrimRadix(s, @base);
             }
 
-            return LiteralParser.ParseIntegerSign(s, radix);
+            return LiteralParser.ParseIntegerSign(s, @base);
         }
 
         [StaticExtensionMethod]

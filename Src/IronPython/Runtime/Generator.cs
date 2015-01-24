@@ -105,12 +105,17 @@ namespace IronPython.Runtime {
         /// </summary>
         [LightThrowing]
         public object @throw(object type) {
-            return @throw(type, null, null);
+            return @throw(type, null, null, false);
         }
 
         [LightThrowing]
         public object @throw(object type, object value) {
-            return @throw(type, value, null);
+            return @throw(type, value, null, false);
+        }
+
+        [LightThrowing]
+        public object @throw(object type, object value, object traceback) {
+            return @throw(type, value, traceback, false);
         }
 
         /// <summary>
@@ -121,7 +126,7 @@ namespace IronPython.Runtime {
         /// If the generator catches the exception and yields another value, that is the return value of g.throw().
         /// </summary>
         [LightThrowing]
-        public object @throw(object type, object value, object traceback) {
+        private object @throw(object type, object value, object traceback, bool finalizing) {
             // The Pep342 explicitly says "The type argument must not be None". 
             // According to CPython 2.5's implementation, a null type argument should:
             // - throw a TypeError exception (just as Raise(None) would) *outside* of the generator's body
@@ -147,11 +152,13 @@ namespace IronPython.Runtime {
                     return throwable;
                 }
             }
-            
+            if (finalizing) {
+                // we are running on the finalizer thread - things can be already collected
+                return LightExceptions.Throw(PythonOps.StopIteration());
+            }
             if (!((IEnumerator)this).MoveNext()) {
                 return LightExceptions.Throw(PythonOps.StopIteration());
             }
-
             return CurrentValue;
         }
 
@@ -174,13 +181,17 @@ namespace IronPython.Runtime {
             return next();
         }
 
+        [LightThrowing]
+        public object close() {
+            return close(false);
+        }
+
         /// <summary>
         /// Close introduced in Pep 342.
         /// </summary>
         [LightThrowing]
-        public object close() {
+        private object close(bool finalizing) {
             // This is nop if the generator is already closed.
-
             // Optimization to avoid throwing + catching an exception if we're already closed.
             if (Closed) {
                 return null;
@@ -188,7 +199,7 @@ namespace IronPython.Runtime {
 
             // This function body is the psuedo code straight from Pep 342.
             try {
-                object res = @throw(new GeneratorExitException());
+                object res = @throw(new GeneratorExitException(), null, null, finalizing);
                 Exception lightEh = LightExceptions.GetLightException(res);
                 if (lightEh != null) {
                     if (lightEh is StopIterationException || lightEh is GeneratorExitException) {
@@ -297,7 +308,7 @@ namespace IronPython.Runtime {
             if (CanSetSysExcInfo || ContainsTryFinally) {
                 try {
                     // This may run the users generator.
-                    object res = close();
+                    object res = close(true);
                     Exception ex = LightExceptions.GetLightException(res);
                     if (ex != null) {
                         HandleFinalizerException(ex);
@@ -389,7 +400,7 @@ namespace IronPython.Runtime {
                 // 2. Exit normally: _next returns false.
                 // 3. Exit with a StopIteration exception: for-loops and other enumeration consumers will 
                 //    catch this and terminate the loop without propogating the exception.
-                // 4. Exit via some other unhandled exception: This will close the generator, but the exception still propogates.
+                // 4. Exit via some other unhandled exception: This will close the generator, but the exception still propagates.
                 //    _next does not return, so ret is left assigned to false (closed), which we detect in the finally.
                 if (!(ret = GetNext())) {
                     CurrentValue = OperationFailed.Value;

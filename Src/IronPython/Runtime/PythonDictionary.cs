@@ -406,17 +406,17 @@ namespace IronPython.Runtime {
         public void update() {
         }
 
-        public void update(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> b) {
-            DictionaryOps.update(context, this, b);
+        public void update(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> other\u00F8) {
+            DictionaryOps.update(context, this, other\u00F8);
         }
 
-        public void update(CodeContext/*!*/ context, object b) {
-            DictionaryOps.update(context, this, b);
+        public void update(CodeContext/*!*/ context, object other\u00F8) {
+            DictionaryOps.update(context, this, other\u00F8);
         }
 
-        public void update(CodeContext/*!*/ context, object b, [ParamDictionary]IDictionary<object, object> f) {
-            DictionaryOps.update(context, this, b);
-            DictionaryOps.update(context, this, f);
+        public void update(CodeContext/*!*/ context, object other\u00F8, [ParamDictionary]IDictionary<object, object> otherArgs\u00F8) {
+            DictionaryOps.update(context, this, other\u00F8);
+            DictionaryOps.update(context, this, otherArgs\u00F8);
         }
 
         private static object fromkeysAny(CodeContext/*!*/ context, PythonType cls, object o, object value) {

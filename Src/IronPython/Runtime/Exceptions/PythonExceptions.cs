@@ -670,6 +670,7 @@ for k, v in toError.iteritems():
                 if (errCode is int) {
                     switch ((int)errCode) {
                         case ERROR_BROKEN_PIPE:
+                        case ERROR_NO_DATA:
                             errno = 32;
                             break;
                         case ERROR_FILE_NOT_FOUND:
@@ -843,6 +844,7 @@ for k, v in toError.iteritems():
             internal const int ERROR_INFLOOP_IN_RELOC_CHAIN = 202;
             internal const int ERROR_FILENAME_EXCED_RANGE = 206;
             internal const int ERROR_NESTING_NOT_ALLOWED = 215;
+            internal const int ERROR_NO_DATA = 232; // The pipe is being closed.
             internal const int ERROR_NOT_ENOUGH_QUOTA = 1816;
 
             // These map to POSIX errno 22 and are added by hand as needed.
@@ -875,7 +877,8 @@ for k, v in toError.iteritems():
             protected internal override void InitializeFromClr(System.Exception/*!*/ exception) {
                 EncoderFallbackException ex = exception as EncoderFallbackException;
                 if (ex != null) {
-                    __init__("unknown", new string(ex.CharUnknown, 1), ex.Index, ex.Index + 1, "");
+                    __init__((exception.Data.Contains("encoding")) ? exception.Data["encoding"] : "unknown",
+                        new string(ex.CharUnknown, 1), ex.Index, ex.Index + 1, exception.Message);
                 } else {
                     base.InitializeFromClr(exception);
                 }
@@ -1275,7 +1278,7 @@ for k, v in toError.iteritems():
 
 #if !SILVERLIGHT
             frames = new List<DynamicStackFrame>(frames);
-            List<DynamicStackFrame> res = new List<DynamicStackFrame>();
+            List<DynamicStackFrame> identified = new List<DynamicStackFrame>();
 
             // merge .NET frames w/ any dynamic frames that we have
             try {
@@ -1298,7 +1301,7 @@ for k, v in toError.iteritems():
                         // upon name/module/declaring type which will always be a correct
                         // check for dynamic methods.
                         if (MethodsMatch(method, other)) {
-                            res.Add(frames[j]);
+                            identified.Add(frames[j]);
                             frames.RemoveAt(j);
                             lastFound = j;
                             break;
@@ -1309,9 +1312,10 @@ for k, v in toError.iteritems():
                 // can't access new StackTrace(e) due to security
             }
 
-            // add any remaining frames we couldn't find
-            res.AddRange(frames);
-            return res.ToArray();
+            // combine identified and any remaining frames we couldn't find
+            // this is equivalent of adding remaining frames in front of identified
+            frames.AddRange(identified);
+            return frames.ToArray();
 #else 
             return frames.ToArray();
 #endif

@@ -72,7 +72,7 @@ namespace IronPython.Modules {
 
         public static RE_Pattern compile(CodeContext/*!*/ context, object pattern) {
             try {
-                return new RE_Pattern(context, ValidatePattern(pattern), 0, true);
+                return GetPattern(context, pattern, 0, true);
             } catch (ArgumentException e) {
                 throw PythonExceptions.CreateThrowable(error(context), e.Message);
             }
@@ -80,7 +80,7 @@ namespace IronPython.Modules {
 
         public static RE_Pattern compile(CodeContext/*!*/ context, object pattern, object flags) {
             try {
-                return new RE_Pattern(context, ValidatePattern(pattern), PythonContext.GetContext(context).ConvertToInt32(flags), true);
+                return GetPattern(context, pattern, PythonContext.GetContext(context).ConvertToInt32(flags), true);
             } catch (ArgumentException e) {
                 throw PythonExceptions.CreateThrowable(error(context), e.Message);
             }
@@ -882,6 +882,10 @@ namespace IronPython.Modules {
         #region Private helper functions
 
         private static RE_Pattern GetPattern(CodeContext/*!*/ context, object pattern, int flags) {
+            return GetPattern(context, pattern, flags, false);
+        }
+
+        private static RE_Pattern GetPattern(CodeContext/*!*/ context, object pattern, int flags, bool compiled) {
             RE_Pattern res = pattern as RE_Pattern;
             if (res != null) {
                 return res;
@@ -891,10 +895,15 @@ namespace IronPython.Modules {
             PatternKey key = new PatternKey(strPattern, flags);
             lock (_cachedPatterns) {
                 if (_cachedPatterns.TryGetValue(new PatternKey(strPattern, flags), out res)) {
+#if SILVERLIGHT
                     return res;
+#else
+                    if ( ! compiled || (res._re.Options & RegexOptions.Compiled) == RegexOptions.Compiled) {
+                        return res;
+                    }
+#endif
                 }
-
-                res = new RE_Pattern(context, strPattern, flags);
+                res = new RE_Pattern(context, strPattern, flags, compiled);
                 _cachedPatterns[key] = res;
                 return res;
             }
@@ -1032,19 +1041,28 @@ namespace IronPython.Modules {
                                                 pattern = pattern.Remove(nameIndex, 1);
                                             }
                                             break;
-                                        case 'i': res.Options |= RegexOptions.IgnoreCase; break;
+                                        case 'i':
+                                            res.Options |= RegexOptions.IgnoreCase;
+                                            RemoveOption(ref pattern, ref nameIndex);
+                                            break;
                                         case 'L':
                                             res.Options &= ~(RegexOptions.CultureInvariant);
                                             RemoveOption(ref pattern, ref nameIndex);
                                             break;
-                                        case 'm': res.Options |= RegexOptions.Multiline; break;
-                                        case 's': res.Options |= RegexOptions.Singleline; break;
+                                        case 'm': res.Options |= RegexOptions.Multiline;
+                                            RemoveOption(ref pattern, ref nameIndex);
+                                            break;
+                                        case 's': res.Options |= RegexOptions.Singleline;
+                                            RemoveOption(ref pattern, ref nameIndex);
+                                            break;
                                         case 'u':
                                             // specify unicode; not relevant and not valid under .NET as we're always unicode
                                             // -- so the option needs to be removed
                                             RemoveOption(ref pattern, ref nameIndex);
                                             break;
-                                        case 'x': res.Options |= RegexOptions.IgnorePatternWhitespace; break;
+                                        case 'x': res.Options |= RegexOptions.IgnorePatternWhitespace;
+                                            RemoveOption(ref pattern, ref nameIndex);
+                                            break;
                                         case ':': break; // non-capturing
                                         case '=': break; // look ahead assertion
                                         case '<': break; // positive look behind assertion
@@ -1144,7 +1162,8 @@ namespace IronPython.Modules {
                 pattern = pattern.Remove(nameIndex - 2, 4);
                 nameIndex -= 2;
             } else {
-                pattern = pattern.Remove(nameIndex--, 1);
+                pattern = pattern.Remove(nameIndex, 1);
+                nameIndex -= 2;
             }
         }
 

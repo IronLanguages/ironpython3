@@ -32,7 +32,6 @@ using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-
 #if FEATURE_NUMERICS
 using System.Numerics;
 #else
@@ -67,26 +66,33 @@ namespace IronPython.Modules {
         public static bool access(CodeContext/*!*/ context, string path, int mode) {
             if (path == null) throw PythonOps.TypeError("expected string, got None");
 
-            if (mode == F_OK) {
-                return context.LanguageContext.DomainManager.Platform.FileExists(path) ||
-            context.LanguageContext.DomainManager.Platform.DirectoryExists(path);
-            }
 #if FEATURE_FILESYSTEM
-            // match the behavior of the VC C Runtime
-            FileAttributes fa = File.GetAttributes(path);
-            if ((fa & FileAttributes.Directory) != 0) {
-                // directories have read & write access
+            try {
+                FileAttributes fa = File.GetAttributes(path);
+                if (mode == F_OK) {
+                    return true;
+                }
+                // match the behavior of the VC C Runtime
+                if ((fa & FileAttributes.Directory) != 0) {
+                    // directories have read & write access
+                    return true;
+                }
+                if ((fa & FileAttributes.ReadOnly) != 0 && (mode & W_OK) != 0) {
+                    // want to write but file is read-only
+                    return false;
+                }
                 return true;
+            } catch(ArgumentException) {
+            } catch(PathTooLongException) {
+            } catch(NotSupportedException) {
+            } catch(FileNotFoundException) {
+            } catch(DirectoryNotFoundException) {
+            } catch(IOException) {
+            } catch(UnauthorizedAccessException) {
             }
-
-            if ((fa & FileAttributes.ReadOnly) != 0 && (mode & W_OK) != 0) {
-                // want to write but file is read-only
-                return false;
-            }
-
-            return true;
-#else
             return false;
+#else
+            throw new NotImplementedException();
 #endif
         }
 
@@ -116,21 +122,97 @@ namespace IronPython.Modules {
             }
         }
 #endif
-
         public static void close(CodeContext/*!*/ context, int fd) {
+            PythonContext pythonContext = PythonContext.GetContext(context);
+            PythonFileManager fileManager = pythonContext.FileManager;
+            PythonFile file;
+            if (fileManager.TryGetFileFromId(pythonContext, fd, out file)) {
+                fileManager.CloseIfLast(fd, file);
+            } else {
+                Stream stream = fileManager.GetObjectFromId(fd) as Stream;
+                if (stream == null) {
+                    throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+                }
+                fileManager.CloseIfLast(fd, stream);
+            }
+        }
+
+        public static void closerange(CodeContext/*!*/ context, int fd_low, int fd_high) {
+            for (var fd = fd_low; fd <= fd_high; fd++) {
+                try {
+                    close(context, fd);
+                } catch (OSException) {
+                    // ignore errors on close
+                }
+            }
+        }
+        private static bool IsValidFd(CodeContext/*!*/ context, int fd) {
             PythonContext pythonContext = PythonContext.GetContext(context);
             PythonFile file;
             if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out file)) {
-                file.close();
+                return true;
+            }
+            Object o;
+            if (pythonContext.FileManager.TryGetObjectFromId(pythonContext, fd, out o)) {
+                var stream = o as Stream;
+                if (stream != null) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public static int dup(CodeContext/*!*/ context, int fd) {
+            PythonContext pythonContext = PythonContext.GetContext(context);
+            PythonFile file;
+            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out file)) {
+                return pythonContext.FileManager.AddToStrongMapping(file);
             } else {
                 Stream stream = pythonContext.FileManager.GetObjectFromId(fd) as Stream;
                 if (stream == null) {
                     throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
                 }
-
-                stream.Close();
+                return pythonContext.FileManager.AddToStrongMapping(stream);
             }
         }
+
+
+        public static int dup2(CodeContext/*!*/ context, int fd, int fd2) {
+            PythonContext pythonContext = PythonContext.GetContext(context);
+            PythonFile file;
+
+            if (!IsValidFd(context, fd)) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+            }
+
+            if (! pythonContext.FileManager.ValidateFdRange(fd2)) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+            }
+
+            bool fd2Valid = IsValidFd(context, fd2);
+
+            if (fd == fd2) {
+                if (fd2Valid) {
+                    return fd2;
+                }
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+            }
+
+            if (fd2Valid) {
+                close(context, fd2);
+            }
+
+            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out file)) {
+                return pythonContext.FileManager.AddToStrongMapping(file, fd2);
+            }
+            var stream = pythonContext.FileManager.GetObjectFromId(fd) as Stream;
+            if (stream == null) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+            }
+            return pythonContext.FileManager.AddToStrongMapping(stream, fd2);
+        }
+
+
         
 #if FEATURE_PROCESS
         /// <summary>
@@ -181,6 +263,23 @@ namespace IronPython.Modules {
                 return new stat_result(8192);
             }
             return lstat(pf.name);
+        }
+
+        public static void fsync(CodeContext context, int fd) {
+            PythonContext pythonContext = PythonContext.GetContext(context);
+            PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
+            if (!pf.IsOutput) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+            }
+            try {
+                pf.FlushToDisk();
+            } catch (Exception ex) {
+                if (ex is ValueErrorException ||
+                    ex is IOException) {
+                    throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+                }
+                throw;
+            }
         }
 
         public static string getcwd(CodeContext/*!*/ context) {
@@ -284,7 +383,8 @@ namespace IronPython.Modules {
         /// Like stat(path), but do not follow symbolic links.
         /// </summary>
         [LightThrowing]
-        public static object lstat(string path) {
+        public static object lstat([BytesConversion]string path) {
+            // TODO: detect links
             return stat(path);
         }
 
@@ -322,14 +422,16 @@ namespace IronPython.Modules {
                 FileMode fileMode = FileModeFromFlags(flag);
                 FileAccess access = FileAccessFromFlags(flag);
                 FileOptions options = FileOptionsFromFlags(flag);
-                FileStream fs;
-                if (access == FileAccess.Read && (fileMode == FileMode.CreateNew || fileMode == FileMode.Create || fileMode == FileMode.Append)) {
+                Stream fs;
+                if (Environment.OSVersion.Platform == PlatformID.Win32NT && (String.Compare(filename, "nul", true) == 0)) {
+                    fs = Stream.Null;
+                } else if (access == FileAccess.Read && (fileMode == FileMode.CreateNew || fileMode == FileMode.Create || fileMode == FileMode.Append)) {
                     // .NET doesn't allow Create/CreateNew w/ access == Read, so create the file, then close it, then
                     // open it again w/ just read access.
                     fs = new FileStream(filename, fileMode, FileAccess.Write, FileShare.None);
                     fs.Close();
                     fs = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, DefaultBufferSize, options);
-                } else if(access == FileAccess.ReadWrite && fileMode == FileMode.Append) {
+                } else if (access == FileAccess.ReadWrite && fileMode == FileMode.Append) {
                     fs = new FileStream(filename, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, DefaultBufferSize, options);
                 } else {
                     fs = new FileStream(filename, fileMode, access, FileShare.ReadWrite, DefaultBufferSize, options);
@@ -368,18 +470,7 @@ namespace IronPython.Modules {
 
 #if FEATURE_PROCESS
         public static PythonTuple pipe(CodeContext context) {
-            IntPtr hRead, hWrite;
-
-            PythonSubprocess.SECURITY_ATTRIBUTES secAttrs = new PythonSubprocess.SECURITY_ATTRIBUTES();
-            secAttrs.nLength = Marshal.SizeOf(secAttrs);
-
-            // TODO: handle unsuccessful call?
-            PythonSubprocess.CreatePipePI(out hRead, out hWrite, ref secAttrs, 0);
-
-            return PythonTuple.MakeTuple(
-                PythonMsvcrt.open_osfhandle(context, new BigInteger(hRead.ToInt64()), 0),
-                PythonMsvcrt.open_osfhandle(context, new BigInteger(hWrite.ToInt64()), 0)
-            );
+            return PythonFile.CreatePipeAsFd(context);
         }
 
         public static PythonFile popen(CodeContext/*!*/ context, string command) {
@@ -392,7 +483,7 @@ namespace IronPython.Modules {
 
         public static PythonFile popen(CodeContext/*!*/ context, string command, string mode, int bufsize) {
             if (String.IsNullOrEmpty(mode)) mode = "r";
-            ProcessStartInfo psi = GetProcessInfo(command);
+            ProcessStartInfo psi = GetProcessInfo(command, true);
             psi.CreateNoWindow = true;  // ipyw shouldn't create a new console window
             Process p;
             PythonFile res;
@@ -435,7 +526,7 @@ namespace IronPython.Modules {
             if (mode == "t") mode = String.Empty;
 
             try {
-                ProcessStartInfo psi = GetProcessInfo(command);
+                ProcessStartInfo psi = GetProcessInfo(command, true);
                 psi.RedirectStandardInput = true;
                 psi.RedirectStandardOutput = true;
                 psi.CreateNoWindow = true; // ipyw shouldn't create a new console window
@@ -462,7 +553,7 @@ namespace IronPython.Modules {
             if (mode == "t") mode = String.Empty;
 
             try {
-                ProcessStartInfo psi = GetProcessInfo(command);
+                ProcessStartInfo psi = GetProcessInfo(command, true);
                 psi.RedirectStandardInput = true;
                 psi.RedirectStandardOutput = true;
                 psi.RedirectStandardError = true;
@@ -494,7 +585,7 @@ namespace IronPython.Modules {
             try {
                 PythonContext pythonContext = PythonContext.GetContext(context);
                 PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
-                return pf.read();
+                return pf.read(buffersize);
             } catch (Exception e) {
                 throw ToPythonException(e);
             }
@@ -1146,7 +1237,7 @@ namespace IronPython.Modules {
 
         [Documentation("stat(path) -> stat result\nGathers statistics about the specified file or directory")]
         [LightThrowing]
-        public static object stat(string path) {            
+        public static object stat([BytesConversion]string path) {
             if (path == null) {
                 return LightExceptions.Throw(PythonOps.TypeError("expected string, got NoneType"));
             }
@@ -1251,7 +1342,12 @@ namespace IronPython.Modules {
 #if FEATURE_PROCESS
         [Documentation("system(command) -> int\nExecute the command (a string) in a subshell.")]
         public static int system(string command) {
-            ProcessStartInfo psi = GetProcessInfo(command);
+            ProcessStartInfo psi = GetProcessInfo(command, false);
+
+            if (psi == null) {
+                return -1;
+            }
+
             psi.CreateNoWindow = false;
 
             try {
@@ -1492,6 +1588,7 @@ are defined in the signal module.")]
             }
             
             int error = Marshal.GetLastWin32Error();
+
             string message = e.Message;
             int errorCode = 0;
 
@@ -1527,6 +1624,7 @@ are defined in the signal module.")]
 
 #if !SILVERLIGHT5
                 errorCode = System.Runtime.InteropServices.Marshal.GetHRForException(e);
+
                 if ((errorCode & ~0xfff) == (unchecked((int)0x80070000))) {
                     // Win32 HR, translate HR to Python error code if possible, otherwise
                     // report the HR.
@@ -1609,13 +1707,17 @@ are defined in the signal module.")]
             }
         }
 
-        private static ProcessStartInfo GetProcessInfo(string command) {
+        private static ProcessStartInfo GetProcessInfo(string command, bool throwException) {
             // TODO: always run through cmd.exe ?
             command = command.Trim();
             string baseCommand, args;
             if (!TryGetExecutableCommand(command, out baseCommand, out args)) {
                 if (!TryGetShellCommand(command, out baseCommand, out args)) {
-                    throw PythonOps.WindowsError("The system can not find command '{0}'", command);
+                    if (throwException) {
+                        throw PythonOps.WindowsError("The system can not find command '{0}'", command);
+                    } else {
+                        return null;
+                    }
                 }
             }
 
@@ -1695,3 +1797,4 @@ are defined in the signal module.")]
         #endregion
     }
 }
+ 

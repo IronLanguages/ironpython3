@@ -16,6 +16,7 @@
 #if FEATURE_FULL_NET
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -114,9 +115,30 @@ namespace IronPython.Modules {
                 dict.AddNoLock("serialNumber", SerialNumberToPython(cert));
                 dict.AddNoLock("version", cert.GetCertHashString());
                 dict.AddNoLock("issuer", IssuerToPython(context, cert.Issuer));
+                AddSubjectAltNames(dict, new X509Certificate2(cert));
             }
 
             return new PythonDictionary(dict);
+        }
+
+        private static void AddSubjectAltNames(CommonDictionaryStorage dict, X509Certificate2 cert2) {
+            foreach (var extension in cert2.Extensions) {
+                if (extension.Oid.Value != "2.5.29.17") {  // Subject Alternative Name
+                    continue;
+                }
+                var altNames = new List<object>();
+                var sr = new StringReader(extension.Format(true));
+                string line;
+                while (null != (line = sr.ReadLine())) {
+                    line = line.Trim();
+                    var keyValue = line.Split('=');
+                    if (keyValue[0] == "DNS Name" && keyValue.Length == 2) {
+                        altNames.Add(PythonTuple.MakeTuple("DNS", keyValue[1]));
+                    }
+                }
+                dict.AddNoLock("subjectAltName", PythonTuple.MakeTuple(altNames.ToArray()));
+                break;
+            }
         }
 
         private static string ToPythonDateFormat(string date) {
@@ -133,16 +155,41 @@ namespace IronPython.Modules {
             return res;
         }
 
-        private static PythonTuple IssuerToPython(CodeContext context, string issuer) {
-            var split = issuer.Split(',');
-            object[] res = new object[split.Length];
-            for(int i = 0; i<split.Length; i++) {
-                res[i] = PythonTuple.MakeTuple(
-                    IssuerFieldToPython(context, split[i].Trim())
-                );
-                
+        // yields parts out of issuer or subject string
+        // Respects quoted comma e.g: CN=*.c.ssl.fastly.net, O="Fastly, Inc.", L=San Francisco, S=California, C=US
+        // Quote characters are removed
+        private static IEnumerable<string> IssuerParts(string issuer) {
+            var inQuote = false;
+            var token = new StringBuilder();
+            foreach (var c in issuer) {
+                if (inQuote) {
+                    if (c == '"') {
+                        inQuote = false;
+                    } else {
+                        token.Append(c);
+                    }
+                } else {
+                    if (c == '"') {
+                        inQuote = true;
+                    } else if (c == ',') {
+                        yield return token.ToString().Trim();
+                        token.Length = 0;
+                    } else {
+                        token.Append(c);
+                    }
+                }
             }
-            return PythonTuple.MakeTuple(res);
+        }
+
+        private static PythonTuple IssuerToPython(CodeContext context, string issuer) {
+            var collector = new List<object>();
+            foreach (var part in IssuerParts(issuer)) {
+                var field = IssuerFieldToPython(context, part);
+                if (field != null) {
+                    collector.Add(field); 
+                }
+            }
+            return PythonTuple.MakeTuple(collector.ToArray());
         }
 
         private static PythonTuple IssuerFieldToPython(CodeContext context, string p) {
@@ -162,7 +209,8 @@ namespace IronPython.Modules {
                 return PythonTuple.MakeTuple("email", p.Substring(2));
             }
 
-            throw PythonExceptions.CreateThrowable(SSLError(context), "Unknown field: ", p);
+            // Ignore unknown fields
+            return null;
         }
 
 

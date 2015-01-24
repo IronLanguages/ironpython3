@@ -571,9 +571,10 @@ namespace IronPython.Runtime.Types {
                     if (!System.IO.File.Exists(xml)) {
 #if !CLR2
                         // On .NET 4.0 documentation is in the reference assembly location
+                        // for 64-bit processes, we need to look in Program Files (x86)
                         xml = Path.Combine(
                             Path.Combine(
-                                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), 
+                                Environment.GetFolderPath(Environment.Is64BitProcess ? Environment.SpecialFolder.ProgramFilesX86 : Environment.SpecialFolder.ProgramFiles), 
                                 _frameworkReferencePath
                             ),
                             baseFile

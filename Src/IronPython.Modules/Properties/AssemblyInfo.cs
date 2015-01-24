@@ -45,9 +45,7 @@ using System.Security;
 // You can specify all the values or you can default the Revision and Build Numbers 
 // by using the '*' as shown below:
 
-#if !WIN8
 [assembly: SecurityTransparent]
-#endif
 
 #if FEATURE_APTCA
 [assembly: AllowPartiallyTrustedCallers]

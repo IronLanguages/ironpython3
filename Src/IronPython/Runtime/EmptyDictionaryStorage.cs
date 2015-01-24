@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 
+using IronPython.Runtime.Operations;
+
 namespace IronPython.Runtime {
     /// <summary>
     /// Singleton used for dictionaries which contain no items.
@@ -35,7 +37,11 @@ namespace IronPython.Runtime {
         }
 
         public override bool Contains(object key) {
-            return false;
+            // make sure argument is valid, do not calculate hash
+            if (PythonContext.IsHashable(key)) {
+                return false;
+            }
+            throw PythonOps.TypeErrorForUnhashableObject(key);
         }
 
         public override bool TryGetValue(object key, out object value) {

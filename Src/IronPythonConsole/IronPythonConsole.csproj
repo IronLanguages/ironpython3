@@ -39,6 +39,12 @@
     <Content Include="ipy.ico" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\App.Debug.config">
+      <Link>App.Debug.config</Link>
+    </None>
+    <None Include="..\App.Release.config">
+      <Link>App.Release.config</Link>
+    </None>
     <None Include="IronPythonConsole.ruleset" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

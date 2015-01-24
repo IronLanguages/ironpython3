@@ -380,9 +380,9 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        internal override void RewriteBody(PythonAst.LookupVisitor visitor) {
+        internal override void RewriteBody(MSAst.ExpressionVisitor visitor) {
             _dlrBody = null;
-            _body = new PythonAst.RewrittenBodyStatement(Body, visitor.Visit(Body));
+            _body = new RewrittenBodyStatement(Body, visitor.Visit(Body));
         }
     }
 }

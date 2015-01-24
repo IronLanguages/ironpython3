@@ -49,6 +49,8 @@ namespace IronPython.Modules {
         public static readonly int ALLOCATIONGRANULARITY = GetAllocationGranularity();
         public static readonly int PAGESIZE = System.Environment.SystemPageSize;
 
+        public static readonly string __doc__ = null;
+
         private static readonly object _mmapErrorKey = new object();
 
         [SpecialName]

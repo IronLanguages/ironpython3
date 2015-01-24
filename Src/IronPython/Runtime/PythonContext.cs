@@ -1483,10 +1483,9 @@ namespace IronPython.Runtime {
 
             object pythonEx = PythonExceptions.ToPython(exception);
 
-            string result = FormatStackTraces(exception) + FormatPythonException(pythonEx);
+            string result = FormatStackTraces(exception) + FormatPythonException(pythonEx) + Environment.NewLine;
 
             if (Options.ShowClrExceptions) {
-                result += Environment.NewLine;
                 result += FormatCLSException(exception);
             }
 
@@ -1679,6 +1678,10 @@ namespace IronPython.Runtime {
                 printedHeader = true;
             }
 
+            var traceback = e.GetTraceBack();
+            if (traceback != null) {
+                return result + traceback.Extract();
+            }
             var frames = PythonExceptions.GetDynamicStackFrames(e);
             for (int i = frames.Length - 1; i >= 0; i--) {
                 var frame = frames[i];
@@ -1754,6 +1757,13 @@ namespace IronPython.Runtime {
             List path;
             if (TryGetSystemPath(out path)) {
                 path.append(directory);
+            }
+        }
+
+        internal void AddToPath(string directory, int index) {
+            List path;
+            if (TryGetSystemPath(out path)) {
+                path.insert(index, directory);
             }
         }
 
@@ -1941,7 +1951,7 @@ namespace IronPython.Runtime {
             _initialPrefix = prefix;
 
 #if !SILVERLIGHT
-            AddToPath(prefix);
+            AddToPath(Path.Combine(prefix, "Lib"), 0);
 #endif
 
             SetHostVariables(SystemState.__dict__);
@@ -2952,6 +2962,45 @@ namespace IronPython.Runtime {
             }
 
             return DynamicHelpers.GetPythonType(o).Hash(o);
+        }
+
+        internal static bool IsHashable(object o) {
+            if (o == null) {
+                return true;
+            }
+            switch (o.GetType().GetTypeCode()) {
+                case TypeCode.Int32:
+                case TypeCode.String:
+                case TypeCode.Double:
+                case TypeCode.Int16:
+                case TypeCode.Int64:
+                case TypeCode.SByte:
+                case TypeCode.Single:
+                case TypeCode.UInt16:
+                case TypeCode.UInt32:
+                case TypeCode.UInt64:
+                case TypeCode.Decimal:
+                case TypeCode.DateTime:
+                case TypeCode.Boolean:
+                case TypeCode.Byte:
+                    return true;
+            }
+            object hashFunction;
+            if (PythonOps.TryGetBoundAttr(o, "__hash__", out hashFunction) && hashFunction != null) {
+                 return true;
+            }
+            var instance = o as OldInstance;
+            if (instance != null) {
+                if (instance.TryGetBoundCustomMember(DefaultContext.Default, "__hash__", out hashFunction) ||
+                    ( ! instance.TryGetBoundCustomMember(DefaultContext.Default, "__cmp__", out hashFunction) &&
+                      ! instance.TryGetBoundCustomMember(DefaultContext.Default, "__eq__", out hashFunction))) {
+                    return true;
+                }
+            }
+            if (o is PythonType) {
+                return true;
+            }
+            return false;
         }
 
         internal object Add(object x, object y) {

@@ -59,7 +59,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <MainStageFiles Include="$(RootDir)\README" />
+    <MainStageFiles Include="$(RootDir)\README.md" />
     <MainStageFiles Include="$(RootDir)\LICENSE" />
   </ItemGroup>
 
@@ -75,7 +75,7 @@
 
   <Target Name="RestoreReferences"
             DependsOnTargets="_EnsureNuGetConfig;_MakeReferenceDir"
-            Inputs="$(RootDir)\packages.config"
+            Inputs="$(RootDir)\packages.config;$(RootDir)\NuGet.config"
             Outputs="$(ReferenceDir)\updated">
     <Exec Command="$(NuGet) restore packages.config -PackagesDirectory &quot;$(ReferenceDir)&quot; -ConfigFile &quot;$(NuGetConfig)&quot;" WorkingDirectory="$(RootDir)" />
     <Touch Files="$(ReferenceDir)\updated" AlwaysCreate="true" />

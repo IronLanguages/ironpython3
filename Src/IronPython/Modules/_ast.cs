@@ -291,9 +291,11 @@ namespace IronPython.Modules
             internal static stmt Convert(TryStatement stmt) {
                 if (stmt.Finally != null) {
                     PythonList body;
-                    if (stmt.Handlers != null && stmt.Handlers.Count != 0)
-                        body = PythonOps.MakeListNoCopy(new TryExcept(stmt));
-                    else
+                    if (stmt.Handlers != null && stmt.Handlers.Count != 0) {
+                        stmt tryExcept = new TryExcept(stmt);
+                        tryExcept.GetSourceLocation(stmt);
+                        body = PythonOps.MakeListNoCopy(tryExcept);
+                    } else
                         body = ConvertStatements(stmt.Body);
 
                     return new TryFinally(body, ConvertStatements(stmt.Finally));
@@ -347,9 +349,10 @@ namespace IronPython.Modules
                     ast = Convert((ConstantExpression)expr);
                 else if (expr is NameExpression)
                     ast = new Name((NameExpression)expr, ctx);
-                else if (expr is UnaryExpression)
-                    ast = new UnaryOp((UnaryExpression)expr);
-                else if (expr is BinaryExpression)
+                else if (expr is UnaryExpression) {
+                    var unaryOp = new UnaryOp((UnaryExpression)expr);
+                    ast = unaryOp.TryTrimTrivialUnaryOp();
+                } else if (expr is BinaryExpression)
                     ast = Convert((BinaryExpression)expr);
                 else if (expr is AndExpression)
                     ast = new BoolOp((AndExpression)expr);
@@ -1923,19 +1926,19 @@ namespace IronPython.Modules
             private string _name;
             private arguments _args;
             private PythonList _body;
-            private PythonList _decorators;
+            private PythonList _decorator_list;
 
             public FunctionDef() {
-                _fields = new PythonTuple(new[] { "name", "args", "body", "decorators" });
+                _fields = new PythonTuple(new[] { "name", "args", "body", "decorator_list" });
             }
 
-            public FunctionDef(string name, arguments args, PythonList body, PythonList decorators,
+            public FunctionDef(string name, arguments args, PythonList body, PythonList decorator_list,
                 [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _name = name;
                 _args = args;
                 _body = body;
-                _decorators = decorators;
+                _decorator_list = decorator_list;
                 _lineno = lineno;
                 _col_offset = col_offset;
             }
@@ -1947,19 +1950,19 @@ namespace IronPython.Modules
                 _body = ConvertStatements(def.Body);
 
                 if (def.Decorators != null) {
-                    _decorators = PythonOps.MakeEmptyList(def.Decorators.Count);
+                    _decorator_list = PythonOps.MakeEmptyList(def.Decorators.Count);
                     foreach (AstExpression expr in def.Decorators)
-                        _decorators.Add(Convert(expr));
+                        _decorator_list.Add(Convert(expr));
                 } else
-                    _decorators = PythonOps.MakeEmptyList(0);
+                    _decorator_list = PythonOps.MakeEmptyList(0);
             }
 
             internal override Statement Revert() {
                 FunctionDefinition fd = new FunctionDefinition(name, args.Revert(), RevertStmts(body));
                 fd.IsGenerator = _containsYield;
                 _containsYield = false;
-                if (decorators.Count != 0)
-                    fd.Decorators = expr.RevertExprs(decorators);
+                if (decorator_list.Count != 0)
+                    fd.Decorators = expr.RevertExprs(decorator_list);
                 return fd;
             }
 
@@ -1978,9 +1981,9 @@ namespace IronPython.Modules
                 set { _body = value; }
             }
 
-            public PythonList decorators {
-                get { return _decorators; }
-                set { _decorators = value; }
+            public PythonList decorator_list {
+                get { return _decorator_list; }
+                set { _decorator_list = value; }
             }
         }
 
@@ -3447,6 +3450,39 @@ namespace IronPython.Modules
             public expr operand {
                 get { return _operand; }
                 set { _operand = value; }
+            }
+
+            internal expr TryTrimTrivialUnaryOp() {
+                // in case of +constant or -constant returns underlying Num
+                // representation, otherwise unmodified itself
+                var num = _operand as Num;
+                if (null == num) {
+                    return this;
+                }
+                if (_op is UAdd) {
+                    return num;
+                }
+                if (!(_op is USub)) {
+                    return this;
+                }
+                // list of possible types can be found in:
+                // class AST {
+                //     internal static expr Convert(ConstantExpression expr);
+                // }
+                if (num.n is int) {
+                    num.n = -(int)num.n;
+                } else if (num.n is double) {
+                    num.n = -(double)num.n;
+                } else if (num.n is Int64) {
+                    num.n = -(Int64)num.n;
+                } else if (num.n is BigInteger) {
+                    num.n = -(BigInteger)num.n;
+                } else if (num.n is Complex) {
+                    num.n = -(Complex)num.n;
+                } else {
+                    return this;
+                }
+                return num;
             }
         }
 

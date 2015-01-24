@@ -179,13 +179,15 @@ namespace IronPython.Runtime.Binding {
                     res = TryToCharConversion(self);
                     break;
                 case TypeCode.String:
-                    if (self.GetLimitType() == typeof(Bytes) && !_context.PythonOptions.Python30) {
+                    var limitType = self.GetLimitType();
+                    if ((limitType == typeof(Bytes) || limitType == typeof(PythonBuffer) || limitType == typeof(ByteArray)) &&
+                        !_context.PythonOptions.Python30) {
                         res = new DynamicMetaObject(
                             Ast.Call(
                                 typeof(PythonOps).GetMethod("MakeString"),
                                 AstUtils.Convert(self.Expression, typeof(IList<byte>))
                             ),
-                            BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, typeof(Bytes))
+                            BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, limitType)
                         );
                     }
                     break;

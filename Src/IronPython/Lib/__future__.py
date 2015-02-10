@@ -55,6 +55,7 @@ all_feature_names = [
     "with_statement",
     "print_function",
     "unicode_literals",
+    "barry_as_FLUFL",
 ]
 
 __all__ = ["all_feature_names"] + all_feature_names
@@ -70,6 +71,7 @@ CO_FUTURE_ABSOLUTE_IMPORT = 0x4000 # perform absolute imports by default
 CO_FUTURE_WITH_STATEMENT  = 0x8000   # with statement
 CO_FUTURE_PRINT_FUNCTION  = 0x10000   # print function
 CO_FUTURE_UNICODE_LITERALS = 0x20000 # unicode string literals
+CO_FUTURE_BARRY_AS_BDFL = 0x40000
 
 class _Feature:
     def __init__(self, optionalRelease, mandatoryRelease, compiler_flag):
@@ -112,7 +114,7 @@ division = _Feature((2, 2, 0, "alpha", 2),
                     CO_FUTURE_DIVISION)
 
 absolute_import = _Feature((2, 5, 0, "alpha", 1),
-                           (2, 7, 0, "alpha", 0),
+                           (3, 0, 0, "alpha", 0),
                            CO_FUTURE_ABSOLUTE_IMPORT)
 
 with_statement = _Feature((2, 5, 0, "alpha", 1),
@@ -126,3 +128,7 @@ print_function = _Feature((2, 6, 0, "alpha", 2),
 unicode_literals = _Feature((2, 6, 0, "alpha", 2),
                             (3, 0, 0, "alpha", 0),
                             CO_FUTURE_UNICODE_LITERALS)
+
+barry_as_FLUFL = _Feature((3, 1, 0, "alpha", 2),
+                         (3, 9, 0, "alpha", 0),
+                         CO_FUTURE_BARRY_AS_BDFL)

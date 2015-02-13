@@ -16,6 +16,7 @@ bin/
 # Generated files
 BuildInfo.Generated.cs
 CurrentVersion.Generated.cs
+.local-dlr-path.props
 
 TestResult.xml
 Solutions/TestResults/

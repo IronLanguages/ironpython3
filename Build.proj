@@ -3,7 +3,8 @@
 
   <PropertyGroup>
     <BuildFlavour Condition=" '$(BuildFlavour)' == '' ">Debug</BuildFlavour>
-    <MainPlatform Condition=" '$(MainPlatform)' == '' ">net40</MainPlatform>
+    <MainPlatform Condition=" '$(MainPlatform)' == '' ">net45</MainPlatform>
+    <MainBuildPrefix Condition=" '$(MainBuildPrefix)' == '' "></MainBuildPrefix>
     <DlrVersion>1.2.0-alpha0</DlrVersion>
     <Mono Condition="'$(OS)' != 'Windows_NT'">true</Mono>
 
@@ -79,11 +80,6 @@
             Outputs="$(ReferenceDir)\updated">
     <Exec Command="$(NuGet) restore packages.config -PackagesDirectory &quot;$(ReferenceDir)&quot; -ConfigFile &quot;$(NuGetConfig)&quot;" WorkingDirectory="$(RootDir)" />
     <Touch Files="$(ReferenceDir)\updated" AlwaysCreate="true" />
-    <OnError ExecuteTargets="_RestoreReferencesError" />
-  </Target>
-  
-  <Target Name="_RestoreReferencesError">
-    <Error Text="Most likely you have not set a local DLR location. Use the set-dlr-source script to set the location of the DLR repository." />
   </Target>
   
   <Target Name="Build" DependsOnTargets="RestoreReferences">
@@ -121,28 +117,31 @@
   <Target Name="_CopyDlrPlatformReferences" DependsOnTargets="_PlatformStage">
     <ItemGroup>
       <DlrPlatformReferenceFiles
-          Include="$(UtilDir)\References\DynamicLanguageRuntime.$(DlrVersion)\lib\**\Microsoft.Scripting.Core.*" />
+          Include="$(BinDir)\%(ReferencedPlatform.BuildPrefix)$(BuildFlavour)\Microsoft.Scripting.*"
+          Exclude="$(BinDir)\%(ReferencedPlatform.BuildPrefix)$(BuildFlavour)\*.pdb">
+          <PlatformDestination>%(ReferencedPlatform.Identity)</PlatformDestination>
+      </DlrPlatformReferenceFiles>
       <DlrPlatformReferenceFiles
-          Include="$(UtilDir)\References\DynamicLanguageRuntime.$(DlrVersion)\lib\**\Microsoft.Scripting.dll" />
-      <DlrPlatformReferenceFiles
-          Include="$(UtilDir)\References\DynamicLanguageRuntime.$(DlrVersion)\lib\**\Microsoft.Scripting.xml" />
-      <DlrPlatformReferenceFiles
-          Include="$(UtilDir)\References\DynamicLanguageRuntime.$(DlrVersion)\lib\**\Microsoft.Dynamic.*" />
+          Include="$(BinDir)\%(ReferencedPlatform.BuildPrefix)$(BuildFlavour)\Microsoft.Dynamic.*"
+          Exclude="$(BinDir)\%(ReferencedPlatform.BuildPrefix)$(BuildFlavour)\*.pdb">
+          <PlatformDestination>%(ReferencedPlatform.Identity)</PlatformDestination>
+      </DlrPlatformReferenceFiles>
     </ItemGroup>
     <Copy SourceFiles="@(DlrPlatformReferenceFiles)"
-          DestinationFiles="@(DlrPlatformReferenceFiles->'$(StageDir)\Platforms\%(RecursiveDir)%(Filename)%(Extension)')" />
+          DestinationFiles="@(DlrPlatformReferenceFiles->'$(StageDir)\Platforms\%(PlatformDestination)\%(Filename)%(Extension)')" />
   </Target>
 
   <Target Name="_CopyDlrMainReferences" DependsOnTargets="_MakeStageDir">
     <ItemGroup>
       <DlrMainReferenceFiles
-          Include="$(UtilDir)\References\DynamicLanguageRuntime.$(DlrVersion)\lib\$(MainPlatform)\Microsoft.Scripting.Core.dll"
-          Condition=" Exists('$(UtilDir)\References\DynamicLanguageRuntime.$(DlrVersion)\lib\$(MainPlatform)\Microsoft.Scripting.Core.dll')" />
+          Include="$(BinDir)\$(MainBuildPrefix)$(BuildFlavour)\Microsoft.Scripting.Core.dll"
+          Condition=" Exists('$(BinDir)\$(MainPlatform)$(BuildFlavour)\Microsoft.Scripting.Core.dll')" />
       <DlrMainReferenceFiles
-          Include="$(UtilDir)\References\DynamicLanguageRuntime.$(DlrVersion)\lib\$(MainPlatform)\Microsoft.Scripting.dll" />
+          Include="$(BinDir)\$(MainBuildPrefix)$(BuildFlavour)\Microsoft.Scripting.dll" />
       <DlrMainReferenceFiles
-          Include="$(UtilDir)\References\DynamicLanguageRuntime.$(DlrVersion)\lib\$(MainPlatform)\Microsoft.Dynamic.dll" />
+          Include="$(BinDir)\$(MainBuildPrefix)$(BuildFlavour)\Microsoft.Dynamic.dll" />
     </ItemGroup>
+    
     <Copy SourceFiles="@(DlrMainReferenceFiles)"
           DestinationFolder="$(StageDir)" />
   </Target>

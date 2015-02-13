@@ -1,42 +1,30 @@
-@echo off
+; @echo off
 setlocal
 
 if [%1]==[] goto usage
-
-set _src_name=dlr-dev
+if [%1]==[none] goto remove-config
 
 set _root=%~dp0
-set _nuget=%_root%Util\NuGet\nuget.exe
-set _nuget_config=%_root%NuGet.config
+set _local_dlr_path_file=%_root%.local-dlr-path.props
 
 set _dlr_root=%~dpn1
 
-:: Should probably allow switching between Debug and Release
-set _dlr_src=%_dlr_root%\Package\Release\dlr-1.2.0-alpha0
-
-if exist "%_nuget_config%" (call :check-config-size %_nuget_config%) else (call :fill-config)
-
-:action
-"%_nuget%" sources list -ConfigFile "%_nuget_config%" | findstr "%_src_name%" > NUL
-if %ERRORLEVEL% equ 0 (set _action=update) else (set _action=add)
-
-:config
-"%_nuget%" sources %_action% -Name "%_src_name%" -Source "%_dlr_src%" -ConfigFile "%_nuget_config%"
-goto exit
-
-:check-config-size
-if %~z1 equ 0 (call :fill-config)
+:set-config
+echo ^<?xml version="1.0" encoding="utf-8"?^> > "%_local_dlr_path_file%"
+echo ^<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003"^> >> "%_local_dlr_path_file%"
+echo   ^<PropertyGroup^> >> "%_local_dlr_path_file%"
+echo     ^<DlrReferences^>%_dlr_root%\bin\$(Configuration)^</DlrReferences^> >> "%_local_dlr_path_file%"
+echo   ^</PropertyGroup^> >> "%_local_dlr_path_file%"
+echo ^</Project^> >> "%_local_dlr_path_file%"
 goto:eof
 
-:fill-config
-echo foo
-echo ^<?xml version="1.0" encoding="utf-8"?^> > "%_nuget_config%"
-echo ^<configuration^> >> "%_nuget_config%"
-echo ^</configuration^> >> "%_nuget_config%"
+:remove-config
+del /P "%_local_dlr_path_file%"
 goto:eof
 
 :usage
 echo %~n0 ^<path^\to^\dlr^>
+echo %~n0 none
 exit /B 1
 
 :exit

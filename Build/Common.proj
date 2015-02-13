@@ -83,6 +83,9 @@
 
     <DlrReferences>$(RootDir)\Util\References\DynamicLanguageRuntime.$(DlrVersion)\lib\$(ReferencedPlatform)</DlrReferences>
     <WpfReferences>$(RootDir)\Util\References\WPF\4.0</WpfReferences>
+    
+    <!-- If this file exists it will be used to load the DLR assemblies. -->
+    <LocalDlrPathProperties>$(RootDir)\.local-dlr-path.props</LocalDlrPathProperties>
   </PropertyGroup>
 
   <!-- References -->
@@ -120,19 +123,9 @@
   </PropertyGroup>
   
   <!-- Include the DLR references here since they're a bit complicated.
-       If a project doesn't need them it can set 'ExcludeDlrReferences=true'. -->
-  <ItemGroup Condition=" '$(ExcludeDlrReferences)' != 'true' and '$(FeatureCoreDlr)' != 'true' ">
-    <Reference Include="Microsoft.Scripting.Core">
-      <HintPath>$(DlrReferences)\Microsoft.Scripting.Core.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(ExcludeDlrReferences)' != 'true' ">
-    <Reference Include="Microsoft.Scripting">
-      <HintPath>$(DlrReferences)\Microsoft.Scripting.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Dynamic">
-      <HintPath>$(DlrReferences)\Microsoft.Dynamic.dll</HintPath>
-    </Reference>
-  </ItemGroup>
+       If a project doesn't need them it can set 'ExcludeDlrReferences=true'. 
+       
+       Use a separate import file to avoid confusing Visual Studio.
+  -->  
+  <Import Project="dlr-refs.props" Condition=" '$(ExcludeDlrReferences)' != 'true' " />
 </Project>
-

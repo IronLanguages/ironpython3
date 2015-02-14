@@ -30,3 +30,18 @@ for embedding.
 
 Support for Android, Windows 8 Store Apps (Metro), Window Phone 8, and iOS are also
 planned (in roughly that order).
+
+## Custom DLR
+If you need to make changes to the DLR, you can point IronPython at your local DLR using
+`set-dlr-source`:
+
+    set-dlr-source ..\dlr
+
+(Windows)
+
+    ./set-dlr-source.sh ../dlr
+
+(Unix)
+
+After making DLR changes, commit them, update the version, and release an updated NuGet.
+Then, update the `DlrVersion` property in `CurrentVersion.props`.

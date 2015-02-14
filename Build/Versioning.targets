@@ -4,7 +4,8 @@
     <CurrentVersionFile>$(RootDir)\CurrentVersion.props</CurrentVersionFile>
   </PropertyGroup>
 
-  <Import Project="$(CurrentVersionFile)" />
+  <!-- Do not re-import this if already imported. -->
+  <Import Project="$(CurrentVersionFile)" Condition="'$(MajorVersion)' == ''" />
 
   <PropertyGroup>
     <ShortReleaseLevel Condition="'$(ReleaseLevel)' == 'alpha'">a</ShortReleaseLevel>

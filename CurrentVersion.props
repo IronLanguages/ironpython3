@@ -8,5 +8,7 @@
     <ReleaseSerial>0</ReleaseSerial>
 
     <AssemblyRevision>0</AssemblyRevision>
+    
+    <DlrVersion>1.2.0-alpha1</DlrVersion>
   </PropertyGroup>
 </Project>

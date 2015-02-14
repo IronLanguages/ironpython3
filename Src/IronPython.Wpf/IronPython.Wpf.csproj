@@ -11,6 +11,7 @@
     <AssemblyName>IronPython.Wpf</AssemblyName>
     <DocumentationFile>$(OutputPath)\$(AssemblyName).xml</DocumentationFile>
     <BaseAddress>885063680</BaseAddress>
+    <StoreInDLLs>true</StoreInDLLs>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
   </PropertyGroup>

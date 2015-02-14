@@ -17,6 +17,7 @@ bin/
 BuildInfo.Generated.cs
 CurrentVersion.Generated.cs
 .local-dlr-path.props
+packages.config
 
 TestResult.xml
 Solutions/TestResults/

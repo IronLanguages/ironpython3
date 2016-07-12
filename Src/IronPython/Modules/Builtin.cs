@@ -1537,11 +1537,15 @@ namespace IronPython.Modules {
         }
 
         public static object next(CodeContext/*!*/ context, object iter) {
+
+            // PEP 3114 -- Renaming iterator.next() to iterator.__next__()
             return PythonOps.Invoke(context, iter, "__next__");
         }
 
         public static object next(CodeContext/*!*/ context, object iter, object defaultVal) {
             try {
+                
+                // PEP 3114 -- Renaming iterator.next() to iterator.__next__()
                 return PythonOps.Invoke(context, iter, "__next__");
             } catch (StopIterationException) {
                 return defaultVal;

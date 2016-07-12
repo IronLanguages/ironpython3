@@ -256,7 +256,7 @@ namespace IronPython.Runtime {
 
         public bool MoveNext() {
             if (_nextMethod == null) {
-                if (!PythonOps.TryGetBoundAttr(_baseObject, "next", out _nextMethod) || _nextMethod == null) {
+                if (!PythonOps.TryGetBoundAttr(_baseObject, "__next__", out _nextMethod) || _nextMethod == null) {
                     throw PythonOps.TypeError("instance has no next() method");
                 }
             }

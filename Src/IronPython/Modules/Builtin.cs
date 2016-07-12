@@ -1537,12 +1537,12 @@ namespace IronPython.Modules {
         }
 
         public static object next(CodeContext/*!*/ context, object iter) {
-            return PythonOps.Invoke(context, iter, "next");
+            return PythonOps.Invoke(context, iter, "__next__");
         }
 
         public static object next(CodeContext/*!*/ context, object iter, object defaultVal) {
             try {
-                return PythonOps.Invoke(context, iter, "next");
+                return PythonOps.Invoke(context, iter, "__next__");
             } catch (StopIterationException) {
                 return defaultVal;
             }

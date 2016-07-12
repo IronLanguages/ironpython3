@@ -646,6 +646,8 @@ namespace IronPython.Runtime.Types {
                 new OneOffResolver("__exit__", ExitResolver),
                 new OneOffResolver("__len__", LengthResolver),
                 new OneOffResolver("__format__", FormatResolver),
+
+                // PEP 3114 -- Renaming iterator.next() to iterator.__next__()
                 new OneOffResolver("next", NextResolver),
 
                 new OneOffResolver("__complex__", ComplexResolver),

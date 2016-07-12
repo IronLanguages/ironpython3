@@ -77,17 +77,18 @@ namespace IronPython.Runtime.Types {
             return new PythonDictionary(context, this);
         }
 
-        public IEnumerator iteritems(CodeContext/*!*/ context) {
-            return new DictionaryItemEnumerator(_dt.GetMemberDictionary(context, false)._storage);
-        }
-
-        public IEnumerator iterkeys(CodeContext/*!*/ context) {
-            return new DictionaryKeyEnumerator(_dt.GetMemberDictionary(context, false)._storage);
-        }
-
-        public IEnumerator itervalues(CodeContext/*!*/ context) {
-            return new DictionaryValueEnumerator(_dt.GetMemberDictionary(context, false)._storage);
-        }
+        //TODO: DICT_ITER
+        /// public IEnumerator iteritems(CodeContext/*!*/ context) {
+        ///     return new DictionaryItemEnumerator(_dt.GetMemberDictionary(context, false)._storage);
+        /// }
+        /// 
+        /// public IEnumerator iterkeys(CodeContext/*!*/ context) {
+        ///     return new DictionaryKeyEnumerator(_dt.GetMemberDictionary(context, false)._storage);
+        /// }
+        /// 
+        /// public IEnumerator itervalues(CodeContext/*!*/ context) {
+        ///     return new DictionaryValueEnumerator(_dt.GetMemberDictionary(context, false)._storage);
+        /// }
 
         #endregion
 
@@ -127,7 +128,7 @@ namespace IronPython.Runtime.Types {
         #region IEnumerable Members
 
         System.Collections.IEnumerator IEnumerable.GetEnumerator() {
-            return DictionaryOps.iterkeys(_dt.GetMemberDictionary(DefaultContext.Default, false));
+            return DictionaryOps.__iterkeys__(_dt.GetMemberDictionary(DefaultContext.Default, false));
         }
 
         #endregion

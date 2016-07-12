@@ -267,7 +267,7 @@ namespace IronPython {
             _verbose = GetOption(options, "Verbose", false);
             _optimize = GetOption(options, "Optimize", false);
             _stripDocStrings = GetOption(options, "StripDocStrings", false);
-            _division = GetOption(options, "DivisionOptions", PythonDivisionOptions.Old);
+            _division = GetOption(options, "DivisionOptions", PythonDivisionOptions.New);
             _recursionLimit = GetOption(options, "RecursionLimit", Int32.MaxValue);
             _indentationInconsistencySeverity = GetOption(options, "IndentationInconsistencySeverity", Severity.Ignore);
             _enableProfiler = GetOption(options, "EnableProfiler", false);

@@ -254,6 +254,10 @@ namespace IronPython.Runtime {
             }
         }
 
+        /// <summary>
+        /// Move to the next item in this iterable
+        /// </summary>
+        /// <returns>True if moving was successfull</returns>
         public bool MoveNext() {
             if (_nextMethod == null) {
                 // PEP 3114 -- Renaming iterator.next() to iterator.__next__()

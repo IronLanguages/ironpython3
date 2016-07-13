@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPython", "Src\IronPython\IronPython.csproj", "{95289EA9-5778-489D-AB48-F81F2CE2DA32}"
 EndProject
@@ -57,6 +57,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{17737ACB
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPythonTestConsole", "Src\IronPythonTestConsole\IronPythonTestConsole.csproj", "{79446DDF-421C-4695-9859-5E01F0D95830}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPythonCompiler", "Src\IronPythonCompiler\IronPythonCompiler.csproj", "{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -295,13 +297,39 @@ Global
 		{79446DDF-421C-4695-9859-5E01F0D95830}.Win8Debug|Any CPU.Build.0 = Win8Debug|Any CPU
 		{79446DDF-421C-4695-9859-5E01F0D95830}.Win8Release|Any CPU.ActiveCfg = Win8Release|Any CPU
 		{79446DDF-421C-4695-9859-5E01F0D95830}.Win8Release|Any CPU.Build.0 = Win8Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.AndroidDebug|Any CPU.ActiveCfg = AndroidDebug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.AndroidDebug|Any CPU.Build.0 = AndroidDebug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.AndroidRelease|Any CPU.ActiveCfg = AndroidRelease|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.AndroidRelease|Any CPU.Build.0 = AndroidRelease|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.FxCop|Any CPU.ActiveCfg = FxCop|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.FxCop|Any CPU.Build.0 = FxCop|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Silverlight5Debug|Any CPU.ActiveCfg = Silverlight5Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Silverlight5Debug|Any CPU.Build.0 = Silverlight5Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Silverlight5Release|Any CPU.ActiveCfg = Silverlight5Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Silverlight5Release|Any CPU.Build.0 = Silverlight5Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.v2Debug|Any CPU.ActiveCfg = v2Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.v2Debug|Any CPU.Build.0 = v2Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.v2Release|Any CPU.ActiveCfg = v2Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.v2Release|Any CPU.Build.0 = v2Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.v45Debug|Any CPU.ActiveCfg = v45Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.v45Debug|Any CPU.Build.0 = v45Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.v45Release|Any CPU.ActiveCfg = v45Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.v45Release|Any CPU.Build.0 = v45Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Win8Debug|Any CPU.ActiveCfg = Win8Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Win8Debug|Any CPU.Build.0 = Win8Debug|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Win8Release|Any CPU.ActiveCfg = Win8Release|Any CPU
+		{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}.Win8Release|Any CPU.Build.0 = Win8Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{17737ACB-40C6-41A6-83DA-3203A4DCEC19} = {3A14D070-628F-44EF-92DD-47C8BE5C33CD}
-		{CE9DF8A7-CEE3-44CB-8C17-E0E3004A8755} = {17737ACB-40C6-41A6-83DA-3203A4DCEC19}
 		{2BA7ADB8-E6B4-4C3E-95A0-A65C98919FE2} = {17737ACB-40C6-41A6-83DA-3203A4DCEC19}
+		{CE9DF8A7-CEE3-44CB-8C17-E0E3004A8755} = {17737ACB-40C6-41A6-83DA-3203A4DCEC19}
+		{17737ACB-40C6-41A6-83DA-3203A4DCEC19} = {3A14D070-628F-44EF-92DD-47C8BE5C33CD}
 	EndGlobalSection
 EndGlobal

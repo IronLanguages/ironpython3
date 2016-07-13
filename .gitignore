@@ -54,3 +54,4 @@ Languages/IronPython/Tests/vbproptest0.*.dll
 Util/References
 
 /NuGet.config
+*.bak

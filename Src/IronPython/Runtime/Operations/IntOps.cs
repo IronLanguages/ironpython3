@@ -438,6 +438,8 @@ namespace IronPython.Runtime.Operations {
             }
 
             string digits;
+            int width = 0;
+
             switch (spec.Type) {
                 case 'n':
                     CultureInfo culture = PythonContext.GetContext(context).NumericCulture;
@@ -447,13 +449,32 @@ namespace IronPython.Runtime.Operations {
                         // include any formatting info.
                         goto case 'd';
                     }
+                    width = spec.Width ?? 0;
 
-                    digits = self.ToString("N0", PythonContext.GetContext(context).NumericCulture);
+                    // If we're padding with leading zeros and we might be inserting
+                    // culture sensitive number group separators. (i.e. commas)
+                    // So use FormattingHelper.ToCultureString for that support.
+                    if (spec.Fill.HasValue && spec.Fill.Value == '0' && width > 1) {
+                        digits = FormattingHelper.ToCultureString(self, culture.NumberFormat, spec);
+                    }
+                    else {
+                        digits = self.ToString("N0", culture);
+                    }
                     break;
                 case null:
                 case 'd':
                     if (spec.ThousandsComma) {
-                        digits = self.ToString("#,0", CultureInfo.InvariantCulture);
+                        width = spec.Width ?? 0;
+
+                        // If we're inserting commas, and we're padding with leading zeros.
+                        // AlignNumericText won't know where to place the commas,
+                        // so use FormattingHelper.ToCultureString for that support.
+                        if (spec.Fill.HasValue && spec.Fill.Value == '0' && width > 1) {
+                            digits = FormattingHelper.ToCultureString(self, FormattingHelper.InvariantCommaNumberInfo, spec);
+                        }
+                        else {
+                            digits = self.ToString("#,0", CultureInfo.InvariantCulture);
+                        }
                     } else {
                         digits = self.ToString("D", CultureInfo.InvariantCulture);
                     }
@@ -491,7 +512,8 @@ namespace IronPython.Runtime.Operations {
                     if (self >= 1000000 || self <= -1000000) {
                         digits = self.ToString("0.#####e+00", CultureInfo.InvariantCulture);
                     } else if (spec.ThousandsComma) {
-                        digits = self.ToString("#,0", CultureInfo.InvariantCulture);
+                        // Handle the common case in 'd'.
+                        goto case 'd';
                     } else {
                         digits = self.ToString(CultureInfo.InvariantCulture);
                     }
@@ -500,8 +522,10 @@ namespace IronPython.Runtime.Operations {
                     if (self >= 1000000 || self <= -1000000) {
                         digits = self.ToString("0.#####E+00", CultureInfo.InvariantCulture);
                     } else if (spec.ThousandsComma) {
-                        digits = self.ToString("#,0", CultureInfo.InvariantCulture);
-                    } else {
+                        // Handle the common case in 'd'.
+                        goto case 'd';
+                    }
+                    else {
                         digits = self.ToString(CultureInfo.InvariantCulture);
                     }
                     break;

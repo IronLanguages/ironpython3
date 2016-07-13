@@ -154,7 +154,7 @@ namespace IronPython.Runtime.Operations {
             // check if object has finalizer...
             PythonTypeSlot dummy;
             if (dt.TryResolveSlot(context, "__del__", out dummy)) {
-                IWeakReferenceable iwr = newObject as IWeakReferenceable;
+                IWeakReferenceable iwr = context.GetPythonContext().ConvertToWeakReferenceable(newObject);
                 Debug.Assert(iwr != null);
 
                 InstanceFinalizer nif = new InstanceFinalizer(context, newObject);

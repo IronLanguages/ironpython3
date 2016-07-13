@@ -612,10 +612,7 @@ namespace IronPython.Runtime {
         public static Complex ParseComplex(string s) {
             // remove no-meaning spaces and convert to lowercase
             string text = s.Trim().ToLower();
-            if (String.IsNullOrEmpty(text)) {
-                throw PythonOps.ValueError("complex() arg is an empty string");
-            }
-            if (text.IndexOf(' ') != -1) {
+            if (String.IsNullOrEmpty(text) || text.IndexOf(' ') != -1) {
                 throw ExnMalformed();
             }
 

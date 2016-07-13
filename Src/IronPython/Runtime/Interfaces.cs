@@ -52,6 +52,18 @@ namespace IronPython.Runtime {
         void SetFinalizer(WeakRefTracker value);
     }
 
+    /// <summary>
+    /// Allow types to implement weakvreference tracking by returning a proxy.
+    /// 
+    /// The proxy can refer to the current Python context, whihc is the main purpose.
+    /// </summary>
+    public interface IWeakReferenceableByProxy {
+        /// <summary>
+        /// 
+        /// </summary>
+        IWeakReferenceable GetWeakRefProxy(PythonContext context);
+    }
+
     public interface IProxyObject {
         object Target { get; }
     }

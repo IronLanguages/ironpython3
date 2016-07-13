@@ -104,10 +104,10 @@ to Zip archives.";
                 path = pathObj as string;
 
                 if (path.Length == 0)
-                    throw MakeError("archive path is empty");
+                    throw MakeError(context, "archive path is empty");
 
                 if (path.Length > MAXPATHLEN)
-                    throw MakeError("archive path too long");
+                    throw MakeError(context, "archive path too long");
 
                 string buf = path.Replace(Path.AltDirectorySeparatorChar,
                     Path.DirectorySeparatorChar);
@@ -132,11 +132,11 @@ to Zip archives.";
                     if (zip_directory_cache != null && zip_directory_cache.ContainsKey(path)) {
                         _files = zip_directory_cache[path] as PythonDictionary;
                     } else {
-                        _files = ReadDirectory(path);
+                        _files = ReadDirectory(context, path);
                         zip_directory_cache.Add(path, _files);
                     }
                 } else {
-                    throw MakeError("not a Zip file");
+                    throw MakeError(context, "not a Zip file");
                 }
 
                 _prefix = input.Replace(path, string.Empty);
@@ -268,7 +268,7 @@ Raise ZipImportError if the module couldn't be found.")]
             public bool is_package(CodeContext/*!*/ context, string fullname) {
                 ModuleStatus info = GetModuleInfo(context, fullname);
                 if (info == ModuleStatus.NotFound) {
-                    throw MakeError("can't find module '{0}'", fullname);
+                    throw MakeError(context, "can't find module '{0}'", fullname);
                 }
                 return info == ModuleStatus.Package;
             }
@@ -279,7 +279,7 @@ Return the data associated with 'pathname'. Raise IOError if
 the file wasn't found.")]
             public string get_data(CodeContext/*!*/ context, string path) {
                 if (path.Length >= MAXPATHLEN) {
-                    throw MakeError("path too long");
+                    throw MakeError(context, "path too long");
                 }
 
                 path = path.Replace(_archive, string.Empty).TrimStart(Path.DirectorySeparatorChar);                
@@ -287,7 +287,7 @@ the file wasn't found.")]
                     throw PythonOps.IOError(path);
                 }
 
-                var data = GetData(_archive, __files[path] as PythonTuple);
+                var data = GetData(context, _archive, __files[path] as PythonTuple);
                 return PythonAsciiEncoding.Instance.GetString(data, 0, data.Length);
             }
 
@@ -313,11 +313,11 @@ contain the module, but has no source for it.")]
                 }
 
                 if (mi == ModuleStatus.NotFound) {
-                    throw MakeError("can't find module '{0}'", fullname);
+                    throw MakeError(context, "can't find module '{0}'", fullname);
                 }
 
                 string subname = GetSubName(fullname);
-                string path = MakeFilename(_prefix, subname);
+                string path = MakeFilename(context, _prefix, subname);
                 if (string.IsNullOrEmpty(path)) {
                     return null;
                 }
@@ -329,7 +329,7 @@ contain the module, but has no source for it.")]
                 }
 
                 if (__files.ContainsKey(path)) {
-                    var data = GetData(_archive, __files[path] as PythonTuple);
+                    var data = GetData(context, _archive, __files[path] as PythonTuple);
                     res = pythonContext.DefaultEncoding.GetString(data, 0, data.Length);
                 }
 
@@ -341,7 +341,7 @@ contain the module, but has no source for it.")]
             private string GetModuleCode(CodeContext/*!*/ context, string fullname, out bool ispackage, out string modpath) {
                 PythonTuple toc_entry = null;
                 string subname = GetSubName(fullname);
-                string path = MakeFilename(_prefix, subname);
+                string path = MakeFilename(context, _prefix, subname);
                 string code = null;
                 ispackage = false;
                 modpath = string.Empty;
@@ -367,7 +367,7 @@ contain the module, but has no source for it.")]
                         return code;
                     }
                 }
-                throw MakeError("can't find module '{0}'", fullname);
+                throw MakeError(context, "can't find module '{0}'", fullname);
             }
 
             /// <summary>
@@ -377,7 +377,7 @@ contain the module, but has no source for it.")]
             /// <param name="archive"></param>
             /// <param name="toc_entry"></param>
             /// <returns></returns>
-            private byte[] GetData(string archive, PythonTuple toc_entry) {
+            private byte[] GetData(CodeContext context, string archive, PythonTuple toc_entry) {
                 int l, file_offset = (int)toc_entry[4], data_size = (int)toc_entry[2], compress = (int)toc_entry[1];
                 BinaryReader fp = null;
                 byte[] raw_data;
@@ -394,7 +394,7 @@ contain the module, but has no source for it.")]
                     l = fp.ReadInt32();
                     if (l != 0x04034B50) {
                         // Bad: Local File Header
-                        throw MakeError("bad local file header in {0}", archive);
+                        throw MakeError(context, "bad local file header in {0}", archive);
                     }
                     fp.BaseStream.Seek(file_offset + 26, SeekOrigin.Begin);
                     l = 30 + fp.ReadInt16() + fp.ReadInt16(); // local header size
@@ -439,7 +439,7 @@ contain the module, but has no source for it.")]
             /// <param name="toc_entry"></param>
             /// <returns></returns>
             private string GetCodeFromData(CodeContext/*!*/ context, bool ispackage, bool isbytecode, int mtime, PythonTuple toc_entry) {
-                byte[] data = GetData(_archive, toc_entry);
+                byte[] data = GetData(context, _archive, toc_entry);
                 string modpath = (string)toc_entry[0];
                 string code = null;
 
@@ -472,7 +472,7 @@ contain the module, but has no source for it.")]
             /// </summary>
             /// <param name="archive"></param>
             /// <returns></returns>
-            private PythonDictionary ReadDirectory(string archive) {
+            private PythonDictionary ReadDirectory(CodeContext context, string archive) {
                 string path, name = string.Empty;
                 BinaryReader fp = null;
                 int header_position, header_size, header_offset, count, compress;
@@ -490,23 +490,23 @@ contain the module, but has no source for it.")]
                     try {
                         fp = new BinaryReader(new FileStream(archive, FileMode.Open, FileAccess.Read));
                     } catch {
-                        throw MakeError("can't open Zip file: '{0}'", archive);
+                        throw MakeError(context, "can't open Zip file: '{0}'", archive);
                     }
 
                     if (fp.BaseStream.Length < 22) {
-                        throw MakeError("can't read Zip file: '{0}'", archive);
+                        throw MakeError(context, "can't read Zip file: '{0}'", archive);
                     }
 
                     fp.BaseStream.Seek(-22, SeekOrigin.End);
                     header_position = (int)fp.BaseStream.Position;
                     if (fp.Read(endof_central_dir, 0, 22) != 22) {
-                        throw MakeError("can't read Zip file: '{0}'", archive);
+                        throw MakeError(context, "can't read Zip file: '{0}'", archive);
                     }
 
                     if (BitConverter.ToUInt32(endof_central_dir, 0) != 0x06054B50) {
                         // Bad: End of Central Dir signature
                         fp.Close();
-                        throw MakeError("not a Zip file: '{0}'", archive);
+                        throw MakeError(context, "not a Zip file: '{0}'", archive);
                     }
 
                     header_size = BitConverter.ToInt32(endof_central_dir, 12);
@@ -576,10 +576,10 @@ contain the module, but has no source for it.")]
             /// <param name="prefix"></param>
             /// <param name="name"></param>
             /// <returns></returns>
-            private string MakeFilename(string prefix, string name) {
+            private string MakeFilename(CodeContext context, string prefix, string name) {
                 // self.prefix + name [+ SEP + "__init__"] + ".py[co]" 
                 if ((prefix.Length + name.Length + 13) >= MAXPATHLEN) {
-                    throw MakeError("path to long");
+                    throw MakeError(context, "path to long");
                 }
                 return (prefix + name).Replace('.', Path.DirectorySeparatorChar);
             }
@@ -592,7 +592,7 @@ contain the module, but has no source for it.")]
             /// <returns></returns>
             private ModuleStatus GetModuleInfo(CodeContext/*!*/ context, string fullname) {
                 string subname = GetSubName(fullname);
-                string path = MakeFilename(_prefix, subname);
+                string path = MakeFilename(context, _prefix, subname);
                 if (string.IsNullOrEmpty(path))
                     return ModuleStatus.Error;
 
@@ -610,14 +610,19 @@ contain the module, but has no source for it.")]
             }
         }
 
-        public static PythonType ZipImportError;
-        internal static Exception MakeError(params object[] args) {
-            return PythonOps.CreateThrowable(ZipImportError, args);
+        public static PythonType get_ZipImportError(CodeContext context) {
+            PythonContext pyContext = context.LanguageContext;
+            PythonType zipImportError = (PythonType)pyContext.GetModuleState("zipimport.ZipImportError");
+            return zipImportError;
+        }
+
+        internal static Exception MakeError(CodeContext context, params object[] args) {
+            return PythonOps.CreateThrowable(get_ZipImportError(context), args);
         }
 
         private static void InitModuleExceptions(PythonContext context,
             PythonDictionary dict) {
-            ZipImportError = context.EnsureModuleException(
+            context.EnsureModuleException(
                 "zipimport.ZipImportError",
                 PythonExceptions.ImportError,
                 typeof(PythonExceptions.BaseException),

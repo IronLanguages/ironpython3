@@ -32,8 +32,8 @@ namespace IronPython.Runtime.Types {
                 return true;
             }
 
-            IWeakReferenceable reference = instance as IWeakReferenceable;
-            if (reference != null) {
+            IWeakReferenceable reference;
+            if (context.GetPythonContext().TryConvertToWeakReferenceable(instance, out reference)) {
                 WeakRefTracker tracker = reference.GetWeakRef();
                 if (tracker == null || tracker.HandlerCount == 0) {
                     value = null;
@@ -48,8 +48,8 @@ namespace IronPython.Runtime.Types {
         }
 
         internal override bool TrySetValue(CodeContext context, object instance, PythonType owner, object value) {
-            IWeakReferenceable reference = instance as IWeakReferenceable;
-            if (reference != null) {
+            IWeakReferenceable reference;
+            if (context.GetPythonContext().TryConvertToWeakReferenceable(instance, out reference)) {
                 return reference.SetWeakRef(new WeakRefTracker(value, instance));
             }
             return false;

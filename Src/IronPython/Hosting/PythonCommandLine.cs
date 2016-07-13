@@ -228,7 +228,7 @@ namespace IronPython.Hosting {
 
         private void InitializeModules() {
             string executable = "";
-            string prefix = "";
+            string prefix = null;
 #if !SILVERLIGHT // paths     
             Assembly entryAssembly = Assembly.GetEntryAssembly();
             //Can be null if called from unmanaged code (VS integration scenario)

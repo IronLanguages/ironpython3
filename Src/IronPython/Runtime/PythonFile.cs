@@ -1393,7 +1393,7 @@ namespace IronPython.Runtime {
                     _reader = new PythonBinaryReader(stream);
                 } else {
                     long initPosition = (stream.CanSeek) ? stream.Position : 0;
-                    _reader = CreateTextReader(new StreamReader(stream, encoding), encoding, initPosition);
+                    _reader = CreateTextReader(new StreamReader(stream, encoding, false), encoding, initPosition);
                 }
             }
 

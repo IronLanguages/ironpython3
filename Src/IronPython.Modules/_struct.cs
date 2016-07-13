@@ -894,10 +894,13 @@ namespace IronPython.Modules {
         }
 
         internal static char GetCharValue(CodeContext/*!*/ context, int index, object[] args) {
-            string val = GetValue(context, index, args) as string;
-            if (val == null || val.Length != 1) throw Error(context, "char format requires string of length 1");
+            object val = GetValue(context, index, args);
+            string strVal = val as string;
+            if (strVal != null && strVal.Length == 1) return strVal[0];
 
-            return val[0];
+            IList<Byte> byteVal = val as IList<Byte>;
+            if (byteVal == null || byteVal.Count != 1) throw Error(context, "char format requires string of length 1");
+            else return (char)byteVal[0];
         }
 
         internal static sbyte GetSByteValue(CodeContext/*!*/ context, int index, object[] args) {

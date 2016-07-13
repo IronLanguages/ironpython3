@@ -2864,6 +2864,7 @@ namespace IronPython.Modules
             private expr _type; // Optional
             private expr _inst; // Optional
             private expr _tback; // Optional
+            private expr _cause; // Optional
 
             public Raise() {
                 _fields = new PythonTuple(new[] { "type", "inst", "tback" });
@@ -2887,10 +2888,12 @@ namespace IronPython.Modules
                     _inst = Convert(stmt.Value);
                 if (stmt.Traceback != null)
                     _tback = Convert(stmt.Traceback);
+                if (stmt.Cause != null)
+                    _cause = Convert(stmt.Cause);
             }
 
             internal override Statement Revert() {
-                return new RaiseStatement(expr.Revert(type), expr.Revert(inst), expr.Revert(tback));
+                return new RaiseStatement(expr.Revert(type), expr.Revert(inst), expr.Revert(tback), expr.Revert(_cause));
             }
 
             public expr type {

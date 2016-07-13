@@ -1175,7 +1175,7 @@ namespace IronPython.Modules {
             Exception lastException = null;
             var addrInfos = getaddrinfo(context, host, port, 0, SOCK_STREAM, (int)ProtocolType.IP, (int)SocketFlags.None);
             if (addrInfos.Count == 0) {
-                throw PythonExceptions.CreateThrowableForRaise(context, error(context), "getaddrinfo returns an empty list");
+                throw PythonExceptions.CreateThrowableForRaise(context, error(context), "getaddrinfo returns an empty list", null);
             }
             foreach (PythonTuple current in addrInfos) {
                 int family = Converter.ConvertToInt32(current[0]);

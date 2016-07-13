@@ -983,18 +983,26 @@ namespace IronPython.Compiler {
         private RaiseStatement ParseRaiseStmt() {
             Eat(TokenKind.KeywordRaise);
             var start = GetStart();
-            Expression type = null, _value = null, traceback = null;
+            Expression type = null, _value = null, traceback = null, cause = null;
 
             if (!NeverTestToken(PeekToken())) {
+                // Get exception type, e.g. NameError: raise NameError
                 type = ParseExpression();
-                if (MaybeEat(TokenKind.Comma)) {
+                if (MaybeEat(TokenKind.Comma))
+                {
                     _value = ParseExpression();
-                    if (MaybeEat(TokenKind.Comma)) {
+                    if (MaybeEat(TokenKind.Comma))
+                    {
                         traceback = ParseExpression();
                     }
                 }
+                else if (MaybeEat(TokenKind.KeywordFrom))
+                {
+                    // Peek parse name expression
+                    cause = ParseExpression();
+                }
             }
-            RaiseStatement ret = new RaiseStatement(type, _value, traceback);
+            RaiseStatement ret = new RaiseStatement(type, _value, traceback, cause);
             ret.SetLoc(_globalParent, start, GetEnd());
             return ret;
         }

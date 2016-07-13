@@ -113,6 +113,11 @@ namespace IronPython.Runtime.Exceptions {
             private System.Exception _clrException; // the cached CLR exception that is thrown
             private object[] _slots;                // slots, only used for storage of our weak reference.
 
+            // PEP 3134 changes for exception chaining
+            private BaseException _cause;
+            private BaseException _context;
+            private TraceBack _traceback;
+
             public static string __doc__ = "Common base class for all non-exit exceptions.";
 
             #region Public API Surface
@@ -348,6 +353,54 @@ namespace IronPython.Runtime.Exceptions {
 
             PythonType IPythonObject.PythonType {
                 get { return _type; }
+            }
+
+            /// <summary>
+            /// Gets or sets the attribute for explicitly chained exceptions
+            /// </summary>
+            public BaseException __cause__
+            {
+                get
+                {
+                    return _cause;
+                }
+
+                internal set
+                {
+                    _cause = value;
+                }
+            }
+
+            /// <summary>
+            /// Gets or sets the attribute for implicitly chained exceptions
+            /// </summary>
+            public BaseException __context__
+            {
+                get
+                {
+                    return _context;
+                }
+
+                internal set
+                {
+                    _context = value;
+                }
+            }
+
+            /// <summary>
+            /// Gets or sets attribute for the traceback.
+            /// </summary>
+            public TraceBack __traceback__
+            {
+                get
+                {
+                    return _traceback;
+                }
+
+                internal set
+                {
+                    _traceback = value;
+                }
             }
 
             void IPythonObject.SetPythonType(PythonType/*!*/ newType) {
@@ -922,7 +975,7 @@ for k, v in toError.iteritems():
         /// Used at runtime when creating the exception from a user provided type via the raise statement.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Throwable")]
-        internal static System.Exception CreateThrowableForRaise(CodeContext/*!*/ context, PythonType/*!*/ type, object value) {
+        internal static System.Exception CreateThrowableForRaise(CodeContext/*!*/ context, PythonType/*!*/ type, object value, object cause) {
             object pyEx;
 
             if (PythonOps.IsInstance(value, type)) {
@@ -952,7 +1005,7 @@ for k, v in toError.iteritems():
         /// Used at runtime when creating the exception form a user provided type that's an old class (via the raise statement).
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Throwable")]
-        internal static System.Exception CreateThrowableForRaise(CodeContext/*!*/ context, OldClass type, object value) {
+        internal static System.Exception CreateThrowableForRaise(CodeContext/*!*/ context, OldClass type, object value, object cause) {
             object pyEx;
 
             if (PythonOps.IsInstance(context, value, type)) {

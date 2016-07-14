@@ -45,7 +45,8 @@ namespace IronPython.Modules {
         private const int MaxIndex = 9;
 
         private const int minYear = 1900;   // minimum year for python dates (CLS dates are bigger)
-        private const double epochDifference = 62135596800.0; // Difference between CLS epoch and UNIX epoch, == System.DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc).Ticks / TimeSpan.TicksPerSecond
+        private const double epochDifferenceDouble = 62135596800.0; // Difference between CLS epoch and UNIX epoch, == System.DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc).Ticks / TimeSpan.TicksPerSecond
+        private const long epochDifferenceLong = 62135596800;
         private const double ticksPerSecond = (double)TimeSpan.TicksPerSecond;
 
         public static readonly int altzone;
@@ -97,11 +98,18 @@ namespace IronPython.Modules {
         }
 
         internal static long TimestampToTicks(double seconds) {
-            return (long)((seconds + epochDifference) * ticksPerSecond);
+            // If everything is converted in one shot, the rounding error surface at
+            // microsecond level.
+            // e.g: 5399410716.777882 --> 2141-02-06 05:18:36.777881
+            //      1399410716.123    --> 2014-05-06 23:11:56.122995
+            // To work around it, second and microseconds are converted
+            // separately
+            return (((long)seconds) + epochDifferenceLong) * TimeSpan.TicksPerSecond + // seconds
+                   (long)(Math.Round(seconds % 1, 6) * TimeSpan.TicksPerSecond); // micro seconds
         }
 
         internal static double TicksToTimestamp(long ticks) {
-            return (ticks / ticksPerSecond) - epochDifference;
+            return (ticks / ticksPerSecond) - epochDifferenceDouble;
         }
 
         public static string asctime(CodeContext/*!*/ context) {

@@ -78,10 +78,51 @@ def gen_python_walker(cw):
 def gen_python_walker_nr(cw):
     gen_walker(cw, get_python_nodes(), "public override", "false")
 
+def gen_python_name_binder(cw):
+    # Each of these exclusions is here because there is some reason
+    # to not generate the default content.
+    exclusions = ["DictionaryComprehension",
+                  "SetComprehension",
+                  "ExecStatement",
+                  "DelStatement",
+                  "ClassDefinition",
+                  "FunctionDefinition",
+                  "AugmentedAssignStatement",
+                  "AssignmentStatement",
+                  "RaiseStatement",
+                  "ForStatement",
+                  "WhileStatement",
+                  "BreakStatement",
+                  "ContinueStatement",
+                  "ReturnStatement",
+                  "WithStatement",
+                  "FromImportStatement",
+                  "GlobalStatement",
+                  "NameExpression",
+                  "PythonAst",
+                  "ImportStatement",
+                  "TryStatement",
+                  "ComprehensionFor",
+                  ]
+    nodes = get_python_nodes()
+    nodes.sort()
+    for node in nodes:
+        if node not in exclusions:
+            space = 0
+            if space: cw.write("")
+            cw.write("// %s" % node)
+            cw.enter_block("public override bool Walk(%s node)" % node)
+            cw.write("node.Parent = _currentScope;")
+            cw.write("return base.Walk(node);")
+            cw.exit_block()
+
+
+
 def main():
     return generate(
         ("Python AST Walker", gen_python_walker),
         ("Python AST Walker Nonrecursive", gen_python_walker_nr),
+        ("Python Name Binder Propagate Current Scope", gen_python_name_binder),
     )
 
 if __name__=="__main__":

@@ -123,7 +123,7 @@ namespace IronPython.Runtime.Exceptions {
             #region Public API Surface
 
             public BaseException(PythonType/*!*/ type) {
-                ContractUtils.RequiresNotNull(type, "type");
+                 ContractUtils.RequiresNotNull(type, "type");
 
                 _type = type;
             }
@@ -132,8 +132,12 @@ namespace IronPython.Runtime.Exceptions {
             {
                 ContractUtils.RequiresNotNull(type, "type");
 
-                _cause = cause;
                 _type = type;
+                _cause = cause;
+
+                // Set default context. Not totally sure that this is the correct way
+                // following PEP 3134.
+                _context = cause;
             }
 
             public static object __new__(PythonType/*!*/ cls, params object[] _args) {

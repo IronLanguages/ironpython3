@@ -998,7 +998,7 @@ namespace IronPython.Compiler {
                 }
                 else if (MaybeEat(TokenKind.KeywordFrom))
                 {
-                    // Peek parse name expression
+                    // Peek parse name expression                    
                     cause = ParseExpression();
                 }
             }
@@ -3357,8 +3357,13 @@ namespace IronPython.Compiler {
 
         private bool PeekToken(Token check) {
             return PeekToken() == check;
-        }       
+        }
 
+        /// <summary>
+        /// Eat the current token if it is of the passed type/kind, else throws an exception
+        /// </summary>
+        /// <param name="kind">Token to check</param>
+        /// <returns>True if the kind match with the current token type, else false</returns>
         private bool Eat(TokenKind kind) {
             Token next = PeekToken();
             if (next.Kind != kind) {
@@ -3369,7 +3374,7 @@ namespace IronPython.Compiler {
                 return true;
             }
         }
-
+        
         private bool EatNoEof(TokenKind kind) {
             Token next = PeekToken();
             if (next.Kind != kind) {
@@ -3380,6 +3385,11 @@ namespace IronPython.Compiler {
             return true;
         }
 
+        /// <summary>
+        /// If the current token is from a specific type, it will be eaten, if not, nothing happens
+        /// </summary>
+        /// <param name="kind">Token to check</param>
+        /// <returns>If the token match, it will be eaten and true will be returned, else false</returns>
         private bool MaybeEat(TokenKind kind) {
             if (PeekToken().Kind == kind) {
                 NextToken();

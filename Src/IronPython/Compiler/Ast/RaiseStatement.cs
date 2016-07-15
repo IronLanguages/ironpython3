@@ -114,6 +114,10 @@ namespace IronPython.Compiler.Ast {
                 if (_traceback != null) {
                     _traceback.Walk(walker);
                 }
+                if (_cause != null)
+                {
+                    _cause.Walk(walker);
+                }
             }
             walker.PostWalk(this);
         }

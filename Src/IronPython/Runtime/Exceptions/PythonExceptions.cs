@@ -128,9 +128,25 @@ namespace IronPython.Runtime.Exceptions {
                 _type = type;
             }
 
-            public static object __new__(PythonType/*!*/ cls, params object[] args\u00F8) {
+            public BaseException(PythonType/*!*/ type, BaseException cause)
+            {
+                ContractUtils.RequiresNotNull(type, "type");
+
+                _cause = cause;
+                _type = type;
+            }
+
+            public static object __new__(PythonType/*!*/ cls, params object[] _args) {
                 if (cls.UnderlyingSystemType == typeof(BaseException)) {
-                    return new BaseException(cls);
+                    if (_args.Length == 0)
+                    {
+                        return new BaseException(cls);
+                    }
+                    else if (_args.Length > 0) {
+                        if (_args[0] is BaseException) {
+                            return new BaseException(cls, (BaseException)(_args[0]));
+                        }
+                    }
                 }
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
@@ -983,9 +999,9 @@ for k, v in toError.iteritems():
             } else if (value is PythonTuple) {
                 pyEx = PythonOps.CallWithArgsTuple(type, ArrayUtils.EmptyObjects, value);
             } else if (value != null) {
-                pyEx = PythonCalls.Call(context, type, value);
+                pyEx = PythonCalls.Call(context, type, value, cause);
             } else {
-                pyEx = PythonCalls.Call(context, type);
+                pyEx = PythonCalls.Call(context, type, cause);
             }
 
             if (PythonOps.IsInstance(pyEx, type)) {

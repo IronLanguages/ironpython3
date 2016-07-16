@@ -57,8 +57,7 @@
     <ReferencedPlatform Include="net40">
       <BuildPrefix></BuildPrefix>
     </ReferencedPlatform>
-    <!-- Mono 3.2 is missing necessary bits for 4.5. -->
-    <ReferencedPlatform Include="net45" Condition=" '$(Mono)' != 'true' ">
+    <ReferencedPlatform Include="net45">
       <BuildPrefix>v45</BuildPrefix>
     </ReferencedPlatform>
   </ItemGroup>

@@ -2339,6 +2339,10 @@ namespace IronPython.Runtime.Operations {
             PythonType pt;
 
             if (type is PythonExceptions.BaseException) {
+                // Set nested python exception
+                var _cause = cause as PythonExceptions.BaseException;
+                ((PythonExceptions.BaseException)type).SetCause(_cause);
+
                 throwable = PythonExceptions.ToClr(type);
             } else if (type is Exception) {
                 throwable = type as Exception;

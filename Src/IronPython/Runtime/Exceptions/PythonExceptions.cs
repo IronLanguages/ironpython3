@@ -131,6 +131,13 @@ namespace IronPython.Runtime.Exceptions {
                 ContractUtils.RequiresNotNull(type, "type");
 
                 _type = type;
+
+                // Set nested python exception
+                SetCause(cause);
+            }
+
+            internal void SetCause(BaseException cause)
+            {
                 _cause = cause;
 
                 // Set default context. Not totally sure that this is the correct way
@@ -139,12 +146,16 @@ namespace IronPython.Runtime.Exceptions {
                 _traceback = null;
 
                 // Create CLR-Exception and set the cause as Inner-Exception
-                //cause.GetClrException()
+                if (cause != null)
+                {
+                    var causeClrException = cause.GetClrException();
+                    _clrException = GetClrException(causeClrException);
+                }
             }
 
             public static object __new__(PythonType/*!*/ cls, params object[] _args) {
                 if (cls.UnderlyingSystemType == typeof(BaseException)) {
-                    if (_args.Length == 0)
+                    if (_args == null || _args.Length == 0)
                     {
                         return new BaseException(cls);
                     }
@@ -464,7 +475,8 @@ namespace IronPython.Runtime.Exceptions {
             /// Helper to get the CLR exception associated w/ this Python exception
             /// creating it if one has not already been created.
             /// </summary>
-            internal/*!*/ System.Exception GetClrException() {
+            /// <param name="innerException">Optional inner exception</param>
+            internal/*!*/ System.Exception GetClrException(Exception innerException = null) {
                 if (_clrException != null) {
                     return _clrException;
                 }
@@ -473,7 +485,7 @@ namespace IronPython.Runtime.Exceptions {
                 if (String.IsNullOrEmpty(stringMessage)) {
                     stringMessage = _type.Name;
                 }
-                System.Exception newExcep = _type._makeException(stringMessage, null);
+                System.Exception newExcep = _type._makeException(stringMessage, innerException);
                 newExcep.SetPythonException(this);
 
                 Interlocked.CompareExchange<System.Exception>(ref _clrException, newExcep, null);

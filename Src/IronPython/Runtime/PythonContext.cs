@@ -1481,15 +1481,31 @@ namespace IronPython.Runtime {
                 return FormatPythonSyntaxError(syntax_error);
             }
 
-            object pythonEx = PythonExceptions.ToPython(exception);
+            StringBuilder result = new StringBuilder();
 
-            string result = FormatStackTraces(exception) + FormatPythonException(pythonEx) + Environment.NewLine;
+            if (exception.InnerException != null)
+            {
+                var pythonInnserException = exception.InnerException.GetPythonException() as PythonExceptions.BaseException;
 
-            if (Options.ShowClrExceptions) {
-                result += FormatCLSException(exception);
+                if (pythonInnserException != null)
+                {
+                    result.AppendLine(FormatException(exception.InnerException));
+                    result.AppendLine("The above exception was the direct cause of the following exception:");
+                    result.AppendLine("");
+                }
             }
 
-            return result;
+            object pythonEx = PythonExceptions.ToPython(exception);
+
+            result.Append(FormatStackTraces(exception));
+            result.Append(FormatPythonException(pythonEx));
+            result.AppendLine("");
+            
+            if (Options.ShowClrExceptions) {
+                result.Append(FormatCLSException(exception));
+            }
+
+            return result.ToString();
         }
 
         internal static string FormatPythonSyntaxError(SyntaxErrorException e) {
@@ -1689,26 +1705,12 @@ namespace IronPython.Runtime {
 
         internal string FormatStackTraceNoDetail(Exception e, ref bool printedHeader) {
 
-            var baseException = e.GetPythonException();
+            var pythonException = e.GetPythonException() as PythonExceptions.BaseException;
             StringBuilder result = new StringBuilder();
 
-            if (baseException != null && baseException is PythonExceptions.BaseException)
-            {
-                var _baseException = (PythonExceptions.BaseException)baseException;
-                if (_baseException.__cause__ != null)
-                {
-                    var clrException = _baseException.__cause__.GetClrException();
-                    printedHeader = false;
-                    result.AppendLine(FormatStackTraces(clrException, ref printedHeader));
-
-                    result.AppendLine("The above exception was the direct cause of the following exception:");
-                    result.AppendLine();
-                }
-            }
-
-            // dump inner most exception first, followed by outer most.
-            if (e.InnerException != null) {
-                result.Append(FormatStackTraceNoDetail(e.InnerException, ref printedHeader));
+            // dump inner most exception first, followed by outer most. Must not be a python exception
+            if (e.InnerException != null && pythonException == null) {
+                result.AppendLine(FormatStackTraceNoDetail(e.InnerException, ref printedHeader));
             }
 
             if (!printedHeader) {
@@ -1718,7 +1720,8 @@ namespace IronPython.Runtime {
 
             var traceback = e.GetTraceBack();
             if (traceback != null) {
-                return result + traceback.Extract();
+                result.Append(traceback.Extract());
+                return result.ToString();
             }
             var frames = PythonExceptions.GetDynamicStackFrames(e);
             for (int i = frames.Length - 1; i >= 0; i--) {

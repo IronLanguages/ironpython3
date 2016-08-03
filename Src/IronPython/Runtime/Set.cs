@@ -159,7 +159,8 @@ namespace IronPython.Runtime {
         }
 
         public PythonTuple __reduce__() {
-            return SetStorage.Reduce(_items, TypeCache.Set);
+            var type = GetType() != typeof(SetCollection) ? DynamicHelpers.GetPythonType(this) : TypeCache.Set;
+            return SetStorage.Reduce(_items, type);
         }
 
         #endregion
@@ -1034,7 +1035,8 @@ namespace IronPython.Runtime {
         }
 
         public PythonTuple __reduce__() {
-            return SetStorage.Reduce(_items, TypeCache.FrozenSet);
+            var type = GetType() != typeof(FrozenSetCollection) ? DynamicHelpers.GetPythonType(this) : TypeCache.FrozenSet;
+            return SetStorage.Reduce(_items, type);
         }
 
         #endregion

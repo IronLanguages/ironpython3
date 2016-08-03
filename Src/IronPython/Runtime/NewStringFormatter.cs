@@ -1,11 +1,11 @@
 ﻿/* ****************************************************************************
  *
- * Copyright (c) Microsoft Corporation. 
+ * Copyright (c) Microsoft Corporation.
  *
- * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
- * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Apache License, Version 2.0, please send an email to 
- * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+ * This source code is subject to terms and conditions of the Apache License, Version 2.0. A
+ * copy of the license can be found in the License.html file at the root of this distribution. If
+ * you cannot locate the  Apache License, Version 2.0, please send an email to
+ * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound
  * by the terms of the Apache License, Version 2.0.
  *
  * You must not remove this notice, or any other, from this software.
@@ -27,12 +27,12 @@ using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
     /// <summary>
-    /// New string formatter for 'str'.format(...) calls and support for the Formatter 
+    /// New string formatter for 'str'.format(...) calls and support for the Formatter
     /// library via the _formatter_parser / _formatter_field_name_split
     /// methods.
-    /// 
+    ///
     /// We parse this format:
-    /// 
+    ///
     /// replacement_field =  "{" field_name ["!" conversion] [":" format_spec] "}"
     /// field_name        =  (identifier | integer) ("." attribute_name | "[" element_index "]")*
     /// attribute_name    =  identifier
@@ -61,7 +61,7 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Gets the formatting information for the given format.  This is a list of tuples.  The tuples
         /// include:
-        /// 
+        ///
         /// text, field name, format spec, conversion
         /// </summary>
         public static IEnumerable<PythonTuple/*!*/>/*!*/ GetFormatInfo(string/*!*/ format) {
@@ -74,7 +74,7 @@ namespace IronPython.Runtime {
         /// Parses a field name returning the argument name and an iterable
         /// object which can be used to access the individual attribute
         /// or element accesses.  The iterator yields tuples of:
-        /// 
+        ///
         /// bool (true if attribute, false if element index), attribute/index value
         /// </summary>
         public static PythonTuple/*!*/ GetFieldNameInfo(string/*!*/ name) {
@@ -121,7 +121,7 @@ namespace IronPython.Runtime {
 
             /// <summary>
             /// Gets an enumerable object for walking the parsed format.
-            /// 
+            ///
             /// TODO: object array?  struct?
             /// </summary>
             public static IEnumerable<PythonTuple/*!*/>/*!*/ Parse(string/*!*/ text) {
@@ -241,7 +241,7 @@ namespace IronPython.Runtime {
             }
 
             /// <summary>
-            /// Checks to see if we're at the end of the format.  If there's no more characters left we report 
+            /// Checks to see if we're at the end of the format.  If there's no more characters left we report
             /// the error, otherwise if we hit a } we return true to indicate parsing should stop.
             /// </summary>
             private bool CheckEnd() {
@@ -273,7 +273,7 @@ namespace IronPython.Runtime {
             /// <summary>
             /// Handles parsing the field name and the format spec and returns it.  At the parse
             /// level these are basically the same - field names just have more terminating characters.
-            /// 
+            ///
             /// The most complex part of parsing them is they both allow nested braces and require
             /// the braces are matched.  Strangely though the braces need to be matched across the
             /// combined field and format spec - not within each format.
@@ -312,13 +312,8 @@ namespace IronPython.Runtime {
             private readonly PythonContext/*!*/ _context;
             private readonly PythonTuple/*!*/ _args;
             private readonly IDictionary<object, object>/*!*/ _kwArgs;
-            private readonly int _depth;
+            private int _depth;
             private int _autoNumberedIndex;
-
-            private Formatter(PythonContext/*!*/ context, PythonTuple/*!*/ args, IDictionary<object, object>/*!*/ kwArgs, int depth)
-                : this(context, args, kwArgs) {
-                _depth = depth;
-            }
 
             private Formatter(PythonContext/*!*/ context, PythonTuple/*!*/ args, IDictionary<object, object>/*!*/ kwArgs) {
                 Assert.NotNull(context, args, kwArgs);
@@ -334,17 +329,11 @@ namespace IronPython.Runtime {
                 return new Formatter(context, args, kwArgs).ReplaceText(format);
             }
 
-            public static string/*!*/ FormatString(PythonContext/*!*/ context, string/*!*/ format, PythonTuple/*!*/ args, IDictionary<object, object>/*!*/ kwArgs, int depth) {
-                Assert.NotNull(context, args, kwArgs, format);
-
-                if (depth == 2) {
+            private string ReplaceText(string format) {
+                if (_depth == 2) {
                     throw PythonOps.ValueError("Max string recursion exceeded");
                 }
 
-                return new Formatter(context, args, kwArgs, depth).ReplaceText(format);
-            }
-
-            private string ReplaceText(string format) {
                 StringBuilder builder = new StringBuilder();
 
                 foreach (PythonTuple pt in StringFormatParser.Parse(format)) {
@@ -382,13 +371,9 @@ namespace IronPython.Runtime {
             private string/*!*/ ReplaceComputedFormats(string/*!*/ formatSpec) {
                 int computeStart = formatSpec.IndexOf('{');
                 if (computeStart != -1) {
-                    formatSpec = FormatString(
-                        _context,
-                        formatSpec,
-                        _args,
-                        _kwArgs,
-                        _depth + 1
-                    );
+                    _depth++;
+                    formatSpec = ReplaceText(formatSpec);
+                    _depth--;
                 }
                 return formatSpec;
             }

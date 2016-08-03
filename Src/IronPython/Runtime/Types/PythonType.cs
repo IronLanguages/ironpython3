@@ -55,7 +55,7 @@ namespace IronPython.Runtime.Types {
     [PythonType("type")]
     [Documentation(@"type(object) -> gets the type of the object
 type(name, bases, dict) -> creates a new type instance with the given name, base classes, and members from the dictionary")]
-    public partial class PythonType : IPythonMembersList, IDynamicMetaObjectProvider, IWeakReferenceable, ICodeFormattable, IFastGettable, IFastSettable, IFastInvokable {
+    public partial class PythonType : IPythonMembersList, IDynamicMetaObjectProvider, IWeakReferenceable, IWeakReferenceableByProxy, ICodeFormattable, IFastGettable, IFastSettable, IFastInvokable {
         private Type/*!*/ _underlyingSystemType;            // the underlying CLI system type for this type
         private string _name;                               // the name of the type
         private Dictionary<string, PythonTypeSlot> _dict;   // type-level slots & attributes
@@ -101,11 +101,11 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         [MultiRuntimeAware]
         private static int MasterVersion = 1;
         private static readonly CommonDictionaryStorage _pythonTypes = new CommonDictionaryStorage();
-        internal static PythonType _pythonTypeType = DynamicHelpers.GetPythonTypeFromType(typeof(PythonType));
+        internal static readonly PythonType _pythonTypeType = DynamicHelpers.GetPythonTypeFromType(typeof(PythonType));
         private static readonly WeakReference[] _emptyWeakRef = new WeakReference[0];
         private static object _subtypesLock = new object();
-        internal static Func<string, Exception, Exception> DefaultMakeException = (message, innerException) => new Exception(message, innerException);
 
+        internal static Func<string, Exception, Exception> DefaultMakeException = (message, innerException) => new Exception(message, innerException);
         internal static Func<string, Exception> DefaultMakeExceptionNoInnerException = (message) => { return DefaultMakeException(message, null); };
 
         /// <summary>
@@ -2695,11 +2695,60 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         bool IWeakReferenceable.SetWeakRef(WeakRefTracker value) {
-            return Interlocked.CompareExchange<WeakRefTracker>(ref _weakrefTracker, value, null) == null;
+            if (!IsSystemType) {
+                return Interlocked.CompareExchange<WeakRefTracker>(ref _weakrefTracker, value, null) == null;
+            } else {
+                return false;
+            }
         }
 
         void IWeakReferenceable.SetFinalizer(WeakRefTracker value) {
-            _weakrefTracker = value;
+            if (!IsSystemType) {
+                _weakrefTracker = value;
+            } else {
+                // do nothing, system types are never collected
+            }
+        }
+
+        IWeakReferenceable IWeakReferenceableByProxy.GetWeakRefProxy(PythonContext context) {
+            return new WeakReferenceProxy(context, this);
+        }
+
+        class WeakReferenceProxy : IWeakReferenceable {
+            private readonly PythonContext context;
+            private readonly PythonType type;
+
+            internal WeakReferenceProxy(PythonContext context, PythonType type) {
+                this.type = type;
+                this.context = context;
+            }
+
+            public WeakRefTracker GetWeakRef() {
+                if(type.IsSystemType) {
+                    return this.context.GetSystemPythonTypeWeakRef(type);
+                } else {
+                    IWeakReferenceable weakref = (IWeakReferenceable)type;
+                    return weakref.GetWeakRef();
+                }
+            }
+
+            public void SetFinalizer(WeakRefTracker value) {
+                if(type.IsSystemType) {
+                    this.context.SetSystemPythonTypeFinalizer(type, value);
+                } else {
+                    IWeakReferenceable weakref = (IWeakReferenceable)type;
+                    weakref.SetFinalizer(value);
+                }
+            }
+
+            public bool SetWeakRef(WeakRefTracker value) {
+                if(type.IsSystemType) {
+                    return this.context.SetSystemPythonTypeWeakRef(type, value);
+                } else {
+                    IWeakReferenceable weakref = (IWeakReferenceable)type;
+                    return weakref.SetWeakRef(value);
+                }
+            }
         }
 
         #endregion

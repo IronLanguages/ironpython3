@@ -252,6 +252,7 @@ namespace IronPython.Runtime.Operations {
             if (o is double) return DoubleOps.__str__(context, (double)o);
             if ((dt = o as PythonType) != null) return dt.__repr__(DefaultContext.Default);
             if ((oc = o as OldClass) != null) return oc.ToString();
+            if (o.GetType() == typeof(object).Assembly.GetType("System.__ComObject")) return ComOps.__repr__(o);
 
             object value = PythonContext.InvokeUnaryOperator(context, UnaryOperators.String, o);
             string ret = value as string;
@@ -1356,7 +1357,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static void InitializeForFinalization(CodeContext/*!*/ context, object newObject) {
-            IWeakReferenceable iwr = newObject as IWeakReferenceable;
+            IWeakReferenceable iwr = context.GetPythonContext().ConvertToWeakReferenceable(newObject);
             Debug.Assert(iwr != null);
 
             InstanceFinalizer nif = new InstanceFinalizer(context, newObject);
@@ -1784,7 +1785,7 @@ namespace IronPython.Runtime.Operations {
         public static object ImportBottom(CodeContext/*!*/ context, string fullName, int level) {
             object module = Importer.ImportLightThrow(context, fullName, null, level);
 
-            if (fullName.IndexOf('.') >= 0) {
+            if (!LightExceptions.IsLightException(module) && fullName.IndexOf('.') >= 0) {
                 // Extract bottom from the imported module chain
                 string[] parts = fullName.Split('.');
 

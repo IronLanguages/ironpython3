@@ -711,7 +711,7 @@ in CSV format.")]
                         {
                             throw PythonOps.TypeError("expected string or " +
                                 "Unicode object, {0} found",
-                                PythonType.GetPythonType(lineobj.GetType()));
+                                DynamicHelpers.GetPythonType(lineobj.GetType()));
                         }
 
                         string line = lineobj as string;

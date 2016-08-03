@@ -648,6 +648,7 @@ namespace IronPython.Compiler {
 
                         return new IncompleteStringErrorToken(Resources.EofInString, incompleteContents);
                     } else if ((eol_size = ReadEolnOpt(ch)) > 0) {
+                        _newLineLocations.Add(CurrentIndex);
 
                         // skip \<eoln> unless followed by EOF:
                         if (Peek() == EOF) {

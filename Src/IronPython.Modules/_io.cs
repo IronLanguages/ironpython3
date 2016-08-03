@@ -61,7 +61,7 @@ namespace IronPython.Modules {
                 dict,
                 "BlockingIOError",
                 "builtins",
-                msg => new _BlockingIOErrorException(msg)
+                (msg, innerException) => new _BlockingIOErrorException(msg, innerException)
             );
             context.EnsureModuleException(
                 _unsupportedOperationKey,
@@ -3070,6 +3070,7 @@ namespace IronPython.Modules {
 
         private class _BlockingIOErrorException : IOException {
             public _BlockingIOErrorException(string msg) : base(msg) { }
+            public _BlockingIOErrorException(string msg, Exception innerException) : base(msg, innerException) { }
         }
 
         #endregion

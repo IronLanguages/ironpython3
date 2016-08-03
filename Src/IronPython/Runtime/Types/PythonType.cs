@@ -96,7 +96,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         private PythonTypeSlot _lenSlot;                    // cached length slot, cleared when the type is mutated
 
-        internal Func<string, Exception> _makeException = DefaultMakeException;
+        internal Func<string, Exception, Exception> _makeException = DefaultMakeException;
 
         [MultiRuntimeAware]
         private static int MasterVersion = 1;
@@ -104,7 +104,9 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         internal static PythonType _pythonTypeType = DynamicHelpers.GetPythonTypeFromType(typeof(PythonType));
         private static readonly WeakReference[] _emptyWeakRef = new WeakReference[0];
         private static object _subtypesLock = new object();
-        internal static Func<string, Exception> DefaultMakeException = (message) => new Exception(message);
+        internal static Func<string, Exception, Exception> DefaultMakeException = (message, innerException) => new Exception(message, innerException);
+
+        internal static Func<string, Exception> DefaultMakeExceptionNoInnerException = (message) => { return DefaultMakeException(message, null); };
 
         /// <summary>
         /// Provides delegates that will invoke a parameterless type ctor.  The first key provides
@@ -160,7 +162,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// Used for runtime defined new-style classes which require multiple inheritance.  The
         /// primary example of this is the exception system.
         /// </summary>
-        internal PythonType(PythonType baseType, string name, Func<string, Exception> exceptionMaker) {
+        internal PythonType(PythonType baseType, string name, Func<string, Exception, Exception> exceptionMaker) {
             _underlyingSystemType = baseType.UnderlyingSystemType;
 
             IsSystemType = baseType.IsSystemType;
@@ -199,7 +201,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// Used for runtime defined new-style classes which require multiple inheritance.  The
         /// primary example of this is the exception system.
         /// </summary>
-        internal PythonType(PythonType[] baseTypes, Type underlyingType, string name, Func<string, Exception> exceptionMaker)
+        internal PythonType(PythonType[] baseTypes, Type underlyingType, string name, Func<string, Exception, Exception> exceptionMaker)
             : this(baseTypes, name) {
             _underlyingSystemType = underlyingType;
             _makeException = exceptionMaker;
@@ -211,7 +213,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// Used for runtime defined new-style classes which require multiple inheritance.  The
         /// primary example of this is the exception system.
         /// </summary>
-        internal PythonType(PythonContext context, PythonType baseType, string name, string module, string doc, Func<string, Exception> exceptionMaker)
+        internal PythonType(PythonContext context, PythonType baseType, string name, string module, string doc, Func<string, Exception, Exception> exceptionMaker)
             : this(baseType, name, exceptionMaker) {
             EnsureDict();
 
@@ -245,7 +247,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// Used for runtime defined new-style classes which require multiple inheritance.  The
         /// primary example of this is the exception system.
         /// </summary>
-        internal PythonType(PythonContext context, PythonType[] baseTypes, Type underlyingType, string name, string module, string doc, Func<string, Exception> exceptionMaker)
+        internal PythonType(PythonContext context, PythonType[] baseTypes, Type underlyingType, string name, string module, string doc, Func<string, Exception, Exception> exceptionMaker)
             : this(baseTypes, underlyingType, name, exceptionMaker) {
             EnsureDict();
 

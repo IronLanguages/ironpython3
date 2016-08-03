@@ -122,10 +122,8 @@ namespace IronPython.Runtime.Exceptions {
 
             #region Public API Surface
 
-            public BaseException(PythonType/*!*/ type) {
-                 ContractUtils.RequiresNotNull(type, "type");
+            public BaseException(PythonType/*!*/ type) : this(type, null) {
 
-                _type = type;
             }
 
             public BaseException(PythonType/*!*/ type, BaseException cause)
@@ -138,6 +136,10 @@ namespace IronPython.Runtime.Exceptions {
                 // Set default context. Not totally sure that this is the correct way
                 // following PEP 3134.
                 _context = cause;
+                _traceback = null;
+
+                // Create CLR-Exception and set the cause as Inner-Exception
+                //cause.GetClrException()
             }
 
             public static object __new__(PythonType/*!*/ cls, params object[] _args) {
@@ -414,12 +416,14 @@ namespace IronPython.Runtime.Exceptions {
             {
                 get
                 {
-                    return _traceback;
-                }
+                    if (_traceback == null)
+                    {
+                        var clrException = GetClrException();
+                        List<DynamicStackFrame> frames = clrException.GetFrameList();
+                        _traceback = PythonOps.CreateTraceBack(clrException, frames, frames.Count);
+                    }
 
-                internal set
-                {
-                    _traceback = value;
+                    return _traceback;
                 }
             }
 
@@ -469,7 +473,7 @@ namespace IronPython.Runtime.Exceptions {
                 if (String.IsNullOrEmpty(stringMessage)) {
                     stringMessage = _type.Name;
                 }
-                System.Exception newExcep = _type._makeException(stringMessage);
+                System.Exception newExcep = _type._makeException(stringMessage, null);
                 newExcep.SetPythonException(this);
 
                 Interlocked.CompareExchange<System.Exception>(ref _clrException, newExcep, null);
@@ -1174,7 +1178,7 @@ for k, v in toError.iteritems():
         /// <summary>
         /// Internal helper to get the associated Python exception from a .NET exception.
         /// </summary>
-        private static object GetPythonException(this Exception e) {
+        internal static object GetPythonException(this Exception e) {
             IPythonAwareException pyAware = e as IPythonAwareException;
             if (pyAware != null) {
                 return pyAware.PythonException;
@@ -1277,7 +1281,7 @@ for k, v in toError.iteritems():
         /// normal user types.
         /// </summary>
         [PythonHidden]
-        public static PythonType CreateSubType(PythonContext/*!*/ context, PythonType baseType, string name, string module, string documentation, Func<string, Exception> exceptionMaker) {
+        public static PythonType CreateSubType(PythonContext/*!*/ context, PythonType baseType, string name, string module, string documentation, Func<string, Exception, Exception> exceptionMaker) {
             PythonType res = new PythonType(context, baseType, name, module, documentation, exceptionMaker);
             res.SetCustomMember(context.SharedContext, "__weakref__", new PythonTypeWeakRefSlot(res));
             res.IsWeakReferencable = true;
@@ -1289,7 +1293,7 @@ for k, v in toError.iteritems():
         /// normal user types.
         /// </summary>
         [PythonHidden]
-        public static PythonType CreateSubType(PythonContext/*!*/ context, PythonType baseType, Type underlyingType, string name, string module, string documentation, Func<string, Exception> exceptionMaker) {
+        public static PythonType CreateSubType(PythonContext/*!*/ context, PythonType baseType, Type underlyingType, string name, string module, string documentation, Func<string, Exception, Exception> exceptionMaker) {
             PythonType res = new PythonType(context, new PythonType[] { baseType }, underlyingType, name, module, documentation, exceptionMaker);
             res.SetCustomMember(context.SharedContext, "__weakref__", new PythonTypeWeakRefSlot(res));
             res.IsWeakReferencable = true;
@@ -1301,7 +1305,7 @@ for k, v in toError.iteritems():
         /// from multiple bases.  These types are mutable like normal user types. 
         /// </summary>
         [PythonHidden]
-        public static PythonType CreateSubType(PythonContext/*!*/ context, PythonType[] baseTypes, Type underlyingType, string name, string module, string documentation, Func<string, Exception> exceptionMaker) {
+        public static PythonType CreateSubType(PythonContext/*!*/ context, PythonType[] baseTypes, Type underlyingType, string name, string module, string documentation, Func<string, Exception, Exception> exceptionMaker) {
             PythonType res = new PythonType(context, baseTypes, underlyingType, name, module, documentation, exceptionMaker);
             res.SetCustomMember(context.SharedContext, "__weakref__", new PythonTypeWeakRefSlot(res));
             res.IsWeakReferencable = true;
@@ -1315,14 +1319,14 @@ for k, v in toError.iteritems():
         /// example StandardError.x = 3 is illegal.  This isn't for module exceptions which 
         /// are like user defined types.  thread.error.x = 3 is legal.
         /// </summary>
-        private static PythonType CreateSubType(PythonType baseType, string name, Func<string, Exception> exceptionMaker) {
+        private static PythonType CreateSubType(PythonType baseType, string name, Func<string, Exception, Exception> exceptionMaker) {
             return new PythonType(baseType, name, exceptionMaker);
         }
 
         /// <summary>
         /// Creates a new type for a built-in exception which is the root concrete type.  
         /// </summary>
-        private static PythonType/*!*/ CreateSubType(PythonType/*!*/ baseType, Type/*!*/ concreteType, Func<string, Exception> exceptionMaker) {
+        private static PythonType/*!*/ CreateSubType(PythonType/*!*/ baseType, Type/*!*/ concreteType, Func<string, Exception, Exception> exceptionMaker) {
             Assert.NotNull(baseType, concreteType);
 
             PythonType myType = DynamicHelpers.GetPythonTypeFromType(concreteType);

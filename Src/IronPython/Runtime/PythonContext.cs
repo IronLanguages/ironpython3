@@ -659,7 +659,7 @@ namespace IronPython.Runtime {
             ));
         }
 
-        public PythonType EnsureModuleException(object key, PythonType baseType, Type underlyingType, PythonDictionary dict, string name, string module, Func<string, Exception> exceptionMaker) {
+        public PythonType EnsureModuleException(object key, PythonType baseType, Type underlyingType, PythonDictionary dict, string name, string module, Func<string, Exception, Exception> exceptionMaker) {
             return (PythonType)(dict[name] = GetOrCreateModuleState(
                 key,
                 () => PythonExceptions.CreateSubType(this, baseType, underlyingType, name, module, "", exceptionMaker)
@@ -1635,17 +1635,31 @@ namespace IronPython.Runtime {
             return result.ToString();
         }
 #else
+
+        /// <summary>
+        /// Formats the stacktrace of the given exception in python-notation and always print the header
+        /// </summary>
+        /// <param name="e">Exception instance</param>
+        /// <returns>Formatted message as string</returns>
         private string FormatStackTraces(Exception e) {
             bool printedHeader = false;
 
             return FormatStackTraces(e, ref printedHeader);
         }
 
+        /// <summary>
+        /// Formats the stacktrace of the given exception in python-notation
+        /// </summary>
+        /// <param name="e">Exception instance</param>
+        /// <param name="printedHeader">Defines, whether to print the header message again or not (use ref for chaining). 
+        /// If False is passed, the header will be pritned</param>
+        /// <returns>Formatted message as string</returns>
         private string FormatStackTraces(Exception e, ref bool printedHeader) {
-            string result = "";
+            StringBuilder result = new StringBuilder();
+
             if (Options.ExceptionDetail) {
                 if (!printedHeader) {
-                    result = e.Message + Environment.NewLine;
+                    result.AppendLine(e.Message);
                     printedHeader = true;
                 }
                 IList<System.Diagnostics.StackTrace> traces = ExceptionHelpers.GetExceptionStackTraces(e);
@@ -1654,27 +1668,51 @@ namespace IronPython.Runtime {
                     for (int i = 0; i < traces.Count; i++) {
                         for (int j = 0; j < traces[i].FrameCount; j++) {
                             StackFrame curFrame = traces[i].GetFrame(j);
-                            result += curFrame.ToString() + Environment.NewLine;
+                            result.AppendLine(curFrame.ToString());
                         }
                     }
                 }
 
-                if (e.StackTrace != null) result += e.StackTrace.ToString() + Environment.NewLine;
-                if (e.InnerException != null) result += FormatStackTraces(e.InnerException, ref printedHeader);
+                if (e.StackTrace != null) {
+                    result.AppendLine(e.StackTrace.ToString());
+                }
+
+                if (e.InnerException != null) {
+                    result.Append(FormatStackTraces(e.InnerException, ref printedHeader));
+                }
             } else {
-                result = FormatStackTraceNoDetail(e, ref printedHeader);
+                result.Append(FormatStackTraceNoDetail(e, ref printedHeader));
             }
 
-            return result;
+            return result.ToString();
         }
 
         internal string FormatStackTraceNoDetail(Exception e, ref bool printedHeader) {
-            string result = String.Empty;
+
+            var baseException = e.GetPythonException();
+            StringBuilder result = new StringBuilder();
+
+            if (baseException != null && baseException is PythonExceptions.BaseException)
+            {
+                var _baseException = (PythonExceptions.BaseException)baseException;
+                if (_baseException.__cause__ != null)
+                {
+                    var clrException = _baseException.__cause__.GetClrException();
+                    printedHeader = false;
+                    result.AppendLine(FormatStackTraces(clrException, ref printedHeader));
+
+                    result.AppendLine("The above exception was the direct cause of the following exception:");
+                    result.AppendLine();
+                }
+            }
+
             // dump inner most exception first, followed by outer most.
-            if (e.InnerException != null) result += FormatStackTraceNoDetail(e.InnerException, ref printedHeader);
+            if (e.InnerException != null) {
+                result.Append(FormatStackTraceNoDetail(e.InnerException, ref printedHeader));
+            }
 
             if (!printedHeader) {
-                result += "Traceback (most recent call last):" + Environment.NewLine;
+                result.AppendLine("Traceback (most recent call last):");
                 printedHeader = true;
             }
 
@@ -1692,9 +1730,10 @@ namespace IronPython.Runtime {
                     continue;
                 }
 
-                result += FrameToString(frame) + Environment.NewLine;
+                result.AppendLine(FrameToString(frame));
             }
-            return result;
+
+            return result.ToString();
         }
 
         private static string FrameToString(DynamicStackFrame frame) {

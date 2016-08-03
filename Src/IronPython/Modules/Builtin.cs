@@ -1503,6 +1503,11 @@ namespace IronPython.Modules {
             return value;
         }
 
+        /// <summary>
+        /// Calls the __next__ method of an iterable
+        /// </summary>
+        /// <param name="iter">Iterable instance</param>
+        /// <returns>Next object or throws an StopIterator exception</returns>
         public static object next(IEnumerator iter) {
             if (iter.MoveNext()) {
                 return iter.Current;
@@ -1511,6 +1516,12 @@ namespace IronPython.Modules {
             }
         }
 
+        /// <summary>
+        /// Calls the __next__ method of an iterable
+        /// </summary>
+        /// <param name="iter">Iterable instance</param>
+        /// <param name="defaultVal">Default operation value</param>
+        /// <returns>Next object or throws an StopIterator exception</returns>
         public static object next(IEnumerator iter, object defaultVal) {
             if (iter.MoveNext()) {
                 return iter.Current;
@@ -1537,12 +1548,14 @@ namespace IronPython.Modules {
         }
 
         public static object next(CodeContext/*!*/ context, object iter) {
-            return PythonOps.Invoke(context, iter, "next");
+            // PEP 3114 -- Renaming iterator.next() to iterator.__next__()
+            return PythonOps.Invoke(context, iter, "__next__");
         }
 
         public static object next(CodeContext/*!*/ context, object iter, object defaultVal) {
-            try {
-                return PythonOps.Invoke(context, iter, "next");
+            try {                
+                // PEP 3114 -- Renaming iterator.next() to iterator.__next__()
+                return PythonOps.Invoke(context, iter, "__next__");
             } catch (StopIterationException) {
                 return defaultVal;
             }

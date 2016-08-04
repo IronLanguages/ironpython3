@@ -1484,16 +1484,19 @@ namespace IronPython.Runtime
 
             StringBuilder result = new StringBuilder();
 
+            object pythonEx = PythonExceptions.ToPython(exception);
+
             if (exception.InnerException != null)
             {
                 var pythonInnerException = exception.InnerException.GetPythonException() as PythonExceptions.BaseException;
                 
-                if (pythonInnerException != null)
+                if (pythonInnerException != null && pythonEx is PythonExceptions.BaseException)
                 {
                     // Add nested/chained exception
                     result.AppendLine(FormatException(exception.InnerException));
 
-                    if (!pythonInnerException.IsImplicitException)
+                    // Check whether this is implicit or explicit
+                    if (!((PythonExceptions.BaseException)pythonEx).IsImplicitException)
                     {
                         result.AppendLine("The above exception was the direct cause of the following exception:");
                     }
@@ -1505,8 +1508,6 @@ namespace IronPython.Runtime
                     result.AppendLine("");
                 }
             }
-
-            object pythonEx = PythonExceptions.ToPython(exception);
 
             result.Append(FormatStackTraces(exception));
             result.Append(FormatPythonException(pythonEx));

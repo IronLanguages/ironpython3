@@ -2335,15 +2335,31 @@ namespace IronPython.Runtime.Operations {
             return e;
         }
 
+        /// <summary>
+        /// Get the current context-exception which might be null
+        /// </summary>
+        /// <returns>BaseException or null</returns>
+        internal static PythonExceptions.BaseException GetRawContextException()
+        {
+            if (RawException != null)
+            {
+                return RawException.GetPythonException() as PythonExceptions.BaseException;
+            }
+
+            return null;
+        }
+
         private static Exception MakeExceptionWorker(CodeContext/*!*/ context, object type, object value, object traceback, object cause, bool forRethrow) {
             Exception throwable;
             PythonType pt;
-
+            
             if (type is PythonExceptions.BaseException) {
+                var baseExc = ((PythonExceptions.BaseException)type);
+
                 // Set nested python exception
                 var _cause = cause as PythonExceptions.BaseException;
-                ((PythonExceptions.BaseException)type).SetCause(_cause);
-
+                baseExc.CreateClrExceptionWithCause(_cause, GetRawContextException());
+                
                 throwable = PythonExceptions.ToClr(type);
             } else if (type is Exception) {
                 throwable = type as Exception;
@@ -2373,7 +2389,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             PerfTrack.NoteEvent(PerfTrack.Categories.Exceptions, throwable);
-
+            
             return throwable;
         }
 

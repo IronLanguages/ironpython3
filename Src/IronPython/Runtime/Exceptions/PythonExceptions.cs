@@ -133,24 +133,7 @@ namespace IronPython.Runtime.Exceptions {
                 _type = type;
 
                 // Set nested python exception
-                SetCause(cause);
-            }
-
-            internal void SetCause(BaseException cause)
-            {
-                _cause = cause;
-
-                // Set default context. Not totally sure that this is the correct way
-                // following PEP 3134.
-                _context = cause;
-                _traceback = null;
-
-                // Create CLR-Exception and set the cause as Inner-Exception
-                if (cause != null)
-                {
-                    var causeClrException = cause.GetClrException();
-                    _clrException = GetClrException(causeClrException);
-                }
+                CreateClrExceptionWithCause(cause, null);
             }
 
             public static object __new__(PythonType/*!*/ cls, params object[] _args) {
@@ -411,6 +394,12 @@ namespace IronPython.Runtime.Exceptions {
             {
                 get
                 {
+                    // If we have no context, be sure we return the context, this is maybe not null
+                    if (_context == null)
+                    {
+                        return __cause__;
+                    }
+
                     return _context;
                 }
 
@@ -435,6 +424,33 @@ namespace IronPython.Runtime.Exceptions {
                     }
 
                     return _traceback;
+                }
+            }
+
+            /// <summary>
+            /// Gets whether a cause exists or not
+            /// </summary>
+            public bool HasCause
+            {
+                get
+                {
+                    return __cause__ != null;
+                }
+            }
+
+            /// <summary>
+            /// Gets whether the exception is an implcicit exception
+            /// </summary>
+            public bool IsImplicitException
+            {
+                get
+                {
+                    if (__cause__ != __context__ && __cause__ == null)
+                    {
+                        return true;
+                    }
+
+                    return false;
                 }
             }
 
@@ -489,6 +505,37 @@ namespace IronPython.Runtime.Exceptions {
                 newExcep.SetPythonException(this);
 
                 Interlocked.CompareExchange<System.Exception>(ref _clrException, newExcep, null);
+
+                return _clrException;
+            }
+
+            /// <summary>
+            /// Returns a create clr-exception with the specific inner-exception
+            /// </summary>
+            /// <param name="cause"></param>
+            /// <param name="context"></param>
+            /// <returns></returns>
+            internal Exception CreateClrExceptionWithCause(BaseException cause, BaseException context)
+            {
+                _cause = cause;
+
+                // Set default context. Not totally sure that this is the correct way
+                // following PEP 3134.
+                _context = context;
+                _traceback = null;
+
+                // Create CLR-Exception and set the cause as Inner-Exception
+                if (cause != null)
+                {
+                    var causeClrException = cause.GetClrException();
+                    _clrException = GetClrException(causeClrException);
+                }
+                // ... with inner implicit exception
+                else if (context != null)
+                {
+                    var causeClrException = context.GetClrException();
+                    _clrException = GetClrException(causeClrException);
+                }
 
                 return _clrException;
             }
@@ -1025,10 +1072,24 @@ for k, v in toError.iteritems():
             }
 
             if (PythonOps.IsInstance(pyEx, type)) {
-                // overloaded __new__ can return anything, if 
-                // it's the right exception type use the normal conversion...
-                // If it's wrong return an ObjectException which remembers the type.
-                return ((BaseException)pyEx).GetClrException();
+                // Get context exception
+                var contextException = PythonOps.GetRawContextException();
+
+                // If we have a context-exception or no context/cause lets return the existing
+                // or a new exception
+                if (cause != null || cause == null && contextException == null)
+                {
+                    // overloaded __new__ can return anything, if 
+                    // it's the right exception type use the normal conversion...
+                    // If it's wrong return an ObjectException which remembers the type.
+                    return ((BaseException)pyEx).GetClrException();
+                }
+                else if (context != null)
+                {
+                    // Generate new CLR-Exception and return it, with the implicit context exception
+                    return ((BaseException)pyEx).CreateClrExceptionWithCause(null, contextException);
+                }
+                
             }
 
             // user returned arbitrary object from overridden __new__, let it throw...

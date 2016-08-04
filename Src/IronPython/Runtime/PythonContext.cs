@@ -1486,12 +1486,22 @@ namespace IronPython.Runtime
 
             if (exception.InnerException != null)
             {
-                var pythonInnserException = exception.InnerException.GetPythonException() as PythonExceptions.BaseException;
-
-                if (pythonInnserException != null)
+                var pythonInnerException = exception.InnerException.GetPythonException() as PythonExceptions.BaseException;
+                
+                if (pythonInnerException != null)
                 {
+                    // Add nested/chained exception
                     result.AppendLine(FormatException(exception.InnerException));
-                    result.AppendLine("The above exception was the direct cause of the following exception:");
+
+                    if (!pythonInnerException.IsImplicitException)
+                    {
+                        result.AppendLine("The above exception was the direct cause of the following exception:");
+                    }
+                    else
+                    {
+                        result.AppendLine("During handling of the above exception, another exception occurred:");
+                    }
+
                     result.AppendLine("");
                 }
             }

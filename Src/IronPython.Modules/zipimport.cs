@@ -620,14 +620,13 @@ contain the module, but has no source for it.")]
             return PythonOps.CreateThrowable(get_ZipImportError(context), args);
         }
 
-        private static void InitModuleExceptions(PythonContext context,
-            PythonDictionary dict) {
+        private static void InitModuleExceptions(PythonContext context, PythonDictionary dict) {
             context.EnsureModuleException(
                 "zipimport.ZipImportError",
                 PythonExceptions.ImportError,
                 typeof(PythonExceptions.BaseException),
                 dict, "ZipImportError", "zipimport",
-                msg => new ImportException(msg));
+                (msg, innerException) => { return new ImportException(msg, innerException); });
         }
 
         /// <summary>

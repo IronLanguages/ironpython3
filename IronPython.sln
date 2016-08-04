@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPython", "Src\IronPython\IronPython.csproj", "{95289EA9-5778-489D-AB48-F81F2CE2DA32}"
 EndProject
@@ -139,6 +139,8 @@ Global
 		{65E997B7-E99B-4C83-B29E-9951429BB293}.Release|Any CPU.Build.0 = Release|Any CPU
 		{65E997B7-E99B-4C83-B29E-9951429BB293}.Silverlight5Debug|Any CPU.ActiveCfg = Silverlight5Debug|Any CPU
 		{65E997B7-E99B-4C83-B29E-9951429BB293}.Silverlight5Release|Any CPU.ActiveCfg = Silverlight5Release|Any CPU
+		{65E997B7-E99B-4C83-B29E-9951429BB293}.v2Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{65E997B7-E99B-4C83-B29E-9951429BB293}.v2Release|Any CPU.ActiveCfg = Release|Any CPU
 		{65E997B7-E99B-4C83-B29E-9951429BB293}.v45Debug|Any CPU.ActiveCfg = v45Debug|Any CPU
 		{65E997B7-E99B-4C83-B29E-9951429BB293}.v45Debug|Any CPU.Build.0 = v45Debug|Any CPU
 		{65E997B7-E99B-4C83-B29E-9951429BB293}.v45Release|Any CPU.ActiveCfg = v45Release|Any CPU

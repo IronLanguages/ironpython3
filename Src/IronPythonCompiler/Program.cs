@@ -17,9 +17,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Hosting;
@@ -62,7 +59,11 @@ namespace IronPythonCompiler {
 
                 foreach (var a in System.AppDomain.CurrentDomain.GetAssemblies()) {
                     var n = new AssemblyName(a.FullName);
+#if CLR2
+                    if (a.EntryPoint == null && (n.Name.StartsWith("IronPython") || n.Name == "Microsoft.Dynamic" || n.Name == "Microsoft.Scripting")) {
+#else
                     if (!a.IsDynamic && a.EntryPoint == null && (n.Name.StartsWith("IronPython") || n.Name == "Microsoft.Dynamic" || n.Name == "Microsoft.Scripting")) {
+#endif
                         ConsoleOps.Info("\tEmbedded {0} {1}", n.Name, n.Version);
                         var f = new FileStream(a.Location, FileMode.Open, FileAccess.Read);
                         mb.DefineManifestResource("Dll." + n.Name, f, IKVM.Reflection.ResourceAttributes.Public);

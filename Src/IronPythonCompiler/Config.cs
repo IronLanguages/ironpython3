@@ -3,7 +3,6 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using IKVM.Reflection;
 using IKVM.Reflection.Emit;
 using System.Resources;

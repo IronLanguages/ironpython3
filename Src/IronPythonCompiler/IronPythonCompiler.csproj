@@ -2,15 +2,11 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(ProjectDir)..\..\Build\Common.proj" />
   <PropertyGroup>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>IronPythonCompiler</RootNamespace>
     <AssemblyName>ipyc</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
   </PropertyGroup>
@@ -50,14 +46,18 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <None Include="..\App.Debug.config">
+      <Link>App.Debug.config</Link>
+    </None>
+    <None Include="..\App.Release.config">
+      <Link>App.Release.config</Link>
+    </None>
     <None Include="IronPythonCompiler.ruleset" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\IronPython\IronPython.csproj">
       <Project>{95289ea9-5778-489d-ab48-f81f2ce2da32}</Project>
       <Name>IronPython</Name>
-      <Private>false</Private>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(CSharpTargets)" />

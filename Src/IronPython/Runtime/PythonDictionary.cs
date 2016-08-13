@@ -473,7 +473,7 @@ namespace IronPython.Runtime {
 
         [ClassMethod]
         public static object fromkeys(CodeContext context, PythonType cls, object seq, object value) {
-            XRange xr = seq as XRange;
+            Range xr = seq as Range;
             if (xr != null) {
                 int n = xr.__len__();
                 object ret = PythonContext.GetContext(context).CallSplat(cls);

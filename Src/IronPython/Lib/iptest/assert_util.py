@@ -237,8 +237,27 @@ def AssertInOrNot(l, in_list, not_in_list):
     for x in not_in_list:
         Assert(x not in l, "%s should not be in %s" % (x, l))
         
-# Check that the exception is raised with the provided message
+def AssertIn(x, l):
+    Assert(x in l, "%s should be in %s" % (x, l))
 
+def AssertNotIn(x, l):
+    Assert(x not in l, "%s should not be in %s" % (x, l))
+
+def AssertIs(x, t):
+    Assert(x == t, "expected type %s, but got %s" % (t, x))
+
+class AssertRaisesCtx():
+    def __init__(self, ex):
+        self.expectedException = ex
+    def __enter__(self):
+        return self
+    def __exit__(self, type, value, traceback):
+        Assert(isinstance(value, self.expectedException),
+               "Expected %s, but got %s" % (self.expectedException, value))
+        return True
+
+
+# Check that the exception is raised with the provided message
 def AssertErrorWithMessage(exc, expectedMessage, func, *args, **kwargs):
     Assert(expectedMessage, "expectedMessage cannot be null")
     try:   func(*args, **kwargs)
@@ -518,7 +537,6 @@ def run_test(mod_name, noOutputPlease=False):
                         except:
                             failures.append( (name, sys.exc_info()) )
                             print("FAIL (%s)" % str(sys.exc_info()[0]))
-					
                 elif not noOutputPlease:
                     print(">>> skipping %-40s" % name)
     if failures:

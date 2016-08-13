@@ -366,11 +366,11 @@ namespace IronPython.Runtime {
         /// result in an OverflowError.
         /// </summary>
         internal static bool TryConvertToIndex(object value, bool throwOverflowError, out object index) {
-            index = ConvertToSliceIndexHelper(value);
+            index = ConvertToSliceIndexHelper(value, throwOverflowError);
             if (index == null) {
                 object callable;
                 if (PythonOps.TryGetBoundAttr(value, "__index__", out callable)) {
-                    index = ConvertToSliceIndexHelper(PythonCalls.Call(callable));
+                    index = ConvertToSliceIndexHelper(PythonCalls.Call(callable), throwOverflowError);
                 }
             }
 

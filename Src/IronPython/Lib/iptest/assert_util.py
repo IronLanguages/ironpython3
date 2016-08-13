@@ -246,7 +246,7 @@ def AssertNotIn(x, l):
 def AssertIs(x, t):
     Assert(x == t, "expected type %s, but got %s" % (t, x))
 
-class AssertReisesCtx():
+class AssertRaisesCtx():
     def __init__(self, ex):
         self.expectedException = ex
     def __enter__(self):

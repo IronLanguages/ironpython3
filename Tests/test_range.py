@@ -107,7 +107,7 @@ self.assertRaises = self.AssertError
 self.assertIs = self.AssertIs
 self.assertIn = self.AssertIn
 self.assertNotIn = self.AssertNotIn
-self.assertRaisesCtx = self.AssertReisesCtx
+self.assertRaisesCtx = self.AssertRaisesCtx
 
 def test_range_from_stdlib():
     self.assertEqual(list(range(3)), [0, 1, 2])

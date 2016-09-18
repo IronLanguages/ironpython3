@@ -2,3 +2,8 @@ language: csharp
 
 script:
  - make
+
+notifications:
+  email:
+    - slide.o.mix@gmail.com
+    - ticotimo@gmail.com

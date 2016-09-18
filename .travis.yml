@@ -15,7 +15,7 @@ script:
   #- mono ./testrunner/NUnit.Runners.*/tools/nunit-console.exe bin/v2Debug/IronPythonTest.dll
 
 after_script:
-  - mono ./bin/Debug/IronPythonTestConsole.exe IronPythonTest -result:all-resultxml
+  - pushd bin/Debug ; mono ./IronPythonTestConsole.exe IronPythonTest -result:all-resultxml; popd
 
 notifications:
   email:

@@ -6,21 +6,19 @@ before_install:
   - sudo apt-get install -y nunit-console
   #- sudo apt-get install -y nunit3-console
 
-# Should be done by default
-#before_script:
-#  - nuget restore IronPython.sln
-
 script:
   - make
-  #- mono ./testrunner/NUnit.Runners.*/tools/nunit-console.exe bin/v2Debug/IronPythonTest.dll
 
 after_script:
+  # Try multiple ways of running tests
+  - nunit-console bin/v2Debug/IronPythonTest.dll
+  - nunit-console bin/Debug/IronPythonTest.dll
   - pushd bin/Debug ; mono ./IronPythonTestConsole.exe IronPythonTest -result:all-resultxml; popd
 
 notifications:
   email:
     recipients:
-      #- slide.o.mix@gmail.com
+      - slide.o.mix@gmail.com
       - ticotimo@gmail.com
     on_success: always # default: change
     #on_failure: [always|never|change] # default: always

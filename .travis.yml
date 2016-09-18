@@ -19,5 +19,8 @@ after_script:
 
 notifications:
   email:
-    #- slide.o.mix@gmail.com
-    - ticotimo@gmail.com
+    recipients:
+      #- slide.o.mix@gmail.com
+      - ticotimo@gmail.com
+    on_success: always # default: change
+    #on_failure: [always|never|change] # default: always

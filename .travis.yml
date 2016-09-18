@@ -12,9 +12,10 @@ before_install:
 
 script:
   - make
+  #- mono ./testrunner/NUnit.Runners.*/tools/nunit-console.exe bin/v2Debug/IronPythonTest.dll
 
-#after_script:
-  #- nunit-console Tests/bin/Debug/Tests.dll
+after_script:
+  - nunit-console bin/v2Debug/IronPythonTest.dll
 
 notifications:
   email:

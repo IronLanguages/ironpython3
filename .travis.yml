@@ -1,9 +1,22 @@
 language: csharp
 
+solution: IronPython.sln
+
+before_install:
+  - sudo apt-get install -y nunit-console
+  #- sudo apt-get install -y nunit3-console
+
+# Should be done by default
+#before_script:
+#  - nuget restore IronPython.sln
+
 script:
- - make
+  - make
+
+#after_script:
+  #- nunit-console Tests/bin/Debug/Tests.dll
 
 notifications:
   email:
-    - slide.o.mix@gmail.com
+    #- slide.o.mix@gmail.com
     - ticotimo@gmail.com

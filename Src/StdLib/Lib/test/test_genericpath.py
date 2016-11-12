@@ -419,7 +419,7 @@ class CommonTest(GenericTest):
     def test_nonascii_abspath(self):
         if (support.TESTFN_UNDECODABLE
         # Mac OS X denies the creation of a directory with an invalid
-        # UTF-8 name. Windows allows to create a directory with an
+        # UTF-8 name. Windows allows creating a directory with an
         # arbitrary bytes name, but fails to enter this directory
         # (when the bytes name is used).
         and sys.platform not in ('win32', 'darwin')):
@@ -433,6 +433,44 @@ class CommonTest(GenericTest):
             warnings.simplefilter("ignore", DeprecationWarning)
             with support.temp_cwd(name):
                 self.test_abspath()
+
+    def test_join_errors(self):
+        # Check join() raises friendly TypeErrors.
+        with support.check_warnings(('', BytesWarning), quiet=True):
+            errmsg = "Can't mix strings and bytes in path components"
+            with self.assertRaisesRegex(TypeError, errmsg):
+                self.pathmodule.join(b'bytes', 'str')
+            with self.assertRaisesRegex(TypeError, errmsg):
+                self.pathmodule.join('str', b'bytes')
+            # regression, see #15377
+            errmsg = r'join\(\) argument must be str or bytes, not %r'
+            with self.assertRaisesRegex(TypeError, errmsg % 'int'):
+                self.pathmodule.join(42, 'str')
+            with self.assertRaisesRegex(TypeError, errmsg % 'int'):
+                self.pathmodule.join('str', 42)
+            with self.assertRaisesRegex(TypeError, errmsg % 'int'):
+                self.pathmodule.join(42)
+            with self.assertRaisesRegex(TypeError, errmsg % 'list'):
+                self.pathmodule.join([])
+            with self.assertRaisesRegex(TypeError, errmsg % 'bytearray'):
+                self.pathmodule.join(bytearray(b'foo'), bytearray(b'bar'))
+
+    def test_relpath_errors(self):
+        # Check relpath() raises friendly TypeErrors.
+        with support.check_warnings(('', (BytesWarning, DeprecationWarning)),
+                                    quiet=True):
+            errmsg = "Can't mix strings and bytes in path components"
+            with self.assertRaisesRegex(TypeError, errmsg):
+                self.pathmodule.relpath(b'bytes', 'str')
+            with self.assertRaisesRegex(TypeError, errmsg):
+                self.pathmodule.relpath('str', b'bytes')
+            errmsg = r'relpath\(\) argument must be str or bytes, not %r'
+            with self.assertRaisesRegex(TypeError, errmsg % 'int'):
+                self.pathmodule.relpath(42, 'str')
+            with self.assertRaisesRegex(TypeError, errmsg % 'int'):
+                self.pathmodule.relpath('str', 42)
+            with self.assertRaisesRegex(TypeError, errmsg % 'bytearray'):
+                self.pathmodule.relpath(bytearray(b'foo'), bytearray(b'bar'))
 
 
 if __name__=="__main__":

@@ -1,6 +1,7 @@
 # Copyright (C) 2001,2002 Python Software Foundation
 # csv package unit tests
 
+import copy
 import io
 import sys
 import os
@@ -9,6 +10,7 @@ from io import StringIO
 from tempfile import TemporaryFile
 import csv
 import gc
+import pickle
 from test import support
 
 class Test_Csv(unittest.TestCase):
@@ -124,12 +126,19 @@ class Test_Csv(unittest.TestCase):
             self.assertEqual(fileobj.read(),
                              expect + writer.dialect.lineterminator)
 
+    def _write_error_test(self, exc, fields, **kwargs):
+        with TemporaryFile("w+", newline='') as fileobj:
+            writer = csv.writer(fileobj, **kwargs)
+            with self.assertRaises(exc):
+                writer.writerow(fields)
+            fileobj.seek(0)
+            self.assertEqual(fileobj.read(), '')
+
     def test_write_arg_valid(self):
-        self.assertRaises(csv.Error, self._write_test, None, '')
+        self._write_error_test(csv.Error, None)
         self._write_test((), '')
         self._write_test([None], '""')
-        self.assertRaises(csv.Error, self._write_test,
-                          [None], None, quoting = csv.QUOTE_NONE)
+        self._write_error_test(csv.Error, [None], quoting = csv.QUOTE_NONE)
         # Check that exceptions are passed up the chain
         class BadList:
             def __len__(self):
@@ -137,11 +146,11 @@ class Test_Csv(unittest.TestCase):
             def __getitem__(self, i):
                 if i > 2:
                     raise OSError
-        self.assertRaises(OSError, self._write_test, BadList(), '')
+        self._write_error_test(OSError, BadList())
         class BadItem:
             def __str__(self):
                 raise OSError
-        self.assertRaises(OSError, self._write_test, [BadItem()], '')
+        self._write_error_test(OSError, [BadItem()])
 
     def test_write_bigfield(self):
         # This exercises the buffer realloc functionality
@@ -151,10 +160,8 @@ class Test_Csv(unittest.TestCase):
 
     def test_write_quoting(self):
         self._write_test(['a',1,'p,q'], 'a,1,"p,q"')
-        self.assertRaises(csv.Error,
-                          self._write_test,
-                          ['a',1,'p,q'], 'a,1,p,q',
-                          quoting = csv.QUOTE_NONE)
+        self._write_error_test(csv.Error, ['a',1,'p,q'],
+                               quoting = csv.QUOTE_NONE)
         self._write_test(['a',1,'p,q'], 'a,1,"p,q"',
                          quoting = csv.QUOTE_MINIMAL)
         self._write_test(['a',1,'p,q'], '"a",1,"p,q"',
@@ -167,10 +174,8 @@ class Test_Csv(unittest.TestCase):
     def test_write_escape(self):
         self._write_test(['a',1,'p,q'], 'a,1,"p,q"',
                          escapechar='\\')
-        self.assertRaises(csv.Error,
-                          self._write_test,
-                          ['a',1,'p,"q"'], 'a,1,"p,\\"q\\""',
-                          escapechar=None, doublequote=False)
+        self._write_error_test(csv.Error, ['a',1,'p,"q"'],
+                               escapechar=None, doublequote=False)
         self._write_test(['a',1,'p,"q"'], 'a,1,"p,\\"q\\""',
                          escapechar='\\', doublequote = False)
         self._write_test(['"'], '""""',
@@ -182,6 +187,14 @@ class Test_Csv(unittest.TestCase):
                          escapechar='\\', quoting = csv.QUOTE_NONE)
         self._write_test(['a',1,'p,q'], 'a,1,p\\,q',
                          escapechar='\\', quoting = csv.QUOTE_NONE)
+
+    def test_write_iterable(self):
+        self._write_test(iter(['a', 1, 'p,q']), 'a,1,"p,q"')
+        self._write_test(iter(['a', 1, None]), 'a,1,')
+        self._write_test(iter([]), '')
+        self._write_test(iter([None]), '""')
+        self._write_error_test(csv.Error, iter([None]), quoting=csv.QUOTE_NONE)
+        self._write_test(iter([None, None]), ',')
 
     def test_writerows(self):
         class BrokenFile:
@@ -413,6 +426,18 @@ class TestDialectRegistry(unittest.TestCase):
         self.assertRaises(TypeError, csv.reader, [], quoting = -1)
         self.assertRaises(TypeError, csv.reader, [], quoting = 100)
 
+    # See issue #22995
+    ## def test_copy(self):
+    ##     for name in csv.list_dialects():
+    ##         dialect = csv.get_dialect(name)
+    ##         self.assertRaises(TypeError, copy.copy, dialect)
+
+    ## def test_pickle(self):
+    ##     for name in csv.list_dialects():
+    ##         dialect = csv.get_dialect(name)
+    ##         for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+    ##             self.assertRaises(TypeError, pickle.dumps, dialect, proto)
+
 class TestCsvBase(unittest.TestCase):
     def readerAssertEqual(self, input, expected_result):
         with TemporaryFile("w+", newline='') as fileobj:
@@ -574,6 +599,16 @@ class TestDictFields(unittest.TestCase):
             fileobj.seek(0)
             fileobj.readline() # header
             self.assertEqual(fileobj.read(), "10,,abc\r\n")
+
+    def test_write_multiple_dict_rows(self):
+        fileobj = StringIO()
+        writer = csv.DictWriter(fileobj, fieldnames=["f1", "f2", "f3"])
+        writer.writeheader()
+        self.assertEqual(fileobj.getvalue(), "f1,f2,f3\r\n")
+        writer.writerows([{"f1": 1, "f2": "abc", "f3": "f"},
+                          {"f1": 2, "f2": 5, "f3": "xyz"}])
+        self.assertEqual(fileobj.getvalue(),
+                         "f1,f2,f3\r\n1,abc,f\r\n2,5,xyz\r\n")
 
     def test_write_no_fields(self):
         fileobj = StringIO()
@@ -773,7 +808,7 @@ class TestDialectValidity(unittest.TestCase):
         with self.assertRaises(csv.Error) as cm:
             mydialect()
         self.assertEqual(str(cm.exception),
-                         '"quotechar" must be an 1-character string')
+                         '"quotechar" must be a 1-character string')
 
         mydialect.quotechar = 4
         with self.assertRaises(csv.Error) as cm:
@@ -796,13 +831,13 @@ class TestDialectValidity(unittest.TestCase):
         with self.assertRaises(csv.Error) as cm:
             mydialect()
         self.assertEqual(str(cm.exception),
-                         '"delimiter" must be an 1-character string')
+                         '"delimiter" must be a 1-character string')
 
         mydialect.delimiter = ""
         with self.assertRaises(csv.Error) as cm:
             mydialect()
         self.assertEqual(str(cm.exception),
-                         '"delimiter" must be an 1-character string')
+                         '"delimiter" must be a 1-character string')
 
         mydialect.delimiter = b","
         with self.assertRaises(csv.Error) as cm:
@@ -1063,12 +1098,5 @@ class TestUnicode(unittest.TestCase):
             self.assertEqual(fileobj.read(), expected)
 
 
-
-def test_main():
-    mod = sys.modules[__name__]
-    support.run_unittest(
-        *[getattr(mod, name) for name in dir(mod) if name.startswith('Test')]
-    )
-
 if __name__ == '__main__':
-    test_main()
+    unittest.main()

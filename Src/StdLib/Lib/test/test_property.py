@@ -3,7 +3,6 @@
 
 import sys
 import unittest
-from test.support import run_unittest
 
 class PropertyBase(Exception):
     pass
@@ -140,9 +139,9 @@ class PropertyTests(unittest.TestCase):
         # check that the property's __isabstractmethod__ descriptor does the
         # right thing when presented with a value that fails truth testing:
         class NotBool(object):
-            def __nonzero__(self):
+            def __bool__(self):
                 raise ValueError()
-            __len__ = __nonzero__
+            __len__ = __bool__
         with self.assertRaises(ValueError):
             class C(object):
                 def foo(self):
@@ -151,6 +150,28 @@ class PropertyTests(unittest.TestCase):
                 foo = property(foo)
             C.foo.__isabstractmethod__
 
+    @unittest.skipIf(sys.flags.optimize >= 2,
+                     "Docstrings are omitted with -O2 and above")
+    def test_property_builtin_doc_writable(self):
+        p = property(doc='basic')
+        self.assertEqual(p.__doc__, 'basic')
+        p.__doc__ = 'extended'
+        self.assertEqual(p.__doc__, 'extended')
+
+    @unittest.skipIf(sys.flags.optimize >= 2,
+                     "Docstrings are omitted with -O2 and above")
+    def test_property_decorator_doc_writable(self):
+        class PropertyWritableDoc(object):
+
+            @property
+            def spam(self):
+                """Eggs"""
+                return "eggs"
+
+        sub = PropertyWritableDoc()
+        self.assertEqual(sub.__class__.spam.__doc__, 'Eggs')
+        sub.__class__.spam.__doc__ = 'Spam'
+        self.assertEqual(sub.__class__.spam.__doc__, 'Spam')
 
 # Issue 5890: subclasses of property do not preserve method __doc__ strings
 class PropertySub(property):
@@ -247,8 +268,5 @@ class PropertySubclassTests(unittest.TestCase):
 
 
 
-def test_main():
-    run_unittest(PropertyTests, PropertySubclassTests)
-
 if __name__ == '__main__':
-    test_main()
+    unittest.main()

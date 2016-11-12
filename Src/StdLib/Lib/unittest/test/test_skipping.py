@@ -1,6 +1,6 @@
 import unittest
 
-from .support import LoggingResult
+from unittest.test.support import LoggingResult
 
 
 class Test_TestSkipping(unittest.TestCase):
@@ -114,6 +114,39 @@ class Test_TestSkipping(unittest.TestCase):
         events = []
         result = LoggingResult(events)
         test = Foo("test_die")
+        test.run(result)
+        self.assertEqual(events,
+                         ['startTest', 'addExpectedFailure', 'stopTest'])
+        self.assertEqual(result.expectedFailures[0][0], test)
+        self.assertTrue(result.wasSuccessful())
+
+    def test_expected_failure_with_wrapped_class(self):
+        @unittest.expectedFailure
+        class Foo(unittest.TestCase):
+            def test_1(self):
+                self.assertTrue(False)
+
+        events = []
+        result = LoggingResult(events)
+        test = Foo("test_1")
+        test.run(result)
+        self.assertEqual(events,
+                         ['startTest', 'addExpectedFailure', 'stopTest'])
+        self.assertEqual(result.expectedFailures[0][0], test)
+        self.assertTrue(result.wasSuccessful())
+
+    def test_expected_failure_with_wrapped_subclass(self):
+        class Foo(unittest.TestCase):
+            def test_1(self):
+                self.assertTrue(False)
+
+        @unittest.expectedFailure
+        class Bar(Foo):
+            pass
+
+        events = []
+        result = LoggingResult(events)
+        test = Bar("test_1")
         test.run(result)
         self.assertEqual(events,
                          ['startTest', 'addExpectedFailure', 'stopTest'])

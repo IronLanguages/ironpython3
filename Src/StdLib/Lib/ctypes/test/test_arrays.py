@@ -1,6 +1,8 @@
 import unittest
 from ctypes import *
 
+from ctypes.test import need_symbol
+
 formats = "bBhHiIlLqQfd"
 
 formats = c_byte, c_ubyte, c_short, c_ushort, c_int, c_uint, \
@@ -22,20 +24,24 @@ class ArrayTestCase(unittest.TestCase):
             self.assertEqual(len(ia), alen)
 
             # slot values ok?
-            values = [ia[i] for i in range(len(init))]
+            values = [ia[i] for i in range(alen)]
             self.assertEqual(values, init)
+
+            # out-of-bounds accesses should be caught
+            with self.assertRaises(IndexError): ia[alen]
+            with self.assertRaises(IndexError): ia[-alen-1]
 
             # change the items
             from operator import setitem
             new_values = list(range(42, 42+alen))
             [setitem(ia, n, new_values[n]) for n in range(alen)]
-            values = [ia[i] for i in range(len(init))]
+            values = [ia[i] for i in range(alen)]
             self.assertEqual(values, new_values)
 
             # are the items initialized to 0?
             ia = int_array()
-            values = [ia[i] for i in range(len(init))]
-            self.assertEqual(values, [0] * len(init))
+            values = [ia[i] for i in range(alen)]
+            self.assertEqual(values, [0] * alen)
 
             # Too many initializers should be caught
             self.assertRaises(IndexError, int_array, *range(alen*2))
@@ -98,20 +104,16 @@ class ArrayTestCase(unittest.TestCase):
         self.assertEqual(sz[1:4:2], b"o")
         self.assertEqual(sz.value, b"foo")
 
-    try:
-        create_unicode_buffer
-    except NameError:
-        pass
-    else:
-        def test_from_addressW(self):
-            p = create_unicode_buffer("foo")
-            sz = (c_wchar * 3).from_address(addressof(p))
-            self.assertEqual(sz[:], "foo")
-            self.assertEqual(sz[::], "foo")
-            self.assertEqual(sz[::-1], "oof")
-            self.assertEqual(sz[::3], "f")
-            self.assertEqual(sz[1:4:2], "o")
-            self.assertEqual(sz.value, "foo")
+    @need_symbol('create_unicode_buffer')
+    def test_from_addressW(self):
+        p = create_unicode_buffer("foo")
+        sz = (c_wchar * 3).from_address(addressof(p))
+        self.assertEqual(sz[:], "foo")
+        self.assertEqual(sz[::], "foo")
+        self.assertEqual(sz[::-1], "oof")
+        self.assertEqual(sz[::3], "f")
+        self.assertEqual(sz[1:4:2], "o")
+        self.assertEqual(sz.value, "foo")
 
     def test_cache(self):
         # Array types are cached internally in the _ctypes extension,

@@ -99,7 +99,7 @@ def win_getpass(prompt='Password: ', stream=None):
     """Prompt for password with echo off, using Windows getch()."""
     if sys.stdin is not sys.__stdin__:
         return fallback_getpass(prompt, stream)
-    import msvcrt
+
     for c in prompt:
         msvcrt.putwch(c)
     pw = ""
@@ -135,7 +135,13 @@ def _raw_input(prompt="", stream=None, input=None):
         input = sys.stdin
     prompt = str(prompt)
     if prompt:
-        stream.write(prompt)
+        try:
+            stream.write(prompt)
+        except UnicodeEncodeError:
+            # Use replace error handler to get as much as possible printed.
+            prompt = prompt.encode(stream.encoding, 'replace')
+            prompt = prompt.decode(stream.encoding)
+            stream.write(prompt)
         stream.flush()
     # NOTE: The Python C API calls flockfile() (and unlock) during readline.
     line = input.readline()

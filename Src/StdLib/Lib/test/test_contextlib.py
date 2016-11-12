@@ -83,6 +83,42 @@ class ContextManagerTestCase(unittest.TestCase):
             raise ZeroDivisionError(999)
         self.assertEqual(state, [1, 42, 999])
 
+    def test_contextmanager_except_stopiter(self):
+        stop_exc = StopIteration('spam')
+        @contextmanager
+        def woohoo():
+            yield
+        try:
+            with self.assertWarnsRegex(PendingDeprecationWarning,
+                                       "StopIteration"):
+                with woohoo():
+                    raise stop_exc
+        except Exception as ex:
+            self.assertIs(ex, stop_exc)
+        else:
+            self.fail('StopIteration was suppressed')
+
+    def test_contextmanager_except_pep479(self):
+        code = """\
+from __future__ import generator_stop
+from contextlib import contextmanager
+@contextmanager
+def woohoo():
+    yield
+"""
+        locals = {}
+        exec(code, locals, locals)
+        woohoo = locals['woohoo']
+
+        stop_exc = StopIteration('spam')
+        try:
+            with woohoo():
+                raise stop_exc
+        except Exception as ex:
+            self.assertIs(ex, stop_exc)
+        else:
+            self.fail('StopIteration was suppressed')
+
     def _create_contextmanager_attribs(self):
         def attribs(**kw):
             def decorate(func):
@@ -110,6 +146,14 @@ class ContextManagerTestCase(unittest.TestCase):
     def test_instance_docstring_given_cm_docstring(self):
         baz = self._create_contextmanager_attribs()(None)
         self.assertEqual(baz.__doc__, "Whee!")
+
+    def test_keywords(self):
+        # Ensure no keyword arguments are inhibited
+        @contextmanager
+        def woohoo(self, func, args, kwds):
+            yield (self, func, args, kwds)
+        with woohoo(self=11, func=22, args=33, kwds=44) as target:
+            self.assertEqual(target, (11, 22, 33, 44))
 
 
 class ClosingTestCase(unittest.TestCase):
@@ -718,58 +762,74 @@ class TestExitStack(unittest.TestCase):
         stack.push(cm)
         self.assertIs(stack._exit_callbacks[-1], cm)
 
-class TestRedirectStdout(unittest.TestCase):
+
+class TestRedirectStream:
+
+    redirect_stream = None
+    orig_stream = None
 
     @support.requires_docstrings
     def test_instance_docs(self):
         # Issue 19330: ensure context manager instances have good docstrings
-        cm_docstring = redirect_stdout.__doc__
-        obj = redirect_stdout(None)
+        cm_docstring = self.redirect_stream.__doc__
+        obj = self.redirect_stream(None)
         self.assertEqual(obj.__doc__, cm_docstring)
 
     def test_no_redirect_in_init(self):
-        orig_stdout = sys.stdout
-        redirect_stdout(None)
-        self.assertIs(sys.stdout, orig_stdout)
+        orig_stdout = getattr(sys, self.orig_stream)
+        self.redirect_stream(None)
+        self.assertIs(getattr(sys, self.orig_stream), orig_stdout)
 
     def test_redirect_to_string_io(self):
         f = io.StringIO()
         msg = "Consider an API like help(), which prints directly to stdout"
-        orig_stdout = sys.stdout
-        with redirect_stdout(f):
-            print(msg)
-        self.assertIs(sys.stdout, orig_stdout)
+        orig_stdout = getattr(sys, self.orig_stream)
+        with self.redirect_stream(f):
+            print(msg, file=getattr(sys, self.orig_stream))
+        self.assertIs(getattr(sys, self.orig_stream), orig_stdout)
         s = f.getvalue().strip()
         self.assertEqual(s, msg)
 
     def test_enter_result_is_target(self):
         f = io.StringIO()
-        with redirect_stdout(f) as enter_result:
+        with self.redirect_stream(f) as enter_result:
             self.assertIs(enter_result, f)
 
     def test_cm_is_reusable(self):
         f = io.StringIO()
-        write_to_f = redirect_stdout(f)
-        orig_stdout = sys.stdout
+        write_to_f = self.redirect_stream(f)
+        orig_stdout = getattr(sys, self.orig_stream)
         with write_to_f:
-            print("Hello", end=" ")
+            print("Hello", end=" ", file=getattr(sys, self.orig_stream))
         with write_to_f:
-            print("World!")
-        self.assertIs(sys.stdout, orig_stdout)
+            print("World!", file=getattr(sys, self.orig_stream))
+        self.assertIs(getattr(sys, self.orig_stream), orig_stdout)
         s = f.getvalue()
         self.assertEqual(s, "Hello World!\n")
 
     def test_cm_is_reentrant(self):
         f = io.StringIO()
-        write_to_f = redirect_stdout(f)
-        orig_stdout = sys.stdout
+        write_to_f = self.redirect_stream(f)
+        orig_stdout = getattr(sys, self.orig_stream)
         with write_to_f:
-            print("Hello", end=" ")
+            print("Hello", end=" ", file=getattr(sys, self.orig_stream))
             with write_to_f:
-                print("World!")
-        self.assertIs(sys.stdout, orig_stdout)
+                print("World!", file=getattr(sys, self.orig_stream))
+        self.assertIs(getattr(sys, self.orig_stream), orig_stdout)
         s = f.getvalue()
         self.assertEqual(s, "Hello World!\n")
+
+
+class TestRedirectStdout(TestRedirectStream, unittest.TestCase):
+
+    redirect_stream = redirect_stdout
+    orig_stream = "stdout"
+
+
+class TestRedirectStderr(TestRedirectStream, unittest.TestCase):
+
+    redirect_stream = redirect_stderr
+    orig_stream = "stderr"
 
 
 class TestSuppress(unittest.TestCase):
@@ -820,9 +880,11 @@ class TestSuppress(unittest.TestCase):
         with ignore_exceptions:
             len(5)
         with ignore_exceptions:
-            1/0
             with ignore_exceptions: # Check nested usage
                 len(5)
+            outer_continued = True
+            1/0
+        self.assertTrue(outer_continued)
 
 if __name__ == "__main__":
     unittest.main()

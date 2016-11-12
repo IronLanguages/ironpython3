@@ -24,7 +24,7 @@ import traceback
 # If threading is available then ThreadPool should be provided.  Therefore
 # we avoid top-level imports which are liable to fail on some systems.
 from . import util
-from . import get_context, cpu_count, TimeoutError
+from . import get_context, TimeoutError
 
 #
 # Constants representing the state of a pool
@@ -87,10 +87,11 @@ class MaybeEncodingError(Exception):
                                                              self.exc)
 
     def __repr__(self):
-        return "<MaybeEncodingError: %s>" % str(self)
+        return "<%s: %s>" % (self.__class__.__name__, self)
 
 
-def worker(inqueue, outqueue, initializer=None, initargs=(), maxtasks=None):
+def worker(inqueue, outqueue, initializer=None, initargs=(), maxtasks=None,
+           wrap_exception=False):
     assert maxtasks is None or (type(maxtasks) == int and maxtasks > 0)
     put = outqueue.put
     get = inqueue.get
@@ -117,7 +118,8 @@ def worker(inqueue, outqueue, initializer=None, initargs=(), maxtasks=None):
         try:
             result = (True, func(*args, **kwds))
         except Exception as e:
-            e = ExceptionWithTraceback(e, e.__traceback__)
+            if wrap_exception:
+                e = ExceptionWithTraceback(e, e.__traceback__)
             result = (False, e)
         try:
             put((job, i, result))
@@ -137,6 +139,8 @@ class Pool(object):
     '''
     Class which supports an async version of applying functions to arguments.
     '''
+    _wrap_exception = True
+
     def Process(self, *args, **kwds):
         return self._ctx.Process(*args, **kwds)
 
@@ -220,7 +224,8 @@ class Pool(object):
             w = self.Process(target=worker,
                              args=(self._inqueue, self._outqueue,
                                    self._initializer,
-                                   self._initargs, self._maxtasksperchild)
+                                   self._initargs, self._maxtasksperchild,
+                                   self._wrap_exception)
                             )
             self._pool.append(w)
             w.name = w.name.replace('Process', 'PoolWorker')
@@ -369,25 +374,34 @@ class Pool(object):
         thread = threading.current_thread()
 
         for taskseq, set_length in iter(taskqueue.get, None):
+            task = None
             i = -1
-            for i, task in enumerate(taskseq):
-                if thread._state:
-                    util.debug('task handler found thread._state != RUN')
-                    break
-                try:
-                    put(task)
-                except Exception as e:
-                    job, ind = task[:2]
+            try:
+                for i, task in enumerate(taskseq):
+                    if thread._state:
+                        util.debug('task handler found thread._state != RUN')
+                        break
                     try:
-                        cache[job]._set(ind, (False, e))
-                    except KeyError:
-                        pass
-            else:
+                        put(task)
+                    except Exception as e:
+                        job, ind = task[:2]
+                        try:
+                            cache[job]._set(ind, (False, e))
+                        except KeyError:
+                            pass
+                else:
+                    if set_length:
+                        util.debug('doing set_length()')
+                        set_length(i+1)
+                    continue
+                break
+            except Exception as ex:
+                job, ind = task[:2] if task else (0, 0)
+                if job in cache:
+                    cache[job]._set(ind + 1, (False, ex))
                 if set_length:
                     util.debug('doing set_length()')
                     set_length(i+1)
-                continue
-            break
         else:
             util.debug('task handler got sentinel')
 
@@ -661,8 +675,7 @@ class IMapIterator(object):
         return self
 
     def next(self, timeout=None):
-        self._cond.acquire()
-        try:
+        with self._cond:
             try:
                 item = self._items.popleft()
             except IndexError:
@@ -675,8 +688,6 @@ class IMapIterator(object):
                     if self._index == self._length:
                         raise StopIteration
                     raise TimeoutError
-        finally:
-            self._cond.release()
 
         success, value = item
         if success:
@@ -686,8 +697,7 @@ class IMapIterator(object):
     __next__ = next                    # XXX
 
     def _set(self, i, obj):
-        self._cond.acquire()
-        try:
+        with self._cond:
             if self._index == i:
                 self._items.append(obj)
                 self._index += 1
@@ -701,18 +711,13 @@ class IMapIterator(object):
 
             if self._index == self._length:
                 del self._cache[self._job]
-        finally:
-            self._cond.release()
 
     def _set_length(self, length):
-        self._cond.acquire()
-        try:
+        with self._cond:
             self._length = length
             if self._index == self._length:
                 self._cond.notify()
                 del self._cache[self._job]
-        finally:
-            self._cond.release()
 
 #
 # Class whose instances are returned by `Pool.imap_unordered()`
@@ -721,21 +726,19 @@ class IMapIterator(object):
 class IMapUnorderedIterator(IMapIterator):
 
     def _set(self, i, obj):
-        self._cond.acquire()
-        try:
+        with self._cond:
             self._items.append(obj)
             self._index += 1
             self._cond.notify()
             if self._index == self._length:
                 del self._cache[self._job]
-        finally:
-            self._cond.release()
 
 #
 #
 #
 
 class ThreadPool(Pool):
+    _wrap_exception = False
 
     @staticmethod
     def Process(*args, **kwds):
@@ -754,10 +757,7 @@ class ThreadPool(Pool):
     @staticmethod
     def _help_stuff_finish(inqueue, task_handler, size):
         # put sentinels at head of inqueue to make workers finish
-        inqueue.not_empty.acquire()
-        try:
+        with inqueue.not_empty:
             inqueue.queue.clear()
             inqueue.queue.extend([None] * size)
             inqueue.not_empty.notify_all()
-        finally:
-            inqueue.not_empty.release()

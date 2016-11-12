@@ -73,7 +73,7 @@ class RegressionTests(unittest.TestCase):
     def CheckStatementFinalizationOnCloseDb(self):
         # pysqlite versions <= 2.3.3 only finalized statements in the statement
         # cache when closing the database. statements that were still
-        # referenced in cursors weren't closed an could provoke "
+        # referenced in cursors weren't closed and could provoke "
         # "OperationalError: Unable to close due to unfinalised statements".
         con = sqlite.connect(":memory:")
         cursors = []
@@ -334,6 +334,16 @@ class RegressionTests(unittest.TestCase):
         # isolation level is a string, not an integer
         self.assertRaises(TypeError,
                           sqlite.connect, ":memory:", isolation_level=123)
+
+
+    def CheckNullCharacter(self):
+        # Issue #21147
+        con = sqlite.connect(":memory:")
+        self.assertRaises(ValueError, con, "\0select 1")
+        self.assertRaises(ValueError, con, "select 1\0")
+        cur = con.cursor()
+        self.assertRaises(ValueError, cur.execute, " \0select 2")
+        self.assertRaises(ValueError, cur.execute, "select 2\0")
 
 
 def suite():

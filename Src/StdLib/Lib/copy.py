@@ -94,7 +94,7 @@ def copy(x):
     else:
         reductor = getattr(x, "__reduce_ex__", None)
         if reductor:
-            rv = reductor(2)
+            rv = reductor(4)
         else:
             reductor = getattr(x, "__reduce__", None)
             if reductor:
@@ -110,7 +110,7 @@ _copy_dispatch = d = {}
 def _copy_immutable(x):
     return x
 for t in (type(None), int, float, bool, str, tuple,
-          frozenset, type, range,
+          bytes, frozenset, type, range,
           types.BuiltinFunctionType, type(Ellipsis),
           types.FunctionType, weakref.ref):
     d[t] = _copy_immutable
@@ -171,7 +171,7 @@ def deepcopy(x, memo=None, _nil=[]):
                 else:
                     reductor = getattr(x, "__reduce_ex__", None)
                     if reductor:
-                        rv = reductor(2)
+                        rv = reductor(4)
                     else:
                         reductor = getattr(x, "__reduce__", None)
                         if reductor:
@@ -207,7 +207,6 @@ try:
 except AttributeError:
     pass
 d[type] = _deepcopy_atomic
-d[range] = _deepcopy_atomic
 d[types.BuiltinFunctionType] = _deepcopy_atomic
 d[types.FunctionType] = _deepcopy_atomic
 d[weakref.ref] = _deepcopy_atomic
@@ -221,17 +220,15 @@ def _deepcopy_list(x, memo):
 d[list] = _deepcopy_list
 
 def _deepcopy_tuple(x, memo):
-    y = []
-    for a in x:
-        y.append(deepcopy(a, memo))
+    y = [deepcopy(a, memo) for a in x]
     # We're not going to put the tuple in the memo, but it's still important we
     # check for it, in case the tuple contains recursive mutable structures.
     try:
         return memo[id(x)]
     except KeyError:
         pass
-    for i in range(len(x)):
-        if x[i] is not y[i]:
+    for k, j in zip(x, y):
+        if k is not j:
             y = tuple(y)
             break
     else:
@@ -281,7 +278,7 @@ def _reconstruct(x, info, deep, memo=None):
     if n > 2:
         state = info[2]
     else:
-        state = {}
+        state = None
     if n > 3:
         listiter = info[3]
     else:
@@ -295,7 +292,7 @@ def _reconstruct(x, info, deep, memo=None):
     y = callable(*args)
     memo[id(x)] = y
 
-    if state:
+    if state is not None:
         if deep:
             state = deepcopy(state, memo)
         if hasattr(y, '__setstate__'):

@@ -302,17 +302,20 @@ class Future(object):
         with self._condition:
             if self._state == FINISHED:
                 if self._exception:
-                    return '<Future at %s state=%s raised %s>' % (
-                        hex(id(self)),
+                    return '<%s at %#x state=%s raised %s>' % (
+                        self.__class__.__name__,
+                        id(self),
                         _STATE_TO_DESCRIPTION_MAP[self._state],
                         self._exception.__class__.__name__)
                 else:
-                    return '<Future at %s state=%s returned %s>' % (
-                        hex(id(self)),
+                    return '<%s at %#x state=%s returned %s>' % (
+                        self.__class__.__name__,
+                        id(self),
                         _STATE_TO_DESCRIPTION_MAP[self._state],
                         self._result.__class__.__name__)
-            return '<Future at %s state=%s>' % (
-                    hex(id(self)),
+            return '<%s at %#x state=%s>' % (
+                    self.__class__.__name__,
+                    id(self),
                    _STATE_TO_DESCRIPTION_MAP[self._state])
 
     def cancel(self):
@@ -517,14 +520,18 @@ class Executor(object):
         """
         raise NotImplementedError()
 
-    def map(self, fn, *iterables, timeout=None):
-        """Returns a iterator equivalent to map(fn, iter).
+    def map(self, fn, *iterables, timeout=None, chunksize=1):
+        """Returns an iterator equivalent to map(fn, iter).
 
         Args:
             fn: A callable that will take as many arguments as there are
                 passed iterables.
             timeout: The maximum number of seconds to wait. If None, then there
                 is no limit on the wait time.
+            chunksize: The size of the chunks the iterable will be broken into
+                before being passed to a child process. This argument is only
+                used by ProcessPoolExecutor; it is ignored by
+                ThreadPoolExecutor.
 
         Returns:
             An iterator equivalent to: map(func, *iterables) but the calls may

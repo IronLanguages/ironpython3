@@ -3,10 +3,12 @@
 """
 
 import io
+import operator
 import os
 import unittest
 import dbm.dumb as dumbdbm
 from test import support
+from functools import partial
 
 _fname = support.TESTFN
 
@@ -190,11 +192,47 @@ class DumbDBMTestCase(unittest.TestCase):
         with dumbdbm.open(_fname, 'r') as db:
             self.assertEqual(list(db.keys()), [b"dumbdbm context manager"])
 
-        # This currently just raises AttributeError rather than a specific
-        # exception like the GNU or NDBM based implementations. See
-        # http://bugs.python.org/issue19385 for details.
-        with self.assertRaises(Exception):
+        with self.assertRaises(dumbdbm.error):
             db.keys()
+
+    def test_check_closed(self):
+        f = dumbdbm.open(_fname, 'c')
+        f.close()
+
+        for meth in (partial(operator.delitem, f),
+                     partial(operator.setitem, f, 'b'),
+                     partial(operator.getitem, f),
+                     partial(operator.contains, f)):
+            with self.assertRaises(dumbdbm.error) as cm:
+                meth('test')
+            self.assertEqual(str(cm.exception),
+                             "DBM object has already been closed")
+
+        for meth in (operator.methodcaller('keys'),
+                     operator.methodcaller('iterkeys'),
+                     operator.methodcaller('items'),
+                     len):
+            with self.assertRaises(dumbdbm.error) as cm:
+                meth(f)
+            self.assertEqual(str(cm.exception),
+                             "DBM object has already been closed")
+
+    def test_create_new(self):
+        with dumbdbm.open(_fname, 'n') as f:
+            for k in self._dict:
+                f[k] = self._dict[k]
+
+        with dumbdbm.open(_fname, 'n') as f:
+            self.assertEqual(f.keys(), [])
+
+    def test_eval(self):
+        with open(_fname + '.dir', 'w') as stream:
+            stream.write("str(print('Hacked!')), 0\n")
+        with support.captured_stdout() as stdout:
+            with self.assertRaises(ValueError):
+                with dumbdbm.open(_fname) as f:
+                    pass
+            self.assertEqual(stdout.getvalue(), '')
 
     def tearDown(self):
         _delete_files()

@@ -1,6 +1,7 @@
 import os
 import sys
 import unittest
+from unittest import mock
 
 if sys.platform != 'win32':
     raise unittest.SkipTest('Windows only')
@@ -8,8 +9,8 @@ if sys.platform != 'win32':
 import _winapi
 
 import asyncio
-from asyncio import test_utils
 from asyncio import _overlapped
+from asyncio import test_utils
 from asyncio import windows_events
 
 
@@ -27,20 +28,16 @@ class UpperProto(asyncio.Protocol):
             self.trans.close()
 
 
-class ProactorTests(unittest.TestCase):
+class ProactorTests(test_utils.TestCase):
 
     def setUp(self):
         self.loop = asyncio.ProactorEventLoop()
-        asyncio.set_event_loop(None)
-
-    def tearDown(self):
-        self.loop.close()
-        self.loop = None
+        self.set_event_loop(self.loop)
 
     def test_close(self):
         a, b = self.loop._socketpair()
         trans = self.loop._make_socket_transport(a, asyncio.Protocol())
-        f = asyncio.async(self.loop.sock_recv(b, 100))
+        f = asyncio.ensure_future(self.loop.sock_recv(b, 100))
         trans.close()
         self.loop.run_until_complete(f)
         self.assertEqual(f.result(), b'')
@@ -50,7 +47,7 @@ class ProactorTests(unittest.TestCase):
         ADDRESS = r'\\.\pipe\test_double_bind-%s' % os.getpid()
         server1 = windows_events.PipeServer(ADDRESS)
         with self.assertRaises(PermissionError):
-            server2 = windows_events.PipeServer(ADDRESS)
+            windows_events.PipeServer(ADDRESS)
         server1.close()
 
     def test_pipe(self):
@@ -71,7 +68,8 @@ class ProactorTests(unittest.TestCase):
         clients = []
         for i in range(5):
             stream_reader = asyncio.StreamReader(loop=self.loop)
-            protocol = asyncio.StreamReaderProtocol(stream_reader)
+            protocol = asyncio.StreamReaderProtocol(stream_reader,
+                                                    loop=self.loop)
             trans, proto = yield from self.loop.create_pipe_connection(
                 lambda: protocol, ADDRESS)
             self.assertIsInstance(trans, asyncio.Transport)
@@ -94,41 +92,69 @@ class ProactorTests(unittest.TestCase):
 
         return 'done'
 
+    def test_connect_pipe_cancel(self):
+        exc = OSError()
+        exc.winerror = _overlapped.ERROR_PIPE_BUSY
+        with mock.patch.object(_overlapped, 'ConnectPipe', side_effect=exc) as connect:
+            coro = self.loop._proactor.connect_pipe('pipe_address')
+            task = self.loop.create_task(coro)
+
+            # check that it's possible to cancel connect_pipe()
+            task.cancel()
+            with self.assertRaises(asyncio.CancelledError):
+                self.loop.run_until_complete(task)
+
     def test_wait_for_handle(self):
         event = _overlapped.CreateEvent(None, True, False, None)
         self.addCleanup(_winapi.CloseHandle, event)
 
-        # Wait for unset event with 0.2s timeout;
+        # Wait for unset event with 0.5s timeout;
         # result should be False at timeout
-        f = self.loop._proactor.wait_for_handle(event, 0.2)
+        fut = self.loop._proactor.wait_for_handle(event, 0.5)
         start = self.loop.time()
-        self.loop.run_until_complete(f)
+        done = self.loop.run_until_complete(fut)
         elapsed = self.loop.time() - start
-        self.assertFalse(f.result())
-        self.assertTrue(0.18 < elapsed < 0.9, elapsed)
+
+        self.assertEqual(done, False)
+        self.assertFalse(fut.result())
+        self.assertTrue(0.48 < elapsed < 0.9, elapsed)
 
         _overlapped.SetEvent(event)
 
-        # Wait for for set event;
+        # Wait for set event;
         # result should be True immediately
-        f = self.loop._proactor.wait_for_handle(event, 10)
+        fut = self.loop._proactor.wait_for_handle(event, 10)
         start = self.loop.time()
-        self.loop.run_until_complete(f)
+        done = self.loop.run_until_complete(fut)
         elapsed = self.loop.time() - start
-        self.assertTrue(f.result())
-        self.assertTrue(0 <= elapsed < 0.1, elapsed)
 
-        _overlapped.ResetEvent(event)
+        self.assertEqual(done, True)
+        self.assertTrue(fut.result())
+        self.assertTrue(0 <= elapsed < 0.3, elapsed)
+
+        # asyncio issue #195: cancelling a done _WaitHandleFuture
+        # must not crash
+        fut.cancel()
+
+    def test_wait_for_handle_cancel(self):
+        event = _overlapped.CreateEvent(None, True, False, None)
+        self.addCleanup(_winapi.CloseHandle, event)
 
         # Wait for unset event with a cancelled future;
         # CancelledError should be raised immediately
-        f = self.loop._proactor.wait_for_handle(event, 10)
-        f.cancel()
+        fut = self.loop._proactor.wait_for_handle(event, 10)
+        fut.cancel()
         start = self.loop.time()
         with self.assertRaises(asyncio.CancelledError):
-            self.loop.run_until_complete(f)
+            self.loop.run_until_complete(fut)
         elapsed = self.loop.time() - start
         self.assertTrue(0 <= elapsed < 0.1, elapsed)
+
+        # asyncio issue #195: cancelling a _WaitHandleFuture twice
+        # must not crash
+        fut = self.loop._proactor.wait_for_handle(event)
+        fut.cancel()
+        fut.cancel()
 
 
 if __name__ == '__main__':

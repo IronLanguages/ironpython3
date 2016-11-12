@@ -9,8 +9,9 @@ test.support.import_module('multiprocessing.synchronize')
 # without thread support.
 test.support.import_module('threading')
 
-from test.script_helper import assert_python_ok
+from test.support.script_helper import assert_python_ok
 
+import os
 import sys
 import threading
 import time
@@ -425,6 +426,13 @@ class ExecutorTest:
         self.assertTrue(collected,
                         "Stale reference not collected within timeout.")
 
+    def test_max_workers_negative(self):
+        for number in (0, -1):
+            with self.assertRaisesRegex(ValueError,
+                                        "max_workers must be greater "
+                                        "than 0"):
+                self.executor_type(max_workers=number)
+
 
 class ThreadPoolExecutorTest(ThreadPoolMixin, ExecutorTest, unittest.TestCase):
     def test_map_submits_without_iteration(self):
@@ -436,6 +444,11 @@ class ThreadPoolExecutorTest(ThreadPoolMixin, ExecutorTest, unittest.TestCase):
         self.executor.map(record_finished, range(10))
         self.executor.shutdown(wait=True)
         self.assertCountEqual(finished, range(10))
+
+    def test_default_workers(self):
+        executor = self.executor_type()
+        self.assertEqual(executor._max_workers,
+                         (os.cpu_count() or 1) * 5)
 
 
 class ProcessPoolExecutorTest(ProcessPoolMixin, ExecutorTest, unittest.TestCase):
@@ -450,6 +463,48 @@ class ProcessPoolExecutorTest(ProcessPoolMixin, ExecutorTest, unittest.TestCase)
             self.assertRaises(BrokenProcessPool, fut.result)
         # Submitting other jobs fails as well.
         self.assertRaises(BrokenProcessPool, self.executor.submit, pow, 2, 8)
+
+    def test_map_chunksize(self):
+        def bad_map():
+            list(self.executor.map(pow, range(40), range(40), chunksize=-1))
+
+        ref = list(map(pow, range(40), range(40)))
+        self.assertEqual(
+            list(self.executor.map(pow, range(40), range(40), chunksize=6)),
+            ref)
+        self.assertEqual(
+            list(self.executor.map(pow, range(40), range(40), chunksize=50)),
+            ref)
+        self.assertEqual(
+            list(self.executor.map(pow, range(40), range(40), chunksize=40)),
+            ref)
+        self.assertRaises(ValueError, bad_map)
+
+    @classmethod
+    def _test_traceback(cls):
+        raise RuntimeError(123) # some comment
+
+    def test_traceback(self):
+        # We want ensure that the traceback from the child process is
+        # contained in the traceback raised in the main process.
+        future = self.executor.submit(self._test_traceback)
+        with self.assertRaises(Exception) as cm:
+            future.result()
+
+        exc = cm.exception
+        self.assertIs(type(exc), RuntimeError)
+        self.assertEqual(exc.args, (123,))
+        cause = exc.__cause__
+        self.assertIs(type(cause), futures.process._RemoteTraceback)
+        self.assertIn('raise RuntimeError(123) # some comment', cause.tb)
+
+        with test.support.captured_stderr() as f1:
+            try:
+                raise exc
+            except RuntimeError:
+                sys.excepthook(*sys.exc_info())
+        self.assertIn('raise RuntimeError(123) # some comment',
+                      f1.getvalue())
 
 
 class FutureTests(unittest.TestCase):
@@ -621,7 +676,7 @@ class FutureTests(unittest.TestCase):
         self.assertEqual(SUCCESSFUL_FUTURE.result(timeout=0), 42)
 
     def test_result_with_success(self):
-        # TODO(brian@sweetapp.com): This test is timing dependant.
+        # TODO(brian@sweetapp.com): This test is timing dependent.
         def notification():
             # Wait until the main thread is waiting for the result.
             time.sleep(1)
@@ -634,7 +689,7 @@ class FutureTests(unittest.TestCase):
         self.assertEqual(f1.result(timeout=5), 42)
 
     def test_result_with_cancel(self):
-        # TODO(brian@sweetapp.com): This test is timing dependant.
+        # TODO(brian@sweetapp.com): This test is timing dependent.
         def notification():
             # Wait until the main thread is waiting for the result.
             time.sleep(1)

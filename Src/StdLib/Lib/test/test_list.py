@@ -1,6 +1,7 @@
 import sys
 from test import support, list_tests
 import pickle
+import unittest
 
 class ListTest(list_tests.CommonTest):
     type2test = list
@@ -71,32 +72,76 @@ class ListTest(list_tests.CommonTest):
         check(1000000)
 
     def test_iterator_pickle(self):
-        # Userlist iterators don't support pickling yet since
-        # they are based on generators.
-        data = self.type2test([4, 5, 6, 7])
-        it = itorg = iter(data)
-        d = pickle.dumps(it)
-        it = pickle.loads(d)
-        self.assertEqual(type(itorg), type(it))
-        self.assertEqual(self.type2test(it), self.type2test(data))
+        orig = self.type2test([4, 5, 6, 7])
+        data = [10, 11, 12, 13, 14, 15]
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            # initial iterator
+            itorig = iter(orig)
+            d = pickle.dumps((itorig, orig), proto)
+            it, a = pickle.loads(d)
+            a[:] = data
+            self.assertEqual(type(it), type(itorig))
+            self.assertEqual(list(it), data)
 
-        it = pickle.loads(d)
-        next(it)
-        d = pickle.dumps(it)
-        self.assertEqual(self.type2test(it), self.type2test(data)[1:])
+            # running iterator
+            next(itorig)
+            d = pickle.dumps((itorig, orig), proto)
+            it, a = pickle.loads(d)
+            a[:] = data
+            self.assertEqual(type(it), type(itorig))
+            self.assertEqual(list(it), data[1:])
+
+            # empty iterator
+            for i in range(1, len(orig)):
+                next(itorig)
+            d = pickle.dumps((itorig, orig), proto)
+            it, a = pickle.loads(d)
+            a[:] = data
+            self.assertEqual(type(it), type(itorig))
+            self.assertEqual(list(it), data[len(orig):])
+
+            # exhausted iterator
+            self.assertRaises(StopIteration, next, itorig)
+            d = pickle.dumps((itorig, orig), proto)
+            it, a = pickle.loads(d)
+            a[:] = data
+            self.assertEqual(list(it), [])
 
     def test_reversed_pickle(self):
-        data = self.type2test([4, 5, 6, 7])
-        it = itorg = reversed(data)
-        d = pickle.dumps(it)
-        it = pickle.loads(d)
-        self.assertEqual(type(itorg), type(it))
-        self.assertEqual(self.type2test(it), self.type2test(reversed(data)))
+        orig = self.type2test([4, 5, 6, 7])
+        data = [10, 11, 12, 13, 14, 15]
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            # initial iterator
+            itorig = reversed(orig)
+            d = pickle.dumps((itorig, orig), proto)
+            it, a = pickle.loads(d)
+            a[:] = data
+            self.assertEqual(type(it), type(itorig))
+            self.assertEqual(list(it), data[len(orig)-1::-1])
 
-        it = pickle.loads(d)
-        next(it)
-        d = pickle.dumps(it)
-        self.assertEqual(self.type2test(it), self.type2test(reversed(data))[1:])
+            # running iterator
+            next(itorig)
+            d = pickle.dumps((itorig, orig), proto)
+            it, a = pickle.loads(d)
+            a[:] = data
+            self.assertEqual(type(it), type(itorig))
+            self.assertEqual(list(it), data[len(orig)-2::-1])
+
+            # empty iterator
+            for i in range(1, len(orig)):
+                next(itorig)
+            d = pickle.dumps((itorig, orig), proto)
+            it, a = pickle.loads(d)
+            a[:] = data
+            self.assertEqual(type(it), type(itorig))
+            self.assertEqual(list(it), [])
+
+            # exhausted iterator
+            self.assertRaises(StopIteration, next, itorig)
+            d = pickle.dumps((itorig, orig), proto)
+            it, a = pickle.loads(d)
+            a[:] = data
+            self.assertEqual(list(it), [])
 
     def test_no_comdat_folding(self):
         # Issue 8847: In the PGO build, the MSVC linker's COMDAT folding
@@ -106,20 +151,5 @@ class ListTest(list_tests.CommonTest):
         with self.assertRaises(TypeError):
             (3,) + L([1,2])
 
-def test_main(verbose=None):
-    support.run_unittest(ListTest)
-
-    # verify reference counting
-    import sys
-    if verbose and hasattr(sys, "gettotalrefcount"):
-        import gc
-        counts = [None] * 5
-        for i in range(len(counts)):
-            support.run_unittest(ListTest)
-            gc.collect()
-            counts[i] = sys.gettotalrefcount()
-        print(counts)
-
-
 if __name__ == "__main__":
-    test_main(verbose=True)
+    unittest.main()

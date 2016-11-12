@@ -336,17 +336,33 @@ class CommandSequence(Command):
         self.depth = self.depth + incr
         return self.depth
 
-def main():
+
+def _undo_delegator(parent):  # htest #
+    import re
+    import tkinter as tk
     from idlelib.Percolator import Percolator
-    root = Tk()
-    root.wm_protocol("WM_DELETE_WINDOW", root.quit)
-    text = Text()
+    undowin = tk.Toplevel()
+    undowin.title("Test UndoDelegator")
+    width, height, x, y = list(map(int, re.split('[x+]', parent.geometry())))
+    undowin.geometry("+%d+%d"%(x, y + 150))
+
+    text = Text(undowin, height=10)
     text.pack()
     text.focus_set()
     p = Percolator(text)
     d = UndoDelegator()
     p.insertfilter(d)
-    root.mainloop()
+
+    undo = Button(undowin, text="Undo", command=lambda:d.undo_event(None))
+    undo.pack(side='left')
+    redo = Button(undowin, text="Redo", command=lambda:d.redo_event(None))
+    redo.pack(side='left')
+    dump = Button(undowin, text="Dump", command=lambda:d.dump_event(None))
+    dump.pack(side='left')
 
 if __name__ == "__main__":
-    main()
+    import unittest
+    unittest.main('idlelib.idle_test.test_undodelegator', verbosity=2,
+                  exit=False)
+    from idlelib.idle_test.htest import run
+    run(_undo_delegator)

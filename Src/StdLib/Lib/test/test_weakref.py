@@ -7,7 +7,8 @@ import operator
 import contextlib
 import copy
 
-from test import support, script_helper
+from test import support
+from test.support import script_helper
 
 # Used in ReferencesTestCase.test_ref_created_during_del() .
 ref_from_del = None
@@ -92,6 +93,18 @@ class ReferencesTestCase(TestBase):
         self.check_basic_callback(create_function)
         self.check_basic_callback(create_bound_method)
 
+    @support.cpython_only
+    def test_cfunction(self):
+        import _testcapi
+        create_cfunction = _testcapi.create_cfunction
+        f = create_cfunction()
+        wr = weakref.ref(f)
+        self.assertIs(wr(), f)
+        del f
+        self.assertIsNone(wr())
+        self.check_basic_ref(create_cfunction)
+        self.check_basic_callback(create_cfunction)
+
     def test_multiple_callbacks(self):
         o = C()
         ref1 = weakref.ref(o, self.callback)
@@ -119,6 +132,10 @@ class ReferencesTestCase(TestBase):
         self.ref = weakref.ref(c, callback)
         ref1 = weakref.ref(c, callback)
         del c
+
+    def test_constructor_kwargs(self):
+        c = C()
+        self.assertRaises(TypeError, weakref.ref, c, callback=None)
 
     def test_proxy_ref(self):
         o = C()
@@ -934,7 +951,7 @@ class SubclassableWeakrefTestCase(TestBase):
 class WeakMethodTestCase(unittest.TestCase):
 
     def _subclass(self):
-        """Return a Object subclass overriding `some_method`."""
+        """Return an Object subclass overriding `some_method`."""
         class C(Object):
             def some_method(self):
                 return 6
@@ -1298,6 +1315,36 @@ class MappingTestCase(TestBase):
             dict.clear()
         self.assertEqual(len(dict), 0)
 
+    def check_weak_del_and_len_while_iterating(self, dict, testcontext):
+        # Check that len() works when both iterating and removing keys
+        # explicitly through various means (.pop(), .clear()...), while
+        # implicit mutation is deferred because an iterator is alive.
+        # (each call to testcontext() should schedule one item for removal
+        #  for this test to work properly)
+        o = Object(123456)
+        with testcontext():
+            n = len(dict)
+            dict.popitem()
+            self.assertEqual(len(dict), n - 1)
+            dict[o] = o
+            self.assertEqual(len(dict), n)
+        with testcontext():
+            self.assertEqual(len(dict), n - 1)
+            dict.pop(next(dict.keys()))
+            self.assertEqual(len(dict), n - 2)
+        with testcontext():
+            self.assertEqual(len(dict), n - 3)
+            del dict[next(dict.keys())]
+            self.assertEqual(len(dict), n - 4)
+        with testcontext():
+            self.assertEqual(len(dict), n - 5)
+            dict.popitem()
+            self.assertEqual(len(dict), n - 6)
+        with testcontext():
+            dict.clear()
+            self.assertEqual(len(dict), 0)
+        self.assertEqual(len(dict), 0)
+
     def test_weak_keys_destroy_while_iterating(self):
         # Issue #7105: iterators shouldn't crash when a key is implicitly removed
         dict, objects = self.make_weak_keyed_dict()
@@ -1317,7 +1364,12 @@ class MappingTestCase(TestBase):
                 yield Object(v), v
             finally:
                 it = None           # should commit all removals
+                gc.collect()
         self.check_weak_destroy_and_mutate_while_iterating(dict, testcontext)
+        # Issue #21173: len() fragile when keys are both implicitly and
+        # explicitly removed.
+        dict, objects = self.make_weak_keyed_dict()
+        self.check_weak_del_and_len_while_iterating(dict, testcontext)
 
     def test_weak_values_destroy_while_iterating(self):
         # Issue #7105: iterators shouldn't crash when a key is implicitly removed
@@ -1339,7 +1391,10 @@ class MappingTestCase(TestBase):
                 yield k, Object(k)
             finally:
                 it = None           # should commit all removals
+                gc.collect()
         self.check_weak_destroy_and_mutate_while_iterating(dict, testcontext)
+        dict, objects = self.make_weak_valued_dict()
+        self.check_weak_del_and_len_while_iterating(dict, testcontext)
 
     def test_make_weak_keyed_dict_from_dict(self):
         o = Object(3)
@@ -1369,6 +1424,18 @@ class MappingTestCase(TestBase):
         dict = weakref.WeakValueDictionary({364:o})
         dict2 = weakref.WeakValueDictionary(dict)
         self.assertEqual(dict[364], o)
+
+    def test_make_weak_valued_dict_misc(self):
+        # errors
+        self.assertRaises(TypeError, weakref.WeakValueDictionary.__init__)
+        self.assertRaises(TypeError, weakref.WeakValueDictionary, {}, {})
+        self.assertRaises(TypeError, weakref.WeakValueDictionary, (), ())
+        # special keyword arguments
+        o = Object(3)
+        for kw in 'self', 'dict', 'other', 'iterable':
+            d = weakref.WeakValueDictionary(**{kw: o})
+            self.assertEqual(list(d.keys()), [kw])
+            self.assertEqual(d[kw], o)
 
     def make_weak_valued_dict(self):
         dict = weakref.WeakValueDictionary()
@@ -1450,6 +1517,19 @@ class MappingTestCase(TestBase):
     def test_weak_valued_dict_update(self):
         self.check_update(weakref.WeakValueDictionary,
                           {1: C(), 'a': C(), C(): C()})
+        # errors
+        self.assertRaises(TypeError, weakref.WeakValueDictionary.update)
+        d = weakref.WeakValueDictionary()
+        self.assertRaises(TypeError, d.update, {}, {})
+        self.assertRaises(TypeError, d.update, (), ())
+        self.assertEqual(list(d.keys()), [])
+        # special keyword arguments
+        o = Object(3)
+        for kw in 'self', 'dict', 'other', 'iterable':
+            d = weakref.WeakValueDictionary()
+            d.update(**{kw: o})
+            self.assertEqual(list(d.keys()), [kw])
+            self.assertEqual(d[kw], o)
 
     def test_weak_keyed_dict_update(self):
         self.check_update(weakref.WeakKeyDictionary,
@@ -1535,6 +1615,14 @@ class MappingTestCase(TestBase):
             del d[o]
         self.assertEqual(len(d), 0)
         self.assertEqual(count, 2)
+
+    def test_make_weak_valued_dict_repr(self):
+        dict = weakref.WeakValueDictionary()
+        self.assertRegex(repr(dict), '<WeakValueDictionary at 0x.*>')
+
+    def test_make_weak_keyed_dict_repr(self):
+        dict = weakref.WeakKeyDictionary()
+        self.assertRegex(repr(dict), '<WeakKeyDictionary at 0x.*>')
 
 from test import mapping_tests
 

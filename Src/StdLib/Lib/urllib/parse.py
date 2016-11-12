@@ -34,7 +34,9 @@ import collections
 __all__ = ["urlparse", "urlunparse", "urljoin", "urldefrag",
            "urlsplit", "urlunsplit", "urlencode", "parse_qs",
            "parse_qsl", "quote", "quote_plus", "quote_from_bytes",
-           "unquote", "unquote_plus", "unquote_to_bytes"]
+           "unquote", "unquote_plus", "unquote_to_bytes",
+           "DefragResult", "ParseResult", "SplitResult",
+           "DefragResultBytes", "ParseResultBytes", "SplitResultBytes"]
 
 # A classification of schemes ('' means apply by default)
 uses_relative = ['ftp', 'http', 'gopher', 'nntp', 'imap',
@@ -409,11 +411,13 @@ def urljoin(base, url, allow_fragments=True):
         return url
     if not url:
         return base
+
     base, url, _coerce_result = _coerce_args(base, url)
     bscheme, bnetloc, bpath, bparams, bquery, bfragment = \
             urlparse(base, '', allow_fragments)
     scheme, netloc, path, params, query, fragment = \
             urlparse(url, bscheme, allow_fragments)
+
     if scheme != bscheme or scheme not in uses_relative:
         return _coerce_result(url)
     if scheme in uses_netloc:
@@ -421,9 +425,7 @@ def urljoin(base, url, allow_fragments=True):
             return _coerce_result(urlunparse((scheme, netloc, path,
                                               params, query, fragment)))
         netloc = bnetloc
-    if path[:1] == '/':
-        return _coerce_result(urlunparse((scheme, netloc, path,
-                                          params, query, fragment)))
+
     if not path and not params:
         path = bpath
         params = bparams
@@ -431,29 +433,45 @@ def urljoin(base, url, allow_fragments=True):
             query = bquery
         return _coerce_result(urlunparse((scheme, netloc, path,
                                           params, query, fragment)))
-    segments = bpath.split('/')[:-1] + path.split('/')
-    # XXX The stuff below is bogus in various ways...
-    if segments[-1] == '.':
-        segments[-1] = ''
-    while '.' in segments:
-        segments.remove('.')
-    while 1:
-        i = 1
-        n = len(segments) - 1
-        while i < n:
-            if (segments[i] == '..'
-                and segments[i-1] not in ('', '..')):
-                del segments[i-1:i+1]
-                break
-            i = i+1
+
+    base_parts = bpath.split('/')
+    if base_parts[-1] != '':
+        # the last item is not a directory, so will not be taken into account
+        # in resolving the relative path
+        del base_parts[-1]
+
+    # for rfc3986, ignore all base path should the first character be root.
+    if path[:1] == '/':
+        segments = path.split('/')
+    else:
+        segments = base_parts + path.split('/')
+        # filter out elements that would cause redundant slashes on re-joining
+        # the resolved_path
+        segments[1:-1] = filter(None, segments[1:-1])
+
+    resolved_path = []
+
+    for seg in segments:
+        if seg == '..':
+            try:
+                resolved_path.pop()
+            except IndexError:
+                # ignore any .. segments that would otherwise cause an IndexError
+                # when popped from resolved_path if resolving for rfc3986
+                pass
+        elif seg == '.':
+            continue
         else:
-            break
-    if segments == ['', '..']:
-        segments[-1] = ''
-    elif len(segments) >= 2 and segments[-1] == '..':
-        segments[-2:] = ['']
-    return _coerce_result(urlunparse((scheme, netloc, '/'.join(segments),
-                                      params, query, fragment)))
+            resolved_path.append(seg)
+
+    if segments[-1] in ('.', '..'):
+        # do some post-processing here. if the last segment was a relative dir,
+        # then we need to append the trailing '/'
+        resolved_path.append('')
+
+    return _coerce_result(urlunparse((scheme, netloc, '/'.join(
+        resolved_path) or '/', params, query, fragment)))
+
 
 def urldefrag(url):
     """Removes any existing fragment from URL.
@@ -472,8 +490,7 @@ def urldefrag(url):
     return _coerce_result(DefragResult(defrag, frag))
 
 _hexdig = '0123456789ABCDEFabcdef'
-_hextobyte = {(a + b).encode(): bytes([int(a + b, 16)])
-              for a in _hexdig for b in _hexdig}
+_hextobyte = None
 
 def unquote_to_bytes(string):
     """unquote_to_bytes('abc%20def') -> b'abc def'."""
@@ -490,6 +507,12 @@ def unquote_to_bytes(string):
         return string
     res = [bits[0]]
     append = res.append
+    # Delay the initialization of the table to not waste memory
+    # if the function is never called
+    global _hextobyte
+    if _hextobyte is None:
+        _hextobyte = {(a + b).encode(): bytes([int(a + b, 16)])
+                      for a in _hexdig for b in _hexdig}
     for item in bits[1:]:
         try:
             append(_hextobyte[item[:2]])
@@ -636,7 +659,7 @@ class Quoter(collections.defaultdict):
 
     def __repr__(self):
         # Without this, will just display as a defaultdict
-        return "<Quoter %r>" % dict(self)
+        return "<%s %r>" % (self.__class__.__name__, dict(self))
 
     def __missing__(self, b):
         # Handle a cache miss. Store quoted string in cache and return.
@@ -665,8 +688,8 @@ def quote(string, safe='/', encoding=None, errors=None):
     called on a path where the existing slash characters are used as
     reserved characters.
 
-    string and safe may be either str or bytes objects. encoding must
-    not be specified if string is a str.
+    string and safe may be either str or bytes objects. encoding and errors
+    must not be specified if string is a bytes object.
 
     The optional encoding and errors parameters specify how to deal with
     non-ASCII characters, as accepted by the str.encode method.
@@ -727,7 +750,8 @@ def quote_from_bytes(bs, safe='/'):
         _safe_quoters[safe] = quoter = Quoter(safe).__getitem__
     return ''.join([quoter(char) for char in bs])
 
-def urlencode(query, doseq=False, safe='', encoding=None, errors=None):
+def urlencode(query, doseq=False, safe='', encoding=None, errors=None,
+              quote_via=quote_plus):
     """Encode a dict or sequence of two-element tuples into a URL query string.
 
     If any values in the query arg are sequences and doseq is true, each
@@ -738,8 +762,9 @@ def urlencode(query, doseq=False, safe='', encoding=None, errors=None):
     input.
 
     The components of a query arg may each be either a string or a bytes type.
-    When a component is a string, the safe, encoding and error parameters are
-    sent to the quote_plus function for encoding.
+
+    The safe, encoding, and errors parameters are passed down to the function
+    specified by quote_via (encoding and errors only if a component is a str).
     """
 
     if hasattr(query, "items"):
@@ -765,27 +790,27 @@ def urlencode(query, doseq=False, safe='', encoding=None, errors=None):
     if not doseq:
         for k, v in query:
             if isinstance(k, bytes):
-                k = quote_plus(k, safe)
+                k = quote_via(k, safe)
             else:
-                k = quote_plus(str(k), safe, encoding, errors)
+                k = quote_via(str(k), safe, encoding, errors)
 
             if isinstance(v, bytes):
-                v = quote_plus(v, safe)
+                v = quote_via(v, safe)
             else:
-                v = quote_plus(str(v), safe, encoding, errors)
+                v = quote_via(str(v), safe, encoding, errors)
             l.append(k + '=' + v)
     else:
         for k, v in query:
             if isinstance(k, bytes):
-                k = quote_plus(k, safe)
+                k = quote_via(k, safe)
             else:
-                k = quote_plus(str(k), safe, encoding, errors)
+                k = quote_via(str(k), safe, encoding, errors)
 
             if isinstance(v, bytes):
-                v = quote_plus(v, safe)
+                v = quote_via(v, safe)
                 l.append(k + '=' + v)
             elif isinstance(v, str):
-                v = quote_plus(v, safe, encoding, errors)
+                v = quote_via(v, safe, encoding, errors)
                 l.append(k + '=' + v)
             else:
                 try:
@@ -793,32 +818,17 @@ def urlencode(query, doseq=False, safe='', encoding=None, errors=None):
                     x = len(v)
                 except TypeError:
                     # not a sequence
-                    v = quote_plus(str(v), safe, encoding, errors)
+                    v = quote_via(str(v), safe, encoding, errors)
                     l.append(k + '=' + v)
                 else:
                     # loop over the sequence
                     for elt in v:
                         if isinstance(elt, bytes):
-                            elt = quote_plus(elt, safe)
+                            elt = quote_via(elt, safe)
                         else:
-                            elt = quote_plus(str(elt), safe, encoding, errors)
+                            elt = quote_via(str(elt), safe, encoding, errors)
                         l.append(k + '=' + elt)
     return '&'.join(l)
-
-# Utilities to parse URLs (most of these return None for missing parts):
-# unwrap('<URL:type://host/path>') --> 'type://host/path'
-# splittype('type:opaquestring') --> 'type', 'opaquestring'
-# splithost('//host[:port]/path') --> 'host[:port]', '/path'
-# splituser('user[:passwd]@host[:port]') --> 'user[:passwd]', 'host[:port]'
-# splitpasswd('user:passwd') -> 'user', 'passwd'
-# splitport('host:port') --> 'host', 'port'
-# splitquery('/path?query') --> '/path', 'query'
-# splittag('/path#tag') --> '/path', 'tag'
-# splitattr('/path;attr1=value1;attr2=value2;...') ->
-#   '/path', ['attr1=value1', 'attr2=value2', ...]
-# splitvalue('attr=value') --> 'attr', 'value'
-# urllib.parse.unquote('abc%20def') -> 'abc def'
-# quote('abc def') -> 'abc%20def')
 
 def to_bytes(url):
     """to_bytes(u"URL") --> 'URL'."""
@@ -846,12 +856,12 @@ def splittype(url):
     """splittype('type:opaquestring') --> 'type', 'opaquestring'."""
     global _typeprog
     if _typeprog is None:
-        _typeprog = re.compile('^([^/:]+):')
+        _typeprog = re.compile('([^/:]+):(.*)', re.DOTALL)
 
     match = _typeprog.match(url)
     if match:
-        scheme = match.group(1)
-        return scheme.lower(), url[len(scheme) + 1:]
+        scheme, data = match.groups()
+        return scheme.lower(), data
     return None, url
 
 _hostprog = None
@@ -859,38 +869,25 @@ def splithost(url):
     """splithost('//host[:port]/path') --> 'host[:port]', '/path'."""
     global _hostprog
     if _hostprog is None:
-        _hostprog = re.compile('^//([^/?]*)(.*)$')
+        _hostprog = re.compile('//([^/?]*)(.*)', re.DOTALL)
 
     match = _hostprog.match(url)
     if match:
-        host_port = match.group(1)
-        path = match.group(2)
-        if path and not path.startswith('/'):
+        host_port, path = match.groups()
+        if path and path[0] != '/':
             path = '/' + path
         return host_port, path
     return None, url
 
-_userprog = None
 def splituser(host):
     """splituser('user[:passwd]@host[:port]') --> 'user[:passwd]', 'host[:port]'."""
-    global _userprog
-    if _userprog is None:
-        _userprog = re.compile('^(.*)@(.*)$')
+    user, delim, host = host.rpartition('@')
+    return (user if delim else None), host
 
-    match = _userprog.match(host)
-    if match: return match.group(1, 2)
-    return None, host
-
-_passwdprog = None
 def splitpasswd(user):
     """splitpasswd('user:passwd') -> 'user', 'passwd'."""
-    global _passwdprog
-    if _passwdprog is None:
-        _passwdprog = re.compile('^([^:]*):(.*)$',re.S)
-
-    match = _passwdprog.match(user)
-    if match: return match.group(1, 2)
-    return user, None
+    user, delim, passwd = user.partition(':')
+    return user, (passwd if delim else None)
 
 # splittag('/path#tag') --> '/path', 'tag'
 _portprog = None
@@ -898,7 +895,7 @@ def splitport(host):
     """splitport('host:port') --> 'host', 'port'."""
     global _portprog
     if _portprog is None:
-        _portprog = re.compile('^(.*):([0-9]*)$')
+        _portprog = re.compile('(.*):([0-9]*)$', re.DOTALL)
 
     match = _portprog.match(host)
     if match:
@@ -907,47 +904,34 @@ def splitport(host):
             return host, port
     return host, None
 
-_nportprog = None
 def splitnport(host, defport=-1):
     """Split host and port, returning numeric port.
     Return given default port if no ':' found; defaults to -1.
     Return numerical port if a valid number are found after ':'.
     Return None if ':' but not a valid number."""
-    global _nportprog
-    if _nportprog is None:
-        _nportprog = re.compile('^(.*):(.*)$')
-
-    match = _nportprog.match(host)
-    if match:
-        host, port = match.group(1, 2)
-        if port:
-            try:
-                nport = int(port)
-            except ValueError:
-                nport = None
-            return host, nport
+    host, delim, port = host.rpartition(':')
+    if not delim:
+        host = port
+    elif port:
+        try:
+            nport = int(port)
+        except ValueError:
+            nport = None
+        return host, nport
     return host, defport
 
-_queryprog = None
 def splitquery(url):
     """splitquery('/path?query') --> '/path', 'query'."""
-    global _queryprog
-    if _queryprog is None:
-        _queryprog = re.compile('^(.*)\?([^?]*)$')
-
-    match = _queryprog.match(url)
-    if match: return match.group(1, 2)
+    path, delim, query = url.rpartition('?')
+    if delim:
+        return path, query
     return url, None
 
-_tagprog = None
 def splittag(url):
     """splittag('/path#tag') --> '/path', 'tag'."""
-    global _tagprog
-    if _tagprog is None:
-        _tagprog = re.compile('^(.*)#([^#]*)$')
-
-    match = _tagprog.match(url)
-    if match: return match.group(1, 2)
+    path, delim, tag = url.rpartition('#')
+    if delim:
+        return path, tag
     return url, None
 
 def splitattr(url):
@@ -956,13 +940,7 @@ def splitattr(url):
     words = url.split(';')
     return words[0], words[1:]
 
-_valueprog = None
 def splitvalue(attr):
     """splitvalue('attr=value') --> 'attr', 'value'."""
-    global _valueprog
-    if _valueprog is None:
-        _valueprog = re.compile('^([^=]*)=(.*)$')
-
-    match = _valueprog.match(attr)
-    if match: return match.group(1, 2)
-    return attr, None
+    attr, delim, value = attr.partition('=')
+    return attr, (value if delim else None)

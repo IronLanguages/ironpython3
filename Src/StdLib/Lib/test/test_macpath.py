@@ -49,16 +49,40 @@ class MacPathTestCase(unittest.TestCase):
     def test_join(self):
         join = macpath.join
         self.assertEqual(join('a', 'b'), ':a:b')
+        self.assertEqual(join(':a', 'b'), ':a:b')
+        self.assertEqual(join(':a:', 'b'), ':a:b')
+        self.assertEqual(join(':a::', 'b'), ':a::b')
+        self.assertEqual(join(':a', '::b'), ':a::b')
+        self.assertEqual(join('a', ':'), ':a:')
+        self.assertEqual(join('a:', ':'), 'a:')
+        self.assertEqual(join('a', ''), ':a:')
+        self.assertEqual(join('a:', ''), 'a:')
+        self.assertEqual(join('', ''), '')
         self.assertEqual(join('', 'a:b'), 'a:b')
+        self.assertEqual(join('', 'a', 'b'), ':a:b')
         self.assertEqual(join('a:b', 'c'), 'a:b:c')
         self.assertEqual(join('a:b', ':c'), 'a:b:c')
         self.assertEqual(join('a', ':b', ':c'), ':a:b:c')
+        self.assertEqual(join('a', 'b:'), 'b:')
+        self.assertEqual(join('a:', 'b:'), 'b:')
 
         self.assertEqual(join(b'a', b'b'), b':a:b')
+        self.assertEqual(join(b':a', b'b'), b':a:b')
+        self.assertEqual(join(b':a:', b'b'), b':a:b')
+        self.assertEqual(join(b':a::', b'b'), b':a::b')
+        self.assertEqual(join(b':a', b'::b'), b':a::b')
+        self.assertEqual(join(b'a', b':'), b':a:')
+        self.assertEqual(join(b'a:', b':'), b'a:')
+        self.assertEqual(join(b'a', b''), b':a:')
+        self.assertEqual(join(b'a:', b''), b'a:')
+        self.assertEqual(join(b'', b''), b'')
         self.assertEqual(join(b'', b'a:b'), b'a:b')
+        self.assertEqual(join(b'', b'a', b'b'), b':a:b')
         self.assertEqual(join(b'a:b', b'c'), b'a:b:c')
         self.assertEqual(join(b'a:b', b':c'), b'a:b:c')
         self.assertEqual(join(b'a', b':b', b':c'), b':a:b:c')
+        self.assertEqual(join(b'a', b'b:'), b'b:')
+        self.assertEqual(join(b'a:', b'b:'), b'b:')
 
     def test_splitext(self):
         splitext = macpath.splitext
@@ -117,6 +141,8 @@ class MacPathTestCase(unittest.TestCase):
 
 class MacCommonTest(test_genericpath.CommonTest, unittest.TestCase):
     pathmodule = macpath
+
+    test_relpath_errors = None
 
 
 if __name__ == "__main__":

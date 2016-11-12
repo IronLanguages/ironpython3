@@ -5,15 +5,22 @@ import textwrap
 import unittest
 import functools
 import contextlib
+import os.path
 from test import support
 from nntplib import NNTP, GroupInfo
 import nntplib
+from unittest.mock import patch
 try:
     import ssl
 except ImportError:
     ssl = None
+try:
+    import threading
+except ImportError:
+    threading = None
 
 TIMEOUT = 30
+certfile = os.path.join(os.path.dirname(__file__), 'keycert3.pem')
 
 # TODO:
 # - test the `file` arg to more commands
@@ -201,24 +208,6 @@ class NetworkedNNTPTestsMixin:
         resp, caps = self.server.capabilities()
         _check_caps(caps)
 
-    @unittest.skipUnless(ssl, 'requires SSL support')
-    def test_starttls(self):
-        file = self.server.file
-        sock = self.server.sock
-        try:
-            self.server.starttls()
-        except nntplib.NNTPPermanentError:
-            self.skipTest("STARTTLS not supported by server.")
-        else:
-            # Check that the socket and internal pseudo-file really were
-            # changed.
-            self.assertNotEqual(file, self.server.file)
-            self.assertNotEqual(sock, self.server.sock)
-            # Check that the new socket really is an SSL one
-            self.assertIsInstance(self.server.sock, ssl.SSLSocket)
-            # Check that trying starttls when it's already active fails.
-            self.assertRaises(ValueError, self.server.starttls)
-
     def test_zlogin(self):
         # This test must be the penultimate because further commands will be
         # refused.
@@ -370,6 +359,14 @@ class _NNTPServerIO(io.RawIOBase):
         return n
 
 
+def make_mock_file(handler):
+    sio = _NNTPServerIO(handler)
+    # Using BufferedRWPair instead of BufferedRandom ensures the file
+    # isn't seekable.
+    file = io.BufferedRWPair(sio, sio)
+    return (sio, file)
+
+
 class MockedNNTPTestsMixin:
     # Override in derived classes
     handler_class = None
@@ -384,10 +381,7 @@ class MockedNNTPTestsMixin:
 
     def make_server(self, *args, **kwargs):
         self.handler = self.handler_class()
-        self.sio = _NNTPServerIO(self.handler)
-        # Using BufferedRWPair instead of BufferedRandom ensures the file
-        # isn't seekable.
-        file = io.BufferedRWPair(self.sio, self.sio)
+        self.sio, file = make_mock_file(self.handler)
         self.server = nntplib._NNTPBase(file, 'test.server', *args, **kwargs)
         return self.server
 
@@ -615,7 +609,7 @@ class NNTPv1Handler:
                     "\t\t6683\t16"
                     "\t"
                     "\n"
-                # An UTF-8 overview line from fr.comp.lang.python
+                # A UTF-8 overview line from fr.comp.lang.python
                 "59\tRe: Message d'erreur incompréhensible (par moi)"
                     "\tEric Brunel <eric.brunel@pragmadev.nospam.com>"
                     "\tWed, 15 Sep 2010 18:09:15 +0200"
@@ -1412,11 +1406,166 @@ class MiscTests(unittest.TestCase):
     def test_ssl_support(self):
         self.assertTrue(hasattr(nntplib, 'NNTP_SSL'))
 
-def test_main():
-    tests = [MiscTests, NNTPv1Tests, NNTPv2Tests, CapsAfterLoginNNTPv2Tests,
-            SendReaderNNTPv2Tests, NetworkedNNTPTests, NetworkedNNTP_SSLTests]
-    support.run_unittest(*tests)
+
+class PublicAPITests(unittest.TestCase):
+    """Ensures that the correct values are exposed in the public API."""
+
+    def test_module_all_attribute(self):
+        self.assertTrue(hasattr(nntplib, '__all__'))
+        target_api = ['NNTP', 'NNTPError', 'NNTPReplyError',
+                      'NNTPTemporaryError', 'NNTPPermanentError',
+                      'NNTPProtocolError', 'NNTPDataError', 'decode_header']
+        if ssl is not None:
+            target_api.append('NNTP_SSL')
+        self.assertEqual(set(nntplib.__all__), set(target_api))
+
+class MockSocketTests(unittest.TestCase):
+    """Tests involving a mock socket object
+
+    Used where the _NNTPServerIO file object is not enough."""
+
+    nntp_class = nntplib.NNTP
+
+    def check_constructor_error_conditions(
+            self, handler_class,
+            expected_error_type, expected_error_msg,
+            login=None, password=None):
+
+        class mock_socket_module:
+            def create_connection(address, timeout):
+                return MockSocket()
+
+        class MockSocket:
+            def close(self):
+                nonlocal socket_closed
+                socket_closed = True
+
+            def makefile(socket, mode):
+                handler = handler_class()
+                _, file = make_mock_file(handler)
+                files.append(file)
+                return file
+
+        socket_closed = False
+        files = []
+        with patch('nntplib.socket', mock_socket_module), \
+             self.assertRaisesRegex(expected_error_type, expected_error_msg):
+            self.nntp_class('dummy', user=login, password=password)
+        self.assertTrue(socket_closed)
+        for f in files:
+            self.assertTrue(f.closed)
+
+    def test_bad_welcome(self):
+        #Test a bad welcome message
+        class Handler(NNTPv1Handler):
+            welcome = 'Bad Welcome'
+        self.check_constructor_error_conditions(
+            Handler, nntplib.NNTPProtocolError, Handler.welcome)
+
+    def test_service_temporarily_unavailable(self):
+        #Test service temporarily unavailable
+        class Handler(NNTPv1Handler):
+            welcome = '400 Service temporarily unavilable'
+        self.check_constructor_error_conditions(
+            Handler, nntplib.NNTPTemporaryError, Handler.welcome)
+
+    def test_service_permanently_unavailable(self):
+        #Test service permanently unavailable
+        class Handler(NNTPv1Handler):
+            welcome = '502 Service permanently unavilable'
+        self.check_constructor_error_conditions(
+            Handler, nntplib.NNTPPermanentError, Handler.welcome)
+
+    def test_bad_capabilities(self):
+        #Test a bad capabilities response
+        class Handler(NNTPv1Handler):
+            def handle_CAPABILITIES(self):
+                self.push_lit(capabilities_response)
+        capabilities_response = '201 bad capability'
+        self.check_constructor_error_conditions(
+            Handler, nntplib.NNTPReplyError, capabilities_response)
+
+    def test_login_aborted(self):
+        #Test a bad authinfo response
+        login = 't@e.com'
+        password = 'python'
+        class Handler(NNTPv1Handler):
+            def handle_AUTHINFO(self, *args):
+                self.push_lit(authinfo_response)
+        authinfo_response = '503 Mechanism not recognized'
+        self.check_constructor_error_conditions(
+            Handler, nntplib.NNTPPermanentError, authinfo_response,
+            login, password)
+
+class bypass_context:
+    """Bypass encryption and actual SSL module"""
+    def wrap_socket(sock, **args):
+        return sock
+
+@unittest.skipUnless(ssl, 'requires SSL support')
+class MockSslTests(MockSocketTests):
+    @staticmethod
+    def nntp_class(*pos, **kw):
+        return nntplib.NNTP_SSL(*pos, ssl_context=bypass_context, **kw)
+
+@unittest.skipUnless(threading, 'requires multithreading')
+class LocalServerTests(unittest.TestCase):
+    def setUp(self):
+        sock = socket.socket()
+        port = support.bind_port(sock)
+        sock.listen()
+        self.background = threading.Thread(
+            target=self.run_server, args=(sock,))
+        self.background.start()
+        self.addCleanup(self.background.join)
+
+        self.nntp = NNTP(support.HOST, port, usenetrc=False).__enter__()
+        self.addCleanup(self.nntp.__exit__, None, None, None)
+
+    def run_server(self, sock):
+        # Could be generalized to handle more commands in separate methods
+        with sock:
+            [client, _] = sock.accept()
+        with contextlib.ExitStack() as cleanup:
+            cleanup.enter_context(client)
+            reader = cleanup.enter_context(client.makefile('rb'))
+            client.sendall(b'200 Server ready\r\n')
+            while True:
+                cmd = reader.readline()
+                if cmd == b'CAPABILITIES\r\n':
+                    client.sendall(
+                        b'101 Capability list:\r\n'
+                        b'VERSION 2\r\n'
+                        b'STARTTLS\r\n'
+                        b'.\r\n'
+                    )
+                elif cmd == b'STARTTLS\r\n':
+                    reader.close()
+                    client.sendall(b'382 Begin TLS negotiation now\r\n')
+                    client = ssl.wrap_socket(
+                        client, server_side=True, certfile=certfile)
+                    cleanup.enter_context(client)
+                    reader = cleanup.enter_context(client.makefile('rb'))
+                elif cmd == b'QUIT\r\n':
+                    client.sendall(b'205 Bye!\r\n')
+                    break
+                else:
+                    raise ValueError('Unexpected command {!r}'.format(cmd))
+
+    @unittest.skipUnless(ssl, 'requires SSL support')
+    def test_starttls(self):
+        file = self.nntp.file
+        sock = self.nntp.sock
+        self.nntp.starttls()
+        # Check that the socket and internal pseudo-file really were
+        # changed.
+        self.assertNotEqual(file, self.nntp.file)
+        self.assertNotEqual(sock, self.nntp.sock)
+        # Check that the new socket really is an SSL one
+        self.assertIsInstance(self.nntp.sock, ssl.SSLSocket)
+        # Check that trying starttls when it's already active fails.
+        self.assertRaises(ValueError, self.nntp.starttls)
 
 
 if __name__ == "__main__":
-    test_main()
+    unittest.main()

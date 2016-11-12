@@ -19,6 +19,8 @@ if os.name == "nt":
         i = i + len(prefix)
         s, rest = sys.version[i:].split(" ", 1)
         majorVersion = int(s[:-2]) - 6
+        if majorVersion >= 13:
+            majorVersion += 1
         minorVersion = int(s[2:3]) / 10.0
         # I don't think paths are affected by minor version in version 6
         if majorVersion == 6:
@@ -36,8 +38,12 @@ if os.name == "nt":
             return None
         if version <= 6:
             clibname = 'msvcrt'
-        else:
+        elif version <= 13:
             clibname = 'msvcr%d' % (version * 10)
+        else:
+            # CRT is no longer directly loadable. See issue23606 for the
+            # discussion about alternative approaches.
+            return None
 
         # If python was built with in debug mode
         import importlib.machinery
@@ -85,7 +91,7 @@ if os.name == "posix" and sys.platform == "darwin":
 
 elif os.name == "posix":
     # Andreas Degert's find functions, using gcc, /sbin/ldconfig, objdump
-    import re, tempfile, errno
+    import re, tempfile
 
     def _findLib_gcc(name):
         expr = r'[^\(\)\s]*lib%s\.[^\(\)\s]*' % re.escape(name)
@@ -178,6 +184,7 @@ elif os.name == "posix":
             else:
                 cmd = 'env LC_ALL=C /usr/bin/crle 2>/dev/null'
 
+            paths = None
             with contextlib.closing(os.popen(cmd)) as f:
                 for line in f.readlines():
                     line = line.strip()

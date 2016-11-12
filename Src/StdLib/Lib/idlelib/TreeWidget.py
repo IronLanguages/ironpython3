@@ -173,11 +173,12 @@ class TreeNode:
 
     def draw(self, x, y):
         # XXX This hard-codes too many geometry constants!
+        dy = 20
         self.x, self.y = x, y
         self.drawicon()
         self.drawtext()
         if self.state != 'expanded':
-            return y+17
+            return y + dy
         # draw children
         if not self.children:
             sublist = self.item._GetSubList()
@@ -188,7 +189,7 @@ class TreeNode:
                 child = self.__class__(self.canvas, self, item)
                 self.children.append(child)
         cx = x+20
-        cy = y+17
+        cy = y + dy
         cylast = 0
         for child in self.children:
             cylast = cy
@@ -227,7 +228,7 @@ class TreeNode:
 
     def drawtext(self):
         textx = self.x+20-1
-        texty = self.y-1
+        texty = self.y-4
         labeltext = self.item.GetLabelText()
         if labeltext:
             id = self.canvas.create_text(textx, texty, anchor="nw",
@@ -244,11 +245,11 @@ class TreeNode:
         else:
             self.edit_finish()
         try:
-            label = self.label
+            self.label
         except AttributeError:
             # padding carefully selected (on Windows) to match Entry widget:
             self.label = Label(self.canvas, text=text, bd=0, padx=2, pady=2)
-        theme = idleConf.GetOption('main','Theme','name')
+        theme = idleConf.CurrentTheme()
         if self.selected:
             self.label.configure(idleConf.GetHighlight(theme, 'hilite'))
         else:
@@ -448,29 +449,18 @@ class ScrolledCanvas:
         return "break"
 
 
-# Testing functions
-
-def test():
-    from idlelib import PyShell
-    root = Toplevel(PyShell.root)
-    root.configure(bd=0, bg="yellow")
-    root.focus_set()
+def _tree_widget(parent):
+    root = Tk()
+    root.title("Test TreeWidget")
+    width, height, x, y = list(map(int, re.split('[x+]', parent.geometry())))
+    root.geometry("+%d+%d"%(x, y + 150))
     sc = ScrolledCanvas(root, bg="white", highlightthickness=0, takefocus=1)
-    sc.frame.pack(expand=1, fill="both")
-    item = FileTreeItem("C:/windows/desktop")
+    sc.frame.pack(expand=1, fill="both", side=LEFT)
+    item = FileTreeItem(os.getcwd())
     node = TreeNode(sc.canvas, None, item)
     node.expand()
-
-def test2():
-    # test w/o scrolling canvas
-    root = Tk()
-    root.configure(bd=0)
-    canvas = Canvas(root, bg="white", highlightthickness=0)
-    canvas.pack(expand=1, fill="both")
-    item = FileTreeItem(os.curdir)
-    node = TreeNode(canvas, None, item)
-    node.update()
-    canvas.focus_set()
+    root.mainloop()
 
 if __name__ == '__main__':
-    test()
+    from idlelib.idle_test.htest import run
+    run(_tree_widget)

@@ -993,12 +993,25 @@ class TestPEP380Operation(unittest.TestCase):
             del inner_gen
             gc_collect()
 
-
-def test_main():
-    from test import support
-    test_classes = [TestPEP380Operation]
-    support.run_unittest(*test_classes)
+    def test_send_tuple_with_custom_generator(self):
+        # See issue #21209.
+        class MyGen:
+            def __iter__(self):
+                return self
+            def __next__(self):
+                return 42
+            def send(self, what):
+                nonlocal v
+                v = what
+                return None
+        def outer():
+            v = yield from MyGen()
+        g = outer()
+        next(g)
+        v = None
+        g.send((1, 2, 3, 4))
+        self.assertEqual(v, (1, 2, 3, 4))
 
 
 if __name__ == '__main__':
-    test_main()
+    unittest.main()

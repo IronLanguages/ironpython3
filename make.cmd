@@ -62,38 +62,38 @@ goto :exit
 
 :test-smoke
 pushd bin\v2Debug
-IronPythonTestConsole.exe IronPythonTest -include:StandardCPython -result:smoke-result-net35.xml
+IronPythonTest.exe -include:StandardCPython -result:smoke-result-net35.xml
 popd
 pushd bin\Debug
-IronPythonTestConsole.exe IronPythonTest -include:StandardCPython -result:smoke-result-net40.xml
+IronPythonTest.exe -include:StandardCPython -result:smoke-result-net40.xml
 popd
 pushd bin\v45Debug
-IronPythonTestConsole.exe IronPythonTest -include:StandardCPython -result:smoke-result-net45.xml
+IronPythonTest.exe -include:StandardCPython -result:smoke-result-net45.xml
 popd
 goto :exit
 
 :test-ironpython
 pushd bin\Debug
-IronPythonTestConsole.exe IronPythonTest -include:IronPython -result:ironpython-result.xml
+IronPythonTest.exe -include:IronPython -result:ironpython-result.xml
 popd
 goto :exit
 
 :test-cpython
 pushd bin\Debug
-IronPythonTestConsole.exe IronPythonTest -include:StandardCPython,AllCPython -result:cpython-result.xml
+IronPythonTest.exe -include:StandardCPython,AllCPython -result:cpython-result.xml
 popd
 goto :exit
 
 :test-all
 pushd bin\Debug
-IronPythonTestConsole.exe IronPythonTest -result:all-result.xml
+IronPythonTest.exe -result:all-result.xml
 popd
 goto :exit
 
 :test-custom
 pushd bin\Debug
 shift
-IronPythonTestConsole.exe IronPythonTest -result:custom-result.xml %1 %2 %3 %4 %5 %6 %7 %8 %9
+IronPythonTest.exe -result:custom-result.xml %1 %2 %3 %4 %5 %6 %7 %8 %9
 popd
 goto :exit
 

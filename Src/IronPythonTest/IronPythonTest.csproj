@@ -4,7 +4,7 @@
   <PropertyGroup>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{B6B42537-07F8-4F6C-A99A-B155CAEB124E}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <OutputType>Exe</OutputType>
     <RootNamespace>IronPythonTest</RootNamespace>
     <AssemblyName>IronPythonTest</AssemblyName>
   </PropertyGroup>
@@ -17,6 +17,9 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Debug|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Release|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
@@ -38,6 +41,7 @@
     <Compile Include="DeTest.cs" />
     <Compile Include="DynamicRegressions.cs" />
     <Compile Include="MemberMappingTests.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Stress\Engine.cs" />
     <Compile Include="EngineTest.cs" />
     <Compile Include="Enums.cs" />
@@ -74,11 +78,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="nunitlite">
-      <HintPath>$(ReferenceDir)\NUnitLite.1.0.0\lib\$(ReferencedPlatform)\nunitlite.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="Cases\IronPythonCasesManifest.ini" />
   </ItemGroup>
   <ItemGroup>
@@ -86,6 +85,16 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Cases\StandardCPythonCasesManifest.ini" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="nunit.framework">
+      <HintPath>$(ReferenceDir)\NUnit.3.5.0\lib\net40\nunit.framework.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="nunitlite">
+      <HintPath>$(ReferenceDir)\NUnitLite.3.5.0\lib\net40\nunitlite.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

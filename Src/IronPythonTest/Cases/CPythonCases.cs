@@ -16,7 +16,7 @@ namespace IronPythonTest.Cases {
     class StandardCPythonCases {
         private CaseExecuter executor;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public void FixtureSetUp() {
             this.executor = new CaseExecuter();
         }
@@ -36,7 +36,7 @@ namespace IronPythonTest.Cases {
     class AllCPythonCases {
         private CaseExecuter executor;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public void FixtureSetUp() {
             this.executor = new CaseExecuter();
         }

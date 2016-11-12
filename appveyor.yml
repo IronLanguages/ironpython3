@@ -1,0 +1,163 @@
+# Notes:
+#   - Minimal appveyor.yml file is an empty file. All sections are optional.
+#   - Indent each level of configuration with 2 spaces. Do not use tabs!
+#   - All section names are case-sensitive.
+#   - Section names should be unique on each level.
+
+#---------------------------------#
+#      general configuration      #
+#---------------------------------#
+
+# version format
+#version: 3.0.0.{build}
+
+# you can use {branch} name in version format too
+# version: 1.0.{build}-{branch}
+
+# branches to build
+#branches:
+  # whitelist
+  # Setting this prevents PRs from being auto-built
+  #only:
+   # - master
+
+# Do not build on tags (GitHub and BitBucket)
+skip_tags: true
+
+#---------------------------------#
+#    environment configuration    #
+#---------------------------------#
+
+# Build worker image (VM template)
+image: Visual Studio 2015
+
+# scripts that are called at very beginning, before repo cloning
+init:
+  - git config --global core.autocrlf input
+
+# build cache to preserve files/folders between builds
+cache:
+  - '%LocalAppData%\NuGet\Cache'
+
+# Automatically register private account and/or project AppVeyor NuGet feeds.
+nuget:
+  account_feed: true
+  project_feed: true
+  disable_publish_on_pr: true     # disable publishing of .nupkg artifacts to
+                                  # account/project feeds for pull request builds
+
+#---------------------------------#
+#       build configuration       #
+#---------------------------------#
+
+# build Configuration, i.e. Debug, Release, etc.
+#configuration: Debug
+
+# scripts to run before build
+before_build:
+  - ps: $xml = [xml] (Get-Content CurrentVersion.props); $major = $xml.Project.PropertyGroup.MajorVersion; $minor = $xml.Project.PropertyGroup.MinorVersion; $micro = $xml.Project.PropertyGroup.MicroVersion; $serial = $xml.Project.PropertyGroup.ReleaseSerial; Update-AppveyorBuild -Version "$($major).$($minor).$($micro).$($serial)-$($env:APPVEYOR_BUILD_NUMBER)"
+
+# scripts to run *after* solution is built and *before* automatic packaging occurs (web apps, NuGet packages, Azure Cloud Services)
+before_package:
+
+# scripts to run after build
+after_build:
+
+# to run your custom scripts instead of automatic MSBuild
+build_script:
+  - .\make.cmd
+
+# to disable automatic builds
+#build: off
+
+# to run your custom scripts instead of automatic tests
+test_script:
+  - .\make.cmd test-all
+  #- nunit3-console .\bin\Debug\IronPythonTest.dll
+
+# to run custom scripts after tests
+after_test:
+  # upload results to AppVeyor
+  #- ps: $wc = New-Object 'System.Net.WebClient'; $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\bin\Debug\all-result.xml))
+
+#---------------------------------#
+#      artifacts configuration    #
+#---------------------------------#
+
+artifacts:
+
+  # make.cmd test-* creates a resulting *-result.xml file
+  # pushing all *-result.xml files in build directory recursively
+  - path: '**\*result.xml'
+
+#  # pushing a single file
+#  - path: test.zip
+
+#  # pushing entire folder as a zip archive
+#  - path: logs
+
+#  # pushing all *.nupkg files in build directory recursively
+#  - path: '**\*.nupkg'
+
+#---------------------------------#
+#     deployment configuration    #
+#---------------------------------#
+
+# providers: Local, FTP, WebDeploy, AzureCS, AzureBlob, S3, NuGet, Environment
+# provider names are case-sensitive!
+#deploy:
+
+#    # Deploying to NuGet feed
+#  - provider: NuGet
+#    server: https://my.nuget.server/feed
+#    api_key:
+#      secure: FYWX6NfjZIVw==
+#    skip_symbols: false
+#    symbol_server: https://your.symbol.server/feed
+#    artifact: MyPackage.nupkg
+
+#    # Deploy to GitHub Releases
+#  - provider: GitHub
+#    artifact: /.*\.nupkg/           # upload all NuGet packages to release assets
+#    draft: false
+#    prerelease: false
+#    on:
+#      branch: master                # release from master branch only
+#      appveyor_repo_tag: true       # deploy on tag push only
+
+#        global handlers          #
+#---------------------------------#
+
+# on successful build
+on_success:
+  - ps: Get-ChildItem -Include *result.xml -Recurse
+  - ps: $wc = New-Object 'System.Net.WebClient'; $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", (Get-ChildItem -Include *result.xml -Recurse))
+
+# on build failure
+on_failure:
+  - ps: Get-ChildItem -Include *result.xml -Recurse
+  - ps: $wc = New-Object 'System.Net.WebClient'; $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", (Get-ChildItem -Include *result.xml -Recurse))
+
+# after build failure or success
+#on_finish:
+  # For DEBUG: If test_script aborts, after_test will not be run
+  #
+  # upload test results to AppVeyor
+  #- ps: $wc = New-Object 'System.Net.WebClient'; $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\bin\Debug\all-result.xml))
+
+  
+#---------------------------------#
+#         notifications           #
+#---------------------------------#
+  
+notifications:
+
+  # Email
+  - provider: Email
+    to:
+      #- slide.o.mix@gmail.com
+      - ticotimo@gmail.com
+    # use defaults for now
+    #subject: 'Build {{status}}'                  # optional
+    #message: "{{message}}, {{commitId}}, ..."    # optional
+    on_build_status_changed: true

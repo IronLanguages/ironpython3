@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <packages>
   <package id="DynamicLanguageRuntime" version="{0}" IncludePrerelease="true" />
-  <package id="NUnitLite" version="1.0.0" developmentDependency="true" />
+  <package id="NUnit" version="3.5.0" developmentDependency="true" />
+  <package id="NUnitLite" version="3.5.0" developmentDependency="true" />
 </packages>

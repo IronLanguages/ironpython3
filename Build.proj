@@ -51,9 +51,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ReferencedPlatform Include="net35">
-      <BuildPrefix>v2</BuildPrefix>
-    </ReferencedPlatform>
     <ReferencedPlatform Include="net40">
       <BuildPrefix></BuildPrefix>
     </ReferencedPlatform>

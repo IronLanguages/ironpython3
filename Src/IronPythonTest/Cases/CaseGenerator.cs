@@ -47,7 +47,7 @@ namespace IronPythonTest.Cases {
                     .Returns(0);
 
                 if (testcase.Options.Ignore)
-                    result.Ignore();
+                    result.Ignore("ignored");
 
                 yield return result;
             }

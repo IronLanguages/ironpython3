@@ -16,8 +16,10 @@
 using System;
 using System.Collections;
 using System.Runtime.CompilerServices;
+using NUnit.Framework;
 
 namespace IronPythonTest {
+    [TestFixture(Category = "IronPython")]
     public class DisposableTest : IDisposable {
         public bool Called;
 

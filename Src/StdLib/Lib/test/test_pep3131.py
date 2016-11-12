@@ -5,7 +5,7 @@ from test import support
 class PEP3131Test(unittest.TestCase):
 
     def test_valid(self):
-	if System.Environment.GetEnvironmentVariable('CI'):
+        if System.Environment.GetEnvironmentVariable('CI'):
 	    # AppVeyor sets CI to true
 	    # This test prevents complete test results file
 	    print '... skipping test if CI is set...'

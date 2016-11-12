@@ -155,9 +155,17 @@ notifications:
   # Email
   - provider: Email
     to:
-      #- slide.o.mix@gmail.com
+      - slide.o.mix@gmail.com
       - ticotimo@gmail.com
     # use defaults for now
     #subject: 'Build {{status}}'                  # optional
     #message: "{{message}}, {{commitId}}, ..."    # optional
+    on_build_status_changed: true
+
+  # Gitter
+  - provider: Webhook
+    url: https://webhooks.gitter.im/e/40f0538551cc83675ba6
+    #headers: ? message payload? how to differentiate projects?
+    on_build_success: true
+    on_build_failure: true
     on_build_status_changed: true

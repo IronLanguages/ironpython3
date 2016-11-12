@@ -56,8 +56,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{17737ACB
 		Build\Versioning.targets = Build\Versioning.targets
 	EndProjectSection
 EndProject
-# Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPythonTestConsole", "Src\IronPythonTestConsole\IronPythonTestConsole.csproj", "{79446DDF-421C-4695-9859-5E01F0D95830}"
-# EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPythonCompiler", "Src\IronPythonCompiler\IronPythonCompiler.csproj", "{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}"
 EndProject
 Global

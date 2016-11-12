@@ -2,6 +2,7 @@ import sys
 import compileall
 import importlib.util
 import os
+import pathlib
 import py_compile
 import shutil
 import struct
@@ -10,7 +11,15 @@ import time
 import unittest
 import io
 
-from test import support, script_helper
+from unittest import mock, skipUnless
+try:
+    from concurrent.futures import ProcessPoolExecutor
+    _have_multiprocessing = True
+except ImportError:
+    _have_multiprocessing = False
+
+from test import support
+from test.support import script_helper
 
 class CompileallTests(unittest.TestCase):
 
@@ -94,18 +103,45 @@ class CompileallTests(unittest.TestCase):
     def test_optimize(self):
         # make sure compiling with different optimization settings than the
         # interpreter's creates the correct file names
-        optimize = 1 if __debug__ else 0
+        optimize, opt = (1, 1) if __debug__ else (0, '')
         compileall.compile_dir(self.directory, quiet=True, optimize=optimize)
         cached = importlib.util.cache_from_source(self.source_path,
-                                                  debug_override=not optimize)
+                                                  optimization=opt)
         self.assertTrue(os.path.isfile(cached))
         cached2 = importlib.util.cache_from_source(self.source_path2,
-                                                   debug_override=not optimize)
+                                                   optimization=opt)
         self.assertTrue(os.path.isfile(cached2))
         cached3 = importlib.util.cache_from_source(self.source_path3,
-                                                   debug_override=not optimize)
+                                                   optimization=opt)
         self.assertTrue(os.path.isfile(cached3))
 
+    @mock.patch('compileall.ProcessPoolExecutor')
+    def test_compile_pool_called(self, pool_mock):
+        compileall.compile_dir(self.directory, quiet=True, workers=5)
+        self.assertTrue(pool_mock.called)
+
+    def test_compile_workers_non_positive(self):
+        with self.assertRaisesRegex(ValueError,
+                                    "workers must be greater or equal to 0"):
+            compileall.compile_dir(self.directory, workers=-1)
+
+    @mock.patch('compileall.ProcessPoolExecutor')
+    def test_compile_workers_cpu_count(self, pool_mock):
+        compileall.compile_dir(self.directory, quiet=True, workers=0)
+        self.assertEqual(pool_mock.call_args[1]['max_workers'], None)
+
+    @mock.patch('compileall.ProcessPoolExecutor')
+    @mock.patch('compileall.compile_file')
+    def test_compile_one_worker(self, compile_file_mock, pool_mock):
+        compileall.compile_dir(self.directory, quiet=True)
+        self.assertFalse(pool_mock.called)
+        self.assertTrue(compile_file_mock.called)
+
+    @mock.patch('compileall.ProcessPoolExecutor', new=None)
+    @mock.patch('compileall.compile_file')
+    def test_compile_missing_multiprocessing(self, compile_file_mock):
+        compileall.compile_dir(self.directory, quiet=True, workers=5)
+        self.assertTrue(compile_file_mock.called)
 
 class EncodingTest(unittest.TestCase):
     """Issue 6716: compileall should escape source code when printing errors
@@ -133,6 +169,33 @@ class EncodingTest(unittest.TestCase):
 class CommandLineTests(unittest.TestCase):
     """Test compileall's CLI."""
 
+    @classmethod
+    def setUpClass(cls):
+        for path in filter(os.path.isdir, sys.path):
+            directory_created = False
+            directory = pathlib.Path(path) / '__pycache__'
+            path = directory / 'test.try'
+            try:
+                if not directory.is_dir():
+                    directory.mkdir()
+                    directory_created = True
+                with path.open('w') as file:
+                    file.write('# for test_compileall')
+            except OSError:
+                sys_path_writable = False
+                break
+            finally:
+                support.unlink(str(path))
+                if directory_created:
+                    directory.rmdir()
+        else:
+            sys_path_writable = True
+        cls._sys_path_writable = sys_path_writable
+
+    def _skip_if_sys_path_not_writable(self):
+        if not self._sys_path_writable:
+            raise unittest.SkipTest('not all entries on sys.path are writable')
+
     def _get_run_args(self, args):
         interp_args = ['-S']
         if sys.flags.optimize:
@@ -159,8 +222,8 @@ class CommandLineTests(unittest.TestCase):
         self.assertFalse(os.path.exists(path))
 
     def setUp(self):
-        self.addCleanup(self._cleanup)
         self.directory = tempfile.mkdtemp()
+        self.addCleanup(support.rmtree, self.directory)
         self.pkgdir = os.path.join(self.directory, 'foo')
         os.mkdir(self.pkgdir)
         self.pkgdir_cachedir = os.path.join(self.pkgdir, '__pycache__')
@@ -168,11 +231,9 @@ class CommandLineTests(unittest.TestCase):
         self.initfn = script_helper.make_script(self.pkgdir, '__init__', '')
         self.barfn = script_helper.make_script(self.pkgdir, 'bar', '')
 
-    def _cleanup(self):
-        support.rmtree(self.directory)
-
     def test_no_args_compiles_path(self):
         # Note that -l is implied for the no args case.
+        self._skip_if_sys_path_not_writable()
         bazfn = script_helper.make_script(self.directory, 'baz', '')
         self.assertRunOK(PYTHONPATH=self.directory)
         self.assertCompiled(bazfn)
@@ -180,6 +241,7 @@ class CommandLineTests(unittest.TestCase):
         self.assertNotCompiled(self.barfn)
 
     def test_no_args_respects_force_flag(self):
+        self._skip_if_sys_path_not_writable()
         bazfn = script_helper.make_script(self.directory, 'baz', '')
         self.assertRunOK(PYTHONPATH=self.directory)
         pycpath = importlib.util.cache_from_source(bazfn)
@@ -196,6 +258,7 @@ class CommandLineTests(unittest.TestCase):
         self.assertNotEqual(mtime, mtime2)
 
     def test_no_args_respects_quiet_flag(self):
+        self._skip_if_sys_path_not_writable()
         script_helper.make_script(self.directory, 'baz', '')
         noisy = self.assertRunOK(PYTHONPATH=self.directory)
         self.assertIn(b'Listing ', noisy)
@@ -203,11 +266,11 @@ class CommandLineTests(unittest.TestCase):
         self.assertNotIn(b'Listing ', quiet)
 
     # Ensure that the default behavior of compileall's CLI is to create
-    # PEP 3147 pyc/pyo files.
+    # PEP 3147/PEP 488 pyc files.
     for name, ext, switch in [
         ('normal', 'pyc', []),
-        ('optimize', 'pyo', ['-O']),
-        ('doubleoptimize', 'pyo', ['-OO']),
+        ('optimize', 'opt-1.pyc', ['-O']),
+        ('doubleoptimize', 'opt-2.pyc', ['-OO']),
     ]:
         def f(self, ext=ext, switch=switch):
             script_helper.assert_python_ok(*(switch +
@@ -224,13 +287,12 @@ class CommandLineTests(unittest.TestCase):
 
     def test_legacy_paths(self):
         # Ensure that with the proper switch, compileall leaves legacy
-        # pyc/pyo files, and no __pycache__ directory.
+        # pyc files, and no __pycache__ directory.
         self.assertRunOK('-b', '-q', self.pkgdir)
         # Verify the __pycache__ directory contents.
         self.assertFalse(os.path.exists(self.pkgdir_cachedir))
-        opt = 'c' if __debug__ else 'o'
-        expected = sorted(['__init__.py', '__init__.py' + opt, 'bar.py',
-                           'bar.py' + opt])
+        expected = sorted(['__init__.py', '__init__.pyc', 'bar.py',
+                           'bar.pyc'])
         self.assertEqual(sorted(os.listdir(self.pkgdir)), expected)
 
     def test_multiple_runs(self):
@@ -273,11 +335,52 @@ class CommandLineTests(unittest.TestCase):
         self.assertCompiled(subinitfn)
         self.assertCompiled(hamfn)
 
+    def test_recursion_limit(self):
+        subpackage = os.path.join(self.pkgdir, 'spam')
+        subpackage2 = os.path.join(subpackage, 'ham')
+        subpackage3 = os.path.join(subpackage2, 'eggs')
+        for pkg in (subpackage, subpackage2, subpackage3):
+            script_helper.make_pkg(pkg)
+
+        subinitfn = os.path.join(subpackage, '__init__.py')
+        hamfn = script_helper.make_script(subpackage, 'ham', '')
+        spamfn = script_helper.make_script(subpackage2, 'spam', '')
+        eggfn = script_helper.make_script(subpackage3, 'egg', '')
+
+        self.assertRunOK('-q', '-r 0', self.pkgdir)
+        self.assertNotCompiled(subinitfn)
+        self.assertFalse(
+            os.path.exists(os.path.join(subpackage, '__pycache__')))
+
+        self.assertRunOK('-q', '-r 1', self.pkgdir)
+        self.assertCompiled(subinitfn)
+        self.assertCompiled(hamfn)
+        self.assertNotCompiled(spamfn)
+
+        self.assertRunOK('-q', '-r 2', self.pkgdir)
+        self.assertCompiled(subinitfn)
+        self.assertCompiled(hamfn)
+        self.assertCompiled(spamfn)
+        self.assertNotCompiled(eggfn)
+
+        self.assertRunOK('-q', '-r 5', self.pkgdir)
+        self.assertCompiled(subinitfn)
+        self.assertCompiled(hamfn)
+        self.assertCompiled(spamfn)
+        self.assertCompiled(eggfn)
+
     def test_quiet(self):
         noisy = self.assertRunOK(self.pkgdir)
         quiet = self.assertRunOK('-q', self.pkgdir)
         self.assertNotEqual(b'', noisy)
         self.assertEqual(b'', quiet)
+
+    def test_silent(self):
+        script_helper.make_script(self.pkgdir, 'crunchyfrog', 'bad(syntax')
+        _, quiet, _ = self.assertRunNotOK('-q', self.pkgdir)
+        _, silent, _ = self.assertRunNotOK('-qq', self.pkgdir)
+        self.assertNotEqual(b'', quiet)
+        self.assertEqual(b'', silent)
 
     def test_regexp(self):
         self.assertRunOK('-q', '-x', r'ba[^\\/]*$', self.pkgdir)
@@ -294,14 +397,6 @@ class CommandLineTests(unittest.TestCase):
         self.assertCompiled(self.barfn)
         self.assertCompiled(init2fn)
         self.assertCompiled(bar2fn)
-
-    def test_d_takes_exactly_one_dir(self):
-        rc, out, err = self.assertRunNotOK('-d', 'foo')
-        self.assertEqual(out, b'')
-        self.assertRegex(err, b'-d')
-        rc, out, err = self.assertRunNotOK('-d', 'foo', 'bar')
-        self.assertEqual(out, b'')
-        self.assertRegex(err, b'-d')
 
     def test_d_compile_error(self):
         script_helper.make_script(self.pkgdir, 'crunchyfrog', 'bad(syntax')
@@ -378,6 +473,29 @@ class CommandLineTests(unittest.TestCase):
     def test_invalid_arg_produces_message(self):
         out = self.assertRunOK('badfilename')
         self.assertRegex(out, b"Can't list 'badfilename'")
+
+    @skipUnless(_have_multiprocessing, "requires multiprocessing")
+    def test_workers(self):
+        bar2fn = script_helper.make_script(self.directory, 'bar2', '')
+        files = []
+        for suffix in range(5):
+            pkgdir = os.path.join(self.directory, 'foo{}'.format(suffix))
+            os.mkdir(pkgdir)
+            fn = script_helper.make_script(pkgdir, '__init__', '')
+            files.append(script_helper.make_script(pkgdir, 'bar2', ''))
+
+        self.assertRunOK(self.directory, '-j', '0')
+        self.assertCompiled(bar2fn)
+        for file in files:
+            self.assertCompiled(file)
+
+    @mock.patch('compileall.compile_dir')
+    def test_workers_available_cores(self, compile_dir):
+        with mock.patch("sys.argv",
+                        new=[sys.executable, self.directory, "-j0"]):
+            compileall.main()
+            self.assertTrue(compile_dir.called)
+            self.assertEqual(compile_dir.call_args[-1]['workers'], None)
 
 
 if __name__ == "__main__":

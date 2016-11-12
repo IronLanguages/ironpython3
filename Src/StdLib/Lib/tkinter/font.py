@@ -69,9 +69,10 @@ class Font:
                  **options):
         if not root:
             root = tkinter._default_root
+        tk = getattr(root, 'tk', root)
         if font:
             # get actual settings corresponding to the given font
-            font = root.tk.splitlist(root.tk.call("font", "actual", font))
+            font = tk.splitlist(tk.call("font", "actual", font))
         else:
             font = self._set(options)
         if not name:
@@ -81,20 +82,19 @@ class Font:
         if exists:
             self.delete_font = False
             # confirm font exists
-            if self.name not in root.tk.call("font", "names"):
+            if self.name not in tk.splitlist(tk.call("font", "names")):
                 raise tkinter._tkinter.TclError(
                     "named font %s does not already exist" % (self.name,))
             # if font config info supplied, apply it
             if font:
-                root.tk.call("font", "configure", self.name, *font)
+                tk.call("font", "configure", self.name, *font)
         else:
             # create new font (raises TclError if the font exists)
-            root.tk.call("font", "create", self.name, *font)
+            tk.call("font", "create", self.name, *font)
             self.delete_font = True
-        # backlinks!
-        self._root  = root
-        self._split = root.tk.splitlist
-        self._call  = root.tk.call
+        self._tk = tk
+        self._split = tk.splitlist
+        self._call  = tk.call
 
     def __str__(self):
         return self.name
@@ -112,14 +112,12 @@ class Font:
         try:
             if self.delete_font:
                 self._call("font", "delete", self.name)
-        except (KeyboardInterrupt, SystemExit):
-            raise
         except Exception:
             pass
 
     def copy(self):
         "Return a distinct copy of the current font"
-        return Font(self._root, **self.actual())
+        return Font(self._tk, **self.actual())
 
     def actual(self, option=None, displayof=None):
         "Return actual font attributes"
@@ -153,7 +151,7 @@ class Font:
         args = (text,)
         if displayof:
             args = ('-displayof', displayof, text)
-        return int(self._call("font", "measure", self.name, *args))
+        return self._tk.getint(self._call("font", "measure", self.name, *args))
 
     def metrics(self, *options, **kw):
         """Return font metrics.
@@ -166,13 +164,13 @@ class Font:
             args = ('-displayof', displayof)
         if options:
             args = args + self._get(options)
-            return int(
+            return self._tk.getint(
                 self._call("font", "metrics", self.name, *args))
         else:
             res = self._split(self._call("font", "metrics", self.name, *args))
             options = {}
             for i in range(0, len(res), 2):
-                options[res[i][1:]] = int(res[i+1])
+                options[res[i][1:]] = self._tk.getint(res[i+1])
             return options
 
 

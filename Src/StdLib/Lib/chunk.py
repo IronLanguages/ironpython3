@@ -21,7 +21,7 @@ Usually an IFF-type file consists of one or more chunks.  The proposed
 usage of the Chunk class defined here is to instantiate an instance at
 the start of each chunk and read from the instance until it reaches
 the end, after which a new instance can be instantiated.  At the end
-of the file, creating a new instance will fail with a EOFError
+of the file, creating a new instance will fail with an EOFError
 exception.
 
 Usage:
@@ -85,8 +85,10 @@ class Chunk:
 
     def close(self):
         if not self.closed:
-            self.skip()
-            self.closed = True
+            try:
+                self.skip()
+            finally:
+                self.closed = True
 
     def isatty(self):
         if self.closed:
@@ -126,7 +128,7 @@ class Chunk:
         if self.closed:
             raise ValueError("I/O operation on closed file")
         if self.size_read >= self.chunksize:
-            return ''
+            return b''
         if size < 0:
             size = self.chunksize - self.size_read
         if size > self.chunksize - self.size_read:

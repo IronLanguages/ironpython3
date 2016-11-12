@@ -1,5 +1,5 @@
-from test.support import run_unittest
-from test.script_helper import assert_python_failure, temp_dir
+from test.support import temp_dir
+from test.support.script_helper import assert_python_failure
 import unittest
 import sys
 import cgitb
@@ -63,8 +63,5 @@ class TestCgitb(unittest.TestCase):
         self.assertNotIn('</p>', out)
 
 
-def test_main():
-    run_unittest(TestCgitb)
-
 if __name__ == "__main__":
-    test_main()
+    unittest.main()

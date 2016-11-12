@@ -4,7 +4,10 @@ Implements the Distutils 'build_ext' command, for building extension
 modules (currently limited to C extensions, should accommodate C++
 extensions ASAP)."""
 
-import sys, os, re
+import contextlib
+import os
+import re
+import sys
 from distutils.core import Command
 from distutils.errors import *
 from distutils.sysconfig import customize_compiler, get_python_version
@@ -14,17 +17,7 @@ from distutils.extension import Extension
 from distutils.util import get_platform
 from distutils import log
 
-# this keeps compatibility from 2.3 to 2.5
-if sys.version < "2.6":
-    USER_BASE = None
-    HAS_USER_SITE = False
-else:
-    from site import USER_BASE
-    HAS_USER_SITE = True
-
-if os.name == 'nt':
-    from distutils.msvccompiler import get_build_version
-    MSVC_VERSION = int(get_build_version())
+from site import USER_BASE
 
 # An extension name is just a dot-separated list of Python NAMEs (ie.
 # the same as a fully-qualified module name).
@@ -91,20 +84,19 @@ class build_ext(Command):
          "forcibly build everything (ignore file timestamps)"),
         ('compiler=', 'c',
          "specify the compiler type"),
+        ('parallel=', 'j',
+         "number of parallel build jobs"),
         ('swig-cpp', None,
          "make SWIG create C++ files (default is C)"),
         ('swig-opts=', None,
          "list of SWIG command line options"),
         ('swig=', None,
          "path to the SWIG executable"),
+        ('user', None,
+         "add user include, library and rpath")
         ]
 
-    boolean_options = ['inplace', 'debug', 'force', 'swig-cpp']
-
-    if HAS_USER_SITE:
-        user_options.append(('user', None,
-                             "add user include, library and rpath"))
-        boolean_options.append('user')
+    boolean_options = ['inplace', 'debug', 'force', 'swig-cpp', 'user']
 
     help_options = [
         ('help-compiler', None,
@@ -133,6 +125,7 @@ class build_ext(Command):
         self.swig_cpp = None
         self.swig_opts = None
         self.user = None
+        self.parallel = None
 
     def finalize_options(self):
         from distutils import sysconfig
@@ -143,6 +136,7 @@ class build_ext(Command):
                                    ('compiler', 'compiler'),
                                    ('debug', 'debug'),
                                    ('force', 'force'),
+                                   ('parallel', 'parallel'),
                                    ('plat_name', 'plat_name'),
                                    )
 
@@ -208,27 +202,17 @@ class build_ext(Command):
             _sys_home = getattr(sys, '_home', None)
             if _sys_home:
                 self.library_dirs.append(_sys_home)
-            if MSVC_VERSION >= 9:
-                # Use the .lib files for the correct architecture
-                if self.plat_name == 'win32':
-                    suffix = ''
-                else:
-                    # win-amd64 or win-ia64
-                    suffix = self.plat_name[4:]
-                new_lib = os.path.join(sys.exec_prefix, 'PCbuild')
-                if suffix:
-                    new_lib = os.path.join(new_lib, suffix)
-                self.library_dirs.append(new_lib)
 
-            elif MSVC_VERSION == 8:
-                self.library_dirs.append(os.path.join(sys.exec_prefix,
-                                         'PC', 'VS8.0'))
-            elif MSVC_VERSION == 7:
-                self.library_dirs.append(os.path.join(sys.exec_prefix,
-                                         'PC', 'VS7.1'))
+            # Use the .lib files for the correct architecture
+            if self.plat_name == 'win32':
+                suffix = 'win32'
             else:
-                self.library_dirs.append(os.path.join(sys.exec_prefix,
-                                         'PC', 'VC6'))
+                # win-amd64 or win-ia64
+                suffix = self.plat_name[4:]
+            new_lib = os.path.join(sys.exec_prefix, 'PCbuild')
+            if suffix:
+                new_lib = os.path.join(new_lib, suffix)
+            self.library_dirs.append(new_lib)
 
         # for extensions under Cygwin and AtheOS Python's library directory must be
         # appended to library_dirs
@@ -246,7 +230,7 @@ class build_ext(Command):
         # Python's library directory must be appended to library_dirs
         # See Issues: #1600860, #4366
         if (sysconfig.get_config_var('Py_ENABLE_SHARED')):
-            if sys.executable.startswith(os.path.join(sys.exec_prefix, "bin")):
+            if not sysconfig.python_build:
                 # building third party extensions
                 self.library_dirs.append(sysconfig.get_config_var('LIBDIR'))
             else:
@@ -282,6 +266,12 @@ class build_ext(Command):
             if os.path.isdir(user_lib):
                 self.library_dirs.append(user_lib)
                 self.rpath.append(user_lib)
+
+        if isinstance(self.parallel, str):
+            try:
+                self.parallel = int(self.parallel)
+            except ValueError:
+                raise DistutilsOptionError("parallel should be an integer")
 
     def run(self):
         from distutils.ccompiler import new_compiler
@@ -451,15 +441,45 @@ class build_ext(Command):
     def build_extensions(self):
         # First, sanity-check the 'extensions' list
         self.check_extensions_list(self.extensions)
+        if self.parallel:
+            self._build_extensions_parallel()
+        else:
+            self._build_extensions_serial()
 
+    def _build_extensions_parallel(self):
+        workers = self.parallel
+        if self.parallel is True:
+            workers = os.cpu_count()  # may return None
+        try:
+            from concurrent.futures import ThreadPoolExecutor
+        except ImportError:
+            workers = None
+
+        if workers is None:
+            self._build_extensions_serial()
+            return
+
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            futures = [executor.submit(self.build_extension, ext)
+                       for ext in self.extensions]
+            for ext, fut in zip(self.extensions, futures):
+                with self._filter_build_errors(ext):
+                    fut.result()
+
+    def _build_extensions_serial(self):
         for ext in self.extensions:
-            try:
+            with self._filter_build_errors(ext):
                 self.build_extension(ext)
-            except (CCompilerError, DistutilsError, CompileError) as e:
-                if not ext.optional:
-                    raise
-                self.warn('building extension "%s" failed: %s' %
-                          (ext.name, e))
+
+    @contextlib.contextmanager
+    def _filter_build_errors(self, ext):
+        try:
+            yield
+        except (CCompilerError, DistutilsError, CompileError) as e:
+            if not ext.optional:
+                raise
+            self.warn('building extension "%s" failed: %s' %
+                      (ext.name, e))
 
     def build_extension(self, ext):
         sources = ext.sources
@@ -511,15 +531,8 @@ class build_ext(Command):
                                          extra_postargs=extra_args,
                                          depends=ext.depends)
 
-        # XXX -- this is a Vile HACK!
-        #
-        # The setup.py script for Python on Unix needs to be able to
-        # get this list so it can perform all the clean up needed to
-        # avoid keeping object files around when cleaning out a failed
-        # build of an extension module.  Since Distutils does not
-        # track dependencies, we have to get rid of intermediates to
-        # ensure all the intermediates will be properly re-built.
-        #
+        # XXX outdated variable, kept here in case third-part code
+        # needs it.
         self._built_objects = objects[:]
 
         # Now link the object files together into a "shared object" --
@@ -664,10 +677,7 @@ class build_ext(Command):
         """
         from distutils.sysconfig import get_config_var
         ext_path = ext_name.split('.')
-        # extensions in debug_mode are named 'module_d.pyd' under windows
         ext_suffix = get_config_var('EXT_SUFFIX')
-        if os.name == 'nt' and self.debug:
-            return os.path.join(*ext_path) + '_d' + ext_suffix
         return os.path.join(*ext_path) + ext_suffix
 
     def get_export_symbols(self, ext):
@@ -692,7 +702,7 @@ class build_ext(Command):
         # to need it mentioned explicitly, though, so that's what we do.
         # Append '_d' to the python import library on debug builds.
         if sys.platform == "win32":
-            from distutils.msvccompiler import MSVCCompiler
+            from distutils._msvccompiler import MSVCCompiler
             if not isinstance(self.compiler, MSVCCompiler):
                 template = "python%d%d"
                 if self.debug:
@@ -738,7 +748,7 @@ class build_ext(Command):
             if sysconfig.get_config_var('Py_ENABLE_SHARED'):
                 pythonlib = 'python{}.{}{}'.format(
                     sys.hexversion >> 24, (sys.hexversion >> 16) & 0xff,
-                    sys.abiflags)
+                    sysconfig.get_config_var('ABIFLAGS'))
                 return ext.libraries + [pythonlib]
             else:
                 return ext.libraries

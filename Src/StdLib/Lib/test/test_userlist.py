@@ -2,6 +2,7 @@
 
 from collections import UserList
 from test import support, list_tests
+import unittest
 
 class UserListTest(list_tests.CommonTest):
     type2test = UserList
@@ -58,8 +59,5 @@ class UserListTest(list_tests.CommonTest):
         self.assertEqual(u, v)
         self.assertEqual(type(u), type(v))
 
-def test_main():
-    support.run_unittest(UserListTest)
-
 if __name__ == "__main__":
-    test_main()
+    unittest.main()

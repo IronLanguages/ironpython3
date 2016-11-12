@@ -425,7 +425,7 @@ class NormalizeTest(unittest.TestCase):
 
     def test_valencia_modifier(self):
         self.check('ca_ES.UTF-8@valencia', 'ca_ES.UTF-8@valencia')
-        self.check('ca_ES@valencia', 'ca_ES.ISO8859-1@valencia')
+        self.check('ca_ES@valencia', 'ca_ES.ISO8859-15@valencia')
         self.check('ca@valencia', 'ca_ES.ISO8859-1@valencia')
 
     def test_devanagari_modifier(self):
@@ -511,7 +511,7 @@ class TestMiscellaneous(unittest.TestCase):
             self.skipTest('test needs Turkish locale')
         loc = locale.getlocale(locale.LC_CTYPE)
         if verbose:
-            print('got locale %a' % (loc,))
+            print('testing with %a' % (loc,), end=' ', flush=True)
         locale.setlocale(locale.LC_CTYPE, loc)
         self.assertEqual(loc, locale.getlocale(locale.LC_CTYPE))
 
@@ -522,6 +522,60 @@ class TestMiscellaneous(unittest.TestCase):
     def test_invalid_iterable_in_localetuple(self):
         with self.assertRaises(TypeError):
             locale.setlocale(locale.LC_ALL, (b'not', b'valid'))
+
+
+class BaseDelocalizeTest(BaseLocalizedTest):
+
+    def _test_delocalize(self, value, out):
+        self.assertEqual(locale.delocalize(value), out)
+
+    def _test_atof(self, value, out):
+        self.assertEqual(locale.atof(value), out)
+
+    def _test_atoi(self, value, out):
+        self.assertEqual(locale.atoi(value), out)
+
+
+class TestEnUSDelocalize(EnUSCookedTest, BaseDelocalizeTest):
+
+    def test_delocalize(self):
+        self._test_delocalize('50000.00', '50000.00')
+        self._test_delocalize('50,000.00', '50000.00')
+
+    def test_atof(self):
+        self._test_atof('50000.00', 50000.)
+        self._test_atof('50,000.00', 50000.)
+
+    def test_atoi(self):
+        self._test_atoi('50000', 50000)
+        self._test_atoi('50,000', 50000)
+
+
+class TestCDelocalizeTest(CCookedTest, BaseDelocalizeTest):
+
+    def test_delocalize(self):
+        self._test_delocalize('50000.00', '50000.00')
+
+    def test_atof(self):
+        self._test_atof('50000.00', 50000.)
+
+    def test_atoi(self):
+        self._test_atoi('50000', 50000)
+
+
+class TestfrFRDelocalizeTest(FrFRCookedTest, BaseDelocalizeTest):
+
+    def test_delocalize(self):
+        self._test_delocalize('50000,00', '50000.00')
+        self._test_delocalize('50 000,00', '50000.00')
+
+    def test_atof(self):
+        self._test_atof('50000,00', 50000.)
+        self._test_atof('50 000,00', 50000.)
+
+    def test_atoi(self):
+        self._test_atoi('50000', 50000)
+        self._test_atoi('50 000', 50000)
 
 
 if __name__ == '__main__':

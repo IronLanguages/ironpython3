@@ -30,6 +30,12 @@ class CommonTest(seq_tests.CommonTest):
         self.assertNotEqual(id(a), id(b))
         self.assertEqual(a, b)
 
+    def test_getitem_error(self):
+        msg = "list indices must be integers or slices"
+        with self.assertRaisesRegex(TypeError, msg):
+            a = []
+            a['a'] = "python"
+
     def test_repr(self):
         l0 = []
         l2 = [0, 1, 2]
@@ -50,7 +56,7 @@ class CommonTest(seq_tests.CommonTest):
         l0 = []
         for i in range(sys.getrecursionlimit() + 100):
             l0 = [l0]
-        self.assertRaises(RuntimeError, repr, l0)
+        self.assertRaises(RecursionError, repr, l0)
 
     def test_print(self):
         d = self.type2test(range(200))
@@ -119,6 +125,10 @@ class CommonTest(seq_tests.CommonTest):
         a[-2] = 8
         a[-1] = 9
         self.assertEqual(a, self.type2test([5,6,7,8,9]))
+
+        msg = "list indices must be integers or slices"
+        with self.assertRaisesRegex(TypeError, msg):
+            a['a'] = "python"
 
     def test_delitem(self):
         a = self.type2test([0, 1])
@@ -583,3 +593,14 @@ class CommonTest(seq_tests.CommonTest):
             def __iter__(self):
                 raise KeyboardInterrupt
         self.assertRaises(KeyboardInterrupt, list, F())
+
+    def test_exhausted_iterator(self):
+        a = self.type2test([1, 2, 3])
+        exhit = iter(a)
+        empit = iter(a)
+        for x in exhit:  # exhaust the iterator
+            next(empit)  # not exhausted
+        a.append(9)
+        self.assertEqual(list(exhit), [])
+        self.assertEqual(list(empit), [9])
+        self.assertEqual(a, self.type2test([1, 2, 3, 9]))

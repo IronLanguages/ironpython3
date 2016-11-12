@@ -269,10 +269,9 @@ class BoolTest(unittest.TestCase):
 
     def test_pickle(self):
         import pickle
-        self.assertIs(pickle.loads(pickle.dumps(True)), True)
-        self.assertIs(pickle.loads(pickle.dumps(False)), False)
-        self.assertIs(pickle.loads(pickle.dumps(True, True)), True)
-        self.assertIs(pickle.loads(pickle.dumps(False, True)), False)
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            self.assertIs(pickle.loads(pickle.dumps(True, proto)), True)
+            self.assertIs(pickle.loads(pickle.dumps(False, proto)), False)
 
     def test_picklevalues(self):
         # Test for specific backwards-compatible pickle values
@@ -314,6 +313,10 @@ class BoolTest(unittest.TestCase):
             def __len__(self):
                 return -1
         self.assertRaises(ValueError, bool, Eggs())
+
+    def test_from_bytes(self):
+        self.assertIs(bool.from_bytes(b'\x00'*8, 'big'), False)
+        self.assertIs(bool.from_bytes(b'abcd', 'little'), True)
 
     def test_sane_len(self):
         # this test just tests our assumptions about __len__

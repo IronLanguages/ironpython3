@@ -1,6 +1,7 @@
 import unittest
 
-from tkinter import Variable, StringVar, IntVar, DoubleVar, BooleanVar, Tk
+from tkinter import (Variable, StringVar, IntVar, DoubleVar, BooleanVar, Tcl,
+                     TclError)
 
 
 class Var(Variable):
@@ -16,10 +17,10 @@ class Var(Variable):
 class TestBase(unittest.TestCase):
 
     def setUp(self):
-        self.root = Tk()
+        self.root = Tcl()
 
     def tearDown(self):
-        self.root.destroy()
+        del self.root
 
 
 class TestVariable(TestBase):
@@ -81,7 +82,7 @@ class TestVariable(TestBase):
             self.root.setvar(b'var\x00name', "value")
 
     def test_initialize(self):
-        v = Var()
+        v = Var(self.root)
         self.assertFalse(v.side_effect)
         v.set("value")
         self.assertTrue(v.side_effect)
@@ -121,10 +122,10 @@ class TestIntVar(TestBase):
     def test_invalid_value(self):
         v = IntVar(self.root, name="name")
         self.root.globalsetvar("name", "value")
-        with self.assertRaises(ValueError):
+        with self.assertRaises((ValueError, TclError)):
             v.get()
         self.root.globalsetvar("name", "345.0")
-        with self.assertRaises(ValueError):
+        with self.assertRaises((ValueError, TclError)):
             v.get()
 
 
@@ -151,7 +152,7 @@ class TestDoubleVar(TestBase):
     def test_invalid_value(self):
         v = DoubleVar(self.root, name="name")
         self.root.globalsetvar("name", "value")
-        with self.assertRaises(ValueError):
+        with self.assertRaises((ValueError, TclError)):
             v.get()
 
 
@@ -159,16 +160,41 @@ class TestBooleanVar(TestBase):
 
     def test_default(self):
         v = BooleanVar(self.root)
-        self.assertEqual(False, v.get())
+        self.assertIs(v.get(), False)
 
     def test_get(self):
         v = BooleanVar(self.root, True, "name")
-        self.assertAlmostEqual(True, v.get())
+        self.assertIs(v.get(), True)
         self.root.globalsetvar("name", "0")
-        self.assertAlmostEqual(False, v.get())
+        self.assertIs(v.get(), False)
+        self.root.globalsetvar("name", 42 if self.root.wantobjects() else 1)
+        self.assertIs(v.get(), True)
+        self.root.globalsetvar("name", 0)
+        self.assertIs(v.get(), False)
+        self.root.globalsetvar("name", "on")
+        self.assertIs(v.get(), True)
+
+    def test_set(self):
+        true = 1 if self.root.wantobjects() else "1"
+        false = 0 if self.root.wantobjects() else "0"
+        v = BooleanVar(self.root, name="name")
+        v.set(True)
+        self.assertEqual(self.root.globalgetvar("name"), true)
+        v.set("0")
+        self.assertEqual(self.root.globalgetvar("name"), false)
+        v.set(42)
+        self.assertEqual(self.root.globalgetvar("name"), true)
+        v.set(0)
+        self.assertEqual(self.root.globalgetvar("name"), false)
+        v.set("on")
+        self.assertEqual(self.root.globalgetvar("name"), true)
 
     def test_invalid_value_domain(self):
+        false = 0 if self.root.wantobjects() else "0"
         v = BooleanVar(self.root, name="name")
+        with self.assertRaises(TclError):
+            v.set("value")
+        self.assertEqual(self.root.globalgetvar("name"), false)
         self.root.globalsetvar("name", "value")
         with self.assertRaises(ValueError):
             v.get()

@@ -106,23 +106,38 @@ class EnumMeta(type):
             raise ValueError('Invalid enum member name: {0}'.format(
                 ','.join(invalid_names)))
 
+        # create a default docstring if one has not been provided
+        if '__doc__' not in classdict:
+            classdict['__doc__'] = 'An enumeration.'
+
         # create our new Enum type
         enum_class = super().__new__(metacls, cls, bases, classdict)
         enum_class._member_names_ = []               # names in definition order
         enum_class._member_map_ = OrderedDict()      # name->value map
         enum_class._member_type_ = member_type
 
+        # save attributes from super classes so we know if we can take
+        # the shortcut of storing members in the class dict
+        base_attributes = {a for b in enum_class.mro() for a in b.__dict__}
+
         # Reverse value->name map for hashable values.
         enum_class._value2member_map_ = {}
 
-        # check for a supported pickle protocols, and if not present sabotage
-        # pickling, since it won't work anyway.
-        # if new class implements its own __reduce_ex__, do not sabotage
-        if classdict.get('__reduce_ex__') is None:
+        # If a custom type is mixed into the Enum, and it does not know how
+        # to pickle itself, pickle.dumps will succeed but pickle.loads will
+        # fail.  Rather than have the error show up later and possibly far
+        # from the source, sabotage the pickle protocol for this class so
+        # that pickle.dumps also fails.
+        #
+        # However, if the new class implements its own __reduce_ex__, do not
+        # sabotage -- it's on them to make sure it works correctly.  We use
+        # __reduce_ex__ instead of any of the others as it is preferred by
+        # pickle over __reduce__, and it handles all pickle protocols.
+        if '__reduce_ex__' not in classdict:
             if member_type is not object:
                 methods = ('__getnewargs_ex__', '__getnewargs__',
                         '__reduce_ex__', '__reduce__')
-                if not any(map(member_type.__dict__.get, methods)):
+                if not any(m in member_type.__dict__ for m in methods):
                     _make_class_unpicklable(enum_class)
 
         # instantiate them, checking for duplicates as we go
@@ -152,12 +167,17 @@ class EnumMeta(type):
             # If another member with the same value was already defined, the
             # new member becomes an alias to the existing one.
             for name, canonical_member in enum_class._member_map_.items():
-                if canonical_member.value == enum_member._value_:
+                if canonical_member._value_ == enum_member._value_:
                     enum_member = canonical_member
                     break
             else:
                 # Aliases don't appear in member names (only in __members__).
                 enum_class._member_names_.append(member_name)
+            # performance boost for any member that would not shadow
+            # a DynamicClassAttribute
+            if member_name not in base_attributes:
+                setattr(enum_class, member_name, enum_member)
+            # now add to _member_map_
             enum_class._member_map_[member_name] = enum_member
             try:
                 # This may fail if value is not hashable. We can't add the value
@@ -186,30 +206,44 @@ class EnumMeta(type):
             enum_class.__new__ = Enum.__new__
         return enum_class
 
-    def __call__(cls, value, names=None, *, module=None, qualname=None, type=None):
+    def __bool__(self):
+        """
+        classes/types should always be True.
+        """
+        return True
+
+    def __call__(cls, value, names=None, *, module=None, qualname=None, type=None, start=1):
         """Either returns an existing member, or creates a new enum class.
 
         This method is used both when an enum class is given a value to match
         to an enumeration member (i.e. Color(3)) and for the functional API
         (i.e. Color = Enum('Color', names='red green blue')).
 
-        When used for the functional API: `module`, if set, will be stored in
-        the new class' __module__ attribute; `qualname`, if set, will be stored
-        in the new class' __qualname__ attribute; `type`, if set, will be mixed
-        in as the first base class.
+        When used for the functional API:
 
-        Note: if `module` is not set this routine will attempt to discover the
-        calling module by walking the frame stack; if this is unsuccessful
-        the resulting class will not be pickleable.
+        `value` will be the name of the new class.
+
+        `names` should be either a string of white-space/comma delimited names
+        (values will start at `start`), or an iterator/mapping of name, value pairs.
+
+        `module` should be set to the module this class is being created in;
+        if it is not set, an attempt to find that module will be made, but if
+        it fails the class will not be picklable.
+
+        `qualname` should be set to the actual location this class can be found
+        at in its module; by default it is set to the global scope.  If this is
+        not correct, unpickling will fail in some circumstances.
+
+        `type`, if set, will be mixed in as the first base class.
 
         """
         if names is None:  # simple value lookup
             return cls.__new__(cls, value)
         # otherwise, functional API: we're creating a new Enum type
-        return cls._create_(value, names, module=module, qualname=qualname, type=type)
+        return cls._create_(value, names, module=module, qualname=qualname, type=type, start=start)
 
     def __contains__(cls, member):
-        return isinstance(member, cls) and member.name in cls._member_map_
+        return isinstance(member, cls) and member._name_ in cls._member_map_
 
     def __delattr__(cls, attr):
         # nicer error message when someone tries to delete an attribute
@@ -277,16 +311,16 @@ class EnumMeta(type):
             raise AttributeError('Cannot reassign members.')
         super().__setattr__(name, value)
 
-    def _create_(cls, class_name, names=None, *, module=None, qualname=None, type=None):
+    def _create_(cls, class_name, names=None, *, module=None, qualname=None, type=None, start=1):
         """Convenience method to create a new Enum class.
 
         `names` can be:
 
         * A string containing member names, separated either with spaces or
-          commas.  Values are auto-numbered from 1.
-        * An iterable of member names.  Values are auto-numbered from 1.
+          commas.  Values are incremented by 1 from `start`.
+        * An iterable of member names.  Values are incremented by 1 from `start`.
         * An iterable of (member name, value) pairs.
-        * A mapping of member name -> value.
+        * A mapping of member name -> value pairs.
 
         """
         metacls = cls.__class__
@@ -297,7 +331,7 @@ class EnumMeta(type):
         if isinstance(names, str):
             names = names.replace(',', ' ').split()
         if isinstance(names, (tuple, list)) and isinstance(names[0], str):
-            names = [(e, i) for (i, e) in enumerate(names, 1)]
+            names = [(e, i) for (i, e) in enumerate(names, start)]
 
         # Here, names is either an iterable of (name, value) or a mapping.
         for item in names:
@@ -437,9 +471,9 @@ class Enum(metaclass=EnumMeta):
         except TypeError:
             # not there, now do long search -- O(n) behavior
             for member in cls._member_map_.values():
-                if member.value == value:
+                if member._value_ == value:
                     return member
-        raise ValueError("%s is not a valid %s" % (value, cls.__name__))
+        raise ValueError("%r is not a valid %s" % (value, cls.__name__))
 
     def __repr__(self):
         return "<%s.%s: %r>" % (
@@ -449,9 +483,13 @@ class Enum(metaclass=EnumMeta):
         return "%s.%s" % (self.__class__.__name__, self._name_)
 
     def __dir__(self):
-        added_behavior = [m for m in self.__class__.__dict__ if m[0] != '_']
-        return (['__class__', '__doc__', '__module__', 'name', 'value'] +
-                added_behavior)
+        added_behavior = [
+                m
+                for cls in self.__class__.mro()
+                for m in cls.__dict__
+                if m[0] != '_' and m not in self._member_map_
+                ]
+        return (['__class__', '__doc__', '__module__'] + added_behavior)
 
     def __format__(self, format_spec):
         # mixed-in Enums should use the mixed-in type's __format__, otherwise
@@ -465,7 +503,7 @@ class Enum(metaclass=EnumMeta):
         # mix-in branch
         else:
             cls = self._member_type_
-            val = self.value
+            val = self._value_
         return cls.__format__(val, format_spec)
 
     def __hash__(self):
@@ -491,10 +529,36 @@ class Enum(metaclass=EnumMeta):
         """The value of the Enum member."""
         return self._value_
 
+    @classmethod
+    def _convert(cls, name, module, filter, source=None):
+        """
+        Create a new Enum subclass that replaces a collection of global constants
+        """
+        # convert all constants from source (or module) that pass filter() to
+        # a new Enum called name, and export the enum and its members back to
+        # module;
+        # also, replace the __reduce_ex__ method so unpickling works in
+        # previous Python versions
+        module_globals = vars(sys.modules[module])
+        if source:
+            source = vars(source)
+        else:
+            source = module_globals
+        members = {name: value for name, value in source.items()
+                if filter(name)}
+        cls = cls(name, members, module=module)
+        cls.__reduce_ex__ = _reduce_ex_by_name
+        module_globals.update(cls.__members__)
+        module_globals[name] = cls
+        return cls
+
 
 class IntEnum(int, Enum):
     """Enum where members are also (and must be) ints"""
 
+
+def _reduce_ex_by_name(self, proto):
+    return self.name
 
 def unique(enumeration):
     """Class decorator for enumerations ensuring unique member values."""

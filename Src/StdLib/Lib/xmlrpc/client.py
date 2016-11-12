@@ -49,6 +49,7 @@
 # 2003-07-12 gp  Correct marshalling of Faults
 # 2003-10-31 mvl Add multicall support
 # 2004-08-20 mvl Bump minimum supported Python version to 2.1
+# 2014-12-02 ch/doko  Add workaround for gzip bomb vulnerability
 #
 # Copyright (c) 1999-2002 by Secret Labs AB.
 # Copyright (c) 1999-2002 by Fredrik Lundh.
@@ -134,7 +135,6 @@ from datetime import datetime
 import http.client
 import urllib.parse
 from xml.parsers import expat
-import socket
 import errno
 from io import BytesIO
 try:
@@ -208,8 +208,8 @@ class ProtocolError(Error):
         self.headers = headers
     def __repr__(self):
         return (
-            "<ProtocolError for %s: %s %s>" %
-            (self.url, self.errcode, self.errmsg)
+            "<%s for %s: %s %s>" %
+            (self.__class__.__name__, self.url, self.errcode, self.errmsg)
             )
 
 ##
@@ -237,7 +237,8 @@ class Fault(Error):
         self.faultCode = faultCode
         self.faultString = faultString
     def __repr__(self):
-        return "<Fault %s: %r>" % (self.faultCode, self.faultString)
+        return "<%s %s: %r>" % (self.__class__.__name__,
+                                self.faultCode, self.faultString)
 
 # --------------------------------------------------------------------
 # Special values
@@ -339,10 +340,6 @@ class DateTime:
         s, o = self.make_comparable(other)
         return s == o
 
-    def __ne__(self, other):
-        s, o = self.make_comparable(other)
-        return s != o
-
     def timetuple(self):
         return time.strptime(self.value, "%Y%m%dT%H:%M:%S")
 
@@ -355,7 +352,7 @@ class DateTime:
         return self.value
 
     def __repr__(self):
-        return "<DateTime %r at %x>" % (self.value, id(self))
+        return "<%s %r at %#x>" % (self.__class__.__name__, self.value, id(self))
 
     def decode(self, data):
         self.value = str(data).strip()
@@ -406,11 +403,6 @@ class Binary:
             other = other.data
         return self.data == other
 
-    def __ne__(self, other):
-        if isinstance(other, Binary):
-            other = other.data
-        return self.data != other
-
     def decode(self, data):
         self.data = base64.decodebytes(data)
 
@@ -446,8 +438,13 @@ class ExpatParser:
         self._parser.Parse(data, 0)
 
     def close(self):
-        self._parser.Parse("", 1) # end of data
-        del self._target, self._parser # get rid of circular references
+        try:
+            parser = self._parser
+        except AttributeError:
+            pass
+        else:
+            del self._target, self._parser # get rid of circular references
+            parser.Parse(b"", True) # end of data
 
 # --------------------------------------------------------------------
 # XML-RPC marshalling and unmarshalling code
@@ -643,6 +640,7 @@ class Unmarshaller:
         self._stack = []
         self._marks = []
         self._data = []
+        self._value = False
         self._methodname = None
         self._encoding = "utf-8"
         self.append = self._stack.append
@@ -672,6 +670,8 @@ class Unmarshaller:
         if tag == "array" or tag == "struct":
             self._marks.append(len(self._stack))
         self._data = []
+        if self._value and tag not in self.dispatch:
+            raise ResponseError("unknown tag %r" % tag)
         self._value = (tag == "value")
 
     def data(self, text):
@@ -826,7 +826,7 @@ class MultiCallIterator:
             raise ValueError("unexpected type in multicall result")
 
 class MultiCall:
-    """server -> a object used to boxcar method calls
+    """server -> an object used to boxcar method calls
 
     server should be a ServerProxy object.
 
@@ -847,7 +847,7 @@ class MultiCall:
         self.__call_list = []
 
     def __repr__(self):
-        return "<MultiCall at %x>" % id(self)
+        return "<%s at %#x>" % (self.__class__.__name__, id(self))
 
     __str__ = __repr__
 
@@ -958,8 +958,6 @@ def dumps(params, methodname=None, methodresponse=None, encoding=None,
     # standard XML-RPC wrappings
     if methodname:
         # a method call
-        if not isinstance(methodname, str):
-            methodname = methodname.encode(encoding)
         data = (
             xmlheader,
             "<methodCall>\n"
@@ -1018,12 +1016,9 @@ def gzip_encode(data):
     if not gzip:
         raise NotImplementedError
     f = BytesIO()
-    gzf = gzip.GzipFile(mode="wb", fileobj=f, compresslevel=1)
-    gzf.write(data)
-    gzf.close()
-    encoded = f.getvalue()
-    f.close()
-    return encoded
+    with gzip.GzipFile(mode="wb", fileobj=f, compresslevel=1) as gzf:
+        gzf.write(data)
+    return f.getvalue()
 
 ##
 # Decode a string using the gzip content encoding such as specified by the
@@ -1031,24 +1026,29 @@ def gzip_encode(data):
 # in the HTTP header, as described in RFC 1952
 #
 # @param data The encoded data
+# @keyparam max_decode Maximum bytes to decode (20MB default), use negative
+#    values for unlimited decoding
 # @return the unencoded data
 # @raises ValueError if data is not correctly coded.
+# @raises ValueError if max gzipped payload length exceeded
 
-def gzip_decode(data):
+def gzip_decode(data, max_decode=20971520):
     """gzip encoded data -> unencoded data
 
     Decode data using the gzip content encoding as described in RFC 1952
     """
     if not gzip:
         raise NotImplementedError
-    f = BytesIO(data)
-    gzf = gzip.GzipFile(mode="rb", fileobj=f)
-    try:
-        decoded = gzf.read()
-    except OSError:
-        raise ValueError("invalid data")
-    f.close()
-    gzf.close()
+    with gzip.GzipFile(mode="rb", fileobj=BytesIO(data)) as gzf:
+        try:
+            if max_decode < 0: # no limit
+                decoded = gzf.read()
+            else:
+                decoded = gzf.read(max_decode + 1)
+        except OSError:
+            raise ValueError("invalid data")
+    if max_decode >= 0 and len(decoded) > max_decode:
+        raise ValueError("max gzipped payload length exceeded")
     return decoded
 
 ##
@@ -1071,8 +1071,10 @@ class GzipDecodedResponse(gzip.GzipFile if gzip else object):
         gzip.GzipFile.__init__(self, mode="rb", fileobj=self.io)
 
     def close(self):
-        gzip.GzipFile.close(self)
-        self.io.close()
+        try:
+            gzip.GzipFile.close(self)
+        finally:
+            self.io.close()
 
 
 # --------------------------------------------------------------------
@@ -1130,12 +1132,12 @@ class Transport:
         for i in (0, 1):
             try:
                 return self.single_request(host, handler, request_body, verbose)
+            except http.client.RemoteDisconnected:
+                if i:
+                    raise
             except OSError as e:
                 if i or e.errno not in (errno.ECONNRESET, errno.ECONNABORTED,
                                         errno.EPIPE):
-                    raise
-            except http.client.BadStatusLine: #close after we sent request
-                if i:
                     raise
 
     def single_request(self, host, handler, request_body, verbose=False):
@@ -1169,7 +1171,7 @@ class Transport:
     ##
     # Create parser.
     #
-    # @return A 2-tuple containing a parser and a unmarshaller.
+    # @return A 2-tuple containing a parser and an unmarshaller.
 
     def getparser(self):
         # get parser and unmarshaller
@@ -1227,9 +1229,10 @@ class Transport:
     # Used in the event of socket errors.
     #
     def close(self):
-        if self._connection[1]:
-            self._connection[1].close()
+        host, connection = self._connection
+        if connection:
             self._connection = (None, None)
+            connection.close()
 
     ##
     # Send HTTP request.
@@ -1324,6 +1327,11 @@ class Transport:
 class SafeTransport(Transport):
     """Handles an HTTPS transaction to an XML-RPC server."""
 
+    def __init__(self, use_datetime=False, use_builtin_types=False, *,
+                 context=None):
+        super().__init__(use_datetime=use_datetime, use_builtin_types=use_builtin_types)
+        self.context = context
+
     # FIXME: mostly untested
 
     def make_connection(self, host):
@@ -1337,7 +1345,7 @@ class SafeTransport(Transport):
         # host may be a string, or a (host, x509-dict) tuple
         chost, self._extra_headers, x509 = self.get_host_info(host)
         self._connection = host, http.client.HTTPSConnection(chost,
-            None, **(x509 or {}))
+            None, context=self.context, **(x509 or {}))
         return self._connection[1]
 
 ##
@@ -1380,7 +1388,8 @@ class ServerProxy:
     """
 
     def __init__(self, uri, transport=None, encoding=None, verbose=False,
-                 allow_none=False, use_datetime=False, use_builtin_types=False):
+                 allow_none=False, use_datetime=False, use_builtin_types=False,
+                 *, context=None):
         # establish a "logical" server connection
 
         # get the url
@@ -1394,10 +1403,13 @@ class ServerProxy:
         if transport is None:
             if type == "https":
                 handler = SafeTransport
+                extra_kwargs = {"context": context}
             else:
                 handler = Transport
+                extra_kwargs = {}
             transport = handler(use_datetime=use_datetime,
-                                use_builtin_types=use_builtin_types)
+                                use_builtin_types=use_builtin_types,
+                                **extra_kwargs)
         self.__transport = transport
 
         self.__encoding = encoding or 'utf-8'
@@ -1411,7 +1423,7 @@ class ServerProxy:
         # call a method on the remote server
 
         request = dumps(params, methodname, encoding=self.__encoding,
-                        allow_none=self.__allow_none).encode(self.__encoding)
+                        allow_none=self.__allow_none).encode(self.__encoding, 'xmlcharrefreplace')
 
         response = self.__transport.request(
             self.__host,
@@ -1427,8 +1439,8 @@ class ServerProxy:
 
     def __repr__(self):
         return (
-            "<ServerProxy for %s%s>" %
-            (self.__host, self.__handler)
+            "<%s for %s%s>" %
+            (self.__class__.__name__, self.__host, self.__handler)
             )
 
     __str__ = __repr__
@@ -1437,7 +1449,7 @@ class ServerProxy:
         # magic method dispatcher
         return _Method(self.__request, name)
 
-    # note: to call a remote object with an non-standard name, use
+    # note: to call a remote object with a non-standard name, use
     # result getattr(server, "strange-python-name")(args)
 
     def __call__(self, attr):
@@ -1449,6 +1461,12 @@ class ServerProxy:
         elif attr == "transport":
             return self.__transport
         raise AttributeError("Attribute %r not found" % (attr,))
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.__close()
 
 # compatibility
 

@@ -22,15 +22,18 @@ class PolicyAPITests(unittest.TestCase):
         'linesep':                  '\n',
         'cte_type':                 '8bit',
         'raise_on_defect':          False,
+        'mangle_from_':             True,
         }
     # These default values are the ones set on email.policy.default.
     # If any of these defaults change, the docs must be updated.
     policy_defaults = compat32_defaults.copy()
     policy_defaults.update({
+        'utf8':                     False,
         'raise_on_defect':          False,
         'header_factory':           email.policy.EmailPolicy.header_factory,
         'refold_source':            'long',
         'content_manager':          email.policy.EmailPolicy.content_manager,
+        'mangle_from_':             False,
         })
 
     # For each policy under test, we give here what we expect the defaults to
@@ -42,6 +45,9 @@ class PolicyAPITests(unittest.TestCase):
         email.policy.default: make_defaults(policy_defaults, {}),
         email.policy.SMTP: make_defaults(policy_defaults,
                                          {'linesep': '\r\n'}),
+        email.policy.SMTPUTF8: make_defaults(policy_defaults,
+                                             {'linesep': '\r\n',
+                                              'utf8': True}),
         email.policy.HTTP: make_defaults(policy_defaults,
                                          {'linesep': '\r\n',
                                           'max_line_length': None}),
@@ -171,7 +177,7 @@ class PolicyAPITests(unittest.TestCase):
         with self.assertRaisesRegex(self.MyDefect, "the telly is broken"):
             self.MyPolicy(raise_on_defect=True).handle_defect(foo, defect)
 
-    def test_overriden_register_defect_works(self):
+    def test_overridden_register_defect_works(self):
         foo = self.MyObj()
         defect1 = self.MyDefect("one")
         my_policy = self.MyPolicy()
@@ -317,6 +323,15 @@ class TestPolicyPropagation(unittest.TestCase):
         msg = self._make_msg("Subject: test\nTo: foo\n\n",
                              policy=email.policy.default.clone(linesep='X'))
         self.assertEqual(msg.as_string(), "Subject: testXTo: fooXX")
+
+
+class TestConcretePolicies(unittest.TestCase):
+
+    def test_header_store_parse_rejects_newlines(self):
+        instance = email.policy.EmailPolicy()
+        self.assertRaises(ValueError,
+                          instance.header_store_parse,
+                          'From', 'spam\negg@foo.py')
 
 
 if __name__ == '__main__':

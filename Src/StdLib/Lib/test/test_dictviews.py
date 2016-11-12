@@ -1,5 +1,6 @@
+import copy
+import pickle
 import unittest
-from test import support
 
 class DictSetTest(unittest.TestCase):
 
@@ -95,6 +96,7 @@ class DictSetTest(unittest.TestCase):
         self.assertEqual(d1.keys() & set(d1.keys()), {'a', 'b'})
         self.assertEqual(d1.keys() & set(d2.keys()), {'b'})
         self.assertEqual(d1.keys() & set(d3.keys()), set())
+        self.assertEqual(d1.keys() & tuple(d1.keys()), {'a', 'b'})
 
         self.assertEqual(d1.keys() | d1.keys(), {'a', 'b'})
         self.assertEqual(d1.keys() | d2.keys(), {'a', 'b', 'c'})
@@ -103,6 +105,7 @@ class DictSetTest(unittest.TestCase):
         self.assertEqual(d1.keys() | set(d2.keys()), {'a', 'b', 'c'})
         self.assertEqual(d1.keys() | set(d3.keys()),
                          {'a', 'b', 'd', 'e'})
+        self.assertEqual(d1.keys() | (1, 2), {'a', 'b', 1, 2})
 
         self.assertEqual(d1.keys() ^ d1.keys(), set())
         self.assertEqual(d1.keys() ^ d2.keys(), {'a', 'c'})
@@ -111,6 +114,7 @@ class DictSetTest(unittest.TestCase):
         self.assertEqual(d1.keys() ^ set(d2.keys()), {'a', 'c'})
         self.assertEqual(d1.keys() ^ set(d3.keys()),
                          {'a', 'b', 'd', 'e'})
+        self.assertEqual(d1.keys() ^ tuple(d2.keys()), {'a', 'c'})
 
         self.assertEqual(d1.keys() - d1.keys(), set())
         self.assertEqual(d1.keys() - d2.keys(), {'a'})
@@ -118,6 +122,7 @@ class DictSetTest(unittest.TestCase):
         self.assertEqual(d1.keys() - set(d1.keys()), set())
         self.assertEqual(d1.keys() - set(d2.keys()), {'a'})
         self.assertEqual(d1.keys() - set(d3.keys()), {'a', 'b'})
+        self.assertEqual(d1.keys() - (0, 1), {'a', 'b'})
 
         self.assertFalse(d1.keys().isdisjoint(d1.keys()))
         self.assertFalse(d1.keys().isdisjoint(d2.keys()))
@@ -196,11 +201,24 @@ class DictSetTest(unittest.TestCase):
     def test_recursive_repr(self):
         d = {}
         d[42] = d.values()
-        self.assertRaises(RuntimeError, repr, d)
+        self.assertRaises(RecursionError, repr, d)
 
+    def test_copy(self):
+        d = {1: 10, "a": "ABC"}
+        self.assertRaises(TypeError, copy.copy, d.keys())
+        self.assertRaises(TypeError, copy.copy, d.values())
+        self.assertRaises(TypeError, copy.copy, d.items())
 
-def test_main():
-    support.run_unittest(DictSetTest)
+    def test_pickle(self):
+        d = {1: 10, "a": "ABC"}
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            self.assertRaises((TypeError, pickle.PicklingError),
+                pickle.dumps, d.keys(), proto)
+            self.assertRaises((TypeError, pickle.PicklingError),
+                pickle.dumps, d.values(), proto)
+            self.assertRaises((TypeError, pickle.PicklingError),
+                pickle.dumps, d.items(), proto)
+
 
 if __name__ == "__main__":
-    test_main()
+    unittest.main()

@@ -1,4 +1,4 @@
-# Copyright 2001-2013 by Vinay Sajip. All Rights Reserved.
+# Copyright 2001-2015 by Vinay Sajip. All Rights Reserved.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose and without fee is hereby granted,
@@ -18,12 +18,13 @@
 Logging package for Python. Based on PEP 282 and comments thereto in
 comp.lang.python.
 
-Copyright (C) 2001-2013 Vinay Sajip. All Rights Reserved.
+Copyright (C) 2001-2015 Vinay Sajip. All Rights Reserved.
 
 To use, simply 'import logging' and log away!
 """
 
-import sys, os, time, io, traceback, warnings, weakref
+import sys, os, time, io, traceback, warnings, weakref, collections
+
 from string import Template
 
 __all__ = ['BASIC_FORMAT', 'BufferingFormatter', 'CRITICAL', 'DEBUG', 'ERROR',
@@ -42,40 +43,13 @@ except ImportError: #pragma: no cover
 
 __author__  = "Vinay Sajip <vinay_sajip@red-dove.com>"
 __status__  = "production"
+# The following module attributes are no longer updated.
 __version__ = "0.5.1.2"
 __date__    = "07 February 2010"
 
 #---------------------------------------------------------------------------
 #   Miscellaneous module data
 #---------------------------------------------------------------------------
-
-#
-# _srcfile is used when walking the stack to check when we've got the first
-# caller stack frame.
-#
-if hasattr(sys, 'frozen'): #support for py2exe
-    _srcfile = "logging%s__init__%s" % (os.sep, __file__[-4:])
-else:
-    _srcfile = __file__
-_srcfile = os.path.normcase(_srcfile)
-
-
-if hasattr(sys, '_getframe'):
-    currentframe = lambda: sys._getframe(3)
-else: #pragma: no cover
-    def currentframe():
-        """Return the frame object for the caller's stack frame."""
-        try:
-            raise Exception
-        except Exception:
-            return sys.exc_info()[2].tb_frame.f_back
-
-# _srcfile is only used in conjunction with sys._getframe().
-# To provide compatibility with older versions of Python, set _srcfile
-# to None if _getframe() is not available; this value will prevent
-# findCaller() from being called.
-#if not hasattr(sys, "_getframe"):
-#    _srcfile = None
 
 #
 #_startTime is used as the base when calculating the relative time of events
@@ -155,7 +129,8 @@ def getLevelName(level):
 
     Otherwise, the string "Level %s" % level is returned.
     """
-    return _levelToName.get(level, ("Level %s" % level))
+    # See Issue #22386 for the reason for this convoluted expression
+    return _levelToName.get(level, _nameToLevel.get(level, ("Level %s" % level)))
 
 def addLevelName(level, levelName):
     """
@@ -169,6 +144,40 @@ def addLevelName(level, levelName):
         _nameToLevel[levelName] = level
     finally:
         _releaseLock()
+
+if hasattr(sys, '_getframe'):
+    currentframe = lambda: sys._getframe(3)
+else: #pragma: no cover
+    def currentframe():
+        """Return the frame object for the caller's stack frame."""
+        try:
+            raise Exception
+        except Exception:
+            return sys.exc_info()[2].tb_frame.f_back
+
+#
+# _srcfile is used when walking the stack to check when we've got the first
+# caller stack frame, by skipping frames whose filename is that of this
+# module's source. It therefore should contain the filename of this module's
+# source file.
+#
+# Ordinarily we would use __file__ for this, but frozen modules don't always
+# have __file__ set, for some reason (see Issue #21736). Thus, we get the
+# filename from a handy code object from a function defined in this module.
+# (There's no particular reason for picking addLevelName.)
+#
+
+_srcfile = os.path.normcase(addLevelName.__code__.co_filename)
+
+# _srcfile is only used in conjunction with sys._getframe().
+# To provide compatibility with older versions of Python, set _srcfile
+# to None if _getframe() is not available; this value will prevent
+# findCaller() from being called. You can also do this if you want to avoid
+# the overhead of fetching caller information, even when _getframe() is
+# available.
+#if not hasattr(sys, '_getframe'):
+#    _srcfile = None
+
 
 def _checkLevel(level):
     if isinstance(level, int):
@@ -252,7 +261,13 @@ class LogRecord(object):
         # 'Value is %d' instead of 'Value is 0'.
         # For the use case of passing a dictionary, this should not be a
         # problem.
-        if args and len(args) == 1 and isinstance(args[0], dict) and args[0]:
+        # Issue #21172: a request was made to relax the isinstance check
+        # to hasattr(args[0], '__getitem__'). However, the docs on string
+        # formatting still seem to suggest a mapping object is required.
+        # Thus, while not removing the isinstance check, it does now look
+        # for collections.Mapping rather than, as before, dict.
+        if (args and len(args) == 1 and isinstance(args[0], collections.Mapping)
+            and args[0]):
             args = args[0]
         self.args = args
         self.levelname = getLevelName(level)
@@ -300,6 +315,8 @@ class LogRecord(object):
     def __str__(self):
         return '<LogRecord: %s, %s, %s, %s, "%s">'%(self.name, self.levelno,
             self.pathname, self.lineno, self.msg)
+
+    __repr__ = __str__
 
     def getMessage(self):
         """
@@ -454,7 +471,7 @@ class Formatter(object):
         use one of %-formatting, :meth:`str.format` (``{}``) formatting or
         :class:`string.Template` formatting in your format string.
 
-        .. versionchanged: 3.2
+        .. versionchanged:: 3.2
            Added the ``style`` parameter.
         """
         if style not in _STYLES:
@@ -683,7 +700,7 @@ class Filterer(object):
         this and the record is then dropped. Returns a zero value if a record
         is to be dropped, else non-zero.
 
-        .. versionchanged: 3.2
+        .. versionchanged:: 3.2
 
            Allow filters to be just callables.
         """
@@ -710,16 +727,17 @@ def _removeHandlerRef(wr):
     Remove a handler reference from the internal cleanup list.
     """
     # This function can be called during module teardown, when globals are
-    # set to None. If _acquireLock is None, assume this is the case and do
-    # nothing.
-    if (_acquireLock is not None and _handlerList is not None and
-        _releaseLock is not None):
-        _acquireLock()
+    # set to None. It can also be called from another thread. So we need to
+    # pre-emptively grab the necessary globals and check if they're None,
+    # to prevent race conditions and failures during interpreter shutdown.
+    acquire, release, handlers = _acquireLock, _releaseLock, _handlerList
+    if acquire and release and handlers:
+        acquire()
         try:
-            if wr in _handlerList:
-                _handlerList.remove(wr)
+            if wr in handlers:
+                handlers.remove(wr)
         finally:
-            _releaseLock()
+            release()
 
 def _addHandlerRef(handler):
     """
@@ -902,8 +920,15 @@ class Handler(Filterer):
                     sys.stderr.write('Logged from file %s, line %s\n' % (
                                      record.filename, record.lineno))
                 # Issue 18671: output logging message and arguments
-                sys.stderr.write('Message: %r\n'
-                                 'Arguments: %s\n' % (record.msg, record.args))
+                try:
+                    sys.stderr.write('Message: %r\n'
+                                     'Arguments: %s\n' % (record.msg,
+                                                          record.args))
+                except Exception:
+                    sys.stderr.write('Unable to print the message and arguments'
+                                     ' - possible formatting error.\nUse the'
+                                     ' traceback above to help find the error.\n'
+                                    )
             except OSError: #pragma: no cover
                 pass    # see issue 5971
             finally:
@@ -988,14 +1013,19 @@ class FileHandler(StreamHandler):
         """
         self.acquire()
         try:
-            if self.stream:
-                self.flush()
-                if hasattr(self.stream, "close"):
-                    self.stream.close()
-                self.stream = None
-            # Issue #19523: call unconditionally to
-            # prevent a handler leak when delay is set
-            StreamHandler.close(self)
+            try:
+                if self.stream:
+                    try:
+                        self.flush()
+                    finally:
+                        stream = self.stream
+                        self.stream = None
+                        if hasattr(stream, "close"):
+                            stream.close()
+            finally:
+                # Issue #19523: call unconditionally to
+                # prevent a handler leak when delay is set
+                StreamHandler.close(self)
         finally:
             self.release()
 
@@ -1063,7 +1093,6 @@ class PlaceHolder(object):
 #
 #   Determine which class to use when instantiating loggers.
 #
-_loggerClass = None
 
 def setLoggerClass(klass):
     """
@@ -1082,7 +1111,6 @@ def getLoggerClass():
     """
     Return the class to be used when instantiating a logger.
     """
-
     return _loggerClass
 
 class Manager(object):
@@ -1279,12 +1307,11 @@ class Logger(Filterer):
         if self.isEnabledFor(ERROR):
             self._log(ERROR, msg, args, **kwargs)
 
-    def exception(self, msg, *args, **kwargs):
+    def exception(self, msg, *args, exc_info=True, **kwargs):
         """
         Convenience method for logging an ERROR with exception information.
         """
-        kwargs['exc_info'] = True
-        self.error(msg, *args, **kwargs)
+        self.error(msg, *args, exc_info=exc_info, **kwargs)
 
     def critical(self, msg, *args, **kwargs):
         """
@@ -1379,7 +1406,9 @@ class Logger(Filterer):
         else: # pragma: no cover
             fn, lno, func = "(unknown file)", 0, "(unknown function)"
         if exc_info:
-            if not isinstance(exc_info, tuple):
+            if isinstance(exc_info, BaseException):
+                exc_info = (type(exc_info), exc_info, exc_info.__traceback__)
+            elif not isinstance(exc_info, tuple):
                 exc_info = sys.exc_info()
         record = self.makeRecord(self.name, level, fn, lno, msg, args,
                                  exc_info, func, extra, sinfo)
@@ -1589,12 +1618,11 @@ class LoggerAdapter(object):
         """
         self.log(ERROR, msg, *args, **kwargs)
 
-    def exception(self, msg, *args, **kwargs):
+    def exception(self, msg, *args, exc_info=True, **kwargs):
         """
         Delegate an exception call to the underlying logger.
         """
-        kwargs["exc_info"] = True
-        self.log(ERROR, msg, *args, **kwargs)
+        self.log(ERROR, msg, *args, exc_info=exc_info, **kwargs)
 
     def critical(self, msg, *args, **kwargs):
         """
@@ -1700,7 +1728,7 @@ def basicConfig(**kwargs):
     _acquireLock()
     try:
         if len(root.handlers) == 0:
-            handlers = kwargs.get("handlers")
+            handlers = kwargs.pop("handlers", None)
             if handlers is None:
                 if "stream" in kwargs and "filename" in kwargs:
                     raise ValueError("'stream' and 'filename' should not be "
@@ -1710,28 +1738,31 @@ def basicConfig(**kwargs):
                     raise ValueError("'stream' or 'filename' should not be "
                                      "specified together with 'handlers'")
             if handlers is None:
-                filename = kwargs.get("filename")
+                filename = kwargs.pop("filename", None)
+                mode = kwargs.pop("filemode", 'a')
                 if filename:
-                    mode = kwargs.get("filemode", 'a')
                     h = FileHandler(filename, mode)
                 else:
-                    stream = kwargs.get("stream")
+                    stream = kwargs.pop("stream", None)
                     h = StreamHandler(stream)
                 handlers = [h]
-            dfs = kwargs.get("datefmt", None)
-            style = kwargs.get("style", '%')
+            dfs = kwargs.pop("datefmt", None)
+            style = kwargs.pop("style", '%')
             if style not in _STYLES:
                 raise ValueError('Style must be one of: %s' % ','.join(
                                  _STYLES.keys()))
-            fs = kwargs.get("format", _STYLES[style][1])
+            fs = kwargs.pop("format", _STYLES[style][1])
             fmt = Formatter(fs, dfs, style)
             for h in handlers:
                 if h.formatter is None:
                     h.setFormatter(fmt)
                 root.addHandler(h)
-            level = kwargs.get("level")
+            level = kwargs.pop("level", None)
             if level is not None:
                 root.setLevel(level)
+            if kwargs:
+                keys = ', '.join(kwargs.keys())
+                raise ValueError('Unrecognised argument(s): %s' % keys)
     finally:
         _releaseLock()
 
@@ -1773,14 +1804,13 @@ def error(msg, *args, **kwargs):
         basicConfig()
     root.error(msg, *args, **kwargs)
 
-def exception(msg, *args, **kwargs):
+def exception(msg, *args, exc_info=True, **kwargs):
     """
     Log a message with severity 'ERROR' on the root logger, with exception
     information. If the logger has no handlers, basicConfig() is called to add
     a console handler with a pre-defined format.
     """
-    kwargs['exc_info'] = True
-    error(msg, *args, **kwargs)
+    error(msg, *args, exc_info=exc_info, **kwargs)
 
 def warning(msg, *args, **kwargs):
     """

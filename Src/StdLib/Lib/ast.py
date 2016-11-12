@@ -194,7 +194,7 @@ def get_docstring(node, clean=True):
     be found.  If the node provided does not have docstrings a TypeError
     will be raised.
     """
-    if not isinstance(node, (FunctionDef, ClassDef, Module)):
+    if not isinstance(node, (AsyncFunctionDef, FunctionDef, ClassDef, Module)):
         raise TypeError("%r can't have docstrings" % node.__class__.__name__)
     if node.body and isinstance(node.body[0], Expr) and \
        isinstance(node.body[0].value, Str):
@@ -293,7 +293,6 @@ class NodeTransformer(NodeVisitor):
 
     def generic_visit(self, node):
         for field, old_value in iter_fields(node):
-            old_value = getattr(node, field, None)
             if isinstance(old_value, list):
                 new_values = []
                 for value in old_value:

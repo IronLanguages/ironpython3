@@ -58,7 +58,7 @@ class TestProgram(object):
     def __init__(self, module='__main__', defaultTest=None, argv=None,
                     testRunner=None, testLoader=loader.defaultTestLoader,
                     exit=True, verbosity=1, failfast=None, catchbreak=None,
-                    buffer=None, warnings=None):
+                    buffer=None, warnings=None, *, tb_locals=False):
         if isinstance(module, str):
             self.module = __import__(module)
             for part in module.split('.')[1:]:
@@ -73,8 +73,9 @@ class TestProgram(object):
         self.catchbreak = catchbreak
         self.verbosity = verbosity
         self.buffer = buffer
+        self.tb_locals = tb_locals
         if warnings is None and not sys.warnoptions:
-            # even if DreprecationWarnings are ignored by default
+            # even if DeprecationWarnings are ignored by default
             # print them anyway unless other warnings settings are
             # specified by the warnings arg or the -W python flag
             self.warnings = 'default'
@@ -159,7 +160,9 @@ class TestProgram(object):
         parser.add_argument('-q', '--quiet', dest='verbosity',
                             action='store_const', const=0,
                             help='Quiet output')
-
+        parser.add_argument('--locals', dest='tb_locals',
+                            action='store_true',
+                            help='Show local variables in tracebacks')
         if self.failfast is None:
             parser.add_argument('-f', '--failfast', dest='failfast',
                                 action='store_true',
@@ -168,7 +171,7 @@ class TestProgram(object):
         if self.catchbreak is None:
             parser.add_argument('-c', '--catch', dest='catchbreak',
                                 action='store_true',
-                                help='Catch ctrl-C and display results so far')
+                                help='Catch Ctrl-C and display results so far')
             self.catchbreak = False
         if self.buffer is None:
             parser.add_argument('-b', '--buffer', dest='buffer',
@@ -231,10 +234,18 @@ class TestProgram(object):
             self.testRunner = runner.TextTestRunner
         if isinstance(self.testRunner, type):
             try:
-                testRunner = self.testRunner(verbosity=self.verbosity,
-                                             failfast=self.failfast,
-                                             buffer=self.buffer,
-                                             warnings=self.warnings)
+                try:
+                    testRunner = self.testRunner(verbosity=self.verbosity,
+                                                 failfast=self.failfast,
+                                                 buffer=self.buffer,
+                                                 warnings=self.warnings,
+                                                 tb_locals=self.tb_locals)
+                except TypeError:
+                    # didn't accept the tb_locals argument
+                    testRunner = self.testRunner(verbosity=self.verbosity,
+                                                 failfast=self.failfast,
+                                                 buffer=self.buffer,
+                                                 warnings=self.warnings)
             except TypeError:
                 # didn't accept the verbosity, buffer or failfast arguments
                 testRunner = self.testRunner()

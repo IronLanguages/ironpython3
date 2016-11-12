@@ -1,3 +1,7 @@
+This file, idlelib/help.txt is out-of-date and no longer used by Idle.
+It is deprecated and will be removed in the future, possibly in 3.6
+----------------------------------------------------------------------
+
 [See the end of this file for ** TIPS ** on using IDLE !!]
 
 IDLE is the Python IDE built with the tkinter GUI toolkit.
@@ -15,9 +19,7 @@ Menus:
 IDLE has two window types the Shell window and the Editor window. It is
 possible to have multiple editor windows simultaneously. IDLE's
 menus dynamically change based on which window is currently selected. Each menu
-documented below indicates which window type it is associated with. Click on
-the dotted line at the top of a menu to "tear it off": a separate window
-containing the menu is created (for Unix and Windows only).
+documented below indicates which window type it is associated with. 
 
 File Menu (Shell and Editor):
 
@@ -129,7 +131,9 @@ Options Menu (Shell and Editor):
         Configure IDLE -- Open a configuration dialog.  Fonts, indentation,
                           keybindings, and color themes may be altered.
                           Startup Preferences may be set, and additional Help
-                          sources can be specified.
+                          sources can be specified.  On OS X, open the
+                          configuration dialog by selecting Preferences
+                          in the application menu.
 
         ---
         Code Context (toggle) -- Open a pane at the top of the edit window
@@ -138,7 +142,7 @@ Options Menu (Shell and Editor):
                                  window. This is not present in the Shell
                                  window only the Editor window.
 
-Windows Menu (Shell and Editor):
+Window Menu (Shell and Editor):
 
         Zoom Height -- Toggles the window between normal size (40x80 initial
         setting) and maximum height.  The initial size is in the Configure

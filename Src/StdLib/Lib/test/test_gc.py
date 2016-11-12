@@ -1,7 +1,8 @@
 import unittest
 from test.support import (verbose, refcount_test, run_unittest,
-                            strip_python_stderr, cpython_only)
-from test.script_helper import assert_python_ok, make_script, temp_dir
+                            strip_python_stderr, cpython_only, start_threads,
+                            temp_dir)
+from test.support.script_helper import assert_python_ok, make_script
 
 import sys
 import time
@@ -397,17 +398,13 @@ class GCTests(unittest.TestCase):
         old_switchinterval = sys.getswitchinterval()
         sys.setswitchinterval(1e-5)
         try:
-            exit = False
+            exit = []
             threads = []
             for i in range(N_THREADS):
                 t = threading.Thread(target=run_thread)
                 threads.append(t)
-            for t in threads:
-                t.start()
-            time.sleep(1.0)
-            exit = True
-            for t in threads:
-                t.join()
+            with start_threads(threads, lambda: exit.append(1)):
+                time.sleep(1.0)
         finally:
             sys.setswitchinterval(old_switchinterval)
         gc.collect()
@@ -550,11 +547,31 @@ class GCTests(unittest.TestCase):
 
         class UserClass:
             pass
+
+        class UserInt(int):
+            pass
+
+        # Base class is object; no extra fields.
+        class UserClassSlots:
+            __slots__ = ()
+
+        # Base class is fixed size larger than object; no extra fields.
+        class UserFloatSlots(float):
+            __slots__ = ()
+
+        # Base class is variable size; no extra fields.
+        class UserIntSlots(int):
+            __slots__ = ()
+
         self.assertTrue(gc.is_tracked(gc))
         self.assertTrue(gc.is_tracked(UserClass))
         self.assertTrue(gc.is_tracked(UserClass()))
+        self.assertTrue(gc.is_tracked(UserInt()))
         self.assertTrue(gc.is_tracked([]))
         self.assertTrue(gc.is_tracked(set()))
+        self.assertFalse(gc.is_tracked(UserClassSlots()))
+        self.assertFalse(gc.is_tracked(UserFloatSlots()))
+        self.assertFalse(gc.is_tracked(UserIntSlots()))
 
     def test_bug1055820b(self):
         # Corresponds to temp2b.py in the bug report.
@@ -579,6 +596,38 @@ class GCTests(unittest.TestCase):
             # If the callback resurrected one of these guys, the instance
             # would be damaged, with an empty __dict__.
             self.assertEqual(x, None)
+
+    def test_bug21435(self):
+        # This is a poor test - its only virtue is that it happened to
+        # segfault on Tim's Windows box before the patch for 21435 was
+        # applied.  That's a nasty bug relying on specific pieces of cyclic
+        # trash appearing in exactly the right order in finalize_garbage()'s
+        # input list.
+        # But there's no reliable way to force that order from Python code,
+        # so over time chances are good this test won't really be testing much
+        # of anything anymore.  Still, if it blows up, there's _some_
+        # problem ;-)
+        gc.collect()
+
+        class A:
+            pass
+
+        class B:
+            def __init__(self, x):
+                self.x = x
+
+            def __del__(self):
+                self.attr = None
+
+        def do_work():
+            a = A()
+            b = B(A())
+
+            a.attr = b
+            b.attr = a
+
+        do_work()
+        gc.collect() # this blows up (bad C pointer) when it fails
 
     @cpython_only
     def test_garbage_at_shutdown(self):

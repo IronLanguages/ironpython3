@@ -66,18 +66,14 @@ try:
 except Exception:
     pass
 
-def test_pickle_dump_load(assertion, source, target=None,
-        *, protocol=(0, HIGHEST_PROTOCOL)):
-    start, stop = protocol
+def test_pickle_dump_load(assertion, source, target=None):
     if target is None:
         target = source
-    for protocol in range(start, stop+1):
+    for protocol in range(HIGHEST_PROTOCOL + 1):
         assertion(loads(dumps(source, protocol=protocol)), target)
 
-def test_pickle_exception(assertion, exception, obj,
-        *, protocol=(0, HIGHEST_PROTOCOL)):
-    start, stop = protocol
-    for protocol in range(start, stop+1):
+def test_pickle_exception(assertion, exception, obj):
+    for protocol in range(HIGHEST_PROTOCOL + 1):
         with assertion(exception):
             dumps(obj, protocol=protocol)
 
@@ -176,6 +172,18 @@ class TestEnum(unittest.TestCase):
                 set(['__class__', '__doc__', '__module__', 'name', 'value', 'wowser']),
                 )
 
+    def test_dir_on_sub_with_behavior_on_super(self):
+        # see issue22506
+        class SuperEnum(Enum):
+            def invisible(self):
+                return "did you see me?"
+        class SubEnum(SuperEnum):
+            sample = 5
+        self.assertEqual(
+                set(dir(SubEnum.sample)),
+                set(['__class__', '__doc__', '__module__', 'name', 'value', 'invisible']),
+                )
+
     def test_enum_in_enum_out(self):
         Season = self.Season
         self.assertIs(Season(Season.WINTER), Season.WINTER)
@@ -244,6 +252,19 @@ class TestEnum(unittest.TestCase):
             del Season.DRY
         with self.assertRaises(AttributeError):
             del Season.SPRING.name
+
+    def test_bool_of_class(self):
+        class Empty(Enum):
+            pass
+        self.assertTrue(bool(Empty))
+
+    def test_bool_of_member(self):
+        class Count(Enum):
+            zero = 0
+            one = 1
+            two = 2
+        for member in Count:
+            self.assertTrue(bool(member))
 
     def test_invalid_names(self):
         with self.assertRaises(ValueError):
@@ -520,6 +541,18 @@ class TestEnum(unittest.TestCase):
         self.assertEqual([k for k,v in WeekDay.__members__.items()
                 if v.name != k], ['TEUSDAY', ])
 
+    def test_intenum_from_bytes(self):
+        self.assertIs(IntStooges.from_bytes(b'\x00\x03', 'big'), IntStooges.MOE)
+        with self.assertRaises(ValueError):
+            IntStooges.from_bytes(b'\x00\x05', 'big')
+
+    def test_floatenum_fromhex(self):
+        h = float.hex(FloatStooges.MOE.value)
+        self.assertIs(FloatStooges.fromhex(h), FloatStooges.MOE)
+        h = float.hex(FloatStooges.MOE.value + 0.01)
+        with self.assertRaises(ValueError):
+            FloatStooges.fromhex(h)
+
     def test_pickle_enum(self):
         if isinstance(Stooges, Exception):
             raise Stooges
@@ -563,11 +596,15 @@ class TestEnum(unittest.TestCase):
 
         self.__class__.NestedEnum = NestedEnum
         self.NestedEnum.__qualname__ = '%s.NestedEnum' % self.__class__.__name__
-        test_pickle_exception(
-                self.assertRaises, PicklingError, self.NestedEnum.twigs,
-                protocol=(0, 3))
-        test_pickle_dump_load(self.assertIs, self.NestedEnum.twigs,
-                protocol=(4, HIGHEST_PROTOCOL))
+        test_pickle_dump_load(self.assertIs, self.NestedEnum.twigs)
+
+    def test_pickle_by_name(self):
+        class ReplaceGlobalInt(IntEnum):
+            ONE = 1
+            TWO = 2
+        ReplaceGlobalInt.__reduce_ex__ = enum._reduce_ex_by_name
+        for proto in range(HIGHEST_PROTOCOL):
+            self.assertEqual(ReplaceGlobalInt.TWO.__reduce_ex__(proto), 'TWO')
 
     def test_exploding_pickle(self):
         BadPickle = Enum(
@@ -634,6 +671,23 @@ class TestEnum(unittest.TestCase):
             self.assertIn(e, SummerMonth)
             self.assertIs(type(e), SummerMonth)
 
+    def test_programatic_function_string_with_start(self):
+        SummerMonth = Enum('SummerMonth', 'june july august', start=10)
+        lst = list(SummerMonth)
+        self.assertEqual(len(lst), len(SummerMonth))
+        self.assertEqual(len(SummerMonth), 3, SummerMonth)
+        self.assertEqual(
+                [SummerMonth.june, SummerMonth.july, SummerMonth.august],
+                lst,
+                )
+        for i, month in enumerate('june july august'.split(), 10):
+            e = SummerMonth(i)
+            self.assertEqual(int(e.value), i)
+            self.assertNotEqual(e, i)
+            self.assertEqual(e.name, month)
+            self.assertIn(e, SummerMonth)
+            self.assertIs(type(e), SummerMonth)
+
     def test_programatic_function_string_list(self):
         SummerMonth = Enum('SummerMonth', ['june', 'july', 'august'])
         lst = list(SummerMonth)
@@ -644,6 +698,23 @@ class TestEnum(unittest.TestCase):
                 lst,
                 )
         for i, month in enumerate('june july august'.split(), 1):
+            e = SummerMonth(i)
+            self.assertEqual(int(e.value), i)
+            self.assertNotEqual(e, i)
+            self.assertEqual(e.name, month)
+            self.assertIn(e, SummerMonth)
+            self.assertIs(type(e), SummerMonth)
+
+    def test_programatic_function_string_list_with_start(self):
+        SummerMonth = Enum('SummerMonth', ['june', 'july', 'august'], start=20)
+        lst = list(SummerMonth)
+        self.assertEqual(len(lst), len(SummerMonth))
+        self.assertEqual(len(SummerMonth), 3, SummerMonth)
+        self.assertEqual(
+                [SummerMonth.june, SummerMonth.july, SummerMonth.august],
+                lst,
+                )
+        for i, month in enumerate('june july august'.split(), 20):
             e = SummerMonth(i)
             self.assertEqual(int(e.value), i)
             self.assertNotEqual(e, i)
@@ -707,6 +778,22 @@ class TestEnum(unittest.TestCase):
             self.assertIn(e, SummerMonth)
             self.assertIs(type(e), SummerMonth)
 
+    def test_programatic_function_type_with_start(self):
+        SummerMonth = Enum('SummerMonth', 'june july august', type=int, start=30)
+        lst = list(SummerMonth)
+        self.assertEqual(len(lst), len(SummerMonth))
+        self.assertEqual(len(SummerMonth), 3, SummerMonth)
+        self.assertEqual(
+                [SummerMonth.june, SummerMonth.july, SummerMonth.august],
+                lst,
+                )
+        for i, month in enumerate('june july august'.split(), 30):
+            e = SummerMonth(i)
+            self.assertEqual(e, i)
+            self.assertEqual(e.name, month)
+            self.assertIn(e, SummerMonth)
+            self.assertIs(type(e), SummerMonth)
+
     def test_programatic_function_type_from_subclass(self):
         SummerMonth = IntEnum('SummerMonth', 'june july august')
         lst = list(SummerMonth)
@@ -717,6 +804,22 @@ class TestEnum(unittest.TestCase):
                 lst,
                 )
         for i, month in enumerate('june july august'.split(), 1):
+            e = SummerMonth(i)
+            self.assertEqual(e, i)
+            self.assertEqual(e.name, month)
+            self.assertIn(e, SummerMonth)
+            self.assertIs(type(e), SummerMonth)
+
+    def test_programatic_function_type_from_subclass_with_start(self):
+        SummerMonth = IntEnum('SummerMonth', 'june july august', start=40)
+        lst = list(SummerMonth)
+        self.assertEqual(len(lst), len(SummerMonth))
+        self.assertEqual(len(SummerMonth), 3, SummerMonth)
+        self.assertEqual(
+                [SummerMonth.june, SummerMonth.july, SummerMonth.august],
+                lst,
+                )
+        for i, month in enumerate('june july august'.split(), 40):
             e = SummerMonth(i)
             self.assertEqual(e, i)
             self.assertEqual(e.name, month)
@@ -1010,9 +1113,9 @@ class TestEnum(unittest.TestCase):
         globals()['NEI'] = NEI
         NI5 = NamedInt('test', 5)
         self.assertEqual(NI5, 5)
-        test_pickle_dump_load(self.assertEqual, NI5, 5, protocol=(4, 4))
+        test_pickle_dump_load(self.assertEqual, NI5, 5)
         self.assertEqual(NEI.y.value, 2)
-        test_pickle_dump_load(self.assertIs, NEI.y, protocol=(4, 4))
+        test_pickle_dump_load(self.assertIs, NEI.y)
         test_pickle_dump_load(self.assertIs, NEI)
 
     def test_subclasses_with_reduce(self):
@@ -1477,11 +1580,26 @@ class TestUnique(unittest.TestCase):
                 triple = 3
                 turkey = 3
 
+    def test_unique_with_name(self):
+        @unique
+        class Silly(Enum):
+            one = 1
+            two = 'dos'
+            name = 3
+        @unique
+        class Sillier(IntEnum):
+            single = 1
+            name = 2
+            triple = 3
+            value = 4
 
-expected_help_output = """
+
+expected_help_output_with_docs = """\
 Help on class Color in module %s:
 
 class Color(enum.Enum)
+ |  An enumeration.
+ |\x20\x20
  |  Method resolution order:
  |      Color
  |      enum.Enum
@@ -1511,10 +1629,40 @@ class Color(enum.Enum)
  |      Returns a mapping of member name->value.
  |\x20\x20\x20\x20\x20\x20
  |      This mapping lists all enum members, including aliases. Note that this
- |      is a read-only view of the internal mapping.
-""".strip()
+ |      is a read-only view of the internal mapping."""
+
+expected_help_output_without_docs = """\
+Help on class Color in module %s:
+
+class Color(enum.Enum)
+ |  Method resolution order:
+ |      Color
+ |      enum.Enum
+ |      builtins.object
+ |\x20\x20
+ |  Data and other attributes defined here:
+ |\x20\x20
+ |  blue = <Color.blue: 3>
+ |\x20\x20
+ |  green = <Color.green: 2>
+ |\x20\x20
+ |  red = <Color.red: 1>
+ |\x20\x20
+ |  ----------------------------------------------------------------------
+ |  Data descriptors inherited from enum.Enum:
+ |\x20\x20
+ |  name
+ |\x20\x20
+ |  value
+ |\x20\x20
+ |  ----------------------------------------------------------------------
+ |  Data descriptors inherited from enum.EnumMeta:
+ |\x20\x20
+ |  __members__"""
 
 class TestStdLib(unittest.TestCase):
+
+    maxDiff = None
 
     class Color(Enum):
         red = 1
@@ -1523,19 +1671,20 @@ class TestStdLib(unittest.TestCase):
 
     def test_pydoc(self):
         # indirectly test __objclass__
-        expected_text = expected_help_output % __name__
+        if StrEnum.__doc__ is None:
+            expected_text = expected_help_output_without_docs % __name__
+        else:
+            expected_text = expected_help_output_with_docs % __name__
         output = StringIO()
         helper = pydoc.Helper(output=output)
         helper(self.Color)
         result = output.getvalue().strip()
-        if result != expected_text:
-            print_diffs(expected_text, result)
-            self.fail("outputs are not equal, see diff above")
+        self.assertEqual(result, expected_text)
 
     def test_inspect_getmembers(self):
         values = dict((
                 ('__class__', EnumMeta),
-                ('__doc__', None),
+                ('__doc__', 'An enumeration.'),
                 ('__members__', self.Color.__members__),
                 ('__module__', __name__),
                 ('blue', self.Color.blue),
@@ -1563,7 +1712,7 @@ class TestStdLib(unittest.TestCase):
                 Attribute(name='__class__', kind='data',
                     defining_class=object, object=EnumMeta),
                 Attribute(name='__doc__', kind='data',
-                    defining_class=self.Color, object=None),
+                    defining_class=self.Color, object='An enumeration.'),
                 Attribute(name='__members__', kind='property',
                     defining_class=EnumMeta, object=EnumMeta.__members__),
                 Attribute(name='__module__', kind='data',

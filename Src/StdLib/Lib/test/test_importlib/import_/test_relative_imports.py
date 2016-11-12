@@ -1,6 +1,5 @@
 """Test relative imports (PEP 328)."""
 from .. import util
-from . import util as import_util
 import sys
 import unittest
 
@@ -208,8 +207,15 @@ class RelativeImports:
         with self.assertRaises(KeyError):
             self.__import__('sys', level=1)
 
-Frozen_RelativeImports, Source_RelativeImports = util.test_both(
-        RelativeImports, __import__=import_util.__import__)
+    def test_relative_import_no_package_exists_absolute(self):
+        with self.assertRaises(SystemError):
+            self.__import__('sys', {'__package__': '', '__spec__': None},
+                            level=1)
+
+
+(Frozen_RelativeImports,
+ Source_RelativeImports
+ ) = util.test_both(RelativeImports, __import__=util.__import__)
 
 
 if __name__ == '__main__':

@@ -603,7 +603,7 @@ class DictTest(unittest.TestCase):
         # (D) subclass defines __missing__ method returning a value
         # (E) subclass defines __missing__ method raising RuntimeError
         # (F) subclass sets __missing__ instance variable (no effect)
-        # (G) subclass doesn't define __missing__ at a all
+        # (G) subclass doesn't define __missing__ at all
         class D(dict):
             def __missing__(self, key):
                 return 42
@@ -837,57 +837,60 @@ class DictTest(unittest.TestCase):
         self._tracked(MyDict())
 
     def test_iterator_pickling(self):
-        data = {1:"a", 2:"b", 3:"c"}
-        it = iter(data)
-        d = pickle.dumps(it)
-        it = pickle.loads(d)
-        self.assertEqual(sorted(it), sorted(data))
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            data = {1:"a", 2:"b", 3:"c"}
+            it = iter(data)
+            d = pickle.dumps(it, proto)
+            it = pickle.loads(d)
+            self.assertEqual(sorted(it), sorted(data))
 
-        it = pickle.loads(d)
-        try:
-            drop = next(it)
-        except StopIteration:
-            return
-        d = pickle.dumps(it)
-        it = pickle.loads(d)
-        del data[drop]
-        self.assertEqual(sorted(it), sorted(data))
+            it = pickle.loads(d)
+            try:
+                drop = next(it)
+            except StopIteration:
+                continue
+            d = pickle.dumps(it, proto)
+            it = pickle.loads(d)
+            del data[drop]
+            self.assertEqual(sorted(it), sorted(data))
 
     def test_itemiterator_pickling(self):
-        data = {1:"a", 2:"b", 3:"c"}
-        # dictviews aren't picklable, only their iterators
-        itorg = iter(data.items())
-        d = pickle.dumps(itorg)
-        it = pickle.loads(d)
-        # note that the type of type of the unpickled iterator
-        # is not necessarily the same as the original.  It is
-        # merely an object supporting the iterator protocol, yielding
-        # the same objects as the original one.
-        # self.assertEqual(type(itorg), type(it))
-        self.assertTrue(isinstance(it, collections.abc.Iterator))
-        self.assertEqual(dict(it), data)
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            data = {1:"a", 2:"b", 3:"c"}
+            # dictviews aren't picklable, only their iterators
+            itorg = iter(data.items())
+            d = pickle.dumps(itorg, proto)
+            it = pickle.loads(d)
+            # note that the type of the unpickled iterator
+            # is not necessarily the same as the original.  It is
+            # merely an object supporting the iterator protocol, yielding
+            # the same objects as the original one.
+            # self.assertEqual(type(itorg), type(it))
+            self.assertIsInstance(it, collections.abc.Iterator)
+            self.assertEqual(dict(it), data)
 
-        it = pickle.loads(d)
-        drop = next(it)
-        d = pickle.dumps(it)
-        it = pickle.loads(d)
-        del data[drop[0]]
-        self.assertEqual(dict(it), data)
+            it = pickle.loads(d)
+            drop = next(it)
+            d = pickle.dumps(it, proto)
+            it = pickle.loads(d)
+            del data[drop[0]]
+            self.assertEqual(dict(it), data)
 
     def test_valuesiterator_pickling(self):
-        data = {1:"a", 2:"b", 3:"c"}
-        # data.values() isn't picklable, only its iterator
-        it = iter(data.values())
-        d = pickle.dumps(it)
-        it = pickle.loads(d)
-        self.assertEqual(sorted(list(it)), sorted(list(data.values())))
+        for proto in range(pickle.HIGHEST_PROTOCOL):
+            data = {1:"a", 2:"b", 3:"c"}
+            # data.values() isn't picklable, only its iterator
+            it = iter(data.values())
+            d = pickle.dumps(it, proto)
+            it = pickle.loads(d)
+            self.assertEqual(sorted(list(it)), sorted(list(data.values())))
 
-        it = pickle.loads(d)
-        drop = next(it)
-        d = pickle.dumps(it)
-        it = pickle.loads(d)
-        values = list(it) + [drop]
-        self.assertEqual(sorted(values), sorted(list(data.values())))
+            it = pickle.loads(d)
+            drop = next(it)
+            d = pickle.dumps(it, proto)
+            it = pickle.loads(d)
+            values = list(it) + [drop]
+            self.assertEqual(sorted(values), sorted(list(data.values())))
 
     def test_instance_dict_getattr_str_subclass(self):
         class Foo:
@@ -906,6 +909,55 @@ class DictTest(unittest.TestCase):
         f.a = 'a'
         self.assertEqual(f.__dict__, {1:1, 'a':'a'})
 
+    def check_reentrant_insertion(self, mutate):
+        # This object will trigger mutation of the dict when replaced
+        # by another value.  Note this relies on refcounting: the test
+        # won't achieve its purpose on fully-GCed Python implementations.
+        class Mutating:
+            def __del__(self):
+                mutate(d)
+
+        d = {k: Mutating() for k in 'abcdefghijklmnopqr'}
+        for k in list(d):
+            d[k] = k
+
+    def test_reentrant_insertion(self):
+        # Reentrant insertion shouldn't crash (see issue #22653)
+        def mutate(d):
+            d['b'] = 5
+        self.check_reentrant_insertion(mutate)
+
+        def mutate(d):
+            d.update(self.__dict__)
+            d.clear()
+        self.check_reentrant_insertion(mutate)
+
+        def mutate(d):
+            while d:
+                d.popitem()
+        self.check_reentrant_insertion(mutate)
+
+    def test_merge_and_mutate(self):
+        class X:
+            def __hash__(self):
+                return 0
+
+            def __eq__(self, o):
+                other.clear()
+                return False
+
+        l = [(i,0) for i in range(1, 1337)]
+        other = dict(l)
+        other[X()] = 0
+        d = {X(): 0, 1: 1}
+        self.assertRaises(RuntimeError, d.update, other)
+
+    def test_free_after_iterating(self):
+        support.check_free_after_iterating(self, iter, dict)
+        support.check_free_after_iterating(self, lambda d: iter(d.keys()), dict)
+        support.check_free_after_iterating(self, lambda d: iter(d.values()), dict)
+        support.check_free_after_iterating(self, lambda d: iter(d.items()), dict)
+
 from test import mapping_tests
 
 class GeneralMappingTests(mapping_tests.BasicTestMappingProtocol):
@@ -917,12 +969,5 @@ class Dict(dict):
 class SubclassMappingTests(mapping_tests.BasicTestMappingProtocol):
     type2test = Dict
 
-def test_main():
-    support.run_unittest(
-        DictTest,
-        GeneralMappingTests,
-        SubclassMappingTests,
-    )
-
 if __name__ == "__main__":
-    test_main()
+    unittest.main()

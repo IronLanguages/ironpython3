@@ -1,5 +1,6 @@
 import datetime
 import warnings
+import weakref
 import unittest
 from itertools import product
 
@@ -97,12 +98,41 @@ class Test_Assertions(unittest.TestCase):
         else:
             self.fail("assertRaises() didn't let exception pass through")
 
+    def test_assertRaises_frames_survival(self):
+        # Issue #9815: assertRaises should avoid keeping local variables
+        # in a traceback alive.
+        class A:
+            pass
+        wr = None
+
+        class Foo(unittest.TestCase):
+
+            def foo(self):
+                nonlocal wr
+                a = A()
+                wr = weakref.ref(a)
+                try:
+                    raise IOError
+                except IOError:
+                    raise ValueError
+
+            def test_functional(self):
+                self.assertRaises(ValueError, self.foo)
+
+            def test_with(self):
+                with self.assertRaises(ValueError):
+                    self.foo()
+
+        Foo("test_functional").run()
+        self.assertIsNone(wr())
+        Foo("test_with").run()
+        self.assertIsNone(wr())
+
     def testAssertNotRegex(self):
         self.assertNotRegex('Ala ma kota', r'r+')
         try:
             self.assertNotRegex('Ala ma kota', r'k.t', 'Message')
         except self.failureException as e:
-            self.assertIn("'kot'", e.args[0])
             self.assertIn('Message', e.args[0])
         else:
             self.fail('assertNotRegex should have failed.')
@@ -297,6 +327,20 @@ class TestLongMessage(unittest.TestCase):
                             ["^unexpectedly identical: None$", "^oops$",
                              "^unexpectedly identical: None$",
                              "^unexpectedly identical: None : oops$"])
+
+    def testAssertRegex(self):
+        self.assertMessages('assertRegex', ('foo', 'bar'),
+                            ["^Regex didn't match:",
+                             "^oops$",
+                             "^Regex didn't match:",
+                             "^Regex didn't match: (.*) : oops$"])
+
+    def testAssertNotRegex(self):
+        self.assertMessages('assertNotRegex', ('foo', 'foo'),
+                            ["^Regex matched:",
+                             "^oops$",
+                             "^Regex matched:",
+                             "^Regex matched: (.*) : oops$"])
 
 
     def assertMessagesCM(self, methodName, args, func, errors):

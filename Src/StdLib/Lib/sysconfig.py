@@ -57,7 +57,7 @@ _INSTALL_SCHEMES = {
         'purelib': '{userbase}/Python{py_version_nodot}/site-packages',
         'platlib': '{userbase}/Python{py_version_nodot}/site-packages',
         'include': '{userbase}/Python{py_version_nodot}/Include',
-        'scripts': '{userbase}/Scripts',
+        'scripts': '{userbase}/Python{py_version_nodot}/Scripts',
         'data': '{userbase}',
         },
     'posix_user': {
@@ -109,13 +109,8 @@ else:
     # unable to retrieve the real program name
     _PROJECT_BASE = _safe_realpath(os.getcwd())
 
-if os.name == "nt" and "pcbuild" in _PROJECT_BASE[-8:].lower():
-    _PROJECT_BASE = _safe_realpath(os.path.join(_PROJECT_BASE, pardir))
-# PC/VS7.1
-if os.name == "nt" and "\\pc\\v" in _PROJECT_BASE[-10:].lower():
-    _PROJECT_BASE = _safe_realpath(os.path.join(_PROJECT_BASE, pardir, pardir))
-# PC/AMD64
-if os.name == "nt" and "\\pcbuild\\amd64" in _PROJECT_BASE[-14:].lower():
+if (os.name == 'nt' and
+    _PROJECT_BASE.lower().endswith(('\\pcbuild\\win32', '\\pcbuild\\amd64'))):
     _PROJECT_BASE = _safe_realpath(os.path.join(_PROJECT_BASE, pardir, pardir))
 
 # set for cross builds
@@ -129,11 +124,9 @@ def _is_python_source_dir(d):
     return False
 
 _sys_home = getattr(sys, '_home', None)
-if _sys_home and os.name == 'nt' and \
-    _sys_home.lower().endswith(('pcbuild', 'pcbuild\\amd64')):
-    _sys_home = os.path.dirname(_sys_home)
-    if _sys_home.endswith('pcbuild'):   # must be amd64
-        _sys_home = os.path.dirname(_sys_home)
+if (_sys_home and os.name == 'nt' and
+    _sys_home.lower().endswith(('\\pcbuild\\win32', '\\pcbuild\\amd64'))):
+    _sys_home = os.path.dirname(os.path.dirname(_sys_home))
 def is_python_build(check_home=False):
     if check_home and _sys_home:
         return _is_python_source_dir(_sys_home)
@@ -267,7 +260,12 @@ def _parse_makefile(filename, vars=None):
     while len(variables) > 0:
         for name in tuple(variables):
             value = notdone[name]
-            m = _findvar1_rx.search(value) or _findvar2_rx.search(value)
+            m1 = _findvar1_rx.search(value)
+            m2 = _findvar2_rx.search(value)
+            if m1 and m2:
+                m = m1 if m1.start() < m2.start() else m2
+            else:
+                m = m1 if m1 else m2
             if m is not None:
                 n = m.group(1)
                 found = True

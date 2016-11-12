@@ -164,7 +164,7 @@ notifications:
 
   # Gitter
   - provider: Webhook
-    url: https://webhooks.gitter.im/e/40f0538551cc83675ba6
+    url: https://webhooks.gitter.im/e/9fdb5c75f38c850816f8 
     #headers: ? message payload? how to differentiate projects?
     on_build_success: true
     on_build_failure: true

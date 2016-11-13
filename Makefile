@@ -1,7 +1,7 @@
 .PHONY: debug release test stage package clean
 
 debug:
-	xbuild Build.proj /t:Build /p:Mono=true;BuildFlavour=Debug
+	xbuild Build.proj /t:Build /p:Mono=true;BuildFlavour=Debug || (echo "make debug failed $$?"; exit 1)
 
 release:
 	xbuild Build.proj /t:Build /p:Mono=true;BuildFlavour=Release

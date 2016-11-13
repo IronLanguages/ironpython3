@@ -246,7 +246,8 @@ class MimeTypes:
                 except EnvironmentError:
                     break
                 else:
-                    yield ctype
+                    if '\0' not in ctype:
+                        yield ctype
                 i += 1
 
         with _winreg.OpenKey(_winreg.HKEY_CLASSES_ROOT, '') as hkcr:
@@ -415,6 +416,7 @@ def _default_mime_types():
         '.cpio'   : 'application/x-cpio',
         '.csh'    : 'application/x-csh',
         '.css'    : 'text/css',
+        '.csv'    : 'text/csv',
         '.dll'    : 'application/octet-stream',
         '.doc'    : 'application/msword',
         '.dot'    : 'application/msword',
@@ -512,6 +514,7 @@ def _default_mime_types():
         '.ustar'  : 'application/x-ustar',
         '.vcf'    : 'text/x-vcard',
         '.wav'    : 'audio/x-wav',
+        '.webm'   : 'video/webm',
         '.wiz'    : 'application/msword',
         '.wsdl'   : 'application/xml',
         '.xbm'    : 'image/x-xbitmap',

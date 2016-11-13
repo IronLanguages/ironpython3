@@ -16,7 +16,7 @@ this_dir_path = os.path.abspath(os.path.dirname(__file__))
 
 def is_package(path):
     for name in os.listdir(path):
-        if name in ('__init__.py', '__init__.pyc', '__init.pyo'):
+        if name in ('__init__.py', '__init__.pyc'):
             return True
     return False
 
@@ -68,5 +68,4 @@ def get_tests(text=True, gui=True, packages=None):
                 yield test
 
 if __name__ == "__main__":
-    test.support.use_resources = ['gui']
     test.support.run_unittest(*get_tests())

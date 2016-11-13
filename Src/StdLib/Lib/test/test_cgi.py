@@ -1,4 +1,4 @@
-from test.support import run_unittest, check_warnings
+from test.support import check_warnings
 import cgi
 import os
 import sys
@@ -186,9 +186,9 @@ class CgiTests(unittest.TestCase):
         cgi.initlog("%s", "Testing initlog 1")
         cgi.log("%s", "Testing log 2")
         self.assertEqual(cgi.logfp.getvalue(), "Testing initlog 1\nTesting log 2\n")
-        if os.path.exists("/dev/null"):
+        if os.path.exists(os.devnull):
             cgi.logfp = None
-            cgi.logfile = "/dev/null"
+            cgi.logfile = os.devnull
             cgi.initlog("%s", "Testing log 3")
             self.addCleanup(cgi.closelog)
             cgi.log("Testing log 4")
@@ -237,6 +237,25 @@ class CgiTests(unittest.TestCase):
             'CONTENT_TYPE': 'multipart/form-data; boundary={}'.format(BOUNDARY),
             'CONTENT_LENGTH': '558'}
         fp = BytesIO(POSTDATA.encode('latin-1'))
+        fs = cgi.FieldStorage(fp, environ=env, encoding="latin-1")
+        self.assertEqual(len(fs.list), 4)
+        expect = [{'name':'id', 'filename':None, 'value':'1234'},
+                  {'name':'title', 'filename':None, 'value':''},
+                  {'name':'file', 'filename':'test.txt', 'value':b'Testing 123.\n'},
+                  {'name':'submit', 'filename':None, 'value':' Add '}]
+        for x in range(len(fs.list)):
+            for k, exp in expect[x].items():
+                got = getattr(fs.list[x], k)
+                self.assertEqual(got, exp)
+
+    def test_fieldstorage_multipart_leading_whitespace(self):
+        env = {
+            'REQUEST_METHOD': 'POST',
+            'CONTENT_TYPE': 'multipart/form-data; boundary={}'.format(BOUNDARY),
+            'CONTENT_LENGTH': '560'}
+        # Add some leading whitespace to our post data that will cause the
+        # first line to not be the innerboundary.
+        fp = BytesIO(b"\r\n" + POSTDATA.encode('latin-1'))
         fs = cgi.FieldStorage(fp, environ=env, encoding="latin-1")
         self.assertEqual(len(fs.list), 4)
         expect = [{'name':'id', 'filename':None, 'value':'1234'},
@@ -306,6 +325,35 @@ Content-Type: text/plain
             for k, exp in expect[x].items():
                 got = getattr(files[x], k)
                 self.assertEqual(got, exp)
+
+    def test_fieldstorage_part_content_length(self):
+        BOUNDARY = "JfISa01"
+        POSTDATA = """--JfISa01
+Content-Disposition: form-data; name="submit-name"
+Content-Length: 5
+
+Larry
+--JfISa01"""
+        env = {
+            'REQUEST_METHOD': 'POST',
+            'CONTENT_TYPE': 'multipart/form-data; boundary={}'.format(BOUNDARY),
+            'CONTENT_LENGTH': str(len(POSTDATA))}
+        fp = BytesIO(POSTDATA.encode('latin-1'))
+        fs = cgi.FieldStorage(fp, environ=env, encoding="latin-1")
+        self.assertEqual(len(fs.list), 1)
+        self.assertEqual(fs.list[0].name, 'submit-name')
+        self.assertEqual(fs.list[0].value, 'Larry')
+
+    def test_fieldstorage_as_context_manager(self):
+        fp = BytesIO(b'x' * 10)
+        env = {'REQUEST_METHOD': 'PUT'}
+        with cgi.FieldStorage(fp=fp, environ=env) as fs:
+            content = fs.file.read()
+            self.assertFalse(fs.file.closed)
+        self.assertTrue(fs.file.closed)
+        self.assertEqual(content, 'x' * 10)
+        with self.assertRaisesRegex(ValueError, 'I/O operation on closed file'):
+            fs.file.read()
 
     _qs_result = {
         'key1': 'value1',
@@ -481,9 +529,5 @@ Content-Transfer-Encoding: binary
 --AaB03x--
 """
 
-
-def test_main():
-    run_unittest(CgiTests)
-
 if __name__ == '__main__':
-    test_main()
+    unittest.main()

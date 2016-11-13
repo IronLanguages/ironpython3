@@ -3,7 +3,6 @@ import unittest
 from test.support import requires
 
 from _tkinter import TclError
-import tkinter as tk
 
 class TextTest(object):
 
@@ -221,6 +220,7 @@ class TkTextTest(TextTest, unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.root.destroy()
+        del cls.root
 
 
 if __name__ == '__main__':

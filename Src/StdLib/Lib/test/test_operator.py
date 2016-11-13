@@ -1,4 +1,6 @@
 import unittest
+import pickle
+import sys
 
 from test import support
 
@@ -203,6 +205,15 @@ class OperatorTestCase:
         self.assertRaises(TypeError, operator.mul, None, None)
         self.assertTrue(operator.mul(5, 2) == 10)
 
+    def test_matmul(self):
+        operator = self.module
+        self.assertRaises(TypeError, operator.matmul)
+        self.assertRaises(TypeError, operator.matmul, 42, 42)
+        class M:
+            def __matmul__(self, other):
+                return other - 1
+        self.assertEqual(M() @ 42, 41)
+
     def test_neg(self):
         operator = self.module
         self.assertRaises(TypeError, operator.neg)
@@ -307,6 +318,9 @@ class OperatorTestCase:
         a.name = 'arthur'
         f = operator.attrgetter('name')
         self.assertEqual(f(a), 'arthur')
+        self.assertRaises(TypeError, f)
+        self.assertRaises(TypeError, f, a, 'dent')
+        self.assertRaises(TypeError, f, a, surname='dent')
         f = operator.attrgetter('rank')
         self.assertRaises(AttributeError, f, a)
         self.assertRaises(TypeError, operator.attrgetter, 2)
@@ -354,6 +368,9 @@ class OperatorTestCase:
         a = 'ABCDE'
         f = operator.itemgetter(2)
         self.assertEqual(f(a), 'C')
+        self.assertRaises(TypeError, f)
+        self.assertRaises(TypeError, f, a, 3)
+        self.assertRaises(TypeError, f, a, size=3)
         f = operator.itemgetter(10)
         self.assertRaises(IndexError, f, a)
 
@@ -387,6 +404,7 @@ class OperatorTestCase:
     def test_methodcaller(self):
         operator = self.module
         self.assertRaises(TypeError, operator.methodcaller)
+        self.assertRaises(TypeError, operator.methodcaller, 12)
         class A:
             def foo(self, *args, **kwds):
                 return args[0] + args[1]
@@ -399,6 +417,9 @@ class OperatorTestCase:
         self.assertRaises(IndexError, f, a)
         f = operator.methodcaller('foo', 1, 2)
         self.assertEqual(f(a), 3)
+        self.assertRaises(TypeError, f)
+        self.assertRaises(TypeError, f, a, 3)
+        self.assertRaises(TypeError, f, a, spam=3)
         f = operator.methodcaller('bar')
         self.assertEqual(f(a), 42)
         self.assertRaises(TypeError, f, a, a)
@@ -416,6 +437,7 @@ class OperatorTestCase:
             def __ilshift__  (self, other): return "ilshift"
             def __imod__     (self, other): return "imod"
             def __imul__     (self, other): return "imul"
+            def __imatmul__  (self, other): return "imatmul"
             def __ior__      (self, other): return "ior"
             def __ipow__     (self, other): return "ipow"
             def __irshift__  (self, other): return "irshift"
@@ -430,6 +452,7 @@ class OperatorTestCase:
         self.assertEqual(operator.ilshift  (c, 5), "ilshift")
         self.assertEqual(operator.imod     (c, 5), "imod")
         self.assertEqual(operator.imul     (c, 5), "imul")
+        self.assertEqual(operator.imatmul  (c, 5), "imatmul")
         self.assertEqual(operator.ior      (c, 5), "ior")
         self.assertEqual(operator.ipow     (c, 5), "ipow")
         self.assertEqual(operator.irshift  (c, 5), "irshift")
@@ -479,6 +502,108 @@ class PyOperatorTestCase(OperatorTestCase, unittest.TestCase):
 @unittest.skipUnless(c_operator, 'requires _operator')
 class COperatorTestCase(OperatorTestCase, unittest.TestCase):
     module = c_operator
+
+
+class OperatorPickleTestCase:
+    def copy(self, obj, proto):
+        with support.swap_item(sys.modules, 'operator', self.module):
+            pickled = pickle.dumps(obj, proto)
+        with support.swap_item(sys.modules, 'operator', self.module2):
+            return pickle.loads(pickled)
+
+    def test_attrgetter(self):
+        attrgetter = self.module.attrgetter
+        class A:
+            pass
+        a = A()
+        a.x = 'X'
+        a.y = 'Y'
+        a.z = 'Z'
+        a.t = A()
+        a.t.u = A()
+        a.t.u.v = 'V'
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            with self.subTest(proto=proto):
+                f = attrgetter('x')
+                f2 = self.copy(f, proto)
+                self.assertEqual(repr(f2), repr(f))
+                self.assertEqual(f2(a), f(a))
+                # multiple gets
+                f = attrgetter('x', 'y', 'z')
+                f2 = self.copy(f, proto)
+                self.assertEqual(repr(f2), repr(f))
+                self.assertEqual(f2(a), f(a))
+                # recursive gets
+                f = attrgetter('t.u.v')
+                f2 = self.copy(f, proto)
+                self.assertEqual(repr(f2), repr(f))
+                self.assertEqual(f2(a), f(a))
+
+    def test_itemgetter(self):
+        itemgetter = self.module.itemgetter
+        a = 'ABCDE'
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            with self.subTest(proto=proto):
+                f = itemgetter(2)
+                f2 = self.copy(f, proto)
+                self.assertEqual(repr(f2), repr(f))
+                self.assertEqual(f2(a), f(a))
+                # multiple gets
+                f = itemgetter(2, 0, 4)
+                f2 = self.copy(f, proto)
+                self.assertEqual(repr(f2), repr(f))
+                self.assertEqual(f2(a), f(a))
+
+    def test_methodcaller(self):
+        methodcaller = self.module.methodcaller
+        class A:
+            def foo(self, *args, **kwds):
+                return args[0] + args[1]
+            def bar(self, f=42):
+                return f
+            def baz(*args, **kwds):
+                return kwds['name'], kwds['self']
+        a = A()
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            with self.subTest(proto=proto):
+                f = methodcaller('bar')
+                f2 = self.copy(f, proto)
+                self.assertEqual(repr(f2), repr(f))
+                self.assertEqual(f2(a), f(a))
+                # positional args
+                f = methodcaller('foo', 1, 2)
+                f2 = self.copy(f, proto)
+                self.assertEqual(repr(f2), repr(f))
+                self.assertEqual(f2(a), f(a))
+                # keyword args
+                f = methodcaller('bar', f=5)
+                f2 = self.copy(f, proto)
+                self.assertEqual(repr(f2), repr(f))
+                self.assertEqual(f2(a), f(a))
+                f = methodcaller('baz', self='eggs', name='spam')
+                f2 = self.copy(f, proto)
+                # Can't test repr consistently with multiple keyword args
+                self.assertEqual(f2(a), f(a))
+
+class PyPyOperatorPickleTestCase(OperatorPickleTestCase, unittest.TestCase):
+    module = py_operator
+    module2 = py_operator
+
+@unittest.skipUnless(c_operator, 'requires _operator')
+class PyCOperatorPickleTestCase(OperatorPickleTestCase, unittest.TestCase):
+    module = py_operator
+    module2 = c_operator
+
+@unittest.skipUnless(c_operator, 'requires _operator')
+class CPyOperatorPickleTestCase(OperatorPickleTestCase, unittest.TestCase):
+    module = c_operator
+    module2 = py_operator
+
+@unittest.skipUnless(c_operator, 'requires _operator')
+class CCOperatorPickleTestCase(OperatorPickleTestCase, unittest.TestCase):
+    module = c_operator
+    module2 = c_operator
+
 
 if __name__ == "__main__":
     unittest.main()

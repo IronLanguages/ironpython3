@@ -7,10 +7,9 @@
 # Licensed to PSF under a Contributor Agreement.
 #
 
-import sys
-import functools
 import os
 import itertools
+import sys
 import weakref
 import atexit
 import threading        # we want threading to install it's
@@ -214,10 +213,11 @@ class Finalize(object):
             obj = None
 
         if obj is None:
-            return '<Finalize object, dead>'
+            return '<%s object, dead>' % self.__class__.__name__
 
-        x = '<Finalize object, callback=%s' % \
-            getattr(self._callback, '__name__', self._callback)
+        x = '<%s object, callback=%s' % (
+                self.__class__.__name__,
+                getattr(self._callback, '__name__', self._callback))
         if self._args:
             x += ', args=' + str(self._args)
         if self._kwargs:
@@ -329,6 +329,13 @@ class ForkAwareThreadLock(object):
         self.acquire = self._lock.acquire
         self.release = self._lock.release
 
+    def __enter__(self):
+        return self._lock.__enter__()
+
+    def __exit__(self, *args):
+        return self._lock.__exit__(*args)
+
+
 class ForkAwareLocal(threading.local):
     def __init__(self):
         register_after_fork(self, lambda obj : obj.__dict__.clear())
@@ -350,6 +357,28 @@ def close_all_fds_except(fds):
     assert fds[-1] == MAXFD, 'fd too large'
     for i in range(len(fds) - 1):
         os.closerange(fds[i]+1, fds[i+1])
+#
+# Close sys.stdin and replace stdin with os.devnull
+#
+
+def _close_stdin():
+    if sys.stdin is None:
+        return
+
+    try:
+        sys.stdin.close()
+    except (OSError, ValueError):
+        pass
+
+    try:
+        fd = os.open(os.devnull, os.O_RDONLY)
+        try:
+            sys.stdin = open(fd, closefd=False)
+        except:
+            os.close(fd)
+            raise
+    except (OSError, ValueError):
+        pass
 
 #
 # Start a program with only specified fds kept open

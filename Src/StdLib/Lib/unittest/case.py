@@ -9,6 +9,7 @@ import re
 import warnings
 import collections
 import contextlib
+import traceback
 
 from . import result
 from .util import (strclass, safe_repr, _count_diff_all_purpose,
@@ -118,6 +119,10 @@ def expectedFailure(test_item):
     test_item.__unittest_expecting_failure__ = True
     return test_item
 
+def _is_subtype(expected, basetype):
+    if isinstance(expected, tuple):
+        return all(_is_subtype(e, basetype) for e in expected)
+    return isinstance(expected, type) and issubclass(expected, basetype)
 
 class _BaseTestCaseContext:
 
@@ -128,41 +133,54 @@ class _BaseTestCaseContext:
         msg = self.test_case._formatMessage(self.msg, standardMsg)
         raise self.test_case.failureException(msg)
 
-
 class _AssertRaisesBaseContext(_BaseTestCaseContext):
 
-    def __init__(self, expected, test_case, callable_obj=None,
-                 expected_regex=None):
+    def __init__(self, expected, test_case, expected_regex=None):
         _BaseTestCaseContext.__init__(self, test_case)
         self.expected = expected
         self.test_case = test_case
-        if callable_obj is not None:
-            try:
-                self.obj_name = callable_obj.__name__
-            except AttributeError:
-                self.obj_name = str(callable_obj)
-        else:
-            self.obj_name = None
-        if isinstance(expected_regex, (bytes, str)):
+        if expected_regex is not None:
             expected_regex = re.compile(expected_regex)
         self.expected_regex = expected_regex
+        self.obj_name = None
         self.msg = None
 
-    def handle(self, name, callable_obj, args, kwargs):
+    def handle(self, name, args, kwargs):
         """
-        If callable_obj is None, assertRaises/Warns is being used as a
+        If args is empty, assertRaises/Warns is being used as a
         context manager, so check for a 'msg' kwarg and return self.
-        If callable_obj is not None, call it passing args and kwargs.
+        If args is not empty, call a callable passing positional and keyword
+        arguments.
         """
-        if callable_obj is None:
+        if not _is_subtype(self.expected, self._base_type):
+            raise TypeError('%s() arg 1 must be %s' %
+                            (name, self._base_type_str))
+        if args and args[0] is None:
+            warnings.warn("callable is None",
+                          DeprecationWarning, 3)
+            args = ()
+        if not args:
             self.msg = kwargs.pop('msg', None)
+            if kwargs:
+                warnings.warn('%r is an invalid keyword argument for '
+                              'this function' % next(iter(kwargs)),
+                              DeprecationWarning, 3)
             return self
+
+        callable_obj, *args = args
+        try:
+            self.obj_name = callable_obj.__name__
+        except AttributeError:
+            self.obj_name = str(callable_obj)
         with self:
             callable_obj(*args, **kwargs)
 
 
 class _AssertRaisesContext(_AssertRaisesBaseContext):
     """A context manager used to implement TestCase.assertRaises* methods."""
+
+    _base_type = BaseException
+    _base_type_str = 'an exception type or tuple of exception types'
 
     def __enter__(self):
         return self
@@ -178,6 +196,8 @@ class _AssertRaisesContext(_AssertRaisesBaseContext):
                                                                 self.obj_name))
             else:
                 self._raiseFailure("{} not raised".format(exc_name))
+        else:
+            traceback.clear_frames(tb)
         if not issubclass(exc_type, self.expected):
             # let unexpected exceptions pass through
             return False
@@ -195,6 +215,9 @@ class _AssertRaisesContext(_AssertRaisesBaseContext):
 
 class _AssertWarnsContext(_AssertRaisesBaseContext):
     """A context manager used to implement TestCase.assertWarns* methods."""
+
+    _base_type = Warning
+    _base_type_str = 'a warning type or tuple of warning types'
 
     def __enter__(self):
         # The __warningregistry__'s need to be in a pristine state for tests
@@ -560,8 +583,11 @@ class TestCase(object):
             finally:
                 result.stopTest(self)
             return
-        expecting_failure = getattr(testMethod,
-                                    "__unittest_expecting_failure__", False)
+        expecting_failure_method = getattr(testMethod,
+                                           "__unittest_expecting_failure__", False)
+        expecting_failure_class = getattr(self,
+                                          "__unittest_expecting_failure__", False)
+        expecting_failure = expecting_failure_class or expecting_failure_method
         outcome = _Outcome(result)
         try:
             self._outcome = outcome
@@ -671,15 +697,15 @@ class TestCase(object):
         except UnicodeDecodeError:
             return  '%s : %s' % (safe_repr(standardMsg), safe_repr(msg))
 
-    def assertRaises(self, excClass, callableObj=None, *args, **kwargs):
-        """Fail unless an exception of class excClass is raised
-           by callableObj when invoked with arguments args and keyword
-           arguments kwargs. If a different type of exception is
+    def assertRaises(self, expected_exception, *args, **kwargs):
+        """Fail unless an exception of class expected_exception is raised
+           by the callable when invoked with specified positional and
+           keyword arguments. If a different type of exception is
            raised, it will not be caught, and the test case will be
            deemed to have suffered an error, exactly as for an
            unexpected exception.
 
-           If called with callableObj omitted or None, will return a
+           If called with the callable and arguments omitted, will return a
            context object used like this::
 
                 with self.assertRaises(SomeException):
@@ -697,18 +723,18 @@ class TestCase(object):
                the_exception = cm.exception
                self.assertEqual(the_exception.error_code, 3)
         """
-        context = _AssertRaisesContext(excClass, self, callableObj)
-        return context.handle('assertRaises', callableObj, args, kwargs)
+        context = _AssertRaisesContext(expected_exception, self)
+        return context.handle('assertRaises', args, kwargs)
 
-    def assertWarns(self, expected_warning, callable_obj=None, *args, **kwargs):
+    def assertWarns(self, expected_warning, *args, **kwargs):
         """Fail unless a warning of class warnClass is triggered
-           by callable_obj when invoked with arguments args and keyword
-           arguments kwargs.  If a different type of warning is
+           by the callable when invoked with specified positional and
+           keyword arguments.  If a different type of warning is
            triggered, it will not be handled: depending on the other
            warning filtering rules in effect, it might be silenced, printed
            out, or raised as an exception.
 
-           If called with callable_obj omitted or None, will return a
+           If called with the callable and arguments omitted, will return a
            context object used like this::
 
                 with self.assertWarns(SomeWarning):
@@ -728,8 +754,8 @@ class TestCase(object):
                the_warning = cm.warning
                self.assertEqual(the_warning.some_attribute, 147)
         """
-        context = _AssertWarnsContext(expected_warning, self, callable_obj)
-        return context.handle('assertWarns', callable_obj, args, kwargs)
+        context = _AssertWarnsContext(expected_warning, self)
+        return context.handle('assertWarns', args, kwargs)
 
     def assertLogs(self, logger=None, level=None):
         """Fail unless a log message of level *level* or higher is emitted
@@ -938,7 +964,7 @@ class TestCase(object):
 
                 if item1 != item2:
                     differing += ('\nFirst differing element %d:\n%s\n%s\n' %
-                                 (i, item1, item2))
+                                 ((i,) + _common_shorten_repr(item1, item2)))
                     break
             else:
                 if (len1 == len2 and seq_type is None and
@@ -951,7 +977,7 @@ class TestCase(object):
                              'elements.\n' % (seq_type_name, len1 - len2))
                 try:
                     differing += ('First extra element %d:\n%s\n' %
-                                  (len2, seq1[len2]))
+                                  (len2, safe_repr(seq1[len2])))
                 except (TypeError, IndexError, NotImplementedError):
                     differing += ('Unable to index element %d '
                                   'of first %s\n' % (len2, seq_type_name))
@@ -960,7 +986,7 @@ class TestCase(object):
                              'elements.\n' % (seq_type_name, len2 - len1))
                 try:
                     differing += ('First extra element %d:\n%s\n' %
-                                  (len1, seq2[len1]))
+                                  (len1, safe_repr(seq2[len1])))
                 except (TypeError, IndexError, NotImplementedError):
                     differing += ('Unable to index element %d '
                                   'of second %s\n' % (len1, seq_type_name))
@@ -1216,26 +1242,23 @@ class TestCase(object):
             self.fail(self._formatMessage(msg, standardMsg))
 
     def assertRaisesRegex(self, expected_exception, expected_regex,
-                          callable_obj=None, *args, **kwargs):
+                          *args, **kwargs):
         """Asserts that the message in a raised exception matches a regex.
 
         Args:
             expected_exception: Exception class expected to be raised.
             expected_regex: Regex (re pattern object or string) expected
                     to be found in error message.
-            callable_obj: Function to be called.
+            args: Function to be called and extra positional args.
+            kwargs: Extra kwargs.
             msg: Optional message used in case of failure. Can only be used
                     when assertRaisesRegex is used as a context manager.
-            args: Extra args.
-            kwargs: Extra kwargs.
         """
-        context = _AssertRaisesContext(expected_exception, self, callable_obj,
-                                       expected_regex)
-
-        return context.handle('assertRaisesRegex', callable_obj, args, kwargs)
+        context = _AssertRaisesContext(expected_exception, self, expected_regex)
+        return context.handle('assertRaisesRegex', args, kwargs)
 
     def assertWarnsRegex(self, expected_warning, expected_regex,
-                         callable_obj=None, *args, **kwargs):
+                         *args, **kwargs):
         """Asserts that the message in a triggered warning matches a regexp.
         Basic functioning is similar to assertWarns() with the addition
         that only warnings whose messages also match the regular expression
@@ -1245,15 +1268,13 @@ class TestCase(object):
             expected_warning: Warning class expected to be triggered.
             expected_regex: Regex (re pattern object or string) expected
                     to be found in error message.
-            callable_obj: Function to be called.
+            args: Function to be called and extra positional args.
+            kwargs: Extra kwargs.
             msg: Optional message used in case of failure. Can only be used
                     when assertWarnsRegex is used as a context manager.
-            args: Extra args.
-            kwargs: Extra kwargs.
         """
-        context = _AssertWarnsContext(expected_warning, self, callable_obj,
-                                      expected_regex)
-        return context.handle('assertWarnsRegex', callable_obj, args, kwargs)
+        context = _AssertWarnsContext(expected_warning, self, expected_regex)
+        return context.handle('assertWarnsRegex', args, kwargs)
 
     def assertRegex(self, text, expected_regex, msg=None):
         """Fail the test unless the text matches the regular expression."""
@@ -1261,8 +1282,10 @@ class TestCase(object):
             assert expected_regex, "expected_regex must not be empty."
             expected_regex = re.compile(expected_regex)
         if not expected_regex.search(text):
-            msg = msg or "Regex didn't match"
-            msg = '%s: %r not found in %r' % (msg, expected_regex.pattern, text)
+            standardMsg = "Regex didn't match: %r not found in %r" % (
+                expected_regex.pattern, text)
+            # _formatMessage ensures the longMessage option is respected
+            msg = self._formatMessage(msg, standardMsg)
             raise self.failureException(msg)
 
     def assertNotRegex(self, text, unexpected_regex, msg=None):
@@ -1271,11 +1294,12 @@ class TestCase(object):
             unexpected_regex = re.compile(unexpected_regex)
         match = unexpected_regex.search(text)
         if match:
-            msg = msg or "Regex matched"
-            msg = '%s: %r matches %r in %r' % (msg,
-                                               text[match.start():match.end()],
-                                               unexpected_regex.pattern,
-                                               text)
+            standardMsg = 'Regex matched: %r matches %r in %r' % (
+                text[match.start() : match.end()],
+                unexpected_regex.pattern,
+                text)
+            # _formatMessage ensures the longMessage option is respected
+            msg = self._formatMessage(msg, standardMsg)
             raise self.failureException(msg)
 
 
@@ -1297,6 +1321,7 @@ class TestCase(object):
     failIf = _deprecate(assertFalse)
     assertRaisesRegexp = _deprecate(assertRaisesRegex)
     assertRegexpMatches = _deprecate(assertRegex)
+    assertNotRegexpMatches = _deprecate(assertNotRegex)
 
 
 
@@ -1338,9 +1363,6 @@ class FunctionTestCase(TestCase):
                self._tearDownFunc == other._tearDownFunc and \
                self._testFunc == other._testFunc and \
                self._description == other._description
-
-    def __ne__(self, other):
-        return not self == other
 
     def __hash__(self):
         return hash((type(self), self._setUpFunc, self._tearDownFunc,

@@ -614,6 +614,8 @@ def test_next_until_return_at_return_event():
     ...     test_function_2()
     ...     end = 1
 
+    >>> from bdb import Breakpoint
+    >>> Breakpoint.next = 1
     >>> with PdbTestInput(['break test_function_2',
     ...                    'continue',
     ...                    'return',
@@ -675,10 +677,12 @@ def test_pdb_next_command_for_generator():
     ...     import pdb; pdb.Pdb(nosigint=True).set_trace()
     ...     it = test_gen()
     ...     try:
-    ...         assert next(it) == 0
+    ...         if next(it) != 0:
+    ...             raise AssertionError
     ...         next(it)
     ...     except StopIteration as ex:
-    ...         assert ex.value == 1
+    ...         if ex.value != 1:
+    ...             raise AssertionError
     ...     print("finished")
 
     >>> with PdbTestInput(['step',
@@ -697,7 +701,7 @@ def test_pdb_next_command_for_generator():
     -> try:
     (Pdb) step
     > <doctest test.test_pdb.test_pdb_next_command_for_generator[1]>(5)test_function()
-    -> assert next(it) == 0
+    -> if next(it) != 0:
     (Pdb) step
     --Call--
     > <doctest test.test_pdb.test_pdb_next_command_for_generator[0]>(1)test_gen()
@@ -714,7 +718,7 @@ def test_pdb_next_command_for_generator():
     -> return 1
     (Pdb) step
     StopIteration: 1
-    > <doctest test.test_pdb.test_pdb_next_command_for_generator[1]>(6)test_function()
+    > <doctest test.test_pdb.test_pdb_next_command_for_generator[1]>(7)test_function()
     -> next(it)
     (Pdb) continue
     finished
@@ -733,10 +737,12 @@ def test_pdb_return_command_for_generator():
     ...     import pdb; pdb.Pdb(nosigint=True).set_trace()
     ...     it = test_gen()
     ...     try:
-    ...         assert next(it) == 0
+    ...         if next(it) != 0:
+    ...             raise AssertionError
     ...         next(it)
     ...     except StopIteration as ex:
-    ...         assert ex.value == 1
+    ...         if ex.value != 1:
+    ...             raise AssertionError
     ...     print("finished")
 
     >>> with PdbTestInput(['step',
@@ -754,21 +760,21 @@ def test_pdb_return_command_for_generator():
     -> try:
     (Pdb) step
     > <doctest test.test_pdb.test_pdb_return_command_for_generator[1]>(5)test_function()
-    -> assert next(it) == 0
+    -> if next(it) != 0:
     (Pdb) step
     --Call--
     > <doctest test.test_pdb.test_pdb_return_command_for_generator[0]>(1)test_gen()
     -> def test_gen():
     (Pdb) return
     StopIteration: 1
-    > <doctest test.test_pdb.test_pdb_return_command_for_generator[1]>(6)test_function()
+    > <doctest test.test_pdb.test_pdb_return_command_for_generator[1]>(7)test_function()
     -> next(it)
     (Pdb) step
-    > <doctest test.test_pdb.test_pdb_return_command_for_generator[1]>(7)test_function()
+    > <doctest test.test_pdb.test_pdb_return_command_for_generator[1]>(8)test_function()
     -> except StopIteration as ex:
     (Pdb) step
-    > <doctest test.test_pdb.test_pdb_return_command_for_generator[1]>(8)test_function()
-    -> assert ex.value == 1
+    > <doctest test.test_pdb.test_pdb_return_command_for_generator[1]>(9)test_function()
+    -> if ex.value != 1:
     (Pdb) continue
     finished
     """
@@ -818,7 +824,7 @@ def test_pdb_until_command_for_generator():
     """
 
 def test_pdb_next_command_in_generator_for_loop():
-    """The next command on returning from a generator controled by a for loop.
+    """The next command on returning from a generator controlled by a for loop.
 
     >>> def test_gen():
     ...     yield 0
@@ -914,6 +920,7 @@ class PdbTestCase(unittest.TestCase):
         with open(filename, 'w') as f:
             f.write(textwrap.dedent(script))
         self.addCleanup(support.unlink, filename)
+        self.addCleanup(support.rmtree, '__pycache__')
         cmd = [sys.executable, '-m', 'pdb', filename]
         stdout = stderr = None
         with subprocess.Popen(cmd, stdout=subprocess.PIPE,
@@ -1035,6 +1042,18 @@ class PdbTestCase(unittest.TestCase):
         stdout, stderr = proc.communicate(b'cont\n')
         self.assertNotIn('Error', stdout.decode(),
                          "Got an error running test script under PDB")
+
+    def test_issue16180(self):
+        # A syntax error in the debuggee.
+        script = "def f: pass\n"
+        commands = ''
+        expected = "SyntaxError:"
+        stdout, stderr = self.run_pdb(script, commands)
+        self.assertIn(expected, stdout,
+            '\n\nExpected:\n{}\nGot:\n{}\n'
+            'Fail to handle a syntax error in the debuggee.'
+            .format(expected, stdout))
+
 
     def tearDown(self):
         support.unlink(support.TESTFN)

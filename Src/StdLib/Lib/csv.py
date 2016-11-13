@@ -147,16 +147,13 @@ class DictWriter:
             if wrong_fields:
                 raise ValueError("dict contains fields not in fieldnames: "
                                  + ", ".join([repr(x) for x in wrong_fields]))
-        return [rowdict.get(key, self.restval) for key in self.fieldnames]
+        return (rowdict.get(key, self.restval) for key in self.fieldnames)
 
     def writerow(self, rowdict):
         return self.writer.writerow(self._dict_to_list(rowdict))
 
     def writerows(self, rowdicts):
-        rows = []
-        for rowdict in rowdicts:
-            rows.append(self._dict_to_list(rowdict))
-        return self.writer.writerows(rows)
+        return self.writer.writerows(map(self._dict_to_list, rowdicts))
 
 # Guard Sniffer's type checking against builds that exclude complex()
 try:
@@ -231,20 +228,21 @@ class Sniffer:
         quotes = {}
         delims = {}
         spaces = 0
+        groupindex = regexp.groupindex
         for m in matches:
-            n = regexp.groupindex['quote'] - 1
+            n = groupindex['quote'] - 1
             key = m[n]
             if key:
                 quotes[key] = quotes.get(key, 0) + 1
             try:
-                n = regexp.groupindex['delim'] - 1
+                n = groupindex['delim'] - 1
                 key = m[n]
             except KeyError:
                 continue
             if key and (delimiters is None or key in delimiters):
                 delims[key] = delims.get(key, 0) + 1
             try:
-                n = regexp.groupindex['space'] - 1
+                n = groupindex['space'] - 1
             except KeyError:
                 continue
             if m[n]:

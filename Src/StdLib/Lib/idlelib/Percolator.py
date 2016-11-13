@@ -1,6 +1,7 @@
 from idlelib.WidgetRedirector import WidgetRedirector
 from idlelib.Delegator import Delegator
 
+
 class Percolator:
 
     def __init__(self, text):
@@ -16,8 +17,10 @@ class Percolator:
         while self.top is not self.bottom:
             self.removefilter(self.top)
         self.top = None
-        self.bottom.setdelegate(None); self.bottom = None
-        self.redir.close(); self.redir = None
+        self.bottom.setdelegate(None)
+        self.bottom = None
+        self.redir.close()
+        self.redir = None
         self.text = None
 
     def insert(self, index, chars, tags=None):
@@ -51,34 +54,52 @@ class Percolator:
             f.setdelegate(filter.delegate)
             filter.setdelegate(None)
 
-def main():
-    import tkinter as Tk
+
+def _percolator(parent):  # htest #
+    import tkinter as tk
+    import re
+
     class Tracer(Delegator):
         def __init__(self, name):
             self.name = name
             Delegator.__init__(self, None)
+
         def insert(self, *args):
             print(self.name, ": insert", args)
             self.delegate.insert(*args)
+
         def delete(self, *args):
             print(self.name, ": delete", args)
             self.delegate.delete(*args)
-    root = Tk.Tk()
-    root.wm_protocol("WM_DELETE_WINDOW", root.quit)
-    text = Tk.Text()
-    text.pack()
-    text.focus_set()
+
+    box = tk.Toplevel(parent)
+    box.title("Test Percolator")
+    width, height, x, y = list(map(int, re.split('[x+]', parent.geometry())))
+    box.geometry("+%d+%d" % (x, y + 150))
+    text = tk.Text(box)
     p = Percolator(text)
+    pin = p.insertfilter
+    pout = p.removefilter
     t1 = Tracer("t1")
     t2 = Tracer("t2")
-    p.insertfilter(t1)
-    p.insertfilter(t2)
-    root.mainloop() # click close widget to continue...
-    p.removefilter(t2)
-    root.mainloop()
-    p.insertfilter(t2)
-    p.removefilter(t1)
-    root.mainloop()
+
+    def toggle1():
+        (pin if var1.get() else pout)(t1)
+    def toggle2():
+        (pin if var2.get() else pout)(t2)
+
+    text.pack()
+    var1 = tk.IntVar()
+    cb1 = tk.Checkbutton(box, text="Tracer1", command=toggle1, variable=var1)
+    cb1.pack()
+    var2 = tk.IntVar()
+    cb2 = tk.Checkbutton(box, text="Tracer2", command=toggle2, variable=var2)
+    cb2.pack()
 
 if __name__ == "__main__":
-    main()
+    import unittest
+    unittest.main('idlelib.idle_test.test_percolator', verbosity=2,
+                  exit=False)
+
+    from idlelib.idle_test.htest import run
+    run(_percolator)

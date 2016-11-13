@@ -10,14 +10,10 @@ import re
 import sys
 import time
 import random
-import warnings
 
 from copy import deepcopy
 from io import StringIO, BytesIO
-from email._policybase import compat32
-from email.header import Header
 from email.utils import _has_surrogates
-import email.charset as _charset
 
 UNDERSCORE = '_'
 NL = '\n'  # XXX: no longer used by the code below.
@@ -36,16 +32,16 @@ class Generator:
     # Public interface
     #
 
-    def __init__(self, outfp, mangle_from_=True, maxheaderlen=None, *,
+    def __init__(self, outfp, mangle_from_=None, maxheaderlen=None, *,
                  policy=None):
         """Create the generator for message flattening.
 
         outfp is the output file-like object for writing the message to.  It
         must have a write() method.
 
-        Optional mangle_from_ is a flag that, when True (the default), escapes
-        From_ lines in the body of the message by putting a `>' in front of
-        them.
+        Optional mangle_from_ is a flag that, when True (the default if policy
+        is not set), escapes From_ lines in the body of the message by putting
+        a `>' in front of them.
 
         Optional maxheaderlen specifies the longest length for a non-continued
         header.  When a header line is longer (in characters, with tabs
@@ -55,10 +51,14 @@ class Generator:
         by RFC 2822.
 
         The policy keyword specifies a policy object that controls a number of
-        aspects of the generator's operation.  The default policy maintains
-        backward compatibility.
+        aspects of the generator's operation.  If no policy is specified,
+        the policy associated with the Message object passed to the
+        flatten method is used.
 
         """
+
+        if mangle_from_ is None:
+            mangle_from_ = True if policy is None else policy.mangle_from_
         self._fp = outfp
         self._mangle_from_ = mangle_from_
         self.maxheaderlen = maxheaderlen
@@ -80,7 +80,9 @@ class Generator:
         Note that for subobjects, no From_ line is printed.
 
         linesep specifies the characters used to indicate a new line in
-        the output.  The default value is determined by the policy.
+        the output.  The default value is determined by the policy specified
+        when the Generator instance was created or, if none was specified,
+        from the policy associated with the msg.
 
         """
         # We use the _XXX constants for operating on data that comes directly
@@ -450,7 +452,7 @@ class DecodedGenerator(Generator):
     Like the Generator base class, except that non-text parts are substituted
     with a format string representing the part.
     """
-    def __init__(self, outfp, mangle_from_=True, maxheaderlen=78, fmt=None):
+    def __init__(self, outfp, mangle_from_=None, maxheaderlen=78, fmt=None):
         """Like Generator.__init__() except that an additional optional
         argument is allowed.
 

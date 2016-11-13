@@ -159,11 +159,12 @@ class TestBasicOps:
             self.assertEqual(y1, y2)
 
     def test_pickling(self):
-        state = pickle.dumps(self.gen)
-        origseq = [self.gen.random() for i in range(10)]
-        newgen = pickle.loads(state)
-        restoredseq = [newgen.random() for i in range(10)]
-        self.assertEqual(origseq, restoredseq)
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            state = pickle.dumps(self.gen, proto)
+            origseq = [self.gen.random() for i in range(10)]
+            newgen = pickle.loads(state)
+            restoredseq = [newgen.random() for i in range(10)]
+            self.assertEqual(origseq, restoredseq)
 
     def test_bug_1727780(self):
         # verify that version-2-pickles can be loaded
@@ -215,7 +216,8 @@ class SystemRandom_TestBasicOps(TestBasicOps, unittest.TestCase):
         self.assertEqual(self.gen.gauss_next, None)
 
     def test_pickling(self):
-        self.assertRaises(NotImplementedError, pickle.dumps, self.gen)
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            self.assertRaises(NotImplementedError, pickle.dumps, self.gen, proto)
 
     def test_53_bits_per_float(self):
         # This should pass whenever a C double has 53 bit precision.
@@ -336,6 +338,11 @@ class MersenneTwister_TestBasicOps(TestBasicOps, unittest.TestCase):
         self.assertRaises(TypeError, self.gen.setstate, (2, ('a',)*625, None))
         # Last element s/b an int also
         self.assertRaises(TypeError, self.gen.setstate, (2, (0,)*624+('a',), None))
+        # Last element s/b between 0 and 624
+        with self.assertRaises((ValueError, OverflowError)):
+            self.gen.setstate((2, (1,)*624+(625,), None))
+        with self.assertRaises((ValueError, OverflowError)):
+            self.gen.setstate((2, (1,)*624+(-1,), None))
 
         # Little trick to make "tuple(x % (2**32) for x in internalstate)"
         # raise ValueError. I cannot think of a simple way to achieve this, so
@@ -487,7 +494,7 @@ class MersenneTwister_TestBasicOps(TestBasicOps, unittest.TestCase):
             self.assertTrue(2**k > n > 2**(k-1))   # note the stronger assertion
 
     @unittest.mock.patch('random.Random.random')
-    def test_randbelow_overriden_random(self, random_mock):
+    def test_randbelow_overridden_random(self, random_mock):
         # Random._randbelow() can only use random() when the built-in one
         # has been overridden but no new getrandbits() method was supplied.
         random_mock.side_effect = random.SystemRandom().random
@@ -602,7 +609,7 @@ class TestDistributions(unittest.TestCase):
         for variate, args, expected in [
                 (g.uniform, (10.0, 10.0), 10.0),
                 (g.triangular, (10.0, 10.0), 10.0),
-                #(g.triangular, (10.0, 10.0, 10.0), 10.0),
+                (g.triangular, (10.0, 10.0, 10.0), 10.0),
                 (g.expovariate, (float('inf'),), 0.0),
                 (g.vonmisesvariate, (3.0, float('inf')), 3.0),
                 (g.gauss, (10.0, 0.0), 10.0),

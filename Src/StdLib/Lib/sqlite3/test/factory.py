@@ -23,6 +23,7 @@
 
 import unittest
 import sqlite3 as sqlite
+from collections.abc import Sequence
 
 class MyConnection(sqlite.Connection):
     def __init__(self, *args, **kwargs):
@@ -96,9 +97,37 @@ class RowFactoryTests(unittest.TestCase):
         self.assertEqual(col1, 1, "by name: wrong result for column 'A'")
         self.assertEqual(col2, 2, "by name: wrong result for column 'B'")
 
-        col1, col2 = row[0], row[1]
-        self.assertEqual(col1, 1, "by index: wrong result for column 0")
-        self.assertEqual(col2, 2, "by index: wrong result for column 1")
+        self.assertEqual(row[0], 1, "by index: wrong result for column 0")
+        self.assertEqual(row[1], 2, "by index: wrong result for column 1")
+        self.assertEqual(row[-1], 2, "by index: wrong result for column -1")
+        self.assertEqual(row[-2], 1, "by index: wrong result for column -2")
+
+        with self.assertRaises(IndexError):
+            row['c']
+        with self.assertRaises(IndexError):
+            row[2]
+        with self.assertRaises(IndexError):
+            row[-3]
+        with self.assertRaises(IndexError):
+            row[2**1000]
+
+    def CheckSqliteRowSlice(self):
+        # A sqlite.Row can be sliced like a list.
+        self.con.row_factory = sqlite.Row
+        row = self.con.execute("select 1, 2, 3, 4").fetchone()
+        self.assertEqual(row[0:0], ())
+        self.assertEqual(row[0:1], (1,))
+        self.assertEqual(row[1:3], (2, 3))
+        self.assertEqual(row[3:1], ())
+        # Explicit bounds are optional.
+        self.assertEqual(row[1:], (2, 3, 4))
+        self.assertEqual(row[:3], (1, 2, 3))
+        # Slices can use negative indices.
+        self.assertEqual(row[-2:-1], (3,))
+        self.assertEqual(row[-2:], (3, 4))
+        # Slicing supports steps.
+        self.assertEqual(row[0:4:2], (1, 3))
+        self.assertEqual(row[3:0:-2], (4, 2))
 
     def CheckSqliteRowIter(self):
         """Checks if the row object is iterable"""
@@ -141,6 +170,23 @@ class RowFactoryTests(unittest.TestCase):
         self.assertEqual(hash(row_1), hash(row_2))
         self.assertNotEqual(row_1, row_3)
         self.assertNotEqual(hash(row_1), hash(row_3))
+
+    def CheckSqliteRowAsSequence(self):
+        """ Checks if the row object can act like a sequence """
+        self.con.row_factory = sqlite.Row
+        row = self.con.execute("select 1 as a, 2 as b").fetchone()
+
+        as_tuple = tuple(row)
+        self.assertEqual(list(reversed(row)), list(reversed(as_tuple)))
+        self.assertIsInstance(row, Sequence)
+
+    def CheckFakeCursorClass(self):
+        # Issue #24257: Incorrect use of PyObject_IsInstance() caused
+        # segmentation fault.
+        class FakeCursor(str):
+            __class__ = sqlite.Cursor
+        cur = self.con.cursor(factory=FakeCursor)
+        self.assertRaises(TypeError, sqlite.Row, cur, ())
 
     def tearDown(self):
         self.con.close()

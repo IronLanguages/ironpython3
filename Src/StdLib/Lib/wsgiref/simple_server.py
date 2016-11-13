@@ -11,6 +11,7 @@ module.  See also the BaseHTTPServer module docs for other API information.
 """
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from io import BufferedWriter
 import sys
 import urllib.parse
 from wsgiref.handlers import SimpleHandler
@@ -82,7 +83,7 @@ class WSGIRequestHandler(BaseHTTPRequestHandler):
         else:
             path,query = self.path,''
 
-        env['PATH_INFO'] = urllib.parse.unquote_to_bytes(path).decode('iso-8859-1')
+        env['PATH_INFO'] = urllib.parse.unquote(path, 'iso-8859-1')
         env['QUERY_STRING'] = query
 
         host = self.address_string()
@@ -115,15 +116,28 @@ class WSGIRequestHandler(BaseHTTPRequestHandler):
     def handle(self):
         """Handle a single HTTP request"""
 
-        self.raw_requestline = self.rfile.readline()
+        self.raw_requestline = self.rfile.readline(65537)
+        if len(self.raw_requestline) > 65536:
+            self.requestline = ''
+            self.request_version = ''
+            self.command = ''
+            self.send_error(414)
+            return
+
         if not self.parse_request(): # An error code has been sent, just exit
             return
 
-        handler = ServerHandler(
-            self.rfile, self.wfile, self.get_stderr(), self.get_environ()
-        )
-        handler.request_handler = self      # backpointer for logging
-        handler.run(self.server.get_app())
+        # Avoid passing the raw file object wfile, which can do partial
+        # writes (Issue 24291)
+        stdout = BufferedWriter(self.wfile)
+        try:
+            handler = ServerHandler(
+                self.rfile, stdout, self.get_stderr(), self.get_environ()
+            )
+            handler.request_handler = self      # backpointer for logging
+            handler.run(self.server.get_app())
+        finally:
+            stdout.detach()
 
 
 

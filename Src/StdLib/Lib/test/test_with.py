@@ -8,12 +8,11 @@ import sys
 import unittest
 from collections import deque
 from contextlib import _GeneratorContextManager, contextmanager
-from test.support import run_unittest
 
 
 class MockContextManager(_GeneratorContextManager):
-    def __init__(self, func, *args, **kwds):
-        super().__init__(func, *args, **kwds)
+    def __init__(self, *args):
+        super().__init__(*args)
         self.enter_called = False
         self.exit_called = False
         self.exit_args = None
@@ -31,7 +30,7 @@ class MockContextManager(_GeneratorContextManager):
 
 def mock_contextmanager(func):
     def helper(*args, **kwds):
-        return MockContextManager(func, *args, **kwds)
+        return MockContextManager(func, args, kwds)
     return helper
 
 
@@ -455,7 +454,8 @@ class ExceptionalTestCase(ContextmanagerAssertionMixin, unittest.TestCase):
             with cm():
                 raise StopIteration("from with")
 
-        self.assertRaises(StopIteration, shouldThrow)
+        with self.assertWarnsRegex(PendingDeprecationWarning, "StopIteration"):
+            self.assertRaises(StopIteration, shouldThrow)
 
     def testRaisedStopIteration2(self):
         # From bug 1462485
@@ -482,7 +482,8 @@ class ExceptionalTestCase(ContextmanagerAssertionMixin, unittest.TestCase):
             with cm():
                 raise next(iter([]))
 
-        self.assertRaises(StopIteration, shouldThrow)
+        with self.assertWarnsRegex(PendingDeprecationWarning, "StopIteration"):
+            self.assertRaises(StopIteration, shouldThrow)
 
     def testRaisedGeneratorExit1(self):
         # From bug 1462485
@@ -737,14 +738,5 @@ class NestedWith(unittest.TestCase):
             self.assertEqual(10, b1)
             self.assertEqual(20, b2)
 
-def test_main():
-    run_unittest(FailureTestCase, NonexceptionalTestCase,
-                 NestedNonexceptionalTestCase, ExceptionalTestCase,
-                 NonLocalFlowControlTestCase,
-                 AssignmentTargetTestCase,
-                 ExitSwallowsExceptionTestCase,
-                 NestedWith)
-
-
 if __name__ == '__main__':
-    test_main()
+    unittest.main()

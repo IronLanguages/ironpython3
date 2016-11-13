@@ -1,0 +1,23 @@
+language: csharp
+
+solution: IronPython.sln
+
+before_install:
+  - curl https://api.nuget.org/downloads/nuget.exe -o nuget.exe
+  - mono nuget.exe install NUnit
+  - mono nuget.exe install NUnit.Framework
+  - mono nuget.exe install NUnitLite
+
+script:
+  - make
+
+after_script:
+  - pushd bin/Debug ; mono ./IronPythonTest.exe --result:all-result.xml; popd
+
+notifications:
+  email:
+    recipients:
+      #- slide.o.mix@gmail.com
+      - ticotimo@gmail.com
+    on_success: always # default: change
+    #on_failure: [always|never|change] # default: always

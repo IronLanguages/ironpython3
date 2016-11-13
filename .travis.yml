@@ -1,23 +1,31 @@
 language: csharp
 
+env:
+  - CONFIGURATION=Release
+
+mono:
+  - latest
+
 solution: IronPython.sln
 
 before_install:
   - curl https://api.nuget.org/downloads/nuget.exe -o nuget.exe
   - mono nuget.exe install NUnit
-  - mono nuget.exe install NUnit.Framework
   - mono nuget.exe install NUnitLite
 
 script:
-  - make
-
-after_script:
-  - pushd bin/Debug ; mono ./IronPythonTest.exe --result:all-result.xml; popd
+  - xbuild Build.proj /t:Build "/p:Mono=true;BuildFlavour=$CONFIGURATION"
+  - pushd bin/$CONFIGURATION
+  - mono ./IronPythonTest.exe --result:all-result.xml
 
 notifications:
   email:
     recipients:
-      #- slide.o.mix@gmail.com
+      - slide.o.mix@gmail.com
       - ticotimo@gmail.com
     on_success: always # default: change
     #on_failure: [always|never|change] # default: always
+
+  webhooks:
+    urls:
+      - https://webhooks.gitter.im/e/9fdb5c75f38c850816f8

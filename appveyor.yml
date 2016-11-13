@@ -72,6 +72,9 @@ build_script:
 
 # to run your custom scripts instead of automatic tests
 test_script:
+  #- .\make.cmd test-smoke
+  #- .\make.cmd test-cpython
+  #- .\make.cmd test-ironpython
   - .\make.cmd test-all
   #- nunit3-console .\bin\Debug\IronPythonTest.dll
 

@@ -420,6 +420,15 @@ namespace IronPython.Compiler {
                         if (ch >= '0' && ch <= '9')
                             return ReadFraction();
 
+                        if(NextChar('.')) {
+                            if (NextChar('.')) {
+                                MarkTokenEnd();
+                                return new ConstantValueToken(PythonOps.Ellipsis);
+                            } else {
+                                BufferBack();
+                            }
+                        }
+
                         MarkTokenEnd();
                         return Tokens.DotToken;
 
@@ -963,8 +972,14 @@ namespace IronPython.Compiler {
                         return new ConstantValueToken(LiteralParser.ParseImaginary(GetTokenString()));
 
                     default:
-                        BufferBack();
-                        MarkTokenEnd();
+                        if (!Char.IsDigit((char)ch) && !Char.IsWhiteSpace((char)ch) && ch != EOF) {
+                            BufferBack();
+                            BufferBack();
+                            MarkTokenEnd();
+                        } else {
+                            BufferBack();
+                            MarkTokenEnd();
+                        }
 
                         // TODO: parse in place
                         return new ConstantValueToken(ParseFloat(GetTokenString()));

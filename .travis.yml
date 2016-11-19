@@ -28,4 +28,4 @@ notifications:
 
   webhooks:
     urls:
-      - https://webhooks.gitter.im/e/9fdb5c75f38c850816f8
+      - https://webhooks.gitter.im/e/f04e10a7af4b181c18c0

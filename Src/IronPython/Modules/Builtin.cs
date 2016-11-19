@@ -800,6 +800,10 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         public static bool issubclass(CodeContext context, [NotNull]PythonType c, [NotNull]PythonType typeinfo) {
             return PythonOps.IsSubClass(c, typeinfo);
         }
+        public static bool issubclass(CodeContext context, [NotNull]OldClass c, object typeinfo) {
+            return PythonOps.IsSubClass(context, c.TypeObject, typeinfo);
+        }
+
 
         [LightThrowing]
         public static object issubclass(CodeContext/*!*/ context, object o, object typeinfo) {

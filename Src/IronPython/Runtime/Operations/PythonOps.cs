@@ -559,7 +559,7 @@ namespace IronPython.Runtime.Operations {
             if (!Converter.TryConvertToIndex(count, out icount)) {
                 PythonTuple pt = null;
                 if (count is OldInstance || !DynamicHelpers.GetPythonType(count).IsSystemType) {
-                    pt = Builtin.TryCoerce(DefaultContext.Default, count, sequence) as PythonTuple;
+                    pt = TryCoerce(DefaultContext.Default, count, sequence) as PythonTuple;
                 }
 
                 if (pt == null || !Converter.TryConvertToIndex(pt[0], out icount)) {

@@ -1066,17 +1066,9 @@ namespace IronPython.Compiler {
             } else if (ch == 'e') {
                 ch = NextChar();
                 if (ch == 'x') {
-                    ch = NextChar();
-                    if (ch == 'e') {
-                        if (NextChar() == 'c' && !IsNamePart(Peek())) {
-                            MarkTokenEnd();
-                            return Tokens.KeywordExecToken;
-                        }
-                    } else if (ch == 'c') {
-                        if (NextChar() == 'e' && NextChar() == 'p' && NextChar() == 't' && !IsNamePart(Peek())) {
-                            MarkTokenEnd();
-                            return Tokens.KeywordExceptToken;
-                        }
+                    if (NextChar() == 'c' && NextChar() == 'e' && NextChar() == 'p' && NextChar() == 't' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordExceptToken;
                     }
                 } else if (ch == 'l') {
                     ch = NextChar();

@@ -437,7 +437,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                     throw PythonOps.TypeError("'{0}' object is not callable", PythonOps.GetPythonTypeName(_function));
                 }
 
-                IEnumerator e = PythonOps.GetEnumerator(list);
+                IEnumerator e = PythonOps.GetEnumerator(_context, _list);
                 while(e.MoveNext()) {
                     object o = e.Current;
                     object t = (_function != null) ? PythonCalls.Call(_context, _function, o) : o;
@@ -1758,7 +1758,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
 
             public IEnumerator GetEnumerator() {
-                var enumerators = _iters.Select(x => PythonOps.GetEnumerator(x)).ToArray();
+                var enumerators = _iters.Select(x => PythonOps.GetEnumerator(_context, x)).ToArray();
                 while(enumerators.All(x => x.MoveNext())) {
                     yield return PythonOps.MakeTuple(enumerators.Select(x => x.Current).ToArray());
                 }                

@@ -908,7 +908,7 @@ namespace IronPython.Modules {
             /// <summary>
             /// Call the appropriate reduce method for obj and pickle the object using
             /// the resulting data. Use the first available of
-            /// copy_reg.dispatch_table[type(obj)], obj.__reduce_ex__, and obj.__reduce__.
+            /// copyreg.dispatch_table[type(obj)], obj.__reduce_ex__, and obj.__reduce__.
             /// </summary>
             private void SaveObject(PicklerObject/*!*/ pickler, CodeContext/*!*/ context, object obj) {
                 Debug.Assert(!MemoContains(obj));

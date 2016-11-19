@@ -57,16 +57,6 @@ namespace IronPython.Modules {
                 return _rnd;
             }
 
-            public void jumpahead(int count) {
-                lock (this) {
-                    _rnd.NextBytes(new byte[4096]);
-                }
-            }
-
-            public void jumpahead(double count) {
-                throw PythonOps.TypeError("jumpahead requires an integer, not 'float'");
-            }
-
             public object random() {
                 lock (this) {
                     return _rnd.NextDouble();

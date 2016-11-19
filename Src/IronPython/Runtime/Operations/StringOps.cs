@@ -1511,22 +1511,19 @@ namespace IronPython.Runtime.Operations {
         #region Internal implementation details
 
         internal static string Quote(string s) {
-
-            bool isUnicode = false;
             StringBuilder b = new StringBuilder(s.Length + 5);
             char quote = '\'';
             if (s.IndexOf('\'') != -1 && s.IndexOf('\"') == -1) {
                 quote = '\"';
             }
             b.Append(quote);
-            b.Append(ReprEncode(s, quote, ref isUnicode));
+            b.Append(ReprEncode(s, quote));
             b.Append(quote);
-            if (isUnicode) return "u" + b.ToString();
             return b.ToString();
         }
 
-        internal static string ReprEncode(string s, ref bool isUnicode) {
-            return ReprEncode(s, (char)0, ref isUnicode);
+        internal static string ReprEncode(string s) {
+            return ReprEncode(s, (char)0);
         }
 
         internal static bool TryGetEncoding(string name, out Encoding encoding) {
@@ -1631,14 +1628,13 @@ namespace IronPython.Runtime.Operations {
             return new string(rchars);
         }
 
-        internal static string ReprEncode(string s, char quote, ref bool isUnicode) {
+        internal static string ReprEncode(string s, char quote) {
             // in the common case we don't need to encode anything, so we
             // lazily create the StringBuilder only if necessary.
             StringBuilder b = null;
             for (int i = 0; i < s.Length; i++) {
                 char ch = s[i];
 
-                if (ch >= LowestUnicodeValue) isUnicode = true;
                 switch (ch) {
                     case '\\': ReprInit(ref b, s, i); b.Append("\\\\"); break;
                     case '\t': ReprInit(ref b, s, i); b.Append("\\t"); break;
@@ -1648,12 +1644,9 @@ namespace IronPython.Runtime.Operations {
                         if (quote != 0 && ch == quote) {
                             ReprInit(ref b, s, i);
                             b.Append('\\'); b.Append(ch);
-                        } else if (ch < ' ' || (ch >= 0x7f && ch <= 0xff)) {
+                        } else if (ch < ' ') {
                             ReprInit(ref b, s, i);
                             b.AppendFormat("\\x{0:x2}", (int)ch);
-                        } else if (ch > 0xff) {
-                            ReprInit(ref b, s, i);
-                            b.AppendFormat("\\u{0:x4}", (int)ch);
                         } else if (b != null) {
                             b.Append(ch);
                         }
@@ -1826,8 +1819,7 @@ namespace IronPython.Runtime.Operations {
                 if ("raw_unicode_escape" == normalizedName) {
                     return RawUnicodeEscapeEncode(s);
                 } else if ("unicode_escape" == normalizedName || "string_escape" == normalizedName) {
-                    bool dummy = false;
-                    return ReprEncode(s, '\'', ref dummy);
+                    return ReprEncode(s, '\'');
                 }
             }
 
@@ -2659,8 +2651,7 @@ namespace IronPython.Runtime.Operations {
                     return RawUnicodeEscapeEncode(new string(chars, index, count));
                 }
 
-                bool dummy = false;
-                return ReprEncode(new string(chars, index, count), ref dummy);
+                return ReprEncode(new string(chars, index, count));
             }
 
             public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex) {

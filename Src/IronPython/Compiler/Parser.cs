@@ -521,8 +521,6 @@ namespace IronPython.Compiler {
                     return ParseRaiseStmt();
                 case TokenKind.KeywordAssert:
                     return ParseAssertStmt();
-                case TokenKind.KeywordExec:
-                    return ParseExecStmt();
                 case TokenKind.KeywordDel:
                     return ParseDelStmt();
                 case TokenKind.KeywordYield:
@@ -945,23 +943,6 @@ namespace IronPython.Compiler {
                 return ReadName();
             }
             return null;
-        }
-
-        //exec_stmt: 'exec' expr ['in' expression [',' expression]]
-        private ExecStatement ParseExecStmt() {
-            Eat(TokenKind.KeywordExec);
-            var start = GetStart();
-            Expression code, locals = null, globals = null;
-            code = ParseExpr();
-            if (MaybeEat(TokenKind.KeywordIn)) {
-                globals = ParseExpression();
-                if (MaybeEat(TokenKind.Comma)) {
-                    locals = ParseExpression();
-                }
-            }
-            ExecStatement ret = new ExecStatement(code, locals, globals);
-            ret.SetLoc(_globalParent, start, GetEnd());
-            return ret;
         }
 
         //global_stmt: 'global' NAME (',' NAME)*

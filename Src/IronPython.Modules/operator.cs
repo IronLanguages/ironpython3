@@ -434,10 +434,6 @@ namespace IronPython.Modules {
             return repeat(context, a, b);
         }
 
-        public static object sequenceIncludes(CodeContext/*!*/ context, object a, object b) {
-            return contains(context, a, b);
-        }
-
         public static void setitem(CodeContext/*!*/ context, object a, object b, object c) {
             PythonContext.GetContext(context).SetIndex(a, b, c);
         }
@@ -452,10 +448,6 @@ namespace IronPython.Modules {
 
         public static void __setslice__(CodeContext/*!*/ context, object a, object b, object c, object v) {
             setslice(context, a, b, c, v);
-        }
-
-        public static bool isCallable(CodeContext/*!*/ context, object o) {
-            return PythonOps.IsCallable(context, o);
         }
 
         public static object isMappingType(CodeContext context, object o) {

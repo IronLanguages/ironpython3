@@ -67,7 +67,7 @@
     <Compile Include="_bytesio.cs" />
     <Compile Include="_codecs_cn.cs" />
     <Compile Include="_collections.cs" />
-    <Compile Include="copy_reg.cs" />
+    <Compile Include="copyreg.cs" />
     <Compile Include="cPickle.cs" />
     <Compile Include="cStringIO.cs" />
     <Compile Include="datetime.cs" />
@@ -131,7 +131,7 @@
     <Compile Include="..\AssemblyVersion.cs">
       <Link>Properties\AssemblyVersion.cs</Link>
     </Compile>
-    <Compile Include="_winreg.cs" />
+    <Compile Include="winreg.cs" />
     <Compile Include="_weakref.Generated.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -700,7 +700,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static string __repr__([NotNull]BigInteger/*!*/ self) {
-            return self.ToString() + "L";
+            return self.ToString();
         }
 
         public static object __coerce__(CodeContext context, BigInteger self, object o) {

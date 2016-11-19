@@ -78,7 +78,7 @@ namespace IronPython.Runtime
         private readonly HashSet<Assembly> _loadedAssemblies = new HashSet<Assembly>();
 #endif
 #endif
-        private Encoding _defaultEncoding = PythonAsciiEncoding.Instance;
+        private Encoding _defaultEncoding = Encoding.UTF8;
 
         // conditional variables for silverlight/desktop CLR features
         private Hosting.PythonService _pythonService;
@@ -94,9 +94,9 @@ namespace IronPython.Runtime
         private Dictionary<string, object> _errorHandlers;
         private List<object> _searchFunctions;
         private Dictionary<object, object> _moduleState;
-        /// <summary> stored for copy_reg module, used for reduce protocol </summary>
+        /// <summary> stored for copyreg module, used for reduce protocol </summary>
         internal BuiltinFunction NewObject;
-        /// <summary> stored for copy_reg module, used for reduce protocol </summary>
+        /// <summary> stored for copyreg module, used for reduce protocol </summary>
         internal BuiltinFunction PythonReconstructor;
         private Dictionary<Type, object> _genericSiteStorage;
 
@@ -837,8 +837,6 @@ namespace IronPython.Runtime
             SysModule.SysFlags flags = new SysModule.SysFlags();
             SetSystemStateValue("flags", flags);
             flags.debug = _options.Debug ? 1 : 0;
-            flags.py3k_warning = _options.WarnPython30 ? 1 : 0;
-            SetSystemStateValue("py3kwarning", _options.WarnPython30);
             switch (_options.DivisionOptions) {
                 case PythonDivisionOptions.Old:
                     break;
@@ -982,11 +980,11 @@ namespace IronPython.Runtime
 
             // we choose ASCII by default, if the file has a Unicode pheader though
             // we'll automatically get it as unicode.
-            Encoding encoding = PythonAsciiEncoding.SourceEncoding;
+            Encoding encoding = Encoding.UTF8;
 
             long startPosition = stream.Position;
 
-            StreamReader sr = new StreamReader(stream, PythonAsciiEncoding.SourceEncoding);
+            StreamReader sr = new StreamReader(stream, Encoding.UTF8);
             byte[] bomBuffer = new byte[3];
             int bomRead = stream.Read(bomBuffer, 0, 3);
             int bytesRead = 0;

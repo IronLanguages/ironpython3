@@ -388,7 +388,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         /// <summary>
-        /// Used in copy_reg which is the only consumer of __flags__ in the standard library.
+        /// Used in copyreg which is the only consumer of __flags__ in the standard library.
         /// 
         /// Set if the type is user defined
         /// </summary>

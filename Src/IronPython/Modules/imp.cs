@@ -237,7 +237,7 @@ namespace IronPython.Modules {
         public static object load_source(CodeContext/*!*/ context, string/*!*/ name, string/*!*/ pathname, PythonFile/*!*/ file) {
             if (name == null) throw PythonOps.TypeError("load_source() argument 1 must be string, not None");
             if (pathname == null) throw PythonOps.TypeError("load_source() argument 2 must be string, not None");
-            if (pathname == null) throw PythonOps.TypeError("load_source() argument 3 must be file, not None");
+            if (file == null) throw PythonOps.TypeError("load_source() argument 3 must be file, not None");
             
             return LoadPythonSource(PythonContext.GetContext(context), name, file, pathname);
         }

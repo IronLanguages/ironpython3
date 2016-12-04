@@ -135,9 +135,9 @@ namespace IronPythonTest {
         public override DictionaryStorage Clone() {
             lock (this) {
                 IDictionary<string, object> dict;
-#if !SILVERLIGHT
+#if FEATURE_ICLONEABLE
                 ICloneable cloneable = _dict as ICloneable;
-                if (_dict != null) {
+                if (cloneable != null) {
                     dict = (IDictionary<string, object>)cloneable.Clone();
                 } else 
 #endif

@@ -190,7 +190,6 @@ namespace IronPython.Runtime.Operations {
         //   Im(x//y) := 0
         [SpecialName]
         public static Complex FloorDivide(CodeContext context, Complex x, Complex y) {
-            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "complex divmod(), // and % are deprecated");
             Complex quotient = Divide(x, y);
             return MathUtils.MakeReal(PythonOps.CheckMath(Math.Floor(quotient.Real)));
         }

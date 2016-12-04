@@ -19,6 +19,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Pipes;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -31,15 +33,18 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-#if FEATURE_PROCESS
+#if FEATURE_PIPES
 using System.IO.Pipes;
 #endif
 
 #if FEATURE_NUMERICS
 using System.Numerics;
-
 #else
 using Microsoft.Scripting.Math;
+#endif
+
+#if NETCOREAPP1_0
+using Environment = System.FakeEnvironment;
 #endif
 
 namespace IronPython.Runtime {
@@ -890,39 +895,38 @@ namespace IronPython.Runtime {
     #region File Manager
 
     internal class PythonFileManager {
-        private HybridMapping<PythonFile> fileMapping = new HybridMapping<PythonFile>(3);
-        private HybridMapping<object> objMapping = new HybridMapping<object>(3);
+        private HybridMapping<object> mapping = new HybridMapping<object>(3);
 
         public int AddToStrongMapping(PythonFile pf, int pos) {
-            return fileMapping.StrongAdd(pf, pos);
+            return mapping.StrongAdd(pf, pos);
         }
 
         public int AddToStrongMapping(PythonFile pf) {
-            return fileMapping.StrongAdd(pf, -1);
+            return mapping.StrongAdd(pf, -1);
         }
 
         public int AddToStrongMapping(object o, int pos) {
-            return objMapping.StrongAdd(o, pos);
+            return mapping.StrongAdd(o, pos);
         }
 
         public int AddToStrongMapping(object o) {
-            return objMapping.StrongAdd(o, -1);
+            return mapping.StrongAdd(o, -1);
         }
 
         public void Remove(PythonFile pf) {
-            fileMapping.RemoveOnObject(pf);
+            mapping.RemoveOnObject(pf);
         }
 
         public void RemovePythonFileOnId(int id) {
-            fileMapping.RemoveOnId(id);
+            mapping.RemoveOnId(id);
         }
 
         public void Remove(object o) {
-            objMapping.RemoveOnObject(o);
+            mapping.RemoveOnObject(o);
         }
 
         public void RemoveObjectOnId(int id) {
-            objMapping.RemoveOnId(id);
+            mapping.RemoveOnId(id);
         }
 
         public PythonFile GetFileFromId(PythonContext context, int id) {
@@ -949,20 +953,20 @@ namespace IronPython.Runtime {
                     pf = (context.GetSystemStateValue("__stderr__") as PythonFile);
                     break;
                 default:
-                    pf = fileMapping.GetObjectFromId(id);
+                    pf = mapping.GetObjectFromId(id) as PythonFile;
                     break;
             }
 
             return pf != null;
         }
 
-        public bool TryGetObjectFromId(PythonContext context, int id, out Object o) {
-            o = objMapping.GetObjectFromId(id);
+        public bool TryGetObjectFromId(PythonContext context, int id, out object o) {
+            o = mapping.GetObjectFromId(id);
             return o != null;
         }
 
         public object GetObjectFromId(int id) {
-            object o = objMapping.GetObjectFromId(id);
+            object o = mapping.GetObjectFromId(id);
 
             if (o == null) {
                 throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
@@ -972,20 +976,20 @@ namespace IronPython.Runtime {
 
 
         public int GetIdFromFile(PythonFile pf) {
-            return fileMapping.GetIdFromObject(pf);
+            return mapping.GetIdFromObject(pf);
         }
 
         public void CloseIfLast(int fd, PythonFile pf) {
-            fileMapping.RemoveOnId(fd);
-            if (-1 == fileMapping.GetIdFromObject(pf)) {
+            mapping.RemoveOnId(fd);
+            if (-1 == mapping.GetIdFromObject(pf)) {
                 pf.close();
             }
         }
 
         public void CloseIfLast(int fd, Stream stream) {
-            objMapping.RemoveOnId(fd);
-            if (-1 == objMapping.GetIdFromObject(stream)) {
-                stream.Close();
+            mapping.RemoveOnId(fd);
+            if (-1 == mapping.GetIdFromObject(stream)) {
+                ((IDisposable)stream).Dispose();
             }
         }
 
@@ -999,30 +1003,30 @@ namespace IronPython.Runtime {
                 }
             }
 
-            int res = fileMapping.GetIdFromObject(pf);
+            int res = mapping.GetIdFromObject(pf);
             if (res == -1) {
                 // lazily created weak mapping
-                res = fileMapping.WeakAdd(pf);
+                res = mapping.WeakAdd(pf);
             }
             return res;
         }
 
         public int GetIdFromObject(object o) {
-            return objMapping.GetIdFromObject(o);
+            return mapping.GetIdFromObject(o);
         }
 
 
         public int GetOrAssignIdForObject(object o) {
-            int res = objMapping.GetIdFromObject(o);
+            int res = mapping.GetIdFromObject(o);
             if (res == -1) {
                 // lazily created weak mapping
-                res = objMapping.WeakAdd(o);
+                res = mapping.WeakAdd(o);
             }
             return res;
         }
 
         public bool ValidateFdRange(int fd) {
-            return fd >= 0 && fd < HybridMapping<PythonFile>.SIZE;
+            return fd >= 0 && fd < HybridMapping<object>.SIZE;
         }
     }
 
@@ -1045,8 +1049,6 @@ namespace IronPython.Runtime {
         private WeakRefTracker _weakref;
         private string _enumValue;
         internal readonly PythonContext/*!*/ _context;
-
-        private bool _softspace;
 
         internal bool IsConsole {
             get {
@@ -1084,16 +1086,16 @@ namespace IronPython.Runtime {
             return res;
         }
 
-#if FEATURE_PROCESS
-        internal static PythonFile[] CreatePipe(CodeContext/*!*/ context, SafePipeHandle hRead, SafePipeHandle hWrite) {
+#if FEATURE_PIPES
+        internal static PythonFile[] CreatePipe(CodeContext/*!*/ context) {
             var pythonContext = PythonContext.GetContext(context);
             var encoding = pythonContext.DefaultEncoding;
 
-            var inPipe = new AnonymousPipeStream(PipeDirection.In, hRead);
+            var inPipe = new AnonymousPipeServerStream(PipeDirection.In);
             var inPipeFile = new PythonFile(context);
             inPipeFile.InitializePipe(inPipe, "r", encoding);
 
-            var outPipe = new AnonymousPipeStream(PipeDirection.Out, hWrite);
+            var outPipe = new AnonymousPipeClientStream(PipeDirection.Out, inPipe.ClientSafePipeHandle);
             var outPipeFile = new PythonFile(context);
             outPipeFile.InitializePipe(outPipe, "w", encoding);
             return new [] {inPipeFile, outPipeFile};
@@ -1101,16 +1103,7 @@ namespace IronPython.Runtime {
 
         [PythonHidden]
         public static PythonTuple CreatePipeAsFd(CodeContext context) {
-                    SafePipeHandle hRead, hWrite;
-            var secAttrs = new NativeMethods.SECURITY_ATTRIBUTES();
-            secAttrs.nLength = Marshal.SizeOf(secAttrs);
-
-            if (!NativeMethods.CreatePipe(out hRead, out hWrite, ref secAttrs, 0)) {
-                var err = Marshal.GetLastWin32Error();
-                throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, err,
-                    new Win32Exception(err).Message);
-            }
-            var pipeFiles = CreatePipe(context, hRead, hWrite);
+            var pipeFiles = CreatePipe(context);
             return PythonTuple.MakeTuple(
                 PythonContext.GetContext(context).FileManager.AddToStrongMapping(pipeFiles[0]),
                 PythonContext.GetContext(context).FileManager.AddToStrongMapping(pipeFiles[1]));
@@ -1129,6 +1122,14 @@ namespace IronPython.Runtime {
         }
 
         #region Python initialization
+
+        public void __init__(CodeContext/*!*/ context, string name, [DefaultParameterValue("r")]string mode, double buffering) {
+            throw PythonOps.TypeError("integer argument expected, got float");
+        }
+
+        public void __init__(CodeContext/*!*/ context, string name, [DefaultParameterValue("r")]string mode, BigInteger buffering) {
+            __init__(context, name, mode, (int)buffering);
+        }
 
         //
         // Here are the mode rules for IronPython "file":
@@ -1217,23 +1218,24 @@ namespace IronPython.Runtime {
                     mode = "r+";
                 } else if (mode[0] == 'w' || mode[0] == 'a') {
                     throw PythonOps.ValueError("universal newline mode can only be used with modes starting with 'r'");
-                } else {
+                } else if (mode[0] != 'r') {
                     mode = "r" + mode;
                 }
             }
 
-            // process read/write/append
+            // process read/write/append and remove char from mode
             seekEnd = false;
             switch (mode[0]) {
-                case 'r': fmode = FileMode.Open; break;
-                case 'w': fmode = FileMode.Create; break;
-                case 'a': fmode = FileMode.Append; break;
+                case 'r': fmode = FileMode.Open; mode = mode.Remove(0, 1); break;
+                case 'w': fmode = FileMode.Create; mode = mode.Remove(0, 1); break;
+                case 'a': fmode = FileMode.Append; mode = mode.Remove(0, 1); break;
                 default:
                     throw PythonOps.ValueError("mode string must begin with one of 'r', 'w', 'a' or 'U', not '{0}'", inMode);
             }
 
             // process +
             if (mode.IndexOf('+') != -1) {
+                mode = mode.Remove(mode.IndexOf('+'), 1);
                 faccess = FileAccess.ReadWrite;
                 if (fmode == FileMode.Append) {
                     fmode = FileMode.OpenOrCreate;
@@ -1245,6 +1247,13 @@ namespace IronPython.Runtime {
                     case FileMode.Open: faccess = FileAccess.Read; break;
                     case FileMode.Append: faccess = FileAccess.Write; break;
                     default: throw new InvalidOperationException();
+                }
+            }
+
+            // Make some additional mode check after processing all valid modes.
+            if (mode.Length > 0) {
+                if (mode[0] != 'U' && mode[0] != 'b' && mode[0] != 't') {
+                    throw PythonOps.ValueError("Invalid mode ('{0}')", inMode);
                 }
             }
         }
@@ -1319,7 +1328,7 @@ namespace IronPython.Runtime {
                     return new PythonTextWriter(writer, "\r");
 
                 case PythonFileMode.TextLf:
-                    return new PythonTextWriter(writer, null);
+                    return new PythonTextWriter(writer, "\n");
             }
 
             throw Assert.Unreachable;
@@ -1426,7 +1435,7 @@ namespace IronPython.Runtime {
         }
 
 #if FEATURE_PROCESS
-        internal void InitializePipe(Stream stream, string mode, Encoding encoding) {
+        internal void InitializePipe(PipeStream stream, string mode, Encoding encoding) {
             _stream = stream;
             _io = null;
             _name = "<pipe>";
@@ -1438,12 +1447,43 @@ namespace IronPython.Runtime {
 
         }
 #endif
+
         internal void InternalInitialize(Stream stream, Encoding encoding, string name, string mode) {
             InternalInitialize(stream, encoding, mode);
             _name = name;
         }
 
         #endregion
+
+#if !SILVERLIGHT
+        internal bool TryGetFileHandle(out object handle) {
+            Stream stream = _stream;
+            SharedIO io = _io;
+
+            if (stream == null && io != null) {
+                stream = io.GetStream(_consoleStreamType);
+            }
+
+            if (stream is FileStream) {
+                handle = ((FileStream)stream).SafeFileHandle.DangerousGetHandle().ToPython();
+                return true;
+            }
+            if (stream is PipeStream) {
+                handle = ((PipeStream)stream).SafePipeHandle.DangerousGetHandle().ToPython();
+                return true;
+            }
+
+            // if all else fails try reflection
+            var sfh = stream.GetType().GetField("_handle", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(stream);
+            if (sfh is SafeFileHandle) {
+                handle = ((SafeFileHandle)sfh).DangerousGetHandle().ToPython();
+                return true;
+            }
+
+            handle = null;
+            return false;
+        }
+#endif
 
         // Enumeration of each stream mode.
         private enum PythonFileMode {
@@ -1508,7 +1548,7 @@ namespace IronPython.Runtime {
                 _isOpen = false;
 
                 if (!IsConsole) {
-                    _stream.Close();
+                    ((IDisposable)_stream).Dispose();
                 }
 
                 PythonFileManager myManager = _context.RawFileManager;
@@ -1664,15 +1704,6 @@ namespace IronPython.Runtime {
                     _reader.DiscardBufferedData();
                     _reader.Position = newPos;
                 }
-            }
-        }
-
-        public bool softspace {
-            get {
-                return _softspace;
-            }
-            set {
-                _softspace = value;
             }
         }
 
@@ -2031,16 +2062,6 @@ namespace IronPython.Runtime {
 
         #endregion
     }
-
-#if FEATURE_PROCESS
-    internal class AnonymousPipeStream : PipeStream {
-        public AnonymousPipeStream(PipeDirection direction, SafePipeHandle sph) : base(direction, 0) {
-            InitializeHandle(sph, true, false);
-            IsConnected = true;
-        }
-    }
-#endif
-
 
 #if FEATURE_NATIVE
     // dotnet45 backport

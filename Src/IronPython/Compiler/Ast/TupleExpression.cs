@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Reflection;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;

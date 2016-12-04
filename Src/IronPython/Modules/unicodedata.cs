@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -378,7 +379,7 @@ namespace IronPython.Modules {
 
             private void EnsureLoaded() {
                 if (database == null || nameLookup == null) {
-                    var rsrc = typeof(unicodedata).Assembly.GetManifestResourceStream(UnicodedataResourceName);
+                    var rsrc = typeof(unicodedata).GetTypeInfo().Assembly.GetManifestResourceStream(UnicodedataResourceName);
                     var gzip = new GZipStream(rsrc, CompressionMode.Decompress);
                     var data = new StreamReader(gzip, Encoding.UTF8);
 

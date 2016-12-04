@@ -19,6 +19,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Generic = System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using IronPython.Compiler;
 using IronPython.Compiler.Ast;
@@ -593,7 +594,6 @@ namespace IronPython.Modules
                 :this() {
                 _args = args;
                 _vararg = vararg;
-                _kwarg = kwarg;
                 _kwarg = kwarg;
                 _defaults = defaults;
             }
@@ -1929,7 +1929,7 @@ namespace IronPython.Modules
             private PythonList _decorator_list;
 
             public FunctionDef() {
-                _fields = new PythonTuple(new[] { "name", "args", "body", "decorator_list" });
+				_fields = new PythonTuple(new[] { "name", "args", "body", "decorator_list" });
             }
 
             public FunctionDef(string name, arguments args, PythonList body, PythonList decorator_list,

@@ -565,7 +565,7 @@ namespace IronPython.Runtime.Binding {
 
         private DynamicMetaObject GetForeignObject(DynamicMetaObject self) {
             return new DynamicMetaObject(
-                Expression.Dynamic(
+                DynamicExpression.Dynamic(
                     _context.CompatGetMember(Name, IsNoThrow),
                     typeof(object),
                     self.Expression

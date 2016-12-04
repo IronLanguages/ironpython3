@@ -8,7 +8,7 @@ namespace IronPython.Runtime {
 #if FEATURE_NATIVE
     class NativeMethods {
         [Serializable]
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         [BestFitMapping(false)]
         internal struct WIN32_FIND_DATA {
             internal int dwFileAttributes;
@@ -37,11 +37,11 @@ namespace IronPython.Runtime {
 
         public static IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
 
-        [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
+        [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
         internal static extern IntPtr FindFirstFile(String fileName, out WIN32_FIND_DATA data);
 
         [return: MarshalAs(UnmanagedType.Bool)]
-        [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
+        [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
         internal static extern bool FindNextFile(
                     IntPtr hndFindFile,
                     out WIN32_FIND_DATA lpFindFileData);
@@ -57,11 +57,6 @@ namespace IronPython.Runtime {
             public IntPtr lpSecurityDescriptor;
             public int bInheritHandle;
         }
-
-        [DllImport("kernel32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool CreatePipe(out SafePipeHandle hReadPipe, out SafePipeHandle hWritePipe,
-           ref SECURITY_ATTRIBUTES lpPipeAttributes, uint nSize);
 
         [DllImport("kernel32.dll", SetLastError=true)]
         [return: MarshalAs(UnmanagedType.Bool)]

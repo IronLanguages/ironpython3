@@ -76,8 +76,25 @@ namespace IronPython.Modules {
                 }
 
                 PythonContext pc = PythonContext.GetContext(context);
-                FileIO file = (FileIO)pc.FileManager.GetObjectFromId(fd);
-                name = file.name ?? fd;
+
+                PythonFile pf = null;
+                FileIO file = null;
+                Stream stream = null;
+                object temp;
+
+                if (pc.FileManager.TryGetFileFromId(pc, fd, out pf)) {
+                    name = (object)pf.name ?? fd; 
+                } else if(pc.FileManager.TryGetObjectFromId(pc, fd, out temp)) {
+                    file = temp as FileIO;
+                    if (file != null) {
+                        name = file.name ?? fd;
+                    } else {
+                        stream = temp as Stream;
+                        if(stream != null) {
+                            name = fd;
+                        }
+                    }
+                }
 
                 _context = pc;
                 switch (StandardizeMode(mode)) {
@@ -94,8 +111,17 @@ namespace IronPython.Modules {
                         BadMode(mode);
                         break;
                 }
-                _readStream = file._readStream;
-                _writeStream = file._writeStream;
+
+                if (file != null) {
+                    _readStream = file._readStream;
+                    _writeStream = file._writeStream;
+                } else if(pf != null) {
+                    _readStream = pf._stream;
+                    _writeStream = pf._stream;
+                } else if(stream != null) {
+                    _readStream = stream;
+                    _writeStream = stream;
+                }
                 _closefd = closefd;
             }
             
@@ -215,13 +241,13 @@ namespace IronPython.Modules {
 
                 flush(context);
                 _closed = true;
-                _readStream.Close();
-                _readStream.Dispose();
-                if (!object.ReferenceEquals(_readStream, _writeStream)) {
-                    _writeStream.Close();
-                    _writeStream.Dispose();
-                }
 
+                if (_closefd) {
+                    _readStream.Dispose();
+                    if (!object.ReferenceEquals(_readStream, _writeStream)) {
+                        _writeStream.Dispose();
+                    }
+                }
 
                 PythonFileManager myManager = _context.RawFileManager;
                 if (myManager != null) {
@@ -257,7 +283,9 @@ namespace IronPython.Modules {
             public override void flush(CodeContext/*!*/ context) {
                 _checkClosed();
 
-                _writeStream.Flush();
+                if (_writeStream != null) {
+                    _writeStream.Flush();
+                }
             }
 
             [Documentation("isatty() -> bool.  True if the file is connected to a tty device.")]

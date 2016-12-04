@@ -20,6 +20,7 @@ using Microsoft.Scripting.Ast;
 #endif
 
 using System.Dynamic;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 using IronPython.Runtime.Binding;

@@ -788,22 +788,26 @@ namespace Ionic.Crc
             throw new NotSupportedException();
         }
 
-
-        void IDisposable.Dispose()
+        protected override void Dispose(bool disposing)
         {
-            Close();
-        }
+            if (disposing)
+            {
+                System.IO.Stream _innerStream = this._innerStream;
+                if (_innerStream != null)
+                {
+                    try
+                    {
+                        if (!_leaveOpen)
+                            _innerStream.Dispose();
+                    }
+                    finally
+                    {
+                        this._innerStream = null;
+                    }
+                }
+            }
 
-        /// <summary>
-        /// Closes the stream.
-        /// </summary>
-        public override void Close()
-        {
-            base.Close();
-            if (!_leaveOpen)
-                _innerStream.Close();
+            base.Dispose(disposing);
         }
-
     }
-
 }

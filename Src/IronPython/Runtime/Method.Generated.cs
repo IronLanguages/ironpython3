@@ -23,6 +23,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Dynamic;
+using System.Reflection;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;

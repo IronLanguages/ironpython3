@@ -131,7 +131,7 @@ namespace IronPython.Runtime {
                     var ns = Namespaces;
                     
                     foreach (var type in _asm.GetExportedTypes()) {
-                        if (type.IsExtension()) {
+                        if (type.GetTypeInfo().IsExtension()) {
                             if (ns != null && ns.Contains(type.Namespace)) {
                                 loadedTypes.Add(DynamicHelpers.GetPythonTypeFromType(type));
                             }
@@ -255,7 +255,8 @@ namespace IronPython.Runtime {
 
             lock (existingSet) {
                 AssemblyLoadInfo assemblyLoadInfo;
-                if (existingSet._loadedAssemblies.TryGetValue(type.UnderlyingSystemType.Assembly, out assemblyLoadInfo)) {
+                Assembly assembly = type.UnderlyingSystemType.GetTypeInfo().Assembly;
+                if (existingSet._loadedAssemblies.TryGetValue(assembly, out assemblyLoadInfo)) {
                     if (assemblyLoadInfo.IsFullAssemblyLoaded ||
                         (assemblyLoadInfo.Types != null && assemblyLoadInfo.Types.Contains(type)) ||
                         (assemblyLoadInfo.Namespaces != null && assemblyLoadInfo.Namespaces.Contains(type.UnderlyingSystemType.Namespace))) {
@@ -266,8 +267,8 @@ namespace IronPython.Runtime {
                 }
 
                 var dict = NewInfoOrCopy(existingSet);
-                if (!dict.TryGetValue(type.UnderlyingSystemType.Assembly, out assemblyLoadInfo)) {
-                    dict[type.UnderlyingSystemType.Assembly] = assemblyLoadInfo = new AssemblyLoadInfo(type.UnderlyingSystemType.Assembly);
+                if (!dict.TryGetValue(assembly, out assemblyLoadInfo)) {
+                    dict[assembly] = assemblyLoadInfo = new AssemblyLoadInfo(assembly);
                 }
 
                 if (assemblyLoadInfo.Types == null) {

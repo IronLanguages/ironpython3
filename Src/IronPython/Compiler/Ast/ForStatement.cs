@@ -22,6 +22,7 @@ using MSAst = Microsoft.Scripting.Ast;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 
 using Microsoft.Scripting;
 
@@ -172,7 +173,10 @@ namespace IronPython.Compiler.Ast {
                 init,
                 Ast.TryFinally(
                     ls,
-                    Ast.Call(AstMethods.ForLoopDispose, enumerator)
+                    Ast.Block(
+                        Ast.Call(AstMethods.ForLoopDispose, enumerator),
+                        Ast.Assign(enumerator, Ast.New(typeof(KeyValuePair<IEnumerator, IDisposable>)))
+                    )
                 )
             );
         }

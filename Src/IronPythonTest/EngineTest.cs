@@ -28,12 +28,15 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security;
+#if FEATURE_REMOTING
 using System.Security.Policy;
+#endif
 using System.Text;
 using System.Threading;
-#if !CLR2 && !SILVERLIGHT
+#if FEATURE_WPF
 using System.Windows.Markup;
 #endif
 
@@ -50,7 +53,7 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-#if !CLR2 && !SILVERLIGHT
+#if FEATURE_WPF
 using DependencyObject = System.Windows.DependencyObject;
 #endif
 
@@ -64,13 +67,13 @@ namespace IronPythonTest {
         public static string InputTestDirectory;
 
         static Common() {
-            RuntimeDirectory = Path.GetDirectoryName(typeof(PythonContext).Assembly.Location);
+            RuntimeDirectory = Path.GetDirectoryName(typeof(PythonContext).GetTypeInfo().Assembly.Location);
             RootDirectory = Environment.GetEnvironmentVariable("DLR_ROOT");
             if (RootDirectory != null) {
-                ScriptTestDirectory = Path.Combine(RootDirectory, "Languages\\IronPython\\Tests");
+                ScriptTestDirectory = Path.Combine(Path.Combine(Path.Combine(RootDirectory, "Languages"), "IronPython"), "Tests");
             } else {
-                RootDirectory = new System.IO.FileInfo(System.Reflection.Assembly.GetEntryAssembly().GetFiles()[0].Name).Directory.FullName;
-                ScriptTestDirectory = Path.Combine(RootDirectory, "Src\\Tests");
+                RootDirectory = new System.IO.FileInfo(System.Reflection.Assembly.GetEntryAssembly().Location).Directory.FullName;
+                ScriptTestDirectory = Path.Combine(Path.Combine(RootDirectory, "Src"), "Tests");
             }
             InputTestDirectory = Path.Combine(ScriptTestDirectory, "Inputs");
         }
@@ -92,7 +95,7 @@ namespace IronPythonTest {
     public delegate int RefIntDelegate(ref int arg);
     public delegate T GenericDelegate<T, U, V>(U arg1, V arg2);
 
-#if !CLR2 && !SILVERLIGHT
+#if FEATURE_WPF
     [ContentProperty("Content")]
     public class XamlTestObject : DependencyObject {
         public event IntIntDelegate Event;
@@ -184,7 +187,7 @@ namespace IronPythonTest {
     }
 
     public class EngineTest
-#if !SILVERLIGHT // remoting not supported in Silverlight
+#if FEATURE_REMOTING
         : MarshalByRefObject
 #endif
     {
@@ -229,7 +232,7 @@ namespace IronPythonTest {
             return null;
         }
 
-#if !SILVERLIGHT
+#if FEATURE_REMOTING
         public void ScenarioHostingHelpers() {
             AppDomain remote = AppDomain.CreateDomain("foo");
             Dictionary<string, object> options = new Dictionary<string,object>();
@@ -306,10 +309,14 @@ namespace IronPythonTest {
                 AreEqual(po.IndentationInconsistencySeverity, Severity.Warning);
                 AreEqual(po.WarningFilters[0], "warnonme");
             }
-
+            
             AreEqual(Python.GetSysModule(scriptEngine).GetVariable<string>("platform"), "cli");
             AreEqual(Python.GetBuiltinModule(scriptEngine).GetVariable<bool>("True"), true);
-            AreEqual(Python.ImportModule(scriptEngine, "nt").GetVariable<int>("F_OK"), 0);
+            if(System.Environment.OSVersion.Platform == System.PlatformID.Unix) {
+                AreEqual(Python.ImportModule(scriptEngine, "posix").GetVariable<int>("F_OK"), 0);
+            } else {
+                AreEqual(Python.ImportModule(scriptEngine, "nt").GetVariable<int>("F_OK"), 0);
+            }
             try {
                 Python.ImportModule(scriptEngine, "non_existant_module");
                 Assert(false);
@@ -329,7 +336,11 @@ namespace IronPythonTest {
 
             AreEqual(Python.GetSysModule(runtime).GetVariable<string>("platform"), "cli");
             AreEqual(Python.GetBuiltinModule(runtime).GetVariable<bool>("True"), true);
-            AreEqual(Python.ImportModule(runtime, "nt").GetVariable<int>("F_OK"), 0);
+            if(System.Environment.OSVersion.Platform == System.PlatformID.Unix) {
+                AreEqual(Python.ImportModule(runtime, "posix").GetVariable<int>("F_OK"), 0);
+            } else {
+                AreEqual(Python.ImportModule(runtime, "nt").GetVariable<int>("F_OK"), 0);
+            }
             try {
                 Python.ImportModule(runtime, "non_existant_module");
                 Assert(false);
@@ -442,7 +453,7 @@ x = 42", scope);
 #if !SILVERLIGHT        
         public void ScenarioCodePlex20472() {
             try {
-                string fileName = System.IO.Directory.GetCurrentDirectory() + "\\encoded_files\\cp20472.py";
+                string fileName = Path.Combine(Path.Combine(System.IO.Directory.GetCurrentDirectory(), "encoded_files"), "cp20472.py");
                 _pe.CreateScriptSourceFromFile(fileName, System.Text.Encoding.GetEncoding(1251));
 
                 //Disabled. The line above should have thrown a syntax exception or an import error,
@@ -454,7 +465,8 @@ x = 42", scope);
         }
 #endif
 
-        public void ScenarioInterpterNestedVariables() {
+        public void ScenarioInterpreterNestedVariables() {
+#if !NETSTANDARD
             ParameterExpression arg = Expression.Parameter(typeof(object), "tmp");
             var argBody = Expression.Lambda<Func<object, IRuntimeVariables>>(
                 Expression.RuntimeVariables(
@@ -465,6 +477,7 @@ x = 42", scope);
 
             var vars = CompilerHelpers.LightCompile(argBody)(42);
             AreEqual(vars[0], 42);
+#endif
 
             ParameterExpression tmp = Expression.Parameter(typeof(object), "tmp");
             var body = Expression.Lambda<Func<object>>(
@@ -631,7 +644,7 @@ class K(object):
 
         public static void ScenarioInterfaceExtensions() {
             var engine = Python.CreateEngine();
-            engine.Runtime.LoadAssembly(typeof(Fooable).Assembly);
+            engine.Runtime.LoadAssembly(typeof(Fooable).GetTypeInfo().Assembly);
             ScriptSource src = engine.CreateScriptSourceFromString("x.Bar()");
             ScriptScope scope = engine.CreateScope();
             scope.SetVariable("x", new Fooable());
@@ -652,7 +665,7 @@ class K(object):
 
             public override DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion) {
                 return new DynamicMetaObject(
-                    Expression.Dynamic(new MyInvokeBinder(CallInfo), typeof(object), DynamicUtils.GetExpressions(ArrayUtils.Insert(target, args))),
+                    DynamicExpression.Dynamic(new MyInvokeBinder(CallInfo), typeof(object), DynamicUtils.GetExpressions(ArrayUtils.Insert(target, args))),
                     target.Restrictions.Merge(BindingRestrictions.Combine(args))
                 );
             }
@@ -1021,34 +1034,38 @@ i = int
 #if !SILVERLIGHT
             ScriptScope scope = _env.CreateScope();
             ScriptSource src = _pe.CreateScriptSourceFromString(@"
-from System.Collections import ArrayList
 import clr
-clr.AddReference('System.Windows.Forms')
-from System.Windows.Forms import Control
-import System
+if clr.IsNetStandard:
+    clr.AddReference('System.Collections.NonGeneric')
+else:
+    clr.AddReference('System.Windows.Forms')
+    from System.Windows.Forms import Control
 
+import System
+from System.Collections import ArrayList
 
 somecallable = " + actionOfT + @"[object](lambda : 'Delegate')
 
-class control(Control):
-    pass
-
-class control_setattr(Control):
-    def __init__(self):
-        object.__setattr__(self, 'lastset', None)
-    
-    def __setattr__(self, name, value):
-        object.__setattr__(self, 'lastset', (name, value))
-
-class control_override_prop(Control):
-    def __setattr__(self, name, value):
+if not clr.IsNetStandard:
+    class control(Control):
         pass
 
-    def get_AllowDrop(self):
-        return 'abc'
+    class control_setattr(Control):
+        def __init__(self):
+            object.__setattr__(self, 'lastset', None)
+    
+        def __setattr__(self, name, value):
+            object.__setattr__(self, 'lastset', (name, value))
 
-    def set_AllowDrop(self, value):
-        super(control_setattr, self).AllowDrop.SetValue(value)
+    class control_override_prop(Control):
+        def __setattr__(self, name, value):
+            pass
+
+        def get_AllowDrop(self):
+            return 'abc'
+
+        def set_AllowDrop(self, value):
+            super(control_setattr, self).AllowDrop.SetValue(value)
 
 class ns(object):
     ClassVal = 'ClassVal'
@@ -1248,7 +1265,8 @@ TestFunc.TestFunc = TestFunc
 TestFunc.InstVal = 'InstVal'
 TestFunc.ClassVal = 'ClassVal'  # just here to simplify tests
 
-controlinst = control()
+if not clr.IsNetStandard:
+    controlinst = control()
 nsinst = ns()
 iterable = IterableObject()
 iterableos = IterableObjectOs()
@@ -1439,6 +1457,7 @@ range = range
 
             // get on .NET member should fallback
 
+#if !NETSTANDARD
             // property
             site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("AllowDrop"));
             AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
@@ -1454,7 +1473,7 @@ range = range
             // event
             site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("DoubleClick"));
             AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
-
+#endif
 
             site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("something", new CallInfo(0)));
             AreEqual(site.Target(site, (object)scope.GetVariable("ns_getattrinst")), "FallbackInvokegetattrsomething");
@@ -1502,21 +1521,6 @@ range = range
                 AreEqual(ator.MoveNext(), true);
                 AreEqual(ator.Current, 3);
                 AreEqual(ator.MoveNext(), false);
-
-                // Bug, need to support conversions of new-style classes to IEnumerable<T>,
-                // see http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21253
-                if (inst is IronPython.Runtime.Types.OldInstance) {
-                    var enumofTsite = CallSite<Func<CallSite, object, IEnumerable<object>>>.Create(new MyConvertBinder(typeof(IEnumerable<object>), new object[0]));
-                    IEnumerable<object> ieofT = enumofTsite.Target(enumofTsite, inst);
-                    IEnumerator<object> atorofT = ieofT.GetEnumerator();
-                    AreEqual(atorofT.MoveNext(), true);
-                    AreEqual(atorofT.Current, 1);
-                    AreEqual(atorofT.MoveNext(), true);
-                    AreEqual(atorofT.Current, 2);
-                    AreEqual(atorofT.MoveNext(), true);
-                    AreEqual(atorofT.Current, 3);
-                    AreEqual(atorofT.MoveNext(), false);
-                }
             }
 
             site = CallSite<Func<CallSite, object, object>>.Create(new MyUnaryBinder(ExpressionType.Not));
@@ -2286,8 +2290,12 @@ instOC = TestOC()
         // Options.DebugMode
 #endif
 
-#if !SILVERLIGHT
+#if FEATURE_REMOTING
         public void ScenarioPartialTrust() {
+            // Mono doesn't implement partial trust
+            if(System.Environment.OSVersion.Platform == System.PlatformID.Unix)
+                return;
+                
             // basic check of running a host in partial trust
             
             AppDomainSetup info = new AppDomainSetup();
@@ -2374,6 +2382,12 @@ if id(a) == id(b):
 
         public void ScenarioStackFrameLineInfo() {
             const string lineNumber = "raise.py:line";
+            // TODO: Should this work on Mono?
+            if(Environment.OSVersion.Platform == PlatformID.Unix)
+            {
+                Console.WriteLine("Skipping StackFrameLineInfo test on Mono");
+                return;
+            }
 
             // TODO: clone setup?
             var scope = Python.CreateRuntime().CreateScope("py");
@@ -2396,7 +2410,7 @@ if id(a) == id(b):
 
         private void TestLineInfo(ScriptScope/*!*/ scope, string lineNumber) {
             try {
-                scope.Engine.ExecuteFile(Common.InputTestDirectory + "\\raise.py", scope);
+                scope.Engine.ExecuteFile(Path.Combine(Common.InputTestDirectory, "raise.py"), scope);
                 throw new Exception("We should not get here");
             } catch (StopIterationException e2) {
                 if (scope.Engine.Runtime.Setup.DebugMode != e2.StackTrace.Contains(lineNumber))
@@ -2471,7 +2485,7 @@ if id(a) == id(b):
         }
 
         class DictThreadGlobalState {
-            public int DoneCount;
+            public volatile int DoneCount;
             public bool IsDone;
             public ManualResetEvent Event;
             public ManualResetEvent DoneEvent;
@@ -2593,6 +2607,7 @@ if id(a) == id(b):
                 Thread thread = new Thread(new ParameterizedThreadStart((x) => {
                     var state = (DictThreadTestState)x;
 
+#pragma warning disable 0420 // "a reference to a volatile field will not be treated as volatile"
                     for (; ; ) {
                         Interlocked.Increment(ref state.GlobalState.DoneCount);
                         state.GlobalState.Event.WaitOne();
@@ -2606,6 +2621,7 @@ if id(a) == id(b):
 
                         state.GlobalState.DoneEvent.WaitOne();
                     }
+#pragma warning restore 0420
                 }));
 
                 thread.IsBackground = true;
@@ -2775,7 +2791,7 @@ if r.sum != 110:
             if (expected == null && actual == null) return;
 
             if (!expected.Equals(actual)) {
-                Console.WriteLine("Expected: {0} Got: {1} from {2}", expected, actual, new StackTrace(true));
+                Console.WriteLine("Expected: {0} Got: {1} from {2}", expected, actual, new StackTrace((Exception)null, true));
                 throw new Exception();
             }
         }

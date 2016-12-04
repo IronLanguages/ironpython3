@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
@@ -628,6 +629,54 @@ namespace IronPython.Modules {
 
         public static int __index__(object a) {
             return Converter.ConvertToIndex(a);
+        }
+
+        [Documentation(@"compare_digest(a, b)-> bool
+
+Return 'a == b'.  This function uses an approach designed to prevent
+timing analysis, making it appropriate for cryptography.
+a and b must both be of the same type: either str (ASCII only),
+or any type that supports the buffer protocol (e.g. bytes).
+
+Note: If a and b are of different lengths, or if an error occurs,
+a timing attack could theoretically reveal information about the
+types and lengths of a and b--but not their values.")]
+        public static bool _compare_digest(object a, object b) {
+            if(a is string && b is string) {
+                string aStr = a as string;
+                string bStr = b as string;
+                return CompareBytes(aStr.MakeByteArray(), bStr.MakeByteArray());                
+            } else if(a is IBufferProtocol && b is IBufferProtocol) {
+                IBufferProtocol aBuf = a as IBufferProtocol;
+                IBufferProtocol bBuf = b as IBufferProtocol;
+                if(aBuf.NumberDimensions > 1 || bBuf.NumberDimensions > 1) {
+                    throw PythonOps.BufferError("Buffer must be single dimension");
+                }
+
+                return CompareBytes(aBuf.ToBytes(0, null), bBuf.ToBytes(0, null));
+            }
+            throw PythonOps.TypeError("unsupported operand types(s) or combination of types: '{0}' and '{1}", PythonOps.GetPythonTypeName(a), PythonOps.GetPythonTypeName(b));
+        }
+
+        private static bool CompareBytes(IEnumerable<byte> a, IEnumerable<byte> b) {
+            var aList = a.ToList();
+            var bList = b.ToList();
+            int len_b = bList.Count, len_a = aList.Count, length = len_b, result = 0;
+            List<byte> left = null, right = bList;
+            if(len_a == length) {
+                left = aList;
+                result = 0;
+            }
+
+            if(len_a != length) {
+                left = bList;
+                result = 1;
+            }
+
+            for(int i = 0; i < length; i++) {
+                result |= (left[i] ^ right[i]);
+            }
+            return result == 0;
         }
 
         private static void TestBothSequence(object a, object b) {

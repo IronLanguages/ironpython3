@@ -37,7 +37,6 @@ namespace IronPython {
 
         private readonly ReadOnlyCollection<string>/*!*/ _arguments;
         private readonly ReadOnlyCollection<string>/*!*/ _warningFilters;
-        private readonly bool _warnPy3k, _python30;
         private readonly bool _bytesWarning;
         private readonly bool _debug;
         private readonly int _recursionLimit;
@@ -83,22 +82,6 @@ namespace IronPython {
         /// </summary>
         public ReadOnlyCollection<string>/*!*/ WarningFilters {
             get { return _warningFilters; }
-        }
-
-        /// <summary>
-        /// Enables warnings related to Python 3.0 features.
-        /// </summary>
-        public bool WarnPython30 {
-            get { return _warnPy3k; }
-        }
-
-        /// <summary>
-        /// Enables 3.0 features that are implemented in IronPython.
-        /// </summary>
-        public bool Python30 {
-            get {
-                return _python30;
-            }
         }
 
         public bool BytesWarning {
@@ -257,7 +240,6 @@ namespace IronPython {
             _arguments = GetStringCollectionOption(options, "Arguments") ?? EmptyStringCollection;
             _warningFilters = GetStringCollectionOption(options, "WarningFilters", ';', ',') ?? EmptyStringCollection;
 
-            _warnPy3k = GetOption(options, "WarnPy3k", false);
             _bytesWarning = GetOption(options, "BytesWarning", false);
             _debug = GetOption(options, "Debug", false);
             _inspect = GetOption(options, "Inspect", false);
@@ -288,14 +270,12 @@ namespace IronPython {
                     throw new ValueErrorException("Expected string or Version for PythonVersion");
                 }
 
-                if (_version != new Version(2, 7) && _version != new Version(3, 0)) {
+                if ( _version != new Version(3, 0)) {
                     throw new ValueErrorException("Expected Version to be 2.7 or 3.0");
                 }
             } else {
-                _version = new Version(2, 7);
-            }
-
-            _python30 = _version == new Version(3, 0);
+                _version = new Version(3, 0);
+            }            
         }
 
         private static IDictionary<string, object> EnsureSearchPaths(IDictionary<string, object> options) {

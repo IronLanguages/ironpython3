@@ -17,9 +17,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
-using Microsoft.Scripting.Runtime;
 
 using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Binding;
@@ -34,60 +34,74 @@ namespace IronPython.Runtime {
     /// </summary>
     public class WeakRefTracker {
         struct CallbackInfo {
-            object callback;
-            
-            WeakHandle _longRef, _shortRef;
+            readonly object _callback;
+            readonly WeakHandle _longRef;
+            readonly WeakHandle _shortRef;
             
             public CallbackInfo(object callback, object weakRef) {
-                this.callback = callback;
+                _callback = callback;
                 // we need a short ref & a long ref to deal with the case
                 // when what we're finalizing is cyclic trash.  (see test_weakref
                 // test_callbacks_on_callback).  If the short ref is dead, but the
                 // long ref still lives then it means we'the weakref is in the
                 // finalization queue and we shouldn't run it's callback - we're
                 // just unlucky and are getting ran first.
-                this._longRef = new WeakHandle(weakRef, true);
-                this._shortRef = new WeakHandle(weakRef, false);
+                _longRef = new WeakHandle(weakRef, true);
+                _shortRef = new WeakHandle(weakRef, false);
             }
 
             public object Callback {
+                get { return _callback; }
+            }
+
+            public object WeakRef {
                 get {
-                    return callback;
+                    object longRefTarget = _longRef.Target;
+                    object shortRefTarget = _shortRef.Target;
+
+                    // already in finalization?
+                    if (shortRefTarget != longRefTarget)
+                        return null;
+
+                    return longRefTarget;
                 }
             }
 
-            public WeakHandle LongRef { 
-                get { 
-                    return _longRef; 
-                } 
-            }
-
-            public bool IsFinalizing {
-                get {
-                    return _longRef.IsAlive && !_shortRef.IsAlive || 
-                        _longRef.Target != _shortRef.Target;
-                }
+            public void Free() {
+                _longRef.Free();
+                _shortRef.Free();
             }
         }
-        List<CallbackInfo> callbacks;
 
-        public WeakRefTracker(object callback, object weakRef) {
-            callbacks = new List<CallbackInfo>(1);
+        private readonly long _targetId;
+        private readonly List<CallbackInfo> _callbacks = new List<CallbackInfo>(1);
+
+        public WeakRefTracker(IWeakReferenceable target) {
+            _targetId = IdDispenser.GetId(target);
+        }
+
+        public WeakRefTracker(IWeakReferenceable target, object callback, object weakRef) : this(target) {
             ChainCallback(callback, weakRef);
         }
 
+        public long TargetId {
+            get {
+                return _targetId;
+            }
+        }
+
         public void ChainCallback(object callback, object weakRef) {
-            callbacks.Add(new CallbackInfo(callback, weakRef));
+            _callbacks.Add(new CallbackInfo(callback, weakRef));
         }
 
         public int HandlerCount {
             get {
-                return callbacks.Count;
+                return _callbacks.Count;
             }
         }
 
         public void RemoveHandlerAt(int index) {
-            callbacks.RemoveAt(index);
+            _callbacks.RemoveAt(index);
         }
 
         public void RemoveHandler(object o) {
@@ -100,45 +114,44 @@ namespace IronPython.Runtime {
         }
 
         public object GetHandlerCallback(int index) {
-            return callbacks[index].Callback;
+            return _callbacks[index].Callback;
         }
 
         public object GetWeakRef(int index) {
-            return callbacks[index].LongRef.Target;
+            return _callbacks[index].WeakRef;
         }
 
         ~WeakRefTracker() {
             // callbacks are delivered last registered to first registered.
-            for (int i = callbacks.Count - 1; i >= 0; i--) {
+            for (int i = _callbacks.Count - 1; i >= 0; i--) {
 
-                CallbackInfo ci = callbacks[i];
+                CallbackInfo ci = _callbacks[i];
                 try {
-                    try {
+                    if (ci.Callback != null) {
                         // a little ugly - we only run callbacks that aren't a part
                         // of cyclic trash.  but classes use a single field for
                         // finalization & GC - and that's always cyclic, so we need to special case it.
-                        if (ci.Callback != null &&
-                            (!ci.IsFinalizing ||
-                            ci.LongRef.Target is InstanceFinalizer)) {
-
-                            InstanceFinalizer fin = ci.Callback as InstanceFinalizer;
-                            if (fin != null) {
-                                // Going through PythonCalls / Rules requires the types be public.
-                                // Explicit check so that we can keep InstanceFinalizer internal.
-                                fin.CallDirect(DefaultContext.Default);
+                        InstanceFinalizer fin = ci.Callback as InstanceFinalizer;
+                        if (fin != null) {
+                            // Going through PythonCalls / Rules requires the types be public.
+                            // Explicit check so that we can keep InstanceFinalizer internal.
+                            fin.CallDirect(DefaultContext.Default);
                                 
-                            } else {
-                                // Non-instance finalizer goes through normal call mechanism.
-                                PythonCalls.Call(ci.Callback, ci.LongRef.Target);
-                            }
+                        } else {
+                            // Non-instance finalizer goes through normal call mechanism.
+                            object weakRef = ci.WeakRef;
+                            if (weakRef != null)
+                                PythonCalls.Call(ci.Callback, weakRef);
                         }
-                    } catch (Exception) {
                     }
-
-                    callbacks[i].LongRef.Free();
-                } catch (InvalidOperationException) {
-                    // target was freed
+                } catch (Exception) {
+                    // TODO (from Python docs):
+                    // Exceptions raised by the callback will be noted on the standard error output, 
+                    // but cannot be propagated; they are handled in exactly the same way as exceptions 
+                    // raised from an object’s __del__() method.
                 }
+
+                ci.Free();
             }
         }
     }
@@ -164,16 +177,7 @@ namespace IronPython.Runtime {
         // Callers will do a direct invoke so that instanceFinalizer can stay non-public.
         internal object CallDirect(CodeContext context) {
             object o;
-
-            IronPython.Runtime.Types.OldInstance oi = _instance as IronPython.Runtime.Types.OldInstance;
-            if (oi != null) {
-                if (oi.TryGetBoundCustomMember(context, "__del__", out o)) {
-                    return PythonContext.GetContext(context).CallSplat(o);
-                }
-            } else {
-                PythonTypeOps.TryInvokeUnaryOperator(context, _instance, "__del__", out o);
-            }
-
+            PythonTypeOps.TryInvokeUnaryOperator(context, _instance, "__del__", out o);
             return null;
         }
     }

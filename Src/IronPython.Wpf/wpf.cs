@@ -13,6 +13,8 @@
  *
  * ***************************************************************************/
 
+#if FEATURE_WPF
+
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -26,7 +28,7 @@ using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using System.Windows.Threading;
 
-[assembly: PythonModule("wpf", typeof(IronPython.Modules.Wpf))]
+[assembly: PythonModule("wpf", typeof(IronPython.Modules.Wpf), PlatformID.MacOSX, PlatformID.Unix)]
 namespace IronPython.Modules {
     /// <summary>
     /// Provides helpers for interacting with Windows Presentation Foundation applications.
@@ -113,3 +115,5 @@ namespace IronPython.Modules {
 #endif
     }
 }
+
+#endif

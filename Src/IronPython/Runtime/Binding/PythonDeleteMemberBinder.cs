@@ -20,8 +20,10 @@ using Microsoft.Scripting.Ast;
 #endif
 
 using System;
-using Microsoft.Scripting;
 using System.Dynamic;
+using System.Reflection;
+
+using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Binding;

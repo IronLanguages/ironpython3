@@ -145,7 +145,7 @@ namespace IronPythonTest {
         public static extern void CoRevokeClassObject(uint dwRegister);
 
         static Guid ProgID_IPassword = new Guid("{834C5A62-E0BB-4FB4-87B9-F37C869C976B}");
-        static Guid IID_IClassFactory = typeof(IClassFactory).GUID;
+        static Guid IID_IClassFactory = new Guid("{00000001-0000-0000-C000-000000000046}");
         static Guid IID_IUnknown = new Guid("{00000000-0000-0000-C000-000000000046}");
 
         public static object CreatePassword() {

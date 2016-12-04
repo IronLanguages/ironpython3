@@ -397,7 +397,6 @@ namespace Ionic.BZip2
             throw new NotImplementedException();
         }
 
-
         /// <summary>
         ///   Dispose the stream.
         /// </summary>
@@ -406,21 +405,29 @@ namespace Ionic.BZip2
         /// </param>
         protected override void Dispose(bool disposing)
         {
-            try
+            if (_disposed) return;
+
+            if (disposing)
             {
-                if (!_disposed)
+                Stream input = this.input;
+                if (input != null)
                 {
-                    if (disposing && (this.input != null))
-                        this.input.Close();
-                    _disposed = true;
+                    try
+                    {
+                        if (!this._leaveOpen)
+                            input.Dispose();
+                    }
+                    finally
+                    {
+                        this.data = null;
+                        this.input = null;
+                    }
                 }
             }
-            finally
-            {
-                base.Dispose(disposing);
-            }
-        }
 
+            _disposed = true;
+            base.Dispose(disposing);
+        }
 
         void init()
         {
@@ -547,28 +554,6 @@ namespace Ionic.BZip2
                 throw new IOException(msg);
             }
         }
-
-        /// <summary>
-        ///   Close the stream.
-        /// </summary>
-        public override void Close()
-        {
-            Stream inShadow = this.input;
-            if (inShadow != null)
-            {
-                try
-                {
-                    if (!this._leaveOpen)
-                        inShadow.Close();
-                }
-                finally
-                {
-                    this.data = null;
-                    this.input = null;
-                }
-            }
-        }
-
 
         /// <summary>
         ///   Read n bits from input, right justifying the result.

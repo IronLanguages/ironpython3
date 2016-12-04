@@ -39,12 +39,13 @@ namespace IronPython.Runtime.Operations {
     public static partial class BigIntegerOps {
         [StaticExtensionMethod]
         public static object __new__(CodeContext context, PythonType cls, string s, int radix) {
+            int start = 0;
             if (radix == 16 || radix == 8 || radix == 2) {
-                s = Int32Ops.TrimRadix(s, radix);
+                start = s.Length - Int32Ops.TrimRadix(s, radix).Length;
             }
 
             if (cls == TypeCache.BigInteger) {
-                return ParseBigIntegerSign(s, radix);
+                return ParseBigIntegerSign(s, radix, start);
             } else {
                 BigInteger res = ParseBigIntegerSign(s, radix);
                 return cls.CreateInstance(context, res);
@@ -53,11 +54,18 @@ namespace IronPython.Runtime.Operations {
 
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, PythonType cls, IList<byte> s) {
+            return __new__(context, cls, s, 10);
+        }
+        
+        [StaticExtensionMethod]
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, IList<byte> s, int redix) {
             object value;
             IPythonObject po = s as IPythonObject;
             if (po == null ||
                 !PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__long__", out value)) {
-                    value = ParseBigIntegerSign(s.MakeString(), 10);
+
+                    // Enable base using
+                    value = ParseBigIntegerSign(s.MakeString(), redix);
             }
 
             if (cls == TypeCache.BigInteger) {
@@ -68,9 +76,9 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        private static BigInteger ParseBigIntegerSign(string s, int radix) {
+        private static BigInteger ParseBigIntegerSign(string s, int radix, int start = 0) {
             try {
-                return LiteralParser.ParseBigIntegerSign(s, radix);
+                return LiteralParser.ParseBigIntegerSign(s, radix, start);
             } catch (ArgumentException e) {
                 throw PythonOps.ValueError(e.Message);
             }
@@ -104,15 +112,14 @@ namespace IronPython.Runtime.Operations {
             int intRes;
             BigInteger bigintRes;
             if (PythonTypeOps.TryInvokeUnaryOperator(context, x, "__long__", out result) &&
-                !Object.ReferenceEquals(result, NotImplementedType.Value) ||
-                x is OldInstance &&
+                !Object.ReferenceEquals(result, NotImplementedType.Value) &&
                 PythonTypeOps.TryInvokeUnaryOperator(context, x, "__int__", out result) &&
                 !Object.ReferenceEquals(result, NotImplementedType.Value)) {
                 if (result is int || result is BigInteger ||
                     result is Extensible<int> || result is Extensible<BigInteger>) {
                     return ReturnObject(context, cls, result);
                 } else {
-                    throw PythonOps.TypeError("__long__ returned non-long (type {0})", PythonTypeOps.GetOldName(result));
+                    throw PythonOps.TypeError("__long__ returned non-long (type {0})", PythonTypeOps.GetName(result));
                 }
             } else if (PythonOps.TryGetBoundAttr(context, x, "__trunc__", out result)) {
                 result = PythonOps.CallWithContext(context, result);
@@ -121,17 +128,12 @@ namespace IronPython.Runtime.Operations {
                 } else if (Converter.TryConvertToBigInteger(result, out bigintRes)) {
                     return ReturnObject(context, cls, bigintRes);
                 } else {
-                    throw PythonOps.TypeError("__trunc__ returned non-Integral (type {0})", PythonTypeOps.GetOldName(result));
+                    throw PythonOps.TypeError("__trunc__ returned non-Integral (type {0})", PythonTypeOps.GetName(result));
                 }
             }
 
-            if (x is OldInstance) {
-                throw PythonOps.AttributeError("{0} instance has no attribute '__trunc__'",
-                    ((OldInstance)x)._class.Name);
-            } else {
-                throw PythonOps.TypeError("long() argument must be a string or a number, not '{0}'",
+            throw PythonOps.TypeError("long() argument must be a string or a number, not '{0}'",
                     DynamicHelpers.GetPythonType(x).Name);
-            }
         }
 
         private static object ReturnObject(CodeContext context, PythonType cls, object value) {
@@ -241,10 +243,22 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
+        public static object Power([NotNull]BigInteger x, long y) {
+            if(y < 0) {
+                return DoubleOps.Power(x.ToFloat64(), y);
+            }
+            return x.Power(y);
+        }
+
+        [SpecialName]
         public static object Power([NotNull]BigInteger x, [NotNull]BigInteger y) {
             int yl;
+            long y2;
+
             if (y.AsInt32(out yl)) {
                 return Power(x, yl);
+            } else if (y.AsInt64(out y2)) {
+                return Power(x, y2);
             } else {
                 if (x == BigInteger.Zero) {
                     if (y.Sign < 0)
@@ -491,20 +505,19 @@ namespace IronPython.Runtime.Operations {
 
         public static string __oct__(BigInteger x) {
             if (x == BigInteger.Zero) {
-                return "0L";
+                return "0";
             } else if (x > 0) {
-                return "0" + x.ToString(8) + "L";
+                return "0" + x.ToString(8);
             } else {
-                return "-0" + (-x).ToString(8) + "L";
+                return "-0" + (-x).ToString(8);
             }
         }
 
         public static string __hex__(BigInteger x) {
-            // CPython 2.5 prints letters in lowercase, with a capital L. 
             if (x < 0) {
-                return "-0x" + (-x).ToString(16).ToLower() + "L";
+                return "-0x" + (-x).ToString(16).ToLower();
             } else {
-                return "0x" + x.ToString(16).ToLower() + "L";
+                return "0x" + x.ToString(16).ToLower();
             }
         }
 

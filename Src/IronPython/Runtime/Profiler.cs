@@ -22,6 +22,7 @@ using MSAst = Microsoft.Scripting.Ast;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
@@ -337,8 +338,7 @@ namespace IronPython.Runtime {
         }
 
         private static bool IgnoreMethod(MethodBase method) {
-            var attrs = method.GetCustomAttributes(typeof(ProfilerTreatsAsExternalAttribute), false);
-            return attrs.Length > 0;
+            return method.GetCustomAttributes(typeof(ProfilerTreatsAsExternalAttribute), false).Any();
         }
 
         /// <summary>

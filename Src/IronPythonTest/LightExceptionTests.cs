@@ -239,10 +239,10 @@ namespace IronPythonTest {
             yield return AddLogging(Expression.Call(typeof(LightExceptionTests).GetMethod("ThrowingCallInvalidOp")), "call throw invalidop");
             yield return AddLogging(LightExceptions.CheckAndThrow(Expression.Call(typeof(LightExceptionTests).GetMethod("LightThrowingCall"))), "call throw");
             yield return AddLogging(LightExceptions.CheckAndThrow(Expression.Call(typeof(LightExceptionTests).GetMethod("LightThrowingCallInvalidOp"))), "call throw invalidop");
-            yield return AddLogging(Expression.Dynamic(new LightExBinder("test", false), typeof(object), Expression.Constant(42)), "dynamic throw");
+            yield return AddLogging(DynamicExpression.Dynamic(new LightExBinder("test", false), typeof(object), Expression.Constant(42)), "dynamic throw");
             yield return AddLogging(
-                Expression.Dynamic(new LightExBinder("test", false), typeof(object), 
-                Expression.Dynamic(new LightExBinder("foo", false), typeof(object), Expression.Constant(42))), "dynamic nothrow");
+                DynamicExpression.Dynamic(new LightExBinder("test", false), typeof(object),
+                DynamicExpression.Dynamic(new LightExBinder("foo", false), typeof(object), Expression.Constant(42))), "dynamic nothrow");
         }
 
         public static object SomeCall() {

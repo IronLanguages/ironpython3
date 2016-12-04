@@ -16,12 +16,16 @@
 #------------------------------------------------------------------------------
 #--IMPORTS
 import sys
-import nt
+import os
 from exceptions import SystemExit
 
 from iptest import *
+from iptest.test_env import is_netstandard
 
 if sys.platform!="win32":
+    if is_netstandard:
+        import clr
+        clr.AddReference("System.IO.FileSystem")
     from System.IO.Path import GetFullPath as get_path
     from System.IO.File import Exists as file_exists
 else:
@@ -44,7 +48,7 @@ LOGGING_LVL = 1
 
 #Save the current working directory before running any tests which in turn may
 #inadvertantly change it
-__CWD = nt.getcwd()
+__CWD = os.getcwd()
 
 
     
@@ -81,17 +85,17 @@ def run_test_pkg(pkg_name, do_not_run=[]):
     
     #Determine where the test package is and ensure it exists
     log_debug("The current working directory is " + __CWD)
-    pkg_dir_name = __CWD + "\\" + pkg_name.replace(".", "\\")
+    pkg_dir_name = os.path.join(__CWD, pkg_name.replace(".", os.sep))
     log_debug("The test package location is " + pkg_dir_name)
-    if not file_exists(pkg_dir_name + r"\__init__.py"):
+    if not file_exists(os.path.join(pkg_dir_name, "__init__.py")):
         err_msg = "No such test package: %s" % pkg_dir_name
         log_error(err_msg)
         raise Exception(err_msg)
     
     #Build up a list of all subpackages/modules contained in test package
-    subpkg_list = [x for x in nt.listdir(pkg_dir_name) if not x.endswith(".py") and file_exists(pkg_dir_name + "\\" + x + "\\__init__.py")]
+    subpkg_list = [x for x in os.listdir(pkg_dir_name) if not x.endswith(".py") and file_exists(os.path.join(pkg_dir_name, x, "__init__.py"))]
     log_debug("Subpackages found: %s" % (str(subpkg_list)))
-    module_list = [x for x in nt.listdir(pkg_dir_name) if x.endswith(".py") and x!="__init__.py"]
+    module_list = [x for x in os.listdir(pkg_dir_name) if x.endswith(".py") and x!="__init__.py"]
     log_debug("Modules found: %s" % (str(module_list)))
     if len(module_list)==0:
         log_warn("No test modules found in the %s test package!" % pkg_name)

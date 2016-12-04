@@ -20,6 +20,10 @@ Its purpose is to enable testing behaviour of the top-level console,
 when that differs from behaviour while importing a module and executing
 its statements.
 """
+from test_env import is_netstandard
+if is_netstandard:
+    import clr
+    clr.AddReference("System.Diagnostics.Process")
 from System.Diagnostics import Process, ProcessStartInfo
 from System.IO import StreamReader, StreamWriter
 from System.Threading import Thread

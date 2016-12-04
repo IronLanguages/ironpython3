@@ -429,7 +429,7 @@ namespace IronPython.Runtime.Binding {
                     }
                 }
 
-                if (t.IsGenericType()) {
+                if (t.GetTypeInfo().IsGenericType) {
                     // search for generic extensions, e.g. ListOfTOps<T> for List<T>,
                     // we then make a new generic type out of the extension type.
                     Type typeDef = t.GetGenericTypeDefinition();

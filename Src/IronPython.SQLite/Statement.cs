@@ -16,6 +16,7 @@
 using System;
 using System.Collections;
 using System.Diagnostics;
+using System.Globalization;
 using Community.CsharpSqlite;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
@@ -101,15 +102,15 @@ namespace IronPython.SQLite
 
                 string s = this.sql.TrimStart();
 
-                if(s.StartsWith("select", StringComparison.InvariantCultureIgnoreCase))
+                if(CultureInfo.InvariantCulture.CompareInfo.IsPrefix(s, "select", CompareOptions.IgnoreCase))
                     this._type = StatementType.Select;
-                else if(s.StartsWith("insert", StringComparison.InvariantCultureIgnoreCase))
+                else if(CultureInfo.InvariantCulture.CompareInfo.IsPrefix(s, "insert", CompareOptions.IgnoreCase))
                     this._type = StatementType.Insert;
-                else if(s.StartsWith("update", StringComparison.InvariantCultureIgnoreCase))
+                else if(CultureInfo.InvariantCulture.CompareInfo.IsPrefix(s, "update", CompareOptions.IgnoreCase))
                     this._type = StatementType.Update;
-                else if(s.StartsWith("delete", StringComparison.InvariantCultureIgnoreCase))
+                else if(CultureInfo.InvariantCulture.CompareInfo.IsPrefix(s, "delete", CompareOptions.IgnoreCase))
                     this._type = StatementType.Delete;
-                else if(s.StartsWith("replace", StringComparison.InvariantCultureIgnoreCase))
+                else if(CultureInfo.InvariantCulture.CompareInfo.IsPrefix(s, "replace", CompareOptions.IgnoreCase))
                     this._type = StatementType.Replace;
                 else
                     this._type = StatementType.Other;

@@ -35,20 +35,20 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="WindowsBase, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, ProcessorArchitecture=MSIL">
+    <Reference Include="WindowsBase, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, ProcessorArchitecture=MSIL" Condition="'$(Mono)' != 'true'">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(WpfReferences)\WindowsBase.dll</HintPath>
     </Reference>
-    <Reference Include="PresentationCore, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, ProcessorArchitecture=MSIL">
+    <Reference Include="PresentationCore, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, ProcessorArchitecture=MSIL" Condition="'$(Mono)' != 'true'">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(WpfReferences)\PresentationCore.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="PresentationFramework, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, ProcessorArchitecture=MSIL">
+    <Reference Include="PresentationFramework, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, ProcessorArchitecture=MSIL" Condition="'$(Mono)' != 'true'">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(WpfReferences)\PresentationFramework.dll</HintPath>
     </Reference>
-    <Reference Include="System.Xaml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, ProcessorArchitecture=MSIL">
+    <Reference Include="System.Xaml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, ProcessorArchitecture=MSIL" Condition="'$(Mono)' != 'true'">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(WpfReferences)\System.Xaml.dll</HintPath>
     </Reference>

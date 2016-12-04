@@ -132,8 +132,14 @@ namespace IronPython.Hosting {
                 result = RunInteractiveLoop();
 
             return result;
+        }
 
-
+        protected override int RunInteractiveLoop() {
+            var sys = Engine.GetSysModule();
+                        
+            sys.SetVariable("ps1", ">>> ");
+            sys.SetVariable("ps2", "... ");
+            return base.RunInteractiveLoop();
         }
 
         #region Initialization
@@ -149,10 +155,11 @@ namespace IronPython.Hosting {
             // TODO: must precede path initialization! (??? - test test_importpkg.py)
             int pathIndex = PythonContext.PythonOptions.SearchPaths.Count;
                         
-            Language.DomainManager.LoadAssembly(typeof(string).Assembly);
-            Language.DomainManager.LoadAssembly(typeof(System.Diagnostics.Debug).Assembly);
+            Language.DomainManager.LoadAssembly(typeof(string).GetTypeInfo().Assembly);
+            Language.DomainManager.LoadAssembly(typeof(System.Diagnostics.Debug).GetTypeInfo().Assembly);
 
             InitializePath(ref pathIndex);
+            InitializeEnvironmentVariables();
             InitializeModules();
             InitializeExtensionDLLs();
 
@@ -196,7 +203,9 @@ namespace IronPython.Hosting {
             }
 
             PythonContext.InsertIntoPath(0, fullPath);
+#if FEATURE_THREAD
             PythonContext.MainThread = Thread.CurrentThread;
+#endif
         }
 
         protected override Scope/*!*/ CreateScope() {
@@ -226,6 +235,27 @@ namespace IronPython.Hosting {
 #endif
         }
 
+        private void InitializeEnvironmentVariables() {
+#if !SILVERLIGHT
+            if(!Options.IgnoreEnvironmentVariables) {
+                string warnings = Environment.GetEnvironmentVariable("IRONPYTHONWARNINGS");
+                object o = PythonContext.GetSystemStateValue("warnoptions");
+                if (o == null) {
+                    o = new List();
+                    PythonContext.SetSystemStateValue("warnoptions", o);
+                }
+
+                List warnoptions = o as List;
+                if (warnoptions != null && !string.IsNullOrEmpty(warnings)) {
+                    string[] warns = warnings.Split(',');
+                    foreach(string warn in warns) {
+                        warnoptions.Add(warn);
+                    }
+                }
+            }
+#endif
+        }
+
         private void InitializeModules() {
             string executable = "";
             string prefix = null;
@@ -235,6 +265,12 @@ namespace IronPython.Hosting {
             if (entryAssembly != null) {
                 executable = entryAssembly.Location;
                 prefix = Path.GetDirectoryName(executable);
+#if NETSTANDARD
+                if (Path.GetExtension(executable) == ".dll") {
+                    var runner = Path.Combine(prefix, "ipy.bat");
+                    if (File.Exists(runner)) executable = runner;
+                }
+#endif
             }
 
             // Make sure there an IronPython Lib directory, and if not keep looking up
@@ -387,7 +423,6 @@ namespace IronPython.Hosting {
             } catch (ThreadAbortException tae) {
                 KeyboardInterruptException pki = tae.ExceptionState as KeyboardInterruptException;
                 if (pki != null) {
-                    Console.WriteLine(Language.FormatException(tae), Style.Error);
                     Thread.ResetAbort();
                 }
 #endif

@@ -225,7 +225,9 @@ namespace IronPython.Runtime.Operations {
 
         public static object NextMethod(object self) {
             IEnumerator i = (IEnumerator)self;
-            if (i.MoveNext()) return i.Current;
+            lock (i) {
+                if (i.MoveNext()) return i.Current;
+            }
             throw PythonOps.StopIteration();
         }
 
@@ -240,7 +242,7 @@ namespace IronPython.Runtime.Operations {
             // add in the non-dynamic members from the dynamic objects base class.
             Type t = self.GetType();
             while (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(t)) {
-                t = t.GetBaseType();
+                t = t.GetTypeInfo().BaseType;
             }
 
             res.extend(DynamicHelpers.GetPythonTypeFromType(t).GetMemberNames(context));
@@ -930,8 +932,6 @@ namespace IronPython.Runtime.Operations {
                 // NoneType seems to get some special treatment (None.__init__('abc') works)
                 if (hasObjectNew && self != null) {
                     throw PythonOps.TypeError("object.__init__() takes no parameters");
-                } else if ((!hasObjectNew && !hasObjectInit) || self == null) {
-                    PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "object.__init__() takes no parameters for type {0}", PythonTypeOps.GetName(self));
                 }
             }
         }

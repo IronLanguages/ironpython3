@@ -75,19 +75,9 @@ namespace IronPython.Runtime.Types {
                 // build up the list - it contains the MRO of all our
                 // bases as well as the bases themselves in the order in
                 // which they appear.
-                int oldSytleCount = 0;
-                foreach (PythonType type in bases) {
-                    if (type.IsOldClass) oldSytleCount++;
-                }
 
                 foreach (PythonType dt in bases) {
-                    if (!dt.IsOldClass) {
-                        mroList.Add(TupleToList(dt.ResolutionOrder));
-                    } else if (oldSytleCount == 1 && !forceNewStyle) {
-                        mroList.Add(GetOldStyleMro(dt));
-                    } else {
-                        mroList.Add(GetNewStyleMro(dt));
-                    }
+                    mroList.Add(TupleToList(dt.ResolutionOrder));
                 }
 
                 mroList.Add(TupleToList(bases));

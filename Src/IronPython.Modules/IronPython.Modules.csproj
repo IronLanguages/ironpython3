@@ -49,6 +49,7 @@
     <Compile Include="bz2\dotnetzip\BZip2\ParallelBZip2OutputStream.cs" />
     <Compile Include="bz2\dotnetzip\BZip2\Rand.cs" />
     <Compile Include="cmath.cs" />
+    <Compile Include="hashlib\MD5CryptoServiceProvider.cs" />
     <Compile Include="hashlib\SHA224.cs" />
     <Compile Include="hashlib\SHA224Managed.cs" />
     <Compile Include="msvcrt.cs" />

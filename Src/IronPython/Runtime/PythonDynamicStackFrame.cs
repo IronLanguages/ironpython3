@@ -48,9 +48,9 @@ namespace IronPython.Runtime {
             MethodBase method;
             Debug.Assert(funcCode._normalDelegate != null || funcCode._tracingDelegate != null);
             if (!context.LanguageContext.EnableTracing || funcCode._tracingDelegate == null) {
-                method = funcCode._normalDelegate.GetMethod();
+                method = funcCode._normalDelegate.GetMethodInfo();
             } else {
-                method = funcCode._tracingDelegate.GetMethod();
+                method = funcCode._tracingDelegate.GetMethodInfo();
             }
             return method;
         }

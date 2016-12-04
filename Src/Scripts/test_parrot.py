@@ -19,8 +19,8 @@
 """
 
 from time import clock
-import sys, nt
-sys.path.append([nt.environ[x] for x in nt.environ.keys() if x.lower() == "dlr_root"][0] + "\\Languages\\IronPython\\External\\parrotbench")
+import sys, os
+sys.path.append(os.path.join([os.environ[x] for x in os.environ.keys() if x.lower() == "dlr_root"][0], "Languages", "IronPython", "External", "parrotbench"))
 if sys.platform=="cli":
     import System
     is_cli64 = System.IntPtr.Size == 8

@@ -118,7 +118,7 @@ namespace IronPython.Runtime.Operations {
                     result is Extensible<int> || result is Extensible<BigInteger>) {
                     return result;
                 } else {
-                    throw PythonOps.TypeError("__int__ returned non-Integral (type {0})", PythonTypeOps.GetOldName(result));
+                    throw PythonOps.TypeError("__int__ returned non-Integral (type {0})", PythonTypeOps.GetName(result));
                 }
             } else if (PythonOps.TryGetBoundAttr(context, o, "__trunc__", out result)) {
                 result = PythonOps.CallWithContext(context, result);
@@ -130,15 +130,11 @@ namespace IronPython.Runtime.Operations {
                 } else if (Converter.TryConvertToBigInteger(result, out bigintRes)) {
                     return bigintRes;
                 } else {
-                    throw PythonOps.TypeError("__trunc__ returned non-Integral (type {0})", PythonTypeOps.GetOldName(result));
+                    throw PythonOps.TypeError("__trunc__ returned non-Integral (type {0})", PythonTypeOps.GetName(result));
                 }
             }
 
-            if (o is OldInstance) {
-                throw PythonOps.AttributeError("{0} instance has no attribute '__trunc__'", PythonTypeOps.GetOldName((OldInstance)o));
-            } else {
-                throw PythonOps.TypeError("int() argument must be a string or a number, not '{0}'", PythonTypeOps.GetName(o));
-            }
+            throw PythonOps.TypeError("int() argument must be a string or a number, not '{0}'", PythonTypeOps.GetName(o));
         }
 
         [StaticExtensionMethod]
@@ -169,11 +165,12 @@ namespace IronPython.Runtime.Operations {
 
             // radix 16/8/2 allows a 0x/0o/0b preceding it... We either need a whole new
             // integer parser, or special case it here.
+            int start = 0;
             if (@base == 16 || @base == 8 || @base == 2) {
-                s = TrimRadix(s, @base);
+                start = s.Length - TrimRadix(s, @base).Length;
             }
 
-            return LiteralParser.ParseIntegerSign(s, @base);
+            return LiteralParser.ParseIntegerSign(s, @base, start);
         }
 
         [StaticExtensionMethod]
@@ -406,10 +403,6 @@ namespace IronPython.Runtime.Operations {
             return self;
         }
 
-        public static int __index__(int self) {
-            return self;
-        }
-
         public static BigInteger __long__(int self) {
             return (BigInteger)self;
         }
@@ -561,10 +554,6 @@ namespace IronPython.Runtime.Operations {
             }
 
             return spec.AlignNumericText(digits, self == 0, self > 0);
-        }
-
-        public static string/*!*/ __repr__(int self) {
-            return self.ToString(CultureInfo.InvariantCulture);
         }
 
         private static string ToHex(int self, bool lowercase) {

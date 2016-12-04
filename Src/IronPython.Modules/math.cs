@@ -91,7 +91,7 @@ namespace IronPython.Modules {
         public static double fsum(IEnumerable e) {
             // msum from https://code.activestate.com/recipes/393090/
             var partials = new List<double>();
-            foreach (var v in e.Select(o => Converter.ConvertToDouble(o))) {
+            foreach (var v in e.Cast<object>().Select(o => Converter.ConvertToDouble(o))) {
                 var x = v;
                 var i = 0;
                 for (var j = 0; j < partials.Count; j++) {

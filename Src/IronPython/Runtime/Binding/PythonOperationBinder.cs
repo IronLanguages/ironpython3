@@ -23,6 +23,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting.Generation;
@@ -64,10 +65,6 @@ namespace IronPython.Runtime.Binding {
                     if (CompilerHelpers.GetType(args[0]) == typeof(PythonType)) {
                         if (typeof(T) == typeof(Func<CallSite, object, int>)) {
                             return (T)(object)new Func<CallSite, object, int>(HashPythonType);
-                        }
-                    } else if (args[0] is OldClass) {
-                        if (typeof(T) == typeof(Func<CallSite, object, int>)) {
-                            return (T)(object)new Func<CallSite, object, int>(HashOldClass);
                         }
                     }
                     break;
@@ -241,15 +238,7 @@ namespace IronPython.Runtime.Binding {
 
             return ((CallSite<Func<CallSite, object, int>>)site).Update(site, value);
         }
-
-        private int HashOldClass(CallSite site, object value) {
-            // OldClass is sealed, an is check is good enough.
-            if (value is OldClass) {
-                return value.GetHashCode();
-            }
-
-            return ((CallSite<Func<CallSite, object, int>>)site).Update(site, value);
-        }
+        
 
         private int CompareStrings(CallSite site, object arg0, object arg1) {
             if (arg0 != null && arg0.GetType() == typeof(string) &&

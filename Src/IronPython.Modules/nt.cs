@@ -46,13 +46,17 @@ using Environment = System.FakeEnvironment;
 [assembly: PythonModule("nt", typeof(IronPython.Modules.PythonNT))]
 namespace IronPython.Modules {
     public static class PythonNT {
-        public const string __doc__ = "Provides low-level operationg system access for files, the environment, etc...";
+        public const string __doc__ = "Provides low-level operating system access for files, the environment, etc...";
 
 #if FEATURE_PROCESS
         private static Dictionary<int, Process> _processToIdMapping = new Dictionary<int, Process>();
         private static List<int> _freeProcessIds = new List<int>();
         private static int _processCount;
 #endif
+
+        public static List<string> _have_functions = new List<string> {
+            "MS_WINDOWS"
+        };
 
         #region Public API Surface
 
@@ -1444,7 +1448,11 @@ namespace IronPython.Modules {
 #endif
 
         public static object urandom(int n) {
-            RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
+#if SILVERLIGHT || WP75
+            RandomNumberGenerator rng = new RNGCryptoServiceProvider();
+#else
+            RandomNumberGenerator rng = RandomNumberGenerator.Create();
+#endif
             byte[] data = new byte[n];
             rng.GetBytes(data);
 
@@ -1525,7 +1533,7 @@ namespace IronPython.Modules {
         }
 #endif
 
-        public static int write(CodeContext/*!*/ context, int fd, string text) {
+        public static int write(CodeContext/*!*/ context, int fd, [BytesConversion]string text) {
             try {
                 PythonContext pythonContext = PythonContext.GetContext(context);
                 PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);

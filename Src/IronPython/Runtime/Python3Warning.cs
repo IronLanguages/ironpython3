@@ -19,7 +19,7 @@ using System.Text;
 using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime {
-    [AttributeUsage(AttributeTargets.Method)]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor)]
     sealed class Python3WarningAttribute : Attribute  {
         private readonly string/*!*/ _message;
         

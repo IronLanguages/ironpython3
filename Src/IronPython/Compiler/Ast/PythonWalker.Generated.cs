@@ -30,11 +30,7 @@ namespace IronPython.Compiler.Ast {
         // AndExpression
         public virtual bool Walk(AndExpression node) { return true; }
         public virtual void PostWalk(AndExpression node) { }
-
-        // BackQuoteExpression
-        public virtual bool Walk(BackQuoteExpression node) { return true; }
-        public virtual void PostWalk(BackQuoteExpression node) { }
-
+        
         // BinaryExpression
         public virtual bool Walk(BinaryExpression node) { return true; }
         public virtual void PostWalk(BinaryExpression node) { }
@@ -155,10 +151,6 @@ namespace IronPython.Compiler.Ast {
         public virtual bool Walk(EmptyStatement node) { return true; }
         public virtual void PostWalk(EmptyStatement node) { }
 
-        // ExecStatement
-        public virtual bool Walk(ExecStatement node) { return true; }
-        public virtual void PostWalk(ExecStatement node) { }
-
         // ExpressionStatement
         public virtual bool Walk(ExpressionStatement node) { return true; }
         public virtual void PostWalk(ExpressionStatement node) { }
@@ -273,11 +265,7 @@ namespace IronPython.Compiler.Ast {
         // AndExpression
         public override bool Walk(AndExpression node) { return false; }
         public override void PostWalk(AndExpression node) { }
-
-        // BackQuoteExpression
-        public override bool Walk(BackQuoteExpression node) { return false; }
-        public override void PostWalk(BackQuoteExpression node) { }
-
+        
         // BinaryExpression
         public override bool Walk(BinaryExpression node) { return false; }
         public override void PostWalk(BinaryExpression node) { }
@@ -397,10 +385,6 @@ namespace IronPython.Compiler.Ast {
         // EmptyStatement
         public override bool Walk(EmptyStatement node) { return false; }
         public override void PostWalk(EmptyStatement node) { }
-
-        // ExecStatement
-        public override bool Walk(ExecStatement node) { return false; }
-        public override void PostWalk(ExecStatement node) { }
 
         // ExpressionStatement
         public override bool Walk(ExpressionStatement node) { return false; }

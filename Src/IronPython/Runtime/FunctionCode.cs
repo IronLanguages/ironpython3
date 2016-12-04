@@ -595,7 +595,7 @@ namespace IronPython.Runtime {
                 throw PythonOps.TypeError("cannot exec code object that contains free variables: {0}", co_freevars.__repr__(context));
             }
 
-            if (Target == null || (Target.GetMethod() != null && Target.GetMethod().DeclaringType == typeof(PythonCallTargets))) {
+            if (Target == null || (Target.GetMethodInfo() != null && Target.GetMethodInfo().DeclaringType == typeof(PythonCallTargets))) {
                 UpdateDelegate(context.LanguageContext, true);
             }
 
@@ -1150,11 +1150,6 @@ namespace IronPython.Runtime {
             }
 
             public override bool Walk(IronPython.Compiler.Ast.ContinueStatement node) {
-                UpdateLoops(node);
-                return base.Walk(node);
-            }
-
-            public override bool Walk(IronPython.Compiler.Ast.ExecStatement node) {
                 UpdateLoops(node);
                 return base.Walk(node);
             }

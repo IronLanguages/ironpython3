@@ -62,9 +62,7 @@ namespace IronPython.Runtime.Binding {
                 PythonTypeSlot dummy;
                 if (pt.IsSystemType) {
                     return action.FallbackInvokeMember(this, args);
-                } else if (
-                    pt.TryResolveSlot(DefaultContext.DefaultCLS, action.Name, out dummy) ||
-                    pt.IsOldClass) {
+                } else if (pt.TryResolveSlot(DefaultContext.DefaultCLS, action.Name, out dummy)) {
                     break;
                 }
             }
@@ -290,9 +288,7 @@ namespace IronPython.Runtime.Binding {
 
         private InitAdapter/*!*/ GetInitAdapter(ArgumentValues/*!*/ ai, PythonTypeSlot/*!*/ init, DynamicMetaObjectBinder/*!*/ call, Expression/*!*/ codeContext) {
             PythonContext state = PythonContext.GetPythonContext(call);
-            if (Value.IsMixedNewStyleOldStyle()) {
-                return new MixedInitAdapter(ai, state, codeContext);
-            } else if ((init == InstanceOps.Init && !HasFinalizer(call)) || (Value == TypeCache.PythonType && ai.Arguments.Length == 2)) {
+            if ((init == InstanceOps.Init && !HasFinalizer(call)) || (Value == TypeCache.PythonType && ai.Arguments.Length == 2)) {
                 return new DefaultInitAdapter(ai, state, codeContext);
             } else if (init is BuiltinMethodDescriptor) {
                 return new BuiltinInitAdapter(ai, ((BuiltinMethodDescriptor)init).Template, state, codeContext);
@@ -306,9 +302,7 @@ namespace IronPython.Runtime.Binding {
         private NewAdapter/*!*/ GetNewAdapter(ArgumentValues/*!*/ ai, PythonTypeSlot/*!*/ newInst, DynamicMetaObjectBinder/*!*/ call, Expression/*!*/ codeContext) {
             PythonContext state = PythonContext.GetPythonContext(call);
 
-            if (Value.IsMixedNewStyleOldStyle()) {
-                return new MixedNewAdapter(ai, state, codeContext);
-            } else if (newInst == InstanceOps.New) {
+            if (newInst == InstanceOps.New) {
                 return new DefaultNewAdapter(ai, Value, state, codeContext);
             } else if (newInst is ConstructorFunction) {
                 return new ConstructorNewAdapter(ai, Value, state, codeContext);

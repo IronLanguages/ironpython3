@@ -270,8 +270,6 @@ namespace IronPython.Modules
                     ast = new Import((ImportStatement)stmt);
                 else if (stmt is FromImportStatement)
                     ast = new ImportFrom((FromImportStatement)stmt);
-                else if (stmt is ExecStatement)
-                    ast = new Exec((ExecStatement)stmt);
                 else if (stmt is GlobalStatement)
                     ast = new Global((GlobalStatement)stmt);
                 else if (stmt is ClassDefinition)
@@ -383,8 +381,6 @@ namespace IronPython.Modules
                     ast = new IfExp((ConditionalExpression)expr);
                 else if (expr is IndexExpression)
                     ast = new Subscript((IndexExpression)expr, ctx);
-                else if (expr is BackQuoteExpression)
-                    ast = new Repr((BackQuoteExpression)expr);
                 else if (expr is SetExpression)
                     ast = new Set((SetExpression)expr);
                 else if (expr is DictionaryComprehension)
@@ -1718,56 +1714,7 @@ namespace IronPython.Modules
             }
         }
 
-        [PythonType]
-        public class Exec : stmt
-        {
-            private expr _body;
-            private expr _globals; // Optional
-            private expr _locals; // Optional
-
-            public Exec() {
-                _fields = new PythonTuple(new[] { "body", "globals", "locals" });
-            }
-
-            public Exec(expr body, [Optional]expr globals, [Optional]expr locals,
-               [Optional]int? lineno, [Optional]int? col_offset)
-                : this() {
-                _body = body;
-                _globals = globals;
-                _locals = locals;
-                _lineno = lineno;
-                _col_offset = col_offset;
-            }
-            
-            public Exec(ExecStatement stmt)
-                : this() {
-                _body = Convert(stmt.Code);
-                if (stmt.Globals != null)
-                    _globals = Convert(stmt.Globals);
-                if (stmt.Locals != null)
-                    _locals = Convert(stmt.Locals);
-            }
-
-            internal override Statement Revert() {
-                return new ExecStatement(expr.Revert(body), expr.Revert(locals), expr.Revert(globals));
-            }
-
-            public expr body {
-                get { return _body; }
-                set { _body = value; }
-            }
-
-            public expr globals {
-                get { return _globals; }
-                set { _globals = value; }
-            }
-
-            public expr locals {
-                get { return _locals; }
-                set { _locals = value; }
-            }
-        }
-
+       
         [PythonType]
         public class Expr : stmt
         {
@@ -2923,15 +2870,6 @@ namespace IronPython.Modules
                 _value = value;
                 _lineno = lineno;
                 _col_offset = col_offset;
-            }
-
-            internal Repr(BackQuoteExpression expr)
-                : this() {
-                _value = Convert(expr.Expression);
-            }
-
-            internal override AstExpression Revert() {
-                return new BackQuoteExpression(expr.Revert(value));
             }
 
             public expr value {

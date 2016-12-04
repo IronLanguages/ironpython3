@@ -81,7 +81,7 @@ namespace IronPython.Modules {
             }
 
             protected override void CreateHasher() {
-                _hasher = MD5.Create();
+                _hasher = new Mono.Security.Cryptography.MD5CryptoServiceProvider();
             }
 
             [Documentation("copy() -> object (copy of this md5 object)")]

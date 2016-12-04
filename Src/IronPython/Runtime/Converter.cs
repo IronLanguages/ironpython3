@@ -366,11 +366,11 @@ namespace IronPython.Runtime {
         /// result in an OverflowError.
         /// </summary>
         internal static bool TryConvertToIndex(object value, bool throwOverflowError, out object index) {
-            index = ConvertToSliceIndexHelper(value, throwOverflowError);
+            index = ConvertToSliceIndexHelper(value);
             if (index == null) {
                 object callable;
                 if (PythonOps.TryGetBoundAttr(value, "__index__", out callable)) {
-                    index = ConvertToSliceIndexHelper(PythonCalls.Call(callable), throwOverflowError);
+                    index = ConvertToSliceIndexHelper(PythonCalls.Call(callable));
                 }
             }
 
@@ -550,7 +550,7 @@ namespace IronPython.Runtime {
 
 #if FEATURE_CUSTOM_TYPE_DESCRIPTOR
             // try available type conversions...
-            object[] tcas = toType.GetCustomAttributes(typeof(TypeConverterAttribute), true);
+            var tcas = toType.GetTypeInfo().GetCustomAttributes(typeof(TypeConverterAttribute), true);
             foreach (TypeConverterAttribute tca in tcas) {
                 TypeConverter tc = GetTypeConverter(tca);
 
@@ -824,8 +824,7 @@ namespace IronPython.Runtime {
                     Type genTo = toType.GetGenericTypeDefinition();
                     if (genTo == IEnumerableOfTType) {
                         return IEnumerableOfObjectType.IsAssignableFrom(fromType) ||
-                            IEnumerableType.IsAssignableFrom(fromType) ||
-                            fromType == typeof(OldInstance);
+                            IEnumerableType.IsAssignableFrom(fromType);
                     } else if (genTo == typeof(System.Collections.Generic.IEnumerator<>)) {
                         if (IsPythonType(fromType)) return true;
                     }
@@ -914,9 +913,10 @@ namespace IronPython.Runtime {
         internal static bool IsNumeric(Type t) {
             if (t.IsEnum()) return false;
 
+            const TypeCode TypeCodeDbNull = (TypeCode)2; // TypeCode.DBNull
             switch (t.GetTypeCode()) {
                 case TypeCode.DateTime:
-                case TypeCode.DBNull:
+                case TypeCodeDbNull:
                 case TypeCode.Char:
                 case TypeCode.Empty:
                 case TypeCode.String:
@@ -935,7 +935,6 @@ namespace IronPython.Runtime {
 
         private static bool HasPythonProtocol(Type t, string name) {
             if (t.FullName.StartsWith(NewTypeMaker.TypePrefix)) return true;
-            if (t == typeof(OldInstance)) return true;
             PythonType dt = DynamicHelpers.GetPythonTypeFromType(t);
             if (dt == null) return false;
             PythonTypeSlot tmp;

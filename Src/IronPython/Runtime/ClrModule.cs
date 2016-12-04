@@ -52,6 +52,12 @@ namespace IronPython.Runtime {
     /// .NET/CLS interop with Python.  
     /// </summary>
     public static class ClrModule {
+#if NETSTANDARD
+        public static readonly bool IsNetStandard = true;
+#else
+        public static readonly bool IsNetStandard = false;
+#endif
+
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             if (!dict.ContainsKey("References")) {
@@ -113,7 +119,7 @@ import Namespace.")]
             }
         }
 
-#if !SILVERLIGHT
+#if FEATURE_LOADWITHPARTIALNAME
         [Documentation(@"Adds a reference to a .NET assembly.  Parameters are a partial assembly name. 
 After the load the assemblies namespaces and top-level types will be available via 
 import Namespace.")]
@@ -398,10 +404,10 @@ the assembly object.")]
         private static void AddReferenceToFile(CodeContext/*!*/ context, string file) {
             if (file == null) throw new TypeErrorException("Expected string, got NoneType");
 
-#if !FEATURE_FILESYSTEM
-            Assembly asm = context.LanguageContext.DomainManager.Platform.LoadAssemblyFromPath(file);
-#else
+#if FEATURE_FILESYSTEM
             Assembly asm = LoadAssemblyFromFile(context, file);
+#else
+            Assembly asm = context.LanguageContext.DomainManager.Platform.LoadAssemblyFromPath(file);
 #endif
             if (asm == null) {
                 throw new IOException(String.Format("Could not add reference to assembly {0}", file));
@@ -632,7 +638,6 @@ import Namespace.")]
                     PythonType dt = DynamicHelpers.GetPythonType(args[i - start]);
 
                     PythonType expct = _expected[i] as PythonType;
-                    if (expct == null) expct = ((OldClass)_expected[i]).TypeObject;
                     if (dt != _expected[i] && !dt.IsSubclassOf(expct)) {
                         throw PythonOps.AssertionError("argument {0} has bad value (got {1}, expected {2})", i, dt, _expected[i]);
                     }
@@ -725,7 +730,6 @@ import Namespace.")]
                 PythonType dt = DynamicHelpers.GetPythonType(ret);
                 if (dt != _retType) {
                     PythonType expct = _retType as PythonType;
-                    if (expct == null) expct = ((OldClass)_retType).TypeObject;
 
                     if (!dt.IsSubclassOf(expct))
                         throw PythonOps.AssertionError("bad return value returned (expected {0}, got {1})", _retType, dt);
@@ -953,11 +957,11 @@ import Namespace.")]
                 Type clrBaseType = info.BaseType;
                 Type tempType = clrBaseType;
                 while (tempType != null) {
-                    if (tempType.IsGenericType() && tempType.GetGenericTypeDefinition() == typeof(Extensible<>)) {
+                    if (tempType.GetTypeInfo().IsGenericType && tempType.GetGenericTypeDefinition() == typeof(Extensible<>)) {
                         clrBaseType = tempType.GetGenericArguments()[0];
                         break;
                     }
-                    tempType = tempType.GetBaseType();
+                    tempType = tempType.GetTypeInfo().BaseType;
                 }
 
                 PythonType baseType = DynamicHelpers.GetPythonTypeFromType(clrBaseType);

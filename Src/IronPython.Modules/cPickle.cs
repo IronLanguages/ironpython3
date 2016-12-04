@@ -422,11 +422,9 @@ namespace IronPython.Modules {
                 _dispatchTable[typeof(PythonDictionary)] = SaveDict;
                 _dispatchTable[typeof(PythonTuple)] = SaveTuple;
                 _dispatchTable[typeof(List)] = SaveList;
-                _dispatchTable[typeof(OldClass)] = SaveGlobal;
                 _dispatchTable[typeof(PythonFunction)] = SaveGlobal;
                 _dispatchTable[typeof(BuiltinFunction)] = SaveGlobal;
                 _dispatchTable[typeof(PythonType)] = SaveGlobal;
-                _dispatchTable[typeof(OldInstance)] = SaveInstance;
             }
             #region Public API
 
@@ -720,7 +718,6 @@ namespace IronPython.Modules {
 
             private static void SaveGlobal(PicklerObject/*!*/ pickler, CodeContext/*!*/ context, object obj) {
                 Debug.Assert(
-                    DynamicHelpers.GetPythonType(obj).Equals(TypeCache.OldClass) ||
                     DynamicHelpers.GetPythonType(obj).Equals(TypeCache.Function) ||
                     DynamicHelpers.GetPythonType(obj).Equals(TypeCache.BuiltinFunction) ||
                     DynamicHelpers.GetPythonType(obj).Equals(TypeCache.PythonType) ||
@@ -771,52 +768,7 @@ namespace IronPython.Modules {
                 WriteStringPair(context, moduleName, name);
                 WritePut(context, obj);
             }
-
-            private static void SaveInstance(PicklerObject/*!*/ pickler, CodeContext/*!*/ context, object obj) {
-                Debug.Assert(DynamicHelpers.GetPythonType(obj).Equals(TypeCache.OldInstance), "arg must be old-class instance");
-                Debug.Assert(!pickler.MemoContains(obj));
-
-                pickler.Write(context, Opcode.Mark);
-
-                // Memoize() call isn't in the usual spot to allow class to be memoized before
-                // instance (when using proto other than 0) to match CPython's bytecode output
-
-                object objClass;
-                if (!PythonOps.TryGetBoundAttr(context, obj, "__class__", out objClass)) {
-                    throw pickler.CannotPickle(context, obj, "could not determine its __class__");
-                }
-
-                if (pickler._protocol < 1) {
-                    object className, classModuleName;
-                    if (!PythonOps.TryGetBoundAttr(context, objClass, "__name__", out className)) {
-                        throw pickler.CannotPickle(context, obj, "its __class__ has no __name__");
-                    }
-                    classModuleName = pickler.FindModuleForGlobal(context, objClass, className);
-
-                    Debug.Assert(!pickler.MemoContains(obj));
-                    pickler.MemoizeNew(obj);
-                    pickler.WriteInitArgs(context, obj);
-                    pickler.Write(context, Opcode.Inst);
-                    pickler.WriteStringPair(context, classModuleName, className);
-                } else {
-                    pickler.Save(context, objClass);
-                    pickler.Memoize(obj);
-                    pickler.WriteInitArgs(context, obj);
-                    pickler.Write(context, Opcode.Obj);
-                }
-
-                pickler.WritePut(context, obj);
-
-                object getStateCallable;
-                if (PythonOps.TryGetBoundAttr(context, obj, "__getstate__", out getStateCallable)) {
-                    pickler.Save(context, PythonCalls.Call(context, getStateCallable));
-                } else {
-                    pickler.Save(context, PythonOps.GetBoundAttr(context, obj, "__dict__"));
-                }
-
-                pickler.Write(context, Opcode.Build);
-            }
-
+            
             private static void SaveInteger(PicklerObject/*!*/ pickler, CodeContext/*!*/ context, object obj) {
                 Debug.Assert(DynamicHelpers.GetPythonType(obj).Equals(TypeCache.Int32), "arg must be int");
                 if (pickler._protocol < 1) {
@@ -1928,14 +1880,6 @@ namespace IronPython.Modules {
             }
 
             private object MakeInstance(CodeContext/*!*/ context, object cls, object[] args) {
-                OldClass oc = cls as OldClass;
-                if (oc != null) {
-                    OldInstance inst = new OldInstance(context, oc);
-                    if (args.Length != 0 || PythonOps.HasAttr(context, cls, "__getinitargs__")) {
-                        PythonOps.CallWithContext(context, PythonOps.GetBoundAttr(context, inst, "__init__"), args);
-                    }
-                    return inst;
-                }
                 return PythonOps.CallWithContext(context, cls, args);
             }
 
@@ -2134,7 +2078,7 @@ namespace IronPython.Modules {
             private void LoadInst(CodeContext/*!*/ context) {
                 LoadGlobal(context);
                 object cls = PopStack();
-                if (cls is OldClass || cls is PythonType) {
+                if (cls is PythonType) {
                     int markIndex = GetMarkIndex(context);
                     object[] args = StackGetSliceAsArray(markIndex + 1);
                     PopMark(markIndex);
@@ -2196,7 +2140,7 @@ namespace IronPython.Modules {
                 }
 
                 PythonType cls = PopStack() as PythonType;
-                if (args == null) {
+                if (cls == null) {
                     throw PythonOps.TypeError("expected new-style type as first argument to NEWOBJ, got {0}", DynamicHelpers.GetPythonType(args));
                 }
 
@@ -2230,7 +2174,7 @@ namespace IronPython.Modules {
                 }
 
                 object cls = _stack[markIndex + 1];
-                if (cls is OldClass || cls is PythonType) {
+                if (cls is PythonType) {
                     object[] args = StackGetSliceAsArray(markIndex + 2);
                     PopMark(markIndex);
                     _stack.Add(MakeInstance(context, cls, args));

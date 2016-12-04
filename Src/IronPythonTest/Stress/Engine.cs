@@ -22,7 +22,7 @@ using IronPython.Hosting;
 namespace IronPythonTest.Stress {
 
     public class Engine
-#if !SILVERLIGHT // remoting not supported in Silverlight
+#if FEATURE_REMOTING
         : MarshalByRefObject
 #endif
     {
@@ -54,7 +54,7 @@ namespace IronPythonTest.Stress {
             for (int i = 0; i < 10000; i++) {
                 ScriptScope scope = _pe.CreateScope();
                 scope.SetVariable("x", "Hello");
-                _pe.CreateScriptSourceFromFile(Common.InputTestDirectory + "\\simpleCommand.py").Execute(scope);
+                _pe.CreateScriptSourceFromFile(System.IO.Path.Combine(Common.InputTestDirectory, "simpleCommand.py")).Execute(scope);
                 AreEqual(_pe.CreateScriptSourceFromString("x").Execute<int>(scope), 1);
                 scope = null;
             }
@@ -80,7 +80,7 @@ namespace IronPythonTest.Stress {
             if (expected == null && actual == null) return;
 
             if (!expected.Equals(actual)) {
-                Console.WriteLine("Expected: {0} Got: {1} from {2}", expected, actual, new StackTrace(true));
+                Console.WriteLine("Expected: {0} Got: {1} from {2}", expected, actual, new StackTrace((Exception)null, true));
                 throw new Exception();
             }
         }

@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -46,7 +47,9 @@ using Complex = Microsoft.Scripting.Math.Complex64;
 namespace IronPython.Modules {
     [Documentation("")]  // Documentation suppresses XML Doc on startup.
     public static partial class Builtin {
-        public const string __doc__ = "Provides access to commonly used built-in functions, exception objects, etc...";
+        public const string __doc__ = @"Built-in functions, exceptions, and other objects.
+
+Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         public const object __package__ = null;
         public const string __name__ = "builtins";
 
@@ -74,12 +77,6 @@ namespace IronPython.Modules {
         public static NotImplementedType NotImplemented {
             get {
                 return NotImplementedType.Value;
-            }
-        }
-
-        public static object exit {
-            get {
-                return "Use Ctrl-Z plus Return to exit";
             }
         }
 
@@ -149,39 +146,24 @@ namespace IronPython.Modules {
             throw PythonOps.TypeError("bad operand type for abs(): '{0}'", PythonTypeOps.GetName(o));
         }
 
-        public static bool all(object x) {
-            IEnumerator i = PythonOps.GetEnumerator(x);
+        public static bool all(CodeContext context, object x) {
+            IEnumerator i = PythonOps.GetEnumerator(context, x);
             while (i.MoveNext()) {
                 if (!PythonOps.IsTrue(i.Current)) return false;
             }
             return true;
         }
 
-        public static bool any(object x) {
-            IEnumerator i = PythonOps.GetEnumerator(x);
+        public static bool any(CodeContext context, object x) {
+            IEnumerator i = PythonOps.GetEnumerator(context, x);
             while (i.MoveNext()) {
                 if (PythonOps.IsTrue(i.Current)) return true;
             }
             return false;
         }
 
-        [Documentation("apply(object[, args[, kwargs]]) -> value\n\nDeprecated.\nInstead, use:\n    function(*args, **keywords).")]
-        public static object apply(CodeContext/*!*/ context, object func) {
-            return PythonOps.CallWithContext(context, func);
-        }
-
-        public static object apply(CodeContext/*!*/ context, object func, object args) {
-            return PythonOps.CallWithArgsTupleAndContext(context, func, ArrayUtils.EmptyObjects, args);
-        }
-
-        public static object apply(CodeContext/*!*/ context, object func, object args, object kws) {
-            return context.LanguageContext.CallWithKeywords(func, args, kws);
-        }
-
-        public static PythonType basestring {
-            get {
-                return DynamicHelpers.GetPythonTypeFromType(typeof(string));
-            }
+        public static string ascii(CodeContext context, object o) {
+            throw new NotImplementedException();
         }
 
         public static string bin(int number) {
@@ -206,7 +188,6 @@ namespace IronPython.Modules {
             }
         }
 
-
         public static PythonType buffer {
             get {
                 return DynamicHelpers.GetPythonTypeFromType(typeof(PythonBuffer));
@@ -225,12 +206,6 @@ namespace IronPython.Modules {
             }
         }
 
-        [Documentation("callable(object) -> bool\n\nReturn whether the object is callable (i.e., some kind of function).")]
-        [Python3Warning("callable() is removed in 3.x. instead call hasattr(obj, '__call__')")]
-        public static bool callable(CodeContext/*!*/ context, object o) {
-            return PythonOps.IsCallable(context, o);
-        }
-
         [Documentation("chr(i) -> character\n\nReturn a string of one character with ordinal i; 0 <= i< 256.")]
         [LightThrowing]
         public static object chr(int value) {
@@ -240,41 +215,10 @@ namespace IronPython.Modules {
             return ScriptingRuntimeHelpers.CharToString((char)value);
         }
 
-        internal static object TryCoerce(CodeContext/*!*/ context, object x, object y) {
-            PythonTypeSlot pts;
-            PythonType xType = DynamicHelpers.GetPythonType(x);
-
-            if (xType.TryResolveSlot(context, "__coerce__", out pts)) {
-                object callable;
-                if (pts.TryGetValue(context, x, xType, out callable)) {
-                    return PythonCalls.Call(context, callable, y);
-                }
+        public static PythonType classmethod {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(classmethod));
             }
-            return NotImplementedType.Value;
-        }
-
-        [Documentation("coerce(x, y) -> (x1, y1)\n\nReturn a tuple consisting of the two numeric arguments converted to\na common type. If coercion is not possible, raise TypeError.")]
-        public static object coerce(CodeContext/*!*/ context, object x, object y) {
-            object converted;
-
-            if (x == null && y == null) {
-                return PythonTuple.MakeTuple(null, null);
-            }
-
-            converted = TryCoerce(context, x, y);
-            if (converted != null && converted != NotImplementedType.Value) {
-                return converted;
-            }
-
-            converted = TryCoerce(context, y, x);
-            if (converted != null && converted != NotImplementedType.Value) {
-                PythonTuple pt = converted as PythonTuple;
-                if (pt != null && pt.Count == 2) {
-                    return PythonTuple.MakeTuple(pt[1], pt[0]);
-                }
-            }
-
-            throw PythonOps.TypeError("coercion failed");
         }
 
         [Documentation("compile a unit of source code.\n\nThe source can be compiled either as exec, eval, or single.\nexec compiles the code as if it were a file\neval compiles the code as if were an expression\nsingle compiles a single statement\n\nsource can either be a string or an AST object")]
@@ -347,68 +291,6 @@ namespace IronPython.Modules {
             return source;
         }
 
-        public static PythonType classmethod {
-            get {
-                return DynamicHelpers.GetPythonTypeFromType(typeof(classmethod));
-            }
-        }
-
-        public static int cmp(CodeContext/*!*/ context, object x, object y) {
-            return PythonOps.Compare(context, x, y);
-        }
-
-        // having a cmp overload for double would be nice, but it breaks:
-        // x = 1e66666
-        // y = x/x
-        // cmp(y,y)
-        // which returns 0 because id(y) == id(y).  If we added a double overload
-        // we lose object identity.
-
-        public static int cmp(CodeContext/*!*/ context, int x, int y) {
-            return Int32Ops.Compare(x, y);
-        }
-
-        public static int cmp(CodeContext/*!*/ context, [NotNull]BigInteger x, [NotNull]BigInteger y) {
-            if ((object)x == (object)y) {
-                return 0;
-            }
-            return BigIntegerOps.Compare(x, y);
-        }
-
-        public static int cmp(CodeContext/*!*/ context, double x, [NotNull]BigInteger y) {
-            return -BigIntegerOps.Compare(y, x);
-        }
-
-        public static int cmp(CodeContext/*!*/ context, [NotNull]BigInteger x, double y) {
-            return BigIntegerOps.Compare(x, y);
-        }
-
-        public static int cmp(CodeContext/*!*/ context, [NotNull]string x, [NotNull]string y) {
-            if ((object)x != (object)y) {
-                int res = string.CompareOrdinal(x, y);
-                if (res >= 1) {
-                    return 1;
-                } else if (res <= -1) {
-                    return -1;
-                }
-            }
-
-            return 0;
-        }
-
-#if FEATURE_SORTKEY
-        public static int cmp(CodeContext/*!*/ context, [NotNull]SortKey x, [NotNull]SortKey y) {
-            return SortKey.Compare(x, y);
-        }
-#endif
-
-        public static int cmp(CodeContext/*!*/ context, [NotNull]PythonTuple x, [NotNull]PythonTuple y) {
-            if ((object)x == (object)y) {
-                return 0;
-            }
-            return x.CompareTo(y);
-        }
-
         public static PythonType complex {
             get {
                 return DynamicHelpers.GetPythonTypeFromType(typeof(Complex));
@@ -418,7 +300,7 @@ namespace IronPython.Modules {
         public static void delattr(CodeContext/*!*/ context, object o, string name) {
             PythonOps.DeleteAttr(context, o, name);
         }
-
+        
         public static PythonType dict {
             get {
                 return DynamicHelpers.GetPythonTypeFromType(typeof(PythonDictionary));
@@ -524,122 +406,57 @@ namespace IronPython.Modules {
             return code.Call(scope);
         }
 
-        public static void execfile(CodeContext/*!*/ context, object/*!*/ filename) {
-            execfile(context, filename, null, null);
+        public static void exec(CodeContext context, object code, PythonDictionary globals = null, object locals = null) {
+            if (globals == null && locals == null) {
+                PythonOps.UnqualifiedExec(context, code);
+            } else {
+                PythonOps.QualifiedExec(context, code, globals, locals);
+            }
         }
 
-        public static void execfile(CodeContext/*!*/ context, object/*!*/ filename, object globals) {
-            execfile(context, filename, globals, null);
-        }
-
-        public static void execfile(CodeContext/*!*/ context, object/*!*/ filename, object globals, object locals) {
-            if (filename == null) {
-                throw PythonOps.TypeError("execfile() argument 1 must be string, not None");
-            }
-            
-            PythonDictionary g = globals as PythonDictionary;
-            if (g == null && globals != null) {
-                throw PythonOps.TypeError("execfile() arg 2 must be dictionary");
-            }
-
-            PythonDictionary l = locals as PythonDictionary;
-            if (l == null && locals != null) {
-                throw PythonOps.TypeError("execfile() arg 3 must be dictionary");
-            }
-
-            if (l == null) {
-                l = g;
-            }
-
-            var execScope = GetExecEvalScopeOptional(context, g, l, true);
-            string path = Converter.ConvertToString(filename);
-            PythonContext pc = PythonContext.GetContext(context);
-            if (!pc.DomainManager.Platform.FileExists(path)) {
-                throw PythonOps.IOError("execfile: specified file doesn't exist");
-            }
-
-            SourceUnit sourceUnit = pc.CreateFileUnit(path, pc.DefaultEncoding, SourceCodeKind.Statements);
-            FunctionCode code;
-
-            var options = GetRuntimeGeneratedCodeCompilerOptions(context, true, 0);
-            //always generate an unoptimized module since we run these against a dictionary namespace
-            options.Module &= ~ModuleOptions.Optimized;
-
-            try {
-                code = FunctionCode.FromSourceUnit(sourceUnit, options, false);
-            } catch (UnauthorizedAccessException x) {
-                throw PythonOps.IOError(x);
-            }
-
-            // Do not attempt evaluation mode for execfile
-            code.Call(execScope);
-        }
-
-        public static PythonType file {
+        public static object exit {
             get {
-                return DynamicHelpers.GetPythonTypeFromType(typeof(PythonFile));
+                return "Use Ctrl-Z plus Return to exit";
             }
         }
 
-        public static string filter(CodeContext/*!*/ context, object function, [NotNull]string list) {
-            if (function == null) return list;
+        [PythonType("filter")]
+        public class filterobj : IEnumerable {
+            private CodeContext _context;
+            private object _function;
+            private object _list;
+
+            public filterobj(CodeContext context, object function, object list) {
+                _context = context;
+                _function = function;
+                _list = list;
+            }
+
+            public IEnumerator GetEnumerator() {
+                if (_function != null && !PythonOps.IsCallable(_context, _function)) {
+                    throw PythonOps.TypeError("'{0}' object is not callable", PythonOps.GetPythonTypeName(_function));
+                }
+
+                IEnumerator e = PythonOps.GetEnumerator(_context, _list);
+                while(e.MoveNext()) {
+                    object o = e.Current;
+                    object t = (_function != null) ? PythonCalls.Call(_context, _function, o) : o;
+
+                    if (PythonOps.IsTrue(t)) {
+                        yield return o;
+                    }
+                }
+            }
+        }
+
+        public static object filter(CodeContext/*!*/ context, object function, object list) {
             if (list == null) throw PythonOps.TypeError("NoneType is not iterable");
 
-            StringBuilder sb = new StringBuilder();
-            foreach (char c in list) {
-                if (PythonOps.IsTrue(PythonCalls.Call(context, function, ScriptingRuntimeHelpers.CharToString(c)))) sb.Append(c);
+            IEnumerator e;
+            if(!PythonOps.TryGetEnumerator(context, list, out e)) {
+                throw PythonOps.TypeError("'{0}' object is not iterable", PythonOps.GetPythonTypeName(list));
             }
-
-            return sb.ToString();
-        }
-
-        public static string filter(CodeContext/*!*/ context, object function, [NotNull]ExtensibleString list) {
-            StringBuilder sb = new StringBuilder();
-            IEnumerator e = PythonOps.GetEnumerator(list);
-            while (e.MoveNext()) {
-                object o = e.Current;
-                object t = (function != null) ? PythonCalls.Call(context, function, o) : o;
-
-                if (PythonOps.IsTrue(t)) {
-                    sb.Append(Converter.ConvertToString(o));
-                }
-            }
-            return sb.ToString();
-        }
-
-        /// <summary>
-        /// Specialized version because enumerating tuples by Python's definition
-        /// doesn't call __getitem__, but filter does!
-        /// </summary>
-        public static PythonTuple filter(CodeContext/*!*/ context, object function, [NotNull]PythonTuple tuple) {
-            List<object> res = new List<object>(tuple.__len__());
-
-            for (int i = 0; i < tuple.__len__(); i++) {
-                object obj = tuple[i];
-                object t = (function != null) ? PythonCalls.Call(context, function, obj) : obj;
-
-                if (PythonOps.IsTrue(t)) {
-                    res.Add(obj);
-                }
-            }
-
-            return PythonTuple.MakeTuple(res.ToArray());
-        }
-
-        public static List filter(CodeContext/*!*/ context, object function, object list) {
-            if (list == null) throw PythonOps.TypeError("NoneType is not iterable");
-            List ret = new List();
-
-            IEnumerator i = PythonOps.GetEnumerator(list);
-            while (i.MoveNext()) {
-                if (function == null) {
-                    if (PythonOps.IsTrue(i.Current)) ret.AddNoLock(i.Current);
-                } else {
-                    if (PythonOps.IsTrue(PythonCalls.Call(context, function, i.Current))) ret.AddNoLock(i.Current);
-                }
-            }
-
-            return ret;
+            return new filterobj(context, function, list);
         }
 
         public static PythonType @float {
@@ -649,19 +466,14 @@ namespace IronPython.Modules {
         }
 
         public static string format(CodeContext/*!*/ context, object argValue, [DefaultParameterValue("")]string formatSpec) {
-            object res, formatMethod;
-            OldInstance oi = argValue as OldInstance;
-            if (oi != null && oi.TryGetBoundCustomMember(context, "__format__", out formatMethod)) {
-                res = PythonOps.CallWithContext(context, formatMethod, formatSpec);
-            } else {
-                // call __format__ with the format spec (__format__ is defined on object, so this always succeeds)
-                PythonTypeOps.TryInvokeBinaryOperator(
-                    context,
-                    argValue,
-                    formatSpec,
-                    "__format__",
-                    out res);
-            }
+            object res;
+            // call __format__ with the format spec (__format__ is defined on object, so this always succeeds)
+            PythonTypeOps.TryInvokeBinaryOperator(
+                context,
+                argValue,
+                formatSpec,
+                "__format__",
+                out res);
 
             string strRes = res as string;
             if (strRes == null) {
@@ -669,6 +481,12 @@ namespace IronPython.Modules {
             }
 
             return strRes;
+        }
+
+        public static PythonType frozenset {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(FrozenSetCollection));
+            }
         }
 
         public static object getattr(CodeContext/*!*/ context, object o, string name) {
@@ -763,7 +581,6 @@ namespace IronPython.Modules {
             Method method;
             string strVal;
             PythonModule pyModule;
-            OldClass oldClass;
 
             if (doced.Contains(obj)) return;  // document things only once
             doced.Add(obj);
@@ -886,32 +703,6 @@ namespace IronPython.Modules {
                         help(context, doced, doc, indent + 1, value);
                     }
                 }
-            } else if ((oldClass = obj as OldClass) != null) {
-                if (indent == 0) {
-                    doc.AppendFormat("Help on {0} in module {1}\n\n", oldClass.Name, PythonOps.GetBoundAttr(context, oldClass, "__module__"));
-                }
-
-                object docText;
-                if (oldClass.TryLookupSlot("__doc__", out docText) && docText != null) {
-                    AppendMultiLine(doc, docText.ToString() + Environment.NewLine, indent);
-                    AppendIndent(doc, indent);
-                    doc.AppendLine("Data and other attributes defined here:");
-                    AppendIndent(doc, indent);
-                    doc.AppendLine();
-                }
-
-                IList<object> names = ((IPythonMembersList)oldClass).GetMemberNames(context);
-                List sortNames = new List(names);
-                sortNames.sort(context);
-                names = sortNames;
-                foreach (string name in names) {
-                    if (name == "__class__") continue;
-
-                    object value;
-
-                    if (oldClass.TryLookupSlot(name, out value))
-                        help(context, doced, doc, indent + 1, value);
-                }
             }
         }
 
@@ -958,14 +749,6 @@ namespace IronPython.Modules {
             }
         }
 
-        public static string intern(object o) {
-            string s = o as string;
-            if (s == null) {
-                throw PythonOps.TypeError("intern: argument must be string");
-            }
-            return string.Intern(s);
-        }
-
         public static bool isinstance(object o, [NotNull]PythonType typeinfo) {
             return PythonOps.IsInstance(o, typeinfo);
         }
@@ -976,10 +759,6 @@ namespace IronPython.Modules {
 
         public static bool isinstance(CodeContext context, object o, object typeinfo) {
             return PythonOps.IsInstance(context, o, typeinfo);
-        }
-
-        public static bool issubclass(CodeContext context, [NotNull]OldClass c, object typeinfo) {
-            return PythonOps.IsSubClass(context, c.TypeObject, typeinfo);
         }
 
         public static bool issubclass(CodeContext context, [NotNull]PythonType c, object typeinfo) {
@@ -1023,16 +802,11 @@ namespace IronPython.Modules {
             }
             foreach (object baseCls in tupleBases) {
                 PythonType pyType;
-                OldClass oc;
 
                 if (baseCls == typeinfo) {
                     return ScriptingRuntimeHelpers.True;
                 } else if ((pyType = baseCls as PythonType) != null) {
                     if (issubclass(context, pyType, typeinfo)) {
-                        return ScriptingRuntimeHelpers.True;
-                    }
-                } else if ((oc = baseCls as OldClass) != null) {
-                    if (issubclass(context, oc, typeinfo)) {
                         return ScriptingRuntimeHelpers.True;
                     }
                 } else if (hasattr(context, baseCls, "__bases__")) {
@@ -1093,12 +867,6 @@ namespace IronPython.Modules {
             }
         }
 
-        public static PythonType frozenset {
-            get {
-                return DynamicHelpers.GetPythonTypeFromType(typeof(FrozenSetCollection));
-            }
-        }
-
         public static PythonType list {
             get {
                 return DynamicHelpers.GetPythonTypeFromType(typeof(List));
@@ -1136,181 +904,43 @@ namespace IronPython.Modules {
             );
         }
 
-        public static List map(CodeContext/*!*/ context, object func, [NotNull]IEnumerable enumerator) {
-            IEnumerator en = PythonOps.GetEnumerator(enumerator);
-            
-            List ret = new List();            
-            CallSite<Func<CallSite, CodeContext, object, object, object>> mapSite = null;
+        [PythonType("map")]
+        public class mapobject : IEnumerable {
+            private CodeContext _context;
+            private object _func;
+            private object[] _iters;
 
-            if (func != null) {
-                mapSite = MakeMapSite<object, object>(context);
+            public mapobject(CodeContext context, object func, params object[] iters) {
+                _context = context;
+                _func = func;
+                _iters = iters;
             }
 
-            while (en.MoveNext()) {
-                if (func == null) {
-                    ret.AddNoLock(en.Current);
-                } else {
-                    ret.AddNoLock(mapSite.Target(mapSite, context, func, en.Current));
+            IEnumerator IEnumerable.GetEnumerator() {
+                IEnumerator[] enumerators = _iters.Select(x => PythonOps.GetEnumerator(x)).ToArray();
+                while (enumerators.All(x => x.MoveNext())) {
+                    yield return PythonOps.CallWithContext(_context, _func, enumerators.Select(x => x.Current).ToArray());
                 }
-            }
-        
-            return ret;
+            }            
         }
 
-        public static List map(
-            CodeContext/*!*/ context,
-            SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object, object>>> storage,
-            object func,
-            [NotNull]string enumerator
-        ) {
-            CallSite<Func<CallSite, CodeContext, object, object, object>> mapSite;
-            if (storage.Data == null && func != null) {
-                storage.Data = MakeMapSite<object, object>(context);
+        public static object map(CodeContext/*!*/ context, object func, params object[] iters) {
+            if(iters.Length == 0) {
+                throw PythonOps.TypeError("map() must have at least two arguments.");
             }
-            mapSite = storage.Data;
 
-            List ret = new List(enumerator.Length);
-            foreach (char o in enumerator) {
-                if (func == null) {
-                    ret.AddNoLock(ScriptingRuntimeHelpers.CharToString(o));
-                } else {
-                    ret.AddNoLock(mapSite.Target(mapSite, context, func, ScriptingRuntimeHelpers.CharToString(o)));
+            if(!PythonOps.IsCallable(context, func)) {
+                throw PythonOps.TypeError("'{0}' object is not callable", PythonOps.GetPythonTypeName(func));
+            }
+
+            foreach(object o in iters) {
+                IEnumerator e;
+                if(!PythonOps.TryGetEnumerator(context, o, out e)) {
+                    throw PythonOps.TypeError("'{0}' object is not iterable", PythonOps.GetPythonTypeName(o));
                 }
             }
 
-            return ret;
-        }
-
-        public static List map(
-            CodeContext/*!*/ context,
-            SiteLocalStorage<CallSite<Func<CallSite, CodeContext, PythonType, object, object>>> storage,
-            [NotNull]PythonType/*!*/ func,
-            [NotNull]string enumerator
-        ) {
-            CallSite<Func<CallSite, CodeContext, PythonType, string, object>> mapSite = MakeMapSite<PythonType, string>(context);
-
-            List ret = new List(enumerator.Length);
-            foreach (char o in enumerator) {
-                ret.AddNoLock(mapSite.Target(mapSite, context, func, ScriptingRuntimeHelpers.CharToString(o)));
-            }
-            return ret;
-        }
-
-        public static List map(
-            CodeContext/*!*/ context,
-            SiteLocalStorage<CallSite<Func<CallSite, CodeContext, PythonType, object, object>>> storage,
-            [NotNull]PythonType/*!*/ func,
-            [NotNull]IEnumerable enumerator
-        ) {
-            CallSite<Func<CallSite, CodeContext, PythonType, object, object>> mapSite;
-            if (storage.Data == null) {
-                storage.Data = MakeMapSite<PythonType, object>(context);
-            }
-            mapSite = storage.Data;
-
-            IEnumerator en = PythonOps.GetEnumerator(enumerator);
-            List ret = new List();
-            while (en.MoveNext()) {
-                ret.AddNoLock(mapSite.Target(mapSite, context, func, en.Current));
-            }
-            return ret;
-        }
-
-        public static List map(
-            CodeContext/*!*/ context,
-            SiteLocalStorage<CallSite<Func<CallSite, CodeContext, BuiltinFunction, object, object>>> storage,
-            [NotNull]BuiltinFunction/*!*/ func,
-            [NotNull]string enumerator
-        ) {
-            CallSite<Func<CallSite, CodeContext, BuiltinFunction, object, object>> mapSite;
-            if (storage.Data == null) {
-                storage.Data = MakeMapSite<BuiltinFunction, object>(context);
-            }
-            mapSite = storage.Data;
-
-            List ret = new List(enumerator.Length);
-            foreach (char o in enumerator) {
-                ret.AddNoLock(mapSite.Target(mapSite, context, func, ScriptingRuntimeHelpers.CharToString(o)));
-            }
-            return ret;
-        }
-
-        public static List map(
-            CodeContext/*!*/ context,
-            SiteLocalStorage<CallSite<Func<CallSite, CodeContext, BuiltinFunction, object, object>>> storage,
-            [NotNull]BuiltinFunction/*!*/ func,
-            [NotNull]IEnumerable enumerator
-        ) {
-            CallSite<Func<CallSite, CodeContext, BuiltinFunction, object, object>> mapSite;
-            if (storage.Data == null) {
-                storage.Data = MakeMapSite<BuiltinFunction, object>(context);
-            }
-            mapSite = storage.Data;
-
-            IEnumerator en = PythonOps.GetEnumerator(enumerator);
-            List ret = new List();
-            while (en.MoveNext()) {
-                ret.AddNoLock(mapSite.Target(mapSite, context, func, en.Current));
-            }
-            return ret;
-        }
-
-        public static List map(
-            CodeContext/*!*/ context,
-            SiteLocalStorage<CallSite<Func<CallSite, CodeContext, PythonFunction, object, object>>> storage,
-            [NotNull]PythonFunction/*!*/ func,
-            [NotNull]IList enumerator
-        ) {
-            CallSite<Func<CallSite, CodeContext, PythonFunction, object, object>> mapSite;
-            if (storage.Data == null) {
-                storage.Data = MakeMapSite<PythonFunction, object>(context);
-            }
-            mapSite = storage.Data;
-
-            IEnumerator en = PythonOps.GetEnumerator(enumerator);
-            List ret = new List(enumerator.Count);
-            while (en.MoveNext()) {
-                ret.AddNoLock(mapSite.Target(mapSite, context, func, en.Current));
-            }
-            return ret;
-        }
-
-        public static List map(CodeContext/*!*/ context, params object[] param) {
-            if (param == null || param.Length < 2) {
-                throw PythonOps.TypeError("at least 2 arguments required to map");
-            }
-            List ret = new List();
-            object func = param[0];
-
-            IEnumerator[] enums = new IEnumerator[param.Length - 1];
-            for (int i = 0; i < enums.Length; i++) {
-                enums[i] = PythonOps.GetEnumerator(param[i + 1]);
-            }
-
-            object[] args = new object[enums.Length];
-            while (true) {
-                bool done = true;
-                for (int i = 0; i < enums.Length; i++) {
-                    if (enums[i].MoveNext()) {
-                        args[i] = enums[i].Current;
-                        done = false;
-                    } else {
-                        args[i] = null;
-                    }
-                }
-                if (done) {
-                    return ret;
-                }
-                if (func != null) {
-                    // splat call w/ args, can't use site here yet...
-                    ret.AddNoLock(PythonCalls.Call(context, func, args));
-                } else if (args.Length == 1) {
-                    ret.AddNoLock(args[0]);
-                } else {
-                    ret.AddNoLock(PythonTuple.MakeTuple(args));
-                    args = new object[enums.Length];    // Tuple does not copy the array, allocate new one.
-                }
-            }
+            return new mapobject(context, func, iters);
         }
 
         public static object max(CodeContext/*!*/ context, object x) {
@@ -1648,7 +1278,7 @@ namespace IronPython.Modules {
             }
 
             object end = AttrCollectionPop(kwargs, "end", "\n");
-            if (sep != null && !(sep is string)) {
+            if (end != null && !(end is string)) {
                 throw PythonOps.TypeError("end must be None or str, not {0}", PythonTypeOps.GetName(end));
             }
 
@@ -1763,72 +1393,6 @@ namespace IronPython.Modules {
 
             if (line != null && line.EndsWith("\n")) return line.Substring(0, line.Length - 1);
             return line;
-        }
-
-        public static object reduce(CodeContext/*!*/ context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object, object, object>>> siteData, object func, object seq) {
-            IEnumerator i = PythonOps.GetEnumerator(seq);
-            if (!i.MoveNext()) {
-                throw PythonOps.TypeError("reduce() of empty sequence with no initial value");
-            }
-            EnsureReduceData(context, siteData);
-
-            CallSite<Func<CallSite, CodeContext, object, object, object, object>> site = siteData.Data;
-
-            object ret = i.Current;
-            while (i.MoveNext()) {
-                ret = site.Target(site, context, func, ret, i.Current);
-            }
-            return ret;
-        }
-
-        public static object reduce(CodeContext/*!*/ context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object, object, object>>> siteData, object func, object seq, object initializer) {
-            IEnumerator i = PythonOps.GetEnumerator(seq);
-            EnsureReduceData(context, siteData);
-            
-            CallSite<Func<CallSite, CodeContext, object, object, object, object>> site = siteData.Data;
-            
-            object ret = initializer;
-            while (i.MoveNext()) {
-                ret = site.Target(site, context, func, ret, i.Current);
-            }
-            return ret;
-        }
-
-        private static void EnsureReduceData(CodeContext context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object, object, object>>> siteData) {
-            if (siteData.Data == null) {
-                siteData.Data = CallSite<Func<CallSite, CodeContext, object, object, object, object>>.Create(
-                    PythonContext.GetContext(context).Invoke(
-                        new CallSignature(2)
-                    )
-                );
-
-            }
-        }
-
-        [ThreadStatic]
-        private static List<PythonModule> _reloadStack;
-
-        public static object reload(CodeContext/*!*/ context, PythonModule/*!*/ module) {
-            if (module == null) {
-                throw PythonOps.TypeError("unexpected type: NoneType");
-            }
-
-            if (_reloadStack == null) {
-                Interlocked.CompareExchange(ref _reloadStack, new List<PythonModule>(), null);
-            }
-
-            // if a module attempts to reload it's self while already reloading it's 
-            // self we just return the original module.
-            if (_reloadStack.Contains(module)) {
-                return module;
-            }
-
-            _reloadStack.Add(module);
-            try {
-                return Importer.ReloadModule(context, module);
-            } finally {
-                _reloadStack.RemoveAt(_reloadStack.Count - 1);
-            }
         }
 
         public static object repr(CodeContext/*!*/ context, object o) {
@@ -2143,47 +1707,25 @@ namespace IronPython.Modules {
             return value;
         }
 
-        public static List zip(object s0, object s1) {
-            IEnumerator i0 = PythonOps.GetEnumerator(s0);
-            IEnumerator i1 = PythonOps.GetEnumerator(s1);
-            List ret = new List();
-            while(true) {
-                object obj0, obj1;
-                if(!i0.MoveNext()) {
-                    break;
-                }
-                obj0 = i0.Current;
-                if(!i1.MoveNext()) {
-                    break;
-                }
-
-                obj1 = i1.Current;
-                ret.AddNoLock(PythonTuple.MakeTuple(obj0, obj1));
+        [PythonType("zip")]
+        public class zipobject : IEnumerable {
+            private CodeContext _context;
+            private object[] _iters;
+            public zipobject(CodeContext context, object[] iters) {
+                _context = context;
+                _iters = iters;
             }
-            return ret;
+
+            public IEnumerator GetEnumerator() {
+                var enumerators = _iters.Select(x => PythonOps.GetEnumerator(_context, x)).ToArray();
+                while(enumerators.All(x => x.MoveNext())) {
+                    yield return PythonOps.MakeTuple(enumerators.Select(x => x.Current).ToArray());
+                }                
+            }
         }
 
-        //??? should we fastpath the 1,2,3 item cases???
-        public static List zip(params object[] seqs) {
-            if (seqs == null) throw PythonOps.TypeError("zip argument must support iteration, got None");
-
-            int N = seqs.Length;
-            if (N == 2) return zip(seqs[0], seqs[1]);
-            if (N == 0) return PythonOps.MakeList();
-            IEnumerator[] iters = new IEnumerator[N];
-            for (int i = 0; i < N; i++) iters[i] = PythonOps.GetEnumerator(seqs[i]);
-
-            List ret = new List();
-            while (true) {
-                object[] items = new object[N];
-                for (int i = 0; i < N; i++) {
-                    // first iterator which is no longer iterable ends the 
-                    // loop.
-                    if (!iters[i].MoveNext()) return ret;
-                    items[i] = iters[i].Current;
-                }
-                ret.AddNoLock(PythonTuple.MakeTuple(items));
-            }
+        public static object zip(CodeContext context, params object[] seqs) {
+            return new zipobject(context, seqs);
         }
 
         public static PythonType BaseException {

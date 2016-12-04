@@ -303,7 +303,9 @@ def getsitepackages(prefixes=None):
             continue
         seen.add(prefix)
 
-        if os.sep == '/':
+        if sys.platform == 'cli':
+            sitepackages.append(os.path.join(prefix, "Lib", "site-packages"))
+        elif os.sep == '/':
             sitepackages.append(os.path.join(prefix, "lib",
                                         "python" + sys.version[:3],
                                         "site-packages"))
@@ -360,6 +362,10 @@ def setcopyright():
         builtins.credits = _sitebuiltins._Printer(
             "credits",
             "Jython is maintained by the Jython developers (www.jython.org).")
+    elif sys.platform == 'cli':
+        __builtin__.credits = _Printer(
+            "credits",
+            "IronPython is maintained by the IronPython developers (www.ironpython.net).")
     else:
         builtins.credits = _sitebuiltins._Printer("credits", """\
     Thanks to CWI, CNRI, BeOpen.com, Zope Corporation and a cast of thousands

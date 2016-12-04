@@ -21,6 +21,7 @@ using MSAst = Microsoft.Scripting.Ast;
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 using Microsoft.Scripting.Runtime;
 using IronPython.Runtime.Operations;

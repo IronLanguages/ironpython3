@@ -20,6 +20,7 @@ using System.Linq.Expressions;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting.Ast;
@@ -78,7 +79,7 @@ namespace IronPython.Runtime {
                 Array arr = o as Array;
                 if (arr != null) {
                     Type t = arr.GetType().GetElementType();
-                    if (!t.IsPrimitive && t != typeof(string)) {
+                    if (!t.GetTypeInfo().IsPrimitive && t != typeof(string)) {
                         return false;
                     }
                     length = arr.Length;

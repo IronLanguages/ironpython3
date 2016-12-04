@@ -5795,7 +5795,7 @@ whereBeginError:
         ** that reference the table and converts them into opcodes that
         ** reference the index.
         */
-        if ( ( pLevel.plan.wsFlags & WHERE_INDEXED ) != 0 )///* && 0 == db.mallocFailed */ )
+        if ( ( pLevel.plan.wsFlags & WHERE_INDEXED ) != 0 )// /* && 0 == db.mallocFailed */ )
         {
           int k, j, last;
           VdbeOp pOp;

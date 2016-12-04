@@ -178,19 +178,6 @@ namespace IronPython.Runtime.Binding {
                 case TypeCode.Char:
                     res = TryToCharConversion(self);
                     break;
-                case TypeCode.String:
-                    var limitType = self.GetLimitType();
-                    if ((limitType == typeof(Bytes) || limitType == typeof(PythonBuffer) || limitType == typeof(ByteArray)) &&
-                        !_context.PythonOptions.Python30) {
-                        res = new DynamicMetaObject(
-                            Ast.Call(
-                                typeof(PythonOps).GetMethod("MakeString"),
-                                AstUtils.Convert(self.Expression, typeof(IList<byte>))
-                            ),
-                            BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, limitType)
-                        );
-                    }
-                    break;
                 case TypeCode.Object:
                     // !!! Deferral?
                     if (type.IsArray && self.Value is PythonTuple && type.GetArrayRank() == 1) {
@@ -485,9 +472,7 @@ namespace IronPython.Runtime.Binding {
                 return ((CallSite<Func<CallSite, Bytes, IEnumerable>>)site).Update(site, value);
             }
 
-            return _context.PythonOptions.Python30 ?
-                PythonOps.BytesIntEnumerable(value) :
-                PythonOps.BytesEnumerable(value);
+            return PythonOps.BytesIntEnumerable(value);
         }
 
         public IEnumerator BytesToIEnumeratorConversion(CallSite site, Bytes value) {
@@ -495,9 +480,7 @@ namespace IronPython.Runtime.Binding {
                 return ((CallSite<Func<CallSite, Bytes, IEnumerator>>)site).Update(site, value);
             }
 
-            return _context.PythonOptions.Python30 ?
-                (IEnumerator)PythonOps.BytesIntEnumerator(value).Key :
-                (IEnumerator)PythonOps.BytesEnumerator(value).Key;
+            return (IEnumerator)PythonOps.BytesIntEnumerator(value).Key;
         }
 
         public IEnumerable ObjectToIEnumerableConversion(CallSite site, object value) {
@@ -505,9 +488,7 @@ namespace IronPython.Runtime.Binding {
                 if (value is string) {
                     return PythonOps.StringEnumerable((string)value);
                 } else if (value.GetType() == typeof(Bytes)) {
-                    return _context.PythonOptions.Python30 ?
-                        PythonOps.BytesIntEnumerable((Bytes)value) :
-                        PythonOps.BytesEnumerable((Bytes)value);
+                    return PythonOps.BytesIntEnumerable((Bytes)value);
                 }
             }
 
@@ -519,9 +500,7 @@ namespace IronPython.Runtime.Binding {
                 if (value is string) {
                     return PythonOps.StringEnumerator((string)value).Key;
                 } else if (value.GetType() == typeof(Bytes)) {
-                    return _context.PythonOptions.Python30 ?
-                        (IEnumerator)PythonOps.BytesIntEnumerator((Bytes)value).Key :
-                        (IEnumerator)PythonOps.BytesEnumerator((Bytes)value).Key;
+                    return (IEnumerator)PythonOps.BytesIntEnumerator((Bytes)value).Key;
                 }
             }
 
@@ -578,7 +557,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         internal static bool IsIndexless(DynamicMetaObject/*!*/ arg) {
-            return arg.GetLimitType() != typeof(OldInstance);
+            return true;
         }
 
         public override int GetHashCode() {

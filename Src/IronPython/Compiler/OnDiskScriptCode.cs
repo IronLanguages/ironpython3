@@ -84,7 +84,7 @@ namespace IronPython.Compiler {
 
         internal CodeContext CreateContext() {
             if (_optimizedContext == null) {
-                CachedOptimizedCodeAttribute[] attrs = (CachedOptimizedCodeAttribute[])_target.Method.GetCustomAttributes(typeof(CachedOptimizedCodeAttribute), false);
+                CachedOptimizedCodeAttribute[] attrs = (CachedOptimizedCodeAttribute[])_target.GetMethodInfo().GetCustomAttributes(typeof(CachedOptimizedCodeAttribute), false);
 
                 // create the CompilerContext for the ScriptCode
                 CachedOptimizedCodeAttribute optimizedCode = attrs[0];

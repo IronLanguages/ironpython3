@@ -15,54 +15,48 @@
 
 using System;
 using System.Reflection;
-using Microsoft.Scripting.Utils;
-using System.Collections.Generic;
+
+#if FEATURE_REFEMIT
 
 namespace Microsoft.Scripting.Generation {
-    /// <summary>
-    /// This helper type lets us build a fake ParameterInfo object with a specific type and name
-    /// to pass along to methods that expect ParameterInfos.  This is currently found useful
-    /// for the NewTypeMaker code and may be useful in other situations as well.
-    /// </summary>
-    public class ParameterInfoWrapper : ParameterInfo {
-        private Type _type;
-        private string _name;
+    internal class ParameterInfoWrapper {
+        private readonly ParameterInfo parameterInfo;
+        private readonly Type parameterType;
+        private readonly string name;
 
-        public ParameterInfoWrapper(Type parameterType) {
-            _type = parameterType;
+        public ParameterInfoWrapper(ParameterInfo parameterInfo) {
+            this.parameterInfo = parameterInfo;
         }
 
-        public ParameterInfoWrapper(Type parameterType, string parameterName) {
-            _type = parameterType;
-            _name = parameterName;
+        public ParameterInfoWrapper(Type parameterType, string name = null) {
+            this.parameterType = parameterType;
+            this.name = name;
         }
 
-        public override Type ParameterType {
+        public Type ParameterType {
             get {
-                return _type;
+                if (parameterInfo != null)
+                    return parameterInfo.ParameterType;
+                return parameterType;
             }
         }
 
-        public override string Name {
+        public string Name {
             get {
-                if (_name != null) return _name;
-
-                return base.Name;
+                if (parameterInfo != null)
+                    return parameterInfo.Name;
+                return name;
             }
         }
 
-#if WIN8
-        public override IEnumerable<CustomAttributeData> CustomAttributes {
-            get { return new CustomAttributeData[0]; }
+        public ParameterAttributes Attributes {
+            get {
+                if (parameterInfo != null)
+                    return parameterInfo.Attributes;
+                return default(ParameterAttributes);
+            }
         }
-#else
-        public override object[] GetCustomAttributes(bool inherit) {
-            return ArrayUtils.EmptyObjects;
-        }
-
-        public override object[] GetCustomAttributes(Type attributeType, bool inherit) {
-            return ArrayUtils.EmptyObjects;
-        }
-#endif
     }
 }
+
+#endif

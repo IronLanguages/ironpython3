@@ -68,7 +68,7 @@ namespace IronPython.Modules {
             return t.ManagedThreadId;
         }
 
-#if !SILVERLIGHT && !WP75
+#if FEATURE_THREAD && !SILVERLIGHT && !WP75
         /// <summary>
         /// Stops execution of Python or other .NET code on the main thread.  If the thread is
         /// blocked in native code the thread will be interrupted after it returns back to Python
@@ -193,7 +193,7 @@ namespace IronPython.Modules {
             private void CreateBlockEvent() {
                 AutoResetEvent are = new AutoResetEvent(false);
                 if (Interlocked.CompareExchange<AutoResetEvent>(ref blockEvent, are, null) != null) {
-                    are.Close();
+                    ((IDisposable)are).Dispose();
                 }
             }
         }
@@ -201,7 +201,7 @@ namespace IronPython.Modules {
         #region Internal Implementation details
 
         private static Thread CreateThread(CodeContext/*!*/ context, ThreadStart start) {
-#if !SILVERLIGHT && !WP75
+#if !SILVERLIGHT && !WP75 && !NETSTANDARD
             int size = GetStackSize(context);
             return (size != 0) ? new Thread(start, size) : new Thread(start);
 #else

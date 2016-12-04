@@ -55,3 +55,5 @@ Util/References
 
 /NuGet.config
 *.bak
+__pycache__/
+.vscode/

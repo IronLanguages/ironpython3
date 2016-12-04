@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -35,19 +36,76 @@ using IronPython.Runtime.Types;
 
 [assembly: PythonModule("_ssl", typeof(IronPython.Modules.PythonSsl))]
 namespace IronPython.Modules {
+
+    internal class Asn1Object {
+
+        public Asn1Object(string shortName, string longName, int nid, byte[] oid) {
+            ShortName = shortName;
+            LongName = longName;
+            NID = nid;
+            OID = oid;
+#if !CLR2
+            OIDString = string.Join(".", OID);
+#else
+            StringBuilder buf = new StringBuilder();
+            foreach(byte b in oid) {
+                buf.AppendFormat("{0}.");
+            }
+            OIDString = buf.ToString().Trim('.');
+#endif
+        }
+
+        public string ShortName {
+            get; set;
+        }
+        public string LongName {
+            get; set;
+        }
+
+        public int NID {
+            get; set;
+        }
+
+        public byte[] OID {
+            get; set;
+        }
+
+        public string OIDString {
+            get;
+        }
+
+        public PythonTuple ToTuple() {
+            return PythonTuple.MakeTuple(NID, ShortName, LongName, OIDString);
+        }
+    }
+
     public static class PythonSsl {
         public const string __doc__ = "Implementation module for SSL socket operations.  See the socket module\nfor documentation.";
         public const int OPENSSL_VERSION_NUMBER = 9437184;
-        public static PythonTuple OPENSSL_VERSION_INFO = PythonTuple.MakeTuple(0, 0, 0, 0, 0);
+        public static readonly PythonTuple OPENSSL_VERSION_INFO = PythonTuple.MakeTuple(0, 0, 0, 0, 0);
+        public static readonly object _OPENSSL_API_VERSION = OPENSSL_VERSION_INFO;
         public const string OPENSSL_VERSION = "OpenSSL 0.0.0 (.NET SSL)";
+
+        private static List<Asn1Object> _asn1Objects = new List<Asn1Object>();
+
+        static PythonSsl() {
+            _asn1Objects.AddRange(new Asn1Object[] {
+                new Asn1Object("serverAuth", "TLS Web Server Authentication", 129, new byte[] { 1, 3, 6, 1 ,5, 5, 7, 3, 1 }),
+                new Asn1Object("clientAuth", "TLS Web Client Authentication", 130, new byte[] { 1, 3, 6, 1 ,5, 5, 7, 3, 2 }),
+            });
+        }
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {            
             var socket = context.GetBuiltinModule("socket");
             var socketError = PythonSocket.GetSocketError(context, socket.__dict__);
             
-            context.EnsureModuleException("SSLError", socketError, dict, "SSLError", "ssl");
-
+            var sslError = context.EnsureModuleException("SSLError", socketError, dict, "SSLError", "ssl");
+            context.EnsureModuleException("SSLZeroReturnError", sslError, dict, "SSLZeroReturnError", "ssl");
+            context.EnsureModuleException("SSLWantWriteError", sslError, dict, "SSLWantWriteError", "ssl");
+            context.EnsureModuleException("SSLSyscallError", sslError, dict, "SSLSyscallError", "ssl");
+            context.EnsureModuleException("SSLEOFError", sslError, dict, "SSLEOFError", "ssl");
+            context.EnsureModuleException("SSLWantReadError", sslError, dict, "SSLWantReadError", "ssl");
         }
         #region Stubs for RAND functions
 
@@ -62,14 +120,106 @@ namespace IronPython.Modules {
             }
         }
 
-        public static void RAND_egd([NotNull]string source) {
-        }
-
         public static int RAND_status() {
             return 1; // always ready
         }
 
-        #endregion
+		#endregion
+
+		#region SSLContext
+        [PythonType]
+        public class _SSLContext {
+            private X509Certificate2Collection _cert_store = new X509Certificate2Collection();
+            private string _cafile;
+            private int _verify_mode = SSL_VERIFY_NONE;
+
+            public _SSLContext(CodeContext context, [DefaultParameterValue(PROTOCOL_SSLv23)] int protocol) {
+                if (protocol != PROTOCOL_SSLv2 && protocol != PROTOCOL_SSLv23 && protocol != PROTOCOL_SSLv3 &&
+                    protocol != PROTOCOL_TLSv1 && protocol != PROTOCOL_TLSv1_1 && protocol != PROTOCOL_TLSv1_2) {
+                    throw PythonOps.ValueError("invalid protocol version");
+                }
+
+                this.protocol = protocol;
+                if (protocol != PROTOCOL_SSLv2)
+                    options |= OP_NO_SSLv2;
+                if (protocol != PROTOCOL_SSLv3)
+                    options |= OP_NO_SSLv3;
+
+                verify_mode = SSL_VERIFY_NONE;
+                check_hostname = false;
+            }
+
+            public void set_ciphers(CodeContext context, string ciphers) {
+
+            }
+
+            public int options {
+                get; set;
+            }
+
+            public int verify_mode {
+                get {
+                    return _verify_mode;
+                }
+                set {
+                    if(_verify_mode != CERT_NONE && _verify_mode != CERT_OPTIONAL && _verify_mode != CERT_REQUIRED) {
+                        throw PythonOps.ValueError("invalid value for verify_mode");
+                    }
+                    _verify_mode = value;
+                }
+            }
+
+            public int protocol {
+                get; set;
+            }
+
+            public bool check_hostname {
+                get; set;
+            }
+
+            public void set_default_verify_paths(CodeContext context) {
+
+            }
+
+            public void load_cert_chain(string certfile, [DefaultParameterValue(null)] string keyfile, [DefaultParameterValue(null)] object password) {
+
+            }
+
+            public void load_verify_locations(CodeContext context, [DefaultParameterValue(null)] string cafile, [DefaultParameterValue(null)] string capath, [DefaultParameterValue(null)] object cadata) {
+                if(cafile == null && capath == null && cadata == null) {
+                    throw PythonOps.TypeError("cafile, capath and cadata cannot be all omitted");
+                }
+
+                if(cafile != null) {
+                    _cert_store.Add(ReadCertificate(context, cafile));
+                    _cafile = cafile;
+                }
+
+                if(capath != null) {
+                }
+
+                if(cadata != null) {
+                    var cabuf = cadata as IBufferProtocol;
+                    if (cabuf != null) {
+                        int pos = 0;
+                        byte[] contents = cabuf.ToBytes(0, null).ToByteArray();
+                        while(pos < contents.Length) {
+                            byte[] curr = new byte[contents.Length - pos];
+                            Array.Copy(contents, pos, curr, 0, contents.Length - pos);
+                            var cert = new X509Certificate2(curr);
+                            _cert_store.Add(cert);
+                            pos += cert.GetRawCertData().Length;
+                        }                        
+                    }
+                }
+            }
+
+            public object _wrap_socket(CodeContext context, [DefaultParameterValue(null)] PythonSocket.socket sock, [DefaultParameterValue(false)] bool server_side, [DefaultParameterValue(null)] string server_hostname, [DefaultParameterValue(null)] object ssl_sock) {
+                return new PythonSocket.ssl(context, sock, server_side, null, _cafile, verify_mode, protocol | options, null, _cert_store);
+            }
+        }
+
+#endregion
 
         public static PythonType SSLType = DynamicHelpers.GetPythonTypeFromType(typeof(PythonSocket.ssl));
         
@@ -91,8 +241,115 @@ namespace IronPython.Modules {
                 certfile,
                 certs_mode,
                 protocol,
-                cacertsfile
+                cacertsfile,
+                null
             );
+        }
+
+        public static object txt2obj(CodeContext context, string txt, [DefaultParameterValue(false)] object name) {
+            bool nam = PythonOps.IsTrue(name); // if true, we also look at short name and long name
+            Asn1Object obj = null;
+            if(nam) {
+                obj = _asn1Objects.Where(x => txt == x.OIDString || txt == x.ShortName || txt == x.LongName).FirstOrDefault();
+            } else {
+                obj = _asn1Objects.Where(x => txt == x.OIDString).FirstOrDefault();
+            }         
+
+            if(obj == null) {
+                throw PythonOps.ValueError("unknown object '{0}'", txt);
+            }
+
+            return obj.ToTuple();
+        }
+
+        public static object nid2obj(CodeContext context, int nid) {
+            if(nid < 0) {
+                throw PythonOps.ValueError("NID must be positive");
+            }
+
+            var obj = _asn1Objects.Where(x => x.NID == nid).FirstOrDefault();
+            if(obj == null) {
+                throw PythonOps.ValueError("unknown NID {0}", nid);
+            }
+
+            return obj.ToTuple();
+        }
+
+        public static List enum_certificates(string store_name) {
+            X509Store store = null;
+            try {
+                store = new X509Store(store_name, StoreLocation.LocalMachine);
+                store.Open(OpenFlags.ReadOnly);
+                var result = new List();
+
+                foreach (var cert in store.Certificates) {
+                    string format = cert.GetFormat();
+
+                    switch(format) {
+                        case "X509":
+                            format = "x509_asn";
+                            break;
+                        default:
+                            format = "unknown";
+                            break;
+                    }
+
+                    var set = new SetCollection();
+                    bool found = false;
+                    foreach (var ext in cert.Extensions) {
+                        var keyUsage = ext as X509EnhancedKeyUsageExtension;
+                        if (keyUsage != null) {
+                            foreach(var oid in keyUsage.EnhancedKeyUsages) {
+                                set.add(oid.Value);
+                            }
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    result.Add(PythonTuple.MakeTuple(new Bytes(cert.RawData.ToList()), format, found ? set : ScriptingRuntimeHelpers.True));
+                }
+
+                return result;
+            } catch {
+
+            } finally {
+                if(store != null) {
+#if NETSTANDARD
+                    store.Dispose();
+#else
+                    store.Close();
+#endif
+                }
+            }
+            return new List();
+        }
+
+        public static List enum_crls(string store_name) {
+            X509Store store = null;
+            try {
+                
+                store = new X509Store(store_name, StoreLocation.LocalMachine);
+                store.Open(OpenFlags.ReadOnly);
+                var result = new List();
+
+                foreach (var cert in store.Certificates) {
+                    string format = cert.GetFormat();
+
+
+                }
+            } catch {
+
+            } finally {
+                if (store != null) {
+#if NETSTANDARD
+                    store.Dispose();
+#else
+                    store.Close();
+#endif
+                }
+            }
+            return new List();
         }
 
         internal static PythonType SSLError(CodeContext/*!*/ context) {
@@ -101,21 +358,24 @@ namespace IronPython.Modules {
 
         public static PythonDictionary _test_decode_cert(CodeContext context, string filename, [DefaultParameterValue(false)]bool complete) {
             var cert = ReadCertificate(context, filename);
-
             return CertificateToPython(context, cert, complete);
         }
 
         internal static PythonDictionary CertificateToPython(CodeContext context, X509Certificate cert, bool complete) {
+            return CertificateToPython(context, new X509Certificate2(cert.GetRawCertData()), complete);
+        }
+
+        internal static PythonDictionary CertificateToPython(CodeContext context, X509Certificate2 cert, bool complete) {
             var dict = new CommonDictionaryStorage();
 
-            dict.AddNoLock("notAfter", ToPythonDateFormat(cert.GetExpirationDateString()));
+            dict.AddNoLock("notAfter", ToPythonDateFormat(cert.NotAfter.ToString()));
             dict.AddNoLock("subject", IssuerToPython(context, cert.Subject));
             if (complete) {
-                dict.AddNoLock("notBefore", ToPythonDateFormat(cert.GetEffectiveDateString()));
+                dict.AddNoLock("notBefore", ToPythonDateFormat(cert.NotBefore.ToString()));
                 dict.AddNoLock("serialNumber", SerialNumberToPython(cert));
                 dict.AddNoLock("version", cert.GetCertHashString());
                 dict.AddNoLock("issuer", IssuerToPython(context, cert.Issuer));
-                AddSubjectAltNames(dict, new X509Certificate2(cert));
+                AddSubjectAltNames(dict, cert);
             }
 
             return new PythonDictionary(dict);
@@ -144,6 +404,27 @@ namespace IronPython.Modules {
         private static string ToPythonDateFormat(string date) {
             return DateTime.Parse(date).ToUniversalTime().ToString("MMM d HH:mm:ss yyyy") + " GMT";
         }
+
+#if NETSTANDARD
+        private static string ByteArrayToString(IEnumerable<byte> bytes) {
+            var builder = new StringBuilder();
+            foreach (byte b in bytes)
+                builder.Append(b.ToString("X2"));
+            return builder.ToString();
+        }
+
+        private static string GetSerialNumberString(this X509Certificate cert) {
+            return ByteArrayToString(cert.GetSerialNumber().Reverse()); // must be reversed
+        }
+
+        private static string GetCertHashString(this X509Certificate cert) {
+            return ByteArrayToString(cert.GetCertHash());
+        }
+
+        internal static byte[] GetRawCertData(this X509Certificate cert) {
+            return cert.Export(X509ContentType.Cert);
+        }
+#endif
 
         private static string SerialNumberToPython(X509Certificate cert) {
             var res = cert.GetSerialNumberString();
@@ -240,7 +521,6 @@ namespace IronPython.Modules {
 
                         try {
                             var keyBytes = Convert.FromBase64String(keyStr.ToString());
-
                             key = ParsePkcs1DerEncodedPrivateKey(context, filename, keyBytes);
                         } catch (Exception e) {
                             throw ErrorDecoding(context, filename, e);
@@ -252,6 +532,7 @@ namespace IronPython.Modules {
             }
 
             if (cert != null) {
+#if !NETSTANDARD
                 if (key != null) {
                     try {
                         cert.PrivateKey = key;
@@ -259,6 +540,7 @@ namespace IronPython.Modules {
                         throw ErrorDecoding(context, filename, "cert and private key are incompatible", e);
                     }
                 }
+#endif
                 return cert;
             }
             throw ErrorDecoding(context, filename, "certificate not found");
@@ -410,6 +692,8 @@ namespace IronPython.Modules {
             return PythonExceptions.CreateThrowable(SSLError(context), ArrayUtils.Insert("Error decoding PEM-encoded file ", args));
         }
 
+		#region Exported constants
+
         public const int CERT_NONE = 0;
         public const int CERT_OPTIONAL = 1;
         public const int CERT_REQUIRED = 2;
@@ -421,16 +705,15 @@ namespace IronPython.Modules {
         public const int PROTOCOL_TLSv1_1 = 4;
         public const int PROTOCOL_TLSv1_2 = 5;
 
-        public const int OP_NO_SSLv2 =    0x1000000;
-        public const int OP_NO_SSLv3 =    0x2000000;
-        public const int OP_NO_TLSv1 =    0x4000000;
+        public const uint OP_ALL = 0x80000BFF;
+        public const uint OP_DONT_INSERT_EMPTY_FRAGMENTS = 0x00000800;        
+        public const int OP_NO_SSLv2 = 0x00000000;
+        public const int OP_NO_SSLv3 = 0x02000000;
+        public const int OP_NO_TLSv1 = 0x04000000;
         public const int OP_NO_TLSv1_1 = 0x10000000;
-        public const int OP_NO_TLSv1_2 =  0x8000000;
+        public const int OP_NO_TLSv1_2 = 0x08000000;
 
-        internal const int OP_NO_ALL = OP_NO_SSLv2 | OP_NO_SSLv3 | OP_NO_TLSv1 | OP_NO_TLSv1_1 | OP_NO_TLSv1_2;
-
-
-        #region Exported constants
+        internal const int OP_NO_ALL = OP_NO_SSLv2 | OP_NO_SSLv3 | OP_NO_TLSv1 | OP_NO_TLSv1_1 | OP_NO_TLSv1_2;        
 
         public const int SSL_ERROR_SSL = 1;
         public const int SSL_ERROR_WANT_READ = 2;
@@ -441,6 +724,23 @@ namespace IronPython.Modules {
         public const int SSL_ERROR_WANT_CONNECT = 7;
         public const int SSL_ERROR_EOF = 8;
         public const int SSL_ERROR_INVALID_ERROR_CODE = 9;
+
+        public const int VERIFY_DEFAULT = 0;
+        public const int VERIFY_CRL_CHECK_LEAF = 0x4; // from openssl/x509_vfy.h
+        public const int VERIFY_CRL_CHECK_CHAIN = 0x4 | 0x8; // from openssl/x509_vfy.h
+        public const int VERIFY_X509_STRICT = 0x20; // from openssl/x509_vfy.h
+        public const int VERIFY_X509_TRUSTED_FIRST = 0x8000; // from openssl/x509_vfy.h
+
+        public const bool HAS_SNI = false;
+        public const bool HAS_ECDH = true;
+        public const bool HAS_NPN = false;
+        public const bool HAS_ALPN = false;
+        public const bool HAS_TLS_UNIQUE = false;
+        
+        private const int SSL_VERIFY_NONE = 0x00;
+        private const int SSL_VERIFY_PEER = 0x01;
+        private const int SSL_VERIFY_FAIL_IF_NO_PEER_CERT = 0x02;
+        private const int SSL_VERIFY_CLIENT_ONCE = 0x04;
 
         #endregion
     }

@@ -112,7 +112,6 @@
     <Compile Include="Runtime\Profiler.cs" />
     <Compile Include="Compiler\CompilationMode.cs" />
     <Compile Include="Compiler\Ast\AugmentedAssignStatement.cs" />
-    <Compile Include="Compiler\Ast\BackQuoteExpression.cs" />
     <Compile Include="Compiler\Ast\BinaryExpression.cs" />
     <Compile Include="Compiler\Ast\BreakStatement.cs" />
     <Compile Include="Compiler\Ast\CallExpression.cs" />
@@ -125,7 +124,6 @@
     <Compile Include="Compiler\Ast\DottedName.cs" />
     <Compile Include="Compiler\Ast\EmptyStatement.cs" />
     <Compile Include="Compiler\Ast\ErrorExpression.cs" />
-    <Compile Include="Compiler\Ast\ExecStatement.cs" />
     <Compile Include="Compiler\Ast\Expression.cs" />
     <Compile Include="Compiler\Ast\ExpressionStatement.cs" />
     <Compile Include="Compiler\Ast\FlowChecker.cs" />
@@ -291,7 +289,6 @@
     <Compile Include="Runtime\Exceptions\IPythonException.cs" />
     <Compile Include="Runtime\Exceptions\LookupException.Generated.cs" />
     <Compile Include="Runtime\Exceptions\ObjectException.cs" />
-    <Compile Include="Runtime\Exceptions\OldInstanceException.cs" />
     <Compile Include="Runtime\Exceptions\OSException.Generated.cs" />
     <Compile Include="Runtime\Exceptions\PendingDeprecationWarningException.Generated.cs" />
     <Compile Include="Runtime\Exceptions\PythonExceptions.cs" />
@@ -313,8 +310,6 @@
     <Compile Include="Runtime\Binding\MetaBuiltinFunction.cs" />
     <Compile Include="Runtime\Binding\MetaBuiltinMethodDescriptor.cs" />
     <Compile Include="Runtime\Binding\MetaMethod.cs" />
-    <Compile Include="Runtime\Binding\MetaOldClass.cs" />
-    <Compile Include="Runtime\Binding\MetaOldInstance.cs" />
     <Compile Include="Runtime\Binding\MetaPythonFunction.cs" />
     <Compile Include="Runtime\Binding\MetaPythonType.Calls.cs" />
     <Compile Include="Runtime\Binding\MetaPythonObject.cs" />
@@ -411,9 +406,6 @@
     <Compile Include="Runtime\Types\PythonTypeWeakRefSlot.cs" />
     <Compile Include="Runtime\Types\EmptyType.cs" />
     <Compile Include="Runtime\Types\Mro.cs" />
-    <Compile Include="Runtime\Types\OldClass.cs" />
-    <Compile Include="Runtime\Types\OldInstance.cs" />
-    <Compile Include="Runtime\Types\OldInstance.Generated.cs" />
     <Compile Include="Runtime\Types\PythonAssemblyOps.cs" />
     <Compile Include="Runtime\PythonModule.cs" />
     <Compile Include="Runtime\Types\ReflectedSlotProperty.cs" />

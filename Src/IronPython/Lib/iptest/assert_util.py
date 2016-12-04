@@ -23,7 +23,7 @@ from iptest.test_env import *
 from iptest import options, l
 
 if not is_silverlight:
-    import nt
+    import os
     from .file_util import *
  
 from .type_util import types
@@ -36,15 +36,18 @@ def usage(code, msg=''):
 
 if not is_silverlight:
     def get_environ_variable(key):
-        l = [nt.environ[x] for x in nt.environ.keys() if x.lower() == key.lower()]
+        l = [os.environ[x] for x in os.environ.keys() if x.lower() == key.lower()]
         if l: return l[0]
         else: return None
 
     def get_temp_dir():
         temp = get_environ_variable("TMP")
         if temp == None: temp = get_environ_variable("TEMP")
-        if (temp == None) or (' ' in temp) : 
+        if ((temp == None) or (' ' in temp)) and os.name == 'nt': 
             temp = r"C:\temp"
+        if ((temp == None) or (' ' in temp)) and os.name == 'posix': 
+            temp = "/tmp"
+
         return temp
     
     ironpython_dlls = [
@@ -88,26 +91,29 @@ else:
         # find the ironpython root directory
         rowan_root          = get_environ_variable("dlr_root")
 
-        basePyDir = 'Languages\\IronPython'
+        basePyDir = path_combine('Languages', 'IronPython')
         if not rowan_root:
             rowan_root = sys.prefix
             if is_cli:
-                if System.IO.Directory.Exists(path_combine(rowan_root, r'..\..\Src')):
-                    basePyDir = r'..\..\Src'
+                if is_netstandard:
+                    import clr
+                    clr.AddReference("System.IO.FileSystem")
+                if System.IO.Directory.Exists(path_combine(rowan_root, '../../Src')):
+                    basePyDir = '../../Src'
 
         # get some directories and files
         ip_root             = path_combine(rowan_root, basePyDir)
-        external_dir        = path_combine(rowan_root, r'External.LCA_RESTRICTED\Languages\IronPython')
-        clean_external_dir  = path_combine(rowan_root, r'External.LCA_RESTRICTED\Languages\CPython\27')
-        public_testdir      = path_combine(ip_root, r'Tests')
-        compat_testdir      = path_combine(ip_root, r'Tests\compat')
-        test_inputs_dir     = path_combine(ip_root, r'Tests\Inputs')
-        script_testdir      = path_combine(ip_root, r'Scripts')
+        external_dir        = path_combine(rowan_root, 'External.LCA_RESTRICTED/Languages/IronPython')
+        clean_external_dir  = path_combine(rowan_root, 'External.LCA_RESTRICTED/Languages/CPython/27')
+        public_testdir      = path_combine(ip_root, 'Tests')
+        compat_testdir      = path_combine(ip_root, 'Tests/compat')
+        test_inputs_dir     = path_combine(ip_root, 'Tests/Inputs')
+        script_testdir      = path_combine(ip_root, 'Scripts')
 
-        math_testdir        = path_combine(external_dir, r'Math')
-        parrot_testdir      = path_combine(external_dir, r'parrotbench')
-        lib_testdir         = path_combine(external_dir, r'27\Lib')
-        private_testdir     = path_combine(external_dir, r'27\Lib\test')
+        math_testdir        = path_combine(external_dir, 'Math')
+        parrot_testdir      = path_combine(external_dir, 'parrotbench')
+        lib_testdir         = path_combine(external_dir, '27/Lib')
+        private_testdir     = path_combine(external_dir, '27/Lib/test')
 
         temporary_dir   = path_combine(get_temp_dir(), "IronPython")
         ensure_directory_present(temporary_dir)
@@ -116,9 +122,12 @@ else:
 
         if is_cli: 
             ipython_executable  = sys.executable
-            cpython_executable  = path_combine(external_dir, r'27\python.exe')
+            if is_posix:
+                cpython_executable  = '/usr/bin/python3'
+            else:
+                cpython_executable  = path_combine(external_dir, '27/python.exe')
         else: 
-            ipython_executable  = path_combine(sys.prefix, r'ipy.exe')
+            ipython_executable  = path_combine(sys.prefix, 'ipy.exe')
             cpython_executable  = sys.executable
         
         #team_dir            = path_combine(ip_root, r'Team')
@@ -162,7 +171,7 @@ def is_interactive():
 
 def is_stdlib():
     if is_cli:
-        clean_lib = System.IO.Path.GetFullPath(testpath.clean_external_dir + r"\lib").lower()
+        clean_lib = System.IO.Path.GetFullPath(System.IO.Path.Combine(testpath.clean_external_dir, "Lib")).lower()
         for x in sys.path:
             if clean_lib==System.IO.Path.GetFullPath(x).lower():
                 return True
@@ -198,8 +207,14 @@ def AssertUnreachable(m = None):
 def AreEqual(a, b):
     Assert(a == b, "expected %r, but found %r" % (b, a))
 
+def AreSame(a, b):
+    Assert(a is b, "objects are not the same and should be (%r and %r)" % (a, b))
+
+def AreNotSame(a, b):
+    AssertFalse(a is b, "objects are the same and should not be (%r and %r)" % (a, b))
+
 def AreNotEqual(a, b):
-    Assert(a != b, "expected only one of the values to be %r" % a)
+    Assert(a != b, "expected only one of the values to be %r" % (a, ))
 
 def AssertContains(containing_string, substring):
     Assert(substring in containing_string, "%s should be in %s" % (substring, containing_string))
@@ -258,12 +273,15 @@ class AssertRaisesCtx():
 
 
 # Check that the exception is raised with the provided message
+
 def AssertErrorWithMessage(exc, expectedMessage, func, *args, **kwargs):
     Assert(expectedMessage, "expectedMessage cannot be null")
     try:   func(*args, **kwargs)
-    except exc as inst:
-        Assert(expectedMessage == inst.__str__(), \
-               "Exception %r message (%r) does not match %r" % (type(inst), inst.__str__(), expectedMessage))
+    except exc, inst:
+        msg = inst.__str__().replace('\r', '')
+        expectedMessage = expectedMessage.replace('\r', '')
+        Assert(expectedMessage == msg, \
+               "Exception %r message (%r) does not match %r" % (type(inst), msg, expectedMessage))
     else:  Assert(False, "Expected %r but got no exception" % exc)
 
 def AssertErrorWithPartialMessage(exc, expectedMessage, func, *args, **kwargs):
@@ -337,6 +355,8 @@ else:
 
     def load_iron_python_dll():
         import clr
+        if is_netstandard:
+            clr.AddReference("System.IO.FileSystem")
         from System.IO import File
         #When assemblies are installed into the GAC, we should not expect
         #IronPython.dll to exist alongside IronPython.dll
@@ -389,6 +409,8 @@ class skip:
         else: 
             self.platforms = platforms
 
+    def netstandard_test(self):
+        return is_netstandard
     def silverlight_test(self):
         return is_silverlight
     def cli64_test(self):
@@ -396,11 +418,13 @@ class skip:
     def orcas_test(self):
         return is_orcas
     def interactive_test(self):
-	    return is_interactive()
+        return is_interactive()
     def multiple_execute_test(self):
-		return get_num_iterations() > 1
+        return get_num_iterations() > 1
     def stdlib_test(self):
         return is_stdlib()
+    def posix_test(self):
+        return is_posix
     
     def __call__(self, f):
         #skip questionable tests
@@ -413,7 +437,7 @@ class skip:
             return _do_nothing(msg)
 		
         
-        platforms = 'silverlight', 'cli64', 'orcas', 'interactive', 'multiple_execute', 'stdlib'
+        platforms = 'silverlight', 'cli64', 'interactive', 'multiple_execute', 'stdlib', 'posix', 'netstandard'
         for to_skip in platforms:
             platform_test = getattr(self, to_skip + '_test')
             if to_skip in self.platforms and platform_test():
@@ -462,6 +486,10 @@ def skiptest(*args):
     elif is_cli64 and 'cli64' in args:
         print('... %s, skipping whole test module on 64-bit CLI...' % sys.platform)
         exit_module()
+        
+    elif is_posix and 'posix' in args:
+		print('... %s, skipping whole test module on Posix...' % sys.platform)
+		exit_module()
     
     elif get_num_iterations() > 1 and 'multiple_execute' in args:
         print('... %d invocations, skipping whole test module under "multiple_execute" mode...' % get_num_iterations())
@@ -541,7 +569,7 @@ def run_test(mod_name, noOutputPlease=False):
                     print(">>> skipping %-40s" % name)
     if failures:
         print_failures(total, failures)
-        if is_cli:
+        if is_cli and not is_netstandard: # System.Environment.CommandLine not in netstandard1.6
             cmd_line = System.Environment.CurrentDirectory + "> " + System.Environment.CommandLine
             print("Please run the following command to repro:")
             print("\t" + cmd_line)
@@ -568,7 +596,8 @@ def AddReferenceToDlrCore():
     import clr
     import System
     if System.Environment.Version.Major >=4:
-        clr.AddReference("System.Core")
+        if not is_netstandard:
+            clr.AddReference("System.Core")
     else:
         clr.AddReference("Microsoft.Scripting.Core")
 

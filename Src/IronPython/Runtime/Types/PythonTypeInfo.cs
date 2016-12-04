@@ -39,6 +39,10 @@ using Microsoft.Scripting.Math;
 using Complex = Microsoft.Scripting.Math.Complex64;
 #endif
 
+#if !FEATURE_TYPE_INFO
+using TypeInfo = System.Type;
+#endif
+
 namespace IronPython.Runtime.Types {
     /// <summary>
     /// Helpers for interacting w/ .NET types.  This includes:
@@ -231,7 +235,7 @@ namespace IronPython.Runtime.Types {
                     }
                 }
 
-                if (type.IsInterface) {
+                if (type.GetTypeInfo().IsInterface) {
                     foreach (Type t in type.GetInterfaces()) {
                         res = FilterSpecialNames(binder.GetMember(t, name), name, action);
                         if (res.Count > 0) {
@@ -1002,19 +1006,11 @@ namespace IronPython.Runtime.Types {
         /// </summary>
         private static MemberGroup/*!*/ IterResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
             if (type == typeof(string)) {
-                // __iter__ is only exposed in 3.0
-                if (binder.Binder.Context.PythonOptions.Python30) {
-                    return GetInstanceOpsMethod(type, "IterMethodForString");
-                }
-                return MemberGroup.EmptyGroup;
+                return GetInstanceOpsMethod(type, "IterMethodForString");
             }
 
             if (typeof(Bytes).IsAssignableFrom(type)) {
-                // __iter__ is only exposed in 3.0
-                if (binder.Binder.Context.PythonOptions.Python30) {
-                    return GetInstanceOpsMethod(type, "IterMethodForBytes");
-                }
-                return MemberGroup.EmptyGroup;
+                return GetInstanceOpsMethod(type, "IterMethodForBytes");
             }
 
             foreach (Type t in binder.GetContributingTypes(type)) {
@@ -1532,7 +1528,7 @@ namespace IronPython.Runtime.Types {
                 List<Type> res = new List<Type>();
                 foreach (Type intf in allInterfaces) {
                     try {
-                        InterfaceMapping imap = t.GetInterfaceMap(intf);
+                        InterfaceMapping imap = t.GetTypeInfo().GetRuntimeInterfaceMap(intf);
                         foreach (MethodInfo mi in imap.TargetMethods) {
                             if (mi != null && mi.DeclaringType == t) {
                                 res.Add(intf);
@@ -1556,7 +1552,7 @@ namespace IronPython.Runtime.Types {
             }
 
             public override MemberGroup/*!*/ GetBaseInstanceMethod(Type/*!*/ type, params string[] name) {
-                if (type.BaseType == typeof(object) || type.BaseType == typeof(ValueType)) {
+                if (type.GetTypeInfo().BaseType == typeof(object) || type.GetTypeInfo().BaseType == typeof(ValueType)) {
                     return GetInstanceOpsMethod(type, name);
                 }
 
@@ -1818,7 +1814,7 @@ namespace IronPython.Runtime.Types {
                 case MemberTypes.Field:
                     return ((FieldInfo)input).IsProtected();
                 case MemberTypes.NestedType:
-                    return ((Type)input).IsProtected();
+                    return ((TypeInfo)input).AsType().IsProtected();
                 default:
                     return false;
             }

@@ -469,24 +469,13 @@ namespace IronPython.Runtime.Binding {
                 );
             } else if (self.GetLimitType() == typeof(Bytes)) {
                 self = self.Restrict(self.GetLimitType());
-
-                if (operation.Context.PythonOptions.Python30) {
-                    return new DynamicMetaObject(
-                        Expression.Call(
-                            typeof(PythonOps).GetMethod("BytesIntEnumerator"),
-                            self.Expression
-                        ),
-                        self.Restrictions
-                    );
-                } else {
-                    return new DynamicMetaObject(
-                        Expression.Call(
-                            typeof(PythonOps).GetMethod("BytesEnumerator"),
-                            self.Expression
-                        ),
-                        self.Restrictions
-                    );
-                }
+                return new DynamicMetaObject(
+                    Expression.Call(
+                        typeof(PythonOps).GetMethod("BytesIntEnumerator"),
+                        self.Expression
+                    ),
+                    self.Restrictions
+                );
             } else if ((self.Value is IEnumerable ||
                     typeof(IEnumerable).IsAssignableFrom(self.GetLimitType())) && !(self.Value is PythonGenerator)) {
                 self = self.Restrict(self.GetLimitType());
@@ -870,24 +859,11 @@ namespace IronPython.Runtime.Binding {
             if (!SlotOrFunction.GetCombinedTargets(fCand, rCand, out fTarget, out rTarget) &&
                 fSlot == null &&
                 rSlot == null &&
-                !ShouldCoerce(state, op, types[0], types[1], false) &&
-                !ShouldCoerce(state, op, types[1], types[0], false) &&
                 bodyBuilder.NoConditions) {
                 return MakeRuleForNoMatch(operation, op, errorSuggestion, types);
             }
 
-            if (ShouldCoerce(state, op, types[0], types[1], false) &&
-                (op != PythonOperationKind.Mod || !MetaPythonObject.GetPythonType(types[0]).IsSubclassOf(TypeCache.String))) {
-                // need to try __coerce__ first.
-                DoCoerce(state, bodyBuilder, op, types, false);
-            }
-
             if (MakeOneTarget(PythonContext.GetPythonContext(operation), fTarget, fSlot, bodyBuilder, false, types)) {
-                if (ShouldCoerce(state, op, types[1], types[0], false)) {
-                    // need to try __coerce__ on the reverse first                    
-                    DoCoerce(state, bodyBuilder, op, new DynamicMetaObject[] { types[1], types[0] }, true);
-                }
-
                 if (rSlot != null) {
                     MakeSlotCall(PythonContext.GetPythonContext(operation), types, bodyBuilder, rSlot, true);
                     bodyBuilder.FinishCondition(MakeBinaryThrow(operation, op, types).Expression, typeof(object));
@@ -1045,79 +1021,6 @@ namespace IronPython.Runtime.Binding {
             bodyBuilder.AddVariable(tmp);
         }
 
-        private static void DoCoerce(PythonContext/*!*/ state, ConditionalBuilder/*!*/ bodyBuilder, PythonOperationKind op, DynamicMetaObject/*!*/[]/*!*/ types, bool reverse) {
-            DoCoerce(state, bodyBuilder, op, types, reverse, delegate(Expression e) {
-                return e;
-            });
-        }
-
-        /// <summary>
-        /// calls __coerce__ for old-style classes and performs the operation if the coercion is successful.
-        /// </summary>
-        private static void DoCoerce(PythonContext/*!*/ pyContext, ConditionalBuilder/*!*/ bodyBuilder, PythonOperationKind op, DynamicMetaObject/*!*/[]/*!*/ types, bool reverse, Func<Expression, Expression> returnTransform) {
-            ParameterExpression coerceResult = Ast.Variable(typeof(object), "coerceResult");
-            ParameterExpression coerceTuple = Ast.Variable(typeof(PythonTuple), "coerceTuple");
-
-            // tmp = self.__coerce__(other)
-            // if tmp != null && tmp != NotImplemented && (tuple = PythonOps.ValidateCoerceResult(tmp)) != null:
-            //      return operation(tuple[0], tuple[1])                        
-            SlotOrFunction slot = SlotOrFunction.GetSlotOrFunction(pyContext, "__coerce__", types);
-
-            if (slot.Success) {
-                bodyBuilder.AddCondition(
-                    Ast.AndAlso(
-                        Ast.Not(
-                            Ast.TypeIs(
-                                Ast.Assign(
-                                    coerceResult,
-                                    slot.Target.Expression
-                                ),
-                                typeof(OldInstance)
-                            )
-                        ),
-                        Ast.NotEqual(
-                            Ast.Assign(
-                                coerceTuple,
-                                Ast.Call(
-                                    typeof(PythonOps).GetMethod("ValidateCoerceResult"),
-                                    coerceResult
-                                )
-                            ),
-                            AstUtils.Constant(null)
-                        )
-                    ),
-                    BindingHelpers.AddRecursionCheck(
-                        pyContext,
-                        returnTransform(
-                            DynamicExpression.Dynamic(
-                                pyContext.Operation(op | PythonOperationKind.DisableCoerce),
-                                op == PythonOperationKind.Compare ? typeof(int) : typeof(object),
-                                reverse ? CoerceTwo(coerceTuple) : CoerceOne(coerceTuple),
-                                reverse ? CoerceOne(coerceTuple) : CoerceTwo(coerceTuple)
-                            )
-                        )
-                    )
-                );
-                bodyBuilder.AddVariable(coerceResult);
-                bodyBuilder.AddVariable(coerceTuple);
-            }
-        }
-
-        private static MethodCallExpression/*!*/ CoerceTwo(ParameterExpression/*!*/ coerceTuple) {
-            return Ast.Call(
-                typeof(PythonOps).GetMethod("GetCoerceResultTwo"),
-                coerceTuple
-            );
-        }
-
-        private static MethodCallExpression/*!*/ CoerceOne(ParameterExpression/*!*/ coerceTuple) {
-            return Ast.Call(
-                typeof(PythonOps).GetMethod("GetCoerceResultOne"),
-                coerceTuple
-            );
-        }
-
-
         #endregion
 
         #region Comparison Operations
@@ -1158,12 +1061,6 @@ namespace IronPython.Runtime.Binding {
                     // then try __cmp__ or __rcmp__ and compare the resulting int appropriaetly
                     shouldWarn = shouldWarn || cmp.ShouldWarn(state, out info);
 
-                    if (ShouldCoerce(state, opString, xType, yType, true)) {
-                        DoCoerce(state, bodyBuilder, PythonOperationKind.Compare, types, false, delegate(Expression e) {
-                            return GetCompareTest(op, e, false);
-                        });
-                    }
-
                     if (MakeOneCompareGeneric(
                         cmp,
                         false,
@@ -1175,13 +1072,6 @@ namespace IronPython.Runtime.Binding {
                         typeof(object))) {
 
                         shouldWarn = shouldWarn || rcmp.ShouldWarn(state, out info);
-
-                        if (ShouldCoerce(state, opString, yType, xType, true)) {
-                            DoCoerce(state, bodyBuilder, PythonOperationKind.Compare, rTypes, true, delegate(Expression e) {
-                                return GetCompareTest(op, e, true);
-                            });
-                        }
-
                         if (MakeOneCompareGeneric(
                             rcmp,
                             true,
@@ -1275,20 +1165,12 @@ namespace IronPython.Runtime.Binding {
 
             bool tryRich = true, more = true;
             if (xType == yType && cTarget != SlotOrFunction.Empty) {
-                // if the types are equal try __cmp__ first
-                if (ShouldCoerce(state, op, types[0], types[1], true)) {
-                    // need to try __coerce__ first.
-                    DoCoerce(state, bodyBuilder, PythonOperationKind.Compare, types, false);
-                }
-
                 more = more && MakeOneCompareGeneric(cTarget, false, types, MakeCompareReverse, bodyBuilder, typeof(int));
 
-                if (xType != TypeCache.OldInstance) {
-                    // try __cmp__ backwards for new-style classes and don't fallback to
-                    // rich comparisons if available
-                    more = more && MakeOneCompareGeneric(rcTarget, true, types, MakeCompareReverse, bodyBuilder, typeof(int));
-                    tryRich = false;
-                }
+                // try __cmp__ backwards for new-style classes and don't fallback to
+                // rich comparisons if available
+                more = more && MakeOneCompareGeneric(rcTarget, true, types, MakeCompareReverse, bodyBuilder, typeof(int));
+                tryRich = false;
             }
 
             if (tryRich && more) {
@@ -1309,20 +1191,7 @@ namespace IronPython.Runtime.Binding {
             }
 
             if (xType != yType) {
-                if (more && ShouldCoerce(state, op, types[0], types[1], true)) {
-                    // need to try __coerce__ first.
-                    DoCoerce(state, bodyBuilder, PythonOperationKind.Compare, types, false);
-                }
-
                 more = more && MakeOneCompareGeneric(cTarget, false, types, MakeCompareReverse, bodyBuilder, typeof(int));
-
-                if (more && ShouldCoerce(state, op, types[1], types[0], true)) {
-                    // try __coerce__ first
-                    DoCoerce(state, bodyBuilder, PythonOperationKind.Compare, rTypes, true, delegate(Expression e) {
-                        return ReverseCompareValue(e);
-                    });
-                }
-
                 more = more && MakeOneCompareGeneric(rcTarget, true, types, MakeCompareReverse, bodyBuilder, typeof(int));
             }
 
@@ -1725,11 +1594,6 @@ namespace IronPython.Runtime.Binding {
             }
 
             public override DynamicMetaObject[] GetTupleArguments(DynamicMetaObject[] arguments) {
-                if (arguments[0].GetLimitType() == typeof(OldInstance)) {
-                    // old instances are special in that they take only a single parameter
-                    // in their indexer but accept multiple parameters as tuples.
-                    return base.GetTupleArguments(arguments);
-                }
                 return arguments;
             }
 
@@ -2162,62 +2026,6 @@ namespace IronPython.Runtime.Binding {
         #endregion
 
         #region Helpers
-
-        /// <summary>
-        /// Checks if a coercion check should be performed.  We perform coercion under the following
-        /// situations:
-        ///     1. Old instances performing a binary operator (excluding rich comparisons)
-        ///     2. User-defined new instances calling __cmp__ but only if we wouldn't dispatch to a built-in __coerce__ on the parent type
-        ///     
-        /// This matches the behavior of CPython.
-        /// </summary>
-        /// <returns></returns>
-        private static bool ShouldCoerce(PythonContext/*!*/ state, PythonOperationKind operation, DynamicMetaObject/*!*/ x, DynamicMetaObject/*!*/ y, bool isCompare) {
-            if ((operation & PythonOperationKind.DisableCoerce) != 0) {
-                return false;
-            }
-
-            PythonType xType = MetaPythonObject.GetPythonType(x), yType = MetaPythonObject.GetPythonType(y);
-
-            if (xType == TypeCache.OldInstance) return true;
-
-            if (isCompare && !xType.IsSystemType && yType.IsSystemType) {
-                if (yType == TypeCache.Int32 ||
-                    yType == TypeCache.BigInteger ||
-                    yType == TypeCache.Double ||
-                    yType == TypeCache.Complex) {
-
-                    // only coerce new style types that define __coerce__ and
-                    // only when comparing against built-in types which
-                    // define __coerce__
-                    PythonTypeSlot pts;
-                    if (xType.TryResolveSlot(state.SharedContext, "__coerce__", out pts)) {
-                        // don't call __coerce__ if it's declared on the base type
-                        BuiltinMethodDescriptor bmd = pts as BuiltinMethodDescriptor;
-                        if (bmd == null) return true;
-
-                        if (bmd.__name__ != "__coerce__" &&
-                            bmd.DeclaringType != typeof(int) &&
-                            bmd.DeclaringType != typeof(BigInteger) &&
-                            bmd.DeclaringType != typeof(double) &&
-                            bmd.DeclaringType != typeof(Complex)) {
-                            return true;
-                        }
-
-                        foreach (PythonType pt in xType.ResolutionOrder) {
-                            if (pt.UnderlyingSystemType == bmd.DeclaringType) {
-                                // inherited __coerce__
-                                return false;
-                            }
-                        }
-
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        }
 
         public static PythonOperationKind DirectOperation(PythonOperationKind op) {
             if ((op & PythonOperationKind.InPlace) == 0) {

@@ -15,6 +15,7 @@
 
 using System;
 using System.Dynamic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 #if FEATURE_CORE_DLR

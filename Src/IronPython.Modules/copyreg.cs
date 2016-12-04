@@ -31,7 +31,7 @@ using Microsoft.Scripting.Math;
 using Complex = Microsoft.Scripting.Math.Complex64;
 #endif
 
-[assembly: PythonModule("copy_reg", typeof(IronPython.Modules.PythonCopyReg))]
+[assembly: PythonModule("copyreg", typeof(IronPython.Modules.PythonCopyReg))]
 namespace IronPython.Modules {
     [Documentation("Provides global reduction-function registration for pickling and copying objects.")]
     public static class PythonCopyReg {
@@ -72,7 +72,7 @@ namespace IronPython.Modules {
             + "specified by the \"Extended __reduce__ API\" section of PEP 307.\n"
             + "\n"
             + "Reduction functions registered by calling pickle() can be retrieved later\n"
-            + "through copy_reg.dispatch_table[type].\n"
+            + "through copyreg.dispatch_table[type].\n"
             + "\n"
             + "Note that calling pickle() will overwrite any previous association for the\n"
             + "given type.\n"
@@ -215,7 +215,7 @@ namespace IronPython.Modules {
 
         private static void EnsureModuleInitialized(CodeContext context) {
             if (!PythonContext.GetContext(context).HasModuleState(_dispatchTableKey)) {
-                Importer.ImportBuiltin(context, "copy_reg");
+                Importer.ImportBuiltin(context, "copyreg");
             }
         }
 

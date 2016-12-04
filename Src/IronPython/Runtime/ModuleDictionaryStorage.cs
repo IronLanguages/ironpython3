@@ -23,6 +23,10 @@ using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
+#if !FEATURE_TYPE_INFO
+using TypeInfo = System.Type;
+#endif
+
 namespace IronPython.Runtime {
     /// <summary>
     /// Enables lazy initialization of module dictionaries.
@@ -189,7 +193,7 @@ namespace IronPython.Runtime {
                             return true;
                         case MemberTypes.NestedType:
                             if (members.Length == 1) {
-                                value = DynamicHelpers.GetPythonTypeFromType((Type)members[0]);
+                                value = DynamicHelpers.GetPythonTypeFromType(((TypeInfo)members[0]).AsType());
                             } else {
                                 TypeTracker tt = (TypeTracker)MemberTracker.FromMemberInfo(members[0]);
                                 for (int i = 1; i < members.Length; i++) {

@@ -383,24 +383,45 @@ namespace IronPython.Runtime.Operations {
         #region Binary operators
 
         [SpecialName]
-        [return: MaybeNotImplemented]
         public static object DivMod(double x, double y) {
-            object div = FloorDivide(x, y);
-            if (div == NotImplementedType.Value) return div;
-            return PythonTuple.MakeTuple(div, Mod(x, y));
+            if (y == 0) throw PythonOps.ZeroDivisionError();
+
+            // .NET does not provide Math.DivRem() for floats. Implementation along the CPython code.
+            var mod = Math.IEEERemainder(x, y);
+            var div = (x - mod) / y;
+            if (mod != 0) {
+                if ((y < 0) != (mod < 0)) {
+                    mod += y;
+                    div -= 1;
+                }
+            } else {
+                mod = CopySign(0, y);
+            }
+            double floordiv;
+            if (div != 0) {
+                floordiv = Math.Floor(div);
+                if (div - floordiv > 0.5)
+                    floordiv += 1;
+            } else {
+                floordiv = CopySign(0, x / y);
+            }
+            return PythonTuple.MakeTuple(floordiv, mod);
         }
 
         [SpecialName]
         public static double Mod(double x, double y) {
             if (y == 0) throw PythonOps.ZeroDivisionError();
 
-            double r = x % y;
-            if (r > 0 && y < 0) {
-                r = r + y;
-            } else if (r < 0 && y > 0) {
-                r = r + y;
+            // implemented as in CPython
+            var mod = Math.IEEERemainder(x, y);
+            if (mod != 0) {
+                if ((y < 0) != (mod < 0)) {
+                    mod += y;
+                }
+            } else {
+                mod = CopySign(0, y);
             }
-            return r;
+            return mod;
         }
 
         [SpecialName]
@@ -613,6 +634,10 @@ namespace IronPython.Runtime.Operations {
                 // note: NaN intentionally shows up as negative
                 return value > 0 ? 1 : -1;
             }
+        }
+
+        internal static double CopySign(double value, double sign) {
+            return Sign(sign) * Math.Abs(value);
         }
 
         internal static int Compare(double x, double y) {

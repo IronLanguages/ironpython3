@@ -44,17 +44,19 @@ decompress() function instead.
 
             public Bytes unused_data {
                 get {
-                    var buffer = this.input.GetBuffer();
-
                     var unusedCount = this.input.Length - this.lastSuccessfulPosition;
                     var unused = new byte[unusedCount];
 
-#if !SILVERLIGHT && !WP75
-                    Array.Copy(buffer, this.lastSuccessfulPosition, unused, 0, unusedCount);
+#if NETSTANDARD
+                    ArraySegment<byte> buffer;
+                    this.input.TryGetBuffer(out buffer);
+                    Array.Copy(buffer.Array, (int)this.lastSuccessfulPosition, unused, 0, (int)unusedCount);
+#elif !SILVERLIGHT && !WP75
+                    Array.Copy(this.input.GetBuffer(), this.lastSuccessfulPosition, unused, 0, unusedCount);
 #else
-                    Array.Copy(buffer, (int)this.lastSuccessfulPosition, unused, 0, (int)unusedCount);
+                    Array.Copy(this.input.GetBuffer(), (int)this.lastSuccessfulPosition, unused, 0, (int)unusedCount);
 #endif
-                    
+
                     return new Bytes(unused);
                 }
             }

@@ -55,6 +55,8 @@ namespace IronPython.Modules {
             get {
 #if FEATURE_ANSICP    // No ANSICodePage in Silverlight
                 return "cp" + CultureInfo.CurrentCulture.TextInfo.ANSICodePage.ToString();
+#elif NETSTANDARD
+                return "utf_8";
 #else
                 return "";
 #endif

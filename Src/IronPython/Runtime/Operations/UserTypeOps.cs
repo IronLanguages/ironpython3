@@ -23,6 +23,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -144,15 +145,7 @@ namespace IronPython.Runtime.Operations {
 
             foreach (PythonType type in dt.ResolutionOrder) {
                 PythonTypeSlot dts;
-                if (type != TypeCache.Object && type.OldClass != null) {
-                    // we're an old class, check the old-class way
-                    OldClass oc = type.OldClass;
-
-                    if (oc.TryGetBoundCustomMember(context, name, out value)) {
-                        value = oc.GetOldStyleDescriptor(context, value, instance, oc);
-                        return true;
-                    }
-                } else if (type.TryLookupSlot(context, name, out dts)) {
+                if (type.TryLookupSlot(context, name, out dts)) {
                     // we're a dynamic type, check the dynamic type way
                     return dts.TryGetValue(context, instance, dt, out value);
                 }
@@ -414,7 +407,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static FastBindResult<T> MakeSetBinding<T>(CodeContext codeContext, CallSite<T> site, IPythonObject self, object value, Binding.PythonSetMemberBinder setBinder) where T : class {
-            if (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(self.GetType().BaseType)) {
+            if (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(self.GetType().GetTypeInfo().BaseType)) {
                 // very tricky, user is inheriting from a class which implements IDO, we
                 // don't optimize this yet.
                 return new FastBindResult<T>();

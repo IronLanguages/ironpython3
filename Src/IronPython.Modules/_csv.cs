@@ -438,7 +438,7 @@ The Dialect type records CSV parsing and generation options.")]
                         else if (source.Length != 1)
                         {
                             throw PythonOps.TypeError(
-                                "\"{0}\" must be a 1-character string",
+                                "\"{0}\" must be an 1-character string",
                                 name);
                         }
                         else
@@ -447,7 +447,7 @@ The Dialect type records CSV parsing and generation options.")]
                     else
                     {
                         throw PythonOps.TypeError(
-                            "\"{0}\" must be a 1-character string", name);
+                            "\"{0}\" must be string, not {1}", name, PythonOps.GetPythonTypeName(src));
                     }
                 }
                 return result;
@@ -463,7 +463,7 @@ The Dialect type records CSV parsing and generation options.")]
                     else if (!(src is string))
                     {
                         throw PythonOps.TypeError(
-                            "\"{0}\" must be an string", name);
+                            "\"{0}\" must be a string", name);
                     }
                     else
                     {
@@ -560,7 +560,7 @@ The Dialect type records CSV parsing and generation options.")]
                 if (_quoting < QUOTE_MINIMAL || _quoting > QUOTE_NONE)
                     throw PythonOps.TypeError("bad \"quoting\" value");
                 if (string.IsNullOrEmpty(_delimiter))
-                    throw PythonOps.TypeError("delimiter must be set");
+                    throw PythonOps.TypeError("\"delimiter\" must be an 1-character string");
 
                 if ((foundParams["quotechar"] && quotechar == null) && quoting == null)
                     _quoting = QUOTE_NONE;
@@ -693,8 +693,15 @@ in CSV format.")]
                         object lineobj = null;
                         if (!_iterator.MoveNext())
                         {
-                            if (_field.Length != 0)
-                                throw MakeError("newline inside string");
+                            // End of input OR exception
+                            if(_field.Length > 0 || _state == State.InQuotedField) {
+                                if(_reader._dialect.strict) {
+                                    throw MakeError("unexpected end of data");
+                                } else {
+                                    ParseSaveField();
+                                    return true;
+                                }
+                            }
                             return false;
                         }
                         else
@@ -731,6 +738,8 @@ in CSV format.")]
                         result = true;
 
                     } while (_state != State.StartRecord);
+
+
 
                     return result;
                 }
@@ -1067,12 +1076,12 @@ elements will be converted to string.")]
                         JoinAppend((string)field, quoted, rowlen == 1);
                     else if (field is double)
                     {
-                        JoinAppend(DoubleOps.__str__(context, (double)field),
+                        JoinAppend(DoubleOps.__repr__(context, (double)field),
                             quoted, rowlen == 1);
                     }
                     else if (field is float)
                     {
-                        JoinAppend(SingleOps.__str__(context, (float)field),
+                        JoinAppend(SingleOps.__repr__(context, (float)field),
                             quoted, rowlen == 1);
                     }
                     else if (field == null)

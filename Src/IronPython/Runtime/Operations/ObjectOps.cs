@@ -219,9 +219,9 @@ namespace IronPython.Runtime.Operations {
             FieldInfo[] fields = t.GetFields(System.Reflection.BindingFlags.FlattenHierarchy | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
             int res = 0;
             foreach (FieldInfo fi in fields) {
-                if (fi.FieldType.IsClass() || fi.FieldType.IsInterface()) {
+                if (fi.FieldType.GetTypeInfo().IsClass || fi.FieldType.GetTypeInfo().IsInterface) {
                     res += AdjustPointerSize(4);
-                } else if (fi.FieldType.IsPrimitive()) {
+                } else if (fi.FieldType.GetTypeInfo().IsPrimitive) {
                     return System.Runtime.InteropServices.Marshal.SizeOf(fi.FieldType);
                 } else {
                     res += GetTypeSize(fi.FieldType);
@@ -289,13 +289,15 @@ namespace IronPython.Runtime.Operations {
                     typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(PythonTuple)), null);
                     typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(List)), null);
                     typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(PythonDictionary)), null);
-                    typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(OldInstance)), null);
-                    typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(OldClass)), null);
                     typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(PythonFunction)), null);
                     typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(BuiltinFunction)), null);
 
                     // type dict needs to be ensured to be fully initialized before assigning back
+#if NETSTANDARD
+                    Interlocked.MemoryBarrier();
+#else
                     Thread.MemoryBarrier();
+#endif
                     _nativelyPickleableTypes = typeDict;
                 }
                 return _nativelyPickleableTypes;
@@ -337,7 +339,7 @@ namespace IronPython.Runtime.Operations {
         /// Implements the default __reduce_ex__ method as specified by PEP 307 case 2 (new-style instance, protocol 0 or 1)
         /// </summary>
         internal static PythonTuple ReduceProtocol0(CodeContext/*!*/ context, object self) {
-            // CPython implements this in copy_reg._reduce_ex
+            // CPython implements this in copyreg._reduce_ex
 
             PythonType myType = DynamicHelpers.GetPythonType(self); // PEP 307 calls this "D"
             ThrowIfNativelyPickable(myType);
@@ -449,7 +451,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             dictIterator = null;
-            if (self is PythonDictionary || self is PythonDictionary) {
+            if (self is PythonDictionary) {
                 dictIterator = PythonOps.Invoke(context, self, "iteritems", ArrayUtils.EmptyObjects);
             }
 

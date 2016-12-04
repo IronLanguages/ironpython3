@@ -53,10 +53,10 @@ namespace IronPython.Modules {
         public static extern void CopyMemory(IntPtr destination, IntPtr source, IntPtr Length);
 
         // unix entry points, VM needs to map the filenames.
-        [DllImport("libdl.so")]
+        [DllImport("libdl")]
         private static extern IntPtr dlopen(string filename, int flags);
 
-        [DllImport("libdl.so")]
+        [DllImport("libdl")]
         private static extern IntPtr dlsym(IntPtr handle, string symbol);
 
         public static IntPtr LoadDLL(string filename, int flags) {
@@ -92,6 +92,11 @@ namespace IronPython.Modules {
         /// </summary>
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public static IntPtr Calloc(IntPtr size) {
+            if (Environment.OSVersion.Platform == PlatformID.Unix ||
+                Environment.OSVersion.Platform == PlatformID.MacOSX) {
+                return calloc((IntPtr)1, size);
+            }
+
             return LocalAlloc(LMEM_ZEROINIT, size);
         }
 
@@ -106,10 +111,16 @@ namespace IronPython.Modules {
         [DllImport("kernel32.dll"), ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         private static extern IntPtr LocalAlloc(uint flags, IntPtr size);
 
+        [DllImport("libc")]
+        private static extern IntPtr calloc(IntPtr num, IntPtr size);
+
         private const int LMEM_ZEROINIT = 0x0040;
 
         [DllImport("kernel32.dll")]
         private static extern void RtlMoveMemory(IntPtr Destination, IntPtr src, IntPtr length);
+
+        [DllImport("libc")]
+        private static extern IntPtr memmove(IntPtr dst, IntPtr src, IntPtr length);
 
         /// <summary>
         /// Helper function for implementing memset.  Could be more efficient if we 
@@ -124,7 +135,12 @@ namespace IronPython.Modules {
         }
 
         private static IntPtr MoveMemory(IntPtr dest, IntPtr src, IntPtr length) {
-            RtlMoveMemory(dest, src, length);
+            if (Environment.OSVersion.Platform == PlatformID.Unix ||
+                Environment.OSVersion.Platform == PlatformID.MacOSX) {
+                memmove(dest, src, length);
+            } else {
+                RtlMoveMemory(dest, src, length);
+            }
             return dest;
         }
     }

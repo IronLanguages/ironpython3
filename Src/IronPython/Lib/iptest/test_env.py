@@ -22,13 +22,21 @@ from iptest.util import get_env_var, get_temp_dir
 is_silverlight = sys.platform == 'silverlight'
 is_cli =         sys.platform == 'cli'
 is_ironpython =  is_silverlight or is_cli
-is_cpython    =  sys.platform == 'win32'
+is_cpython    =  sys.platform == 'win32' or sys.platform == 'posix'
+is_posix      =  sys.platform == 'posix'
+is_netstandard = False
 
 if is_ironpython:
     #We'll use System, if available, to figure out more info on the test
     #environment later
     import System
     import clr
+    is_netstandard = clr.IsNetStandard
+    if is_netstandard:
+        clr.AddReference("Microsoft.Scripting")
+        is_posix = System.FakeEnvironment.OSVersion.Platform == System.PlatformID.Unix
+    else:
+        is_posix = sys.platform == 'posix' or System.Environment.OSVersion.Platform == System.PlatformID.Unix
 
 
 #--The bittedness of the Python implementation
@@ -51,8 +59,15 @@ if is_cli:
     is_orcas = len(clr.GetClrType(System.Reflection.Emit.DynamicMethod).GetConstructors()) == 8
 
 is_net40 = False
+is_net45 = False
+is_net45Or46 = False
+is_net46 = False
 if is_cli:
-    is_net40 = System.Environment.Version.Major==4
+    version = System.Environment.Version
+    is_net40 = version.Major == 4
+    is_net45 = is_net40 and version.Minor == 0 and version.Build == 30319 and version.Revision < 42000
+    is_net45Or46 = is_net40 and version.Minor == 0 and version.Build == 30319
+    is_net46 = is_net40 and version.Minor == 0 and version.Build == 30319 and version.Revision == 42000 
 
 is_dlr_in_ndp = False
 if is_net40:
@@ -99,7 +114,7 @@ if not is_silverlight and get_env_var("IS_VISTA")=="1":
     is_vista = True
 
 is_win7 = False
-if is_ironpython:  #TODO - what about CPython?
+if is_ironpython and not is_posix:  #TODO - what about CPython?
     is_win7 = System.Environment.OSVersion.Version.Major==6 and System.Environment.OSVersion.Version.Minor==1
 
 #------------------------------------------------------------------------------

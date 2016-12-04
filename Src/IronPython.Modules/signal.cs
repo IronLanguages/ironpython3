@@ -27,6 +27,10 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
+#if NETCOREAPP1_0
+using Environment = System.FakeEnvironment;
+#endif
+
 #if FEATURE_PROCESS
 
 [assembly: PythonModule("signal", typeof(IronPython.Modules.PythonSignal))]

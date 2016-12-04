@@ -19,6 +19,7 @@ using System.Linq.Expressions;
 
 using System;
 using System.Diagnostics;
+using System.Reflection;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Ast;

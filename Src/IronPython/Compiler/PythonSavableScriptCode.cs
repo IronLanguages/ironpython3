@@ -50,6 +50,7 @@ namespace IronPython.Compiler {
             _moduleName = moduleName;
         }
 
+#if !NETSTANDARD
         protected override KeyValuePair<MethodBuilder, Type> CompileForSave(TypeGen typeGen) {
             var lambda = RewriteForSave(typeGen, _code);
 
@@ -63,6 +64,7 @@ namespace IronPython.Compiler {
 
             return new KeyValuePair<MethodBuilder, Type>(mb, typeof(LookupCompilationDelegate));
         }
+#endif
 
         public override object Run() {
             throw new NotSupportedException();

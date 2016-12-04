@@ -20,6 +20,7 @@ using System.Linq.Expressions;
 using System;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Reflection;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Runtime;

@@ -25,11 +25,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 
-using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
@@ -37,6 +35,10 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 using Microsoft.Scripting.Utils;
+
+#if NETCOREAPP1_0
+using Environment = System.FakeEnvironment;
+#endif
 
 [assembly: PythonModule("sys", typeof(IronPython.Modules.SysModule))]
 namespace IronPython.Modules {
@@ -130,22 +132,29 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             throw PythonOps.NotImplementedError("IronPython does not support sys.setcheckinterval");
         }
 
-        public static void getrefcount() {
-            throw PythonOps.NotImplementedError("IronPython does not support sys.getrefcount");
+        public static int getrefcount(CodeContext/*!*/ context, object o) {
+            // getrefcount() is used at various places in the CPython test suite, usually to 
+            // check that instances are not cloned. Under .NET, we cannot provide that functionality, 
+            // but we can at least return a dummy result so that the tests can continue.
+            PythonOps.Warn(context, PythonExceptions.RuntimeWarning, "IronPython does not support sys.getrefcount. A dummy result is returned.");
+            return 1000000;
         }
 
         // warnoptions is set by PythonContext and updated on each reload        
-
-        [Python3Warning("'sys.exc_clear() not supported in 3.x; use except clauses'")]
-        public static void exc_clear() {
-            PythonOps.ClearCurrentException();
-        }
 
         public static PythonTuple exc_info(CodeContext/*!*/ context) {
             return PythonOps.GetExceptionInfo(context);
         }
 
-        // exec_prefix and executable are set by PythonContext and updated on each reload
+		#if !NET_STANDARD
+        public static string intern(object o) {
+            string s = o as string;
+            if (s == null) {
+                throw PythonOps.TypeError("intern: argument must be string");
+            }
+            return string.Intern(s);
+        }
+		#endif
 
         public static void exit() {
             exit(null);
@@ -312,42 +321,15 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
 #endif
 
         public static void settrace(CodeContext/*!*/ context, object o) {
-            PythonContext pyContext = PythonContext.GetContext(context);
-            pyContext.EnsureDebugContext();
-
-            if (o == null) {
-                pyContext.UnregisterTracebackHandler();
-                PythonTracebackListener.SetTrace(null, null);
-            } else {
-                // We're following CPython behavior here.
-                // If CurrentPythonFrame is not null then we're currently inside a traceback, and
-                // enabling trace while inside a traceback is only allowed through sys.call_tracing()
-                var pyThread = PythonOps.GetFunctionStackNoCreate();
-                if (pyThread == null || !PythonTracebackListener.InTraceBack) {
-                    pyContext.PushTracebackHandler(new PythonTracebackListener((PythonContext)context.LanguageContext));
-                    pyContext.RegisterTracebackHandler();
-                    PythonTracebackListener.SetTrace(o, (TracebackDelegate)Converter.ConvertToDelegate(o, typeof(TracebackDelegate)));
-                }
-            }
+            context.LanguageContext.SetTrace(o);
         }
 
-        public static void call_tracing(CodeContext/*!*/ context, object func, PythonTuple args) {
-            PythonContext pyContext = (PythonContext)context.LanguageContext;
-            pyContext.EnsureDebugContext();
-
-            pyContext.UnregisterTracebackHandler();
-            pyContext.PushTracebackHandler(new PythonTracebackListener((PythonContext)context.LanguageContext));
-            pyContext.RegisterTracebackHandler();
-            try {
-                PythonCalls.Call(func, args.ToArray());
-            } finally {
-                pyContext.PopTracebackHandler();
-                pyContext.UnregisterTracebackHandler();
-            }
+        public static object call_tracing(CodeContext/*!*/ context, object func, PythonTuple args) {
+            return context.LanguageContext.CallTracing(func, args);
         }
 
         public static object gettrace(CodeContext/*!*/ context) {
-            return PythonTracebackListener.GetTraceObject();
+            return context.LanguageContext.GetTrace();
         }
 
         public static void setrecursionlimit(CodeContext/*!*/ context, int limit) {

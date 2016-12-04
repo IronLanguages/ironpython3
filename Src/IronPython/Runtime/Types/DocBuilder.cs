@@ -154,10 +154,10 @@ namespace IronPython.Runtime.Types {
 #if FEATURE_XMLDOC
             GetXmlDoc(t, out summary);
 #endif
-            if (t.IsEnum) {
+            if (t.GetTypeInfo().IsEnum) {
 
 #if FEATURE_ENUM_NAMES_VALUES // GetNames/GetValues
-                                string[] names = Enum.GetNames(t);
+                string[] names = Enum.GetNames(t);
                 Array values = Enum.GetValues(t);
                 for (int i = 0; i < names.Length; i++) {
                     names[i] = String.Concat(names[i],
@@ -179,7 +179,7 @@ namespace IronPython.Runtime.Types {
                 summary = String.Concat(
                     summary,
                     Environment.NewLine, Environment.NewLine, 
-                    "enum ", t.IsDefined(typeof(FlagsAttribute), false) ? "(flags) ": "", GetPythonTypeName(t), ", values: ", 
+                    "enum ", t.GetTypeInfo().IsDefined(typeof(FlagsAttribute), false) ? "(flags) ": "", GetPythonTypeName(t), ", values: ", 
                     String.Join(", ", names));
             }
             return summary;
@@ -213,25 +213,31 @@ namespace IronPython.Runtime.Types {
                     retType.Append(GetPythonTypeName(mi.ReturnType));
                     returnCount++;
 
-                    var typeAttrs = mi.ReturnParameter.GetCustomAttributes(typeof(SequenceTypeInfoAttribute), true);
-                    if (typeAttrs.Length > 0) {
-                        retType.Append(" (of ");
-                        SequenceTypeInfoAttribute typeAttr = (SequenceTypeInfoAttribute)typeAttrs[0];
-                        for (int curTypeAttr = 0; curTypeAttr < typeAttr.Types.Count; curTypeAttr++) {
-                            if (curTypeAttr != 0) {
-                                retType.Append(", ");
+                    try {
+                        var typeAttrs = mi.ReturnParameter.GetCustomAttributes(typeof(SequenceTypeInfoAttribute), true);
+                        if (typeAttrs.Any()) {
+                            retType.Append(" (of ");
+                            SequenceTypeInfoAttribute typeAttr = (SequenceTypeInfoAttribute)typeAttrs.First();
+                            for (int curTypeAttr = 0; curTypeAttr < typeAttr.Types.Count; curTypeAttr++) {
+                                if (curTypeAttr != 0) {
+                                    retType.Append(", ");
+                                }
+
+                                retType.Append(GetPythonTypeName(typeAttr.Types[curTypeAttr]));
                             }
-
-                            retType.Append(GetPythonTypeName(typeAttr.Types[curTypeAttr]));
+                            retType.Append(")");
                         }
-                        retType.Append(")");
                     }
+                    catch (IndexOutOfRangeException) { } // swallow bug in .NET Core
 
-                    var dictTypeAttrs = mi.ReturnParameter.GetCustomAttributes(typeof(DictionaryTypeInfoAttribute), true);
-                    if (dictTypeAttrs.Length > 0) {
-                        var dictTypeAttr = (DictionaryTypeInfoAttribute)dictTypeAttrs[0];
-                        retType.Append(String.Format(" (of {0} to {1})", GetPythonTypeName(dictTypeAttr.KeyType), GetPythonTypeName(dictTypeAttr.ValueType)));
+                    try {
+                        var dictTypeAttrs = mi.ReturnParameter.GetCustomAttributes(typeof(DictionaryTypeInfoAttribute), true);
+                        if (dictTypeAttrs.Any()) {
+                            var dictTypeAttr = (DictionaryTypeInfoAttribute)dictTypeAttrs.First();
+                            retType.Append(String.Format(" (of {0} to {1})", GetPythonTypeName(dictTypeAttr.KeyType), GetPythonTypeName(dictTypeAttr.ValueType)));
+                        }
                     }
+                    catch (IndexOutOfRangeException) { } // swallow bug in .NET Core
                 }
 
                 if (name == null) {
@@ -458,9 +464,10 @@ namespace IronPython.Runtime.Types {
         private static string GetXmlNameForProperty(Type declaringType, string propertyName) {
             StringBuilder res = new StringBuilder();
             res.Append("P:");
-
-            res.Append(declaringType.Namespace);
-            res.Append('.');
+            if (!string.IsNullOrEmpty(declaringType.Namespace)) {
+                res.Append(declaringType.Namespace);
+                res.Append('.');
+            }
             res.Append(declaringType.Name);
             res.Append('.');
             res.Append(propertyName);
@@ -471,8 +478,10 @@ namespace IronPython.Runtime.Types {
         private static string GetXmlName(MethodBase info) {
             StringBuilder res = new StringBuilder();
             res.Append("M:");
-            res.Append(info.DeclaringType.Namespace);
-            res.Append('.');
+            if (!string.IsNullOrEmpty(info.DeclaringType.Namespace)) {
+                res.Append(info.DeclaringType.Namespace);
+                res.Append('.');
+            }
             res.Append(info.DeclaringType.Name);
             res.Append('.');
             res.Append(info.Name);
@@ -483,7 +492,7 @@ namespace IronPython.Runtime.Types {
                     Type curType = pi[i].ParameterType;
 
                     if (i != 0) res.Append(',');
-                    AppendTypeFormat(curType, res);
+                    AppendTypeFormat(curType, res, pi[i]);
                 }
                 res.Append(')');
             }
@@ -494,17 +503,19 @@ namespace IronPython.Runtime.Types {
         /// Converts a Type object into a string suitable for lookup in the help file.  All generic types are
         /// converted down to their generic type definition.
         /// </summary>
-        private static void AppendTypeFormat(Type curType, StringBuilder res) {
-            if (curType.IsGenericType) {
+        private static void AppendTypeFormat(Type curType, StringBuilder res, ParameterInfo pi=null) {
+            if (curType.GetTypeInfo().IsGenericType) {
                 curType = curType.GetGenericTypeDefinition();
             }
 
             if (curType.IsGenericParameter) {
                 res.Append(ReflectionUtils.GenericArityDelimiter);
                 res.Append(curType.GenericParameterPosition);
-            } else if (curType.ContainsGenericParameters) {
-                res.Append(curType.Namespace);
-                res.Append('.');
+            } else if (curType.GetTypeInfo().ContainsGenericParameters) {
+                if (!string.IsNullOrEmpty(curType.Namespace)) {
+                    res.Append(curType.Namespace);
+                    res.Append('.');
+                }
                 res.Append(curType.Name.Substring(0, curType.Name.Length - 2));
                 res.Append('{');
                 Type[] types = curType.GetGenericArguments();
@@ -520,7 +531,15 @@ namespace IronPython.Runtime.Types {
                 }
                 res.Append('}');
             } else {
-                res.Append(curType.FullName);
+                if (pi != null) {
+                    if((pi.IsOut || pi.ParameterType.IsByRef) && curType.FullName.EndsWith("&")) {
+                        res.Append(curType.FullName.Replace("&", "@"));
+                    } else {
+                        res.Append(curType.FullName);
+                    }
+                } else {
+                    res.Append(curType.FullName);
+                }
             }
         }
 
@@ -550,7 +569,7 @@ namespace IronPython.Runtime.Types {
         /// Gets the XPathDocument for the specified assembly, or null if one is not available.
         /// </summary>
         private static XPathDocument GetXPathDocument(Assembly asm) {
-            System.Globalization.CultureInfo ci = System.Threading.Thread.CurrentThread.CurrentCulture;
+            System.Globalization.CultureInfo ci = System.Globalization.CultureInfo.CurrentCulture;
 
             string location = GetXmlDocLocation(asm);
             if (location == null) {
@@ -569,7 +588,7 @@ namespace IronPython.Runtime.Types {
                 if (!System.IO.File.Exists(xml)) {
                     xml = Path.Combine(baseDir, baseFile);
                     if (!System.IO.File.Exists(xml)) {
-#if !CLR2
+#if !CLR2 && !NETSTANDARD
                         // On .NET 4.0 documentation is in the reference assembly location
                         // for 64-bit processes, we need to look in Program Files (x86)
                         xml = Path.Combine(
@@ -614,7 +633,7 @@ namespace IronPython.Runtime.Types {
             returns = null;
             parameters = null;
 
-            XPathDocument xpd = GetXPathDocument(info.DeclaringType.Assembly);
+            XPathDocument xpd = GetXPathDocument(info.DeclaringType.GetTypeInfo().Assembly);
             if (xpd == null) return;
 
             XPathNavigator xpn = xpd.CreateNavigator();
@@ -652,7 +671,7 @@ namespace IronPython.Runtime.Types {
         private static void GetXmlDoc(Type type, out string summary) {
             summary = null;
 
-            XPathDocument xpd = GetXPathDocument(type.Assembly);
+            XPathDocument xpd = GetXPathDocument(type.GetTypeInfo().Assembly);
             if (xpd == null) return;
 
             XPathNavigator xpn = xpd.CreateNavigator();
@@ -673,7 +692,7 @@ namespace IronPython.Runtime.Types {
             summary = null;
             returns = null;
 
-            XPathDocument xpd = GetXPathDocument(declaringType.Assembly);
+            XPathDocument xpd = GetXPathDocument(declaringType.GetTypeInfo().Assembly);
             if (xpd == null) return;
 
             XPathNavigator xpn = xpd.CreateNavigator();
@@ -695,7 +714,7 @@ namespace IronPython.Runtime.Types {
             summary = null;
             returns = null;
 
-            XPathDocument xpd = GetXPathDocument(info.DeclaringType.Assembly);
+            XPathDocument xpd = GetXPathDocument(info.DeclaringType.GetTypeInfo().Assembly);
             if (xpd == null) return;
 
             XPathNavigator xpn = xpd.CreateNavigator();
@@ -718,7 +737,7 @@ namespace IronPython.Runtime.Types {
                 for (; ; ) {
                     switch (xr.NodeType) {
                         case XmlNodeType.Text:
-                            text.Append(xr.ReadString());
+                            text.Append(xr.ReadContentAsString());
                             continue;
                         case XmlNodeType.Element:
                             switch (xr.Name) {

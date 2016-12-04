@@ -21,6 +21,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
@@ -38,16 +39,24 @@ using System.Numerics;
 using Microsoft.Scripting.Math;
 #endif
 
+#if NETCOREAPP1_0
+using Environment = System.FakeEnvironment;
+#endif
+
 [assembly: PythonModule("nt", typeof(IronPython.Modules.PythonNT))]
 namespace IronPython.Modules {
     public static class PythonNT {
-        public const string __doc__ = "Provides low-level operationg system access for files, the environment, etc...";
+        public const string __doc__ = "Provides low-level operating system access for files, the environment, etc...";
 
 #if FEATURE_PROCESS
         private static Dictionary<int, Process> _processToIdMapping = new Dictionary<int, Process>();
         private static List<int> _freeProcessIds = new List<int>();
         private static int _processCount;
 #endif
+
+        public static List<string> _have_functions = new List<string> {
+            "MS_WINDOWS"
+        };
 
         #region Public API Surface
 
@@ -360,7 +369,7 @@ namespace IronPython.Modules {
 
         public static List listdir(CodeContext/*!*/ context, [NotNull]string path) {
             if (path == String.Empty) {
-                path = ".";
+                throw PythonOps.WindowsError("The system cannot find the path specified: '{0}'", path);
             }
 
             List ret = PythonOps.MakeList();
@@ -429,7 +438,7 @@ namespace IronPython.Modules {
                     // .NET doesn't allow Create/CreateNew w/ access == Read, so create the file, then close it, then
                     // open it again w/ just read access.
                     fs = new FileStream(filename, fileMode, FileAccess.Write, FileShare.None);
-                    fs.Close();
+                    fs.Dispose();
                     fs = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, DefaultBufferSize, options);
                 } else if (access == FileAccess.ReadWrite && fileMode == FileMode.Append) {
                     fs = new FileStream(filename, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, DefaultBufferSize, options);
@@ -468,11 +477,13 @@ namespace IronPython.Modules {
         }
 #endif
 
-#if FEATURE_PROCESS
+#if FEATURE_PIPES
         public static PythonTuple pipe(CodeContext context) {
             return PythonFile.CreatePipeAsFd(context);
         }
+#endif
 
+#if FEATURE_PROCESS
         public static PythonFile popen(CodeContext/*!*/ context, string command) {
             return popen(context, command, "r");
         }
@@ -641,7 +652,11 @@ namespace IronPython.Modules {
             object[] slicedArgs = ArrayUtils.RemoveFirst(args);
 
             Process process = MakeProcess();
+#if NETSTANDARD
+            SetEnvironment(process.StartInfo.Environment, env);
+#else
             SetEnvironment(process.StartInfo.EnvironmentVariables, env);
+#endif
 
             return SpawnProcessImpl(context, process, mode, path, slicedArgs);
         }
@@ -672,7 +687,11 @@ namespace IronPython.Modules {
         /// </summary>
         public static object spawnve(CodeContext/*!*/ context, int mode, string path, object args, object env) {
             Process process = MakeProcess();
+#if NETSTANDARD
+            SetEnvironment(process.StartInfo.Environment, env);
+#else
             SetEnvironment(process.StartInfo.EnvironmentVariables, env);
+#endif
 
             return SpawnProcessImpl(context, process, mode, path, args);
         }
@@ -700,7 +719,7 @@ namespace IronPython.Modules {
             if (mode == P_WAIT) {
                 process.WaitForExit();
                 int exitCode = process.ExitCode;
-                process.Close();
+                process.Dispose();
                 return exitCode;
             }
 
@@ -727,7 +746,11 @@ namespace IronPython.Modules {
         /// <summary>
         /// Copy elements from a Python mapping of dict environment variables to a StringDictionary.
         /// </summary>
+#if NETSTANDARD
+        private static void SetEnvironment(IDictionary<string, string> currentEnvironment, object newEnvironment) {
+#else
         private static void SetEnvironment(System.Collections.Specialized.StringDictionary currentEnvironment, object newEnvironment) {
+#endif
             PythonDictionary env = newEnvironment as PythonDictionary;
             if (env == null) {
                 throw PythonOps.TypeError("env argument must be a dict");
@@ -790,11 +813,19 @@ namespace IronPython.Modules {
 #if FEATURE_PROCESS
         public static void startfile(string filename, [DefaultParameterValue("open")]string operation) {
             System.Diagnostics.Process process = new System.Diagnostics.Process();
+#if NETSTANDARD
+            process.StartInfo.FileName = "cmd";
+            process.StartInfo.Arguments = "/c " + filename;
+            process.StartInfo.UseShellExecute = false;
+#else
             process.StartInfo.FileName = filename;
             process.StartInfo.UseShellExecute = true;
             process.StartInfo.Verb = operation;
+#endif
             try {
-
+#if NETSTANDARD
+                if (!File.Exists(filename)) throw new Win32Exception("The system cannot find the file specified");
+#endif
                 process.Start();
             } catch (Exception e) {
                 throw ToPythonException(e, filename);
@@ -996,7 +1027,17 @@ namespace IronPython.Modules {
             }
 
             public override string ToString() {
-                return MakeTuple().ToString();
+                return string.Format("nt.stat_result("
+                    + "st_mode={0}, "
+                    + "st_ino={1}, "
+                    + "st_dev={2}, "
+                    + "st_nlink={3}, "
+                    + "st_uid={4}, "
+                    + "st_gid={5}, "
+                    + "st_size={6}, "
+                    + "st_atime={7}, "
+                    + "st_mtime={8}, "
+                    + "st_ctime={9})", MakeTuple().ToArray());
             }
 
             public string/*!*/ __repr__() {
@@ -1052,6 +1093,7 @@ namespace IronPython.Modules {
             #endregion
 
             private PythonTuple MakeTuple() {
+
                 return PythonTuple.MakeTuple(
                     st_mode,
                     st_ino,
@@ -1231,7 +1273,7 @@ namespace IronPython.Modules {
         }
 
         private static bool HasExecutableExtension(string path) {
-            string extension = Path.GetExtension(path).ToLower(CultureInfo.InvariantCulture);
+            string extension = Path.GetExtension(path).ToLowerInvariant();
             return (extension == ".exe" || extension == ".dll" || extension == ".com" || extension == ".bat");
         }
 
@@ -1364,26 +1406,6 @@ namespace IronPython.Modules {
 #endif
 
 #if FEATURE_FILESYSTEM
-        public static string tempnam(CodeContext/*!*/ context) {
-            return tempnam(context, null);
-        }
-
-        public static string tempnam(CodeContext/*!*/ context, string dir) {
-            return tempnam(context, null, null);
-        }
-
-        public static string tempnam(CodeContext/*!*/ context, string dir, string prefix) {
-            PythonOps.Warn(context, PythonExceptions.RuntimeWarning, "tempnam is a potential security risk to your program");
-
-            try {
-                dir = Path.GetTempPath(); // Reasonably consistent with CPython behavior under Windows
-
-                return Path.GetFullPath(Path.Combine(dir, prefix ?? String.Empty) + Path.GetRandomFileName());
-            } catch (Exception e) {
-                throw ToPythonException(e, dir);
-            }
-        }
-
         public static object times() {
             System.Diagnostics.Process p = System.Diagnostics.Process.GetCurrentProcess();
 
@@ -1392,22 +1414,6 @@ namespace IronPython.Modules {
                 0,  // child process system time
                 0,  // child process os time
                 DateTime.Now.Subtract(p.StartTime).TotalSeconds);
-        }
-
-        public static PythonFile/*!*/ tmpfile(CodeContext/*!*/ context) {
-            try {
-                FileStream sw = new FileStream(Path.GetTempFileName(), FileMode.Open, FileAccess.ReadWrite, FileShare.None, 4096, FileOptions.DeleteOnClose);
-
-                PythonFile res = PythonFile.Create(context, sw, sw.Name, "w+b");
-                return res;
-            } catch (Exception e) {
-                throw ToPythonException(e);
-            }
-        }
-
-        public static string/*!*/ tmpnam(CodeContext/*!*/ context) {
-            PythonOps.Warn(context, PythonExceptions.RuntimeWarning, "tmpnam is a potential security risk to your program");
-            return Path.GetFullPath(Path.GetTempPath() + Path.GetRandomFileName());
         }
 
         public static void remove(string path) {
@@ -1442,7 +1448,11 @@ namespace IronPython.Modules {
 #endif
 
         public static object urandom(int n) {
-            RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
+#if SILVERLIGHT || WP75
+            RandomNumberGenerator rng = new RNGCryptoServiceProvider();
+#else
+            RandomNumberGenerator rng = RandomNumberGenerator.Create();
+#endif
             byte[] data = new byte[n];
             rng.GetBytes(data);
 
@@ -1467,6 +1477,14 @@ namespace IronPython.Modules {
             } else {
                 return (int)oldMask;
             }
+        }
+
+        public static int umask(CodeContext/*!*/ context, BigInteger mask) {
+            return umask(context, (int)mask);
+        }
+
+        public static int umask(double mask) {
+            throw PythonOps.TypeError("integer argument expected, got float");
         }
 
 #if FEATURE_FILESYSTEM
@@ -1515,7 +1533,7 @@ namespace IronPython.Modules {
         }
 #endif
 
-        public static int write(CodeContext/*!*/ context, int fd, string text) {
+        public static int write(CodeContext/*!*/ context, int fd, [BytesConversion]string text) {
             try {
                 PythonContext pythonContext = PythonContext.GetContext(context);
                 PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
@@ -1530,6 +1548,8 @@ namespace IronPython.Modules {
         [Documentation(@"Send signal sig to the process pid. Constants for the specific signals available on the host platform 
 are defined in the signal module.")]
         public static void kill(CodeContext/*!*/ context, int pid, int sig) {
+            if (PythonSignal.NativeSignal.GenerateConsoleCtrlEvent((uint)sig, (uint)pid)) return;
+
             //If the calls to GenerateConsoleCtrlEvent didn't work, simply
             //forcefully kill the process.
             Process toKill = Process.GetProcessById(pid);
@@ -1761,6 +1781,7 @@ are defined in the signal module.")]
                 return true;
             }
 
+#if !NETCOREAPP1_0
             // TODO: need revisit
             string sysdir = System.Environment.GetFolderPath(System.Environment.SpecialFolder.System);
             foreach (string suffix in new string[] { string.Empty, ".com", ".exe", "cmd", ".bat" }) {
@@ -1770,6 +1791,7 @@ are defined in the signal module.")]
                     return true;
                 }
             }
+#endif
 
             return false;
         }

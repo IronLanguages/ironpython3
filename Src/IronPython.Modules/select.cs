@@ -94,7 +94,7 @@ namespace IronPython.Modules {
         }
 
         private static PythonTuple SocketExceptionToTuple(SocketException e) {
-            return PythonTuple.MakeTuple(e.ErrorCode, e.Message);
+            return PythonTuple.MakeTuple((int)e.SocketErrorCode, e.Message);
         }
 
         private static Exception MakeException(CodeContext/*!*/ context, object value) {
@@ -151,7 +151,7 @@ namespace IronPython.Modules {
             socket = PythonSocket.socket.HandleToSocket(handle);
             if (socket == null) {
                 SocketException e = new SocketException((int)SocketError.NotSocket);
-                throw PythonExceptions.CreateThrowable((PythonType)PythonContext.GetContext(context).GetModuleState("selecterror"), PythonTuple.MakeTuple(e.ErrorCode, e.Message));
+                throw PythonExceptions.CreateThrowable((PythonType)PythonContext.GetContext(context).GetModuleState("selecterror"), SocketExceptionToTuple(e));
             }
             return socket;
         }

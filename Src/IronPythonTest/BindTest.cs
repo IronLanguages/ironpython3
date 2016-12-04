@@ -142,7 +142,7 @@ namespace IronPythonTest {
                 case "char": return 'a';
                 case "object": return new object();
                 case "null": return null;
-#if !SILVERLIGHT
+#if FEATURE_COM
                 case "com":
                     Type t = Type.GetTypeFromProgID("JScript");
                     return Activator.CreateInstance(t);

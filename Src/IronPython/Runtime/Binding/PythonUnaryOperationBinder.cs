@@ -21,6 +21,7 @@ using Microsoft.Scripting.Ast;
 
 using System;
 using System.Dynamic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting.Generation;

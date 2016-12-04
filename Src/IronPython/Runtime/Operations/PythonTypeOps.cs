@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Dynamic;
+using System.Linq;
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Types;
 using Microsoft.Scripting;
@@ -41,11 +42,7 @@ namespace IronPython.Runtime.Operations {
             foreach (PythonType dt in types) {
                 if (dt.UnderlyingSystemType == typeof(ValueType)) continue; // hide value type
 
-                if(dt.OldClass != null) {
-                    res.Add(dt.OldClass);
-                } else {
-                    res.Add(dt);
-                }
+                res.Add(dt);
             }
 
             return PythonTuple.Make(res);
@@ -129,16 +126,6 @@ namespace IronPython.Runtime.Operations {
                 PythonType cdt = dt.ResolutionOrder[i];
                 PythonTypeSlot dts;
                 object value;
-                if (cdt.IsOldClass) {
-                    OldClass oc = PythonOps.ToPythonType(cdt) as OldClass;
-
-                    if (oc != null && oc.TryGetBoundCustomMember(context, "__init__", out value)) {
-                        return oc.GetOldStyleDescriptor(context, value, newObject, oc);
-                    }
-                    // fall through to new-style only case.  We might accidently
-                    // detect old-style if the user imports a IronPython.NewTypes
-                    // type.
-                }
 
                 if (cdt.TryLookupSlot(context, "__init__", out dts) &&
                     dts.TryGetValue(context, newObject, dt, out value)) {
@@ -158,7 +145,7 @@ namespace IronPython.Runtime.Operations {
                 Debug.Assert(iwr != null);
 
                 InstanceFinalizer nif = new InstanceFinalizer(context, newObject);
-                iwr.SetFinalizer(new WeakRefTracker(nif, nif));
+                iwr.SetFinalizer(new WeakRefTracker(iwr, nif, nif));
             }
         }
 
@@ -202,17 +189,14 @@ namespace IronPython.Runtime.Operations {
 
         // note: returns "instance" rather than type name if o is an OldInstance
         internal static string GetName(object o) {
+            // Resolve Namespace-Tracker name, which would end in `namespace#` if 
+            // it is not handled indivdualy
+            if (o is NamespaceTracker)
+            {
+                return ((NamespaceTracker)o).Name;
+            }
+
             return DynamicHelpers.GetPythonType(o).Name;
-        }
-
-        // a version of GetName that also works on old-style classes
-        internal static string GetOldName(object o) {
-            return o is OldInstance ? GetOldName((OldInstance)o) : GetName(o);
-        }
-
-        // a version of GetName that also works on old-style classes
-        internal static string GetOldName(OldInstance instance) {
-            return instance._class.Name;
         }
 
         internal static PythonType[] ObjectTypes(object[] args) {
@@ -720,9 +704,9 @@ namespace IronPython.Runtime.Operations {
 
         internal static string GetDocumentation(Type type) {
             // Python documentation
-            object[] docAttr = type.GetCustomAttributes(typeof(DocumentationAttribute), false);
-            if (docAttr != null && docAttr.Length > 0) {
-                return ((DocumentationAttribute)docAttr[0]).Documentation;
+            var docAttr = type.GetTypeInfo().GetCustomAttributes(typeof(DocumentationAttribute), false);
+            if (docAttr != null && docAttr.Any()) {
+                return ((DocumentationAttribute)docAttr.First()).Documentation;
             }
 
             if (type == typeof(DynamicNull)) return null;
@@ -886,8 +870,6 @@ namespace IronPython.Runtime.Operations {
         internal static PythonTuple EnsureBaseType(PythonTuple bases) {
             bool hasInterface = false;
             foreach (object baseClass in bases) {
-                if (baseClass is OldClass) continue;
-
                 PythonType dt = baseClass as PythonType;
 
                 if (!dt.UnderlyingSystemType.IsInterface()) {

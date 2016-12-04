@@ -23,6 +23,7 @@ using System.Numerics;
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Runtime.InteropServices;
@@ -66,6 +67,10 @@ namespace IronPython.Modules {
                 new PythonSubprocessHandle(hReadPipe),
                 new PythonSubprocessHandle(hWritePipe)
             );
+        }
+
+        private static string FormatError(int errorCode) {
+            return new Win32Exception(errorCode).Message;
         }
 
         public static PythonTuple CreateProcess(
@@ -133,7 +138,7 @@ namespace IronPython.Modules {
 
             if (!result) {
                 int error = Marshal.GetLastWin32Error();
-                throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, error, CTypes.FormatError(error));
+                throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, error, FormatError(error));
             }
 
             IntPtr hp = lpProcessInformation.hProcess;

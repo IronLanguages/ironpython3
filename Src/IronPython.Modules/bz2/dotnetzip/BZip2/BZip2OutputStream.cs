@@ -204,29 +204,21 @@ namespace Ionic.BZip2
             EmitHeader();
         }
 
-
-
-
-        /// <summary>
-        ///   Close the stream.
-        /// </summary>
-        /// <remarks>
-        ///   <para>
-        ///     This may or may not close the underlying stream.  Check the
-        ///     constructors that accept a bool value.
-        ///   </para>
-        /// </remarks>
-        public override void Close()
+        protected override void Dispose(bool disposing)
         {
-            if (output != null)
+            if (disposing)
             {
-                Stream o = this.output;
-                Finish();
-                if (!leaveOpen)
-                    o.Close();
+                Stream output = this.output;
+                if (output != null)
+                {
+                    Finish(); // sets output to null
+                    if (!leaveOpen)
+                        output.Dispose();
+                }
             }
-        }
 
+            base.Dispose(disposing);
+        }
 
         /// <summary>
         ///   Flush the stream.

@@ -41,7 +41,7 @@ common approach.
             }
             IComparer comparer = PythonContext.GetContext(context).GetComparer(null, GetComparisonType(list));
             while (lo < hi) {
-                mid = (lo + hi) / 2;
+                mid = (int)(((long)lo + hi) / 2);
                 litem = list[mid];
                 if (comparer.Compare(litem, item) < 0)
                     lo = mid + 1;
@@ -64,7 +64,7 @@ common approach.
             }
             IComparer comparer = PythonContext.GetContext(context).GetComparer(null, GetComparisonType(context, list));
             while (lo < hi) {
-                mid = (lo + hi) / 2;
+                mid = (int)(((long)lo + hi) / 2);
                 litem = PythonOps.GetIndex(context, list, mid);
                 if (comparer.Compare(litem, item) < 0)
                     lo = mid + 1;
@@ -87,7 +87,7 @@ common approach.
             }
             IComparer comparer = PythonContext.GetContext(context).GetComparer(null, GetComparisonType(list));
             while (lo < hi) {
-                mid = (lo + hi) / 2;
+                mid = (int)(((long)lo + hi) / 2);
                 litem = list[mid];
                 if (comparer.Compare(item, litem) < 0)
                     hi = mid;
@@ -111,7 +111,7 @@ common approach.
 
             IComparer comparer = PythonContext.GetContext(context).GetComparer(null, GetComparisonType(context, list));
             while (lo < hi) {
-                mid = (lo + hi) / 2;
+                mid = (int)(((long)lo + hi) / 2);
                 litem = PythonOps.GetIndex(context, list, mid);
                 if (comparer.Compare(item, litem) < 0)
                     hi = mid;
@@ -154,11 +154,12 @@ beyond the rightmost x already there
 Optional args lo (default 0) and hi (default len(a)) bound the
 slice of a to be searched.
 ")]
-        public static object bisect_right(CodeContext/*!*/ context, List a, object x, [DefaultParameterValue(0)] int lo, [DefaultParameterValue(-1)] int hi) {
-            return InternalBisectRight(context, a, x, lo, hi);
-        }
-
         public static object bisect_right(CodeContext/*!*/ context, object a, object x, [DefaultParameterValue(0)] int lo, [DefaultParameterValue(-1)] int hi) {
+            List l = a as List;
+            if (l != null && l.GetType() == typeof(List)) {
+                return InternalBisectRight(context, l, x, lo, hi);
+            }
+
             return InternalBisectRight(context, a, x, lo, hi);
         }
 
@@ -171,11 +172,13 @@ If x is already in a, insert it to the right of the rightmost x.
 Optional args lo (default 0) and hi (default len(a)) bound the
 slice of a to be searched.
 ")]
-        public static void insort_right(CodeContext/*!*/ context, List a, object x, [DefaultParameterValue(0)] int lo, [DefaultParameterValue(-1)] int hi) {
-            a.Insert(InternalBisectRight(context, a, x, lo, hi), x);
-        }
-
         public static void insort_right(CodeContext/*!*/ context, object a, object x, [DefaultParameterValue(0)] int lo, [DefaultParameterValue(-1)] int hi) {
+            List l = a as List;
+            if (l != null && l.GetType() == typeof(List)) {
+                l.Insert(InternalBisectRight(context, l, x, lo, hi), x);
+                return;
+            }
+
             PythonOps.Invoke(context, a, "insert", InternalBisectRight(context, a, x, lo, hi), x);
         }
 
@@ -190,11 +193,12 @@ before the leftmost x already there.
 Optional args lo (default 0) and hi (default len(a)) bound the
 slice of a to be searched.
 ")]
-        public static object bisect_left(CodeContext/*!*/ context, List a, object x, [DefaultParameterValue(0)] int lo, [DefaultParameterValue(-1)] int hi) {
-            return InternalBisectLeft(context, a, x, lo, hi);
-        }
-
         public static object bisect_left(CodeContext/*!*/ context, object a, object x, [DefaultParameterValue(0)] int lo, [DefaultParameterValue(-1)] int hi) {
+            List l = a as List;
+            if (l != null && l.GetType() == typeof(List)) {
+                return InternalBisectLeft(context, l, x, lo, hi);
+            }
+
             return InternalBisectLeft(context, a, x, lo, hi);
         }
 
@@ -207,27 +211,19 @@ If x is already in a, insert it to the left of the leftmost x.
 Optional args lo (default 0) and hi (default len(a)) bound the
 slice of a to be searched.
 ")]
-        public static void insort_left(CodeContext/*!*/ context, List a, object x, [DefaultParameterValue(0)] int lo, [DefaultParameterValue(-1)] int hi) {
-            a.Insert(InternalBisectLeft(context, a, x, lo, hi), x);
-        }
-
         public static void insort_left(CodeContext/*!*/ context, object a, object x, [DefaultParameterValue(0)] int lo, [DefaultParameterValue(-1)] int hi) {
-            PythonOps.Invoke(context, a, "insert", InternalBisectLeft(context, a, x, lo, hi), x);
-        }
+            List l = a as List;
+            if (l != null && l.GetType() == typeof(List)) {
+                l.Insert(InternalBisectLeft(context, l, x, lo, hi), x);
+                return;
+            }
 
-        [Documentation("Alias for bisect_right().")]
-        public static object bisect(CodeContext/*!*/ context, List a, object x, [DefaultParameterValue(0)] int lo, [DefaultParameterValue(-1)] int hi) {
-            return bisect_right(context, a, x, lo, hi);
+            PythonOps.Invoke(context, a, "insert", InternalBisectLeft(context, a, x, lo, hi), x);
         }
 
         [Documentation("Alias for bisect_right().")]
         public static object bisect(CodeContext/*!*/ context, object a, object x, [DefaultParameterValue(0)] int lo, [DefaultParameterValue(-1)] int hi) {
             return bisect_right(context, a, x, lo, hi);
-        }
-
-        [Documentation("Alias for insort_right().")]
-        public static void insort(CodeContext/*!*/ context, List a, object x, [DefaultParameterValue(0)] int lo, [DefaultParameterValue(-1)] int hi) {
-            insort_right(context, a, x, lo, hi);
         }
 
         [Documentation("Alias for insort_right().")]

@@ -661,7 +661,7 @@ namespace IronPython.Runtime {
         public MSAst.Expression CreateExpression() {
             Ast[] items = new Ast[Count];
             for (int i = 0; i < items.Length; i++) {
-                items[i] = Utils.Constant(this[i]);
+                items[i] = Expression.Convert(Utils.Constant(this[i]), typeof(object));
             }
 
             return Ast.Call(

@@ -64,7 +64,6 @@ namespace IronPython.Runtime.Types {
             }
 
             if (IsSystemType ||                          // limited numbers of these, just generate optimal code
-                IsMixedNewStyleOldStyle() ||             // old-style classes shouldn't be commonly used
                 args.Length > 5 ||                       // and we only generate optimal code for a small number of calls.
                 HasSystemCtor ||                         // __clrtype__ overridden and ctor doesn't take PythonType as 1st arg
                 GetType() != typeof(PythonType) ||       // and we don't handle meta classes yet (they could override __call__)...
@@ -636,21 +635,7 @@ namespace IronPython.Runtime.Types {
                 PythonTypeSlot init;
                 instType.TryResolveSlot(context, "__init__", out init);
 
-                if (instType.IsMixedNewStyleOldStyle()) {
-                    // mixed new-style/old-style class, we need to look up __init__ every time
-                    res = MakeDynamicInitInvoke(
-                        context,
-                        args,
-                        Expression.Call(
-                            typeof(PythonOps).GetMethod("GetMixedMember"),
-                            codeContext.Expression,
-                            Expression.Convert(AstUtils.WeakConstant(instType), typeof(PythonType)),
-                            AstUtils.Convert(target.Expression, typeof(object)),
-                            AstUtils.Constant("__init__")
-                        ),
-                        codeContext.Expression
-                    );
-                } else if (init is PythonFunction) {
+                if (init is PythonFunction) {
                     // avoid creating the bound method, just invoke it directly
                     Expression[] allArgs = new Expression[args.Length + 3];
                     allArgs[0] = codeContext.Expression;
@@ -758,8 +743,7 @@ namespace IronPython.Runtime.Types {
                 PythonTypeSlot delSlot;
                 PythonFunction initFunc = null;
                 string callTarget = null;
-                if (!instType.TryResolveSlot(context, "__del__", out delSlot)        // we don't have fast code for classes w/ finalizers
-                    && !instType.IsMixedNewStyleOldStyle()) {                               // we also don't have fast code for mixed new-style/old-style classes
+                if (!instType.TryResolveSlot(context, "__del__", out delSlot)) {       // we don't have fast code for classes w/ finalizers) 
 
                     if (IronPython.Modules.Builtin.isinstance(inst, _newType) &&
                         NeedsInitCall((CodeContext)context, instType, args.Length)) {
@@ -1026,7 +1010,7 @@ namespace IronPython.Runtime.Types {
 
 
         private bool NeedsInitCall(CodeContext context, PythonType type, int argCount) {
-            if (!type.HasObjectInit(context) || type.IsMixedNewStyleOldStyle()) {
+            if (!type.HasObjectInit(context)) {
                 return true;
             } else if (_newType.HasObjectNew(context)) {
                 return argCount > 0;

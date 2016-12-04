@@ -54,7 +54,7 @@ namespace IronPython.Modules {
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
-            context.EnsureModuleException(
+            PythonType t = context.EnsureModuleException(
                 _blockingIOErrorKey,
                 PythonExceptions.IOError,
                 typeof(BlockingIOError),
@@ -63,6 +63,9 @@ namespace IronPython.Modules {
                 "builtins",
                 msg => new _BlockingIOErrorException(msg)
             );
+            // this makes repr work correctly (gh878)
+            t.IsSystemType = true;
+
             context.EnsureModuleException(
                 _unsupportedOperationKey,
                 new PythonType[] { PythonExceptions.ValueError, PythonExceptions.IOError },

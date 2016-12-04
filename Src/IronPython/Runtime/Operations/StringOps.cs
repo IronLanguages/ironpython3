@@ -199,9 +199,10 @@ namespace IronPython.Runtime.Operations {
             if (x == null) {
                 return "None";
             }
-            if (x is string) {
-                // check ascii
-                return CheckAsciiString(context, (string)x);
+
+            string xstr = (x as string);
+            if (xstr != null) {
+                return xstr;
             }
 
             // we don't invoke PythonOps.StringRepr here because we want to return the 
@@ -258,16 +259,6 @@ namespace IronPython.Runtime.Operations {
             }
 
             object res;
-            OldInstance oi = value as OldInstance;
-            if (oi != null &&
-                (oi.TryGetBoundCustomMember(context, "__unicode__", out res) || oi.TryGetBoundCustomMember(context, "__str__", out res))) {
-                res = context.LanguageContext.Call(context, res);
-                if (res is string || res is Extensible<string>) {
-                    return res;
-                }
-                throw PythonOps.TypeError("coercing to Unicode: expected string, got {0}", PythonTypeOps.GetName(value));
-            }
-
 
             if (PythonTypeOps.TryInvokeUnaryOperator(context, value, "__unicode__", out res) ||
                 PythonTypeOps.TryInvokeUnaryOperator(context, value, "__str__", out res)) {
@@ -278,20 +269,6 @@ namespace IronPython.Runtime.Operations {
             }
 
             return FastNewUnicode(context, value, context.LanguageContext.DefaultEncoding.WebName, "strict");
-        }
-
-        private static object CheckAsciiString(CodeContext context, string s) {
-            for (int i = 0; i < s.Length; i++) {
-                if (s[i] > '\x80')
-                    return StringOps.__new__(
-                        context,
-                        (PythonType)DynamicHelpers.GetPythonTypeFromType(typeof(String)),
-                        s,
-                        null,
-                        "strict"
-                        );
-            }
-            return s;
         }
 
         #region Python Constructors
@@ -317,7 +294,7 @@ namespace IronPython.Runtime.Operations {
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull]string @object) {
             if (cls == TypeCache.String) {
-                return CheckAsciiString(context, @object);
+                return @object;
             } else {
                 return cls.CreateInstance(context, @object);
             }
@@ -335,7 +312,7 @@ namespace IronPython.Runtime.Operations {
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, PythonType cls, char @object) {
             if (cls == TypeCache.String) {
-                return CheckAsciiString(context, ScriptingRuntimeHelpers.CharToString(@object));
+                return ScriptingRuntimeHelpers.CharToString(@object);
             } else {
                 return cls.CreateInstance(context, __new__(context, TypeCache.String, @object));
             }
@@ -498,7 +475,7 @@ namespace IronPython.Runtime.Operations {
         /// </summary>
         public static string capitalize(this string self) {
             if (self.Length == 0) return self;
-            return Char.ToUpper(self[0], CultureInfo.InvariantCulture) + self.Substring(1).ToLower(CultureInfo.InvariantCulture);
+            return Char.ToUpperInvariant(self[0]) + self.Substring(1).ToLowerInvariant();
         }
 
         //  default fillchar (padding char) is a space
@@ -790,7 +767,7 @@ namespace IronPython.Runtime.Operations {
             string v = self;
             bool prevCharCased = false, currCharCased = false, containsUpper = false;
             for (int i = 0; i < v.Length; i++) {
-                if (Char.IsUpper(v, i) || Char.GetUnicodeCategory(v, i) == UnicodeCategory.TitlecaseLetter) {
+                if (Char.IsUpper(v, i) || CharUnicodeInfo.GetUnicodeCategory(v, i) == UnicodeCategory.TitlecaseLetter) {
                     containsUpper = true;
                     if (prevCharCased)
                         return false;
@@ -889,13 +866,13 @@ namespace IronPython.Runtime.Operations {
         private static CultureInfo CasingCultureInfo = new CultureInfo("en");
 
         public static string lower(this string self) {
-            return self.ToLower(CasingCultureInfo);
+            return CasingCultureInfo.TextInfo.ToLower(self);
         }
 
         internal static string ToLowerAsciiTriggered(this string self) {
             for (int i = 0; i < self.Length; i++) {
                 if (self[i] >= 'A' && self[i] <= 'Z') {
-                    return self.ToLower(CultureInfo.InvariantCulture);
+                    return self.ToLowerInvariant();
                 }
             }
             return self;
@@ -1192,8 +1169,8 @@ namespace IronPython.Runtime.Operations {
             StringBuilder ret = new StringBuilder(self);
             for (int i = 0; i < ret.Length; i++) {
                 char ch = ret[i];
-                if (Char.IsUpper(ch)) ret[i] = Char.ToLower(ch, CultureInfo.InvariantCulture);
-                else if (Char.IsLower(ch)) ret[i] = Char.ToUpper(ch, CultureInfo.InvariantCulture);
+                if (Char.IsUpper(ch)) ret[i] = Char.ToLowerInvariant(ch);
+                else if (Char.IsLower(ch)) ret[i] = Char.ToUpperInvariant(ch);
             }
             return ret.ToString();
         }
@@ -1208,9 +1185,9 @@ namespace IronPython.Runtime.Operations {
             do {
                 if (Char.IsUpper(retchars[i]) || Char.IsLower(retchars[i])) {
                     if (!prevCharCased)
-                        retchars[i] = Char.ToUpper(retchars[i], CultureInfo.InvariantCulture);
+                        retchars[i] = Char.ToUpperInvariant(retchars[i]);
                     else
-                        retchars[i] = Char.ToLower(retchars[i], CultureInfo.InvariantCulture);
+                        retchars[i] = Char.ToLowerInvariant(retchars[i]);
                     currCharCased = true;
                 } else {
                     currCharCased = false;
@@ -1286,7 +1263,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static string upper(this string self) {
-            return self.ToUpper(CasingCultureInfo);
+            return CasingCultureInfo.TextInfo.ToUpper(self);
         }
 
         public static string zfill(this string self, int width) {
@@ -1511,22 +1488,19 @@ namespace IronPython.Runtime.Operations {
         #region Internal implementation details
 
         internal static string Quote(string s) {
-
-            bool isUnicode = false;
             StringBuilder b = new StringBuilder(s.Length + 5);
             char quote = '\'';
             if (s.IndexOf('\'') != -1 && s.IndexOf('\"') == -1) {
                 quote = '\"';
             }
             b.Append(quote);
-            b.Append(ReprEncode(s, quote, ref isUnicode));
+            b.Append(ReprEncode(s, quote));
             b.Append(quote);
-            if (isUnicode) return "u" + b.ToString();
             return b.ToString();
         }
 
-        internal static string ReprEncode(string s, ref bool isUnicode) {
-            return ReprEncode(s, (char)0, ref isUnicode);
+        internal static string ReprEncode(string s) {
+            return ReprEncode(s, (char)0);
         }
 
         internal static bool TryGetEncoding(string name, out Encoding encoding) {
@@ -1631,14 +1605,13 @@ namespace IronPython.Runtime.Operations {
             return new string(rchars);
         }
 
-        internal static string ReprEncode(string s, char quote, ref bool isUnicode) {
+        internal static string ReprEncode(string s, char quote) {
             // in the common case we don't need to encode anything, so we
             // lazily create the StringBuilder only if necessary.
             StringBuilder b = null;
             for (int i = 0; i < s.Length; i++) {
                 char ch = s[i];
 
-                if (ch >= LowestUnicodeValue) isUnicode = true;
                 switch (ch) {
                     case '\\': ReprInit(ref b, s, i); b.Append("\\\\"); break;
                     case '\t': ReprInit(ref b, s, i); b.Append("\\t"); break;
@@ -1648,12 +1621,9 @@ namespace IronPython.Runtime.Operations {
                         if (quote != 0 && ch == quote) {
                             ReprInit(ref b, s, i);
                             b.Append('\\'); b.Append(ch);
-                        } else if (ch < ' ' || (ch >= 0x7f && ch <= 0xff)) {
+                        } else if (ch < ' ') {
                             ReprInit(ref b, s, i);
                             b.AppendFormat("\\x{0:x2}", (int)ch);
-                        } else if (ch > 0xff) {
-                            ReprInit(ref b, s, i);
-                            b.AppendFormat("\\u{0:x4}", (int)ch);
                         } else if (b != null) {
                             b.Append(ch);
                         }
@@ -1682,6 +1652,7 @@ namespace IronPython.Runtime.Operations {
             // if we have a valid code page try and get a reasonable name.  The
             // web names / mail displays match tend to CPython's terse names
             if (encoding.CodePage != 0) {
+#if !NETSTANDARD
                 if (encoding.IsBrowserDisplay) {
                     name = encoding.WebName;
                 }
@@ -1689,6 +1660,7 @@ namespace IronPython.Runtime.Operations {
                 if (name == null && encoding.IsMailNewsDisplay) {
                     name = encoding.HeaderName;
                 }
+#endif
 
                 // otherwise use a code page number which also matches CPython               
                 if (name == null) {
@@ -1712,7 +1684,7 @@ namespace IronPython.Runtime.Operations {
             if (name == null) {
                 return null;
             }
-            return name.ToLower(CultureInfo.InvariantCulture).Replace('-', '_').Replace(' ', '_');
+            return name.ToLowerInvariant().Replace('-', '_').Replace(' ', '_');
         }
 
         private static string RawDecode(CodeContext/*!*/ context, string s, object encodingType, string errors) {
@@ -1755,6 +1727,30 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.LookupError("unknown encoding: {0}", encoding);
         }
 
+#if FEATURE_ENCODING
+        internal static void SetDecoderFallback(Encoding e, DecoderFallback decoderFallback) {
+#if NETSTANDARD
+            typeof(Encoding).GetField("decoderFallback", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(e, decoderFallback);
+            Debug.Assert(e.DecoderFallback == decoderFallback);
+#else
+            e.DecoderFallback = decoderFallback;
+#endif
+        }
+
+        internal static void SetEncoderFallback(Encoding e, EncoderFallback encoderFallback) {
+#if NETSTANDARD
+            typeof(Encoding).GetField("encoderFallback", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(e, encoderFallback);
+            Debug.Assert(e.EncoderFallback == encoderFallback);
+#else
+            e.EncoderFallback = encoderFallback;
+#endif
+        }
+#endif
+
+#if FEATURE_ENCODING
+        private static DecoderFallback ReplacementFallback = new DecoderReplacementFallback("\ufffd");
+#endif
+
         internal static string DoDecode(CodeContext context, string s, string errors, string encoding, Encoding e) {
 #if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
@@ -1764,23 +1760,29 @@ namespace IronPython.Runtime.Operations {
             switch (errors) {
                 case "backslashreplace":
                 case "xmlcharrefreplace":
-                case "strict": e.DecoderFallback = DecoderFallback.ExceptionFallback; break;
-                case "replace": e.DecoderFallback = DecoderFallback.ReplacementFallback; break;
-                case "ignore":
-                    e.DecoderFallback = new PythonDecoderFallback(encoding,
-                        s,
-                        null);
-                    break;
+                case "strict": SetDecoderFallback(e, DecoderFallback.ExceptionFallback); break;
+                case "replace": SetDecoderFallback(e, ReplacementFallback); break;
+                case "ignore":  SetDecoderFallback(e, new PythonDecoderFallback(encoding, s, null)); break;
                 default:
-                    e.DecoderFallback = new PythonDecoderFallback(encoding,
-                        s,
-                        LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors)));
+                    SetDecoderFallback(e, new PythonDecoderFallback(encoding, s, LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors))));
                     break;
             }
 #endif
 
             byte[] bytes = s.MakeByteArray();
             int start = GetStartingOffset(e, bytes);
+
+#if FEATURE_ENCODING && NETSTANDARD
+            try
+            {
+                return e.GetString(bytes, start, bytes.Length - start);
+            }
+            catch (NullReferenceException)
+            {
+                // bug in netstandard1.6, instead of failing try with a DecoderReplacementFallback
+                SetDecoderFallback(e, ReplacementFallback);
+            }
+#endif
 
             return e.GetString(bytes, start, bytes.Length - start);
         }
@@ -1826,8 +1828,7 @@ namespace IronPython.Runtime.Operations {
                 if ("raw_unicode_escape" == normalizedName) {
                     return RawUnicodeEscapeEncode(s);
                 } else if ("unicode_escape" == normalizedName || "string_escape" == normalizedName) {
-                    bool dummy = false;
-                    return ReprEncode(s, '\'', ref dummy);
+                    return ReprEncode(s, '\'');
                 }
             }
 
@@ -1851,22 +1852,15 @@ namespace IronPython.Runtime.Operations {
             e = (Encoding)e.Clone();
 
             switch (errors) {
-                case "strict": e.EncoderFallback = EncoderFallback.ExceptionFallback; break;
-                case "replace": e.EncoderFallback = EncoderFallback.ReplacementFallback; break;
-                case "backslashreplace": e.EncoderFallback = new BackslashEncoderReplaceFallback(); break;
-                case "xmlcharrefreplace": e.EncoderFallback = new XmlCharRefEncoderReplaceFallback(); break;
-                case "ignore":
-                    e.EncoderFallback = new PythonEncoderFallback(encoding,
-                        s,
-                        null);
-                    break;
+                case "strict": SetEncoderFallback(e, EncoderFallback.ExceptionFallback); break;
+                case "replace": SetEncoderFallback(e, EncoderFallback.ReplacementFallback); break;
+                case "backslashreplace": SetEncoderFallback(e, new BackslashEncoderReplaceFallback()); break;
+                case "xmlcharrefreplace": SetEncoderFallback(e, new XmlCharRefEncoderReplaceFallback()); break;
+                case "ignore": SetEncoderFallback(e, new PythonEncoderFallback(encoding, s, null)); break;
                 default:
-                    e.EncoderFallback = new PythonEncoderFallback(encoding,
-                        s,
-                        LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors)));
+                    SetEncoderFallback(e, new PythonEncoderFallback(encoding, s, LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors))));
                     break;
             }
-
 #endif
             return PythonOps.MakeString(e.GetPreamble(), e.GetBytes(s));
         }
@@ -1889,44 +1883,64 @@ namespace IronPython.Runtime.Operations {
         static class CodecsInfo {
             public static readonly Dictionary<string, EncodingInfoWrapper> Codecs = MakeCodecsDict();
 
+#if NETSTANDARD
+            private static IEnumerable<EncodingInfo> GetEncodings() {
+                yield return new EncodingInfo(1200, "utf-16", "Unicode");
+                yield return new EncodingInfo(1201, "unicodeFFFE", "Unicode (Big endian)");
+                yield return new EncodingInfo(1252, "windows-1252", "Western European (Windows)");
+                yield return new EncodingInfo(20127, "us-ascii", "US-ASCII");
+                yield return new EncodingInfo(28591, "iso-8859-1", "Western European (ISO)");
+                yield return new EncodingInfo(28605, "iso-8859-15", "Latin 9 (ISO)");
+                yield return new EncodingInfo(65000, "utf-7", "Unicode (UTF-7)");
+                yield return new EncodingInfo(65001, "utf-8", "Unicode (UTF-8)");
+            }
+#endif
+
             private static Dictionary<string, EncodingInfoWrapper> MakeCodecsDict() {
                 Dictionary<string, EncodingInfoWrapper> d = new Dictionary<string, EncodingInfoWrapper>();
+#if NETSTANDARD
+                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                IEnumerable<EncodingInfo> encs = GetEncodings();
+#else
                 EncodingInfo[] encs = Encoding.GetEncodings();
-                for (int i = 0; i < encs.Length; i++) {
-                    string normalizedName = NormalizeEncodingName(encs[i].Name);
+#endif
+                foreach (EncodingInfo enc in encs) {
+                    string normalizedName = NormalizeEncodingName(enc.Name);
 
                     // setup well-known mappings, for everything
                     // else we'll store as lower case w/ _                
                     switch (normalizedName) {
                         case "us_ascii":
-                            d["cp" + encs[i].CodePage.ToString()] = d[normalizedName] = d["us"] = d["ascii"] = d["646"] = d["us_ascii"] = new AsciiEncodingInfoWrapper();
+                            d["cp" + enc.CodePage.ToString()] = d[normalizedName] = d["us"] = d["ascii"] = d["646"] = d["us_ascii"] = new AsciiEncodingInfoWrapper();
                             continue;
                         case "iso_8859_1":
-                            d["8859"] = d["latin_1"] = d["latin1"] = d["iso 8859_1"] = d["iso8859_1"] = d["cp819"] = d["819"] = d["latin"] = d["latin1"] = d["l1"] = encs[i];
+                            d["8859"] = d["latin_1"] = d["latin1"] = d["iso 8859_1"] = d["iso8859_1"] = d["cp819"] = d["819"] = d["latin"] = d["l1"] = enc;
                             break;
                         case "utf_7":
-                            d["u7"] = d["unicode-1-1-utf-7"] = encs[i];
+                            d["u7"] = d["unicode-1-1-utf-7"] = enc;
                             break;
                         case "utf_8":
-                            d["utf_8_sig"] = encs[i];
-                            d["utf_8"] = d["utf8"] = d["u8"] = new EncodingInfoWrapper(encs[i], new byte[0]);
+                            d["utf_8_sig"] = enc;
+                            d["cp" + enc.CodePage.ToString()] = d["utf_8"] = d["utf8"] = d["u8"] = new EncodingInfoWrapper(enc, new byte[0]);
                             continue;
                         case "utf_16":
-                            d["utf_16_le"] = d["utf_16le"] = new EncodingInfoWrapper(encs[i], new byte[0]);
-                            d["utf16"] = new EncodingInfoWrapper(encs[i], encs[i].GetEncoding().GetPreamble());
+                            d["utf_16_le"] = d["utf_16le"] = new EncodingInfoWrapper(enc, new byte[0]);
+                            d["utf16"] = new EncodingInfoWrapper(enc, enc.GetEncoding().GetPreamble());
                             break;
                         case "unicodefffe": // big endian unicode                    
                             // strip off the pre-amble, CPython doesn't include it.
-                            d["utf_16_be"] = d["utf_16be"] = new EncodingInfoWrapper(encs[i], new byte[0]);
+                            d["utf_16_be"] = d["utf_16be"] = new EncodingInfoWrapper(enc, new byte[0]);
                             break;
                     }
 
                     // publish under normalized name (all lower cases, -s replaced with _s)
-                    d[normalizedName] = encs[i];
-                    // publish under Windows code page as well...                
-                    d["windows-" + encs[i].GetEncoding().WindowsCodePage.ToString()] = encs[i];
+                    d[normalizedName] = enc;
+                    // publish under Windows code page as well...
+#if !NETSTANDARD
+                    d["windows-" + enc.GetEncoding().WindowsCodePage.ToString()] = enc;
+#endif
                     // publish under code page number as well...
-                    d["cp" + encs[i].CodePage.ToString()] = d[encs[i].CodePage.ToString()] = encs[i];
+                    d["cp" + enc.CodePage.ToString()] = d[enc.CodePage.ToString()] = enc;
                 }
 
                 d["raw_unicode_escape"] = new EncodingInfoWrapper(new UnicodeEscapeEncoding(true));
@@ -1936,7 +1950,7 @@ namespace IronPython.Runtime.Operations {
 #if DEBUG
                 // all codecs should be stored in lowercase because we only look up from lowercase strings
                 foreach (KeyValuePair<string, EncodingInfoWrapper> kvp in d) {
-                    Debug.Assert(kvp.Key.ToLower(CultureInfo.InvariantCulture) == kvp.Key);
+                    Debug.Assert(kvp.Key.ToLowerInvariant() == kvp.Key);
                 }
 #endif
                 return d;
@@ -1998,13 +2012,13 @@ namespace IronPython.Runtime.Operations {
 
             private void SetEncoderFallback() {
 #if FEATURE_ENCODING
-                _encoding.EncoderFallback = EncoderFallback;
+                StringOps.SetEncoderFallback(_encoding, EncoderFallback);
 #endif
             }
 
             private void SetDecoderFallback() {
 #if FEATURE_ENCODING
-                _encoding.DecoderFallback = DecoderFallback;
+                StringOps.SetDecoderFallback(_encoding, DecoderFallback);
 #endif
             }
 
@@ -2659,8 +2673,7 @@ namespace IronPython.Runtime.Operations {
                     return RawUnicodeEscapeEncode(new string(chars, index, count));
                 }
 
-                bool dummy = false;
-                return ReprEncode(new string(chars, index, count), ref dummy);
+                return ReprEncode(new string(chars, index, count));
             }
 
             public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex) {

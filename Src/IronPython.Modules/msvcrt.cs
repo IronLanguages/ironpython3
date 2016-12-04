@@ -13,12 +13,14 @@
  *
  * ***********************************************************************/
 
-#if FEATURE_NATIVE
+#if FEATURE_NATIVE || NETSTANDARD
 
 using System;
 using System.ComponentModel;
 using System.IO;
+using System.IO.Pipes;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 using Microsoft.Scripting.Runtime;
 
@@ -31,7 +33,7 @@ using System.Numerics;
 using Microsoft.Scripting.Math;
 #endif
 
-[assembly: PythonModule("msvcrt", typeof(IronPython.Modules.PythonMsvcrt))]
+[assembly: PythonModule("msvcrt", typeof(IronPython.Modules.PythonMsvcrt), PlatformID.MacOSX, PlatformID.Unix)]
 namespace IronPython.Modules {
     [PythonType("msvcrt")]
     public class PythonMsvcrt {
@@ -59,9 +61,7 @@ to os.fdopen() to create a file object.
 ")]
 
         public static int open_osfhandle(CodeContext context, BigInteger os_handle, int arg1) {
-#pragma warning disable 618 // System.IO.FileStream.FileStream(System.IntPtr, System.IO.FileAccess, bool) is obsolete
-            FileStream stream = new FileStream(new IntPtr((long)os_handle), FileAccess.ReadWrite, true);
-#pragma warning restore 618
+            FileStream stream = new FileStream(new SafeFileHandle(new IntPtr((long)os_handle), true), FileAccess.ReadWrite);
             return context.LanguageContext.FileManager.AddToStrongMapping(stream);
         }
 
@@ -72,12 +72,9 @@ if fd is not recognized.")]
         public static object get_osfhandle(CodeContext context, int fd) {
             PythonFile pfile = context.LanguageContext.FileManager.GetFileFromId(context.LanguageContext, fd);
 
-            FileStream stream = pfile._stream as FileStream;
-            if (stream != null) {
-#pragma warning disable 618 // System.IO.FileStream.Handle is obsolete
-                return stream.Handle.ToPython();
-#pragma warning restore 618
-            }
+            object handle;
+            if (pfile.TryGetFileHandle(out handle)) return handle;
+
             return -1;
         }
 

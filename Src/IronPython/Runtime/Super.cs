@@ -149,20 +149,10 @@ namespace IronPython.Runtime {
         private bool TryLookupInBase(CodeContext context, PythonType pt, string name, object self, out object value) {
             PythonTypeSlot dts;
 
-            if (pt.OldClass == null) {
-                // new-style class, or reflected type, lookup slot
-                if (pt.TryLookupSlot(context, name, out dts) && 
-                    dts.TryGetValue(context, self, DescriptorContext, out value)) {
-                    return true;
-                }
-            } else {
-                // old-style class, lookup attribute                
-                OldClass dt = pt.OldClass;
-
-                if (PythonOps.TryGetBoundAttr(context, dt, name, out value)) {
-                    value = OldClass.GetOldStyleDescriptor(context, value, self, DescriptorContext);
-                    return true;
-                }
+            // new-style class, or reflected type, lookup slot
+            if (pt.TryLookupSlot(context, name, out dts) && 
+                dts.TryGetValue(context, self, DescriptorContext, out value)) {
+                return true;
             }
             value = null;
             return false;
@@ -176,10 +166,7 @@ namespace IronPython.Runtime {
                     return _thisClass;
                 }
 
-                PythonType dt = _selfClass as PythonType;
-                if (dt != null) return dt;
-
-                return ((OldClass)_selfClass).TypeObject;
+                return _selfClass as PythonType;
             }
         }
 

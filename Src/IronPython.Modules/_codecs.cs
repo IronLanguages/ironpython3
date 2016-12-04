@@ -116,7 +116,7 @@ namespace IronPython.Modules {
             return PythonTuple.MakeTuple(res.ToString(), res.Length);
         }
 
-        public static object charbuffer_encode() {
+        public static object charbuffer_encode(string input) {
             throw PythonOps.NotImplementedError("charbuffer_encode");
         }
 
@@ -336,7 +336,7 @@ namespace IronPython.Modules {
         public static PythonTuple mbcs_decode(CodeContext/*!*/ context, string input, [DefaultParameterValue("strict")]string errors, [DefaultParameterValue(false)]bool ignored) {
             // CPython ignores the errors parameter
             return PythonTuple.MakeTuple(
-                StringOps.decode(context, input, Encoding.Default, "replace"),
+                StringOps.decode(context, input, Encoding.GetEncoding(0), "replace"),
                 Builtin.len(input)
             );
         }
@@ -344,7 +344,7 @@ namespace IronPython.Modules {
         public static PythonTuple mbcs_encode(CodeContext/*!*/ context, string input, [DefaultParameterValue("strict")]string errors) {
             // CPython ignores the errors parameter
             return PythonTuple.MakeTuple(
-                StringOps.encode(context, input, Encoding.Default, "replace"),
+                StringOps.encode(context, input, Encoding.GetEncoding(0), "replace"),
                 Builtin.len(input)
             );
         }
@@ -366,7 +366,7 @@ namespace IronPython.Modules {
             );
         }
 
-        public static object readbuffer_encode() {
+        public static object readbuffer_encode(string input) {
             throw PythonOps.NotImplementedError("readbuffer_encode");
         }
 
@@ -380,11 +380,11 @@ namespace IronPython.Modules {
 
         #region Unicode Escape Encoding
 
-        public static PythonTuple unicode_escape_decode() {
+        public static PythonTuple unicode_escape_decode(string input) {
             throw PythonOps.NotImplementedError("unicode_escape_decode");
         }
 
-        public static PythonTuple unicode_escape_encode() {
+        public static PythonTuple unicode_escape_encode(string input) {
             throw PythonOps.NotImplementedError("unicode_escape_encode");
         }
 
@@ -610,6 +610,34 @@ namespace IronPython.Modules {
         }
 
         #endregion
+
+        #region Utf-32 Be Functions
+
+        private static Encoding utf32BeEncoding = null;
+        private static Encoding UTF32BE {
+            get {
+                if (utf32BeEncoding == null) utf32BeEncoding = new UTF32Encoding(true, true);
+                return utf32BeEncoding;
+            }
+        }
+
+        public static PythonTuple utf_32_be_decode(object input) {
+            return utf_32_be_decode(input, "strict", false);
+        }
+
+        public static PythonTuple utf_32_be_decode(object input, string errors, [Optional]bool ignored) {
+            return DoDecode(UTF32BE, input, errors);
+        }
+
+        public static PythonTuple utf_32_be_encode(object input) {
+            return utf_32_be_encode(input, "strict");
+        }
+
+        public static PythonTuple utf_32_be_encode(object input, string errors) {
+            return DoEncode(UTF32BE, input, errors);
+        }
+
+        #endregion
 #endif
 
 
@@ -643,14 +671,14 @@ namespace IronPython.Modules {
             encoding = (Encoding)encoding.Clone();
             ExceptionFallBack fallback = null;
             if (fAlwaysThrow) {
-                encoding.DecoderFallback = DecoderFallback.ExceptionFallback;
+                StringOps.SetDecoderFallback(encoding, DecoderFallback.ExceptionFallback);
             } else {
                 fallback = (encoding is UTF8Encoding && DotNet) ?
                     // This is a workaround for a bug, see ExceptionFallbackBufferUtf8DotNet
                     // for more details.
                     new ExceptionFallBackUtf8DotNet(bytes):
                     new ExceptionFallBack(bytes);
-                encoding.DecoderFallback = fallback;
+                StringOps.SetDecoderFallback(encoding, fallback);
             }
 #endif
             string decoded = encoding.GetString(bytes, 0, bytes.Length);
@@ -709,7 +737,7 @@ namespace IronPython.Modules {
                 encoding = (Encoding)encoding.Clone();
 
 #if FEATURE_ENCODING // EncoderFallback
-                encoding.EncoderFallback = EncoderFallback.ExceptionFallback;
+                StringOps.SetEncoderFallback(encoding, EncoderFallback.ExceptionFallback);
 #endif
 
                 if (includePreamble) {

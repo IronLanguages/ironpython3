@@ -15,15 +15,15 @@
 
 ## BE PLATFORM NETURAL
 
-import nt
+import os
 import sys
-from .assert_util import testpath, is_cli
+from .assert_util import testpath, is_cli, is_posix, is_netstandard
 
 one_arg_params = ("-X:Optimize", "-W", "-c", "-X:MaxRecursion", "-X:AssembliesDir")
 
 def launch(executable, *params):
     l = [ executable ] + list(params)
-    return nt.spawnv(0, executable, l)
+    return os.spawnv(0, executable, l)
 
 def launch_ironpython(pyfile, *args):
     t = (pyfile, )
@@ -79,10 +79,13 @@ def launch_ironpython_changing_extensions(test, add=[], remove=[], additionalScr
     
     print("Starting process: %s" % params)
     
-    return nt.spawnv(0, sys.executable, params)
+    return os.spawnv(0, sys.executable, params)
 
 def run_tool(cmd, args=""):
     import System
+    if is_netstandard:
+        import clr
+        clr.AddReference("System.Diagnostics.Process")
     process = System.Diagnostics.Process()
     process.StartInfo.FileName = cmd
     process.StartInfo.Arguments = args
@@ -124,24 +127,35 @@ def run_unregister_com_component(pathToDll):
 
 def run_csc(args):
     from . import file_util
-    return run_tool(file_util.path_combine(get_clr_dir(),"csc.exe"), args)
+    if is_posix:
+        return run_tool("/usr/bin/mcs", args)
+    else:
+        return run_tool(file_util.path_combine(get_clr_dir(),"csc.exe"), args)
 
 def run_vbc(args):
     from . import file_util
-    return run_tool(file_util.path_combine(get_clr_dir(),"vbc.exe"), args)
+    if is_posix:
+        return run_tool("/usr/bin/vbnc", args)
+    else:
+        return run_tool(file_util.path_combine(get_clr_dir(),"vbc.exe"), args)
 
 def run_ilasm(args):
     from . import file_util
-    return run_tool(file_util.path_combine(get_clr_dir(),"ilasm.exe"), args)
+    if is_posix:
+        return run_tool("/usr/bin/ilasm", args)
+    else:
+        return run_tool(file_util.path_combine(get_clr_dir(),"ilasm.exe"), args)
 
 def number_of_process(arg):
-    return len([x for x in nt.popen('tasklist.exe').readlines() if x.lower().startswith(arg.lower()) ])
+    return len([x for x in os.popen('tasklist.exe').readlines() if x.lower().startswith(arg.lower()) ])
 
 def kill_process(arg):
     return run_tool("taskkill.exe", '/F /IM %s' % arg)
 
 def get_clr_dir():
     import clr
-    from System import Type
-    from System.IO import Path
-    return Path.GetDirectoryName(Type.GetType('System.Int32').Assembly.Location)
+    import System
+    if is_netstandard:
+        clr.AddReference("System.Runtime.Extensions")
+        return System.IO.Path.Combine(System.Environment.GetEnvironmentVariable("windir"), r"Microsoft.NET\Framework\v4.0.30319")
+    return System.IO.Path.GetDirectoryName(System.Type.GetType('System.Int32').Assembly.Location)

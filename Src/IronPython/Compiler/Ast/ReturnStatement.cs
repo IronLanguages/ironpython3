@@ -20,6 +20,7 @@ using MSAst = Microsoft.Scripting.Ast;
 #endif
 
 using System;
+using System.Reflection;
 using Microsoft.Scripting.Utils;
 
 namespace IronPython.Compiler.Ast {

@@ -22,6 +22,7 @@ using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
@@ -37,7 +38,6 @@ namespace IronPython.Modules {
         /// </summary>
         internal static IWeakReferenceable ConvertToWeakReferenceable(PythonContext context, object obj) {
             return context.ConvertToWeakReferenceable(obj);
-
         }
 
         public static int getweakrefcount(CodeContext context, object @object) {
@@ -73,10 +73,11 @@ namespace IronPython.Modules {
             , IValueEquality
 #endif
         {
-            private WeakHandle _target;
+            private readonly CodeContext _context;
+            private readonly WeakHandle _target;
+            private readonly long _targetId;
             private int _hashVal;
             private bool _fHasHash;
-            private CodeContext _context;
 
             #region Python Constructors
             public static object __new__(CodeContext context, PythonType cls, object @object) {
@@ -114,33 +115,29 @@ namespace IronPython.Modules {
             }
 
             public @ref(CodeContext context, object @object, object callback) {
-                this._context = context;
-                WeakRefHelpers.InitializeWeakRef(this._context.GetPythonContext(), this, @object, callback);
-                this._target = new WeakHandle(@object, false);
+                _context = context;
+                WeakRefTracker wrt = WeakRefHelpers.InitializeWeakRef(_context.GetPythonContext(), this, @object, callback);
+
+                _target = new WeakHandle(@object, false);
+                _targetId = wrt.TargetId;
             }
             #endregion
 
             #region Finalizer
             ~@ref() {
-                // remove our self from the chain...
-                try {
-                    if (_target.IsAlive) {
-                        IWeakReferenceable iwr;
-                        if (this._context.GetPythonContext().TryConvertToWeakReferenceable(_target.Target, out iwr)) {
-                            WeakRefTracker wrt = iwr.GetWeakRef();
-                            if (wrt != null) {
-                                // weak reference being finalized before target object,
-                                // we don't want to run the callback when the object is
-                                // finalized.
-                                wrt.RemoveHandler(this);
-                            }
-                        }
-
-                        _target.Free();
+                IWeakReferenceable iwr;
+                if (_context.GetPythonContext().TryConvertToWeakReferenceable(_target.Target, out iwr))
+                {
+                    WeakRefTracker wrt = iwr.GetWeakRef();
+                    if (wrt != null) {
+                        // weak reference being finalized before target object,
+                        // we don't want to run the callback when the object is
+                        // finalized.
+                        wrt.RemoveHandler(this);
                     }
-                } catch (InvalidOperationException) {
-                    // target was freed
                 }
+
+                _target.Free();
             }
             #endregion
 
@@ -174,16 +171,9 @@ namespace IronPython.Modules {
 
             [SpecialName]
             public object Call(CodeContext context) {
-                if (!_target.IsAlive) {
-                    return null;
-                }
-                try {
-                    object res = _target.Target;
-                    GC.KeepAlive(this);
-                    return res;
-                } catch (InvalidOperationException) {
-                    return null;
-                }
+                object res = _target.Target;
+                GC.KeepAlive(this);
+                return res;
             }
 
             [return: MaybeNotImplemented]
@@ -227,20 +217,20 @@ namespace IronPython.Modules {
                 if (!_fHasHash) {
                     object refObj = _target.Target;
                     if (refObj == null) throw PythonOps.TypeError("weak object has gone away");
-                    GC.KeepAlive(this);
                     _hashVal = PythonContext.GetContext(context).EqualityComparerNonGeneric.GetHashCode(refObj);
                     _fHasHash = true;
                 }
+                GC.KeepAlive(this);
                 return _hashVal;
             }
 
             int IStructuralEquatable.GetHashCode(IEqualityComparer comparer) {
                 if (!_fHasHash) {
                     object refObj = _target.Target;
-                    GC.KeepAlive(this);
                     _hashVal = comparer.GetHashCode(refObj);
                     _fHasHash = true;
                 }
+                GC.KeepAlive(this);
                 return _hashVal;
             }
 
@@ -259,10 +249,10 @@ namespace IronPython.Modules {
                     object ourTarget = _target.Target;
                     object itsTarget = wr._target.Target;
 
-                    GC.KeepAlive(this);
-                    GC.KeepAlive(wr);
                     if (ourTarget != null && itsTarget != null) {
                         fResult = RefEquals(ourTarget, itsTarget, comparer);
+                    } else {
+                        fResult = (_targetId == wr._targetId);
                     }
                 }
                 GC.KeepAlive(this);
@@ -343,17 +333,13 @@ namespace IronPython.Modules {
             #region Finalizer
             ~weakproxy() {
                 // remove our self from the chain...
-                try {
-                    IWeakReferenceable iwr;
-                    if (this._context.GetPythonContext().TryConvertToWeakReferenceable(_target.Target, out iwr)) {
-                        WeakRefTracker wrt = iwr.GetWeakRef();
-                        wrt.RemoveHandler(this);
-                    }
-
-                    _target.Free();
-                } catch (InvalidOperationException) {
-                    // target was freed
+                IWeakReferenceable iwr;
+                if (_context.GetPythonContext().TryConvertToWeakReferenceable(_target.Target, out iwr)) {
+                    WeakRefTracker wrt = iwr.GetWeakRef();
+                    wrt.RemoveHandler(this);
                 }
+
+                _target.Free();
             }
             #endregion
 
@@ -370,15 +356,10 @@ namespace IronPython.Modules {
             }
 
             bool TryGetObject(out object result) {
-                try {
-                    result = _target.Target;
-                    if (result == null) return false;
-                    GC.KeepAlive(this);
-                    return true;
-                } catch (InvalidOperationException) {
-                    result = null;
-                    return false;
-                }
+                result = _target.Target;
+                if (result == null) return false;
+                GC.KeepAlive(this);
+                return true;
             }
             #endregion
 
@@ -616,16 +597,13 @@ namespace IronPython.Modules {
 
             ~weakcallableproxy() {
                 // remove our self from the chain...
-                try {
-                    IWeakReferenceable iwr;
-                    if (this._context.GetPythonContext().TryConvertToWeakReferenceable(_target.Target, out iwr)) {
-                        WeakRefTracker wrt = iwr.GetWeakRef();
-                        wrt.RemoveHandler(this);
-                    }
-                    _target.Free();
-                } catch (InvalidOperationException) {
-                    // target was freed
+                IWeakReferenceable iwr;
+                if (_context.GetPythonContext().TryConvertToWeakReferenceable(_target.Target, out iwr))
+                {
+                    WeakRefTracker wrt = iwr.GetWeakRef();
+                    wrt.RemoveHandler(this);
                 }
+                _target.Free();
             }
 
             #endregion
@@ -832,17 +810,17 @@ namespace IronPython.Modules {
         }
 
         static class WeakRefHelpers {
-            public static void InitializeWeakRef(PythonContext context, object self, object target, object callback) {
+            public static WeakRefTracker InitializeWeakRef(PythonContext context, object self, object target, object callback) {
                 IWeakReferenceable iwr = ConvertToWeakReferenceable(context, target);
 
                 WeakRefTracker wrt = iwr.GetWeakRef();
                 if (wrt == null) {
-                    if (!iwr.SetWeakRef(new WeakRefTracker(callback, self))) {
+                    if (!iwr.SetWeakRef(wrt = new WeakRefTracker(iwr))) 
                         throw PythonOps.TypeError("cannot create weak reference to '{0}' object", PythonOps.GetPythonTypeName(target));
-                    }
-                } else {
-                    wrt.ChainCallback(callback, self);
                 }
+
+                wrt.ChainCallback(callback,self);
+                return wrt;
             }
         }
     }

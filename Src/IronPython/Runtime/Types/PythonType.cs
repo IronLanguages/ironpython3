@@ -24,6 +24,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Dynamic;
@@ -81,7 +82,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private WeakRefTracker _weakrefTracker;             // storage for Python style weak references
         private WeakReference _weakRef;                     // single weak ref instance used for all user PythonTypes.
         private string[] _slots;                            // the slots when the class was created
-        private OldClass _oldClass;                         // the associated OldClass or null for new-style types  
         private int _originalSlotCount;                     // the number of slots when the type was created
         private InstanceCreator _instanceCtor;              // creates instances
         private CallSite<Func<CallSite, object, int>> _hashSite;
@@ -261,26 +261,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// <summary>
         /// Creates a new PythonType object which represents an Old-style class.
         /// </summary>
-        internal PythonType(OldClass oc) {
-            EnsureDict();
-
-            _underlyingSystemType = typeof(OldInstance);
-            Name = oc.Name;
-            OldClass = oc;
-
-            List<PythonType> ocs = new List<PythonType>(oc.BaseClasses.Count);
-            foreach (OldClass klass in oc.BaseClasses) {
-                ocs.Add(klass.TypeObject);
-            }
-
-            List<PythonType> mro = new List<PythonType>();
-            mro.Add(this);
-
-            _bases = ocs.ToArray(); 
-            _resolutionOrder = mro;
-            AddSlot("__class__", new PythonTypeUserDescriptorSlot(this, true));
-        }
-
         internal BuiltinFunction Ctor {
             get {
                 EnsureConstructor();
@@ -310,7 +290,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             PythonType meta = FindMetaClass(cls, bases);
 
-            if (meta != TypeCache.OldInstance && meta != TypeCache.PythonType) {
+            if (meta != TypeCache.PythonType) {
                 if (meta != cls) {
                     // the user has a custom __new__ which picked the wrong meta class, call the correct metaclass
                     return PythonCalls.Call(context, meta, name, bases, dict);
@@ -333,8 +313,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             PythonType meta = cls;
             foreach (object dt in bases) {
                 PythonType metaCls = DynamicHelpers.GetPythonType(dt);
-
-                if (metaCls == TypeCache.OldClass) continue;
 
                 if (meta.IsSubclassOf(metaCls)) continue;
 
@@ -364,13 +342,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             object[] res = new object[BaseTypes.Count];
             IList<PythonType> bases = BaseTypes;
             for (int i = 0; i < bases.Count; i++) {
-                PythonType baseType = bases[i];
-
-                if (baseType.IsOldClass) {
-                    res[i] = baseType.OldClass;
-                } else {
-                    res[i] = baseType;
-                }
+                res[i] = bases[i];
             }
 
             return PythonTuple.MakeTuple(res);
@@ -388,7 +360,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         /// <summary>
-        /// Used in copy_reg which is the only consumer of __flags__ in the standard library.
+        /// Used in copyreg which is the only consumer of __flags__ in the standard library.
         /// 
         /// Set if the type is user defined
         /// </summary>
@@ -420,6 +392,25 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             _flags = res;
             return true;
+        }
+
+        /// <summary>
+        /// Check whether the current type is iterabel
+        /// </summary>
+        /// <param name="context"></param>
+        /// <returns>True if it is iterable</returns>
+        internal bool IsIterable(CodeContext context)
+        {
+            object _dummy = null;
+            if (PythonOps.TryGetBoundAttr(context,  this, "__iter__", out _dummy) &&
+                    !Object.ReferenceEquals(_dummy, NotImplementedType.Value)
+                && PythonOps.TryGetBoundAttr(context, this, "next", out _dummy) &&
+                    !Object.ReferenceEquals(_dummy, NotImplementedType.Value))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private void ClearAbstractMethodFlags(string name) {
@@ -505,12 +496,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 // gather all the type objects...
                 PythonType adt = o as PythonType;
                 if (adt == null) {
-                    OldClass oc = o as OldClass;
-                    if (oc == null) {
-                        throw PythonOps.TypeError("expected tuple of types, got '{0}'", PythonTypeOps.GetName(o));
-                    }
-
-                    adt = oc.TypeObject;
+                    throw PythonOps.TypeError("expected tuple of types, got '{0}'", PythonTypeOps.GetName(o));
                 }
 
                 ldt.Add(adt);
@@ -535,7 +521,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         private static bool TryReplaceExtensibleWithBase(Type curType, out Type newType) {
-            if (curType.IsGenericType &&
+            if (curType.GetTypeInfo().IsGenericType &&
                 curType.GetGenericTypeDefinition() == typeof(Extensible<>)) {
                 newType = curType.GetGenericArguments()[0];
                 return true;
@@ -784,36 +770,19 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return sub.IsSubclassOf(this);
         }
 
-        public virtual bool __subclasscheck__(OldClass sub) {
-            return IsSubclassOf(sub.TypeObject);
-        }
-
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates")]
         public static implicit operator Type(PythonType self) {
             return self.UnderlyingSystemType;
         }
 
         public static implicit operator TypeTracker(PythonType self) {
-            return TypeTracker.GetTypeTracker(self.UnderlyingSystemType);
+            return ReflectionCache.GetTypeTracker(self.UnderlyingSystemType);
         }
 
         #endregion
 
         #region Internal API
 
-        internal bool IsMixedNewStyleOldStyle() {
-            if (!IsOldClass) {
-                foreach (PythonType baseType in ResolutionOrder) {
-                    if (baseType.IsOldClass) {
-                        // mixed new-style/old-style class, we can't handle
-                        // __init__ in an old-style class yet (it doesn't show
-                        // up in a slot).
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
 
         internal int SlotCount {
             get {
@@ -1230,21 +1199,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
         }
 
-        internal OldClass OldClass {
-            get {
-                return _oldClass;
-            }
-            set {
-                _oldClass = value;
-            }
-        }
-
-        internal bool IsOldClass {
-            get {
-                return _oldClass != null;
-            }
-        }
-
         internal PythonContext PythonContext {
             get {
                 return _pythonContext;
@@ -1362,14 +1316,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
                 if (dt.TryLookupSlot(context, name, out slot)) {
                     return true;
-                }
-
-                if (dt.OldClass != null) {
-                    object ret;
-                    if (dt.OldClass.TryLookupSlot(name, out ret)) {
-                        slot = ToTypeSlot(ret);
-                        return true;
-                    }
                 }
             }
 
@@ -1902,16 +1848,10 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// Adds members from a user defined type.
         /// </summary>
         private static void AddUserTypeMembers(CodeContext context, Dictionary<string, string> keys, PythonType dt, List res) {
-            if (dt.OldClass != null) {
-                foreach (KeyValuePair<object, object> kvp in dt.OldClass._dict) {
-                    AddOneMember(keys, res, kvp.Key);
-                }
-            } else {
-                foreach (KeyValuePair<string, PythonTypeSlot> kvp in dt._dict) {
-                    if (keys.ContainsKey(kvp.Key)) continue;
+            foreach (KeyValuePair<string, PythonTypeSlot> kvp in dt._dict) {
+                if (keys.ContainsKey(kvp.Key)) continue;
 
-                    keys[kvp.Key] = kvp.Key;
-                }
+                keys[kvp.Key] = kvp.Key;
             }
         }
 
@@ -2251,16 +2191,17 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
 
             // check the slots to see if we're weak refable
-            if (CheckForSlotWithDefault(context, bases, slots, "__weakref__")) {
+            if (CheckForSlotWithDefault(context, _resolutionOrder, slots, "__weakref__")) {
                 _attrs |= PythonTypeAttributes.WeakReferencable;
                 AddSlot("__weakref__", new PythonTypeWeakRefSlot(this));
             }
 
-            if (CheckForSlotWithDefault(context, bases, slots, "__dict__")) {
+            // check if we have a dictionary
+            if (CheckForSlotWithDefault(context, _resolutionOrder, slots, "__dict__")) {
                 _attrs |= PythonTypeAttributes.HasDictionary;
                 PythonTypeSlot pts;
                 bool inheritsDict = false;
-                for(int i = 1; i<_resolutionOrder.Count; i++) {
+                for (int i = 1; i<_resolutionOrder.Count; i++) {
                     PythonType pt = _resolutionOrder[i];
                     if (pt.TryResolveSlot(context, "__dict__", out pts)) {
                         inheritsDict = true;
@@ -2290,28 +2231,30 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
         }
 
-        private static bool CheckForSlotWithDefault(CodeContext context, PythonTuple bases, List<string> slots, string name) {
-            bool hasSlot = true;
-            if (slots != null && !slots.Contains(name)) {
-                hasSlot = false;
-                foreach (object pt in bases) {
-                    PythonType dt = pt as PythonType;
-                    PythonTypeSlot dummy;
-                    if (dt != null && dt.TryLookupSlot(context, name, out dummy)) {
-                        hasSlot = true;
-                    }
-                }
-            } else if (slots != null) {
-                // check and see if we have 2
-                if(bases.Count > 0) {
-                    PythonType dt = bases[0] as PythonType;
+        private bool CheckForSlotWithDefault(CodeContext context, IList<PythonType> resolutionOrder, List<string> slots, string name) {
+            // slots not restricted
+            if (slots == null)
+                return true;
+            // slot defined in the __slots__ tuple
+            if (slots.Contains(name)) {
+                if (resolutionOrder.Count > 1) {
+                    PythonType dt = resolutionOrder[1];
                     PythonTypeSlot dummy;
                     if (dt != null && dt.TryLookupSlot(context, name, out dummy)) {
                         throw PythonOps.TypeError(name + " slot disallowed: we already got one");
                     }
                 }
+                return true;
             }
-            return hasSlot;
+            // slot defined in a base class
+            foreach (PythonType dt in resolutionOrder.Skip(1)) {
+                PythonTypeSlot dummy;
+                if (dt.TryLookupSlot(context, name, out dummy)) {
+                    return true;
+                }
+            }
+            // slot not available
+            return false;
         }
 
         /// <summary>
@@ -2335,10 +2278,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             List<PythonType> newbs = new List<PythonType>();
             foreach (object typeObj in bases) {
                 PythonType dt = typeObj as PythonType;
-                if (dt == null) {
-                    dt = ((OldClass)typeObj).TypeObject;
-                }
-
                 newbs.Add(dt);
             }
 
@@ -2359,12 +2298,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
                 for (int j = 0; j < newBases.__len__(); j++) {
                     if (i != j && newBases[i] == newBases[j]) {
-                        OldClass oc = newBases[i] as OldClass;
-                        if (oc != null) {
-                            throw PythonOps.TypeError("duplicate base class {0}", oc.Name);
-                        } else {
-                            throw PythonOps.TypeError("duplicate base class {0}", ((PythonType)newBases[i]).Name);
-                        }
+                        throw PythonOps.TypeError("duplicate base class {0}", ((PythonType)newBases[i]).Name);
                     }
                 }
             }
@@ -2466,9 +2400,19 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             Dictionary<string, Type> methodMap = new Dictionary<string, Type>();
             bool hasExplicitIface = false;
             List<Type> nonCollidingInterfaces = new List<Type>(interfaces);
+
+            PythonType[] bases = new PythonType[_bases.Length + interfaces.Length];
+            Array.Copy(_bases, bases, _bases.Length);
+            for(int i = 0; i < interfaces.Length; i++) {
+                bases[i + _bases.Length] = PythonType.GetPythonType(interfaces[i]);
+            }
+
+            lock (_bases) {
+                _bases = bases;
+            }
             
             foreach (Type iface in interfaces) {
-                InterfaceMapping mapping = _underlyingSystemType.GetInterfaceMap(iface);
+                InterfaceMapping mapping = _underlyingSystemType.GetTypeInfo().GetInterfaceMap(iface);
                 
                 // grab all the interface methods which would hide other members
                 for (int i = 0; i < mapping.TargetMethods.Length; i++) {
@@ -2517,7 +2461,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             if (hasExplicitIface) {
                 // add any non-colliding interfaces into the MRO
                 foreach (Type t in nonCollidingInterfaces) {
-                    Debug.Assert(t.IsInterface());
+                    Debug.Assert(t.GetTypeInfo().IsInterface);
 
                     mro.Add(DynamicHelpers.GetPythonTypeFromType(t));
                 }

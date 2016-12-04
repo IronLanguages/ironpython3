@@ -27,6 +27,7 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security;
@@ -35,6 +36,7 @@ using System.Threading;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Debugging.CompilerServices;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
@@ -49,6 +51,10 @@ using IronPython.Runtime.Types;
 
 using Debugging = Microsoft.Scripting.Debugging;
 using PyAst = IronPython.Compiler.Ast;
+
+#if NETCOREAPP1_0
+using Environment = System.FakeEnvironment;
+#endif
 
 namespace IronPython.Runtime
 {
@@ -72,13 +78,15 @@ namespace IronPython.Runtime
         private readonly PythonOverloadResolverFactory _sharedOverloadResolverFactory;
         private readonly PythonBinder _binder;
         private readonly SysModuleDictionaryStorage _sysDict = new SysModuleDictionaryStorage();
-#if FEATURE_ASSEMBLY_RESOLVE && FEATURE_FILESYSTEM
+#if FEATURE_FILESYSTEM
+#if FEATURE_ASSEMBLY_RESOLVE
         private readonly AssemblyResolveHolder _resolveHolder;
+#endif
 #if !CLR2
         private readonly HashSet<Assembly> _loadedAssemblies = new HashSet<Assembly>();
 #endif
 #endif
-        private Encoding _defaultEncoding = PythonAsciiEncoding.Instance;
+        private Encoding _defaultEncoding = Encoding.UTF8;
 
         // conditional variables for silverlight/desktop CLR features
         private Hosting.PythonService _pythonService;
@@ -94,9 +102,9 @@ namespace IronPython.Runtime
         private Dictionary<string, object> _errorHandlers;
         private List<object> _searchFunctions;
         private Dictionary<object, object> _moduleState;
-        /// <summary> stored for copy_reg module, used for reduce protocol </summary>
+        /// <summary> stored for copyreg module, used for reduce protocol </summary>
         internal BuiltinFunction NewObject;
-        /// <summary> stored for copy_reg module, used for reduce protocol </summary>
+        /// <summary> stored for copyreg module, used for reduce protocol </summary>
         internal BuiltinFunction PythonReconstructor;
         private Dictionary<Type, object> _genericSiteStorage;
 
@@ -184,19 +192,17 @@ namespace IronPython.Runtime
         private DynamicMetaObjectBinder _invokeTwoConvertToInt;
         private static CultureInfo _CCulture;
         private DynamicDelegateCreator _delegateCreator;
-        // tracing / in-proc debugging support
-        private Debugging.CompilerServices.DebugContext _debugContext;
-        private Debugging.ITracePipeline _tracePipeline;
 
-        private Microsoft.Scripting.Utils.ThreadLocal<Stack<PythonTracebackListener>> _tracebackListeners;
-        private int _tracingThreads;
+        // tracing / in-proc debugging support
+        private DebugContext _debugContext;
+        private Debugging.ITracePipeline _tracePipeline;
+        private readonly Microsoft.Scripting.Utils.ThreadLocal<PythonTracebackListener> _tracebackListeners = new Microsoft.Scripting.Utils.ThreadLocal<PythonTracebackListener>();
+        private int _tracebackListenersCount;
 
         internal FunctionCode.CodeList _allCodes;
         internal readonly object _codeCleanupLock = new object(), _codeUpdateLock = new object();
         internal int _codeCount, _nextCodeCleanup = 200;
         private int _recursionLimit;
-
-        private Microsoft.Scripting.Utils.ThreadLocal<bool> _enableTracing = new Microsoft.Scripting.Utils.ThreadLocal<bool>();
 
         internal readonly List<FunctionStack> _mainThreadFunctionStack;
         private CallSite<Func<CallSite, CodeContext, object, object>> _callSite0LightEh;
@@ -278,7 +284,6 @@ namespace IronPython.Runtime
 
             if (_options.Tracing) {
                 EnsureDebugContext();
-                RegisterTracebackHandler();
             }
 
             List path = new List(_options.SearchPaths);
@@ -338,7 +343,7 @@ namespace IronPython.Runtime
             }
             manager.AssemblyLoaded += new EventHandler<AssemblyLoadedEventArgs>(ManagerAssemblyLoaded);
 
-            _mainThreadFunctionStack = Runtime.Operations.PythonOps.GetFunctionStack();
+            _mainThreadFunctionStack = PythonOps.GetFunctionStack();
         }
 
         void ManagerAssemblyLoaded(object sender, AssemblyLoadedEventArgs e) {
@@ -372,31 +377,7 @@ namespace IronPython.Runtime
 
         internal bool EnableTracing {
             get {
-                return _tracingThreads > 0 || PythonOptions.Tracing;
-            }
-            set {
-                lock (_codeUpdateLock) {
-                    bool oldEnableTracing = _enableTracing.Value;
-                    _enableTracing.Value = value;
-
-                    bool flip = false;
-                    if (value && !oldEnableTracing) {
-                        flip = _tracingThreads == 0;
-                        _tracingThreads++;
-                    } else if (!value && oldEnableTracing) {
-                        _tracingThreads--;
-                        flip = _tracingThreads == 0;
-                        if (flip) {
-                            _tracePipeline.TraceCallback = null;
-                        }
-                    }
-
-                    if (flip) {
-                        // recursion setting has changed, we need to update all of our
-                        // function codes to enforce or un-enforce recursion.
-                        FunctionCode.UpdateAllCode(this);
-                    }
-                }
+                return PythonOptions.Tracing || _tracebackListenersCount > 0;
             }
         }
 
@@ -649,28 +630,28 @@ namespace IronPython.Runtime
         public PythonType EnsureModuleException(object key, PythonDictionary dict, string name, string module) {
             return (PythonType)(dict[name] = GetOrCreateModuleState(
                 key,
-                () => PythonExceptions.CreateSubType(this, PythonExceptions.Exception, name, module, "", PythonType.DefaultMakeException)
+                () => PythonExceptions.CreateSubType(this, PythonExceptions.Exception, name, module, null, PythonType.DefaultMakeException)
             ));
         }
 
         public PythonType EnsureModuleException(object key, PythonType baseType, PythonDictionary dict, string name, string module) {
             return (PythonType)(dict[name] = GetOrCreateModuleState(
                 key,
-                () => PythonExceptions.CreateSubType(this, baseType, name, module, "", PythonType.DefaultMakeException)
+                () => PythonExceptions.CreateSubType(this, baseType, name, module, null, PythonType.DefaultMakeException)
             ));
         }
 
         public PythonType EnsureModuleException(object key, PythonType baseType, Type underlyingType, PythonDictionary dict, string name, string module, Func<string, Exception> exceptionMaker) {
             return (PythonType)(dict[name] = GetOrCreateModuleState(
                 key,
-                () => PythonExceptions.CreateSubType(this, baseType, underlyingType, name, module, "", exceptionMaker)
+                () => PythonExceptions.CreateSubType(this, baseType, underlyingType, name, module, null, exceptionMaker)
             ));
         }
 
         public PythonType EnsureModuleException(object key, PythonType[] baseTypes, Type underlyingType, PythonDictionary dict, string name, string module) {
             return (PythonType)(dict[name] = GetOrCreateModuleState(
                 key,
-                () => PythonExceptions.CreateSubType(this, baseTypes, underlyingType, name, module, "", PythonType.DefaultMakeException)
+                () => PythonExceptions.CreateSubType(this, baseTypes, underlyingType, name, module, null, PythonType.DefaultMakeException)
             ));
         }
 
@@ -786,7 +767,7 @@ namespace IronPython.Runtime
         }
 
         internal static Version GetPythonVersion() {
-            return new AssemblyName(typeof(PythonContext).Assembly.FullName).Version;
+            return new AssemblyName(typeof(PythonContext).GetTypeInfo().Assembly.FullName).Version;
         }
 
         internal FloatFormat FloatFormat {
@@ -820,9 +801,6 @@ namespace IronPython.Runtime
 
             SetSystemStateValue("path", new List(3));
 
-            SetSystemStateValue("ps1", ">>> ");
-            SetSystemStateValue("ps2", "... ");
-
             SetStandardIO();
 
             SysModule.PerformModuleReload(this, _systemState.__dict__);
@@ -837,8 +815,6 @@ namespace IronPython.Runtime
             SysModule.SysFlags flags = new SysModule.SysFlags();
             SetSystemStateValue("flags", flags);
             flags.debug = _options.Debug ? 1 : 0;
-            flags.py3k_warning = _options.WarnPython30 ? 1 : 0;
-            SetSystemStateValue("py3kwarning", _options.WarnPython30);
             switch (_options.DivisionOptions) {
                 case PythonDivisionOptions.Old:
                     break;
@@ -980,13 +956,13 @@ namespace IronPython.Runtime
             ContractUtils.RequiresNotNull(defaultEncoding, "defaultEncoding");
             ContractUtils.Requires(stream.CanSeek && stream.CanRead, "stream", "The stream must support seeking and reading");
 
-            // we choose ASCII by default, if the file has a Unicode pheader though
+            // we choose UTF-8 by default, if the file has a Unicode pheader though
             // we'll automatically get it as unicode.
-            Encoding encoding = PythonAsciiEncoding.SourceEncoding;
+            Encoding encoding = Encoding.UTF8;
 
             long startPosition = stream.Position;
 
-            StreamReader sr = new StreamReader(stream, PythonAsciiEncoding.SourceEncoding);
+            StreamReader sr = new StreamReader(stream, Encoding.UTF8);
             byte[] bomBuffer = new byte[3];
             int bomRead = stream.Read(bomBuffer, 0, 3);
             int bytesRead = 0;
@@ -1224,7 +1200,7 @@ namespace IronPython.Runtime
                 // rather than having them get populated w/ the ReflectedType.  W/o this the
                 // cctor runs after we've done a bunch of reflection over the type that doesn't
                 // force the cctor to run.
-                System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+                RuntimeHelpers.RunClassConstructor(type.TypeHandle);
                 return CreateBuiltinModule(name, type);
             }
 
@@ -1326,7 +1302,7 @@ namespace IronPython.Runtime
         }
 
 #region Assembly Loading
-#if FEATURE_ASSEMBLY_RESOLVE && FEATURE_FILESYSTEM
+#if FEATURE_FILESYSTEM
 
         internal Assembly LoadAssemblyFromFile(string file) {
             // check all files in the path...
@@ -1351,7 +1327,11 @@ namespace IronPython.Runtime
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Reflection.Assembly.LoadFile")]
         internal bool TryLoadAssemblyFromFileWithPath(string path, out Assembly res) {
             if (File.Exists(path) && Path.IsPathRooted(path)) {
+#if NETSTANDARD
+                res = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyPath(path);
+#else
                 res = Assembly.LoadFile(path);
+#endif
                 if (res != null) {
 #if !CLR2
                     _loadedAssemblies.Add(res);
@@ -1364,6 +1344,7 @@ namespace IronPython.Runtime
             return false;
         }
 
+#if FEATURE_ASSEMBLY_RESOLVE
         internal Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args) {
 #if !CLR2 && !ANDROID
             if (args.RequestingAssembly != null && !_loadedAssemblies.Contains(args.RequestingAssembly)) {
@@ -1414,6 +1395,7 @@ namespace IronPython.Runtime
                 // If so, we will not look up sys.path for module loads
             }
         }
+#endif
 #endif
 #endregion
 
@@ -1652,9 +1634,8 @@ namespace IronPython.Runtime
                 IList<System.Diagnostics.StackTrace> traces = ExceptionHelpers.GetExceptionStackTraces(e);
 
                 if (traces != null) {
-                    for (int i = 0; i < traces.Count; i++) {
-                        for (int j = 0; j < traces[i].FrameCount; j++) {
-                            StackFrame curFrame = traces[i].GetFrame(j);
+                    foreach (StackTrace trace in traces) {
+                        foreach (StackFrame curFrame in trace.GetFrames()) {
                             result += curFrame.ToString() + Environment.NewLine;
                         }
                     }
@@ -1849,7 +1830,7 @@ namespace IronPython.Runtime
             Dictionary<string, Type> builtinTable = new Dictionary<string, Type>();
 
             // We should register builtins, if any, from IronPython.dll
-            LoadBuiltins(builtinTable, typeof(PythonContext).Assembly, false);
+            LoadBuiltins(builtinTable, typeof(PythonContext).GetTypeInfo().Assembly, false);
 
             // Load builtins from IronPython.Modules
             Assembly ironPythonModules = null;
@@ -1881,11 +1862,17 @@ namespace IronPython.Runtime
         }
 
         internal void LoadBuiltins(Dictionary<string, Type> builtinTable, Assembly assem, bool updateSys) {
-            object[] attrs = assem.GetCustomAttributes(typeof(PythonModuleAttribute), false);
-            if (attrs.Length > 0) {
+#if NETSTANDARD
+            var attrs = assem.GetCustomAttributes(typeof(PythonModuleAttribute));
+#else
+            var attrs = assem.GetCustomAttributes(typeof(PythonModuleAttribute), false);
+#endif
+            if (attrs.Any()) {
                 foreach (PythonModuleAttribute pma in attrs) {
-                    builtinTable[pma.Name] = pma.Type;
-                    BuiltinModuleNames[pma.Type] = pma.Name;
+                    if (pma.InvalidPlatforms != null && Array.IndexOf(pma.InvalidPlatforms, Environment.OSVersion.Platform) < 0) {
+                        builtinTable[pma.Name] = pma.Type;
+                        BuiltinModuleNames[pma.Type] = pma.Name;
+                    }
                 }
 
                 if (updateSys) {
@@ -1896,7 +1883,7 @@ namespace IronPython.Runtime
 
         public static string GetIronPythonAssembly(string/*!*/ baseName) {
             ContractUtils.RequiresNotNull(baseName, "baseName");
-            string fullName = typeof(PythonContext).Assembly.FullName;
+            string fullName = typeof(PythonContext).GetTypeInfo().Assembly.FullName;
             int firstComma = fullName.IndexOf(',');
             return firstComma > 0 ? baseName + fullName.Substring(firstComma) : baseName;
         }
@@ -1998,7 +1985,7 @@ namespace IronPython.Runtime
         private static string GetInitialPrefix() {
 #if FEATURE_ASSEMBLY_CODEBASE
             try {
-                return typeof(PythonContext).Assembly.CodeBase;
+                return typeof(PythonContext).GetTypeInfo().Assembly.CodeBase;
             } catch (SecurityException) {
                 // we don't have permissions to get paths...
                 return String.Empty;
@@ -3035,14 +3022,6 @@ namespace IronPython.Runtime
             object hashFunction;
             if (PythonOps.TryGetBoundAttr(o, "__hash__", out hashFunction) && hashFunction != null) {
                  return true;
-            }
-            var instance = o as OldInstance;
-            if (instance != null) {
-                if (instance.TryGetBoundCustomMember(DefaultContext.Default, "__hash__", out hashFunction) ||
-                    ( ! instance.TryGetBoundCustomMember(DefaultContext.Default, "__cmp__", out hashFunction) &&
-                      ! instance.TryGetBoundCustomMember(DefaultContext.Default, "__eq__", out hashFunction))) {
-                    return true;
-                }
             }
             if (o is PythonType) {
                 return true;
@@ -4119,7 +4098,7 @@ namespace IronPython.Runtime
 
 #region Tracing
 
-        internal Debugging.CompilerServices.DebugContext DebugContext {
+        internal DebugContext DebugContext {
             get {
                 EnsureDebugContext();
 
@@ -4127,21 +4106,43 @@ namespace IronPython.Runtime
             }
         }
 
-        internal void EnsureDebugContext() {
-            if (_debugContext == null || _tracePipeline == null) {
+        private void EnsureDebugContext() {
+            if (_debugContext == null) {
                 lock(this) {
                     if (_debugContext == null) {
-                        _debugContext = Debugging.CompilerServices.DebugContext.CreateInstance();
-                        _tracePipeline = Debugging.TracePipeline.CreateInstance(_debugContext);
-                    }                    
+                        try {
+                            _debugContext = DebugContext.CreateInstance();
+                            _tracePipeline = Debugging.TracePipeline.CreateInstance(_debugContext);
+                            _tracePipeline.TraceCallback = new PythonTracebackListenersDispatcher(this);
+                        } catch {
+                            _debugContext = null;
+                            _tracePipeline = null;
+                            throw;
+                        }
+                    }
                 }
             }
+        }
 
-            if (_tracebackListeners == null) {
-                _tracebackListeners = new Microsoft.Scripting.Utils.ThreadLocal<Stack<PythonTracebackListener>>();
-                _tracebackListeners.Value = new Stack<PythonTracebackListener>();
-                // push the default listener
-                _tracebackListeners.Value.Push(new PythonTracebackListener(this));
+        private class PythonTracebackListenersDispatcher : Debugging.ITraceCallback  {
+            private readonly PythonContext _parent;
+
+            public PythonTracebackListenersDispatcher(PythonContext parent) {
+                _parent = parent;
+            }
+
+            void Debugging.ITraceCallback.OnTraceEvent(Debugging.TraceEventKind kind, string name, string sourceFileName, SourceSpan sourceSpan, Func<IDictionary<object, object>> scopeCallback, object payload, object customPayload)
+            {
+                var listener = _parent._tracebackListeners.Value;
+
+                if (listener == null && _parent.PythonOptions.Tracing) {
+                    // If tracing without sys.set_trace() is enabled, we need to register a dummy traceback listener,
+                    // because of the FunctionStack handling done there.
+                    _parent._tracebackListeners.Value = listener = new PythonTracebackListener(_parent, null);
+                }
+
+                if (listener != null)
+                    listener.OnTraceEvent(kind, name, sourceFileName, sourceSpan, scopeCallback, payload, customPayload);
             }
         }
 
@@ -4151,35 +4152,74 @@ namespace IronPython.Runtime
             }
         }
 
-        internal void RegisterTracebackHandler() {
-            Debug.Assert(_tracePipeline != null);   // ensure debug context should have been called
+        internal void SetTrace(object o) {
+            if (o == null && _debugContext == null)
+                return;
 
-            _tracePipeline.TraceCallback = _tracebackListeners.Value.Peek();
-            EnableTracing = true;
-        }
+            EnsureDebugContext();
 
-        internal void UnregisterTracebackHandler() {
-            Debug.Assert(_tracePipeline != null);  // ensure debug context should have been called
+            // thread-local
+            var oldTraceListener = _tracebackListeners.Value;
+            var newTraceListener = oldTraceListener;
 
-            EnableTracing = false;
-        }
-
-        internal void PushTracebackHandler(PythonTracebackListener listener) {
-            var tracebackListeners = _tracebackListeners.Value;
-            if (_debugContext != null) {
-                while (tracebackListeners.Count > 0 && tracebackListeners.Peek().ExceptionThrown) {
-                    // remove any orphaned traceback listeners that are just doing pops
-                    tracebackListeners.Pop();
+            if (o == null) {
+                _tracebackListeners.Value = newTraceListener = null;
+            } else {
+                // We're following CPython behavior here.
+                // If CurrentPythonFrame is not null then we're currently inside a traceback, and
+                // enabling trace while inside a traceback is only allowed through sys.call_tracing()
+                var pyThread = PythonOps.GetFunctionStackNoCreate();
+                if (pyThread == null || (oldTraceListener == null || !oldTraceListener.InTraceBack)) {
+                    _tracebackListeners.Value = newTraceListener = new PythonTracebackListener(this, o);
                 }
-                tracebackListeners.Push(listener);
+            }
+
+            // global
+            lock (_codeUpdateLock)
+            {
+                var oldEnableTracing = EnableTracing;
+
+                if ((oldTraceListener != null) != (newTraceListener != null)) {
+                    _tracebackListenersCount += (newTraceListener != null) ? 1 : -1;
+                }
+
+                if (EnableTracing != oldEnableTracing) {
+                    // DebugContext invocation has changed, we need to update all of our
+                    // function codes.
+                    FunctionCode.UpdateAllCode(this);
+                }
             }
         }
 
-        internal void PopTracebackHandler() {
-            var tracebackListeners = _tracebackListeners.Value;
-            if (_debugContext != null && tracebackListeners.Count > 1) {
-                tracebackListeners.Pop();
+        internal object CallTracing(object func, PythonTuple args) {
+            // The CPython implementation basically only stores/restores the
+            // nesting level and the recursion control (e.g. that the trace handler
+            // is not called from inside of the trace handler)
+
+            var tblistener = (_debugContext != null) ? _tracebackListeners.Value : null;
+            var backupInTraceBack = (tblistener != null) ? tblistener.InTraceBack : false;
+
+            if (tblistener != null && backupInTraceBack)
+                tblistener.InTraceBack = false;
+
+            try {
+                return PythonCalls.Call(func, args.ToArray());
+            } finally {
+                if (tblistener != null)
+                    tblistener.InTraceBack = backupInTraceBack;
             }
+        }
+
+        internal object GetTrace()
+        {
+            if (_debugContext == null)
+                return null;
+
+            var listener = _tracebackListeners.Value;
+            if (listener == null)
+                return null;
+
+            return listener.TraceObject;
         }
 
 #endregion

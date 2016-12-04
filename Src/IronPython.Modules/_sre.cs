@@ -35,11 +35,11 @@ namespace IronPython.Modules {
             if (encInt == (int)PythonRegex.UNICODE) {
                 return (int)Char.ToLower((char)charVal);
             } else {
-                return (int)Char.ToLower((char)charVal, CultureInfo.InvariantCulture);
+                return (int)Char.ToLowerInvariant((char)charVal);
             }
         }
 
-        public static object compile(object a, object b, object c, object d, object e, object f) {
+        public static object compile(object a, object b, object c) {
             return null;
         }
     }

@@ -448,7 +448,6 @@ namespace IronPython.Runtime {
         private static readonly char[] zero = new char[] { '0' };
 
         // Return the new type char to use
-        // opts.Precision will be set to the number of digits to display after the decimal point
         private char AdjustForG(char type, double v) {
             if (type != 'G' && type != 'g')
                 return type;
@@ -465,7 +464,10 @@ namespace IronPython.Runtime {
                 absV < 1e-4 || // Values less than 0.0001 will need scientific notation
                 absV >= Math.Pow(10, _opts.Precision)) { // Values bigger than 1e<precision> will need scientific notation
 
-                // One digit is displayed before the decimal point. Hence, we need one fewer than the precision after the decimal point
+                type = (type == 'G') ? 'E' : 'e';
+
+                // For e/E formatting, precision means the number of digits after the decimal point.
+                // One digit is displayed before the decimal point.
                 int fractionDigitsRequired = (_opts.Precision - 1);
                 string expForm = absV.ToString("E" + fractionDigitsRequired, CultureInfo.InvariantCulture);
                 string mantissa = expForm.Substring(0, expForm.IndexOf('E')).TrimEnd(zero);
@@ -476,7 +478,6 @@ namespace IronPython.Runtime {
                     Debug.Assert(mantissa[1] == '.');
                     _opts.Precision = mantissa.Length - 2;
                 }
-                type = (type == 'G') ? 'E' : 'e';
             } else {
                 // "0.000ddddd" is allowed when the precision is 5. The 3 leading zeros are not counted
                 int numberDecimalDigits = _opts.Precision;
@@ -494,16 +495,17 @@ namespace IronPython.Runtime {
                         convertType = false;
                     }
                 }
-                string fraction = fixedPointForm.Substring(fixedPointForm.IndexOf('.') + 1);
-                if (absV < 1.0) {
-                    _opts.Precision = fraction.Length;
-                } else {
-                    int digitsBeforeDecimalPoint = 1 + (int)Math.Log10(absV);
-                    _opts.Precision = Math.Min(_opts.Precision - digitsBeforeDecimalPoint, fraction.Length);
-                }
-
                 if (convertType) {
                     type = (type == 'G') ? 'F' : 'f';
+
+                    // For f/F formatting, precision means the number of digits after the decimal point.
+                    string fraction = fixedPointForm.Substring(fixedPointForm.IndexOf('.') + 1);
+                    if (absV < 1.0) {
+                        _opts.Precision = fraction.Length;
+                    } else {
+                        int digitsBeforeDecimalPoint = 1 + (int)Math.Log10(absV);
+                        _opts.Precision = Math.Min(_opts.Precision - digitsBeforeDecimalPoint, fraction.Length);
+                    }
                 }
             }
 
@@ -756,10 +758,9 @@ namespace IronPython.Runtime {
         }
 
         private void AppendLeftAdj(object val, bool fPos, char type) {
-            var format = (type == 'e' || type == 'E') ?
-                "{0:" + type + _opts.Precision + "}" :
-                "{0:" + type + "}";
-            var str = adjustExponent(String.Format(_nfi, format, val));
+            var str = (type == 'e' || type == 'E') ?
+                adjustExponent(String.Format(_nfi, "{0:" + type + _opts.Precision + "}", val)):
+                String.Format(_nfi, "{0:" + type + "}", val);
             if (fPos) {
                 if (_opts.SignChar) str = '+' + str;
                 else if (_opts.Space) str = ' ' + str;
@@ -1102,8 +1103,9 @@ namespace IronPython.Runtime {
             internal int FieldWidth;
 
             // Number of significant digits to display, before and after the decimal point.
-            // For floats, it gets adjusted to the number of digits to display after the decimal point since
-            // that is the value required by StringBuilder.AppendFormat.
+            // For floats (except G/g format specification), it gets adjusted to the number of 
+            // digits to display after the decimal point since that is the value required by 
+            // the .NET string formatting.
             // For clarity, we should break this up into the two values - the precision specified by the
             // format string, and the value to be passed in to StringBuilder.AppendFormat
             internal int Precision;

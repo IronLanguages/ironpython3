@@ -421,7 +421,7 @@ contain the module, but has no source for it.")]
 
                 } finally {
                     if (fp != null) {
-                        fp.Close();
+                        ((IDisposable)fp).Dispose();
                     }
                 }
 
@@ -505,7 +505,7 @@ contain the module, but has no source for it.")]
 
                     if (BitConverter.ToUInt32(endof_central_dir, 0) != 0x06054B50) {
                         // Bad: End of Central Dir signature
-                        fp.Close();
+                        ((IDisposable)fp).Dispose();
                         throw MakeError(context, "not a Zip file: '{0}'", archive);
                     }
 
@@ -557,7 +557,7 @@ contain the module, but has no source for it.")]
                     }
                 } finally {
                     if (fp != null) {
-                        fp.Close();
+                        ((IDisposable)fp).Dispose();
                     }
                 }
 

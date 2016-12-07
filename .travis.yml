@@ -14,6 +14,7 @@ before_install:
   - mono nuget.exe install NUnitLite
 
 script:
+  - git submodule update --init --recursive
   - xbuild Build.proj /t:Build "/p:Mono=true;BuildFlavour=$CONFIGURATION"
   - pushd bin/$CONFIGURATION
   - mono ./IronPythonTest.exe --result:all-result.xml

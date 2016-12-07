@@ -35,7 +35,7 @@
     <Features>$(Features);FEATURE_PDBEMIT</Features>
     <Features>$(Features);FEATURE_METADATA_READER</Features>
     <Features>$(Features);FEATURE_COM</Features>
-    <Features>$(Features);FEATURE_WPF</Features>
+    <Features Condition=" '$(OS)' != 'Unix' ">$(Features);FEATURE_WPF</Features>
     <Features>$(Features);FEATURE_FULL_CONSOLE</Features>
     <Features>$(Features);FEATURE_BASIC_CONSOLE</Features>
     <Features>$(Features);FEATURE_SERIALIZATION</Features>

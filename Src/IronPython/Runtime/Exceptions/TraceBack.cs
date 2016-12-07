@@ -306,8 +306,7 @@ namespace IronPython.Runtime.Exceptions {
                     }
                 }
 
-                if (_traceAdapter.PythonContext.TracePipeline.CanSetNextStatement((string)((FunctionCode)_code).co_filename, span)) {
-                    _traceAdapter.PythonContext.TracePipeline.SetNextStatement((string)((FunctionCode)_code).co_filename, span);
+                if (_traceAdapter.PythonContext.TracePipeline.TrySetNextStatement((string)((FunctionCode)_code).co_filename, span)) {
                     _lineNo = newLineNum;
                     return;
                 }

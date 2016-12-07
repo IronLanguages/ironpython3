@@ -174,7 +174,7 @@ namespace IronPython.Runtime.Types {
                     }
                 }
 
-                MethodInfo add = _event.Tracker.GetAddMethod();
+                MethodInfo add = _event.Tracker.GetCallableAddMethod();
 
                 // TODO (tomat): this used to use event.ReflectedType, is it still correct?
                 if (_instance != null) {
@@ -204,7 +204,7 @@ namespace IronPython.Runtime.Types {
                     }
                 }
 
-                MethodInfo remove = _event.Tracker.GetRemoveMethod();
+                MethodInfo remove = _event.Tracker.GetCallableRemoveMethod();
                 if (CompilerHelpers.IsVisible(remove) || context.LanguageContext.DomainManager.Configuration.PrivateBinding) {
                     _event.Tracker.RemoveHandler(_instance, func, PythonContext.GetContext(context).EqualityComparer);
                 } else {

@@ -1,0 +1,8 @@
+[submodule "DLR"]
+	path = Src/DLR
+	url = https://github.com/IronLanguages/dlr.git
+	branch = master
+[submodule "Src/DLR"]
+	path = Src/DLR
+	url = https://github.com/IronLanguages/dlr.git
+	branch = master

@@ -54,6 +54,14 @@
     <None Include="IronPythonCompiler.ruleset" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\DLR\Src\Microsoft.Dynamic\Microsoft.Dynamic.csproj">
+      <Project>{eb66b766-6354-4208-a3d4-aacbdcb5c3b3}</Project>
+      <Name>Microsoft.Dynamic</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\DLR\Src\Microsoft.Scripting\Microsoft.Scripting.csproj">
+      <Project>{02ff0909-f5ad-48cf-a86a-345e721b7e40}</Project>
+      <Name>Microsoft.Scripting</Name>
+    </ProjectReference>
     <ProjectReference Include="..\IronPython\IronPython.csproj">
       <Project>{95289ea9-5778-489d-ab48-f81f2ce2da32}</Project>
       <Name>IronPython</Name>

@@ -2,6 +2,7 @@ language: csharp
 
 env:
   - CONFIGURATION=Release
+  - FLAVOUR=release
 
 mono:
   - latest
@@ -15,7 +16,7 @@ before_install:
 
 script:
   - git submodule update --init --recursive
-  - xbuild Build.proj /t:Build "/p:Mono=true;BuildFlavour=$CONFIGURATION"
+  - make $FLAVOUR
   - pushd bin/$CONFIGURATION
   - mono ./IronPythonTest.exe --result:all-result.xml
 

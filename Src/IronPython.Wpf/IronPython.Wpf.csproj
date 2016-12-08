@@ -28,6 +28,14 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\DLR\Src\Microsoft.Dynamic\Microsoft.Dynamic.csproj">
+      <Project>{eb66b766-6354-4208-a3d4-aacbdcb5c3b3}</Project>
+      <Name>Microsoft.Dynamic</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\DLR\Src\Microsoft.Scripting\Microsoft.Scripting.csproj">
+      <Project>{02ff0909-f5ad-48cf-a86a-345e721b7e40}</Project>
+      <Name>Microsoft.Scripting</Name>
+    </ProjectReference>
     <ProjectReference Include="..\IronPython\IronPython.csproj">
       <Project>{95289EA9-5778-489D-AB48-F81F2CE2DA32}</Project>
       <Name>IronPython</Name>
@@ -35,20 +43,20 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="WindowsBase, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, ProcessorArchitecture=MSIL">
+    <Reference Condition=" '$(Mono)' != 'true' " Include="WindowsBase, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(WpfReferences)\WindowsBase.dll</HintPath>
     </Reference>
-    <Reference Include="PresentationCore, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, ProcessorArchitecture=MSIL">
+    <Reference Condition=" '$(Mono)' != 'true' " Include="PresentationCore, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(WpfReferences)\PresentationCore.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="PresentationFramework, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, ProcessorArchitecture=MSIL">
+    <Reference Condition=" '$(Mono)' != 'true' " Include="PresentationFramework, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(WpfReferences)\PresentationFramework.dll</HintPath>
     </Reference>
-    <Reference Include="System.Xaml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, ProcessorArchitecture=MSIL">
+    <Reference Condition=" '$(Mono)' != 'true' " Include="System.Xaml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, ProcessorArchitecture=MSIL">
       <SpecificVersion>True</SpecificVersion>
       <HintPath>$(WpfReferences)\System.Xaml.dll</HintPath>
     </Reference>

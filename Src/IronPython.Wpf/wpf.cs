@@ -13,6 +13,8 @@
  *
  * ***************************************************************************/
 
+#if FEATURE_WPF
+
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -113,3 +115,5 @@ namespace IronPython.Modules {
 #endif
     }
 }
+
+#endif

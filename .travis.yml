@@ -1,7 +1,7 @@
 language: csharp
 
 env:
-  - CONFIGURATION=Release
+  - CONFIGURATION=Release FLAVOUR=release
 
 mono:
   - latest
@@ -14,7 +14,8 @@ before_install:
   - mono nuget.exe install NUnitLite
 
 script:
-  - xbuild Build.proj /t:Build "/p:Mono=true;BuildFlavour=$CONFIGURATION"
+  - git submodule update --init --recursive
+  - make $FLAVOUR
   - pushd bin/$CONFIGURATION
   - mono ./IronPythonTest.exe --result:all-result.xml
 

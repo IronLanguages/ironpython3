@@ -8,22 +8,8 @@ internal static class BuildInfo {{
         false;
 #endif
 
-    internal const bool IsCLR2 =
-#if CLR2
-        true;
-#else
-        false;
-#endif
-
     internal const bool IsCLR4 =
 #if CLR4
-        true;
-#else
-        false;
-#endif
-
-    internal const bool IsSilverlight =
-#if SILVERLIGHT
         true;
 #else
         false;

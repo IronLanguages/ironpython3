@@ -26,7 +26,28 @@ namespace IronPythonTest.Cases {
                 Executable,
                 "");
 
+            AddSearchPaths(engine);
             return engine;
+        }
+
+        private static void AddSearchPaths(ScriptEngine engine) {
+            var paths = new List<string>(engine.GetSearchPaths());
+            if(!paths.Any(x => x.ToLower().Contains("stdlib"))) {
+                // we start at the current directory and look up until we find the "Src" directory
+                var current = System.Reflection.Assembly.GetEntryAssembly().Location;
+                var found = false;
+                while(!found && !string.IsNullOrEmpty(current)) {
+                    var test = Path.Combine(current, "Src", "StdLib", "Lib");
+                    if(Directory.Exists(test)) {
+                        paths.Add(test);
+                        found = true;
+                        break;
+                    }
+
+                    current = Path.GetDirectoryName(current);
+                }
+            }
+            engine.SetSearchPaths(paths);
         }
 
         public CaseExecuter() {
@@ -40,6 +61,7 @@ namespace IronPythonTest.Cases {
                 Path.GetDirectoryName(Executable),
                 Executable,
                 "");
+            AddSearchPaths(this.defaultEngine);
         }
 
         public int RunTest(TestInfo testcase) {

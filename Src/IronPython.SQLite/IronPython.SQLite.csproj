@@ -24,31 +24,21 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DefineConstants>NET_40;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_W32;SQLITE_THREADSAFE;NDEBUG</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Debug|AnyCPU' ">
-    <DefineConstants>NET_35;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_W32;SQLITE_THREADSAFE;SQLITE_ENABLE_OVERSIZE_CELL_CHECK</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Release|AnyCPU' ">
-    <DefineConstants>NET_35;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_W32;SQLITE_THREADSAFE;NDEBUG</DefineConstants>
-  </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v45Debug|AnyCPU' ">
     <DefineConstants>NET_40;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_W32;SQLITE_THREADSAFE;SQLITE_ENABLE_OVERSIZE_CELL_CHECK</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v45Release|AnyCPU' ">
     <DefineConstants>NET_40;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_W32;SQLITE_THREADSAFE;NDEBUG</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight5Debug|AnyCPU' ">
-    <DefineConstants>SQLITE_SILVERLIGHT;NET_40;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_OMIT;SQLITE_ENABLE_OVERSIZE_CELL_CHECK</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight5Release|AnyCPU' ">
-    <DefineConstants>SQLITE_SILVERLIGHT;NET_40;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_OMIT;NDEBUG</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'AndroidDebug|AnyCPU' ">
-    <DefineConstants>NET_35;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_W32;SQLITE_THREADSAFE;SQLITE_DEBUG;SQLITE_ENABLE_OVERSIZE_CELL_CHECK</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'AndroidRelease|AnyCPU' ">
-    <DefineConstants>NET_35;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_W32;SQLITE_THREADSAFE;NDEBUG</DefineConstants>
-  </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\DLR\Src\Microsoft.Dynamic\Microsoft.Dynamic.csproj">
+      <Project>{eb66b766-6354-4208-a3d4-aacbdcb5c3b3}</Project>
+      <Name>Microsoft.Dynamic</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\DLR\Src\Microsoft.Scripting\Microsoft.Scripting.csproj">
+      <Project>{02ff0909-f5ad-48cf-a86a-345e721b7e40}</Project>
+      <Name>Microsoft.Scripting</Name>
+    </ProjectReference>
     <ProjectReference Include="..\IronPython\IronPython.csproj">
       <Project>{95289EA9-5778-489D-AB48-F81F2CE2DA32}</Project>
       <Name>IronPython</Name>

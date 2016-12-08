@@ -17,7 +17,6 @@ bin/
 BuildInfo.Generated.cs
 CurrentVersion.Generated.cs
 .local-dlr-path.props
-packages.config
 
 TestResult.xml
 Solutions/TestResults/
@@ -55,3 +54,5 @@ Util/References
 
 /NuGet.config
 *.bak
+__pycache__/
+.vscode/

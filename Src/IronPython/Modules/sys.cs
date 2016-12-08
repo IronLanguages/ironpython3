@@ -136,16 +136,19 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
 
         // warnoptions is set by PythonContext and updated on each reload        
 
-        [Python3Warning("'sys.exc_clear() not supported in 3.x; use except clauses'")]
-        public static void exc_clear() {
-            PythonOps.ClearCurrentException();
-        }
-
         public static PythonTuple exc_info(CodeContext/*!*/ context) {
             return PythonOps.GetExceptionInfo(context);
         }
 
-        // exec_prefix and executable are set by PythonContext and updated on each reload
+		#if !NET_STANDARD
+        public static string intern(object o) {
+            string s = o as string;
+            if (s == null) {
+                throw PythonOps.TypeError("intern: argument must be string");
+            }
+            return string.Intern(s);
+        }
+		#endif
 
         public static void exit() {
             exit(null);

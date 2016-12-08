@@ -23,7 +23,7 @@
 *.vdproj text eol=crlf
 
 
-# Declare fiels that will always have LF line endings on checkout
+# Declare files that will always have LF line endings on checkout
 .gitmodules text eol=lf
 
 

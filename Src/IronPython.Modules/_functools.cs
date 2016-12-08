@@ -25,6 +25,8 @@ using Microsoft.Scripting.Utils;
 using IronPython.Runtime;
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
+using System.Collections;
+using Microsoft.Scripting.Actions;
 
 [assembly: PythonModule("_functools", typeof(IronPython.Modules.FunctionTools))]
 namespace IronPython.Modules {
@@ -32,13 +34,45 @@ namespace IronPython.Modules {
         public const string __doc__ = "provides functionality for manipulating callable objects";
 
         public static object reduce(CodeContext/*!*/ context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object, object, object>>> siteData, object func, object seq) {
-            return Builtin.reduce(context, siteData, func, seq);
+            IEnumerator i = PythonOps.GetEnumerator(seq);
+            if (!i.MoveNext()) {
+                throw PythonOps.TypeError("reduce() of empty sequence with no initial value");
+            }
+            EnsureReduceData(context, siteData);
+
+            CallSite<Func<CallSite, CodeContext, object, object, object, object>> site = siteData.Data;
+
+            object ret = i.Current;
+            while (i.MoveNext()) {
+                ret = site.Target(site, context, func, ret, i.Current);
+            }
+            return ret;
         }
 
         public static object reduce(CodeContext/*!*/ context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object, object, object>>> siteData, object func, object seq, object initializer) {
-            return Builtin.reduce(context, siteData, func, seq, initializer);
+            IEnumerator i = PythonOps.GetEnumerator(seq);
+            EnsureReduceData(context, siteData);
+
+            CallSite<Func<CallSite, CodeContext, object, object, object, object>> site = siteData.Data;
+
+            object ret = initializer;
+            while (i.MoveNext()) {
+                ret = site.Target(site, context, func, ret, i.Current);
+            }
+            return ret;
         }
-        
+
+        private static void EnsureReduceData(CodeContext context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object, object, object>>> siteData) {
+            if (siteData.Data == null) {
+                siteData.Data = CallSite<Func<CallSite, CodeContext, object, object, object, object>>.Create(
+                    PythonContext.GetContext(context).Invoke(
+                        new CallSignature(2)
+                    )
+                );
+
+            }
+        }
+
         /// <summary>
         /// Returns a new callable object with the provided initial set of arguments
         /// bound to it.  Calling the new function then appends to the additional

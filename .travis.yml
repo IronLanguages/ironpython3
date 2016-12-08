@@ -1,8 +1,7 @@
 language: csharp
 
 env:
-  - CONFIGURATION=Release
-  - FLAVOUR=release
+  - CONFIGURATION=Release FLAVOUR=release
 
 mono:
   - latest

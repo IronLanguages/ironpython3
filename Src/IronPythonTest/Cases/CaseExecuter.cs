@@ -32,7 +32,7 @@ namespace IronPythonTest.Cases {
 
         private static void AddSearchPaths(ScriptEngine engine) {
             var paths = new List<string>(engine.GetSearchPaths());
-            if(!paths.Any(x => x.ToLower().Contains("StdLib"))) {
+            if(!paths.Any(x => x.ToLower().Contains("stdlib"))) {
                 // we start at the current directory and look up until we find the "Src" directory
                 var current = System.Reflection.Assembly.GetEntryAssembly().Location;
                 var found = false;

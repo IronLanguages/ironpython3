@@ -727,6 +727,8 @@ namespace IronPython.Compiler {
                     return ReadOctalNumber();
                 }
                 isPrefix0 = true;
+
+                while (NextChar('0')) { } // skip leading zeroes
             }
 
             bool isFirstChar = true;

@@ -26,6 +26,8 @@ using Microsoft.Scripting.Utils;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+using System.Collections.Generic;
+using System.Threading;
 
 [assembly: PythonModule("imp", typeof(IronPython.Modules.PythonImport))]
 namespace IronPython.Modules {
@@ -235,13 +237,35 @@ namespace IronPython.Modules {
         public static object load_source(CodeContext/*!*/ context, string/*!*/ name, string/*!*/ pathname, PythonFile/*!*/ file) {
             if (name == null) throw PythonOps.TypeError("load_source() argument 1 must be string, not None");
             if (pathname == null) throw PythonOps.TypeError("load_source() argument 2 must be string, not None");
-            if (pathname == null) throw PythonOps.TypeError("load_source() argument 3 must be file, not None");
+            if (file == null) throw PythonOps.TypeError("load_source() argument 3 must be file, not None");
             
             return LoadPythonSource(PythonContext.GetContext(context), name, file, pathname);
         }
 
-        public static object reload(CodeContext/*!*/ context, PythonModule scope) {
-            return Builtin.reload(context, scope);
+        [ThreadStatic]
+        private static List<PythonModule> _reloadStack;
+
+        public static object reload(CodeContext/*!*/ context, PythonModule/*!*/ module) {
+            if (module == null) {
+                throw PythonOps.TypeError("unexpected type: NoneType");
+            }
+
+            if (_reloadStack == null) {
+                Interlocked.CompareExchange(ref _reloadStack, new List<PythonModule>(), null);
+            }
+
+            // if a module attempts to reload it's self while already reloading it's 
+            // self we just return the original module.
+            if (_reloadStack.Contains(module)) {
+                return module;
+            }
+
+            _reloadStack.Add(module);
+            try {
+                return Importer.ReloadModule(context, module);
+            } finally {
+                _reloadStack.RemoveAt(_reloadStack.Count - 1);
+            }
         }
 
         #region Implementation

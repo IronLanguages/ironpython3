@@ -541,12 +541,25 @@ namespace IronPython.Runtime.Operations {
             return multiplier(sequence, icount);
         }
 
+        internal static object TryCoerce(CodeContext/*!*/ context, object x, object y) {
+            PythonTypeSlot pts;
+            PythonType xType = DynamicHelpers.GetPythonType(x);
+
+            if (xType.TryResolveSlot(context, "__coerce__", out pts)) {
+                object callable;
+                if (pts.TryGetValue(context, x, xType, out callable)) {
+                    return PythonCalls.Call(context, callable, y);
+                }
+            }
+            return NotImplementedType.Value;
+        }
+
         internal static int GetSequenceMultiplier(object sequence, object count) {
             int icount;
             if (!Converter.TryConvertToIndex(count, out icount)) {
                 PythonTuple pt = null;
                 if (count is OldInstance || !DynamicHelpers.GetPythonType(count).IsSystemType) {
-                    pt = Builtin.TryCoerce(DefaultContext.Default, count, sequence) as PythonTuple;
+                    pt = TryCoerce(DefaultContext.Default, count, sequence) as PythonTuple;
                 }
 
                 if (pt == null || !Converter.TryConvertToIndex(pt[0], out icount)) {

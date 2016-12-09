@@ -100,7 +100,6 @@ namespace IronPython.Runtime.Binding {
             switch (operatorName) {
                 case PythonOperationKind.Add: return ExpressionType.Add;
                 case PythonOperationKind.BitwiseAnd: return ExpressionType.And;
-                case PythonOperationKind.Divide: return ExpressionType.Divide;
                 case PythonOperationKind.ExclusiveOr: return ExpressionType.ExclusiveOr;
                 case PythonOperationKind.Mod: return ExpressionType.Modulo;
                 case PythonOperationKind.Multiply: return ExpressionType.Multiply;
@@ -109,10 +108,10 @@ namespace IronPython.Runtime.Binding {
                 case PythonOperationKind.RightShift: return ExpressionType.RightShift;
                 case PythonOperationKind.LeftShift: return ExpressionType.LeftShift;
                 case PythonOperationKind.Subtract: return ExpressionType.Subtract;
+                case PythonOperationKind.TrueDivide: return ExpressionType.Divide;
 
                 case PythonOperationKind.InPlaceAdd: return ExpressionType.AddAssign;
                 case PythonOperationKind.InPlaceBitwiseAnd: return ExpressionType.AndAssign;
-                case PythonOperationKind.InPlaceDivide: return ExpressionType.DivideAssign;
                 case PythonOperationKind.InPlaceExclusiveOr: return ExpressionType.ExclusiveOrAssign;
                 case PythonOperationKind.InPlaceMod: return ExpressionType.ModuloAssign;
                 case PythonOperationKind.InPlaceMultiply: return ExpressionType.MultiplyAssign;
@@ -121,6 +120,7 @@ namespace IronPython.Runtime.Binding {
                 case PythonOperationKind.InPlaceRightShift: return ExpressionType.RightShiftAssign;
                 case PythonOperationKind.InPlaceLeftShift: return ExpressionType.LeftShiftAssign;
                 case PythonOperationKind.InPlaceSubtract: return ExpressionType.SubtractAssign;
+                case PythonOperationKind.InPlaceTrueDivide: return ExpressionType.DivideAssign;
 
                 case PythonOperationKind.Equal: return ExpressionType.Equal;
                 case PythonOperationKind.GreaterThan: return ExpressionType.GreaterThan;

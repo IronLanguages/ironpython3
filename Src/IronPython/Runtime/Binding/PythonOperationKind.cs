@@ -114,8 +114,6 @@ namespace IronPython.Runtime.Binding {
         Multiply,
         ///<summary>Operator for performing floordiv</summary>
         FloorDivide,
-        ///<summary>Operator for performing div</summary>
-        Divide,
         ///<summary>Operator for performing truediv</summary>
         TrueDivide,
         ///<summary>Operator for performing mod</summary>
@@ -158,8 +156,6 @@ namespace IronPython.Runtime.Binding {
         InPlaceMultiply = Multiply | InPlace,
         ///<summary>Operator for performing in-place floordiv</summary>
         InPlaceFloorDivide = FloorDivide | InPlace,
-        ///<summary>Operator for performing in-place div</summary>
-        InPlaceDivide = Divide | InPlace,
         ///<summary>Operator for performing in-place truediv</summary>
         InPlaceTrueDivide = TrueDivide | InPlace,
         ///<summary>Operator for performing in-place mod</summary>
@@ -184,8 +180,6 @@ namespace IronPython.Runtime.Binding {
         ReverseMultiply = Multiply | Reversed,
         ///<summary>Operator for performing reverse floordiv</summary>
         ReverseFloorDivide = FloorDivide | Reversed,
-        ///<summary>Operator for performing reverse div</summary>
-        ReverseDivide = Divide | Reversed,
         ///<summary>Operator for performing reverse truediv</summary>
         ReverseTrueDivide = TrueDivide | Reversed,
         ///<summary>Operator for performing reverse mod</summary>

@@ -1,6 +1,6 @@
 @echo off
 setlocal
-set PATH=%PATH%;%WINDIR%\Microsoft.NET\Framework\v4.0.30319
+set PATH=%PATH%;%ProgramFiles(x86)%\MSBuild\14.0\Bin\;%WINDIR%\Microsoft.NET\Framework\v4.0.30319
 
 :getopts
 if "%1"=="" (goto :default) else (goto :%1)

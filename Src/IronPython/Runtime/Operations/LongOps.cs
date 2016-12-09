@@ -328,7 +328,7 @@ namespace IronPython.Runtime.Operations {
 
         [SpecialName]
         public static BigInteger FloorDivide([NotNull]BigInteger x, [NotNull]BigInteger y) {
-            return Divide(x, y);
+            return op_Division(x, y);
         }
 
         [SpecialName]
@@ -725,11 +725,6 @@ namespace IronPython.Runtime.Operations {
         [PythonHidden]
         public static BigInteger Xor(BigInteger x, BigInteger y) {
             return x ^ y;
-        }
-
-        [PythonHidden]
-        public static BigInteger Divide(BigInteger x, BigInteger y) {
-            return op_Division(x, y);
         }
 
         [PythonHidden]

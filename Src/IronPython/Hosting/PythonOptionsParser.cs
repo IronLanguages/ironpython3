@@ -104,17 +104,6 @@ namespace IronPython.Hosting {
                     LanguageSetup.Options["StripDocStrings"] = ScriptingRuntimeHelpers.True;
                     break;
 
-                case "-Q":
-                    LanguageSetup.Options["DivisionOptions"] = ToDivisionOptions(PopNextArg());
-                    break;
-
-                case "-Qold":
-                case "-Qnew":
-                case "-Qwarn":
-                case "-Qwarnall":
-                    LanguageSetup.Options["DivisionOptions"] = ToDivisionOptions(arg.Substring(2));
-                    break;
-
                 case "-V":
                     ConsoleOptions.PrintVersion = true;
                     ConsoleOptions.Exit = true;
@@ -217,17 +206,6 @@ namespace IronPython.Hosting {
             }
         }
 
-        private static PythonDivisionOptions ToDivisionOptions(string/*!*/ value) {
-            switch (value) {
-                case "old": return PythonDivisionOptions.Old;
-                case "new": return PythonDivisionOptions.New;
-                case "warn": return PythonDivisionOptions.Warn;
-                case "warnall": return PythonDivisionOptions.WarnAll;
-                default:
-                    throw InvalidOptionValue("-Q", value);
-            }
-        }
-
         public override void GetHelp(out string commandLine, out string[,] options, out string[,] environmentVariables, out string comments) {
             string[,] standardOptions;
             base.GetHelp(out commandLine, out standardOptions, out environmentVariables, out comments);
@@ -247,7 +225,6 @@ namespace IronPython.Hosting {
                 { "-O",                     "generate optimized code" },
                 { "-OO",                    "remove doc strings and apply -O optimizations" },
                 { "-E",                     "Ignore environment variables" },
-                { "-Q arg",                 "Division options: -Qold (default), -Qwarn, -Qwarnall, -Qnew" },
                 { "-S",                     "Don't imply 'import site' on initialization" },
                 { "-s",                     "Don't add user site directory to sys.path" },
                 { "-t",                     "Issue warnings about inconsistent tab usage" },

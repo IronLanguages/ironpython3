@@ -101,7 +101,7 @@ namespace IronPython.Runtime.Types {
             res.Add(new OperatorMapping(PythonOperationKind.Add, "op_Addition", "Add"));            // +
             res.Add(new OperatorMapping(PythonOperationKind.Subtract, "op_Subtraction", "Subtract"));       // -
             res.Add(new OperatorMapping(PythonOperationKind.Multiply, "op_Multiply", "Multiply"));       // *
-            res.Add(new OperatorMapping(PythonOperationKind.Divide, "op_Division", "Divide"));         // /
+            res.Add(new OperatorMapping(PythonOperationKind.TrueDivide, "op_Division", "Divide"));         // /
             res.Add(new OperatorMapping(PythonOperationKind.Mod, "op_Modulus", "Mod"));            // %
             res.Add(new OperatorMapping(PythonOperationKind.ExclusiveOr, "op_ExclusiveOr", "ExclusiveOr"));    // ^
             res.Add(new OperatorMapping(PythonOperationKind.BitwiseAnd, "op_BitwiseAnd", "BitwiseAnd"));     // &
@@ -123,7 +123,7 @@ namespace IronPython.Runtime.Types {
             res.Add(new OperatorMapping(PythonOperationKind.InPlaceAdd, "op_AdditionAssignment", "InPlaceAdd"));            // += 
             res.Add(new OperatorMapping(PythonOperationKind.InPlaceBitwiseAnd, "op_BitwiseAndAssignment", "InPlaceBitwiseAnd"));     // &=
             res.Add(new OperatorMapping(PythonOperationKind.InPlaceBitwiseOr, "op_BitwiseOrAssignment", "InPlaceBitwiseOr"));      // |=
-            res.Add(new OperatorMapping(PythonOperationKind.InPlaceDivide, "op_DivisionAssignment", "InPlaceDivide"));         // /=
+            res.Add(new OperatorMapping(PythonOperationKind.InPlaceTrueDivide, "op_DivisionAssignment", "InPlaceDivide"));         // /=
             
             // these exist just for TypeInfo to map by name
             res.Add(new OperatorMapping(PythonOperationKind.GetItem, "get_Item", "GetItem"));        // not defined

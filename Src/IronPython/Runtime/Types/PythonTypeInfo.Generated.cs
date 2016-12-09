@@ -43,9 +43,6 @@ namespace IronPython.Runtime.Types {
             pyOp["__floordiv__"] = PythonOperationKind.FloorDivide;
             pyOp["__rfloordiv__"] = PythonOperationKind.ReverseFloorDivide;
             pyOp["__ifloordiv__"] = PythonOperationKind.InPlaceFloorDivide;
-            pyOp["__div__"] = PythonOperationKind.Divide;
-            pyOp["__rdiv__"] = PythonOperationKind.ReverseDivide;
-            pyOp["__idiv__"] = PythonOperationKind.InPlaceDivide;
             pyOp["__truediv__"] = PythonOperationKind.TrueDivide;
             pyOp["__rtruediv__"] = PythonOperationKind.ReverseTrueDivide;
             pyOp["__itruediv__"] = PythonOperationKind.InPlaceTrueDivide;

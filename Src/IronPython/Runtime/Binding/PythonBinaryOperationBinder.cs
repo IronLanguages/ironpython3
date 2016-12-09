@@ -498,7 +498,7 @@ namespace IronPython.Runtime.Binding {
         private object IntDivide(CallSite site, object self, object other) {
             if (self != null && self.GetType() == typeof(int) &&
                 other != null && other.GetType() == typeof(int)) {
-                return Int32Ops.Divide((int)self, (int)other);
+                return Int32Ops.TrueDivide((int)self, (int)other);
             }
 
             return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, self, other);
@@ -506,7 +506,7 @@ namespace IronPython.Runtime.Binding {
 
         private object IntDivide(CallSite site, object self, int other) {
             if (self != null && self.GetType() == typeof(int)) {
-                return Int32Ops.Divide((int)self, other);
+                return Int32Ops.TrueDivide((int)self, other);
             }
 
             return ((CallSite<Func<CallSite, object, int, object>>)site).Update(site, self, other);
@@ -514,7 +514,7 @@ namespace IronPython.Runtime.Binding {
 
         private object IntDivide(CallSite site, int self, object other) {
             if (other != null && other.GetType() == typeof(int)) {
-                return Int32Ops.Divide(self, (int)other);
+                return Int32Ops.TrueDivide(self, (int)other);
             }
 
             return ((CallSite<Func<CallSite, int, object, object>>)site).Update(site, self, other);

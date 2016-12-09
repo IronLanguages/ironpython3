@@ -375,31 +375,29 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
 
             private const int INDEX_DEBUG = 0;
             private const int INDEX_PY3K_WARNING = 1;
-            private const int INDEX_DIVISION_WARNING = 2;
-            private const int INDEX_DIVISION_NEW = 3;
-            private const int INDEX_INSPECT = 4;
-            private const int INDEX_INTERACTIVE = 5;
-            private const int INDEX_OPTIMIZE = 6;
-            private const int INDEX_DONT_WRITE_BYTECODE = 7;
-            private const int INDEX_NO_USER_SITE = 8;
-            private const int INDEX_NO_SITE = 9;
-            private const int INDEX_IGNORE_ENVIRONMENT = 10;
-            private const int INDEX_TABCHECK = 11;
-            private const int INDEX_VERBOSE = 12;
-            private const int INDEX_UNICODE = 13;
-            private const int INDEX_BYTES_WARNING = 14;
+            private const int INDEX_INSPECT = 2;
+            private const int INDEX_INTERACTIVE = 3;
+            private const int INDEX_OPTIMIZE = 4;
+            private const int INDEX_DONT_WRITE_BYTECODE = 5;
+            private const int INDEX_NO_USER_SITE = 6;
+            private const int INDEX_NO_SITE = 7;
+            private const int INDEX_IGNORE_ENVIRONMENT = 8;
+            private const int INDEX_TABCHECK = 9;
+            private const int INDEX_VERBOSE = 10;
+            private const int INDEX_UNICODE = 11;
+            private const int INDEX_BYTES_WARNING = 12;
 
-            public const int n_fields = 15;
-            public const int n_sequence_fields = 15;
+            public const int n_fields = 13;
+            public const int n_sequence_fields = 13;
             public const int n_unnamed_fields = 0;
 
             private static readonly string[] _keys = new string[] {
-                "debug", "py3k_warning", "division_warning", "division_new", "inspect",
+                "debug", "py3k_warning", "inspect",
                 "interactive", "optimize", "dont_write_bytecode", "no_user_site", "no_site",
                 "ignore_environment", "tabcheck", "verbose", "unicode", "bytes_warning"
             };
             private object[] _values = new object[n_fields] {
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
             };
 
             private PythonTuple __tuple = null;
@@ -647,16 +645,6 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             public int py3k_warning {
                 get { return _GetVal(INDEX_PY3K_WARNING); }
                 internal set { _SetVal(INDEX_PY3K_WARNING, value); }
-            }
-
-            public int division_warning {
-                get { return _GetVal(INDEX_DIVISION_WARNING); }
-                internal set { _SetVal(INDEX_DIVISION_WARNING, value); }
-            }
-
-            public int division_new {
-                get { return _GetVal(INDEX_DIVISION_NEW); }
-                internal set { _SetVal(INDEX_DIVISION_NEW, value); }
             }
 
             public int inspect {

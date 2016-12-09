@@ -220,14 +220,6 @@ namespace IronPython.Modules {
             return and_(context, a, b);
         }
 
-        public static object div(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(PythonOperationKind.Divide, a, b);
-        }
-
-        public static object __div__(CodeContext/*!*/ context, object a, object b) {
-            return div(context, a, b);
-        }
-
         public static object floordiv(CodeContext/*!*/ context, object a, object b) {
             return PythonContext.GetContext(context).Operation(PythonOperationKind.FloorDivide, a, b);
         }
@@ -506,10 +498,6 @@ namespace IronPython.Modules {
             return PythonContext.GetContext(context).Operation(PythonOperationKind.InPlaceBitwiseAnd, a, b);
         }
 
-        public static object idiv(CodeContext/*!*/ context, object a, object b) {
-            return PythonContext.GetContext(context).Operation(PythonOperationKind.InPlaceDivide, a, b);
-        }
-
         public static object ifloordiv(CodeContext/*!*/ context, object a, object b) {
             return PythonContext.GetContext(context).Operation(PythonOperationKind.InPlaceFloorDivide, a, b);
         }
@@ -576,10 +564,6 @@ namespace IronPython.Modules {
 
         public static object __iand__(CodeContext/*!*/ context, object a, object b) {
             return iand(context, a, b);
-        }
-
-        public static object __idiv__(CodeContext/*!*/ context, object a, object b) {
-            return idiv(context, a, b);
         }
 
         public static object __ifloordiv__(CodeContext/*!*/ context, object a, object b) {

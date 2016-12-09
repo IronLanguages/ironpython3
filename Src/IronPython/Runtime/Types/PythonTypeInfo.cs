@@ -399,12 +399,12 @@ namespace IronPython.Runtime.Types {
                                         opInfo.Operator == PythonOperationKind.RightShift ||
                                         opInfo.Operator == PythonOperationKind.LeftShift ||
                                         opInfo.Operator == PythonOperationKind.Compare ||
-                                        opInfo.Operator == PythonOperationKind.Divide) {
+                                        opInfo.Operator == PythonOperationKind.TrueDivide) {
                                         // we override these with our own modulus/power PythonOperationKind which are different from BigInteger.
                                         continue;
                                     }
 #if !CLR2
-                                } else if (curType == typeof(Complex) && opInfo.Operator == PythonOperationKind.Divide) {
+                                } else if (curType == typeof(Complex) && opInfo.Operator == PythonOperationKind.TrueDivide) {
                                     // we override this with our own division PythonOperationKind which is different from .NET Complex.
                                     continue;
 #endif

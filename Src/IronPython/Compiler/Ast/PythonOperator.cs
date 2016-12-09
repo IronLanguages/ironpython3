@@ -28,7 +28,6 @@ namespace IronPython.Compiler {
         Add,
         Subtract,
         Multiply,
-        Divide,
         TrueDivide,
         Mod,
         BitwiseAnd,

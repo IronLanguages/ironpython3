@@ -59,8 +59,6 @@ namespace IronPython.Compiler.Ast {
                     return PythonOperationKind.InPlaceSubtract;
                 case PythonOperator.Multiply:
                     return PythonOperationKind.InPlaceMultiply;
-                case PythonOperator.Divide:
-                    return PythonOperationKind.InPlaceDivide;
                 case PythonOperator.TrueDivide:
                     return PythonOperationKind.InPlaceTrueDivide;
                 case PythonOperator.Mod:

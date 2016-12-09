@@ -281,34 +281,6 @@ namespace IronPython.Compiler.Ast {
 
             PythonOperationKind action = PythonOperatorToAction(op);
             if (action != PythonOperationKind.None) {
-                // Create action expression
-                if (CanEmitWarning(op)) {
-                    MSAst.ParameterExpression tempLeft = Ast.Parameter(left.Type, "left");
-                    MSAst.ParameterExpression tempRight = Ast.Parameter(right.Type, "right");
-                    return Ast.Block(
-                        new[] { tempLeft, tempRight },
-                        Ast.Call(
-                            AstMethods.WarnDivision,
-                            Parent.LocalContext,
-                            AstUtils.Constant(GlobalParent.DivisionOptions),
-                            AstUtils.Convert(
-                                Ast.Assign(tempLeft, left),
-                                typeof(object)
-                            ),
-                            AstUtils.Convert(
-                                Ast.Assign(tempRight, right),
-                                typeof(object)
-                            )
-                        ),
-                        GlobalParent.Operation(
-                            typeof(object),
-                            action,
-                            tempLeft,
-                            tempRight
-                        )
-                    );
-                }
-
                 return GlobalParent.Operation(
                     typeof(object),
                     action,
@@ -326,9 +298,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         private bool CanEmitWarning(PythonOperator op) {
-            
-            return op == PythonOperator.Divide &&
-                                (GlobalParent.DivisionOptions == PythonDivisionOptions.Warn || GlobalParent.DivisionOptions == PythonDivisionOptions.WarnAll);
+            return false;
         }
 
         public override void Walk(PythonWalker walker) {
@@ -348,8 +318,6 @@ namespace IronPython.Compiler.Ast {
                     return PythonOperationKind.Subtract;
                 case PythonOperator.Multiply:
                     return PythonOperationKind.Multiply;
-                case PythonOperator.Divide:
-                    return PythonOperationKind.Divide;
                 case PythonOperator.TrueDivide:
                     return PythonOperationKind.TrueDivide;
                 case PythonOperator.Mod:

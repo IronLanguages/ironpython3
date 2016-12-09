@@ -32,10 +32,6 @@ namespace IronPython.Runtime {
         /// </summary>
         Generator = 0x20,
         /// <summary>
-        /// Set if the function was compiled with future division.
-        /// </summary>
-        FutureDivision = 0x2000,
-        /// <summary>
         /// IronPython specific: Set if the function includes nested exception handling and therefore can alter
         /// sys.exc_info().
         /// </summary>

@@ -46,7 +46,7 @@ namespace IronPython.Compiler {
                     return Tokens.MultiplyToken;
                 case '/':
                     if (NextChar('=')) {
-                        return Tokens.DivideEqualToken;
+                        return Tokens.TrueDivideEqualToken;
                     }
                     if (NextChar('/')) {
                         if (NextChar('=')) {
@@ -54,7 +54,7 @@ namespace IronPython.Compiler {
                         }
                         return Tokens.FloorDivideToken;
                     }
-                    return Tokens.DivideToken;
+                    return Tokens.TrueDivideToken;
                 case '%':
                     if (NextChar('=')) {
                         return Tokens.ModEqualToken;

@@ -128,17 +128,12 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static Complex Divide(Complex x, Complex y) {
+        public static Complex TrueDivide(Complex x, Complex y) {
             if (y.IsZero()) {
                 throw new DivideByZeroException("complex division by zero");
             }
 
             return x / y;
-        }
-
-        [SpecialName]
-        public static Complex TrueDivide(Complex x, Complex y) {
-            return Divide(x, y);
         }
 
         [SpecialName]
@@ -182,32 +177,19 @@ namespace IronPython.Runtime.Operations {
             return op_Power(x, y);
         }
 
-        // floordiv for complex numbers is deprecated in the Python 2.
-        // specification; this function implements the observable
-        // functionality in CPython 2.4: 
-        //   Let x, y be complex.
-        //   Re(x//y) := floor(Re(x/y))
-        //   Im(x//y) := 0
         [SpecialName]
         public static Complex FloorDivide(CodeContext context, Complex x, Complex y) {
-            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "complex divmod(), // and % are deprecated");
-            Complex quotient = Divide(x, y);
-            return MathUtils.MakeReal(PythonOps.CheckMath(Math.Floor(quotient.Real)));
+            throw PythonOps.TypeError("can't take floor of complex number");
         }
 
-        // mod for complex numbers is also deprecated. IronPython
-        // implements the CPython semantics, that is:
-        // x % y = x - (y * (x//y)).
         [SpecialName]
         public static Complex Mod(CodeContext context, Complex x, Complex y) {
-            Complex quotient = FloorDivide(context, x, y);
-            return x - (quotient * y);
+            throw PythonOps.TypeError("can't mod complex numbers");
         }
 
         [SpecialName]
         public static PythonTuple DivMod(CodeContext context, Complex x, Complex y) {
-            Complex quotient = FloorDivide(context, x, y);
-            return PythonTuple.MakeTuple(quotient, x - (quotient * y));
+            throw PythonOps.TypeError("can't take floor or mod of complex number");
         }
 
         #endregion

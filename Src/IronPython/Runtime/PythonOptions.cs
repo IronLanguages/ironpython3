@@ -24,14 +24,6 @@ using IronPython.Runtime.Exceptions;
 
 namespace IronPython {
 
-    [CLSCompliant(false)]
-    public enum PythonDivisionOptions {
-        Old,
-        New,
-        Warn,
-        WarnAll
-    }
-
     [Serializable, CLSCompliant(true)]
     public sealed class PythonOptions : LanguageOptions {
 
@@ -42,7 +34,6 @@ namespace IronPython {
         private readonly bool _debug;
         private readonly int _recursionLimit;
         private readonly Severity _indentationInconsistencySeverity;
-        private readonly PythonDivisionOptions _division;
         private readonly bool _stripDocStrings;
         private readonly bool _optimize;
         private readonly bool _inspect;
@@ -200,14 +191,6 @@ namespace IronPython {
         }
 
         /// <summary>
-        /// The division options (old, new, warn, warnall)
-        /// </summary>
-        [CLSCompliant(false)]
-        public PythonDivisionOptions DivisionOptions {
-            get { return _division; }
-        }
-
-        /// <summary>
         /// Forces all code to be compiled in a mode in which the code can be reliably collected by the CLR.
         /// </summary>
         public bool LightweightScopes {
@@ -267,7 +250,6 @@ namespace IronPython {
             _verbose = GetOption(options, "Verbose", false);
             _optimize = GetOption(options, "Optimize", false);
             _stripDocStrings = GetOption(options, "StripDocStrings", false);
-            _division = GetOption(options, "DivisionOptions", PythonDivisionOptions.New);
             _recursionLimit = GetOption(options, "RecursionLimit", Int32.MaxValue);
             _indentationInconsistencySeverity = GetOption(options, "IndentationInconsistencySeverity", Severity.Ignore);
             _enableProfiler = GetOption(options, "EnableProfiler", false);

@@ -43,9 +43,6 @@ namespace IronPython.Runtime {
                 case PythonOperationKind.FloorDivide: return "__floordiv__";
                 case PythonOperationKind.ReverseFloorDivide: return "__rfloordiv__";
                 case PythonOperationKind.InPlaceFloorDivide: return "__ifloordiv__";
-                case PythonOperationKind.Divide: return "__div__";
-                case PythonOperationKind.ReverseDivide: return "__rdiv__";
-                case PythonOperationKind.InPlaceDivide: return "__idiv__";
                 case PythonOperationKind.TrueDivide: return "__truediv__";
                 case PythonOperationKind.ReverseTrueDivide: return "__rtruediv__";
                 case PythonOperationKind.InPlaceTrueDivide: return "__itruediv__";

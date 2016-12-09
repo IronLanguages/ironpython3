@@ -715,20 +715,21 @@ namespace IronPython.Compiler {
         }
 
         private Token ReadNumber(int start) {
-            int b = 10;
+            bool isPrefix0 = false;
             if (start == '0') {
                 if (NextChar('x') || NextChar('X')) {
                     return ReadHexNumber();
-                } else {
-                    if (NextChar('b') || NextChar('B')) {
-                        return ReadBinaryNumber();
-                    } else if (NextChar('o') || NextChar('O')) {
-                        return ReadOctalNumber();
-                    }
                 }
-                b = 8;
+                if (NextChar('b') || NextChar('B')) {
+                    return ReadBinaryNumber();
+                }
+                if (NextChar('o') || NextChar('O')) {
+                    return ReadOctalNumber();
+                }
+                isPrefix0 = true;
             }
 
+            bool isFirstChar = true;
             while (true) {
                 int ch = NextChar();
 
@@ -747,13 +748,6 @@ namespace IronPython.Compiler {
                         // TODO: parse in place
                         return new ConstantValueToken(LiteralParser.ParseImaginary(GetTokenString()));
 
-                    case 'l':
-                    case 'L':
-                        MarkTokenEnd();
-
-                        // TODO: parse in place
-                        return new ConstantValueToken(LiteralParser.ParseBigInteger(GetTokenString(), b));
-
                     case '0':
                     case '1':
                     case '2':
@@ -769,10 +763,14 @@ namespace IronPython.Compiler {
                     default:
                         BufferBack();
                         MarkTokenEnd();
+                        if (isPrefix0 && !isFirstChar) {
+                            ReportSyntaxError(BufferTokenSpan, "invalid token", ErrorCodes.SyntaxError);
+                        }
 
                         // TODO: parse in place
-                        return new ConstantValueToken(ParseInteger(GetTokenString(), b));
+                        return new ConstantValueToken(ParseInteger(GetTokenString(), 10));
                 }
+                isFirstChar = false;
             }
         }
 

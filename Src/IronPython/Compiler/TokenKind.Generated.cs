@@ -46,8 +46,8 @@ namespace IronPython.Compiler {
         MultiplyEqual = 39,
         FloorDivide = 40,
         FloorDivideEqual = 41,
-        Divide = 42,
-        DivideEqual = 43,
+        TrueDivide = 42,
+        TrueDivideEqual = 43,
         Mod = 44,
         ModEqual = 45,
         LeftShift = 46,
@@ -158,8 +158,8 @@ namespace IronPython.Compiler {
         private static readonly Token symMultiplyEqualToken = new SymbolToken(TokenKind.MultiplyEqual, "*=");
         private static readonly Token symFloorDivideToken = new OperatorToken(TokenKind.FloorDivide, "//", 5);
         private static readonly Token symFloorDivideEqualToken = new SymbolToken(TokenKind.FloorDivideEqual, "//=");
-        private static readonly Token symDivideToken = new OperatorToken(TokenKind.Divide, "/", 5);
-        private static readonly Token symDivideEqualToken = new SymbolToken(TokenKind.DivideEqual, "/=");
+        private static readonly Token symTrueDivideToken = new OperatorToken(TokenKind.TrueDivide, "/", 5);
+        private static readonly Token symTrueDivideEqualToken = new SymbolToken(TokenKind.TrueDivideEqual, "/=");
         private static readonly Token symModToken = new OperatorToken(TokenKind.Mod, "%", 5);
         private static readonly Token symModEqualToken = new SymbolToken(TokenKind.ModEqual, "%=");
         private static readonly Token symLeftShiftToken = new OperatorToken(TokenKind.LeftShift, "<<", 3);
@@ -234,12 +234,12 @@ namespace IronPython.Compiler {
             get { return symFloorDivideEqualToken; }
         }
 
-        public static Token DivideToken {
-            get { return symDivideToken; }
+        public static Token TrueDivideToken {
+            get { return symTrueDivideToken; }
         }
 
-        public static Token DivideEqualToken {
-            get { return symDivideEqualToken; }
+        public static Token TrueDivideEqualToken {
+            get { return symTrueDivideEqualToken; }
         }
 
         public static Token ModToken {

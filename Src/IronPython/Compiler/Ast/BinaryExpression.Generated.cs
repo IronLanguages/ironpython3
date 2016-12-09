@@ -54,7 +54,6 @@ namespace IronPython.Compiler.Ast {
                             case PythonOperator.Power: return new ConstantExpression(Int32Ops.Power((Int32)constLeft.Value, (Int32)constRight.Value));
                             case PythonOperator.Multiply: return new ConstantExpression(Int32Ops.Multiply((Int32)constLeft.Value, (Int32)constRight.Value));
                             case PythonOperator.FloorDivide: return new ConstantExpression(Int32Ops.FloorDivide((Int32)constLeft.Value, (Int32)constRight.Value));
-                            case PythonOperator.Divide: return new ConstantExpression(Int32Ops.Divide((Int32)constLeft.Value, (Int32)constRight.Value));
                             case PythonOperator.TrueDivide: return new ConstantExpression(Int32Ops.TrueDivide((Int32)constLeft.Value, (Int32)constRight.Value));
                             case PythonOperator.Mod: return new ConstantExpression(Int32Ops.Mod((Int32)constLeft.Value, (Int32)constRight.Value));
                             case PythonOperator.LeftShift: return new ConstantExpression(Int32Ops.LeftShift((Int32)constLeft.Value, (Int32)constRight.Value));
@@ -77,7 +76,6 @@ namespace IronPython.Compiler.Ast {
                             case PythonOperator.Power: return new ConstantExpression(DoubleOps.Power((Double)constLeft.Value, (Double)constRight.Value));
                             case PythonOperator.Multiply: return new ConstantExpression(DoubleOps.Multiply((Double)constLeft.Value, (Double)constRight.Value));
                             case PythonOperator.FloorDivide: return new ConstantExpression(DoubleOps.FloorDivide((Double)constLeft.Value, (Double)constRight.Value));
-                            case PythonOperator.Divide: return new ConstantExpression(DoubleOps.Divide((Double)constLeft.Value, (Double)constRight.Value));
                             case PythonOperator.TrueDivide: return new ConstantExpression(DoubleOps.TrueDivide((Double)constLeft.Value, (Double)constRight.Value));
                             case PythonOperator.Mod: return new ConstantExpression(DoubleOps.Mod((Double)constLeft.Value, (Double)constRight.Value));
                             case PythonOperator.LessThan: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject(DoubleOps.Compare((Double)constLeft.Value, (Double)constRight.Value) < 0));
@@ -95,7 +93,6 @@ namespace IronPython.Compiler.Ast {
                             case PythonOperator.Power: return new ConstantExpression(BigIntegerOps.Power((BigInteger)constLeft.Value, (BigInteger)constRight.Value));
                             case PythonOperator.Multiply: return new ConstantExpression(BigIntegerOps.Multiply((BigInteger)constLeft.Value, (BigInteger)constRight.Value));
                             case PythonOperator.FloorDivide: return new ConstantExpression(BigIntegerOps.FloorDivide((BigInteger)constLeft.Value, (BigInteger)constRight.Value));
-                            case PythonOperator.Divide: return new ConstantExpression(BigIntegerOps.Divide((BigInteger)constLeft.Value, (BigInteger)constRight.Value));
                             case PythonOperator.TrueDivide: return new ConstantExpression(BigIntegerOps.TrueDivide((BigInteger)constLeft.Value, (BigInteger)constRight.Value));
                             case PythonOperator.Mod: return new ConstantExpression(BigIntegerOps.Mod((BigInteger)constLeft.Value, (BigInteger)constRight.Value));
                             case PythonOperator.LeftShift: return new ConstantExpression(BigIntegerOps.LeftShift((BigInteger)constLeft.Value, (BigInteger)constRight.Value));
@@ -117,7 +114,6 @@ namespace IronPython.Compiler.Ast {
                             case PythonOperator.Subtract: return new ConstantExpression(ComplexOps.Subtract((Complex)constLeft.Value, (Complex)constRight.Value));
                             case PythonOperator.Power: return new ConstantExpression(ComplexOps.Power((Complex)constLeft.Value, (Complex)constRight.Value));
                             case PythonOperator.Multiply: return new ConstantExpression(ComplexOps.Multiply((Complex)constLeft.Value, (Complex)constRight.Value));
-                            case PythonOperator.Divide: return new ConstantExpression(ComplexOps.Divide((Complex)constLeft.Value, (Complex)constRight.Value));
                             case PythonOperator.TrueDivide: return new ConstantExpression(ComplexOps.TrueDivide((Complex)constLeft.Value, (Complex)constRight.Value));
                         }
                     }

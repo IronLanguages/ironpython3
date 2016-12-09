@@ -2204,9 +2204,6 @@ namespace IronPython.Modules {
             }
             
             ModuleOptions langFeat = ModuleOptions.None;
-            if ((cflags & CompileFlags.CO_FUTURE_DIVISION) != 0) {
-                langFeat |= ModuleOptions.TrueDivision;
-            }
             if ((cflags & CompileFlags.CO_FUTURE_WITH_STATEMENT) != 0) {
                 langFeat |= ModuleOptions.WithStatement;
             }

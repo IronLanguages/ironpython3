@@ -43,9 +43,6 @@ namespace IronPython.Modules {
             [SlotField] public static PythonTypeSlot __floordiv__ = new SlotWrapper("__floordiv__", ProxyType);
             [SlotField] public static PythonTypeSlot __rfloordiv__ = new SlotWrapper("__rfloordiv__", ProxyType);
             [SlotField] public static PythonTypeSlot __ifloordiv__ = new SlotWrapper("__ifloordiv__", ProxyType);
-            [SlotField] public static PythonTypeSlot __div__ = new SlotWrapper("__div__", ProxyType);
-            [SlotField] public static PythonTypeSlot __rdiv__ = new SlotWrapper("__rdiv__", ProxyType);
-            [SlotField] public static PythonTypeSlot __idiv__ = new SlotWrapper("__idiv__", ProxyType);
             [SlotField] public static PythonTypeSlot __truediv__ = new SlotWrapper("__truediv__", ProxyType);
             [SlotField] public static PythonTypeSlot __rtruediv__ = new SlotWrapper("__rtruediv__", ProxyType);
             [SlotField] public static PythonTypeSlot __itruediv__ = new SlotWrapper("__itruediv__", ProxyType);
@@ -118,9 +115,6 @@ namespace IronPython.Modules {
             [SlotField] public static PythonTypeSlot __floordiv__ = new SlotWrapper("__floordiv__", CallableProxyType);
             [SlotField] public static PythonTypeSlot __rfloordiv__ = new SlotWrapper("__rfloordiv__", CallableProxyType);
             [SlotField] public static PythonTypeSlot __ifloordiv__ = new SlotWrapper("__ifloordiv__", CallableProxyType);
-            [SlotField] public static PythonTypeSlot __div__ = new SlotWrapper("__div__", CallableProxyType);
-            [SlotField] public static PythonTypeSlot __rdiv__ = new SlotWrapper("__rdiv__", CallableProxyType);
-            [SlotField] public static PythonTypeSlot __idiv__ = new SlotWrapper("__idiv__", CallableProxyType);
             [SlotField] public static PythonTypeSlot __truediv__ = new SlotWrapper("__truediv__", CallableProxyType);
             [SlotField] public static PythonTypeSlot __rtruediv__ = new SlotWrapper("__rtruediv__", CallableProxyType);
             [SlotField] public static PythonTypeSlot __itruediv__ = new SlotWrapper("__itruediv__", CallableProxyType);

@@ -134,10 +134,6 @@ namespace IronPython.Runtime.Operations {
             }
         }
         [SpecialName]
-        public static object Divide(SByte x, SByte y) {
-            return FloorDivide(x, y);
-        }
-        [SpecialName]
         public static double TrueDivide(SByte x, SByte y) {
             return DoubleOps.TrueDivide((double)x, (double)y);
 
@@ -389,18 +385,6 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static object Multiply(SByte x, Byte y) {
             return Int16Ops.Multiply((Int16)x, (Int16)y);
-        }
-        [SpecialName]
-        public static object Divide(Byte x, Byte y) {
-            return FloorDivide(x, y);
-        }
-        [SpecialName]
-        public static object Divide(Byte x, SByte y) {
-            return Int16Ops.Divide((Int16)x, (Int16)y);
-        }
-        [SpecialName]
-        public static object Divide(SByte x, Byte y) {
-            return Int16Ops.Divide((Int16)x, (Int16)y);
         }
         [SpecialName]
         public static double TrueDivide(Byte x, Byte y) {
@@ -689,10 +673,6 @@ namespace IronPython.Runtime.Operations {
             }
         }
         [SpecialName]
-        public static object Divide(Int16 x, Int16 y) {
-            return FloorDivide(x, y);
-        }
-        [SpecialName]
         public static double TrueDivide(Int16 x, Int16 y) {
             return DoubleOps.TrueDivide((double)x, (double)y);
 
@@ -947,18 +927,6 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static object Multiply(Int16 x, UInt16 y) {
             return Int32Ops.Multiply((Int32)x, (Int32)y);
-        }
-        [SpecialName]
-        public static object Divide(UInt16 x, UInt16 y) {
-            return FloorDivide(x, y);
-        }
-        [SpecialName]
-        public static object Divide(UInt16 x, Int16 y) {
-            return Int32Ops.Divide((Int32)x, (Int32)y);
-        }
-        [SpecialName]
-        public static object Divide(Int16 x, UInt16 y) {
-            return Int32Ops.Divide((Int32)x, (Int32)y);
         }
         [SpecialName]
         public static double TrueDivide(UInt16 x, UInt16 y) {
@@ -1217,13 +1185,8 @@ namespace IronPython.Runtime.Operations {
 
         }
         [SpecialName]
-        public static object Divide(Int32 x, Int32 y) {
-            return FloorDivide(x, y);
-        }
-        [SpecialName]
         public static double TrueDivide(Int32 x, Int32 y) {
             return DoubleOps.TrueDivide((double)x, (double)y);
-
         }
 
         // Binary Operations - Bitwise
@@ -1453,21 +1416,8 @@ namespace IronPython.Runtime.Operations {
             return Int64Ops.Multiply((Int64)x, (Int64)y);
         }
         [SpecialName]
-        public static object Divide(UInt32 x, UInt32 y) {
-            return FloorDivide(x, y);
-        }
-        [SpecialName]
-        public static object Divide(UInt32 x, Int32 y) {
-            return Int64Ops.Divide((Int64)x, (Int64)y);
-        }
-        [SpecialName]
-        public static object Divide(Int32 x, UInt32 y) {
-            return Int64Ops.Divide((Int64)x, (Int64)y);
-        }
-        [SpecialName]
         public static double TrueDivide(UInt32 x, UInt32 y) {
             return DoubleOps.TrueDivide((double)x, (double)y);
-
         }
         [SpecialName]
         public static double TrueDivide(UInt32 x, Int32 y) {
@@ -1767,7 +1717,6 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static double TrueDivide(Int64 x, Int64 y) {
             return DoubleOps.TrueDivide((double)x, (double)y);
-
         }
         [SpecialName]
         public static object FloorDivide(Int64 x, Int64 y) {
@@ -2021,21 +1970,8 @@ namespace IronPython.Runtime.Operations {
             return BigIntegerOps.Multiply((BigInteger)x, (BigInteger)y);
         }
         [SpecialName]
-        public static object Divide(UInt64 x, UInt64 y) {
-            return FloorDivide(x, y);
-        }
-        [SpecialName]
-        public static object Divide(UInt64 x, Int64 y) {
-            return BigIntegerOps.Divide((BigInteger)x, (BigInteger)y);
-        }
-        [SpecialName]
-        public static object Divide(Int64 x, UInt64 y) {
-            return BigIntegerOps.Divide((BigInteger)x, (BigInteger)y);
-        }
-        [SpecialName]
         public static double TrueDivide(UInt64 x, UInt64 y) {
             return DoubleOps.TrueDivide((double)x, (double)y);
-
         }
         [SpecialName]
         public static double TrueDivide(UInt64 x, Int64 y) {
@@ -2269,20 +2205,14 @@ namespace IronPython.Runtime.Operations {
             return x * y;
         }
         [SpecialName]
-        public static Single Divide(Single x, Single y) {
-            return TrueDivide(x, y);
-        }
-        [SpecialName]
         public static Single TrueDivide(Single x, Single y) {
             if (y == 0) throw PythonOps.ZeroDivisionError();
             return x / y;
-
         }
         [SpecialName]
         public static Single FloorDivide(Single x, Single y) {
             if (y == 0) throw PythonOps.ZeroDivisionError();
             return (Single)Math.Floor(x / y);
-
         }
 
         // Conversion operators
@@ -2401,20 +2331,14 @@ namespace IronPython.Runtime.Operations {
             return x * y;
         }
         [SpecialName]
-        public static Double Divide(Double x, Double y) {
-            return TrueDivide(x, y);
-        }
-        [SpecialName]
         public static Double TrueDivide(Double x, Double y) {
             if (y == 0) throw PythonOps.ZeroDivisionError();
             return x / y;
-
         }
         [SpecialName]
         public static Double FloorDivide(Double x, Double y) {
             if (y == 0) throw PythonOps.ZeroDivisionError();
             return (Double)Math.Floor(x / y);
-
         }
 
         // Conversion operators

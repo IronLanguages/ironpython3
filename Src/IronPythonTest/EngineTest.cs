@@ -240,7 +240,6 @@ namespace IronPythonTest {
             // python options
             options["StripDocStrings"] = true;
             options["Optimize"] = true;
-            options["DivisionOptions"] = PythonDivisionOptions.New;
             options["RecursionLimit"] = 42;
             options["IndentationInconsistencySeverity"] = Severity.Warning;
             options["WarningFilters"] = new string[] { "warnonme" };
@@ -301,7 +300,6 @@ namespace IronPythonTest {
 
                 AreEqual(po.StripDocStrings, true);
                 AreEqual(po.Optimize, true);
-                AreEqual(po.DivisionOptions, PythonDivisionOptions.New);
                 AreEqual(po.RecursionLimit, 42);
                 AreEqual(po.IndentationInconsistencySeverity, Severity.Warning);
                 AreEqual(po.WarningFilters[0], "warnonme");

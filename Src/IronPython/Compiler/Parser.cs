@@ -740,7 +740,7 @@ namespace IronPython.Compiler {
                 case TokenKind.AddEqual: return PythonOperator.Add;
                 case TokenKind.SubtractEqual: return PythonOperator.Subtract;
                 case TokenKind.MultiplyEqual: return PythonOperator.Multiply;
-                case TokenKind.DivideEqual: return TrueDivision ? PythonOperator.TrueDivide : PythonOperator.Divide;
+                case TokenKind.TrueDivideEqual: return PythonOperator.TrueDivide;
                 case TokenKind.ModEqual: return PythonOperator.Mod;
                 case TokenKind.BitwiseAndEqual: return PythonOperator.BitwiseAnd;
                 case TokenKind.BitwiseOrEqual: return PythonOperator.BitwiseOr;
@@ -759,7 +759,7 @@ namespace IronPython.Compiler {
                 case TokenKind.Add: return PythonOperator.Add;
                 case TokenKind.Subtract: return PythonOperator.Subtract;
                 case TokenKind.Multiply: return PythonOperator.Multiply;
-                case TokenKind.Divide: return TrueDivision ? PythonOperator.TrueDivide : PythonOperator.Divide;
+                case TokenKind.TrueDivide: return PythonOperator.TrueDivide;
                 case TokenKind.Mod: return PythonOperator.Mod;
                 case TokenKind.BitwiseAnd: return PythonOperator.BitwiseAnd;
                 case TokenKind.BitwiseOr: return PythonOperator.BitwiseOr;
@@ -892,7 +892,7 @@ namespace IronPython.Compiler {
                 fromFuture = true;
                 foreach (string name in names) {
                     if (name == "division") {
-                        _languageFeatures |= ModuleOptions.TrueDivision;
+                        // Ignored in Python 3
                     } else if (name == "with_statement") {
                         _languageFeatures |= ModuleOptions.WithStatement;
                     } else if (name == "absolute_import") {
@@ -3002,7 +3002,7 @@ namespace IronPython.Compiler {
                 case TokenKind.AddEqual:
                 case TokenKind.SubtractEqual:
                 case TokenKind.MultiplyEqual:
-                case TokenKind.DivideEqual:
+                case TokenKind.TrueDivideEqual:
                 case TokenKind.ModEqual:
                 case TokenKind.BitwiseAndEqual:
                 case TokenKind.BitwiseOrEqual:
@@ -3292,10 +3292,6 @@ namespace IronPython.Compiler {
                 new SourceSpan(_tokenizer.CurrentPosition, _tokenizer.CurrentPosition),
                 _sourceUnit.Path
             );
-        }
-
-        private bool TrueDivision {
-            get { return (_languageFeatures & ModuleOptions.TrueDivision) == ModuleOptions.TrueDivision; }
         }
 
         private bool AbsoluteImports {

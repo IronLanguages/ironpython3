@@ -340,13 +340,6 @@ namespace IronPython.Compiler.Ast {
         #region Public API
 
         /// <summary>
-        /// True division is enabled in this AST.
-        /// </summary>
-        public bool TrueDivision {
-            get { return (_languageFeatures & ModuleOptions.TrueDivision) != 0; }
-        }
-
-        /// <summary>
         /// True if the with statement is enabled in this AST.
         /// </summary>
         public bool AllowWithStatement {
@@ -361,12 +354,6 @@ namespace IronPython.Compiler.Ast {
         public bool AbsoluteImports {
             get {
                 return (_languageFeatures & ModuleOptions.AbsoluteImports) != 0;
-            }
-        }
-
-        internal PythonDivisionOptions DivisionOptions {
-            get {
-                return PyContext.PythonOptions.DivisionOptions;
             }
         }
 
@@ -538,14 +525,7 @@ namespace IronPython.Compiler.Ast {
 
         internal override FunctionAttributes Flags {
             get {
-                ModuleOptions features = ((PythonCompilerOptions)_compilerContext.Options).Module;
-                FunctionAttributes funcAttrs = 0;
-
-                if ((features & ModuleOptions.TrueDivision) != 0) {
-                    funcAttrs |= FunctionAttributes.FutureDivision;
-                }
-
-                return funcAttrs;
+                return FunctionAttributes.None;
             }
         }
 

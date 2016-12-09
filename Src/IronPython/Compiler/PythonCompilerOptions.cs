@@ -42,17 +42,6 @@ namespace IronPython.Compiler {
             _module = features;
         }
 
-        /// <summary>
-        /// Creates a new PythonCompilerOptions and enables or disables true division.
-        /// 
-        /// This overload is obsolete, instead you should use the overload which takes a
-        /// ModuleOptions.
-        /// </summary>
-        [Obsolete("Use the overload that takes ModuleOptions instead")]
-        public PythonCompilerOptions(bool trueDivision) {
-            TrueDivision = trueDivision;
-        }
-
         public bool DontImplyDedent {
             get { return _dontImplyIndent; }
             set { _dontImplyIndent = value; }
@@ -74,16 +63,6 @@ namespace IronPython.Compiler {
             }
             set {
                 _initialIndentation = value;
-            }
-        }
-
-        public bool TrueDivision {
-            get {
-                return (_module & ModuleOptions.TrueDivision) != 0;
-            }
-            set {
-                if (value) _module |= ModuleOptions.TrueDivision;
-                else _module &= ~ModuleOptions.TrueDivision;
             }
         }
 

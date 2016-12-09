@@ -839,19 +839,6 @@ namespace IronPython.Runtime
             flags.debug = _options.Debug ? 1 : 0;
             flags.py3k_warning = _options.WarnPython30 ? 1 : 0;
             SetSystemStateValue("py3kwarning", _options.WarnPython30);
-            switch (_options.DivisionOptions) {
-                case PythonDivisionOptions.Old:
-                    break;
-                case PythonDivisionOptions.New:
-                    flags.division_new = 1;
-                    break;
-                case PythonDivisionOptions.Warn:
-                    flags.division_warning = 1;
-                    break;
-                case PythonDivisionOptions.WarnAll:
-                    flags.division_warning = 2;
-                    break;
-            }
             flags.inspect = flags.interactive = _options.Inspect ? 1 : 0;
             if (_options.StripDocStrings) {
                 flags.optimize = 2;
@@ -1769,13 +1756,7 @@ namespace IronPython.Runtime
         }
 
         internal PythonCompilerOptions GetPythonCompilerOptions() {
-            ModuleOptions features = ModuleOptions.None;
-
-            if (PythonOptions.DivisionOptions == PythonDivisionOptions.New) {
-                features |= ModuleOptions.TrueDivision;
-            }
-
-            return new PythonCompilerOptions(features);
+            return new PythonCompilerOptions(ModuleOptions.None);
         }
 
         public override CompilerOptions GetCompilerOptions() {

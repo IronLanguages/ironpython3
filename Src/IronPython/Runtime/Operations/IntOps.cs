@@ -363,7 +363,7 @@ namespace IronPython.Runtime.Operations {
         #endregion
 
         public static PythonTuple __divmod__(int x, int y) {
-            return PythonTuple.MakeTuple(Divide(x, y), Mod(x, y));
+            return PythonTuple.MakeTuple(FloorDivide(x, y), Mod(x, y));
         }
 
         [return: MaybeNotImplemented]

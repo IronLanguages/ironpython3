@@ -62,7 +62,7 @@ namespace IronPython.Runtime.Binding {
             switch (operation.Operation) {
                 case ExpressionType.Add: pyOperator = PythonOperationKind.Add; break;
                 case ExpressionType.And: pyOperator = PythonOperationKind.BitwiseAnd; break;
-                case ExpressionType.Divide: pyOperator = PythonOperationKind.Divide; break;
+                case ExpressionType.Divide: pyOperator = PythonOperationKind.TrueDivide; break;
                 case ExpressionType.ExclusiveOr: pyOperator = PythonOperationKind.ExclusiveOr; break;
                 case ExpressionType.Modulo: pyOperator = PythonOperationKind.Mod; break;
                 case ExpressionType.Multiply: pyOperator = PythonOperationKind.Multiply; break;
@@ -74,7 +74,7 @@ namespace IronPython.Runtime.Binding {
 
                 case ExpressionType.AddAssign: pyOperator = PythonOperationKind.InPlaceAdd; break;
                 case ExpressionType.AndAssign: pyOperator = PythonOperationKind.InPlaceBitwiseAnd; break;
-                case ExpressionType.DivideAssign: pyOperator = PythonOperationKind.InPlaceDivide; break;
+                case ExpressionType.DivideAssign: pyOperator = PythonOperationKind.InPlaceTrueDivide; break;
                 case ExpressionType.ExclusiveOrAssign: pyOperator = PythonOperationKind.InPlaceExclusiveOr; break;
                 case ExpressionType.ModuloAssign: pyOperator = PythonOperationKind.InPlaceMod; break;
                 case ExpressionType.MultiplyAssign: pyOperator = PythonOperationKind.InPlaceMultiply; break;
@@ -823,15 +823,6 @@ namespace IronPython.Runtime.Binding {
                 // Python says if x + subx and subx defines __r*__ we should call r*.
                 fbinder = SlotOrFunction.Empty;
                 fSlot = null;
-            }
-
-            if (!fbinder.Success && !rbinder.Success && fSlot == null && rSlot == null) {
-                if (op == "__truediv__" || op == "__rtruediv__") {
-                    // true div on a type which doesn't support it, go ahead and try normal divide
-                    PythonOperationKind newOp = op == "__truediv__" ? PythonOperationKind.Divide : PythonOperationKind.ReverseDivide;
-
-                    GetOperatorMethods(types, newOp, state, out fbinder, out rbinder, out fSlot, out rSlot);
-                }
             }
         }
 
@@ -2361,8 +2352,7 @@ namespace IronPython.Runtime.Binding {
                 case PythonOperationKind.Power: return "**";
                 case PythonOperationKind.Multiply: return "*";
                 case PythonOperationKind.FloorDivide: return "//";
-                case PythonOperationKind.Divide: return "/";
-                case PythonOperationKind.TrueDivide: return "//";
+                case PythonOperationKind.TrueDivide: return "/";
                 case PythonOperationKind.Mod: return "%";
                 case PythonOperationKind.LeftShift: return "<<";
                 case PythonOperationKind.RightShift: return ">>";
@@ -2380,9 +2370,8 @@ namespace IronPython.Runtime.Binding {
                 case PythonOperationKind.InPlaceSubtract: return "-=";
                 case PythonOperationKind.InPlacePower: return "**=";
                 case PythonOperationKind.InPlaceMultiply: return "*=";
-                case PythonOperationKind.InPlaceFloorDivide: return "/=";
-                case PythonOperationKind.InPlaceDivide: return "/=";
-                case PythonOperationKind.InPlaceTrueDivide: return "//=";
+                case PythonOperationKind.InPlaceFloorDivide: return "//=";
+                case PythonOperationKind.InPlaceTrueDivide: return "/=";
                 case PythonOperationKind.InPlaceMod: return "%=";
                 case PythonOperationKind.InPlaceLeftShift: return "<<=";
                 case PythonOperationKind.InPlaceRightShift: return ">>=";
@@ -2393,9 +2382,8 @@ namespace IronPython.Runtime.Binding {
                 case PythonOperationKind.ReverseSubtract: return "-";
                 case PythonOperationKind.ReversePower: return "**";
                 case PythonOperationKind.ReverseMultiply: return "*";
-                case PythonOperationKind.ReverseFloorDivide: return "/";
-                case PythonOperationKind.ReverseDivide: return "/";
-                case PythonOperationKind.ReverseTrueDivide: return "//";
+                case PythonOperationKind.ReverseFloorDivide: return "//";
+                case PythonOperationKind.ReverseTrueDivide: return "/";
                 case PythonOperationKind.ReverseMod: return "%";
                 case PythonOperationKind.ReverseLeftShift: return "<<";
                 case PythonOperationKind.ReverseRightShift: return ">>";

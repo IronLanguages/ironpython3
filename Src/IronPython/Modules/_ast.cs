@@ -498,7 +498,7 @@ namespace IronPython.Modules
                         return BitAnd.Instance;
                     case PyOperator.BitwiseOr:
                         return BitOr.Instance;
-                    case PyOperator.Divide:
+                    case PyOperator.TrueDivide:
                         return Div.Instance;
                     case PyOperator.Equal:
                         return Eq.Instance;
@@ -849,7 +849,7 @@ namespace IronPython.Modules
                 if (this == BitOr.Instance)
                     return PyOperator.BitwiseOr;
                 if (this == Div.Instance)
-                    return PyOperator.Divide;
+                    return PyOperator.TrueDivide;
                 if (this == FloorDiv.Instance)
                     return PyOperator.FloorDivide;
                 if (this == LShift.Instance)

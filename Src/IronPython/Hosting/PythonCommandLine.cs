@@ -200,9 +200,8 @@ namespace IronPython.Hosting {
         }
 
         protected override Scope/*!*/ CreateScope() {
-            ModuleOptions trueDiv = (PythonContext.PythonOptions.DivisionOptions == PythonDivisionOptions.New) ? ModuleOptions.TrueDivision : ModuleOptions.None;
             var modCtx = new ModuleContext(new PythonDictionary(), PythonContext);
-            modCtx.Features = trueDiv;
+            modCtx.Features = ModuleOptions.None;
             modCtx.InitializeBuiltins(true);
 
             PythonContext.PublishModule("__main__", modCtx.Module);
@@ -471,10 +470,7 @@ namespace IronPython.Hosting {
 
         private int RunCommandWorker(string command) {
             ScriptCode compiledCode;
-            ModuleOptions trueDiv = (PythonContext.PythonOptions.DivisionOptions == PythonDivisionOptions.New) ?
-                ModuleOptions.TrueDivision : ModuleOptions.None;
-            ModuleOptions modOpt = ModuleOptions.Optimized | ModuleOptions.ModuleBuiltins | trueDiv;
-                ;
+            ModuleOptions modOpt = ModuleOptions.Optimized | ModuleOptions.ModuleBuiltins;
             if (Options.SkipFirstSourceLine) {
                 modOpt |= ModuleOptions.SkipFirstLine;
             }

@@ -22,10 +22,6 @@ namespace IronPython.Runtime {
     public enum ModuleOptions {
         None = 0,
         /// <summary>
-        /// Enable true division (1/2 == .5)
-        /// </summary>
-        TrueDivision = 0x0001,
-        /// <summary>
         /// Indicates that .NET methods such as .ToString should be available on Python objects.
         /// </summary>
         ShowClsMethods = 0x0002,

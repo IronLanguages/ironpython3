@@ -3546,40 +3546,6 @@ namespace IronPython.Runtime.Operations {
             return message;
         }
 
-        private static bool IsPrimitiveNumber(object o) {
-            return IsNumericObject(o) ||
-                o is Complex ||
-                o is double ||
-                o is Extensible<Complex> ||
-                o is Extensible<double>;
-        }
-
-        public static void WarnDivision(CodeContext/*!*/ context, PythonDivisionOptions options, object self, object other) {
-            if (options == PythonDivisionOptions.WarnAll) {
-                if (IsPrimitiveNumber(self) && IsPrimitiveNumber(other)) {
-                    if (self is Complex || other is Complex || self is Extensible<Complex> || other is Extensible<Complex>) {
-                        Warn(context, PythonExceptions.DeprecationWarning, "classic complex division");
-                        return;
-                    } else if (self is double || other is double || self is Extensible<double> || other is Extensible<double>) {
-                        Warn(context, PythonExceptions.DeprecationWarning, "classic float division");
-                        return;
-                    } else {
-                        WarnDivisionInts(context, self, other);
-                    }
-                }
-            } else if (IsNumericObject(self) && IsNumericObject(other)) {
-                WarnDivisionInts(context, self, other);
-            }
-        }
-
-        private static void WarnDivisionInts(CodeContext/*!*/ context, object self, object other) {
-            if (self is BigInteger || other is BigInteger || self is Extensible<BigInteger> || other is Extensible<BigInteger>) {
-                Warn(context, PythonExceptions.DeprecationWarning, "classic long division");
-            } else {
-                Warn(context, PythonExceptions.DeprecationWarning, "classic int division");
-            }
-        }
-
         public static DynamicMetaObjectBinder MakeComboAction(CodeContext/*!*/ context, DynamicMetaObjectBinder opBinder, DynamicMetaObjectBinder convBinder) {
             return PythonContext.GetContext(context).BinaryOperationRetType((PythonBinaryOperationBinder)opBinder, (PythonConversionBinder)convBinder);
         }

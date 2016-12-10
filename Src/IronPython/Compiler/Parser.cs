@@ -979,11 +979,11 @@ namespace IronPython.Compiler {
             return ret;
         }
 
-        //raise_stmt: 'raise' [expression [',' expression [',' expression]]]
+        //raise_stmt: 'raise' [test ['from' test]]
         private RaiseStatement ParseRaiseStmt() {
             Eat(TokenKind.KeywordRaise);
             var start = GetStart();
-            Expression type = null, _value = null, traceback = null;
+            Expression type = null, _value = null, traceback = null, cause = null;
 
             if (!NeverTestToken(PeekToken())) {
                 type = ParseExpression();
@@ -992,9 +992,11 @@ namespace IronPython.Compiler {
                     if (MaybeEat(TokenKind.Comma)) {
                         traceback = ParseExpression();
                     }
+                } else if (MaybeEat(TokenKind.KeywordFrom)) {
+                    cause = ParseExpression();
                 }
             }
-            RaiseStatement ret = new RaiseStatement(type, _value, traceback);
+            RaiseStatement ret = new RaiseStatement(type, _value, traceback, cause);
             ret.SetLoc(_globalParent, start, GetEnd());
             return ret;
         }

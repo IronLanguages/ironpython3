@@ -113,19 +113,32 @@ namespace IronPython.Runtime.Exceptions {
             private System.Exception _clrException; // the cached CLR exception that is thrown
             private object[] _slots;                // slots, only used for storage of our weak reference.
 
+            private BaseException _cause;
+            private BaseException _context;
+            private TraceBack _traceback;
+
             public static string __doc__ = "Common base class for all non-exit exceptions.";
 
             #region Public API Surface
 
-            public BaseException(PythonType/*!*/ type) {
+            public BaseException(PythonType/*!*/ type, BaseException cause) {
                 ContractUtils.RequiresNotNull(type, "type");
 
                 _type = type;
+                CreateClrExceptionWithCause(cause, null);
+            }
+
+            public BaseException(PythonType/*!*/ type) : this(type, null) {
+                
             }
 
             public static object __new__(PythonType/*!*/ cls, params object[] args\u00F8) {
                 if (cls.UnderlyingSystemType == typeof(BaseException)) {
-                    return new BaseException(cls);
+                    if (argsø == null || argsø.Length == 0) {
+                        return new BaseException(cls);
+                    } else if(argsø.Length > 0 && argsø[0] is BaseException) {
+                        return new BaseException(cls, (BaseException)argsø[0]);
+                    }
                 }
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
@@ -350,6 +363,44 @@ namespace IronPython.Runtime.Exceptions {
                 get { return _type; }
             }
 
+            public BaseException __cause__ {
+                get { return _cause; }
+                set { _cause = value; }
+            }
+
+            public BaseException __context__ {
+                get {
+                    if (_context == null) return __cause__;
+                    return _context;
+                }
+                internal set {
+                    _context = value;
+                }
+            }
+
+            public TraceBack __traceback__ {
+                get {
+                    if (_traceback == null) {
+                        var clrException = GetClrException();
+                        var frames = clrException.GetFrameList();
+                        _traceback = PythonOps.CreateTraceBack(clrException, frames, frames.Count);
+                    }
+                    return _traceback;
+                }
+            }
+
+            public bool HasCause {
+                get {
+                    return __cause__ != null;
+                }
+            }
+
+            public bool IsImplicitException {
+                get {
+                    return (__cause__ != __context__ && __cause__ == null);
+                }
+            }
+
             void IPythonObject.SetPythonType(PythonType/*!*/ newType) {
                 if (_type.IsSystemType || newType.IsSystemType) {
                     throw PythonOps.TypeError("__class__ assignment can only be performed on user defined types");
@@ -387,7 +438,7 @@ namespace IronPython.Runtime.Exceptions {
             /// Helper to get the CLR exception associated w/ this Python exception
             /// creating it if one has not already been created.
             /// </summary>
-            internal/*!*/ System.Exception GetClrException() {
+            internal/*!*/ System.Exception GetClrException(Exception innerException=null) {
                 if (_clrException != null) {
                     return _clrException;
                 }
@@ -396,10 +447,26 @@ namespace IronPython.Runtime.Exceptions {
                 if (String.IsNullOrEmpty(stringMessage)) {
                     stringMessage = _type.Name;
                 }
-                System.Exception newExcep = _type._makeException(stringMessage);
+                System.Exception newExcep = _type._makeException(stringMessage, innerException);
                 newExcep.SetPythonException(this);
 
                 Interlocked.CompareExchange<System.Exception>(ref _clrException, newExcep, null);
+
+                return _clrException;
+            }
+
+            internal Exception CreateClrExceptionWithCause(BaseException cause, BaseException context) {
+                _cause = cause;
+                _context = context;
+                _traceback = null;
+
+                if(cause != null) {
+                    var causeClrException = cause.GetClrException();
+                    _clrException = GetClrException(causeClrException);
+                } else if(context != null) {
+                    var causeClrException = context.GetClrException();
+                    _clrException = GetClrException(causeClrException);
+                }
 
                 return _clrException;
             }
@@ -538,6 +605,7 @@ namespace IronPython.Runtime.Exceptions {
 
             private const int EACCES = 13;
             private const int ENOENT = 2;
+            private const int EPIPE = 32;
 
             [PythonHidden]
             protected internal override void InitializeFromClr(System.Exception/*!*/ exception) {
@@ -564,8 +632,12 @@ namespace IronPython.Runtime.Exceptions {
                     try {
                         uint hr = (uint)GetHRForException(exception);
                         if ((hr & 0xffff0000U) == 0x80070000U) {
-                            // win32 error code, get the real error code...
-                            __init__(hr & 0xffff, exception.Message);
+                            if ((hr & 0xffff) == _WindowsError.ERROR_BROKEN_PIPE) {
+                                __init__(EPIPE, exception.Message);
+                            } else {
+                                // win32 error code, get the real error code...
+                                __init__(hr & 0xffff, exception.Message);
+                            }
                             return;
                         }
                     } catch (MethodAccessException) {
@@ -922,7 +994,7 @@ for k, v in toError.iteritems():
         /// Used at runtime when creating the exception from a user provided type via the raise statement.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Throwable")]
-        internal static System.Exception CreateThrowableForRaise(CodeContext/*!*/ context, PythonType/*!*/ type, object value) {
+        internal static System.Exception CreateThrowableForRaise(CodeContext/*!*/ context, PythonType/*!*/ type, object value, object cause) {
             object pyEx;
 
             if (PythonOps.IsInstance(value, type)) {
@@ -930,16 +1002,24 @@ for k, v in toError.iteritems():
             } else if (value is PythonTuple) {
                 pyEx = PythonOps.CallWithArgsTuple(type, ArrayUtils.EmptyObjects, value);
             } else if (value != null) {
-                pyEx = PythonCalls.Call(context, type, value);
+                pyEx = PythonCalls.Call(context, type, value, cause);
             } else {
-                pyEx = PythonCalls.Call(context, type);
+                pyEx = PythonCalls.Call(context, type, cause);
             }
 
             if (PythonOps.IsInstance(pyEx, type)) {
-                // overloaded __new__ can return anything, if 
-                // it's the right exception type use the normal conversion...
-                // If it's wrong return an ObjectException which remembers the type.
-                return ((BaseException)pyEx).GetClrException();
+                var contextException = PythonOps.GetRawContextException();
+
+                // If we have a context-exception or no context/cause return the existing, or a new exception
+                if(cause != null || cause == null && contextException == null) {
+                    // overloaded __new__ can return anything, if
+                    // it's the right exception type use the normal conversion...
+                    // If it's a wrong return an ObjectException which remembers the type
+                    return ((BaseException)pyEx).GetClrException();
+                } else if(context != null) {
+                    // Generate new CLR-Exception and return it
+                    return ((BaseException)pyEx).CreateClrExceptionWithCause(null, contextException);
+                }
             }
 
             // user returned arbitrary object from overridden __new__, let it throw...
@@ -1049,11 +1129,16 @@ for k, v in toError.iteritems():
                 pyExcep = new BaseException(TypeError);
             } else if (clrException is Win32Exception) {
                 Win32Exception win32 = (Win32Exception)clrException;
+#if NETSTANDARD
+                int errorCode = win32.HResult;
+#else
+                int errorCode = win32.ErrorCode;
+#endif
                 pyExcep = new _WindowsError();
-                if ((win32.ErrorCode & 0x80070000) == 0x80070000) {
-                    pyExcep.__init__(win32.ErrorCode & 0xffff, win32.Message);
+                if ((errorCode & 0x80070000) == 0x80070000) {
+                    pyExcep.__init__(errorCode & 0xffff, win32.Message);
                 } else {
-                    pyExcep.__init__(win32.ErrorCode, win32.Message);
+                    pyExcep.__init__(errorCode, win32.Message);
                 }
                 return pyExcep;
             } else {
@@ -1101,7 +1186,7 @@ for k, v in toError.iteritems():
         /// <summary>
         /// Internal helper to get the associated Python exception from a .NET exception.
         /// </summary>
-        private static object GetPythonException(this Exception e) {
+        internal static object GetPythonException(this Exception e) {
             IPythonAwareException pyAware = e as IPythonAwareException;
             if (pyAware != null) {
                 return pyAware.PythonException;
@@ -1204,7 +1289,7 @@ for k, v in toError.iteritems():
         /// normal user types.
         /// </summary>
         [PythonHidden]
-        public static PythonType CreateSubType(PythonContext/*!*/ context, PythonType baseType, string name, string module, string documentation, Func<string, Exception> exceptionMaker) {
+        public static PythonType CreateSubType(PythonContext/*!*/ context, PythonType baseType, string name, string module, string documentation, Func<string, Exception, Exception> exceptionMaker) {
             PythonType res = new PythonType(context, baseType, name, module, documentation, exceptionMaker);
             res.SetCustomMember(context.SharedContext, "__weakref__", new PythonTypeWeakRefSlot(res));
             res.IsWeakReferencable = true;
@@ -1216,7 +1301,7 @@ for k, v in toError.iteritems():
         /// normal user types.
         /// </summary>
         [PythonHidden]
-        public static PythonType CreateSubType(PythonContext/*!*/ context, PythonType baseType, Type underlyingType, string name, string module, string documentation, Func<string, Exception> exceptionMaker) {
+        public static PythonType CreateSubType(PythonContext/*!*/ context, PythonType baseType, Type underlyingType, string name, string module, string documentation, Func<string, Exception, Exception> exceptionMaker) {
             PythonType res = new PythonType(context, new PythonType[] { baseType }, underlyingType, name, module, documentation, exceptionMaker);
             res.SetCustomMember(context.SharedContext, "__weakref__", new PythonTypeWeakRefSlot(res));
             res.IsWeakReferencable = true;
@@ -1228,7 +1313,7 @@ for k, v in toError.iteritems():
         /// from multiple bases.  These types are mutable like normal user types. 
         /// </summary>
         [PythonHidden]
-        public static PythonType CreateSubType(PythonContext/*!*/ context, PythonType[] baseTypes, Type underlyingType, string name, string module, string documentation, Func<string, Exception> exceptionMaker) {
+        public static PythonType CreateSubType(PythonContext/*!*/ context, PythonType[] baseTypes, Type underlyingType, string name, string module, string documentation, Func<string, Exception, Exception> exceptionMaker) {
             PythonType res = new PythonType(context, baseTypes, underlyingType, name, module, documentation, exceptionMaker);
             res.SetCustomMember(context.SharedContext, "__weakref__", new PythonTypeWeakRefSlot(res));
             res.IsWeakReferencable = true;
@@ -1242,14 +1327,14 @@ for k, v in toError.iteritems():
         /// example StandardError.x = 3 is illegal.  This isn't for module exceptions which 
         /// are like user defined types.  thread.error.x = 3 is legal.
         /// </summary>
-        private static PythonType CreateSubType(PythonType baseType, string name, Func<string, Exception> exceptionMaker) {
+        private static PythonType CreateSubType(PythonType baseType, string name, Func<string, Exception, Exception> exceptionMaker) {
             return new PythonType(baseType, name, exceptionMaker);
         }
 
         /// <summary>
         /// Creates a new type for a built-in exception which is the root concrete type.  
         /// </summary>
-        private static PythonType/*!*/ CreateSubType(PythonType/*!*/ baseType, Type/*!*/ concreteType, Func<string, Exception> exceptionMaker) {
+        private static PythonType/*!*/ CreateSubType(PythonType/*!*/ baseType, Type/*!*/ concreteType, Func<string, Exception, Exception> exceptionMaker) {
             Assert.NotNull(baseType, concreteType);
 
             PythonType myType = DynamicHelpers.GetPythonTypeFromType(concreteType);
@@ -1282,7 +1367,7 @@ for k, v in toError.iteritems():
 
             // merge .NET frames w/ any dynamic frames that we have
             try {
-                StackTrace outermostTrace = new StackTrace(e);
+                StackTrace outermostTrace = new StackTrace(e, false);
                 IList<StackTrace> otherTraces = ExceptionHelpers.GetExceptionStackTraces(e) ?? new List<StackTrace>();
                 List<StackFrame> clrFrames = new List<StackFrame>();
                 

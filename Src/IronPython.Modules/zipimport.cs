@@ -627,7 +627,7 @@ contain the module, but has no source for it.")]
                 PythonExceptions.ImportError,
                 typeof(PythonExceptions.BaseException),
                 dict, "ZipImportError", "zipimport",
-                msg => new ImportException(msg));
+                (msg, innerException) => new ImportException(msg, innerException));
         }
 
         /// <summary>

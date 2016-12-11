@@ -1139,11 +1139,6 @@ namespace IronPython.Runtime {
                 return base.Walk(node);
             }
 
-            public override bool Walk(IronPython.Compiler.Ast.ExecStatement node) {
-                UpdateLoops(node);
-                return base.Walk(node);
-            }
-
             public override void PostWalk(IronPython.Compiler.Ast.EmptyStatement node) {
                 UpdateLoops(node);
                 base.PostWalk(node);

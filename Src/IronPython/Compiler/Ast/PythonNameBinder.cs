@@ -305,26 +305,6 @@ namespace IronPython.Compiler.Ast {
             return true;
         }
 
-        // ExecStatement
-        public override bool Walk(ExecStatement node) {
-            node.Parent = _currentScope;
-            if (node.Locals == null && node.Globals == null) {
-                Debug.Assert(_currentScope != null);
-                _currentScope.ContainsUnqualifiedExec = true;
-            }
-            return true;
-        }
-
-        public override void PostWalk(ExecStatement node) {
-            if (node.NeedsLocalsDictionary()) {
-                _currentScope.NeedsLocalsDictionary = true;
-            }
-
-            if (node.Locals == null) {
-                _currentScope.HasLateBoundVariableSets = true;
-            }
-        }
-
         public override bool Walk(SetComprehension node) {
             node.Parent = _currentScope;
             PushScope(node.Scope);
@@ -381,11 +361,6 @@ namespace IronPython.Compiler.Ast {
         }
         // AssertStatement
         public override bool Walk(AssertStatement node) {
-            node.Parent = _currentScope;
-            return base.Walk(node);
-        }
-        // BackQuoteExpression
-        public override bool Walk(BackQuoteExpression node) {
             node.Parent = _currentScope;
             return base.Walk(node);
         }

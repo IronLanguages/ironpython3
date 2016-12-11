@@ -54,15 +54,17 @@ namespace IronPython.Modules {
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
-            context.EnsureModuleException(
+            PythonType t = context.EnsureModuleException(
                 _blockingIOErrorKey,
                 PythonExceptions.IOError,
                 typeof(BlockingIOError),
                 dict,
                 "BlockingIOError",
                 "builtins",
-                msg => new _BlockingIOErrorException(msg)
+                (msg, innerException) => new _BlockingIOErrorException(msg, innerException)
             );
+            t.IsSystemType = true;
+
             context.EnsureModuleException(
                 _unsupportedOperationKey,
                 new PythonType[] { PythonExceptions.ValueError, PythonExceptions.IOError },
@@ -3069,7 +3071,7 @@ namespace IronPython.Modules {
         }
 
         private class _BlockingIOErrorException : IOException {
-            public _BlockingIOErrorException(string msg) : base(msg) { }
+            public _BlockingIOErrorException(string msg, Exception innerException) : base(msg, innerException) { }
         }
 
         #endregion

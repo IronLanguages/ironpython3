@@ -87,6 +87,7 @@
     <Compile Include="Runtime\Exceptions\AttributeErrorException.cs" />
     <Compile Include="Runtime\Exceptions\BufferException.Generated.cs" />
     <Compile Include="Runtime\Exceptions\PythonException.cs" />
+    <Compile Include="Runtime\Exceptions\ResourceWarningException.cs" />
     <Compile Include="Runtime\Exceptions\SystemException.cs" />
     <Compile Include="Runtime\Exceptions\TypeErrorException.cs" />
     <Compile Include="Runtime\Exceptions\ValueErrorException.cs" />

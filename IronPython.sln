@@ -50,7 +50,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{17737ACB
 		Build\After.targets = Build\After.targets
 		Build\Bootstrap.targets = Build\Bootstrap.targets
 		Build\Common.proj = Build\Common.proj
-		Build\net35.props = Build\net35.props
 		Build\net40.props = Build\net40.props
 		Build\net45.props = Build\net45.props
 		Build\Versioning.targets = Build\Versioning.targets

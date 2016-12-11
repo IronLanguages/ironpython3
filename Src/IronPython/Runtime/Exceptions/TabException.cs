@@ -25,6 +25,8 @@ namespace IronPython.Runtime.Exceptions {
     sealed class TabException : IndentationException {
         public TabException(string message) : base(message) { }
 
+        public TabException(string message, Exception innerException) : base(message, innerException) { }
+
         public TabException(string message, SourceUnit sourceUnit, SourceSpan span, int errorCode, Severity severity)
             : base(message, sourceUnit, span, errorCode, severity) { }
     }

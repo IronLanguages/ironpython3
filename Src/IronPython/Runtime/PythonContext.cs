@@ -27,6 +27,7 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security;
@@ -94,9 +95,9 @@ namespace IronPython.Runtime
         private Dictionary<string, object> _errorHandlers;
         private List<object> _searchFunctions;
         private Dictionary<object, object> _moduleState;
-        /// <summary> stored for copy_reg module, used for reduce protocol </summary>
+        /// <summary> stored for copyreg module, used for reduce protocol </summary>
         internal BuiltinFunction NewObject;
-        /// <summary> stored for copy_reg module, used for reduce protocol </summary>
+        /// <summary> stored for copyreg module, used for reduce protocol </summary>
         internal BuiltinFunction PythonReconstructor;
         private Dictionary<Type, object> _genericSiteStorage;
 
@@ -184,6 +185,7 @@ namespace IronPython.Runtime
         private DynamicMetaObjectBinder _invokeTwoConvertToInt;
         private static CultureInfo _CCulture;
         private DynamicDelegateCreator _delegateCreator;
+
         // tracing / in-proc debugging support
         private Debugging.CompilerServices.DebugContext _debugContext;
         private Debugging.ITracePipeline _tracePipeline;
@@ -649,28 +651,28 @@ namespace IronPython.Runtime
         public PythonType EnsureModuleException(object key, PythonDictionary dict, string name, string module) {
             return (PythonType)(dict[name] = GetOrCreateModuleState(
                 key,
-                () => PythonExceptions.CreateSubType(this, PythonExceptions.Exception, name, module, "", PythonType.DefaultMakeException)
+                () => PythonExceptions.CreateSubType(this, PythonExceptions.Exception, name, module, null, PythonType.DefaultMakeException)
             ));
         }
 
         public PythonType EnsureModuleException(object key, PythonType baseType, PythonDictionary dict, string name, string module) {
             return (PythonType)(dict[name] = GetOrCreateModuleState(
                 key,
-                () => PythonExceptions.CreateSubType(this, baseType, name, module, "", PythonType.DefaultMakeException)
+                () => PythonExceptions.CreateSubType(this, baseType, name, module, null, PythonType.DefaultMakeException)
             ));
         }
 
-        public PythonType EnsureModuleException(object key, PythonType baseType, Type underlyingType, PythonDictionary dict, string name, string module, Func<string, Exception> exceptionMaker) {
+        public PythonType EnsureModuleException(object key, PythonType baseType, Type underlyingType, PythonDictionary dict, string name, string module, Func<string, Exception, Exception> exceptionMaker) {
             return (PythonType)(dict[name] = GetOrCreateModuleState(
                 key,
-                () => PythonExceptions.CreateSubType(this, baseType, underlyingType, name, module, "", exceptionMaker)
+                () => PythonExceptions.CreateSubType(this, baseType, underlyingType, name, module, null, exceptionMaker)
             ));
         }
 
         public PythonType EnsureModuleException(object key, PythonType[] baseTypes, Type underlyingType, PythonDictionary dict, string name, string module) {
             return (PythonType)(dict[name] = GetOrCreateModuleState(
                 key,
-                () => PythonExceptions.CreateSubType(this, baseTypes, underlyingType, name, module, "", PythonType.DefaultMakeException)
+                () => PythonExceptions.CreateSubType(this, baseTypes, underlyingType, name, module, null, PythonType.DefaultMakeException)
             ));
         }
 
@@ -1469,15 +1471,35 @@ namespace IronPython.Runtime
                 return FormatPythonSyntaxError(syntax_error);
             }
 
+            StringBuilder result = new StringBuilder();
+
             object pythonEx = PythonExceptions.ToPython(exception);
 
-            string result = FormatStackTraces(exception) + FormatPythonException(pythonEx) + Environment.NewLine;
+            if(exception.InnerException != null) {
+                var pythonInnerException = exception.InnerException.GetPythonException() as PythonExceptions.BaseException;
+                if(pythonInnerException != null) {
+                    // add the nested/chained exception
+                    result.AppendLine(FormatException(exception.InnerException));
 
-            if (Options.ShowClrExceptions) {
-                result += FormatCLSException(exception);
+                    // check whether this is implicit or explicit
+                    if(!((PythonExceptions.BaseException)pythonEx).IsImplicitException) {
+                        result.AppendLine("The above exception was the direct cause of the following exception.");
+                    } else {
+                        result.AppendLine("During handing of the above exception, another exception occurred:");
+                    }
+                    result.AppendLine();
+                }
             }
 
-            return result;
+            result.Append(FormatStackTraces(exception));
+            result.Append(FormatPythonException(pythonEx));
+            result.AppendLine();
+
+            if (Options.ShowClrExceptions) {
+                result.Append(FormatCLSException(exception));
+            }
+
+            return result.ToString();
         }
 
         internal static string FormatPythonSyntaxError(SyntaxErrorException e) {
@@ -1630,45 +1652,46 @@ namespace IronPython.Runtime
         }
 
         private string FormatStackTraces(Exception e, ref bool printedHeader) {
-            string result = "";
+            StringBuilder result = new StringBuilder();
             if (Options.ExceptionDetail) {
                 if (!printedHeader) {
-                    result = e.Message + Environment.NewLine;
+                    result.AppendLine(e.Message);
                     printedHeader = true;
                 }
                 IList<System.Diagnostics.StackTrace> traces = ExceptionHelpers.GetExceptionStackTraces(e);
 
                 if (traces != null) {
-                    for (int i = 0; i < traces.Count; i++) {
-                        for (int j = 0; j < traces[i].FrameCount; j++) {
-                            StackFrame curFrame = traces[i].GetFrame(j);
-                            result += curFrame.ToString() + Environment.NewLine;
+                    foreach (StackTrace trace in traces) {
+                        foreach (StackFrame curFrame in trace.GetFrames()) {
+                            result.AppendLine(curFrame.ToString());
                         }
                     }
                 }
 
-                if (e.StackTrace != null) result += e.StackTrace.ToString() + Environment.NewLine;
-                if (e.InnerException != null) result += FormatStackTraces(e.InnerException, ref printedHeader);
+                if (e.StackTrace != null) result.AppendLine(e.StackTrace.ToString());
+                if (e.InnerException != null) result.AppendLine(FormatStackTraces(e.InnerException, ref printedHeader));
             } else {
-                result = FormatStackTraceNoDetail(e, ref printedHeader);
+                result.Append(FormatStackTraceNoDetail(e, ref printedHeader));
             }
 
-            return result;
+            return result.ToString();
         }
 
         internal string FormatStackTraceNoDetail(Exception e, ref bool printedHeader) {
-            string result = String.Empty;
+            var pythonException = e.GetPythonException() as PythonExceptions.BaseException;
+            StringBuilder result = new StringBuilder();
             // dump inner most exception first, followed by outer most.
-            if (e.InnerException != null) result += FormatStackTraceNoDetail(e.InnerException, ref printedHeader);
+            if (e.InnerException != null && pythonException != null) result.AppendLine(FormatStackTraceNoDetail(e.InnerException, ref printedHeader));
 
             if (!printedHeader) {
-                result += "Traceback (most recent call last):" + Environment.NewLine;
+                result.AppendLine("Traceback (most recent call last):");
                 printedHeader = true;
             }
 
             var traceback = e.GetTraceBack();
             if (traceback != null) {
-                return result + traceback.Extract();
+                result.Append(traceback.Extract());
+                return result.ToString();
             }
             var frames = PythonExceptions.GetDynamicStackFrames(e);
             for (int i = frames.Length - 1; i >= 0; i--) {
@@ -1680,9 +1703,9 @@ namespace IronPython.Runtime
                     continue;
                 }
 
-                result += FrameToString(frame) + Environment.NewLine;
+                result.AppendLine(FrameToString(frame));
             }
-            return result;
+            return result.ToString();
         }
 
         private static string FrameToString(DynamicStackFrame frame) {

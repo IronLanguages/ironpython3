@@ -27,6 +27,8 @@ namespace IronPython.Runtime.Exceptions {
     class IndentationException : SyntaxErrorException {
         public IndentationException(string message) : base(message) { }
 
+        public IndentationException(string message, Exception innerException) : base(message, innerException) { }
+
         public IndentationException(string message, SourceUnit sourceUnit, SourceSpan span, int errorCode, Severity severity)
             : base(message, sourceUnit, span, errorCode, severity) { }
 

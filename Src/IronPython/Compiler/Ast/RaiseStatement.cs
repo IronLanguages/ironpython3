@@ -27,13 +27,14 @@ namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
     public class RaiseStatement : Statement {
-        private readonly Expression _type, _value, _traceback;
+        private readonly Expression _type, _value, _traceback, _cause;
         private bool _inFinally;
 
-        public RaiseStatement(Expression exceptionType, Expression exceptionValue, Expression traceBack) {
+        public RaiseStatement(Expression exceptionType, Expression exceptionValue, Expression traceBack, Expression cause) {
             _type = exceptionType;
             _value = exceptionValue;
             _traceback = traceBack;
+            _cause = cause;
         }
 
         [Obsolete("Type is obsolete due to direct inheritance from DLR Expression.  Use ExceptType instead")]
@@ -44,6 +45,12 @@ namespace IronPython.Compiler.Ast {
         public Expression ExceptType {
             get {
                 return _type;
+            }
+        }
+
+        public Expression Cause {
+            get {
+                return _cause;
             }
         }
 
@@ -75,7 +82,8 @@ namespace IronPython.Compiler.Ast {
                     Parent.LocalContext,
                     TransformOrConstantNull(_type, typeof(object)),
                     TransformOrConstantNull(_value, typeof(object)),
-                    TransformOrConstantNull(_traceback, typeof(object))
+                    TransformOrConstantNull(_traceback, typeof(object)),
+                    TransformOrConstantNull(_cause, typeof(object))
                 );
             }
 
@@ -104,6 +112,9 @@ namespace IronPython.Compiler.Ast {
                 }
                 if (_traceback != null) {
                     _traceback.Walk(walker);
+                }
+                if (_cause != null) {
+                    _cause.Walk(walker);
                 }
             }
             walker.PostWalk(this);

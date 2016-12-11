@@ -21,6 +21,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
@@ -41,13 +42,29 @@ using Microsoft.Scripting.Math;
 [assembly: PythonModule("nt", typeof(IronPython.Modules.PythonNT))]
 namespace IronPython.Modules {
     public static class PythonNT {
-        public const string __doc__ = "Provides low-level operationg system access for files, the environment, etc...";
+        public const string __doc__ = "Provides low-level operating system access for files, the environment, etc...";
 
 #if FEATURE_PROCESS
         private static Dictionary<int, Process> _processToIdMapping = new Dictionary<int, Process>();
         private static List<int> _freeProcessIds = new List<int>();
         private static int _processCount;
 #endif
+
+        private static readonly object _keyFields = new object();
+        private static readonly string _keyHaveFunctions = "_have_functions";
+
+        [SpecialName]
+        public static void PerformModuleReload(PythonContext context, PythonDictionary dict) {
+            var have_functions = new List();
+            if(Environment.OSVersion.Platform == PlatformID.Win32NT) {
+                have_functions.Add("MS_WINDOWS");
+            }
+
+            context.GetOrCreateModuleState(_keyFields, () => {
+                dict.Add(_keyHaveFunctions, have_functions);
+                return dict;
+            });
+        }
 
         #region Public API Surface
 

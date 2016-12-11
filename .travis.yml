@@ -1,3 +1,7 @@
+os:
+  - linux
+  - osx
+
 language: csharp
 
 env:
@@ -5,6 +9,10 @@ env:
 
 mono:
   - latest
+
+matrix:
+  allow_failures:
+    - os: osx
 
 solution: IronPython.sln
 

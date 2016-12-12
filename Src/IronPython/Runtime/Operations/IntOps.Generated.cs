@@ -104,6 +104,9 @@ namespace IronPython.Runtime.Operations {
         public static int __hash__(SByte x) {
             return unchecked((int)x);
         }
+        public static int __index__(SByte x) {
+            return unchecked((int)x);
+        }
 
         // Binary Operations - Arithmetic
         [SpecialName]
@@ -261,9 +264,6 @@ namespace IronPython.Runtime.Operations {
         public static SByte Getdenominator(SByte x) {
             return (SByte)1;
         }
-        public static string __hex__(SByte value) {
-            return BigIntegerOps.__hex__(value);
-        }
         public static int bit_length(SByte value) {
             return MathUtils.BitLength((int)value);
         }
@@ -331,6 +331,9 @@ namespace IronPython.Runtime.Operations {
             return x;
         }
         public static int __hash__(Byte x) {
+            return unchecked((int)x);
+        }
+        public static int __index__(Byte x) {
             return unchecked((int)x);
         }
 
@@ -565,9 +568,6 @@ namespace IronPython.Runtime.Operations {
         public static Byte Getdenominator(Byte x) {
             return (Byte)1;
         }
-        public static string __hex__(Byte value) {
-            return BigIntegerOps.__hex__(value);
-        }
         public static int bit_length(Byte value) {
             return MathUtils.BitLength((int)value);
         }
@@ -641,6 +641,9 @@ namespace IronPython.Runtime.Operations {
             return x;
         }
         public static int __hash__(Int16 x) {
+            return unchecked((int)x);
+        }
+        public static int __index__(Int16 x) {
             return unchecked((int)x);
         }
 
@@ -803,9 +806,7 @@ namespace IronPython.Runtime.Operations {
         public static Int16 Getdenominator(Int16 x) {
             return (Int16)1;
         }
-        public static string __hex__(Int16 value) {
-            return BigIntegerOps.__hex__(value);
-        }
+
         public static int bit_length(Int16 value) {
             return MathUtils.BitLength((int)value);
         }
@@ -873,6 +874,9 @@ namespace IronPython.Runtime.Operations {
             return x;
         }
         public static int __hash__(UInt16 x) {
+            return unchecked((int)x);
+        }
+        public static int __index__(UInt16 x) {
             return unchecked((int)x);
         }
 
@@ -1113,9 +1117,7 @@ namespace IronPython.Runtime.Operations {
         public static UInt16 Getdenominator(UInt16 x) {
             return (UInt16)1;
         }
-        public static string __hex__(UInt16 value) {
-            return BigIntegerOps.__hex__(value);
-        }
+
         public static int bit_length(UInt16 value) {
             return MathUtils.BitLength((int)value);
         }
@@ -1153,6 +1155,9 @@ namespace IronPython.Runtime.Operations {
             return x;
         }
         public static int __hash__(Int32 x) {
+            return unchecked((int)x);
+        }
+        public static int __index__(Int32 x) {
             return unchecked((int)x);
         }
 
@@ -1360,6 +1365,9 @@ namespace IronPython.Runtime.Operations {
             return x;
         }
         public static int __hash__(UInt32 x) {
+            return unchecked((int)x);
+        }
+        public static int __index__(UInt32 x) {
             return unchecked((int)x);
         }
 
@@ -1597,9 +1605,6 @@ namespace IronPython.Runtime.Operations {
         public static UInt32 Getdenominator(UInt32 x) {
             return (UInt32)1;
         }
-        public static string __hex__(UInt32 value) {
-            return BigIntegerOps.__hex__(value);
-        }
         public static int bit_length(UInt32 value) {
             return MathUtils.BitLengthUnsigned(value);
         }
@@ -1684,6 +1689,9 @@ namespace IronPython.Runtime.Operations {
             return total;
         }
 
+        public static BigInteger __index__(Int64 x) {
+            return unchecked((BigInteger)x);
+        }
 
         // Binary Operations - Arithmetic
         [SpecialName]
@@ -1842,9 +1850,7 @@ namespace IronPython.Runtime.Operations {
         public static Int64 Getdenominator(Int64 x) {
             return (Int64)1;
         }
-        public static string __hex__(Int64 value) {
-            return BigIntegerOps.__hex__(value);
-        }
+        
         public static int bit_length(Int64 value) {
             return MathUtils.BitLength(value);
         }
@@ -1919,6 +1925,9 @@ namespace IronPython.Runtime.Operations {
             return total;
         }
 
+        public static BigInteger __index__(UInt64 x) {
+            return unchecked((BigInteger)x);
+        }
 
         // Binary Operations - Arithmetic
         [SpecialName]
@@ -2157,9 +2166,7 @@ namespace IronPython.Runtime.Operations {
         public static UInt64 Getdenominator(UInt64 x) {
             return (UInt64)1;
         }
-        public static string __hex__(UInt64 value) {
-            return BigIntegerOps.__hex__(value);
-        }
+        
         public static int bit_length(UInt64 value) {
             return MathUtils.BitLengthUnsigned(value);
         }

@@ -847,42 +847,39 @@ namespace IronPython.Runtime.Operations {
             return PythonContext.Hash(o);
         }
 
-        public static object Hex(object o) {
-            if (o is int) return Int32Ops.__hex__((int)o);
-            else if (o is BigInteger) return BigIntegerOps.__hex__((BigInteger)o);
-
-            object hex;
-            if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default,
-                o,
-                "__hex__",
-                out hex)) {
-                if (!(hex is string) && !(hex is ExtensibleString))
-                    throw PythonOps.TypeError("hex expected string type as return, got '{0}'", PythonTypeOps.GetName(hex));
-
-                return hex;
-            }
-            throw TypeError("hex() argument cannot be converted to hex");
-        }
-
-        public static object Oct(object o) {
+        public static object Index(object o) {
             if (o is int) {
-                return Int32Ops.__oct__((int)o);
+                return Int32Ops.__index__((int)o);
+            } else if (o is uint) {
+                return UInt32Ops.__index__((uint)o);
+            } else if (o is ushort) {
+                return UInt16Ops.__index__((ushort)o);
+            } else if (o is short) {
+                return Int16Ops.__index__((short)o);
+            } else if (o is byte) {
+                return ByteOps.__index__((byte)o);
+            } else if (o is sbyte) {
+                return SByteOps.__index__((sbyte)o);
+            } else if (o is long) {
+                return Int64Ops.__index__((long)o);
+            } else if(o is ulong) {
+                return UInt64Ops.__index__((ulong)o);
             } else if (o is BigInteger) {
-                return BigIntegerOps.__oct__((BigInteger)o);
+                return BigIntegerOps.__index__((BigInteger)o);
             }
 
-            object octal;
+            object index;
 
             if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default,
                 o,
-                "__oct__",
-                out octal)) {
-                if (!(octal is string) && !(octal is ExtensibleString))
-                    throw PythonOps.TypeError("hex expected string type as return, got '{0}'", PythonTypeOps.GetName(octal));
+                "__index__",
+                out index)) {
+                if (!(index is int) && !(index is BigInteger))
+                    throw PythonOps.TypeError("__index__ returned non-int (type {0})", PythonTypeOps.GetName(index));
 
-                return octal;
+                return index;
             }
-            throw TypeError("oct() argument cannot be converted to octal");
+            throw TypeError("'{0}' object cannot be interpreted as an integer", PythonTypeOps.GetName(o));
         }
 
         public static int Length(object o) {

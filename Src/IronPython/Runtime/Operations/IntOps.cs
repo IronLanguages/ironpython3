@@ -406,10 +406,6 @@ namespace IronPython.Runtime.Operations {
             return self;
         }
 
-        public static int __index__(int self) {
-            return self;
-        }
-
         public static BigInteger __long__(int self) {
             return (BigInteger)self;
         }

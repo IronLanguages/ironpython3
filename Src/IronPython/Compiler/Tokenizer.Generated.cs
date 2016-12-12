@@ -135,8 +135,6 @@ namespace IronPython.Compiler {
                     return Tokens.CommaToken;
                 case ':':
                     return Tokens.ColonToken;
-                case '`':
-                    return Tokens.BackQuoteToken;
                 case ';':
                     return Tokens.SemicolonToken;
                 case '~':

@@ -75,7 +75,7 @@ namespace IronPython.Compiler {
         RightBrace = 68,
         Comma = 69,
         Colon = 70,
-        BackQuote = 71,
+
         Semicolon = 72,
         Assign = 73,
         Twiddle = 74,
@@ -94,7 +94,6 @@ namespace IronPython.Compiler {
         KeywordElseIf = 84,
         KeywordElse = 85,
         KeywordExcept = 86,
-        KeywordExec = 87,
         KeywordFinally = 88,
         KeywordFor = 89,
         KeywordFrom = 90,
@@ -187,7 +186,6 @@ namespace IronPython.Compiler {
         private static readonly Token symRightBraceToken = new SymbolToken(TokenKind.RightBrace, "}");
         private static readonly Token symCommaToken = new SymbolToken(TokenKind.Comma, ",");
         private static readonly Token symColonToken = new SymbolToken(TokenKind.Colon, ":");
-        private static readonly Token symBackQuoteToken = new SymbolToken(TokenKind.BackQuote, "`");
         private static readonly Token symSemicolonToken = new SymbolToken(TokenKind.Semicolon, ";");
         private static readonly Token symAssignToken = new SymbolToken(TokenKind.Assign, "=");
         private static readonly Token symTwiddleToken = new SymbolToken(TokenKind.Twiddle, "~");
@@ -350,10 +348,6 @@ namespace IronPython.Compiler {
             get { return symColonToken; }
         }
 
-        public static Token BackQuoteToken {
-            get { return symBackQuoteToken; }
-        }
-
         public static Token SemicolonToken {
             get { return symSemicolonToken; }
         }
@@ -385,7 +379,6 @@ namespace IronPython.Compiler {
         private static readonly Token kwElseIfToken = new SymbolToken(TokenKind.KeywordElseIf, "elif");
         private static readonly Token kwElseToken = new SymbolToken(TokenKind.KeywordElse, "else");
         private static readonly Token kwExceptToken = new SymbolToken(TokenKind.KeywordExcept, "except");
-        private static readonly Token kwExecToken = new SymbolToken(TokenKind.KeywordExec, "exec");
         private static readonly Token kwFinallyToken = new SymbolToken(TokenKind.KeywordFinally, "finally");
         private static readonly Token kwForToken = new SymbolToken(TokenKind.KeywordFor, "for");
         private static readonly Token kwFromToken = new SymbolToken(TokenKind.KeywordFrom, "from");
@@ -448,10 +441,6 @@ namespace IronPython.Compiler {
 
         public static Token KeywordExceptToken {
             get { return kwExceptToken; }
-        }
-
-        public static Token KeywordExecToken {
-            get { return kwExecToken; }
         }
 
         public static Token KeywordFinallyToken {

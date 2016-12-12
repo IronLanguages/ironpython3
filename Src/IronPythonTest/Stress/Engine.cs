@@ -80,7 +80,7 @@ namespace IronPythonTest.Stress {
             if (expected == null && actual == null) return;
 
             if (!expected.Equals(actual)) {
-                Console.WriteLine("Expected: {0} Got: {1} from {2}", expected, actual, new StackTrace(true));
+                Console.WriteLine("Expected: {0} Got: {1} from {2}", expected, actual, new StackTrace((Exception)null, true));
                 throw new Exception();
             }
         }

@@ -113,7 +113,6 @@
     <Compile Include="Runtime\Profiler.cs" />
     <Compile Include="Compiler\CompilationMode.cs" />
     <Compile Include="Compiler\Ast\AugmentedAssignStatement.cs" />
-    <Compile Include="Compiler\Ast\BackQuoteExpression.cs" />
     <Compile Include="Compiler\Ast\BinaryExpression.cs" />
     <Compile Include="Compiler\Ast\BreakStatement.cs" />
     <Compile Include="Compiler\Ast\CallExpression.cs" />
@@ -126,7 +125,6 @@
     <Compile Include="Compiler\Ast\DottedName.cs" />
     <Compile Include="Compiler\Ast\EmptyStatement.cs" />
     <Compile Include="Compiler\Ast\ErrorExpression.cs" />
-    <Compile Include="Compiler\Ast\ExecStatement.cs" />
     <Compile Include="Compiler\Ast\Expression.cs" />
     <Compile Include="Compiler\Ast\ExpressionStatement.cs" />
     <Compile Include="Compiler\Ast\FlowChecker.cs" />

@@ -67,16 +67,14 @@ namespace IronPythonTest.Cases {
         };
 
         protected override IEnumerable<TestInfo> GetTests() {
-            string[] path = {"..", "..", "Src", "StdLib", "Lib", "test"};
-            string stdlib = Path.Combine(path);
+            string stdlib = Path.Combine("..", "..", "Src", "StdLib", "Lib", "test");
             return STDTESTS.Select(test => new TestInfo(Path.GetFullPath(Path.Combine(stdlib, test) + ".py"), this.manifest));
         }
     }
 
     class AllCPythonCaseGenerator : CommonCaseGenerator<AllCPythonCases> {
         protected override IEnumerable<TestInfo> GetTests() {
-            string[] path = {"..", "..", "Src", "StdLib", "Lib", "test"};
-            string stdlib = Path.Combine(path);
+            string stdlib = Path.Combine("..", "..", "Src", "StdLib", "Lib", "test");
             return Directory.GetFiles(stdlib, "test_*.py", SearchOption.AllDirectories)
                 .Where(file => !StandardCPythonCaseGenerator.STDTESTS.Contains(Path.GetFileNameWithoutExtension(file)))
                 .Select(file => new TestInfo(Path.GetFullPath(file), this.manifest))

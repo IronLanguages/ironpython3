@@ -483,15 +483,15 @@ namespace IronPython.Compiler {
         }
 
         /*
-        small_stmt: expr_stmt | print_stmt  | del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | exec_stmt | assert_stmt
-
+        small_stmt: expr_stmt | del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt
+        
         del_stmt: 'del' exprlist
         pass_stmt: 'pass'
         flow_stmt: break_stmt | continue_stmt | return_stmt | raise_stmt | yield_stmt
         break_stmt: 'break'
         continue_stmt: 'continue'
         return_stmt: 'return' [testlist]
-        yield_stmt: 'yield' testlist
+        yield_stmt: yield_expr
         */
         private Statement ParseSmallStmt() {
             switch (PeekToken().Kind) {
@@ -521,8 +521,6 @@ namespace IronPython.Compiler {
                     return ParseRaiseStmt();
                 case TokenKind.KeywordAssert:
                     return ParseAssertStmt();
-                case TokenKind.KeywordExec:
-                    return ParseExecStmt();
                 case TokenKind.KeywordDel:
                     return ParseDelStmt();
                 case TokenKind.KeywordYield:
@@ -551,6 +549,7 @@ namespace IronPython.Compiler {
             return ret;
         }
 
+        // 'return' [testlist]
         private Statement ParseReturnStmt() {
             if (CurrentFunction == null) {
                 ReportSyntaxError(IronPython.Resources.MisplacedReturn);
@@ -580,7 +579,7 @@ namespace IronPython.Compiler {
             return stmt;
         }
 
-
+        // yield_stmt: yield_expr
         private Statement ParseYieldStmt() {
             // For yield statements, continue to enforce that it's currently in a function. 
             // This gives us better syntax error reporting for yield-statements than for yield-expressions.
@@ -611,7 +610,10 @@ namespace IronPython.Compiler {
         /// Called w/ yield already eaten.
         /// </summary>
         /// <returns>A yield expression if present, else null. </returns>
-        // yield_expression: "yield" [expression_list] 
+        
+        // yield_expr: 'yield' [yield_arg]
+        // yield_arg: 'from' test | testlist
+
         private Expression ParseYieldExpression() {
             // Mark that this function is actually a generator.
             // If we're in a generator expression, then we don't have a function yet.
@@ -630,21 +632,25 @@ namespace IronPython.Compiler {
             // 3) multiple expression, in which case it's wrapped in a tuple.
             Expression yieldResult;
 
-            bool trailingComma;
-            List<Expression> l = ParseExpressionList(out trailingComma);
-            if (l.Count == 0) {
-                // Check empty expression and convert to 'none'
-                yieldResult = new ConstantExpression(null);
-                // location set to match yield location (consistent with cpython)
-                yieldResult.SetLoc(_globalParent, start, GetEnd());
-            } else if (l.Count != 1) {
-                // make a tuple
-                yieldResult = MakeTupleOrExpr(l, trailingComma);
+            if (MaybeEat(TokenKind.KeywordFrom)) {
+                yieldResult = ParseExpression();
+				yieldResult.SetLoc(_globalParent, start, GetEnd());
             } else {
-                // just take the single expression
-                yieldResult = l[0];
+                bool trailingComma;
+                List<Expression> l = ParseExpressionList(out trailingComma);
+                if (l.Count == 0) {
+                    // Check empty expression and convert to 'none'
+                    yieldResult = new ConstantExpression(null);
+                    // location set to match yield location (consistent with cpython)
+                    yieldResult.SetLoc(_globalParent, start, GetEnd());
+                } else if (l.Count != 1) {
+                    // make a tuple
+                    yieldResult = MakeTupleOrExpr(l, trailingComma);
+                } else {
+                    // just take the single expression
+                    yieldResult = l[0];
+                }
             }
-
             Expression yieldExpression = new YieldExpression(yieldResult);
 
             yieldExpression.SetLoc(_globalParent, start, GetEnd());
@@ -945,23 +951,6 @@ namespace IronPython.Compiler {
                 return ReadName();
             }
             return null;
-        }
-
-        //exec_stmt: 'exec' expr ['in' expression [',' expression]]
-        private ExecStatement ParseExecStmt() {
-            Eat(TokenKind.KeywordExec);
-            var start = GetStart();
-            Expression code, locals = null, globals = null;
-            code = ParseExpr();
-            if (MaybeEat(TokenKind.KeywordIn)) {
-                globals = ParseExpression();
-                if (MaybeEat(TokenKind.Comma)) {
-                    locals = ParseExpression();
-                }
-            }
-            ExecStatement ret = new ExecStatement(code, locals, globals);
-            ret.SetLoc(_globalParent, start, GetEnd());
-            return ret;
         }
 
         //global_stmt: 'global' NAME (',' NAME)*
@@ -2015,9 +2004,6 @@ namespace IronPython.Compiler {
                 case TokenKind.LeftBrace:       // dict_display
                     NextToken();
                     return FinishDictOrSetValue();
-                case TokenKind.BackQuote:       // string_conversion
-                    NextToken();
-                    return FinishStringConversion();
                 case TokenKind.Name:            // identifier
                     NextToken();
                     string name = (string)t.Value;
@@ -2970,16 +2956,6 @@ namespace IronPython.Compiler {
             Expression expr = ParseOldExpression();
             ComprehensionIf ret = new ComprehensionIf(expr);
 
-            ret.SetLoc(_globalParent, start, GetEnd());
-            return ret;
-        }
-
-        private Expression FinishStringConversion() {
-            Expression ret;
-            var start = GetStart();
-            Expression expr = ParseTestListAsExpr();
-            Eat(TokenKind.BackQuote);
-            ret = new BackQuoteExpression(expr);
             ret.SetLoc(_globalParent, start, GetEnd());
             return ret;
         }

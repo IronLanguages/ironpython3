@@ -10,10 +10,6 @@ env:
 mono:
   - latest
 
-matrix:
-  allow_failures:
-    - os: osx
-
 solution: IronPython.sln
 
 before_install:

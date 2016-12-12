@@ -1148,7 +1148,7 @@ namespace IronPython.Compiler {
             var lEnd = GetEnd();
             int grouping = _tokenizer.GroupingLevel;
 
-            Parameter[] parameters = ParseVarArgsList(TokenKind.RightParenthesis);
+            Parameter[] parameters = ParseParameterList(TokenKind.RightParenthesis, allowAnnotations: true);
             FunctionDefinition ret;
             if (parameters == null) {
                 // error in parameters
@@ -1184,18 +1184,6 @@ namespace IronPython.Compiler {
             return ret;
         }
 
-        private Parameter ParseParameterName(HashSet<string> names, ParameterKind kind) {
-            string name = ReadName();
-            if (name != null) {
-                CheckUniqueParameter(names, name);
-            } else {
-                return null;
-            }
-            Parameter parameter = new Parameter(name, kind);
-            parameter.SetLoc(_globalParent, GetStart(), GetEnd());
-            return parameter;
-        }
-
         private void CheckUniqueParameter(HashSet<string> names, string name) {
             if (names.Contains(name)) {
                 ReportSyntaxError(String.Format(
@@ -1206,38 +1194,23 @@ namespace IronPython.Compiler {
             names.Add(name);
         }
 
-        //varargslist: (fpdef ['=' expression ] ',')* ('*' NAME [',' '**' NAME] | '**' NAME) | fpdef ['=' expression] (',' fpdef ['=' expression])* [',']
-        //fpdef: NAME | '(' fplist ')'
-        //fplist: fpdef (',' fpdef)* [',']
-        private Parameter[] ParseVarArgsList(TokenKind terminator) {
-            // parameters not doing * or ** today
+        // parameter_list ::=
+        //     (defparameter ",")*
+        //     ( "*" [parameter] ("," defparameter)* ["," "**" parameter]
+        //         | "**" parameter
+        //         | defparameter[","] )
+        private Parameter[] ParseParameterList(TokenKind terminator, bool allowAnnotations) {
             List<Parameter> pl = new List<Parameter>();
             HashSet<string> names = new HashSet<string>(StringComparer.Ordinal);
             bool needDefault = false;
+            bool readMultiply = false;
             for (int position = 0; ; position++) {
                 if (MaybeEat(terminator)) break;
 
                 Parameter parameter;
 
-                if (MaybeEat(TokenKind.Multiply)) {
-                    parameter = ParseParameterName(names, ParameterKind.List);
-                    if (parameter == null) {
-                        // no parameter name, syntax error
-                        return null;
-                    }
-                    pl.Add(parameter);
-                    if (MaybeEat(TokenKind.Comma)) {
-                        Eat(TokenKind.Power);
-                        parameter = ParseParameterName(names, ParameterKind.Dictionary);
-                        if (parameter == null) {
-                            return null;
-                        }
-                        pl.Add(parameter);
-                    }
-                    Eat(terminator);
-                    break;
-                } else if (MaybeEat(TokenKind.Power)) {
-                    parameter = ParseParameterName(names, ParameterKind.Dictionary);
+                if (MaybeEat(TokenKind.Power)) {
+                    parameter = ParseParameter(names, ParameterKind.Dictionary, allowAnnotations);
                     if (parameter == null) {
                         // no parameter name, syntax error
                         return null;
@@ -1247,23 +1220,40 @@ namespace IronPython.Compiler {
                     break;
                 }
 
-                //
-                //  Parsing defparameter:
-                //
-                //  defparameter ::=
-                //      parameter ["=" expression]
-
-                if ((parameter = ParseParameter(position, names)) != null) {
-                    pl.Add(parameter);
-                    if (MaybeEat(TokenKind.Assign)) {
-                        needDefault = true;
-                        parameter.DefaultValue = ParseExpression();
-                    } else if (needDefault) {
-                        ReportSyntaxError(IronPython.Resources.DefaultRequired);
+                if (MaybeEat(TokenKind.Multiply)) {
+                    if (readMultiply) {
+                        ReportSyntaxError(_lookahead);
+                        return null;
                     }
-                } else {
-                    // no parameter due to syntax error
-                    return null;
+
+                    if (PeekToken(TokenKind.Comma)) {
+                        // TODO: "*"
+                    }
+                    else {
+                        parameter = ParseParameter(names, ParameterKind.List, allowAnnotations);
+                        if (parameter == null) {
+                            // no parameter name, syntax error
+                            return null;
+                        }
+                        pl.Add(parameter);
+                    }
+
+                    readMultiply = true;
+                }
+                else {
+                    // If a parameter has a default value, all following parameters up until the "*" must also have a default value
+                    if (readMultiply) {
+                        bool dontCare = false;
+                        parameter = ParseDefParameter(names, ParameterKind.Normal, allowAnnotations, ref dontCare);
+                    }
+                    else {
+                        parameter = ParseDefParameter(names, ParameterKind.Normal, allowAnnotations, ref needDefault);
+                    }
+                    if (parameter == null) {
+                        // no parameter, syntax error
+                        return null;
+                    }
+                    pl.Add(parameter);
                 }
 
                 if (!MaybeEat(TokenKind.Comma)) {
@@ -1275,43 +1265,39 @@ namespace IronPython.Compiler {
             return pl.ToArray();
         }
 
-        //  parameter ::=
-        //      identifier | "(" sublist ")"
-        private Parameter ParseParameter(int position, HashSet<string> names) {
-            Token t = PeekToken();
-            Parameter parameter = null;
+        // defparameter ::=
+        //     parameter ["=" expression]
+        private Parameter ParseDefParameter(HashSet<string> names, ParameterKind parameterKind, bool allowAnnotations, ref bool needDefault)
+        {
+            Parameter parameter = ParseParameter(names, parameterKind, allowAnnotations);
+            if (parameter != null) {
+                if (MaybeEat(TokenKind.Assign)) {
+                    needDefault = true;
+                    parameter.DefaultValue = ParseExpression();
+                }
+                else if (needDefault) {
+                    ReportSyntaxError(IronPython.Resources.DefaultRequired);
+                }
+            }
+            return parameter;
+        }
 
-            switch (t.Kind) {
-                case TokenKind.LeftParenthesis: // sublist
-                    NextToken();
-                    Expression ret = ParseSublist(names);
-                    Eat(TokenKind.RightParenthesis);
-                    TupleExpression tret = ret as TupleExpression;
-                    NameExpression nameRet;
+        // parameter ::=
+        //     identifier [":" expression]
+        private Parameter ParseParameter(HashSet<string> names, ParameterKind parameterKind, bool allowAnnotations) {
+            if (!PeekToken(TokenKind.Name)) {
+                ReportSyntaxError(_lookahead);
+                return null;
+            }
 
-                    if (tret != null) {
-                        parameter = new SublistParameter(position, tret);
-                    } else if ((nameRet = ret as NameExpression) != null) {
-                        parameter = new Parameter(nameRet.Name);
-                    } else {
-                        ReportSyntaxError(_lookahead);
-                    }
+            Token t = NextToken();
+            string name = FixName((string)t.Value);
+            Parameter parameter = new Parameter(name, parameterKind);
+            CompleteParameterName(parameter, name, names);
 
-                    if (parameter != null) {
-                        parameter.SetLoc(_globalParent, ret.IndexSpan);
-                    }
-                    break;
-
-                case TokenKind.Name:  // identifier
-                    NextToken();
-                    string name = FixName((string)t.Value);
-                    parameter = new Parameter(name);
-                    CompleteParameterName(parameter, name, names);
-                    break;
-
-                default:
-                    ReportSyntaxError(_lookahead);
-                    break;
+            // expression
+            if (allowAnnotations && MaybeEat(TokenKind.Colon)) {
+                parameter.Annotation = ParseExpression();
             }
 
             return parameter;
@@ -1397,7 +1383,7 @@ namespace IronPython.Compiler {
         private FunctionDefinition ParseLambdaHelperStart(string name) {
             var start = GetStart();
             Parameter[] parameters;
-            parameters = ParseVarArgsList(TokenKind.Colon);
+            parameters = ParseParameterList(TokenKind.Colon, allowAnnotations: false);
             var mid = GetEnd();
 
             FunctionDefinition func = new FunctionDefinition(name, parameters ?? new Parameter[0]); // new Parameter[0] for error handling of incomplete lambda

@@ -46,6 +46,7 @@ namespace IronPython.Compiler.Ast {
         /// </summary>
         private readonly string _name;
         protected readonly ParameterKind _kind;
+        protected Expression _annotation;
         protected Expression _defaultValue;
 
         private PythonVariable _variable;
@@ -65,6 +66,11 @@ namespace IronPython.Compiler.Ast {
         /// </summary>
         public string Name {
             get { return _name; }
+        }
+
+        public Expression Annotation {
+            get { return _annotation; }
+            set { _annotation = value; }
         }
 
         public Expression DefaultValue {

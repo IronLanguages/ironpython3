@@ -620,7 +620,7 @@ namespace IronPython.Modules {
 
             #endregion
 
-            //			public override bool __nonzero__() {
+            //			public override bool __bool__() {
             //				return m.Success;
             //			}
 

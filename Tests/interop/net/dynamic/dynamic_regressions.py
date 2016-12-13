@@ -74,7 +74,7 @@ def test_cp24111():
     class TestObj(object):
         def __init__(self, nz):
             self.nz = nz
-        def __nonzero__(self):
+        def __bool__(self):
             return self.nz
 
     for x in [0, 1]:

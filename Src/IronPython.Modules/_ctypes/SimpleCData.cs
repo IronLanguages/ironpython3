@@ -32,7 +32,7 @@ namespace IronPython.Modules {
 
         [PythonType("_SimpleCData")]
         public abstract class SimpleCData : CData, ICodeFormattable {
-            // members: __nonzero__ __new__ __repr__ __ctypes_from_outparam__ __doc__ __init__            
+            // members: __bool__ __new__ __repr__ __ctypes_from_outparam__ __doc__ __init__            
 
             protected SimpleCData() {
             }

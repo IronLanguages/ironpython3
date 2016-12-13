@@ -27,7 +27,7 @@ from Merlin.Testing import *
 from Merlin.Testing.Call import *
 from Merlin.Testing.TypeSample import *
 
-# to cover __int__, __long__, __float__, __complex__, __nonzero__ 
+# to cover __int__, __long__, __float__, __complex__, __bool__ 
 # on CLR objects (and derived python object)
 
 run_test(__name__)

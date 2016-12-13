@@ -27,7 +27,7 @@ def test_bool_dir():
                 '__float__', '__floordiv__', '__getattribute__', '__getnewargs__',
                 '__hash__', '__hex__', '__index__', '__init__', '__int__',
                 '__invert__', '__long__', '__lshift__', '__mod__', '__mul__',
-                '__neg__', '__new__', '__nonzero__', '__oct__', '__or__', '__pos__',
+                '__neg__', '__new__', '__bool__', '__oct__', '__or__', '__pos__',
                 '__pow__', '__radd__', '__rand__', '__rdiv__', '__rdivmod__', '__reduce__',
                 '__reduce_ex__', '__repr__', '__rfloordiv__', '__rlshift__', '__rmod__',
                 '__rmul__', '__ror__', '__rpow__', '__rrshift__', '__rshift__',

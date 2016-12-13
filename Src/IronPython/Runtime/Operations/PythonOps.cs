@@ -847,42 +847,39 @@ namespace IronPython.Runtime.Operations {
             return PythonContext.Hash(o);
         }
 
-        public static object Hex(object o) {
-            if (o is int) return Int32Ops.__hex__((int)o);
-            else if (o is BigInteger) return BigIntegerOps.__hex__((BigInteger)o);
-
-            object hex;
-            if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default,
-                o,
-                "__hex__",
-                out hex)) {
-                if (!(hex is string) && !(hex is ExtensibleString))
-                    throw PythonOps.TypeError("hex expected string type as return, got '{0}'", PythonTypeOps.GetName(hex));
-
-                return hex;
-            }
-            throw TypeError("hex() argument cannot be converted to hex");
-        }
-
-        public static object Oct(object o) {
+        public static object Index(object o) {
             if (o is int) {
-                return Int32Ops.__oct__((int)o);
+                return Int32Ops.__index__((int)o);
+            } else if (o is uint) {
+                return UInt32Ops.__index__((uint)o);
+            } else if (o is ushort) {
+                return UInt16Ops.__index__((ushort)o);
+            } else if (o is short) {
+                return Int16Ops.__index__((short)o);
+            } else if (o is byte) {
+                return ByteOps.__index__((byte)o);
+            } else if (o is sbyte) {
+                return SByteOps.__index__((sbyte)o);
+            } else if (o is long) {
+                return Int64Ops.__index__((long)o);
+            } else if(o is ulong) {
+                return UInt64Ops.__index__((ulong)o);
             } else if (o is BigInteger) {
-                return BigIntegerOps.__oct__((BigInteger)o);
+                return BigIntegerOps.__index__((BigInteger)o);
             }
 
-            object octal;
+            object index;
 
             if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default,
                 o,
-                "__oct__",
-                out octal)) {
-                if (!(octal is string) && !(octal is ExtensibleString))
-                    throw PythonOps.TypeError("hex expected string type as return, got '{0}'", PythonTypeOps.GetName(octal));
+                "__index__",
+                out index)) {
+                if (!(index is int) && !(index is BigInteger))
+                    throw PythonOps.TypeError("__index__ returned non-int (type {0})", PythonTypeOps.GetName(index));
 
-                return octal;
+                return index;
             }
-            throw TypeError("oct() argument cannot be converted to octal");
+            throw TypeError("'{0}' object cannot be interpreted as an integer", PythonTypeOps.GetName(o));
         }
 
         public static int Length(object o) {
@@ -2888,8 +2885,8 @@ namespace IronPython.Runtime.Operations {
 
         public static bool? OldInstanceConvertToBoolNonThrowing(CodeContext/*!*/ context, OldInstance/*!*/ oi) {
             object value;
-            if (oi.TryGetBoundCustomMember(context, "__nonzero__", out value)) {
-                object res = NonThrowingConvertToNonZero(PythonCalls.Call(context, value));
+            if (oi.TryGetBoundCustomMember(context, "__bool__", out value)) {
+                object res = NonThrowingConvertToBool(PythonCalls.Call(context, value));
                 if (res is int) {
                     return ((int)res) != 0;
                 } else if (res is bool) {
@@ -2907,8 +2904,8 @@ namespace IronPython.Runtime.Operations {
 
         public static object OldInstanceConvertToBoolThrowing(CodeContext/*!*/ context, OldInstance/*!*/ oi) {
             object value;
-            if (oi.TryGetBoundCustomMember(context, "__nonzero__", out value)) {
-                return ThrowingConvertToNonZero(PythonCalls.Call(context, value));
+            if (oi.TryGetBoundCustomMember(context, "__bool__", out value)) {
+                return ThrowingConvertToBool(PythonCalls.Call(context, value));
             } else if (oi.TryGetBoundCustomMember(context, "__len__", out value)) {
                 return PythonContext.GetContext(context).ConvertToInt32(PythonCalls.Call(context, value)) != 0;
             }
@@ -2996,8 +2993,8 @@ namespace IronPython.Runtime.Operations {
             return value is string || value is Extensible<string>;
         }
 
-        public static bool CheckingConvertToNonZero(object value) {
-            return value is bool || value is int;
+        public static bool CheckingConvertToBool(object value) {
+            return value is bool;
         }
 
         public static object NonThrowingConvertToInt(object value) {
@@ -3025,8 +3022,8 @@ namespace IronPython.Runtime.Operations {
             return value;
         }
 
-        public static object NonThrowingConvertToNonZero(object value) {
-            if (!CheckingConvertToNonZero(value)) return null;
+        public static object NonThrowingConvertToBool(object value) {
+            if (!CheckingConvertToBool(value)) return null;
             return value;
         }
 
@@ -3055,13 +3052,9 @@ namespace IronPython.Runtime.Operations {
             return value;
         }
 
-        public static bool ThrowingConvertToNonZero(object value) {
-            if (!CheckingConvertToNonZero(value)) throw TypeError("__nonzero__ should return bool or int, returned {0}", PythonTypeOps.GetName(value));
-            if (value is bool) {
-                return (bool)value;
-            }
-
-            return ((int)value) != 0;
+        public static bool ThrowingConvertToBool(object value) {
+            if (!CheckingConvertToBool(value)) throw TypeError("__bool__ should return bool, returned {0}", PythonTypeOps.GetName(value));
+            return (bool)value;
         }
 
         #endregion

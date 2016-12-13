@@ -568,7 +568,7 @@ namespace IronPython.Modules {
                 if (delta == null) {
                     last = -1;
                 } else {
-                    last = delta.__nonzero__() ? 1 : 0;
+                    last = delta.__bool__() ? 1 : 0;
                 }
             }
             return new struct_time(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, dt.Second, Weekday(dayOfWeek ?? dt.DayOfWeek), dt.DayOfYear, last);

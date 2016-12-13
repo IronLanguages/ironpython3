@@ -136,11 +136,11 @@ namespace IronPython.Runtime.Types {
         }
 
         public static bool operator true(OldInstance self) {
-            return (bool)self.__nonzero__(DefaultContext.Default);
+            return (bool)self.__bool__(DefaultContext.Default);
         }
 
         public static bool operator false(OldInstance self) {
-            return !(bool)self.__nonzero__(DefaultContext.Default);
+            return !(bool)self.__bool__(DefaultContext.Default);
         }
 
         #region Object overrides
@@ -395,10 +395,10 @@ namespace IronPython.Runtime.Types {
             throw PythonOps.AttributeError("{0} instance has no __call__ method", _class.Name);
         }
 
-        public object __nonzero__(CodeContext context) {
+        public object __bool__(CodeContext context) {
             object value;
 
-            if (TryGetBoundCustomMember(context, "__nonzero__", out value)) {
+            if (TryGetBoundCustomMember(context, "__bool__", out value)) {
                 return PythonOps.CallWithContext(context, value);
             }
 

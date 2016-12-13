@@ -174,7 +174,7 @@ def gen_unaryops(cw, ty):
         cw.write(unsigned_negate_or_invert, method_name="OnesComplement")
     
     if (ty.type is not complex) and (ty.type is not bigint):
-        cw.enter_block('public static bool __nonzero__(%s x)' % (ty.name))
+        cw.enter_block('public static bool __bool__(%s x)' % (ty.name))
         cw.writeline('return (x != 0);')
         cw.exit_block()
         cw.writeline()

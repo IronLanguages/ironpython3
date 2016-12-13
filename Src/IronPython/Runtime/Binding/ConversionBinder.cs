@@ -716,7 +716,7 @@ namespace IronPython.Runtime.Binding {
             }
 
             if (self.GetLimitType() == typeof(DynamicNull)) {
-                // None has no __nonzero__ and no __len__ but it's always false
+                // None has no __bool__ and no __len__ but it's always false
                 res = MakeNoneToBoolConversion(self);
             } else if (self.GetLimitType() == typeof(bool)) {
                 // nothing special to convert from bool to bool
@@ -730,7 +730,7 @@ namespace IronPython.Runtime.Binding {
                 res = MakePrimitiveToBoolComparison(self);
             } else {
                 // anything non-null that doesn't fall under one of the above rules is true.  So we
-                // fallback to the base Python conversion which will check for __nonzero__ and
+                // fallback to the base Python conversion which will check for __bool__ and
                 // __len__.  The fallback is handled by our ConvertTo site binder.
                 return
                     PythonProtocol.ConvertToBool(this, self) ??

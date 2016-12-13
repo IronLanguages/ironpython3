@@ -372,28 +372,6 @@ namespace IronPython.Runtime.Operations {
         }
 
 
-        #region Unary Operators
-
-        public static string __oct__(int x) {
-            if (x == 0) {
-                return "0";
-            } else if (x > 0) {
-                return "0" + ((BigInteger)x).ToString(8);
-            } else {
-                return "-0" + ((BigInteger)(-x)).ToString(8);
-            }
-        }
-
-        public static string __hex__(int x) {
-            if (x < 0) {
-                return "-0x" + (-x).ToString("x");
-            } else {
-                return "0x" + x.ToString("x");
-            }
-        }
-
-        #endregion
-
         public static object __getnewargs__(CodeContext context, int self) {
             return PythonTuple.MakeTuple(Int32Ops.__new__(context, TypeCache.Int32, self));
         }
@@ -403,10 +381,6 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static int __int__(int self) {
-            return self;
-        }
-
-        public static int __index__(int self) {
             return self;
         }
 

@@ -162,6 +162,10 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return false;
         }
 
+        public static string ascii(CodeContext/*!*/ context, object @object) {
+            return PythonOps.Repr(context, @object);
+        }
+
         public static string bin(int number) {
             return Int32Ops.ToBinary(number);
         }
@@ -750,7 +754,22 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         //??? type this to string
         public static object hex(object o) {
-            return PythonOps.Hex(o);
+            object res = PythonOps.Index(o);
+            if (res is BigInteger) {
+                BigInteger b = (BigInteger)res;
+                if (b < 0) {
+                    return "-0x" + (-b).ToString(16);
+                } else {
+                    return "0x" + b.ToString(16);
+                }
+            }
+
+            int x = (int)res;
+            if (x < 0) {
+                return "-0x" + Convert.ToString(-x, 16);
+            } else {
+                return "0x" + Convert.ToString(x, 16);
+            }
         }
 
         public static object id(object o) {
@@ -1225,7 +1244,22 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object oct(object o) {
-            return PythonOps.Oct(o);
+            object res = PythonOps.Index(o);
+            if (res is BigInteger) {
+                BigInteger b = (BigInteger)res;
+                if (b < 0) {
+                    return "-0o" + (-b).ToString(8);
+                } else {
+                    return "0o" + b.ToString(8);
+                }
+            }
+            
+            int x = (int)res;
+            if (x < 0) {
+                return "-0o" + Convert.ToString(-x, 8);
+            } else {
+                return "0o" + Convert.ToString(x, 8);
+            }            
         }
 
         /// <summary>

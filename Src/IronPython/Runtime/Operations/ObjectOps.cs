@@ -337,7 +337,7 @@ namespace IronPython.Runtime.Operations {
         /// Implements the default __reduce_ex__ method as specified by PEP 307 case 2 (new-style instance, protocol 0 or 1)
         /// </summary>
         internal static PythonTuple ReduceProtocol0(CodeContext/*!*/ context, object self) {
-            // CPython implements this in copy_reg._reduce_ex
+            // CPython implements this in copyreg._reduce_ex
 
             PythonType myType = DynamicHelpers.GetPythonType(self); // PEP 307 calls this "D"
             ThrowIfNativelyPickable(myType);

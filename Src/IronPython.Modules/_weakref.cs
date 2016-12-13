@@ -556,7 +556,7 @@ namespace IronPython.Modules {
             
             #endregion
 
-            public object __nonzero__() {
+            public object __bool__() {
                 return Converter.ConvertToBoolean(GetObject());
             }
 
@@ -826,7 +826,7 @@ namespace IronPython.Modules {
 
             #endregion
 
-            public object __nonzero__() {
+            public object __bool__() {
                 return Converter.ConvertToBoolean(GetObject());
             }
         }

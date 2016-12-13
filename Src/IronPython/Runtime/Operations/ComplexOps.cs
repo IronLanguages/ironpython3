@@ -203,7 +203,7 @@ namespace IronPython.Runtime.Operations {
             return x.GetHashCode();
         }
 
-        public static bool __nonzero__(Complex x) {
+        public static bool __bool__(Complex x) {
             return !x.IsZero();
         }
 

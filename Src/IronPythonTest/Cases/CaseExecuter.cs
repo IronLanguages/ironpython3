@@ -77,6 +77,10 @@ namespace IronPythonTest.Cases {
             }
         }
 
+        public string FormatException(Exception ex) {
+            return this.defaultEngine.GetService<ExceptionOperations>().FormatException(ex);
+        }
+
         private int GetEngineTest(TestInfo testcase) {
             var engine = CreateEngine(testcase.Options);
             var source = engine.CreateScriptSourceFromString(

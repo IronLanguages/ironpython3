@@ -25,8 +25,8 @@ namespace IronPythonTest.Cases {
         public int StandardCPythonTests(TestInfo testcase) {
             try {
                 return this.executor.RunTest(testcase);
-            } catch (SyntaxErrorException e) {
-                Assert.Fail("SyntaxError: {3}({0}, {1}): {2}", e.Line, e.Column, e.Message, e.SourcePath);
+            } catch (Exception e) {
+                Assert.Fail(this.executor.FormatException(e));
                 return -1;
             }
         }
@@ -45,8 +45,8 @@ namespace IronPythonTest.Cases {
         public int AllCPythonTests(TestInfo testcase) {
             try {
                 return this.executor.RunTest(testcase);
-            } catch (SyntaxErrorException e) {
-                Assert.Fail("SyntaxError: {3}({0}, {1}): {2}", e.Line, e.Column, e.Message, e.SourcePath);
+            } catch (Exception e) {
+                Assert.Fail(this.executor.FormatException(e));
                 return -1;
             }
         }

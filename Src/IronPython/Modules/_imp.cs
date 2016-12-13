@@ -29,7 +29,7 @@ using IronPython.Runtime.Types;
 using System.Collections.Generic;
 using System.Threading;
 
-[assembly: PythonModule("imp", typeof(IronPython.Modules.PythonImport))]
+[assembly: PythonModule("_imp", typeof(IronPython.Modules.PythonImport))]
 namespace IronPython.Modules {
     public static class PythonImport {
         public const string __doc__ = "Provides functions for programmatically creating and importing modules and packages.";

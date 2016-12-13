@@ -62,7 +62,7 @@
     <Compile Include="Runtime\BuiltinPythonModule.cs" />
     <Compile Include="Runtime\ConstantDictionaryStorage.cs" />
     <Compile Include="Runtime\DictionaryTypeInfoAttribute.cs" />
-    <Compile Include="Modules\imp.cs" />
+    <Compile Include="Modules\_imp.cs" />
     <Compile Include="Runtime\DebuggerDictionaryStorage.cs" />
     <Compile Include="Runtime\Binding\IComConvertible.cs" />
     <Compile Include="Runtime\CodeContext.cs" />

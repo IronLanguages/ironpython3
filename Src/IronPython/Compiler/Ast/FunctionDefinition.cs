@@ -192,11 +192,17 @@ namespace IronPython.Compiler.Ast {
                         Parameter p = _parameters[i];
                         if (p.IsDictionary || p.IsList) break;
                     }
-                    // Check for the list and dictionary parameters, which must be the last(two)
+                    // Check for the list parameter
                     if (i < _parameters.Length && _parameters[i].IsList) {
                         i++;
                         fa |= FunctionAttributes.ArgumentList;
                     }
+                    // Keyword-only arguments
+                    for (; i < _parameters.Length; i++) {
+                        Parameter p = _parameters[i];
+                        if (p.IsDictionary) break;
+                    }
+                    // Check for the dictionary parameter, which must be the last
                     if (i < _parameters.Length && _parameters[i].IsDictionary) {
                         i++;
                         fa |= FunctionAttributes.KeywordDictionary;

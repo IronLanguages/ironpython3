@@ -462,7 +462,7 @@ namespace IronPython.Runtime.Operations {
             return x.Abs();
         }
 
-        public static bool __nonzero__(BigInteger x) {
+        public static bool __bool__(BigInteger x) {
             return !x.IsZero();
         }
 
@@ -487,25 +487,6 @@ namespace IronPython.Runtime.Operations {
 
         public static object __float__(BigInteger self) {
             return self.ToFloat64();
-        }
-
-        public static string __oct__(BigInteger x) {
-            if (x == BigInteger.Zero) {
-                return "0L";
-            } else if (x > 0) {
-                return "0" + x.ToString(8) + "L";
-            } else {
-                return "-0" + (-x).ToString(8) + "L";
-            }
-        }
-
-        public static string __hex__(BigInteger x) {
-            // CPython 2.5 prints letters in lowercase, with a capital L. 
-            if (x < 0) {
-                return "-0x" + (-x).ToString(16).ToLower() + "L";
-            } else {
-                return "0x" + x.ToString(16).ToLower() + "L";
-            }
         }
 
         public static object __getnewargs__(CodeContext context, BigInteger self) {

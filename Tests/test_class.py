@@ -957,7 +957,7 @@ def test_newstyle_lookup():
     
     global obj
     obj = Strange()
-    obj.__nonzero__ = lambda: False
+    obj.__bool__ = lambda: False
     AreEqual(bool(obj), True)
     
     def twoargs(self, other):
@@ -2679,7 +2679,7 @@ def test_oldinstance_operator_exceptions():
     #    print x
     #    AssertError(AttributeError, getattr(type(OC3()), x), OC3())
     
-    for x in ['__hash__', '__nonzero__', '__str__', '__repr__']:
+    for x in ['__hash__', '__bool__', '__str__', '__repr__']:
         # unary operators that catch AttributeError
         getattr(type(OC3()), x)(OC3())
     
@@ -2833,7 +2833,7 @@ def test_cp13820():
         
         def __hash__(self): return 1
         
-        def __nonzero__(self): return 1
+        def __bool__(self): return True
         
         def __get__(self, instance, owner): return 3
         
@@ -2876,7 +2876,7 @@ def test_cp13820():
         
         def __hash__(self): return 1
         
-        def __nonzero__(self): return 1
+        def __bool__(self): return True
         
         def __get__(self, instance, owner): return 3
         

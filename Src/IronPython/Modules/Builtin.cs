@@ -162,6 +162,10 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return false;
         }
 
+        public static string ascii(CodeContext/*!*/ context, object @object) {
+            return PythonOps.Repr(context, @object);
+        }
+
         public static string bin(int number) {
             return Int32Ops.ToBinary(number);
         }

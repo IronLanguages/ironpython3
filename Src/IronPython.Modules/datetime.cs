@@ -212,7 +212,7 @@ namespace IronPython.Modules {
                 return total_microseconds / 1000000.0;
             }
 
-            public bool __nonzero__() {
+            public bool __bool__() {
                 return this._days != 0 || this._seconds != 0 || this._microseconds != 0;
             }
 
@@ -1311,12 +1311,12 @@ namespace IronPython.Modules {
                 );
             }
 
-            public bool __nonzero__() {
+            public bool __bool__() {
                 return this.UtcTime.TimeSpan.Ticks != 0 || this.UtcTime.LostMicroseconds != 0;
             }
 
             public static explicit operator bool(time time) {
-                return time.__nonzero__();
+                return time.__bool__();
             }
 
             // instance methods

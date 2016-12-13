@@ -79,7 +79,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public bool __nonzero__() {
+            public bool __bool__() {
                 return _memHolder.ReadIntPtr(0) != IntPtr.Zero;
             }
 

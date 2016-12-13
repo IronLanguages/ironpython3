@@ -2885,8 +2885,8 @@ namespace IronPython.Runtime.Operations {
 
         public static bool? OldInstanceConvertToBoolNonThrowing(CodeContext/*!*/ context, OldInstance/*!*/ oi) {
             object value;
-            if (oi.TryGetBoundCustomMember(context, "__nonzero__", out value)) {
-                object res = NonThrowingConvertToNonZero(PythonCalls.Call(context, value));
+            if (oi.TryGetBoundCustomMember(context, "__bool__", out value)) {
+                object res = NonThrowingConvertToBool(PythonCalls.Call(context, value));
                 if (res is int) {
                     return ((int)res) != 0;
                 } else if (res is bool) {
@@ -2904,8 +2904,8 @@ namespace IronPython.Runtime.Operations {
 
         public static object OldInstanceConvertToBoolThrowing(CodeContext/*!*/ context, OldInstance/*!*/ oi) {
             object value;
-            if (oi.TryGetBoundCustomMember(context, "__nonzero__", out value)) {
-                return ThrowingConvertToNonZero(PythonCalls.Call(context, value));
+            if (oi.TryGetBoundCustomMember(context, "__bool__", out value)) {
+                return ThrowingConvertToBool(PythonCalls.Call(context, value));
             } else if (oi.TryGetBoundCustomMember(context, "__len__", out value)) {
                 return PythonContext.GetContext(context).ConvertToInt32(PythonCalls.Call(context, value)) != 0;
             }
@@ -2993,8 +2993,8 @@ namespace IronPython.Runtime.Operations {
             return value is string || value is Extensible<string>;
         }
 
-        public static bool CheckingConvertToNonZero(object value) {
-            return value is bool || value is int;
+        public static bool CheckingConvertToBool(object value) {
+            return value is bool;
         }
 
         public static object NonThrowingConvertToInt(object value) {
@@ -3022,8 +3022,8 @@ namespace IronPython.Runtime.Operations {
             return value;
         }
 
-        public static object NonThrowingConvertToNonZero(object value) {
-            if (!CheckingConvertToNonZero(value)) return null;
+        public static object NonThrowingConvertToBool(object value) {
+            if (!CheckingConvertToBool(value)) return null;
             return value;
         }
 
@@ -3052,13 +3052,9 @@ namespace IronPython.Runtime.Operations {
             return value;
         }
 
-        public static bool ThrowingConvertToNonZero(object value) {
-            if (!CheckingConvertToNonZero(value)) throw TypeError("__nonzero__ should return bool or int, returned {0}", PythonTypeOps.GetName(value));
-            if (value is bool) {
-                return (bool)value;
-            }
-
-            return ((int)value) != 0;
+        public static bool ThrowingConvertToBool(object value) {
+            if (!CheckingConvertToBool(value)) throw TypeError("__bool__ should return bool, returned {0}", PythonTypeOps.GetName(value));
+            return (bool)value;
         }
 
         #endregion

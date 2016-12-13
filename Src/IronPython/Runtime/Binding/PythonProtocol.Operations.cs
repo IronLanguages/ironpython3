@@ -577,13 +577,13 @@ namespace IronPython.Runtime.Binding {
         private static DynamicMetaObject/*!*/ MakeUnaryNotOperation(DynamicMetaObjectBinder/*!*/ operation, DynamicMetaObject/*!*/ self, Type retType, DynamicMetaObject errorSuggestion) {
             self = self.Restrict(self.GetLimitType());
 
-            SlotOrFunction nonzero = SlotOrFunction.GetSlotOrFunction(PythonContext.GetPythonContext(operation), "__nonzero__", self);
+            SlotOrFunction @bool = SlotOrFunction.GetSlotOrFunction(PythonContext.GetPythonContext(operation), "__bool__", self);
             SlotOrFunction length = SlotOrFunction.GetSlotOrFunction(PythonContext.GetPythonContext(operation), "__len__", self);
 
             Expression notExpr;
 
-            if (!nonzero.Success && !length.Success) {
-                // no __len__ or __nonzero__, for None this is always false, everything else is True.  If we have
+            if (!@bool.Success && !length.Success) {
+                // no __len__ or __bool__, for None this is always false, everything else is True.  If we have
                 // an error suggestion though we'll go with that.
                 if (errorSuggestion == null) {
                     notExpr = (self.GetLimitType() == typeof(DynamicNull)) ? AstUtils.Constant(true) : AstUtils.Constant(false);
@@ -591,11 +591,11 @@ namespace IronPython.Runtime.Binding {
                     notExpr = errorSuggestion.Expression;
                 }
             } else {
-                SlotOrFunction target = nonzero.Success ? nonzero : length;
+                SlotOrFunction target = @bool.Success ? @bool : length;
 
                 notExpr = target.Target.Expression;
 
-                if (nonzero.Success) {
+                if (@bool.Success) {
                     // call non-zero and negate it
                     if (notExpr.Type == typeof(bool)) {
                         notExpr = Ast.Equal(notExpr, AstUtils.Constant(false));
@@ -632,7 +632,7 @@ namespace IronPython.Runtime.Binding {
 
             return new DynamicMetaObject(
                 notExpr,
-                self.Restrictions.Merge(nonzero.Target.Restrictions.Merge(length.Target.Restrictions))
+                self.Restrictions.Merge(@bool.Target.Restrictions.Merge(length.Target.Restrictions))
             );
         }
 

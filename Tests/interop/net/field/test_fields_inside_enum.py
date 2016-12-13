@@ -47,10 +47,10 @@ def test_enum_bool():
     #An empty enumeration
     Assert(not bool(EmptyEnum())) 
 
-    #__nonzero__
+    #__bool__
     o = EnumInt32()
-    Assert(not o.A.__nonzero__())
-    Assert(o.B.__nonzero__())
+    Assert(not o.A.__bool__())
+    Assert(o.B.__bool__())
 
     for enum_type in [
                         EnumByte,

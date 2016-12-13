@@ -1084,7 +1084,7 @@ class ns(object):
     def __str__(self): return 'Python'
     def __long__(self): return 42L
     def __complex__(self): return 42j
-    def __nonzero__(self): return False
+    def __bool__(self): return False
 
     def __getitem__(self, index):
         return index
@@ -1188,7 +1188,7 @@ class os:
     def __float__(self): return 42.0
     def __str__(self): return 'Python'
     def __long__(self): return 42L
-    def __nonzero__(self): return False
+    def __bool__(self): return False
     def __complex__(self): return 42j
 
     def __getitem__(self, index):
@@ -1219,7 +1219,7 @@ class os_getattr:
         return 'TestFunc'
 
 class ns_nonzero(object):
-    def __nonzero__(self):
+    def __bool__(self):
         return True
 
 ns_nonzero_inst = ns_nonzero()

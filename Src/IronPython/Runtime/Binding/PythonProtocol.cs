@@ -37,7 +37,7 @@ namespace IronPython.Runtime.Binding {
 
     /// <summary>
     /// Provides binding logic which is implemented to follow various Python protocols.  This includes
-    /// things such as calling __call__ to perform calls, calling __nonzero__/__len__ to convert to
+    /// things such as calling __call__ to perform calls, calling __bool__/__len__ to convert to
     /// bool, calling __add__/__radd__ to do addition, etc...  
     /// 
     /// This logic gets shared between both the IDynamicMetaObjectProvider implementation for Python objects as well
@@ -49,7 +49,7 @@ namespace IronPython.Runtime.Binding {
         #region Conversions
 
         /// <summary>
-        /// Gets a MetaObject which converts the provided object to a bool using __nonzero__ or __len__
+        /// Gets a MetaObject which converts the provided object to a bool using __bool__ or __len__
         /// protocol methods.  This code is shared between both our fallback for a site and our MetaObject
         /// for user defined objects.
         /// </summary>
@@ -58,14 +58,14 @@ namespace IronPython.Runtime.Binding {
 
             SlotOrFunction sf = SlotOrFunction.GetSlotOrFunction(
                 PythonContext.GetPythonContext(conversion),
-                "__nonzero__",
+                "__bool__",
                 self);
 
             if (sf.Success) {
                 if (sf.Target.Expression.Type != typeof(bool)) {
                     return new DynamicMetaObject(
                         Ast.Call(
-                            typeof(PythonOps).GetMethod("ThrowingConvertToNonZero"),
+                            typeof(PythonOps).GetMethod("ThrowingConvertToBool"),
                             sf.Target.Expression
                         ),
                         sf.Target.Restrictions

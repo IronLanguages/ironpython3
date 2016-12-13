@@ -58,7 +58,7 @@ namespace IronPython.Modules {
             
             private static int _curId = 0;
             internal static object _noResType = new object();
-            // __nonzero__ 
+            // __bool__ 
 
             /// <summary>
             /// Creates a new CFuncPtr object from a tuple.  The 1st element of the
@@ -168,7 +168,7 @@ namespace IronPython.Modules {
                 _id = Interlocked.Increment(ref _curId);
             }
 
-            public bool __nonzero__() {
+            public bool __bool__() {
                 return addr != IntPtr.Zero;
             }
 

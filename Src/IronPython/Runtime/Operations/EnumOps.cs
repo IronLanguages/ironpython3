@@ -58,7 +58,7 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.ValueError("one's complement cannot be applied to {0}", self.GetType());
         }
 
-        public static bool __nonzero__(object self) {
+        public static bool __bool__(object self) {
             if (self is Enum) {
                 Type selfType = self.GetType();
                 Type underType = Enum.GetUnderlyingType(selfType);
@@ -75,7 +75,7 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            throw PythonOps.ValueError("__nonzero__ cannot be applied to {0}", self.GetType());
+            throw PythonOps.ValueError("__bool__ cannot be applied to {0}", self.GetType());
         }
 
         public static string __repr__(object self) {

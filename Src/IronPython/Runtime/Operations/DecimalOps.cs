@@ -29,7 +29,7 @@ namespace IronPython.Runtime.Operations {
             return x.CompareTo(other);
         }
 
-        public static bool __nonzero__(decimal x) {
+        public static bool __bool__(decimal x) {
             return x != 0;
         }
 

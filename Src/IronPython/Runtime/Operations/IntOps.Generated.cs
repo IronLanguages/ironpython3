@@ -94,7 +94,7 @@ namespace IronPython.Runtime.Operations {
         public static SByte OnesComplement(SByte x) {
             return (SByte)(~(x));
         }
-        public static bool __nonzero__(SByte x) {
+        public static bool __bool__(SByte x) {
             return (x != 0);
         }
 
@@ -323,7 +323,7 @@ namespace IronPython.Runtime.Operations {
         public static object OnesComplement(Byte x) {
             return Int16Ops.OnesComplement((Int16)x);
         }
-        public static bool __nonzero__(Byte x) {
+        public static bool __bool__(Byte x) {
             return (x != 0);
         }
 
@@ -633,7 +633,7 @@ namespace IronPython.Runtime.Operations {
         public static Int16 OnesComplement(Int16 x) {
             return (Int16)(~(x));
         }
-        public static bool __nonzero__(Int16 x) {
+        public static bool __bool__(Int16 x) {
             return (x != 0);
         }
 
@@ -866,7 +866,7 @@ namespace IronPython.Runtime.Operations {
         public static object OnesComplement(UInt16 x) {
             return Int32Ops.OnesComplement((Int32)x);
         }
-        public static bool __nonzero__(UInt16 x) {
+        public static bool __bool__(UInt16 x) {
             return (x != 0);
         }
 
@@ -1147,7 +1147,7 @@ namespace IronPython.Runtime.Operations {
         public static Int32 OnesComplement(Int32 x) {
             return (Int32)(~(x));
         }
-        public static bool __nonzero__(Int32 x) {
+        public static bool __bool__(Int32 x) {
             return (x != 0);
         }
 
@@ -1357,7 +1357,7 @@ namespace IronPython.Runtime.Operations {
         public static object OnesComplement(UInt32 x) {
             return Int64Ops.OnesComplement((Int64)x);
         }
-        public static bool __nonzero__(UInt32 x) {
+        public static bool __bool__(UInt32 x) {
             return (x != 0);
         }
 
@@ -1670,7 +1670,7 @@ namespace IronPython.Runtime.Operations {
         public static Int64 OnesComplement(Int64 x) {
             return (Int64)(~(x));
         }
-        public static bool __nonzero__(Int64 x) {
+        public static bool __bool__(Int64 x) {
             return (x != 0);
         }
 
@@ -1910,7 +1910,7 @@ namespace IronPython.Runtime.Operations {
         public static object OnesComplement(UInt64 x) {
             return BigIntegerOps.OnesComplement((BigInteger)x);
         }
-        public static bool __nonzero__(UInt64 x) {
+        public static bool __bool__(UInt64 x) {
             return (x != 0);
         }
 
@@ -2186,7 +2186,7 @@ namespace IronPython.Runtime.Operations {
         public static Single Abs(Single x) {
             return (Single)(Math.Abs(x));
         }
-        public static bool __nonzero__(Single x) {
+        public static bool __bool__(Single x) {
             return (x != 0);
         }
 
@@ -2312,7 +2312,7 @@ namespace IronPython.Runtime.Operations {
         public static Double Abs(Double x) {
             return (Double)(Math.Abs(x));
         }
-        public static bool __nonzero__(Double x) {
+        public static bool __bool__(Double x) {
             return (x != 0);
         }
 

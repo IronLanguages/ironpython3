@@ -133,5 +133,5 @@ Implicit conversion operator
 
 Explicit conversion operator
 * Not supported by the language yet, tracking as bug 314284
-* (python) __int__, __long__, __float__, __complex__, __nonzero__
+* (python) __int__, __long__, __float__, __complex__, __bool__
 '''

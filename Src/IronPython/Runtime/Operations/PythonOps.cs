@@ -353,7 +353,7 @@ namespace IronPython.Runtime.Operations {
                 IEnumerator ie = PythonOps.GetEnumerator(bases);
                 while (ie.MoveNext()) {
                     PythonType baseType = ie.Current as PythonType;
-
+                    if (baseType == null) continue;
                     if (c.IsSubclassOf(baseType)) return true;
                 }
                 return false;
@@ -860,10 +860,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object ToPythonType(PythonType dt) {
-            if (dt != null) {
-                return ((object)dt);
-            }
-            return null;
+            return ((object)dt);
         }
 
         public static object CallWithArgsTupleAndContext(CodeContext/*!*/ context, object func, object[] args, object argsTuple) {
@@ -1328,6 +1325,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static object MakeClass(CodeContext/*!*/ context, string name, object[] bases, string selfNames, PythonDictionary vars) {
+            PythonType objType = DynamicHelpers.GetPythonTypeFromType(typeof(object));
             foreach (object dt in bases) {
                 if (dt is TypeGroup) {
                     object[] newBases = new object[bases.Length];
@@ -1347,6 +1345,15 @@ namespace IronPython.Runtime.Operations {
                     break;
                 }
             }
+
+            // we need to make sure that object is always a base
+            if(!bases.Any(x => x == objType)) {
+                object[] newBases = new object[bases.Length + 1];
+                newBases[0] = objType;
+                Array.Copy(bases, 0, newBases, 1, bases.Length);
+                bases = newBases;
+            }
+
             PythonTuple tupleBases = PythonTuple.MakeTuple(bases);
 
             object metaclass = FindMetaclass(context, tupleBases, vars);

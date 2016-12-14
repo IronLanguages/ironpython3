@@ -18,16 +18,16 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
     <DefineConstants>NET_40;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_W32;SQLITE_THREADSAFE;NDEBUG</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v4Debug|AnyCPU' ">
+    <DefineConstants>NET_40;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_W32;SQLITE_THREADSAFE;SQLITE_ENABLE_OVERSIZE_CELL_CHECK</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v4Release|AnyCPU' ">
+    <DefineConstants>NET_40;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_W32;SQLITE_THREADSAFE;NDEBUG</DefineConstants>
+  </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DefineConstants>NET_40;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_W32;SQLITE_THREADSAFE;SQLITE_ENABLE_OVERSIZE_CELL_CHECK</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DefineConstants>NET_40;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_W32;SQLITE_THREADSAFE;NDEBUG</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v45Debug|AnyCPU' ">
-    <DefineConstants>NET_40;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_W32;SQLITE_THREADSAFE;SQLITE_ENABLE_OVERSIZE_CELL_CHECK</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v45Release|AnyCPU' ">
     <DefineConstants>NET_40;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_W32;SQLITE_THREADSAFE;NDEBUG</DefineConstants>
   </PropertyGroup>
   <ItemGroup>

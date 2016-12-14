@@ -15,9 +15,9 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v4Debug|AnyCPU' ">
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v4Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -61,7 +61,6 @@
       <HintPath>$(WpfReferences)\System.Xaml.dll</HintPath>
     </Reference>
   </ItemGroup>
-
   <Import Project="$(CSharpTargets)" />
   <Import Project="$(BeforeTargetFiles)" />
   <Target Name="BeforeBuild" DependsOnTargets="$(BeforeTargets);GenerateCurrentVersion" />

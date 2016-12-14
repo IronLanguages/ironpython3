@@ -474,6 +474,9 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             foreach (object o in t) {
                 // gather all the type objects...
                 PythonType adt = o as PythonType;
+                if (adt == null) {
+                    throw PythonOps.TypeError("expected tuple of types, got '{0}'", PythonTypeOps.GetName(o));
+                }
                 ldt.Add(adt);
             }
 

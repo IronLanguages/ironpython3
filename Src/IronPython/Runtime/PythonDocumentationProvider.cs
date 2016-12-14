@@ -121,6 +121,10 @@ namespace IronPython.Runtime {
                 kind = MemberKind.Field;
             } else if (value != null && value.GetType().IsEnum()) {
                 kind = MemberKind.EnumMember;
+            } else if (value is PythonType) {
+                kind = MemberKind.Class;
+            } else if (value is IPythonObject) {
+                kind = MemberKind.Instance;
             }
 
             return new MemberDoc(

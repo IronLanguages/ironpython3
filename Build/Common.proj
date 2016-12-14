@@ -48,26 +48,18 @@
     <BuildFlavour>Debug</BuildFlavour>
     <BuildFlavour Condition="'$(Configuration)' == 'FxCop'">Release</BuildFlavour>
     <BuildFlavour Condition="'$(Configuration)' == 'Release'">Release</BuildFlavour>
-    <BuildFlavour Condition="'$(Configuration)' == 'v2Release'">Release</BuildFlavour>
-    <BuildFlavour Condition="'$(Configuration)' == 'v45Release'">Release</BuildFlavour>
-    <BuildFlavour Condition="'$(Configuration)' == 'Win8Release'">Release</BuildFlavour>
-    <BuildFlavour Condition="'$(Configuration)' == 'Silverlight5Release'">Release</BuildFlavour>
-    <BuildFlavour Condition="'$(Configuration)' == 'AndroidRelease'">Release</BuildFlavour>
+    <BuildFlavour Condition="'$(Configuration)' == 'v4Release'">Release</BuildFlavour>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(ReferencedPlatform)' == ''">
-    <ReferencedPlatform>net40</ReferencedPlatform>
+    <ReferencedPlatform>net45</ReferencedPlatform>
     <ReferencedPlatform
-        Condition="'$(Configuration)' == 'v45Release' or '$(Configuration)' == 'v45Debug'">net45</ReferencedPlatform>
-    <ReferencedPlatform
-        Condition="'$(Configuration)' == 'Win8Release' or '$(Configuration)' == 'Win8Debug'">wincore45</ReferencedPlatform>
+        Condition="'$(Configuration)' == 'v4Release' or '$(Configuration)' == 'v4Debug'">net40</ReferencedPlatform>
   </PropertyGroup>
 
   <PropertyGroup>
     <CSharpTargets Condition="'$(CSharpTargets)' == ''">$(MSBuildBinPath)\Microsoft.CSharp.targets</CSharpTargets>
     <CSharpTargets Condition="'$(CSharpTargets)' == '' and '$(ReferencedPlatform)' == 'android'">$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets</CSharpTargets>
-
-    <DlrReferences>$(RootDir)\Util\References\DynamicLanguageRuntime.$(DlrVersion)\lib\$(ReferencedPlatform)</DlrReferences>
     <WpfReferences>$(RootDir)\Util\References\WPF\4.0</WpfReferences>
   </PropertyGroup>
 

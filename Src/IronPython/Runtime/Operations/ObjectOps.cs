@@ -289,8 +289,6 @@ namespace IronPython.Runtime.Operations {
                     typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(PythonTuple)), null);
                     typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(List)), null);
                     typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(PythonDictionary)), null);
-                    typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(OldInstance)), null);
-                    typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(OldClass)), null);
                     typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(PythonFunction)), null);
                     typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(BuiltinFunction)), null);
 

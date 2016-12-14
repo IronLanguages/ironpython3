@@ -144,15 +144,7 @@ namespace IronPython.Runtime.Operations {
 
             foreach (PythonType type in dt.ResolutionOrder) {
                 PythonTypeSlot dts;
-                if (type != TypeCache.Object && type.OldClass != null) {
-                    // we're an old class, check the old-class way
-                    OldClass oc = type.OldClass;
-
-                    if (oc.TryGetBoundCustomMember(context, name, out value)) {
-                        value = oc.GetOldStyleDescriptor(context, value, instance, oc);
-                        return true;
-                    }
-                } else if (type.TryLookupSlot(context, name, out dts)) {
+                if (type.TryLookupSlot(context, name, out dts)) {
                     // we're a dynamic type, check the dynamic type way
                     return dts.TryGetValue(context, instance, dt, out value);
                 }

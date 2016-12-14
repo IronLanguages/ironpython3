@@ -44,11 +44,6 @@
     <Zip Condition="'$(OS)' == 'Windows_NT'">$(UtilDir)\Misc\zip.exe</Zip>
     <Zip Condition="'$(OS)' != 'Windows_NT'">zip</Zip>
   </PropertyGroup>
-  
-  <PropertyGroup>
-    <PackageConfigTemplate>$(RootDir)\packages.config.template</PackageConfigTemplate>
-    <PackageConfigOutput>$(RootDir)\packages.config</PackageConfigOutput>
-  </PropertyGroup>
 
   <ItemGroup>
     <ReferencedPlatform Include="net40">
@@ -74,18 +69,8 @@
     <MakeDir Directories="$(ReferenceDir)"  />
   </Target>
   
-  <Target Name="_MakePackagesConfig"
-          DependsOnTargets="Bootstrap"
-          Inputs="$(CurrentVersionFile);@(PackageConfigTemplate);$(MSBuildThisFileFullPath)"
-          Outputs="$(PackageConfigOutput)">
-    <FormatTemplate TemplateFile="$(PackageConfigTemplate)"
-                    OutputFile="$(PackageConfigOutput)"
-                    FileType="xml"
-                    Parameters="$(DlrVersion)" />
-  </Target>
-
   <Target Name="RestoreReferences"
-            DependsOnTargets="_EnsureNuGetConfig;_MakeReferenceDir;_MakePackagesConfig"
+            DependsOnTargets="_EnsureNuGetConfig;_MakeReferenceDir"
             Inputs="$(RootDir)\packages.config;$(RootDir)\NuGet.config"
             Outputs="$(ReferenceDir)\updated">
     <Exec Command="$(NuGet) restore packages.config -PackagesDirectory &quot;$(ReferenceDir)&quot; -ConfigFile &quot;$(NuGetConfig)&quot;" WorkingDirectory="$(RootDir)" />

@@ -57,8 +57,6 @@ namespace IronPython.Runtime.Types {
         private static PythonType biginteger;
         private static PythonType complex;
         private static PythonType super;
-        private static PythonType oldclass;
-        private static PythonType oldinstance;
         private static PythonType nullType;
         private static PythonType boolType;
         private static PythonType baseException;
@@ -230,20 +228,6 @@ namespace IronPython.Runtime.Types {
             get {
                 if (super == null) super = DynamicHelpers.GetPythonTypeFromType(typeof(Super));
                 return super;
-            }
-        }
-
-        public static PythonType OldClass {
-            get {
-                if (oldclass == null) oldclass = DynamicHelpers.GetPythonTypeFromType(typeof(OldClass));
-                return oldclass;
-            }
-        }
-
-        public static PythonType OldInstance {
-            get {
-                if (oldinstance == null) oldinstance = DynamicHelpers.GetPythonTypeFromType(typeof(OldInstance));
-                return oldinstance;
             }
         }
 

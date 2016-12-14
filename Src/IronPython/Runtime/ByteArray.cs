@@ -1089,8 +1089,7 @@ namespace IronPython.Runtime
                 return IndexOf(((Extensible<BigInteger>)value).Value.ToByteChecked()) != -1;
             }
 
-            throw PythonOps.TypeError("Type {0} doesn't support the buffer API",
-                PythonContext.GetContext(context).PythonOptions.Python30 ? PythonTypeOps.GetOldName(value) : PythonTypeOps.GetName(value));
+            throw PythonOps.TypeError("Type {0} doesn't support the buffer API", PythonTypeOps.GetName(value));
         }
 
         public PythonTuple __reduce__(CodeContext/*!*/ context)

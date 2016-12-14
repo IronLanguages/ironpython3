@@ -258,16 +258,6 @@ namespace IronPython.Runtime.Operations {
             }
 
             object res;
-            OldInstance oi = value as OldInstance;
-            if (oi != null &&
-                (oi.TryGetBoundCustomMember(context, "__unicode__", out res) || oi.TryGetBoundCustomMember(context, "__str__", out res))) {
-                res = context.LanguageContext.Call(context, res);
-                if (res is string || res is Extensible<string>) {
-                    return res;
-                }
-                throw PythonOps.TypeError("coercing to Unicode: expected string, got {0}", PythonTypeOps.GetName(value));
-            }
-
 
             if (PythonTypeOps.TryInvokeUnaryOperator(context, value, "__unicode__", out res) ||
                 PythonTypeOps.TryInvokeUnaryOperator(context, value, "__str__", out res)) {

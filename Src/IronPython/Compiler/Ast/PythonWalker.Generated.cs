@@ -171,6 +171,11 @@ namespace IronPython.Compiler.Ast {
         public virtual bool Walk(GlobalStatement node) { return true; }
         public virtual void PostWalk(GlobalStatement node) { }
 
+        // NonlocalStatement
+        public virtual bool Walk(NonlocalStatement node) { return true; }
+        public virtual void PostWalk(NonlocalStatement node) { }
+
+
         // IfStatement
         public virtual bool Walk(IfStatement node) { return true; }
         public virtual void PostWalk(IfStatement node) { }

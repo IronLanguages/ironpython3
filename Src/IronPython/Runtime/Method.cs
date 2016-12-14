@@ -106,7 +106,6 @@ namespace IronPython.Runtime {
         }
 
         private Exception BadSelf(object got) {
-            OldClass dt = im_class as OldClass;            
 
             string firstArg;
             if (got == null) {
@@ -118,7 +117,7 @@ namespace IronPython.Runtime {
 
             return PythonOps.TypeError("unbound method {0}() must be called with {1} instance as first argument (got {2} instead)",
                 Name,
-                (dt != null) ? dt.Name : (pt != null) ? pt.Name : im_class,
+                (pt != null) ? pt.Name : im_class,
                 firstArg);
         }
 
@@ -137,8 +136,6 @@ namespace IronPython.Runtime {
             if (im_class == null) return "?";
             PythonType dt = im_class as PythonType;
             if (dt != null) return dt.Name;
-            OldClass oc = im_class as OldClass;
-            if (oc != null) return oc.Name;
             return im_class.ToString();
         }
 

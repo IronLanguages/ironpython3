@@ -1133,7 +1133,12 @@ namespace IronPython.Compiler {
                         MarkTokenEnd();
                         return Tokens.KeywordAsToken;
                     }
-                    if (NextChar() == 's' && NextChar() == 'e' && NextChar() == 'r' && NextChar() == 't' && !IsNamePart(Peek())) {
+                    ch = NextChar();
+                    if (ch == 'y' && NextChar() == 'n' && NextChar() == 'c' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordAsyncToken;
+                    }
+                    if (ch == 's' && NextChar() == 'e' && NextChar() == 'r' && NextChar() == 't' && !IsNamePart(Peek())) {
                         MarkTokenEnd();
                         return Tokens.KeywordAssertToken;
                     }
@@ -1149,10 +1154,17 @@ namespace IronPython.Compiler {
                     return Tokens.KeywordOrToken;
                 }
             } else if (ch == 'n') {
-                if (NextChar() == 'o' && NextChar() == 't' && !IsNamePart(Peek())) {
-                    MarkTokenEnd();
-                    return Tokens.KeywordNotToken;
-                }
+                if (NextChar() == 'o') {
+                    ch = NextChar();
+                    if (ch == 't' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordNotToken;
+                    }
+                    if (ch == 'n' && NextChar() == 'l' && NextChar() == 'o' && NextChar() == 'c' && NextChar() == 'a' && NextChar() == 'l' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordNonlocalToken;
+                    }                    
+                }                
             } else if (ch == 'N') {
                 if (NextChar() == 'o' && NextChar() == 'n' && NextChar() == 'e' && !IsNamePart(Peek())) {
                     MarkTokenEnd();

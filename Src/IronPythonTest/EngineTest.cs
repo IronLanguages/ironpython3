@@ -1500,21 +1500,6 @@ range = range
                 AreEqual(ator.MoveNext(), true);
                 AreEqual(ator.Current, 3);
                 AreEqual(ator.MoveNext(), false);
-
-                // Bug, need to support conversions of new-style classes to IEnumerable<T>,
-                // see http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21253
-                if (inst is IronPython.Runtime.Types.OldInstance) {
-                    var enumofTsite = CallSite<Func<CallSite, object, IEnumerable<object>>>.Create(new MyConvertBinder(typeof(IEnumerable<object>), new object[0]));
-                    IEnumerable<object> ieofT = enumofTsite.Target(enumofTsite, inst);
-                    IEnumerator<object> atorofT = ieofT.GetEnumerator();
-                    AreEqual(atorofT.MoveNext(), true);
-                    AreEqual(atorofT.Current, 1);
-                    AreEqual(atorofT.MoveNext(), true);
-                    AreEqual(atorofT.Current, 2);
-                    AreEqual(atorofT.MoveNext(), true);
-                    AreEqual(atorofT.Current, 3);
-                    AreEqual(atorofT.MoveNext(), false);
-                }
             }
 
             site = CallSite<Func<CallSite, object, object>>.Create(new MyUnaryBinder(ExpressionType.Not));

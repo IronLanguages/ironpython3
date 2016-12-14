@@ -824,8 +824,7 @@ namespace IronPython.Runtime {
                     Type genTo = toType.GetGenericTypeDefinition();
                     if (genTo == IEnumerableOfTType) {
                         return IEnumerableOfObjectType.IsAssignableFrom(fromType) ||
-                            IEnumerableType.IsAssignableFrom(fromType) ||
-                            fromType == typeof(OldInstance);
+                            IEnumerableType.IsAssignableFrom(fromType);
                     } else if (genTo == typeof(System.Collections.Generic.IEnumerator<>)) {
                         if (IsPythonType(fromType)) return true;
                     }
@@ -935,7 +934,6 @@ namespace IronPython.Runtime {
 
         private static bool HasPythonProtocol(Type t, string name) {
             if (t.FullName.StartsWith(NewTypeMaker.TypePrefix)) return true;
-            if (t == typeof(OldInstance)) return true;
             PythonType dt = DynamicHelpers.GetPythonTypeFromType(t);
             if (dt == null) return false;
             PythonTypeSlot tmp;

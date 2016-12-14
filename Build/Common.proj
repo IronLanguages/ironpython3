@@ -61,8 +61,6 @@
         Condition="'$(Configuration)' == 'v45Release' or '$(Configuration)' == 'v45Debug'">net45</ReferencedPlatform>
     <ReferencedPlatform
         Condition="'$(Configuration)' == 'Win8Release' or '$(Configuration)' == 'Win8Debug'">wincore45</ReferencedPlatform>
-    <ReferencedPlatform
-        Condition="'$(Configuration)' == 'AndroidRelease' or '$(Configuration)' == 'AndroidDebug'">android</ReferencedPlatform>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -106,4 +104,5 @@
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
     <DefineConstants>$(Features);$(SignedSym);$(PlatformSymbols);DEBUG;TRACE</DefineConstants>
   </PropertyGroup>
+ 
 </Project>

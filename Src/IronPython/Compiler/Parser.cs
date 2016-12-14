@@ -424,7 +424,7 @@ namespace IronPython.Compiler {
         }
 
         //stmt: simple_stmt | compound_stmt
-        //compound_stmt: if_stmt | while_stmt | for_stmt | try_stmt | funcdef | classdef
+        //compound_stmt: if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated | async_stmt        
         private Statement ParseStmt() {
             switch (PeekToken().Kind) {
                 case TokenKind.KeywordIf:
@@ -443,6 +443,8 @@ namespace IronPython.Compiler {
                     return ParseClassDef();
                 case TokenKind.KeywordWith:
                     return ParseWithStmt();
+                case TokenKind.KeywordAsync:
+                    return ParseAsyncStmt();
                 default:
                     return ParseSimpleStmt();
             }
@@ -517,6 +519,8 @@ namespace IronPython.Compiler {
                     return ParseImportStmt();
                 case TokenKind.KeywordGlobal:
                     return ParseGlobalStmt();
+                case TokenKind.KeywordNonlocal:
+                    return ParseNonLocalStmt();
                 case TokenKind.KeywordRaise:
                     return ParseRaiseStmt();
                 case TokenKind.KeywordAssert:
@@ -530,7 +534,7 @@ namespace IronPython.Compiler {
             }
         }
 
-        // del_stmt: "del" target_list
+        // del_stmt: "del" exprlist
         //  for error reporting reasons we allow any expression and then report the bad
         //  delete node when it fails.  This is the reason we don't call ParseTargetList.
         private Statement ParseDelStmt() {
@@ -704,7 +708,7 @@ namespace IronPython.Compiler {
         // expression_list: expression ( "," expression )* [","] 
         // assignment_stmt: (target_list "=")+ (expression_list | yield_expression) 
         // augmented_assignment_stmt ::= target augop (expression_list | yield_expression) 
-        // augop: '+=' | '-=' | '*=' | '/=' | '%=' | '**=' | '>>=' | '<<=' | '&=' | '^=' | '|=' | '//='
+        // augop: '+=' | '-=' | '*=' | '@=' | '/=' | '%=' | '**=' | '>>=' | '<<=' | '&=' | '^=' | '|=' | '//='
         private Statement ParseExprStmt() {
             Expression ret = ParseTestListAsExpr();
             if (ret is ErrorExpression) {
@@ -953,6 +957,21 @@ namespace IronPython.Compiler {
             return null;
         }
 
+        //nonlocal_stmt: 'nonlocal' NAME (',' NAME)*
+        private NonlocalStatement ParseNonLocalStmt() {
+            Eat(TokenKind.KeywordNonlocal);
+            var start = GetStart();
+            var l = new List<string>();
+            l.Add(ReadName());
+            while(MaybeEat(TokenKind.Comma)) {
+                l.Add(ReadName());
+            }
+            string[] names = l.ToArray();
+            NonlocalStatement ret = new NonlocalStatement(names);
+            ret.SetLoc(_globalParent, start, GetEnd());
+            return ret;
+        }
+
         //global_stmt: 'global' NAME (',' NAME)*
         private GlobalStatement ParseGlobalStmt() {
             Eat(TokenKind.KeywordGlobal);
@@ -1109,9 +1128,9 @@ namespace IronPython.Compiler {
             return decorators;
         }
 
-        // funcdef: [decorators] 'def' NAME parameters ':' suite
-        // 2.6: 
-        //  decorated: decorators (classdef | funcdef)
+        // 'def' NAME parameters ['->' test] ':' suite
+
+        //  decorated: decorators(classdef | funcdef | async_funcdef)
         // this gets called with "@" look-ahead
         private Statement ParseDecorated() {
             List<Expression> decorators = ParseDecorators();
@@ -1126,6 +1145,11 @@ namespace IronPython.Compiler {
                 ClassDefinition cls = ParseClassDef();
                 cls.Decorators = decorators.ToArray();
                 res = cls;
+            } else if (PeekToken() == Tokens.KeywordAsyncToken) {
+                Eat(TokenKind.KeywordAsync);
+                FunctionDefinition fnc = ParseFuncDef(true);
+                fnc.Decorators = decorators.ToArray();
+                res = fnc;
             } else {
                 res = new EmptyStatement();
                 ReportSyntaxError(_lookahead);
@@ -1135,9 +1159,9 @@ namespace IronPython.Compiler {
         }
 
         // funcdef: [decorators] 'def' NAME parameters ':' suite
-        // parameters: '(' [varargslist] ')'
+        // parameters: '(' [typedargslist] ')'
         // this gets called with "def" as the look-ahead
-        private FunctionDefinition ParseFuncDef() {
+        private FunctionDefinition ParseFuncDef(bool isAsync=false) {
             Eat(TokenKind.KeywordDef);
             var start = GetStart();
             string name = ReadName();
@@ -1152,7 +1176,7 @@ namespace IronPython.Compiler {
             FunctionDefinition ret;
             if (parameters == null) {
                 // error in parameters
-                ret = new FunctionDefinition(name, new Parameter[0]);
+                ret = new FunctionDefinition(name, new Parameter[0], isAsync);
                 ret.SetLoc(_globalParent, start, lEnd);
                 return ret;
             }
@@ -1160,7 +1184,7 @@ namespace IronPython.Compiler {
             var rStart = GetStart();
             var rEnd = GetEnd();
 
-            ret = new FunctionDefinition(name, parameters);
+            ret = new FunctionDefinition(name, parameters, isAsync);
             PushFunction(ret);
 
 
@@ -1494,6 +1518,18 @@ namespace IronPython.Compiler {
             return new WithItem(start, contextManager, var);
         }
 
+        // async_stmt: 'async' (funcdef | with_stmt | for_stmt)
+        private Statement ParseAsyncStmt() {
+            Eat(TokenKind.KeywordAsync);
+
+            if(PeekToken().Kind == TokenKind.KeywordDef) {
+                FunctionDefinition def = ParseFuncDef(true);
+                return def;
+            }
+
+            return null;
+        }
+
         //for_stmt: 'for' target_list 'in' expression_list ':' suite ['else' ':' suite]
         private ForStatement ParseForStmt() {
             Eat(TokenKind.KeywordFor);
@@ -1736,7 +1772,7 @@ namespace IronPython.Compiler {
                 if (!MaybeEat(TokenKind.Indent)) {
                     // no indent?  report the indentation error.
                     if (cur.Token.Kind == TokenKind.Dedent) {
-                        ReportSyntaxError(_lookahead.Span.Start, _lookahead.Span.End, "expected an indented block", ErrorCodes.SyntaxError | ErrorCodes.IncompleteStatement);
+                        ReportSyntaxError(_lookahead.Span.Start, _lookahead.Span.End, Resources.ExpectedIndentation, ErrorCodes.IndentationError | ErrorCodes.IncompleteStatement);
                     } else {
                         ReportSyntaxError(cur, ErrorCodes.IndentationError);
                     }
@@ -2206,7 +2242,7 @@ namespace IronPython.Compiler {
         }
 
 
-        //exprlist: expr (',' expr)* [',']
+        //exprlist: (expr|star_expr) (',' (expr|star_expr))* [',']
         private List<Expression> ParseExprList() {
             List<Expression> l = new List<Expression>();
             while (true) {

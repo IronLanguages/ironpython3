@@ -112,8 +112,6 @@ namespace IronPython.Runtime.Types {
             foreach (object curBaseType in bases) {
                 PythonType curBasePythonType = curBaseType as PythonType;
                 if (curBasePythonType == null) {
-                    if (curBaseType is OldClass)
-                        continue;
                     throw PythonOps.TypeError(typeName + ": unsupported base type for new-style class " + curBaseType);
                 }
 
@@ -134,9 +132,6 @@ namespace IronPython.Runtime.Types {
                         baseInterfaces.Add(dt.ExtensionType);
                     } else if (NewTypeMaker.IsInstanceType(dt.ExtensionType)) {
                         processing.Enqueue(dt);
-                    } else if (!dt.IsOldClass) {
-                        curTypeToExtend = null;
-                        break;
                     }
                 }
             } while (processing.Count > 0);

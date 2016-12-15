@@ -21,7 +21,7 @@ script:
   - git submodule update --init --recursive
   - make $FLAVOUR
   - pushd bin/$CONFIGURATION
-  - mono ./IronPythonTest.exe --result:all-result.xml
+  - mono ./IronPythonTest.exe --labels=All --result:all-result.xml
 
 notifications:
   email:

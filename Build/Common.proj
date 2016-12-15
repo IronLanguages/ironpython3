@@ -41,6 +41,12 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
   </PropertyGroup>
 
+  <!-- This ensures we have a Release and Debug build configuration in Visual Studio -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+
   <!-- Normally BuildFlavour and ReferencedPlatform are set by the build system,
        but they are not when building in Visual Studio (because Build.proj is not
        used). Fill then in here based on the selected configuration. -->

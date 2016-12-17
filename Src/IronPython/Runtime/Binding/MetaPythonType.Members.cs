@@ -190,11 +190,7 @@ namespace IronPython.Runtime.Binding {
 
             protected abstract bool AddMetaSlotAccess(PythonType pt, PythonTypeSlot pts);
 
-            protected abstract void AddMetaOldClassAccess();
-
             protected abstract bool AddSlotAccess(PythonType pt, PythonTypeSlot pts);
-
-            protected abstract void AddOldClassAccess(PythonType pt);
 
             #endregion
 
@@ -220,10 +216,7 @@ namespace IronPython.Runtime.Binding {
                 if (!isFinal) {
                     // then search the MRO to see if we have the value
                     foreach (PythonType pt in Value.ResolutionOrder) {
-                        if (pt.IsOldClass) {
-                            // mixed new-style/old-style class, search the one slot in it's MRO for the member
-                            AddOldClassAccess(pt);
-                        } else if (pt.TryLookupSlot(lookupContext, _name, out pts)) {
+                        if (pt.TryLookupSlot(lookupContext, _name, out pts)) {
                             if (AddSlotAccess(pt, pts)) {
                                 isFinal = true;
                                 break;
@@ -235,13 +228,7 @@ namespace IronPython.Runtime.Binding {
                 if (!isFinal) {
                     // then go back to the meta class to see if we have a normal attribute
                     foreach (PythonType pt in metaType.ResolutionOrder) {
-                        if (pt.OldClass != null) {
-                            // mixed new-style/old-style class, just call our version of __getattribute__
-                            // and let it sort it out at runtime.  
-                            AddMetaOldClassAccess();
-                            isFinal = true;
-                            break;
-                        } else if (pt.TryLookupSlot(lookupContext, _name, out pts)) {
+                        if (pt.TryLookupSlot(lookupContext, _name, out pts)) {
                             if (AddMetaSlotAccess(metaType, pts)) {
                                 isFinal = true;
                                 break;
@@ -306,22 +293,7 @@ namespace IronPython.Runtime.Binding {
                 _state = PythonContext.GetPythonContext(member);
                 _valInfo = validationInfo;
                 _metaValInfo = metaValidation;
-            }
-
-            protected override void AddOldClassAccess(PythonType pt) {
-                EnsureTmp();
-
-                _cb.AddCondition(
-                    Ast.Call(
-                        typeof(PythonOps).GetMethod("OldClassTryLookupOneSlot"),
-                        AstUtils.Constant(pt),
-                        AstUtils.Constant(pt.OldClass),
-                        AstUtils.Constant(_symName),
-                        _tmp
-                    ),
-                    _tmp
-                );
-            }
+            }            
 
             private void EnsureTmp() {
                 if (_tmp == null) {
@@ -351,21 +323,6 @@ namespace IronPython.Runtime.Binding {
                 return pts.GetAlwaysSucceeds;
             }
 
-            protected override void AddMetaOldClassAccess() {
-                // mixed new-style/old-style class, just call our version of __getattribute__
-                // and let it sort it out at runtime.  
-                _cb.FinishCondition(
-                    Ast.Call(
-                        AstUtils.Convert(
-                            Expression,
-                            typeof(PythonType)
-                        ),
-                        typeof(PythonType).GetMethod("__getattribute__"),
-                        _codeContext,
-                        AstUtils.Constant(GetGetMemberName(_member))
-                    )
-                );
-            }
 
             protected override void AddError() {
                 // TODO: We should preserve restrictions from the error
@@ -547,25 +504,6 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            protected override void AddOldClassAccess(PythonType pt) {
-                _gets.Add(new OldClassDelegate(Value, pt, _binder.Name).Target);
-            }
-
-            class OldClassDelegate {
-                private readonly WeakReference _type, _declType;
-                private readonly string _name;
-
-                public OldClassDelegate(PythonType declType, PythonType oldClass, string name) {
-                    _type = oldClass.GetSharedWeakReference();
-                    _declType = declType.GetSharedWeakReference();
-                    _name = name;
-                }
-
-                public bool Target(CodeContext context, object self, out object result) {
-                    return PythonOps.OldClassTryLookupOneSlot((PythonType)_declType.Target, ((PythonType)_type.Target).OldClass, _name, out result);
-                }
-            }
-
             protected override bool AddSlotAccess(PythonType pt, PythonTypeSlot pts) {
                 if (pts.CanOptimizeGets) {
                     _canOptimize = true;
@@ -632,24 +570,6 @@ namespace IronPython.Runtime.Binding {
                     get {
                         return _slot ?? (PythonTypeSlot)_weakSlot.Target;
                     }
-                }
-            }
-
-            protected override void AddMetaOldClassAccess() {
-                // mixed new-style/old-style class, just call our version of __getattribute__
-                // and let it sort it out at runtime.  
-                _gets.Add(new MetaOldClassDelegate(_binder.Name).Target);
-            }
-
-            class MetaOldClassDelegate {
-                private readonly string _name;
-                public MetaOldClassDelegate(string name) {
-                    _name = name;
-                }
-
-                public bool Target(CodeContext context, object self, out object result) {
-                    result = ((PythonType)self).__getattribute__(context, _name);
-                    return true;
                 }
             }
 

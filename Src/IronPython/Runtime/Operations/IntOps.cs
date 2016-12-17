@@ -118,7 +118,7 @@ namespace IronPython.Runtime.Operations {
                     result is Extensible<int> || result is Extensible<BigInteger>) {
                     return result;
                 } else {
-                    throw PythonOps.TypeError("__int__ returned non-Integral (type {0})", PythonTypeOps.GetOldName(result));
+                    throw PythonOps.TypeError("__int__ returned non-Integral (type {0})", PythonTypeOps.GetName(result));
                 }
             } else if (PythonOps.TryGetBoundAttr(context, o, "__trunc__", out result)) {
                 result = PythonOps.CallWithContext(context, result);
@@ -130,15 +130,11 @@ namespace IronPython.Runtime.Operations {
                 } else if (Converter.TryConvertToBigInteger(result, out bigintRes)) {
                     return bigintRes;
                 } else {
-                    throw PythonOps.TypeError("__trunc__ returned non-Integral (type {0})", PythonTypeOps.GetOldName(result));
+                    throw PythonOps.TypeError("__trunc__ returned non-Integral (type {0})", PythonTypeOps.GetName(result));
                 }
             }
 
-            if (o is OldInstance) {
-                throw PythonOps.AttributeError("{0} instance has no attribute '__trunc__'", PythonTypeOps.GetOldName((OldInstance)o));
-            } else {
-                throw PythonOps.TypeError("int() argument must be a string or a number, not '{0}'", PythonTypeOps.GetName(o));
-            }
+            throw PythonOps.TypeError("int() argument must be a string or a number, not '{0}'", PythonTypeOps.GetName(o));
         }
 
         [StaticExtensionMethod]

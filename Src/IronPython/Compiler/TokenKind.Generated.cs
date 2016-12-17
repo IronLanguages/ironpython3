@@ -113,6 +113,8 @@ namespace IronPython.Compiler {
         KeywordYield = 104,
         KeywordAs = 105,
         KeywordWith = 106,
+        KeywordAsync = 107,
+        KeywordNonlocal = 108,
 
         // *** END GENERATED CODE ***
 
@@ -397,6 +399,8 @@ namespace IronPython.Compiler {
         private static readonly Token kwWhileToken = new SymbolToken(TokenKind.KeywordWhile, "while");
         private static readonly Token kwWithToken = new SymbolToken(TokenKind.KeywordWith, "with");
         private static readonly Token kwYieldToken = new SymbolToken(TokenKind.KeywordYield, "yield");
+        private static readonly Token kwAsyncToken = new SymbolToken(TokenKind.KeywordAsync, "async");
+        private static readonly Token kwNonlocalToken = new SymbolToken(TokenKind.KeywordNonlocal, "nonlocal");
 
 
         public static Token KeywordAndToken {
@@ -515,7 +519,13 @@ namespace IronPython.Compiler {
             get { return kwYieldToken; }
         }
 
+        public static Token KeywordAsyncToken {
+            get { return kwAsyncToken; }
+        }
 
+        public static Token KeywordNonlocalToken {
+            get { return kwNonlocalToken; }
+        }
 
         // *** END GENERATED CODE ***
 

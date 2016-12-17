@@ -81,7 +81,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private WeakRefTracker _weakrefTracker;             // storage for Python style weak references
         private WeakReference _weakRef;                     // single weak ref instance used for all user PythonTypes.
         private string[] _slots;                            // the slots when the class was created
-        private OldClass _oldClass;                         // the associated OldClass or null for new-style types  
         private int _originalSlotCount;                     // the number of slots when the type was created
         private InstanceCreator _instanceCtor;              // creates instances
         private CallSite<Func<CallSite, object, int>> _hashSite;
@@ -259,29 +258,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
 
-        /// <summary>
-        /// Creates a new PythonType object which represents an Old-style class.
-        /// </summary>
-        internal PythonType(OldClass oc) {
-            EnsureDict();
-
-            _underlyingSystemType = typeof(OldInstance);
-            Name = oc.Name;
-            OldClass = oc;
-
-            List<PythonType> ocs = new List<PythonType>(oc.BaseClasses.Count);
-            foreach (OldClass klass in oc.BaseClasses) {
-                ocs.Add(klass.TypeObject);
-            }
-
-            List<PythonType> mro = new List<PythonType>();
-            mro.Add(this);
-
-            _bases = ocs.ToArray(); 
-            _resolutionOrder = mro;
-            AddSlot("__class__", new PythonTypeUserDescriptorSlot(this, true));
-        }
-
         internal BuiltinFunction Ctor {
             get {
                 EnsureConstructor();
@@ -311,7 +287,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             PythonType meta = FindMetaClass(cls, bases);
 
-            if (meta != TypeCache.OldInstance && meta != TypeCache.PythonType) {
+            if (meta != TypeCache.PythonType) {
                 if (meta != cls) {
                     // the user has a custom __new__ which picked the wrong meta class, call the correct metaclass
                     return PythonCalls.Call(context, meta, name, bases, dict);
@@ -334,8 +310,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             PythonType meta = cls;
             foreach (object dt in bases) {
                 PythonType metaCls = DynamicHelpers.GetPythonType(dt);
-
-                if (metaCls == TypeCache.OldClass) continue;
 
                 if (meta.IsSubclassOf(metaCls)) continue;
 
@@ -366,12 +340,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             IList<PythonType> bases = BaseTypes;
             for (int i = 0; i < bases.Count; i++) {
                 PythonType baseType = bases[i];
-
-                if (baseType.IsOldClass) {
-                    res[i] = baseType.OldClass;
-                } else {
-                    res[i] = baseType;
-                }
+                res[i] = baseType;
             }
 
             return PythonTuple.MakeTuple(res);
@@ -506,14 +475,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 // gather all the type objects...
                 PythonType adt = o as PythonType;
                 if (adt == null) {
-                    OldClass oc = o as OldClass;
-                    if (oc == null) {
-                        throw PythonOps.TypeError("expected tuple of types, got '{0}'", PythonTypeOps.GetName(o));
-                    }
-
-                    adt = oc.TypeObject;
+                    throw PythonOps.TypeError("expected tuple of types, got '{0}'", PythonTypeOps.GetName(o));
                 }
-
                 ldt.Add(adt);
             }
 
@@ -785,9 +748,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return sub.IsSubclassOf(this);
         }
 
-        public virtual bool __subclasscheck__(OldClass sub) {
-            return IsSubclassOf(sub.TypeObject);
-        }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates")]
         public static implicit operator Type(PythonType self) {
@@ -801,20 +761,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         #endregion
 
         #region Internal API
-
-        internal bool IsMixedNewStyleOldStyle() {
-            if (!IsOldClass) {
-                foreach (PythonType baseType in ResolutionOrder) {
-                    if (baseType.IsOldClass) {
-                        // mixed new-style/old-style class, we can't handle
-                        // __init__ in an old-style class yet (it doesn't show
-                        // up in a slot).
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
 
         internal int SlotCount {
             get {
@@ -1231,21 +1177,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
         }
 
-        internal OldClass OldClass {
-            get {
-                return _oldClass;
-            }
-            set {
-                _oldClass = value;
-            }
-        }
-
-        internal bool IsOldClass {
-            get {
-                return _oldClass != null;
-            }
-        }
-
         internal PythonContext PythonContext {
             get {
                 return _pythonContext;
@@ -1363,14 +1294,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
                 if (dt.TryLookupSlot(context, name, out slot)) {
                     return true;
-                }
-
-                if (dt.OldClass != null) {
-                    object ret;
-                    if (dt.OldClass.TryLookupSlot(name, out ret)) {
-                        slot = ToTypeSlot(ret);
-                        return true;
-                    }
                 }
             }
 
@@ -1903,16 +1826,10 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// Adds members from a user defined type.
         /// </summary>
         private static void AddUserTypeMembers(CodeContext context, Dictionary<string, string> keys, PythonType dt, List res) {
-            if (dt.OldClass != null) {
-                foreach (KeyValuePair<object, object> kvp in dt.OldClass._dict) {
-                    AddOneMember(keys, res, kvp.Key);
-                }
-            } else {
-                foreach (KeyValuePair<string, PythonTypeSlot> kvp in dt._dict) {
-                    if (keys.ContainsKey(kvp.Key)) continue;
+            foreach (KeyValuePair<string, PythonTypeSlot> kvp in dt._dict) {
+                if (keys.ContainsKey(kvp.Key)) continue;
 
-                    keys[kvp.Key] = kvp.Key;
-                }
+                keys[kvp.Key] = kvp.Key;
             }
         }
 
@@ -2336,10 +2253,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             List<PythonType> newbs = new List<PythonType>();
             foreach (object typeObj in bases) {
                 PythonType dt = typeObj as PythonType;
-                if (dt == null) {
-                    dt = ((OldClass)typeObj).TypeObject;
-                }
-
                 newbs.Add(dt);
             }
 
@@ -2360,12 +2273,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
                 for (int j = 0; j < newBases.__len__(); j++) {
                     if (i != j && newBases[i] == newBases[j]) {
-                        OldClass oc = newBases[i] as OldClass;
-                        if (oc != null) {
-                            throw PythonOps.TypeError("duplicate base class {0}", oc.Name);
-                        } else {
-                            throw PythonOps.TypeError("duplicate base class {0}", ((PythonType)newBases[i]).Name);
-                        }
+                        throw PythonOps.TypeError("duplicate base class {0}", ((PythonType)newBases[i]).Name);
                     }
                 }
             }

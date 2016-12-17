@@ -220,13 +220,12 @@ namespace IronPython.Runtime.Binding {
                             res = TryToGenericInterfaceConversion(self, type, typeof(IEnumerable), typeof(IEnumerableOfTWrapper<>));
                         }
                     } else if (type == typeof(IEnumerable)) {
-                        if (!typeof(IEnumerable).IsAssignableFrom(self.GetLimitType()) && IsIndexless(self)) {
+                        if (!typeof(IEnumerable).IsAssignableFrom(self.GetLimitType())) {
                             res = ConvertToIEnumerable(this, self.Restrict(self.GetLimitType()));
                         }
                     } else if (type == typeof(IEnumerator)) {
                         if (!typeof(IEnumerator).IsAssignableFrom(self.GetLimitType()) &&
-                            !typeof(IEnumerable).IsAssignableFrom(self.GetLimitType()) &&
-                            IsIndexless(self)) {
+                            !typeof(IEnumerable).IsAssignableFrom(self.GetLimitType())) {
                             res = ConvertToIEnumerator(this, self.Restrict(self.GetLimitType()));
                         }
                     }
@@ -575,10 +574,6 @@ namespace IronPython.Runtime.Binding {
 
                 return ((CallSite<Func<CallSite, object, T>>)site).Update(site, value);
             }
-        }
-
-        internal static bool IsIndexless(DynamicMetaObject/*!*/ arg) {
-            return arg.GetLimitType() != typeof(OldInstance);
         }
 
         public override int GetHashCode() {

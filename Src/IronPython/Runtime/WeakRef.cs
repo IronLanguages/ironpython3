@@ -165,14 +165,7 @@ namespace IronPython.Runtime {
         internal object CallDirect(CodeContext context) {
             object o;
 
-            IronPython.Runtime.Types.OldInstance oi = _instance as IronPython.Runtime.Types.OldInstance;
-            if (oi != null) {
-                if (oi.TryGetBoundCustomMember(context, "__del__", out o)) {
-                    return PythonContext.GetContext(context).CallSplat(o);
-                }
-            } else {
-                PythonTypeOps.TryInvokeUnaryOperator(context, _instance, "__del__", out o);
-            }
+            PythonTypeOps.TryInvokeUnaryOperator(context, _instance, "__del__", out o);
 
             return null;
         }

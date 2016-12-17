@@ -40,12 +40,7 @@ namespace IronPython.Runtime.Operations {
             List<object> res = new List<object>(types.Count);
             foreach (PythonType dt in types) {
                 if (dt.UnderlyingSystemType == typeof(ValueType)) continue; // hide value type
-
-                if(dt.OldClass != null) {
-                    res.Add(dt.OldClass);
-                } else {
-                    res.Add(dt);
-                }
+                res.Add(dt);
             }
 
             return PythonTuple.Make(res);
@@ -129,17 +124,7 @@ namespace IronPython.Runtime.Operations {
                 PythonType cdt = dt.ResolutionOrder[i];
                 PythonTypeSlot dts;
                 object value;
-                if (cdt.IsOldClass) {
-                    OldClass oc = PythonOps.ToPythonType(cdt) as OldClass;
-
-                    if (oc != null && oc.TryGetBoundCustomMember(context, "__init__", out value)) {
-                        return oc.GetOldStyleDescriptor(context, value, newObject, oc);
-                    }
-                    // fall through to new-style only case.  We might accidently
-                    // detect old-style if the user imports a IronPython.NewTypes
-                    // type.
-                }
-
+               
                 if (cdt.TryLookupSlot(context, "__init__", out dts) &&
                     dts.TryGetValue(context, newObject, dt, out value)) {
                     return value;
@@ -203,16 +188,6 @@ namespace IronPython.Runtime.Operations {
         // note: returns "instance" rather than type name if o is an OldInstance
         internal static string GetName(object o) {
             return DynamicHelpers.GetPythonType(o).Name;
-        }
-
-        // a version of GetName that also works on old-style classes
-        internal static string GetOldName(object o) {
-            return o is OldInstance ? GetOldName((OldInstance)o) : GetName(o);
-        }
-
-        // a version of GetName that also works on old-style classes
-        internal static string GetOldName(OldInstance instance) {
-            return instance._class.Name;
         }
 
         internal static PythonType[] ObjectTypes(object[] args) {
@@ -885,9 +860,7 @@ namespace IronPython.Runtime.Operations {
         /// </summary>
         internal static PythonTuple EnsureBaseType(PythonTuple bases) {
             bool hasInterface = false;
-            foreach (object baseClass in bases) {
-                if (baseClass is OldClass) continue;
-
+            foreach (object baseClass in bases) {               
                 PythonType dt = baseClass as PythonType;
 
                 if (!dt.UnderlyingSystemType.IsInterface()) {

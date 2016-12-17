@@ -57,53 +57,30 @@ namespace IronPython.Runtime {
                     );
                 }
             } else {
-                OldInstance oi = value as OldInstance;
-                if (oi != null) {
-                    foreach (var member in oi.Dictionary) {
-                        AddMember(res, member, false);
+                PythonType pt = value as PythonType;
+                if (pt != null) {
+                    foreach (PythonType type in pt.ResolutionOrder) {
+                        foreach (var member in type.GetMemberDictionary(_context.SharedContext)) {
+                            AddMember(res, member, true);
+                        }
                     }
-
-                    AddOldClassMembers(res, oi._class);
                 } else {
-                    PythonType pt = value as PythonType;
-                    if (pt != null) {
-                        foreach (PythonType type in pt.ResolutionOrder) {
-                            foreach (var member in type.GetMemberDictionary(_context.SharedContext)) {
-                                AddMember(res, member, true);
-                            }
-                        }
-                    } else {
-                        OldClass oc = value as OldClass;
-                        if (oc != null) {
-                            AddOldClassMembers(res, oc);
-                        } else {
-                            pt = DynamicHelpers.GetPythonType(value);
-                            foreach (var member in pt.GetMemberDictionary(_context.SharedContext)) {
-                                AddMember(res, member, true);
-                            }
-                        }
-                    }
 
-                    IPythonObject ipo = value as IPythonObject;
-                    if (ipo != null && ipo.Dict != null) {
-                        foreach (var member in ipo.Dict) {
-                            AddMember(res, member, false);
-                        }
+                    pt = DynamicHelpers.GetPythonType(value);
+                    foreach (var member in pt.GetMemberDictionary(_context.SharedContext)) {
+                        AddMember(res, member, true);
+                    }
+                }
+
+                IPythonObject ipo = value as IPythonObject;
+                if (ipo != null && ipo.Dict != null) {
+                    foreach (var member in ipo.Dict) {
+                        AddMember(res, member, false);
                     }
                 }
             }
 
             return res.ToArray();
-        }
-
-        private void AddOldClassMembers(List<MemberDoc> res, OldClass oc) {
-            foreach (var member in oc._dict) {
-                AddMember(res, member, true);
-            }
-
-            foreach (var baseCls in oc.BaseClasses) {
-                AddOldClassMembers(res, baseCls);
-            }
         }
 
         private static void AddMember(List<MemberDoc> res, KeyValuePair<object, object> member, bool fromClass) {
@@ -144,9 +121,9 @@ namespace IronPython.Runtime {
                 kind = MemberKind.Field;
             } else if (value != null && value.GetType().IsEnum()) {
                 kind = MemberKind.EnumMember;
-            } else if (value is PythonType || value is OldClass) {
+            } else if (value is PythonType) {
                 kind = MemberKind.Class;
-            } else if (value is IPythonObject || value is OldInstance) {
+            } else if (value is IPythonObject) {
                 kind = MemberKind.Instance;
             }
 

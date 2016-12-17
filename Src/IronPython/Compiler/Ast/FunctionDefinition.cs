@@ -52,6 +52,7 @@ namespace IronPython.Compiler.Ast {
         private IList<Expression> _decorators;
         private bool _generator;                        // The function is a generator
         private bool _isLambda;
+        private bool _isAsync;
 
         // true if this function can set sys.exc_info(). Only functions with an except block can set that.
         private bool _canSetSysExcInfo;
@@ -69,12 +70,12 @@ namespace IronPython.Compiler.Ast {
         private static readonly MSAst.Expression _parentContext = new GetParentContextFromFunctionExpression();
         internal static readonly MSAst.LabelTarget _returnLabel = MSAst.Expression.Label(typeof(object), "return");
 
-        public FunctionDefinition(string name, Parameter[] parameters)
-            : this(name, parameters, (Statement)null) {            
+        public FunctionDefinition(string name, Parameter[] parameters, bool isAsync=false)
+            : this(name, parameters, (Statement)null, isAsync) {            
         }
 
         
-        public FunctionDefinition(string name, Parameter[] parameters, Statement body) {
+        public FunctionDefinition(string name, Parameter[] parameters, Statement body, bool isAsync=false) {
             ContractUtils.RequiresNotNullItems(parameters, "parameters");
 
             if (name == null) {
@@ -86,6 +87,7 @@ namespace IronPython.Compiler.Ast {
 
             _parameters = parameters;
             _body = body;
+            _isAsync = isAsync;
         }
 
         [Obsolete("sourceUnit is now ignored.  FunctionDefinitions should belong to a PythonAst which has a SourceUnit")]
@@ -110,6 +112,12 @@ namespace IronPython.Compiler.Ast {
         public bool IsLambda {
             get {
                 return _isLambda;
+            }
+        }
+
+        public bool IsAsync {
+            get {
+                return _isAsync;
             }
         }
 

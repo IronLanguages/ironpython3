@@ -1027,26 +1027,6 @@ for k, v in toError.iteritems():
         }
         
         /// <summary>
-        /// Creates a throwable exception of type type where the type is an OldClass.
-        /// 
-        /// Used at runtime when creating the exception form a user provided type that's an old class (via the raise statement).
-        /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Throwable")]
-        internal static System.Exception CreateThrowableForRaise(CodeContext/*!*/ context, OldClass type, object value) {
-            object pyEx;
-
-            if (PythonOps.IsInstance(context, value, type)) {
-                pyEx = value;
-            } else if (value is PythonTuple) {
-                pyEx = PythonOps.CallWithArgsTuple(type, ArrayUtils.EmptyObjects, value);
-            } else {
-                pyEx = PythonCalls.Call(context, type, value);
-            }
-
-            return new OldInstanceException((OldInstance)pyEx);
-        }
-
-        /// <summary>
         /// Returns the CLR exception associated with a Python exception
         /// creating a new exception if necessary
         /// </summary>
@@ -1056,14 +1036,8 @@ for k, v in toError.iteritems():
                 return pyExcep.GetClrException();
             }
 
-            System.Exception res;
-            OldInstance oi = pythonException as OldInstance;
-            if(oi != null) {
-                res = new OldInstanceException(oi);
-            } else {
-                // default exception message is the exception type (from Python)
-                res = new System.Exception(PythonOps.ToString(pythonException));
-            }
+            // default exception message is the exception type (from Python)
+            System.Exception res = new System.Exception(PythonOps.ToString(pythonException));
 
             res.SetPythonException(pythonException);
 

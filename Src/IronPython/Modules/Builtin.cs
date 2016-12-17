@@ -466,19 +466,14 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static string format(CodeContext/*!*/ context, object argValue, [DefaultParameterValue("")]string formatSpec) {
-            object res, formatMethod;
-            OldInstance oi = argValue as OldInstance;
-            if (oi != null && oi.TryGetBoundCustomMember(context, "__format__", out formatMethod)) {
-                res = PythonOps.CallWithContext(context, formatMethod, formatSpec);
-            } else {
-                // call __format__ with the format spec (__format__ is defined on object, so this always succeeds)
-                PythonTypeOps.TryInvokeBinaryOperator(
-                    context,
-                    argValue,
-                    formatSpec,
-                    "__format__",
-                    out res);
-            }
+            object res;
+            // call __format__ with the format spec (__format__ is defined on object, so this always succeeds)
+            PythonTypeOps.TryInvokeBinaryOperator(
+                context,
+                argValue,
+                formatSpec,
+                "__format__",
+                out res);
 
             string strRes = res as string;
             if (strRes == null) {
@@ -586,7 +581,6 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             Method method;
             string strVal;
             PythonModule pyModule;
-            OldClass oldClass;
 
             if (doced.Contains(obj)) return;  // document things only once
             doced.Add(obj);
@@ -709,32 +703,6 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                         help(context, doced, doc, indent + 1, value);
                     }
                 }
-            } else if ((oldClass = obj as OldClass) != null) {
-                if (indent == 0) {
-                    doc.AppendFormat("Help on {0} in module {1}\n\n", oldClass.Name, PythonOps.GetBoundAttr(context, oldClass, "__module__"));
-                }
-
-                object docText;
-                if (oldClass.TryLookupSlot("__doc__", out docText) && docText != null) {
-                    AppendMultiLine(doc, docText.ToString() + Environment.NewLine, indent);
-                    AppendIndent(doc, indent);
-                    doc.AppendLine("Data and other attributes defined here:");
-                    AppendIndent(doc, indent);
-                    doc.AppendLine();
-                }
-
-                IList<object> names = ((IPythonMembersList)oldClass).GetMemberNames(context);
-                List sortNames = new List(names);
-                sortNames.sort(context);
-                names = sortNames;
-                foreach (string name in names) {
-                    if (name == "__class__") continue;
-
-                    object value;
-
-                    if (oldClass.TryLookupSlot(name, out value))
-                        help(context, doced, doc, indent + 1, value);
-                }
             }
         }
 
@@ -798,10 +766,6 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return PythonOps.IsInstance(context, o, typeinfo);
         }
 
-        public static bool issubclass(CodeContext context, [NotNull]OldClass c, object typeinfo) {
-            return PythonOps.IsSubClass(context, c.TypeObject, typeinfo);
-        }
-
         public static bool issubclass(CodeContext context, [NotNull]PythonType c, object typeinfo) {
             return PythonOps.IsSubClass(context, c, typeinfo);
         }
@@ -843,16 +807,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
             foreach (object baseCls in tupleBases) {
                 PythonType pyType;
-                OldClass oc;
 
                 if (baseCls == typeinfo) {
                     return ScriptingRuntimeHelpers.True;
                 } else if ((pyType = baseCls as PythonType) != null) {
                     if (issubclass(context, pyType, typeinfo)) {
-                        return ScriptingRuntimeHelpers.True;
-                    }
-                } else if ((oc = baseCls as OldClass) != null) {
-                    if (issubclass(context, oc, typeinfo)) {
                         return ScriptingRuntimeHelpers.True;
                     }
                 } else if (hasattr(context, baseCls, "__bases__")) {

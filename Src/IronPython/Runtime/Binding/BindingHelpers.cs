@@ -398,7 +398,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         internal static bool IsDataMember(object p) {
-            if (p is PythonFunction || p is BuiltinFunction || p is PythonType || p is BuiltinMethodDescriptor || p is OldClass || p is staticmethod || p is classmethod || p is Method || p is Delegate) {
+            if (p is PythonFunction || p is BuiltinFunction || p is PythonType || p is BuiltinMethodDescriptor || p is staticmethod || p is classmethod || p is Method || p is Delegate) {
                 return false;
             }
 

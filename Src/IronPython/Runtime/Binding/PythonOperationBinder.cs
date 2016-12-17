@@ -65,10 +65,6 @@ namespace IronPython.Runtime.Binding {
                         if (typeof(T) == typeof(Func<CallSite, object, int>)) {
                             return (T)(object)new Func<CallSite, object, int>(HashPythonType);
                         }
-                    } else if (args[0] is OldClass) {
-                        if (typeof(T) == typeof(Func<CallSite, object, int>)) {
-                            return (T)(object)new Func<CallSite, object, int>(HashOldClass);
-                        }
                     }
                     break;
                 case PythonOperationKind.Compare:
@@ -236,15 +232,6 @@ namespace IronPython.Runtime.Binding {
 
         private int HashPythonType(CallSite site, object value) {
             if (value != null && value.GetType() == typeof(PythonType)) {
-                return value.GetHashCode();
-            }
-
-            return ((CallSite<Func<CallSite, object, int>>)site).Update(site, value);
-        }
-
-        private int HashOldClass(CallSite site, object value) {
-            // OldClass is sealed, an is check is good enough.
-            if (value is OldClass) {
                 return value.GetHashCode();
             }
 

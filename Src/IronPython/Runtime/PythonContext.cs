@@ -3040,14 +3040,6 @@ namespace IronPython.Runtime
             if (PythonOps.TryGetBoundAttr(o, "__hash__", out hashFunction) && hashFunction != null) {
                  return true;
             }
-            var instance = o as OldInstance;
-            if (instance != null) {
-                if (instance.TryGetBoundCustomMember(DefaultContext.Default, "__hash__", out hashFunction) ||
-                    ( ! instance.TryGetBoundCustomMember(DefaultContext.Default, "__cmp__", out hashFunction) &&
-                      ! instance.TryGetBoundCustomMember(DefaultContext.Default, "__eq__", out hashFunction))) {
-                    return true;
-                }
-            }
             if (o is PythonType) {
                 return true;
             }

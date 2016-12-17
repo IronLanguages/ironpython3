@@ -179,6 +179,12 @@ def gen_unaryops(cw, ty):
         cw.exit_block()
         cw.writeline()
     
+    # this is handled in another Ops file
+    if not ty.is_float:
+        cw.enter_block('public static string __repr__(%s x)' % (ty.name))
+        cw.writeline('return x.ToString(CultureInfo.InvariantCulture);')
+        cw.exit_block()
+    
     if ty.is_float:
         cw.write(float_trunc, type=ty.name)
     else:
@@ -206,8 +212,16 @@ def gen_unaryops(cw, ty):
                 cw.writeline('return total;')        
                 cw.exit_block()
                 cw.writeline()
+
+            cw.enter_block('public static BigInteger __index__(%s x)' % (ty.name))
+            cw.writeline('return unchecked((BigInteger)x);')
+            cw.exit_block()            
         else:
             cw.enter_block('public static int __hash__(%s x)' % (ty.name))
+            cw.writeline('return unchecked((int)x);')
+            cw.exit_block()
+
+            cw.enter_block('public static int __index__(%s x)' % (ty.name))
             cw.writeline('return unchecked((int)x);')
             cw.exit_block()
         

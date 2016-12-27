@@ -420,6 +420,15 @@ namespace IronPython.Compiler {
                         if (ch >= '0' && ch <= '9')
                             return ReadFraction();
 
+                        if (NextChar('.')) {
+                            if (NextChar('.')) {
+                                MarkTokenEnd();
+                                return new ConstantValueToken(PythonOps.Ellipsis);
+                            } else {
+                                BufferBack();
+                            }
+                        }
+
                         MarkTokenEnd();
                         return Tokens.DotToken;
 

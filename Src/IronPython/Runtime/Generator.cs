@@ -220,7 +220,7 @@ namespace IronPython.Runtime {
 
         public FunctionCode gi_code {
             get {
-                return _function.func_code;
+                return _function.__code__;
             }
         }
 

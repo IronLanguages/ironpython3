@@ -254,7 +254,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
 
             if (pyfunc != null && pyfunc._compat == _compat) {
-                return ((Func<PythonFunction, object>)pyfunc.func_code.Target)(pyfunc);
+                return ((Func<PythonFunction, object>)pyfunc.__code__.Target)(pyfunc);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, object>>)site).Update(site, context, func);
@@ -270,7 +270,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
-                return ((Func<PythonFunction, object, object>)pyfunc.func_code.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0]);
+                return ((Func<PythonFunction, object, object>)pyfunc.__code__.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, object>>)site).Update(site, context, func);
@@ -280,7 +280,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
-                return ((Func<PythonFunction, object, object, object>)pyfunc.func_code.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1]);
+                return ((Func<PythonFunction, object, object, object>)pyfunc.__code__.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, object>>)site).Update(site, context, func);
@@ -290,7 +290,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
-                return ((Func<PythonFunction, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2]);
+                return ((Func<PythonFunction, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, object>>)site).Update(site, context, func);
@@ -300,7 +300,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
-                return ((Func<PythonFunction, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3]);
+                return ((Func<PythonFunction, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, object>>)site).Update(site, context, func);
@@ -310,7 +310,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
-                return ((Func<PythonFunction, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4]);
+                return ((Func<PythonFunction, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, object>>)site).Update(site, context, func);
@@ -320,7 +320,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, object>>)site).Update(site, context, func);
@@ -330,7 +330,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, object>>)site).Update(site, context, func);
@@ -340,7 +340,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, object>>)site).Update(site, context, func);
@@ -350,7 +350,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, object>>)site).Update(site, context, func);
@@ -360,7 +360,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8], pyfunc.Defaults[defaultIndex + 9]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8], pyfunc.Defaults[defaultIndex + 9]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, object>>)site).Update(site, context, func);
@@ -370,7 +370,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8], pyfunc.Defaults[defaultIndex + 9], pyfunc.Defaults[defaultIndex + 10]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8], pyfunc.Defaults[defaultIndex + 9], pyfunc.Defaults[defaultIndex + 10]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, object>>)site).Update(site, context, func);
@@ -380,7 +380,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8], pyfunc.Defaults[defaultIndex + 9], pyfunc.Defaults[defaultIndex + 10], pyfunc.Defaults[defaultIndex + 11]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8], pyfunc.Defaults[defaultIndex + 9], pyfunc.Defaults[defaultIndex + 10], pyfunc.Defaults[defaultIndex + 11]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, object>>)site).Update(site, context, func);
@@ -390,7 +390,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8], pyfunc.Defaults[defaultIndex + 9], pyfunc.Defaults[defaultIndex + 10], pyfunc.Defaults[defaultIndex + 11], pyfunc.Defaults[defaultIndex + 12]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8], pyfunc.Defaults[defaultIndex + 9], pyfunc.Defaults[defaultIndex + 10], pyfunc.Defaults[defaultIndex + 11], pyfunc.Defaults[defaultIndex + 12]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, object>>)site).Update(site, context, func);
@@ -417,7 +417,7 @@ namespace IronPython.Runtime {
         public object Call1(CallSite site, CodeContext context, object func, T0 arg0) {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
-                return ((Func<PythonFunction, object, object>)pyfunc.func_code.Target)(pyfunc, arg0);
+                return ((Func<PythonFunction, object, object>)pyfunc.__code__.Target)(pyfunc, arg0);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, object>>)site).Update(site, context, func, arg0);
@@ -427,7 +427,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 1;
-                return ((Func<PythonFunction, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, pyfunc.Defaults[defaultIndex + 0]);
+                return ((Func<PythonFunction, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, pyfunc.Defaults[defaultIndex + 0]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, object>>)site).Update(site, context, func, arg0);
@@ -437,7 +437,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 1;
-                return ((Func<PythonFunction, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1]);
+                return ((Func<PythonFunction, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, object>>)site).Update(site, context, func, arg0);
@@ -447,7 +447,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 1;
-                return ((Func<PythonFunction, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2]);
+                return ((Func<PythonFunction, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, object>>)site).Update(site, context, func, arg0);
@@ -457,7 +457,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 1;
-                return ((Func<PythonFunction, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3]);
+                return ((Func<PythonFunction, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, object>>)site).Update(site, context, func, arg0);
@@ -467,7 +467,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 1;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, object>>)site).Update(site, context, func, arg0);
@@ -477,7 +477,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 1;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, object>>)site).Update(site, context, func, arg0);
@@ -487,7 +487,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 1;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, object>>)site).Update(site, context, func, arg0);
@@ -497,7 +497,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 1;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, object>>)site).Update(site, context, func, arg0);
@@ -507,7 +507,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 1;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, object>>)site).Update(site, context, func, arg0);
@@ -517,7 +517,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 1;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8], pyfunc.Defaults[defaultIndex + 9]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8], pyfunc.Defaults[defaultIndex + 9]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, object>>)site).Update(site, context, func, arg0);
@@ -527,7 +527,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 1;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8], pyfunc.Defaults[defaultIndex + 9], pyfunc.Defaults[defaultIndex + 10]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8], pyfunc.Defaults[defaultIndex + 9], pyfunc.Defaults[defaultIndex + 10]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, object>>)site).Update(site, context, func, arg0);
@@ -537,7 +537,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 1;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8], pyfunc.Defaults[defaultIndex + 9], pyfunc.Defaults[defaultIndex + 10], pyfunc.Defaults[defaultIndex + 11]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8], pyfunc.Defaults[defaultIndex + 9], pyfunc.Defaults[defaultIndex + 10], pyfunc.Defaults[defaultIndex + 11]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, object>>)site).Update(site, context, func, arg0);
@@ -550,7 +550,7 @@ namespace IronPython.Runtime {
         public object Call2(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1) {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
-                return ((Func<PythonFunction, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1);
+                return ((Func<PythonFunction, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, object>>)site).Update(site, context, func, arg0, arg1);
@@ -560,7 +560,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 2;
-                return ((Func<PythonFunction, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, pyfunc.Defaults[defaultIndex + 0]);
+                return ((Func<PythonFunction, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, pyfunc.Defaults[defaultIndex + 0]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, object>>)site).Update(site, context, func, arg0, arg1);
@@ -570,7 +570,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 2;
-                return ((Func<PythonFunction, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1]);
+                return ((Func<PythonFunction, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, object>>)site).Update(site, context, func, arg0, arg1);
@@ -580,7 +580,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 2;
-                return ((Func<PythonFunction, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2]);
+                return ((Func<PythonFunction, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, object>>)site).Update(site, context, func, arg0, arg1);
@@ -590,7 +590,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 2;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, object>>)site).Update(site, context, func, arg0, arg1);
@@ -600,7 +600,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 2;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, object>>)site).Update(site, context, func, arg0, arg1);
@@ -610,7 +610,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 2;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, object>>)site).Update(site, context, func, arg0, arg1);
@@ -620,7 +620,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 2;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, object>>)site).Update(site, context, func, arg0, arg1);
@@ -630,7 +630,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 2;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, object>>)site).Update(site, context, func, arg0, arg1);
@@ -640,7 +640,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 2;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, object>>)site).Update(site, context, func, arg0, arg1);
@@ -650,7 +650,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 2;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8], pyfunc.Defaults[defaultIndex + 9]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8], pyfunc.Defaults[defaultIndex + 9]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, object>>)site).Update(site, context, func, arg0, arg1);
@@ -660,7 +660,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 2;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8], pyfunc.Defaults[defaultIndex + 9], pyfunc.Defaults[defaultIndex + 10]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8], pyfunc.Defaults[defaultIndex + 9], pyfunc.Defaults[defaultIndex + 10]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, object>>)site).Update(site, context, func, arg0, arg1);
@@ -673,7 +673,7 @@ namespace IronPython.Runtime {
         public object Call3(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2) {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
-                return ((Func<PythonFunction, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2);
+                return ((Func<PythonFunction, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, object>>)site).Update(site, context, func, arg0, arg1, arg2);
@@ -683,7 +683,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 3;
-                return ((Func<PythonFunction, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, pyfunc.Defaults[defaultIndex + 0]);
+                return ((Func<PythonFunction, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, pyfunc.Defaults[defaultIndex + 0]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, object>>)site).Update(site, context, func, arg0, arg1, arg2);
@@ -693,7 +693,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 3;
-                return ((Func<PythonFunction, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1]);
+                return ((Func<PythonFunction, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, object>>)site).Update(site, context, func, arg0, arg1, arg2);
@@ -703,7 +703,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 3;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, object>>)site).Update(site, context, func, arg0, arg1, arg2);
@@ -713,7 +713,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 3;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, object>>)site).Update(site, context, func, arg0, arg1, arg2);
@@ -723,7 +723,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 3;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, object>>)site).Update(site, context, func, arg0, arg1, arg2);
@@ -733,7 +733,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 3;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, object>>)site).Update(site, context, func, arg0, arg1, arg2);
@@ -743,7 +743,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 3;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, object>>)site).Update(site, context, func, arg0, arg1, arg2);
@@ -753,7 +753,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 3;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, object>>)site).Update(site, context, func, arg0, arg1, arg2);
@@ -763,7 +763,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 3;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, object>>)site).Update(site, context, func, arg0, arg1, arg2);
@@ -773,7 +773,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 3;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8], pyfunc.Defaults[defaultIndex + 9]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8], pyfunc.Defaults[defaultIndex + 9]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, object>>)site).Update(site, context, func, arg0, arg1, arg2);
@@ -786,7 +786,7 @@ namespace IronPython.Runtime {
         public object Call4(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
-                return ((Func<PythonFunction, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3);
+                return ((Func<PythonFunction, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3);
@@ -796,7 +796,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 4;
-                return ((Func<PythonFunction, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, pyfunc.Defaults[defaultIndex + 0]);
+                return ((Func<PythonFunction, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, pyfunc.Defaults[defaultIndex + 0]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3);
@@ -806,7 +806,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 4;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3);
@@ -816,7 +816,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 4;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3);
@@ -826,7 +826,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 4;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3);
@@ -836,7 +836,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 4;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3);
@@ -846,7 +846,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 4;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3);
@@ -856,7 +856,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 4;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3);
@@ -866,7 +866,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 4;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3);
@@ -876,7 +876,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 4;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7], pyfunc.Defaults[defaultIndex + 8]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3);
@@ -889,7 +889,7 @@ namespace IronPython.Runtime {
         public object Call5(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
-                return ((Func<PythonFunction, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4);
+                return ((Func<PythonFunction, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4);
@@ -899,7 +899,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 5;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, pyfunc.Defaults[defaultIndex + 0]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, pyfunc.Defaults[defaultIndex + 0]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4);
@@ -909,7 +909,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 5;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4);
@@ -919,7 +919,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 5;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4);
@@ -929,7 +929,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 5;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4);
@@ -939,7 +939,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 5;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4);
@@ -949,7 +949,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 5;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4);
@@ -959,7 +959,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 5;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4);
@@ -969,7 +969,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 5;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6], pyfunc.Defaults[defaultIndex + 7]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4);
@@ -982,7 +982,7 @@ namespace IronPython.Runtime {
         public object Call6(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5) {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
-                return ((Func<PythonFunction, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5);
@@ -992,7 +992,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 6;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, pyfunc.Defaults[defaultIndex + 0]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, pyfunc.Defaults[defaultIndex + 0]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5);
@@ -1002,7 +1002,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 6;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5);
@@ -1012,7 +1012,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 6;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5);
@@ -1022,7 +1022,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 6;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5);
@@ -1032,7 +1032,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 6;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5);
@@ -1042,7 +1042,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 6;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5);
@@ -1052,7 +1052,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 6;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5], pyfunc.Defaults[defaultIndex + 6]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5);
@@ -1065,7 +1065,7 @@ namespace IronPython.Runtime {
         public object Call7(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6) {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
@@ -1075,7 +1075,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 7;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, pyfunc.Defaults[defaultIndex + 0]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, pyfunc.Defaults[defaultIndex + 0]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
@@ -1085,7 +1085,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 7;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
@@ -1095,7 +1095,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 7;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
@@ -1105,7 +1105,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 7;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
@@ -1115,7 +1115,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 7;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
@@ -1125,7 +1125,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 7;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4], pyfunc.Defaults[defaultIndex + 5]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
@@ -1138,7 +1138,7 @@ namespace IronPython.Runtime {
         public object Call8(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7) {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
@@ -1148,7 +1148,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 8;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, pyfunc.Defaults[defaultIndex + 0]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, pyfunc.Defaults[defaultIndex + 0]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
@@ -1158,7 +1158,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 8;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
@@ -1168,7 +1168,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 8;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
@@ -1178,7 +1178,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 8;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
@@ -1188,7 +1188,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 8;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3], pyfunc.Defaults[defaultIndex + 4]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
@@ -1201,7 +1201,7 @@ namespace IronPython.Runtime {
         public object Call9(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8) {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
@@ -1211,7 +1211,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 9;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, pyfunc.Defaults[defaultIndex + 0]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, pyfunc.Defaults[defaultIndex + 0]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
@@ -1221,7 +1221,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 9;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
@@ -1231,7 +1231,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 9;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
@@ -1241,7 +1241,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 9;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2], pyfunc.Defaults[defaultIndex + 3]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
@@ -1254,7 +1254,7 @@ namespace IronPython.Runtime {
         public object Call10(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9) {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
@@ -1264,7 +1264,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 10;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, pyfunc.Defaults[defaultIndex + 0]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, pyfunc.Defaults[defaultIndex + 0]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
@@ -1274,7 +1274,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 10;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
@@ -1284,7 +1284,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 10;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1], pyfunc.Defaults[defaultIndex + 2]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
@@ -1297,7 +1297,7 @@ namespace IronPython.Runtime {
         public object Call11(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10) {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
@@ -1307,7 +1307,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 11;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, pyfunc.Defaults[defaultIndex + 0]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, pyfunc.Defaults[defaultIndex + 0]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
@@ -1317,7 +1317,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 11;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, pyfunc.Defaults[defaultIndex + 0], pyfunc.Defaults[defaultIndex + 1]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
@@ -1330,7 +1330,7 @@ namespace IronPython.Runtime {
         public object Call12(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11) {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
@@ -1340,7 +1340,7 @@ namespace IronPython.Runtime {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
                 int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + 12;
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, pyfunc.Defaults[defaultIndex + 0]);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, pyfunc.Defaults[defaultIndex + 0]);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
@@ -1353,7 +1353,7 @@ namespace IronPython.Runtime {
         public object Call13(CallSite site, CodeContext context, object func, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12) {
             PythonFunction pyfunc = func as PythonFunction;
             if (pyfunc != null && pyfunc._compat == _compat) {
-                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.func_code.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
+                return ((Func<PythonFunction, object, object, object, object, object, object, object, object, object, object, object, object, object, object>)pyfunc.__code__.Target)(pyfunc, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
             }
 
             return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, object>>)site).Update(site, context, func, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);

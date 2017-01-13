@@ -2319,7 +2319,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static PythonDictionary/*!*/ CopyAndVerifyUserMapping(PythonFunction/*!*/ function, object dict) {
-            return UserMappingToPythonDictionary(function.Context, dict, function.func_name);
+            return UserMappingToPythonDictionary(function.Context, dict, function.__name__);
         }
 
         public static PythonDictionary UserMappingToPythonDictionary(CodeContext/*!*/ context, object dict, string funcName) {
@@ -2396,7 +2396,7 @@ namespace IronPython.Runtime.Operations {
 
         public static PythonTuple GetOrCopyParamsTuple(PythonFunction function, object input) {
             if (input == null) {
-                throw PythonOps.TypeError("{0}() argument after * must be a sequence, not NoneType", function.func_name);
+                throw PythonOps.TypeError("{0}() argument after * must be a sequence, not NoneType", function.__name__);
             } else if (input.GetType() == typeof(PythonTuple)) {
                 return (PythonTuple)input;
             }
@@ -2538,7 +2538,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static void PythonFunctionDeleteDict() {
-            throw PythonOps.TypeError("function's dictionary may not be deleted");
+            throw PythonOps.TypeError("cannot delete __dict__");
         }
 
         public static void PythonFunctionDeleteDoc(PythonFunction function) {
@@ -2902,7 +2902,7 @@ namespace IronPython.Runtime.Operations {
 
         public static object MakeGeneratorExpression(object function, object input) {
             PythonFunction func = (PythonFunction)function;
-            return ((Func<PythonFunction, object, object>)func.func_code.Target)(func, input);
+            return ((Func<PythonFunction, object, object>)func.__code__.Target)(func, input);
         }
 
         public static FunctionCode MakeFunctionCode(CodeContext/*!*/ context, string name, string documentation, string[] argNames, FunctionAttributes flags, int startIndex, int endIndex, string path, Delegate code, string[] freeVars, string[] names, string[] cellVars, string[] varNames, int localCount) {
@@ -2940,11 +2940,11 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static Delegate FunctionGetTarget(PythonFunction func) {
-            return func.func_code.Target;
+            return func.__code__.Target;
         }
 
         public static Delegate FunctionGetLightThrowTarget(PythonFunction func) {
-            return func.func_code.LightThrowTarget;
+            return func.__code__.LightThrowTarget;
         }
 
         public static void FunctionPushFrame(PythonContext context) {

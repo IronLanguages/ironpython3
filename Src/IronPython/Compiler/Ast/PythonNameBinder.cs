@@ -87,13 +87,6 @@ namespace IronPython.Compiler.Ast {
             node.PythonVariable = _binder.DefineParameter(node.Name);
             return false;
         }
-        public override bool Walk(SublistParameter node) {
-            node.PythonVariable = _binder.DefineParameter(node.Name);
-            node.Parent = _binder._currentScope;
-            // we walk the node by hand to avoid walking the default values.
-            WalkTuple(node.Tuple);
-            return false;
-        }
 
         private void WalkTuple(TupleExpression tuple) {
             tuple.Parent = _binder._currentScope;
@@ -486,11 +479,6 @@ namespace IronPython.Compiler.Ast {
         }
         // SliceExpression
         public override bool Walk(SliceExpression node) {
-            node.Parent = _currentScope;
-            return base.Walk(node);
-        }
-        // SublistParameter
-        public override bool Walk(SublistParameter node) {
             node.Parent = _currentScope;
             return base.Walk(node);
         }

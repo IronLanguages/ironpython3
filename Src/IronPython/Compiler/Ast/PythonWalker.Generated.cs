@@ -244,10 +244,6 @@ namespace IronPython.Compiler.Ast {
         public virtual bool Walk(RelativeModuleName node) { return true; }
         public virtual void PostWalk(RelativeModuleName node) { }
 
-        // SublistParameter
-        public virtual bool Walk(SublistParameter node) { return true; }
-        public virtual void PostWalk(SublistParameter node) { }
-
         // TryStatementHandler
         public virtual bool Walk(TryStatementHandler node) { return true; }
         public virtual void PostWalk(TryStatementHandler node) { }
@@ -478,10 +474,6 @@ namespace IronPython.Compiler.Ast {
         // RelativeModuleName
         public override bool Walk(RelativeModuleName node) { return false; }
         public override void PostWalk(RelativeModuleName node) { }
-
-        // SublistParameter
-        public override bool Walk(SublistParameter node) { return false; }
-        public override void PostWalk(SublistParameter node) { }
 
         // TryStatementHandler
         public override bool Walk(TryStatementHandler node) { return false; }

@@ -217,7 +217,7 @@ namespace IronPython.Runtime {
 
             PythonFunction pf = _func as PythonFunction;
             if (pf != null) {
-                PythonDictionary dict = pf.func_dict;
+                PythonDictionary dict = pf.__dict__;
                 
                 // Check the func
                 foreach (KeyValuePair<object, object> kvp in dict) {

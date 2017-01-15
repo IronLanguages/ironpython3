@@ -212,27 +212,25 @@ namespace IronPython.Runtime.Binding {
 
         public override DynamicMetaObject BindDeleteMember(DeleteMemberBinder binder) {
             switch (binder.Name) {
-                case "func_dict":
                 case "__dict__":
                     return new DynamicMetaObject(
                         Expression.Call(
-                            typeof(PythonOps).GetMethod("PythonFunctionDeleteDict")
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.PythonFunctionDeleteDict))
                         ),
                         BindingRestrictions.GetTypeRestriction(Expression, typeof(PythonFunction))
                     );
                 case "__doc__":
-                case "func_doc":
                     return new DynamicMetaObject(
                         Expression.Call(
-                            typeof(PythonOps).GetMethod("PythonFunctionDeleteDoc"),
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.PythonFunctionDeleteDoc)),
                             Expression.Convert(Expression, typeof(PythonFunction))
                         ),
                         BindingRestrictions.GetTypeRestriction(Expression, typeof(PythonFunction))
                     );
-                case "func_defaults":
+                case "__defaults__":
                     return new DynamicMetaObject(
                         Expression.Call(
-                            typeof(PythonOps).GetMethod("PythonFunctionDeleteDefaults"),
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.PythonFunctionDeleteDefaults)),
                             Expression.Convert(Expression, typeof(PythonFunction))
                         ),
                         BindingRestrictions.GetTypeRestriction(Expression, typeof(PythonFunction))
@@ -846,7 +844,7 @@ namespace IronPython.Runtime.Binding {
             /// Fixes up the argument list for the appropriate target delegate type.
             /// </summary>
             private Expression/*!*/[]/*!*/ GetArgumentsForTargetType(Expression[] exprArgs) {
-                Type target = _func.Value.func_code.Target.GetType();
+                Type target = _func.Value.__code__.Target.GetType();
                 if (target == typeof(Func<PythonFunction, object[], object>)) {
                     exprArgs = new Expression[] {
                         AstUtils.NewArrayHelper(typeof(object), exprArgs) 
@@ -989,7 +987,7 @@ namespace IronPython.Runtime.Binding {
             /// Creates the code to invoke the target delegate function w/ the specified arguments.
             /// </summary>
             private Expression/*!*/ MakeFunctionInvoke(Expression[] invokeArgs) {
-                Type targetType = _func.Value.func_code.Target.GetType();
+                Type targetType = _func.Value.__code__.Target.GetType();
                 MethodInfo method = targetType.GetMethod("Invoke");
 
                 // If calling generator, create the instance of PythonGenerator first

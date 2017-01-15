@@ -132,39 +132,20 @@ namespace IronPython.Runtime {
 
         public object __globals__ {
             get {
-                return func_globals;
-            }
-            set {
-                throw PythonOps.TypeError("readonly attribute");
-            }
-        }
-
-        public object func_globals {
-            get {
                 return _context.GlobalDict;
             }
             set {
-                throw PythonOps.TypeError("readonly attribute");
+                throw PythonOps.AttributeError("readonly attribute");
             }
         }
 
         [PropertyMethod, SpecialName, System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
-        public void Deletefunc_globals() {
-            throw PythonOps.TypeError("readonly attribute");
+        public void Delete__globals__() {
+            throw PythonOps.AttributeError("readonly attribute");
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public PythonTuple __defaults__ {
-            get {
-                return func_defaults;
-            }
-            set {
-                func_defaults = value;
-            }
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public PythonTuple func_defaults {
             get {
                 if (_defaults.Length == 0) return null;
 
@@ -181,17 +162,10 @@ namespace IronPython.Runtime {
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public PythonTuple __closure__ {
-            get {
-                return func_closure;
-            }
-            set {
-                func_closure = value;
-            }
-        }
+        public PythonDictionary __kwdefaults__ { get; set; }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public PythonTuple func_closure {
+        public PythonTuple __closure__ {
             get {
                 var storage = (Context.Dict._storage as RuntimeVariablesDictionaryStorage);
                 if (storage != null) {
@@ -205,36 +179,30 @@ namespace IronPython.Runtime {
                 return null;
             }
             set {
-                throw PythonOps.TypeError("readonly attribute");
+                throw PythonOps.AttributeError("readonly attribute");
             }
         }
 
-        public string __name__ {
-            get { return func_name; }
-            set { func_name = value; }
+        [PropertyMethod, SpecialName, System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
+        public void Delete__closure__() {
+            throw PythonOps.AttributeError("readonly attribute");
         }
 
-        public string func_name {
+        public string __name__ {
             get { return _name; }
             set {
                 if (value == null) {
-                    throw PythonOps.TypeError("func_name must be set to a string object");
+                    throw PythonOps.TypeError("__name__ must be set to a string object");
                 }
                 _name = value;
             }
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public PythonDictionary __dict__ {
-            get { return func_dict; }
-            set { func_dict = value; }
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public PythonDictionary/*!*/ func_dict {
+        public PythonDictionary/*!*/ __dict__ {
             get { return EnsureDict(); }
             set {
-                if (value == null) throw PythonOps.TypeError("setting function's dictionary to non-dict");
+                if (value == null) throw PythonOps.TypeError("__dict__ must be set to a dictionary, not a '{0}'", PythonTypeOps.GetName(value));
 
                 _dict = value;
             }
@@ -245,11 +213,6 @@ namespace IronPython.Runtime {
             set { _doc = value; }
         }
 
-        public object func_doc {
-            get { return __doc__; }
-            set { __doc__ = value; }
-        }
-
         public object __module__ {
             get { return _module; }
             set { _module = value; }
@@ -257,20 +220,11 @@ namespace IronPython.Runtime {
 
         public FunctionCode __code__ {
             get {
-                return func_code;
-            }
-            set {
-                func_code = value;
-            }
-        }
-
-        public FunctionCode func_code {
-            get {
                 return _code; 
             }
             set {
                 if (value == null) {
-                    throw PythonOps.TypeError("func_code must be set to a code object");
+                    throw PythonOps.TypeError("__code__ must be set to a code object");
                 }
                 _code = value;
                 _compat = CalculatedCachedCompat();
@@ -290,11 +244,11 @@ namespace IronPython.Runtime {
         #region Internal APIs
 
         internal SourceSpan Span {
-            get { return func_code.Span; }
+            get { return __code__.Span; }
         }
 
         internal string[] ArgNames {
-            get { return func_code.ArgNames; }
+            get { return __code__.ArgNames; }
         }
 
         /// <summary>
@@ -350,7 +304,7 @@ namespace IronPython.Runtime {
         /// 
         /// The dependent values include:
         ///     _nparams - this is readonly, and never requies an update
-        ///     _defaults - the user can mutate this (func_defaults) and that forces
+        ///     _defaults - the user can mutate this (__defaults__) and that forces
         ///                 an update
         ///     expand dict/list - based on nparams and flags, both read-only
         ///     
@@ -560,7 +514,7 @@ namespace IronPython.Runtime {
         #region ICodeFormattable Members
 
         public string/*!*/ __repr__(CodeContext/*!*/ context) {
-            return string.Format("<function {0} at {1}>", func_name, PythonOps.HexId(this));
+            return string.Format("<function {0} at {1}>", __name__, PythonOps.HexId(this));
         }
 
         #endregion

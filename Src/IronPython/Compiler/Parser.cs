@@ -1335,55 +1335,6 @@ namespace IronPython.Compiler {
             node.SetLoc(_globalParent, GetStart(), GetEnd());
         }
 
-        //  parameter ::=
-        //      identifier | "(" sublist ")"
-        private Expression ParseSublistParameter(HashSet<string> names) {
-            Token t = NextToken();
-            Expression ret = null;
-            switch (t.Kind) {
-                case TokenKind.LeftParenthesis: // sublist
-                    ret = ParseSublist(names);
-                    Eat(TokenKind.RightParenthesis);
-                    break;
-                case TokenKind.Name:  // identifier
-                    string name = FixName((string)t.Value);
-                    NameExpression ne = new NameExpression(name);
-                    CompleteParameterName(ne, name, names);
-                    return ne;
-                default:
-                    ReportSyntaxError(_token);
-                    ret = Error();
-                    break;
-            }
-            return ret;
-        }
-
-        //  sublist ::=
-        //      parameter ("," parameter)* [","]
-        private Expression ParseSublist(HashSet<string> names) {
-            bool trailingComma;
-            List<Expression> list = new List<Expression>();
-            for (; ; ) {
-                trailingComma = false;
-                list.Add(ParseSublistParameter(names));
-                if (MaybeEat(TokenKind.Comma)) {
-                    trailingComma = true;
-                    switch (PeekToken().Kind) {
-                        case TokenKind.LeftParenthesis:
-                        case TokenKind.Name:
-                            continue;
-                        default:
-                            break;
-                    }
-                    break;
-                } else {
-                    trailingComma = false;
-                    break;
-                }
-            }
-            return MakeTupleOrExpr(list, trailingComma);
-        }
-
         //Python2.5 -> old_lambdef: 'lambda' [varargslist] ':' old_expression
         private Expression FinishOldLambdef() {
             FunctionDefinition func = ParseLambdaHelperStart(null);

@@ -125,10 +125,6 @@ namespace IronPython.Compiler.Ast {
             _fc.Define(node.Name);
             return true;
         }
-
-        public override bool Walk(SublistParameter node) {
-            return true;
-        }
     }
 
     class FlowDeleter : PythonWalkerNonRecursive {

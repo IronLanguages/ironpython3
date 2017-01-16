@@ -39,7 +39,7 @@ namespace IronPython.Runtime {
         internal PythonDictionary _dict;                // a dictionary to story arbitrary members on the function object
         private object _module;                         // the module name
 
-        internal int _id, _compat;                      // ID/Compat flags used for testing in rules
+        internal int _id;                               // ID flag used for testing in rules
         private FunctionCode _code;                     // the Python function code object.  Not currently used for much by us...        
         private string _name;                           // the name of the method
         private object _doc;                            // the current documentation string
@@ -81,7 +81,7 @@ namespace IronPython.Runtime {
             }
             scopeStatement.RewriteBody(FunctionDefinition.ArbitraryGlobalsVisitorInstance);
 
-            _compat = CalculatedCachedCompat();
+            FunctionCompatibility = CalculatedCachedCompat();
         }
 
         internal PythonFunction(CodeContext/*!*/ context, FunctionCode funcInfo, object modName, object[] defaults, PythonDictionary kwdefaults, PythonDictionary annotations, MutableTuple closure) {
@@ -89,19 +89,20 @@ namespace IronPython.Runtime {
 
             _context = context;
             _defaults = defaults ?? ArrayUtils.EmptyObjects;
+            __kwdefaults__ = kwdefaults ?? new PythonDictionary();
             _code = funcInfo;
             _doc = funcInfo._initialDoc;
             _name = funcInfo.co_name;
-            __kwdefaults__ = kwdefaults;
             _annotations = annotations ?? new PythonDictionary();
 
             Debug.Assert(_defaults.Length <= _code.co_argcount);
+            Debug.Assert(__kwdefaults__.Count <= _code.co_kwonlyargcount);
             if (modName != Uninitialized.Instance) {
                 _module = modName;
             }
 
             Closure = closure;
-            _compat = CalculatedCachedCompat();
+            FunctionCompatibility = CalculatedCachedCompat();
         }
 
         #region Public APIs
@@ -139,11 +140,11 @@ namespace IronPython.Runtime {
             }
             set {
                 _defaults = value == null ? ArrayUtils.EmptyObjects : value.ToArray();
-                _compat = CalculatedCachedCompat();
+                FunctionCompatibility = CalculatedCachedCompat();
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        // TODO: update CalculatedCachedCompat?
         public PythonDictionary __kwdefaults__ { get; set; }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
@@ -204,7 +205,7 @@ namespace IronPython.Runtime {
                     throw PythonOps.TypeError("__code__ must be set to a code object");
                 }
                 _code = value;
-                _compat = CalculatedCachedCompat();
+                FunctionCompatibility = CalculatedCachedCompat();
             }
         }
 
@@ -268,11 +269,7 @@ namespace IronPython.Runtime {
         /// enables us to share sites for simple calls (calls that don't directly
         /// provide named arguments or the list/dict params).
         /// </summary>
-        internal int FunctionCompatibility {
-            get {
-                return _compat;
-            }
-        }
+        internal int FunctionCompatibility { get; private set; }
 
         /// <summary>
         /// Calculates the _compat value which is used for call-compatibility checks
@@ -281,25 +278,27 @@ namespace IronPython.Runtime {
         /// 
         /// The dependent values include:
         ///     _nparams - this is readonly, and never requies an update
-        ///     _defaults - the user can mutate this (__defaults__) and that forces
-        ///                 an update
+        ///     _defaults - the user can mutate this (__defaults__) and that forces an update
+        ///     __kwdefaults__ - the user can mutate this and that forces an update
         ///     expand dict/list - based on nparams and flags, both read-only
         ///     
         /// Bits are allocated as:
-        ///     00003fff - Normal argument count
-        ///     0fffb000 - Default count
-        ///     10000000 - unused
-        ///     20000000 - expand list
-        ///     40000000 - expand dict
-        ///     80000000 - unused
+        ///     000000ff - Normal argument count
+        ///     0000ff00 - Default count
+        ///     007f0000 - Keyword-only argument count
+        ///     3f800000 - Keyword-only defaults count
+        ///     40000000 - expand list
+        ///     80000000 - expand dict
         ///     
         /// Enforce recursion is added at runtime.
         /// </summary>
         private int CalculatedCachedCompat() {
-            return NormalArgumentCount |
-                Defaults.Length << 14 |
-                ((ExpandDictPosition != -1) ? 0x40000000 : 0) |
-                ((ExpandListPosition != -1) ? 0x20000000 : 0);
+            return (NormalArgumentCount) |
+                (Defaults.Length << 8) |
+                (KeywordOnlyArgumentCount << 16) |
+                (__kwdefaults__.Count << 23) |
+                ((ExpandListPosition != -1) ? 0x40000000 : 0) |
+                ((ExpandDictPosition != -1) ? unchecked((int)0x80000000) : 0);
         }
 
         /// <summary>
@@ -327,8 +326,8 @@ namespace IronPython.Runtime {
         /// </summary>
         internal int ExpandListPosition {
             get {
-                if ((_code.Flags & FunctionAttributes.ArgumentList) != 0) {
-                    return _code.co_argcount;
+                if (_code.Flags.HasFlag(FunctionAttributes.ArgumentList)) {
+                    return _code.co_argcount + _code.co_kwonlyargcount;
                 }
 
                 return -1;
@@ -340,37 +339,38 @@ namespace IronPython.Runtime {
         /// </summary>
         internal int ExpandDictPosition {
             get {
-                if ((_code.Flags & FunctionAttributes.KeywordDictionary) != 0) {
-                    if ((_code.Flags & FunctionAttributes.ArgumentList) != 0) {
-                        return _code.co_argcount + 1;
+                if (_code.Flags.HasFlag(FunctionAttributes.KeywordDictionary)) {
+                    if (_code.Flags.HasFlag(FunctionAttributes.ArgumentList)) {
+                        return _code.co_argcount + _code.co_kwonlyargcount + 1;
                     }
-                    return _code.co_argcount;
+                    return _code.co_argcount + _code.co_kwonlyargcount;
                 }
                 return -1;
             }
         }
 
         /// <summary>
-        /// Gets the number of normal (not params or kw-params) parameters.
+        /// Gets the number of normal (not keyword-only, params or kw-params) parameters.
         /// </summary>
-        internal int NormalArgumentCount {
-            get {
-                return _code.co_argcount;
-            }
-        }
+        internal int NormalArgumentCount => _code.co_argcount;
+
+        /// <summary>
+        /// Gets the number of keyword-only parameters.
+        /// </summary>
+        internal int KeywordOnlyArgumentCount => _code.co_kwonlyargcount;
 
         /// <summary>
         /// Gets the number of extra arguments (params or kw-params)
         /// </summary>
         internal int ExtraArguments {
             get {
-                if ((_code.Flags & FunctionAttributes.ArgumentList) != 0) {
-                    if ((_code.Flags & FunctionAttributes.KeywordDictionary) != 0) {
+                if (_code.Flags.HasFlag(FunctionAttributes.ArgumentList)) {
+                    if (_code.Flags.HasFlag(FunctionAttributes.KeywordDictionary)) {
                         return 2;
                     }
                     return 1;
 
-                } else if ((_code.Flags & FunctionAttributes.KeywordDictionary) != 0) {
+                } else if (_code.Flags.HasFlag(FunctionAttributes.KeywordDictionary)) {
                     return 1;
                 }
                 return 0;

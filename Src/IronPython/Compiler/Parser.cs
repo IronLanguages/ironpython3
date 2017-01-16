@@ -310,11 +310,7 @@ namespace IronPython.Compiler {
 
         #region Error Reporting
 
-        private void ReportSyntaxError(TokenWithSpan t) {
-            ReportSyntaxError(t, ErrorCodes.SyntaxError);
-        }
-
-        private void ReportSyntaxError(TokenWithSpan t, int errorCode) {
+        private void ReportSyntaxError(TokenWithSpan t, int errorCode = ErrorCodes.SyntaxError) {
             ReportSyntaxError(t.Token, t.Span, errorCode, true);
         }
 
@@ -348,11 +344,7 @@ namespace IronPython.Compiler {
             ReportSyntaxError(_lookahead.Span.Start, _lookahead.Span.End, message);
         }
 
-        internal void ReportSyntaxError(int start, int end, string message) {
-            ReportSyntaxError(start, end, message, ErrorCodes.SyntaxError);
-        }
-
-        internal void ReportSyntaxError(int start, int end, string message, int errorCode) {
+        internal void ReportSyntaxError(int start, int end, string message, int errorCode = ErrorCodes.SyntaxError) {
             // save the first one, the next error codes may be induced errors:
             if (_errorCode == 0) {
                 _errorCode = errorCode;
@@ -795,7 +787,7 @@ namespace IronPython.Compiler {
                 ret = new RelativeModuleName(names, dotCount);
             } else {
                 if (names.Length == 0) {
-                    ReportSyntaxError(_lookahead.Span.Start, _lookahead.Span.End, "invalid syntax");
+                    ReportSyntaxError("invalid syntax");
                 }
                 ret = new ModuleName(names);
             }
@@ -1196,18 +1188,21 @@ namespace IronPython.Compiler {
             HashSet<string> names = new HashSet<string>(StringComparer.Ordinal);
             bool needDefault = false;
             bool readMultiply = false;
+            bool hasKeywordOnlyParameter = false;
+            // we want these to be the last two parameters
+            Parameter listParameter = null;
+            Parameter dictParameter = null;
             for (int position = 0; ; position++) {
                 if (MaybeEat(terminator)) break;
 
                 Parameter parameter;
 
                 if (MaybeEat(TokenKind.Power)) {
-                    parameter = ParseParameter(names, ParameterKind.Dictionary, allowAnnotations);
-                    if (parameter == null) {
+                    dictParameter = ParseParameter(names, ParameterKind.Dictionary, allowAnnotations);
+                    if (dictParameter == null) {
                         // no parameter name, syntax error
                         return null;
                     }
-                    pl.Add(parameter);
                     Eat(terminator);
                     break;
                 }
@@ -1219,15 +1214,14 @@ namespace IronPython.Compiler {
                     }
 
                     if (PeekToken(TokenKind.Comma)) {
-                        // TODO: "*"
+                        // "*"
                     }
                     else {
-                        parameter = ParseParameter(names, ParameterKind.List, allowAnnotations);
-                        if (parameter == null) {
+                        listParameter = ParseParameter(names, ParameterKind.List, allowAnnotations);
+                        if (listParameter == null) {
                             // no parameter name, syntax error
                             return null;
                         }
-                        pl.Add(parameter);
                     }
 
                     readMultiply = true;
@@ -1236,7 +1230,8 @@ namespace IronPython.Compiler {
                     // If a parameter has a default value, all following parameters up until the "*" must also have a default value
                     if (readMultiply) {
                         bool dontCare = false;
-                        parameter = ParseDefParameter(names, ParameterKind.Normal, allowAnnotations, ref dontCare);
+                        parameter = ParseDefParameter(names, ParameterKind.KeywordOnly, allowAnnotations, ref dontCare);
+                        hasKeywordOnlyParameter = true;
                     }
                     else {
                         parameter = ParseDefParameter(names, ParameterKind.Normal, allowAnnotations, ref needDefault);
@@ -1245,6 +1240,7 @@ namespace IronPython.Compiler {
                         // no parameter, syntax error
                         return null;
                     }
+
                     pl.Add(parameter);
                 }
 
@@ -1253,6 +1249,14 @@ namespace IronPython.Compiler {
                     break;
                 }
             }
+
+            if (readMultiply && listParameter == null && dictParameter != null && !hasKeywordOnlyParameter) {
+                // TODO: this should not throw right away
+                ReportSyntaxError("named arguments must follow bare *");
+            }
+
+            if (listParameter != null) pl.Add(listParameter);
+            if (dictParameter != null) pl.Add(dictParameter);
 
             return pl.ToArray();
         }

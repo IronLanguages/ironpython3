@@ -117,16 +117,26 @@ namespace IronPython.Compiler.Ast {
 
         internal override int ArgCount {
             get {
-                // TODO: properly implement this
-                int argCnt = _parameters.Length;
-                FunctionAttributes flags = Flags;
-                if ((flags & FunctionAttributes.ArgumentList) != 0) argCnt--;
-                if ((flags & FunctionAttributes.KeywordDictionary) != 0) argCnt--;
-                return argCnt;
+                int argCount = 0;
+                for (argCount = 0; argCount < _parameters.Length; argCount++)
+                {
+                    Parameter p = _parameters[argCount];
+                    if (p.IsDictionary || p.IsList || p.IsKeywordOnly) break;
+                }
+                return argCount;
             }
         }
 
-        internal override int KwOnlyArgCount => 0; // TODO: properly implement this
+        internal override int KwOnlyArgCount {
+            get {
+                int kwOnlyArgCount = 0;
+                for (int i = ArgCount; i < _parameters.Length; i++, kwOnlyArgCount++) {
+                    Parameter p = _parameters[i];
+                    if (p.IsDictionary || p.IsList) break;
+                }
+                return kwOnlyArgCount;
+            }
+        }
 
         public Statement Body {
             get { return _body; }
@@ -195,17 +205,11 @@ namespace IronPython.Compiler.Ast {
                         Parameter p = _parameters[i];
                         if (p.IsDictionary || p.IsList) break;
                     }
-                    // Check for the list parameter
+                    // Check for the list and dictionary parameters, which must be the last(two)
                     if (i < _parameters.Length && _parameters[i].IsList) {
                         i++;
                         fa |= FunctionAttributes.ArgumentList;
                     }
-                    // Keyword-only arguments
-                    for (; i < _parameters.Length; i++) {
-                        Parameter p = _parameters[i];
-                        if (p.IsDictionary) break;
-                    }
-                    // Check for the dictionary parameter, which must be the last
                     if (i < _parameters.Length && _parameters[i].IsDictionary) {
                         i++;
                         fa |= FunctionAttributes.KeywordDictionary;
@@ -463,7 +467,7 @@ namespace IronPython.Compiler.Ast {
                 if (param.Kind == ParameterKind.KeywordOnly && param.DefaultValue != null) {
                     compiler.Compile(AstUtils.Convert(param.DefaultValue, typeof(object)));
                     compiler.Compile(AstUtils.Constant(param.Name, typeof(string)));
-                    defaultCount++;
+                    kwdefaultCount++;
                 }
             }
 
@@ -589,7 +593,7 @@ namespace IronPython.Compiler.Ast {
 
             public override int ConsumedStack {
                 get {
-                    return _defaultCount + (_annotationCount * 2) +
+                    return _defaultCount + (_kwdefaultCount * 2) + (_annotationCount * 2) +
                         (_context == null ? 1 : 0) +
                         (_name    == null ? 1 : 0);
                 }

@@ -27,10 +27,6 @@ namespace IronPython.Compiler.Ast {
     /// Parameter base class
     /// </summary>
     public class Parameter : Node {
-        /// <summary>
-        /// Position of the parameter: 0-based index
-        /// </summary>
-        private readonly string _name;
         protected readonly ParameterKind _kind;
         protected Expression _defaultValue;
 
@@ -42,16 +38,14 @@ namespace IronPython.Compiler.Ast {
         }
 
         public Parameter(string name, ParameterKind kind) {
-            _name = name;
+            Name = name;
             _kind = kind;
         }
 
         /// <summary>
         /// Parameter name
         /// </summary>
-        public string Name {
-            get { return _name; }
-        }
+        public string Name { get; }
 
         public Expression Annotation { get; set; }
 
@@ -60,23 +54,13 @@ namespace IronPython.Compiler.Ast {
             set { _defaultValue = value; }
         }
 
-        public bool IsList {
-            get {
-                return _kind == ParameterKind.List;
-            }
-        }
+        public bool IsList => _kind == ParameterKind.List;
 
-        public bool IsDictionary {
-            get {
-                return _kind == ParameterKind.Dictionary;
-            }
-        }
+        public bool IsDictionary => _kind == ParameterKind.Dictionary;
 
-        internal ParameterKind Kind {
-            get {
-                return _kind;
-            }
-        }
+        internal bool IsKeywordOnly => _kind == ParameterKind.KeywordOnly;
+
+        internal ParameterKind Kind => _kind;
 
         internal PythonVariable PythonVariable {
             get { return _variable; }

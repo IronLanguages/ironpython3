@@ -130,8 +130,7 @@ public sealed class FunctionCaller<%(typeParams)s> : FunctionCaller {
     public FunctionCaller(int compat) : base(compat) { }
     
     public object Call%(argCount)d(CallSite site, CodeContext context, object func, %(callParams)s) {
-        PythonFunction pyfunc = func as PythonFunction;
-        if (pyfunc != null && pyfunc._compat == _compat) {
+        if (func is PythonFunction pyfunc && pyfunc.FunctionCompatibility == _compat) {
             return ((Func<%(genFuncArgs)s>)pyfunc.__code__.Target)(pyfunc, %(callArgs)s);
         }
 
@@ -140,8 +139,7 @@ public sealed class FunctionCaller<%(typeParams)s> : FunctionCaller {
     
 defaults_template = """
     public object Default%(defaultCount)dCall%(argCount)d(CallSite site, CodeContext context, object func, %(callParams)s) {
-        PythonFunction pyfunc = func as PythonFunction;
-        if (pyfunc != null && pyfunc._compat == _compat) {
+        if (func is PythonFunction pyfunc && pyfunc.FunctionCompatibility == _compat) {
             int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + %(argCount)d;
             return ((Func<%(genFuncArgs)s>)pyfunc.__code__.Target)(pyfunc, %(callArgs)s, %(defaultArgs)s);
         }
@@ -151,8 +149,7 @@ defaults_template = """
 
 defaults_template_0 = """
 public object Default%(argCount)dCall0(CallSite site, CodeContext context, object func) {
-    PythonFunction pyfunc = func as PythonFunction;
-    if (pyfunc != null && pyfunc._compat == _compat) {
+    if (func is PythonFunction pyfunc && pyfunc.FunctionCompatibility == _compat) {
         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
         return ((Func<%(genFuncArgs)s>)pyfunc.__code__.Target)(pyfunc, %(defaultArgs)s);
     }

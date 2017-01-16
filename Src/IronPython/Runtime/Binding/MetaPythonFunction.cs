@@ -418,7 +418,10 @@ namespace IronPython.Runtime.Binding {
             /// delegate type before being used.
             /// </summary>
             private Expression/*!*/[]/*!*/ GetArgumentsForRule() {
-                Expression[] exprArgs = new Expression[_func.Value.NormalArgumentCount + _func.Value.ExtraArguments];
+                int normalArgumentCount = _func.Value.NormalArgumentCount;
+                int keywordOnlyArgumentCount = _func.Value.KeywordOnlyArgumentCount;
+
+                Expression[] exprArgs = new Expression[normalArgumentCount + keywordOnlyArgumentCount + _func.Value.ExtraArguments];
                 List<Expression> extraArgs = null;
                 Dictionary<string, Expression> namedArgs = null;
                 int instanceIndex = Signature.IndexOf(ArgumentType.Instance);
@@ -439,7 +442,7 @@ namespace IronPython.Runtime.Binding {
                         case ArgumentType.Named:
                             _needCodeTest = true;
                             bool foundName = false;
-                            for (int j = 0; j < _func.Value.NormalArgumentCount; j++) {
+                            for (int j = 0; j < normalArgumentCount + keywordOnlyArgumentCount; j++) {
                                 if (_func.Value.ArgNames[j] == Signature.GetArgumentName(i)) {
                                     if (exprArgs[j] != null) {
                                         // kw-argument provided for already provided normal argument.
@@ -471,7 +474,7 @@ namespace IronPython.Runtime.Binding {
                             continue;
                     }
 
-                    if (i < _func.Value.NormalArgumentCount) {
+                    if (i < normalArgumentCount) {
                         exprArgs[i] = _args[parameterIndex].Expression;
                     } else {
                         if (extraArgs == null) {
@@ -496,9 +499,10 @@ namespace IronPython.Runtime.Binding {
             /// Binds any missing arguments to values from params array, kw dictionary, or default values.
             /// </summary>
             private bool FinishArguments(Expression[] exprArgs, List<Expression> paramsArgs, Dictionary<string, Expression> namedArgs) {
-                int noDefaults = _func.Value.NormalArgumentCount - _func.Value.Defaults.Length; // number of args w/o defaults
+                var normalArgumentCount = _func.Value.NormalArgumentCount;
+                var normalNoDefaults = normalArgumentCount - _func.Value.Defaults.Length;
 
-                for (int i = 0; i < _func.Value.NormalArgumentCount; i++) {
+                for (int i = 0; i < normalArgumentCount; i++) {
                     if (exprArgs[i] != null) {
                         if (_userProvidedParams != null && i >= Signature.GetProvidedPositionalArgumentCount()) {
                             exprArgs[i] = ValidateNotDuplicate(exprArgs[i], _func.Value.ArgNames[i], i);
@@ -506,14 +510,33 @@ namespace IronPython.Runtime.Binding {
                         continue;
                     }
 
-                    if (i < noDefaults) {
+                    if (i < normalNoDefaults) {
                         exprArgs[i] = ExtractNonDefaultValue(_func.Value.ArgNames[i]);
                         if (exprArgs[i] == null) {
                             // can't get a value, this is an invalid call.
                             return false;
                         }
                     } else {
-                        exprArgs[i] = ExtractDefaultValue(i, i - noDefaults);
+                        exprArgs[i] = ExtractDefaultValue(i, i - normalNoDefaults);
+                    }
+                }
+
+                var keywordOnlyArgumentCount = _func.Value.KeywordOnlyArgumentCount;
+                var keywordOnlyNoDefaults = keywordOnlyArgumentCount - _func.Value.__kwdefaults__.Count;
+
+                for (int i = normalArgumentCount; i < normalArgumentCount + keywordOnlyArgumentCount; i++) {
+                    var argName = _func.Value.ArgNames[i];
+
+                    if (exprArgs[i] == null) {
+                        if (_func.Value.__kwdefaults__.ContainsKey(argName)) {
+                            exprArgs[i] = ExtractKeywordOnlyDefault(argName);
+                        } else if (_dict != null) {
+                            exprArgs[i] = ExtractDictionaryArgument(argName);
+                        }
+                        if (exprArgs[i] == null) {
+                            // can't get a value, this is an invalid call.
+                            return false;
+                        }
                     }
                 }
 
@@ -734,9 +757,9 @@ namespace IronPython.Runtime.Binding {
 
                 return Ast.Call(
                     typeof(PythonOps).GetMethod(nameof(PythonOps.ExtractDictionaryArgument)),
-                        AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),        // function
-                        AstUtils.Constant(name, typeof(string)),                                   // name
-                        AstUtils.Constant(Signature.ArgumentCount),                               // arg count
+                        AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),   // function
+                        AstUtils.Constant(name, typeof(string)),                        // name
+                        AstUtils.Constant(Signature.ArgumentCount),                     // arg count
                         AstUtils.Convert(_dict, typeof(PythonDictionary))               // dictionary
                     );
             }
@@ -766,6 +789,25 @@ namespace IronPython.Runtime.Binding {
                     AstUtils.Constant(dfltIndex),
                     AstUtils.Constant(_func.Value.ArgNames[index], typeof(string)),
                     VariableOrNull(_params, typeof(List)),
+                    VariableOrNull(_dict, typeof(PythonDictionary))
+                );
+            }
+
+            private Expression ExtractKeywordOnlyDefault(string name) {
+                if (_dict == null) {
+                    // we can pull the default directly
+                    return Ast.Call(
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.FunctionGetKeywordOnlyDefaultValue)),
+                        AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),
+                        AstUtils.Constant(name)
+                    );
+                }
+
+                _extractedDefault = true;
+                return Ast.Call(
+                    typeof(PythonOps).GetMethod(nameof(PythonOps.GetFunctionKeywordOnlyParameterValue)),
+                    AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),
+                    AstUtils.Constant(name),
                     VariableOrNull(_dict, typeof(PythonDictionary))
                 );
             }

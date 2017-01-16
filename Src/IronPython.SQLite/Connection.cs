@@ -384,7 +384,7 @@ namespace IronPython.SQLite
                 else if(result is PythonBuffer)
                 {
                     PythonBuffer buffer = (PythonBuffer)result;
-                    string s = buffer.__getslice__(0, null).ToString();
+                    string s = buffer[new Slice(0, null)].ToString();
                     Sqlite3.sqlite3_result_blob(ctx, s, s.Length, Sqlite3.SQLITE_TRANSIENT);
                 }
                 else

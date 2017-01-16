@@ -369,30 +369,12 @@ namespace IronPython.Modules {
             delitem(context, a, b);
         }
 
-        public static void delslice(CodeContext/*!*/ context, object a, object b, object c) {
-            MakeSlice(b, c);
-
-            PythonContext.GetContext(context).DelSlice(a, b, c);            
-        }
-
-        public static void __delslice__(CodeContext/*!*/ context, object a, object b, object c) {
-            delslice(context, a, b, c);
-        }
-
         public static object getitem(CodeContext/*!*/ context, object a, object b) {
             return PythonOps.GetIndex(context, a, b);
         }
 
         public static object __getitem__(CodeContext/*!*/ context, object a, object b) {
             return PythonOps.GetIndex(context, a, b);
-        }
-
-        public static object getslice(CodeContext/*!*/ context, object a, object b, object c) {
-            return PythonOps.GetIndex(context, a, MakeSlice(b, c));
-        }
-
-        public static object __getslice__(CodeContext/*!*/ context, object a, object b, object c) {
-            return PythonOps.GetIndex(context, a, MakeSlice(b, c));
         }
 
         public static int indexOf(CodeContext/*!*/ context, object a, object b) {
@@ -436,14 +418,6 @@ namespace IronPython.Modules {
 
         public static void __setitem__(CodeContext/*!*/ context, object a, object b, object c) {
             setitem(context, a, b, c);
-        }
-
-        public static void setslice(CodeContext/*!*/ context, object a, object b, object c, object v) {
-            PythonContext.GetContext(context).SetSlice(a, b, c, v);
-        }
-
-        public static void __setslice__(CodeContext/*!*/ context, object a, object b, object c, object v) {
-            setslice(context, a, b, c, v);
         }
 
         public static bool isCallable(CodeContext/*!*/ context, object o) {

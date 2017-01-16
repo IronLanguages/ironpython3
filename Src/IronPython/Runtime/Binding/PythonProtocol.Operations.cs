@@ -1360,10 +1360,7 @@ namespace IronPython.Runtime.Binding {
         ///    Extended slicing x[i,j,k,...]
         ///    Long Slice x[start:stop:step]
         /// 
-        /// The first maps to __*slice__ (get, set, and del).  
-        ///    This takes indexes - i, j - which specify the range of elements to be
-        ///    returned.  In the slice variants both i, j must be numeric data types.  
-        /// The 2nd and 3rd are both __*item__.  
+        /// These protocols map to __*item__ (get, set, and del).
         ///    This receives a single index which is either a Tuple or a Slice object (which 
         ///    encapsulates the start, stop, and step values) 
         /// 
@@ -1374,34 +1371,19 @@ namespace IronPython.Runtime.Binding {
         /// action.
         /// 
         /// Extended slicing maps to the normal .NET multi-parameter input.  
-        /// 
-        /// So our job here is to first determine if we're to call a __*slice__ method or
-        /// a __*item__ method.  
         /// </summary>
         private static DynamicMetaObject/*!*/ MakeIndexerOperation(DynamicMetaObjectBinder/*!*/ operation, PythonIndexType op, DynamicMetaObject/*!*/[]/*!*/ types, DynamicMetaObject errorSuggestion) {
-            string item, slice;
+            string item;
             DynamicMetaObject indexedType = types[0].Restrict(types[0].GetLimitType());
             PythonContext state = PythonContext.GetPythonContext(operation);
             BuiltinFunction itemFunc = null;
             PythonTypeSlot itemSlot = null;
-            bool callSlice = false;
             int mandatoryArgs;
 
-            GetIndexOperators(op, out item, out slice, out mandatoryArgs);
+            GetIndexOperators(op, out item, out mandatoryArgs);
 
-            if (types.Length == mandatoryArgs + 1 && IsSlice(op) && HasOnlyNumericTypes(operation, types, op == PythonIndexType.SetSlice)) {
-                // two slice indexes, all int arguments, need to call __*slice__ if it exists
-                callSlice = BindingHelpers.TryGetStaticFunction(state, slice, indexedType, out itemFunc);
-                if (itemFunc == null || !callSlice) {
-                    callSlice = MetaPythonObject.GetPythonType(indexedType).TryResolveSlot(state.SharedContext, slice, out itemSlot);
-                }
-            }
-
-            if (!callSlice) {
-                // 1 slice index (simple index) or multiple slice indexes or no __*slice__, call __*item__, 
-                if (!BindingHelpers.TryGetStaticFunction(state, item, indexedType, out itemFunc)) {
-                    MetaPythonObject.GetPythonType(indexedType).TryResolveSlot(state.SharedContext, item, out itemSlot);
-                }
+            if (!BindingHelpers.TryGetStaticFunction(state, item, indexedType, out itemFunc)) {
+                MetaPythonObject.GetPythonType(indexedType).TryResolveSlot(state.SharedContext, item, out itemSlot);
             }
 
             // make the Callable object which does the actual call to the function or slot
@@ -1410,36 +1392,21 @@ namespace IronPython.Runtime.Binding {
                 return errorSuggestion ?? MakeUnindexableError(operation, op, types, indexedType, state);
             }
 
-            // prepare the arguments and make the builder which will
-            // call __*slice__ or __*item__
+            // prepare the arguments and make the builder which will call __*item__
             DynamicMetaObject[] args;
-            IndexBuilder builder;
-            if (callSlice) {
-                // we're going to call a __*slice__ method, we pass the args as is.
-                Debug.Assert(IsSlice(op));
-
-                builder = new SliceBuilder(types, callable);
-
-                // slicing is dependent upon the types of the arguments (HasNumericTypes) 
-                // so we must restrict them.
-                args = ConvertArgs(types);
+            ItemBuilder builder = new ItemBuilder(types, callable);
+            if (IsSlice(op)) {
+                // we need to create a new Slice object.
+                args = GetItemSliceArguments(state, op, types);
             } else {
-                // we're going to call a __*item__ method.
-                builder = new ItemBuilder(types, callable);
-                if (IsSlice(op)) {
-                    // we need to create a new Slice object.
-                    args = GetItemSliceArguments(state, op, types);
-                } else {
-                    // no need to restrict the arguments.  We're not
-                    // a slice and so restrictions are not necessary
-                    // here because it's not dependent upon our types.
-                    args = (DynamicMetaObject[])types.Clone();
+                // no need to restrict the arguments.  We're not
+                // a slice and so restrictions are not necessary
+                // here because it's not dependent upon our types.
+                args = (DynamicMetaObject[])types.Clone();
 
-                    // but we do need to restrict based upon the type
-                    // of object we're calling on.
-                    args[0] = types[0].Restrict(types[0].GetLimitType());
-                }
-
+                // but we do need to restrict based upon the type
+                // of object we're calling on.
+                args[0] = types[0].Restrict(types[0].GetLimitType());
             }
 
             return builder.MakeRule(operation, state, args);
@@ -1723,7 +1690,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         /// <summary>
-        /// Base class for building a __*item__ or __*slice__ call.
+        /// Base class for building a __*item__ call.
         /// </summary>
         abstract class IndexBuilder {
             private readonly Callable/*!*/ _callable;
@@ -1742,147 +1709,6 @@ namespace IronPython.Runtime.Binding {
 
             protected PythonType/*!*/ GetTypeAt(int index) {
                 return MetaPythonObject.GetPythonType(_types[index]);
-            }
-        }
-
-        /// <summary>
-        /// Derived IndexBuilder for calling __*slice__ methods
-        /// </summary>
-        class SliceBuilder : IndexBuilder {
-            private ParameterExpression _lengthVar;        // Nullable<int>, assigned if we need to calculate the length of the object during the call.
-
-            public SliceBuilder(DynamicMetaObject/*!*/[]/*!*/ types, Callable/*!*/ callable)
-                : base(types, callable) {
-            }
-
-            public override DynamicMetaObject/*!*/ MakeRule(DynamicMetaObjectBinder/*!*/ metaBinder, PythonContext/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ args) {
-                // the semantics of simple slicing state that if the value
-                // is less than 0 then the length is added to it.  The default
-                // for unprovided parameters are 0 and maxint.  The callee
-                // is responsible for ignoring out of range values but slicing
-                // is responsible for doing this initial transformation.
-
-                Debug.Assert(args.Length > 2);  // index 1 and 2 should be our slice indexes, we might have another arg if we're a setter
-                args = ArrayUtils.Copy(args);
-                for (int i = 1; i < 3; i++) {
-                    args[i] = args[i].Restrict(args[i].GetLimitType());
-
-                    if (args[i].GetLimitType() == typeof(MissingParameter)) {
-                        switch (i) {
-                            case 1: args[i] = new DynamicMetaObject(AstUtils.Constant(0), args[i].Restrictions); break;
-                            case 2: args[i] = new DynamicMetaObject(AstUtils.Constant(Int32.MaxValue), args[i].Restrictions); break;
-                        }
-                    } else if (args[i].GetLimitType() == typeof(int)) {
-                        args[i] = MakeIntTest(args[0], args[i]);
-                    } else if (args[i].GetLimitType().IsSubclassOf(typeof(Extensible<int>))) {
-                        args[i] = MakeIntTest(
-                            args[0],
-                            new DynamicMetaObject(
-                                Ast.Property(
-                                    args[i].Expression,
-                                    args[i].GetLimitType().GetProperty("Value")
-                                ),
-                                args[i].Restrictions
-                            )
-                        );
-                    } else if (args[i].GetLimitType() == typeof(BigInteger)) {
-                        args[i] = MakeBigIntTest(args[0], args[i]);
-                    } else if (args[i].GetLimitType().IsSubclassOf(typeof(Extensible<BigInteger>))) {
-                        args[i] = MakeBigIntTest(args[0], new DynamicMetaObject(Ast.Property(args[i].Expression, args[i].GetLimitType().GetProperty("Value")), args[i].Restrictions));
-                    } else if (args[i].GetLimitType() == typeof(bool)) {
-                        args[i] = new DynamicMetaObject(
-                            Ast.Condition(args[i].Expression, AstUtils.Constant(1), AstUtils.Constant(0)),
-                            args[i].Restrictions
-                        );
-                    } else {
-                        // this type defines __index__, otherwise we'd have an ItemBuilder constructing a slice
-                        args[i] = MakeIntTest(args[0],
-                            new DynamicMetaObject(
-                                DynamicExpression.Dynamic(
-                                    binder.Convert(
-                                        typeof(int),
-                                        ConversionResultKind.ExplicitCast
-                                    ),
-                                    typeof(int),
-                                    DynamicExpression.Dynamic(
-                                        binder.InvokeNone,
-                                        typeof(object),
-                                        AstUtils.Constant(binder.SharedContext),
-                                        Binders.Get(
-                                            AstUtils.Constant(binder.SharedContext),
-                                            binder,
-                                            typeof(object),
-                                            "__index__",
-                                            Ast.Convert(
-                                                args[i].Expression,
-                                                typeof(object)
-                                            )
-                                        )
-                                    )
-                                ),
-                                args[i].Restrictions
-                            )
-                        );
-                    }
-                }
-
-                if (_lengthVar != null) {
-                    // we need the length which we should only calculate once, calculate and
-                    // store it in a temporary.  Note we only calculate the length if we'll
-                    DynamicMetaObject res = Callable.CompleteRuleTarget(metaBinder, args, null);
-
-                    return new DynamicMetaObject(
-                        Ast.Block(
-                            new ParameterExpression[] { _lengthVar },
-                            Ast.Assign(_lengthVar, AstUtils.Constant(null, _lengthVar.Type)),
-                            res.Expression
-                        ),
-                        res.Restrictions
-                    );
-                }
-
-                return Callable.CompleteRuleTarget(metaBinder, args, null);
-            }
-
-            private DynamicMetaObject/*!*/ MakeBigIntTest(DynamicMetaObject/*!*/ self, DynamicMetaObject/*!*/ bigInt) {
-                EnsureLengthVariable();
-
-                return new DynamicMetaObject(
-                    Ast.Call(
-                        typeof(PythonOps).GetMethod("NormalizeBigInteger"),
-                        self.Expression,
-                        bigInt.Expression,
-                        _lengthVar
-                    ),
-                    self.Restrictions.Merge(bigInt.Restrictions)
-                );
-            }
-
-            private DynamicMetaObject/*!*/ MakeIntTest(DynamicMetaObject/*!*/ self, DynamicMetaObject/*!*/ intVal) {
-                return new DynamicMetaObject(
-                    Ast.Condition(
-                        Ast.LessThan(intVal.Expression, AstUtils.Constant(0)),
-                        Ast.Add(intVal.Expression, MakeGetLength(self)),
-                        intVal.Expression
-                    ),
-                    self.Restrictions.Merge(intVal.Restrictions)
-                );
-            }
-
-            private Expression/*!*/ MakeGetLength(DynamicMetaObject /*!*/ self) {
-                EnsureLengthVariable();
-
-                return Ast.Call(
-                    typeof(PythonOps).GetMethod("GetLengthOnce"),
-                    self.Expression,
-                    _lengthVar
-                );
-            }
-
-            private void EnsureLengthVariable() {
-                if (_lengthVar == null) {
-                    _lengthVar = Ast.Variable(typeof(Nullable<int>), "objLength");
-                }
             }
         }
 
@@ -1963,27 +1789,24 @@ namespace IronPython.Runtime.Binding {
         }
 
         /// <summary>
-        /// Helper to get the symbols for __*item__ and __*slice__ based upon if we're doing
+        /// Helper to get the symbols for __*item__ based upon if we're doing
         /// a get/set/delete and the minimum number of arguments required for each of those.
         /// </summary>
-        private static void GetIndexOperators(PythonIndexType op, out string item, out string slice, out int mandatoryArgs) {
+        private static void GetIndexOperators(PythonIndexType op, out string item, out int mandatoryArgs) {
             switch (op) {
                 case PythonIndexType.GetItem:
                 case PythonIndexType.GetSlice:
                     item = "__getitem__";
-                    slice = "__getslice__";
                     mandatoryArgs = 2;
                     return;
                 case PythonIndexType.SetItem:
                 case PythonIndexType.SetSlice:
                     item = "__setitem__";
-                    slice = "__setslice__";
                     mandatoryArgs = 3;
                     return;
                 case PythonIndexType.DeleteItem:
                 case PythonIndexType.DeleteSlice:
                     item = "__delitem__";
-                    slice = "__delslice__";
                     mandatoryArgs = 2;
                     return;
             }

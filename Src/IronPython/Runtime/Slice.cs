@@ -119,54 +119,6 @@ namespace IronPython.Runtime {
         
         #region Internal Implementation details
 
-        internal static void FixSliceArguments(int size, ref int start, ref int stop) {
-            start = start < 0 ? 0 : start > size ? size : start;
-            stop = stop < 0 ? 0 : stop > size ? size : stop;
-        }
-
-        internal static void FixSliceArguments(long size, ref long start, ref long stop) {
-            start = start < 0 ? 0 : start > size ? size : start;
-            stop = stop < 0 ? 0 : stop > size ? size : stop;
-        }
-
-        /// <summary>
-        /// Gets the indices for the deprecated __getslice__, __setslice__, __delslice__ functions
-        /// 
-        /// This form is deprecated in favor of using __getitem__ w/ a slice object as an index.  This
-        /// form also has subtly different mechanisms for fixing the slice index before calling the function.
-        /// 
-        /// If an index is negative and __len__ is not defined on the object than an AttributeError
-        /// is raised.
-        /// </summary>
-        internal void DeprecatedFixed(object self, out int newStart, out int newStop) {
-            bool calcedLength = false;  // only call __len__ once, even if we need it twice
-            int length = 0;
-
-            if (_start != null) {
-                newStart = Converter.ConvertToIndex(_start);
-                if (newStart < 0) {
-                    calcedLength = true;
-                    length = PythonOps.Length(self);
-
-                    newStart += length;
-                }
-            } else {
-                newStart = 0;
-            }
-
-            if (_stop != null) {
-                newStop = Converter.ConvertToIndex(_stop);
-                if (newStop < 0) {
-                    if (!calcedLength) length = PythonOps.Length(self);
-
-                    newStop += length;
-                }
-            } else {
-                newStop = Int32.MaxValue;
-            }
-
-        }
-
         internal delegate void SliceAssign(int index, object value);
 
         internal void DoSliceAssign(SliceAssign assign, int size, object value) {

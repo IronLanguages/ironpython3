@@ -201,7 +201,7 @@ namespace IronPython.SQLite
             {
                 //TODO: see if there is a better way to do this
                 PythonBuffer buffer = (PythonBuffer)arg;
-                string s = buffer.__getslice__(0, null).ToString();
+                string s = buffer[new Slice(0, null)].ToString();
                 byte[] bytes = PythonSQLite.Latin1.GetBytes(s);
 
                 rc = Sqlite3.sqlite3_bind_blob(this.st, index, bytes, -1, Sqlite3.SQLITE_TRANSIENT);

@@ -149,26 +149,12 @@ namespace IronPython.Runtime {
             return new Slice(_offset, end);
         }
 
-        public object __getslice__(object start, object stop) {
-            return this[new Slice(start, stop)];
-        }
-
         private static Exception ReadOnlyError() {
             return PythonOps.TypeError("buffer is read-only");
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
-        public object __setslice__(object start, object stop, object value) {
-            throw ReadOnlyError();
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public void __delitem__(int index) {
-            throw ReadOnlyError();
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
-        public void __delslice__(object start, object stop) {
             throw ReadOnlyError();
         }
 

@@ -13,8 +13,8 @@ mono:
 solution: IronPython.sln
 
 before_install:
-  - mono Util/NuGet/nuget.exe install NUnit -verbosity detailed
-  - mono Util/NuGet/nuget.exe install NUnitLite -verbosity detailed
+  - mono Util/NuGet/nuget.exe install NUnit -version 3.5.0 
+  - mono Util/NuGet/nuget.exe install NUnitLite -version 3.5.0
 
 script:
   - git submodule update --init --recursive

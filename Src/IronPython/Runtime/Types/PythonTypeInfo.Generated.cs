@@ -70,7 +70,6 @@ namespace IronPython.Runtime.Types {
             pyOp["__ge__"] = PythonOperationKind.GreaterThanOrEqual;
             pyOp["__eq__"] = PythonOperationKind.Equal;
             pyOp["__ne__"] = PythonOperationKind.NotEqual;
-            pyOp["__lg__"] = PythonOperationKind.LessThanGreaterThan;
 
             // *** END GENERATED CODE ***
 

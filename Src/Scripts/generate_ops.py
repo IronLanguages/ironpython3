@@ -263,8 +263,7 @@ compares = [('<', 'lt', 'ge', 'LessThan', 'GreaterThan', "false", "true", "false
             ('<=', 'le', 'gt', 'LessThanOrEqual', 'GreaterThanOrEqual', "true", "true", "false"), 
             ('>=', 'ge', 'lt', 'GreaterThanOrEqual', 'LessThanOrEqual', "true", "false", "true"),
             ('==', 'eq', 'eq', 'Equals', 'NotEquals', 'a', 'a', 'a'), 
-            ('!=', 'ne', 'ne', 'NotEquals', 'Equals', 'a', 'a', 'a'), 
-            ('<>', 'lg', 'lg', 'LessThanGreaterThan', 'Equals', 'a', 'a', 'a')]
+            ('!=', 'ne', 'ne', 'NotEquals', 'Equals', 'a', 'a', 'a')]
 for sym, name, rname,clrName,opposite, bool1, bool2, bool3 in compares:
     ops.append(Operator(sym, name, rname,clrName, opposite=opposite, bool1=bool1, bool2=bool2, bool3=bool3))
 
@@ -439,7 +438,7 @@ def tokens_generator(cw):
     for op in ops:
         if not uc.unique(op): continue
 
-        if isinstance(op, Operator) and op.name != "lg":
+        if isinstance(op, Operator):
             creator = 'new OperatorToken(TokenKind.%s, "%s", %d)' % (
                 op.title_name(), op.symbol, op.prec)
         else:

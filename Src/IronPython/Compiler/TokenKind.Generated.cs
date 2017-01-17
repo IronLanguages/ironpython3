@@ -66,54 +66,53 @@ namespace IronPython.Compiler {
         GreaterThanOrEqual = 59,
         Equals = 60,
         NotEquals = 61,
-        LessThanGreaterThan = 62,
-        LeftParenthesis = 63,
-        RightParenthesis = 64,
-        LeftBracket = 65,
-        RightBracket = 66,
-        LeftBrace = 67,
-        RightBrace = 68,
-        Comma = 69,
-        Colon = 70,
-        Semicolon = 71,
-        Assign = 72,
-        Twiddle = 73,
-        At = 74,
-        RightArrow = 75,
+        LeftParenthesis = 62,
+        RightParenthesis = 63,
+        LeftBracket = 64,
+        RightBracket = 65,
+        LeftBrace = 66,
+        RightBrace = 67,
+        Comma = 68,
+        Colon = 69,
+        Semicolon = 70,
+        Assign = 71,
+        Twiddle = 72,
+        At = 73,
+        RightArrow = 74,
 
         FirstKeyword = KeywordAnd,
         LastKeyword = KeywordNonlocal,
-        KeywordAnd = 76,
-        KeywordAssert = 77,
-        KeywordBreak = 78,
-        KeywordClass = 79,
-        KeywordContinue = 80,
-        KeywordDef = 81,
-        KeywordDel = 82,
-        KeywordElseIf = 83,
-        KeywordElse = 84,
-        KeywordExcept = 85,
-        KeywordFinally = 86,
-        KeywordFor = 87,
-        KeywordFrom = 88,
-        KeywordGlobal = 89,
-        KeywordIf = 90,
-        KeywordImport = 91,
-        KeywordIn = 92,
-        KeywordIs = 93,
-        KeywordLambda = 94,
-        KeywordNot = 95,
-        KeywordOr = 96,
-        KeywordPass = 97,
-        KeywordRaise = 98,
-        KeywordReturn = 99,
-        KeywordTry = 100,
-        KeywordWhile = 101,
-        KeywordYield = 102,
-        KeywordAs = 103,
-        KeywordWith = 104,
-        KeywordAsync = 105,
-        KeywordNonlocal = 106,
+        KeywordAnd = 75,
+        KeywordAssert = 76,
+        KeywordBreak = 77,
+        KeywordClass = 78,
+        KeywordContinue = 79,
+        KeywordDef = 80,
+        KeywordDel = 81,
+        KeywordElseIf = 82,
+        KeywordElse = 83,
+        KeywordExcept = 84,
+        KeywordFinally = 85,
+        KeywordFor = 86,
+        KeywordFrom = 87,
+        KeywordGlobal = 88,
+        KeywordIf = 89,
+        KeywordImport = 90,
+        KeywordIn = 91,
+        KeywordIs = 92,
+        KeywordLambda = 93,
+        KeywordNot = 94,
+        KeywordOr = 95,
+        KeywordPass = 96,
+        KeywordRaise = 97,
+        KeywordReturn = 98,
+        KeywordTry = 99,
+        KeywordWhile = 100,
+        KeywordYield = 101,
+        KeywordAs = 102,
+        KeywordWith = 103,
+        KeywordAsync = 104,
+        KeywordNonlocal = 105,
 
         // *** END GENERATED CODE ***
 
@@ -178,7 +177,6 @@ namespace IronPython.Compiler {
         private static readonly Token symGreaterThanOrEqualToken = new OperatorToken(TokenKind.GreaterThanOrEqual, ">=", -1);
         private static readonly Token symEqualsToken = new OperatorToken(TokenKind.Equals, "==", -1);
         private static readonly Token symNotEqualsToken = new OperatorToken(TokenKind.NotEquals, "!=", -1);
-        private static readonly Token symLessThanGreaterThanToken = new SymbolToken(TokenKind.LessThanGreaterThan, "<>");
         private static readonly Token symLeftParenthesisToken = new SymbolToken(TokenKind.LeftParenthesis, "(");
         private static readonly Token symRightParenthesisToken = new SymbolToken(TokenKind.RightParenthesis, ")");
         private static readonly Token symLeftBracketToken = new SymbolToken(TokenKind.LeftBracket, "[");
@@ -311,10 +309,6 @@ namespace IronPython.Compiler {
 
         public static Token NotEqualsToken {
             get { return symNotEqualsToken; }
-        }
-
-        public static Token LessThanGreaterThanToken {
-            get { return symLessThanGreaterThanToken; }
         }
 
         public static Token LeftParenthesisToken {

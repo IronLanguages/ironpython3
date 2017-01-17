@@ -70,9 +70,6 @@ namespace IronPython.Compiler {
                     if (NextChar('=')) {
                         return Tokens.LessThanOrEqualToken;
                     }
-                    if (NextChar('>')) {
-                        return Tokens.LessThanGreaterThanToken;
-                    }
                     return Tokens.LessThanToken;
                 case '>':
                     if (NextChar('>')) {

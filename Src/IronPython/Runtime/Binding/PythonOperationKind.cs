@@ -142,8 +142,6 @@ namespace IronPython.Runtime.Binding {
         Equal = GreaterThanOrEqual + 1 | Comparison,
         ///<summary>Operator for performing ne</summary>
         NotEqual = Equal + 1 | Comparison,
-        ///<summary>Operator for performing lg</summary>
-        LessThanGreaterThan = NotEqual + 1 | Comparison,
 
 
         ///<summary>Operator for performing in-place add</summary>

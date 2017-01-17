@@ -68,8 +68,6 @@ data = [
     TypeData('BigInteger'),
     TypeData('Complex'),
     TypeData('Super'),
-    TypeData('OldClass'),
-    TypeData('OldInstance'),
     TypeData('DynamicNull', 'nullType', entryName='Null'),
     TypeData('Boolean', 'boolType'),
 	TypeData('PythonExceptions.BaseException', name='baseException', entryName = 'BaseException'),
@@ -80,7 +78,7 @@ data = [
 def gen_typecache_storage(cw):
     types = {}
     for x in data:
-        if(types.has_key(x.typeType)):
+        if(x.typeType in types):
             types[x.typeType].append(x)
         else:
             types[x.typeType] = [x]

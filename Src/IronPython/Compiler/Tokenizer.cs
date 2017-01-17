@@ -990,145 +990,10 @@ namespace IronPython.Compiler {
             int ch;
             BufferBack();
             ch = NextChar();
-            if (ch == 'i') {
-                ch = NextChar();
-                if (ch == 'n') {
-                    if (!IsNamePart(Peek())) {
-                        MarkTokenEnd();
-                        return Tokens.KeywordInToken;
-                    }
-                } else if (ch == 'm') {
-                    if (NextChar() == 'p' && NextChar() == 'o' && NextChar() == 'r' && NextChar() == 't' && !IsNamePart(Peek())) {
-                        MarkTokenEnd();
-                        return Tokens.KeywordImportToken;
-                    }
-                } else if (ch == 's') {
-                    if (!IsNamePart(Peek())) {
-                        MarkTokenEnd();
-                        return Tokens.KeywordIsToken;
-                    }
-                } else if (ch == 'f') {
-                    if (!IsNamePart(Peek())) {
-                        MarkTokenEnd();
-                        return Tokens.KeywordIfToken;
-                    }
-                }
-            } else if (ch == 'w') {
-                ch = NextChar();
-                if (ch == 'i') {
-                    if (NextChar() == 't' && NextChar() == 'h' && !IsNamePart(Peek())) {
-                        MarkTokenEnd();
-                        return Tokens.KeywordWithToken;
-                    }
-                } else if (ch == 'h') {
-                    if (NextChar() == 'i' && NextChar() == 'l' && NextChar() == 'e' && !IsNamePart(Peek())) {
-                        MarkTokenEnd();
-                        return Tokens.KeywordWhileToken;
-                    }
-                }
-            } else if (ch == 't') {
-                if (NextChar() == 'r' && NextChar() == 'y' && !IsNamePart(Peek())) {
+            if (ch == 'N') {
+                if (NextChar() == 'o' && NextChar() == 'n' && NextChar() == 'e' && !IsNamePart(Peek())) {
                     MarkTokenEnd();
-                    return Tokens.KeywordTryToken;
-                }
-            } else if (ch == 'r') {
-                ch = NextChar();
-                if (ch == 'e') {
-                    if (NextChar() == 't' && NextChar() == 'u' && NextChar() == 'r' && NextChar() == 'n' && !IsNamePart(Peek())) {
-                        MarkTokenEnd();
-                        return Tokens.KeywordReturnToken;
-                    }
-                } else if (ch == 'a') {
-                    if (NextChar() == 'i' && NextChar() == 's' && NextChar() == 'e' && !IsNamePart(Peek())) {
-                        MarkTokenEnd();
-                        return Tokens.KeywordRaiseToken;
-                    }
-                }
-            } else if (ch == 'p') {
-                if (NextChar() == 'a' && NextChar() == 's' && NextChar() == 's' && !IsNamePart(Peek())) {
-                    MarkTokenEnd();
-                    return Tokens.KeywordPassToken;
-                }
-            } else if (ch == 'g') {
-                if (NextChar() == 'l' && NextChar() == 'o' && NextChar() == 'b' && NextChar() == 'a' && NextChar() == 'l' && !IsNamePart(Peek())) {
-                    MarkTokenEnd();
-                    return Tokens.KeywordGlobalToken;
-                }
-            } else if (ch == 'f') {
-                ch = NextChar();
-                if (ch == 'r') {
-                    if (NextChar() == 'o' && NextChar() == 'm' && !IsNamePart(Peek())) {
-                        MarkTokenEnd();
-                        return Tokens.KeywordFromToken;
-                    }
-                } else if (ch == 'i') {
-                    if (NextChar() == 'n' && NextChar() == 'a' && NextChar() == 'l' && NextChar() == 'l' && NextChar() == 'y' && !IsNamePart(Peek())) {
-                        MarkTokenEnd();
-                        return Tokens.KeywordFinallyToken;
-                    }
-                } else if (ch == 'o') {
-                    if (NextChar() == 'r' && !IsNamePart(Peek())) {
-                        MarkTokenEnd();
-                        return Tokens.KeywordForToken;
-                    }
-                }
-            } else if (ch == 'e') {
-                ch = NextChar();
-                if (ch == 'x') {
-                    ch = NextChar();
-                    if (ch == 'c') {
-                        if (NextChar() == 'e' && NextChar() == 'p' && NextChar() == 't' && !IsNamePart(Peek())) {
-                            MarkTokenEnd();
-                            return Tokens.KeywordExceptToken;
-                        }
-                    }
-                } else if (ch == 'l') {
-                    ch = NextChar();
-                    if (ch == 's') {
-                        if (NextChar() == 'e' && !IsNamePart(Peek())) {
-                            MarkTokenEnd();
-                            return Tokens.KeywordElseToken;
-                        }
-                    } else if (ch == 'i') {
-                        if (NextChar() == 'f' && !IsNamePart(Peek())) {
-                            MarkTokenEnd();
-                            return Tokens.KeywordElseIfToken;
-                        }
-                    }
-                }
-            } else if (ch == 'd') {
-                ch = NextChar();
-                if (ch == 'e') {
-                    ch = NextChar();
-                    if (ch == 'l') {
-                        if (!IsNamePart(Peek())) {
-                            MarkTokenEnd();
-                            return Tokens.KeywordDelToken;
-                        }
-                    } else if (ch == 'f') {
-                        if (!IsNamePart(Peek())) {
-                            MarkTokenEnd();
-                            return Tokens.KeywordDefToken;
-                        }
-                    }
-                }
-            } else if (ch == 'c') {
-                ch = NextChar();
-                if (ch == 'l') {
-                    if (NextChar() == 'a' && NextChar() == 's' && NextChar() == 's' && !IsNamePart(Peek())) {
-                        MarkTokenEnd();
-                        return Tokens.KeywordClassToken;
-                    }
-                } else if (ch == 'o') {
-                    if (NextChar() == 'n' && NextChar() == 't' && NextChar() == 'i' && NextChar() == 'n' && NextChar() == 'u' && NextChar() == 'e' && !IsNamePart(Peek())) {
-                        MarkTokenEnd();
-                        return Tokens.KeywordContinueToken;
-                    }
-                }
-            } else if (ch == 'b') {
-                if (NextChar() == 'r' && NextChar() == 'e' && NextChar() == 'a' && NextChar() == 'k' && !IsNamePart(Peek())) {
-                    MarkTokenEnd();
-                    return Tokens.KeywordBreakToken;
+                    return Tokens.NoneToken;
                 }
             } else if (ch == 'a') {
                 ch = NextChar();
@@ -1143,46 +1008,185 @@ namespace IronPython.Compiler {
                         return Tokens.KeywordAsToken;
                     }
                     ch = NextChar();
-                    if (ch == 'y' && NextChar() == 'n' && NextChar() == 'c' && !IsNamePart(Peek())) {
-                        MarkTokenEnd();
-                        return Tokens.KeywordAsyncToken;
-                    }
-                    if (ch == 's' && NextChar() == 'e' && NextChar() == 'r' && NextChar() == 't' && !IsNamePart(Peek())) {
-                        MarkTokenEnd();
-                        return Tokens.KeywordAssertToken;
+                    if (ch == 's') {
+                        if (NextChar() == 'e' && NextChar() == 'r' && NextChar() == 't' && !IsNamePart(Peek())) {
+                            MarkTokenEnd();
+                            return Tokens.KeywordAssertToken;
+                        }
+                    } else if (ch == 'y') {
+                        if (NextChar() == 'n' && NextChar() == 'c' && !IsNamePart(Peek())) {
+                            MarkTokenEnd();
+                            return Tokens.KeywordAsyncToken;
+                        }
                     }
                 }
-            } else if (ch == 'y') {
-                if (NextChar() == 'i' && NextChar() == 'e' && NextChar() == 'l' && NextChar() == 'd' && !IsNamePart(Peek())) {
+            } else if (ch == 'b') {
+                if (NextChar() == 'r' && NextChar() == 'e' && NextChar() == 'a' && NextChar() == 'k' && !IsNamePart(Peek())) {
                     MarkTokenEnd();
-                    return Tokens.KeywordYieldToken;
+                    return Tokens.KeywordBreakToken;
+                }
+            } else if (ch == 'c') {
+                ch = NextChar();
+                if (ch == 'l') {
+                    if (NextChar() == 'a' && NextChar() == 's' && NextChar() == 's' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordClassToken;
+                    }
+                } else if (ch == 'o') {
+                    if (NextChar() == 'n' && NextChar() == 't' && NextChar() == 'i' && NextChar() == 'n' && NextChar() == 'u' && NextChar() == 'e' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordContinueToken;
+                    }
+                }
+            } else if (ch == 'd') {
+                ch = NextChar();
+                if (ch == 'e') {
+                    ch = NextChar();
+                    if (ch == 'f') {
+                        if (!IsNamePart(Peek())) {
+                            MarkTokenEnd();
+                            return Tokens.KeywordDefToken;
+                        }
+                    } else if (ch == 'l') {
+                        if (!IsNamePart(Peek())) {
+                            MarkTokenEnd();
+                            return Tokens.KeywordDelToken;
+                        }
+                    }
+                }
+            } else if (ch == 'e') {
+                ch = NextChar();
+                if (ch == 'l') {
+                    ch = NextChar();
+                    if (ch == 'i') {
+                        if (NextChar() == 'f' && !IsNamePart(Peek())) {
+                            MarkTokenEnd();
+                            return Tokens.KeywordElseIfToken;
+                        }
+                    } else if (ch == 's') {
+                        if (NextChar() == 'e' && !IsNamePart(Peek())) {
+                            MarkTokenEnd();
+                            return Tokens.KeywordElseToken;
+                        }
+                    }
+                } else if (ch == 'x') {
+                    if (NextChar() == 'c' && NextChar() == 'e' && NextChar() == 'p' && NextChar() == 't' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordExceptToken;
+                    }
+                }
+            } else if (ch == 'f') {
+                ch = NextChar();
+                if (ch == 'i') {
+                    if (NextChar() == 'n' && NextChar() == 'a' && NextChar() == 'l' && NextChar() == 'l' && NextChar() == 'y' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordFinallyToken;
+                    }
+                } else if (ch == 'o') {
+                    if (NextChar() == 'r' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordForToken;
+                    }
+                } else if (ch == 'r') {
+                    if (NextChar() == 'o' && NextChar() == 'm' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordFromToken;
+                    }
+                }
+            } else if (ch == 'g') {
+                if (NextChar() == 'l' && NextChar() == 'o' && NextChar() == 'b' && NextChar() == 'a' && NextChar() == 'l' && !IsNamePart(Peek())) {
+                    MarkTokenEnd();
+                    return Tokens.KeywordGlobalToken;
+                }
+            } else if (ch == 'i') {
+                ch = NextChar();
+                if (ch == 'f') {
+                    if (!IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordIfToken;
+                    }
+                } else if (ch == 'm') {
+                    if (NextChar() == 'p' && NextChar() == 'o' && NextChar() == 'r' && NextChar() == 't' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordImportToken;
+                    }
+                } else if (ch == 'n') {
+                    if (!IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordInToken;
+                    }
+                } else if (ch == 's') {
+                    if (!IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordIsToken;
+                    }
+                }
+            } else if (ch == 'l') {
+                if (NextChar() == 'a' && NextChar() == 'm' && NextChar() == 'b' && NextChar() == 'd' && NextChar() == 'a' && !IsNamePart(Peek())) {
+                    MarkTokenEnd();
+                    return Tokens.KeywordLambdaToken;
+                }
+            } else if (ch == 'n') {
+                ch = NextChar();
+                if (ch == 'o') {
+                    ch = NextChar();
+                    if (ch == 'n') {
+                        if (NextChar() == 'l' && NextChar() == 'o' && NextChar() == 'c' && NextChar() == 'a' && NextChar() == 'l' && !IsNamePart(Peek())) {
+                            MarkTokenEnd();
+                            return Tokens.KeywordNonlocalToken;
+                        }
+                    } else if (ch == 't') {
+                        if (!IsNamePart(Peek())) {
+                            MarkTokenEnd();
+                            return Tokens.KeywordNotToken;
+                        }
+                    }
                 }
             } else if (ch == 'o') {
                 if (NextChar() == 'r' && !IsNamePart(Peek())) {
                     MarkTokenEnd();
                     return Tokens.KeywordOrToken;
                 }
-            } else if (ch == 'n') {
-                if (NextChar() == 'o') {
-                    ch = NextChar();
-                    if (ch == 't' && !IsNamePart(Peek())) {
-                        MarkTokenEnd();
-                        return Tokens.KeywordNotToken;
-                    }
-                    if (ch == 'n' && NextChar() == 'l' && NextChar() == 'o' && NextChar() == 'c' && NextChar() == 'a' && NextChar() == 'l' && !IsNamePart(Peek())) {
-                        MarkTokenEnd();
-                        return Tokens.KeywordNonlocalToken;
-                    }                    
-                }                
-            } else if (ch == 'N') {
-                if (NextChar() == 'o' && NextChar() == 'n' && NextChar() == 'e' && !IsNamePart(Peek())) {
+            } else if (ch == 'p') {
+                if (NextChar() == 'a' && NextChar() == 's' && NextChar() == 's' && !IsNamePart(Peek())) {
                     MarkTokenEnd();
-                    return Tokens.NoneToken;
+                    return Tokens.KeywordPassToken;
                 }
-            } else if (ch == 'l') {
-                if (NextChar() == 'a' && NextChar() == 'm' && NextChar() == 'b' && NextChar() == 'd' && NextChar() == 'a' && !IsNamePart(Peek())) {
+            } else if (ch == 'r') {
+                ch = NextChar();
+                if (ch == 'a') {
+                    if (NextChar() == 'i' && NextChar() == 's' && NextChar() == 'e' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordRaiseToken;
+                    }
+                } else if (ch == 'e') {
+                    if (NextChar() == 't' && NextChar() == 'u' && NextChar() == 'r' && NextChar() == 'n' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordReturnToken;
+                    }
+                }
+            } else if (ch == 't') {
+                if (NextChar() == 'r' && NextChar() == 'y' && !IsNamePart(Peek())) {
                     MarkTokenEnd();
-                    return Tokens.KeywordLambdaToken;
+                    return Tokens.KeywordTryToken;
+                }
+            } else if (ch == 'w') {
+                ch = NextChar();
+                if (ch == 'h') {
+                    if (NextChar() == 'i' && NextChar() == 'l' && NextChar() == 'e' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordWhileToken;
+                    }
+                } else if (ch == 'i') {
+                    if (NextChar() == 't' && NextChar() == 'h' && !IsNamePart(Peek())) {
+                        MarkTokenEnd();
+                        return Tokens.KeywordWithToken;
+                    }
+                }
+            } else if (ch == 'y') {
+                if (NextChar() == 'i' && NextChar() == 'e' && NextChar() == 'l' && NextChar() == 'd' && !IsNamePart(Peek())) {
+                    MarkTokenEnd();
+                    return Tokens.KeywordYieldToken;
                 }
             }
 

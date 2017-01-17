@@ -241,7 +241,7 @@ def gen_setops(mutable):
 
 op_symbols = [ '|', '&', '^', '-' ]
 op_names = [ 'union', 'intersection', 'symmetric_difference', 'difference' ]
-op_upnames = [ 'update' ] + map(lambda x: x + '_update', op_names[1:])
+op_upnames = [ 'update' ] + [x + '_update' for x in op_names[1:]]
 op_clrnames = [ 'BitwiseOr', 'BitwiseAnd', 'ExclusiveOr', 'Subtract' ]
 
 def gen_op(cw, t_left, t_right, symbol, name):
@@ -257,7 +257,7 @@ def gen_ops(mutable):
     def _gen_ops(cw):
         t = get_type(mutable)
         u = get_type(not mutable)
-        ops = zip(op_symbols, op_names)
+        ops = list(zip(op_symbols, op_names))
         
         for symbol, name in ops:
             gen_op(cw, t, t, symbol, name)

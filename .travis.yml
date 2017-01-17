@@ -13,9 +13,8 @@ mono:
 solution: IronPython.sln
 
 before_install:
-  - curl https://api.nuget.org/downloads/nuget.exe -o nuget.exe
-  - mono nuget.exe install NUnit
-  - mono nuget.exe install NUnitLite
+  - mono Util/NuGet/nuget.exe install NUnit -version 3.5.0 
+  - mono Util/NuGet/nuget.exe install NUnitLite -version 3.5.0
 
 script:
   - git submodule update --init --recursive

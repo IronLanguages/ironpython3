@@ -14,13 +14,14 @@
 #####################################################################################
 
 from generate import generate
+import collections
 import operator
 
 # Add new keywords to the end of the list to preserve existing Enum values
 kwlist = [
-    'and', 'assert', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'exec',
+    'and', 'assert', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except',
     'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'not', 'or', 'pass',
-    'raise', 'return', 'try', 'while', 'yield', 'as', 'with'
+    'raise', 'return', 'try', 'while', 'yield', 'as', 'with', 'async', 'nonlocal'
 ]
 
 class Symbol:
@@ -244,7 +245,7 @@ ops = []
             # op,  pyname,   prec, .NET name, .NET op      op,    pyname,   prec, .NET name,  .NET op overload
 binaries = [('+',  'add',      4, 'Add',         True),   ('-',  'sub',    4, 'Subtract',   True), 
             ('**', 'pow',      6, 'Power',       False),  ('*',  'mul',    5, 'Multiply',   True),
-            ('//', 'floordiv', 5, 'FloorDivide', False),  ('/',  'div',    5, 'Divide',     True), 
+            ('//', 'floordiv', 5, 'FloorDivide', False),
             ('/',  'truediv',  5, 'TrueDivide',  False),  ('%',  'mod',    5, 'Mod',        True), 
             ('<<', 'lshift',   3, 'LeftShift',   False),   ('>>', 'rshift', 3, 'RightShift', False),
             ('&',  'and',      2, 'BitwiseAnd',  True),   ('|',  'or',     0, 'BitwiseOr',  True), 
@@ -272,7 +273,7 @@ for sym, rsym, name, fullName in groupings:
     ops.append(Grouping(sym, name, 'l', 'Left' + fullName))
     ops.append(Grouping(rsym, name, 'r', 'Right' + fullName))
 
-simple = [(',', 'comma'), (':', 'colon'), ('`', 'backquote', 'BackQuote'), (';', 'semicolon'),
+simple = [(',', 'comma'), (':', 'colon'), (';', 'semicolon'),
         ('=', 'assign'), ('~', 'twiddle'), ('@', 'at'), ('=>', 'rarrow', 'RightArrow')]
 for info in simple:
     if len(info) == 2:
@@ -286,7 +287,7 @@ for info in simple:
 start_symbols = {}
 for op in ops:
     ss = op.symbol[0]
-    if not start_symbols.has_key(ss): start_symbols[ss] = []
+    if ss not in start_symbols: start_symbols[ss] = []
     start_symbols[ss].append(op)
 
 
@@ -294,13 +295,13 @@ def gen_tests(ops, pos, indent=1):
     ret = []
 
     default_match = []
-    future_matches = {}
+    future_matches = collections.OrderedDict()
     for sop in ops:
         if len(sop.symbol) == pos:
             default_match.append(sop)
         elif len(sop.symbol) > pos:
             ch = sop.symbol[pos]
-            if future_matches.has_key(ch):
+            if ch in future_matches:
                 future_matches[ch].append(sop)
             else:
                 future_matches[ch] = [sop]
@@ -328,7 +329,7 @@ def tokenize_generator(cw):
     done = {}
     for op in ops:
         ch = op.symbol[0]
-        if done.has_key(ch): continue
+        if ch in done: continue
         sops = start_symbols[ch]
         cw.write("case '%s':" % ch)
         for t in gen_tests(sops, 1):
@@ -338,7 +339,7 @@ def tokenize_generator(cw):
 
 friendlyOverload = {'elif':"ElseIf"}
 def keywordToFriendly(kw):
-    if friendlyOverload.has_key(kw):
+    if kw in friendlyOverload:
         return friendlyOverload[kw]
     
     return kw.title()
@@ -380,7 +381,7 @@ def gen_mark_end(cw, keyword):
 
 def gen_token_tree(cw, tree, keyword):
     cw.write('ch = NextChar();')
-    for i, (k, (v, end)) in enumerate(tree.iteritems()):
+    for i, (k, (v, end)) in enumerate(tree.items()):
         if i == 0:
             cw.enter_block("if (ch == '%c')" % k)            
         else:
@@ -402,8 +403,8 @@ def gen_token_tree(cw, tree, keyword):
                     gen_mark_end(cw, keyword + k + ''.join(word))
                     break
                 elif len(cur_tree) == 1:
-                    word.append(cur_tree.keys()[0])
-                    cur_tree = cur_tree.values()[0][0]
+                    word.append(next(iter(cur_tree.keys())))
+                    cur_tree = next(iter(cur_tree.values()))[0]
                 else:
                     gen_token_tree(cw, v, keyword + k)
                     break
@@ -418,13 +419,13 @@ def keyword_lookup_generator(cw):
     keyword_list.append('None')
     keyword_list.sort()
     
-    tree = {}
+    tree = collections.OrderedDict()
     for kw in keyword_list:
         prev = cur = tree
         for letter in kw:
             val = cur.get(letter)
             if val is None:
-                val = cur[letter] = ({}, False)
+                val = cur[letter] = (collections.OrderedDict(), False)
                 
             prev = cur
             cur = val[0]
@@ -654,12 +655,11 @@ def main():
         ("Tokenize Ops", tokenize_generator),
         ("Token Kinds", tokenkinds_generator),
         ("Tokens", tokens_generator),
-        ("Table of Operators", gen_OperatorTable),
+        #("Table of Operators", gen_OperatorTable),
         ("PythonOperator Mapping", gen_operatorMapping),
         #("OperatorToSymbol", gen_OperatorToSymbol),
         ("StringOperatorToSymbol", gen_StringOperatorToSymbol),
         ("WeakRef Operators Initialization", weakref_operators),
-        ("OldInstance Operators", oldinstance_operators),
         #("Operator Reversal", operator_reversal),
         ("WeakRef Callable Proxy Operators Initialization", weakrefCallabelProxy_operators),
     )

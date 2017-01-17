@@ -44,7 +44,7 @@ def _gen_indexer(cw, name, n_types, isGeneric=False):
         cw.else_block()
     elif n_types > 0:
         cw.enter_block("switch (index / %sStaticFields)" % storage_prefix)
-        for i in xrange(n_types):
+        for i in range(n_types):
             cw.write("case %.3d: return typeof(%sStorage%.3d%s);" %
                      (i, name, i, "<T>" if isGeneric else ""))
         cw.write("")
@@ -106,9 +106,9 @@ def gen_static_storage(cw):
     
     def gen_storage(cw, type, name, n_types):
         cw.write("")
-        for i in xrange(n_types):
+        for i in range(n_types):
             cw.enter_block("public static class %sStorage%.3d" % (name, i))
-            for j in xrange(n_statics):
+            for j in range(n_statics):
                 cw.write("public static %s %s%.3d;" % (type, name, j))
             cw.exit_block()
     
@@ -126,10 +126,10 @@ def gen_site_storage(cw):
     cw.exit_block()
     
     # Generate SiteStorage000..NNN<T>
-    for i in xrange(n_site_types):
+    for i in range(n_site_types):
         cw.write("")
         cw.enter_block("public static class SiteStorage%.3d<T> where T : class" % i)
-        for j in xrange(n_statics):
+        for j in range(n_statics):
             cw.write("public static CallSite<T> Site%.3d;" % j)
         cw.exit_block()
 
@@ -141,7 +141,7 @@ def _list_type_args(n, transform=(lambda x: x)):
 
 def gen_dynamic(cw):
     def gen_main(n):
-        cw.enter_block("public override MSAst.Expression/*!*/ Dynamic("
+        cw.enter_block("public override MSAst.Expression/*!*/ ReduceDynamic("
                        "DynamicMetaObjectBinder/*!*/ binder, Type/*!*/ retType, %s)" %
                        _list_args(n, "MSAst.Expression/*!*/ "))
         if n <= 2:
@@ -156,7 +156,7 @@ def gen_dynamic(cw):
         cw.write("DelegateCache info;")
         cw.enter_block("lock (_delegateCache)")
         line = "info = DelegateCache.FirstCacheNode(arg0.Type)"
-        for i in xrange(1, n):
+        for i in range(1, n):
             line += ".NextCacheNode(arg%d.Type)" % i
         cw.write(line + '.NextCacheNode(retType);')
         cw.enter_block("if (info.DelegateType == null)")
@@ -179,7 +179,7 @@ def gen_dynamic(cw):
         if n >= 4:
             cw.write("var builder = new ReadOnlyCollectionBuilder<MSAst.Expression>(%s);" % (n + 1))
             cw.write("builder.Add(expr);")
-            for i in xrange(n):
+            for i in range(n):
                 cw.write("builder.Add(arg%s);" % i)
             cw.write("")
         cw.write("return new ReducableDynamicExpression(")
@@ -200,7 +200,7 @@ def gen_dynamic(cw):
         cw.write(");")
         cw.exit_block()
     
-    for n_args in xrange(1, max_dynamic_args + 1):
+    for n_args in range(1, max_dynamic_args + 1):
         gen_main(n_args)
         cw.write("")
         gen_helper(n_args)

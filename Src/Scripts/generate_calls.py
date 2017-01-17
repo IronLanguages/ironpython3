@@ -39,7 +39,7 @@ def make_calltarget_type_args(nargs):
 
 def gen_args_comma(nparams, comma):
     args = ""
-    for i in xrange(nparams):
+    for i in range(nparams):
         args = args + comma + ("object arg%d" % i)
         comma = ", "
     return args
@@ -50,7 +50,7 @@ def gen_args(nparams):
 def gen_args_call(nparams, *prefix):
     args = ""
     comma = ""
-    for i in xrange(nparams):
+    for i in range(nparams):
         args = args + comma +("arg%d" % i)
         comma = ", "
     if prefix:
@@ -68,7 +68,7 @@ def gen_args_array(nparams):
 def gen_callargs(nparams):
     args = ""
     comma = ""
-    for i in xrange(nparams):
+    for i in range(nparams):
         args = args + comma + ("callArgs[%d]" % i)
         comma = ","
     return args
@@ -76,7 +76,7 @@ def gen_callargs(nparams):
 def gen_args_paramscall(nparams):
     args = ""
     comma = ""
-    for i in xrange(nparams):
+    for i in range(nparams):
         args = args + comma + ("args[%d]" % i)
         comma = ","
     return args
@@ -120,12 +120,12 @@ class MethodBinding<%(typeParams)s> : BaseMethodBinding {
 def method_callers(cw):
     for nparams in range(1, MAX_ARGS-3):        
         cw.write(method_caller_template % {
-                  'typeParams' : ', '.join(('T%d' % d for d in xrange(nparams))),
-                  'callParams': ', '.join(('T%d arg%d' % (d,d) for d in xrange(nparams))),
-                  'callParamsSelfless': ', '.join(('T%d arg%d' % (d,d+1) for d in xrange(nparams))),
-                  'callArgsSelfless' : ', '.join(('arg%d' % (d+1) for d in xrange(nparams))),
+                  'typeParams' : ', '.join(('T%d' % d for d in range(nparams))),
+                  'callParams': ', '.join(('T%d arg%d' % (d,d) for d in range(nparams))),
+                  'callParamsSelfless': ', '.join(('T%d arg%d' % (d,d+1) for d in range(nparams))),
+                  'callArgsSelfless' : ', '.join(('arg%d' % (d+1) for d in range(nparams))),
                   'argCount' : nparams,
-                  'callArgs': ', '.join(('arg%d' % d for d in xrange(nparams))),
+                  'callArgs': ', '.join(('arg%d' % d for d in range(nparams))),
                   'genFuncArgs' : make_calltarget_type_args(nparams),
                  })
                  
@@ -143,7 +143,7 @@ public sealed class FunctionCaller<%(typeParams)s> : FunctionCaller {
     public object Call%(argCount)d(CallSite site, CodeContext context, object func, %(callParams)s) {
         PythonFunction pyfunc = func as PythonFunction;
         if (pyfunc != null && pyfunc._compat == _compat) {
-            return ((Func<%(genFuncArgs)s>)pyfunc.func_code.Target)(pyfunc, %(callArgs)s);
+            return ((Func<%(genFuncArgs)s>)pyfunc.__code__.Target)(pyfunc, %(callArgs)s);
         }
 
         return ((CallSite<Func<CallSite, CodeContext, object, %(typeParams)s, object>>)site).Update(site, context, func, %(callArgs)s);
@@ -154,7 +154,7 @@ defaults_template = """
         PythonFunction pyfunc = func as PythonFunction;
         if (pyfunc != null && pyfunc._compat == _compat) {
             int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount + %(argCount)d;
-            return ((Func<%(genFuncArgs)s>)pyfunc.func_code.Target)(pyfunc, %(callArgs)s, %(defaultArgs)s);
+            return ((Func<%(genFuncArgs)s>)pyfunc.__code__.Target)(pyfunc, %(callArgs)s, %(defaultArgs)s);
         }
 
         return ((CallSite<Func<CallSite, CodeContext, object, %(typeParams)s, object>>)site).Update(site, context, func, %(callArgs)s);
@@ -165,7 +165,7 @@ public object Default%(argCount)dCall0(CallSite site, CodeContext context, objec
     PythonFunction pyfunc = func as PythonFunction;
     if (pyfunc != null && pyfunc._compat == _compat) {
         int defaultIndex = pyfunc.Defaults.Length - pyfunc.NormalArgumentCount;
-        return ((Func<%(genFuncArgs)s>)pyfunc.func_code.Target)(pyfunc, %(defaultArgs)s);
+        return ((Func<%(genFuncArgs)s>)pyfunc.__code__.Target)(pyfunc, %(defaultArgs)s);
     }
 
     return ((CallSite<Func<CallSite, CodeContext, object, object>>)site).Update(site, context, func);
@@ -178,31 +178,31 @@ def function_callers(cw):
     cw.write('')
     for nparams in range(1, MAX_ARGS-2):        
         cw.write(function_caller_template % {
-                  'typeParams' : ', '.join(('T%d' % d for d in xrange(nparams))),
-                  'callParams': ', '.join(('T%d arg%d' % (d,d) for d in xrange(nparams))),
+                  'typeParams' : ', '.join(('T%d' % d for d in range(nparams))),
+                  'callParams': ', '.join(('T%d arg%d' % (d,d) for d in range(nparams))),
                   'argCount' : nparams,
-                  'callArgs': ', '.join(('arg%d' % d for d in xrange(nparams))),
+                  'callArgs': ', '.join(('arg%d' % d for d in range(nparams))),
                   'genFuncArgs' : make_calltarget_type_args(nparams),
                  })                    
                  
-        for i in xrange(nparams + 1, MAX_ARGS - 2):
+        for i in range(nparams + 1, MAX_ARGS - 2):
             cw.write(defaults_template % {
-                      'typeParams' : ', '.join(('T%d' % d for d in xrange(nparams))),
-                      'callParams': ', '.join(('T%d arg%d' % (d,d) for d in xrange(nparams))),
+                      'typeParams' : ', '.join(('T%d' % d for d in range(nparams))),
+                      'callParams': ', '.join(('T%d arg%d' % (d,d) for d in range(nparams))),
                       'argCount' : nparams,
                       'totalParamCount' : i,
-                      'callArgs': ', '.join(('arg%d' % d for d in xrange(nparams))),
+                      'callArgs': ', '.join(('arg%d' % d for d in range(nparams))),
                       'defaultCount' : i - nparams,
-                      'defaultArgs' : ', '.join(('pyfunc.Defaults[defaultIndex + %d]' % curDefault for curDefault in xrange(i - nparams))),
+                      'defaultArgs' : ', '.join(('pyfunc.Defaults[defaultIndex + %d]' % curDefault for curDefault in range(i - nparams))),
                       'genFuncArgs' : make_calltarget_type_args(i),
                      })                 
         cw.write('}')
 
 def function_callers_0(cw):
-    for i in xrange(1, MAX_ARGS - 2):
+    for i in range(1, MAX_ARGS - 2):
         cw.write(defaults_template_0 % {
                   'argCount' : i,
-                  'defaultArgs' : ', '.join(('pyfunc.Defaults[defaultIndex + %d]' % curDefault for curDefault in xrange(i))),
+                  'defaultArgs' : ', '.join(('pyfunc.Defaults[defaultIndex + %d]' % curDefault for curDefault in range(i))),
                   'genFuncArgs' : make_calltarget_type_args(i),
                  })                 
 
@@ -226,8 +226,8 @@ def function_caller_switch(cw):
 def gen_lazy_call_targets(cw):
     for nparams in range(MAX_ARGS):
         cw.enter_block("public static object OriginalCallTarget%d(%s)" % (nparams, make_params(nparams, "PythonFunction function")))
-        cw.write("function.func_code.LazyCompileFirstTarget(function);")
-        cw.write("return ((Func<%s>)function.func_code.Target)(%s);" % (make_calltarget_type_args(nparams), gen_args_call(nparams, 'function')))
+        cw.write("function.__code__.LazyCompileFirstTarget(function);")
+        cw.write("return ((Func<%s>)function.__code__.Target)(%s);" % (make_calltarget_type_args(nparams), gen_args_call(nparams, 'function')))
         cw.exit_block()
         cw.write('')
 
@@ -336,7 +336,7 @@ def gen_params_callN(cw, any):
     
     if any:
         cw.enter_block("switch (args.Length)")
-        for i in xrange(MAX_ARGS-1):
+        for i in range(MAX_ARGS-1):
                 if i == 0:
                     cw.write(("case %d: if(target2 != null) return target2(context, Instance); break;") % (i))
                 else:
@@ -438,14 +438,14 @@ class NewSite<%(typeParams)s> {
 """
 def gen_fast_type_callers(cw):
     for nparams in range(1, 6):       
-        funcParams = 'CallSite, CodeContext, object, ' + ', '.join(('T%d' % d for d in xrange(nparams))) + ', object'
-        newInitDlgParams = 'CodeContext, object, ' + ', '.join(('T%d' % d for d in xrange(nparams))) + ', object'
-        callTargetArgs = ', '.join(('T%d arg%d' % (d, d) for d in xrange(nparams)))
-        callTargetPassedArgs = ', '.join(('arg%d' % (d, ) for d in xrange(nparams)))
-        nestedSiteParams = 'CallSite, CodeContext, object, object, ' + ', '.join(('T%d' % d for d in xrange(nparams))) + ', object'
-        nestedSlowSiteParams = 'CallSite, CodeContext, object, ' + ', '.join(('T%d' % d for d in xrange(nparams))) + ', object'
+        funcParams = 'CallSite, CodeContext, object, ' + ', '.join(('T%d' % d for d in range(nparams))) + ', object'
+        newInitDlgParams = 'CodeContext, object, ' + ', '.join(('T%d' % d for d in range(nparams))) + ', object'
+        callTargetArgs = ', '.join(('T%d arg%d' % (d, d) for d in range(nparams)))
+        callTargetPassedArgs = ', '.join(('arg%d' % (d, ) for d in range(nparams)))
+        nestedSiteParams = 'CallSite, CodeContext, object, object, ' + ', '.join(('T%d' % d for d in range(nparams))) + ', object'
+        nestedSlowSiteParams = 'CallSite, CodeContext, object, ' + ', '.join(('T%d' % d for d in range(nparams))) + ', object'
         cw.write(fast_type_call_template % {
-                  'typeParams' : ', '.join(('T%d' % d for d in xrange(nparams))),
+                  'typeParams' : ', '.join(('T%d' % d for d in range(nparams))),
                   'funcParams' : funcParams,
                   'newInitDlgParams' : newInitDlgParams,
                   'callTargetArgs' : callTargetArgs,
@@ -494,10 +494,10 @@ class FastInitSite<%(typeParams)s> {
 MAX_FAST_INIT_ARGS = 6
 def gen_fast_init_callers(cw):
     for nparams in range(1, MAX_FAST_INIT_ARGS):       
-        callParams = ', '.join(('T%d arg%d' % (d, d) for d in xrange(nparams)))
-        callArgs = ', '.join(('arg%d' % (d, ) for d in xrange(nparams)))
+        callParams = ', '.join(('T%d arg%d' % (d, d) for d in range(nparams)))
+        callArgs = ', '.join(('arg%d' % (d, ) for d in range(nparams)))
         cw.write(fast_init_template % {
-                  'typeParams' : ', '.join(('T%d' % d for d in xrange(nparams))),
+                  'typeParams' : ', '.join(('T%d' % d for d in range(nparams))),
                   'callParams' : callParams,
                   'callArgs': callArgs,
                  })
@@ -511,21 +511,21 @@ def gen_fast_init_max_args(cw):
 
 MAX_INSTRUCTION_PROVIDED_CALLS = 7
 def gen_call_expression_instruction_switch(cw):
-    for i in xrange(MAX_INSTRUCTION_PROVIDED_CALLS):
+    for i in range(MAX_INSTRUCTION_PROVIDED_CALLS):
         cw.case_label('case %d:' % i)
         cw.write('compiler.Compile(Parent.LocalContext);')
         cw.write('compiler.Compile(_target);')
-        for j in xrange(i):
+        for j in range(i):
             cw.write('compiler.Compile(_args[%d].Expression);' % j)
         cw.write('compiler.Instructions.Emit(new Invoke%dInstruction(Parent.PyContext));' % i)        
         cw.write('return;')
         cw.dedent()
 
 def gen_call_expression_instructions(cw):
-    for i in xrange(MAX_INSTRUCTION_PROVIDED_CALLS):
+    for i in range(MAX_INSTRUCTION_PROVIDED_CALLS):
         siteargs = 'object, ' * (i + 1)
-        argfetch = '\n'.join(['        var arg%d = frame.Pop();' % (j-1) for j in xrange(i, 0, -1)])
-        callargs = ', '.join(['target'] + ['arg%d' % j for j in xrange(i)])
+        argfetch = '\n'.join(['        var arg%d = frame.Pop();' % (j-1) for j in range(i, 0, -1)])
+        callargs = ', '.join(['target'] + ['arg%d' % j for j in range(i)])
         cw.write("""
 class Invoke%(argcount)dInstruction : InvokeInstruction {
     private readonly CallSite<Func<CallSite, CodeContext, %(siteargs)sobject>> _site;
@@ -550,12 +550,12 @@ class Invoke%(argcount)dInstruction : InvokeInstruction {
 
 
 def gen_shared_call_sites_storage(cw):
-    for i in xrange(MAX_INSTRUCTION_PROVIDED_CALLS):
+    for i in range(MAX_INSTRUCTION_PROVIDED_CALLS):
         siteargs = 'object, ' * (i + 1)
         cw.writeline('private CallSite<Func<CallSite, CodeContext, %sobject>> _callSite%d;' % (siteargs, i))
 
 def gen_shared_call_sites_properties(cw):
-    for i in xrange(MAX_INSTRUCTION_PROVIDED_CALLS):
+    for i in range(MAX_INSTRUCTION_PROVIDED_CALLS):
         siteargs = 'object, ' * (i + 1)
         cw.enter_block('internal CallSite<Func<CallSite, CodeContext, %sobject>> CallSite%d' % (siteargs, i))
         cw.enter_block('get')

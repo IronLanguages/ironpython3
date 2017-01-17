@@ -34,25 +34,25 @@ namespace IronPython.Compiler {
                     }
                     return Tokens.SubtractToken;
                 case '*':
-                    if (NextChar('=')) {
-                        return Tokens.MultiplyEqualToken;
-                    }
                     if (NextChar('*')) {
                         if (NextChar('=')) {
                             return Tokens.PowerEqualToken;
                         }
                         return Tokens.PowerToken;
                     }
+                    if (NextChar('=')) {
+                        return Tokens.MultiplyEqualToken;
+                    }
                     return Tokens.MultiplyToken;
                 case '/':
-                    if (NextChar('=')) {
-                        return Tokens.TrueDivideEqualToken;
-                    }
                     if (NextChar('/')) {
                         if (NextChar('=')) {
                             return Tokens.FloorDivideEqualToken;
                         }
                         return Tokens.FloorDivideToken;
+                    }
+                    if (NextChar('=')) {
+                        return Tokens.TrueDivideEqualToken;
                     }
                     return Tokens.TrueDivideToken;
                 case '%':
@@ -61,17 +61,17 @@ namespace IronPython.Compiler {
                     }
                     return Tokens.ModToken;
                 case '<':
-                    if (NextChar('>')) {
-                        return Tokens.LessThanGreaterThanToken;
-                    }
-                    if (NextChar('=')) {
-                        return Tokens.LessThanOrEqualToken;
-                    }
                     if (NextChar('<')) {
                         if (NextChar('=')) {
                             return Tokens.LeftShiftEqualToken;
                         }
                         return Tokens.LeftShiftToken;
+                    }
+                    if (NextChar('=')) {
+                        return Tokens.LessThanOrEqualToken;
+                    }
+                    if (NextChar('>')) {
+                        return Tokens.LessThanGreaterThanToken;
                     }
                     return Tokens.LessThanToken;
                 case '>':
@@ -101,11 +101,11 @@ namespace IronPython.Compiler {
                     }
                     return Tokens.ExclusiveOrToken;
                 case '=':
-                    if (NextChar('>')) {
-                        return Tokens.RightArrowToken;
-                    }
                     if (NextChar('=')) {
                         return Tokens.EqualsToken;
+                    }
+                    if (NextChar('>')) {
+                        return Tokens.RightArrowToken;
                     }
                     return Tokens.AssignToken;
                 case '!':

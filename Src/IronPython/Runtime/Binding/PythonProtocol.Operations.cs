@@ -2081,7 +2081,6 @@ namespace IronPython.Runtime.Binding {
                 case PythonOperationKind.GreaterThanOrEqual: return ">=";
                 case PythonOperationKind.Equal: return "==";
                 case PythonOperationKind.NotEqual: return "!=";
-                case PythonOperationKind.LessThanGreaterThan: return "<>";
                 case PythonOperationKind.InPlaceAdd: return "+=";
                 case PythonOperationKind.InPlaceSubtract: return "-=";
                 case PythonOperationKind.InPlacePower: return "**=";

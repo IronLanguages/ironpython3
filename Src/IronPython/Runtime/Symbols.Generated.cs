@@ -70,7 +70,6 @@ namespace IronPython.Runtime {
                 case PythonOperationKind.GreaterThanOrEqual: return "__ge__";
                 case PythonOperationKind.Equal: return "__eq__";
                 case PythonOperationKind.NotEqual: return "__ne__";
-                case PythonOperationKind.LessThanGreaterThan: return "__lg__";
 
                 // *** END GENERATED CODE ***
 

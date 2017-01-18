@@ -1826,7 +1826,7 @@ namespace IronPython.Compiler {
             }
         }
         //comparison: expr (comp_op expr)*
-        //comp_op: '<'|'>'|'=='|'>='|'<='|'<>'|'!='|'in'|'not' 'in'|'is'|'is' 'not'
+        //comp_op: '<'|'>'|'=='|'>='|'<='|'!='|'in'|'not' 'in'|'is'|'is' 'not'
         private Expression ParseComparison() {
             Expression ret = ParseExpr();
             while (true) {
@@ -1838,7 +1838,6 @@ namespace IronPython.Compiler {
                     case TokenKind.GreaterThanOrEqual: NextToken(); op = PythonOperator.GreaterThanOrEqual; break;
                     case TokenKind.Equals: NextToken(); op = PythonOperator.Equal; break;
                     case TokenKind.NotEquals: NextToken(); op = PythonOperator.NotEqual; break;
-                    case TokenKind.LessThanGreaterThan: NextToken(); op = PythonOperator.NotEqual; break;
 
                     case TokenKind.KeywordIn: NextToken(); op = PythonOperator.In; break;
                     case TokenKind.KeywordNot: NextToken(); Eat(TokenKind.KeywordIn); op = PythonOperator.NotIn; break;

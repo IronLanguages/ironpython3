@@ -330,10 +330,6 @@ namespace IronPython.Runtime {
             _storage.Clear(ref _storage);
         }
 
-        public bool has_key(object key) {
-            return DictionaryOps.has_key(this, key);
-        }
-
         public object pop(object key) {
             return DictionaryOps.pop(this, key);
         }

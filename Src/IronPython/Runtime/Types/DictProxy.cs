@@ -40,16 +40,12 @@ namespace IronPython.Runtime.Types {
         }
 
         public bool __contains__(CodeContext/*!*/ context, object value) {
-            return has_key(context, value);
+            object dummy;
+            return TryGetValue(context, value, out dummy);
         }
 
         public string/*!*/ __str__(CodeContext/*!*/ context) {
             return DictionaryOps.__repr__(context, this);
-        }
-
-        public bool has_key(CodeContext/*!*/ context, object key) {
-            object dummy;
-            return TryGetValue(context, key, out dummy);
         }
 
         public object get(CodeContext/*!*/ context, [NotNull]object k, [DefaultParameterValue(null)]object d) {
@@ -119,7 +115,7 @@ namespace IronPython.Runtime.Types {
         }
 
         bool IDictionary.Contains(object key) {
-            return has_key(DefaultContext.Default, key);
+            return __contains__(DefaultContext.Default, key);
         }
 
         #endregion              
@@ -209,7 +205,7 @@ namespace IronPython.Runtime.Types {
         #region IDictionary<object,object> Members
 
         bool IDictionary<object, object>.ContainsKey(object key) {
-            return has_key(DefaultContext.Default, key);
+            return __contains__(DefaultContext.Default, key);
         }
 
         ICollection<object> IDictionary<object, object>.Keys {
@@ -241,7 +237,7 @@ namespace IronPython.Runtime.Types {
         }
 
         bool ICollection<KeyValuePair<object, object>>.Contains(KeyValuePair<object, object> item) {
-            return has_key(DefaultContext.Default, item.Key);
+            return __contains__(DefaultContext.Default, item.Key);
         }
 
         void ICollection<KeyValuePair<object, object>>.CopyTo(KeyValuePair<object, object>[] array, int arrayIndex) {

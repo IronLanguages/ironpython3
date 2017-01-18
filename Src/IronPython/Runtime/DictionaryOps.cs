@@ -81,10 +81,6 @@ namespace IronPython.Runtime {
             return defaultValue;
         }
 
-        public static bool has_key(IDictionary<object, object> self, object key) {
-            return self.ContainsKey(key);
-        }
-
         public static List items(IDictionary<object, object> self) {
             List ret = PythonOps.MakeEmptyList(self.Count);
             foreach (KeyValuePair<object, object> kv in self) {

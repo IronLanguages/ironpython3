@@ -555,22 +555,6 @@ namespace IronPython.Modules {
                 _data = newData;
             }
 
-            public object __getslice__(object start, object stop) {
-                return this[new Slice(start, stop)];
-            }
-
-            public void __setslice__(int start, int stop, object value) {
-                CheckSliceAssignType(value);
-
-                Slice.FixSliceArguments(_data.Length, ref start, ref stop);
-
-                SliceNoStep(value, start, stop);
-            }
-
-            public void __delslice__(object start, object stop) {
-                __delitem__(new Slice(start, stop));
-            }
-
             public PythonTuple __reduce__() {
                 return PythonOps.MakeTuple(
                     DynamicHelpers.GetPythonType(this),

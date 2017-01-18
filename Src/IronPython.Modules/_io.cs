@@ -532,12 +532,6 @@ namespace IronPython.Modules {
                 }
 
                 object setter;
-                if (PythonOps.TryGetBoundAttr(buf, "__setslice__", out setter)) {
-                    PythonOps.CallWithContext(context, setter, new Slice(data.Count), data);
-                    GC.KeepAlive(this);
-                    return data.Count;
-                }
-
                 if (PythonOps.TryGetBoundAttr(buf, "__setitem__", out setter)) {
                     for (int i = 0; i < data.Count; i++) {
                         PythonOps.CallWithContext(context, setter, i, data[context, i]);

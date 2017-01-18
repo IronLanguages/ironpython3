@@ -1054,10 +1054,6 @@ namespace IronPython.Modules {
                 }
             }
 
-            public object __getslice__(int start, int stop) {
-                return MakeTuple().__getslice__(start, stop);
-            }
-
             public int __len__() {
                 return MakeTuple().__len__();
             }

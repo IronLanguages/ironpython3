@@ -443,43 +443,11 @@ namespace IronPython.Runtime {
             return self.InPlaceMultiply(count);
         }
 
-        public virtual object __getslice__(int start, int stop) {
-            lock (this) {
-                Slice.FixSliceArguments(_size, ref start, ref stop);
-                
-                object[] ret = ArrayOps.GetSlice(_data, start, stop);
-                return new List(ret);
-            }            
-        }
-
         internal object[] GetSliceAsArray(int start, int stop) {
             if (start < 0) start = 0;
             if (stop > Count) stop = Count;
 
             lock (this) return ArrayOps.GetSlice(_data, start, stop);
-        }
-
-        public virtual void __setslice__(int start, int stop, object value) {
-            Slice.FixSliceArguments(_size, ref start, ref stop);
-
-            if (value is List) {
-                SliceNoStep(start, stop, (List)value);
-            } else {
-                SliceNoStep(start, stop, value);
-            }
-        }
-
-        public virtual void __delslice__(int start, int stop) {
-            lock (this) {
-                Slice.FixSliceArguments(_size, ref start, ref stop);
-                if (start > stop) return;
-
-                int i = start;
-                for (int j = stop; j < _size; j++, i++) {
-                    _data[i] = _data[j];
-                }
-                _size -= stop - start;
-            }
         }
 
         private static readonly object _boxedOne = ScriptingRuntimeHelpers.Int32ToObject(1);

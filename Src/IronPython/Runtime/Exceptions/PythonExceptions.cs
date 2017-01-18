@@ -206,13 +206,6 @@ namespace IronPython.Runtime.Exceptions {
                 }
             }
 
-            [Python3Warning("__getslice__ not supported for exception classes in 3.x; use args attribute")]
-            public PythonTuple/*!*/ __getslice__(int start, int stop) {
-                PythonTuple argTuple = (PythonTuple)args;
-                Slice.FixSliceArguments(argTuple._data.Length, ref start, ref stop);
-                return PythonTuple.MakeTuple(ArrayOps.GetSlice(argTuple._data, start, stop));
-            }
-
             /// <summary>
             /// Gets or sets the dictionary which is used for storing members not declared to have space reserved
             /// within the exception object.

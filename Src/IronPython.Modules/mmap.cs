@@ -274,13 +274,6 @@ namespace IronPython.Modules {
                 }
             }
 
-            
-            public void __delslice__(Slice slice) {
-                using (new MmapLocker(this)) {
-                    throw PythonOps.TypeError("mmap object doesn't support slice deletion");
-                }
-            }
-
             public void close() {
                 if (!_isClosed) {
                     lock (this) {

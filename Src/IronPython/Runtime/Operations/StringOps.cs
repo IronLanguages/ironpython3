@@ -160,10 +160,6 @@ namespace IronPython.Runtime.Operations {
             get { return StringOps.GetItem(Value, slice); }
         }
 
-        public object __getslice__(int start, int stop) {
-            return StringOps.__getslice__(Value, start, stop);
-        }
-
         #endregion
 
         #region IPythonContainer Members
@@ -470,14 +466,6 @@ namespace IronPython.Runtime.Operations {
                 return new string(newData);
             }
         }
-
-        public static string __getslice__(string self, int x, int y) {
-            Slice.FixSliceArguments(self.Length, ref x, ref y);
-            if (x >= y) return String.Empty;
-
-            return self.Substring(x, y - x);
-        }
-
         
         #endregion
 

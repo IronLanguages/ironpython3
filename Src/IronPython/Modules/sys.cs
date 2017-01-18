@@ -531,10 +531,6 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
                 }
             }
 
-            public object __getslice__(int start, int end) {
-                return _tuple.__getslice__(start, end);
-            }
-
             public object this[Slice s] {
                 get {
                     return _tuple[s];

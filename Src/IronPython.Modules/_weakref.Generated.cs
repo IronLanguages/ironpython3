@@ -70,16 +70,13 @@ namespace IronPython.Modules {
             #endregion
 
             //[SlotField] public static PythonTypeSlot __cmp__ = new SlotWrapper(Symbols.Cmp, ProxyType);
-            [SlotField] public static PythonTypeSlot __delslice__ = new SlotWrapper("__delslice__", ProxyType);
             [SlotField] public static PythonTypeSlot __divmod__ = new SlotWrapper("__divmod__", ProxyType);
             [SlotField] public static PythonTypeSlot __float__ = new SlotWrapper("__float__", ProxyType);
-            [SlotField] public static PythonTypeSlot __getslice__ = new SlotWrapper("__getslice__", ProxyType);
             [SlotField] public static PythonTypeSlot __index__ = new SlotWrapper("__index__", ProxyType);
             [SlotField] public static PythonTypeSlot __int__ = new SlotWrapper("__int__", ProxyType);
             [SlotField] public static PythonTypeSlot __iter__ = new SlotWrapper("__iter__", ProxyType);
             [SlotField] public static PythonTypeSlot __long__ = new SlotWrapper("__long__", ProxyType);
             [SlotField] public static PythonTypeSlot __rdivmod__ = new SlotWrapper("__rdivmod__", ProxyType);
-            [SlotField] public static PythonTypeSlot __setslice__ = new SlotWrapper("__setslice__", ProxyType);
             [SlotField] public static PythonTypeSlot next = new SlotWrapper("next", ProxyType);
 
             [SlotField] public static PythonTypeSlot __getitem__ = new SlotWrapper("__getitem__", ProxyType);
@@ -142,16 +139,13 @@ namespace IronPython.Modules {
             #endregion
 
             //[SlotField] public static PythonTypeSlot __cmp__ = new SlotWrapper(Symbols.Cmp, CallableProxyType);
-            [SlotField] public static PythonTypeSlot __delslice__ = new SlotWrapper("__delslice__", CallableProxyType);
             [SlotField] public static PythonTypeSlot __divmod__ = new SlotWrapper("__divmod__", CallableProxyType);
             [SlotField] public static PythonTypeSlot __float__ = new SlotWrapper("__float__", CallableProxyType);
-            [SlotField] public static PythonTypeSlot __getslice__ = new SlotWrapper("__getslice__", CallableProxyType);
             [SlotField] public static PythonTypeSlot __index__ = new SlotWrapper("__index__", CallableProxyType);
             [SlotField] public static PythonTypeSlot __int__ = new SlotWrapper("__int__", CallableProxyType);
             [SlotField] public static PythonTypeSlot __iter__ = new SlotWrapper("__iter__", CallableProxyType);
             [SlotField] public static PythonTypeSlot __long__ = new SlotWrapper("__long__", CallableProxyType);
             [SlotField] public static PythonTypeSlot __rdivmod__ = new SlotWrapper("__rdivmod__", CallableProxyType);
-            [SlotField] public static PythonTypeSlot __setslice__ = new SlotWrapper("__setslice__", CallableProxyType);
             [SlotField] public static PythonTypeSlot next = new SlotWrapper("next", CallableProxyType);
 
             [SlotField] public static PythonTypeSlot __getitem__ = new SlotWrapper("__getitem__", CallableProxyType);

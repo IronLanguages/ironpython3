@@ -206,6 +206,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
+        [Documentation("callable(object) -> bool\n\nReturn whether the object is callable (i.e., some kind of function).")]
+        public static bool callable(CodeContext/*!*/ context, object o) {
+            return PythonOps.IsCallable(context, o);
+        }
+
         [Documentation("chr(i) -> character\n\nReturn a string of one character with ordinal i; 0 <= i< 256.")]
         [LightThrowing]
         public static object chr(int value) {

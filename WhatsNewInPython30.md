@@ -44,16 +44,16 @@ New Syntax
 - [ ] Keyword arguments are allowed after the list of base classes in a class definition. This is used by the new convention for specifying a metaclass (see next section), but can be used for other purposes as well, as long as the metaclass supports it.
 - [ ] PEP 3104: nonlocal statement. Using nonlocal x you can now assign directly to a variable in an outer (but non-global) scope. nonlocal is a new reserved word.
 - [ ] PEP 3132: Extended Iterable Unpacking. You can now write things like a, b, *rest = some\_sequence. And even *rest, a = stuff. The rest object is always a (possibly empty) list; the right-hand side may be any iterable
-- [ ] Dictionary comprehensions: {k: v for k, v in stuff} means the same thing as dict(stuff) but is more flexible. (This is PEP 0274 vindicated. :-)
-- [ ] Set literals, e.g. {1, 2}. Note that {} is an empty dictionary; use set() for an empty set. Set comprehensions are also supported; e.g., {x for x in stuff} means the same thing as set(stuff) but is more flexible.
-- [ ] New octal literals, e.g. 0o720 (already in 2.6). The old octal literals (0720) are gone.
-- [ ] New binary literals, e.g. 0b1010 (already in 2.6), and there is a new corresponding builtin function, bin().
+- [x] Dictionary comprehensions: {k: v for k, v in stuff} means the same thing as dict(stuff) but is more flexible. (This is PEP 0274 vindicated. :-)
+- [x] Set literals, e.g. {1, 2}. Note that {} is an empty dictionary; use set() for an empty set. Set comprehensions are also supported; e.g., {x for x in stuff} means the same thing as set(stuff) but is more flexible.
+- [x] New octal literals, e.g. 0o720 (already in 2.6). The old octal literals (0720) are gone.
+- [x] New binary literals, e.g. 0b1010 (already in 2.6), and there is a new corresponding builtin function, bin().
 - [ ] Bytes literals are introduced with a leading b or B, and there is a new corresponding builtin function, bytes().
 
 Changed Syntax
 ==========
 - [ ] PEP 3109 and PEP 3134: new raise statement syntax: raise \[expr \[from expr\]\].
-- [ ] as and with are now reserved words. (Since 2.6, actually.)
+- [x] as and with are now reserved words. (Since 2.6, actually.)
 - [ ] True, False, and None are reserved words. (2.6 partially enforced the restrictions on None already.)
 - [ ] Change from except exc, var to except exc as var. See PEP 3110
 - [ ] PEP 3115: New Metaclass Syntax
@@ -62,20 +62,20 @@ Changed Syntax
 
 Removed Syntax
 ===========
-- [ ] PEP 3113: Tuple parameter unpacking removed. You can no longer write def foo(a, (b, c)): .... Use def foo(a, b\_c): b, c = b\_c instead.
-- [ ] Removed backticks (use repr() instead).
-- [ ] Removed <> (use != instead).
-- [ ] Removed keyword: exec() is no longer a keyword; it remains as a function
-- [ ] Integer literals no longer support a trailing l or L.
+- [x] PEP 3113: Tuple parameter unpacking removed. You can no longer write def foo(a, (b, c)): .... Use def foo(a, b\_c): b, c = b\_c instead.
+- [x] Removed backticks (use repr() instead).
+- [x] Removed <> (use != instead).
+- [x] Removed keyword: exec() is no longer a keyword; it remains as a function
+- [x] Integer literals no longer support a trailing l or L.
 - [ ] String literals no longer support a leading u or U.
 - [ ] The from module import * syntax is only allowed at the module level, no longer inside functions.
 - [ ] The only acceptable syntax for relative imports is from .[module] import name. All import forms not starting with . are interpreted as absolute imports. (PEP 0328)
-- [ ] Classic classes are gone.
+- [x] Classic classes are gone.
 
 Library Changes
 ==========
-- [ ] \_winreg renamed to winreg
-- [ ] copy\_reg renamed to copyreg
+- [x] \_winreg renamed to winreg
+- [x] copy\_reg renamed to copyreg
 - [ ] Cleanup of the sys module: removed sys.exitfunc(), sys.exc\_clear(), sys.exc\_type, sys.exc\_value, sys.exc\_traceback.
 - [ ] Cleanup of the array.array type: the read() and write() methods are gone; use fromfile() and tofile() instead. Also, the 'c' typecode for array is gone – use either 'b' for bytes or 'u' for Unicode characters.
 - [ ] Cleanup of the operator module: removed sequenceIncludes() and isCallable().
@@ -86,7 +86,7 @@ Library Changes
 
 PEP 3101: A New Approach To String Formatting
 ======================
-- [ ] A new system for built-in string formatting operations replaces the % string formatting operator. (However, the % operator is still supported; it will be deprecated in Python 3.1 and removed from the language at some later time.) Read PEP 3101 for the full scoop.
+- [x] A new system for built-in string formatting operations replaces the % string formatting operator. (However, the % operator is still supported; it will be deprecated in Python 3.1 and removed from the language at some later time.) Read PEP 3101 for the full scoop.
 
 Changes To Exceptions
 ===========
@@ -108,10 +108,10 @@ Operators And Special Methods
 - [ ] The concept of “unbound methods” has been removed from the language. When referencing a method as a class attribute, you now get a plain function object.
 - [x] \_\_getslice\_\_(), \_\_setslice\_\_() and \_\_delslice\_\_() were killed. The syntax a[i:j] now translates to a.\_\_getitem\_\_(slice(i, j)) (or \_\_setitem\_\_() or \_\_delitem\_\_(), when used as an assignment or deletion target, respectively).
 - [ ] PEP 3114: the standard next() method has been renamed to \_\_next\_\_().
-- [ ] The \_\_oct\_\_() and \_\_hex\_\_() special methods are removed – oct() and hex() use \_\_index\_\_() now to convert the argument to an integer.
+- [x] The \_\_oct\_\_() and \_\_hex\_\_() special methods are removed – oct() and hex() use \_\_index\_\_() now to convert the argument to an integer.
 - [ ] Removed support for \_\_members\_\_ and \_\_methods\_\_.
-- [ ] The function attributes named func\_X have been renamed to use the \_\_X\_\_ form, freeing up these names in the function attribute namespace for user-defined attributes. To wit, func\_closure, func\_code, func\_defaults, func\_dict, func\_doc, func\_globals, func\_name were renamed to \_\_closure\_\_, \_\_code\_\_, \_\_defaults\_\_, \_\_dict\_\_, \_\_doc\_\_, \_\_globals\_\_, \_\_name\_\_, respectively.
-- [ ] \_\_nonzero\_\_() is now \_\_bool\_\_().
+- [x] The function attributes named func\_X have been renamed to use the \_\_X\_\_ form, freeing up these names in the function attribute namespace for user-defined attributes. To wit, func\_closure, func\_code, func\_defaults, func\_dict, func\_doc, func\_globals, func\_name were renamed to \_\_closure\_\_, \_\_code\_\_, \_\_defaults\_\_, \_\_dict\_\_, \_\_doc\_\_, \_\_globals\_\_, \_\_name\_\_, respectively.
+- [x] \_\_nonzero\_\_() is now \_\_bool\_\_().
 
 Builtins
 =====

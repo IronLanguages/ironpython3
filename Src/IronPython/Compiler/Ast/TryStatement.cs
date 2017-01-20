@@ -289,13 +289,18 @@ namespace IronPython.Compiler.Ast {
 
                     if (tsh.Target != null) {
                         //  translating:
-                        //      except Test, Target:
+                        //      except Test as Target:
                         //          <body>
                         //  into:
                         //      if ((converted = CheckException(exception, Test)) != null) {
-                        //          Target = converted;
-                        //          traceback-header
-                        //          <body>
+                        //          try {
+                        //              Target = converted;
+                        //              traceback-header
+                        //              <body>
+                        //          }
+                        //          finally {
+                        //              del Target
+                        //          }
                         //      }
 
                         if (converted == null) {
@@ -307,17 +312,20 @@ namespace IronPython.Compiler.Ast {
                                 Ast.Assign(converted, test),
                                 AstUtils.Constant(null)
                             ),
-                            Ast.Block(
-                                tsh.Target.TransformSet(SourceSpan.None, converted, PythonOperationKind.None),
-                                GlobalParent.AddDebugInfo(
-                                    GetTracebackHeader(
-                                        this, 
-                                        exception,
-                                        tsh.Body
+                            Ast.TryFinally(
+                                Ast.Block(
+                                    tsh.Target.TransformSet(SourceSpan.None, converted, PythonOperationKind.None),
+                                    GlobalParent.AddDebugInfo(
+                                        GetTracebackHeader(
+                                            this,
+                                            exception,
+                                            tsh.Body
+                                        ),
+                                        new SourceSpan(GlobalParent.IndexToLocation(tsh.StartIndex), GlobalParent.IndexToLocation(tsh.HeaderIndex))
                                     ),
-                                    new SourceSpan(GlobalParent.IndexToLocation(tsh.StartIndex), GlobalParent.IndexToLocation(tsh.HeaderIndex))
+                                    AstUtils.Empty()
                                 ),
-                                AstUtils.Empty()
+                                tsh.Target.TransformDelete()
                             )
                         );
                     } else {

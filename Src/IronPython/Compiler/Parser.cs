@@ -1670,8 +1670,7 @@ namespace IronPython.Compiler {
             }
         }
 
-        //except_clause: 'except' [expression [',' expression]]
-        //2.6: except_clause: 'except' [expression [(',' or 'as') expression]]
+        // except_clause: 'except' [expression ['as' identifier]]
         private TryStatementHandler ParseTryStmtHandler() {
             Eat(TokenKind.KeywordExcept);
 
@@ -1682,16 +1681,17 @@ namespace IronPython.Compiler {
             }
 
             var start = GetStart();
-            Expression test1 = null, test2 = null;
+            Expression test = null, target = null;
             if (PeekToken().Kind != TokenKind.Colon) {
-                test1 = ParseExpression();
-                if (MaybeEat(TokenKind.Comma) || MaybeEat(TokenKind.KeywordAs)) {
-                    test2 = ParseExpression();
+                test = ParseExpression();
+                if (MaybeEat(TokenKind.KeywordAs)) {
+                    string name = ReadName();
+                    target = new NameExpression(FixName(name));
                 }
             }
             var mid = GetEnd();
             Statement body = ParseSuite();
-            TryStatementHandler ret = new TryStatementHandler(test1, test2, body);
+            TryStatementHandler ret = new TryStatementHandler(test, target, body);
             ret.HeaderIndex = mid;
             ret.SetLoc(_globalParent, start, body.EndIndex);
             return ret;

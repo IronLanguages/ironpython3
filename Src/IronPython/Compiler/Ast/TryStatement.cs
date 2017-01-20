@@ -325,7 +325,10 @@ namespace IronPython.Compiler.Ast {
                                     ),
                                     AstUtils.Empty()
                                 ),
-                                tsh.Target.TransformDelete()
+                                Ast.Block(
+                                    tsh.Target.TransformSet(SourceSpan.None, AstUtils.Constant(null), PythonOperationKind.None),
+                                    tsh.Target.TransformDelete()
+                                )
                             )
                         );
                     } else {

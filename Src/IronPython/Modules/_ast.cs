@@ -1343,18 +1343,20 @@ namespace IronPython.Modules
         {
             private string _name;
             private PythonList _bases;
+            private PythonList _keywords;
             private PythonList _body;
             private PythonList _decorator_list;
 
             public ClassDef() {
-                _fields = new PythonTuple(new[] { "name", "bases", "body", "decorator_list" });
+                _fields = new PythonTuple(new[] { "name", "bases", "keywords", "body", "decorator_list" });
             }
 
-            public ClassDef(string name, PythonList bases, PythonList body, PythonList decorator_list,
+            public ClassDef(string name, PythonList bases, PythonList keywords, PythonList body, PythonList decorator_list,
                 [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 _name = name;
                 _bases = bases;
+                _keywords = keywords;
                 _body = body;
                 _decorator_list = decorator_list;
                 _lineno = lineno;
@@ -1378,7 +1380,7 @@ namespace IronPython.Modules
             }
 
             internal override Statement Revert() {
-                ClassDefinition cd = new ClassDefinition(name, expr.RevertExprs(bases), RevertStmts(body));
+                ClassDefinition cd = new ClassDefinition(name, expr.RevertExprs(bases), expr.RevertExprs(keywords), RevertStmts(body));
                 if (decorator_list.Count != 0) 
                     cd.Decorators = expr.RevertExprs(decorator_list);
                 return cd;
@@ -1392,6 +1394,11 @@ namespace IronPython.Modules
             public PythonList bases {
                 get { return _bases; }
                 set { _bases = value; }
+            }
+
+            public PythonList keywords {
+                get { return _keywords; }
+                set { _keywords = value; }
             }
 
             public PythonList body {

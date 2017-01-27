@@ -1,3 +1,7 @@
+# What's New In Python 3.0
+
+https://docs.python.org/3/whatsnew/3.0.html
+
 Views And Iterators Instead Of Lists
 =======================
 - [ ] dict methods dict.keys(), dict.items() and dict.values() return "views" instead of lists. For example, this no longer works: k = d.keys(); k.sort(). Use k = sorted(d) instead (this works in Python 2.5 too and is just as efficient).

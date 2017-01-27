@@ -1,22 +1,22 @@
 Views And Iterators Instead Of Lists
 =======================
-- [ ] dict methods dict.keys(), dict.items() and dict.values() return �views� instead of lists. For example, this no longer works: k = d.keys(); k.sort(). Use k = sorted(d) instead (this works in Python 2.5 too and is just as efficient).
+- [ ] dict methods dict.keys(), dict.items() and dict.values() return "views" instead of lists. For example, this no longer works: k = d.keys(); k.sort(). Use k = sorted(d) instead (this works in Python 2.5 too and is just as efficient).
 - [ ] Also, the dict.iterkeys(), dict.iteritems() and dict.itervalues() methods are no longer supported.
-- [x] map() and filter() return iterators. If you really need a list, a quick fix is e.g. list(map(...)), but a better fix is often to use a list comprehension (especially when the original code uses lambda), or rewriting the code so it doesn�t need a list at all. Particularly tricky is map() invoked for the side effects of the function; the correct transformation is to use a regular for loop (since creating a list would just be wasteful).
+- [x] map() and filter() return iterators. If you really need a list, a quick fix is e.g. list(map(...)), but a better fix is often to use a list comprehension (especially when the original code uses lambda), or rewriting the code so it doesn't need a list at all. Particularly tricky is map() invoked for the side effects of the function; the correct transformation is to use a regular for loop (since creating a list would just be wasteful).
 - [x] zip() now returns an iterator.
 
 Ordering Comparisons
 ==============
-- [ ] The ordering comparison operators (<, <=, >=, >) raise a TypeError exception when the operands don�t have a meaningful natural ordering. Thus, expressions like 1 < '', 0 > None or len <= len are no longer valid, and e.g. None < None raises TypeError instead of returning False. A corollary is that sorting a heterogeneous list no longer makes sense � all the elements must be comparable to each other. Note that this does not apply to the == and != operators: objects of different incomparable types always compare unequal to each other.
-- [ ] builtin.sorted() and list.sort() no longer accept the cmp argument providing a comparison function. Use the key argument instead. N.B. the key and reverse arguments are now �keyword-only�
+- [ ] The ordering comparison operators (<, <=, >=, >) raise a TypeError exception when the operands don't have a meaningful natural ordering. Thus, expressions like 1 < '', 0 > None or len <= len are no longer valid, and e.g. None < None raises TypeError instead of returning False. A corollary is that sorting a heterogeneous list no longer makes sense - all the elements must be comparable to each other. Note that this does not apply to the == and != operators: objects of different incomparable types always compare unequal to each other.
+- [ ] builtin.sorted() and list.sort() no longer accept the cmp argument providing a comparison function. Use the key argument instead. N.B. the key and reverse arguments are now "keyword-only"
 - [ ] The cmp() function should be treated as gone, and the \_\_cmp\_\_() special method is no longer supported. Use \_\_lt\_\_() for sorting, \_\_eq\_\_() with \_\_hash\_\_(), and other rich comparisons as needed. (If you really need the cmp() functionality, you could use the expression (a > b) - (a < b) as the equivalent for cmp(a, b).)
 
 Integers
 =====
 - [ ] PEP 0237: Essentially, long renamed to int. That is, there is only one built-in integral type, named int; but it behaves mostly like the old long type.
 - [x] PEP 0238: An expression like 1/2 returns a float. Use 1//2 to get the truncating behavior. (The latter syntax has existed for years, at least since Python 2.2.)
-- [ ] The sys.maxint constant was removed, since there is no longer a limit to the value of integers. However, sys.maxsize can be used as an integer larger than any practical list or string index. It conforms to the implementation�s �natural� integer size and is typically the same as sys.maxint in previous releases on the same platform (assuming the same build options).
-- [ ] The repr() of a long integer doesn�t include the trailing L anymore, so code that unconditionally strips that character will chop off the last digit instead. (Use str() instead.)
+- [ ] The sys.maxint constant was removed, since there is no longer a limit to the value of integers. However, sys.maxsize can be used as an integer larger than any practical list or string index. It conforms to the implementation's "natural" integer size and is typically the same as sys.maxint in previous releases on the same platform (assuming the same build options).
+- [x] The repr() of a long integer doesn't include the trailing L anymore, so code that unconditionally strips that character will chop off the last digit instead. (Use str() instead.)
 - [x] Octal literals are no longer of the form 0720; use 0o720 instead.
 
 Text Vs. Data Instead Of Unicode Vs. 8-bit
@@ -26,8 +26,8 @@ Text Vs. Data Instead Of Unicode Vs. 8-bit
 - [ ] You can no longer use u"..." literals for Unicode text. However, you must use b"..." literals for binary data.
 - [ ] As the str and bytes types cannot be mixed, you must always explicitly convert between them. Use str.encode() to go from str to bytes, and bytes.decode() to go from bytes to str. You can also use bytes(s, encoding=...) and str(b, encoding=...), respectively.
 - [ ] Like str, the bytes type is immutable. There is a separate mutable type to hold buffered binary data, bytearray. Nearly all APIs that accept bytes also accept bytearray. The mutable API is based on collections.MutableSequence.
-- [ ] All backslashes in raw string literals are interpreted literally. This means that '\U' and '\u' escapes in raw strings are not treated specially. For example, r'\u20ac' is a string of 6 characters in Python 3.0, whereas in 2.6, ur'\u20ac' was the single �euro� character. (Of course, this change only affects raw string literals; the euro character is '\u20ac' in Python 3.0.)
-- [x] The builtin basestring abstract type was removed. Use str instead. The str and bytes types don�t have functionality enough in common to warrant a shared base class. The 2to3 tool (see below) replaces every occurrence of basestring with str.
+- [ ] All backslashes in raw string literals are interpreted literally. This means that '\U' and '\u' escapes in raw strings are not treated specially. For example, r'\u20ac' is a string of 6 characters in Python 3.0, whereas in 2.6, ur'\u20ac' was the single "euro" character. (Of course, this change only affects raw string literals; the euro character is '\u20ac' in Python 3.0.)
+- [x] The builtin basestring abstract type was removed. Use str instead. The str and bytes types don't have functionality enough in common to warrant a shared base class. The 2to3 tool (see below) replaces every occurrence of basestring with str.
 - [ ] Files opened as text files (still the default mode for open()) always use an encoding to map between strings (in memory) and bytes (on disk). Binary files (opened with a b in the mode argument) always use bytes in memory. This means that if a file is opened using an incorrect mode or encoding, I/O will likely fail loudly, instead of silently producing incorrect data. It also means that even Unix users will have to specify the correct mode (text or binary) when opening a file. There is a platform-dependent default encoding, which on Unixy platforms can be set with the LANG environment variable (and sometimes also with some other platform-specific locale-related environment variables). In many cases, but not all, the system default is UTF-8; you should never count on this default. Any application reading or writing more than pure ASCII text should probably have a way to override the encoding. There is no longer any need for using the encoding-aware streams in the codecs module.
 - [ ] Filenames are passed to and returned from APIs as (Unicode) strings. This can present platform-specific problems because on some platforms filenames are arbitrary byte strings. (On the other hand, on Windows filenames are natively stored as Unicode.) As a work-around, most APIs (e.g. open() and many functions in the os module) that take filenames accept bytes objects as well as strings, and a few APIs have a way to ask for a bytes return value. Thus, os.listdir() returns a list of bytes instances if the argument is a bytes instance, and os.getcwdb() returns the current working directory as a bytes instance. Note that when os.listdir() returns a list of strings, filenames that cannot be decoded properly are omitted rather than raising UnicodeError.
 - [ ] Some system APIs like os.environ and sys.argv can also present problems when the bytes made available by the system is not interpretable using the default encoding. Setting the LANG variable and rerunning the program is probably the best approach.
@@ -39,8 +39,8 @@ Text Vs. Data Instead Of Unicode Vs. 8-bit
 
 New Syntax
 ========
-- [ ] PEP 3107: Function argument and return value annotations. This provides a standardized way of annotating a function�s parameters and return value. There are no semantics attached to such annotations except that they can be introspected at runtime using the \_\_annotations\_\_ attribute. The intent is to encourage experimentation through metaclasses, decorators or frameworks.
-- [ ] PEP 3102: Keyword-only arguments. Named parameters occurring after *args in the parameter list must be specified using keyword syntax in the call. You can also use a bare * in the parameter list to indicate that you don�t accept a variable-length argument list, but you do have keyword-only arguments.
+- [ ] PEP 3107: Function argument and return value annotations. This provides a standardized way of annotating a function's parameters and return value. There are no semantics attached to such annotations except that they can be introspected at runtime using the \_\_annotations\_\_ attribute. The intent is to encourage experimentation through metaclasses, decorators or frameworks.
+- [ ] PEP 3102: Keyword-only arguments. Named parameters occurring after *args in the parameter list must be specified using keyword syntax in the call. You can also use a bare * in the parameter list to indicate that you don't accept a variable-length argument list, but you do have keyword-only arguments.
 - [ ] Keyword arguments are allowed after the list of base classes in a class definition. This is used by the new convention for specifying a metaclass (see next section), but can be used for other purposes as well, as long as the metaclass supports it.
 - [ ] PEP 3104: nonlocal statement. Using nonlocal x you can now assign directly to a variable in an outer (but non-global) scope. nonlocal is a new reserved word.
 - [ ] PEP 3132: Extended Iterable Unpacking. You can now write things like a, b, *rest = some\_sequence. And even *rest, a = stuff. The rest object is always a (possibly empty) list; the right-hand side may be any iterable
@@ -77,12 +77,12 @@ Library Changes
 - [x] \_winreg renamed to winreg
 - [x] copy\_reg renamed to copyreg
 - [ ] Cleanup of the sys module: removed sys.exitfunc(), sys.exc\_clear(), sys.exc\_type, sys.exc\_value, sys.exc\_traceback.
-- [ ] Cleanup of the array.array type: the read() and write() methods are gone; use fromfile() and tofile() instead. Also, the 'c' typecode for array is gone � use either 'b' for bytes or 'u' for Unicode characters.
+- [ ] Cleanup of the array.array type: the read() and write() methods are gone; use fromfile() and tofile() instead. Also, the 'c' typecode for array is gone - use either 'b' for bytes or 'u' for Unicode characters.
 - [ ] Cleanup of the operator module: removed sequenceIncludes() and isCallable().
 - [ ] Cleanup of the thread module: acquire\_lock() and release\_lock() are gone; use acquire() and release() instead.
 - [x] Cleanup of the random module: removed the jumpahead() API.
 - [ ] The functions os.tmpnam(), os.tempnam() and os.tmpfile() have been removed in favor of the tempfile module.
-- [ ] string.letters and its friends (string.lowercase and string.uppercase) are gone. Use string.ascii\_letters etc. instead. (The reason for the removal is that string.letters and friends had locale-specific behavior, which is a bad idea for such attractively-named global �constants�.)
+- [ ] string.letters and its friends (string.lowercase and string.uppercase) are gone. Use string.ascii\_letters etc. instead. (The reason for the removal is that string.letters and friends had locale-specific behavior, which is a bad idea for such attractively-named global "constants".)
 
 PEP 3101: A New Approach To String Formatting
 ======================
@@ -105,10 +105,10 @@ Changes To Exceptions
 Operators And Special Methods
 ===============
 - [ ] != now returns the opposite of ==, unless == returns NotImplemented.
-- [ ] The concept of �unbound methods� has been removed from the language. When referencing a method as a class attribute, you now get a plain function object.
+- [ ] The concept of "unbound methods" has been removed from the language. When referencing a method as a class attribute, you now get a plain function object.
 - [x] \_\_getslice\_\_(), \_\_setslice\_\_() and \_\_delslice\_\_() were killed. The syntax a[i:j] now translates to a.\_\_getitem\_\_(slice(i, j)) (or \_\_setitem\_\_() or \_\_delitem\_\_(), when used as an assignment or deletion target, respectively).
 - [ ] PEP 3114: the standard next() method has been renamed to \_\_next\_\_().
-- [x] The \_\_oct\_\_() and \_\_hex\_\_() special methods are removed � oct() and hex() use \_\_index\_\_() now to convert the argument to an integer.
+- [x] The \_\_oct\_\_() and \_\_hex\_\_() special methods are removed - oct() and hex() use \_\_index\_\_() now to convert the argument to an integer.
 - [ ] Removed support for \_\_members\_\_ and \_\_methods\_\_.
 - [x] The function attributes named func\_X have been renamed to use the \_\_X\_\_ form, freeing up these names in the function attribute namespace for user-defined attributes. To wit, func\_closure, func\_code, func\_defaults, func\_dict, func\_doc, func\_globals, func\_name were renamed to \_\_closure\_\_, \_\_code\_\_, \_\_defaults\_\_, \_\_dict\_\_, \_\_doc\_\_, \_\_globals\_\_, \_\_name\_\_, respectively.
 - [x] \_\_nonzero\_\_() is now \_\_bool\_\_().
@@ -126,4 +126,4 @@ Builtins
 - [x] Removed file. Use open().
 - [x] Removed reduce(). Use functools.reduce()
 - [x] Removed reload(). Use imp.reload().
-- [x] Removed. dict.has\_key() � use the in operator instead.
+- [x] Removed. dict.has\_key() - use the in operator instead.

@@ -213,7 +213,7 @@ namespace IronPython.Runtime.Operations {
             string s;
             if ((s = o as string) != null) return StringOps.__repr__(s);
             if (o is int) return Int32Ops.__repr__((int)o);
-            if (o is long) return ((long)o).ToString() + "L";
+            if (o is long) return ((long)o).ToString();
 
             // could be a container object, we need to detect recursion, but only
             // for our own built-in types that we're aware of.  The user can setup

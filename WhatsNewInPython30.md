@@ -80,7 +80,7 @@ Library Changes
 - [ ] Cleanup of the array.array type: the read() and write() methods are gone; use fromfile() and tofile() instead. Also, the 'c' typecode for array is gone - use either 'b' for bytes or 'u' for Unicode characters.
 - [ ] Cleanup of the operator module: removed sequenceIncludes() and isCallable().
 - [ ] Cleanup of the thread module: acquire\_lock() and release\_lock() are gone; use acquire() and release() instead.
-- [ ] Cleanup of the random module: removed the jumpahead() API.
+- [x] Cleanup of the random module: removed the jumpahead() API.
 - [ ] The functions os.tmpnam(), os.tempnam() and os.tmpfile() have been removed in favor of the tempfile module.
 - [ ] string.letters and its friends (string.lowercase and string.uppercase) are gone. Use string.ascii\_letters etc. instead. (The reason for the removal is that string.letters and friends had locale-specific behavior, which is a bad idea for such attractively-named global "constants".)
 
@@ -95,7 +95,7 @@ Changes To Exceptions
 - [ ] StandardError was removed (in 2.6 already).
 - [ ] Exceptions no longer behave as sequences. Use the args attribute instead.
 - [ ] PEP 3109: Raising exceptions. You must now use raise Exception(args) instead of raise Exception, args. Additionally, you can no longer explicitly specify a traceback; instead, if you have to do this, you can assign directly to the \_\_traceback\_\_ attribute (see below).
-- [ ] PEP 3110: Catching exceptions. You must now use except SomeException as variable instead of except SomeException, variable. Moreover, the variable is explicitly deleted when the except block is left.
+- [x] PEP 3110: Catching exceptions. You must now use except SomeException as variable instead of except SomeException, variable. Moreover, the variable is explicitly deleted when the except block is left.
 - [ ] PEP 3134: Exception chaining. There are two cases: implicit chaining and explicit chaining. Implicit chaining happens when an exception is raised in an except or finally handler block. This usually happens due to a bug in the handler block; we call this a secondary exception. In this case, the original exception (that was being handled) is saved as the \_\_context\_\_ attribute of the secondary exception. Explicit chaining is invoked with this syntax:
 - [ ] raise SecondaryException() from primary\_exception
 (where primary\_exception is any expression that produces an exception object, probably an exception that was previously caught). In this case, the primary exception is stored on the \_\_cause\_\_ attribute of the secondary exception. The traceback printed when an unhandled exception occurs walks the chain of \_\_cause\_\_ and \_\_context\_\_ attributes and prints a separate traceback for each component of the chain, with the primary exception at the top. (Java users may recognize this behavior.)

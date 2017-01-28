@@ -80,16 +80,31 @@ namespace IronPython.Compiler.Ast {
             // 2. Add the assignment "right_temp = right" into the suite/block
             MSAst.Expression assignStmt1 = MakeAssignment(right_temp, right);
 
+            int expected = _items.Length;
+            int argcntafter = -1;
+            for (var i = 0; i < _items.Length; i++) {
+                var item = _items[i];
+                if (item is StarredExpression) {
+                    expected = i;
+                    argcntafter = _items.Length - i - 1;
+                    break;
+                }
+            }
+
             // 3. Call GetEnumeratorValues on the right side (stored in temp)
             MSAst.Expression enumeratorValues = Expression.Convert(LightExceptions.CheckAndThrow(
                 Expression.Call(
-                    emitIndividualSets ? 
-                        AstMethods.GetEnumeratorValues : 
-                        AstMethods.GetEnumeratorValuesNoComplexSets,    // method
+                    // method
+                    argcntafter != -1 ?
+                        AstMethods.UnpackIterable :
+                        emitIndividualSets ?
+                            AstMethods.GetEnumeratorValues :
+                            AstMethods.GetEnumeratorValuesNoComplexSets,
                     // arguments
                     Parent.LocalContext,
                     right_temp,
-                    AstUtils.Constant(_items.Length)
+                    AstUtils.Constant(expected),
+                    AstUtils.Constant(argcntafter)
                 )
             ), typeof(object[]));
 

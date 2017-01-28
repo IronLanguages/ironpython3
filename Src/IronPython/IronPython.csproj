@@ -30,6 +30,7 @@
     <Compile Include="Compiler\Ast\PythonConstantExpression.cs" />
     <Compile Include="Compiler\Ast\SerializedScopeStatement.cs" />
     <Compile Include="Compiler\Ast\SetExpression.cs" />
+    <Compile Include="Compiler\Ast\StarredExpression.cs" />
     <Compile Include="Compiler\CollectableCompilationMode.cs" />
     <Compile Include="Compiler\Ast\AssertStatement.cs" />
     <Compile Include="Compiler\Ast\AssignmentStatement.cs" />

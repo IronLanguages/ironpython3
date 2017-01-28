@@ -386,6 +386,8 @@ namespace IronPython.Modules
                     ast = new DictComp((DictionaryComprehension)expr);
                 else if (expr is SetComprehension)
                     ast = new SetComp((SetComprehension)expr);
+                else if (expr is StarredExpression)
+                    ast = new Starred((StarredExpression)expr, ctx);
                 else
                     throw new ArgumentTypeException("Unexpected expression type: " + expr.GetType());
 
@@ -3034,6 +3036,32 @@ namespace IronPython.Modules
                 get { return _step; }
                 set { _step = value; }
             }
+        }
+
+        [PythonType]
+        public class Starred : expr
+        {
+            public Starred() {
+                _fields = new PythonTuple(new[] { nameof(value), nameof(ctx) });
+            }
+
+            public Starred(expr value, expr_context ctx, [Optional]int? lineno, [Optional]int? col_offset)
+                : this() {
+                this.value = value;
+                this.ctx = ctx;
+                _lineno = lineno;
+                _col_offset = col_offset;
+            }
+
+            public Starred(expr value, expr_context ctx)
+                : this(value, ctx, null, null) { }
+
+            internal Starred(StarredExpression expr, expr_context ctx)
+                : this(Convert(expr.Value), ctx, null, null) { }
+
+            public expr_context ctx { get; set; }
+
+            public expr value { get; set; }
         }
 
         [PythonType]

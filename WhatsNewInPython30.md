@@ -85,7 +85,7 @@ Library Changes
 - [ ] Cleanup of the operator module: removed sequenceIncludes() and isCallable().
 - [ ] Cleanup of the thread module: acquire\_lock() and release\_lock() are gone; use acquire() and release() instead.
 - [x] Cleanup of the random module: removed the jumpahead() API.
-- [ ] The functions os.tmpnam(), os.tempnam() and os.tmpfile() have been removed in favor of the tempfile module.
+- [x] The functions os.tmpnam(), os.tempnam() and os.tmpfile() have been removed in favor of the tempfile module.
 - [ ] string.letters and its friends (string.lowercase and string.uppercase) are gone. Use string.ascii\_letters etc. instead. (The reason for the removal is that string.letters and friends had locale-specific behavior, which is a bad idea for such attractively-named global "constants".)
 
 PEP 3101: A New Approach To String Formatting

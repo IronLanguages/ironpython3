@@ -1377,26 +1377,6 @@ namespace IronPython.Modules {
 #endif
 
 #if FEATURE_FILESYSTEM
-        public static string tempnam(CodeContext/*!*/ context) {
-            return tempnam(context, null);
-        }
-
-        public static string tempnam(CodeContext/*!*/ context, string dir) {
-            return tempnam(context, null, null);
-        }
-
-        public static string tempnam(CodeContext/*!*/ context, string dir, string prefix) {
-            PythonOps.Warn(context, PythonExceptions.RuntimeWarning, "tempnam is a potential security risk to your program");
-
-            try {
-                dir = Path.GetTempPath(); // Reasonably consistent with CPython behavior under Windows
-
-                return Path.GetFullPath(Path.Combine(dir, prefix ?? String.Empty) + Path.GetRandomFileName());
-            } catch (Exception e) {
-                throw ToPythonException(e, dir);
-            }
-        }
-
         public static object times() {
             System.Diagnostics.Process p = System.Diagnostics.Process.GetCurrentProcess();
 
@@ -1405,22 +1385,6 @@ namespace IronPython.Modules {
                 0,  // child process system time
                 0,  // child process os time
                 DateTime.Now.Subtract(p.StartTime).TotalSeconds);
-        }
-
-        public static PythonFile/*!*/ tmpfile(CodeContext/*!*/ context) {
-            try {
-                FileStream sw = new FileStream(Path.GetTempFileName(), FileMode.Open, FileAccess.ReadWrite, FileShare.None, 4096, FileOptions.DeleteOnClose);
-
-                PythonFile res = PythonFile.Create(context, sw, sw.Name, "w+b");
-                return res;
-            } catch (Exception e) {
-                throw ToPythonException(e);
-            }
-        }
-
-        public static string/*!*/ tmpnam(CodeContext/*!*/ context) {
-            PythonOps.Warn(context, PythonExceptions.RuntimeWarning, "tmpnam is a potential security risk to your program");
-            return Path.GetFullPath(Path.GetTempPath() + Path.GetRandomFileName());
         }
 
         public static void remove(string path) {

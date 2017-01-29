@@ -298,6 +298,21 @@ namespace IronPython.Compiler.Ast {
             return true;
         }
 
+        public override bool Walk(ListComprehension node) {
+            node.Parent = _currentScope;
+            PushScope(node.Scope);
+            return base.Walk(node);
+        }
+
+        public override void PostWalk(ListComprehension node) {
+            base.PostWalk(node);
+            PopScope();
+
+            if (node.Scope.NeedsLocalsDictionary) {
+                _currentScope.NeedsLocalsDictionary = true;
+            }
+        }
+
         public override bool Walk(SetComprehension node) {
             node.Parent = _currentScope;
             PushScope(node.Scope);
@@ -429,11 +444,6 @@ namespace IronPython.Compiler.Ast {
         }
         // LambdaExpression
         public override bool Walk(LambdaExpression node) {
-            node.Parent = _currentScope;
-            return base.Walk(node);
-        }
-        // ListComprehension
-        public override bool Walk(ListComprehension node) {
             node.Parent = _currentScope;
             return base.Walk(node);
         }

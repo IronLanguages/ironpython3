@@ -82,6 +82,7 @@ def gen_python_name_binder(cw):
     # Each of these exclusions is here because there is some reason
     # to not generate the default content.
     exclusions = ["DictionaryComprehension",
+                  "ListComprehension",
                   "SetComprehension",
                   "ExecStatement",
                   "DelStatement",

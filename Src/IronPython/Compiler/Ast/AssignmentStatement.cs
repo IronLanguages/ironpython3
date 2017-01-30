@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
@@ -110,7 +111,9 @@ namespace IronPython.Compiler.Ast {
             SequenceExpression seLeft = _left[0] as SequenceExpression;
             SequenceExpression seRight = _right as SequenceExpression;
 
-            if (seLeft != null && seRight != null && seLeft.Items.Count == seRight.Items.Count) {
+            bool isStarred = seLeft != null && seLeft.Items.OfType<StarredExpression>().Any();
+
+            if (!isStarred && seLeft != null && seRight != null && seLeft.Items.Count == seRight.Items.Count) {
                 int cnt = seLeft.Items.Count;
                 
                 // a, b = 1, 2, or [a,b] = 1,2 - not something like a, b = range(2)

@@ -1471,58 +1471,110 @@ namespace IronPython.Runtime.Operations {
         /// Otherwise throws exception
         /// </returns>
         [LightThrowing]
-        public static object GetEnumeratorValues(CodeContext/*!*/ context, object e, int expected) {
+        public static object GetEnumeratorValues(CodeContext/*!*/ context, object e, int expected, int argcntafter) {
             if (e != null && e.GetType() == typeof(PythonTuple)) {
                 // fast path for tuples, avoid enumerating & copying the tuple.
-                return GetEnumeratorValuesFromTuple((PythonTuple)e, expected);
+                return GetEnumeratorValuesFromTuple((PythonTuple)e, expected, argcntafter);
             }
 
             IEnumerator ie = PythonOps.GetEnumeratorForUnpack(context, e);
 
-            int count = 0;
-            object[] values = new object[expected];
+            if (argcntafter == -1) {
+                int count = 0;
+                object[] values = new object[expected];
 
-            while (count < expected) {
-                if (!ie.MoveNext()) {
-                    return LightExceptions.Throw(PythonOps.ValueErrorForUnpackMismatch(expected, count));
+                while (count < expected) {
+                    if (!ie.MoveNext()) {
+                        return LightExceptions.Throw(PythonOps.ValueErrorForUnpackMismatch(expected, argcntafter, count));
+                    }
+                    values[count] = ie.Current;
+                    count++;
                 }
-                values[count] = ie.Current;
-                count++;
+
+                if (ie.MoveNext()) {
+                    return LightExceptions.Throw(PythonOps.ValueErrorForUnpackMismatch(expected, argcntafter, count + 1));
+                }
+
+                return values;
             }
 
-            if (ie.MoveNext()) {
-                return LightExceptions.Throw(PythonOps.ValueErrorForUnpackMismatch(expected, count + 1));
-            }
+            return OneTimeIEnumerableFromEnumerator(ie).ToArray();
+        }
 
-            return values;
+        private static IEnumerable<object> OneTimeIEnumerableFromEnumerator(IEnumerator ie) {
+            while (ie.MoveNext()) {
+                yield return ie.Current;
+            }
         }
 
         [LightThrowing]
-        public static object GetEnumeratorValuesNoComplexSets(CodeContext/*!*/ context, object e, int expected) {
+        public static object GetEnumeratorValuesNoComplexSets(CodeContext/*!*/ context, object e, int expected, int argcntafter) {
             if (e != null && e.GetType() == typeof(List)) {
                 // fast path for lists, avoid enumerating & copying the list.
-                return GetEnumeratorValuesFromList((List)e, expected);
+                return GetEnumeratorValuesFromList((List)e, expected, argcntafter);
             }
 
-            return GetEnumeratorValues(context, e, expected);
+            return GetEnumeratorValues(context, e, expected, argcntafter);
         }
 
         [LightThrowing]
-        private static object GetEnumeratorValuesFromTuple(PythonTuple pythonTuple, int expected) {
-            if (pythonTuple.Count == expected) {
-                return pythonTuple._data;
+        private static object GetEnumeratorValuesFromTuple(PythonTuple pythonTuple, int expected, int argcntafter) {
+            if (argcntafter == -1) {
+                if (pythonTuple.Count == expected) {
+                    return pythonTuple._data;
+                }
+            }
+            else {
+                if (pythonTuple.Count >= expected + argcntafter) {
+                    return pythonTuple._data;
+                }
             }
 
-            return LightExceptions.Throw(PythonOps.ValueErrorForUnpackMismatch(expected, pythonTuple.Count));
+            return LightExceptions.Throw(PythonOps.ValueErrorForUnpackMismatch(expected, argcntafter, pythonTuple.Count));
         }
 
-        private static object[] GetEnumeratorValuesFromList(List list, int expected) {
-            if (list._size == expected) {
-                return list._data;
+        [LightThrowing]
+        private static object GetEnumeratorValuesFromList(List list, int expected, int argcntafter) {
+            if (argcntafter == -1) {
+                if (list._size == expected) {
+                    return list._data;
+                }
+            }
+            else {
+                if (list._size > expected + argcntafter) {
+                    return list._data;
+                }
             }
 
-            throw PythonOps.ValueErrorForUnpackMismatch(expected, list._size);
+            return LightExceptions.Throw(PythonOps.ValueErrorForUnpackMismatch(expected, argcntafter, list._size));
         }
+
+        [LightThrowing]
+        public static object UnpackIterable(CodeContext/*!*/ context, object e, int expected, int argcntafter) {
+            var enumeratorValues = GetEnumeratorValuesNoComplexSets(context, e, expected, argcntafter);
+            if (argcntafter == -1 || LightExceptions.IsLightException(enumeratorValues)) return enumeratorValues;
+
+            Debug.Assert(enumeratorValues is object[]);
+
+            var list = new List((object[])enumeratorValues);
+
+            if (list._size < expected + argcntafter) return LightExceptions.Throw(PythonOps.ValueErrorForUnpackMismatch(expected, argcntafter, list._size));
+
+            var newValues = new object[expected + argcntafter + 1];
+
+            for (var i = 0; i < expected; i++) {
+                newValues[i] = list.pop(0);
+            }
+
+            newValues[expected] = list;
+
+            for (var i = argcntafter; i > 0; i--) {
+                newValues[expected + i] = list.pop();
+            }
+
+            return newValues;
+        }
+
         /// <summary>
         /// Python runtime helper to create instance of Slice object
         /// </summary>
@@ -3802,13 +3854,18 @@ namespace IronPython.Runtime.Operations {
         }
 
         // If you do "(a, b) = (1, 2, 3, 4)"
-        public static Exception ValueErrorForUnpackMismatch(int left, int right) {
-            System.Diagnostics.Debug.Assert(left != right);
-
-            if (left > right)
-                return ValueError("need more than {0} values to unpack", right);
-            else
-                return ValueError("too many values to unpack");
+        public static Exception ValueErrorForUnpackMismatch(int left, int argcntafter, int right) {
+            if (argcntafter == -1) {
+                Debug.Assert(left != right);
+                if (left > right)
+                    return ValueError("not enough values to unpack (expected {0}, got {1})", left, right);
+                else
+                    return ValueError("too many values to unpack (expected {0})", left);
+            }
+            else {
+                Debug.Assert(right < left + argcntafter);
+                return ValueError("not enough values to unpack (expected at least {0}, got {1})", left + argcntafter, right);
+            }
         }
 
         public static Exception NameError(string name) {

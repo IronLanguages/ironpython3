@@ -107,6 +107,10 @@ namespace IronPython.Compiler.Ast {
         public virtual bool Walk(SliceExpression node) { return true; }
         public virtual void PostWalk(SliceExpression node) { }
 
+        // StarredExpression
+        public virtual bool Walk(StarredExpression node) { return true; }
+        public virtual void PostWalk(StarredExpression node) { }
+
         // TupleExpression
         public virtual bool Walk(TupleExpression node) { return true; }
         public virtual void PostWalk(TupleExpression node) { }

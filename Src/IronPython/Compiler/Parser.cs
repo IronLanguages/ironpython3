@@ -685,7 +685,7 @@ namespace IronPython.Compiler {
                 if (MaybeEat(TokenKind.KeywordYield)) {
                     right = ParseYieldExpression();
                 } else {
-                    right = ParseTestListAsExpr();
+                    right = ParseTestListStarExpr();
                 }
             }
 
@@ -704,13 +704,14 @@ namespace IronPython.Compiler {
             }
         }
 
-        // expr_stmt: expression_list
-        // expression_list: expression ( "," expression )* [","] 
-        // assignment_stmt: (target_list "=")+ (expression_list | yield_expression) 
-        // augmented_assignment_stmt ::= target augop (expression_list | yield_expression) 
-        // augop: '+=' | '-=' | '*=' | '@=' | '/=' | '%=' | '**=' | '>>=' | '<<=' | '&=' | '^=' | '|=' | '//='
+        // expr_stmt: testlist_star_expr (augassign (yield_expr|testlist) | ('=' (yield_expr|testlist_star_expr))*)
+        // expr_stmt: testlist (augassign (yield_expr|testlist) | ('=' (yield_expr|testlist))*)
+        // testlist_star_expr: (test|star_expr) (',' (test|star_expr))* [',']
+        // augassign: ('+=' | '-=' | '*=' | '@=' | '/=' | '%=' | '&=' | '|=' | '^=' | '<<=' | '>>=' | '**=' | '//=')
+        // testlist: test (',' test)* [',']
+        // star_expr: '*' expr
         private Statement ParseExprStmt() {
-            Expression ret = ParseTestListAsExpr();
+            Expression ret = ParseTestListStarExpr();
             if (ret is ErrorExpression) {
                 NextToken();
             }
@@ -2471,6 +2472,55 @@ namespace IronPython.Compiler {
             }
             return MakeTupleOrExpr(l, trailingComma);
         }
+
+
+        private Expression ParseTestListStarExpr() {
+            if (MaybeEat(TokenKind.Multiply)) {
+                var start = GetStart();
+                var expr = new StarredExpression(ParseExpression());
+                expr.SetLoc(_globalParent, start, GetEnd());
+                if (!MaybeEat(TokenKind.Comma)) {
+                    return expr;
+                }
+
+                return ParseTestListStarExpr(expr);
+            }
+            if (!NeverTestToken(PeekToken())) {
+                var expr = ParseExpression();
+                if (!MaybeEat(TokenKind.Comma)) {
+                    return expr;
+                }
+
+                return ParseTestListStarExpr(expr);
+            } else {
+                return ParseTestListAsExprError();
+            }
+        }
+
+        private Expression ParseTestListStarExpr(Expression expr) {
+            List<Expression> l = new List<Expression>();
+            l.Add(expr);
+
+            bool trailingComma = true;
+            while (true) {
+                if (MaybeEat(TokenKind.Multiply)) {
+                    var start = GetStart();
+                    var sExpr = new StarredExpression(ParseExpression());
+                    sExpr.SetLoc(_globalParent, start, GetEnd());
+                    l.Add(sExpr);
+                }
+                else {
+                    if (NeverTestToken(PeekToken())) break;
+                    l.Add(ParseExpression());
+                }
+                if (!MaybeEat(TokenKind.Comma)) {
+                    trailingComma = false;
+                    break;
+                }
+            }
+            return MakeTupleOrExpr(l, trailingComma);
+        }
+
 
         private Expression ParseTestListAsExprError() {
             if (MaybeEat(TokenKind.Indent)) {

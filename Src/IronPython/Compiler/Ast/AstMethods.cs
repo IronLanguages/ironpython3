@@ -71,8 +71,9 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo ImportBottom = GetMethod((Func<CodeContext, string, int, object>)PythonOps.ImportBottom);
         public static readonly MethodInfo MakeList = GetMethod((Func<List>)PythonOps.MakeList);
         public static readonly MethodInfo MakeListNoCopy = GetMethod((Func<object[], List>)PythonOps.MakeListNoCopy);
-        public static readonly MethodInfo GetEnumeratorValues = GetMethod((Func<CodeContext, object, int, object>)PythonOps.GetEnumeratorValues);
-        public static readonly MethodInfo GetEnumeratorValuesNoComplexSets = GetMethod((Func<CodeContext, object, int, object>)PythonOps.GetEnumeratorValuesNoComplexSets);
+        public static readonly MethodInfo GetEnumeratorValues = GetMethod((Func<CodeContext, object, int, int, object>)PythonOps.GetEnumeratorValues);
+        public static readonly MethodInfo GetEnumeratorValuesNoComplexSets = GetMethod((Func<CodeContext, object, int, int, object>)PythonOps.GetEnumeratorValuesNoComplexSets);
+        public static readonly MethodInfo UnpackIterable = GetMethod((Func<CodeContext, object, int, int, object>)PythonOps.UnpackIterable);
         public static readonly MethodInfo GetGlobalContext = GetMethod((Func<CodeContext, CodeContext>)PythonOps.GetGlobalContext);
         public static readonly MethodInfo GetParentContextFromFunction = GetMethod((Func<PythonFunction, CodeContext>)PythonOps.GetParentContextFromFunction);
         public static readonly MethodInfo MakeFunction = GetMethod((Func<CodeContext, FunctionCode, object, object[], object>)PythonOps.MakeFunction);

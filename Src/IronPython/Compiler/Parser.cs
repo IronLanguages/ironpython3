@@ -1054,7 +1054,7 @@ namespace IronPython.Compiler {
             return new ExpressionStatement(Error());
         }
 
-        //classdef: 'class' NAME ['(' testlist ')'] ':' suite
+        //classdef: 'class' NAME ['(' arglist ')'] ':' suite
         private ClassDefinition ParseClassDef() {
             Eat(TokenKind.KeywordClass);
 
@@ -1062,19 +1062,25 @@ namespace IronPython.Compiler {
             string name = ReadName();
             if (name == null) {
                 // no name, assume there's no class.
-                return new ClassDefinition(null, new Expression[0], ErrorStmt());
+                return new ClassDefinition(null, new Expression[0], new Expression[0], ErrorStmt());
             }
 
-            Expression[] bases = new Expression[0];
+            Expression metaclass = null;
+            var bases = new List<Expression>();
+            var keywords = new List<Expression>();
             if (MaybeEat(TokenKind.LeftParenthesis)) {
-                List<Expression> l = ParseTestList();
-
-                if (l.Count == 1 && l[0] is ErrorExpression) {
-                    // error handling, classes is incomplete.
-                    return new ClassDefinition(name, new Expression[0], ErrorStmt());
+                foreach (var arg in FinishArgumentList(null)) {
+                    var info = arg.GetArgumentInfo();
+                    if (info.Kind == Microsoft.Scripting.Actions.ArgumentType.Simple) {
+                        bases.Add(arg.Expression);
+                    }
+                    else if(info.Kind == Microsoft.Scripting.Actions.ArgumentType.Named) {
+                        keywords.Add(arg.Expression);
+                        if (arg.Name == "metaclass") {
+                            metaclass = arg.Expression;
+                        }
+                    }
                 }
-                bases = l.ToArray();
-                Eat(TokenKind.RightParenthesis);
             }
             var mid = GetEnd();
 
@@ -1082,12 +1088,12 @@ namespace IronPython.Compiler {
             string savedPrefix = SetPrivatePrefix(name);
 
             // Parse the class body
-            Statement body = ParseClassOrFuncBody();
+            Statement body = ParseClassOrFuncBody(metaclass);
 
             // Restore the private prefix
             _privatePrefix = savedPrefix;
 
-            ClassDefinition ret = new ClassDefinition(name, bases, body);
+            ClassDefinition ret = new ClassDefinition(name, bases.ToArray(), keywords.ToArray(), body);
             ret.HeaderIndex =  mid;
             ret.SetLoc(_globalParent, start, GetEnd());
             return ret;
@@ -1526,7 +1532,7 @@ namespace IronPython.Compiler {
             return body;
         }
 
-        private Statement ParseClassOrFuncBody() {
+        private Statement ParseClassOrFuncBody(Expression metaclass = null) {
             Statement body;
             bool inLoop = _inLoop, 
                  inFinally = _inFinally, 
@@ -1539,7 +1545,7 @@ namespace IronPython.Compiler {
                 _inFinallyLoop = false;
                 _isGenerator = false;
                 _returnWithValue = false;
-                body = ParseSuite();
+                body = ParseSuite(metaclass);
             } finally {
                 _inLoop = inLoop;
                 _inFinally = inFinally;
@@ -1698,7 +1704,7 @@ namespace IronPython.Compiler {
         }
 
         //suite: simple_stmt NEWLINE | Newline INDENT stmt+ DEDENT
-        private Statement ParseSuite() {
+        private Statement ParseSuite(Expression metaclass = null) {
             if (!EatNoEof(TokenKind.Colon)) {
                 // improve error handling...
                 return ErrorStmt();
@@ -1728,6 +1734,10 @@ namespace IronPython.Compiler {
                         ReportSyntaxError(cur, ErrorCodes.IndentationError);
                     }
                     return ErrorStmt();
+                }
+
+                if (metaclass != null) {
+                    l.Add(new AssignmentStatement(new[] { new NameExpression("__metaclass__") }, metaclass));
                 }
 
                 while (true) {

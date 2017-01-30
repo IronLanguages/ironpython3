@@ -44,6 +44,7 @@ namespace IronPython.Compiler.Ast {
         private readonly string _name;
         private Statement _body;
         private readonly Expression[] _bases;
+        private readonly Expression[] _keywords;
         private IList<Expression> _decorators;
 
         private PythonVariable _variable;           // Variable corresponding to the class name
@@ -58,12 +59,14 @@ namespace IronPython.Compiler.Ast {
         private static MSAst.ParameterExpression _parentContextParam = Ast.Parameter(typeof(CodeContext), "$parentContext");
         private static MSAst.Expression _tupleExpression = MSAst.Expression.Call(AstMethods.GetClosureTupleFromContext, _parentContextParam);
 
-        public ClassDefinition(string name, Expression[] bases, Statement body) {
-            ContractUtils.RequiresNotNull(body, "body");
-            ContractUtils.RequiresNotNullItems(bases, "bases");
+        public ClassDefinition(string name, Expression[] bases, Expression[] keywords, Statement body) {
+            ContractUtils.RequiresNotNull(body, nameof(body));
+            ContractUtils.RequiresNotNullItems(bases, nameof(bases));
+            ContractUtils.RequiresNotNullItems(keywords, nameof(keywords));
 
             _name = name;
             _bases = bases;
+            _keywords = keywords;
             _body = body;
         }
 
@@ -82,6 +85,10 @@ namespace IronPython.Compiler.Ast {
 
         public IList<Expression> Bases {
             get { return _bases; }
+        }
+
+        public IList<Expression> Keywords {
+            get { return _keywords; }
         }
 
         public Statement Body {

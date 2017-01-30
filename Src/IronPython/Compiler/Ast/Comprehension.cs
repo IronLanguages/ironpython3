@@ -78,10 +78,12 @@ namespace IronPython.Compiler.Ast {
     public sealed class ListComprehension : Comprehension {
         private readonly ComprehensionIterator[] _iterators;
         private readonly Expression _item;
+        private readonly ComprehensionScope _scope;
 
         public ListComprehension(Expression item, ComprehensionIterator[] iterators) {
             _item = item;
             _iterators = iterators;
+            _scope = new ComprehensionScope(this);
         }
 
         public Expression Item {
@@ -98,6 +100,10 @@ namespace IronPython.Compiler.Ast {
 
         protected override MethodInfo Factory() {
             return AstMethods.MakeList;
+        }
+
+        public override Ast Reduce() {
+            return _scope.AddVariables(base.Reduce());
         }
 
         protected override Ast Body(MSAst.ParameterExpression res) {
@@ -129,6 +135,12 @@ namespace IronPython.Compiler.Ast {
                 }
             }
             walker.PostWalk(this);
+        }
+
+        internal ComprehensionScope Scope {
+            get {
+                return _scope;
+            }
         }
     }
         

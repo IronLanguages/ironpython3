@@ -111,7 +111,7 @@ Operators And Special Methods
 - [ ] != now returns the opposite of ==, unless == returns NotImplemented.
 - [ ] The concept of "unbound methods" has been removed from the language. When referencing a method as a class attribute, you now get a plain function object.
 - [x] \_\_getslice\_\_(), \_\_setslice\_\_() and \_\_delslice\_\_() were killed. The syntax a[i:j] now translates to a.\_\_getitem\_\_(slice(i, j)) (or \_\_setitem\_\_() or \_\_delitem\_\_(), when used as an assignment or deletion target, respectively).
-- [ ] PEP 3114: the standard next() method has been renamed to \_\_next\_\_().
+- [x] PEP 3114: the standard next() method has been renamed to \_\_next\_\_().
 - [x] The \_\_oct\_\_() and \_\_hex\_\_() special methods are removed - oct() and hex() use \_\_index\_\_() now to convert the argument to an integer.
 - [ ] Removed support for \_\_members\_\_ and \_\_methods\_\_.
 - [x] The function attributes named func\_X have been renamed to use the \_\_X\_\_ form, freeing up these names in the function attribute namespace for user-defined attributes. To wit, func\_closure, func\_code, func\_defaults, func\_dict, func\_doc, func\_globals, func\_name were renamed to \_\_closure\_\_, \_\_code\_\_, \_\_defaults\_\_, \_\_dict\_\_, \_\_doc\_\_, \_\_globals\_\_, \_\_name\_\_, respectively.

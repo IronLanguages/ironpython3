@@ -646,7 +646,7 @@ namespace IronPython.Runtime.Types {
                 new OneOffResolver("__exit__", ExitResolver),
                 new OneOffResolver("__len__", LengthResolver),
                 new OneOffResolver("__format__", FormatResolver),
-                new OneOffResolver("next", NextResolver),
+                new OneOffResolver("__next__", NextResolver),
 
                 new OneOffResolver("__complex__", ComplexResolver),
                 new OneOffResolver("__float__", FloatResolver),

@@ -82,7 +82,7 @@ namespace IronPython.Runtime {
         #region Python Public APIs
 
         [LightThrowing]
-        public object next() {
+        public object __next__() {
             // Python's language policy on generators is that attempting to access after it's closed (returned)
             // just continues to throw StopIteration exceptions.
             if (Closed) {
@@ -178,7 +178,7 @@ namespace IronPython.Runtime {
             }
 
             _sendValue = value;
-            return next();
+            return __next__();
         }
 
         [LightThrowing]

@@ -632,7 +632,7 @@ in CSV format.")]
                 _iterator = new ReaderIterator(context, this);
             }
 
-            public object next()
+            public object __next__()
             {
                 if (!_iterator.MoveNext())
                     throw PythonOps.StopIteration();

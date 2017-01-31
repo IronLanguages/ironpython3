@@ -1930,7 +1930,7 @@ namespace IronPython.Runtime {
             return _writer;
         }
 
-        public object next() {
+        public object __next__() {
             string line = readline();
             if (String.IsNullOrEmpty(line)) {
                 throw PythonOps.StopIteration();

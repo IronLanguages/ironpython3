@@ -77,7 +77,7 @@ namespace IronPython.Modules {
             [SlotField] public static PythonTypeSlot __iter__ = new SlotWrapper("__iter__", ProxyType);
             [SlotField] public static PythonTypeSlot __long__ = new SlotWrapper("__long__", ProxyType);
             [SlotField] public static PythonTypeSlot __rdivmod__ = new SlotWrapper("__rdivmod__", ProxyType);
-            [SlotField] public static PythonTypeSlot next = new SlotWrapper("next", ProxyType);
+            [SlotField] public static PythonTypeSlot __next__ = new SlotWrapper("__next__", ProxyType);
 
             [SlotField] public static PythonTypeSlot __getitem__ = new SlotWrapper("__getitem__", ProxyType);
             [SlotField] public static PythonTypeSlot __setitem__ = new SlotWrapper("__setitem__", ProxyType);
@@ -146,7 +146,7 @@ namespace IronPython.Modules {
             [SlotField] public static PythonTypeSlot __iter__ = new SlotWrapper("__iter__", CallableProxyType);
             [SlotField] public static PythonTypeSlot __long__ = new SlotWrapper("__long__", CallableProxyType);
             [SlotField] public static PythonTypeSlot __rdivmod__ = new SlotWrapper("__rdivmod__", CallableProxyType);
-            [SlotField] public static PythonTypeSlot next = new SlotWrapper("next", CallableProxyType);
+            [SlotField] public static PythonTypeSlot __next__ = new SlotWrapper("__next__", CallableProxyType);
 
             [SlotField] public static PythonTypeSlot __getitem__ = new SlotWrapper("__getitem__", CallableProxyType);
             [SlotField] public static PythonTypeSlot __setitem__ = new SlotWrapper("__setitem__", CallableProxyType);

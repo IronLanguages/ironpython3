@@ -424,7 +424,7 @@ namespace IronPython.SQLite
                 return this;
             }
 
-            public object next(CodeContext context)
+            public object __next__(CodeContext context)
             {
                 object next_row_tuple, next_row;
 
@@ -474,7 +474,7 @@ namespace IronPython.SQLite
             {
                 try
                 {
-                    return this.next(context);
+                    return this.__next__(context);
                 }
                 catch(StopIterationException)
                 {
@@ -585,7 +585,7 @@ namespace IronPython.SQLite
                 try
                 {
                     while(true)
-                        results.append(this.next(this.context));
+                        results.append(this.__next__(this.context));
                 }
                 catch(StopIterationException) { }
 

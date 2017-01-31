@@ -135,7 +135,7 @@ namespace IronPython.Runtime {
             return this;
         }
 
-        public object next() {
+        public object __next__() {
             if (((IEnumerator)this).MoveNext()) {
                 return ((IEnumerator)this).Current;
             } else {
@@ -260,7 +260,6 @@ namespace IronPython.Runtime {
         /// <returns>True if moving was successfull</returns>
         public bool MoveNext() {
             if (_nextMethod == null) {
-                // PEP 3114 -- Renaming iterator.next() to iterator.__next__()
                 if (!PythonOps.TryGetBoundAttr(_baseObject, "__next__", out _nextMethod) || _nextMethod == null) {
                     throw PythonOps.TypeError("instance has no next() method");
                 }

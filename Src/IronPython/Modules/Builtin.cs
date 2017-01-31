@@ -1172,12 +1172,12 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         [LightThrowing]
         public static object next(PythonGenerator gen) {
-            return gen.next();
+            return gen.__next__();
         }
 
         [LightThrowing]
         public static object next(PythonGenerator gen, object defaultVal) {
-            object res = gen.next();
+            object res = gen.__next__();
             Exception exc = LightExceptions.GetLightException(res);
             
             if (exc != null && exc is StopIterationException) {
@@ -1188,13 +1188,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object next(CodeContext/*!*/ context, object iter) {
-            // PEP 3114 -- Renaming iterator.next() to iterator.__next__()
             return PythonOps.Invoke(context, iter, "__next__");
         }
 
         public static object next(CodeContext/*!*/ context, object iter, object defaultVal) {
             try {                
-                // PEP 3114 -- Renaming iterator.next() to iterator.__next__()
                 return PythonOps.Invoke(context, iter, "__next__");
             } catch (StopIterationException) {
                 return defaultVal;

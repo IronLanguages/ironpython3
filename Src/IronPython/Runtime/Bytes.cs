@@ -67,7 +67,7 @@ namespace IronPython.Runtime {
         }
 
         public Bytes(CodeContext/*!*/ context, [NotNull]string/*!*/ unicode, [NotNull]string/*!*/ encoding) {
-            _bytes = StringOps.encode(context, unicode, encoding, "strict").MakeByteArray();
+            _bytes = StringOps.encode(context, unicode, encoding, "strict").GetUnsafeByteArray();
         }
         
         internal static Bytes Make(byte[] bytes) {

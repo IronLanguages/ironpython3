@@ -211,11 +211,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return PythonOps.IsCallable(context, o);
         }
 
-        [Documentation("chr(i) -> character\n\nReturn a string of one character with ordinal i; 0 <= i< 256.")]
+        [Documentation("chr(i) -> character\n\nReturn a Unicode string of one character with ordinal i; 0 <= i <= 0x10ffff.")]
         [LightThrowing]
         public static object chr(int value) {
-            if (value < 0 || value > 0xFF) {
-                return LightExceptions.Throw(PythonOps.ValueError("{0} is not in required range", value));
+            if (value < 0 || value > 0x10ffff) {
+                return LightExceptions.Throw(PythonOps.ValueError("chr() arg not in range(0x110000)"));
             }
             return ScriptingRuntimeHelpers.CharToString((char)value);
         }

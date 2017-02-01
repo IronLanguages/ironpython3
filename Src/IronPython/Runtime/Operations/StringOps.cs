@@ -712,6 +712,19 @@ namespace IronPython.Runtime.Operations {
             return true;
         }
 
+        // non-ASCII characters are valid under Python 3 (PEP 3131)
+        // see https://docs.python.org/3/reference/lexical_analysis.html#identifiers for the list of valid identifiers
+        public static bool isidentifier(this string self) {
+            if (self.Length == 0) return false;
+            char c = self[0];
+            if (!char.IsLetter(c) && c != '_') return false;
+            for (int i = 1; i < self.Length; i++) {
+                c = self[i];
+                if (!char.IsLetterOrDigit(c) && c != '_') return false;
+            }
+            return true;
+        }
+
         public static bool isspace(this string self) {
             if (self.Length == 0) return false;
             string v = self;

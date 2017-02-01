@@ -361,6 +361,21 @@ namespace IronPython.Runtime {
             }
         }
 
+        public static Bytes maketrans([BytesConversion]IList<byte> from, [BytesConversion]IList<byte> to) {
+            if (from == null) throw PythonOps.TypeError("a bytes-like object is required, not 'NoneType'");
+            if (to == null) throw PythonOps.TypeError("a bytes-like object is required, not 'NoneType'");
+            if (from.Count != to.Count) throw PythonOps.ValueError("maketrans arguments must have same length");
+
+            var bytes = new byte[256];
+            for (var i = 0; i < 256; i++) {
+                bytes[i] = (byte)i;
+            }
+            for (var i = 0; i < from.Count; i++) {
+                bytes[from[i]] = to[i];
+            }
+            return Make(bytes);
+        }
+
         public PythonTuple partition([BytesConversion]IList<byte>/*!*/ sep) {
             if (sep == null) {
                 throw PythonOps.TypeError("expected string, got NoneType");

@@ -969,9 +969,8 @@ namespace IronPython.Runtime
             ContractUtils.RequiresNotNull(defaultEncoding, "defaultEncoding");
             ContractUtils.Requires(stream.CanSeek && stream.CanRead, "stream", "The stream must support seeking and reading");
 
-            // we choose ASCII by default, if the file has a Unicode pheader though
-            // we'll automatically get it as unicode.
-            Encoding encoding = PythonAsciiEncoding.SourceEncoding;
+            // Python 3 uses UTF-8 as default
+            Encoding encoding = Encoding.UTF8;
 
             long startPosition = stream.Position;
 
@@ -1970,8 +1969,10 @@ namespace IronPython.Runtime
 
         internal void SetHostVariables(PythonDictionary dict) {
             dict["executable"] = _initialExecutable;
-            dict["prefix"] =  _initialPrefix;
+            dict["prefix"] = _initialPrefix;
             dict["exec_prefix"] = _initialPrefix;
+            dict["base_prefix"] = _initialPrefix;
+            dict["base_exec_prefix"] = _initialPrefix;
             SetVersionVariables(dict);
         }
 

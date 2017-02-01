@@ -344,11 +344,11 @@ os.spawnlpe(os.P_NOWAIT, "/bin/mycmd", "mycmd", "myarg", env)
 Popen(["/bin/mycmd", "myarg"], env={"PATH": "/usr/bin"})
 """
 
+import os
 import sys
-mswindows = (sys.platform == "win32")
+mswindows = (sys.platform == "win32") or (sys.platform == "cli" and os.name == "nt")
 
 import io
-import os
 import time
 import signal
 import builtins

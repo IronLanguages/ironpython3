@@ -103,6 +103,7 @@
     <Compile Include="_ctypes\UnionType.cs" />
     <Compile Include="_ctypes_test.cs" />
     <Compile Include="_heapq.cs" />
+    <Compile Include="_string.cs" />
     <Compile Include="_struct.cs" />
     <Compile Include="_thread.cs" />
     <Compile Include="time.cs" />

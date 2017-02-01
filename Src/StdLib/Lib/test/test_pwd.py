@@ -107,5 +107,8 @@ class PwdTest(unittest.TestCase):
         self.assertRaises(KeyError, pwd.getpwuid, 2**128)
         self.assertRaises(KeyError, pwd.getpwuid, -2**128)
 
+def test_main():
+    support.run_unittest(PwdTest)
+
 if __name__ == "__main__":
-    unittest.main()
+    test_main()

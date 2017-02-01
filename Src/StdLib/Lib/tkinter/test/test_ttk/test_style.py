@@ -2,15 +2,15 @@ import unittest
 import tkinter
 from tkinter import ttk
 from test.support import requires, run_unittest
-from tkinter.test.support import AbstractTkTest
+
+import tkinter.test.support as support
 
 requires('gui')
 
-class StyleTest(AbstractTkTest, unittest.TestCase):
+class StyleTest(unittest.TestCase):
 
     def setUp(self):
-        super().setUp()
-        self.style = ttk.Style(self.root)
+        self.style = ttk.Style()
 
 
     def test_configure(self):
@@ -25,7 +25,7 @@ class StyleTest(AbstractTkTest, unittest.TestCase):
         style = self.style
         style.map('TButton', background=[('active', 'background', 'blue')])
         self.assertEqual(style.map('TButton', 'background'),
-            [('active', 'background', 'blue')] if self.wantobjects else
+            [('active', 'background', 'blue')] if style.tk.wantobjects() else
             [('active background', 'blue')])
         self.assertIsInstance(style.map('TButton'), dict)
 

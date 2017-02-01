@@ -32,6 +32,7 @@ Each function will be called at most once for each event.
 import sys
 import re
 import tkinter
+from idlelib import macosxSupport
 
 # the event type constants, which define the meaning of mc_type
 MC_KEYPRESS=0; MC_KEYRELEASE=1; MC_BUTTONPRESS=2; MC_BUTTONRELEASE=3;
@@ -44,7 +45,7 @@ MC_SHIFT = 1<<0; MC_CONTROL = 1<<2; MC_ALT = 1<<3; MC_META = 1<<5
 MC_OPTION = 1<<6; MC_COMMAND = 1<<7
 
 # define the list of modifiers, to be used in complex event types.
-if sys.platform == "darwin":
+if macosxSupport.runningAsOSXApp():
     _modifiers = (("Shift",), ("Control",), ("Option",), ("Command",))
     _modifier_masks = (MC_SHIFT, MC_CONTROL, MC_OPTION, MC_COMMAND)
 else:
@@ -60,7 +61,8 @@ _modifier_names = dict([(name, number)
 # destroyed before .__del__ methods here are called.  The following
 # is used to selectively ignore shutdown exceptions to avoid
 # 'Exception ignored' messages.  See http://bugs.python.org/issue20167
-APPLICATION_GONE = "application has been destroyed"
+APPLICATION_GONE = '''\
+can't invoke "bind" command:  application has been destroyed'''
 
 # A binder is a class which binds functions to one type of event. It has two
 # methods: bind and unbind, which get a function and a parsed sequence, as
@@ -107,11 +109,13 @@ class _SimpleBinder:
                 self.widget.unbind(self.widgetinst, self.sequence,
                         self.handlerid)
             except tkinter.TclError as e:
-                if not APPLICATION_GONE in e.args[0]:
+                if e.args[0] == APPLICATION_GONE:
+                    pass
+                else:
                     raise
 
 # An int in range(1 << len(_modifiers)) represents a combination of modifiers
-# (if the least significant bit is on, _modifiers[0] is on, and so on).
+# (if the least significent bit is on, _modifiers[0] is on, and so on).
 # _state_subsets gives for each combination of modifiers, or *state*,
 # a list of the states which are a subset of it. This list is ordered by the
 # number of modifiers is the state - the most specific state comes first.
@@ -240,7 +244,9 @@ class _ComplexBinder:
             try:
                 self.widget.unbind(self.widgetinst, seq, id)
             except tkinter.TclError as e:
-                if not APPLICATION_GONE in e.args[0]:
+                if e.args[0] == APPLICATION_GONE:
+                    break
+                else:
                     raise
 
 # define the list of event types to be handled by MultiEvent. the order is
@@ -407,18 +413,17 @@ def MultiCallCreator(widget):
                         try:
                             self.__binders[triplet[1]].unbind(triplet, func)
                         except tkinter.TclError as e:
-                            if not APPLICATION_GONE in e.args[0]:
+                            if e.args[0] == APPLICATION_GONE:
+                                break
+                            else:
                                 raise
 
     _multicall_dict[widget] = MultiCall
     return MultiCall
 
-
-def _multi_call(parent):
+if __name__ == "__main__":
+    # Test
     root = tkinter.Tk()
-    root.title("Test MultiCall")
-    width, height, x, y = list(map(int, re.split('[x+]', parent.geometry())))
-    root.geometry("+%d+%d"%(x, y + 150))
     text = MultiCallCreator(tkinter.Text)(root)
     text.pack()
     def bindseq(seq, n=[0]):
@@ -434,13 +439,8 @@ def _multi_call(parent):
     bindseq("<Alt-Control-Key-a>")
     bindseq("<Key-b>")
     bindseq("<Control-Button-1>")
-    bindseq("<Button-2>")
     bindseq("<Alt-Button-1>")
     bindseq("<FocusOut>")
     bindseq("<Enter>")
     bindseq("<Leave>")
     root.mainloop()
-
-if __name__ == "__main__":
-    from idlelib.idle_test.htest import run
-    run(_multi_call)

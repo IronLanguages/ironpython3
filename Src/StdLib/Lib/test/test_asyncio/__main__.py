@@ -1,4 +1,5 @@
-from . import load_tests
-import unittest
+from . import test_main
 
-unittest.main()
+
+if __name__ == '__main__':
+    test_main()

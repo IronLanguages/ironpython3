@@ -2,7 +2,7 @@
 
 Utility functions for manipulating directories and directory trees."""
 
-import os
+import os, sys
 import errno
 from distutils.errors import DistutilsFileError, DistutilsInternalError
 from distutils import log
@@ -81,7 +81,7 @@ def create_tree(base_dir, files, mode=0o777, verbose=1, dry_run=0):
     """Create all the empty directories under 'base_dir' needed to put 'files'
     there.
 
-    'base_dir' is just the name of a directory which doesn't necessarily
+    'base_dir' is just the a name of a directory which doesn't necessarily
     exist yet; 'files' is a list of filenames to be interpreted relative to
     'base_dir'.  'base_dir' + the directory portion of every file in 'files'
     will be created if it doesn't already exist.  'mode', 'verbose' and
@@ -125,11 +125,12 @@ def copy_tree(src, dst, preserve_mode=1, preserve_times=1,
     try:
         names = os.listdir(src)
     except OSError as e:
+        (errno, errstr) = e
         if dry_run:
             names = []
         else:
             raise DistutilsFileError(
-                  "error listing files in '%s': %s" % (src, e.strerror))
+                  "error listing files in '%s': %s" % (src, errstr))
 
     if not dry_run:
         mkpath(dst, verbose=verbose)
@@ -181,6 +182,7 @@ def remove_tree(directory, verbose=1, dry_run=0):
     Any errors are ignored (apart from being reported to stdout if 'verbose'
     is true).
     """
+    from distutils.util import grok_environment_error
     global _path_created
 
     if verbose >= 1:
@@ -197,7 +199,8 @@ def remove_tree(directory, verbose=1, dry_run=0):
             if abspath in _path_created:
                 del _path_created[abspath]
         except OSError as exc:
-            log.warn("error removing %s: %s", directory, exc)
+            log.warn(grok_environment_error(
+                    exc, "error removing %s: " % directory))
 
 def ensure_relative(path):
     """Take the full path 'path', and make it a relative path.

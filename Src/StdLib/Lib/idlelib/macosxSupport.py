@@ -1,70 +1,48 @@
 """
-A number of functions that enhance IDLE on Mac OSX.
+A number of function that enhance IDLE on MacOSX when it used as a normal
+GUI application (as opposed to an X11 application).
 """
 import sys
 import tkinter
 from os import path
-import warnings
+
+
+_appbundle = None
 
 def runningAsOSXApp():
-    warnings.warn("runningAsOSXApp() is deprecated, use isAquaTk()",
-                        DeprecationWarning, stacklevel=2)
-    return isAquaTk()
+    """
+    Returns True if Python is running from within an app on OSX.
+    If so, the various OS X customizations will be triggered later (menu
+    fixup, et al).  (Originally, this test was supposed to condition
+    behavior on whether IDLE was running under Aqua Tk rather than
+    under X11 Tk but that does not work since a framework build
+    could be linked with X11.  For several releases, this test actually
+    differentiates between whether IDLE is running from a framework or
+    not.  As a future enhancement, it should be considered whether there
+    should be a difference based on framework and any needed X11 adaptions
+    should be made dependent on a new function that actually tests for X11.)
+    """
+    global _appbundle
+    if _appbundle is None:
+        _appbundle = sys.platform == 'darwin'
+        if _appbundle:
+            import sysconfig
+            _appbundle = bool(sysconfig.get_config_var('PYTHONFRAMEWORK'))
+    return _appbundle
+
+_carbonaquatk = None
 
 def isCarbonAquaTk(root):
-    warnings.warn("isCarbonAquaTk(root) is deprecated, use isCarbonTk()",
-                        DeprecationWarning, stacklevel=2)
-    return isCarbonTk()
-
-_tk_type = None
-
-def _initializeTkVariantTests(root):
-    """
-    Initializes OS X Tk variant values for
-    isAquaTk(), isCarbonTk(), isCocoaTk(), and isXQuartz().
-    """
-    global _tk_type
-    if sys.platform == 'darwin':
-        ws = root.tk.call('tk', 'windowingsystem')
-        if 'x11' in ws:
-            _tk_type = "xquartz"
-        elif 'aqua' not in ws:
-            _tk_type = "other"
-        elif 'AppKit' in root.tk.call('winfo', 'server', '.'):
-            _tk_type = "cocoa"
-        else:
-            _tk_type = "carbon"
-    else:
-        _tk_type = "other"
-
-def isAquaTk():
-    """
-    Returns True if IDLE is using a native OS X Tk (Cocoa or Carbon).
-    """
-    assert _tk_type is not None
-    return _tk_type == "cocoa" or _tk_type == "carbon"
-
-def isCarbonTk():
     """
     Returns True if IDLE is using a Carbon Aqua Tk (instead of the
     newer Cocoa Aqua Tk).
     """
-    assert _tk_type is not None
-    return _tk_type == "carbon"
-
-def isCocoaTk():
-    """
-    Returns True if IDLE is using a Cocoa Aqua Tk.
-    """
-    assert _tk_type is not None
-    return _tk_type == "cocoa"
-
-def isXQuartz():
-    """
-    Returns True if IDLE is using an OS X X11 Tk.
-    """
-    assert _tk_type is not None
-    return _tk_type == "xquartz"
+    global _carbonaquatk
+    if _carbonaquatk is None:
+        _carbonaquatk = (runningAsOSXApp() and
+                         'aqua' in root.tk.call('tk', 'windowingsystem') and
+                         'AppKit' not in root.tk.call('winfo', 'server', '.'))
+    return _carbonaquatk
 
 def tkVersionWarning(root):
     """
@@ -75,7 +53,8 @@ def tkVersionWarning(root):
         can still crash unexpectedly.
     """
 
-    if isCocoaTk():
+    if (runningAsOSXApp() and
+            ('AppKit' in root.tk.call('winfo', 'server', '.')) ):
         patchlevel = root.tk.call('info', 'patchlevel')
         if patchlevel not in ('8.5.7', '8.5.9'):
             return False
@@ -109,8 +88,8 @@ def hideTkConsole(root):
 
 def overrideRootMenu(root, flist):
     """
-    Replace the Tk root menu by something that is more appropriate for
-    IDLE with an Aqua Tk.
+    Replace the Tk root menu by something that's more appropriate for
+    IDLE.
     """
     # The menu that is attached to the Tk root (".") is also used by AquaTk for
     # all windows that don't specify a menu of their own. The default menubar
@@ -123,29 +102,17 @@ def overrideRootMenu(root, flist):
     #
     # Due to a (mis-)feature of TkAqua the user will also see an empty Help
     # menu.
-    from tkinter import Menu
+    from tkinter import Menu, Text, Text
+    from idlelib.EditorWindow import prepstr, get_accelerator
     from idlelib import Bindings
     from idlelib import WindowList
+    from idlelib.MultiCall import MultiCallCreator
 
-    closeItem = Bindings.menudefs[0][1][-2]
-
-    # Remove the last 3 items of the file menu: a separator, close window and
-    # quit. Close window will be reinserted just above the save item, where
-    # it should be according to the HIG. Quit is in the application menu.
-    del Bindings.menudefs[0][1][-3:]
-    Bindings.menudefs[0][1].insert(6, closeItem)
-
-    # Remove the 'About' entry from the help menu, it is in the application
-    # menu
-    del Bindings.menudefs[-1][1][0:2]
-    # Remove the 'Configure Idle' entry from the options menu, it is in the
-    # application menu as 'Preferences'
-    del Bindings.menudefs[-2][1][0]
     menubar = Menu(root)
     root.configure(menu=menubar)
     menudict = {}
 
-    menudict['windows'] = menu = Menu(menubar, name='windows', tearoff=0)
+    menudict['windows'] = menu = Menu(menubar, name='windows')
     menubar.add_cascade(label='Window', menu=menu, underline=0)
 
     def postwindowsmenu(menu=menu):
@@ -159,14 +126,10 @@ def overrideRootMenu(root, flist):
     WindowList.register_callback(postwindowsmenu)
 
     def about_dialog(event=None):
-        "Handle Help 'About IDLE' event."
-        # Synchronize with EditorWindow.EditorWindow.about_dialog.
         from idlelib import aboutDialog
         aboutDialog.AboutDialog(root, 'About IDLE')
 
     def config_dialog(event=None):
-        "Handle Options 'Configure IDLE' event."
-        # Synchronize with EditorWindow.EditorWindow.config_dialog.
         from idlelib import configDialog
 
         # Ensure that the root object has an instance_dict attribute,
@@ -174,13 +137,13 @@ def overrideRootMenu(root, flist):
         # on an EditorWindow instance that is then passed as the first
         # argument to ConfigDialog)
         root.instance_dict = flist.inversedict
+        root.instance_dict = flist.inversedict
         configDialog.ConfigDialog(root, 'Settings')
 
     def help_dialog(event=None):
-        "Handle Help 'IDLE Help' event."
-        # Synchronize with EditorWindow.EditorWindow.help_dialog.
-        from idlelib import help
-        help.show_idlehelp(root)
+        from idlelib import textView
+        fn = path.join(path.abspath(path.dirname(__file__)), 'help.txt')
+        textView.view_file(root, 'Help', fn)
 
     root.bind('<<about-idle>>', about_dialog)
     root.bind('<<open-config-dialog>>', config_dialog)
@@ -193,10 +156,9 @@ def overrideRootMenu(root, flist):
         # right thing for now.
         root.createcommand('exit', flist.close_all_callback)
 
-    if isCarbonTk():
+    if isCarbonAquaTk(root):
         # for Carbon AquaTk, replace the default Tk apple menu
-        menudict['application'] = menu = Menu(menubar, name='apple',
-                                              tearoff=0)
+        menudict['application'] = menu = Menu(menubar, name='apple')
         menubar.add_cascade(label='IDLE', menu=menu)
         Bindings.menudefs.insert(0,
             ('application', [
@@ -209,7 +171,8 @@ def overrideRootMenu(root, flist):
             Bindings.menudefs[0][1].append(
                     ('_Preferences....', '<<open-config-dialog>>'),
                 )
-    if isCocoaTk():
+    else:
+        # assume Cocoa AquaTk
         # replace default About dialog with About IDLE one
         root.createcommand('tkAboutDialog', about_dialog)
         # replace default "Help" item in Help menu
@@ -219,22 +182,10 @@ def overrideRootMenu(root, flist):
 
 def setupApp(root, flist):
     """
-    Perform initial OS X customizations if needed.
-    Called from PyShell.main() after initial calls to Tk()
-
-    There are currently three major versions of Tk in use on OS X:
-        1. Aqua Cocoa Tk (native default since OS X 10.6)
-        2. Aqua Carbon Tk (original native, 32-bit only, deprecated)
-        3. X11 (supported by some third-party distributors, deprecated)
-    There are various differences among the three that affect IDLE
-    behavior, primarily with menus, mouse key events, and accelerators.
-    Some one-time customizations are performed here.
-    Others are dynamically tested throughout idlelib by calls to the
-    isAquaTk(), isCarbonTk(), isCocoaTk(), isXQuartz() functions which
-    are initialized here as well.
+    Perform setup for the OSX application bundle.
     """
-    _initializeTkVariantTests(root)
-    if isAquaTk():
-        hideTkConsole(root)
-        overrideRootMenu(root, flist)
-        addOpenEventSupport(root, flist)
+    if not runningAsOSXApp(): return
+
+    hideTkConsole(root)
+    overrideRootMenu(root, flist)
+    addOpenEventSupport(root, flist)

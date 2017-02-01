@@ -8,22 +8,23 @@ import re
 import sys
 from collections import Sequence
 from contextlib import contextmanager
-from errno import EINVAL, ENOENT, ENOTDIR
+from errno import EINVAL, ENOENT
 from operator import attrgetter
 from stat import S_ISDIR, S_ISLNK, S_ISREG, S_ISSOCK, S_ISBLK, S_ISCHR, S_ISFIFO
 from urllib.parse import quote_from_bytes as urlquote_from_bytes
 
 
 supports_symlinks = True
-if os.name == 'nt':
+try:
     import nt
+except ImportError:
+    nt = None
+else:
     if sys.getwindowsversion()[:2] >= (6, 0):
         from nt import _getfinalpathname
     else:
         supports_symlinks = False
         _getfinalpathname = None
-else:
-    nt = None
 
 
 __all__ = [
@@ -73,10 +74,6 @@ class _Flavour(object):
                     # parts. This makes the result of parsing e.g.
                     # ("C:", "/", "a") reasonably intuitive.
                     for part in it:
-                        if not part:
-                            continue
-                        if altsep:
-                            part = part.replace(altsep, sep)
                         drv = self.splitroot(part)[0]
                         if drv:
                             break
@@ -113,7 +110,7 @@ class _WindowsFlavour(_Flavour):
     has_drv = True
     pathmod = ntpath
 
-    is_supported = (os.name == 'nt')
+    is_supported = (nt is not None)
 
     drive_letters = (
         set(chr(x) for x in range(ord('a'), ord('z') + 1)) |
@@ -225,36 +222,6 @@ class _WindowsFlavour(_Flavour):
             # It's a path on a network drive => 'file://host/share/a/b'
             return 'file:' + urlquote_from_bytes(path.as_posix().encode('utf-8'))
 
-    def gethomedir(self, username):
-        if 'HOME' in os.environ:
-            userhome = os.environ['HOME']
-        elif 'USERPROFILE' in os.environ:
-            userhome = os.environ['USERPROFILE']
-        elif 'HOMEPATH' in os.environ:
-            try:
-                drv = os.environ['HOMEDRIVE']
-            except KeyError:
-                drv = ''
-            userhome = drv + os.environ['HOMEPATH']
-        else:
-            raise RuntimeError("Can't determine home directory")
-
-        if username:
-            # Try to guess user home directory.  By default all users
-            # directories are located in the same place and are named by
-            # corresponding usernames.  If current user home directory points
-            # to nonstandard place, this guess is likely wrong.
-            if os.environ['USERNAME'] != username:
-                drv, root, parts = self.parse_parts((userhome,))
-                if parts[-1] != os.environ['USERNAME']:
-                    raise RuntimeError("Can't determine home directory "
-                                       "for %r" % username)
-                parts[-1] = username
-                if drv or root:
-                    userhome = drv + root + self.join(parts[1:])
-                else:
-                    userhome = self.join(parts)
-        return userhome
 
 class _PosixFlavour(_Flavour):
     sep = '/'
@@ -337,21 +304,6 @@ class _PosixFlavour(_Flavour):
         # for portability to other applications.
         bpath = bytes(path)
         return 'file://' + urlquote_from_bytes(bpath)
-
-    def gethomedir(self, username):
-        if not username:
-            try:
-                return os.environ['HOME']
-            except KeyError:
-                import pwd
-                return pwd.getpwuid(os.getuid()).pw_dir
-        else:
-            import pwd
-            try:
-                return pwd.getpwnam(username).pw_dir
-            except KeyError:
-                raise RuntimeError("Can't determine home directory "
-                                   "for %r" % username)
 
 
 _windows_flavour = _WindowsFlavour()
@@ -499,15 +451,12 @@ class _PreciseSelector(_Selector):
         _Selector.__init__(self, child_parts)
 
     def _select_from(self, parent_path, is_dir, exists, listdir):
-        try:
-            if not is_dir(parent_path):
-                return
-            path = parent_path._make_child_relpath(self.name)
-            if exists(path):
-                for p in self.successor._select_from(path, is_dir, exists, listdir):
-                    yield p
-        except PermissionError:
+        if not is_dir(parent_path):
             return
+        path = parent_path._make_child_relpath(self.name)
+        if exists(path):
+            for p in self.successor._select_from(path, is_dir, exists, listdir):
+                yield p
 
 
 class _WildcardSelector(_Selector):
@@ -517,19 +466,15 @@ class _WildcardSelector(_Selector):
         _Selector.__init__(self, child_parts)
 
     def _select_from(self, parent_path, is_dir, exists, listdir):
-        try:
-            if not is_dir(parent_path):
-                return
-            cf = parent_path._flavour.casefold
-            for name in listdir(parent_path):
-                casefolded = cf(name)
-                if self.pat.match(casefolded):
-                    path = parent_path._make_child_relpath(name)
-                    for p in self.successor._select_from(path, is_dir, exists, listdir):
-                        yield p
-        except PermissionError:
+        if not is_dir(parent_path):
             return
-
+        cf = parent_path._flavour.casefold
+        for name in listdir(parent_path):
+            casefolded = cf(name)
+            if self.pat.match(casefolded):
+                path = parent_path._make_child_relpath(name)
+                for p in self.successor._select_from(path, is_dir, exists, listdir):
+                    yield p
 
 
 class _RecursiveWildcardSelector(_Selector):
@@ -539,32 +484,26 @@ class _RecursiveWildcardSelector(_Selector):
 
     def _iterate_directories(self, parent_path, is_dir, listdir):
         yield parent_path
-        try:
-            for name in listdir(parent_path):
-                path = parent_path._make_child_relpath(name)
-                if is_dir(path) and not path.is_symlink():
-                    for p in self._iterate_directories(path, is_dir, listdir):
-                        yield p
-        except PermissionError:
-            return
+        for name in listdir(parent_path):
+            path = parent_path._make_child_relpath(name)
+            if is_dir(path):
+                for p in self._iterate_directories(path, is_dir, listdir):
+                    yield p
 
     def _select_from(self, parent_path, is_dir, exists, listdir):
-        try:
-            if not is_dir(parent_path):
-                return
-            with _cached(listdir) as listdir:
-                yielded = set()
-                try:
-                    successor_select = self.successor._select_from
-                    for starting_point in self._iterate_directories(parent_path, is_dir, listdir):
-                        for p in successor_select(starting_point, is_dir, exists, listdir):
-                            if p not in yielded:
-                                yield p
-                                yielded.add(p)
-                finally:
-                    yielded.clear()
-        except PermissionError:
+        if not is_dir(parent_path):
             return
+        with _cached(listdir) as listdir:
+            yielded = set()
+            try:
+                successor_select = self.successor._select_from
+                for starting_point in self._iterate_directories(parent_path, is_dir, listdir):
+                    for p in successor_select(starting_point, is_dir, exists, listdir):
+                        if p not in yielded:
+                            yield p
+                            yielded.add(p)
+            finally:
+                yielded.clear()
 
 
 #
@@ -635,8 +574,8 @@ class PurePath(object):
             if isinstance(a, PurePath):
                 parts += a._parts
             elif isinstance(a, str):
-                # Force-cast str subclasses to str (issue #21127)
-                parts.append(str(a))
+                # Assuming a str
+                parts.append(a)
             else:
                 raise TypeError(
                     "argument should be a path or str object, not %r"
@@ -674,7 +613,7 @@ class PurePath(object):
             return cls._flavour.join(parts)
 
     def _init(self):
-        # Overridden in concrete Path
+        # Overriden in concrete Path
         pass
 
     def _make_child(self, args):
@@ -726,6 +665,9 @@ class PurePath(object):
         if not isinstance(other, PurePath):
             return NotImplemented
         return self._cparts == other._cparts and self._flavour is other._flavour
+
+    def __ne__(self, other):
+        return not self == other
 
     def __hash__(self):
         try:
@@ -807,20 +749,17 @@ class PurePath(object):
         """Return a new path with the file name changed."""
         if not self.name:
             raise ValueError("%r has an empty name" % (self,))
-        drv, root, parts = self._flavour.parse_parts((name,))
-        if (not name or name[-1] in [self._flavour.sep, self._flavour.altsep]
-            or drv or root or len(parts) != 1):
-            raise ValueError("Invalid name %r" % (name))
         return self._from_parsed_parts(self._drv, self._root,
                                        self._parts[:-1] + [name])
 
     def with_suffix(self, suffix):
         """Return a new path with the file suffix changed (or added, if none)."""
         # XXX if suffix is None, should the current suffix be removed?
-        f = self._flavour
-        if f.sep in suffix or f.altsep and f.altsep in suffix:
+        drv, root, parts = self._flavour.parse_parts((suffix,))
+        if drv or root or len(parts) != 1:
             raise ValueError("Invalid suffix %r" % (suffix))
-        if suffix and not suffix.startswith('.') or suffix == '.':
+        suffix = parts[0]
+        if not suffix.startswith('.'):
             raise ValueError("Invalid suffix %r" % (suffix))
         name = self.name
         if not name:
@@ -1022,24 +961,6 @@ class Path(PurePath):
         """
         return cls(os.getcwd())
 
-    @classmethod
-    def home(cls):
-        """Return a new path pointing to the user's home directory (as
-        returned by os.path.expanduser('~')).
-        """
-        return cls(cls()._flavour.gethomedir(None))
-
-    def samefile(self, other_path):
-        """Return whether other_path is the same or not as this file
-        (as returned by os.path.samefile()).
-        """
-        st = self.stat()
-        try:
-            other_st = other_path.stat()
-        except AttributeError:
-            other_st = os.stat(other_path)
-        return os.path.samestat(st, other_st)
-
     def iterdir(self):
         """Iterate over the files in this directory.  Does not yield any
         result for the special paths '.' and '..'.
@@ -1058,8 +979,6 @@ class Path(PurePath):
         """Iterate over this subtree and yield all existing files (of any
         kind, including directories) matching the given pattern.
         """
-        if not pattern:
-            raise ValueError("Unacceptable pattern: {!r}".format(pattern))
         pattern = self._flavour.casefold(pattern)
         drv, root, pattern_parts = self._flavour.parse_parts((pattern,))
         if drv or root:
@@ -1150,39 +1069,6 @@ class Path(PurePath):
         return io.open(str(self), mode, buffering, encoding, errors, newline,
                        opener=self._opener)
 
-    def read_bytes(self):
-        """
-        Open the file in bytes mode, read it, and close the file.
-        """
-        with self.open(mode='rb') as f:
-            return f.read()
-
-    def read_text(self, encoding=None, errors=None):
-        """
-        Open the file in text mode, read it, and close the file.
-        """
-        with self.open(mode='r', encoding=encoding, errors=errors) as f:
-            return f.read()
-
-    def write_bytes(self, data):
-        """
-        Open the file in bytes mode, write to it, and close the file.
-        """
-        # type-check for the buffer interface before truncating the file
-        view = memoryview(data)
-        with self.open(mode='wb') as f:
-            return f.write(view)
-
-    def write_text(self, data, encoding=None, errors=None):
-        """
-        Open the file in text mode, write to it, and close the file.
-        """
-        if not isinstance(data, str):
-            raise TypeError('data must be str, not %s' %
-                            data.__class__.__name__)
-        with self.open(mode='w', encoding=encoding, errors=errors) as f:
-            return f.write(data)
-
     def touch(self, mode=0o666, exist_ok=True):
         """
         Create this file with the given access mode, if it doesn't exist.
@@ -1206,21 +1092,14 @@ class Path(PurePath):
         fd = self._raw_open(flags, mode)
         os.close(fd)
 
-    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+    def mkdir(self, mode=0o777, parents=False):
         if self._closed:
             self._raise_closed()
         if not parents:
-            try:
-                self._accessor.mkdir(self, mode)
-            except FileExistsError:
-                if not exist_ok or not self.is_dir():
-                    raise
+            self._accessor.mkdir(self, mode)
         else:
             try:
                 self._accessor.mkdir(self, mode)
-            except FileExistsError:
-                if not exist_ok or not self.is_dir():
-                    raise
             except OSError as e:
                 if e.errno != ENOENT:
                     raise
@@ -1305,7 +1184,7 @@ class Path(PurePath):
         try:
             self.stat()
         except OSError as e:
-            if e.errno not in (ENOENT, ENOTDIR):
+            if e.errno != ENOENT:
                 raise
             return False
         return True
@@ -1317,7 +1196,7 @@ class Path(PurePath):
         try:
             return S_ISDIR(self.stat().st_mode)
         except OSError as e:
-            if e.errno not in (ENOENT, ENOTDIR):
+            if e.errno != ENOENT:
                 raise
             # Path doesn't exist or is a broken symlink
             # (see https://bitbucket.org/pitrou/pathlib/issue/12/)
@@ -1331,7 +1210,7 @@ class Path(PurePath):
         try:
             return S_ISREG(self.stat().st_mode)
         except OSError as e:
-            if e.errno not in (ENOENT, ENOTDIR):
+            if e.errno != ENOENT:
                 raise
             # Path doesn't exist or is a broken symlink
             # (see https://bitbucket.org/pitrou/pathlib/issue/12/)
@@ -1344,7 +1223,7 @@ class Path(PurePath):
         try:
             return S_ISLNK(self.lstat().st_mode)
         except OSError as e:
-            if e.errno not in (ENOENT, ENOTDIR):
+            if e.errno != ENOENT:
                 raise
             # Path doesn't exist
             return False
@@ -1356,7 +1235,7 @@ class Path(PurePath):
         try:
             return S_ISBLK(self.stat().st_mode)
         except OSError as e:
-            if e.errno not in (ENOENT, ENOTDIR):
+            if e.errno != ENOENT:
                 raise
             # Path doesn't exist or is a broken symlink
             # (see https://bitbucket.org/pitrou/pathlib/issue/12/)
@@ -1369,7 +1248,7 @@ class Path(PurePath):
         try:
             return S_ISCHR(self.stat().st_mode)
         except OSError as e:
-            if e.errno not in (ENOENT, ENOTDIR):
+            if e.errno != ENOENT:
                 raise
             # Path doesn't exist or is a broken symlink
             # (see https://bitbucket.org/pitrou/pathlib/issue/12/)
@@ -1382,7 +1261,7 @@ class Path(PurePath):
         try:
             return S_ISFIFO(self.stat().st_mode)
         except OSError as e:
-            if e.errno not in (ENOENT, ENOTDIR):
+            if e.errno != ENOENT:
                 raise
             # Path doesn't exist or is a broken symlink
             # (see https://bitbucket.org/pitrou/pathlib/issue/12/)
@@ -1395,22 +1274,11 @@ class Path(PurePath):
         try:
             return S_ISSOCK(self.stat().st_mode)
         except OSError as e:
-            if e.errno not in (ENOENT, ENOTDIR):
+            if e.errno != ENOENT:
                 raise
             # Path doesn't exist or is a broken symlink
             # (see https://bitbucket.org/pitrou/pathlib/issue/12/)
             return False
-
-    def expanduser(self):
-        """ Return a new path with expanded ~ and ~user constructs
-        (as returned by os.path.expanduser)
-        """
-        if (not (self._drv or self._root) and
-            self._parts and self._parts[0][:1] == '~'):
-            homedir = self._flavour.gethomedir(self._parts[0][1:])
-            return self._from_parts([homedir] + self._parts[1:])
-
-        return self
 
 
 class PosixPath(Path, PurePosixPath):
@@ -1418,9 +1286,3 @@ class PosixPath(Path, PurePosixPath):
 
 class WindowsPath(Path, PureWindowsPath):
     __slots__ = ()
-
-    def owner(self):
-        raise NotImplementedError("Path.owner() is unsupported on this system")
-
-    def group(self):
-        raise NotImplementedError("Path.group() is unsupported on this system")

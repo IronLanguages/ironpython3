@@ -4,16 +4,15 @@ Dialog for building Tkinter accelerator key bindings
 from tkinter import *
 import tkinter.messagebox as tkMessageBox
 import string
-import sys
+from idlelib import macosxSupport
 
 class GetKeysDialog(Toplevel):
-    def __init__(self,parent,title,action,currentKeySequences,_htest=False):
+    def __init__(self,parent,title,action,currentKeySequences):
         """
         action - string, the name of the virtual event these keys will be
                  mapped to
         currentKeys - list, a list of all key sequence lists currently mapped
                  to virtual events, for overlap checking
-        _htest - bool, change box location when running htest
         """
         Toplevel.__init__(self, parent)
         self.configure(borderwidth=5)
@@ -39,14 +38,11 @@ class GetKeysDialog(Toplevel):
         self.LoadFinalKeyList()
         self.withdraw() #hide while setting geometry
         self.update_idletasks()
-        self.geometry(
-                "+%d+%d" % (
-                    parent.winfo_rootx() +
-                    (parent.winfo_width()/2 - self.winfo_reqwidth()/2),
-                    parent.winfo_rooty() +
-                    ((parent.winfo_height()/2 - self.winfo_reqheight()/2)
-                    if not _htest else 150)
-                ) )  #centre dialog over parent (or below htest box)
+        self.geometry("+%d+%d" %
+            ((parent.winfo_rootx()+((parent.winfo_width()/2)
+                -(self.winfo_reqwidth()/2)),
+              parent.winfo_rooty()+((parent.winfo_height()/2)
+                -(self.winfo_reqheight()/2)) )) ) #centre dialog over parent
         self.deiconify() #geometry set, unhide
         self.wait_window()
 
@@ -137,7 +133,8 @@ class GetKeysDialog(Toplevel):
         order is also important: key binding equality depends on it, so
         config-keys.def must use the same ordering.
         """
-        if sys.platform == "darwin":
+        import sys
+        if macosxSupport.runningAsOSXApp():
             self.modifiers = ['Shift', 'Control', 'Option', 'Command']
         else:
             self.modifiers = ['Control', 'Alt', 'Shift']
@@ -262,5 +259,11 @@ class GetKeysDialog(Toplevel):
         return keysOK
 
 if __name__ == '__main__':
-    from idlelib.idle_test.htest import run
-    run(GetKeysDialog)
+    #test the dialog
+    root=Tk()
+    def run():
+        keySeq=''
+        dlg=GetKeysDialog(root,'Get Keys','find-again',[])
+        print(dlg.result)
+    Button(root,text='Dialog',command=run).pack()
+    root.mainloop()

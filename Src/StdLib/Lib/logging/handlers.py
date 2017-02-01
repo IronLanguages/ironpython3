@@ -1,4 +1,4 @@
-# Copyright 2001-2015 by Vinay Sajip. All Rights Reserved.
+# Copyright 2001-2013 by Vinay Sajip. All Rights Reserved.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose and without fee is hereby granted,
@@ -18,12 +18,13 @@
 Additional handlers for the logging package for Python. The core package is
 based on PEP 282 and comments thereto in comp.lang.python.
 
-Copyright (C) 2001-2015 Vinay Sajip. All Rights Reserved.
+Copyright (C) 2001-2013 Vinay Sajip. All Rights Reserved.
 
 To use, simply 'import logging.handlers' and log away!
 """
 
-import logging, socket, os, pickle, struct, time, re
+import errno, logging, socket, os, pickle, struct, time, re
+from codecs import BOM_UTF8
 from stat import ST_DEV, ST_INO, ST_MTIME
 import queue
 try:
@@ -463,7 +464,6 @@ class WatchedFileHandler(logging.FileHandler):
                 # we have an open file handle, clean it up
                 self.stream.flush()
                 self.stream.close()
-                self.stream = None  # See Issue #21742: _open () might fail.
                 # open a new file handle and get new stat info from that fd
                 self.stream = self._open()
                 self._statstream()
@@ -588,8 +588,6 @@ class SocketHandler(logging.Handler):
         d['msg'] = record.getMessage()
         d['args'] = None
         d['exc_info'] = None
-        # Issue #25685: delete 'message' if present: redundant with 'msg'
-        d.pop('message', None)
         s = pickle.dumps(d, 1)
         slen = struct.pack(">L", len(s))
         return slen + s
@@ -629,10 +627,9 @@ class SocketHandler(logging.Handler):
         """
         self.acquire()
         try:
-            sock = self.sock
-            if sock:
+            if self.sock:
+                self.sock.close()
                 self.sock = None
-                sock.close()
             logging.Handler.close(self)
         finally:
             self.release()
@@ -882,21 +879,21 @@ class SysLogHandler(logging.Handler):
         The record is formatted, and then sent to the syslog server. If
         exception information is present, it is NOT sent to the server.
         """
-        try:
-            msg = self.format(record)
-            if self.ident:
-                msg = self.ident + msg
-            if self.append_nul:
-                msg += '\000'
+        msg = self.format(record)
+        if self.ident:
+            msg = self.ident + msg
+        if self.append_nul:
+            msg += '\000'
 
-            # We need to convert record level to lowercase, maybe this will
-            # change in the future.
-            prio = '<%d>' % self.encodePriority(self.facility,
-                                                self.mapPriority(record.levelname))
-            prio = prio.encode('utf-8')
-            # Message is a string. Convert to bytes as required by RFC 5424
-            msg = msg.encode('utf-8')
-            msg = prio + msg
+        # We need to convert record level to lowercase, maybe this will
+        # change in the future.
+        prio = '<%d>' % self.encodePriority(self.facility,
+                                            self.mapPriority(record.levelname))
+        prio = prio.encode('utf-8')
+        # Message is a string. Convert to bytes as required by RFC 5424
+        msg = msg.encode('utf-8')
+        msg = prio + msg
+        try:
             if self.unixsocket:
                 try:
                     self.socket.send(msg)
@@ -934,11 +931,11 @@ class SMTPHandler(logging.Handler):
         default is one second).
         """
         logging.Handler.__init__(self)
-        if isinstance(mailhost, (list, tuple)):
+        if isinstance(mailhost, tuple):
             self.mailhost, self.mailport = mailhost
         else:
             self.mailhost, self.mailport = mailhost, None
-        if isinstance(credentials, (list, tuple)):
+        if isinstance(credentials, tuple):
             self.username, self.password = credentials
         else:
             self.username = None
@@ -967,26 +964,24 @@ class SMTPHandler(logging.Handler):
         """
         try:
             import smtplib
-            from email.message import EmailMessage
-            import email.utils
-
+            from email.utils import formatdate
             port = self.mailport
             if not port:
                 port = smtplib.SMTP_PORT
             smtp = smtplib.SMTP(self.mailhost, port, timeout=self.timeout)
-            msg = EmailMessage()
-            msg['From'] = self.fromaddr
-            msg['To'] = ','.join(self.toaddrs)
-            msg['Subject'] = self.getSubject(record)
-            msg['Date'] = email.utils.localtime()
-            msg.set_content(self.format(record))
+            msg = self.format(record)
+            msg = "From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\n\r\n%s" % (
+                            self.fromaddr,
+                            ",".join(self.toaddrs),
+                            self.getSubject(record),
+                            formatdate(), msg)
             if self.username:
                 if self.secure is not None:
                     smtp.ehlo()
                     smtp.starttls(*self.secure)
                     smtp.ehlo()
                 smtp.login(self.username, self.password)
-            smtp.send_message(msg)
+            smtp.sendmail(self.fromaddr, self.toaddrs, msg)
             smtp.quit()
         except Exception:
             self.handleError(record)
@@ -1094,8 +1089,7 @@ class HTTPHandler(logging.Handler):
     A class which sends records to a Web server, using either GET or
     POST semantics.
     """
-    def __init__(self, host, url, method="GET", secure=False, credentials=None,
-                 context=None):
+    def __init__(self, host, url, method="GET", secure=False, credentials=None):
         """
         Initialize the instance with the host, the request URL, and the method
         ("GET" or "POST")
@@ -1104,15 +1098,11 @@ class HTTPHandler(logging.Handler):
         method = method.upper()
         if method not in ["GET", "POST"]:
             raise ValueError("method must be GET or POST")
-        if not secure and context is not None:
-            raise ValueError("context parameter only makes sense "
-                             "with secure=True")
         self.host = host
         self.url = url
         self.method = method
         self.secure = secure
         self.credentials = credentials
-        self.context = context
 
     def mapLogRecord(self, record):
         """
@@ -1132,7 +1122,7 @@ class HTTPHandler(logging.Handler):
             import http.client, urllib.parse
             host = self.host
             if self.secure:
-                h = http.client.HTTPSConnection(host, context=self.context)
+                h = http.client.HTTPSConnection(host)
             else:
                 h = http.client.HTTPConnection(host)
             url = self.url
@@ -1156,8 +1146,8 @@ class HTTPHandler(logging.Handler):
                 h.putheader("Content-length", str(len(data)))
             if self.credentials:
                 import base64
-                s = ('%s:%s' % self.credentials).encode('utf-8')
-                s = 'Basic ' + base64.b64encode(s).strip().decode('ascii')
+                s = ('u%s:%s' % self.credentials).encode('utf-8')
+                s = 'Basic ' + base64.b64encode(s).strip()
                 h.putheader('Authorization', s)
             h.endheaders()
             if self.method == "POST":
@@ -1218,10 +1208,8 @@ class BufferingHandler(logging.Handler):
 
         This version just flushes and chains to the parent class' close().
         """
-        try:
-            self.flush()
-        finally:
-            logging.Handler.close(self)
+        self.flush()
+        logging.Handler.close(self)
 
 class MemoryHandler(BufferingHandler):
     """
@@ -1275,15 +1263,13 @@ class MemoryHandler(BufferingHandler):
         """
         Flush, set the target to None and lose the buffer.
         """
+        self.flush()
+        self.acquire()
         try:
-            self.flush()
+            self.target = None
+            BufferingHandler.close(self)
         finally:
-            self.acquire()
-            try:
-                self.target = None
-                BufferingHandler.close(self)
-            finally:
-                self.release()
+            self.release()
 
 
 class QueueHandler(logging.Handler):
@@ -1359,7 +1345,7 @@ if threading:
         """
         _sentinel = None
 
-        def __init__(self, queue, *handlers, respect_handler_level=False):
+        def __init__(self, queue, *handlers):
             """
             Initialise an instance with the specified queue and
             handlers.
@@ -1368,7 +1354,6 @@ if threading:
             self.handlers = handlers
             self._stop = threading.Event()
             self._thread = None
-            self.respect_handler_level = respect_handler_level
 
         def dequeue(self, block):
             """
@@ -1409,12 +1394,7 @@ if threading:
             """
             record = self.prepare(record)
             for handler in self.handlers:
-                if not self.respect_handler_level:
-                    process = True
-                else:
-                    process = record.levelno >= handler.level
-                if process:
-                    handler.handle(record)
+                handler.handle(record)
 
         def _monitor(self):
             """

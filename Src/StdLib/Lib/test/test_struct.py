@@ -660,5 +660,8 @@ class UnpackIteratorTest(unittest.TestCase):
         self.assertRaises(StopIteration, next, it)
 
 
+def test_main():
+    support.run_unittest(__name__)
+
 if __name__ == '__main__':
-    unittest.main()
+    test_main()

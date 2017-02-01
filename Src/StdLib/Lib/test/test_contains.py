@@ -1,4 +1,5 @@
 from collections import deque
+from test.support import run_unittest
 import unittest
 
 
@@ -85,5 +86,8 @@ class TestContains(unittest.TestCase):
             self.assertTrue(container == container)
 
 
+def test_main():
+    run_unittest(TestContains)
+
 if __name__ == '__main__':
-    unittest.main()
+    test_main()

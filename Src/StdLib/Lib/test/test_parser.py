@@ -4,7 +4,7 @@ import sys
 import operator
 import struct
 from test import support
-from test.support.script_helper import assert_python_failure
+from test.script_helper import assert_python_failure
 
 #
 #  First, we test that we can generate trees from valid source fragments,
@@ -62,22 +62,6 @@ class RoundtripLegalSyntaxTestCase(unittest.TestCase):
         self.check_suite("def f():\n"
                          "    if (yield):\n"
                          "        yield x\n")
-
-    def test_await_statement(self):
-        self.check_suite("async def f():\n await smth()")
-        self.check_suite("async def f():\n foo = await smth()")
-        self.check_suite("async def f():\n foo, bar = await smth()")
-        self.check_suite("async def f():\n (await smth())")
-        self.check_suite("async def f():\n foo((await smth()))")
-        self.check_suite("async def f():\n await foo(); return 42")
-
-    def test_async_with_statement(self):
-        self.check_suite("async def f():\n async with 1: pass")
-        self.check_suite("async def f():\n async with a as b, c as d: pass")
-
-    def test_async_for_statement(self):
-        self.check_suite("async def f():\n async for i in (): pass")
-        self.check_suite("async def f():\n async for i, b in (): pass")
 
     def test_nonlocal_statement(self):
         self.check_suite("def f():\n"
@@ -329,12 +313,7 @@ class RoundtripLegalSyntaxTestCase(unittest.TestCase):
                          "except Exception as e:\n"
                          "    raise ValueError from e\n")
 
-    def test_list_displays(self):
-        self.check_expr('[]')
-        self.check_expr('[*{2}, 3, *[4]]')
-
     def test_set_displays(self):
-        self.check_expr('{*{2}, 3, *[4]}')
         self.check_expr('{2}')
         self.check_expr('{2,}')
         self.check_expr('{2, 3}')
@@ -346,15 +325,6 @@ class RoundtripLegalSyntaxTestCase(unittest.TestCase):
         self.check_expr('{a:b,}')
         self.check_expr('{a:b, c:d}')
         self.check_expr('{a:b, c:d,}')
-        self.check_expr('{**{}}')
-        self.check_expr('{**{}, 3:4, **{5:6, 7:8}}')
-
-    def test_argument_unpacking(self):
-        self.check_expr("f(*a, **b)")
-        self.check_expr('f(a, *b, *c, *d)')
-        self.check_expr('f(**a, **b)')
-        self.check_expr('f(2, *a, *b, **b, **c, **d)')
-        self.check_expr("f(*b, *() or () and (), **{} and {}, **() or {})")
 
     def test_set_comprehensions(self):
         self.check_expr('{x for x in seq}')
@@ -760,5 +730,16 @@ class OtherParserCase(unittest.TestCase):
         with self.assertRaises(TypeError):
             parser.expr("a", "b")
 
+def test_main():
+    support.run_unittest(
+        RoundtripLegalSyntaxTestCase,
+        IllegalSyntaxTestCase,
+        CompileTestCase,
+        ParserStackLimitTestCase,
+        STObjectTestCase,
+        OtherParserCase,
+    )
+
+
 if __name__ == "__main__":
-    unittest.main()
+    test_main()

@@ -24,5 +24,8 @@ class EOFTestCase(unittest.TestCase):
         else:
             raise support.TestFailed
 
+def test_main():
+    support.run_unittest(EOFTestCase)
+
 if __name__ == "__main__":
-    unittest.main()
+    test_main()

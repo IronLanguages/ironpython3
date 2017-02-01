@@ -6,6 +6,7 @@ of using the typical __path__/__name__ test).
 """
 import unittest
 from .. import util
+from . import util as import_util
 
 
 class Using__package__:
@@ -69,23 +70,17 @@ class Using__package__:
         with self.assertRaises(TypeError):
             self.__import__('', globals, {}, ['relimport'], 1)
 
-
 class Using__package__PEP302(Using__package__):
     mock_modules = util.mock_modules
 
+Frozen_UsingPackagePEP302, Source_UsingPackagePEP302 = util.test_both(
+        Using__package__PEP302, __import__=import_util.__import__)
 
-(Frozen_UsingPackagePEP302,
- Source_UsingPackagePEP302
- ) = util.test_both(Using__package__PEP302, __import__=util.__import__)
-
-
-class Using__package__PEP451(Using__package__):
+class Using__package__PEP302(Using__package__):
     mock_modules = util.mock_spec
 
-
-(Frozen_UsingPackagePEP451,
- Source_UsingPackagePEP451
- ) = util.test_both(Using__package__PEP451, __import__=util.__import__)
+Frozen_UsingPackagePEP451, Source_UsingPackagePEP451 = util.test_both(
+        Using__package__PEP302, __import__=import_util.__import__)
 
 
 class Setting__package__:
@@ -100,7 +95,7 @@ class Setting__package__:
 
     """
 
-    __import__ = util.__import__['Source']
+    __import__ = import_util.__import__[1]
 
     # [top-level]
     def test_top_level(self):

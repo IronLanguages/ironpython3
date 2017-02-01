@@ -1,9 +1,9 @@
-"""Routine to "compile" a .py file to a .pyc file.
+"""Routine to "compile" a .py file to a .pyc (or .pyo) file.
 
 This module has intimate knowledge of the format of .pyc files.
 """
 
-import importlib._bootstrap_external
+import importlib._bootstrap
 import importlib.machinery
 import importlib.util
 import os
@@ -67,7 +67,7 @@ def compile(file, cfile=None, dfile=None, doraise=False, optimize=-1):
 
     :param file: The source file name.
     :param cfile: The target byte compiled file name.  When not given, this
-        defaults to the PEP 3147/PEP 488 location.
+        defaults to the PEP 3147 location.
     :param dfile: Purported file name, i.e. the file name that shows up in
         error messages.  Defaults to the source file name.
     :param doraise: Flag indicating whether or not an exception should be
@@ -85,12 +85,12 @@ def compile(file, cfile=None, dfile=None, doraise=False, optimize=-1):
     Note that it isn't necessary to byte-compile Python modules for
     execution efficiency -- Python itself byte-compiles a module when
     it is loaded, and if it can, writes out the bytecode to the
-    corresponding .pyc file.
+    corresponding .pyc (or .pyo) file.
 
     However, if a Python installation is shared between users, it is a
     good idea to byte-compile all modules upon installation, since
     other users may not be able to write in the source directories,
-    and thus they won't be able to write the .pyc file, and then
+    and thus they won't be able to write the .pyc/.pyo file, and then
     they would be byte-compiling every module each time it is loaded.
     This can slow down program start-up considerably.
 
@@ -105,9 +105,8 @@ def compile(file, cfile=None, dfile=None, doraise=False, optimize=-1):
     """
     if cfile is None:
         if optimize >= 0:
-            optimization = optimize if optimize >= 1 else ''
             cfile = importlib.util.cache_from_source(file,
-                                                     optimization=optimization)
+                                                     debug_override=not optimize)
         else:
             cfile = importlib.util.cache_from_source(file)
     if os.path.islink(cfile):
@@ -137,10 +136,10 @@ def compile(file, cfile=None, dfile=None, doraise=False, optimize=-1):
     except FileExistsError:
         pass
     source_stats = loader.path_stats(file)
-    bytecode = importlib._bootstrap_external._code_to_bytecode(
+    bytecode = importlib._bootstrap._code_to_bytecode(
             code, source_stats['mtime'], source_stats['size'])
-    mode = importlib._bootstrap_external._calc_mode(file)
-    importlib._bootstrap_external._write_atomic(cfile, bytecode, mode)
+    mode = importlib._bootstrap._calc_mode(file)
+    importlib._bootstrap._write_atomic(cfile, bytecode, mode)
     return cfile
 
 
@@ -179,7 +178,7 @@ def main(args=None):
             except PyCompileError as error:
                 # return value to indicate at least one failure
                 rv = 1
-                sys.stderr.write("%s\n" % error.msg)
+                sys.stderr.write(error.msg)
     return rv
 
 if __name__ == "__main__":

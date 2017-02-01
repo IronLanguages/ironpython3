@@ -3,6 +3,7 @@ import shlex
 import string
 import unittest
 
+from test import support
 
 
 # The original test data set was from shellwords, by Hartmut Goebel.
@@ -194,5 +195,8 @@ if not getattr(shlex, "split", None):
         if methname.startswith("test") and methname != "testCompat":
             delattr(ShlexTest, methname)
 
+def test_main():
+    support.run_unittest(ShlexTest)
+
 if __name__ == "__main__":
-    unittest.main()
+    test_main()

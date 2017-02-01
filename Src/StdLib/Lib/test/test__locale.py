@@ -9,6 +9,7 @@ import locale
 import sys
 import unittest
 from platform import uname
+from test.support import run_unittest
 
 if uname().system == "Darwin":
     maj, min, mic = [int(part) for part in uname().release.split(".")]
@@ -23,55 +24,45 @@ candidate_locales = ['es_UY', 'fr_FR', 'fi_FI', 'es_CO', 'pt_PT', 'it_IT',
     'da_DK', 'nn_NO', 'cs_CZ', 'de_LU', 'es_BO', 'sq_AL', 'sk_SK', 'fr_CH',
     'de_DE', 'sr_YU', 'br_FR', 'nl_BE', 'sv_FI', 'pl_PL', 'fr_CA', 'fo_FO',
     'bs_BA', 'fr_LU', 'kl_GL', 'fa_IR', 'de_BE', 'sv_SE', 'it_CH', 'uk_UA',
-    'eu_ES', 'vi_VN', 'af_ZA', 'nb_NO', 'en_DK', 'tg_TJ', 'ps_AF', 'en_US',
-    'fr_FR.ISO8859-1', 'fr_FR.UTF-8', 'fr_FR.ISO8859-15@euro',
-    'ru_RU.KOI8-R', 'ko_KR.eucKR']
+    'eu_ES', 'vi_VN', 'af_ZA', 'nb_NO', 'en_DK', 'tg_TJ', 'en_US',
+    'es_ES.ISO8859-1', 'fr_FR.ISO8859-15', 'ru_RU.KOI8-R', 'ko_KR.eucKR']
 
-def setUpModule():
-    global candidate_locales
-    # Issue #13441: Skip some locales (e.g. cs_CZ and hu_HU) on Solaris to
-    # workaround a mbstowcs() bug. For example, on Solaris, the hu_HU locale uses
-    # the locale encoding ISO-8859-2, the thousauds separator is b'\xA0' and it is
-    # decoded as U+30000020 (an invalid character) by mbstowcs().
-    if sys.platform == 'sunos5':
-        old_locale = locale.setlocale(locale.LC_ALL)
-        try:
-            locales = []
-            for loc in candidate_locales:
-                try:
-                    locale.setlocale(locale.LC_ALL, loc)
-                except Error:
-                    continue
-                encoding = locale.getpreferredencoding(False)
-                try:
-                    localeconv()
-                except Exception as err:
-                    print("WARNING: Skip locale %s (encoding %s): [%s] %s"
-                        % (loc, encoding, type(err), err))
-                else:
-                    locales.append(loc)
-            candidate_locales = locales
-        finally:
-            locale.setlocale(locale.LC_ALL, old_locale)
+# Issue #13441: Skip some locales (e.g. cs_CZ and hu_HU) on Solaris to
+# workaround a mbstowcs() bug. For example, on Solaris, the hu_HU locale uses
+# the locale encoding ISO-8859-2, the thousauds separator is b'\xA0' and it is
+# decoded as U+30000020 (an invalid character) by mbstowcs().
+if sys.platform == 'sunos5':
+    old_locale = locale.setlocale(locale.LC_ALL)
+    try:
+        locales = []
+        for loc in candidate_locales:
+            try:
+                locale.setlocale(locale.LC_ALL, loc)
+            except Error:
+                continue
+            encoding = locale.getpreferredencoding(False)
+            try:
+                localeconv()
+            except Exception as err:
+                print("WARNING: Skip locale %s (encoding %s): [%s] %s"
+                      % (loc, encoding, type(err), err))
+            else:
+                locales.append(loc)
+        candidate_locales = locales
+    finally:
+        locale.setlocale(locale.LC_ALL, old_locale)
 
-    # Workaround for MSVC6(debug) crash bug
-    if "MSC v.1200" in sys.version:
-        def accept(loc):
-            a = loc.split(".")
-            return not(len(a) == 2 and len(a[-1]) >= 9)
-        candidate_locales = [loc for loc in candidate_locales if accept(loc)]
+# Workaround for MSVC6(debug) crash bug
+if "MSC v.1200" in sys.version:
+    def accept(loc):
+        a = loc.split(".")
+        return not(len(a) == 2 and len(a[-1]) >= 9)
+    candidate_locales = [loc for loc in candidate_locales if accept(loc)]
 
 # List known locale values to test against when available.
 # Dict formatted as ``<locale> : (<decimal_point>, <thousands_sep>)``.  If a
 # value is not known, use '' .
-known_numerics = {
-    'en_US': ('.', ','),
-    'de_DE' : (',', '.'),
-    # The French thousands separator may be a breaking or non-breaking space
-    # depending on the platform, so do not test it
-    'fr_FR' : (',', ''),
-    'ps_AF': ('\u066b', '\u066c'),
-}
+known_numerics = {'fr_FR' : (',', ''), 'en_US':('.', ',')}
 
 class _LocaleTests(unittest.TestCase):
 
@@ -100,12 +91,10 @@ class _LocaleTests(unittest.TestCase):
                                     calc_value, known_value,
                                     calc_type, data_type, set_locale,
                                     used_locale))
-            return True
 
     @unittest.skipUnless(nl_langinfo, "nl_langinfo is not available")
     def test_lc_numeric_nl_langinfo(self):
         # Test nl_langinfo against known values
-        tested = False
         for loc in candidate_locales:
             try:
                 setlocale(LC_NUMERIC, loc)
@@ -114,14 +103,10 @@ class _LocaleTests(unittest.TestCase):
                 continue
             for li, lc in ((RADIXCHAR, "decimal_point"),
                             (THOUSEP, "thousands_sep")):
-                if self.numeric_tester('nl_langinfo', nl_langinfo(li), lc, loc):
-                    tested = True
-        if not tested:
-            self.skipTest('no suitable locales')
+                self.numeric_tester('nl_langinfo', nl_langinfo(li), lc, loc)
 
     def test_lc_numeric_localeconv(self):
         # Test localeconv against known values
-        tested = False
         for loc in candidate_locales:
             try:
                 setlocale(LC_NUMERIC, loc)
@@ -131,15 +116,11 @@ class _LocaleTests(unittest.TestCase):
             formatting = localeconv()
             for lc in ("decimal_point",
                         "thousands_sep"):
-                if self.numeric_tester('localeconv', formatting[lc], lc, loc):
-                    tested = True
-        if not tested:
-            self.skipTest('no suitable locales')
+                self.numeric_tester('localeconv', formatting[lc], lc, loc)
 
     @unittest.skipUnless(nl_langinfo, "nl_langinfo is not available")
     def test_lc_numeric_basic(self):
         # Test nl_langinfo against localeconv
-        tested = False
         for loc in candidate_locales:
             try:
                 setlocale(LC_NUMERIC, loc)
@@ -159,14 +140,10 @@ class _LocaleTests(unittest.TestCase):
                                 "(set to %s, using %s)" % (
                                                 nl_radixchar, li_radixchar,
                                                 loc, set_locale))
-                tested = True
-        if not tested:
-            self.skipTest('no suitable locales')
 
     def test_float_parsing(self):
         # Bug #1391872: Test whether float parsing is okay on European
         # locales.
-        tested = False
         for loc in candidate_locales:
             try:
                 setlocale(LC_NUMERIC, loc)
@@ -185,10 +162,9 @@ class _LocaleTests(unittest.TestCase):
             if localeconv()['decimal_point'] != '.':
                 self.assertRaises(ValueError, float,
                                   localeconv()['decimal_point'].join(['1', '23']))
-            tested = True
-        if not tested:
-            self.skipTest('no suitable locales')
 
+def test_main():
+    run_unittest(_LocaleTests)
 
 if __name__ == '__main__':
-    unittest.main()
+    test_main()

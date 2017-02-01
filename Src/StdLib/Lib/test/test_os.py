@@ -2,33 +2,31 @@
 # does add tests for a few functions which have been determined to be more
 # portable than they had been thought to be.
 
-import asynchat
-import asyncore
-import codecs
-import contextlib
-import decimal
-import errno
-import fractions
-import getpass
-import itertools
-import locale
-import mmap
 import os
-import pickle
+import errno
+import unittest
+import warnings
+import sys
+import signal
+import subprocess
+import time
+import shutil
+from test import support
+import contextlib
+import mmap
 import platform
 import re
-import shutil
-import signal
-import socket
-import stat
-import subprocess
-import sys
-import sysconfig
-import time
-import unittest
 import uuid
-import warnings
-from test import support
+import asyncore
+import asynchat
+import socket
+import itertools
+import stat
+import locale
+import codecs
+import decimal
+import fractions
+import pickle
 try:
     import threading
 except ImportError:
@@ -41,34 +39,18 @@ try:
     import fcntl
 except ImportError:
     fcntl = None
-try:
-    import _winapi
-except ImportError:
-    _winapi = None
-try:
-    import grp
-    groups = [g.gr_gid for g in grp.getgrall() if getpass.getuser() in g.gr_mem]
-    if hasattr(os, 'getgid'):
-        process_gid = os.getgid()
-        if process_gid not in groups:
-            groups.append(process_gid)
-except ImportError:
-    groups = []
-try:
-    import pwd
-    all_users = [u.pw_uid for u in pwd.getpwall()]
-except ImportError:
-    all_users = []
-try:
-    from _testcapi import INT_MAX, PY_SSIZE_T_MAX
-except ImportError:
-    INT_MAX = PY_SSIZE_T_MAX = sys.maxsize
 
-from test.support.script_helper import assert_python_ok
+from test.script_helper import assert_python_ok
 
-root_in_posix = False
-if hasattr(os, 'geteuid'):
-    root_in_posix = (os.geteuid() == 0)
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", DeprecationWarning)
+    os.stat_float_times(True)
+st = os.stat(__file__)
+stat_supports_subsecond = (
+    # check if float and int timestamps are different
+    (st.st_atime != st[7])
+    or (st.st_mtime != st[8])
+    or (st.st_ctime != st[9]))
 
 # Detect whether we're on a Linux system that uses the (now outdated
 # and unmaintained) linuxthreads threading library.  There's an issue
@@ -85,7 +67,7 @@ HAVE_WHEEL_GROUP = sys.platform.startswith('freebsd') and os.getgid() == 0
 # Tests creating TESTFN
 class FileTests(unittest.TestCase):
     def setUp(self):
-        if os.path.lexists(support.TESTFN):
+        if os.path.exists(support.TESTFN):
             os.unlink(support.TESTFN)
     tearDown = setUp
 
@@ -132,26 +114,6 @@ class FileTests(unittest.TestCase):
             s = os.read(fd, 4)
             self.assertEqual(type(s), bytes)
             self.assertEqual(s, b"spam")
-
-    @support.cpython_only
-    # Skip the test on 32-bit platforms: the number of bytes must fit in a
-    # Py_ssize_t type
-    @unittest.skipUnless(INT_MAX < PY_SSIZE_T_MAX,
-                         "needs INT_MAX < PY_SSIZE_T_MAX")
-    @support.bigmemtest(size=INT_MAX + 10, memuse=1, dry_run=False)
-    def test_large_read(self, size):
-        with open(support.TESTFN, "wb") as fp:
-            fp.write(b'test')
-        self.addCleanup(support.unlink, support.TESTFN)
-
-        # Issue #21932: Make sure that os.read() does not raise an
-        # OverflowError for size larger than INT_MAX
-        with open(support.TESTFN, "rb") as fp:
-            data = os.read(fp.fileno(), size)
-
-        # The test does not try to read more than 2 GB at once because the
-        # operating system is free to return less bytes than requested.
-        self.assertEqual(data, b'test')
 
     def test_write(self):
         # os.write() accepts bytes- and buffer-like objects but not strings
@@ -208,19 +170,6 @@ class FileTests(unittest.TestCase):
         self.assertRaises(FileNotFoundError, os.stat, support.TESTFN)
         with open(TESTFN2, 'r') as f:
             self.assertEqual(f.read(), "1")
-
-    def test_open_keywords(self):
-        f = os.open(path=__file__, flags=os.O_RDONLY, mode=0o777,
-            dir_fd=None)
-        os.close(f)
-
-    def test_symlink_keywords(self):
-        symlink = support.get_attribute(os, "symlink")
-        try:
-            symlink(src='target', dst=support.TESTFN,
-                target_is_directory=False, dir_fd=None)
-        except (NotImplementedError, OSError):
-            pass  # No OS support or unprivileged user
 
 
 # Test attributes on return values from os.*stat* family.
@@ -316,13 +265,10 @@ class StatAttributeTests(unittest.TestCase):
 
     def test_stat_result_pickle(self):
         result = os.stat(self.fname)
-        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
-            p = pickle.dumps(result, proto)
-            self.assertIn(b'stat_result', p)
-            if proto < 4:
-                self.assertIn(b'cos\nstat_result\n', p)
-            unpickled = pickle.loads(p)
-            self.assertEqual(result, unpickled)
+        p = pickle.dumps(result)
+        self.assertIn(b'\x03cos\nstat_result\n', p)
+        unpickled = pickle.loads(p)
+        self.assertEqual(result, unpickled)
 
     @unittest.skipUnless(hasattr(os, 'statvfs'), 'test needs os.statvfs()')
     def test_statvfs_attributes(self):
@@ -378,13 +324,183 @@ class StatAttributeTests(unittest.TestCase):
             if e.errno == errno.ENOSYS:
                 self.skipTest('os.statvfs() failed with ENOSYS')
 
-        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
-            p = pickle.dumps(result, proto)
-            self.assertIn(b'statvfs_result', p)
-            if proto < 4:
-                self.assertIn(b'cos\nstatvfs_result\n', p)
-            unpickled = pickle.loads(p)
-            self.assertEqual(result, unpickled)
+        p = pickle.dumps(result)
+        self.assertIn(b'\x03cos\nstatvfs_result\n', p)
+        unpickled = pickle.loads(p)
+        self.assertEqual(result, unpickled)
+
+    def test_utime_dir(self):
+        delta = 1000000
+        st = os.stat(support.TESTFN)
+        # round to int, because some systems may support sub-second
+        # time stamps in stat, but not in utime.
+        os.utime(support.TESTFN, (st.st_atime, int(st.st_mtime-delta)))
+        st2 = os.stat(support.TESTFN)
+        self.assertEqual(st2.st_mtime, int(st.st_mtime-delta))
+
+    def _test_utime(self, filename, attr, utime, delta):
+        # Issue #13327 removed the requirement to pass None as the
+        # second argument. Check that the previous methods of passing
+        # a time tuple or None work in addition to no argument.
+        st0 = os.stat(filename)
+        # Doesn't set anything new, but sets the time tuple way
+        utime(filename, (attr(st0, "st_atime"), attr(st0, "st_mtime")))
+        # Setting the time to the time you just read, then reading again,
+        # should always return exactly the same times.
+        st1 = os.stat(filename)
+        self.assertEqual(attr(st0, "st_mtime"), attr(st1, "st_mtime"))
+        self.assertEqual(attr(st0, "st_atime"), attr(st1, "st_atime"))
+        # Set to the current time in the old explicit way.
+        os.utime(filename, None)
+        st2 = os.stat(support.TESTFN)
+        # Set to the current time in the new way
+        os.utime(filename)
+        st3 = os.stat(filename)
+        self.assertAlmostEqual(attr(st2, "st_mtime"), attr(st3, "st_mtime"), delta=delta)
+
+    def test_utime(self):
+        def utime(file, times):
+            return os.utime(file, times)
+        self._test_utime(self.fname, getattr, utime, 10)
+        self._test_utime(support.TESTFN, getattr, utime, 10)
+
+
+    def _test_utime_ns(self, set_times_ns, test_dir=True):
+        def getattr_ns(o, attr):
+            return getattr(o, attr + "_ns")
+        ten_s = 10 * 1000 * 1000 * 1000
+        self._test_utime(self.fname, getattr_ns, set_times_ns, ten_s)
+        if test_dir:
+            self._test_utime(support.TESTFN, getattr_ns, set_times_ns, ten_s)
+
+    def test_utime_ns(self):
+        def utime_ns(file, times):
+            return os.utime(file, ns=times)
+        self._test_utime_ns(utime_ns)
+
+    requires_utime_dir_fd = unittest.skipUnless(
+                                os.utime in os.supports_dir_fd,
+                                "dir_fd support for utime required for this test.")
+    requires_utime_fd = unittest.skipUnless(
+                                os.utime in os.supports_fd,
+                                "fd support for utime required for this test.")
+    requires_utime_nofollow_symlinks = unittest.skipUnless(
+                                os.utime in os.supports_follow_symlinks,
+                                "follow_symlinks support for utime required for this test.")
+
+    @requires_utime_nofollow_symlinks
+    def test_lutimes_ns(self):
+        def lutimes_ns(file, times):
+            return os.utime(file, ns=times, follow_symlinks=False)
+        self._test_utime_ns(lutimes_ns)
+
+    @requires_utime_fd
+    def test_futimes_ns(self):
+        def futimes_ns(file, times):
+            with open(file, "wb") as f:
+                os.utime(f.fileno(), ns=times)
+        self._test_utime_ns(futimes_ns, test_dir=False)
+
+    def _utime_invalid_arguments(self, name, arg):
+        with self.assertRaises(ValueError):
+            getattr(os, name)(arg, (5, 5), ns=(5, 5))
+
+    def test_utime_invalid_arguments(self):
+        self._utime_invalid_arguments('utime', self.fname)
+
+
+    @unittest.skipUnless(stat_supports_subsecond,
+                         "os.stat() doesn't has a subsecond resolution")
+    def _test_utime_subsecond(self, set_time_func):
+        asec, amsec = 1, 901
+        atime = asec + amsec * 1e-3
+        msec, mmsec = 2, 901
+        mtime = msec + mmsec * 1e-3
+        filename = self.fname
+        os.utime(filename, (0, 0))
+        set_time_func(filename, atime, mtime)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            os.stat_float_times(True)
+        st = os.stat(filename)
+        self.assertAlmostEqual(st.st_atime, atime, places=3)
+        self.assertAlmostEqual(st.st_mtime, mtime, places=3)
+
+    def test_utime_subsecond(self):
+        def set_time(filename, atime, mtime):
+            os.utime(filename, (atime, mtime))
+        self._test_utime_subsecond(set_time)
+
+    @requires_utime_fd
+    def test_futimes_subsecond(self):
+        def set_time(filename, atime, mtime):
+            with open(filename, "wb") as f:
+                os.utime(f.fileno(), times=(atime, mtime))
+        self._test_utime_subsecond(set_time)
+
+    @requires_utime_fd
+    def test_futimens_subsecond(self):
+        def set_time(filename, atime, mtime):
+            with open(filename, "wb") as f:
+                os.utime(f.fileno(), times=(atime, mtime))
+        self._test_utime_subsecond(set_time)
+
+    @requires_utime_dir_fd
+    def test_futimesat_subsecond(self):
+        def set_time(filename, atime, mtime):
+            dirname = os.path.dirname(filename)
+            dirfd = os.open(dirname, os.O_RDONLY)
+            try:
+                os.utime(os.path.basename(filename), dir_fd=dirfd,
+                             times=(atime, mtime))
+            finally:
+                os.close(dirfd)
+        self._test_utime_subsecond(set_time)
+
+    @requires_utime_nofollow_symlinks
+    def test_lutimes_subsecond(self):
+        def set_time(filename, atime, mtime):
+            os.utime(filename, (atime, mtime), follow_symlinks=False)
+        self._test_utime_subsecond(set_time)
+
+    @requires_utime_dir_fd
+    def test_utimensat_subsecond(self):
+        def set_time(filename, atime, mtime):
+            dirname = os.path.dirname(filename)
+            dirfd = os.open(dirname, os.O_RDONLY)
+            try:
+                os.utime(os.path.basename(filename), dir_fd=dirfd,
+                             times=(atime, mtime))
+            finally:
+                os.close(dirfd)
+        self._test_utime_subsecond(set_time)
+
+    # Restrict tests to Win32, since there is no guarantee other
+    # systems support centiseconds
+    def get_file_system(path):
+        if sys.platform == 'win32':
+            root = os.path.splitdrive(os.path.abspath(path))[0] + '\\'
+            import ctypes
+            kernel32 = ctypes.windll.kernel32
+            buf = ctypes.create_unicode_buffer("", 100)
+            if kernel32.GetVolumeInformationW(root, None, 0, None, None, None, buf, len(buf)):
+                return buf.value
+
+    @unittest.skipUnless(sys.platform == "win32", "Win32 specific tests")
+    @unittest.skipUnless(get_file_system(support.TESTFN) == "NTFS",
+                         "requires NTFS")
+    def test_1565150(self):
+        t1 = 1159195039.25
+        os.utime(self.fname, (t1, t1))
+        self.assertEqual(os.stat(self.fname).st_mtime, t1)
+
+    @unittest.skipUnless(sys.platform == "win32", "Win32 specific tests")
+    @unittest.skipUnless(get_file_system(support.TESTFN) == "NTFS",
+                         "requires NTFS")
+    def test_large_time(self):
+        t1 = 5000000000 # some day in 2128
+        os.utime(self.fname, (t1, t1))
+        self.assertEqual(os.stat(self.fname).st_mtime, t1)
 
     @unittest.skipUnless(sys.platform == "win32", "Win32 specific tests")
     def test_1686475(self):
@@ -409,224 +525,6 @@ class StatAttributeTests(unittest.TestCase):
         with self.assertRaises(OSError) as ctx:
             os.stat(r)
         self.assertEqual(ctx.exception.errno, errno.EBADF)
-
-    def check_file_attributes(self, result):
-        self.assertTrue(hasattr(result, 'st_file_attributes'))
-        self.assertTrue(isinstance(result.st_file_attributes, int))
-        self.assertTrue(0 <= result.st_file_attributes <= 0xFFFFFFFF)
-
-    @unittest.skipUnless(sys.platform == "win32",
-                         "st_file_attributes is Win32 specific")
-    def test_file_attributes(self):
-        # test file st_file_attributes (FILE_ATTRIBUTE_DIRECTORY not set)
-        result = os.stat(self.fname)
-        self.check_file_attributes(result)
-        self.assertEqual(
-            result.st_file_attributes & stat.FILE_ATTRIBUTE_DIRECTORY,
-            0)
-
-        # test directory st_file_attributes (FILE_ATTRIBUTE_DIRECTORY set)
-        result = os.stat(support.TESTFN)
-        self.check_file_attributes(result)
-        self.assertEqual(
-            result.st_file_attributes & stat.FILE_ATTRIBUTE_DIRECTORY,
-            stat.FILE_ATTRIBUTE_DIRECTORY)
-
-
-class UtimeTests(unittest.TestCase):
-    def setUp(self):
-        self.dirname = support.TESTFN
-        self.fname = os.path.join(self.dirname, "f1")
-
-        self.addCleanup(support.rmtree, self.dirname)
-        os.mkdir(self.dirname)
-        with open(self.fname, 'wb') as fp:
-            fp.write(b"ABC")
-
-        def restore_float_times(state):
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", DeprecationWarning)
-
-                os.stat_float_times(state)
-
-        # ensure that st_atime and st_mtime are float
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
-
-            old_float_times = os.stat_float_times(-1)
-            self.addCleanup(restore_float_times, old_float_times)
-
-            os.stat_float_times(True)
-
-    def support_subsecond(self, filename):
-        # Heuristic to check if the filesystem supports timestamp with
-        # subsecond resolution: check if float and int timestamps are different
-        st = os.stat(filename)
-        return ((st.st_atime != st[7])
-                or (st.st_mtime != st[8])
-                or (st.st_ctime != st[9]))
-
-    def _test_utime(self, set_time, filename=None):
-        if not filename:
-            filename = self.fname
-
-        support_subsecond = self.support_subsecond(filename)
-        if support_subsecond:
-            # Timestamp with a resolution of 1 microsecond (10^-6).
-            #
-            # The resolution of the C internal function used by os.utime()
-            # depends on the platform: 1 sec, 1 us, 1 ns. Writing a portable
-            # test with a resolution of 1 ns requires more work:
-            # see the issue #15745.
-            atime_ns = 1002003000   # 1.002003 seconds
-            mtime_ns = 4005006000   # 4.005006 seconds
-        else:
-            # use a resolution of 1 second
-            atime_ns = 5 * 10**9
-            mtime_ns = 8 * 10**9
-
-        set_time(filename, (atime_ns, mtime_ns))
-        st = os.stat(filename)
-
-        if support_subsecond:
-            self.assertAlmostEqual(st.st_atime, atime_ns * 1e-9, delta=1e-6)
-            self.assertAlmostEqual(st.st_mtime, mtime_ns * 1e-9, delta=1e-6)
-        else:
-            self.assertEqual(st.st_atime, atime_ns * 1e-9)
-            self.assertEqual(st.st_mtime, mtime_ns * 1e-9)
-        self.assertEqual(st.st_atime_ns, atime_ns)
-        self.assertEqual(st.st_mtime_ns, mtime_ns)
-
-    def test_utime(self):
-        def set_time(filename, ns):
-            # test the ns keyword parameter
-            os.utime(filename, ns=ns)
-        self._test_utime(set_time)
-
-    @staticmethod
-    def ns_to_sec(ns):
-        # Convert a number of nanosecond (int) to a number of seconds (float).
-        # Round towards infinity by adding 0.5 nanosecond to avoid rounding
-        # issue, os.utime() rounds towards minus infinity.
-        return (ns * 1e-9) + 0.5e-9
-
-    def test_utime_by_indexed(self):
-        # pass times as floating point seconds as the second indexed parameter
-        def set_time(filename, ns):
-            atime_ns, mtime_ns = ns
-            atime = self.ns_to_sec(atime_ns)
-            mtime = self.ns_to_sec(mtime_ns)
-            # test utimensat(timespec), utimes(timeval), utime(utimbuf)
-            # or utime(time_t)
-            os.utime(filename, (atime, mtime))
-        self._test_utime(set_time)
-
-    def test_utime_by_times(self):
-        def set_time(filename, ns):
-            atime_ns, mtime_ns = ns
-            atime = self.ns_to_sec(atime_ns)
-            mtime = self.ns_to_sec(mtime_ns)
-            # test the times keyword parameter
-            os.utime(filename, times=(atime, mtime))
-        self._test_utime(set_time)
-
-    @unittest.skipUnless(os.utime in os.supports_follow_symlinks,
-                         "follow_symlinks support for utime required "
-                         "for this test.")
-    def test_utime_nofollow_symlinks(self):
-        def set_time(filename, ns):
-            # use follow_symlinks=False to test utimensat(timespec)
-            # or lutimes(timeval)
-            os.utime(filename, ns=ns, follow_symlinks=False)
-        self._test_utime(set_time)
-
-    @unittest.skipUnless(os.utime in os.supports_fd,
-                         "fd support for utime required for this test.")
-    def test_utime_fd(self):
-        def set_time(filename, ns):
-            with open(filename, 'wb') as fp:
-                # use a file descriptor to test futimens(timespec)
-                # or futimes(timeval)
-                os.utime(fp.fileno(), ns=ns)
-        self._test_utime(set_time)
-
-    @unittest.skipUnless(os.utime in os.supports_dir_fd,
-                         "dir_fd support for utime required for this test.")
-    def test_utime_dir_fd(self):
-        def set_time(filename, ns):
-            dirname, name = os.path.split(filename)
-            dirfd = os.open(dirname, os.O_RDONLY)
-            try:
-                # pass dir_fd to test utimensat(timespec) or futimesat(timeval)
-                os.utime(name, dir_fd=dirfd, ns=ns)
-            finally:
-                os.close(dirfd)
-        self._test_utime(set_time)
-
-    def test_utime_directory(self):
-        def set_time(filename, ns):
-            # test calling os.utime() on a directory
-            os.utime(filename, ns=ns)
-        self._test_utime(set_time, filename=self.dirname)
-
-    def _test_utime_current(self, set_time):
-        # Get the system clock
-        current = time.time()
-
-        # Call os.utime() to set the timestamp to the current system clock
-        set_time(self.fname)
-
-        if not self.support_subsecond(self.fname):
-            delta = 1.0
-        else:
-            # On Windows, the usual resolution of time.time() is 15.6 ms
-            delta = 0.020
-        st = os.stat(self.fname)
-        msg = ("st_time=%r, current=%r, dt=%r"
-               % (st.st_mtime, current, st.st_mtime - current))
-        self.assertAlmostEqual(st.st_mtime, current,
-                               delta=delta, msg=msg)
-
-    def test_utime_current(self):
-        def set_time(filename):
-            # Set to the current time in the new way
-            os.utime(self.fname)
-        self._test_utime_current(set_time)
-
-    def test_utime_current_old(self):
-        def set_time(filename):
-            # Set to the current time in the old explicit way.
-            os.utime(self.fname, None)
-        self._test_utime_current(set_time)
-
-    def get_file_system(self, path):
-        if sys.platform == 'win32':
-            root = os.path.splitdrive(os.path.abspath(path))[0] + '\\'
-            import ctypes
-            kernel32 = ctypes.windll.kernel32
-            buf = ctypes.create_unicode_buffer("", 100)
-            ok = kernel32.GetVolumeInformationW(root, None, 0,
-                                                None, None, None,
-                                                buf, len(buf))
-            if ok:
-                return buf.value
-        # return None if the filesystem is unknown
-
-    def test_large_time(self):
-        # Many filesystems are limited to the year 2038. At least, the test
-        # pass with NTFS filesystem.
-        if self.get_file_system(self.dirname) != "NTFS":
-            self.skipTest("requires NTFS")
-
-        large = 5000000000   # some day in 2128
-        os.utime(self.fname, (large, large))
-        self.assertEqual(os.stat(self.fname).st_mtime, large)
-
-    def test_utime_invalid_arguments(self):
-        # seconds and nanoseconds parameters are mutually exclusive
-        with self.assertRaises(ValueError):
-            os.utime(self.fname, (5, 5), ns=(5, 5))
-
 
 from test import mapping_tests
 
@@ -789,15 +687,9 @@ class EnvironTests(mapping_tests.BasicTestMappingProtocol):
 class WalkTests(unittest.TestCase):
     """Tests for os.walk()."""
 
-    # Wrapper to hide minor differences between os.walk and os.fwalk
-    # to tests both functions with the same code base
-    def walk(self, top, **kwargs):
-        if 'follow_symlinks' in kwargs:
-            kwargs['followlinks'] = kwargs.pop('follow_symlinks')
-        return os.walk(top, **kwargs)
-
     def setUp(self):
-        join = os.path.join
+        import os
+        from os.path import join
 
         # Build:
         #     TESTFN/
@@ -812,39 +704,36 @@ class WalkTests(unittest.TestCase):
         #           broken_link
         #       TEST2/
         #         tmp4              a lone file
-        self.walk_path = join(support.TESTFN, "TEST1")
-        self.sub1_path = join(self.walk_path, "SUB1")
-        self.sub11_path = join(self.sub1_path, "SUB11")
-        sub2_path = join(self.walk_path, "SUB2")
-        tmp1_path = join(self.walk_path, "tmp1")
-        tmp2_path = join(self.sub1_path, "tmp2")
+        walk_path = join(support.TESTFN, "TEST1")
+        sub1_path = join(walk_path, "SUB1")
+        sub11_path = join(sub1_path, "SUB11")
+        sub2_path = join(walk_path, "SUB2")
+        tmp1_path = join(walk_path, "tmp1")
+        tmp2_path = join(sub1_path, "tmp2")
         tmp3_path = join(sub2_path, "tmp3")
-        self.link_path = join(sub2_path, "link")
+        link_path = join(sub2_path, "link")
         t2_path = join(support.TESTFN, "TEST2")
         tmp4_path = join(support.TESTFN, "TEST2", "tmp4")
+        link_path = join(sub2_path, "link")
         broken_link_path = join(sub2_path, "broken_link")
 
         # Create stuff.
-        os.makedirs(self.sub11_path)
+        os.makedirs(sub11_path)
         os.makedirs(sub2_path)
         os.makedirs(t2_path)
-
         for path in tmp1_path, tmp2_path, tmp3_path, tmp4_path:
             f = open(path, "w")
             f.write("I'm " + path + " and proud of it.  Blame test_os.\n")
             f.close()
-
         if support.can_symlink():
-            os.symlink(os.path.abspath(t2_path), self.link_path)
+            os.symlink(os.path.abspath(t2_path), link_path)
             os.symlink('broken', broken_link_path, True)
-            self.sub2_tree = (sub2_path, ["link"], ["broken_link", "tmp3"])
+            sub2_tree = (sub2_path, ["link"], ["broken_link", "tmp3"])
         else:
-            self.sub2_tree = (sub2_path, [], ["tmp3"])
+            sub2_tree = (sub2_path, [], ["tmp3"])
 
-    def test_walk_topdown(self):
         # Walk top-down.
-        all = list(self.walk(self.walk_path))
-
+        all = list(os.walk(walk_path))
         self.assertEqual(len(all), 4)
         # We can't know which order SUB1 and SUB2 will appear in.
         # Not flipped:  TESTFN, SUB1, SUB11, SUB2
@@ -852,32 +741,26 @@ class WalkTests(unittest.TestCase):
         flipped = all[0][1][0] != "SUB1"
         all[0][1].sort()
         all[3 - 2 * flipped][-1].sort()
-        self.assertEqual(all[0], (self.walk_path, ["SUB1", "SUB2"], ["tmp1"]))
-        self.assertEqual(all[1 + flipped], (self.sub1_path, ["SUB11"], ["tmp2"]))
-        self.assertEqual(all[2 + flipped], (self.sub11_path, [], []))
-        self.assertEqual(all[3 - 2 * flipped], self.sub2_tree)
+        self.assertEqual(all[0], (walk_path, ["SUB1", "SUB2"], ["tmp1"]))
+        self.assertEqual(all[1 + flipped], (sub1_path, ["SUB11"], ["tmp2"]))
+        self.assertEqual(all[2 + flipped], (sub11_path, [], []))
+        self.assertEqual(all[3 - 2 * flipped], sub2_tree)
 
-    def test_walk_prune(self):
         # Prune the search.
         all = []
-        for root, dirs, files in self.walk(self.walk_path):
+        for root, dirs, files in os.walk(walk_path):
             all.append((root, dirs, files))
             # Don't descend into SUB1.
             if 'SUB1' in dirs:
                 # Note that this also mutates the dirs we appended to all!
                 dirs.remove('SUB1')
-
         self.assertEqual(len(all), 2)
-        self.assertEqual(all[0],
-                         (self.walk_path, ["SUB2"], ["tmp1"]))
-
+        self.assertEqual(all[0], (walk_path, ["SUB2"], ["tmp1"]))
         all[1][-1].sort()
-        self.assertEqual(all[1], self.sub2_tree)
+        self.assertEqual(all[1], sub2_tree)
 
-    def test_walk_bottom_up(self):
         # Walk bottom-up.
-        all = list(self.walk(self.walk_path, topdown=False))
-
+        all = list(os.walk(walk_path, topdown=False))
         self.assertEqual(len(all), 4)
         # We can't know which order SUB1 and SUB2 will appear in.
         # Not flipped:  SUB11, SUB1, SUB2, TESTFN
@@ -885,28 +768,20 @@ class WalkTests(unittest.TestCase):
         flipped = all[3][1][0] != "SUB1"
         all[3][1].sort()
         all[2 - 2 * flipped][-1].sort()
-        self.assertEqual(all[3],
-                         (self.walk_path, ["SUB1", "SUB2"], ["tmp1"]))
-        self.assertEqual(all[flipped],
-                         (self.sub11_path, [], []))
-        self.assertEqual(all[flipped + 1],
-                         (self.sub1_path, ["SUB11"], ["tmp2"]))
-        self.assertEqual(all[2 - 2 * flipped],
-                         self.sub2_tree)
+        self.assertEqual(all[3], (walk_path, ["SUB1", "SUB2"], ["tmp1"]))
+        self.assertEqual(all[flipped], (sub11_path, [], []))
+        self.assertEqual(all[flipped + 1], (sub1_path, ["SUB11"], ["tmp2"]))
+        self.assertEqual(all[2 - 2 * flipped], sub2_tree)
 
-    def test_walk_symlink(self):
-        if not support.can_symlink():
-            self.skipTest("need symlink support")
-
-        # Walk, following symlinks.
-        walk_it = self.walk(self.walk_path, follow_symlinks=True)
-        for root, dirs, files in walk_it:
-            if root == self.link_path:
-                self.assertEqual(dirs, [])
-                self.assertEqual(files, ["tmp4"])
-                break
-        else:
-            self.fail("Didn't follow symlink with followlinks=True")
+        if support.can_symlink():
+            # Walk, following symlinks.
+            for root, dirs, files in os.walk(walk_path, followlinks=True):
+                if root == link_path:
+                    self.assertEqual(dirs, [])
+                    self.assertEqual(files, ["tmp4"])
+                    break
+            else:
+                self.fail("Didn't follow symlink with followlinks=True")
 
     def tearDown(self):
         # Tear everything down.  This is a decent use for bottom-up on
@@ -924,30 +799,10 @@ class WalkTests(unittest.TestCase):
                     os.remove(dirname)
         os.rmdir(support.TESTFN)
 
-    def test_walk_bad_dir(self):
-        # Walk top-down.
-        errors = []
-        walk_it = self.walk(self.walk_path, onerror=errors.append)
-        root, dirs, files = next(walk_it)
-        self.assertFalse(errors)
-        dir1 = dirs[0]
-        dir1new = dir1 + '.new'
-        os.rename(os.path.join(root, dir1), os.path.join(root, dir1new))
-        roots = [r for r, d, f in walk_it]
-        self.assertTrue(errors)
-        self.assertNotIn(os.path.join(root, dir1), roots)
-        self.assertNotIn(os.path.join(root, dir1new), roots)
-        for dir2 in dirs[1:]:
-            self.assertIn(os.path.join(root, dir2), roots)
-
 
 @unittest.skipUnless(hasattr(os, 'fwalk'), "Test needs os.fwalk()")
 class FwalkTests(WalkTests):
     """Tests for os.fwalk()."""
-
-    def walk(self, top, **kwargs):
-        for root, dirs, files, root_fd in os.fwalk(top, **kwargs):
-            yield (root, dirs, files)
 
     def _compare_to_walk(self, walk_kwargs, fwalk_kwargs):
         """
@@ -1019,30 +874,6 @@ class FwalkTests(WalkTests):
                     os.unlink(name, dir_fd=rootfd)
         os.rmdir(support.TESTFN)
 
-class BytesWalkTests(WalkTests):
-    """Tests for os.walk() with bytes."""
-    def setUp(self):
-        super().setUp()
-        self.stack = contextlib.ExitStack()
-        if os.name == 'nt':
-            self.stack.enter_context(warnings.catch_warnings())
-            warnings.simplefilter("ignore", DeprecationWarning)
-
-    def tearDown(self):
-        self.stack.close()
-        super().tearDown()
-
-    def walk(self, top, **kwargs):
-        if 'follow_symlinks' in kwargs:
-            kwargs['followlinks'] = kwargs.pop('follow_symlinks')
-        for broot, bdirs, bfiles in os.walk(os.fsencode(top), **kwargs):
-            root = os.fsdecode(broot)
-            dirs = list(map(os.fsdecode, bdirs))
-            files = list(map(os.fsdecode, bfiles))
-            yield (root, dirs, files)
-            bdirs[:] = list(map(os.fsencode, dirs))
-            bfiles[:] = list(map(os.fsencode, files))
-
 
 class MakedirTests(unittest.TestCase):
     def setUp(self):
@@ -1070,12 +901,20 @@ class MakedirTests(unittest.TestCase):
         os.makedirs(path, mode)
         self.assertRaises(OSError, os.makedirs, path, mode)
         self.assertRaises(OSError, os.makedirs, path, mode, exist_ok=False)
-        os.makedirs(path, 0o776, exist_ok=True)
+        self.assertRaises(OSError, os.makedirs, path, 0o776, exist_ok=True)
         os.makedirs(path, mode=mode, exist_ok=True)
         os.umask(old_mask)
 
-        # Issue #25583: A drive root could raise PermissionError on Windows
-        os.makedirs(os.path.abspath('/'), exist_ok=True)
+    @unittest.skipUnless(hasattr(os, 'chown'), 'test needs os.chown')
+    def test_chown_uid_gid_arguments_must_be_index(self):
+        stat = os.stat(support.TESTFN)
+        uid = stat.st_uid
+        gid = stat.st_gid
+        for value in (-1.0, -1j, decimal.Decimal(-1), fractions.Fraction(-2, 2)):
+            self.assertRaises(TypeError, os.chown, support.TESTFN, value, gid)
+            self.assertRaises(TypeError, os.chown, support.TESTFN, uid, value)
+        self.assertIsNone(os.chown(support.TESTFN, uid, gid))
+        self.assertIsNone(os.chown(support.TESTFN, -1, -1))
 
     def test_exist_ok_s_isgid_directory(self):
         path = os.path.join(support.TESTFN, 'dir1')
@@ -1099,8 +938,9 @@ class MakedirTests(unittest.TestCase):
             os.makedirs(path, mode, exist_ok=True)
             # remove the bit.
             os.chmod(path, stat.S_IMODE(os.lstat(path).st_mode) & ~S_ISGID)
-            # May work even when the bit is not already set when demanded.
-            os.makedirs(path, mode | S_ISGID, exist_ok=True)
+            with self.assertRaises(OSError):
+                # Should fail when the bit is not already set when demanded.
+                os.makedirs(path, mode | S_ISGID, exist_ok=True)
         finally:
             os.umask(old_mask)
 
@@ -1125,60 +965,6 @@ class MakedirTests(unittest.TestCase):
             path = os.path.dirname(path)
 
         os.removedirs(path)
-
-
-@unittest.skipUnless(hasattr(os, 'chown'), "Test needs chown")
-class ChownFileTests(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        os.mkdir(support.TESTFN)
-
-    def test_chown_uid_gid_arguments_must_be_index(self):
-        stat = os.stat(support.TESTFN)
-        uid = stat.st_uid
-        gid = stat.st_gid
-        for value in (-1.0, -1j, decimal.Decimal(-1), fractions.Fraction(-2, 2)):
-            self.assertRaises(TypeError, os.chown, support.TESTFN, value, gid)
-            self.assertRaises(TypeError, os.chown, support.TESTFN, uid, value)
-        self.assertIsNone(os.chown(support.TESTFN, uid, gid))
-        self.assertIsNone(os.chown(support.TESTFN, -1, -1))
-
-    @unittest.skipUnless(len(groups) > 1, "test needs more than one group")
-    def test_chown(self):
-        gid_1, gid_2 = groups[:2]
-        uid = os.stat(support.TESTFN).st_uid
-        os.chown(support.TESTFN, uid, gid_1)
-        gid = os.stat(support.TESTFN).st_gid
-        self.assertEqual(gid, gid_1)
-        os.chown(support.TESTFN, uid, gid_2)
-        gid = os.stat(support.TESTFN).st_gid
-        self.assertEqual(gid, gid_2)
-
-    @unittest.skipUnless(root_in_posix and len(all_users) > 1,
-                         "test needs root privilege and more than one user")
-    def test_chown_with_root(self):
-        uid_1, uid_2 = all_users[:2]
-        gid = os.stat(support.TESTFN).st_gid
-        os.chown(support.TESTFN, uid_1, gid)
-        uid = os.stat(support.TESTFN).st_uid
-        self.assertEqual(uid, uid_1)
-        os.chown(support.TESTFN, uid_2, gid)
-        uid = os.stat(support.TESTFN).st_uid
-        self.assertEqual(uid, uid_2)
-
-    @unittest.skipUnless(not root_in_posix and len(all_users) > 1,
-                         "test needs non-root account and more than one user")
-    def test_chown_without_permission(self):
-        uid_1, uid_2 = all_users[:2]
-        gid = os.stat(support.TESTFN).st_gid
-        with self.assertRaises(PermissionError):
-            os.chown(support.TESTFN, uid_1, gid)
-            os.chown(support.TESTFN, uid_2, gid)
-
-    @classmethod
-    def tearDownClass(cls):
-        os.rmdir(support.TESTFN)
 
 
 class RemoveDirsTests(unittest.TestCase):
@@ -1262,17 +1048,6 @@ class URandomTests(unittest.TestCase):
         data2 = self.get_urandom_subprocess(16)
         self.assertNotEqual(data1, data2)
 
-
-# os.urandom() doesn't use a file descriptor when it is implemented with the
-# getentropy() function, the getrandom() function or the getrandom() syscall
-OS_URANDOM_DONT_USE_FD = (
-    sysconfig.get_config_var('HAVE_GETENTROPY') == 1
-    or sysconfig.get_config_var('HAVE_GETRANDOM') == 1
-    or sysconfig.get_config_var('HAVE_GETRANDOM_SYSCALL') == 1)
-
-@unittest.skipIf(OS_URANDOM_DONT_USE_FD ,
-                 "os.random() does not use a file descriptor")
-class URandomFDTests(unittest.TestCase):
     @unittest.skipUnless(resource, "test requires the resource module")
     def test_urandom_failure(self):
         # Check urandom() failing when it is not able to open /dev/random.
@@ -1295,53 +1070,6 @@ class URandomFDTests(unittest.TestCase):
                 raise AssertionError("OSError not raised")
             """
         assert_python_ok('-c', code)
-
-    def test_urandom_fd_closed(self):
-        # Issue #21207: urandom() should reopen its fd to /dev/urandom if
-        # closed.
-        code = """if 1:
-            import os
-            import sys
-            import test.support
-            os.urandom(4)
-            with test.support.SuppressCrashReport():
-                os.closerange(3, 256)
-            sys.stdout.buffer.write(os.urandom(4))
-            """
-        rc, out, err = assert_python_ok('-Sc', code)
-
-    def test_urandom_fd_reopened(self):
-        # Issue #21207: urandom() should detect its fd to /dev/urandom
-        # changed to something else, and reopen it.
-        with open(support.TESTFN, 'wb') as f:
-            f.write(b"x" * 256)
-        self.addCleanup(os.unlink, support.TESTFN)
-        code = """if 1:
-            import os
-            import sys
-            import test.support
-            os.urandom(4)
-            with test.support.SuppressCrashReport():
-                for fd in range(3, 256):
-                    try:
-                        os.close(fd)
-                    except OSError:
-                        pass
-                    else:
-                        # Found the urandom fd (XXX hopefully)
-                        break
-                os.closerange(3, 256)
-            with open({TESTFN!r}, 'rb') as f:
-                os.dup2(f.fileno(), fd)
-                sys.stdout.buffer.write(os.urandom(4))
-                sys.stdout.buffer.write(os.urandom(4))
-            """.format(TESTFN=support.TESTFN)
-        rc, out, err = assert_python_ok('-Sc', code)
-        self.assertEqual(len(out), 8)
-        self.assertNotEqual(out[0:4], out[4:8])
-        rc, out2, err2 = assert_python_ok('-Sc', code)
-        self.assertEqual(len(out2), 8)
-        self.assertNotEqual(out2, out)
 
 
 @contextlib.contextmanager
@@ -1486,7 +1214,7 @@ class TestInvalidFD(unittest.TestCase):
         except OSError as e:
             self.assertEqual(e.errno, errno.EBADF)
         else:
-            self.fail("%r didn't raise an OSError with a bad file descriptor"
+            self.fail("%r didn't raise a OSError with a bad file descriptor"
                       % f)
 
     @unittest.skipUnless(hasattr(os, 'isatty'), 'test needs os.isatty()')
@@ -1555,16 +1283,6 @@ class TestInvalidFD(unittest.TestCase):
     @unittest.skipUnless(hasattr(os, 'writev'), 'test needs os.writev()')
     def test_writev(self):
         self.check(os.writev, [b'abc'])
-
-    def test_inheritable(self):
-        self.check(os.get_inheritable)
-        self.check(os.set_inheritable, True)
-
-    @unittest.skipUnless(hasattr(os, 'get_blocking'),
-                         'needs os.get_blocking() and os.set_blocking()')
-    def test_blocking(self):
-        self.check(os.get_blocking)
-        self.check(os.set_blocking, True)
 
 
 class LinkTests(unittest.TestCase):
@@ -1825,7 +1543,7 @@ class Win32KillTests(unittest.TestCase):
             os.kill(proc.pid, signal.SIGINT)
             self.fail("subprocess did not stop on {}".format(name))
 
-    @unittest.skip("subprocesses aren't inheriting Ctrl+C property")
+    @unittest.skip("subprocesses aren't inheriting CTRL+C property")
     def test_CTRL_C_EVENT(self):
         from ctypes import wintypes
         import ctypes
@@ -1838,7 +1556,7 @@ class Win32KillTests(unittest.TestCase):
         SetConsoleCtrlHandler.restype = wintypes.BOOL
 
         # Calling this with NULL and FALSE causes the calling process to
-        # handle Ctrl+C, rather than ignore it. This property is inherited
+        # handle CTRL+C, rather than ignore it. This property is inherited
         # by subprocesses.
         SetConsoleCtrlHandler(NULL, 0)
 
@@ -2013,37 +1731,6 @@ class Win32SymlinkTests(unittest.TestCase):
             shutil.rmtree(level1)
 
 
-@unittest.skipUnless(sys.platform == "win32", "Win32 specific tests")
-class Win32JunctionTests(unittest.TestCase):
-    junction = 'junctiontest'
-    junction_target = os.path.dirname(os.path.abspath(__file__))
-
-    def setUp(self):
-        assert os.path.exists(self.junction_target)
-        assert not os.path.exists(self.junction)
-
-    def tearDown(self):
-        if os.path.exists(self.junction):
-            # os.rmdir delegates to Windows' RemoveDirectoryW,
-            # which removes junction points safely.
-            os.rmdir(self.junction)
-
-    def test_create_junction(self):
-        _winapi.CreateJunction(self.junction_target, self.junction)
-        self.assertTrue(os.path.exists(self.junction))
-        self.assertTrue(os.path.isdir(self.junction))
-
-        # Junctions are not recognized as links.
-        self.assertFalse(os.path.islink(self.junction))
-
-    def test_unlink_removes_junction(self):
-        _winapi.CreateJunction(self.junction_target, self.junction)
-        self.assertTrue(os.path.exists(self.junction))
-
-        os.unlink(self.junction)
-        self.assertFalse(os.path.exists(self.junction))
-
-
 @support.skip_unless_symlink
 class NonLocalSymlinkTests(unittest.TestCase):
 
@@ -2116,12 +1803,6 @@ class PidTests(unittest.TestCase):
         stdout, _ = p.communicate()
         # We are the parent of our subprocess
         self.assertEqual(int(stdout), os.getpid())
-
-    def test_waitpid(self):
-        args = [sys.executable, '-c', 'pass']
-        pid = os.spawnv(os.P_NOWAIT, args[0], args)
-        status = os.waitpid(pid, 0)
-        self.assertEqual(status, (pid, 0))
 
 
 # The introduction of this TestCase caused at least two different errors on
@@ -2256,13 +1937,11 @@ class TestSendfile(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.key = support.threading_setup()
         with open(support.TESTFN, "wb") as f:
             f.write(cls.DATA)
 
     @classmethod
     def tearDownClass(cls):
-        support.threading_cleanup(*cls.key)
         support.unlink(support.TESTFN)
 
     def setUp(self):
@@ -2370,14 +2049,6 @@ class TestSendfile(unittest.TestCase):
         with self.assertRaises(OSError) as cm:
             os.sendfile(self.sockno, self.fileno, -1, 4096)
         self.assertEqual(cm.exception.errno, errno.EINVAL)
-
-    def test_keywords(self):
-        # Keyword arguments should be supported
-        os.sendfile(out=self.sockno, offset=0, count=4096,
-            **{'in': self.fileno})
-        if self.SUPPORT_HEADERS_TRAILERS:
-            os.sendfile(self.sockno, self.fileno, offset=0, count=4096,
-                headers=(), trailers=(), flags=0)
 
     # --- headers / trailers tests
 
@@ -2797,251 +2468,41 @@ class FDInheritanceTests(unittest.TestCase):
         self.assertEqual(os.get_inheritable(slave_fd), False)
 
 
-@unittest.skipUnless(hasattr(os, 'get_blocking'),
-                     'needs os.get_blocking() and os.set_blocking()')
-class BlockingTests(unittest.TestCase):
-    def test_blocking(self):
-        fd = os.open(__file__, os.O_RDONLY)
-        self.addCleanup(os.close, fd)
-        self.assertEqual(os.get_blocking(fd), True)
-
-        os.set_blocking(fd, False)
-        self.assertEqual(os.get_blocking(fd), False)
-
-        os.set_blocking(fd, True)
-        self.assertEqual(os.get_blocking(fd), True)
-
-
-
-class ExportsTests(unittest.TestCase):
-    def test_os_all(self):
-        self.assertIn('open', os.__all__)
-        self.assertIn('walk', os.__all__)
-
-
-class TestScandir(unittest.TestCase):
-    def setUp(self):
-        self.path = os.path.realpath(support.TESTFN)
-        self.addCleanup(support.rmtree, self.path)
-        os.mkdir(self.path)
-
-    def create_file(self, name="file.txt"):
-        filename = os.path.join(self.path, name)
-        with open(filename, "wb") as fp:
-            fp.write(b'python')
-        return filename
-
-    def get_entries(self, names):
-        entries = dict((entry.name, entry)
-                       for entry in os.scandir(self.path))
-        self.assertEqual(sorted(entries.keys()), names)
-        return entries
-
-    def assert_stat_equal(self, stat1, stat2, skip_fields):
-        if skip_fields:
-            for attr in dir(stat1):
-                if not attr.startswith("st_"):
-                    continue
-                if attr in ("st_dev", "st_ino", "st_nlink"):
-                    continue
-                self.assertEqual(getattr(stat1, attr),
-                                 getattr(stat2, attr),
-                                 (stat1, stat2, attr))
-        else:
-            self.assertEqual(stat1, stat2)
-
-    def check_entry(self, entry, name, is_dir, is_file, is_symlink):
-        self.assertEqual(entry.name, name)
-        self.assertEqual(entry.path, os.path.join(self.path, name))
-        self.assertEqual(entry.inode(),
-                         os.stat(entry.path, follow_symlinks=False).st_ino)
-
-        entry_stat = os.stat(entry.path)
-        self.assertEqual(entry.is_dir(),
-                         stat.S_ISDIR(entry_stat.st_mode))
-        self.assertEqual(entry.is_file(),
-                         stat.S_ISREG(entry_stat.st_mode))
-        self.assertEqual(entry.is_symlink(),
-                         os.path.islink(entry.path))
-
-        entry_lstat = os.stat(entry.path, follow_symlinks=False)
-        self.assertEqual(entry.is_dir(follow_symlinks=False),
-                         stat.S_ISDIR(entry_lstat.st_mode))
-        self.assertEqual(entry.is_file(follow_symlinks=False),
-                         stat.S_ISREG(entry_lstat.st_mode))
-
-        self.assert_stat_equal(entry.stat(),
-                               entry_stat,
-                               os.name == 'nt' and not is_symlink)
-        self.assert_stat_equal(entry.stat(follow_symlinks=False),
-                               entry_lstat,
-                               os.name == 'nt')
-
-    def test_attributes(self):
-        link = hasattr(os, 'link')
-        symlink = support.can_symlink()
-
-        dirname = os.path.join(self.path, "dir")
-        os.mkdir(dirname)
-        filename = self.create_file("file.txt")
-        if link:
-            os.link(filename, os.path.join(self.path, "link_file.txt"))
-        if symlink:
-            os.symlink(dirname, os.path.join(self.path, "symlink_dir"),
-                       target_is_directory=True)
-            os.symlink(filename, os.path.join(self.path, "symlink_file.txt"))
-
-        names = ['dir', 'file.txt']
-        if link:
-            names.append('link_file.txt')
-        if symlink:
-            names.extend(('symlink_dir', 'symlink_file.txt'))
-        entries = self.get_entries(names)
-
-        entry = entries['dir']
-        self.check_entry(entry, 'dir', True, False, False)
-
-        entry = entries['file.txt']
-        self.check_entry(entry, 'file.txt', False, True, False)
-
-        if link:
-            entry = entries['link_file.txt']
-            self.check_entry(entry, 'link_file.txt', False, True, False)
-
-        if symlink:
-            entry = entries['symlink_dir']
-            self.check_entry(entry, 'symlink_dir', True, False, True)
-
-            entry = entries['symlink_file.txt']
-            self.check_entry(entry, 'symlink_file.txt', False, True, True)
-
-    def get_entry(self, name):
-        entries = list(os.scandir(self.path))
-        self.assertEqual(len(entries), 1)
-
-        entry = entries[0]
-        self.assertEqual(entry.name, name)
-        return entry
-
-    def create_file_entry(self):
-        filename = self.create_file()
-        return self.get_entry(os.path.basename(filename))
-
-    def test_current_directory(self):
-        filename = self.create_file()
-        old_dir = os.getcwd()
-        try:
-            os.chdir(self.path)
-
-            # call scandir() without parameter: it must list the content
-            # of the current directory
-            entries = dict((entry.name, entry) for entry in os.scandir())
-            self.assertEqual(sorted(entries.keys()),
-                             [os.path.basename(filename)])
-        finally:
-            os.chdir(old_dir)
-
-    def test_repr(self):
-        entry = self.create_file_entry()
-        self.assertEqual(repr(entry), "<DirEntry 'file.txt'>")
-
-    def test_removed_dir(self):
-        path = os.path.join(self.path, 'dir')
-
-        os.mkdir(path)
-        entry = self.get_entry('dir')
-        os.rmdir(path)
-
-        # On POSIX, is_dir() result depends if scandir() filled d_type or not
-        if os.name == 'nt':
-            self.assertTrue(entry.is_dir())
-        self.assertFalse(entry.is_file())
-        self.assertFalse(entry.is_symlink())
-        if os.name == 'nt':
-            self.assertRaises(FileNotFoundError, entry.inode)
-            # don't fail
-            entry.stat()
-            entry.stat(follow_symlinks=False)
-        else:
-            self.assertGreater(entry.inode(), 0)
-            self.assertRaises(FileNotFoundError, entry.stat)
-            self.assertRaises(FileNotFoundError, entry.stat, follow_symlinks=False)
-
-    def test_removed_file(self):
-        entry = self.create_file_entry()
-        os.unlink(entry.path)
-
-        self.assertFalse(entry.is_dir())
-        # On POSIX, is_dir() result depends if scandir() filled d_type or not
-        if os.name == 'nt':
-            self.assertTrue(entry.is_file())
-        self.assertFalse(entry.is_symlink())
-        if os.name == 'nt':
-            self.assertRaises(FileNotFoundError, entry.inode)
-            # don't fail
-            entry.stat()
-            entry.stat(follow_symlinks=False)
-        else:
-            self.assertGreater(entry.inode(), 0)
-            self.assertRaises(FileNotFoundError, entry.stat)
-            self.assertRaises(FileNotFoundError, entry.stat, follow_symlinks=False)
-
-    def test_broken_symlink(self):
-        if not support.can_symlink():
-            return self.skipTest('cannot create symbolic link')
-
-        filename = self.create_file("file.txt")
-        os.symlink(filename,
-                   os.path.join(self.path, "symlink.txt"))
-        entries = self.get_entries(['file.txt', 'symlink.txt'])
-        entry = entries['symlink.txt']
-        os.unlink(filename)
-
-        self.assertGreater(entry.inode(), 0)
-        self.assertFalse(entry.is_dir())
-        self.assertFalse(entry.is_file())  # broken symlink returns False
-        self.assertFalse(entry.is_dir(follow_symlinks=False))
-        self.assertFalse(entry.is_file(follow_symlinks=False))
-        self.assertTrue(entry.is_symlink())
-        self.assertRaises(FileNotFoundError, entry.stat)
-        # don't fail
-        entry.stat(follow_symlinks=False)
-
-    def test_bytes(self):
-        if os.name == "nt":
-            # On Windows, os.scandir(bytes) must raise an exception
-            self.assertRaises(TypeError, os.scandir, b'.')
-            return
-
-        self.create_file("file.txt")
-
-        path_bytes = os.fsencode(self.path)
-        entries = list(os.scandir(path_bytes))
-        self.assertEqual(len(entries), 1, entries)
-        entry = entries[0]
-
-        self.assertEqual(entry.name, b'file.txt')
-        self.assertEqual(entry.path,
-                         os.fsencode(os.path.join(self.path, 'file.txt')))
-
-    def test_empty_path(self):
-        self.assertRaises(FileNotFoundError, os.scandir, '')
-
-    def test_consume_iterator_twice(self):
-        self.create_file("file.txt")
-        iterator = os.scandir(self.path)
-
-        entries = list(iterator)
-        self.assertEqual(len(entries), 1, entries)
-
-        # check than consuming the iterator twice doesn't raise exception
-        entries2 = list(iterator)
-        self.assertEqual(len(entries2), 0, entries2)
-
-    def test_bad_path_type(self):
-        for obj in [1234, 1.234, {}, []]:
-            self.assertRaises(TypeError, os.scandir, obj)
-
+@support.reap_threads
+def test_main():
+    support.run_unittest(
+        FileTests,
+        StatAttributeTests,
+        EnvironTests,
+        WalkTests,
+        FwalkTests,
+        MakedirTests,
+        DevNullTests,
+        URandomTests,
+        ExecTests,
+        Win32ErrorTests,
+        TestInvalidFD,
+        PosixUidGidTests,
+        Pep383Tests,
+        Win32KillTests,
+        Win32ListdirTests,
+        Win32SymlinkTests,
+        NonLocalSymlinkTests,
+        FSEncodingTests,
+        DeviceEncodingTests,
+        PidTests,
+        LoginTests,
+        LinkTests,
+        TestSendfile,
+        ProgramPriorityTests,
+        ExtendedAttributeTests,
+        Win32DeprecatedBytesAPI,
+        TermsizeTests,
+        OSErrorTests,
+        RemoveDirsTests,
+        CPUCountTests,
+        FDInheritanceTests,
+    )
 
 if __name__ == "__main__":
-    unittest.main()
+    test_main()

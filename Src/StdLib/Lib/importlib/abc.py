@@ -1,6 +1,5 @@
 """Abstract base classes related to import."""
 from . import _bootstrap
-from . import _bootstrap_external
 from . import machinery
 try:
     import _frozen_importlib
@@ -8,10 +7,6 @@ except ImportError as exc:
     if exc.name != '_frozen_importlib':
         raise
     _frozen_importlib = None
-try:
-    import _frozen_importlib_external
-except ImportError as exc:
-    _frozen_importlib_external = _bootstrap_external
 import abc
 
 
@@ -19,10 +14,7 @@ def _register(abstract_cls, *classes):
     for cls in classes:
         abstract_cls.register(cls)
         if _frozen_importlib is not None:
-            try:
-                frozen_cls = getattr(_frozen_importlib, cls.__name__)
-            except AttributeError:
-                frozen_cls = getattr(_frozen_importlib_external, cls.__name__)
+            frozen_cls = getattr(_frozen_importlib, cls.__name__)
             abstract_cls.register(frozen_cls)
 
 
@@ -110,7 +102,7 @@ class PathEntryFinder(Finder):
         else:
             return None, []
 
-    find_module = _bootstrap_external._find_module_shim
+    find_module = _bootstrap._find_module_shim
 
     def invalidate_caches(self):
         """An optional method for clearing the finder's cache, if any.
@@ -130,8 +122,11 @@ class Loader(metaclass=abc.ABCMeta):
         This method should raise ImportError if anything prevents it
         from creating a new module.  It may return None to indicate
         that the spec should create the new module.
+
+        create_module() is optional.
+
         """
-        # By default, defer to default semantics for the new module.
+        # By default, defer to _SpecMethods.create() for the new module.
         return None
 
     # We don't define exec_module() here since that would break
@@ -222,16 +217,15 @@ class InspectLoader(Loader):
         """
         raise ImportError
 
-    @staticmethod
-    def source_to_code(data, path='<string>'):
+    def source_to_code(self, data, path='<string>'):
         """Compile 'data' into a code object.
 
         The 'data' argument can be anything that compile() can handle. The'path'
         argument should be where the data was retrieved (when applicable)."""
         return compile(data, path, 'exec', dont_inherit=True)
 
-    exec_module = _bootstrap_external._LoaderBasics.exec_module
-    load_module = _bootstrap_external._LoaderBasics.load_module
+    exec_module = _bootstrap._LoaderBasics.exec_module
+    load_module = _bootstrap._LoaderBasics.load_module
 
 _register(InspectLoader, machinery.BuiltinImporter, machinery.FrozenImporter)
 
@@ -273,7 +267,7 @@ class ExecutionLoader(InspectLoader):
 _register(ExecutionLoader, machinery.ExtensionFileLoader)
 
 
-class FileLoader(_bootstrap_external.FileLoader, ResourceLoader, ExecutionLoader):
+class FileLoader(_bootstrap.FileLoader, ResourceLoader, ExecutionLoader):
 
     """Abstract base class partially implementing the ResourceLoader and
     ExecutionLoader ABCs."""
@@ -282,7 +276,7 @@ _register(FileLoader, machinery.SourceFileLoader,
             machinery.SourcelessFileLoader)
 
 
-class SourceLoader(_bootstrap_external.SourceLoader, ResourceLoader, ExecutionLoader):
+class SourceLoader(_bootstrap.SourceLoader, ResourceLoader, ExecutionLoader):
 
     """Abstract base class for loading source code (and optionally any
     corresponding bytecode).

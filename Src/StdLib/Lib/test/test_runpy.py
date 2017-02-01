@@ -8,10 +8,10 @@ import tempfile
 import importlib, importlib.machinery, importlib.util
 import py_compile
 from test.support import (
-    forget, make_legacy_pyc, unload, verbose, no_tracing,
-    create_empty_file, temp_dir)
-from test.support.script_helper import (
-    make_pkg, make_script, make_zip_pkg, make_zip_script)
+    forget, make_legacy_pyc, run_unittest, unload, verbose, no_tracing,
+    create_empty_file)
+from test.script_helper import (
+    make_pkg, make_script, make_zip_pkg, make_zip_script, temp_dir)
 
 
 import runpy
@@ -197,11 +197,8 @@ class RunModuleTestCase(unittest.TestCase, CodeExecutionMixin):
         self.expect_import_error("sys.imp.eric")
         self.expect_import_error("os.path.half")
         self.expect_import_error("a.bee")
-        # Relative names not allowed
         self.expect_import_error(".howard")
         self.expect_import_error("..eaten")
-        self.expect_import_error(".test_runpy")
-        self.expect_import_error(".unittest")
         # Package without __main__.py
         self.expect_import_error("multiprocessing")
 
@@ -272,7 +269,7 @@ class RunModuleTestCase(unittest.TestCase, CodeExecutionMixin):
             if verbose > 1: print(ex) # Persist with cleaning up
 
     def _fix_ns_for_legacy_pyc(self, ns, alter_sys):
-        char_to_add = "c"
+        char_to_add = "c" if __debug__ else "o"
         ns["__file__"] += char_to_add
         ns["__cached__"] = ns["__file__"]
         spec = ns["__spec__"]
@@ -441,34 +438,6 @@ from ..uncle.cousin import nephew
         for depth in range(1, 4):
             if verbose > 1: print("Testing package depth:", depth)
             self._check_package(depth)
-
-    def test_run_package_init_exceptions(self):
-        # These were previously wrapped in an ImportError; see Issue 14285
-        result = self._make_pkg("", 1, "__main__")
-        pkg_dir, _, mod_name, _ = result
-        mod_name = mod_name.replace(".__main__", "")
-        self.addCleanup(self._del_pkg, pkg_dir, 1, mod_name)
-        init = os.path.join(pkg_dir, "__runpy_pkg__", "__init__.py")
-
-        exceptions = (ImportError, AttributeError, TypeError, ValueError)
-        for exception in exceptions:
-            name = exception.__name__
-            with self.subTest(name):
-                source = "raise {0}('{0} in __init__.py.')".format(name)
-                with open(init, "wt", encoding="ascii") as mod_file:
-                    mod_file.write(source)
-                try:
-                    run_module(mod_name)
-                except exception as err:
-                    self.assertNotIn("finding spec", format(err))
-                else:
-                    self.fail("Nothing raised; expected {}".format(name))
-                try:
-                    run_module(mod_name + ".submodule")
-                except exception as err:
-                    self.assertNotIn("finding spec", format(err))
-                else:
-                    self.fail("Nothing raised; expected {}".format(name))
 
     def test_run_package_in_namespace_package(self):
         for depth in range(1, 4):
@@ -704,7 +673,7 @@ class RunPathTestCase(unittest.TestCase, CodeExecutionMixin):
             script_name = self._make_test_script(script_dir, mod_name, source)
             zip_name, fname = make_zip_script(script_dir, 'test_zip', script_name)
             msg = "recursion depth exceeded"
-            self.assertRaisesRegex(RecursionError, msg, run_path, zip_name)
+            self.assertRaisesRegex(RuntimeError, msg, run_path, zip_name)
 
     def test_encoding(self):
         with temp_dir() as script_dir:

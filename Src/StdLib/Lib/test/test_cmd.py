@@ -110,7 +110,7 @@ class samplecmdclass(cmd.Cmd):
     5  12  19
     6  13
 
-    This is an interactive test, put some commands in the cmdqueue attribute
+    This is a interactive test, put some commands in the cmdqueue attribute
     and let it execute
     This test includes the preloop(), postloop(), default(), emptyline(),
     parseline(), do_help() functions
@@ -229,7 +229,7 @@ def test_coverage(coverdir):
     trace = support.import_module('trace')
     tracer=trace.Trace(ignoredirs=[sys.base_prefix, sys.base_exec_prefix,],
                         trace=0, count=1)
-    tracer.run('import importlib; importlib.reload(cmd); test_main()')
+    tracer.run('reload(cmd);test_main()')
     r=tracer.results()
     print("Writing coverage results...")
     r.write_results(show_missing=True, summary=True, coverdir=coverdir)

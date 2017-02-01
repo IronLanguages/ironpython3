@@ -8,8 +8,6 @@ __all__ = ['Message']
 
 import re
 import uu
-import quopri
-import warnings
 from io import BytesIO, StringIO
 
 # Intrapackage imports
@@ -205,11 +203,7 @@ class Message:
         if self._payload is None:
             self._payload = [payload]
         else:
-            try:
-                self._payload.append(payload)
-            except AttributeError:
-                raise TypeError("Attach is not valid on a message with a"
-                                " non-multipart payload")
+            self._payload.append(payload)
 
     def get_payload(self, i=None, decode=False):
         """Return a reference to the payload.
@@ -273,14 +267,14 @@ class Message:
                     bpayload = payload.encode('ascii')
                 except UnicodeError:
                     # This won't happen for RFC compliant messages (messages
-                    # containing only ASCII code points in the unicode input).
+                    # containing only ASCII codepoints in the unicode input).
                     # If it does happen, turn the string into bytes in a way
                     # guaranteed not to fail.
                     bpayload = payload.encode('raw-unicode-escape')
         if not decode:
             return payload
         if cte == 'quoted-printable':
-            return quopri.decodestring(bpayload)
+            return utils._qdecode(bpayload)
         elif cte == 'base64':
             # XXX: this is a bit of a hack; decode_b should probably be factored
             # out somewhere, but I haven't figured out where yet.
@@ -710,7 +704,7 @@ class Message:
         message, it will be set to "text/plain" and the new parameter and
         value will be appended as per RFC 2045.
 
-        An alternate header can be specified in the header argument, and all
+        An alternate header can specified in the header argument, and all
         parameters will be quoted as necessary unless requote is False.
 
         If charset is specified, the parameter will be encoded according to RFC
@@ -927,18 +921,6 @@ class Message:
         """
         return [part.get_content_charset(failobj) for part in self.walk()]
 
-    def get_content_disposition(self):
-        """Return the message's content-disposition if it exists, or None.
-
-        The return values can be either 'inline', 'attachment' or None
-        according to the rfc2183.
-        """
-        value = self.get('content-disposition')
-        if value is None:
-            return None
-        c_d = _splitparam(value)[0].lower()
-        return c_d
-
     # I.e. def walk(self): ...
     from email.iterators import walk
 
@@ -951,12 +933,15 @@ class MIMEPart(Message):
             policy = default
         Message.__init__(self, policy)
 
+    @property
     def is_attachment(self):
         c_d = self.get('content-disposition')
-        return False if c_d is None else c_d.content_disposition == 'attachment'
+        if c_d is None:
+            return False
+        return c_d.lower() == 'attachment'
 
     def _find_body(self, part, preferencelist):
-        if part.is_attachment():
+        if part.is_attachment:
             return
         maintype, subtype = part.get_content_type().split('/')
         if maintype == 'text':
@@ -1049,7 +1034,7 @@ class MIMEPart(Message):
         for part in parts:
             maintype, subtype = part.get_content_type().split('/')
             if ((maintype, subtype) in self._body_types and
-                    not part.is_attachment() and subtype not in seen):
+                    not part.is_attachment and subtype not in seen):
                 seen.append(subtype)
                 continue
             yield part

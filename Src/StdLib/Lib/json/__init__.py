@@ -98,12 +98,12 @@ Using json.tool from the shell to validate and pretty-print::
 __version__ = '2.0.9'
 __all__ = [
     'dump', 'dumps', 'load', 'loads',
-    'JSONDecoder', 'JSONDecodeError', 'JSONEncoder',
+    'JSONDecoder', 'JSONEncoder',
 ]
 
 __author__ = 'Bob Ippolito <bob@redivi.com>'
 
-from .decoder import JSONDecoder, JSONDecodeError
+from .decoder import JSONDecoder
 from .encoder import JSONEncoder
 
 _default_encoder = JSONEncoder(
@@ -184,7 +184,7 @@ def dumps(obj, skipkeys=False, ensure_ascii=True, check_circular=True,
         default=None, sort_keys=False, **kw):
     """Serialize ``obj`` to a JSON formatted ``str``.
 
-    If ``skipkeys`` is true then ``dict`` keys that are not basic types
+    If ``skipkeys`` is false then ``dict`` keys that are not basic types
     (``str``, ``int``, ``float``, ``bool``, ``None``) will be skipped
     instead of raising a ``TypeError``.
 
@@ -311,8 +311,7 @@ def loads(s, encoding=None, cls=None, object_hook=None, parse_float=None,
         raise TypeError('the JSON object must be str, not {!r}'.format(
                             s.__class__.__name__))
     if s.startswith(u'\ufeff'):
-        raise JSONDecodeError("Unexpected UTF-8 BOM (decode using utf-8-sig)",
-                              s, 0)
+        raise ValueError("Unexpected UTF-8 BOM (decode using utf-8-sig)")
     if (cls is None and object_hook is None and
             parse_int is None and parse_float is None and
             parse_constant is None and object_pairs_hook is None and not kw):

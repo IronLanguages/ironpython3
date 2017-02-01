@@ -1,6 +1,5 @@
 import unittest
 from ctypes import *
-from ctypes.test import need_symbol
 import _ctypes_test
 
 class Callbacks(unittest.TestCase):
@@ -89,10 +88,9 @@ class Callbacks(unittest.TestCase):
     # disabled: would now (correctly) raise a RuntimeWarning about
     # a memory leak.  A callback function cannot return a non-integral
     # C type without causing a memory leak.
-    @unittest.skip('test disabled')
-    def test_char_p(self):
-        self.check_type(c_char_p, "abc")
-        self.check_type(c_char_p, "def")
+##    def test_char_p(self):
+##        self.check_type(c_char_p, "abc")
+##        self.check_type(c_char_p, "def")
 
     def test_pyobject(self):
         o = ()
@@ -144,12 +142,13 @@ class Callbacks(unittest.TestCase):
         CFUNCTYPE(None)(lambda x=Nasty(): None)
 
 
-@need_symbol('WINFUNCTYPE')
-class StdcallCallbacks(Callbacks):
-    try:
+try:
+    WINFUNCTYPE
+except NameError:
+    pass
+else:
+    class StdcallCallbacks(Callbacks):
         functype = WINFUNCTYPE
-    except NameError:
-        pass
 
 ################################################################
 
@@ -179,7 +178,7 @@ class SampleCallbacksTestCase(unittest.TestCase):
         from ctypes.util import find_library
         libc_path = find_library("c")
         if not libc_path:
-            self.skipTest('could not find libc')
+            return # cannot test
         libc = CDLL(libc_path)
 
         @CFUNCTYPE(c_int, POINTER(c_int), POINTER(c_int))
@@ -191,19 +190,23 @@ class SampleCallbacksTestCase(unittest.TestCase):
         libc.qsort(array, len(array), sizeof(c_int), cmp_func)
         self.assertEqual(array[:], [1, 5, 7, 33, 99])
 
-    @need_symbol('WINFUNCTYPE')
-    def test_issue_8959_b(self):
-        from ctypes.wintypes import BOOL, HWND, LPARAM
-        global windowCount
-        windowCount = 0
-
-        @WINFUNCTYPE(BOOL, HWND, LPARAM)
-        def EnumWindowsCallbackFunc(hwnd, lParam):
+    try:
+        WINFUNCTYPE
+    except NameError:
+        pass
+    else:
+        def test_issue_8959_b(self):
+            from ctypes.wintypes import BOOL, HWND, LPARAM
             global windowCount
-            windowCount += 1
-            return True #Allow windows to keep enumerating
+            windowCount = 0
 
-        windll.user32.EnumWindows(EnumWindowsCallbackFunc, 0)
+            @WINFUNCTYPE(BOOL, HWND, LPARAM)
+            def EnumWindowsCallbackFunc(hwnd, lParam):
+                global windowCount
+                windowCount += 1
+                return True #Allow windows to keep enumerating
+
+            windll.user32.EnumWindows(EnumWindowsCallbackFunc, 0)
 
     def test_callback_register_int(self):
         # Issue #8275: buggy handling of callback args under Win64

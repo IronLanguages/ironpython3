@@ -85,7 +85,7 @@ class SearchEngine:
         except re.error as what:
             args = what.args
             msg = args[0]
-            col = args[1] if len(args) >= 2 else -1
+            col = arg[1] if len(args) >= 2 else -1
             self.report_error(pat, msg, col)
             return None
         return prog
@@ -107,7 +107,7 @@ class SearchEngine:
         It directly return the result of that call.
 
         Text is a text widget. Prog is a precompiled pattern.
-        The ok parameter is a bit complicated as it has two effects.
+        The ok parameteris a bit complicated as it has two effects.
 
         If there is a selection, the search begin at either end,
         depending on the direction setting and ok, with ok meaning that
@@ -191,7 +191,7 @@ def search_reverse(prog, chars, col):
 
     This is done by searching forwards until there is no match.
     Prog: compiled re object with a search method returning a match.
-    Chars: line of text, without \\n.
+    Chars: line of text, without \n.
     Col: stop index for the search; the limit for match.end().
     '''
     m = prog.search(chars)
@@ -229,5 +229,6 @@ def get_line_col(index):
     return line, col
 
 if __name__ == "__main__":
+    from test import support; support.use_resources = ['gui']
     import unittest
     unittest.main('idlelib.idle_test.test_searchengine', verbosity=2, exit=False)

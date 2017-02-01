@@ -9,7 +9,6 @@ Written by:   Fred L. Drake, Jr.
 Email:        <fdrake@acm.org>
 """
 
-import _imp
 import os
 import re
 import sys
@@ -23,15 +22,23 @@ BASE_PREFIX = os.path.normpath(sys.base_prefix)
 BASE_EXEC_PREFIX = os.path.normpath(sys.base_exec_prefix)
 
 # Path to the base directory of the project. On Windows the binary may
-# live in project/PCBuild/win32 or project/PCBuild/amd64.
+# live in project/PCBuild9.  If we're dealing with an x64 Windows build,
+# it'll live in project/PCbuild/amd64.
 # set for cross builds
 if "_PYTHON_PROJECT_BASE" in os.environ:
     project_base = os.path.abspath(os.environ["_PYTHON_PROJECT_BASE"])
 else:
     project_base = os.path.dirname(os.path.abspath(sys.executable))
-if (os.name == 'nt' and
-    project_base.lower().endswith(('\\pcbuild\\win32', '\\pcbuild\\amd64'))):
-    project_base = os.path.dirname(os.path.dirname(project_base))
+if os.name == "nt" and "pcbuild" in project_base[-8:].lower():
+    project_base = os.path.abspath(os.path.join(project_base, os.path.pardir))
+# PC/VS7.1
+if os.name == "nt" and "\\pc\\v" in project_base[-10:].lower():
+    project_base = os.path.abspath(os.path.join(project_base, os.path.pardir,
+                                                os.path.pardir))
+# PC/AMD64
+if os.name == "nt" and "\\pcbuild\\amd64" in project_base[-14:].lower():
+    project_base = os.path.abspath(os.path.join(project_base, os.path.pardir,
+                                                os.path.pardir))
 
 # python_build: (Boolean) if true, we're either building Python or
 # building an extension with an un-installed Python, so we use
@@ -44,9 +51,11 @@ def _is_python_source_dir(d):
             return True
     return False
 _sys_home = getattr(sys, '_home', None)
-if (_sys_home and os.name == 'nt' and
-    _sys_home.lower().endswith(('\\pcbuild\\win32', '\\pcbuild\\amd64'))):
-    _sys_home = os.path.dirname(os.path.dirname(_sys_home))
+if _sys_home and os.name == 'nt' and \
+    _sys_home.lower().endswith(('pcbuild', 'pcbuild\\amd64')):
+    _sys_home = os.path.dirname(_sys_home)
+    if _sys_home.endswith('pcbuild'):   # must be amd64
+        _sys_home = os.path.dirname(_sys_home)
 def _python_build():
     if _sys_home:
         return _is_python_source_dir(_sys_home)
@@ -142,7 +151,10 @@ def get_python_lib(plat_specific=0, standard_lib=0, prefix=None):
         if standard_lib:
             return os.path.join(prefix, "Lib")
         else:
-            return os.path.join(prefix, "Lib", "site-packages")
+            if get_python_version() < "2.2":
+                return prefix
+            else:
+                return os.path.join(prefix, "Lib", "site-packages")
     else:
         raise DistutilsPlatformError(
             "I don't know where Python installs its library "
@@ -167,8 +179,7 @@ def customize_compiler(compiler):
             # version and build tools may not support the same set
             # of CPU architectures for universal builds.
             global _config_vars
-            # Use get_config_var() to ensure _config_vars is initialized.
-            if not get_config_var('CUSTOMIZED_OSX_COMPILER'):
+            if not _config_vars.get('CUSTOMIZED_OSX_COMPILER', ''):
                 import _osx_support
                 _osx_support.customize_compiler(_config_vars)
                 _config_vars['CUSTOMIZED_OSX_COMPILER'] = 'True'
@@ -232,8 +243,12 @@ def get_config_h_filename():
             inc_dir = _sys_home or project_base
     else:
         inc_dir = get_python_inc(plat_specific=1)
-
-    return os.path.join(inc_dir, 'pyconfig.h')
+    if get_python_version() < '2.2':
+        config_h = 'config.h'
+    else:
+        # The name of the config.h file changed in 2.2
+        config_h = 'pyconfig.h'
+    return os.path.join(inc_dir, config_h)
 
 
 def get_makefile_filename():
@@ -445,6 +460,17 @@ def _init_posix():
     if python_build:
         g['LDSHARED'] = g['BLDSHARED']
 
+    elif get_python_version() < '2.1':
+        # The following two branches are for 1.5.2 compatibility.
+        if sys.platform == 'aix4':          # what about AIX 3.x ?
+            # Linker script is in the config directory, not in Modules as the
+            # Makefile says.
+            python_lib = get_python_lib(standard_lib=1)
+            ld_so_aix = os.path.join(python_lib, 'config', 'ld_so_aix')
+            python_exp = os.path.join(python_lib, 'config', 'python.exp')
+
+            g['LDSHARED'] = "%s %s -bI:%s" % (ld_so_aix, g['CC'], python_exp)
+
     global _config_vars
     _config_vars = g
 
@@ -459,7 +485,7 @@ def _init_nt():
     # XXX hmmm.. a normal install puts include files here
     g['INCLUDEPY'] = get_python_inc(plat_specific=0)
 
-    g['EXT_SUFFIX'] = _imp.extension_suffixes()[0]
+    g['EXT_SUFFIX'] = '.pyd'
     g['EXE'] = ".exe"
     g['VERSION'] = get_python_version().replace(".", "")
     g['BINDIR'] = os.path.dirname(os.path.abspath(sys.executable))

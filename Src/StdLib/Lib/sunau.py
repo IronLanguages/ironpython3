@@ -97,7 +97,7 @@ but when it is set to the correct value, the header does not have to
 be patched up.
 It is best to first set all parameters, perhaps possibly the
 compression type, and then write audio frames using writeframesraw.
-When all frames have been written, either call writeframes(b'') or
+When all frames have been written, either call writeframes('') or
 close() to patch up the sizes in the header.
 The close() method is called automatically when the class instance
 is destroyed.
@@ -210,9 +210,12 @@ class Au_read:
         self._framesize = self._framesize * self._nchannels
         if self._hdr_size > 24:
             self._info = file.read(self._hdr_size - 24)
-            self._info, _, _ = self._info.partition(b'\0')
+            for i in range(len(self._info)):
+                if self._info[i] == b'\0':
+                    self._info = self._info[:i]
+                    break
         else:
-            self._info = b''
+            self._info = ''
         try:
             self._data_pos = file.tell()
         except (AttributeError, OSError):
@@ -295,11 +298,9 @@ class Au_read:
         self._soundpos = pos
 
     def close(self):
-        file = self._file
-        if file:
-            self._file = None
-            if self._opened:
-                file.close()
+        if self._opened and self._file:
+            self._file.close()
+        self._file = None
 
 class Au_write:
 
@@ -440,10 +441,9 @@ class Au_write:
                     self._patchheader()
                 self._file.flush()
             finally:
-                file = self._file
+                if self._opened and self._file:
+                    self._file.close()
                 self._file = None
-                if self._opened:
-                    file.close()
 
     #
     # private methods

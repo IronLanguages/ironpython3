@@ -6,7 +6,6 @@ See: RFC 1014
 
 import struct
 from io import BytesIO
-from functools import wraps
 
 __all__ = ["Error", "Packer", "Unpacker", "ConversionError"]
 
@@ -32,16 +31,6 @@ class Error(Exception):
 class ConversionError(Error):
     pass
 
-def raise_conversion_error(function):
-    """ Wrap any raised struct.errors in a ConversionError. """
-
-    @wraps(function)
-    def result(self, value):
-        try:
-            return function(self, value)
-        except struct.error as e:
-            raise ConversionError(e.args[0]) from None
-    return result
 
 
 class Packer:
@@ -58,11 +47,9 @@ class Packer:
     # backwards compatibility
     get_buf = get_buffer
 
-    @raise_conversion_error
     def pack_uint(self, x):
         self.__buf.write(struct.pack('>L', x))
 
-    @raise_conversion_error
     def pack_int(self, x):
         self.__buf.write(struct.pack('>l', x))
 
@@ -73,24 +60,20 @@ class Packer:
         else: self.__buf.write(b'\0\0\0\0')
 
     def pack_uhyper(self, x):
-        try:
-            self.pack_uint(x>>32 & 0xffffffff)
-        except (TypeError, struct.error) as e:
-            raise ConversionError(e.args[0]) from None
-        try:
-            self.pack_uint(x & 0xffffffff)
-        except (TypeError, struct.error) as e:
-            raise ConversionError(e.args[0]) from None
+        self.pack_uint(x>>32 & 0xffffffff)
+        self.pack_uint(x & 0xffffffff)
 
     pack_hyper = pack_uhyper
 
-    @raise_conversion_error
     def pack_float(self, x):
-        self.__buf.write(struct.pack('>f', x))
+        try: self.__buf.write(struct.pack('>f', x))
+        except struct.error as msg:
+            raise ConversionError(msg)
 
-    @raise_conversion_error
     def pack_double(self, x):
-        self.__buf.write(struct.pack('>d', x))
+        try: self.__buf.write(struct.pack('>d', x))
+        except struct.error as msg:
+            raise ConversionError(msg)
 
     def pack_fstring(self, n, s):
         if n < 0:

@@ -22,8 +22,7 @@ class bdist_dumb(Command):
                      "platform name to embed in generated filenames "
                      "(default: %s)" % get_platform()),
                     ('format=', 'f',
-                     "archive format to create (tar, gztar, bztar, xztar, "
-                     "ztar, zip)"),
+                     "archive format to create (tar, ztar, gztar, zip)"),
                     ('keep-temp', 'k',
                      "keep the pseudo-installation tree around after " +
                      "creating the distribution archive"),

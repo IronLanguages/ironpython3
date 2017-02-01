@@ -1,6 +1,8 @@
 import sys
+import io
 import linecache
 import time
+import socket
 import traceback
 import _thread as thread
 import threading
@@ -174,7 +176,7 @@ def show_socket_error(err, address):
         tkMessageBox.showerror("IDLE Subprocess Error", msg, parent=root)
     else:
         tkMessageBox.showerror("IDLE Subprocess Error",
-                               "Socket Error: %s" % err.args[1], parent=root)
+                               "Socket Error: %s" % err.args[1])
     root.destroy()
 
 def print_exception():

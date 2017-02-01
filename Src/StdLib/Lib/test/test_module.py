@@ -1,8 +1,8 @@
 # Test the module type
 import unittest
 import weakref
-from test.support import gc_collect
-from test.support.script_helper import assert_python_ok
+from test.support import run_unittest, gc_collect
+from test.script_helper import assert_python_ok
 
 import sys
 ModuleType = type(sys)
@@ -29,22 +29,6 @@ class ModuleTests(unittest.TestCase):
         except AttributeError:
             pass
         self.assertEqual(foo.__doc__, ModuleType.__doc__)
-
-    def test_uninitialized_missing_getattr(self):
-        # Issue 8297
-        # test the text in the AttributeError of an uninitialized module
-        foo = ModuleType.__new__(ModuleType)
-        self.assertRaisesRegex(
-                AttributeError, "module has no attribute 'not_here'",
-                getattr, foo, "not_here")
-
-    def test_missing_getattr(self):
-        # Issue 8297
-        # test the text in the AttributeError
-        foo = ModuleType("foo")
-        self.assertRaisesRegex(
-                AttributeError, "module 'foo' has no attribute 'not_here'",
-                getattr, foo, "not_here")
 
     def test_no_docstring(self):
         # Regularly initialized module, no docstring
@@ -227,16 +211,12 @@ a = A(destroyed)"""
             b"len = len",
             b"shutil.rmtree = rmtree"})
 
-    def test_descriptor_errors_propagate(self):
-        class Descr:
-            def __get__(self, o, t):
-                raise RuntimeError
-        class M(ModuleType):
-            melon = Descr()
-        self.assertRaises(RuntimeError, getattr, M("mymod"), "melon")
-
     # frozen and namespace module reprs are tested in importlib.
 
 
+def test_main():
+    run_unittest(ModuleTests)
+
+
 if __name__ == '__main__':
-    unittest.main()
+    test_main()

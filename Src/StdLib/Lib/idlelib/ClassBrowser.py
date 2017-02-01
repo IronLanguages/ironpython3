@@ -19,23 +19,13 @@ from idlelib.WindowList import ListedToplevel
 from idlelib.TreeWidget import TreeNode, TreeItem, ScrolledCanvas
 from idlelib.configHandler import idleConf
 
-file_open = None  # Method...Item and Class...Item use this.
-# Normally PyShell.flist.open, but there is no PyShell.flist for htest.
-
 class ClassBrowser:
 
-    def __init__(self, flist, name, path, _htest=False):
+    def __init__(self, flist, name, path):
         # XXX This API should change, if the file doesn't end in ".py"
         # XXX the code here is bogus!
-        """
-        _htest - bool, change box when location running htest.
-        """
-        global file_open
-        if not _htest:
-            file_open = PyShell.flist.open
         self.name = name
         self.file = os.path.join(path[0], self.name + ".py")
-        self._htest = _htest
         self.init(flist)
 
     def close(self, event=None):
@@ -50,13 +40,10 @@ class ClassBrowser:
         self.top = top = ListedToplevel(flist.root)
         top.protocol("WM_DELETE_WINDOW", self.close)
         top.bind("<Escape>", self.close)
-        if self._htest: # place dialog below parent if running htest
-            top.geometry("+%d+%d" %
-                (flist.root.winfo_rootx(), flist.root.winfo_rooty() + 200))
         self.settitle()
         top.focus_set()
         # create scrolled canvas
-        theme = idleConf.CurrentTheme()
+        theme = idleConf.GetOption('main','Theme','name')
         background = idleConf.GetHighlight(theme, 'normal')['background']
         sc = ScrolledCanvas(top, bg=background, highlightthickness=0, takefocus=1)
         sc.frame.pack(expand=1, fill="both")
@@ -107,7 +94,7 @@ class ModuleBrowserTreeItem(TreeItem):
             return []
         try:
             dict = pyclbr.readmodule_ex(name, [dir] + sys.path)
-        except ImportError:
+        except ImportError as msg:
             return []
         items = []
         self.classes = {}
@@ -176,7 +163,7 @@ class ClassBrowserTreeItem(TreeItem):
     def OnDoubleClick(self):
         if not os.path.exists(self.file):
             return
-        edit = file_open(self.file)
+        edit = PyShell.flist.open(self.file)
         if hasattr(self.cl, 'lineno'):
             lineno = self.cl.lineno
             edit.gotoline(lineno)
@@ -212,10 +199,10 @@ class MethodBrowserTreeItem(TreeItem):
     def OnDoubleClick(self):
         if not os.path.exists(self.file):
             return
-        edit = file_open(self.file)
+        edit = PyShell.flist.open(self.file)
         edit.gotoline(self.cl.methods[self.name])
 
-def _class_browser(parent): #Wrapper for htest
+def main():
     try:
         file = __file__
     except NameError:
@@ -226,11 +213,9 @@ def _class_browser(parent): #Wrapper for htest
             file = sys.argv[0]
     dir, file = os.path.split(file)
     name = os.path.splitext(file)[0]
-    flist = PyShell.PyShellFileList(parent)
-    global file_open
-    file_open = flist.open
-    ClassBrowser(flist, name, [dir], _htest=True)
+    ClassBrowser(PyShell.flist, name, [dir])
+    if sys.stdin is sys.__stdin__:
+        mainloop()
 
 if __name__ == "__main__":
-    from idlelib.idle_test.htest import run
-    run(_class_browser)
+    main()

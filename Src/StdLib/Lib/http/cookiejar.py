@@ -143,10 +143,6 @@ def offset_from_tz_string(tz):
     return offset
 
 def _str2time(day, mon, yr, hr, min, sec, tz):
-    yr = int(yr)
-    if yr > datetime.MAXYEAR:
-        return None
-
     # translate month name to number
     # month numbers start with 1 (January)
     try:
@@ -167,6 +163,7 @@ def _str2time(day, mon, yr, hr, min, sec, tz):
     if min is None: min = 0
     if sec is None: sec = 0
 
+    yr = int(yr)
     day = int(day)
     hr = int(hr)
     min = int(min)
@@ -426,10 +423,10 @@ def join_header_words(lists):
     Takes a list of lists of (key, value) pairs and produces a single header
     value.  Attribute values are quoted if needed.
 
-    >>> join_header_words([[("text/plain", None), ("charset", "iso-8859-1")]])
-    'text/plain; charset="iso-8859-1"'
-    >>> join_header_words([[("text/plain", None)], [("charset", "iso-8859-1")]])
-    'text/plain, charset="iso-8859-1"'
+    >>> join_header_words([[("text/plain", None), ("charset", "iso-8859/1")]])
+    'text/plain; charset="iso-8859/1"'
+    >>> join_header_words([[("text/plain", None)], [("charset", "iso-8859/1")]])
+    'text/plain, charset="iso-8859/1"'
 
     """
     headers = []
@@ -475,42 +472,26 @@ def parse_ns_headers(ns_headers):
     for ns_header in ns_headers:
         pairs = []
         version_set = False
-
-        # XXX: The following does not strictly adhere to RFCs in that empty
-        # names and values are legal (the former will only appear once and will
-        # be overwritten if multiple occurrences are present). This is
-        # mostly to deal with backwards compatibility.
-        for ii, param in enumerate(ns_header.split(';')):
-            param = param.strip()
-
-            key, sep, val = param.partition('=')
-            key = key.strip()
-
-            if not key:
-                if ii == 0:
-                    break
-                else:
-                    continue
-
-            # allow for a distinction between present and empty and missing
-            # altogether
-            val = val.strip() if sep else None
-
+        for ii, param in enumerate(re.split(r";\s*", ns_header)):
+            param = param.rstrip()
+            if param == "": continue
+            if "=" not in param:
+                k, v = param, None
+            else:
+                k, v = re.split(r"\s*=\s*", param, 1)
+                k = k.lstrip()
             if ii != 0:
-                lc = key.lower()
+                lc = k.lower()
                 if lc in known_attrs:
-                    key = lc
-
-                if key == "version":
+                    k = lc
+                if k == "version":
                     # This is an RFC 2109 cookie.
-                    if val is not None:
-                        val = strip_quotes(val)
+                    v = strip_quotes(v)
                     version_set = True
-                elif key == "expires":
+                if k == "expires":
                     # convert expires date to seconds since epoch
-                    if val is not None:
-                        val = http2time(strip_quotes(val))  # None if invalid
-            pairs.append((key, val))
+                    v = http2time(strip_quotes(v))  # None if invalid
+            pairs.append((k, v))
 
         if pairs:
             if not version_set:
@@ -761,7 +742,7 @@ class Cookie:
                  ):
 
         if version is not None: version = int(version)
-        if expires is not None: expires = int(float(expires))
+        if expires is not None: expires = int(expires)
         if port is None and port_specified is True:
             raise ValueError("if port is None, port_specified must be false")
 
@@ -824,7 +805,7 @@ class Cookie:
             args.append("%s=%s" % (name, repr(attr)))
         args.append("rest=%s" % repr(self._rest))
         args.append("rfc2109=%s" % repr(self.rfc2109))
-        return "%s(%s)" % (self.__class__.__name__, ", ".join(args))
+        return "Cookie(%s)" % ", ".join(args)
 
 
 class CookiePolicy:
@@ -1440,7 +1421,7 @@ class CookieJar:
                         break
                     # convert RFC 2965 Max-Age to seconds since epoch
                     # XXX Strictly you're supposed to follow RFC 2616
-                    #   age-calculation rules.  Remember that zero Max-Age
+                    #   age-calculation rules.  Remember that zero Max-Age is a
                     #   is a request to discard (old and new) cookie, though.
                     k = "expires"
                     v = self._now + v
@@ -1741,12 +1722,12 @@ class CookieJar:
     def __repr__(self):
         r = []
         for cookie in self: r.append(repr(cookie))
-        return "<%s[%s]>" % (self.__class__.__name__, ", ".join(r))
+        return "<%s[%s]>" % (self.__class__, ", ".join(r))
 
     def __str__(self):
         r = []
         for cookie in self: r.append(str(cookie))
-        return "<%s[%s]>" % (self.__class__.__name__, ", ".join(r))
+        return "<%s[%s]>" % (self.__class__, ", ".join(r))
 
 
 # derives from OSError for backwards-compatibility with Python 2.4.0
@@ -1811,7 +1792,7 @@ class FileCookieJar(CookieJar):
 
 
 def lwp_cookie_str(cookie):
-    """Return string representation of Cookie in the LWP cookie file format.
+    """Return string representation of Cookie in an the LWP cookie file format.
 
     Actually, the format is extended a bit -- see module docstring.
 
@@ -1841,7 +1822,7 @@ def lwp_cookie_str(cookie):
 class LWPCookieJar(FileCookieJar):
     """
     The LWPCookieJar saves a sequence of "Set-Cookie3" lines.
-    "Set-Cookie3" is the format used by the libwww-perl library, not known
+    "Set-Cookie3" is the format used by the libwww-perl libary, not known
     to be compatible with any browser, but which is easy to read and
     doesn't lose information about RFC 2965 cookies.
 
@@ -2002,6 +1983,7 @@ class MozillaCookieJar(FileCookieJar):
 
         magic = f.readline()
         if not self.magic_re.search(magic):
+            f.close()
             raise LoadError(
                 "%r does not look like a Netscape format cookies file" %
                 filename)

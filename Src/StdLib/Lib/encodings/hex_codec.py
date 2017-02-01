@@ -1,6 +1,7 @@
 """Python 'hex_codec' Codec - 2-digit hex content transfer encoding.
 
-This codec de/encodes from bytes to bytes.
+This codec de/encodes from bytes to bytes and is therefore usable with
+bytes.transform() and bytes.untransform().
 
 Written by Marc-Andre Lemburg (mal@lemburg.com).
 """

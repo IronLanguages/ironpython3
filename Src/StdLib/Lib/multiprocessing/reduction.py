@@ -16,6 +16,7 @@ import socket
 import sys
 
 from . import context
+from . import util
 
 __all__ = ['send_handle', 'recv_handle', 'ForkingPickler', 'register', 'dump']
 

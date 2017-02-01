@@ -56,6 +56,17 @@ if not os.path.supports_unicode_filenames:
                                 "Unicode-friendly filesystem encoding")
 
 
+# Destroy directory dirname and all files under it, to one level.
+def deltree(dirname):
+    # Don't hide legitimate errors:  if one of these suckers exists, it's
+    # an error if we can't remove it.
+    if os.path.exists(dirname):
+        # must pass unicode to os.listdir() so we get back unicode results.
+        for fname in os.listdir(str(dirname)):
+            os.unlink(os.path.join(dirname, fname))
+        os.rmdir(dirname)
+
+
 class UnicodeFileTests(unittest.TestCase):
     files = set(filenames)
     normal_form = None
@@ -65,8 +76,6 @@ class UnicodeFileTests(unittest.TestCase):
             os.mkdir(support.TESTFN)
         except FileExistsError:
             pass
-        self.addCleanup(support.rmtree, support.TESTFN)
-
         files = set()
         for name in self.files:
             name = os.path.join(support.TESTFN, self.norm(name))
@@ -75,6 +84,9 @@ class UnicodeFileTests(unittest.TestCase):
             os.stat(name)
             files.add(name)
         self.files = files
+
+    def tearDown(self):
+        deltree(support.TESTFN)
 
     def norm(self, s):
         if self.normal_form:
@@ -158,11 +170,17 @@ class UnicodeFileTests(unittest.TestCase):
     def test_directory(self):
         dirname = os.path.join(support.TESTFN, 'Gr\xfc\xdf-\u66e8\u66e9\u66eb')
         filename = '\xdf-\u66e8\u66e9\u66eb'
-        with support.temp_cwd(dirname):
+        oldwd = os.getcwd()
+        os.mkdir(dirname)
+        os.chdir(dirname)
+        try:
             with open(filename, 'wb') as f:
                 f.write((filename + '\n').encode("utf-8"))
             os.access(filename,os.R_OK)
             os.remove(filename)
+        finally:
+            os.chdir(oldwd)
+            os.rmdir(dirname)
 
 
 class UnicodeNFCFileTests(UnicodeFileTests):
@@ -182,13 +200,16 @@ class UnicodeNFKDFileTests(UnicodeFileTests):
 
 
 def test_main():
-    support.run_unittest(
-        UnicodeFileTests,
-        UnicodeNFCFileTests,
-        UnicodeNFDFileTests,
-        UnicodeNFKCFileTests,
-        UnicodeNFKDFileTests,
-    )
+    try:
+        support.run_unittest(
+            UnicodeFileTests,
+            UnicodeNFCFileTests,
+            UnicodeNFDFileTests,
+            UnicodeNFKCFileTests,
+            UnicodeNFKDFileTests,
+        )
+    finally:
+        deltree(support.TESTFN)
 
 
 if __name__ == "__main__":

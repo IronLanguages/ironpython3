@@ -545,6 +545,9 @@ class NamedNodeMap(object):
     def __lt__(self, other):
         return self._cmp(other) < 0
 
+    def __ne__(self, other):
+        return self._cmp(other) != 0
+
     def __getitem__(self, attname_or_tuple):
         if isinstance(attname_or_tuple, tuple):
             return self._attrsNS[attname_or_tuple]
@@ -645,10 +648,9 @@ class TypeInfo(object):
 
     def __repr__(self):
         if self.namespace:
-            return "<%s %r (from %r)>" % (self.__class__.__name__, self.name,
-                                          self.namespace)
+            return "<TypeInfo %r (from %r)>" % (self.name, self.namespace)
         else:
-            return "<%s %r>" % (self.__class__.__name__, self.name)
+            return "<TypeInfo %r>" % self.name
 
     def _get_name(self):
         return self.name
@@ -974,7 +976,7 @@ class ProcessingInstruction(Childless, Node):
     def _get_nodeValue(self):
         return self.data
     def _set_nodeValue(self, value):
-        self.data = value
+        self.data = data
     nodeValue = property(_get_nodeValue, _set_nodeValue)
 
     # nodeName is an alias for target

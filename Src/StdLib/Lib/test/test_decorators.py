@@ -1,4 +1,5 @@
 import unittest
+from test import support
 
 def funcattrs(**kwds):
     def decorate(func):
@@ -300,5 +301,9 @@ class TestClassDecorators(unittest.TestCase):
         class C(object): pass
         self.assertEqual(C.extra, 'second')
 
-if __name__ == "__main__":
-    unittest.main()
+def test_main():
+    support.run_unittest(TestDecorators)
+    support.run_unittest(TestClassDecorators)
+
+if __name__=="__main__":
+    test_main()

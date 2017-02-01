@@ -34,5 +34,12 @@ class StatsTestCase(unittest.TestCase):
         stats.add(self.stats, self.stats)
 
 
+def test_main():
+    support.run_unittest(
+        AddCallersTestCase,
+        StatsTestCase,
+    )
+
+
 if __name__ == "__main__":
-    unittest.main()
+    test_main()

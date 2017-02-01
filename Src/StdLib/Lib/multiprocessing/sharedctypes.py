@@ -188,12 +188,6 @@ class SynchronizedBase(object):
         self.acquire = self._lock.acquire
         self.release = self._lock.release
 
-    def __enter__(self):
-        return self._lock.__enter__()
-
-    def __exit__(self, *args):
-        return self._lock.__exit__(*args)
-
     def __reduce__(self):
         assert_spawning(self)
         return synchronized, (self._obj, self._lock)
@@ -218,20 +212,32 @@ class SynchronizedArray(SynchronizedBase):
         return len(self._obj)
 
     def __getitem__(self, i):
-        with self:
+        self.acquire()
+        try:
             return self._obj[i]
+        finally:
+            self.release()
 
     def __setitem__(self, i, value):
-        with self:
+        self.acquire()
+        try:
             self._obj[i] = value
+        finally:
+            self.release()
 
     def __getslice__(self, start, stop):
-        with self:
+        self.acquire()
+        try:
             return self._obj[start:stop]
+        finally:
+            self.release()
 
     def __setslice__(self, start, stop, values):
-        with self:
+        self.acquire()
+        try:
             self._obj[start:stop] = values
+        finally:
+            self.release()
 
 
 class SynchronizedString(SynchronizedArray):

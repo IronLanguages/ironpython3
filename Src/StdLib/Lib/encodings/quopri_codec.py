@@ -1,6 +1,7 @@
 """Codec for quoted-printable encoding.
 
-This codec de/encodes from bytes to bytes.
+This codec de/encodes from bytes to bytes and is therefore usable with
+bytes.transform() and bytes.untransform().
 """
 
 import codecs
@@ -11,7 +12,7 @@ def quopri_encode(input, errors='strict'):
     assert errors == 'strict'
     f = BytesIO(input)
     g = BytesIO()
-    quopri.encode(f, g, quotetabs=True)
+    quopri.encode(f, g, 1)
     return (g.getvalue(), len(input))
 
 def quopri_decode(input, errors='strict'):

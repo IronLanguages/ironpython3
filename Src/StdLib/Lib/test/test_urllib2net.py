@@ -7,6 +7,10 @@ import socket
 import urllib.error
 import urllib.request
 import sys
+try:
+    import ssl
+except ImportError:
+    ssl = None
 
 support.requires("network")
 
@@ -20,6 +24,8 @@ def _retry_thrice(func, exc, *args, **kwargs):
         except exc as e:
             last_exc = e
             continue
+        except:
+            raise
     raise last_exc
 
 def _wrap_with_retry_thrice(func, exc):
@@ -77,7 +83,7 @@ class CloseSocketTest(unittest.TestCase):
     def test_close(self):
         # calling .close() on urllib2's response objects should close the
         # underlying socket
-        url = "http://www.example.com/"
+        url = "http://www.python.org/"
         with support.transient_internet(url):
             response = _urlopen_with_retry(url)
             sock = response.fp
@@ -97,9 +103,11 @@ class OtherNetworkTests(unittest.TestCase):
 
     def test_ftp(self):
         urls = [
-            'ftp://ftp.debian.org/debian/README',
-            ('ftp://ftp.debian.org/debian/non-existent-file',
-             None, urllib.error.URLError),
+            'ftp://ftp.kernel.org/pub/linux/kernel/README',
+            'ftp://ftp.kernel.org/pub/linux/kernel/non-existent-file',
+            #'ftp://ftp.kernel.org/pub/leenox/kernel/test',
+            'ftp://gatekeeper.research.compaq.com/pub/DEC/SRC'
+                '/research-reports/00README-Legal-Rules-Regs',
             ]
         self._test_urls(urls, self._extra_handlers())
 
@@ -149,20 +157,20 @@ class OtherNetworkTests(unittest.TestCase):
 ##             self._test_urls(urls, self._extra_handlers()+[bauth, dauth])
 
     def test_urlwithfrag(self):
-        urlwith_frag = "http://www.pythontest.net/index.html#frag"
+        urlwith_frag = "http://docs.python.org/2/glossary.html#glossary"
         with support.transient_internet(urlwith_frag):
             req = urllib.request.Request(urlwith_frag)
             res = urllib.request.urlopen(req)
             self.assertEqual(res.geturl(),
-                    "http://www.pythontest.net/index.html#frag")
+                    "http://docs.python.org/2/glossary.html#glossary")
 
     def test_redirect_url_withfrag(self):
-        redirect_url_with_frag = "http://www.pythontest.net/redir/with_frag/"
+        redirect_url_with_frag = "http://bitly.com/urllibredirecttest"
         with support.transient_internet(redirect_url_with_frag):
             req = urllib.request.Request(redirect_url_with_frag)
             res = urllib.request.urlopen(req)
             self.assertEqual(res.geturl(),
-                    "http://www.pythontest.net/elsewhere/#frag")
+                    "http://docs.python.org/3.4/glossary.html#term-global-interpreter-lock")
 
     def test_custom_headers(self):
         url = "http://www.example.com"
@@ -207,34 +215,39 @@ class OtherNetworkTests(unittest.TestCase):
             urlopen = _wrap_with_retry_thrice(urlopen, urllib.error.URLError)
 
         for url in urls:
-            with self.subTest(url=url):
-                if isinstance(url, tuple):
-                    url, req, expected_err = url
-                else:
-                    req = expected_err = None
+            if isinstance(url, tuple):
+                url, req, expected_err = url
+            else:
+                req = expected_err = None
 
-                with support.transient_internet(url):
-                    try:
-                        f = urlopen(url, req, TIMEOUT)
-                    # urllib.error.URLError is a subclass of OSError
-                    except OSError as err:
-                        if expected_err:
-                            msg = ("Didn't get expected error(s) %s for %s %s, got %s: %s" %
-                                   (expected_err, url, req, type(err), err))
-                            self.assertIsInstance(err, expected_err, msg)
-                        else:
-                            raise
+            with support.transient_internet(url):
+                debug(url)
+                try:
+                    f = urlopen(url, req, TIMEOUT)
+                except OSError as err:
+                    debug(err)
+                    if expected_err:
+                        msg = ("Didn't get expected error(s) %s for %s %s, got %s: %s" %
+                               (expected_err, url, req, type(err), err))
+                        self.assertIsInstance(err, expected_err, msg)
+                except urllib.error.URLError as err:
+                    if isinstance(err[0], socket.timeout):
+                        print("<timeout: %s>" % url, file=sys.stderr)
+                        continue
                     else:
-                        try:
-                            with support.time_out, \
-                                 support.socket_peer_reset, \
-                                 support.ioerror_peer_reset:
-                                buf = f.read()
-                                debug("read %d bytes" % len(buf))
-                        except socket.timeout:
-                            print("<timeout: %s>" % url, file=sys.stderr)
-                        f.close()
-                time.sleep(0.1)
+                        raise
+                else:
+                    try:
+                        with support.time_out, \
+                             support.socket_peer_reset, \
+                             support.ioerror_peer_reset:
+                            buf = f.read()
+                            debug("read %d bytes" % len(buf))
+                    except socket.timeout:
+                        print("<timeout: %s>" % url, file=sys.stderr)
+                    f.close()
+            debug("******** next url coming up...")
+            time.sleep(0.1)
 
     def _extra_handlers(self):
         handlers = []
@@ -250,7 +263,7 @@ class OtherNetworkTests(unittest.TestCase):
 class TimeoutTest(unittest.TestCase):
     def test_http_basic(self):
         self.assertIsNone(socket.getdefaulttimeout())
-        url = "http://www.example.com"
+        url = "http://www.python.org"
         with support.transient_internet(url, timeout=None):
             u = _urlopen_with_retry(url)
             self.addCleanup(u.close)
@@ -258,7 +271,7 @@ class TimeoutTest(unittest.TestCase):
 
     def test_http_default_timeout(self):
         self.assertIsNone(socket.getdefaulttimeout())
-        url = "http://www.example.com"
+        url = "http://www.python.org"
         with support.transient_internet(url):
             socket.setdefaulttimeout(60)
             try:
@@ -270,7 +283,7 @@ class TimeoutTest(unittest.TestCase):
 
     def test_http_no_timeout(self):
         self.assertIsNone(socket.getdefaulttimeout())
-        url = "http://www.example.com"
+        url = "http://www.python.org"
         with support.transient_internet(url):
             socket.setdefaulttimeout(60)
             try:
@@ -281,13 +294,13 @@ class TimeoutTest(unittest.TestCase):
             self.assertIsNone(u.fp.raw._sock.gettimeout())
 
     def test_http_timeout(self):
-        url = "http://www.example.com"
+        url = "http://www.python.org"
         with support.transient_internet(url):
             u = _urlopen_with_retry(url, timeout=120)
             self.addCleanup(u.close)
             self.assertEqual(u.fp.raw._sock.gettimeout(), 120)
 
-    FTP_HOST = 'ftp://ftp.debian.org/debian/'
+    FTP_HOST = "ftp://ftp.mirror.nl/pub/gnu/"
 
     def test_ftp_basic(self):
         self.assertIsNone(socket.getdefaulttimeout())

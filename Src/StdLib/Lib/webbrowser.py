@@ -159,8 +159,10 @@ class BackgroundBrowser(GenericBrowser):
             if sys.platform[:3] == 'win':
                 p = subprocess.Popen(cmdline)
             else:
-                p = subprocess.Popen(cmdline, close_fds=True,
-                                     start_new_session=True)
+                setsid = getattr(os, 'setsid', None)
+                if not setsid:
+                    setsid = getattr(os, 'setpgrp', None)
+                p = subprocess.Popen(cmdline, close_fds=True, preexec_fn=setsid)
             return (p.poll() is None)
         except OSError:
             return False
@@ -319,6 +321,11 @@ class Konqueror(BaseBrowser):
             action = "openURL"
 
         devnull = subprocess.DEVNULL
+        # if possible, put browser in separate process group, so
+        # keyboard interrupts don't affect browser as well as Python
+        setsid = getattr(os, 'setsid', None)
+        if not setsid:
+            setsid = getattr(os, 'setpgrp', None)
 
         try:
             p = subprocess.Popen(["kfmclient", action, url],
@@ -336,7 +343,7 @@ class Konqueror(BaseBrowser):
             p = subprocess.Popen(["konqueror", "--silent", url],
                                  close_fds=True, stdin=devnull,
                                  stdout=devnull, stderr=devnull,
-                                 start_new_session=True)
+                                 preexec_fn=setsid)
         except OSError:
             # fall through to next variant
             pass
@@ -349,7 +356,7 @@ class Konqueror(BaseBrowser):
             p = subprocess.Popen(["kfm", "-d", url],
                                  close_fds=True, stdin=devnull,
                                  stdout=devnull, stderr=devnull,
-                                 start_new_session=True)
+                                 preexec_fn=setsid)
         except OSError:
             return False
         else:

@@ -207,9 +207,6 @@ class TestPlistlib(unittest.TestCase):
         for fmt in ALL_FORMATS:
             with self.subTest(fmt=fmt):
                 pl = self._create(fmt=fmt)
-                pl2 = plistlib.loads(TESTDATA[fmt], fmt=fmt)
-                self.assertEqual(dict(pl), dict(pl2),
-                    "generated data was not identical to Apple's output")
                 pl2 = plistlib.loads(TESTDATA[fmt])
                 self.assertEqual(dict(pl), dict(pl2),
                     "generated data was not identical to Apple's output")
@@ -220,8 +217,6 @@ class TestPlistlib(unittest.TestCase):
                 b = BytesIO()
                 pl = self._create(fmt=fmt)
                 plistlib.dump(pl, b, fmt=fmt)
-                pl2 = plistlib.load(BytesIO(b.getvalue()), fmt=fmt)
-                self.assertEqual(dict(pl), dict(pl2))
                 pl2 = plistlib.load(BytesIO(b.getvalue()))
                 self.assertEqual(dict(pl), dict(pl2))
 
@@ -416,27 +411,6 @@ class TestPlistlib(unittest.TestCase):
                 pl2 = plistlib.loads(data)
                 self.assertEqual(dict(pl), dict(pl2))
 
-    def test_nonstandard_refs_size(self):
-        # Issue #21538: Refs and offsets are 24-bit integers
-        data = (b'bplist00'
-                b'\xd1\x00\x00\x01\x00\x00\x02QaQb'
-                b'\x00\x00\x08\x00\x00\x0f\x00\x00\x11'
-                b'\x00\x00\x00\x00\x00\x00'
-                b'\x03\x03'
-                b'\x00\x00\x00\x00\x00\x00\x00\x03'
-                b'\x00\x00\x00\x00\x00\x00\x00\x00'
-                b'\x00\x00\x00\x00\x00\x00\x00\x13')
-        self.assertEqual(plistlib.loads(data), {'a': 'b'})
-
-    def test_large_timestamp(self):
-        # Issue #26709: 32-bit timestamp out of range
-        for ts in -2**31-1, 2**31:
-            with self.subTest(ts=ts):
-                d = (datetime.datetime.utcfromtimestamp(0) +
-                     datetime.timedelta(seconds=ts))
-                data = plistlib.dumps(d, fmt=plistlib.FMT_BINARY)
-                self.assertEqual(plistlib.loads(data), d)
-
 
 class TestPlistlibDeprecated(unittest.TestCase):
     def test_io_deprecated(self):
@@ -515,15 +489,15 @@ class TestPlistlibDeprecated(unittest.TestCase):
 
         cur = plistlib.loads(buf)
         self.assertEqual(cur, out_data)
-        self.assertEqual(cur, in_data)
+        self.assertNotEqual(cur, in_data)
 
         cur = plistlib.loads(buf, use_builtin_types=False)
-        self.assertEqual(cur, out_data)
+        self.assertNotEqual(cur, out_data)
         self.assertEqual(cur, in_data)
 
         with self.assertWarns(DeprecationWarning):
             cur = plistlib.readPlistFromBytes(buf)
-        self.assertEqual(cur, out_data)
+        self.assertNotEqual(cur, out_data)
         self.assertEqual(cur, in_data)
 
 

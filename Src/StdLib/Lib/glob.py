@@ -4,9 +4,9 @@ import os
 import re
 import fnmatch
 
-__all__ = ["glob", "iglob", "escape"]
+__all__ = ["glob", "iglob"]
 
-def glob(pathname, *, recursive=False):
+def glob(pathname):
     """Return a list of paths matching a pathname pattern.
 
     The pattern may contain simple shell-style wildcards a la
@@ -14,12 +14,10 @@ def glob(pathname, *, recursive=False):
     dot are special cases that are not matched by '*' and '?'
     patterns.
 
-    If recursive is true, the pattern '**' will match any files and
-    zero or more directories and subdirectories.
     """
-    return list(iglob(pathname, recursive=recursive))
+    return list(iglob(pathname))
 
-def iglob(pathname, *, recursive=False):
+def iglob(pathname):
     """Return an iterator which yields the paths matching a pathname pattern.
 
     The pattern may contain simple shell-style wildcards a la
@@ -27,44 +25,24 @@ def iglob(pathname, *, recursive=False):
     dot are special cases that are not matched by '*' and '?'
     patterns.
 
-    If recursive is true, the pattern '**' will match any files and
-    zero or more directories and subdirectories.
     """
-    it = _iglob(pathname, recursive)
-    if recursive and _isrecursive(pathname):
-        s = next(it)  # skip empty string
-        assert not s
-    return it
-
-def _iglob(pathname, recursive):
-    dirname, basename = os.path.split(pathname)
     if not has_magic(pathname):
-        if basename:
-            if os.path.lexists(pathname):
-                yield pathname
-        else:
-            # Patterns ending with a slash should match only directories
-            if os.path.isdir(dirname):
-                yield pathname
+        if os.path.lexists(pathname):
+            yield pathname
         return
+    dirname, basename = os.path.split(pathname)
     if not dirname:
-        if recursive and _isrecursive(basename):
-            yield from glob2(dirname, basename)
-        else:
-            yield from glob1(dirname, basename)
+        yield from glob1(None, basename)
         return
     # `os.path.split()` returns the argument itself as a dirname if it is a
     # drive or UNC path.  Prevent an infinite recursion if a drive or UNC path
     # contains magic characters (i.e. r'\\?\C:').
     if dirname != pathname and has_magic(dirname):
-        dirs = _iglob(dirname, recursive)
+        dirs = iglob(dirname)
     else:
         dirs = [dirname]
     if has_magic(basename):
-        if recursive and _isrecursive(basename):
-            glob_in_dir = glob2
-        else:
-            glob_in_dir = glob1
+        glob_in_dir = glob1
     else:
         glob_in_dir = glob0
     for dirname in dirs:
@@ -100,32 +78,6 @@ def glob0(dirname, basename):
             return [basename]
     return []
 
-# This helper function recursively yields relative pathnames inside a literal
-# directory.
-
-def glob2(dirname, pattern):
-    assert _isrecursive(pattern)
-    yield pattern[:0]
-    yield from _rlistdir(dirname)
-
-# Recursively yields relative pathnames inside a literal directory.
-def _rlistdir(dirname):
-    if not dirname:
-        if isinstance(dirname, bytes):
-            dirname = bytes(os.curdir, 'ASCII')
-        else:
-            dirname = os.curdir
-    try:
-        names = os.listdir(dirname)
-    except os.error:
-        return
-    for x in names:
-        if not _ishidden(x):
-            yield x
-            path = os.path.join(dirname, x) if dirname else x
-            for y in _rlistdir(path):
-                yield os.path.join(x, y)
-
 
 magic_check = re.compile('([*?[])')
 magic_check_bytes = re.compile(b'([*?[])')
@@ -139,12 +91,6 @@ def has_magic(s):
 
 def _ishidden(path):
     return path[0] in ('.', b'.'[0])
-
-def _isrecursive(pattern):
-    if isinstance(pattern, bytes):
-        return pattern == b'**'
-    else:
-        return pattern == '**'
 
 def escape(pathname):
     """Escape all special characters.

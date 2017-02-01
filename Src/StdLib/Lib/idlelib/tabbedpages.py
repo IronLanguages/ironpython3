@@ -467,12 +467,9 @@ class TabbedPageSet(Frame):
 
         self._tab_set.set_selected_tab(page_name)
 
-def _tabbed_pages(parent):
+if __name__ == '__main__':
     # test dialog
     root=Tk()
-    width, height, x, y = list(map(int, re.split('[x+]', parent.geometry())))
-    root.geometry("+%d+%d"%(x, y + 175))
-    root.title("Test tabbed pages")
     tabPage=TabbedPageSet(root, page_names=['Foobar','Baz'], n_rows=0,
                           expand_tabs=False,
                           )
@@ -491,8 +488,3 @@ def _tabbed_pages(parent):
     labelPgName.pack(padx=5)
     entryPgName.pack(padx=5)
     root.mainloop()
-
-
-if __name__ == '__main__':
-    from idlelib.idle_test.htest import run
-    run(_tabbed_pages)

@@ -1,19 +1,3 @@
-'''This module implements specialized container datatypes providing
-alternatives to Python's general purpose built-in containers, dict,
-list, set, and tuple.
-
-* namedtuple   factory function for creating tuple subclasses with named fields
-* deque        list-like container with fast appends and pops on either end
-* ChainMap     dict-like class for creating a single view of multiple mappings
-* Counter      dict subclass for counting hashable objects
-* OrderedDict  dict subclass that remembers the order entries were added
-* defaultdict  dict subclass that calls a factory function to supply missing values
-* UserDict     wrapper around dictionary objects for easier dict subclassing
-* UserList     wrapper around list objects for easier list subclassing
-* UserString   wrapper around string objects for easier string subclassing
-
-'''
-
 __all__ = ['deque', 'defaultdict', 'namedtuple', 'UserDict', 'UserList',
             'UserString', 'Counter', 'OrderedDict', 'ChainMap']
 
@@ -23,6 +7,7 @@ from _collections_abc import *
 import _collections_abc
 __all__ += _collections_abc.__all__
 
+from _collections import deque, defaultdict
 from operator import itemgetter as _itemgetter, eq as _eq
 from keyword import iskeyword as _iskeyword
 import sys as _sys
@@ -31,39 +16,9 @@ from _weakref import proxy as _proxy
 from itertools import repeat as _repeat, chain as _chain, starmap as _starmap
 from reprlib import recursive_repr as _recursive_repr
 
-try:
-    from _collections import deque
-except ImportError:
-    pass
-else:
-    MutableSequence.register(deque)
-
-try:
-    from _collections import defaultdict
-except ImportError:
-    pass
-
-
 ################################################################################
 ### OrderedDict
 ################################################################################
-
-class _OrderedDictKeysView(KeysView):
-
-    def __reversed__(self):
-        yield from reversed(self._mapping)
-
-class _OrderedDictItemsView(ItemsView):
-
-    def __reversed__(self):
-        for key in reversed(self._mapping):
-            yield (key, self._mapping[key])
-
-class _OrderedDictValuesView(ValuesView):
-
-    def __reversed__(self):
-        for key in reversed(self._mapping):
-            yield self._mapping[key]
 
 class _Link(object):
     __slots__ = 'prev', 'next', 'key', '__weakref__'
@@ -83,16 +38,12 @@ class OrderedDict(dict):
     # Individual links are kept alive by the hard reference in self.__map.
     # Those hard references disappear when a key is deleted from an OrderedDict.
 
-    def __init__(*args, **kwds):
+    def __init__(self, *args, **kwds):
         '''Initialize an ordered dictionary.  The signature is the same as
         regular dictionaries, but keyword arguments are not recommended because
         their insertion order is arbitrary.
 
         '''
-        if not args:
-            raise TypeError("descriptor '__init__' of 'OrderedDict' object "
-                            "needs an argument")
-        self, *args = args
         if len(args) > 1:
             raise TypeError('expected at most 1 arguments, got %d' % len(args))
         try:
@@ -128,8 +79,6 @@ class OrderedDict(dict):
         link_next = link.next
         link_prev.next = link_next
         link_next.prev = link_prev
-        link.prev = None
-        link.next = None
 
     def __iter__(self):
         'od.__iter__() <==> iter(od)'
@@ -213,19 +162,9 @@ class OrderedDict(dict):
         return size
 
     update = __update = MutableMapping.update
-
-    def keys(self):
-        "D.keys() -> a set-like object providing a view on D's keys"
-        return _OrderedDictKeysView(self)
-
-    def items(self):
-        "D.items() -> a set-like object providing a view on D's items"
-        return _OrderedDictItemsView(self)
-
-    def values(self):
-        "D.values() -> an object providing a view on D's values"
-        return _OrderedDictValuesView(self)
-
+    keys = MutableMapping.keys
+    values = MutableMapping.values
+    items = MutableMapping.items
     __ne__ = MutableMapping.__ne__
 
     __marker = object()
@@ -290,13 +229,6 @@ class OrderedDict(dict):
         return dict.__eq__(self, other)
 
 
-try:
-    from _collections import OrderedDict
-except ImportError:
-    # Leave the pure Python version in place.
-    pass
-
-
 ################################################################################
 ### namedtuple
 ################################################################################
@@ -336,13 +268,24 @@ class {typename}(tuple):
         'Return a nicely formatted representation string'
         return self.__class__.__name__ + '({repr_fmt})' % self
 
-    def _asdict(self):
-        'Return a new OrderedDict which maps field names to their values.'
+    @property
+    def __dict__(self):
+        'A new OrderedDict mapping field names to their values'
         return OrderedDict(zip(self._fields, self))
+
+    def _asdict(self):
+        '''Return a new OrderedDict which maps field names to their values.
+           This method is obsolete.  Use vars(nt) or nt.__dict__ instead.
+        '''
+        return self.__dict__
 
     def __getnewargs__(self):
         'Return self as a plain tuple.  Used by copy and pickle.'
         return tuple(self)
+
+    def __getstate__(self):
+        'Exclude the OrderedDict from pickling'
+        return None
 
 {field_defs}
 """
@@ -365,7 +308,7 @@ def namedtuple(typename, field_names, verbose=False, rename=False):
     >>> x, y = p                        # unpack like a regular tuple
     >>> x, y
     (11, 22)
-    >>> p.x + p.y                       # fields also accessible by name
+    >>> p.x + p.y                       # fields also accessable by name
     33
     >>> d = p._asdict()                 # convert to a dictionary
     >>> d['x']
@@ -382,7 +325,6 @@ def namedtuple(typename, field_names, verbose=False, rename=False):
     if isinstance(field_names, str):
         field_names = field_names.replace(',', ' ').split()
     field_names = list(map(str, field_names))
-    typename = str(typename)
     if rename:
         seen = set()
         for index, name in enumerate(field_names):
@@ -393,8 +335,6 @@ def namedtuple(typename, field_names, verbose=False, rename=False):
                 field_names[index] = '_%d' % index
             seen.add(name)
     for name in [typename] + field_names:
-        if type(name) != str:
-            raise TypeError('Type names and field names must be strings')
         if not name.isidentifier():
             raise ValueError('Type names and field names must be valid '
                              'identifiers: %r' % name)
@@ -509,7 +449,7 @@ class Counter(dict):
     #   http://code.activestate.com/recipes/259174/
     #   Knuth, TAOCP Vol. II section 4.6.3
 
-    def __init__(*args, **kwds):
+    def __init__(self, iterable=None, **kwds):
         '''Create a new, empty Counter object.  And if given, count elements
         from an input iterable.  Or, initialize the count from another mapping
         of elements to their counts.
@@ -520,14 +460,8 @@ class Counter(dict):
         >>> c = Counter(a=4, b=2)                   # a new counter from keyword args
 
         '''
-        if not args:
-            raise TypeError("descriptor '__init__' of 'Counter' object "
-                            "needs an argument")
-        self, *args = args
-        if len(args) > 1:
-            raise TypeError('expected at most 1 arguments, got %d' % len(args))
-        super(Counter, self).__init__()
-        self.update(*args, **kwds)
+        super().__init__()
+        self.update(iterable, **kwds)
 
     def __missing__(self, key):
         'The count of elements not in the Counter is zero.'
@@ -578,7 +512,7 @@ class Counter(dict):
         raise NotImplementedError(
             'Counter.fromkeys() is undefined.  Use Counter(iterable) instead.')
 
-    def update(*args, **kwds):
+    def update(self, iterable=None, **kwds):
         '''Like dict.update() but add counts instead of replacing them.
 
         Source can be an iterable, a dictionary, or another Counter instance.
@@ -598,13 +532,6 @@ class Counter(dict):
         # contexts.  Instead, we implement straight-addition.  Both the inputs
         # and outputs are allowed to contain zero and negative counts.
 
-        if not args:
-            raise TypeError("descriptor 'update' of 'Counter' object "
-                            "needs an argument")
-        self, *args = args
-        if len(args) > 1:
-            raise TypeError('expected at most 1 arguments, got %d' % len(args))
-        iterable = args[0] if args else None
         if iterable is not None:
             if isinstance(iterable, Mapping):
                 if self:
@@ -612,13 +539,13 @@ class Counter(dict):
                     for elem, count in iterable.items():
                         self[elem] = count + self_get(elem, 0)
                 else:
-                    super(Counter, self).update(iterable) # fast path when counter is empty
+                    super().update(iterable) # fast path when counter is empty
             else:
                 _count_elements(self, iterable)
         if kwds:
             self.update(kwds)
 
-    def subtract(*args, **kwds):
+    def subtract(self, iterable=None, **kwds):
         '''Like dict.update() but subtracts counts instead of replacing them.
         Counts can be reduced below zero.  Both the inputs and outputs are
         allowed to contain zero and negative counts.
@@ -634,13 +561,6 @@ class Counter(dict):
         -1
 
         '''
-        if not args:
-            raise TypeError("descriptor 'subtract' of 'Counter' object "
-                            "needs an argument")
-        self, *args = args
-        if len(args) > 1:
-            raise TypeError('expected at most 1 arguments, got %d' % len(args))
-        iterable = args[0] if args else None
         if iterable is not None:
             self_get = self.get
             if isinstance(iterable, Mapping):
@@ -760,22 +680,14 @@ class Counter(dict):
 
     def __pos__(self):
         'Adds an empty counter, effectively stripping negative and zero counts'
-        result = Counter()
-        for elem, count in self.items():
-            if count > 0:
-                result[elem] = count
-        return result
+        return self + Counter()
 
     def __neg__(self):
         '''Subtracts from an empty counter.  Strips positive and zero counts,
         and flips the sign on negative counts.
 
         '''
-        result = Counter()
-        for elem, count in self.items():
-            if count < 0:
-                result[elem] = 0 - count
-        return result
+        return Counter() - self
 
     def _keep_positive(self):
         '''Internal method to strip elements with a negative or zero count'''
@@ -850,8 +762,7 @@ class ChainMap(MutableMapping):
     to create a single, updateable view.
 
     The underlying mappings are stored in a list.  That list is public and can
-    be accessed or updated using the *maps* attribute.  There is no other
-    state.
+    accessed or updated using the *maps* attribute.  There is no other state.
 
     Lookups search the underlying mappings successively until a key is found.
     In contrast, writes, updates, and deletions only operate on the first
@@ -909,8 +820,9 @@ class ChainMap(MutableMapping):
     __copy__ = copy
 
     def new_child(self, m=None):                # like Django's Context.push()
-        '''New ChainMap with a new map followed by all previous maps.
-        If no map is provided, an empty dict is used.
+        '''
+        New ChainMap with a new map followed by all previous maps. If no
+        map is provided, an empty dict is used.
         '''
         if m is None:
             m = {}
@@ -956,22 +868,7 @@ class ChainMap(MutableMapping):
 class UserDict(MutableMapping):
 
     # Start by filling-out the abstract methods
-    def __init__(*args, **kwargs):
-        if not args:
-            raise TypeError("descriptor '__init__' of 'UserDict' object "
-                            "needs an argument")
-        self, *args = args
-        if len(args) > 1:
-            raise TypeError('expected at most 1 arguments, got %d' % len(args))
-        if args:
-            dict = args[0]
-        elif 'dict' in kwargs:
-            dict = kwargs.pop('dict')
-            import warnings
-            warnings.warn("Passing 'dict' as keyword argument is deprecated",
-                          PendingDeprecationWarning, stacklevel=2)
-        else:
-            dict = None
+    def __init__(self, dict=None, **kwargs):
         self.data = {}
         if dict is not None:
             self.update(dict)
@@ -1036,6 +933,7 @@ class UserList(MutableSequence):
     def __lt__(self, other): return self.data <  self.__cast(other)
     def __le__(self, other): return self.data <= self.__cast(other)
     def __eq__(self, other): return self.data == self.__cast(other)
+    def __ne__(self, other): return self.data != self.__cast(other)
     def __gt__(self, other): return self.data >  self.__cast(other)
     def __ge__(self, other): return self.data >= self.__cast(other)
     def __cast(self, other):
@@ -1107,13 +1005,15 @@ class UserString(Sequence):
     def __float__(self): return float(self.data)
     def __complex__(self): return complex(self.data)
     def __hash__(self): return hash(self.data)
-    def __getnewargs__(self):
-        return (self.data[:],)
 
     def __eq__(self, string):
         if isinstance(string, UserString):
             return self.data == string.data
         return self.data == string
+    def __ne__(self, string):
+        if isinstance(string, UserString):
+            return self.data != string.data
+        return self.data != string
     def __lt__(self, string):
         if isinstance(string, UserString):
             return self.data < string.data
@@ -1153,13 +1053,9 @@ class UserString(Sequence):
     __rmul__ = __mul__
     def __mod__(self, args):
         return self.__class__(self.data % args)
-    def __rmod__(self, format):
-        return self.__class__(format % args)
 
     # the following methods are defined in alphabetical order:
     def capitalize(self): return self.__class__(self.data.capitalize())
-    def casefold(self):
-        return self.__class__(self.data.casefold())
     def center(self, width, *args):
         return self.__class__(self.data.center(width, *args))
     def count(self, sub, start=0, end=_sys.maxsize):
@@ -1182,8 +1078,6 @@ class UserString(Sequence):
         return self.data.find(sub, start, end)
     def format(self, *args, **kwds):
         return self.data.format(*args, **kwds)
-    def format_map(self, mapping):
-        return self.data.format_map(mapping)
     def index(self, sub, start=0, end=_sys.maxsize):
         return self.data.index(sub, start, end)
     def isalpha(self): return self.data.isalpha()
@@ -1193,7 +1087,6 @@ class UserString(Sequence):
     def isidentifier(self): return self.data.isidentifier()
     def islower(self): return self.data.islower()
     def isnumeric(self): return self.data.isnumeric()
-    def isprintable(self): return self.data.isprintable()
     def isspace(self): return self.data.isspace()
     def istitle(self): return self.data.istitle()
     def isupper(self): return self.data.isupper()
@@ -1202,7 +1095,6 @@ class UserString(Sequence):
         return self.__class__(self.data.ljust(width, *args))
     def lower(self): return self.__class__(self.data.lower())
     def lstrip(self, chars=None): return self.__class__(self.data.lstrip(chars))
-    maketrans = str.maketrans
     def partition(self, sep):
         return self.data.partition(sep)
     def replace(self, old, new, maxsplit=-1):

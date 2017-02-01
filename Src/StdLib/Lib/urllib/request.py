@@ -91,7 +91,6 @@ import os
 import posixpath
 import re
 import socket
-import string
 import sys
 import time
 import collections
@@ -121,10 +120,9 @@ __all__ = [
     'Request', 'OpenerDirector', 'BaseHandler', 'HTTPDefaultErrorHandler',
     'HTTPRedirectHandler', 'HTTPCookieProcessor', 'ProxyHandler',
     'HTTPPasswordMgr', 'HTTPPasswordMgrWithDefaultRealm',
-    'HTTPPasswordMgrWithPriorAuth', 'AbstractBasicAuthHandler',
-    'HTTPBasicAuthHandler', 'ProxyBasicAuthHandler', 'AbstractDigestAuthHandler',
-    'HTTPDigestAuthHandler', 'ProxyDigestAuthHandler', 'HTTPHandler',
-    'FileHandler', 'FTPHandler', 'CacheFTPHandler', 'DataHandler',
+    'AbstractBasicAuthHandler', 'HTTPBasicAuthHandler', 'ProxyBasicAuthHandler',
+    'AbstractDigestAuthHandler', 'HTTPDigestAuthHandler', 'ProxyDigestAuthHandler',
+    'HTTPHandler', 'FileHandler', 'FTPHandler', 'CacheFTPHandler', 'DataHandler',
     'UnknownHandler', 'HTTPErrorProcessor',
     # Functions
     'urlopen', 'install_opener', 'build_opener',
@@ -138,23 +136,15 @@ __version__ = sys.version[:3]
 
 _opener = None
 def urlopen(url, data=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
-            *, cafile=None, capath=None, cadefault=False, context=None):
+            *, cafile=None, capath=None, cadefault=False):
     global _opener
     if cafile or capath or cadefault:
-        if context is not None:
-            raise ValueError(
-                "You can't pass both context and any of cafile, capath, and "
-                "cadefault"
-            )
         if not _have_ssl:
             raise ValueError('SSL support not available')
-        context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH,
+        context = ssl._create_stdlib_context(cert_reqs=ssl.CERT_REQUIRED,
                                              cafile=cafile,
                                              capath=capath)
-        https_handler = HTTPSHandler(context=context)
-        opener = build_opener(https_handler)
-    elif context:
-        https_handler = HTTPSHandler(context=context)
+        https_handler = HTTPSHandler(context=context, check_hostname=True)
         opener = build_opener(https_handler)
     elif _opener is None:
         _opener = opener = build_opener()
@@ -231,7 +221,6 @@ def urlretrieve(url, filename=None, reporthook=None, data=None):
     return result
 
 def urlcleanup():
-    """Clean up temporary files from urlretrieve calls."""
     for temp_file in _url_tempfiles:
         try:
             os.unlink(temp_file)
@@ -522,6 +511,9 @@ def build_opener(*handlers):
     If any of the handlers passed as arguments are subclasses of the
     default handlers, the default handlers will not be used.
     """
+    def isclass(obj):
+        return isinstance(obj, type) or hasattr(obj, "__bases__")
+
     opener = OpenerDirector()
     default_classes = [ProxyHandler, UnknownHandler, HTTPHandler,
                        HTTPDefaultErrorHandler, HTTPRedirectHandler,
@@ -532,7 +524,7 @@ def build_opener(*handlers):
     skip = set()
     for klass in default_classes:
         for check in handlers:
-            if isinstance(check, type):
+            if isclass(check):
                 if issubclass(check, klass):
                     skip.add(klass)
             elif isinstance(check, klass):
@@ -544,7 +536,7 @@ def build_opener(*handlers):
         opener.add_handler(klass())
 
     for h in handlers:
-        if isinstance(h, type):
+        if isclass(h):
             h = h()
         opener.add_handler(h)
     return opener
@@ -617,12 +609,8 @@ class HTTPRedirectHandler(BaseHandler):
         # from the user (of urllib.request, in this case).  In practice,
         # essentially all clients do redirect in this case, so we do
         # the same.
-
-        # Be conciliant with URIs containing a space.  This is mainly
-        # redundant with the more complete encoding done in http_error_302(),
-        # but it is kept for compatibility with other callers.
+        # be conciliant with URIs containing a space
         newurl = newurl.replace(' ', '%20')
-
         CONTENT_HEADERS = ("content-length", "content-type")
         newheaders = dict((k, v) for k, v in req.headers.items()
                           if k.lower() not in CONTENT_HEADERS)
@@ -657,16 +645,11 @@ class HTTPRedirectHandler(BaseHandler):
                 "%s - Redirection to url '%s' is not allowed" % (msg, newurl),
                 headers, fp)
 
-        if not urlparts.path and urlparts.netloc:
+        if not urlparts.path:
             urlparts = list(urlparts)
             urlparts[2] = "/"
         newurl = urlunparse(urlparts)
 
-        # http.client.parse_headers() decodes as ISO-8859-1.  Recover the
-        # original bytes and percent-encode non-ASCII bytes, and any special
-        # characters such as the space.
-        newurl = quote(
-            newurl, encoding="iso-8859-1", safe=string.punctuation)
         newurl = urljoin(req.full_url, newurl)
 
         # XXX Probably want to forget about the state of the current
@@ -707,7 +690,50 @@ def _parse_proxy(proxy):
 
     If a URL is supplied, it must have an authority (host:port) component.
     According to RFC 3986, having an authority component means the URL must
-    have two slashes after the scheme.
+    have two slashes after the scheme:
+
+    >>> _parse_proxy('file:/ftp.example.com/')
+    Traceback (most recent call last):
+    ValueError: proxy URL with no authority: 'file:/ftp.example.com/'
+
+    The first three items of the returned tuple may be None.
+
+    Examples of authority parsing:
+
+    >>> _parse_proxy('proxy.example.com')
+    (None, None, None, 'proxy.example.com')
+    >>> _parse_proxy('proxy.example.com:3128')
+    (None, None, None, 'proxy.example.com:3128')
+
+    The authority component may optionally include userinfo (assumed to be
+    username:password):
+
+    >>> _parse_proxy('joe:password@proxy.example.com')
+    (None, 'joe', 'password', 'proxy.example.com')
+    >>> _parse_proxy('joe:password@proxy.example.com:3128')
+    (None, 'joe', 'password', 'proxy.example.com:3128')
+
+    Same examples, but with URLs instead:
+
+    >>> _parse_proxy('http://proxy.example.com/')
+    ('http', None, None, 'proxy.example.com')
+    >>> _parse_proxy('http://proxy.example.com:3128/')
+    ('http', None, None, 'proxy.example.com:3128')
+    >>> _parse_proxy('http://joe:password@proxy.example.com/')
+    ('http', 'joe', 'password', 'proxy.example.com')
+    >>> _parse_proxy('http://joe:password@proxy.example.com:3128')
+    ('http', 'joe', 'password', 'proxy.example.com:3128')
+
+    Everything after the authority is ignored:
+
+    >>> _parse_proxy('ftp://joe:password@proxy.example.com/rubbish:3128')
+    ('ftp', 'joe', 'password', 'proxy.example.com')
+
+    Test for no trailing '/' case:
+
+    >>> _parse_proxy('http://joe:password@proxy.example.com')
+    ('http', 'joe', 'password', 'proxy.example.com')
+
     """
     scheme, r_scheme = splittype(proxy)
     if not r_scheme.startswith("/"):
@@ -847,37 +873,6 @@ class HTTPPasswordMgrWithDefaultRealm(HTTPPasswordMgr):
         return HTTPPasswordMgr.find_user_password(self, None, authuri)
 
 
-class HTTPPasswordMgrWithPriorAuth(HTTPPasswordMgrWithDefaultRealm):
-
-    def __init__(self, *args, **kwargs):
-        self.authenticated = {}
-        super().__init__(*args, **kwargs)
-
-    def add_password(self, realm, uri, user, passwd, is_authenticated=False):
-        self.update_authenticated(uri, is_authenticated)
-        # Add a default for prior auth requests
-        if realm is not None:
-            super().add_password(None, uri, user, passwd)
-        super().add_password(realm, uri, user, passwd)
-
-    def update_authenticated(self, uri, is_authenticated=False):
-        # uri could be a single URI or a sequence
-        if isinstance(uri, str):
-            uri = [uri]
-
-        for default_port in True, False:
-            for u in uri:
-                reduced_uri = self.reduce_uri(u, default_port)
-                self.authenticated[reduced_uri] = is_authenticated
-
-    def is_authenticated(self, authuri):
-        for default_port in True, False:
-            reduced_authuri = self.reduce_uri(authuri, default_port)
-            for uri in self.authenticated:
-                if self.is_suburi(uri, reduced_authuri):
-                    return self.authenticated[uri]
-
-
 class AbstractBasicAuthHandler:
 
     # XXX this allows for multiple auth-schemes, but will stupidly pick
@@ -897,12 +892,23 @@ class AbstractBasicAuthHandler:
             password_mgr = HTTPPasswordMgr()
         self.passwd = password_mgr
         self.add_password = self.passwd.add_password
+        self.retried = 0
+
+    def reset_retry_count(self):
+        self.retried = 0
 
     def http_error_auth_reqed(self, authreq, host, req, headers):
         # host may be an authority (without userinfo) or a URL with an
         # authority
         # XXX could be multiple headers
         authreq = headers.get(authreq, None)
+
+        if self.retried > 5:
+            # retry sending the username:password 5 times before failing.
+            raise HTTPError(req.get_full_url(), 401, "basic auth failed",
+                    headers, None)
+        else:
+            self.retried += 1
 
         if authreq:
             scheme = authreq.split()[0]
@@ -918,44 +924,22 @@ class AbstractBasicAuthHandler:
                         warnings.warn("Basic Auth Realm was unquoted",
                                       UserWarning, 2)
                     if scheme.lower() == 'basic':
-                        return self.retry_http_basic_auth(host, req, realm)
+                        response = self.retry_http_basic_auth(host, req, realm)
+                        if response and response.code != 401:
+                            self.retried = 0
+                        return response
 
     def retry_http_basic_auth(self, host, req, realm):
         user, pw = self.passwd.find_user_password(realm, host)
         if pw is not None:
             raw = "%s:%s" % (user, pw)
             auth = "Basic " + base64.b64encode(raw.encode()).decode("ascii")
-            if req.get_header(self.auth_header, None) == auth:
+            if req.headers.get(self.auth_header, None) == auth:
                 return None
             req.add_unredirected_header(self.auth_header, auth)
             return self.parent.open(req, timeout=req.timeout)
         else:
             return None
-
-    def http_request(self, req):
-        if (not hasattr(self.passwd, 'is_authenticated') or
-           not self.passwd.is_authenticated(req.full_url)):
-            return req
-
-        if not req.has_header('Authorization'):
-            user, passwd = self.passwd.find_user_password(None, req.full_url)
-            credentials = '{0}:{1}'.format(user, passwd).encode()
-            auth_str = base64.standard_b64encode(credentials).decode()
-            req.add_unredirected_header('Authorization',
-                                        'Basic {}'.format(auth_str.strip()))
-        return req
-
-    def http_response(self, req, response):
-        if hasattr(self.passwd, 'is_authenticated'):
-            if 200 <= response.code < 300:
-                self.passwd.update_authenticated(req.full_url, True)
-            else:
-                self.passwd.update_authenticated(req.full_url, False)
-        return response
-
-    https_request = http_request
-    https_response = http_response
-
 
 
 class HTTPBasicAuthHandler(AbstractBasicAuthHandler, BaseHandler):
@@ -966,6 +950,7 @@ class HTTPBasicAuthHandler(AbstractBasicAuthHandler, BaseHandler):
         url = req.full_url
         response = self.http_error_auth_reqed('www-authenticate',
                                           url, req, headers)
+        self.reset_retry_count()
         return response
 
 
@@ -981,6 +966,7 @@ class ProxyBasicAuthHandler(AbstractBasicAuthHandler, BaseHandler):
         authority = req.host
         response = self.http_error_auth_reqed('proxy-authenticate',
                                           authority, req, headers)
+        self.reset_retry_count()
         return response
 
 
@@ -1121,9 +1107,6 @@ class AbstractDigestAuthHandler:
         elif algorithm == 'SHA':
             H = lambda x: hashlib.sha1(x.encode("ascii")).hexdigest()
         # XXX MD5-sess
-        else:
-            raise ValueError("Unsupported digest authentication "
-                             "algorithm %r" % algorithm)
         KD = lambda s, d: H("%s:%s" % (s, d))
         return H, KD
 
@@ -1221,7 +1204,6 @@ class AbstractHTTPHandler(BaseHandler):
 
         # will parse host:port
         h = http_class(host, timeout=req.timeout, **http_conn_args)
-        h.set_debuglevel(self._debuglevel)
 
         headers = dict(req.unredirected_hdrs)
         headers.update(dict((k, v) for k, v in req.headers.items()
@@ -1250,21 +1232,18 @@ class AbstractHTTPHandler(BaseHandler):
             h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
 
         try:
-            try:
-                h.request(req.get_method(), req.selector, req.data, headers)
-            except OSError as err: # timeout error
-                raise URLError(err)
-            r = h.getresponse()
-        except:
+            h.request(req.get_method(), req.selector, req.data, headers)
+        except OSError as err: # timeout error
             h.close()
-            raise
-
-        # If the server does not send us a 'Connection: close' header,
-        # HTTPConnection assumes the socket should be left open. Manually
-        # mark the socket to be closed when this response object goes away.
-        if h.sock:
-            h.sock.close()
-            h.sock = None
+            raise URLError(err)
+        else:
+            r = h.getresponse()
+            # If the server does not send us a 'Connection: close' header,
+            # HTTPConnection assumes the socket should be left open. Manually
+            # mark the socket to be closed when this response object goes away.
+            if h.sock:
+                h.sock.close()
+                h.sock = None
 
         r.url = req.get_full_url()
         # This line replaces the .msg attribute of the HTTPResponse
@@ -1382,7 +1361,7 @@ class FileHandler(BaseHandler):
         url = req.selector
         if url[:2] == '//' and url[2:3] != '/' and (req.host and
                 req.host != 'localhost'):
-            if not req.host in self.get_names():
+            if not req.host is self.get_names():
                 raise URLError("file:// scheme is supported only on localhost")
         else:
             return self.open_local_file(req)
@@ -1978,7 +1957,7 @@ class URLopener:
         # XXX thread unsafe!
         if len(self.ftpcache) > MAXFTPCACHE:
             # Prune the cache, rather arbitrarily
-            for k in list(self.ftpcache):
+            for k in self.ftpcache.keys():
                 if k != key:
                     v = self.ftpcache[k]
                     del self.ftpcache[k]
@@ -2064,20 +2043,18 @@ class FancyURLopener(URLopener):
     def http_error_302(self, url, fp, errcode, errmsg, headers, data=None):
         """Error 302 -- relocated (temporarily)."""
         self.tries += 1
-        try:
-            if self.maxtries and self.tries >= self.maxtries:
-                if hasattr(self, "http_error_500"):
-                    meth = self.http_error_500
-                else:
-                    meth = self.http_error_default
-                return meth(url, fp, 500,
-                            "Internal Server Error: Redirect Recursion",
-                            headers)
-            result = self.redirect_internal(url, fp, errcode, errmsg,
-                                            headers, data)
-            return result
-        finally:
+        if self.maxtries and self.tries >= self.maxtries:
+            if hasattr(self, "http_error_500"):
+                meth = self.http_error_500
+            else:
+                meth = self.http_error_default
             self.tries = 0
+            return meth(url, fp, 500,
+                        "Internal Server Error: Redirect Recursion", headers)
+        result = self.redirect_internal(url, fp, errcode, errmsg, headers,
+                                        data)
+        self.tries = 0
+        return result
 
     def redirect_internal(self, url, fp, errcode, errmsg, headers, data):
         if 'location' in headers:
@@ -2314,11 +2291,7 @@ class ftpwrapper:
         self.timeout = timeout
         self.refcount = 0
         self.keepalive = persistent
-        try:
-            self.init()
-        except:
-            self.close()
-            raise
+        self.init()
 
     def init(self):
         import ftplib
@@ -2406,35 +2379,19 @@ def getproxies_environment():
 
     """
     proxies = {}
-    # in order to prefer lowercase variables, process environment in
-    # two passes: first matches any, second pass matches lowercase only
     for name, value in os.environ.items():
         name = name.lower()
         if value and name[-6:] == '_proxy':
             proxies[name[:-6]] = value
-    for name, value in os.environ.items():
-        if name[-6:] == '_proxy':
-            name = name.lower()
-            if value:
-                proxies[name[:-6]] = value
-            else:
-                proxies.pop(name[:-6], None)
     return proxies
 
-def proxy_bypass_environment(host, proxies=None):
+def proxy_bypass_environment(host):
     """Test if proxies should not be used for a particular host.
 
-    Checks the proxy dict for the value of no_proxy, which should
-    be a list of comma separated DNS suffixes, or '*' for all hosts.
-
+    Checks the environment for a variable named no_proxy, which should
+    be a list of DNS suffixes separated by commas, or '*' for all hosts.
     """
-    if proxies is None:
-        proxies = getproxies_environment()
-    # don't bypass, if no_proxy isn't specified
-    try:
-        no_proxy = proxies['no']
-    except KeyError:
-        return 0
+    no_proxy = os.environ.get('no_proxy', '') or os.environ.get('NO_PROXY', '')
     # '*' is special case for always bypass
     if no_proxy == '*':
         return 1
@@ -2443,12 +2400,8 @@ def proxy_bypass_environment(host, proxies=None):
     # check if the host ends with any of the DNS suffixes
     no_proxy_list = [proxy.strip() for proxy in no_proxy.split(',')]
     for name in no_proxy_list:
-        if name:
-            name = re.escape(name)
-            pattern = r'(.+\.)?%s$' % name
-            if (re.match(pattern, hostonly, re.I)
-                    or re.match(pattern, host, re.I)):
-                return 1
+        if name and (hostonly.endswith(name) or host.endswith(name)):
+            return 1
     # otherwise, don't bypass
     return 0
 
@@ -2533,15 +2486,8 @@ if sys.platform == 'darwin':
 
 
     def proxy_bypass(host):
-        """Return True, if host should be bypassed.
-
-        Checks proxy settings gathered from the environment, if specified,
-        or from the MacOSX framework SystemConfiguration.
-
-        """
-        proxies = getproxies_environment()
-        if proxies:
-            return proxy_bypass_environment(host, proxies)
+        if getproxies_environment():
+            return proxy_bypass_environment(host)
         else:
             return proxy_bypass_macosx_sysconf(host)
 
@@ -2655,15 +2601,14 @@ elif os.name == 'nt':
         return 0
 
     def proxy_bypass(host):
-        """Return True, if host should be bypassed.
+        """Return a dictionary of scheme -> proxy server URL mappings.
 
-        Checks proxy settings gathered from the environment, if specified,
+        Returns settings gathered from the environment, if specified,
         or the registry.
 
         """
-        proxies = getproxies_environment()
-        if proxies:
-            return proxy_bypass_environment(host, proxies)
+        if getproxies_environment():
+            return proxy_bypass_environment(host)
         else:
             return proxy_bypass_registry(host)
 

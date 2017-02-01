@@ -1,5 +1,6 @@
 """Test that the semantics relating to the 'fromlist' argument are correct."""
 from .. import util
+from . import util as import_util
 import unittest
 
 
@@ -28,10 +29,8 @@ class ReturnValue:
                 module = self.__import__('pkg.module', fromlist=['attr'])
                 self.assertEqual(module.__name__, 'pkg.module')
 
-
-(Frozen_ReturnValue,
- Source_ReturnValue
- ) = util.test_both(ReturnValue, __import__=util.__import__)
+Frozen_ReturnValue, Source_ReturnValue = util.test_both(
+        ReturnValue, __import__=import_util.__import__)
 
 
 class HandlingFromlist:
@@ -62,7 +61,7 @@ class HandlingFromlist:
             with util.import_state(meta_path=[importer]):
                 module = self.__import__('module', fromlist=['non_existent'])
                 self.assertEqual(module.__name__, 'module')
-                self.assertFalse(hasattr(module, 'non_existent'))
+                self.assertTrue(not hasattr(module, 'non_existent'))
 
     def test_module_from_package(self):
         # [module]
@@ -122,10 +121,8 @@ class HandlingFromlist:
                 self.assertEqual(module.module1.__name__, 'pkg.module1')
                 self.assertEqual(module.module2.__name__, 'pkg.module2')
 
-
-(Frozen_FromList,
- Source_FromList
- ) = util.test_both(HandlingFromlist, __import__=util.__import__)
+Frozen_FromList, Source_FromList = util.test_both(
+        HandlingFromlist, __import__=import_util.__import__)
 
 
 if __name__ == '__main__':

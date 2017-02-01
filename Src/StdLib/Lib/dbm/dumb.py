@@ -21,7 +21,6 @@ is read when the database is opened, and some updates rewrite the whole index)
 
 """
 
-import ast as _ast
 import io as _io
 import os as _os
 import collections
@@ -45,7 +44,7 @@ class _Database(collections.MutableMapping):
     _os = _os       # for _commit()
     _io = _io       # for _commit()
 
-    def __init__(self, filebasename, mode, flag='c'):
+    def __init__(self, filebasename, mode):
         self._mode = mode
 
         # The directory file is a text file.  Each line looks like
@@ -65,25 +64,14 @@ class _Database(collections.MutableMapping):
         # The index is an in-memory dict, mirroring the directory file.
         self._index = None  # maps keys to (pos, siz) pairs
 
-        # Handle the creation
-        self._create(flag)
-        self._update()
-
-    def _create(self, flag):
-        if flag == 'n':
-            for filename in (self._datfile, self._bakfile, self._dirfile):
-                try:
-                    _os.remove(filename)
-                except OSError:
-                    pass
         # Mod by Jack: create data file if needed
         try:
             f = _io.open(self._datfile, 'r', encoding="Latin-1")
         except OSError:
-            with _io.open(self._datfile, 'w', encoding="Latin-1") as f:
-                self._chmod(self._datfile)
-        else:
-            f.close()
+            f = _io.open(self._datfile, 'w', encoding="Latin-1")
+            self._chmod(self._datfile)
+        f.close()
+        self._update()
 
     # Read directory file into the in-memory index dict.
     def _update(self):
@@ -93,12 +81,12 @@ class _Database(collections.MutableMapping):
         except OSError:
             pass
         else:
-            with f:
-                for line in f:
-                    line = line.rstrip()
-                    key, pos_and_siz_pair = _ast.literal_eval(line)
-                    key = key.encode('Latin-1')
-                    self._index[key] = pos_and_siz_pair
+            for line in f:
+                line = line.rstrip()
+                key, pos_and_siz_pair = eval(line)
+                key = key.encode('Latin-1')
+                self._index[key] = pos_and_siz_pair
+            f.close()
 
     # Write the index dict to the directory file.  The original directory
     # file (if any) is renamed with a .bak extension first.  If a .bak
@@ -120,28 +108,24 @@ class _Database(collections.MutableMapping):
         except OSError:
             pass
 
-        with self._io.open(self._dirfile, 'w', encoding="Latin-1") as f:
-            self._chmod(self._dirfile)
-            for key, pos_and_siz_pair in self._index.items():
-                # Use Latin-1 since it has no qualms with any value in any
-                # position; UTF-8, though, does care sometimes.
-                entry = "%r, %r\n" % (key.decode('Latin-1'), pos_and_siz_pair)
-                f.write(entry)
+        f = self._io.open(self._dirfile, 'w', encoding="Latin-1")
+        self._chmod(self._dirfile)
+        for key, pos_and_siz_pair in self._index.items():
+            # Use Latin-1 since it has no qualms with any value in any
+            # position; UTF-8, though, does care sometimes.
+            f.write("%r, %r\n" % (key.decode('Latin-1'), pos_and_siz_pair))
+        f.close()
 
     sync = _commit
-
-    def _verify_open(self):
-        if self._index is None:
-            raise error('DBM object has already been closed')
 
     def __getitem__(self, key):
         if isinstance(key, str):
             key = key.encode('utf-8')
-        self._verify_open()
         pos, siz = self._index[key]     # may raise KeyError
-        with _io.open(self._datfile, 'rb') as f:
-            f.seek(pos)
-            dat = f.read(siz)
+        f = _io.open(self._datfile, 'rb')
+        f.seek(pos)
+        dat = f.read(siz)
+        f.close()
         return dat
 
     # Append val to the data file, starting at a _BLOCKSIZE-aligned
@@ -149,13 +133,14 @@ class _Database(collections.MutableMapping):
     # to get to an aligned offset.  Return pair
     #     (starting offset of val, len(val))
     def _addval(self, val):
-        with _io.open(self._datfile, 'rb+') as f:
-            f.seek(0, 2)
-            pos = int(f.tell())
-            npos = ((pos + _BLOCKSIZE - 1) // _BLOCKSIZE) * _BLOCKSIZE
-            f.write(b'\0'*(npos-pos))
-            pos = npos
-            f.write(val)
+        f = _io.open(self._datfile, 'rb+')
+        f.seek(0, 2)
+        pos = int(f.tell())
+        npos = ((pos + _BLOCKSIZE - 1) // _BLOCKSIZE) * _BLOCKSIZE
+        f.write(b'\0'*(npos-pos))
+        pos = npos
+        f.write(val)
+        f.close()
         return (pos, len(val))
 
     # Write val to the data file, starting at offset pos.  The caller
@@ -163,9 +148,10 @@ class _Database(collections.MutableMapping):
     # pos to hold val, without overwriting some other value.  Return
     # pair (pos, len(val)).
     def _setval(self, pos, val):
-        with _io.open(self._datfile, 'rb+') as f:
-            f.seek(pos)
-            f.write(val)
+        f = _io.open(self._datfile, 'rb+')
+        f.seek(pos)
+        f.write(val)
+        f.close()
         return (pos, len(val))
 
     # key is a new key whose associated value starts in the data file
@@ -173,9 +159,10 @@ class _Database(collections.MutableMapping):
     # the in-memory index dict, and append one to the directory file.
     def _addkey(self, key, pos_and_siz_pair):
         self._index[key] = pos_and_siz_pair
-        with _io.open(self._dirfile, 'a', encoding="Latin-1") as f:
-            self._chmod(self._dirfile)
-            f.write("%r, %r\n" % (key.decode("Latin-1"), pos_and_siz_pair))
+        f = _io.open(self._dirfile, 'a', encoding="Latin-1")
+        self._chmod(self._dirfile)
+        f.write("%r, %r\n" % (key.decode("Latin-1"), pos_and_siz_pair))
+        f.close()
 
     def __setitem__(self, key, val):
         if isinstance(key, str):
@@ -186,7 +173,6 @@ class _Database(collections.MutableMapping):
             val = val.encode('utf-8')
         elif not isinstance(val, (bytes, bytearray)):
             raise TypeError("values must be bytes or strings")
-        self._verify_open()
         if key not in self._index:
             self._addkey(key, self._addval(val))
         else:
@@ -214,7 +200,6 @@ class _Database(collections.MutableMapping):
     def __delitem__(self, key):
         if isinstance(key, str):
             key = key.encode('utf-8')
-        self._verify_open()
         # The blocks used by the associated value are lost.
         del self._index[key]
         # XXX It's unclear why we do a _commit() here (the code always
@@ -224,44 +209,26 @@ class _Database(collections.MutableMapping):
         self._commit()
 
     def keys(self):
-        try:
-            return list(self._index)
-        except TypeError:
-            raise error('DBM object has already been closed') from None
+        return list(self._index.keys())
 
     def items(self):
-        self._verify_open()
         return [(key, self[key]) for key in self._index.keys()]
 
     def __contains__(self, key):
         if isinstance(key, str):
             key = key.encode('utf-8')
-        try:
-            return key in self._index
-        except TypeError:
-            if self._index is None:
-                raise error('DBM object has already been closed') from None
-            else:
-                raise
+        return key in self._index
 
     def iterkeys(self):
-        try:
-            return iter(self._index)
-        except TypeError:
-            raise error('DBM object has already been closed') from None
+        return iter(self._index.keys())
     __iter__ = iterkeys
 
     def __len__(self):
-        try:
-            return len(self._index)
-        except TypeError:
-            raise error('DBM object has already been closed') from None
+        return len(self._index)
 
     def close(self):
-        try:
-            self._commit()
-        finally:
-            self._index = self._datfile = self._dirfile = self._bakfile = None
+        self._commit()
+        self._index = self._datfile = self._dirfile = self._bakfile = None
 
     __del__ = close
 
@@ -276,20 +243,20 @@ class _Database(collections.MutableMapping):
         self.close()
 
 
-def open(file, flag='c', mode=0o666):
+def open(file, flag=None, mode=0o666):
     """Open the database file, filename, and return corresponding object.
 
     The flag argument, used to control how the database is opened in the
-    other DBM implementations, supports only the semantics of 'c' and 'n'
-    values.  Other values will default to the semantics of 'c' value:
-    the database will always opened for update and will be created if it
-    does not exist.
+    other DBM implementations, is ignored in the dbm.dumb module; the
+    database is always opened for update, and will be created if it does
+    not exist.
 
     The optional mode argument is the UNIX mode of the file, used only when
     the database has to be created.  It defaults to octal code 0o666 (and
     will be modified by the prevailing umask).
 
     """
+    # flag argument is currently ignored
 
     # Modify mode depending on the umask
     try:
@@ -300,4 +267,5 @@ def open(file, flag='c', mode=0o666):
     else:
         # Turn off any bits that are set in the umask
         mode = mode & (~um)
-    return _Database(file, mode, flag=flag)
+
+    return _Database(file, mode)

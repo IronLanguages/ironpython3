@@ -24,7 +24,7 @@ __author__ = 'Ka-Ping Yee <ping@lfw.org>'
 __credits__ = ('GvR, ESR, Tim Peters, Thomas Wouters, Fred Drake, '
                'Skip Montanaro, Raymond Hettinger, Trent Nelson, '
                'Michael Foord')
-from builtins import open as _builtin_open
+import builtins
 from codecs import lookup, BOM_UTF8
 import collections
 from io import TextIOWrapper
@@ -33,7 +33,7 @@ import re
 import sys
 from token import *
 
-cookie_re = re.compile(r'^[ \t\f]*#.*?coding[:=][ \t]*([-\w.]+)', re.ASCII)
+cookie_re = re.compile(r'^[ \t\f]*#.*coding[:=][ \t]*([-\w.]+)', re.ASCII)
 blank_re = re.compile(br'^[ \t\f]*(?:[#\r\n]|$)', re.ASCII)
 
 import token
@@ -91,8 +91,7 @@ EXACT_TOKEN_TYPES = {
     '**=': DOUBLESTAREQUAL,
     '//':  DOUBLESLASH,
     '//=': DOUBLESLASHEQUAL,
-    '@':   AT,
-    '@=':  ATEQUAL,
+    '@':   AT
 }
 
 class TokenInfo(collections.namedtuple('TokenInfo', 'type string start end line')):
@@ -151,7 +150,7 @@ String = group(StringPrefix + r"'[^\n'\\]*(?:\\.[^\n'\\]*)*'",
 # recognized as two instances of =).
 Operator = group(r"\*\*=?", r">>=?", r"<<=?", r"!=",
                  r"//=?", r"->",
-                 r"[+\-*/%&@|^=<>]=?",
+                 r"[+\-*/%&|^=<>]=?",
                  r"~")
 
 Bracket = '[][(){}]'
@@ -187,6 +186,7 @@ endpats = {"'": Single, '"': Double,
            "rB'''": Single3, 'rB"""': Double3,
            "RB'''": Single3, 'RB"""': Double3,
            "u'''": Single3, 'u"""': Double3,
+           "R'''": Single3, 'R"""': Double3,
            "U'''": Single3, 'U"""': Double3,
            'r': None, 'R': None, 'b': None, 'B': None,
            'u': None, 'U': None}
@@ -244,8 +244,6 @@ class Untokenizer:
 
     def untokenize(self, iterable):
         it = iter(iterable)
-        indents = []
-        startline = False
         for t in it:
             if len(t) == 2:
                 self.compat(t, it)
@@ -256,21 +254,6 @@ class Untokenizer:
                 continue
             if tok_type == ENDMARKER:
                 break
-            if tok_type == INDENT:
-                indents.append(token)
-                continue
-            elif tok_type == DEDENT:
-                indents.pop()
-                self.prev_row, self.prev_col = end
-                continue
-            elif tok_type in (NEWLINE, NL):
-                startline = True
-            elif startline and indents:
-                indent = indents[-1]
-                if start[1] >= len(indent):
-                    self.tokens.append(indent)
-                    self.prev_col = len(indent)
-                startline = False
             self.add_whitespace(start)
             self.tokens.append(token)
             self.prev_row, self.prev_col = end
@@ -291,7 +274,7 @@ class Untokenizer:
                 self.encoding = tokval
                 continue
 
-            if toknum in (NAME, NUMBER, ASYNC, AWAIT):
+            if toknum in (NAME, NUMBER):
                 tokval += ' '
 
             # Insert a space between two consecutive strings
@@ -328,8 +311,8 @@ def untokenize(iterable):
     Round-trip invariant for full input:
         Untokenized source will match input source exactly
 
-    Round-trip invariant for limited input:
-        # Output bytes will tokenize back to the input
+    Round-trip invariant for limited intput:
+        # Output bytes will tokenize the back to the input
         t1 = [tok[:2] for tok in tokenize(f.readline)]
         newcode = untokenize(t1)
         readline = BytesIO(newcode).readline
@@ -451,24 +434,20 @@ def open(filename):
     """Open a file in read only mode using the encoding detected by
     detect_encoding().
     """
-    buffer = _builtin_open(filename, 'rb')
-    try:
-        encoding, lines = detect_encoding(buffer.readline)
-        buffer.seek(0)
-        text = TextIOWrapper(buffer, encoding, line_buffering=True)
-        text.mode = 'r'
-        return text
-    except:
-        buffer.close()
-        raise
+    buffer = builtins.open(filename, 'rb')
+    encoding, lines = detect_encoding(buffer.readline)
+    buffer.seek(0)
+    text = TextIOWrapper(buffer, encoding, line_buffering=True)
+    text.mode = 'r'
+    return text
 
 
 def tokenize(readline):
     """
-    The tokenize() generator requires one argument, readline, which
+    The tokenize() generator requires one argment, readline, which
     must be a callable object which provides the same interface as the
     readline() method of built-in file objects.  Each call to the function
-    should return one line of input as bytes.  Alternatively, readline
+    should return one line of input as bytes.  Alternately, readline
     can be a callable function terminating with StopIteration:
         readline = open(myfile, 'rb').__next__  # Example of alternate readline
 
@@ -497,12 +476,6 @@ def _tokenize(readline, encoding):
     contstr, needcont = '', 0
     contline = None
     indents = [0]
-
-    # 'stashed' and 'async_*' are used for async/await parsing
-    stashed = None
-    async_def = False
-    async_def_indent = 0
-    async_def_nl = False
 
     if encoding is not None:
         if encoding == "utf-8-sig":
@@ -579,18 +552,7 @@ def _tokenize(readline, encoding):
                         "unindent does not match any outer indentation level",
                         ("<tokenize>", lnum, pos, line))
                 indents = indents[:-1]
-
-                if async_def and async_def_indent >= indents[-1]:
-                    async_def = False
-                    async_def_nl = False
-                    async_def_indent = 0
-
                 yield TokenInfo(DEDENT, '', (lnum, pos), (lnum, pos), line)
-
-            if async_def and async_def_nl and async_def_indent >= indents[-1]:
-                async_def = False
-                async_def_nl = False
-                async_def_indent = 0
 
         else:                                  # continued statement
             if not line:
@@ -610,21 +572,10 @@ def _tokenize(readline, encoding):
                     (initial == '.' and token != '.' and token != '...')):
                     yield TokenInfo(NUMBER, token, spos, epos, line)
                 elif initial in '\r\n':
-                    if stashed:
-                        yield stashed
-                        stashed = None
-                    if parenlev > 0:
-                        yield TokenInfo(NL, token, spos, epos, line)
-                    else:
-                        yield TokenInfo(NEWLINE, token, spos, epos, line)
-                        if async_def:
-                            async_def_nl = True
-
+                    yield TokenInfo(NL if parenlev > 0 else NEWLINE,
+                           token, spos, epos, line)
                 elif initial == '#':
                     assert not token.endswith("\n")
-                    if stashed:
-                        yield stashed
-                        stashed = None
                     yield TokenInfo(COMMENT, token, spos, epos, line)
                 elif token in triple_quoted:
                     endprog = _compile(endpats[token])
@@ -652,36 +603,7 @@ def _tokenize(readline, encoding):
                     else:                                  # ordinary string
                         yield TokenInfo(STRING, token, spos, epos, line)
                 elif initial.isidentifier():               # ordinary name
-                    if token in ('async', 'await'):
-                        if async_def:
-                            yield TokenInfo(
-                                ASYNC if token == 'async' else AWAIT,
-                                token, spos, epos, line)
-                            continue
-
-                    tok = TokenInfo(NAME, token, spos, epos, line)
-                    if token == 'async' and not stashed:
-                        stashed = tok
-                        continue
-
-                    if token == 'def':
-                        if (stashed
-                                and stashed.type == NAME
-                                and stashed.string == 'async'):
-
-                            async_def = True
-                            async_def_indent = indents[-1]
-
-                            yield TokenInfo(ASYNC, stashed.string,
-                                            stashed.start, stashed.end,
-                                            stashed.line)
-                            stashed = None
-
-                    if stashed:
-                        yield stashed
-                        stashed = None
-
-                    yield tok
+                    yield TokenInfo(NAME, token, spos, epos, line)
                 elif initial == '\\':                      # continued stmt
                     continued = 1
                 else:
@@ -689,18 +611,11 @@ def _tokenize(readline, encoding):
                         parenlev += 1
                     elif initial in ')]}':
                         parenlev -= 1
-                    if stashed:
-                        yield stashed
-                        stashed = None
                     yield TokenInfo(OP, token, spos, epos, line)
             else:
                 yield TokenInfo(ERRORTOKEN, line[pos],
                            (lnum, pos), (lnum, pos+1), line)
                 pos += 1
-
-    if stashed:
-        yield stashed
-        stashed = None
 
     for indent in indents[1:]:                 # pop remaining indent levels
         yield TokenInfo(DEDENT, '', (lnum, 0), (lnum, 0), '')
@@ -742,7 +657,7 @@ def main():
         # Tokenize the input
         if args.filename:
             filename = args.filename
-            with _builtin_open(filename, 'rb') as f:
+            with builtins.open(filename, 'rb') as f:
                 tokens = list(tokenize(f.readline))
         else:
             filename = "<stdin>"

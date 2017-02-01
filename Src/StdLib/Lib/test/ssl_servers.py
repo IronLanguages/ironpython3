@@ -150,7 +150,7 @@ class HTTPSServerThread(threading.Thread):
 def make_https_server(case, *, context=None, certfile=CERTFILE,
                       host=HOST, handler_class=None):
     if context is None:
-        context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
     # We assume the certfile contains both private key and certificate
     context.load_cert_chain(certfile)
     server = HTTPSServerThread(context, host, handler_class)
@@ -182,8 +182,6 @@ if __name__ == "__main__":
     parser.add_argument('--curve-name', dest='curve_name', type=str,
                         action='store',
                         help='curve name for EC-based Diffie-Hellman')
-    parser.add_argument('--ciphers', dest='ciphers', type=str,
-                        help='allowed cipher list')
     parser.add_argument('--dh', dest='dh_file', type=str, action='store',
                         help='PEM file containing DH parameters')
     args = parser.parse_args()
@@ -194,14 +192,12 @@ if __name__ == "__main__":
     else:
         handler_class = RootedHTTPRequestHandler
         handler_class.root = os.getcwd()
-    context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
     context.load_cert_chain(CERTFILE)
     if args.curve_name:
         context.set_ecdh_curve(args.curve_name)
     if args.dh_file:
         context.load_dh_params(args.dh_file)
-    if args.ciphers:
-        context.set_ciphers(args.ciphers)
 
     server = HTTPSServer(("", args.port), handler_class, context)
     if args.verbose:

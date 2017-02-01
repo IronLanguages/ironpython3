@@ -1,4 +1,4 @@
-# Copyright 2001-2014 by Vinay Sajip. All Rights Reserved.
+# Copyright 2001-2013 by Vinay Sajip. All Rights Reserved.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose and without fee is hereby granted,
@@ -19,19 +19,13 @@ Configuration functions for the logging package for Python. The core package
 is based on PEP 282 and comments thereto in comp.lang.python, and influenced
 by Apache's log4j system.
 
-Copyright (C) 2001-2014 Vinay Sajip. All Rights Reserved.
+Copyright (C) 2001-2013 Vinay Sajip. All Rights Reserved.
 
 To use, simply 'import logging' and log away!
 """
 
-import errno
+import sys, logging, logging.handlers, socket, struct, traceback, re
 import io
-import logging
-import logging.handlers
-import re
-import struct
-import sys
-import traceback
 
 try:
     import _thread as thread
@@ -44,7 +38,10 @@ from socketserver import ThreadingTCPServer, StreamRequestHandler
 
 DEFAULT_LOGGING_CONFIG_PORT = 9030
 
-RESET_ERROR = errno.ECONNRESET
+if sys.platform == "win32":
+    RESET_ERROR = 10054   #WSAECONNRESET
+else:
+    RESET_ERROR = 104     #ECONNRESET
 
 #
 #   The following code implements a socket listener for on-the-fly
@@ -116,12 +113,11 @@ def _create_formatters(cp):
         sectname = "formatter_%s" % form
         fs = cp.get(sectname, "format", raw=True, fallback=None)
         dfs = cp.get(sectname, "datefmt", raw=True, fallback=None)
-        stl = cp.get(sectname, "style", raw=True, fallback='%')
         c = logging.Formatter
         class_name = cp[sectname].get("class")
         if class_name:
             c = _resolve(class_name)
-        f = c(fs, dfs, stl)
+        f = c(fs, dfs)
         formatters[form] = f
     return formatters
 
@@ -278,30 +274,6 @@ def valid_ident(s):
     return True
 
 
-class ConvertingMixin(object):
-    """For ConvertingXXX's, this mixin class provides common functions"""
-
-    def convert_with_key(self, key, value, replace=True):
-        result = self.configurator.convert(value)
-        #If the converted value is different, save for next time
-        if value is not result:
-            if replace:
-                self[key] = result
-            if type(result) in (ConvertingDict, ConvertingList,
-                               ConvertingTuple):
-                result.parent = self
-                result.key = key
-        return result
-
-    def convert(self, value):
-        result = self.configurator.convert(value)
-        if value is not result:
-            if type(result) in (ConvertingDict, ConvertingList,
-                               ConvertingTuple):
-                result.parent = self
-        return result
-
-
 # The ConvertingXXX classes are wrappers around standard Python containers,
 # and they serve to convert any suitable values in the container. The
 # conversion converts base dicts, lists and tuples to their wrapped
@@ -311,37 +283,77 @@ class ConvertingMixin(object):
 # Each wrapper should have a configurator attribute holding the actual
 # configurator to use for conversion.
 
-class ConvertingDict(dict, ConvertingMixin):
+class ConvertingDict(dict):
     """A converting dictionary wrapper."""
 
     def __getitem__(self, key):
         value = dict.__getitem__(self, key)
-        return self.convert_with_key(key, value)
+        result = self.configurator.convert(value)
+        #If the converted value is different, save for next time
+        if value is not result:
+            self[key] = result
+            if type(result) in (ConvertingDict, ConvertingList,
+                                ConvertingTuple):
+                result.parent = self
+                result.key = key
+        return result
 
     def get(self, key, default=None):
         value = dict.get(self, key, default)
-        return self.convert_with_key(key, value)
+        result = self.configurator.convert(value)
+        #If the converted value is different, save for next time
+        if value is not result:
+            self[key] = result
+            if type(result) in (ConvertingDict, ConvertingList,
+                                ConvertingTuple):
+                result.parent = self
+                result.key = key
+        return result
 
     def pop(self, key, default=None):
         value = dict.pop(self, key, default)
-        return self.convert_with_key(key, value, replace=False)
+        result = self.configurator.convert(value)
+        if value is not result:
+            if type(result) in (ConvertingDict, ConvertingList,
+                                ConvertingTuple):
+                result.parent = self
+                result.key = key
+        return result
 
-class ConvertingList(list, ConvertingMixin):
+class ConvertingList(list):
     """A converting list wrapper."""
     def __getitem__(self, key):
         value = list.__getitem__(self, key)
-        return self.convert_with_key(key, value)
+        result = self.configurator.convert(value)
+        #If the converted value is different, save for next time
+        if value is not result:
+            self[key] = result
+            if type(result) in (ConvertingDict, ConvertingList,
+                                ConvertingTuple):
+                result.parent = self
+                result.key = key
+        return result
 
     def pop(self, idx=-1):
         value = list.pop(self, idx)
-        return self.convert(value)
+        result = self.configurator.convert(value)
+        if value is not result:
+            if type(result) in (ConvertingDict, ConvertingList,
+                                ConvertingTuple):
+                result.parent = self
+        return result
 
-class ConvertingTuple(tuple, ConvertingMixin):
+class ConvertingTuple(tuple):
     """A converting tuple wrapper."""
     def __getitem__(self, key):
         value = tuple.__getitem__(self, key)
-        # Can't replace a tuple entry.
-        return self.convert_with_key(key, value, replace=False)
+        result = self.configurator.convert(value)
+        if value is not result:
+            if type(result) in (ConvertingDict, ConvertingList,
+                                ConvertingTuple):
+                result.parent = self
+                result.key = key
+        return result
 
 class BaseConfigurator(object):
     """
@@ -661,12 +673,7 @@ class DictConfigurator(BaseConfigurator):
             fmt = config.get('format', None)
             dfmt = config.get('datefmt', None)
             style = config.get('style', '%')
-            cname = config.get('class', None)
-            if not cname:
-                c = logging.Formatter
-            else:
-                c = _resolve(cname)
-            result = c(fmt, dfmt, style)
+            result = logging.Formatter(fmt, dfmt, style)
         return result
 
     def configure_filter(self, config):
@@ -860,8 +867,12 @@ def listen(port=DEFAULT_LOGGING_CONFIG_PORT, verify=None):
                     if self.server.ready:
                         self.server.ready.set()
             except OSError as e:
-                if e.errno != RESET_ERROR:
+                if not isinstance(e.args, tuple):
                     raise
+                else:
+                    errcode = e.args[0]
+                    if errcode != RESET_ERROR:
+                        raise
 
     class ConfigSocketReceiver(ThreadingTCPServer):
         """

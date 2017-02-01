@@ -1,5 +1,5 @@
 from test.support import (TESTFN, run_unittest, import_module, unlink,
-                          requires, _2G, _4G, gc_collect, cpython_only)
+                          requires, _2G, _4G, gc_collect)
 import unittest
 import os
 import re
@@ -282,7 +282,6 @@ class MmapTests(unittest.TestCase):
         self.assertEqual(m.find(b'one', 1), 8)
         self.assertEqual(m.find(b'one', 1, -1), 8)
         self.assertEqual(m.find(b'one', 1, -2), -1)
-        self.assertEqual(m.find(bytearray(b'one')), 0)
 
 
     def test_rfind(self):
@@ -301,7 +300,6 @@ class MmapTests(unittest.TestCase):
         self.assertEqual(m.rfind(b'one', 0, -2), 0)
         self.assertEqual(m.rfind(b'one', 1, -1), 8)
         self.assertEqual(m.rfind(b'one', 1, -2), -1)
-        self.assertEqual(m.rfind(bytearray(b'one')), 8)
 
 
     def test_double_close(self):
@@ -603,10 +601,8 @@ class MmapTests(unittest.TestCase):
         m.write(b"bar")
         self.assertEqual(m.tell(), 6)
         self.assertEqual(m[:], b"012bar6789")
-        m.write(bytearray(b"baz"))
-        self.assertEqual(m.tell(), 9)
-        self.assertEqual(m[:], b"012barbaz9")
-        self.assertRaises(ValueError, m.write, b"ba")
+        m.seek(8)
+        self.assertRaises(ValueError, m.write, b"bar")
 
     def test_non_ascii_byte(self):
         for b in (129, 200, 255): # > 128
@@ -642,15 +638,6 @@ class MmapTests(unittest.TestCase):
         self.assertEqual(m2[:], data2)
         m2.close()
         m1.close()
-
-    @cpython_only
-    @unittest.skipUnless(os.name == 'nt', 'requires Windows')
-    def test_sizeof(self):
-        m1 = mmap.mmap(-1, 100)
-        tagname = "foo"
-        m2 = mmap.mmap(-1, 100, tagname=tagname)
-        self.assertEqual(sys.getsizeof(m2),
-                         sys.getsizeof(m1) + len(tagname) + 1)
 
     @unittest.skipUnless(os.name == 'nt', 'requires Windows')
     def test_crasher_on_windows(self):
@@ -730,11 +717,8 @@ class LargeMmapTests(unittest.TestCase):
             f.seek(num_zeroes)
             f.write(tail)
             f.flush()
-        except (OSError, OverflowError, ValueError):
-            try:
-                f.close()
-            except (OSError, OverflowError):
-                pass
+        except (OSError, OverflowError):
+            f.close()
             raise unittest.SkipTest("filesystem does not have largefile support")
         return f
 

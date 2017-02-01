@@ -22,7 +22,6 @@
 
 import datetime
 import time
-import collections.abc
 
 from _sqlite3 import *
 
@@ -51,7 +50,6 @@ version_info = tuple([int(x) for x in version.split(".")])
 sqlite_version_info = tuple([int(x) for x in sqlite_version.split(".")])
 
 Binary = memoryview
-collections.abc.Sequence.register(Row)
 
 def register_adapters_and_converters():
     def adapt_date(val):

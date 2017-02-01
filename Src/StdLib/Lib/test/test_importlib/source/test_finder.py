@@ -1,5 +1,6 @@
 from .. import abc
 from .. import util
+from . import util as source_util
 
 machinery = util.import_importlib('importlib.machinery')
 
@@ -59,7 +60,7 @@ class FinderTests(abc.FinderTests):
         """
         if create is None:
             create = {test}
-        with util.create_modules(*create) as mapping:
+        with source_util.create_modules(*create) as mapping:
             if compile_:
                 for name in compile_:
                     py_compile.compile(mapping[name])
@@ -99,14 +100,14 @@ class FinderTests(abc.FinderTests):
 
     # [sub module]
     def test_module_in_package(self):
-        with util.create_modules('pkg.__init__', 'pkg.sub') as mapping:
+        with source_util.create_modules('pkg.__init__', 'pkg.sub') as mapping:
             pkg_dir = os.path.dirname(mapping['pkg.__init__'])
             loader = self.import_(pkg_dir, 'pkg.sub')
             self.assertTrue(hasattr(loader, 'load_module'))
 
     # [sub package]
     def test_package_in_package(self):
-        context = util.create_modules('pkg.__init__', 'pkg.sub.__init__')
+        context = source_util.create_modules('pkg.__init__', 'pkg.sub.__init__')
         with context as mapping:
             pkg_dir = os.path.dirname(mapping['pkg.__init__'])
             loader = self.import_(pkg_dir, 'pkg.sub')
@@ -119,7 +120,7 @@ class FinderTests(abc.FinderTests):
         self.assertIn('__init__', loader.get_filename(name))
 
     def test_failure(self):
-        with util.create_modules('blah') as mapping:
+        with source_util.create_modules('blah') as mapping:
             nothing = self.import_(mapping['.root'], 'sdfsadsadf')
             self.assertIsNone(nothing)
 
@@ -146,7 +147,7 @@ class FinderTests(abc.FinderTests):
     # Regression test for http://bugs.python.org/issue14846
     def test_dir_removal_handling(self):
         mod = 'mod'
-        with util.create_modules(mod) as mapping:
+        with source_util.create_modules(mod) as mapping:
             finder = self.get_finder(mapping['.root'])
             found = self._find(finder, 'mod', loader_only=True)
             self.assertIsNotNone(found)
@@ -195,10 +196,8 @@ class FinderTestsPEP451(FinderTests):
         spec = finder.find_spec(name)
         return spec.loader if spec is not None else spec
 
-
-(Frozen_FinderTestsPEP451,
- Source_FinderTestsPEP451
- ) = util.test_both(FinderTestsPEP451, machinery=machinery)
+Frozen_FinderTestsPEP451, Source_FinderTestsPEP451 = util.test_both(
+        FinderTestsPEP451, machinery=machinery)
 
 
 class FinderTestsPEP420(FinderTests):
@@ -211,10 +210,8 @@ class FinderTestsPEP420(FinderTests):
             loader_portions = finder.find_loader(name)
             return loader_portions[0] if loader_only else loader_portions
 
-
-(Frozen_FinderTestsPEP420,
- Source_FinderTestsPEP420
- ) = util.test_both(FinderTestsPEP420, machinery=machinery)
+Frozen_FinderTestsPEP420, Source_FinderTestsPEP420 = util.test_both(
+        FinderTestsPEP420, machinery=machinery)
 
 
 class FinderTestsPEP302(FinderTests):
@@ -226,10 +223,9 @@ class FinderTestsPEP302(FinderTests):
             warnings.simplefilter("ignore", DeprecationWarning)
             return finder.find_module(name)
 
+Frozen_FinderTestsPEP302, Source_FinderTestsPEP302 = util.test_both(
+        FinderTestsPEP302, machinery=machinery)
 
-(Frozen_FinderTestsPEP302,
- Source_FinderTestsPEP302
- ) = util.test_both(FinderTestsPEP302, machinery=machinery)
 
 
 if __name__ == '__main__':

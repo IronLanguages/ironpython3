@@ -1,4 +1,3 @@
-from test.test_email import load_tests
-import unittest
+from test.test_email import test_main
 
-unittest.main()
+test_main()

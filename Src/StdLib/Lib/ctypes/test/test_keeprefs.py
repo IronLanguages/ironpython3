@@ -94,8 +94,7 @@ class PointerTestCase(unittest.TestCase):
         self.assertEqual(x._objects, {'1': i})
 
 class DeletePointerTestCase(unittest.TestCase):
-    @unittest.skip('test disabled')
-    def test_X(self):
+    def X_test(self):
         class X(Structure):
             _fields_ = [("p", POINTER(c_char_p))]
         x = X()

@@ -1,5 +1,4 @@
 from ctypes import *
-from ctypes.test import need_symbol
 import unittest
 
 # IMPORTANT INFO:
@@ -69,10 +68,7 @@ class CharPointersTestCase(unittest.TestCase):
 
     def test_int_pointer_arg(self):
         func = testdll._testfunc_p_p
-        if sizeof(c_longlong) == sizeof(c_void_p):
-            func.restype = c_longlong
-        else:
-            func.restype = c_long
+        func.restype = c_long
         self.assertEqual(0, func(0))
 
         ci = c_int(0)
@@ -139,14 +135,13 @@ class CharPointersTestCase(unittest.TestCase):
         func(pointer(c_int()))
         func((c_int * 3)())
 
-    @need_symbol('c_wchar_p')
-    def test_c_void_p_arg_with_c_wchar_p(self):
-        func = testdll._testfunc_p_p
-        func.restype = c_wchar_p
-        func.argtypes = c_void_p,
-
-        self.assertEqual(None, func(c_wchar_p(None)))
-        self.assertEqual("123", func(c_wchar_p("123")))
+        try:
+            func.restype = c_wchar_p
+        except NameError:
+            pass
+        else:
+            self.assertEqual(None, func(c_wchar_p(None)))
+            self.assertEqual("123", func(c_wchar_p("123")))
 
     def test_instance(self):
         func = testdll._testfunc_p_p
@@ -161,47 +156,51 @@ class CharPointersTestCase(unittest.TestCase):
         func.argtypes = None
         self.assertEqual(None, func(X()))
 
-@need_symbol('c_wchar')
-class WCharPointersTestCase(unittest.TestCase):
+try:
+    c_wchar
+except NameError:
+    pass
+else:
+    class WCharPointersTestCase(unittest.TestCase):
 
-    def setUp(self):
-        func = testdll._testfunc_p_p
-        func.restype = c_int
-        func.argtypes = None
+        def setUp(self):
+            func = testdll._testfunc_p_p
+            func.restype = c_int
+            func.argtypes = None
 
 
-    def test_POINTER_c_wchar_arg(self):
-        func = testdll._testfunc_p_p
-        func.restype = c_wchar_p
-        func.argtypes = POINTER(c_wchar),
+        def test_POINTER_c_wchar_arg(self):
+            func = testdll._testfunc_p_p
+            func.restype = c_wchar_p
+            func.argtypes = POINTER(c_wchar),
 
-        self.assertEqual(None, func(None))
-        self.assertEqual("123", func("123"))
-        self.assertEqual(None, func(c_wchar_p(None)))
-        self.assertEqual("123", func(c_wchar_p("123")))
+            self.assertEqual(None, func(None))
+            self.assertEqual("123", func("123"))
+            self.assertEqual(None, func(c_wchar_p(None)))
+            self.assertEqual("123", func(c_wchar_p("123")))
 
-        self.assertEqual("123", func(c_wbuffer("123")))
-        ca = c_wchar("a")
-        self.assertEqual("a", func(pointer(ca))[0])
-        self.assertEqual("a", func(byref(ca))[0])
+            self.assertEqual("123", func(c_wbuffer("123")))
+            ca = c_wchar("a")
+            self.assertEqual("a", func(pointer(ca))[0])
+            self.assertEqual("a", func(byref(ca))[0])
 
-    def test_c_wchar_p_arg(self):
-        func = testdll._testfunc_p_p
-        func.restype = c_wchar_p
-        func.argtypes = c_wchar_p,
+        def test_c_wchar_p_arg(self):
+            func = testdll._testfunc_p_p
+            func.restype = c_wchar_p
+            func.argtypes = c_wchar_p,
 
-        c_wchar_p.from_param("123")
+            c_wchar_p.from_param("123")
 
-        self.assertEqual(None, func(None))
-        self.assertEqual("123", func("123"))
-        self.assertEqual(None, func(c_wchar_p(None)))
-        self.assertEqual("123", func(c_wchar_p("123")))
+            self.assertEqual(None, func(None))
+            self.assertEqual("123", func("123"))
+            self.assertEqual(None, func(c_wchar_p(None)))
+            self.assertEqual("123", func(c_wchar_p("123")))
 
-        # XXX Currently, these raise TypeErrors, although they shouldn't:
-        self.assertEqual("123", func(c_wbuffer("123")))
-        ca = c_wchar("a")
-        self.assertEqual("a", func(pointer(ca))[0])
-        self.assertEqual("a", func(byref(ca))[0])
+            # XXX Currently, these raise TypeErrors, although they shouldn't:
+            self.assertEqual("123", func(c_wbuffer("123")))
+            ca = c_wchar("a")
+            self.assertEqual("a", func(pointer(ca))[0])
+            self.assertEqual("a", func(byref(ca))[0])
 
 class ArrayTest(unittest.TestCase):
     def test(self):

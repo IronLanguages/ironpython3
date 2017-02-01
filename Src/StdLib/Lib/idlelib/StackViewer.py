@@ -1,16 +1,14 @@
 import os
 import sys
 import linecache
-import re
-import tkinter as tk
 
 from idlelib.TreeWidget import TreeNode, TreeItem, ScrolledCanvas
 from idlelib.ObjectBrowser import ObjectTreeItem, make_objecttreeitem
-from idlelib.PyShell import PyShellFileList
 
 def StackBrowser(root, flist=None, tb=None, top=None):
     if top is None:
-        top = tk.Toplevel(root)
+        from tkinter import Toplevel
+        top = Toplevel(root)
     sc = ScrolledCanvas(top, bg="white", highlightthickness=0)
     sc.frame.pack(expand=1, fill="both")
     item = StackTreeItem(flist, tb)
@@ -107,9 +105,12 @@ class VariablesTreeItem(ObjectTreeItem):
     def IsExpandable(self):
         return len(self.object) > 0
 
+    def keys(self):
+        return list(self.object.keys())
+
     def GetSubList(self):
         sublist = []
-        for key in self.object.keys():
+        for key in self.keys():
             try:
                 value = self.object[key]
             except KeyError:
@@ -119,33 +120,3 @@ class VariablesTreeItem(ObjectTreeItem):
             item = make_objecttreeitem(key + " =", value, setfunction)
             sublist.append(item)
         return sublist
-
-    def keys(self):  # unused, left for possible 3rd party use
-        return list(self.object.keys())
-
-def _stack_viewer(parent):
-    root = tk.Tk()
-    root.title("Test StackViewer")
-    width, height, x, y = list(map(int, re.split('[x+]', parent.geometry())))
-    root.geometry("+%d+%d"%(x, y + 150))
-    flist = PyShellFileList(root)
-    try: # to obtain a traceback object
-        intentional_name_error
-    except NameError:
-        exc_type, exc_value, exc_tb = sys.exc_info()
-
-    # inject stack trace to sys
-    sys.last_type = exc_type
-    sys.last_value = exc_value
-    sys.last_traceback = exc_tb
-
-    StackBrowser(root, flist=flist, top=root, tb=exc_tb)
-
-    # restore sys to original state
-    del sys.last_type
-    del sys.last_value
-    del sys.last_traceback
-
-if __name__ == '__main__':
-    from idlelib.idle_test.htest import run
-    run(_stack_viewer)

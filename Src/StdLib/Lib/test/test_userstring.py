@@ -28,12 +28,14 @@ class UserStringTest(
             realresult
         )
 
-    def checkraises(self, exc, obj, methodname, *args):
-        obj = self.fixtype(obj)
+    def checkraises(self, exc, object, methodname, *args):
+        object = self.fixtype(object)
         # we don't fix the arguments, because UserString can't cope with it
-        with self.assertRaises(exc) as cm:
-            getattr(obj, methodname)(*args)
-        self.assertNotEqual(str(cm.exception), '')
+        self.assertRaises(
+            exc,
+            getattr(object, methodname),
+            *args
+        )
 
     def checkcall(self, object, methodname, *args):
         object = self.fixtype(object)

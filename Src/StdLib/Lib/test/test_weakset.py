@@ -1,4 +1,5 @@
 import unittest
+from test import support
 from weakref import proxy, ref, WeakSet
 import operator
 import copy
@@ -442,5 +443,8 @@ class TestWeakSet(unittest.TestCase):
             self.assertLessEqual(n2, n1)
 
 
+def test_main(verbose=None):
+    support.run_unittest(TestWeakSet)
+
 if __name__ == "__main__":
-    unittest.main()
+    test_main(verbose=True)

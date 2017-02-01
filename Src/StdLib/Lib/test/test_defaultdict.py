@@ -5,6 +5,7 @@ import copy
 import pickle
 import tempfile
 import unittest
+from test import support
 
 from collections import defaultdict
 
@@ -156,9 +157,8 @@ class TestDefaultDict(unittest.TestCase):
             def _factory(self):
                 return []
         d = sub()
-        self.assertRegex(repr(d),
-            r"defaultdict\(<bound method .*sub\._factory "
-            r"of defaultdict\(\.\.\., \{\}\)>, \{\}\)")
+        self.assertTrue(repr(d).startswith(
+            "defaultdict(<bound method sub._factory of defaultdict(..."))
 
         # NOTE: printing a subclass of a builtin type does not call its
         # tp_print slot. So this part is essentially the same test as above.
@@ -183,5 +183,8 @@ class TestDefaultDict(unittest.TestCase):
             o = pickle.loads(s)
             self.assertEqual(d, o)
 
+def test_main():
+    support.run_unittest(TestDefaultDict)
+
 if __name__ == "__main__":
-    unittest.main()
+    test_main()

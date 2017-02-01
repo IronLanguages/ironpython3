@@ -7,7 +7,7 @@
 This will append site-specific paths to the module search path.  On
 Unix (including Mac OSX), it starts with sys.prefix and
 sys.exec_prefix (if different) and appends
-lib/python<version>/site-packages.
+lib/python<version>/site-packages as well as lib/site-python.
 On other platforms (such as Windows), it tries each of the
 prefixes directly, as well as with lib/site-packages appended.  The
 resulting directories, if they exist, are appended to sys.path, and
@@ -15,7 +15,7 @@ also inspected for path configuration files.
 
 If a file named "pyvenv.cfg" exists one directory above sys.executable,
 sys.prefix and sys.exec_prefix are set to that directory and
-it is also checked for site-packages (sys.base_prefix and
+it is also checked for site-packages and site-python (sys.base_prefix and
 sys.base_exec_prefix will always be the "real" prefixes of the Python
 installation). If "pyvenv.cfg" (a bootstrap configuration file) contains
 the key "include-system-site-packages" set to anything other than "false"
@@ -59,7 +59,7 @@ because bar.pth comes alphabetically before foo.pth; and spam is
 omitted because it is not mentioned in either path configuration file.
 
 The readline module is also automatically configured to enable
-completion for systems that support it.  This can be overridden in
+completion for systems that support it.  This can be overriden in
 sitecustomize, usercustomize or PYTHONSTARTUP.
 
 After these operations, an attempt is made to import a module
@@ -98,8 +98,8 @@ def makepath(*paths):
 def abs_paths():
     """Set all module __file__ and __cached__ attributes to an absolute path"""
     for m in set(sys.modules.values()):
-        if (getattr(getattr(m, '__loader__', None), '__module__', None) not in
-                ('_frozen_importlib', '_frozen_importlib_external')):
+        if (getattr(getattr(m, '__loader__', None), '__module__', None) !=
+                '_frozen_importlib'):
             continue   # don't mess with a PEP 302-supplied __file__
         try:
             m.__file__ = os.path.abspath(m.__file__)
@@ -285,7 +285,8 @@ def addusersitepackages(known_paths):
     return known_paths
 
 def getsitepackages(prefixes=None):
-    """Returns a list containing all global site-packages directories.
+    """Returns a list containing all global site-packages directories
+    (and possibly site-python).
 
     For each directory present in ``prefixes`` (or the global ``PREFIXES``),
     this function will find its `site-packages` subdirectory depending on the
@@ -306,6 +307,7 @@ def getsitepackages(prefixes=None):
             sitepackages.append(os.path.join(prefix, "lib",
                                         "python" + sys.version[:3],
                                         "site-packages"))
+            sitepackages.append(os.path.join(prefix, "lib", "site-python"))
         else:
             sitepackages.append(prefix)
             sitepackages.append(os.path.join(prefix, "lib", "site-packages"))
@@ -321,9 +323,14 @@ def getsitepackages(prefixes=None):
     return sitepackages
 
 def addsitepackages(known_paths, prefixes=None):
-    """Add site-packages to sys.path"""
+    """Add site-packages (and possibly site-python) to sys.path"""
     for sitedir in getsitepackages(prefixes):
         if os.path.isdir(sitedir):
+            if "site-python" in sitedir:
+                import warnings
+                warnings.warn('"site-python" directories will not be '
+                              'supported in 3.5 anymore',
+                              DeprecationWarning)
             addsitedir(sitedir, known_paths)
 
     return known_paths
@@ -357,17 +364,12 @@ def setcopyright():
         builtins.credits = _sitebuiltins._Printer("credits", """\
     Thanks to CWI, CNRI, BeOpen.com, Zope Corporation and a cast of thousands
     for supporting Python development.  See www.python.org for more information.""")
-    files, dirs = [], []
-    # Not all modules are required to have a __file__ attribute.  See
-    # PEP 420 for more details.
-    if hasattr(os, '__file__'):
-        here = os.path.dirname(os.__file__)
-        files.extend(["LICENSE.txt", "LICENSE"])
-        dirs.extend([os.path.join(here, os.pardir), here, os.curdir])
+    here = os.path.dirname(os.__file__)
     builtins.license = _sitebuiltins._Printer(
         "license",
-        "See https://www.python.org/psf/license/",
-        files, dirs)
+        "See http://www.python.org/download/releases/%.5s/license" % sys.version,
+        ["LICENSE.txt", "LICENSE"],
+        [os.path.join(here, os.pardir), here, os.curdir])
 
 
 def sethelper():
@@ -379,7 +381,7 @@ def enablerlcompleter():
 
     If the readline module can be imported, the hook will set the Tab key
     as completion key and register ~/.python_history as history file.
-    This can be overridden in the sitecustomize or usercustomize module,
+    This can be overriden in the sitecustomize or usercustomize module,
     or in a PYTHONSTARTUP file.
     """
     def register_readline():
@@ -465,9 +467,7 @@ def venv(known_paths):
         config_line = re.compile(CONFIG_LINE)
         virtual_conf = candidate_confs[0]
         system_site = "true"
-        # Issue 25185: Use UTF-8, as that's what the venv module uses when
-        # writing the file.
-        with open(virtual_conf, encoding='utf-8') as f:
+        with open(virtual_conf) as f:
             for line in f:
                 line = line.strip()
                 m = config_line.match(line)
@@ -478,12 +478,6 @@ def venv(known_paths):
                         system_site = value.lower()
                     elif key == 'home':
                         sys._home = value
-                    elif key == 'applocal' and value.lower() == 'true':
-                        # App-local installs use the exe_dir as prefix,
-                        # not one level higher, and do not use system
-                        # site packages.
-                        site_prefix = exe_dir
-                        system_site = 'false'
 
         sys.prefix = sys.exec_prefix = site_prefix
 

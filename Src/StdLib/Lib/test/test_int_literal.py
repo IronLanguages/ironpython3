@@ -4,6 +4,7 @@ This is complex because of changes due to PEP 237.
 """
 
 import unittest
+from test import support
 
 class TestHexOctBin(unittest.TestCase):
 
@@ -139,5 +140,8 @@ class TestHexOctBin(unittest.TestCase):
         self.assertEqual(-0b1000000000000000000000000000000000000000000000000000000000000000, -9223372036854775808)
         self.assertEqual(-0b1111111111111111111111111111111111111111111111111111111111111111, -18446744073709551615)
 
+def test_main():
+    support.run_unittest(TestHexOctBin)
+
 if __name__ == "__main__":
-    unittest.main()
+    test_main()

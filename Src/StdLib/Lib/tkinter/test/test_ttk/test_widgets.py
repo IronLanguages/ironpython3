@@ -1,12 +1,12 @@
 import unittest
 import tkinter
-from tkinter import ttk, TclError
+from tkinter import ttk
 from test.support import requires
 import sys
 
+import tkinter.test.support as support
 from tkinter.test.test_ttk.test_functions import MockTclObj
-from tkinter.test.support import (AbstractTkTest, tcl_version, get_tk_patchlevel,
-                                  simulate_mouse_click)
+from tkinter.test.support import tcl_version, get_tk_patchlevel
 from tkinter.test.widget_tests import (add_standard_options, noconv,
     AbstractWidgetTest, StandardOptionsTests, IntegerSizeTests, PixelSizeTests,
     setUpModule)
@@ -20,7 +20,7 @@ class StandardTtkOptionsTests(StandardOptionsTests):
         widget = self.create()
         self.assertEqual(widget['class'], '')
         errmsg='attempt to change read-only option'
-        if get_tk_patchlevel() < (8, 6, 0, 'beta', 3):
+        if get_tk_patchlevel() < (8, 6, 0): # actually this was changed in 8.6b3
             errmsg='Attempt to change read-only option'
         self.checkInvalidParam(widget, 'class', 'Foo', errmsg=errmsg)
         widget2 = self.create(class_='Foo')
@@ -53,14 +53,18 @@ class StandardTtkOptionsTests(StandardOptionsTests):
         pass
 
 
-class WidgetTest(AbstractTkTest, unittest.TestCase):
+class WidgetTest(unittest.TestCase):
     """Tests methods available in every ttk widget."""
 
     def setUp(self):
-        super().setUp()
-        self.widget = ttk.Button(self.root, width=0, text="Text")
+        support.root_deiconify()
+        self.widget = ttk.Button(width=0, text="Text")
         self.widget.pack()
         self.widget.wait_visibility()
+
+    def tearDown(self):
+        self.widget.destroy()
+        support.root_withdraw()
 
 
     def test_identify(self):
@@ -124,7 +128,7 @@ class FrameTest(AbstractToplevelTest, unittest.TestCase):
         'width',
     )
 
-    def create(self, **kwargs):
+    def _create(self, **kwargs):
         return ttk.Frame(self.root, **kwargs)
 
 
@@ -137,7 +141,7 @@ class LabelFrameTest(AbstractToplevelTest, unittest.TestCase):
         'text', 'underline', 'width',
     )
 
-    def create(self, **kwargs):
+    def _create(self, **kwargs):
         return ttk.LabelFrame(self.root, **kwargs)
 
     def test_labelanchor(self):
@@ -157,8 +161,8 @@ class LabelFrameTest(AbstractToplevelTest, unittest.TestCase):
 class AbstractLabelTest(AbstractWidgetTest):
 
     def checkImageParam(self, widget, name):
-        image = tkinter.PhotoImage(master=self.root, name='image1')
-        image2 = tkinter.PhotoImage(master=self.root, name='image2')
+        image = tkinter.PhotoImage('image1')
+        image2 = tkinter.PhotoImage('image2')
         self.checkParam(widget, name, image, expected=('image1',))
         self.checkParam(widget, name, 'image1', expected=('image1',))
         self.checkParam(widget, name, (image,), expected=('image1',))
@@ -187,7 +191,7 @@ class AbstractLabelTest(AbstractWidgetTest):
 @add_standard_options(StandardTtkOptionsTests)
 class LabelTest(AbstractLabelTest, unittest.TestCase):
     OPTIONS = (
-        'anchor', 'background', 'borderwidth',
+        'anchor', 'background',
         'class', 'compound', 'cursor', 'font', 'foreground',
         'image', 'justify', 'padding', 'relief', 'state', 'style',
         'takefocus', 'text', 'textvariable',
@@ -195,7 +199,7 @@ class LabelTest(AbstractLabelTest, unittest.TestCase):
     )
     _conv_pixels = noconv
 
-    def create(self, **kwargs):
+    def _create(self, **kwargs):
         return ttk.Label(self.root, **kwargs)
 
     def test_font(self):
@@ -208,12 +212,11 @@ class LabelTest(AbstractLabelTest, unittest.TestCase):
 class ButtonTest(AbstractLabelTest, unittest.TestCase):
     OPTIONS = (
         'class', 'command', 'compound', 'cursor', 'default',
-        'image', 'padding', 'state', 'style',
-        'takefocus', 'text', 'textvariable',
+        'image', 'state', 'style', 'takefocus', 'text', 'textvariable',
         'underline', 'width',
     )
 
-    def create(self, **kwargs):
+    def _create(self, **kwargs):
         return ttk.Button(self.root, **kwargs)
 
     def test_default(self):
@@ -222,7 +225,7 @@ class ButtonTest(AbstractLabelTest, unittest.TestCase):
 
     def test_invoke(self):
         success = []
-        btn = ttk.Button(self.root, command=lambda: success.append(1))
+        btn = ttk.Button(command=lambda: success.append(1))
         btn.invoke()
         self.assertTrue(success)
 
@@ -233,12 +236,12 @@ class CheckbuttonTest(AbstractLabelTest, unittest.TestCase):
         'class', 'command', 'compound', 'cursor',
         'image',
         'offvalue', 'onvalue',
-        'padding', 'state', 'style',
+        'state', 'style',
         'takefocus', 'text', 'textvariable',
         'underline', 'variable', 'width',
     )
 
-    def create(self, **kwargs):
+    def _create(self, **kwargs):
         return ttk.Checkbutton(self.root, **kwargs)
 
     def test_offvalue(self):
@@ -255,7 +258,7 @@ class CheckbuttonTest(AbstractLabelTest, unittest.TestCase):
             success.append(1)
             return "cb test called"
 
-        cbtn = ttk.Checkbutton(self.root, command=cb_test)
+        cbtn = ttk.Checkbutton(command=cb_test)
         # the variable automatically created by ttk.Checkbutton is actually
         # undefined till we invoke the Checkbutton
         self.assertEqual(cbtn.state(), ('alternate', ))
@@ -277,10 +280,142 @@ class CheckbuttonTest(AbstractLabelTest, unittest.TestCase):
 
 
 @add_standard_options(IntegerSizeTests, StandardTtkOptionsTests)
+class ComboboxTest(AbstractWidgetTest, unittest.TestCase):
+    OPTIONS = (
+        'class', 'cursor', 'exportselection', 'height',
+        'justify', 'postcommand', 'state', 'style',
+        'takefocus', 'textvariable', 'values', 'width',
+    )
+
+    def setUp(self):
+        super().setUp()
+        support.root_deiconify()
+        self.combo = self.create()
+
+    def tearDown(self):
+        self.combo.destroy()
+        support.root_withdraw()
+        super().tearDown()
+
+    def _create(self, **kwargs):
+        return ttk.Combobox(self.root, **kwargs)
+
+    def test_height(self):
+        widget = self.create()
+        self.checkParams(widget, 'height', 100, 101.2, 102.6, -100, 0, '1i')
+
+    def test_state(self):
+        widget = self.create()
+        self.checkParams(widget, 'state', 'active', 'disabled', 'normal')
+
+    def _show_drop_down_listbox(self):
+        width = self.combo.winfo_width()
+        self.combo.event_generate('<ButtonPress-1>', x=width - 5, y=5)
+        self.combo.event_generate('<ButtonRelease-1>', x=width - 5, y=5)
+        self.combo.update_idletasks()
+
+
+    def test_virtual_event(self):
+        success = []
+
+        self.combo['values'] = [1]
+        self.combo.bind('<<ComboboxSelected>>',
+            lambda evt: success.append(True))
+        self.combo.pack()
+        self.combo.wait_visibility()
+
+        height = self.combo.winfo_height()
+        self._show_drop_down_listbox()
+        self.combo.update()
+        self.combo.event_generate('<Return>')
+        self.combo.update()
+
+        self.assertTrue(success)
+
+
+    def test_postcommand(self):
+        success = []
+
+        self.combo['postcommand'] = lambda: success.append(True)
+        self.combo.pack()
+        self.combo.wait_visibility()
+
+        self._show_drop_down_listbox()
+        self.assertTrue(success)
+
+        # testing postcommand removal
+        self.combo['postcommand'] = ''
+        self._show_drop_down_listbox()
+        self.assertEqual(len(success), 1)
+
+
+    def test_values(self):
+        def check_get_current(getval, currval):
+            self.assertEqual(self.combo.get(), getval)
+            self.assertEqual(self.combo.current(), currval)
+
+        self.assertEqual(self.combo['values'],
+                         () if tcl_version < (8, 5) else '')
+        check_get_current('', -1)
+
+        self.checkParam(self.combo, 'values', 'mon tue wed thur',
+                        expected=('mon', 'tue', 'wed', 'thur'))
+        self.checkParam(self.combo, 'values', ('mon', 'tue', 'wed', 'thur'))
+        self.checkParam(self.combo, 'values', (42, 3.14, '', 'any string'))
+        self.checkParam(self.combo, 'values', '', expected=())
+
+        self.combo['values'] = ['a', 1, 'c']
+
+        self.combo.set('c')
+        check_get_current('c', 2)
+
+        self.combo.current(0)
+        check_get_current('a', 0)
+
+        self.combo.set('d')
+        check_get_current('d', -1)
+
+        # testing values with empty string
+        self.combo.set('')
+        self.combo['values'] = (1, 2, '', 3)
+        check_get_current('', 2)
+
+        # testing values with empty string set through configure
+        self.combo.configure(values=[1, '', 2])
+        self.assertEqual(self.combo['values'],
+                         ('1', '', '2') if self.wantobjects else
+                         '1 {} 2')
+
+        # testing values with spaces
+        self.combo['values'] = ['a b', 'a\tb', 'a\nb']
+        self.assertEqual(self.combo['values'],
+                         ('a b', 'a\tb', 'a\nb') if self.wantobjects else
+                         '{a b} {a\tb} {a\nb}')
+
+        # testing values with special characters
+        self.combo['values'] = [r'a\tb', '"a"', '} {']
+        self.assertEqual(self.combo['values'],
+                         (r'a\tb', '"a"', '} {') if self.wantobjects else
+                         r'a\\tb {"a"} \}\ \{')
+
+        # out of range
+        self.assertRaises(tkinter.TclError, self.combo.current,
+            len(self.combo['values']))
+        # it expects an integer (or something that can be converted to int)
+        self.assertRaises(tkinter.TclError, self.combo.current, '')
+
+        # testing creating combobox with empty string in values
+        combo2 = ttk.Combobox(values=[1, 2, ''])
+        self.assertEqual(combo2['values'],
+                         ('1', '2', '') if self.wantobjects else '1 2 {}')
+        combo2.destroy()
+
+
+@add_standard_options(IntegerSizeTests, StandardTtkOptionsTests)
 class EntryTest(AbstractWidgetTest, unittest.TestCase):
     OPTIONS = (
         'background', 'class', 'cursor',
-        'exportselection', 'font', 'foreground',
+        'exportselection', 'font',
         'invalidcommand', 'justify',
         'show', 'state', 'style', 'takefocus', 'textvariable',
         'validate', 'validatecommand', 'width', 'xscrollcommand',
@@ -288,9 +423,15 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
 
     def setUp(self):
         super().setUp()
+        support.root_deiconify()
         self.entry = self.create()
 
-    def create(self, **kwargs):
+    def tearDown(self):
+        self.entry.destroy()
+        support.root_withdraw()
+        super().tearDown()
+
+    def _create(self, **kwargs):
         return ttk.Entry(self.root, **kwargs)
 
     def test_invalidcommand(self):
@@ -319,7 +460,10 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
 
 
     def test_bbox(self):
-        self.assertIsBoundingBox(self.entry.bbox(0))
+        self.assertEqual(len(self.entry.bbox(0)), 4)
+        for item in self.entry.bbox(0):
+            self.assertIsInstance(item, int)
+
         self.assertRaises(tkinter.TclError, self.entry.bbox, 'noindex')
         self.assertRaises(tkinter.TclError, self.entry.bbox, None)
 
@@ -409,132 +553,6 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
 
 
 @add_standard_options(IntegerSizeTests, StandardTtkOptionsTests)
-class ComboboxTest(EntryTest, unittest.TestCase):
-    OPTIONS = (
-        'background', 'class', 'cursor', 'exportselection',
-        'font', 'foreground', 'height', 'invalidcommand',
-        'justify', 'postcommand', 'show', 'state', 'style',
-        'takefocus', 'textvariable',
-        'validate', 'validatecommand', 'values',
-        'width', 'xscrollcommand',
-    )
-
-    def setUp(self):
-        super().setUp()
-        self.combo = self.create()
-
-    def create(self, **kwargs):
-        return ttk.Combobox(self.root, **kwargs)
-
-    def test_height(self):
-        widget = self.create()
-        self.checkParams(widget, 'height', 100, 101.2, 102.6, -100, 0, '1i')
-
-    def _show_drop_down_listbox(self):
-        width = self.combo.winfo_width()
-        self.combo.event_generate('<ButtonPress-1>', x=width - 5, y=5)
-        self.combo.event_generate('<ButtonRelease-1>', x=width - 5, y=5)
-        self.combo.update_idletasks()
-
-
-    def test_virtual_event(self):
-        success = []
-
-        self.combo['values'] = [1]
-        self.combo.bind('<<ComboboxSelected>>',
-            lambda evt: success.append(True))
-        self.combo.pack()
-        self.combo.wait_visibility()
-
-        height = self.combo.winfo_height()
-        self._show_drop_down_listbox()
-        self.combo.update()
-        self.combo.event_generate('<Return>')
-        self.combo.update()
-
-        self.assertTrue(success)
-
-
-    def test_postcommand(self):
-        success = []
-
-        self.combo['postcommand'] = lambda: success.append(True)
-        self.combo.pack()
-        self.combo.wait_visibility()
-
-        self._show_drop_down_listbox()
-        self.assertTrue(success)
-
-        # testing postcommand removal
-        self.combo['postcommand'] = ''
-        self._show_drop_down_listbox()
-        self.assertEqual(len(success), 1)
-
-
-    def test_values(self):
-        def check_get_current(getval, currval):
-            self.assertEqual(self.combo.get(), getval)
-            self.assertEqual(self.combo.current(), currval)
-
-        self.assertEqual(self.combo['values'],
-                         () if tcl_version < (8, 5) else '')
-        check_get_current('', -1)
-
-        self.checkParam(self.combo, 'values', 'mon tue wed thur',
-                        expected=('mon', 'tue', 'wed', 'thur'))
-        self.checkParam(self.combo, 'values', ('mon', 'tue', 'wed', 'thur'))
-        self.checkParam(self.combo, 'values', (42, 3.14, '', 'any string'))
-        self.checkParam(self.combo, 'values', '',
-                        expected='' if get_tk_patchlevel() < (8, 5, 10) else ())
-
-        self.combo['values'] = ['a', 1, 'c']
-
-        self.combo.set('c')
-        check_get_current('c', 2)
-
-        self.combo.current(0)
-        check_get_current('a', 0)
-
-        self.combo.set('d')
-        check_get_current('d', -1)
-
-        # testing values with empty string
-        self.combo.set('')
-        self.combo['values'] = (1, 2, '', 3)
-        check_get_current('', 2)
-
-        # testing values with empty string set through configure
-        self.combo.configure(values=[1, '', 2])
-        self.assertEqual(self.combo['values'],
-                         ('1', '', '2') if self.wantobjects else
-                         '1 {} 2')
-
-        # testing values with spaces
-        self.combo['values'] = ['a b', 'a\tb', 'a\nb']
-        self.assertEqual(self.combo['values'],
-                         ('a b', 'a\tb', 'a\nb') if self.wantobjects else
-                         '{a b} {a\tb} {a\nb}')
-
-        # testing values with special characters
-        self.combo['values'] = [r'a\tb', '"a"', '} {']
-        self.assertEqual(self.combo['values'],
-                         (r'a\tb', '"a"', '} {') if self.wantobjects else
-                         r'a\\tb {"a"} \}\ \{')
-
-        # out of range
-        self.assertRaises(tkinter.TclError, self.combo.current,
-            len(self.combo['values']))
-        # it expects an integer (or something that can be converted to int)
-        self.assertRaises(tkinter.TclError, self.combo.current, '')
-
-        # testing creating combobox with empty string in values
-        combo2 = ttk.Combobox(self.root, values=[1, 2, ''])
-        self.assertEqual(combo2['values'],
-                         ('1', '2', '') if self.wantobjects else '1 2 {}')
-        combo2.destroy()
-
-
-@add_standard_options(IntegerSizeTests, StandardTtkOptionsTests)
 class PanedWindowTest(AbstractWidgetTest, unittest.TestCase):
     OPTIONS = (
         'class', 'cursor', 'height',
@@ -543,16 +561,22 @@ class PanedWindowTest(AbstractWidgetTest, unittest.TestCase):
 
     def setUp(self):
         super().setUp()
+        support.root_deiconify()
         self.paned = self.create()
 
-    def create(self, **kwargs):
+    def tearDown(self):
+        self.paned.destroy()
+        support.root_withdraw()
+        super().tearDown()
+
+    def _create(self, **kwargs):
         return ttk.PanedWindow(self.root, **kwargs)
 
     def test_orient(self):
         widget = self.create()
         self.assertEqual(str(widget['orient']), 'vertical')
         errmsg='attempt to change read-only option'
-        if get_tk_patchlevel() < (8, 6, 0, 'beta', 3):
+        if get_tk_patchlevel() < (8, 6, 0): # actually this was changed in 8.6b3
             errmsg='Attempt to change read-only option'
         self.checkInvalidParam(widget, 'orient', 'horizontal',
                 errmsg=errmsg)
@@ -567,13 +591,13 @@ class PanedWindowTest(AbstractWidgetTest, unittest.TestCase):
         label.destroy()
         child.destroy()
         # another attempt
-        label = ttk.Label(self.root)
+        label = ttk.Label()
         child = ttk.Label(label)
         self.assertRaises(tkinter.TclError, self.paned.add, child)
         child.destroy()
         label.destroy()
 
-        good_child = ttk.Label(self.root)
+        good_child = ttk.Label()
         self.paned.add(good_child)
         # re-adding a child is not accepted
         self.assertRaises(tkinter.TclError, self.paned.add, good_child)
@@ -591,7 +615,7 @@ class PanedWindowTest(AbstractWidgetTest, unittest.TestCase):
         self.assertRaises(tkinter.TclError, self.paned.forget, None)
         self.assertRaises(tkinter.TclError, self.paned.forget, 0)
 
-        self.paned.add(ttk.Label(self.root))
+        self.paned.add(ttk.Label())
         self.paned.forget(0)
         self.assertRaises(tkinter.TclError, self.paned.forget, 0)
 
@@ -601,9 +625,9 @@ class PanedWindowTest(AbstractWidgetTest, unittest.TestCase):
         self.assertRaises(tkinter.TclError, self.paned.insert, 0, None)
         self.assertRaises(tkinter.TclError, self.paned.insert, 0, 0)
 
-        child = ttk.Label(self.root)
-        child2 = ttk.Label(self.root)
-        child3 = ttk.Label(self.root)
+        child = ttk.Label()
+        child2 = ttk.Label()
+        child3 = ttk.Label()
 
         self.assertRaises(tkinter.TclError, self.paned.insert, 0, child)
 
@@ -634,7 +658,7 @@ class PanedWindowTest(AbstractWidgetTest, unittest.TestCase):
     def test_pane(self):
         self.assertRaises(tkinter.TclError, self.paned.pane, 0)
 
-        child = ttk.Label(self.root)
+        child = ttk.Label()
         self.paned.add(child)
         self.assertIsInstance(self.paned.pane(0), dict)
         self.assertEqual(self.paned.pane(0, weight=None),
@@ -674,12 +698,12 @@ class RadiobuttonTest(AbstractLabelTest, unittest.TestCase):
     OPTIONS = (
         'class', 'command', 'compound', 'cursor',
         'image',
-        'padding', 'state', 'style',
+        'state', 'style',
         'takefocus', 'text', 'textvariable',
         'underline', 'value', 'variable', 'width',
     )
 
-    def create(self, **kwargs):
+    def _create(self, **kwargs):
         return ttk.Radiobutton(self.root, **kwargs)
 
     def test_value(self):
@@ -692,11 +716,9 @@ class RadiobuttonTest(AbstractLabelTest, unittest.TestCase):
             success.append(1)
             return "cb test called"
 
-        myvar = tkinter.IntVar(self.root)
-        cbtn = ttk.Radiobutton(self.root, command=cb_test,
-                               variable=myvar, value=0)
-        cbtn2 = ttk.Radiobutton(self.root, command=cb_test,
-                                variable=myvar, value=1)
+        myvar = tkinter.IntVar()
+        cbtn = ttk.Radiobutton(command=cb_test, variable=myvar, value=0)
+        cbtn2 = ttk.Radiobutton(command=cb_test, variable=myvar, value=1)
 
         if self.wantobjects:
             conv = lambda x: x
@@ -724,12 +746,12 @@ class RadiobuttonTest(AbstractLabelTest, unittest.TestCase):
 class MenubuttonTest(AbstractLabelTest, unittest.TestCase):
     OPTIONS = (
         'class', 'compound', 'cursor', 'direction',
-        'image', 'menu', 'padding', 'state', 'style',
+        'image', 'menu', 'state', 'style',
         'takefocus', 'text', 'textvariable',
         'underline', 'width',
     )
 
-    def create(self, **kwargs):
+    def _create(self, **kwargs):
         return ttk.Menubutton(self.root, **kwargs)
 
     def test_direction(self):
@@ -755,11 +777,17 @@ class ScaleTest(AbstractWidgetTest, unittest.TestCase):
 
     def setUp(self):
         super().setUp()
+        support.root_deiconify()
         self.scale = self.create()
         self.scale.pack()
         self.scale.update()
 
-    def create(self, **kwargs):
+    def tearDown(self):
+        self.scale.destroy()
+        support.root_withdraw()
+        super().tearDown()
+
+    def _create(self, **kwargs):
         return ttk.Scale(self.root, **kwargs)
 
     def test_from(self):
@@ -831,7 +859,7 @@ class ScaleTest(AbstractWidgetTest, unittest.TestCase):
         self.assertEqual(conv(self.scale.get()), min)
 
         # changing directly the variable doesn't impose this limitation tho
-        var = tkinter.DoubleVar(self.root)
+        var = tkinter.DoubleVar()
         self.scale['variable'] = var
         var.set(max + 5)
         self.assertEqual(conv(self.scale.get()), var.get())
@@ -861,7 +889,7 @@ class ProgressbarTest(AbstractWidgetTest, unittest.TestCase):
     _conv_pixels = noconv
     default_orient = 'horizontal'
 
-    def create(self, **kwargs):
+    def _create(self, **kwargs):
         return ttk.Progressbar(self.root, **kwargs)
 
     def test_length(self):
@@ -895,25 +923,33 @@ class ScrollbarTest(AbstractWidgetTest, unittest.TestCase):
     )
     default_orient = 'vertical'
 
-    def create(self, **kwargs):
+    def _create(self, **kwargs):
         return ttk.Scrollbar(self.root, **kwargs)
 
 
 @add_standard_options(IntegerSizeTests, StandardTtkOptionsTests)
 class NotebookTest(AbstractWidgetTest, unittest.TestCase):
     OPTIONS = (
-        'class', 'cursor', 'height', 'padding', 'style', 'takefocus', 'width',
+        'class', 'cursor', 'height', 'padding', 'style', 'takefocus',
     )
 
     def setUp(self):
         super().setUp()
+        support.root_deiconify()
         self.nb = self.create(padding=0)
-        self.child1 = ttk.Label(self.root)
-        self.child2 = ttk.Label(self.root)
+        self.child1 = ttk.Label()
+        self.child2 = ttk.Label()
         self.nb.add(self.child1, text='a')
         self.nb.add(self.child2, text='b')
 
-    def create(self, **kwargs):
+    def tearDown(self):
+        self.child1.destroy()
+        self.child2.destroy()
+        self.nb.destroy()
+        support.root_withdraw()
+        super().tearDown()
+
+    def _create(self, **kwargs):
         return ttk.Notebook(self.root, **kwargs)
 
     def test_tab_identifiers(self):
@@ -952,7 +988,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
         self.assertRaises(tkinter.TclError, self.nb.hide, 'hi')
         self.assertRaises(tkinter.TclError, self.nb.hide, None)
         self.assertRaises(tkinter.TclError, self.nb.add, None)
-        self.assertRaises(tkinter.TclError, self.nb.add, ttk.Label(self.root),
+        self.assertRaises(tkinter.TclError, self.nb.add, ttk.Label(),
             unknown='option')
 
         tabs = self.nb.tabs()
@@ -960,7 +996,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
         self.nb.add(self.child1)
         self.assertEqual(self.nb.tabs(), tabs)
 
-        child = ttk.Label(self.root)
+        child = ttk.Label()
         self.nb.add(child, text='c')
         tabs = self.nb.tabs()
 
@@ -1018,7 +1054,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
         self.assertRaises(tkinter.TclError, self.nb.insert, -1, tabs[0])
 
         # new tab
-        child3 = ttk.Label(self.root)
+        child3 = ttk.Label()
         self.nb.insert(1, child3)
         self.assertEqual(self.nb.tabs(), (tabs[0], str(child3), tabs[1]))
         self.nb.forget(child3)
@@ -1084,7 +1120,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
 
         self.nb.select(0)
 
-        simulate_mouse_click(self.nb, 5, 5)
+        support.simulate_mouse_click(self.nb, 5, 5)
         self.nb.focus_force()
         self.nb.event_generate('<Control-Tab>')
         self.assertEqual(self.nb.select(), str(self.child2))
@@ -1098,7 +1134,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
         self.nb.tab(self.child1, text='a', underline=0)
         self.nb.enable_traversal()
         self.nb.focus_force()
-        simulate_mouse_click(self.nb, 5, 5)
+        support.simulate_mouse_click(self.nb, 5, 5)
         if sys.platform == 'darwin':
             self.nb.event_generate('<Option-a>')
         else:
@@ -1116,9 +1152,15 @@ class TreeviewTest(AbstractWidgetTest, unittest.TestCase):
 
     def setUp(self):
         super().setUp()
+        support.root_deiconify()
         self.tv = self.create(padding=0)
 
-    def create(self, **kwargs):
+    def tearDown(self):
+        self.tv.destroy()
+        support.root_withdraw()
+        super().tearDown()
+
+    def _create(self, **kwargs):
         return ttk.Treeview(self.root, **kwargs)
 
     def test_columns(self):
@@ -1126,8 +1168,7 @@ class TreeviewTest(AbstractWidgetTest, unittest.TestCase):
         self.checkParam(widget, 'columns', 'a b c',
                         expected=('a', 'b', 'c'))
         self.checkParam(widget, 'columns', ('a', 'b', 'c'))
-        self.checkParam(widget, 'columns', (),
-                        expected='' if get_tk_patchlevel() < (8, 5, 10) else ())
+        self.checkParam(widget, 'columns', ())
 
     def test_displaycolumns(self):
         widget = self.create()
@@ -1175,7 +1216,12 @@ class TreeviewTest(AbstractWidgetTest, unittest.TestCase):
         self.assertTrue(children)
 
         bbox = self.tv.bbox(children[0])
-        self.assertIsBoundingBox(bbox)
+        self.assertEqual(len(bbox), 4)
+        self.assertIsInstance(bbox, tuple)
+        for item in bbox:
+            if not isinstance(item, int):
+                self.fail("Invalid bounding box: %s" % bbox)
+                break
 
         # compare width in bboxes
         self.tv['columns'] = ['test']
@@ -1355,7 +1401,7 @@ class TreeviewTest(AbstractWidgetTest, unittest.TestCase):
 
     def test_heading_callback(self):
         def simulate_heading_click(x, y):
-            simulate_mouse_click(self.tv, x, y)
+            support.simulate_mouse_click(self.tv, x, y)
             self.tv.update()
 
         success = [] # no success for now
@@ -1544,7 +1590,7 @@ class TreeviewTest(AbstractWidgetTest, unittest.TestCase):
 
         self.assertEqual(len(pos_y), 2) # item1 and item2 y pos
         for y in pos_y:
-            simulate_mouse_click(self.tv, 0, y)
+            support.simulate_mouse_click(self.tv, 0, y)
 
         # by now there should be 4 things in the events list, since each
         # item had a bind for two events that were simulated above
@@ -1565,21 +1611,6 @@ class TreeviewTest(AbstractWidgetTest, unittest.TestCase):
             'blue')
         self.assertIsInstance(self.tv.tag_configure('test'), dict)
 
-    def test_tag_has(self):
-        item1 = self.tv.insert('', 'end', text='Item 1', tags=['tag1'])
-        item2 = self.tv.insert('', 'end', text='Item 2', tags=['tag2'])
-        self.assertRaises(TypeError, self.tv.tag_has)
-        self.assertRaises(TclError, self.tv.tag_has, 'tag1', 'non-existing')
-        self.assertTrue(self.tv.tag_has('tag1', item1))
-        self.assertFalse(self.tv.tag_has('tag1', item2))
-        self.assertFalse(self.tv.tag_has('tag2', item1))
-        self.assertTrue(self.tv.tag_has('tag2', item2))
-        self.assertFalse(self.tv.tag_has('tag3', item1))
-        self.assertFalse(self.tv.tag_has('tag3', item2))
-        self.assertEqual(self.tv.tag_has('tag1'), (item1,))
-        self.assertEqual(self.tv.tag_has('tag2'), (item2,))
-        self.assertEqual(self.tv.tag_has('tag3'), ())
-
 
 @add_standard_options(StandardTtkOptionsTests)
 class SeparatorTest(AbstractWidgetTest, unittest.TestCase):
@@ -1589,7 +1620,7 @@ class SeparatorTest(AbstractWidgetTest, unittest.TestCase):
     )
     default_orient = 'horizontal'
 
-    def create(self, **kwargs):
+    def _create(self, **kwargs):
         return ttk.Separator(self.root, **kwargs)
 
 
@@ -1600,7 +1631,7 @@ class SizegripTest(AbstractWidgetTest, unittest.TestCase):
         # 'state'?
     )
 
-    def create(self, **kwargs):
+    def _create(self, **kwargs):
         return ttk.Sizegrip(self.root, **kwargs)
 
 tests_gui = (

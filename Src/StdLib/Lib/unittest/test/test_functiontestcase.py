@@ -1,6 +1,6 @@
 import unittest
 
-from unittest.test.support import LoggingResult
+from .support import LoggingResult
 
 
 class Test_FunctionTestCase(unittest.TestCase):

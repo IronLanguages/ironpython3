@@ -1,7 +1,8 @@
 import os
 import io
 import sys
-from test.support import TESTFN, rmtree, unlink, captured_stdout
+from test.support import (run_unittest, TESTFN, rmtree, unlink,
+                               captured_stdout)
 import unittest
 
 import trace
@@ -9,11 +10,12 @@ from trace import CoverageResults, Trace
 
 from test.tracedmodules import testmod
 
+
 #------------------------------- Utilities -----------------------------------#
 
 def fix_ext_py(filename):
-    """Given a .pyc filename converts it to the appropriate .py"""
-    if filename.endswith('.pyc'):
+    """Given a .pyc/.pyo filename converts it to the appropriate .py"""
+    if filename.endswith(('.pyc', '.pyo')):
         filename = filename[:-1]
     return filename
 
@@ -222,11 +224,6 @@ class TestFuncs(unittest.TestCase):
         self.addCleanup(sys.settrace, sys.gettrace())
         self.tracer = Trace(count=0, trace=0, countfuncs=1)
         self.filemod = my_file_and_modname()
-        self._saved_tracefunc = sys.gettrace()
-
-    def tearDown(self):
-        if self._saved_tracefunc is not None:
-            sys.settrace(self._saved_tracefunc)
 
     def test_simple_caller(self):
         self.tracer.runfunc(traced_func_simple_caller, 1)
@@ -300,8 +297,7 @@ class TestCoverage(unittest.TestCase):
         unlink(TESTFN)
 
     def _coverage(self, tracer,
-                  cmd='import test.support, test.test_pprint;'
-                      'test.support.run_unittest(test.test_pprint.QueryTestCase)'):
+                  cmd='from test import test_pprint; test_pprint.test_main()'):
         tracer.run(cmd)
         r = tracer.results()
         r.write_results(show_missing=True, summary=True, coverdir=TESTFN)
@@ -411,5 +407,9 @@ class TestDeprecatedMethods(unittest.TestCase):
             trace.find_executable_linenos(fd.name)
 
 
+def test_main():
+    run_unittest(__name__)
+
+
 if __name__ == '__main__':
-    unittest.main()
+    test_main()

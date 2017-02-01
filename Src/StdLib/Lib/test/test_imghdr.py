@@ -16,9 +16,7 @@ TEST_FILES = (
     ('python.ras', 'rast'),
     ('python.sgi', 'rgb'),
     ('python.tiff', 'tiff'),
-    ('python.xbm', 'xbm'),
-    ('python.webp', 'webp'),
-    ('python.exr', 'exr'),
+    ('python.xbm', 'xbm')
 )
 
 class UnseekableIO(io.FileIO):

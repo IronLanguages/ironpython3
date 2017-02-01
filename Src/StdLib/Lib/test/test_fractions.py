@@ -1,14 +1,13 @@
 """Tests for Lib/fractions.py."""
 
 from decimal import Decimal
-from test.support import requires_IEEE_754
+from test.support import run_unittest, requires_IEEE_754
 import math
 import numbers
 import operator
 import fractions
 import sys
 import unittest
-import warnings
 from copy import copy, deepcopy
 from pickle import dumps, loads
 F = fractions.Fraction
@@ -50,7 +49,7 @@ class DummyRational(object):
     """Test comparison of Fraction with a naive rational implementation."""
 
     def __init__(self, num, den):
-        g = math.gcd(num, den)
+        g = gcd(num, den)
         self.num = num // g
         self.den = den // g
 
@@ -84,26 +83,16 @@ class DummyFraction(fractions.Fraction):
 class GcdTest(unittest.TestCase):
 
     def testMisc(self):
-        # fractions.gcd() is deprecated
-        with self.assertWarnsRegex(DeprecationWarning, r'fractions\.gcd'):
-            gcd(1, 1)
-        with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', r'fractions\.gcd',
-                                    DeprecationWarning)
-            self.assertEqual(0, gcd(0, 0))
-            self.assertEqual(1, gcd(1, 0))
-            self.assertEqual(-1, gcd(-1, 0))
-            self.assertEqual(1, gcd(0, 1))
-            self.assertEqual(-1, gcd(0, -1))
-            self.assertEqual(1, gcd(7, 1))
-            self.assertEqual(-1, gcd(7, -1))
-            self.assertEqual(1, gcd(-23, 15))
-            self.assertEqual(12, gcd(120, 84))
-            self.assertEqual(-12, gcd(84, -120))
-            self.assertEqual(gcd(120.0, 84), 12.0)
-            self.assertEqual(gcd(120, 84.0), 12.0)
-            self.assertEqual(gcd(F(120), F(84)), F(12))
-            self.assertEqual(gcd(F(120, 77), F(84, 55)), F(12, 385))
+        self.assertEqual(0, gcd(0, 0))
+        self.assertEqual(1, gcd(1, 0))
+        self.assertEqual(-1, gcd(-1, 0))
+        self.assertEqual(1, gcd(0, 1))
+        self.assertEqual(-1, gcd(0, -1))
+        self.assertEqual(1, gcd(7, 1))
+        self.assertEqual(-1, gcd(7, -1))
+        self.assertEqual(1, gcd(-23, 15))
+        self.assertEqual(12, gcd(120, 84))
+        self.assertEqual(-12, gcd(84, -120))
 
 
 def _components(r):
@@ -341,6 +330,7 @@ class FractionTest(unittest.TestCase):
         self.assertTypedEquals(F(-2, 10), round(F(-15, 100), 1))
         self.assertTypedEquals(F(-2, 10), round(F(-25, 100), 1))
 
+
     def testArithmetic(self):
         self.assertEqual(F(1, 2), F(1, 10) + F(2, 5))
         self.assertEqual(F(-3, 10), F(1, 10) - F(2, 5))
@@ -412,8 +402,6 @@ class FractionTest(unittest.TestCase):
         self.assertTypedEquals(2.0 , 4 ** F(1, 2))
         self.assertTypedEquals(0.25, 2.0 ** F(-2, 1))
         self.assertTypedEquals(1.0 + 0j, (1.0 + 0j) ** F(1, 10))
-        self.assertRaises(ZeroDivisionError, operator.pow,
-                          F(0, 1), -2)
 
     def testMixingWithDecimal(self):
         # Decimal refuses mixed arithmetic (but not mixed comparisons)
@@ -617,5 +605,8 @@ class FractionTest(unittest.TestCase):
         r = F(13, 7)
         self.assertRaises(AttributeError, setattr, r, 'a', 10)
 
+def test_main():
+    run_unittest(FractionTest, GcdTest)
+
 if __name__ == '__main__':
-    unittest.main()
+    test_main()

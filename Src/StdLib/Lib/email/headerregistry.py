@@ -7,7 +7,6 @@ Eventually HeaderRegistry will be a public API, but it isn't yet,
 and will probably change some before that happens.
 
 """
-from types import MappingProxyType
 
 from email import utils
 from email import errors
@@ -16,7 +15,7 @@ from email import _header_value_parser as parser
 class Address:
 
     def __init__(self, display_name='', username='', domain='', addr_spec=None):
-        """Create an object representing a full email address.
+        """Create an object represeting a full email address.
 
         An address can have a 'display_name', a 'username', and a 'domain'.  In
         addition to specifying the username and domain separately, they may be
@@ -81,8 +80,7 @@ class Address:
         return lp
 
     def __repr__(self):
-        return "{}(display_name={!r}, username={!r}, domain={!r})".format(
-                        self.__class__.__name__,
+        return "Address(display_name={!r}, username={!r}, domain={!r})".format(
                         self.display_name, self.username, self.domain)
 
     def __str__(self):
@@ -109,7 +107,7 @@ class Group:
     def __init__(self, display_name=None, addresses=None):
         """Create an object representing an address group.
 
-        An address group consists of a display_name followed by colon and a
+        An address group consists of a display_name followed by colon and an
         list of addresses (see Address) terminated by a semi-colon.  The Group
         is created by specifying a display_name and a possibly empty list of
         Address objects.  A Group can also be used to represent a single
@@ -133,8 +131,7 @@ class Group:
         return self._addresses
 
     def __repr__(self):
-        return "{}(display_name={!r}, addresses={!r}".format(
-                 self.__class__.__name__,
+        return "Group(display_name={!r}, addresses={!r}".format(
                  self.display_name, self.addresses)
 
     def __str__(self):
@@ -457,7 +454,7 @@ class ParameterizedMIMEHeader:
 
     @property
     def params(self):
-        return MappingProxyType(self._params)
+        return self._params.copy()
 
 
 class ContentTypeHeader(ParameterizedMIMEHeader):

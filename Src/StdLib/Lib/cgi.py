@@ -184,7 +184,7 @@ def parse(fp=None, environ=os.environ, keep_blank_values=0, strict_parsing=0):
 
 
 # parse query string function called from urlparse,
-# this is done in order to maintain backward compatibility.
+# this is done in order to maintain backward compatiblity.
 
 def parse_qs(qs, keep_blank_values=0, strict_parsing=0):
     """Parse a query given as a string argument."""
@@ -566,12 +566,6 @@ class FieldStorage:
         except AttributeError:
             pass
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *args):
-        self.file.close()
-
     def __repr__(self):
         """Return a printable representation."""
         return "FieldStorage(%r, %r, %r)" % (
@@ -699,13 +693,8 @@ class FieldStorage:
             raise ValueError("%s should return bytes, got %s" \
                              % (self.fp, type(first_line).__name__))
         self.bytes_read += len(first_line)
-
-        # Ensure that we consume the file until we've hit our inner boundary
-        while (first_line.strip() != (b"--" + self.innerboundary) and
-                first_line):
-            first_line = self.fp.readline()
-            self.bytes_read += len(first_line)
-
+        # first line holds boundary ; ignore it, or check that
+        # b"--" + ib == first_line.strip() ?
         while True:
             parser = FeedParser()
             hdr_text = b""
@@ -720,11 +709,6 @@ class FieldStorage:
             self.bytes_read += len(hdr_text)
             parser.feed(hdr_text.decode(self.encoding, self.errors))
             headers = parser.close()
-
-            # Some clients add Content-Length for part headers, ignore them
-            if 'content-length' in headers:
-                del headers['content-length']
-
             part = klass(self.fp, headers, ib, environ, keep_blank_values,
                          strict_parsing,self.limit-self.bytes_read,
                          self.encoding, self.errors)
@@ -1061,7 +1045,7 @@ def escape(s, quote=None):
     return s
 
 
-def valid_boundary(s):
+def valid_boundary(s, _vb_pattern=None):
     import re
     if isinstance(s, bytes):
         _vb_pattern = b"^[ -~]{0,200}[!-~]$"

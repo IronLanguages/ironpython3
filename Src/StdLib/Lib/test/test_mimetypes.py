@@ -101,5 +101,11 @@ class Win32MimeTypesTestCase(unittest.TestCase):
         eq(self.db.guess_type("image.jpg"), ("image/jpeg", None))
         eq(self.db.guess_type("image.png"), ("image/png", None))
 
+def test_main():
+    support.run_unittest(MimeTypesTestCase,
+        Win32MimeTypesTestCase
+        )
+
+
 if __name__ == "__main__":
-    unittest.main()
+    test_main()

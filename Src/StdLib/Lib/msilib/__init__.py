@@ -1,11 +1,7 @@
 # Copyright (C) 2005 Martin v. Löwis
 # Licensed to PSF under a Contributor Agreement.
 from _msi import *
-import glob
-import os
-import re
-import string
-import sys
+import os, string, re, sys
 
 AMD64 = "AMD64" in sys.version
 Itanium = "Itanium" in sys.version
@@ -365,7 +361,7 @@ class Directory:
         #             [(logical, 0, filehash.IntegerData(1),
         #               filehash.IntegerData(2), filehash.IntegerData(3),
         #               filehash.IntegerData(4))])
-        # Automatically remove .pyc files on uninstall (2)
+        # Automatically remove .pyc/.pyo files on uninstall (2)
         # XXX: adding so many RemoveFile entries makes installer unbelievably
         # slow. So instead, we have to use wildcard remove entries
         if file.endswith(".py"):
@@ -386,9 +382,10 @@ class Directory:
         return files
 
     def remove_pyc(self):
-        "Remove .pyc files on uninstall"
+        "Remove .pyc/.pyo files on uninstall"
         add_data(self.db, "RemoveFile",
-                 [(self.component+"c", self.component, "*.pyc", self.logical, 2)])
+                 [(self.component+"c", self.component, "*.pyc", self.logical, 2),
+                  (self.component+"o", self.component, "*.pyo", self.logical, 2)])
 
 class Binary:
     def __init__(self, fname):

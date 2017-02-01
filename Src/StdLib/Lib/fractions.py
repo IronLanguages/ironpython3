@@ -20,17 +20,6 @@ def gcd(a, b):
     Unless b==0, the result will have the same sign as b (so that when
     b is divided by it, the result comes out positive).
     """
-    import warnings
-    warnings.warn('fractions.gcd() is deprecated. Use math.gcd() instead.',
-                  DeprecationWarning, 2)
-    if type(a) is int is type(b):
-        if (b or a) < 0:
-            return -math.gcd(a, b)
-        return math.gcd(a, b)
-    return _gcd(a, b)
-
-def _gcd(a, b):
-    # Supports non-integers for backward compatibility.
     while b:
         a, b = b, a%b
     return a
@@ -81,7 +70,7 @@ class Fraction(numbers.Rational):
     __slots__ = ('_numerator', '_denominator')
 
     # We're immutable, so use __new__ not __init__
-    def __new__(cls, numerator=0, denominator=None, _normalize=True):
+    def __new__(cls, numerator=0, denominator=None):
         """Constructs a Rational.
 
         Takes a string like '3/2' or '1.5', another Rational instance, a
@@ -115,12 +104,7 @@ class Fraction(numbers.Rational):
         self = super(Fraction, cls).__new__(cls)
 
         if denominator is None:
-            if type(numerator) is int:
-                self._numerator = numerator
-                self._denominator = 1
-                return self
-
-            elif isinstance(numerator, numbers.Rational):
+            if isinstance(numerator, numbers.Rational):
                 self._numerator = numerator.numerator
                 self._denominator = numerator.denominator
                 return self
@@ -169,9 +153,6 @@ class Fraction(numbers.Rational):
                 raise TypeError("argument should be a string "
                                 "or a Rational instance")
 
-        elif type(numerator) is int is type(denominator):
-            pass # *very* normal case
-
         elif (isinstance(numerator, numbers.Rational) and
             isinstance(denominator, numbers.Rational)):
             numerator, denominator = (
@@ -184,18 +165,9 @@ class Fraction(numbers.Rational):
 
         if denominator == 0:
             raise ZeroDivisionError('Fraction(%s, 0)' % numerator)
-        if _normalize:
-            if type(numerator) is int is type(denominator):
-                # *very* normal case
-                g = math.gcd(numerator, denominator)
-                if denominator < 0:
-                    g = -g
-            else:
-                g = _gcd(numerator, denominator)
-            numerator //= g
-            denominator //= g
-        self._numerator = numerator
-        self._denominator = denominator
+        g = gcd(numerator, denominator)
+        self._numerator = numerator // g
+        self._denominator = denominator // g
         return self
 
     @classmethod
@@ -305,8 +277,7 @@ class Fraction(numbers.Rational):
 
     def __repr__(self):
         """repr(self)"""
-        return '%s(%s, %s)' % (self.__class__.__name__,
-                               self._numerator, self._denominator)
+        return ('Fraction(%s, %s)' % (self._numerator, self._denominator))
 
     def __str__(self):
         """str(self)"""
@@ -424,17 +395,17 @@ class Fraction(numbers.Rational):
 
     def _add(a, b):
         """a + b"""
-        da, db = a.denominator, b.denominator
-        return Fraction(a.numerator * db + b.numerator * da,
-                        da * db)
+        return Fraction(a.numerator * b.denominator +
+                        b.numerator * a.denominator,
+                        a.denominator * b.denominator)
 
     __add__, __radd__ = _operator_fallbacks(_add, operator.add)
 
     def _sub(a, b):
         """a - b"""
-        da, db = a.denominator, b.denominator
-        return Fraction(a.numerator * db - b.numerator * da,
-                        da * db)
+        return Fraction(a.numerator * b.denominator -
+                        b.numerator * a.denominator,
+                        a.denominator * b.denominator)
 
     __sub__, __rsub__ = _operator_fallbacks(_sub, operator.sub)
 
@@ -482,12 +453,10 @@ class Fraction(numbers.Rational):
                 power = b.numerator
                 if power >= 0:
                     return Fraction(a._numerator ** power,
-                                    a._denominator ** power,
-                                    _normalize=False)
+                                    a._denominator ** power)
                 else:
                     return Fraction(a._denominator ** -power,
-                                    a._numerator ** -power,
-                                    _normalize=False)
+                                    a._numerator ** -power)
             else:
                 # A fractional power will generally produce an
                 # irrational number.
@@ -511,15 +480,15 @@ class Fraction(numbers.Rational):
 
     def __pos__(a):
         """+a: Coerces a subclass instance to Fraction"""
-        return Fraction(a._numerator, a._denominator, _normalize=False)
+        return Fraction(a._numerator, a._denominator)
 
     def __neg__(a):
         """-a"""
-        return Fraction(-a._numerator, a._denominator, _normalize=False)
+        return Fraction(-a._numerator, a._denominator)
 
     def __abs__(a):
         """abs(a)"""
-        return Fraction(abs(a._numerator), a._denominator, _normalize=False)
+        return Fraction(abs(a._numerator), a._denominator)
 
     def __trunc__(a):
         """trunc(a)"""
@@ -586,8 +555,6 @@ class Fraction(numbers.Rational):
 
     def __eq__(a, b):
         """a == b"""
-        if type(b) is int:
-            return a._numerator == b and a._denominator == 1
         if isinstance(b, numbers.Rational):
             return (a._numerator == b.numerator and
                     a._denominator == b.denominator)

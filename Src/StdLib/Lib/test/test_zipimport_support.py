@@ -14,8 +14,8 @@ import inspect
 import linecache
 import pdb
 import unittest
-from test.support.script_helper import (spawn_python, kill_python, assert_python_ok,
-                                        make_script, make_zip_script)
+from test.script_helper import (spawn_python, kill_python, assert_python_ok,
+                                temp_dir, make_script, make_zip_script)
 
 verbose = test.support.verbose
 
@@ -39,7 +39,7 @@ def _run_object_doctest(obj, module):
     # Use the object's fully qualified name if it has one
     # Otherwise, use the module's name
     try:
-        name = "%s.%s" % (obj.__module__, obj.__qualname__)
+        name = "%s.%s" % (obj.__module__, obj.__name__)
     except AttributeError:
         name = module.__name__
     for example in finder.find(obj, name, module):
@@ -57,7 +57,7 @@ class ZipSupportTests(unittest.TestCase):
     # This used to use the ImportHooksBaseTestCase to restore
     # the state of the import related information
     # in the sys module after each test. However, that restores
-    # *too much* information and breaks for the invocation
+    # *too much* information and breaks for the invocation of
     # of test_doctest. So we do our own thing and leave
     # sys.modules alone.
     # We also clear the linecache and zipimport cache
@@ -78,7 +78,7 @@ class ZipSupportTests(unittest.TestCase):
 
     def test_inspect_getsource_issue4223(self):
         test_src = "def foo(): pass\n"
-        with test.support.temp_dir() as d:
+        with temp_dir() as d:
             init_name = make_script(d, '__init__', test_src)
             name_in_zip = os.path.join('zip_pkg',
                                        os.path.basename(init_name))
@@ -118,7 +118,7 @@ class ZipSupportTests(unittest.TestCase):
             mod_name = mod_name.replace("sample_", "sample_zipped_")
             sample_sources[mod_name] = src
 
-        with test.support.temp_dir() as d:
+        with temp_dir() as d:
             script_name = make_script(d, 'test_zipped_doctest',
                                             test_src)
             zip_name, run_name = make_zip_script(d, 'test_zip',
@@ -195,7 +195,7 @@ class ZipSupportTests(unittest.TestCase):
                     doctest.testmod()
                     """)
         pattern = 'File "%s", line 2, in %s'
-        with test.support.temp_dir() as d:
+        with temp_dir() as d:
             script_name = make_script(d, 'script', test_src)
             rc, out, err = assert_python_ok(script_name)
             expected = pattern % (script_name, "__main__.Test")
@@ -222,7 +222,7 @@ class ZipSupportTests(unittest.TestCase):
                     import pdb
                     pdb.Pdb(nosigint=True).runcall(f)
                     """)
-        with test.support.temp_dir() as d:
+        with temp_dir() as d:
             script_name = make_script(d, 'script', test_src)
             p = spawn_python(script_name)
             p.stdin.write(b'l\n')
@@ -238,8 +238,9 @@ class ZipSupportTests(unittest.TestCase):
             self.assertIn(os.path.normcase(run_name.encode('utf-8')), data)
 
 
-def tearDownModule():
+def test_main():
+    test.support.run_unittest(ZipSupportTests)
     test.support.reap_children()
 
 if __name__ == '__main__':
-    unittest.main()
+    test_main()

@@ -1,4 +1,4 @@
-"""RPC Implementation, originally written for the Python Idle IDE
+"""RPC Implemention, originally written for the Python Idle IDE
 
 For security reasons, GvR requested that Idle's Python execution server process
 connect to the Idle process, which listens for the connection.  Since Idle has
@@ -29,7 +29,6 @@ accomplished in Idle.
 
 import sys
 import os
-import io
 import socket
 import select
 import socketserver
@@ -54,15 +53,16 @@ def pickle_code(co):
     ms = marshal.dumps(co)
     return unpickle_code, (ms,)
 
-def dumps(obj, protocol=None):
-    f = io.BytesIO()
-    p = CodePickler(f, protocol)
-    p.dump(obj)
-    return f.getvalue()
+# XXX KBK 24Aug02 function pickling capability not used in Idle
+#  def unpickle_function(ms):
+#      return ms
 
-class CodePickler(pickle.Pickler):
-    dispatch_table = {types.CodeType: pickle_code}
-    dispatch_table.update(copyreg.dispatch_table)
+#  def pickle_function(fn):
+#      assert isinstance(fn, type.FunctionType)
+#      return repr(fn)
+
+copyreg.pickle(types.CodeType, pickle_code, unpickle_code)
+# copyreg.pickle(types.FunctionType, pickle_function, unpickle_function)
 
 BUFSIZE = 8*1024
 LOCALHOST = '127.0.0.1'
@@ -329,7 +329,7 @@ class SocketIO(object):
     def putmessage(self, message):
         self.debug("putmessage:%d:" % message[0])
         try:
-            s = dumps(message)
+            s = pickle.dumps(message)
         except pickle.PicklingError:
             print("Cannot pickle:", repr(message), file=sys.__stderr__)
             raise
@@ -340,7 +340,10 @@ class SocketIO(object):
                 n = self.sock.send(s[:BUFSIZE])
             except (AttributeError, TypeError):
                 raise OSError("socket no longer exists")
-            s = s[n:]
+            except OSError:
+                raise
+            else:
+                s = s[n:]
 
     buff = b''
     bufneed = 4

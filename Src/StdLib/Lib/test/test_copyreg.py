@@ -1,6 +1,7 @@
 import copyreg
 import unittest
 
+from test import support
 from test.pickletester import ExtensionSaver
 
 class C:
@@ -112,5 +113,9 @@ class CopyRegTestCase(unittest.TestCase):
         self.assertEqual(result, expected)
 
 
+def test_main():
+    support.run_unittest(CopyRegTestCase)
+
+
 if __name__ == "__main__":
-    unittest.main()
+    test_main()

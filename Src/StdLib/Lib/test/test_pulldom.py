@@ -6,7 +6,7 @@ import xml.sax
 from xml.sax.xmlreader import AttributesImpl
 from xml.dom import pulldom
 
-from test.support import findfile
+from test.support import run_unittest, findfile
 
 
 tstfile = findfile("test.xml", subdir="xmltestdata")
@@ -339,5 +339,9 @@ class SAX2DOMTestCase(unittest.TestCase):
         doc.unlink()
 
 
+def test_main():
+    run_unittest(PullDOMTestCase, ThoroughTestCase, SAX2DOMTestCase)
+
+
 if __name__ == "__main__":
-    unittest.main()
+    test_main()

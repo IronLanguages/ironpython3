@@ -9,6 +9,7 @@ import sys
 import time
 import unittest
 
+from test import support
 if not hasattr(select, "kqueue"):
     raise unittest.SkipTest("test works only on BSD")
 
@@ -85,35 +86,10 @@ class TestKQueue(unittest.TestCase):
         self.assertEqual(ev, ev)
         self.assertNotEqual(ev, other)
 
-        # Issue 11973
-        bignum = 0xffff
-        ev = select.kevent(0, 1, bignum)
-        self.assertEqual(ev.ident, 0)
-        self.assertEqual(ev.filter, 1)
-        self.assertEqual(ev.flags, bignum)
-        self.assertEqual(ev.fflags, 0)
-        self.assertEqual(ev.data, 0)
-        self.assertEqual(ev.udata, 0)
-        self.assertEqual(ev, ev)
-        self.assertNotEqual(ev, other)
-
-        # Issue 11973
-        bignum = 0xffffffff
-        ev = select.kevent(0, 1, 2, bignum)
-        self.assertEqual(ev.ident, 0)
-        self.assertEqual(ev.filter, 1)
-        self.assertEqual(ev.flags, 2)
-        self.assertEqual(ev.fflags, bignum)
-        self.assertEqual(ev.data, 0)
-        self.assertEqual(ev.udata, 0)
-        self.assertEqual(ev, ev)
-        self.assertNotEqual(ev, other)
-
-
     def test_queue_event(self):
         serverSocket = socket.socket()
         serverSocket.bind(('127.0.0.1', 0))
-        serverSocket.listen()
+        serverSocket.listen(1)
         client = socket.socket()
         client.setblocking(False)
         try:
@@ -236,5 +212,8 @@ class TestKQueue(unittest.TestCase):
         self.assertEqual(os.get_inheritable(kqueue.fileno()), False)
 
 
+def test_main():
+    support.run_unittest(TestKQueue)
+
 if __name__ == "__main__":
-    unittest.main()
+    test_main()

@@ -1,16 +1,12 @@
 """Tests for distutils.command.upload."""
 import os
 import unittest
-import unittest.mock as mock
-from urllib.request import HTTPError
-
 from test.support import run_unittest
 
 from distutils.command import upload as upload_mod
 from distutils.command.upload import upload
 from distutils.core import Distribution
-from distutils.errors import DistutilsError
-from distutils.log import ERROR, INFO
+from distutils.log import INFO
 
 from distutils.tests.test_config import PYPIRC, PyPIRCCommandTestCase
 
@@ -45,14 +41,13 @@ username:me
 
 class FakeOpen(object):
 
-    def __init__(self, url, msg=None, code=None):
+    def __init__(self, url):
         self.url = url
         if not isinstance(url, str):
             self.req = url
         else:
             self.req = None
-        self.msg = msg or 'OK'
-        self.code = code or 200
+        self.msg = 'OK'
 
     def getheader(self, name, default=None):
         return {
@@ -63,7 +58,7 @@ class FakeOpen(object):
         return b'xyzzy'
 
     def getcode(self):
-        return self.code
+        return 200
 
 
 class uploadTestCase(PyPIRCCommandTestCase):
@@ -73,15 +68,13 @@ class uploadTestCase(PyPIRCCommandTestCase):
         self.old_open = upload_mod.urlopen
         upload_mod.urlopen = self._urlopen
         self.last_open = None
-        self.next_msg = None
-        self.next_code = None
 
     def tearDown(self):
         upload_mod.urlopen = self.old_open
         super(uploadTestCase, self).tearDown()
 
     def _urlopen(self, url):
-        self.last_open = FakeOpen(url, msg=self.next_msg, code=self.next_code)
+        self.last_open = FakeOpen(url)
         return self.last_open
 
     def test_finalize_options(self):
@@ -130,7 +123,7 @@ class uploadTestCase(PyPIRCCommandTestCase):
 
         # what did we send ?
         headers = dict(self.last_open.req.headers)
-        self.assertEqual(headers['Content-length'], '2161')
+        self.assertEqual(headers['Content-length'], '2087')
         content_type = headers['Content-type']
         self.assertTrue(content_type.startswith('multipart/form-data'))
         self.assertEqual(self.last_open.req.get_method(), 'POST')
@@ -140,37 +133,7 @@ class uploadTestCase(PyPIRCCommandTestCase):
 
         # The PyPI response body was echoed
         results = self.get_logs(INFO)
-        self.assertEqual(results[-1], 75 * '-' + '\nxyzzy\n' + 75 * '-')
-
-    def test_upload_fails(self):
-        self.next_msg = "Not Found"
-        self.next_code = 404
-        self.assertRaises(DistutilsError, self.test_upload)
-
-    def test_wrong_exception_order(self):
-        tmp = self.mkdtemp()
-        path = os.path.join(tmp, 'xxx')
-        self.write_file(path)
-        dist_files = [('xxx', '2.6', path)]  # command, pyversion, filename
-        self.write_file(self.rc, PYPIRC_LONG_PASSWORD)
-
-        pkg_dir, dist = self.create_dist(dist_files=dist_files)
-        tests = [
-            (OSError('oserror'), 'oserror', OSError),
-            (HTTPError('url', 400, 'httperror', {}, None),
-             'Upload failed (400): httperror', DistutilsError),
-        ]
-        for exception, expected, raised_exception in tests:
-            with self.subTest(exception=type(exception).__name__):
-                with mock.patch('distutils.command.upload.urlopen',
-                                new=mock.Mock(side_effect=exception)):
-                    with self.assertRaises(raised_exception):
-                        cmd = upload(dist)
-                        cmd.ensure_finalized()
-                        cmd.run()
-                    results = self.get_logs(ERROR)
-                    self.assertIn(expected, results[-1])
-                    self.clear_logs()
+        self.assertIn('xyzzy\n', results[-1])
 
 
 def test_suite():

@@ -3,6 +3,7 @@
 # testing of error conditions uncovered when using extension types.
 
 import unittest
+from test import support
 import sys
 
 
@@ -258,23 +259,31 @@ class TestIsInstanceIsSubclass(unittest.TestCase):
         self.assertEqual(True, issubclass(str, (str, (Child, NewChild, str))))
 
     def test_subclass_recursion_limit(self):
-        # make sure that issubclass raises RecursionError before the C stack is
+        # make sure that issubclass raises RuntimeError before the C stack is
         # blown
-        self.assertRaises(RecursionError, blowstack, issubclass, str, str)
+        self.assertRaises(RuntimeError, blowstack, issubclass, str, str)
 
     def test_isinstance_recursion_limit(self):
-        # make sure that issubclass raises RecursionError before the C stack is
+        # make sure that issubclass raises RuntimeError before the C stack is
         # blown
-        self.assertRaises(RecursionError, blowstack, isinstance, '', str)
+        self.assertRaises(RuntimeError, blowstack, isinstance, '', str)
 
 def blowstack(fxn, arg, compare_to):
     # Make sure that calling isinstance with a deeply nested tuple for its
-    # argument will raise RecursionError eventually.
+    # argument will raise RuntimeError eventually.
     tuple_arg = (compare_to,)
     for cnt in range(sys.getrecursionlimit()+5):
         tuple_arg = (tuple_arg,)
         fxn(arg, tuple_arg)
 
 
+def test_main():
+    support.run_unittest(
+        TestIsInstanceExceptions,
+        TestIsSubclassExceptions,
+        TestIsInstanceIsSubclass
+    )
+
+
 if __name__ == '__main__':
-    unittest.main()
+    test_main()

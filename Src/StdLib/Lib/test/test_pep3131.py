@@ -1,15 +1,14 @@
 import unittest
 import sys
+import os
 from test import support
 
 class PEP3131Test(unittest.TestCase):
 
-    def test_valid(self):
-        if System.Environment.GetEnvironmentVariable('CI'):
-	    # AppVeyor sets CI to true
-	    # This test prevents complete test results file
-	    print '... skipping test if CI is set...'
-	    return
+    # TODO: AppVeyor sets the 'CI' environment variable, 
+    # need to determine why this test causes issues
+    @unittest.skipIf('CI' in os.environ)
+    def test_valid(self):        
         class T:
             ä = 1
             µ = 2 # this is a compatibility character

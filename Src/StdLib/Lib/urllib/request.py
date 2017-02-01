@@ -136,15 +136,23 @@ __version__ = sys.version[:3]
 
 _opener = None
 def urlopen(url, data=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
-            *, cafile=None, capath=None, cadefault=False):
+            *, cafile=None, capath=None, cadefault=False, context=None):
     global _opener
     if cafile or capath or cadefault:
+        if context is not None:
+            raise ValueError(
+                "You can't pass both context and any of cafile, capath, and "
+                "cadefault"
+            )
         if not _have_ssl:
             raise ValueError('SSL support not available')
-        context = ssl._create_stdlib_context(cert_reqs=ssl.CERT_REQUIRED,
+        context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH,
                                              cafile=cafile,
                                              capath=capath)
-        https_handler = HTTPSHandler(context=context, check_hostname=True)
+        https_handler = HTTPSHandler(context=context)
+        opener = build_opener(https_handler)
+    elif context:
+        https_handler = HTTPSHandler(context=context)
         opener = build_opener(https_handler)
     elif _opener is None:
         _opener = opener = build_opener()
@@ -221,6 +229,7 @@ def urlretrieve(url, filename=None, reporthook=None, data=None):
     return result
 
 def urlcleanup():
+    """Clean up temporary files from urlretrieve calls."""
     for temp_file in _url_tempfiles:
         try:
             os.unlink(temp_file)
@@ -511,9 +520,6 @@ def build_opener(*handlers):
     If any of the handlers passed as arguments are subclasses of the
     default handlers, the default handlers will not be used.
     """
-    def isclass(obj):
-        return isinstance(obj, type) or hasattr(obj, "__bases__")
-
     opener = OpenerDirector()
     default_classes = [ProxyHandler, UnknownHandler, HTTPHandler,
                        HTTPDefaultErrorHandler, HTTPRedirectHandler,
@@ -524,7 +530,7 @@ def build_opener(*handlers):
     skip = set()
     for klass in default_classes:
         for check in handlers:
-            if isclass(check):
+            if isinstance(check, type):
                 if issubclass(check, klass):
                     skip.add(klass)
             elif isinstance(check, klass):
@@ -536,7 +542,7 @@ def build_opener(*handlers):
         opener.add_handler(klass())
 
     for h in handlers:
-        if isclass(h):
+        if isinstance(h, type):
             h = h()
         opener.add_handler(h)
     return opener
@@ -690,50 +696,7 @@ def _parse_proxy(proxy):
 
     If a URL is supplied, it must have an authority (host:port) component.
     According to RFC 3986, having an authority component means the URL must
-    have two slashes after the scheme:
-
-    >>> _parse_proxy('file:/ftp.example.com/')
-    Traceback (most recent call last):
-    ValueError: proxy URL with no authority: 'file:/ftp.example.com/'
-
-    The first three items of the returned tuple may be None.
-
-    Examples of authority parsing:
-
-    >>> _parse_proxy('proxy.example.com')
-    (None, None, None, 'proxy.example.com')
-    >>> _parse_proxy('proxy.example.com:3128')
-    (None, None, None, 'proxy.example.com:3128')
-
-    The authority component may optionally include userinfo (assumed to be
-    username:password):
-
-    >>> _parse_proxy('joe:password@proxy.example.com')
-    (None, 'joe', 'password', 'proxy.example.com')
-    >>> _parse_proxy('joe:password@proxy.example.com:3128')
-    (None, 'joe', 'password', 'proxy.example.com:3128')
-
-    Same examples, but with URLs instead:
-
-    >>> _parse_proxy('http://proxy.example.com/')
-    ('http', None, None, 'proxy.example.com')
-    >>> _parse_proxy('http://proxy.example.com:3128/')
-    ('http', None, None, 'proxy.example.com:3128')
-    >>> _parse_proxy('http://joe:password@proxy.example.com/')
-    ('http', 'joe', 'password', 'proxy.example.com')
-    >>> _parse_proxy('http://joe:password@proxy.example.com:3128')
-    ('http', 'joe', 'password', 'proxy.example.com:3128')
-
-    Everything after the authority is ignored:
-
-    >>> _parse_proxy('ftp://joe:password@proxy.example.com/rubbish:3128')
-    ('ftp', 'joe', 'password', 'proxy.example.com')
-
-    Test for no trailing '/' case:
-
-    >>> _parse_proxy('http://joe:password@proxy.example.com')
-    ('http', 'joe', 'password', 'proxy.example.com')
-
+    have two slashes after the scheme.
     """
     scheme, r_scheme = splittype(proxy)
     if not r_scheme.startswith("/"):
@@ -892,23 +855,12 @@ class AbstractBasicAuthHandler:
             password_mgr = HTTPPasswordMgr()
         self.passwd = password_mgr
         self.add_password = self.passwd.add_password
-        self.retried = 0
-
-    def reset_retry_count(self):
-        self.retried = 0
 
     def http_error_auth_reqed(self, authreq, host, req, headers):
         # host may be an authority (without userinfo) or a URL with an
         # authority
         # XXX could be multiple headers
         authreq = headers.get(authreq, None)
-
-        if self.retried > 5:
-            # retry sending the username:password 5 times before failing.
-            raise HTTPError(req.get_full_url(), 401, "basic auth failed",
-                    headers, None)
-        else:
-            self.retried += 1
 
         if authreq:
             scheme = authreq.split()[0]
@@ -924,17 +876,14 @@ class AbstractBasicAuthHandler:
                         warnings.warn("Basic Auth Realm was unquoted",
                                       UserWarning, 2)
                     if scheme.lower() == 'basic':
-                        response = self.retry_http_basic_auth(host, req, realm)
-                        if response and response.code != 401:
-                            self.retried = 0
-                        return response
+                        return self.retry_http_basic_auth(host, req, realm)
 
     def retry_http_basic_auth(self, host, req, realm):
         user, pw = self.passwd.find_user_password(realm, host)
         if pw is not None:
             raw = "%s:%s" % (user, pw)
             auth = "Basic " + base64.b64encode(raw.encode()).decode("ascii")
-            if req.headers.get(self.auth_header, None) == auth:
+            if req.get_header(self.auth_header, None) == auth:
                 return None
             req.add_unredirected_header(self.auth_header, auth)
             return self.parent.open(req, timeout=req.timeout)
@@ -950,7 +899,6 @@ class HTTPBasicAuthHandler(AbstractBasicAuthHandler, BaseHandler):
         url = req.full_url
         response = self.http_error_auth_reqed('www-authenticate',
                                           url, req, headers)
-        self.reset_retry_count()
         return response
 
 
@@ -966,7 +914,6 @@ class ProxyBasicAuthHandler(AbstractBasicAuthHandler, BaseHandler):
         authority = req.host
         response = self.http_error_auth_reqed('proxy-authenticate',
                                           authority, req, headers)
-        self.reset_retry_count()
         return response
 
 
@@ -1232,18 +1179,21 @@ class AbstractHTTPHandler(BaseHandler):
             h.set_tunnel(req._tunnel_host, headers=tunnel_headers)
 
         try:
-            h.request(req.get_method(), req.selector, req.data, headers)
-        except OSError as err: # timeout error
-            h.close()
-            raise URLError(err)
-        else:
+            try:
+                h.request(req.get_method(), req.selector, req.data, headers)
+            except OSError as err: # timeout error
+                raise URLError(err)
             r = h.getresponse()
-            # If the server does not send us a 'Connection: close' header,
-            # HTTPConnection assumes the socket should be left open. Manually
-            # mark the socket to be closed when this response object goes away.
-            if h.sock:
-                h.sock.close()
-                h.sock = None
+        except:
+            h.close()
+            raise
+
+        # If the server does not send us a 'Connection: close' header,
+        # HTTPConnection assumes the socket should be left open. Manually
+        # mark the socket to be closed when this response object goes away.
+        if h.sock:
+            h.sock.close()
+            h.sock = None
 
         r.url = req.get_full_url()
         # This line replaces the .msg attribute of the HTTPResponse
@@ -1361,7 +1311,7 @@ class FileHandler(BaseHandler):
         url = req.selector
         if url[:2] == '//' and url[2:3] != '/' and (req.host and
                 req.host != 'localhost'):
-            if not req.host is self.get_names():
+            if not req.host in self.get_names():
                 raise URLError("file:// scheme is supported only on localhost")
         else:
             return self.open_local_file(req)
@@ -1957,7 +1907,7 @@ class URLopener:
         # XXX thread unsafe!
         if len(self.ftpcache) > MAXFTPCACHE:
             # Prune the cache, rather arbitrarily
-            for k in self.ftpcache.keys():
+            for k in list(self.ftpcache):
                 if k != key:
                     v = self.ftpcache[k]
                     del self.ftpcache[k]
@@ -2291,7 +2241,11 @@ class ftpwrapper:
         self.timeout = timeout
         self.refcount = 0
         self.keepalive = persistent
-        self.init()
+        try:
+            self.init()
+        except:
+            self.close()
+            raise
 
     def init(self):
         import ftplib
@@ -2383,6 +2337,13 @@ def getproxies_environment():
         name = name.lower()
         if value and name[-6:] == '_proxy':
             proxies[name[:-6]] = value
+
+    # CVE-2016-1000110 - If we are running as CGI script, forget HTTP_PROXY
+    # (non-all-lowercase) as it may be set from the web server by a "Proxy:"
+    # header from the client
+    if 'REQUEST_METHOD' in os.environ:
+        proxies.pop('http', None)
+
     return proxies
 
 def proxy_bypass_environment(host):

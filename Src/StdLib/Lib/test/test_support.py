@@ -69,6 +69,7 @@ class TestSupport(unittest.TestCase):
         finally:
             del sys.path[0]
             support.unlink(mod_filename)
+            support.rmtree('__pycache__')
 
     def test_HOST(self):
         s = socket.socket()
@@ -102,7 +103,7 @@ class TestSupport(unittest.TestCase):
                 self.assertTrue(os.path.isdir(path))
             self.assertFalse(os.path.isdir(path))
         finally:
-            shutil.rmtree(parent_dir)
+            support.rmtree(parent_dir)
 
     def test_temp_dir__path_none(self):
         """Test passing no path."""

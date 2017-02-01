@@ -301,7 +301,7 @@ class Pdb(bdb.Bdb, cmd.Cmd):
         # An 'Internal StopIteration' exception is an exception debug event
         # issued by the interpreter when handling a subgenerator run with
         # 'yield from' or a generator controled by a for loop. No exception has
-        # actually occured in this case. The debugger uses this debug event to
+        # actually occurred in this case. The debugger uses this debug event to
         # stop when the debuggee is returning from such generators.
         prefix = 'Internal ' if (not exc_traceback
                                     and exc_type is StopIteration) else ''
@@ -673,7 +673,7 @@ class Pdb(bdb.Bdb, cmd.Cmd):
             # now set the break point
             err = self.set_break(filename, line, temporary, cond, funcname)
             if err:
-                self.error(err, file=self.stdout)
+                self.error(err)
             else:
                 bp = self.get_breaks(filename, line)[-1]
                 self.message("Breakpoint %d at %s:%d" %
@@ -1669,6 +1669,9 @@ def main():
             # In most cases SystemExit does not warrant a post-mortem session.
             print("The program exited via sys.exit(). Exit status:", end=' ')
             print(sys.exc_info()[1])
+        except SyntaxError:
+            traceback.print_exc()
+            sys.exit(1)
         except:
             traceback.print_exc()
             print("Uncaught exception. Entering post mortem debugging")

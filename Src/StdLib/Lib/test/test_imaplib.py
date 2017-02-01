@@ -18,9 +18,6 @@ try:
     import ssl
 except ImportError:
     ssl = None
-    HAS_SNI = False
-else:
-    from ssl import HAS_SNI
 
 CERTFILE = None
 CAFILE = None
@@ -58,7 +55,9 @@ class TestImaplib(unittest.TestCase):
                 '"18-May-2033 05:33:20 +0200"']
 
     @run_with_locale('LC_ALL', 'de_DE', 'fr_FR')
-    @run_with_tz('STD-1DST')
+    # DST rules included to work around quirk where the Gnu C library may not
+    # otherwise restore the previous time zone
+    @run_with_tz('STD-1DST,M3.2.0,M11.1.0')
     def test_Time2Internaldate(self):
         expected = '"18-May-2033 05:33:20 +0200"'
 
@@ -328,6 +327,25 @@ class BaseThreadedNetworkedTests(unittest.TestCase):
             self.assertEqual(ret, "OK")
 
 
+
+    @reap_threads
+    def test_aborted_authentication(self):
+
+        class MyServer(SimpleIMAPHandler):
+
+            def cmd_AUTHENTICATE(self, tag, args):
+                self._send_textline('+')
+                self.response = yield
+
+                if self.response == b'*\r\n':
+                    self._send_tagged(tag, 'NO', '[AUTHENTICATIONFAILED] aborted')
+                else:
+                    self._send_tagged(tag, 'OK', 'MYAUTH successful')
+
+        with self.reaped_pair(MyServer) as (server, client):
+            with self.assertRaises(imaplib.IMAP4.error):
+                code, data = client.authenticate('MYAUTH', lambda x: None)
+
     def test_linetoolong(self):
         class TooLongHandler(SimpleIMAPHandler):
             def handle(self):
@@ -352,7 +370,6 @@ class ThreadedNetworkedTestsSSL(BaseThreadedNetworkedTests):
     imap_class = IMAP4_SSL
 
     @reap_threads
-    @unittest.skipUnless(HAS_SNI, 'No SNI support in ssl module')
     def test_ssl_verified(self):
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
         ssl_context.verify_mode = ssl.CERT_REQUIRED
@@ -501,5 +518,4 @@ def load_tests(*args):
 
 
 if __name__ == "__main__":
-    support.use_resources = ['network']
     unittest.main()

@@ -45,11 +45,12 @@ AllowedVersions = ('IMAP4REV1', 'IMAP4')        # Most recent first
 
 # Maximal line length when calling readline(). This is to prevent
 # reading arbitrary length lines. RFC 3501 and 2060 (IMAP 4rev1)
-# don't specify a line length. RFC 2683 however suggests limiting client
-# command lines to 1000 octets and server command lines to 8000 octets.
-# We have selected 10000 for some extra margin and since that is supposedly
-# also what UW and Panda IMAP does.
-_MAXLINE = 10000
+# don't specify a line length. RFC 2683 suggests limiting client
+# command lines to 1000 octets and that servers should be prepared
+# to accept command lines up to 8000 octets, so we used to use 10K here.
+# In the modern world (eg: gmail) the response to, for example, a
+# search command can be quite large, so we now use 1M.
+_MAXLINE = 1000000
 
 
 #       Commands
@@ -745,9 +746,8 @@ class IMAP4:
             ssl_context = ssl._create_stdlib_context()
         typ, dat = self._simple_command(name)
         if typ == 'OK':
-            server_hostname = self.host if ssl.HAS_SNI else None
             self.sock = ssl_context.wrap_socket(self.sock,
-                                                server_hostname=server_hostname)
+                                                server_hostname=self.host)
             self.file = self.sock.makefile('rb')
             self._tls_established = True
             self._get_capabilities()
@@ -1223,9 +1223,8 @@ if HAVE_SSL:
 
         def _create_socket(self):
             sock = IMAP4._create_socket(self)
-            server_hostname = self.host if ssl.HAS_SNI else None
             return self.ssl_context.wrap_socket(sock,
-                                                server_hostname=server_hostname)
+                                                server_hostname=self.host)
 
         def open(self, host='', port=IMAP4_SSL_PORT):
             """Setup connection to remote server on "host:port".
@@ -1307,7 +1306,7 @@ class _Authenticator:
     def process(self, data):
         ret = self.mech(self.decode(data))
         if ret is None:
-            return '*'      # Abort conversation
+            return b'*'     # Abort conversation
         return self.encode(ret)
 
     def encode(self, inp):

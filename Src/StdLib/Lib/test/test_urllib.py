@@ -7,8 +7,10 @@ import http.client
 import email.message
 import io
 import unittest
+from unittest.mock import patch
 from test import support
 import os
+import ssl
 import sys
 import tempfile
 from nturl2path import url2pathname, pathname2url
@@ -47,46 +49,71 @@ def urlopen(url, data=None, proxies=None):
         return opener.open(url, data)
 
 
+def fakehttp(fakedata):
+    class FakeSocket(io.BytesIO):
+        io_refs = 1
+
+        def sendall(self, data):
+            FakeHTTPConnection.buf = data
+
+        def makefile(self, *args, **kwds):
+            self.io_refs += 1
+            return self
+
+        def read(self, amt=None):
+            if self.closed:
+                return b""
+            return io.BytesIO.read(self, amt)
+
+        def readline(self, length=None):
+            if self.closed:
+                return b""
+            return io.BytesIO.readline(self, length)
+
+        def close(self):
+            self.io_refs -= 1
+            if self.io_refs == 0:
+                io.BytesIO.close(self)
+
+    class FakeHTTPConnection(http.client.HTTPConnection):
+
+        # buffer to store data for verification in urlopen tests.
+        buf = None
+        fakesock = FakeSocket(fakedata)
+
+        def connect(self):
+            self.sock = self.fakesock
+
+    return FakeHTTPConnection
+
+
 class FakeHTTPMixin(object):
     def fakehttp(self, fakedata):
-        class FakeSocket(io.BytesIO):
-            io_refs = 1
-
-            def sendall(self, data):
-                FakeHTTPConnection.buf = data
-
-            def makefile(self, *args, **kwds):
-                self.io_refs += 1
-                return self
-
-            def read(self, amt=None):
-                if self.closed:
-                    return b""
-                return io.BytesIO.read(self, amt)
-
-            def readline(self, length=None):
-                if self.closed:
-                    return b""
-                return io.BytesIO.readline(self, length)
-
-            def close(self):
-                self.io_refs -= 1
-                if self.io_refs == 0:
-                    io.BytesIO.close(self)
-
-        class FakeHTTPConnection(http.client.HTTPConnection):
-
-            # buffer to store data for verification in urlopen tests.
-            buf = None
-
-            def connect(self):
-                self.sock = FakeSocket(fakedata)
-
         self._connection_class = http.client.HTTPConnection
-        http.client.HTTPConnection = FakeHTTPConnection
+        http.client.HTTPConnection = fakehttp(fakedata)
 
     def unfakehttp(self):
         http.client.HTTPConnection = self._connection_class
+
+
+class FakeFTPMixin(object):
+    def fakeftp(self):
+        class FakeFtpWrapper(object):
+            def __init__(self,  user, passwd, host, port, dirs, timeout=None,
+                     persistent=True):
+                pass
+
+            def retrfile(self, file, type):
+                return io.BytesIO(), 0
+
+            def close(self):
+                pass
+
+        self._ftpwrapper_class = urllib.request.ftpwrapper
+        urllib.request.ftpwrapper = FakeFtpWrapper
+
+    def unfakeftp(self):
+        urllib.request.ftpwrapper = self._ftpwrapper_class
 
 
 class urlopen_FileTests(unittest.TestCase):
@@ -195,7 +222,20 @@ class ProxyTests(unittest.TestCase):
         self.env.set('NO_PROXY', 'localhost, anotherdomain.com, newdomain.com')
         self.assertTrue(urllib.request.proxy_bypass_environment('anotherdomain.com'))
 
-class urlopen_HttpTests(unittest.TestCase, FakeHTTPMixin):
+    def test_proxy_cgi_ignore(self):
+        try:
+            self.env.set('HTTP_PROXY', 'http://somewhere:3128')
+            proxies = urllib.request.getproxies_environment()
+            self.assertEqual('http://somewhere:3128', proxies['http'])
+            self.env.set('REQUEST_METHOD', 'GET')
+            proxies = urllib.request.getproxies_environment()
+            self.assertNotIn('http', proxies)
+        finally:
+            self.env.unset('REQUEST_METHOD')
+            self.env.unset('HTTP_PROXY')
+
+
+class urlopen_HttpTests(unittest.TestCase, FakeHTTPMixin, FakeFTPMixin):
     """Test urlopen() opening a fake http connection."""
 
     def check_read(self, ver):
@@ -309,6 +349,15 @@ Content-Type: text/html; charset=iso-8859-1
         self.assertFalse(e.exception.filename)
         self.assertTrue(e.exception.reason)
 
+    @patch.object(urllib.request, 'MAXFTPCACHE', 0)
+    def test_ftp_cache_pruning(self):
+        self.fakeftp()
+        try:
+            urllib.request.ftpcache['test'] = urllib.request.ftpwrapper('user', 'pass', 'localhost', 21, [])
+            urlopen('ftp://localhost')
+        finally:
+            self.unfakeftp()
+
 
     def test_userpass_inurl(self):
         self.fakehttp(b"HTTP/1.0 200 OK\r\n\r\nHello!")
@@ -343,6 +392,13 @@ Content-Type: text/html; charset=iso-8859-1
     def test_URLopener_deprecation(self):
         with support.check_warnings(('',DeprecationWarning)):
             urllib.request.URLopener()
+
+    def test_cafile_and_context(self):
+        context = ssl.create_default_context()
+        with self.assertRaises(ValueError):
+            urllib.request.urlopen(
+                "https://localhost", cafile="/nonexistent/path", context=context
+            )
 
 class urlopen_DataTests(unittest.TestCase):
     """Test urlopen() opening a data URL."""
@@ -480,7 +536,7 @@ class urlretrieve_FileTests(unittest.TestCase):
         result = urllib.request.urlretrieve("file:%s" % support.TESTFN)
         self.assertEqual(result[0], support.TESTFN)
         self.assertIsInstance(result[1], email.message.Message,
-                              "did not get a email.message.Message instance "
+                              "did not get an email.message.Message instance "
                               "as second returned value")
 
     def test_copy(self):
@@ -1250,21 +1306,6 @@ class Pathname_Tests(unittest.TestCase):
 
 class Utility_Tests(unittest.TestCase):
     """Testcase to test the various utility functions in the urllib."""
-
-    def test_splitpasswd(self):
-        """Some of password examples are not sensible, but it is added to
-        confirming to RFC2617 and addressing issue4675.
-        """
-        self.assertEqual(('user', 'ab'),urllib.parse.splitpasswd('user:ab'))
-        self.assertEqual(('user', 'a\nb'),urllib.parse.splitpasswd('user:a\nb'))
-        self.assertEqual(('user', 'a\tb'),urllib.parse.splitpasswd('user:a\tb'))
-        self.assertEqual(('user', 'a\rb'),urllib.parse.splitpasswd('user:a\rb'))
-        self.assertEqual(('user', 'a\fb'),urllib.parse.splitpasswd('user:a\fb'))
-        self.assertEqual(('user', 'a\vb'),urllib.parse.splitpasswd('user:a\vb'))
-        self.assertEqual(('user', 'a:b'),urllib.parse.splitpasswd('user:a:b'))
-        self.assertEqual(('user', 'a b'),urllib.parse.splitpasswd('user:a b'))
-        self.assertEqual(('user 2', 'ab'),urllib.parse.splitpasswd('user 2:ab'))
-        self.assertEqual(('user+1', 'a+b'),urllib.parse.splitpasswd('user+1:a+b'))
 
     def test_thishost(self):
         """Test the urllib.request.thishost utility function returns a tuple"""

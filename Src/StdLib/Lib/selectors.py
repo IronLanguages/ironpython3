@@ -175,6 +175,8 @@ class BaseSelector(metaclass=ABCMeta):
         """
         mapping = self.get_map()
         try:
+            if mapping is None:
+                raise KeyError
             return mapping[fileobj]
         except KeyError:
             raise KeyError("{!r} is not registered".format(fileobj)) from None
@@ -256,6 +258,7 @@ class _BaseSelectorImpl(BaseSelector):
 
     def close(self):
         self._fd_to_key.clear()
+        self._map = None
 
     def get_map(self):
         return self._map
@@ -396,7 +399,11 @@ if hasattr(select, 'epoll'):
                 epoll_events |= select.EPOLLIN
             if events & EVENT_WRITE:
                 epoll_events |= select.EPOLLOUT
-            self._epoll.register(key.fd, epoll_events)
+            try:
+                self._epoll.register(key.fd, epoll_events)
+            except BaseException:
+                super().unregister(fileobj)
+                raise
             return key
 
         def unregister(self, fileobj):
@@ -418,7 +425,12 @@ if hasattr(select, 'epoll'):
                 # epoll_wait() has a resolution of 1 millisecond, round away
                 # from zero to wait *at least* timeout seconds.
                 timeout = math.ceil(timeout * 1e3) * 1e-3
-            max_ev = len(self._fd_to_key)
+
+            # epoll_wait() expects `maxevents` to be greater than zero;
+            # we want to make sure that `select()` can be called when no
+            # FD is registered.
+            max_ev = max(len(self._fd_to_key), 1)
+
             ready = []
             try:
                 fd_event_list = self._epoll.poll(timeout, max_ev)
@@ -437,8 +449,10 @@ if hasattr(select, 'epoll'):
             return ready
 
         def close(self):
-            self._epoll.close()
-            super().close()
+            try:
+                self._epoll.close()
+            finally:
+                super().close()
 
 
 if hasattr(select, 'kqueue'):
@@ -455,14 +469,18 @@ if hasattr(select, 'kqueue'):
 
         def register(self, fileobj, events, data=None):
             key = super().register(fileobj, events, data)
-            if events & EVENT_READ:
-                kev = select.kevent(key.fd, select.KQ_FILTER_READ,
-                                    select.KQ_EV_ADD)
-                self._kqueue.control([kev], 0, 0)
-            if events & EVENT_WRITE:
-                kev = select.kevent(key.fd, select.KQ_FILTER_WRITE,
-                                    select.KQ_EV_ADD)
-                self._kqueue.control([kev], 0, 0)
+            try:
+                if events & EVENT_READ:
+                    kev = select.kevent(key.fd, select.KQ_FILTER_READ,
+                                        select.KQ_EV_ADD)
+                    self._kqueue.control([kev], 0, 0)
+                if events & EVENT_WRITE:
+                    kev = select.kevent(key.fd, select.KQ_FILTER_WRITE,
+                                        select.KQ_EV_ADD)
+                    self._kqueue.control([kev], 0, 0)
+            except BaseException:
+                super().unregister(fileobj)
+                raise
             return key
 
         def unregister(self, fileobj):
@@ -509,8 +527,10 @@ if hasattr(select, 'kqueue'):
             return ready
 
         def close(self):
-            self._kqueue.close()
-            super().close()
+            try:
+                self._kqueue.close()
+            finally:
+                super().close()
 
 
 # Choose the best implementation: roughly, epoll|kqueue > poll > select.

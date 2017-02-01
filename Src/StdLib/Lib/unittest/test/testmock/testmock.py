@@ -1,5 +1,6 @@
 import copy
 import sys
+import tempfile
 
 import unittest
 from unittest.test.testmock.support import is_instance
@@ -154,6 +155,24 @@ class MockTest(unittest.TestCase):
         mock = Mock(side_effect=side_effect, return_value=sentinel.RETURN)
         self.assertEqual(mock(), sentinel.RETURN)
 
+    def test_autospec_side_effect(self):
+        # Test for issue17826
+        results = [1, 2, 3]
+        def effect():
+            return results.pop()
+        def f():
+            pass
+
+        mock = create_autospec(f)
+        mock.side_effect = [1, 2, 3]
+        self.assertEqual([mock(), mock(), mock()], [1, 2, 3],
+                          "side effect not used correctly in create_autospec")
+        # Test where side effect is a callable
+        results = [1, 2, 3]
+        mock = create_autospec(f)
+        mock.side_effect = effect
+        self.assertEqual([mock(), mock(), mock()], [3, 2, 1],
+                          "callable side effect not used correctly")
 
     @unittest.skipUnless('java' in sys.platform,
                           'This test only applies to Jython')
@@ -219,6 +238,9 @@ class MockTest(unittest.TestCase):
         # used to cause recursion
         mock.reset_mock()
 
+    def test_reset_mock_on_mock_open_issue_18622(self):
+        a = mock.mock_open()
+        a.reset_mock()
 
     def test_call(self):
         mock = Mock()
@@ -269,6 +291,9 @@ class MockTest(unittest.TestCase):
         self.assertEqual(mock.call_args,
                          ((sentinel.Arg,), {"kw": sentinel.Kwarg}))
 
+        # Comparing call_args to a long sequence should not raise
+        # an exception. See issue 24857.
+        self.assertFalse(mock.call_args == "a long sequence")
 
     def test_assert_called_with(self):
         mock = Mock()
@@ -1164,6 +1189,10 @@ class MockTest(unittest.TestCase):
                 func.mock_calls, [call(1, 2), call(3, 4)]
             )
 
+    #Issue21222
+    def test_create_autospec_with_name(self):
+        m = mock.create_autospec(object(), name='sweet_func')
+        self.assertIn('sweet_func', repr(m))
 
     def test_mock_add_spec(self):
         class _One(object):
@@ -1301,6 +1330,32 @@ class MockTest(unittest.TestCase):
             self.assertEqual(m.mock_calls, [call.__int__(), call.__float__()])
             self.assertEqual(m.method_calls, [])
 
+    def test_mock_open_reuse_issue_21750(self):
+        mocked_open = mock.mock_open(read_data='data')
+        f1 = mocked_open('a-name')
+        f1_data = f1.read()
+        f2 = mocked_open('another-name')
+        f2_data = f2.read()
+        self.assertEqual(f1_data, f2_data)
+
+    def test_mock_open_write(self):
+        # Test exception in file writing write()
+        mock_namedtemp = mock.mock_open(mock.MagicMock(name='JLV'))
+        with mock.patch('tempfile.NamedTemporaryFile', mock_namedtemp):
+            mock_filehandle = mock_namedtemp.return_value
+            mock_write = mock_filehandle.write
+            mock_write.side_effect = OSError('Test 2 Error')
+            def attempt():
+                tempfile.NamedTemporaryFile().write('asd')
+            self.assertRaises(OSError, attempt)
+
+    def test_mock_open_alter_readline(self):
+        mopen = mock.mock_open(read_data='foo\nbarn')
+        mopen.return_value.readline.side_effect = lambda *args:'abc'
+        first = mopen().readline()
+        second = mopen().readline()
+        self.assertEqual('abc', first)
+        self.assertEqual('abc', second)
 
     def test_mock_parents(self):
         for Klass in Mock, MagicMock:

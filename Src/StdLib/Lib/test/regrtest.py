@@ -27,7 +27,7 @@ python -E -Wd -m test [options] [test_name1 ...]
 EPILOG = """\
 Additional option details:
 
--r randomizes test execution order. You can use --randseed=int to provide a
+-r randomizes test execution order. You can use --randseed=int to provide an
 int seed value for the randomizer; this is useful for reproducing troublesome
 test orders.
 
@@ -798,10 +798,8 @@ def main(tests=None, **kwargs):
         for time, test in test_times[:10]:
             print("%s: %.1fs" % (test, time))
     if bad:
-        bad = sorted(set(bad) - set(environment_changed))
-        if bad:
-            print(count(len(bad), "test"), "failed:")
-            printlist(bad)
+        print(count(len(bad), "test"), "failed:")
+        printlist(bad)
     if environment_changed:
         print("{} altered the execution environment:".format(
                  count(len(environment_changed), "test")))
@@ -812,7 +810,7 @@ def main(tests=None, **kwargs):
 
     if ns.verbose2 and bad:
         print("Re-running failed tests in verbose mode")
-        for test in bad:
+        for test in bad[:]:
             print("Re-running test %r in verbose mode" % test)
             sys.stdout.flush()
             try:
@@ -823,8 +821,13 @@ def main(tests=None, **kwargs):
                 # print a newline separate from the ^C
                 print()
                 break
-            except:
-                raise
+            else:
+                if ok[0] in {PASSED, ENV_CHANGED, SKIPPED, RESOURCE_DENIED}:
+                    bad.remove(test)
+        else:
+            if bad:
+                print(count(len(bad), 'test'), "failed again:")
+                printlist(bad)
 
     if ns.single:
         if next_single_test:
@@ -1031,7 +1034,7 @@ class saved_test_environment:
                  # to a thread, so check processes first.
                  'multiprocessing.process._dangling', 'threading._dangling',
                  'sysconfig._CONFIG_VARS', 'sysconfig._INSTALL_SCHEMES',
-                 'support.TESTFN', 'locale', 'warnings.showwarning',
+                 'files', 'locale', 'warnings.showwarning',
                 )
 
     def get_sys_argv(self):
@@ -1187,20 +1190,16 @@ class saved_test_environment:
         sysconfig._INSTALL_SCHEMES.clear()
         sysconfig._INSTALL_SCHEMES.update(saved[2])
 
-    def get_support_TESTFN(self):
-        if os.path.isfile(support.TESTFN):
-            result = 'f'
-        elif os.path.isdir(support.TESTFN):
-            result = 'd'
-        else:
-            result = None
-        return result
-    def restore_support_TESTFN(self, saved_value):
-        if saved_value is None:
-            if os.path.isfile(support.TESTFN):
-                os.unlink(support.TESTFN)
-            elif os.path.isdir(support.TESTFN):
-                shutil.rmtree(support.TESTFN)
+    def get_files(self):
+        return sorted(fn + ('/' if os.path.isdir(fn) else '')
+                      for fn in os.listdir())
+    def restore_files(self, saved_value):
+        fn = support.TESTFN
+        if fn not in saved_value and (fn + '/') not in saved_value:
+            if os.path.isfile(fn):
+                support.unlink(fn)
+            elif os.path.isdir(fn):
+                support.rmtree(fn)
 
     _lc = [getattr(locale, lc) for lc in dir(locale)
            if lc.startswith('LC_')]
@@ -1273,8 +1272,10 @@ def runtest_inner(test, verbose, quiet,
             # tests.  If not, use normal unittest test loading.
             test_runner = getattr(the_module, "test_main", None)
             if test_runner is None:
-                tests = unittest.TestLoader().loadTestsFromModule(the_module)
-                test_runner = lambda: support.run_unittest(tests)
+                def test_runner():
+                    loader = unittest.TestLoader()
+                    tests = loader.loadTestsFromModule(the_module)
+                    support.run_unittest(tests)
             test_runner()
             if huntrleaks:
                 refleak = dash_R(the_module, test, test_runner, huntrleaks)

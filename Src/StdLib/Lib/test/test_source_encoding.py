@@ -1,10 +1,11 @@
 # -*- coding: koi8-r -*-
 
 import unittest
-from test.support import TESTFN, unlink, unload
+from test.support import TESTFN, unlink, unload, rmtree
 import importlib
 import os
 import sys
+import subprocess
 
 class SourceEncodingTest(unittest.TestCase):
 
@@ -57,6 +58,15 @@ class SourceEncodingTest(unittest.TestCase):
 
         # two bytes in common with the UTF-8 BOM
         self.assertRaises(SyntaxError, eval, b'\xef\xbb\x20')
+
+    def test_20731(self):
+        sub = subprocess.Popen([sys.executable,
+                        os.path.join(os.path.dirname(__file__),
+                                     'coding20731.py')],
+                        stderr=subprocess.PIPE)
+        err = sub.communicate()[1]
+        self.assertEqual(sub.returncode, 0)
+        self.assertNotIn(b'SyntaxError', err)
 
     def test_error_message(self):
         compile(b'# -*- coding: iso-8859-15 -*-\n', 'dummy', 'exec')
@@ -119,6 +129,7 @@ class SourceEncodingTest(unittest.TestCase):
             unlink(filename + "c")
             unlink(filename + "o")
             unload(TESTFN)
+            rmtree('__pycache__')
 
     def test_error_from_string(self):
         # See http://bugs.python.org/issue6289

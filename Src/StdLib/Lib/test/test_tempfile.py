@@ -9,6 +9,7 @@ import re
 import warnings
 import contextlib
 import weakref
+from unittest import mock
 
 import unittest
 from test import support, script_helper
@@ -273,7 +274,39 @@ def _mock_candidate_names(*names):
                              lambda: iter(names))
 
 
-class TestMkstempInner(BaseTestCase):
+class TestBadTempdir:
+
+    def test_read_only_directory(self):
+        with _inside_empty_temp_dir():
+            oldmode = mode = os.stat(tempfile.tempdir).st_mode
+            mode &= ~(stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH)
+            os.chmod(tempfile.tempdir, mode)
+            try:
+                if os.access(tempfile.tempdir, os.W_OK):
+                    self.skipTest("can't set the directory read-only")
+                with self.assertRaises(PermissionError):
+                    self.make_temp()
+                self.assertEqual(os.listdir(tempfile.tempdir), [])
+            finally:
+                os.chmod(tempfile.tempdir, oldmode)
+
+    def test_nonexisting_directory(self):
+        with _inside_empty_temp_dir():
+            tempdir = os.path.join(tempfile.tempdir, 'nonexistent')
+            with support.swap_attr(tempfile, 'tempdir', tempdir):
+                with self.assertRaises(FileNotFoundError):
+                    self.make_temp()
+
+    def test_non_directory(self):
+        with _inside_empty_temp_dir():
+            tempdir = os.path.join(tempfile.tempdir, 'file')
+            open(tempdir, 'wb').close()
+            with support.swap_attr(tempfile, 'tempdir', tempdir):
+                with self.assertRaises((NotADirectoryError, FileNotFoundError)):
+                    self.make_temp()
+
+
+class TestMkstempInner(TestBadTempdir, BaseTestCase):
     """Test the internal function _mkstemp_inner."""
 
     class mkstemped:
@@ -388,7 +421,7 @@ class TestMkstempInner(BaseTestCase):
         os.lseek(f.fd, 0, os.SEEK_SET)
         self.assertEqual(os.read(f.fd, 20), b"blat")
 
-    def default_mkstemp_inner(self):
+    def make_temp(self):
         return tempfile._mkstemp_inner(tempfile.gettempdir(),
                                        tempfile.template,
                                        '',
@@ -399,11 +432,11 @@ class TestMkstempInner(BaseTestCase):
         # the chosen name already exists
         with _inside_empty_temp_dir(), \
              _mock_candidate_names('aaa', 'aaa', 'bbb'):
-            (fd1, name1) = self.default_mkstemp_inner()
+            (fd1, name1) = self.make_temp()
             os.close(fd1)
             self.assertTrue(name1.endswith('aaa'))
 
-            (fd2, name2) = self.default_mkstemp_inner()
+            (fd2, name2) = self.make_temp()
             os.close(fd2)
             self.assertTrue(name2.endswith('bbb'))
 
@@ -415,7 +448,7 @@ class TestMkstempInner(BaseTestCase):
             dir = tempfile.mkdtemp()
             self.assertTrue(dir.endswith('aaa'))
 
-            (fd, name) = self.default_mkstemp_inner()
+            (fd, name) = self.make_temp()
             os.close(fd)
             self.assertTrue(name.endswith('bbb'))
 
@@ -527,8 +560,11 @@ class TestMkstemp(BaseTestCase):
             os.rmdir(dir)
 
 
-class TestMkdtemp(BaseTestCase):
+class TestMkdtemp(TestBadTempdir, BaseTestCase):
     """Test mkdtemp()."""
+
+    def make_temp(self):
+        return tempfile.mkdtemp()
 
     def do_create(self, dir=None, pre="", suf=""):
         if dir is None:
@@ -706,6 +742,19 @@ class TestNamedTemporaryFile(BaseTestCase):
             # No reference cycle was created.
             self.assertIsNone(wr())
 
+    def test_iter(self):
+        # Issue #23700: getting iterator from a temporary file should keep
+        # it alive as long as it's being iterated over
+        lines = [b'spam\n', b'eggs\n', b'beans\n']
+        def make_file():
+            f = tempfile.NamedTemporaryFile(mode='w+b')
+            f.write(b''.join(lines))
+            f.seek(0)
+            return f
+        for i, l in enumerate(make_file()):
+            self.assertEqual(l, lines[i])
+        self.assertEqual(i, len(lines) - 1)
+
     def test_creates_named(self):
         # NamedTemporaryFile creates files with names
         f = tempfile.NamedTemporaryFile()
@@ -757,6 +806,19 @@ class TestNamedTemporaryFile(BaseTestCase):
             with f:
                 pass
         self.assertRaises(ValueError, use_closed)
+
+    def test_no_leak_fd(self):
+        # Issue #21058: don't leak file descriptor when io.open() fails
+        closed = []
+        os_close = os.close
+        def close(fd):
+            closed.append(fd)
+            os_close(fd)
+
+        with mock.patch('os.close', side_effect=close):
+            with mock.patch('io.open', side_effect=ValueError):
+                self.assertRaises(ValueError, tempfile.NamedTemporaryFile)
+                self.assertEqual(len(closed), 1)
 
     # How to test the mode and bufsize parameters?
 
@@ -1061,6 +1123,20 @@ if tempfile.NamedTemporaryFile is not tempfile.TemporaryFile:
             roundtrip("\u039B", "w+", encoding="utf-16")
             roundtrip("foo\r\n", "w+", newline="")
 
+        def test_no_leak_fd(self):
+            # Issue #21058: don't leak file descriptor when io.open() fails
+            closed = []
+            os_close = os.close
+            def close(fd):
+                closed.append(fd)
+                os_close(fd)
+
+            with mock.patch('os.close', side_effect=close):
+                with mock.patch('io.open', side_effect=ValueError):
+                    self.assertRaises(ValueError, tempfile.TemporaryFile)
+                    self.assertEqual(len(closed), 1)
+
+
 
 # Helper for test_del_on_shutdown
 class NulledModules:
@@ -1182,6 +1258,30 @@ class TestTemporaryDirectory(BaseTestCase):
                 err = err.decode('utf-8', 'backslashreplace')
                 self.assertNotIn("Exception ", err)
                 self.assertIn("ResourceWarning: Implicitly cleaning up", err)
+
+    def test_exit_on_shutdown(self):
+        # Issue #22427
+        with self.do_create() as dir:
+            code = """if True:
+                import sys
+                import tempfile
+                import warnings
+
+                def generator():
+                    with tempfile.TemporaryDirectory(dir={dir!r}) as tmp:
+                        yield tmp
+                g = generator()
+                sys.stdout.buffer.write(next(g).encode())
+
+                warnings.filterwarnings("always", category=ResourceWarning)
+                """.format(dir=dir)
+            rc, out, err = script_helper.assert_python_ok("-c", code)
+            tmp_name = out.decode().strip()
+            self.assertFalse(os.path.exists(tmp_name),
+                        "TemporaryDirectory %s exists after cleanup" % tmp_name)
+            err = err.decode('utf-8', 'backslashreplace')
+            self.assertNotIn("Exception ", err)
+            self.assertIn("ResourceWarning: Implicitly cleaning up", err)
 
     def test_warnings_on_cleanup(self):
         # ResourceWarning will be triggered by __del__

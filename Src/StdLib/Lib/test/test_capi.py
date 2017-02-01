@@ -202,15 +202,11 @@ class TestPendingCalls(unittest.TestCase):
         context.lock = threading.Lock()
         context.event = threading.Event()
 
-        for i in range(context.nThreads):
-            t = threading.Thread(target=self.pendingcalls_thread, args = (context,))
-            t.start()
-            threads.append(t)
-
-        self.pendingcalls_wait(context.l, n, context)
-
-        for t in threads:
-            t.join()
+        threads = [threading.Thread(target=self.pendingcalls_thread,
+                                    args=(context,))
+                   for i in range(context.nThreads)]
+        with support.start_threads(threads):
+            self.pendingcalls_wait(context.l, n, context)
 
     def pendingcalls_thread(self, context):
         try:
@@ -261,7 +257,8 @@ class Test6012(unittest.TestCase):
 
 class EmbeddingTests(unittest.TestCase):
     def setUp(self):
-        basepath = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        here = os.path.abspath(__file__)
+        basepath = os.path.dirname(os.path.dirname(os.path.dirname(here)))
         exename = "_testembed"
         if sys.platform.startswith("win"):
             ext = ("_d" if "_d" in sys.executable else "") + ".exe"

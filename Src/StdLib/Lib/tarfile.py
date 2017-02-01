@@ -38,6 +38,7 @@ __credits__ = "Gustavo Niemeyer, Niels Gust\u00e4bel, Richard Townsend."
 #---------
 # Imports
 #---------
+from builtins import open as bltn_open
 import sys
 import os
 import io
@@ -64,8 +65,6 @@ except NameError:
 
 # from tarfile import *
 __all__ = ["TarFile", "TarInfo", "is_tarfile", "TarError"]
-
-from builtins import open as _open # Since 'open' is TarFile.open
 
 #---------------------------------------------------------
 # tar constants
@@ -179,7 +178,8 @@ def nti(s):
             n = -(256 ** (len(s) - 1) - n)
     else:
         try:
-            n = int(nts(s, "ascii", "strict") or "0", 8)
+            s = nts(s, "ascii", "strict")
+            n = int(s.strip() or "0", 8)
         except ValueError:
             raise InvalidHeaderError("invalid header")
     return n
@@ -225,7 +225,7 @@ def calc_chksums(buf):
     signed_chksum = 256 + sum(struct.unpack_from("148b8x356b", buf))
     return unsigned_chksum, signed_chksum
 
-def copyfileobj(src, dst, length=None):
+def copyfileobj(src, dst, length=None, exception=OSError):
     """Copy length bytes from fileobj src to fileobj dst.
        If length is None, copy the entire content.
     """
@@ -240,13 +240,13 @@ def copyfileobj(src, dst, length=None):
     for b in range(blocks):
         buf = src.read(BUFSIZE)
         if len(buf) < BUFSIZE:
-            raise OSError("end of file reached")
+            raise exception("unexpected end of data")
         dst.write(buf)
 
     if remainder != 0:
         buf = src.read(remainder)
         if len(buf) < remainder:
-            raise OSError("end of file reached")
+            raise exception("unexpected end of data")
         dst.write(buf)
     return
 
@@ -450,26 +450,26 @@ class _Stream:
         if self.closed:
             return
 
-        if self.mode == "w" and self.comptype != "tar":
-            self.buf += self.cmp.flush()
-
-        if self.mode == "w" and self.buf:
-            self.fileobj.write(self.buf)
-            self.buf = b""
-            if self.comptype == "gz":
-                # The native zlib crc is an unsigned 32-bit integer, but
-                # the Python wrapper implicitly casts that to a signed C
-                # long.  So, on a 32-bit box self.crc may "look negative",
-                # while the same crc on a 64-bit box may "look positive".
-                # To avoid irksome warnings from the `struct` module, force
-                # it to look positive on all boxes.
-                self.fileobj.write(struct.pack("<L", self.crc & 0xffffffff))
-                self.fileobj.write(struct.pack("<L", self.pos & 0xffffFFFF))
-
-        if not self._extfileobj:
-            self.fileobj.close()
-
         self.closed = True
+        try:
+            if self.mode == "w" and self.comptype != "tar":
+                self.buf += self.cmp.flush()
+
+            if self.mode == "w" and self.buf:
+                self.fileobj.write(self.buf)
+                self.buf = b""
+                if self.comptype == "gz":
+                    # The native zlib crc is an unsigned 32-bit integer, but
+                    # the Python wrapper implicitly casts that to a signed C
+                    # long.  So, on a 32-bit box self.crc may "look negative",
+                    # while the same crc on a 64-bit box may "look positive".
+                    # To avoid irksome warnings from the `struct` module, force
+                    # it to look positive on all boxes.
+                    self.fileobj.write(struct.pack("<L", self.crc & 0xffffffff))
+                    self.fileobj.write(struct.pack("<L", self.pos & 0xffffFFFF))
+        finally:
+            if not self._extfileobj:
+                self.fileobj.close()
 
     def _init_read_gz(self):
         """Initialize for reading a gzip compressed fileobj.
@@ -690,7 +690,10 @@ class _FileInFile(object):
             length = min(size, stop - self.position)
             if data:
                 self.fileobj.seek(offset + (self.position - start))
-                buf += self.fileobj.read(length)
+                b = self.fileobj.read(length)
+                if len(b) != length:
+                    raise ReadError("unexpected end of data")
+                buf += b
             else:
                 buf += NUL * length
             size -= length
@@ -1425,7 +1428,8 @@ class TarFile(object):
             fileobj = bltn_open(name, self._mode)
             self._extfileobj = False
         else:
-            if name is None and hasattr(fileobj, "name"):
+            if (name is None and hasattr(fileobj, "name") and
+                isinstance(fileobj.name, (str, bytes))):
                 name = fileobj.name
             if hasattr(fileobj, "mode"):
                 self._mode = fileobj.mode
@@ -1705,18 +1709,19 @@ class TarFile(object):
         if self.closed:
             return
 
-        if self.mode in "aw":
-            self.fileobj.write(NUL * (BLOCKSIZE * 2))
-            self.offset += (BLOCKSIZE * 2)
-            # fill up the end with zero-blocks
-            # (like option -b20 for tar does)
-            blocks, remainder = divmod(self.offset, RECORDSIZE)
-            if remainder > 0:
-                self.fileobj.write(NUL * (RECORDSIZE - remainder))
-
-        if not self._extfileobj:
-            self.fileobj.close()
         self.closed = True
+        try:
+            if self.mode in "aw":
+                self.fileobj.write(NUL * (BLOCKSIZE * 2))
+                self.offset += (BLOCKSIZE * 2)
+                # fill up the end with zero-blocks
+                # (like option -b20 for tar does)
+                blocks, remainder = divmod(self.offset, RECORDSIZE)
+                if remainder > 0:
+                    self.fileobj.write(NUL * (RECORDSIZE - remainder))
+        finally:
+            if not self._extfileobj:
+                self.fileobj.close()
 
     def getmember(self, name):
         """Return a TarInfo object for member `name'. If `name' can not be
@@ -2130,9 +2135,9 @@ class TarFile(object):
             if tarinfo.sparse is not None:
                 for offset, size in tarinfo.sparse:
                     target.seek(offset)
-                    copyfileobj(source, target, size)
+                    copyfileobj(source, target, size, ReadError)
             else:
-                copyfileobj(source, target, tarinfo.size)
+                copyfileobj(source, target, tarinfo.size, ReadError)
             target.seek(tarinfo.size)
             target.truncate()
 
@@ -2242,8 +2247,13 @@ class TarFile(object):
             self.firstmember = None
             return m
 
+        # Advance the file pointer.
+        if self.offset != self.fileobj.tell():
+            self.fileobj.seek(self.offset - 1)
+            if not self.fileobj.read(1):
+                raise ReadError("unexpected end of data")
+
         # Read the next block.
-        self.fileobj.seek(self.offset)
         tarinfo = None
         while True:
             try:
@@ -2422,7 +2432,6 @@ def is_tarfile(name):
     except TarError:
         return False
 
-bltn_open = open
 open = TarFile.open
 
 
@@ -2492,16 +2501,16 @@ def main():
         _, ext = os.path.splitext(tar_name)
         compressions = {
             # gz
-            'gz': 'gz',
-            'tgz': 'gz',
+            '.gz': 'gz',
+            '.tgz': 'gz',
             # xz
-            'xz': 'xz',
-            'txz': 'xz',
+            '.xz': 'xz',
+            '.txz': 'xz',
             # bz2
-            'bz2': 'bz2',
-            'tbz': 'bz2',
-            'tbz2': 'bz2',
-            'tb2': 'bz2',
+            '.bz2': 'bz2',
+            '.tbz': 'bz2',
+            '.tbz2': 'bz2',
+            '.tb2': 'bz2',
         }
         tar_mode = 'w:' + compressions[ext] if ext in compressions else 'w'
         tar_files = args.create

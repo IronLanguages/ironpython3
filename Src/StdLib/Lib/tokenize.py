@@ -24,7 +24,7 @@ __author__ = 'Ka-Ping Yee <ping@lfw.org>'
 __credits__ = ('GvR, ESR, Tim Peters, Thomas Wouters, Fred Drake, '
                'Skip Montanaro, Raymond Hettinger, Trent Nelson, '
                'Michael Foord')
-import builtins
+from builtins import open as _builtin_open
 from codecs import lookup, BOM_UTF8
 import collections
 from io import TextIOWrapper
@@ -244,6 +244,8 @@ class Untokenizer:
 
     def untokenize(self, iterable):
         it = iter(iterable)
+        indents = []
+        startline = False
         for t in it:
             if len(t) == 2:
                 self.compat(t, it)
@@ -254,6 +256,21 @@ class Untokenizer:
                 continue
             if tok_type == ENDMARKER:
                 break
+            if tok_type == INDENT:
+                indents.append(token)
+                continue
+            elif tok_type == DEDENT:
+                indents.pop()
+                self.prev_row, self.prev_col = end
+                continue
+            elif tok_type in (NEWLINE, NL):
+                startline = True
+            elif startline and indents:
+                indent = indents[-1]
+                if start[1] >= len(indent):
+                    self.tokens.append(indent)
+                    self.prev_col = len(indent)
+                startline = False
             self.add_whitespace(start)
             self.tokens.append(token)
             self.prev_row, self.prev_col = end
@@ -434,12 +451,16 @@ def open(filename):
     """Open a file in read only mode using the encoding detected by
     detect_encoding().
     """
-    buffer = builtins.open(filename, 'rb')
-    encoding, lines = detect_encoding(buffer.readline)
-    buffer.seek(0)
-    text = TextIOWrapper(buffer, encoding, line_buffering=True)
-    text.mode = 'r'
-    return text
+    buffer = _builtin_open(filename, 'rb')
+    try:
+        encoding, lines = detect_encoding(buffer.readline)
+        buffer.seek(0)
+        text = TextIOWrapper(buffer, encoding, line_buffering=True)
+        text.mode = 'r'
+        return text
+    except:
+        buffer.close()
+        raise
 
 
 def tokenize(readline):
@@ -657,7 +678,7 @@ def main():
         # Tokenize the input
         if args.filename:
             filename = args.filename
-            with builtins.open(filename, 'rb') as f:
+            with _builtin_open(filename, 'rb') as f:
                 tokens = list(tokenize(f.readline))
         else:
             filename = "<stdin>"

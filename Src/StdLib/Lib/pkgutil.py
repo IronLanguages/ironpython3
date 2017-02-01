@@ -456,11 +456,15 @@ def get_loader(module_or_name):
     """
     if module_or_name in sys.modules:
         module_or_name = sys.modules[module_or_name]
+        if module_or_name is None:
+            return None
     if isinstance(module_or_name, ModuleType):
         module = module_or_name
         loader = getattr(module, '__loader__', None)
         if loader is not None:
             return loader
+        if getattr(module, '__spec__', None) is None:
+            return None
         fullname = module.__name__
     else:
         fullname = module_or_name
@@ -470,29 +474,22 @@ def get_loader(module_or_name):
 def find_loader(fullname):
     """Find a PEP 302 "loader" object for fullname
 
-    This is s convenience wrapper around :func:`importlib.find_loader` that
-    sets the *path* argument correctly when searching for submodules, and
-    also ensures parent packages (if any) are imported before searching for
-    submodules.
+    This is a backwards compatibility wrapper around
+    importlib.util.find_spec that converts most failures to ImportError
+    and only returns the loader rather than the full spec
     """
     if fullname.startswith('.'):
         msg = "Relative module name {!r} not supported".format(fullname)
         raise ImportError(msg)
-    path = None
-    pkg_name = fullname.rpartition(".")[0]
-    if pkg_name:
-        pkg = importlib.import_module(pkg_name)
-        path = getattr(pkg, "__path__", None)
-        if path is None:
-            return None
     try:
-        return importlib.find_loader(fullname, path)
+        spec = importlib.util.find_spec(fullname)
     except (ImportError, AttributeError, TypeError, ValueError) as ex:
         # This hack fixes an impedance mismatch between pkgutil and
         # importlib, where the latter raises other errors for cases where
         # pkgutil previously raised ImportError
         msg = "Error while finding loader for {!r} ({}: {})"
         raise ImportError(msg.format(fullname, type(ex), ex)) from ex
+    return spec.loader if spec is not None else None
 
 
 def extend_path(path, name):

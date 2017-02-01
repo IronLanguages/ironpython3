@@ -2,21 +2,25 @@
 
 """
 
-from tkinter import *
 import os
-
+from sys import version
+from tkinter import *
 from idlelib import textView
-from idlelib import idlever
 
 class AboutDialog(Toplevel):
     """Modal about dialog for idle
 
     """
-    def __init__(self,parent,title):
+    def __init__(self, parent, title, _htest=False):
+        """
+        _htest - bool, change box location when running htest
+        """
         Toplevel.__init__(self, parent)
         self.configure(borderwidth=5)
-        self.geometry("+%d+%d" % (parent.winfo_rootx()+30,
-                                  parent.winfo_rooty()+30))
+        # place dialog below parent if running htest
+        self.geometry("+%d+%d" % (
+                        parent.winfo_rootx()+30,
+                        parent.winfo_rooty()+(30 if not _htest else 100)))
         self.bg = "#707070"
         self.fg = "#ffffff"
         self.CreateWidgets()
@@ -32,6 +36,7 @@ class AboutDialog(Toplevel):
         self.wait_window()
 
     def CreateWidgets(self):
+        release = version[:version.index(' ')]
         frameMain = Frame(self, borderwidth=2, relief=SUNKEN)
         frameButtons = Frame(self)
         frameButtons.pack(side=BOTTOM, fill=X)
@@ -57,14 +62,15 @@ class AboutDialog(Toplevel):
                            justify=LEFT, fg=self.fg, bg=self.bg)
         labelEmail.grid(row=6, column=0, columnspan=2,
                         sticky=W, padx=10, pady=0)
-        labelWWW = Label(frameBg, text='www:  http://www.python.org/idle/',
+        labelWWW = Label(frameBg, text='https://docs.python.org/' +
+                         version[:3] + '/library/idle.html',
                          justify=LEFT, fg=self.fg, bg=self.bg)
         labelWWW.grid(row=7, column=0, columnspan=2, sticky=W, padx=10, pady=0)
         Frame(frameBg, borderwidth=1, relief=SUNKEN,
               height=2, bg=self.bg).grid(row=8, column=0, sticky=EW,
                                          columnspan=3, padx=5, pady=5)
-        labelPythonVer = Label(frameBg, text='Python version:  ' + \
-                               sys.version.split()[0], fg=self.fg, bg=self.bg)
+        labelPythonVer = Label(frameBg, text='Python version:  ' +
+                               release, fg=self.fg, bg=self.bg)
         labelPythonVer.grid(row=9, column=0, sticky=W, padx=10, pady=0)
         tkVer = self.tk.call('info', 'patchlevel')
         labelTkVer = Label(frameBg, text='Tk version:  '+
@@ -87,7 +93,7 @@ class AboutDialog(Toplevel):
         Frame(frameBg, borderwidth=1, relief=SUNKEN,
               height=2, bg=self.bg).grid(row=11, column=0, sticky=EW,
                                          columnspan=3, padx=5, pady=5)
-        idle_v = Label(frameBg, text='IDLE version:   ' + idlever.IDLE_VERSION,
+        idle_v = Label(frameBg, text='IDLE version:   ' + release,
                        fg=self.fg, bg=self.bg)
         idle_v.grid(row=12, column=0, sticky=W, padx=10, pady=0)
         idle_button_f = Frame(frameBg, bg=self.bg)
@@ -136,10 +142,5 @@ class AboutDialog(Toplevel):
         self.destroy()
 
 if __name__ == '__main__':
-    # test the dialog
-    root = Tk()
-    def run():
-        from idlelib import aboutDialog
-        aboutDialog.AboutDialog(root, 'About')
-    Button(root, text='Dialog', command=run).pack()
-    root.mainloop()
+    from idlelib.idle_test.htest import run
+    run(AboutDialog)

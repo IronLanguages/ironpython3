@@ -1,4 +1,8 @@
 # tests __main__ module handling in multiprocessing
+from test import support
+# Skip tests if _thread or _multiprocessing wasn't built.
+support.import_module('_thread')
+support.import_module('_multiprocessing')
 
 import importlib
 import importlib.machinery
@@ -9,17 +13,17 @@ import os
 import os.path
 import py_compile
 
-from test import support
 from test.script_helper import (
     make_pkg, make_script, make_zip_pkg, make_zip_script,
     assert_python_ok, assert_python_failure, temp_dir,
     spawn_python, kill_python)
 
-# Skip tests if _multiprocessing wasn't built.
-_multiprocessing = support.import_module('_multiprocessing')
 # Look up which start methods are available to test
 import multiprocessing
 AVAILABLE_START_METHODS = set(multiprocessing.get_all_start_methods())
+
+# Issue #22332: Skip tests if sem_open implementation is broken.
+support.import_module('multiprocessing.synchronize')
 
 verbose = support.verbose
 
@@ -139,7 +143,7 @@ class MultiProcessingCmdLineMixin():
     def _check_output(self, script_name, exit_code, out, err):
         if verbose > 1:
             print("Output from test script %r:" % script_name)
-            print(out)
+            print(repr(out))
         self.assertEqual(exit_code, 0)
         self.assertEqual(err.decode('utf-8'), '')
         expected_results = "%s -> [1, 4, 9]" % self.start_method

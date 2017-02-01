@@ -183,7 +183,7 @@ class Set(Sized, Iterable, Container):
     methods except for __contains__, __iter__ and __len__.
 
     To override the comparisons (presumably for speed, as the
-    semantics are fixed), all you have to do is redefine __le__ and
+    semantics are fixed), redefine __le__ and __ge__,
     then the other operations will automatically follow suit.
     """
 
@@ -207,20 +207,22 @@ class Set(Sized, Iterable, Container):
     def __gt__(self, other):
         if not isinstance(other, Set):
             return NotImplemented
-        return other.__lt__(self)
+        return len(self) > len(other) and self.__ge__(other)
 
     def __ge__(self, other):
         if not isinstance(other, Set):
             return NotImplemented
-        return other.__le__(self)
+        if len(self) < len(other):
+            return False
+        for elem in other:
+            if elem not in self:
+                return False
+        return True
 
     def __eq__(self, other):
         if not isinstance(other, Set):
             return NotImplemented
         return len(self) == len(other) and self.__le__(other)
-
-    def __ne__(self, other):
-        return not (self == other)
 
     @classmethod
     def _from_iterable(cls, it):
@@ -236,6 +238,8 @@ class Set(Sized, Iterable, Container):
             return NotImplemented
         return self._from_iterable(value for value in other if value in self)
 
+    __rand__ = __and__
+
     def isdisjoint(self, other):
         'Return True if two sets have a null intersection.'
         for value in other:
@@ -249,6 +253,8 @@ class Set(Sized, Iterable, Container):
         chain = (e for s in (self, other) for e in s)
         return self._from_iterable(chain)
 
+    __ror__ = __or__
+
     def __sub__(self, other):
         if not isinstance(other, Set):
             if not isinstance(other, Iterable):
@@ -257,12 +263,22 @@ class Set(Sized, Iterable, Container):
         return self._from_iterable(value for value in self
                                    if value not in other)
 
+    def __rsub__(self, other):
+        if not isinstance(other, Set):
+            if not isinstance(other, Iterable):
+                return NotImplemented
+            other = self._from_iterable(other)
+        return self._from_iterable(value for value in other
+                                   if value not in self)
+
     def __xor__(self, other):
         if not isinstance(other, Set):
             if not isinstance(other, Iterable):
                 return NotImplemented
             other = self._from_iterable(other)
         return (self - other) | (other - self)
+
+    __rxor__ = __xor__
 
     def _hash(self):
         """Compute the hash value of a set.
@@ -432,9 +448,6 @@ class Mapping(Sized, Iterable, Container):
             return NotImplemented
         return dict(self.items()) == dict(other.items())
 
-    def __ne__(self, other):
-        return not (self == other)
-
 Mapping.register(mappingproxy)
 
 
@@ -565,23 +578,24 @@ class MutableMapping(Mapping):
             If E present and lacks .keys() method, does:     for (k, v) in E: D[k] = v
             In either case, this is followed by: for k, v in F.items(): D[k] = v
         '''
-        if len(args) > 2:
-            raise TypeError("update() takes at most 2 positional "
-                            "arguments ({} given)".format(len(args)))
-        elif not args:
-            raise TypeError("update() takes at least 1 argument (0 given)")
-        self = args[0]
-        other = args[1] if len(args) >= 2 else ()
-
-        if isinstance(other, Mapping):
-            for key in other:
-                self[key] = other[key]
-        elif hasattr(other, "keys"):
-            for key in other.keys():
-                self[key] = other[key]
-        else:
-            for key, value in other:
-                self[key] = value
+        if not args:
+            raise TypeError("descriptor 'update' of 'MutableMapping' object "
+                            "needs an argument")
+        self, *args = args
+        if len(args) > 1:
+            raise TypeError('update expected at most 1 arguments, got %d' %
+                            len(args))
+        if args:
+            other = args[0]
+            if isinstance(other, Mapping):
+                for key in other:
+                    self[key] = other[key]
+            elif hasattr(other, "keys"):
+                for key in other.keys():
+                    self[key] = other[key]
+            else:
+                for key, value in other:
+                    self[key] = value
         for key, value in kwds.items():
             self[key] = value
 

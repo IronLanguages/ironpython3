@@ -1,5 +1,6 @@
 # Test iterators.
 
+import sys
 import unittest
 from test.support import run_unittest, TESTFN, unlink, cpython_only
 import pickle
@@ -48,6 +49,10 @@ class SequenceClass:
         else:
             raise IndexError
 
+class UnlimitedSequenceClass:
+    def __getitem__(self, i):
+        return i
+
 # Main test suite
 
 class TestCase(unittest.TestCase):
@@ -76,22 +81,23 @@ class TestCase(unittest.TestCase):
 
     # Helper to check picklability
     def check_pickle(self, itorg, seq):
-        d = pickle.dumps(itorg)
-        it = pickle.loads(d)
-        # Cannot assert type equality because dict iterators unpickle as list
-        # iterators.
-        # self.assertEqual(type(itorg), type(it))
-        self.assertTrue(isinstance(it, collections.abc.Iterator))
-        self.assertEqual(list(it), seq)
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            d = pickle.dumps(itorg, proto)
+            it = pickle.loads(d)
+            # Cannot assert type equality because dict iterators unpickle as list
+            # iterators.
+            # self.assertEqual(type(itorg), type(it))
+            self.assertTrue(isinstance(it, collections.abc.Iterator))
+            self.assertEqual(list(it), seq)
 
-        it = pickle.loads(d)
-        try:
-            next(it)
-        except StopIteration:
-            return
-        d = pickle.dumps(it)
-        it = pickle.loads(d)
-        self.assertEqual(list(it), seq[1:])
+            it = pickle.loads(d)
+            try:
+                next(it)
+            except StopIteration:
+                continue
+            d = pickle.dumps(it, proto)
+            it = pickle.loads(d)
+            self.assertEqual(list(it), seq[1:])
 
     # Test basic use of iter() function
     def test_iter_basic(self):
@@ -917,6 +923,26 @@ class TestCase(unittest.TestCase):
             lst.pop(0)
         lst.extend(gen())
         self.assertEqual(len(lst), 760)
+
+    @cpython_only
+    def test_iter_overflow(self):
+        # Test for the issue 22939
+        it = iter(UnlimitedSequenceClass())
+        # Manually set `it_index` to PY_SSIZE_T_MAX-2 without a loop
+        it.__setstate__(sys.maxsize - 2)
+        self.assertEqual(next(it), sys.maxsize - 2)
+        self.assertEqual(next(it), sys.maxsize - 1)
+        with self.assertRaises(OverflowError):
+            next(it)
+        # Check that Overflow error is always raised
+        with self.assertRaises(OverflowError):
+            next(it)
+
+    def test_iter_neg_setstate(self):
+        it = iter(UnlimitedSequenceClass())
+        it.__setstate__(-42)
+        self.assertEqual(next(it), 0)
+        self.assertEqual(next(it), 1)
 
 
 def test_main():

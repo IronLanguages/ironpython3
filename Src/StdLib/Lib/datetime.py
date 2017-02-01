@@ -280,6 +280,25 @@ def _cmperror(x, y):
     raise TypeError("can't compare '%s' to '%s'" % (
                     type(x).__name__, type(y).__name__))
 
+def _divide_and_round(a, b):
+    """divide a by b and round result to the nearest integer
+
+    When the ratio is exactly half-way between two integers,
+    the even integer is returned.
+    """
+    # Based on the reference implementation for divmod_near
+    # in Objects/longobject.c.
+    q, r = divmod(a, b)
+    # round up if either r / b > 0.5, or r / b == 0.5 and q is odd.
+    # The expression r / b > 0.5 is equivalent to 2 * r > b if b is
+    # positive, 2 * r < b if b negative.
+    r *= 2
+    greater_than_half = r > b if b > 0 else r < b
+    if greater_than_half or r == b and q % 2 == 1:
+        q += 1
+
+    return q
+
 class timedelta:
     """Represent the difference between two datetime objects.
 
@@ -506,8 +525,9 @@ class timedelta:
                              self._seconds * other,
                              self._microseconds * other)
         if isinstance(other, float):
+            usec = self._to_microseconds()
             a, b = other.as_integer_ratio()
-            return self * a / b
+            return timedelta(0, 0, _divide_and_round(usec * a, b))
         return NotImplemented
 
     __rmul__ = __mul__
@@ -532,10 +552,10 @@ class timedelta:
         if isinstance(other, timedelta):
             return usec / other._to_microseconds()
         if isinstance(other, int):
-            return timedelta(0, 0, usec / other)
+            return timedelta(0, 0, _divide_and_round(usec, other))
         if isinstance(other, float):
             a, b = other.as_integer_ratio()
-            return timedelta(0, 0, b * usec / a)
+            return timedelta(0, 0, _divide_and_round(b * usec, a))
 
     def __mod__(self, other):
         if isinstance(other, timedelta):
@@ -626,7 +646,7 @@ class date:
     Operators:
 
     __repr__, __str__
-    __cmp__, __hash__
+    __eq__, __le__, __lt__, __ge__, __gt__, __hash__
     __add__, __radd__, __sub__ (add/radd only with timedelta arg)
 
     Methods:
@@ -756,7 +776,8 @@ class date:
         """day (1-31)"""
         return self._day
 
-    # Standard conversions, __cmp__, __hash__ (and helpers)
+    # Standard conversions, __eq__, __le__, __lt__, __ge__, __gt__,
+    # __hash__ (and helpers)
 
     def timetuple(self):
         "Return local time tuple compatible with time.localtime()."
@@ -985,7 +1006,7 @@ class time:
     Operators:
 
     __repr__, __str__
-    __cmp__, __hash__
+    __eq__, __le__, __lt__, __ge__, __gt__, __hash__
 
     Methods:
 
@@ -1341,49 +1362,42 @@ class datetime(date):
         return self._tzinfo
 
     @classmethod
+    def _fromtimestamp(cls, t, utc, tz):
+        """Construct a datetime from a POSIX timestamp (like time.time()).
+
+        A timezone info object may be passed in as well.
+        """
+        frac, t = _math.modf(t)
+        us = round(frac * 1e6)
+        if us >= 1000000:
+            t += 1
+            us -= 1000000
+        elif us < 0:
+            t -= 1
+            us += 1000000
+
+        converter = _time.gmtime if utc else _time.localtime
+        y, m, d, hh, mm, ss, weekday, jday, dst = converter(t)
+        ss = min(ss, 59)    # clamp out leap seconds if the platform has them
+        return cls(y, m, d, hh, mm, ss, us, tz)
+
+    @classmethod
     def fromtimestamp(cls, t, tz=None):
         """Construct a datetime from a POSIX timestamp (like time.time()).
 
         A timezone info object may be passed in as well.
         """
-
         _check_tzinfo_arg(tz)
 
-        converter = _time.localtime if tz is None else _time.gmtime
-
-        t, frac = divmod(t, 1.0)
-        us = int(frac * 1e6)
-
-        # If timestamp is less than one microsecond smaller than a
-        # full second, us can be rounded up to 1000000.  In this case,
-        # roll over to seconds, otherwise, ValueError is raised
-        # by the constructor.
-        if us == 1000000:
-            t += 1
-            us = 0
-        y, m, d, hh, mm, ss, weekday, jday, dst = converter(t)
-        ss = min(ss, 59)    # clamp out leap seconds if the platform has them
-        result = cls(y, m, d, hh, mm, ss, us, tz)
+        result = cls._fromtimestamp(t, tz is not None, tz)
         if tz is not None:
             result = tz.fromutc(result)
         return result
 
     @classmethod
     def utcfromtimestamp(cls, t):
-        "Construct a UTC datetime from a POSIX timestamp (like time.time())."
-        t, frac = divmod(t, 1.0)
-        us = int(frac * 1e6)
-
-        # If timestamp is less than one microsecond smaller than a
-        # full second, us can be rounded up to 1000000.  In this case,
-        # roll over to seconds, otherwise, ValueError is raised
-        # by the constructor.
-        if us == 1000000:
-            t += 1
-            us = 0
-        y, m, d, hh, mm, ss, weekday, jday, dst = _time.gmtime(t)
-        ss = min(ss, 59)    # clamp out leap seconds if the platform has them
-        return cls(y, m, d, hh, mm, ss, us)
+        """Construct a naive UTC datetime from a POSIX timestamp."""
+        return cls._fromtimestamp(t, True, None)
 
     # XXX This is supposed to do better than we *can* do by using time.time(),
     # XXX if the platform supports a more accurate way.  The C implementation

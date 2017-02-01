@@ -65,7 +65,7 @@ but when it is set to the correct value, the header does not have to
 be patched up.
 It is best to first set all parameters, perhaps possibly the
 compression type, and then write audio frames using writeframesraw.
-When all frames have been written, either call writeframes('') or
+When all frames have been written, either call writeframes(b'') or
 close() to patch up the sizes in the header.
 The close() method is called automatically when the class instance
 is destroyed.
@@ -186,10 +186,11 @@ class Wave_read:
         self._soundpos = 0
 
     def close(self):
-        if self._i_opened_the_file:
-            self._i_opened_the_file.close()
-            self._i_opened_the_file = None
         self._file = None
+        file = self._i_opened_the_file
+        if file:
+            self._i_opened_the_file = None
+            file.close()
 
     def tell(self):
         return self._soundpos
@@ -428,17 +429,18 @@ class Wave_write:
             self._patchheader()
 
     def close(self):
-        if self._file:
-            try:
+        try:
+            if self._file:
                 self._ensure_header_written(0)
                 if self._datalength != self._datawritten:
                     self._patchheader()
                 self._file.flush()
-            finally:
-                self._file = None
-        if self._i_opened_the_file:
-            self._i_opened_the_file.close()
-            self._i_opened_the_file = None
+        finally:
+            self._file = None
+            file = self._i_opened_the_file
+            if file:
+                self._i_opened_the_file = None
+                file.close()
 
     #
     # Internal methods.

@@ -1,5 +1,6 @@
 # tests command line execution of scripts
 
+import contextlib
 import importlib
 import importlib.machinery
 import zipimport
@@ -8,6 +9,7 @@ import sys
 import os
 import os.path
 import py_compile
+import subprocess
 
 import textwrap
 from test import support
@@ -112,7 +114,7 @@ class CmdLineTest(unittest.TestCase):
                              expected_loader):
         if verbose > 1:
             print("Output from test script %r:" % script_name)
-            print(data)
+            print(repr(data))
         self.assertEqual(exit_code, 0)
         printed_loader = '__loader__==%a' % expected_loader
         printed_file = '__file__==%a' % expected_file
@@ -151,7 +153,7 @@ class CmdLineTest(unittest.TestCase):
         rc, out, err = assert_python_failure(*run_args)
         if verbose > 1:
             print('Output from test script %r:' % script_name)
-            print(err)
+            print(repr(err))
             print('Expected output: %r' % expected_msg)
         self.assertIn(expected_msg.encode('utf-8'), err)
 
@@ -172,6 +174,53 @@ class CmdLineTest(unittest.TestCase):
             out = kill_python(p)
         expected = repr(importlib.machinery.BuiltinImporter).encode("utf-8")
         self.assertIn(expected, out)
+
+    @contextlib.contextmanager
+    def interactive_python(self, separate_stderr=False):
+        if separate_stderr:
+            p = spawn_python('-i', bufsize=1, stderr=subprocess.PIPE)
+            stderr = p.stderr
+        else:
+            p = spawn_python('-i', bufsize=1, stderr=subprocess.STDOUT)
+            stderr = p.stdout
+        try:
+            # Drain stderr until prompt
+            while True:
+                data = stderr.read(4)
+                if data == b">>> ":
+                    break
+                stderr.readline()
+            yield p
+        finally:
+            kill_python(p)
+            stderr.close()
+
+    def check_repl_stdout_flush(self, separate_stderr=False):
+        with self.interactive_python(separate_stderr) as p:
+            p.stdin.write(b"print('foo')\n")
+            p.stdin.flush()
+            self.assertEqual(b'foo', p.stdout.readline().strip())
+
+    def check_repl_stderr_flush(self, separate_stderr=False):
+        with self.interactive_python(separate_stderr) as p:
+            p.stdin.write(b"1/0\n")
+            p.stdin.flush()
+            stderr = p.stderr if separate_stderr else p.stdout
+            self.assertIn(b'Traceback ', stderr.readline())
+            self.assertIn(b'File "<stdin>"', stderr.readline())
+            self.assertIn(b'ZeroDivisionError', stderr.readline())
+
+    def test_repl_stdout_flush(self):
+        self.check_repl_stdout_flush()
+
+    def test_repl_stdout_flush_separate_stderr(self):
+        self.check_repl_stdout_flush(True)
+
+    def test_repl_stderr_flush(self):
+        self.check_repl_stderr_flush()
+
+    def test_repl_stderr_flush_separate_stderr(self):
+        self.check_repl_stderr_flush(True)
 
     def test_basic_script(self):
         with temp_dir() as script_dir:
@@ -313,7 +362,7 @@ class CmdLineTest(unittest.TestCase):
                 script_name = _make_test_script(pkg_dir, 'script')
                 rc, out, err = assert_python_ok('-m', 'test_pkg.script', *example_args, __isolated=False)
                 if verbose > 1:
-                    print(out)
+                    print(repr(out))
                 expected = "init_argv0==%r" % '-m'
                 self.assertIn(expected.encode('utf-8'), out)
                 self._check_output(script_name, rc, out,
@@ -331,7 +380,7 @@ class CmdLineTest(unittest.TestCase):
                         'import sys; print("sys.path[0]==%r" % sys.path[0])',
                         __isolated=False)
                     if verbose > 1:
-                        print(out)
+                        print(repr(out))
                     expected = "sys.path[0]==%r" % ''
                     self.assertIn(expected.encode('utf-8'), out)
 
@@ -361,7 +410,7 @@ class CmdLineTest(unittest.TestCase):
                                                 "if __name__ == '__main__': raise ValueError")
                 rc, out, err = assert_python_failure('-m', 'test_pkg.other', *example_args)
                 if verbose > 1:
-                    print(out)
+                    print(repr(out))
                 self.assertEqual(rc, 1)
 
     def test_pep_409_verbiage(self):

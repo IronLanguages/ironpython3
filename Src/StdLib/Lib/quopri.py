@@ -44,13 +44,11 @@ def quote(c):
 def encode(input, output, quotetabs, header=False):
     """Read 'input', apply quoted-printable encoding, and write to 'output'.
 
-    'input' and 'output' are files with readline() and write() methods.
-    The 'quotetabs' flag indicates whether embedded tabs and spaces should be
-    quoted.  Note that line-ending tabs and spaces are always encoded, as per
-    RFC 1521.
-    The 'header' flag indicates whether we are encoding spaces as _ as per
-    RFC 1522.
-    """
+    'input' and 'output' are binary file objects. The 'quotetabs' flag
+    indicates whether embedded tabs and spaces should be quoted. Note that
+    line-ending tabs and spaces are always encoded, as per RFC 1521.
+    The 'header' flag indicates whether we are encoding spaces as _ as per RFC
+    1522."""
 
     if b2a_qp is not None:
         data = input.read()
@@ -118,7 +116,7 @@ def encodestring(s, quotetabs=False, header=False):
 
 def decode(input, output, header=False):
     """Read 'input', apply quoted-printable decoding, and write to 'output'.
-    'input' and 'output' are files with readline() and write() methods.
+    'input' and 'output' are binary file objects.
     If 'header' is true, decode underscore as space (per RFC 1522)."""
 
     if a2b_qp is not None:
@@ -147,7 +145,7 @@ def decode(input, output, header=False):
                 new = new + c; i = i+1
             elif i+1 == n and not partial:
                 partial = 1; break
-            elif i+1 < n and line[i+1] == ESCAPE:
+            elif i+1 < n and line[i+1:i+2] == ESCAPE:
                 new = new + ESCAPE; i = i+2
             elif i+2 < n and ishex(line[i+1:i+2]) and ishex(line[i+2:i+3]):
                 new = new + bytes((unhex(line[i+1:i+3]),)); i = i+3

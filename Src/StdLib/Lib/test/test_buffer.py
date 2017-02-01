@@ -149,15 +149,15 @@ def randrange_fmt(mode, char, obj):
        format character."""
     x = randrange(*fmtdict[mode][char])
     if char == 'c':
-        x = bytes(chr(x), 'latin1')
+        x = bytes([x])
+        if obj == 'numpy' and x == b'\x00':
+            # http://projects.scipy.org/numpy/ticket/1925
+            x = b'\x01'
     if char == '?':
         x = bool(x)
     if char == 'f' or char == 'd':
         x = struct.pack(char, x)
         x = struct.unpack(char, x)[0]
-    if obj == 'numpy' and x == b'\x00':
-        # http://projects.scipy.org/numpy/ticket/1925
-        x = b'\x01'
     return x
 
 def gen_item(fmt, obj):
@@ -2448,6 +2448,21 @@ class TestBufferProtocol(unittest.TestCase):
             m = msrc.cast(fmt)
             self.assertEqual(m.tobytes(), b'')
             self.assertEqual(m.tolist(), [])
+
+    check_sizeof = support.check_sizeof
+
+    def test_memoryview_sizeof(self):
+        check = self.check_sizeof
+        vsize = support.calcvobjsize
+        base_struct = 'Pnin 2P2n2i5P 3cP'
+        per_dim = '3n'
+
+        items = list(range(8))
+        check(memoryview(b''), vsize(base_struct + 1 * per_dim))
+        a = ndarray(items, shape=[2, 4], format="b")
+        check(memoryview(a), vsize(base_struct + 2 * per_dim))
+        a = ndarray(items, shape=[2, 2, 2], format="b")
+        check(memoryview(a), vsize(base_struct + 3 * per_dim))
 
     def test_memoryview_struct_module(self):
 

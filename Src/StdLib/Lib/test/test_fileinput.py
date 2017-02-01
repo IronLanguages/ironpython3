@@ -19,11 +19,12 @@ try:
 except ImportError:
     gzip = None
 
-from io import StringIO
+from io import BytesIO, StringIO
 from fileinput import FileInput, hook_encoded
 
 from test.support import verbose, TESTFN, run_unittest, check_warnings
 from test.support import unlink as safe_unlink
+from unittest import mock
 
 
 # The fileinput module has 2 interfaces: the FileInput class which does
@@ -232,6 +233,13 @@ class FileInputTests(unittest.TestCase):
         finally:
             remove_tempfiles(t1)
 
+    def test_stdin_binary_mode(self):
+        with mock.patch('sys.stdin') as m_stdin:
+            m_stdin.buffer = BytesIO(b'spam, bacon, sausage, and spam')
+            fi = FileInput(files=['-'], mode='rb')
+            lines = list(fi)
+            self.assertEqual(lines, [b'spam, bacon, sausage, and spam'])
+
     def test_file_opening_hook(self):
         try:
             # cannot use openhook and inplace mode
@@ -259,6 +267,42 @@ class FileInputTests(unittest.TestCase):
         with FileInput([t], openhook=custom_open_hook) as fi:
             fi.readline()
         self.assertTrue(custom_open_hook.invoked, "openhook not invoked")
+
+    def test_readline(self):
+        with open(TESTFN, 'wb') as f:
+            f.write(b'A\nB\r\nC\r')
+            # Fill TextIOWrapper buffer.
+            f.write(b'123456789\n' * 1000)
+            # Issue #20501: readline() shouldn't read whole file.
+            f.write(b'\x80')
+        self.addCleanup(safe_unlink, TESTFN)
+
+        with FileInput(files=TESTFN,
+                       openhook=hook_encoded('ascii'), bufsize=8) as fi:
+            try:
+                self.assertEqual(fi.readline(), 'A\n')
+                self.assertEqual(fi.readline(), 'B\n')
+                self.assertEqual(fi.readline(), 'C\n')
+            except UnicodeDecodeError:
+                self.fail('Read to end of file')
+            with self.assertRaises(UnicodeDecodeError):
+                # Read to the end of file.
+                list(fi)
+            self.assertEqual(fi.readline(), '')
+            self.assertEqual(fi.readline(), '')
+
+    def test_readline_binary_mode(self):
+        with open(TESTFN, 'wb') as f:
+            f.write(b'A\nB\r\nC\rD')
+        self.addCleanup(safe_unlink, TESTFN)
+
+        with FileInput(files=TESTFN, mode='rb') as fi:
+            self.assertEqual(fi.readline(), b'A\n')
+            self.assertEqual(fi.readline(), b'B\r\n')
+            self.assertEqual(fi.readline(), b'C\rD')
+            # Read to the end of file.
+            self.assertEqual(fi.readline(), b'')
+            self.assertEqual(fi.readline(), b'')
 
     def test_context_manager(self):
         try:
@@ -836,6 +880,26 @@ class Test_hook_encoded(unittest.TestCase):
         self.assertIs(args[1], mode)
         self.assertIs(kwargs.pop('encoding'), encoding)
         self.assertFalse(kwargs)
+
+    def test_modes(self):
+        with open(TESTFN, 'wb') as f:
+            # UTF-7 is a convenient, seldom used encoding
+            f.write(b'A\nB\r\nC\rD+IKw-')
+        self.addCleanup(safe_unlink, TESTFN)
+
+        def check(mode, expected_lines):
+            with FileInput(files=TESTFN, mode=mode,
+                           openhook=hook_encoded('utf-7')) as fi:
+                lines = list(fi)
+            self.assertEqual(lines, expected_lines)
+
+        check('r', ['A\n', 'B\n', 'C\n', 'D\u20ac'])
+        with self.assertWarns(DeprecationWarning):
+            check('rU', ['A\n', 'B\n', 'C\n', 'D\u20ac'])
+        with self.assertWarns(DeprecationWarning):
+            check('U', ['A\n', 'B\n', 'C\n', 'D\u20ac'])
+        with self.assertRaises(ValueError):
+            check('rb', ['A\n', 'B\r\n', 'C\r', 'D\u20ac'])
 
 
 if __name__ == "__main__":

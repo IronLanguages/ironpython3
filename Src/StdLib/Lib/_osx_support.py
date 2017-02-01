@@ -182,7 +182,7 @@ def _find_appropriate_compiler(_config_vars):
         # Compiler is GCC, check if it is LLVM-GCC
         data = _read_output("'%s' --version"
                              % (cc.replace("'", "'\"'\"'"),))
-        if 'llvm-gcc' in data:
+        if data and 'llvm-gcc' in data:
             # Found LLVM-GCC, fall back to clang
             cc = _find_build_tool('clang')
 
@@ -450,8 +450,16 @@ def get_platform_osx(_config_vars, osname, release, machine):
         # case and disallow installs.
         cflags = _config_vars.get(_INITPRE+'CFLAGS',
                                     _config_vars.get('CFLAGS', ''))
-        if ((macrelease + '.') >= '10.4.' and
-            '-arch' in cflags.strip()):
+        if macrelease:
+            try:
+                macrelease = tuple(int(i) for i in macrelease.split('.')[0:2])
+            except ValueError:
+                macrelease = (10, 0)
+        else:
+            # assume no universal support
+            macrelease = (10, 0)
+
+        if (macrelease >= (10, 4)) and '-arch' in cflags.strip():
             # The universal build will build fat binaries, but not on
             # systems before 10.4
 

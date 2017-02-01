@@ -13,7 +13,8 @@ import time
 import shutil
 import unittest
 from test.support import (
-    verbose, import_module, run_unittest, TESTFN, reap_threads, forget, unlink)
+    verbose, import_module, run_unittest, TESTFN, reap_threads,
+    forget, unlink, rmtree, start_threads)
 threading = import_module('threading')
 
 def task(N, done, done_tasks, errors):
@@ -114,10 +115,10 @@ class ThreadedImportTests(unittest.TestCase):
             errors = []
             done_tasks = []
             done.clear()
-            for i in range(N):
-                t = threading.Thread(target=task,
-                                     args=(N, done, done_tasks, errors,))
-                t.start()
+            with start_threads(threading.Thread(target=task,
+                                                args=(N, done, done_tasks, errors,))
+                               for i in range(N)):
+                pass
             self.assertTrue(done.wait(60))
             self.assertFalse(errors)
             if verbose:
@@ -222,6 +223,7 @@ class ThreadedImportTests(unittest.TestCase):
             f.write(code.encode('utf-8'))
         self.addCleanup(unlink, filename)
         self.addCleanup(forget, TESTFN)
+        self.addCleanup(rmtree, '__pycache__')
         importlib.invalidate_caches()
         __import__(TESTFN)
 

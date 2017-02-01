@@ -176,6 +176,18 @@ class TestEnum(unittest.TestCase):
                 set(['__class__', '__doc__', '__module__', 'name', 'value', 'wowser']),
                 )
 
+    def test_dir_on_sub_with_behavior_on_super(self):
+        # see issue22506
+        class SuperEnum(Enum):
+            def invisible(self):
+                return "did you see me?"
+        class SubEnum(SuperEnum):
+            sample = 5
+        self.assertEqual(
+                set(dir(SubEnum.sample)),
+                set(['__class__', '__doc__', '__module__', 'name', 'value', 'invisible']),
+                )
+
     def test_enum_in_enum_out(self):
         Season = self.Season
         self.assertIs(Season(Season.WINTER), Season.WINTER)
@@ -244,6 +256,19 @@ class TestEnum(unittest.TestCase):
             del Season.DRY
         with self.assertRaises(AttributeError):
             del Season.SPRING.name
+
+    def test_bool_of_class(self):
+        class Empty(Enum):
+            pass
+        self.assertTrue(bool(Empty))
+
+    def test_bool_of_member(self):
+        class Count(Enum):
+            zero = 0
+            one = 1
+            two = 2
+        for member in Count:
+            self.assertTrue(bool(member))
 
     def test_invalid_names(self):
         with self.assertRaises(ValueError):
@@ -568,6 +593,14 @@ class TestEnum(unittest.TestCase):
                 protocol=(0, 3))
         test_pickle_dump_load(self.assertIs, self.NestedEnum.twigs,
                 protocol=(4, HIGHEST_PROTOCOL))
+
+    def test_pickle_by_name(self):
+        class ReplaceGlobalInt(IntEnum):
+            ONE = 1
+            TWO = 2
+        ReplaceGlobalInt.__reduce_ex__ = enum._reduce_ex_by_name
+        for proto in range(HIGHEST_PROTOCOL):
+            self.assertEqual(ReplaceGlobalInt.TWO.__reduce_ex__(proto), 'TWO')
 
     def test_exploding_pickle(self):
         BadPickle = Enum(
@@ -1528,9 +1561,7 @@ class TestStdLib(unittest.TestCase):
         helper = pydoc.Helper(output=output)
         helper(self.Color)
         result = output.getvalue().strip()
-        if result != expected_text:
-            print_diffs(expected_text, result)
-            self.fail("outputs are not equal, see diff above")
+        self.assertEqual(result, expected_text)
 
     def test_inspect_getmembers(self):
         values = dict((

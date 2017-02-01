@@ -13,9 +13,11 @@ import functools
 import pickle
 import tempfile
 import unittest
+
 import test.support
 import test.string_tests
 import test.buffer_tests
+from test.support import bigaddrspacetest, MAX_Py_ssize_t
 
 
 if sys.flags.bytes_warning:
@@ -98,6 +100,14 @@ class BaseBytesTest:
         self.assertRaises(TypeError, self.type2test, [0.0])
         self.assertRaises(TypeError, self.type2test, [None])
         self.assertRaises(TypeError, self.type2test, [C()])
+        self.assertRaises(TypeError, self.type2test, 0, 'ascii')
+        self.assertRaises(TypeError, self.type2test, b'', 'ascii')
+        self.assertRaises(TypeError, self.type2test, 0, errors='ignore')
+        self.assertRaises(TypeError, self.type2test, b'', errors='ignore')
+        self.assertRaises(TypeError, self.type2test, '')
+        self.assertRaises(TypeError, self.type2test, '', errors='ignore')
+        self.assertRaises(TypeError, self.type2test, '', b'ascii')
+        self.assertRaises(TypeError, self.type2test, '', 'ascii', b'ignore')
 
     def test_constructor_value_errors(self):
         self.assertRaises(ValueError, self.type2test, [-1])
@@ -110,6 +120,17 @@ class BaseBytesTest:
         self.assertRaises(ValueError, self.type2test, [sys.maxsize])
         self.assertRaises(ValueError, self.type2test, [sys.maxsize+1])
         self.assertRaises(ValueError, self.type2test, [10**100])
+
+    @bigaddrspacetest
+    def test_constructor_overflow(self):
+        size = MAX_Py_ssize_t
+        self.assertRaises((OverflowError, MemoryError), self.type2test, size)
+        try:
+            # Should either pass or raise an error (e.g. on debug builds with
+            # additional malloc() overhead), but shouldn't crash.
+            bytearray(size - 4)
+        except (OverflowError, MemoryError):
+            pass
 
     def test_compare(self):
         b1 = self.type2test([1, 2, 3])
@@ -298,6 +319,7 @@ class BaseBytesTest:
         seq = [b"abc"] * 1000
         expected = b"abc" + b".:abc" * 999
         self.assertEqual(dot_join(seq), expected)
+        self.assertRaises(TypeError, self.type2test(b" ").join, None)
         # Error handling and cleanup when some item in the middle of the
         # sequence has the wrong type.
         with self.assertRaises(TypeError):
@@ -533,22 +555,23 @@ class BaseBytesTest:
                 self.assertEqual(b, q)
 
     def test_iterator_pickling(self):
-        for b in b"", b"a", b"abc", b"\xffab\x80", b"\0\0\377\0\0":
-            it = itorg = iter(self.type2test(b))
-            data = list(self.type2test(b))
-            d = pickle.dumps(it)
-            it = pickle.loads(d)
-            self.assertEqual(type(itorg), type(it))
-            self.assertEqual(list(it), data)
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            for b in b"", b"a", b"abc", b"\xffab\x80", b"\0\0\377\0\0":
+                it = itorg = iter(self.type2test(b))
+                data = list(self.type2test(b))
+                d = pickle.dumps(it, proto)
+                it = pickle.loads(d)
+                self.assertEqual(type(itorg), type(it))
+                self.assertEqual(list(it), data)
 
-            it = pickle.loads(d)
-            try:
-                next(it)
-            except StopIteration:
-                continue
-            d = pickle.dumps(it)
-            it = pickle.loads(d)
-            self.assertEqual(list(it), data[1:])
+                it = pickle.loads(d)
+                try:
+                    next(it)
+                except StopIteration:
+                    continue
+                d = pickle.dumps(it, proto)
+                it = pickle.loads(d)
+                self.assertEqual(list(it), data[1:])
 
     def test_strip(self):
         b = self.type2test(b'mississippi')
@@ -700,7 +723,7 @@ class BytesTest(BaseBytesTest, unittest.TestCase):
     type2test = bytes
 
     def test_buffer_is_readonly(self):
-        fd = os.dup(sys.stdin.fileno())
+        fd = os.open(__file__, os.O_RDONLY)
         with open(fd, "rb", buffering=0) as f:
             self.assertRaises(TypeError, f.readinto, b"")
 
@@ -721,6 +744,14 @@ class BytesTest(BaseBytesTest, unittest.TestCase):
             def __index__(self):
                 return 42
         self.assertEqual(bytes(A()), b'a')
+        # Issue #24731
+        class A:
+            def __bytes__(self):
+                return OtherBytesSubclass(b'abc')
+        self.assertEqual(bytes(A()), b'abc')
+        self.assertIs(type(bytes(A())), OtherBytesSubclass)
+        self.assertEqual(BytesSubclass(A()), b'abc')
+        self.assertIs(type(BytesSubclass(A())), BytesSubclass)
 
     # Test PyBytes_FromFormat()
     def test_from_format(self):
@@ -924,6 +955,22 @@ class ByteArrayTest(BaseBytesTest, unittest.TestCase):
         b.extend(range(100, 110))
         self.assertEqual(list(b), list(range(10, 110)))
 
+    def test_fifo_overrun(self):
+        # Test for issue #23985, a buffer overrun when implementing a FIFO
+        # Build Python in pydebug mode for best results.
+        b = bytearray(10)
+        b.pop()        # Defeat expanding buffer off-by-one quirk
+        del b[:1]      # Advance start pointer without reallocating
+        b += bytes(2)  # Append exactly the number of deleted bytes
+        del b          # Free memory buffer, allowing pydebug verification
+
+    def test_del_expand(self):
+        # Reducing the size should not expand the buffer (issue #23985)
+        b = bytearray(10)
+        size = sys.getsizeof(b)
+        del b[:1]
+        self.assertLessEqual(sys.getsizeof(b), size)
+
     def test_extended_set_del_slice(self):
         indices = (0, None, 1, 3, 19, 300, 1<<333, -1, -2, -31, -300)
         for start in indices:
@@ -991,9 +1038,26 @@ class ByteArrayTest(BaseBytesTest, unittest.TestCase):
         for i in range(100):
             b += b"x"
             alloc = b.__alloc__()
-            self.assertTrue(alloc >= len(b))
+            self.assertGreater(alloc, len(b))  # including trailing null byte
             if alloc not in seq:
                 seq.append(alloc)
+
+    def test_init_alloc(self):
+        b = bytearray()
+        def g():
+            for i in range(1, 100):
+                yield i
+                a = list(b)
+                self.assertEqual(a, list(range(1, len(a)+1)))
+                self.assertEqual(len(b), len(a))
+                self.assertLessEqual(len(b), i)
+                alloc = b.__alloc__()
+                self.assertGreater(alloc, len(b))  # including trailing null byte
+        b.__init__(g())
+        self.assertEqual(list(b), list(range(1, 100)))
+        self.assertEqual(len(b), 99)
+        alloc = b.__alloc__()
+        self.assertGreater(alloc, len(b))
 
     def test_extend(self):
         orig = b'hello'
@@ -1407,6 +1471,9 @@ class ByteArraySubclass(bytearray):
     pass
 
 class BytesSubclass(bytes):
+    pass
+
+class OtherBytesSubclass(bytes):
     pass
 
 class ByteArraySubclassTest(SubclassTest, unittest.TestCase):

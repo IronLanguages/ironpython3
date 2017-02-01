@@ -287,7 +287,7 @@ class FTP:
         return self.voidcmd(cmd)
 
     def sendeprt(self, host, port):
-        '''Send a EPRT command with the current host and the given port number.'''
+        '''Send an EPRT command with the current host and the given port number.'''
         af = 0
         if self.af == socket.AF_INET:
             af = 1
@@ -320,7 +320,6 @@ class FTP:
                 raise err
             else:
                 raise OSError("getaddrinfo returns an empty list")
-            raise OSError(msg)
         sock.listen(1)
         port = sock.getsockname()[1] # Get proper port
         host = self.sock.getsockname()[0] # Get proper host
@@ -668,11 +667,16 @@ class FTP:
 
     def close(self):
         '''Close the connection without assuming anything about it.'''
-        if self.file is not None:
-            self.file.close()
-        if self.sock is not None:
-            self.sock.close()
-        self.file = self.sock = None
+        try:
+            file = self.file
+            self.file = None
+            if file is not None:
+                file.close()
+        finally:
+            sock = self.sock
+            self.sock = None
+            if sock is not None:
+                sock.close()
 
 try:
     import ssl
@@ -714,7 +718,7 @@ else:
         '221 Goodbye.'
         >>>
         '''
-        ssl_version = ssl.PROTOCOL_TLSv1
+        ssl_version = ssl.PROTOCOL_SSLv23
 
         def __init__(self, host='', user='', passwd='', acct='', keyfile=None,
                      certfile=None, context=None,
@@ -744,13 +748,12 @@ else:
             '''Set up secure control connection by using TLS/SSL.'''
             if isinstance(self.sock, ssl.SSLSocket):
                 raise ValueError("Already using TLS")
-            if self.ssl_version == ssl.PROTOCOL_TLSv1:
+            if self.ssl_version >= ssl.PROTOCOL_SSLv23:
                 resp = self.voidcmd('AUTH TLS')
             else:
                 resp = self.voidcmd('AUTH SSL')
-            server_hostname = self.host if ssl.HAS_SNI else None
             self.sock = self.context.wrap_socket(self.sock,
-                                                 server_hostname=server_hostname)
+                                                 server_hostname=self.host)
             self.file = self.sock.makefile(mode='r', encoding=self.encoding)
             return resp
 
@@ -789,9 +792,8 @@ else:
         def ntransfercmd(self, cmd, rest=None):
             conn, size = FTP.ntransfercmd(self, cmd, rest)
             if self._prot_p:
-                server_hostname = self.host if ssl.HAS_SNI else None
                 conn = self.context.wrap_socket(conn,
-                                                server_hostname=server_hostname)
+                                                server_hostname=self.host)
             return conn, size
 
         def abort(self):
@@ -850,7 +852,7 @@ def parse227(resp):
 
 
 def parse229(resp, peer):
-    '''Parse the '229' response for a EPSV request.
+    '''Parse the '229' response for an EPSV request.
     Raises error_proto if it does not contain '(|||port|)'
     Return ('host.addr.as.numbers', port#) tuple.'''
 

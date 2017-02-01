@@ -423,10 +423,10 @@ def join_header_words(lists):
     Takes a list of lists of (key, value) pairs and produces a single header
     value.  Attribute values are quoted if needed.
 
-    >>> join_header_words([[("text/plain", None), ("charset", "iso-8859/1")]])
-    'text/plain; charset="iso-8859/1"'
-    >>> join_header_words([[("text/plain", None)], [("charset", "iso-8859/1")]])
-    'text/plain, charset="iso-8859/1"'
+    >>> join_header_words([[("text/plain", None), ("charset", "iso-8859-1")]])
+    'text/plain; charset="iso-8859-1"'
+    >>> join_header_words([[("text/plain", None)], [("charset", "iso-8859-1")]])
+    'text/plain, charset="iso-8859-1"'
 
     """
     headers = []
@@ -472,26 +472,42 @@ def parse_ns_headers(ns_headers):
     for ns_header in ns_headers:
         pairs = []
         version_set = False
-        for ii, param in enumerate(re.split(r";\s*", ns_header)):
-            param = param.rstrip()
-            if param == "": continue
-            if "=" not in param:
-                k, v = param, None
-            else:
-                k, v = re.split(r"\s*=\s*", param, 1)
-                k = k.lstrip()
+
+        # XXX: The following does not strictly adhere to RFCs in that empty
+        # names and values are legal (the former will only appear once and will
+        # be overwritten if multiple occurrences are present). This is
+        # mostly to deal with backwards compatibility.
+        for ii, param in enumerate(ns_header.split(';')):
+            param = param.strip()
+
+            key, sep, val = param.partition('=')
+            key = key.strip()
+
+            if not key:
+                if ii == 0:
+                    break
+                else:
+                    continue
+
+            # allow for a distinction between present and empty and missing
+            # altogether
+            val = val.strip() if sep else None
+
             if ii != 0:
-                lc = k.lower()
+                lc = key.lower()
                 if lc in known_attrs:
-                    k = lc
-                if k == "version":
+                    key = lc
+
+                if key == "version":
                     # This is an RFC 2109 cookie.
-                    v = strip_quotes(v)
+                    if val is not None:
+                        val = strip_quotes(val)
                     version_set = True
-                if k == "expires":
+                elif key == "expires":
                     # convert expires date to seconds since epoch
-                    v = http2time(strip_quotes(v))  # None if invalid
-            pairs.append((k, v))
+                    if val is not None:
+                        val = http2time(strip_quotes(val))  # None if invalid
+            pairs.append((key, val))
 
         if pairs:
             if not version_set:
@@ -742,7 +758,7 @@ class Cookie:
                  ):
 
         if version is not None: version = int(version)
-        if expires is not None: expires = int(expires)
+        if expires is not None: expires = int(float(expires))
         if port is None and port_specified is True:
             raise ValueError("if port is None, port_specified must be false")
 
@@ -1421,7 +1437,7 @@ class CookieJar:
                         break
                     # convert RFC 2965 Max-Age to seconds since epoch
                     # XXX Strictly you're supposed to follow RFC 2616
-                    #   age-calculation rules.  Remember that zero Max-Age is a
+                    #   age-calculation rules.  Remember that zero Max-Age
                     #   is a request to discard (old and new) cookie, though.
                     k = "expires"
                     v = self._now + v
@@ -1722,12 +1738,12 @@ class CookieJar:
     def __repr__(self):
         r = []
         for cookie in self: r.append(repr(cookie))
-        return "<%s[%s]>" % (self.__class__, ", ".join(r))
+        return "<%s[%s]>" % (self.__class__.__name__, ", ".join(r))
 
     def __str__(self):
         r = []
         for cookie in self: r.append(str(cookie))
-        return "<%s[%s]>" % (self.__class__, ", ".join(r))
+        return "<%s[%s]>" % (self.__class__.__name__, ", ".join(r))
 
 
 # derives from OSError for backwards-compatibility with Python 2.4.0
@@ -1792,7 +1808,7 @@ class FileCookieJar(CookieJar):
 
 
 def lwp_cookie_str(cookie):
-    """Return string representation of Cookie in an the LWP cookie file format.
+    """Return string representation of Cookie in the LWP cookie file format.
 
     Actually, the format is extended a bit -- see module docstring.
 

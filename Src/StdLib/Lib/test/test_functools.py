@@ -77,9 +77,11 @@ class TestPartial:
         # exercise special code paths for no keyword args in
         # either the partial object or the caller
         p = self.partial(capture)
+        self.assertEqual(p.keywords, {})
         self.assertEqual(p(), ((), {}))
         self.assertEqual(p(a=1), ((), {'a':1}))
         p = self.partial(capture, a=1)
+        self.assertEqual(p.keywords, {'a':1})
         self.assertEqual(p(), ((), {'a':1}))
         self.assertEqual(p(b=2), ((), {'a':1, 'b':2}))
         # keyword args in the call override those in the partial object
@@ -155,9 +157,9 @@ class TestPartialC(TestPartial, unittest.TestCase):
     def test_repr(self):
         args = (object(), object())
         args_repr = ', '.join(repr(a) for a in args)
-        #kwargs = {'a': object(), 'b': object()}
-        kwargs = {'a': object()}
-        kwargs_repr = ', '.join("%s=%r" % (k, v) for k, v in kwargs.items())
+        kwargs = {'a': object(), 'b': object()}
+        kwargs_reprs = ['a={a!r}, b={b!r}'.format_map(kwargs),
+                        'b={b!r}, a={a!r}'.format_map(kwargs)]
         if self.partial is c_functools.partial:
             name = 'functools.partial'
         else:
@@ -172,18 +174,21 @@ class TestPartialC(TestPartial, unittest.TestCase):
                          repr(f))
 
         f = self.partial(capture, **kwargs)
-        self.assertEqual('{}({!r}, {})'.format(name, capture, kwargs_repr),
-                         repr(f))
+        self.assertIn(repr(f),
+                      ['{}({!r}, {})'.format(name, capture, kwargs_repr)
+                       for kwargs_repr in kwargs_reprs])
 
         f = self.partial(capture, *args, **kwargs)
-        self.assertEqual('{}({!r}, {}, {})'.format(name, capture, args_repr, kwargs_repr),
-                         repr(f))
+        self.assertIn(repr(f),
+                      ['{}({!r}, {}, {})'.format(name, capture, args_repr, kwargs_repr)
+                       for kwargs_repr in kwargs_reprs])
 
     def test_pickle(self):
         f = self.partial(signature, 'asdf', bar=True)
         f.add_something_to__dict__ = True
-        f_copy = pickle.loads(pickle.dumps(f))
-        self.assertEqual(signature(f), signature(f_copy))
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            f_copy = pickle.loads(pickle.dumps(f, proto))
+            self.assertEqual(signature(f), signature(f_copy))
 
     # Issue 6083: Reference counting bug
     def test_setstate_refcount(self):
@@ -1070,6 +1075,13 @@ class TestLRU(unittest.TestCase):
         self.assertEqual(test_func(DoubleEq(2)),    # Trigger a re-entrant __eq__ call
                          DoubleEq(2))               # Verify the correct return value
 
+    def test_early_detection_of_bad_call(self):
+        # Issue #22184
+        with self.assertRaises(TypeError):
+            @functools.lru_cache
+            def f():
+                pass
+
 
 class TestSingleDispatch(unittest.TestCase):
     def test_simple_overloads(self):
@@ -1315,6 +1327,24 @@ class TestSingleDispatch(unittest.TestCase):
         # unrelated ABCs don't appear in the resulting MRO
         many_abcs = [c.Mapping, c.Sized, c.Callable, c.Container, c.Iterable]
         self.assertEqual(mro(X, abcs=many_abcs), expected)
+
+    def test_false_meta(self):
+        # see issue23572
+        class MetaA(type):
+            def __len__(self):
+                return 0
+        class A(metaclass=MetaA):
+            pass
+        class AA(A):
+            pass
+        @functools.singledispatch
+        def fun(a):
+            return 'base A'
+        @fun.register(A)
+        def _(a):
+            return 'fun A'
+        aa = AA()
+        self.assertEqual(fun(aa), 'fun A')
 
     def test_mro_conflicts(self):
         c = collections

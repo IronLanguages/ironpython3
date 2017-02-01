@@ -80,6 +80,12 @@ class TokenTests(unittest.TestCase):
         x = .3e14
         x = 3.1e4
 
+    def test_float_exponent_tokenization(self):
+        # See issue 21642.
+        self.assertEqual(1 if 1else 0, 1)
+        self.assertEqual(1 if 0else 0, 0)
+        self.assertRaises(SyntaxError, eval, "0 if 1Else 0")
+
     def test_string_literals(self):
         x = ''; y = ""; self.assertTrue(len(x) == 0 and x == y)
         x = '\''; y = "'"; self.assertTrue(len(x) == 1 and x == y and ord(x) == 39)
@@ -198,7 +204,9 @@ class GrammarTests(unittest.TestCase):
         d01()
         d01(1)
         d01(*(1,))
+        d01(*[] or [2])
         d01(**{'a':2})
+        d01(**{'a':2} or {})
         def d11(a, b=1): pass
         d11(1)
         d11(1, 2)
@@ -296,31 +304,31 @@ class GrammarTests(unittest.TestCase):
         # argument annotation tests
         def f(x) -> list: pass
         self.assertEqual(f.__annotations__, {'return': list})
-        def f(x:int): pass
+        def f(x: int): pass
         self.assertEqual(f.__annotations__, {'x': int})
-        def f(*x:str): pass
+        def f(*x: str): pass
         self.assertEqual(f.__annotations__, {'x': str})
-        def f(**x:float): pass
+        def f(**x: float): pass
         self.assertEqual(f.__annotations__, {'x': float})
-        def f(x, y:1+2): pass
+        def f(x, y: 1+2): pass
         self.assertEqual(f.__annotations__, {'y': 3})
-        def f(a, b:1, c:2, d): pass
+        def f(a, b: 1, c: 2, d): pass
         self.assertEqual(f.__annotations__, {'b': 1, 'c': 2})
-        def f(a, b:1, c:2, d, e:3=4, f=5, *g:6): pass
+        def f(a, b: 1, c: 2, d, e: 3 = 4, f=5, *g: 6): pass
         self.assertEqual(f.__annotations__,
-                          {'b': 1, 'c': 2, 'e': 3, 'g': 6})
-        def f(a, b:1, c:2, d, e:3=4, f=5, *g:6, h:7, i=8, j:9=10,
-              **k:11) -> 12: pass
+                         {'b': 1, 'c': 2, 'e': 3, 'g': 6})
+        def f(a, b: 1, c: 2, d, e: 3 = 4, f=5, *g: 6, h: 7, i=8, j: 9 = 10,
+              **k: 11) -> 12: pass
         self.assertEqual(f.__annotations__,
-                          {'b': 1, 'c': 2, 'e': 3, 'g': 6, 'h': 7, 'j': 9,
-                           'k': 11, 'return': 12})
+                         {'b': 1, 'c': 2, 'e': 3, 'g': 6, 'h': 7, 'j': 9,
+                          'k': 11, 'return': 12})
         # Check for issue #20625 -- annotations mangling
         class Spam:
-            def f(self, *, __kw:1):
+            def f(self, *, __kw: 1):
                 pass
         class Ham(Spam): pass
-        self.assertEquals(Spam.f.__annotations__, {'_Spam__kw': 1})
-        self.assertEquals(Ham.f.__annotations__, {'_Spam__kw': 1})
+        self.assertEqual(Spam.f.__annotations__, {'_Spam__kw': 1})
+        self.assertEqual(Ham.f.__annotations__, {'_Spam__kw': 1})
         # Check for SF Bug #1697248 - mixing decorators and a return annotation
         def null(x): return x
         @null
@@ -383,6 +391,31 @@ class GrammarTests(unittest.TestCase):
 
         check_syntax_error(self, "x + 1 = 1")
         check_syntax_error(self, "a + 1 = b + 2")
+
+    # Check the heuristic for print & exec covers significant cases
+    # As well as placing some limits on false positives
+    def test_former_statements_refer_to_builtins(self):
+        keywords = "print", "exec"
+        # Cases where we want the custom error
+        cases = [
+            "{} foo",
+            "{} {{1:foo}}",
+            "if 1: {} foo",
+            "if 1: {} {{1:foo}}",
+            "if 1:\n    {} foo",
+            "if 1:\n    {} {{1:foo}}",
+        ]
+        for keyword in keywords:
+            custom_msg = "call to '{}'".format(keyword)
+            for case in cases:
+                source = case.format(keyword)
+                with self.subTest(source=source):
+                    with self.assertRaisesRegex(SyntaxError, custom_msg):
+                        exec(source)
+                source = source.replace("foo", "(foo.)")
+                with self.subTest(source=source):
+                    with self.assertRaisesRegex(SyntaxError, "invalid syntax"):
+                        exec(source)
 
     def test_del_stmt(self):
         # 'del' exprlist

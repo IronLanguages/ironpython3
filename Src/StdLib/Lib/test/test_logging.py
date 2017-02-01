@@ -41,7 +41,8 @@ import sys
 import tempfile
 from test.script_helper import assert_python_ok
 from test.support import (captured_stdout, run_with_locale, run_unittest,
-                          patch, requires_zlib, TestHandler, Matcher)
+                          patch, requires_zlib, TestHandler, Matcher, HOST,
+                          swap_attr)
 import textwrap
 import time
 import unittest
@@ -64,14 +65,10 @@ try:
 except ImportError:
     threading = None
 try:
-    import win32evtlog
+    import win32evtlog, win32evtlogutil, pywintypes
 except ImportError:
-    win32evtlog = None
-try:
-    import win32evtlogutil
-except ImportError:
-    win32evtlogutil = None
-    win32evtlog = None
+    win32evtlog = win32evtlogutil = pywintypes = None
+
 try:
     import zlib
 except ImportError:
@@ -313,6 +310,10 @@ class BuiltinLevelsTest(BaseTest):
             ('INF.BADPARENT', 'INFO', '4'),
         ])
 
+    def test_regression_22386(self):
+        """See issue #22386 for more information."""
+        self.assertEqual(logging.getLevelName('INFO'), logging.INFO)
+        self.assertEqual(logging.getLevelName(logging.INFO), 'INFO')
 
 class BasicFilterTest(BaseTest):
 
@@ -865,9 +866,6 @@ if threading:
             super(TestTCPServer, self).server_bind()
             self.port = self.socket.getsockname()[1]
 
-    class TestUnixStreamServer(TestTCPServer):
-        address_family = socket.AF_UNIX
-
     class TestUDPServer(ControlMixin, ThreadingUDPServer):
         """
         A UDP server which is controllable using :class:`ControlMixin`.
@@ -915,8 +913,12 @@ if threading:
             super(TestUDPServer, self).server_close()
             self._closed = True
 
-    class TestUnixDatagramServer(TestUDPServer):
-        address_family = socket.AF_UNIX
+    if hasattr(socket, "AF_UNIX"):
+        class TestUnixStreamServer(TestTCPServer):
+            address_family = socket.AF_UNIX
+
+        class TestUnixDatagramServer(TestUDPServer):
+            address_family = socket.AF_UNIX
 
 # - end of server_helper section
 
@@ -925,15 +927,15 @@ class SMTPHandlerTest(BaseTest):
     TIMEOUT = 8.0
     def test_basic(self):
         sockmap = {}
-        server = TestSMTPServer(('localhost', 0), self.process_message, 0.001,
+        server = TestSMTPServer((HOST, 0), self.process_message, 0.001,
                                 sockmap)
         server.start()
-        addr = ('localhost', server.port)
+        addr = (HOST, server.port)
         h = logging.handlers.SMTPHandler(addr, 'me', 'you', 'Log',
                                          timeout=self.TIMEOUT)
         self.assertEqual(h.toaddrs, ['you'])
         self.messages = []
-        r = logging.makeLogRecord({'msg': 'Hello'})
+        r = logging.makeLogRecord({'msg': 'Hello \u2713'})
         self.handled = threading.Event()
         h.handle(r)
         self.handled.wait(self.TIMEOUT)  # 14314: don't wait forever
@@ -944,7 +946,7 @@ class SMTPHandlerTest(BaseTest):
         self.assertEqual(mailfrom, 'me')
         self.assertEqual(rcpttos, ['you'])
         self.assertIn('\nSubject: Log\n', data)
-        self.assertTrue(data.endswith('\n\nHello'))
+        self.assertTrue(data.endswith('\n\nHello \u2713'))
         h.close()
 
     def process_message(self, *args):
@@ -1457,12 +1459,13 @@ def _get_temp_domain_socket():
     os.remove(fn)
     return fn
 
+@unittest.skipUnless(hasattr(socket, "AF_UNIX"), "Unix sockets required")
 @unittest.skipUnless(threading, 'Threading required for this test.')
 class UnixSocketHandlerTest(SocketHandlerTest):
 
     """Test for SocketHandler with unix sockets."""
 
-    if threading:
+    if threading and hasattr(socket, "AF_UNIX"):
         server_class = TestUnixStreamServer
 
     def setUp(self):
@@ -1528,13 +1531,13 @@ class DatagramHandlerTest(BaseTest):
         self.handled.wait()
         self.assertEqual(self.log_output, "spam\neggs\n")
 
-
+@unittest.skipUnless(hasattr(socket, "AF_UNIX"), "Unix sockets required")
 @unittest.skipUnless(threading, 'Threading required for this test.')
 class UnixDatagramHandlerTest(DatagramHandlerTest):
 
     """Test for DatagramHandler using Unix sockets."""
 
-    if threading:
+    if threading and hasattr(socket, "AF_UNIX"):
         server_class = TestUnixDatagramServer
 
     def setUp(self):
@@ -1603,13 +1606,13 @@ class SysLogHandlerTest(BaseTest):
         self.handled.wait()
         self.assertEqual(self.log_output, b'<11>h\xc3\xa4m-sp\xc3\xa4m')
 
-
+@unittest.skipUnless(hasattr(socket, "AF_UNIX"), "Unix sockets required")
 @unittest.skipUnless(threading, 'Threading required for this test.')
 class UnixSysLogHandlerTest(SysLogHandlerTest):
 
     """Test for SysLogHandler with Unix sockets."""
 
-    if threading:
+    if threading and hasattr(socket, "AF_UNIX"):
         server_class = TestUnixDatagramServer
 
     def setUp(self):
@@ -1624,36 +1627,6 @@ class UnixSysLogHandlerTest(SysLogHandlerTest):
 @unittest.skipUnless(threading, 'Threading required for this test.')
 class HTTPHandlerTest(BaseTest):
     """Test for HTTPHandler."""
-
-    PEMFILE = """-----BEGIN RSA PRIVATE KEY-----
-MIICXQIBAAKBgQDGT4xS5r91rbLJQK2nUDenBhBG6qFk+bVOjuAGC/LSHlAoBnvG
-zQG3agOG+e7c5z2XT8m2ktORLqG3E4mYmbxgyhDrzP6ei2Anc+pszmnxPoK3Puh5
-aXV+XKt0bU0C1m2+ACmGGJ0t3P408art82nOxBw8ZHgIg9Dtp6xIUCyOqwIDAQAB
-AoGBAJFTnFboaKh5eUrIzjmNrKsG44jEyy+vWvHN/FgSC4l103HxhmWiuL5Lv3f7
-0tMp1tX7D6xvHwIG9VWvyKb/Cq9rJsDibmDVIOslnOWeQhG+XwJyitR0pq/KlJIB
-5LjORcBw795oKWOAi6RcOb1ON59tysEFYhAGQO9k6VL621gRAkEA/Gb+YXULLpbs
-piXN3q4zcHzeaVANo69tUZ6TjaQqMeTxE4tOYM0G0ZoSeHEdaP59AOZGKXXNGSQy
-2z/MddcYGQJBAMkjLSYIpOLJY11ja8OwwswFG2hEzHe0cS9bzo++R/jc1bHA5R0Y
-i6vA5iPi+wopPFvpytdBol7UuEBe5xZrxWMCQQCWxELRHiP2yWpEeLJ3gGDzoXMN
-PydWjhRju7Bx3AzkTtf+D6lawz1+eGTuEss5i0JKBkMEwvwnN2s1ce+EuF4JAkBb
-E96h1lAzkVW5OAfYOPY8RCPA90ZO/hoyg7PpSxR0ECuDrgERR8gXIeYUYfejBkEa
-rab4CfRoVJKKM28Yq/xZAkBvuq670JRCwOgfUTdww7WpdOQBYPkzQccsKNCslQW8
-/DyW6y06oQusSENUvynT6dr3LJxt/NgZPhZX2+k1eYDV
------END RSA PRIVATE KEY-----
------BEGIN CERTIFICATE-----
-MIICGzCCAYSgAwIBAgIJAIq84a2Q/OvlMA0GCSqGSIb3DQEBBQUAMBQxEjAQBgNV
-BAMTCWxvY2FsaG9zdDAeFw0xMTA1MjExMDIzMzNaFw03NTAzMjEwMzU1MTdaMBQx
-EjAQBgNVBAMTCWxvY2FsaG9zdDCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEA
-xk+MUua/da2yyUCtp1A3pwYQRuqhZPm1To7gBgvy0h5QKAZ7xs0Bt2oDhvnu3Oc9
-l0/JtpLTkS6htxOJmJm8YMoQ68z+notgJ3PqbM5p8T6Ctz7oeWl1flyrdG1NAtZt
-vgAphhidLdz+NPGq7fNpzsQcPGR4CIPQ7aesSFAsjqsCAwEAAaN1MHMwHQYDVR0O
-BBYEFLWaUPO6N7efGiuoS9i3DVYcUwn0MEQGA1UdIwQ9MDuAFLWaUPO6N7efGiuo
-S9i3DVYcUwn0oRikFjAUMRIwEAYDVQQDEwlsb2NhbGhvc3SCCQCKvOGtkPzr5TAM
-BgNVHRMEBTADAQH/MA0GCSqGSIb3DQEBBQUAA4GBAMK5whPjLNQK1Ivvk88oqJqq
-4f889OwikGP0eUhOBhbFlsZs+jq5YZC2UzHz+evzKBlgAP1u4lP/cB85CnjvWqM+
-1c/lywFHQ6HOdDeQ1L72tSYMrNOG4XNmLn0h7rx6GoTU7dcFRfseahBCq8mv0IDt
-IRbTpvlHWPjsSvHz0ZOH
------END CERTIFICATE-----"""
 
     def setUp(self):
         """Set up an HTTP server to receive log messages, and a HTTPHandler
@@ -1684,17 +1657,18 @@ IRbTpvlHWPjsSvHz0ZOH
             if secure:
                 try:
                     import ssl
-                    fd, fn = tempfile.mkstemp()
-                    os.close(fd)
-                    with open(fn, 'w') as f:
-                        f.write(self.PEMFILE)
-                    sslctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-                    sslctx.load_cert_chain(fn)
-                    os.unlink(fn)
                 except ImportError:
                     sslctx = None
+                else:
+                    here = os.path.dirname(__file__)
+                    localhost_cert = os.path.join(here, "keycert.pem")
+                    sslctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+                    sslctx.load_cert_chain(localhost_cert)
+
+                    context = ssl.create_default_context(cafile=localhost_cert)
             else:
                 sslctx = None
+                context = None
             self.server = server = TestHTTPServer(addr, self.handle_request,
                                                     0.01, sslctx=sslctx)
             server.start()
@@ -1702,7 +1676,8 @@ IRbTpvlHWPjsSvHz0ZOH
             host = 'localhost:%d' % server.server_port
             secure_client = secure and sslctx
             self.h_hdlr = logging.handlers.HTTPHandler(host, '/frob',
-                                                       secure=secure_client)
+                                                       secure=secure_client,
+                                                       context=context)
             self.log_data = None
             root_logger.addHandler(self.h_hdlr)
 
@@ -3611,6 +3586,10 @@ class BasicConfigTest(unittest.TestCase):
                                                      handlers=handlers)
         assertRaises(ValueError, logging.basicConfig, stream=stream,
                                                      handlers=handlers)
+        # Issue 23207: test for invalid kwargs
+        assertRaises(ValueError, logging.basicConfig, loglevel=logging.INFO)
+        # Should pop both filename and filemode even if filename is None
+        logging.basicConfig(filename=None, filemode='a')
 
     def test_handlers(self):
         handlers = [
@@ -3766,18 +3745,12 @@ class LoggerTest(BaseTest):
                          (exc.__class__, exc, exc.__traceback__))
 
     def test_log_invalid_level_with_raise(self):
-        old_raise = logging.raiseExceptions
-        self.addCleanup(setattr, logging, 'raiseExecptions', old_raise)
-
-        logging.raiseExceptions = True
-        self.assertRaises(TypeError, self.logger.log, '10', 'test message')
+        with swap_attr(logging, 'raiseExceptions', True):
+            self.assertRaises(TypeError, self.logger.log, '10', 'test message')
 
     def test_log_invalid_level_no_raise(self):
-        old_raise = logging.raiseExceptions
-        self.addCleanup(setattr, logging, 'raiseExecptions', old_raise)
-
-        logging.raiseExceptions = False
-        self.logger.log('10', 'test message')  # no exception happens
+        with swap_attr(logging, 'raiseExceptions', False):
+            self.logger.log('10', 'test message')  # no exception happens
 
     def test_find_caller_with_stack_info(self):
         called = []
@@ -4121,13 +4094,20 @@ for when, exp in (('S', 1),
     setattr(TimedRotatingFileHandlerTest, "test_compute_rollover_%s" % when, test_compute_rollover)
 
 
-@unittest.skipUnless(win32evtlog, 'win32evtlog/win32evtlogutil required for this test.')
+@unittest.skipUnless(win32evtlog, 'win32evtlog/win32evtlogutil/pywintypes required for this test.')
 class NTEventLogHandlerTest(BaseTest):
     def test_basic(self):
         logtype = 'Application'
         elh = win32evtlog.OpenEventLog(None, logtype)
         num_recs = win32evtlog.GetNumberOfEventLogRecords(elh)
-        h = logging.handlers.NTEventLogHandler('test_logging')
+
+        try:
+            h = logging.handlers.NTEventLogHandler('test_logging')
+        except pywintypes.error as e:
+            if e.winerror == 5:  # access denied
+                raise unittest.SkipTest('Insufficient privileges to run test')
+            raise
+
         r = logging.makeLogRecord({'msg': 'Test Log Message'})
         h.handle(r)
         h.close()

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Generate Python documentation in HTML or text for interactive use.
 
-In the Python interpreter, do "from pydoc import help" to provide
-help.  Calling help(thing) on a Python object documents the object.
+At the Python interactive prompt, calling help(thing) on a Python object
+documents the object, and calling help() starts up an interactive
+help session.
 
 Or, at the shell command line outside of Python:
 
@@ -63,10 +64,11 @@ import re
 import sys
 import time
 import tokenize
+import urllib.parse
 import warnings
 from collections import deque
 from reprlib import Repr
-from traceback import extract_tb, format_exception_only
+from traceback import format_exception_only
 
 
 # --------------------------------------------------------- common routines
@@ -268,7 +270,7 @@ def synopsis(filename, cache={}):
             except:
                 return None
             del sys.modules['__temp__']
-            result = (module.__doc__ or '').splitlines()[0]
+            result = module.__doc__.splitlines()[0] if module.__doc__ else None
         # Cache the result.
         cache[filename] = (mtime, result)
     return result
@@ -594,10 +596,15 @@ class HTMLDoc(Doc):
             elif pep:
                 url = 'http://www.python.org/dev/peps/pep-%04d/' % int(pep)
                 results.append('<a href="%s">%s</a>' % (url, escape(all)))
+            elif selfdot:
+                # Create a link for methods like 'self.method(...)'
+                # and use <strong> for attributes like 'self.attr'
+                if text[end:end+1] == '(':
+                    results.append('self.' + self.namelink(name, methods))
+                else:
+                    results.append('self.<strong>%s</strong>' % name)
             elif text[end:end+1] == '(':
                 results.append(self.namelink(name, methods, funcs, classes))
-            elif selfdot:
-                results.append('self.<strong>%s</strong>' % name)
             else:
                 results.append(self.namelink(name, classes))
             here = end
@@ -642,10 +649,7 @@ class HTMLDoc(Doc):
         head = '<big><big><strong>%s</strong></big></big>' % linkedname
         try:
             path = inspect.getabsfile(object)
-            url = path
-            if sys.platform == 'win32':
-                import nturl2path
-                url = nturl2path.pathname2url(path)
+            url = urllib.parse.quote(path)
             filelink = self.filelink(url, path)
         except TypeError:
             filelink = '(built-in)'
@@ -952,7 +956,7 @@ class HTMLDoc(Doc):
         if not argspec:
             argspec = '(...)'
 
-        decl = title + argspec + (note and self.grey(
+        decl = title + self.escape(argspec) + (note and self.grey(
                '<font face="helvetica, arial">%s</font>' % note))
 
         if skipdocs:
@@ -1408,6 +1412,8 @@ def pager(text):
 
 def getpager():
     """Decide what method to use for paging through text."""
+    if not hasattr(sys.stdin, "isatty"):
+        return plainpager
     if not hasattr(sys.stdout, "isatty"):
         return plainpager
     if not sys.stdin.isatty() or not sys.stdout.isatty():
@@ -1443,39 +1449,64 @@ def plain(text):
 
 def pipepager(text, cmd):
     """Page through text by feeding it to another program."""
-    pipe = os.popen(cmd, 'w')
+    import subprocess
+    proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE)
     try:
-        pipe.write(text)
-        pipe.close()
+        with io.TextIOWrapper(proc.stdin, errors='backslashreplace') as pipe:
+            try:
+                pipe.write(text)
+            except KeyboardInterrupt:
+                # We've hereby abandoned whatever text hasn't been written,
+                # but the pager is still in control of the terminal.
+                pass
     except OSError:
         pass # Ignore broken pipes caused by quitting the pager program.
+    while True:
+        try:
+            proc.wait()
+            break
+        except KeyboardInterrupt:
+            # Ignore ctl-c like the pager itself does.  Otherwise the pager is
+            # left running and the terminal is in raw mode and unusable.
+            pass
 
 def tempfilepager(text, cmd):
     """Page through text by invoking a program on a temporary file."""
     import tempfile
     filename = tempfile.mktemp()
-    with open(filename, 'w') as file:
+    with open(filename, 'w', errors='backslashreplace') as file:
         file.write(text)
     try:
         os.system(cmd + ' "' + filename + '"')
     finally:
         os.unlink(filename)
 
+def _escape_stdout(text):
+    # Escape non-encodable characters to avoid encoding errors later
+    encoding = getattr(sys.stdout, 'encoding', None) or 'utf-8'
+    return text.encode(encoding, 'backslashreplace').decode(encoding)
+
 def ttypager(text):
     """Page through text on a text terminal."""
-    lines = plain(text).split('\n')
+    lines = plain(_escape_stdout(text)).split('\n')
     try:
         import tty
         fd = sys.stdin.fileno()
         old = tty.tcgetattr(fd)
         tty.setcbreak(fd)
         getchar = lambda: sys.stdin.read(1)
-    except (ImportError, AttributeError):
+    except (ImportError, AttributeError, io.UnsupportedOperation):
         tty = None
         getchar = lambda: sys.stdin.readline()[:-1][:1]
 
     try:
-        r = inc = os.environ.get('LINES', 25) - 1
+        try:
+            h = int(os.environ.get('LINES', 0))
+        except ValueError:
+            h = 0
+        if h <= 1:
+            h = 25
+        r = inc = h - 1
         sys.stdout.write('\n'.join(lines[:inc]) + '\n')
         while lines[r:]:
             sys.stdout.write('-- more --')
@@ -1501,7 +1532,7 @@ def ttypager(text):
 
 def plainpager(text):
     """Simply print unformatted text.  This is the ultimate fallback."""
-    sys.stdout.write(plain(text))
+    sys.stdout.write(plain(_escape_stdout(text)))
 
 def describe(thing):
     """Produce a short description of the given thing."""
@@ -1559,7 +1590,7 @@ def resolve(thing, forceload=0):
     """Given an object or a path to an object, get the object and its name."""
     if isinstance(thing, str):
         object = locate(thing, forceload)
-        if not object:
+        if object is None:
             raise ImportError('no Python documentation found for %r' % thing)
         return object, thing
     else:
@@ -1629,7 +1660,7 @@ class Helper:
     # in pydoc_data/topics.py.
     #
     # CAUTION: if you change one of these dictionaries, be sure to adapt the
-    #          list of needed labels in Doc/tools/sphinxext/pyspecific.py and
+    #          list of needed labels in Doc/tools/pyspecific.py and
     #          regenerate the pydoc_data/topics.py file by running
     #              make pydoc-topics
     #          in Doc/ and copying the output file into the Lib/ directory.
@@ -1729,7 +1760,6 @@ class Helper:
         'TRACEBACKS': 'TYPES',
         'NONE': ('bltin-null-object', ''),
         'ELLIPSIS': ('bltin-ellipsis-object', 'SLICINGS'),
-        'FILES': ('bltin-file-objects', ''),
         'SPECIALATTRIBUTES': ('specialattrs', ''),
         'CLASSES': ('types', 'class SPECIALMETHODS PRIVATENAMES'),
         'MODULES': ('typesmodules', 'import'),
@@ -1865,7 +1895,7 @@ has the same effect as typing a particular string at the help> prompt.
 
     def intro(self):
         self.output.write('''
-Welcome to Python %s!  This is the interactive help utility.
+Welcome to Python %s's help utility!
 
 If this is your first time using Python, you should definitely check out
 the tutorial on the Internet at http://docs.python.org/%s/tutorial/.
@@ -2061,7 +2091,7 @@ class ModuleScanner:
                         if onerror:
                             onerror(modname)
                         continue
-                    desc = (module.__doc__ or '').splitlines()[0]
+                    desc = module.__doc__.splitlines()[0] if module.__doc__ else ''
                     path = getattr(module,'__file__',None)
                 name = modname + ' - ' + desc
                 if name.lower().find(key) >= 0:
@@ -2170,8 +2200,8 @@ def _start_server(urlhandler, port):
     class DocServer(http.server.HTTPServer):
 
         def __init__(self, port, callback):
-            self.host = (sys.platform == 'mac') and '127.0.0.1' or 'localhost'
-            self.address = ('', port)
+            self.host = 'localhost'
+            self.address = (self.host, port)
             self.callback = callback
             self.base.__init__(self, self.address, self.handler)
             self.quit = False
@@ -2325,7 +2355,9 @@ def _url_handler(url, content_type="text/html"):
 
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore') # ignore problems during import
-            ModuleScanner().run(callback, key)
+            def onerror(modname):
+                pass
+            ModuleScanner().run(callback, key, onerror=onerror)
 
         # format page
         def bltinlink(name):
@@ -2343,7 +2375,7 @@ def _url_handler(url, content_type="text/html"):
 
     def html_getfile(path):
         """Get and display a source file listing safely."""
-        path = path.replace('%20', ' ')
+        path = urllib.parse.unquote(path)
         with tokenize.open(path) as fp:
             lines = html.escape(fp.read())
         body = '<pre>%s</pre>' % lines

@@ -388,40 +388,7 @@ def get_mixed_type_key(obj):
     return NotImplemented
 
 
-class _TotalOrderingMixin:
-    # Helper that derives the other comparison operations from
-    # __lt__ and __eq__
-    # We avoid functools.total_ordering because it doesn't handle
-    # NotImplemented correctly yet (http://bugs.python.org/issue10042)
-    def __eq__(self, other):
-        raise NotImplementedError
-    def __ne__(self, other):
-        equal = self.__eq__(other)
-        if equal is NotImplemented:
-            return NotImplemented
-        return not equal
-    def __lt__(self, other):
-        raise NotImplementedError
-    def __le__(self, other):
-        less = self.__lt__(other)
-        if less is NotImplemented or not less:
-            return self.__eq__(other)
-        return less
-    def __gt__(self, other):
-        less = self.__lt__(other)
-        if less is NotImplemented:
-            return NotImplemented
-        equal = self.__eq__(other)
-        if equal is NotImplemented:
-            return NotImplemented
-        return not (less or equal)
-    def __ge__(self, other):
-        less = self.__lt__(other)
-        if less is NotImplemented:
-            return NotImplemented
-        return not less
-
-class _IPAddressBase(_TotalOrderingMixin):
+class _IPAddressBase:
 
     """The mother class."""
 
@@ -472,7 +439,7 @@ class _IPAddressBase(_TotalOrderingMixin):
         """Return prefix length from the bitwise netmask.
 
         Args:
-            ip_int: An integer, the netmask in axpanded bitwise format
+            ip_int: An integer, the netmask in expanded bitwise format
 
         Returns:
             An integer, the prefix length.
@@ -554,6 +521,7 @@ class _IPAddressBase(_TotalOrderingMixin):
             self._report_invalid_netmask(ip_str)
 
 
+@functools.total_ordering
 class _BaseAddress(_IPAddressBase):
 
     """A generic IP object.
@@ -578,11 +546,10 @@ class _BaseAddress(_IPAddressBase):
             return NotImplemented
 
     def __lt__(self, other):
+        if not isinstance(other, _BaseAddress):
+            return NotImplemented
         if self._version != other._version:
             raise TypeError('%s and %s are not of the same version' % (
-                             self, other))
-        if not isinstance(other, _BaseAddress):
-            raise TypeError('%s and %s are not of the same type' % (
                              self, other))
         if self._ip != other._ip:
             return self._ip < other._ip
@@ -613,6 +580,7 @@ class _BaseAddress(_IPAddressBase):
         return (self._version, self)
 
 
+@functools.total_ordering
 class _BaseNetwork(_IPAddressBase):
 
     """A generic IP network object.
@@ -662,11 +630,10 @@ class _BaseNetwork(_IPAddressBase):
             return self._address_class(broadcast + n)
 
     def __lt__(self, other):
+        if not isinstance(other, _BaseNetwork):
+            return NotImplemented
         if self._version != other._version:
             raise TypeError('%s and %s are not of the same version' % (
-                             self, other))
-        if not isinstance(other, _BaseNetwork):
-            raise TypeError('%s and %s are not of the same type' % (
                              self, other))
         if self.network_address != other.network_address:
             return self.network_address < other.network_address
@@ -2154,6 +2121,18 @@ class IPv6Network(_BaseV6, _BaseNetwork):
 
         if self._prefixlen == (self._max_prefixlen - 1):
             self.hosts = self.__iter__
+
+    def hosts(self):
+        """Generate Iterator over usable hosts in a network.
+
+          This is like __iter__ except it doesn't return the
+          Subnet-Router anycast address.
+
+        """
+        network = int(self.network_address)
+        broadcast = int(self.broadcast_address)
+        for x in range(network + 1, broadcast + 1):
+            yield self._address_class(x)
 
     @property
     def is_site_local(self):

@@ -41,7 +41,7 @@ LF = b'\n'
 CRLF = CR+LF
 
 # maximal line length when calling readline(). This is to prevent
-# reading arbitrary lenght lines. RFC 1939 limits POP3 line length to
+# reading arbitrary length lines. RFC 1939 limits POP3 line length to
 # 512 characters, including CRLF. We have selected 2048 just to be on
 # the safe side.
 _MAXLINE = 2048
@@ -136,7 +136,7 @@ class POP3:
         # so only possibilities are ...LF, ...CRLF, CR...LF
         if line[-2:] == CRLF:
             return line[:-2], octets
-        if line[0] == CR:
+        if line[:1] == CR:
             return line[1:-1], octets
         return line[:-1], octets
 
@@ -276,18 +276,23 @@ class POP3:
 
     def close(self):
         """Close the connection without assuming anything about it."""
-        if self.file is not None:
-            self.file.close()
-        if self.sock is not None:
-            try:
-                self.sock.shutdown(socket.SHUT_RDWR)
-            except OSError as e:
-                # The server might already have closed the connection
-                if e.errno != errno.ENOTCONN:
-                    raise
-            finally:
-                self.sock.close()
-        self.file = self.sock = None
+        try:
+            file = self.file
+            self.file = None
+            if file is not None:
+                file.close()
+        finally:
+            sock = self.sock
+            self.sock = None
+            if sock is not None:
+                try:
+                    sock.shutdown(socket.SHUT_RDWR)
+                except OSError as e:
+                    # The server might already have closed the connection
+                    if e.errno != errno.ENOTCONN:
+                        raise
+                finally:
+                    sock.close()
 
     #__del__ = quit
 
@@ -387,9 +392,8 @@ class POP3:
         if context is None:
             context = ssl._create_stdlib_context()
         resp = self._shortcmd('STLS')
-        server_hostname = self.host if ssl.HAS_SNI else None
         self.sock = context.wrap_socket(self.sock,
-                                        server_hostname=server_hostname)
+                                        server_hostname=self.host)
         self.file = self.sock.makefile('rb')
         self._tls_established = True
         return resp
@@ -430,9 +434,8 @@ if HAVE_SSL:
 
         def _create_socket(self, timeout):
             sock = POP3._create_socket(self, timeout)
-            server_hostname = self.host if ssl.HAS_SNI else None
             sock = self.context.wrap_socket(sock,
-                                            server_hostname=server_hostname)
+                                            server_hostname=self.host)
             return sock
 
         def stls(self, keyfile=None, certfile=None, context=None):

@@ -125,7 +125,7 @@ class Element:
     This class is the reference implementation of the Element interface.
 
     An element's length is its number of subelements.  That means if you
-    you want to check if an element is truly empty, you should check BOTH
+    want to check if an element is truly empty, you should check BOTH
     its length AND its text attribute.
 
     The element tag, attribute names, and attribute values can be either
@@ -756,14 +756,13 @@ class ElementTree:
                 encoding = "utf-8"
             else:
                 encoding = "us-ascii"
-        else:
-            encoding = encoding.lower()
-        with _get_writer(file_or_filename, encoding) as write:
+        enc_lower = encoding.lower()
+        with _get_writer(file_or_filename, enc_lower) as write:
             if method == "xml" and (xml_declaration or
                     (xml_declaration is None and
-                     encoding not in ("utf-8", "us-ascii", "unicode"))):
+                     enc_lower not in ("utf-8", "us-ascii", "unicode"))):
                 declared_encoding = encoding
-                if encoding == "unicode":
+                if enc_lower == "unicode":
                     # Retrieve the default encoding for the xml declaration
                     import locale
                     declared_encoding = locale.getpreferredencoding()
@@ -1207,7 +1206,12 @@ def iterparse(source, events=None, parser=None):
     if not hasattr(source, "read"):
         source = open(source, "rb")
         close_source = True
-    return _IterParseIterator(source, events, parser, close_source)
+    try:
+        return _IterParseIterator(source, events, parser, close_source)
+    except:
+        if close_source:
+            source.close()
+        raise
 
 
 class XMLPullParser:
@@ -1290,20 +1294,26 @@ class _IterParseIterator:
         self.root = self._root = None
 
     def __next__(self):
-        while 1:
-            for event in self._parser.read_events():
-                return event
-            if self._parser._parser is None:
-                self.root = self._root
-                if self._close_file:
-                    self._file.close()
-                raise StopIteration
-            # load event buffer
-            data = self._file.read(16 * 1024)
-            if data:
-                self._parser.feed(data)
-            else:
-                self._root = self._parser._close_and_return_root()
+        try:
+            while 1:
+                for event in self._parser.read_events():
+                    return event
+                if self._parser._parser is None:
+                    break
+                # load event buffer
+                data = self._file.read(16 * 1024)
+                if data:
+                    self._parser.feed(data)
+                else:
+                    self._root = self._parser._close_and_return_root()
+            self.root = self._root
+        except:
+            if self._close_file:
+                self._file.close()
+            raise
+        if self._close_file:
+            self._file.close()
+        raise StopIteration
 
     def __iter__(self):
         return self

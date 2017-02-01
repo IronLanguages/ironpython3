@@ -103,10 +103,13 @@ from _ssl import (
     SSLSyscallError, SSLEOFError,
     )
 from _ssl import CERT_NONE, CERT_OPTIONAL, CERT_REQUIRED
-from _ssl import (VERIFY_DEFAULT, VERIFY_CRL_CHECK_LEAF, VERIFY_CRL_CHECK_CHAIN,
-    VERIFY_X509_STRICT)
 from _ssl import txt2obj as _txt2obj, nid2obj as _nid2obj
-from _ssl import RAND_status, RAND_egd, RAND_add, RAND_bytes, RAND_pseudo_bytes
+from _ssl import RAND_status, RAND_add, RAND_bytes, RAND_pseudo_bytes
+try:
+    from _ssl import RAND_egd
+except ImportError:
+    # LibreSSL does not provide RAND_egd
+    pass
 
 def _import_symbols(prefix):
     for n in dir(_ssl):
@@ -116,18 +119,15 @@ def _import_symbols(prefix):
 _import_symbols('OP_')
 _import_symbols('ALERT_DESCRIPTION_')
 _import_symbols('SSL_ERROR_')
+_import_symbols('PROTOCOL_')
+_import_symbols('VERIFY_')
 
 from _ssl import HAS_SNI, HAS_ECDH, HAS_NPN
 
-from _ssl import PROTOCOL_SSLv3, PROTOCOL_SSLv23, PROTOCOL_TLSv1
 from _ssl import _OPENSSL_API_VERSION
 
 
-_PROTOCOL_NAMES = {
-    PROTOCOL_TLSv1: "TLSv1",
-    PROTOCOL_SSLv23: "SSLv23",
-    PROTOCOL_SSLv3: "SSLv3",
-}
+_PROTOCOL_NAMES = {value: name for name, value in globals().items() if name.startswith('PROTOCOL_')}
 try:
     from _ssl import PROTOCOL_SSLv2
     _SSLv2_IF_EXISTS = PROTOCOL_SSLv2
@@ -147,12 +147,9 @@ else:
 if sys.platform == "win32":
     from _ssl import enum_certificates, enum_crls
 
-from socket import getnameinfo as _getnameinfo
-from socket import SHUT_RDWR as _SHUT_RDWR
 from socket import socket, AF_INET, SOCK_STREAM, create_connection
 from socket import SOL_SOCKET, SO_TYPE
 import base64        # for DER-to-PEM translation
-import traceback
 import errno
 
 
@@ -165,14 +162,35 @@ else:
 
 # Disable weak or insecure ciphers by default
 # (OpenSSL's default setting is 'DEFAULT:!aNULL:!eNULL')
-_DEFAULT_CIPHERS = 'DEFAULT:!aNULL:!eNULL:!LOW:!EXPORT:!SSLv2'
+# Enable a better set of ciphers by default
+# This list has been explicitly chosen to:
+#   * Prefer cipher suites that offer perfect forward secrecy (DHE/ECDHE)
+#   * Prefer ECDHE over DHE for better performance
+#   * Prefer any AES-GCM over any AES-CBC for better performance and security
+#   * Then Use HIGH cipher suites as a fallback
+#   * Then Use 3DES as fallback which is secure but slow
+#   * Disable NULL authentication, NULL encryption, and MD5 MACs for security
+#     reasons
+_DEFAULT_CIPHERS = (
+    'ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:ECDH+HIGH:'
+    'DH+HIGH:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+HIGH:RSA+3DES:!aNULL:'
+    '!eNULL:!MD5'
+)
 
-# restricted and more secure ciphers
-# HIGH: high encryption cipher suites with key length >= 128 bits (no MD5)
-# !aNULL: only authenticated cipher suites (no anonymous DH)
-# !RC4: no RC4 streaming cipher, RC4 is broken
-# !DSS: RSA is preferred over DSA
-_RESTRICTED_CIPHERS = 'HIGH:!aNULL:!RC4:!DSS'
+# Restricted and more secure ciphers for the server side
+# This list has been explicitly chosen to:
+#   * Prefer cipher suites that offer perfect forward secrecy (DHE/ECDHE)
+#   * Prefer ECDHE over DHE for better performance
+#   * Prefer any AES-GCM over any AES-CBC for better performance and security
+#   * Then Use HIGH cipher suites as a fallback
+#   * Then Use 3DES as fallback which is secure but slow
+#   * Disable NULL authentication, NULL encryption, MD5 MACs, DSS, and RC4 for
+#     security reasons
+_RESTRICTED_SERVER_CIPHERS = (
+    'ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:ECDH+HIGH:'
+    'DH+HIGH:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+HIGH:RSA+3DES:!aNULL:'
+    '!eNULL:!MD5:!DSS:!RC4'
+)
 
 
 class CertificateError(ValueError):
@@ -193,7 +211,7 @@ def _dnsname_match(dn, hostname, max_wildcards=1):
     wildcards = leftmost.count('*')
     if wildcards > max_wildcards:
         # Issue #17980: avoid denials of service by refusing more
-        # than one wildcard per fragment.  A survery of established
+        # than one wildcard per fragment.  A survey of established
         # policy among SSL implementations showed it to be a
         # reasonable choice.
         raise CertificateError(
@@ -370,8 +388,7 @@ class SSLContext(_SSLContext):
         if sys.platform == "win32":
             for storename in self._windows_cert_stores:
                 self._load_windows_store_certs(storename, purpose)
-        else:
-            self.set_default_verify_paths()
+        self.set_default_verify_paths()
 
 
 def create_default_context(purpose=Purpose.SERVER_AUTH, *, cafile=None,
@@ -384,17 +401,35 @@ def create_default_context(purpose=Purpose.SERVER_AUTH, *, cafile=None,
     """
     if not isinstance(purpose, _ASN1Object):
         raise TypeError(purpose)
-    context = SSLContext(PROTOCOL_TLSv1)
+
+    context = SSLContext(PROTOCOL_SSLv23)
+
     # SSLv2 considered harmful.
     context.options |= OP_NO_SSLv2
+
+    # SSLv3 has problematic security and is only required for really old
+    # clients such as IE6 on Windows XP
+    context.options |= OP_NO_SSLv3
+
     # disable compression to prevent CRIME attacks (OpenSSL 1.0+)
     context.options |= getattr(_ssl, "OP_NO_COMPRESSION", 0)
-    # disallow ciphers with known vulnerabilities
-    context.set_ciphers(_RESTRICTED_CIPHERS)
-    # verify certs and host name in client mode
+
     if purpose == Purpose.SERVER_AUTH:
+        # verify certs and host name in client mode
         context.verify_mode = CERT_REQUIRED
         context.check_hostname = True
+    elif purpose == Purpose.CLIENT_AUTH:
+        # Prefer the server's ciphers by default so that we get stronger
+        # encryption
+        context.options |= getattr(_ssl, "OP_CIPHER_SERVER_PREFERENCE", 0)
+
+        # Use single use keys in order to improve forward secrecy
+        context.options |= getattr(_ssl, "OP_SINGLE_DH_USE", 0)
+        context.options |= getattr(_ssl, "OP_SINGLE_ECDH_USE", 0)
+
+        # disallow ciphers with known vulnerabilities
+        context.set_ciphers(_RESTRICTED_SERVER_CIPHERS)
+
     if cafile or capath or cadata:
         context.load_verify_locations(cafile, capath, cadata)
     elif context.verify_mode != CERT_NONE:
@@ -404,8 +439,7 @@ def create_default_context(purpose=Purpose.SERVER_AUTH, *, cafile=None,
         context.load_default_certs(purpose)
     return context
 
-
-def _create_stdlib_context(protocol=PROTOCOL_SSLv23, *, cert_reqs=None,
+def _create_unverified_context(protocol=PROTOCOL_SSLv23, *, cert_reqs=None,
                            check_hostname=False, purpose=Purpose.SERVER_AUTH,
                            certfile=None, keyfile=None,
                            cafile=None, capath=None, cadata=None):
@@ -422,6 +456,9 @@ def _create_stdlib_context(protocol=PROTOCOL_SSLv23, *, cert_reqs=None,
     context = SSLContext(protocol)
     # SSLv2 considered harmful.
     context.options |= OP_NO_SSLv2
+    # SSLv3 has problematic security and is only required for really old
+    # clients such as IE6 on Windows XP
+    context.options |= OP_NO_SSLv3
 
     if cert_reqs is not None:
         context.verify_mode = cert_reqs
@@ -442,6 +479,14 @@ def _create_stdlib_context(protocol=PROTOCOL_SSLv23, *, cert_reqs=None,
         context.load_default_certs(purpose)
 
     return context
+
+# Used by http.client if no context is explicitly passed.
+_create_default_https_context = create_default_context
+
+
+# Backwards compatibility alias, even though it's not a public name.
+_create_stdlib_context = _create_unverified_context
+
 
 class SSLSocket(socket):
     """This class implements a subtype of socket.socket that wraps
@@ -491,12 +536,7 @@ class SSLSocket(socket):
             raise ValueError("server_hostname can only be specified "
                              "in client mode")
         if self._context.check_hostname and not server_hostname:
-            if HAS_SNI:
-                raise ValueError("check_hostname requires server_hostname")
-            else:
-                raise ValueError("check_hostname requires server_hostname, "
-                                 "but it's not supported by your OpenSSL "
-                                 "library")
+            raise ValueError("check_hostname requires server_hostname")
         self.server_side = server_side
         self.server_hostname = server_hostname
         self.do_handshake_on_connect = do_handshake_on_connect
@@ -884,7 +924,7 @@ def PEM_cert_to_DER_cert(pem_cert_string):
     d = pem_cert_string.strip()[len(PEM_HEADER):-len(PEM_FOOTER)]
     return base64.decodebytes(d.encode('ASCII', 'strict'))
 
-def get_server_certificate(addr, ssl_version=PROTOCOL_SSLv3, ca_certs=None):
+def get_server_certificate(addr, ssl_version=PROTOCOL_SSLv23, ca_certs=None):
     """Retrieve the certificate from the server at the specified address,
     and return it as a PEM-encoded string.
     If 'ca_certs' is specified, validate the server cert against it.

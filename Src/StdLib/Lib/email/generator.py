@@ -10,14 +10,10 @@ import re
 import sys
 import time
 import random
-import warnings
 
 from copy import deepcopy
 from io import StringIO, BytesIO
-from email._policybase import compat32
-from email.header import Header
 from email.utils import _has_surrogates
-import email.charset as _charset
 
 UNDERSCORE = '_'
 NL = '\n'  # XXX: no longer used by the code below.
@@ -55,8 +51,9 @@ class Generator:
         by RFC 2822.
 
         The policy keyword specifies a policy object that controls a number of
-        aspects of the generator's operation.  The default policy maintains
-        backward compatibility.
+        aspects of the generator's operation.  If no policy is specified,
+        the policy associated with the Message object passed to the
+        flatten method is used.
 
         """
         self._fp = outfp
@@ -80,7 +77,9 @@ class Generator:
         Note that for subobjects, no From_ line is printed.
 
         linesep specifies the characters used to indicate a new line in
-        the output.  The default value is determined by the policy.
+        the output.  The default value is determined by the policy specified
+        when the Generator instance was created or, if none was specified,
+        from the policy associated with the msg.
 
         """
         # We use the _XXX constants for operating on data that comes directly

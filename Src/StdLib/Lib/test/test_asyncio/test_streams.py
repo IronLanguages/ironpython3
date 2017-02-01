@@ -1,10 +1,13 @@
 """Tests for streams.py."""
 
-import functools
 import gc
+import os
+import queue
 import socket
+import sys
+import threading
 import unittest
-import unittest.mock
+from unittest import mock
 try:
     import ssl
 except ImportError:
@@ -14,13 +17,13 @@ import asyncio
 from asyncio import test_utils
 
 
-class StreamReaderTests(unittest.TestCase):
+class StreamReaderTests(test_utils.TestCase):
 
     DATA = b'line1\nline2\nline3\n'
 
     def setUp(self):
         self.loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(None)
+        self.set_event_loop(self.loop)
 
     def tearDown(self):
         # just in case if we have transport close callbacks
@@ -28,8 +31,9 @@ class StreamReaderTests(unittest.TestCase):
 
         self.loop.close()
         gc.collect()
+        super().tearDown()
 
-    @unittest.mock.patch('asyncio.streams.events')
+    @mock.patch('asyncio.streams.events')
     def test_ctor_global_loop(self, m_events):
         stream = asyncio.StreamReader()
         self.assertIs(stream._loop, m_events.get_event_loop.return_value)
@@ -199,6 +203,20 @@ class StreamReaderTests(unittest.TestCase):
         self.assertRaises(
             ValueError, self.loop.run_until_complete, stream.read(2))
 
+    def test_invalid_limit(self):
+        with self.assertRaisesRegex(ValueError, 'imit'):
+            asyncio.StreamReader(limit=0, loop=self.loop)
+
+        with self.assertRaisesRegex(ValueError, 'imit'):
+            asyncio.StreamReader(limit=-1, loop=self.loop)
+
+    def test_read_limit(self):
+        stream = asyncio.StreamReader(limit=3, loop=self.loop)
+        stream.feed_data(b'chunk')
+        data = self.loop.run_until_complete(stream.read(5))
+        self.assertEqual(b'chunk', data)
+        self.assertEqual(b'', stream._buffer)
+
     def test_readline(self):
         # Read one line. 'readline' will need to wait for the data
         # to come from 'cb'
@@ -288,6 +306,23 @@ class StreamReaderTests(unittest.TestCase):
             ValueError, self.loop.run_until_complete, stream.readline())
         self.assertEqual(b'chunk3\n', stream._buffer)
 
+        # check strictness of the limit
+        stream = asyncio.StreamReader(limit=7, loop=self.loop)
+        stream.feed_data(b'1234567\n')
+        line = self.loop.run_until_complete(stream.readline())
+        self.assertEqual(b'1234567\n', line)
+        self.assertEqual(b'', stream._buffer)
+
+        stream.feed_data(b'12345678\n')
+        with self.assertRaises(ValueError) as cm:
+            self.loop.run_until_complete(stream.readline())
+        self.assertEqual(b'', stream._buffer)
+
+        stream.feed_data(b'12345678')
+        with self.assertRaises(ValueError) as cm:
+            self.loop.run_until_complete(stream.readline())
+        self.assertEqual(b'', stream._buffer)
+
     def test_readline_nolimit_nowait(self):
         # All needed data for the first 'readline' call will be
         # in the buffer.
@@ -338,6 +373,92 @@ class StreamReaderTests(unittest.TestCase):
             ValueError, self.loop.run_until_complete, stream.readline())
         self.assertEqual(b'', stream._buffer)
 
+    def test_readuntil_separator(self):
+        stream = asyncio.StreamReader(loop=self.loop)
+        with self.assertRaisesRegex(ValueError, 'Separator should be'):
+            self.loop.run_until_complete(stream.readuntil(separator=b''))
+
+    def test_readuntil_multi_chunks(self):
+        stream = asyncio.StreamReader(loop=self.loop)
+
+        stream.feed_data(b'lineAAA')
+        data = self.loop.run_until_complete(stream.readuntil(separator=b'AAA'))
+        self.assertEqual(b'lineAAA', data)
+        self.assertEqual(b'', stream._buffer)
+
+        stream.feed_data(b'lineAAA')
+        data = self.loop.run_until_complete(stream.readuntil(b'AAA'))
+        self.assertEqual(b'lineAAA', data)
+        self.assertEqual(b'', stream._buffer)
+
+        stream.feed_data(b'lineAAAxxx')
+        data = self.loop.run_until_complete(stream.readuntil(b'AAA'))
+        self.assertEqual(b'lineAAA', data)
+        self.assertEqual(b'xxx', stream._buffer)
+
+    def test_readuntil_multi_chunks_1(self):
+        stream = asyncio.StreamReader(loop=self.loop)
+
+        stream.feed_data(b'QWEaa')
+        stream.feed_data(b'XYaa')
+        stream.feed_data(b'a')
+        data = self.loop.run_until_complete(stream.readuntil(b'aaa'))
+        self.assertEqual(b'QWEaaXYaaa', data)
+        self.assertEqual(b'', stream._buffer)
+
+        stream.feed_data(b'QWEaa')
+        stream.feed_data(b'XYa')
+        stream.feed_data(b'aa')
+        data = self.loop.run_until_complete(stream.readuntil(b'aaa'))
+        self.assertEqual(b'QWEaaXYaaa', data)
+        self.assertEqual(b'', stream._buffer)
+
+        stream.feed_data(b'aaa')
+        data = self.loop.run_until_complete(stream.readuntil(b'aaa'))
+        self.assertEqual(b'aaa', data)
+        self.assertEqual(b'', stream._buffer)
+
+        stream.feed_data(b'Xaaa')
+        data = self.loop.run_until_complete(stream.readuntil(b'aaa'))
+        self.assertEqual(b'Xaaa', data)
+        self.assertEqual(b'', stream._buffer)
+
+        stream.feed_data(b'XXX')
+        stream.feed_data(b'a')
+        stream.feed_data(b'a')
+        stream.feed_data(b'a')
+        data = self.loop.run_until_complete(stream.readuntil(b'aaa'))
+        self.assertEqual(b'XXXaaa', data)
+        self.assertEqual(b'', stream._buffer)
+
+    def test_readuntil_eof(self):
+        stream = asyncio.StreamReader(loop=self.loop)
+        stream.feed_data(b'some dataAA')
+        stream.feed_eof()
+
+        with self.assertRaises(asyncio.IncompleteReadError) as cm:
+            self.loop.run_until_complete(stream.readuntil(b'AAA'))
+        self.assertEqual(cm.exception.partial, b'some dataAA')
+        self.assertIsNone(cm.exception.expected)
+        self.assertEqual(b'', stream._buffer)
+
+    def test_readuntil_limit_found_sep(self):
+        stream = asyncio.StreamReader(loop=self.loop, limit=3)
+        stream.feed_data(b'some dataAA')
+
+        with self.assertRaisesRegex(asyncio.LimitOverrunError,
+                                    'not found') as cm:
+            self.loop.run_until_complete(stream.readuntil(b'AAA'))
+
+        self.assertEqual(b'some dataAA', stream._buffer)
+
+        stream.feed_data(b'A')
+        with self.assertRaisesRegex(asyncio.LimitOverrunError,
+                                    'is found') as cm:
+            self.loop.run_until_complete(stream.readuntil(b'AAA'))
+
+        self.assertEqual(b'some dataAAA', stream._buffer)
+
     def test_readexactly_zero_or_less(self):
         # Read exact number of bytes (zero or less).
         stream = asyncio.StreamReader(loop=self.loop)
@@ -347,8 +468,8 @@ class StreamReaderTests(unittest.TestCase):
         self.assertEqual(b'', data)
         self.assertEqual(self.DATA, stream._buffer)
 
-        data = self.loop.run_until_complete(stream.readexactly(-1))
-        self.assertEqual(b'', data)
+        with self.assertRaisesRegex(ValueError, 'less than zero'):
+            self.loop.run_until_complete(stream.readexactly(-1))
         self.assertEqual(self.DATA, stream._buffer)
 
     def test_readexactly(self):
@@ -367,6 +488,13 @@ class StreamReaderTests(unittest.TestCase):
         data = self.loop.run_until_complete(read_task)
         self.assertEqual(self.DATA + self.DATA, data)
         self.assertEqual(self.DATA, stream._buffer)
+
+    def test_readexactly_limit(self):
+        stream = asyncio.StreamReader(limit=3, loop=self.loop)
+        stream.feed_data(b'chunk')
+        data = self.loop.run_until_complete(stream.readexactly(5))
+        self.assertEqual(b'chunk', data)
+        self.assertEqual(b'', stream._buffer)
 
     def test_readexactly_eof(self):
         # Read exact number of bytes (eof).
@@ -413,10 +541,6 @@ class StreamReaderTests(unittest.TestCase):
         def set_err():
             stream.set_exception(ValueError())
 
-        @asyncio.coroutine
-        def readline():
-            yield from stream.readline()
-
         t1 = asyncio.Task(stream.readline(), loop=self.loop)
         t2 = asyncio.Task(set_err(), loop=self.loop)
 
@@ -427,11 +551,7 @@ class StreamReaderTests(unittest.TestCase):
     def test_exception_cancel(self):
         stream = asyncio.StreamReader(loop=self.loop)
 
-        @asyncio.coroutine
-        def read_a_line():
-            yield from stream.readline()
-
-        t = asyncio.Task(read_a_line(), loop=self.loop)
+        t = asyncio.Task(stream.readline(), loop=self.loop)
         test_utils.run_briefly(self.loop)
         t.cancel()
         test_utils.run_briefly(self.loop)
@@ -452,6 +572,8 @@ class StreamReaderTests(unittest.TestCase):
             def handle_client(self, client_reader, client_writer):
                 data = yield from client_reader.readline()
                 client_writer.write(data)
+                yield from client_writer.drain()
+                client_writer.close()
 
             def start(self):
                 sock = socket.socket()
@@ -463,12 +585,8 @@ class StreamReaderTests(unittest.TestCase):
                 return sock.getsockname()
 
             def handle_client_callback(self, client_reader, client_writer):
-                task = asyncio.Task(client_reader.readline(), loop=self.loop)
-
-                def done(task):
-                    client_writer.write(task.result())
-
-                task.add_done_callback(done)
+                self.loop.create_task(self.handle_client(client_reader,
+                                                         client_writer))
 
             def start_callback(self):
                 sock = socket.socket()
@@ -528,6 +646,8 @@ class StreamReaderTests(unittest.TestCase):
             def handle_client(self, client_reader, client_writer):
                 data = yield from client_reader.readline()
                 client_writer.write(data)
+                yield from client_writer.drain()
+                client_writer.close()
 
             def start(self):
                 self.server = self.loop.run_until_complete(
@@ -536,18 +656,14 @@ class StreamReaderTests(unittest.TestCase):
                                               loop=self.loop))
 
             def handle_client_callback(self, client_reader, client_writer):
-                task = asyncio.Task(client_reader.readline(), loop=self.loop)
-
-                def done(task):
-                    client_writer.write(task.result())
-
-                task.add_done_callback(done)
+                self.loop.create_task(self.handle_client(client_reader,
+                                                         client_writer))
 
             def start_callback(self):
-                self.server = self.loop.run_until_complete(
-                    asyncio.start_unix_server(self.handle_client_callback,
-                                              path=self.path,
-                                              loop=self.loop))
+                start = asyncio.start_unix_server(self.handle_client_callback,
+                                                  path=self.path,
+                                                  loop=self.loop)
+                self.server = self.loop.run_until_complete(start)
 
             def stop(self):
                 if self.server is not None:
@@ -583,6 +699,150 @@ class StreamReaderTests(unittest.TestCase):
                                                             loop=self.loop))
             server.stop()
             self.assertEqual(msg, b"hello world!\n")
+
+    @unittest.skipIf(sys.platform == 'win32', "Don't have pipes")
+    def test_read_all_from_pipe_reader(self):
+        # See asyncio issue 168.  This test is derived from the example
+        # subprocess_attach_read_pipe.py, but we configure the
+        # StreamReader's limit so that twice it is less than the size
+        # of the data writter.  Also we must explicitly attach a child
+        # watcher to the event loop.
+
+        code = """\
+import os, sys
+fd = int(sys.argv[1])
+os.write(fd, b'data')
+os.close(fd)
+"""
+        rfd, wfd = os.pipe()
+        args = [sys.executable, '-c', code, str(wfd)]
+
+        pipe = open(rfd, 'rb', 0)
+        reader = asyncio.StreamReader(loop=self.loop, limit=1)
+        protocol = asyncio.StreamReaderProtocol(reader, loop=self.loop)
+        transport, _ = self.loop.run_until_complete(
+            self.loop.connect_read_pipe(lambda: protocol, pipe))
+
+        watcher = asyncio.SafeChildWatcher()
+        watcher.attach_loop(self.loop)
+        try:
+            asyncio.set_child_watcher(watcher)
+            create = asyncio.create_subprocess_exec(*args,
+                                                    pass_fds={wfd},
+                                                    loop=self.loop)
+            proc = self.loop.run_until_complete(create)
+            self.loop.run_until_complete(proc.wait())
+        finally:
+            asyncio.set_child_watcher(None)
+
+        os.close(wfd)
+        data = self.loop.run_until_complete(reader.read(-1))
+        self.assertEqual(data, b'data')
+
+    def test_streamreader_constructor(self):
+        self.addCleanup(asyncio.set_event_loop, None)
+        asyncio.set_event_loop(self.loop)
+
+        # asyncio issue #184: Ensure that StreamReaderProtocol constructor
+        # retrieves the current loop if the loop parameter is not set
+        reader = asyncio.StreamReader()
+        self.assertIs(reader._loop, self.loop)
+
+    def test_streamreaderprotocol_constructor(self):
+        self.addCleanup(asyncio.set_event_loop, None)
+        asyncio.set_event_loop(self.loop)
+
+        # asyncio issue #184: Ensure that StreamReaderProtocol constructor
+        # retrieves the current loop if the loop parameter is not set
+        reader = mock.Mock()
+        protocol = asyncio.StreamReaderProtocol(reader)
+        self.assertIs(protocol._loop, self.loop)
+
+    def test_drain_raises(self):
+        # See http://bugs.python.org/issue25441
+
+        # This test should not use asyncio for the mock server; the
+        # whole point of the test is to test for a bug in drain()
+        # where it never gives up the event loop but the socket is
+        # closed on the  server side.
+
+        q = queue.Queue()
+
+        def server():
+            # Runs in a separate thread.
+            sock = socket.socket()
+            with sock:
+                sock.bind(('localhost', 0))
+                sock.listen(1)
+                addr = sock.getsockname()
+                q.put(addr)
+                clt, _ = sock.accept()
+                clt.close()
+
+        @asyncio.coroutine
+        def client(host, port):
+            reader, writer = yield from asyncio.open_connection(
+                host, port, loop=self.loop)
+
+            while True:
+                writer.write(b"foo\n")
+                yield from writer.drain()
+
+        # Start the server thread and wait for it to be listening.
+        thread = threading.Thread(target=server)
+        thread.setDaemon(True)
+        thread.start()
+        addr = q.get()
+
+        # Should not be stuck in an infinite loop.
+        with self.assertRaises((ConnectionResetError, BrokenPipeError)):
+            self.loop.run_until_complete(client(*addr))
+
+        # Clean up the thread.  (Only on success; on failure, it may
+        # be stuck in accept().)
+        thread.join()
+
+    def test___repr__(self):
+        stream = asyncio.StreamReader(loop=self.loop)
+        self.assertEqual("<StreamReader>", repr(stream))
+
+    def test___repr__nondefault_limit(self):
+        stream = asyncio.StreamReader(loop=self.loop, limit=123)
+        self.assertEqual("<StreamReader l=123>", repr(stream))
+
+    def test___repr__eof(self):
+        stream = asyncio.StreamReader(loop=self.loop)
+        stream.feed_eof()
+        self.assertEqual("<StreamReader eof>", repr(stream))
+
+    def test___repr__data(self):
+        stream = asyncio.StreamReader(loop=self.loop)
+        stream.feed_data(b'data')
+        self.assertEqual("<StreamReader 4 bytes>", repr(stream))
+
+    def test___repr__exception(self):
+        stream = asyncio.StreamReader(loop=self.loop)
+        exc = RuntimeError()
+        stream.set_exception(exc)
+        self.assertEqual("<StreamReader e=RuntimeError()>", repr(stream))
+
+    def test___repr__waiter(self):
+        stream = asyncio.StreamReader(loop=self.loop)
+        stream._waiter = asyncio.Future(loop=self.loop)
+        self.assertRegex(
+            repr(stream),
+            "<StreamReader w=<Future pending[\S ]*>>")
+        stream._waiter.set_result(None)
+        self.loop.run_until_complete(stream._waiter)
+        stream._waiter = None
+        self.assertEqual("<StreamReader>", repr(stream))
+
+    def test___repr__transport(self):
+        stream = asyncio.StreamReader(loop=self.loop)
+        stream._transport = mock.Mock()
+        stream._transport.__repr__ = mock.Mock()
+        stream._transport.__repr__.return_value = "<Transport>"
+        self.assertEqual("<StreamReader t=<Transport>>", repr(stream))
 
 
 if __name__ == '__main__':

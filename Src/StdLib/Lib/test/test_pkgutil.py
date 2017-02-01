@@ -1,4 +1,4 @@
-from test.support import run_unittest, unload, check_warnings
+from test.support import run_unittest, unload, check_warnings, CleanImport
 import unittest
 import sys
 import importlib
@@ -332,6 +332,56 @@ class ImportlibMigrationTests(unittest.TestCase):
             self.assertIsNotNone(pkgutil.get_loader("sys"))
             self.assertIsNotNone(pkgutil.get_loader("os"))
             self.assertIsNotNone(pkgutil.get_loader("test.support"))
+            self.assertEqual(len(w.warnings), 0)
+
+    def test_get_loader_handles_missing_loader_attribute(self):
+        global __loader__
+        this_loader = __loader__
+        del __loader__
+        try:
+            with check_warnings() as w:
+                self.assertIsNotNone(pkgutil.get_loader(__name__))
+                self.assertEqual(len(w.warnings), 0)
+        finally:
+            __loader__ = this_loader
+
+    def test_get_loader_handles_missing_spec_attribute(self):
+        name = 'spam'
+        mod = type(sys)(name)
+        del mod.__spec__
+        with CleanImport(name):
+            sys.modules[name] = mod
+            loader = pkgutil.get_loader(name)
+        self.assertIsNone(loader)
+
+    def test_get_loader_handles_spec_attribute_none(self):
+        name = 'spam'
+        mod = type(sys)(name)
+        mod.__spec__ = None
+        with CleanImport(name):
+            sys.modules[name] = mod
+            loader = pkgutil.get_loader(name)
+        self.assertIsNone(loader)
+
+    def test_get_loader_None_in_sys_modules(self):
+        name = 'totally bogus'
+        sys.modules[name] = None
+        try:
+            loader = pkgutil.get_loader(name)
+        finally:
+            del sys.modules[name]
+        self.assertIsNone(loader)
+
+    def test_find_loader_missing_module(self):
+        name = 'totally bogus'
+        loader = pkgutil.find_loader(name)
+        self.assertIsNone(loader)
+
+    def test_find_loader_avoids_emulation(self):
+        with check_warnings() as w:
+            self.assertIsNotNone(pkgutil.find_loader("sys"))
+            self.assertIsNotNone(pkgutil.find_loader("os"))
+            self.assertIsNotNone(pkgutil.find_loader("test.support"))
             self.assertEqual(len(w.warnings), 0)
 
     def test_get_importer_avoids_emulation(self):

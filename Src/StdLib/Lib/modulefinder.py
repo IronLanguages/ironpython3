@@ -1,6 +1,7 @@
 """Find modules used by a script, using introspection."""
 
 import dis
+import importlib._bootstrap
 import importlib.machinery
 import marshal
 import os
@@ -287,11 +288,12 @@ class ModuleFinder:
         if type == imp.PY_SOURCE:
             co = compile(fp.read()+'\n', pathname, 'exec')
         elif type == imp.PY_COMPILED:
-            if fp.read(4) != imp.get_magic():
-                self.msgout(2, "raise ImportError: Bad magic number", pathname)
-                raise ImportError("Bad magic number in %s" % pathname)
-            fp.read(4)
-            co = marshal.load(fp)
+            try:
+                marshal_data = importlib._bootstrap._validate_bytecode_header(fp.read())
+            except ImportError as exc:
+                self.msgout(2, "raise ImportError: " + str(exc), pathname)
+                raise
+            co = marshal.loads(marshal_data)
         else:
             co = None
         m = self.add_module(fqname)
@@ -566,11 +568,12 @@ class ModuleFinder:
             if isinstance(consts[i], type(co)):
                 consts[i] = self.replace_paths_in_code(consts[i])
 
-        return types.CodeType(co.co_argcount, co.co_nlocals, co.co_stacksize,
-                         co.co_flags, co.co_code, tuple(consts), co.co_names,
-                         co.co_varnames, new_filename, co.co_name,
-                         co.co_firstlineno, co.co_lnotab,
-                         co.co_freevars, co.co_cellvars)
+        return types.CodeType(co.co_argcount, co.co_kwonlyargcount,
+                              co.co_nlocals, co.co_stacksize, co.co_flags,
+                              co.co_code, tuple(consts), co.co_names,
+                              co.co_varnames, new_filename, co.co_name,
+                              co.co_firstlineno, co.co_lnotab, co.co_freevars,
+                              co.co_cellvars)
 
 
 def test():

@@ -472,8 +472,7 @@ def urldefrag(url):
     return _coerce_result(DefragResult(defrag, frag))
 
 _hexdig = '0123456789ABCDEFabcdef'
-_hextobyte = {(a + b).encode(): bytes([int(a + b, 16)])
-              for a in _hexdig for b in _hexdig}
+_hextobyte = None
 
 def unquote_to_bytes(string):
     """unquote_to_bytes('abc%20def') -> b'abc def'."""
@@ -490,6 +489,12 @@ def unquote_to_bytes(string):
         return string
     res = [bits[0]]
     append = res.append
+    # Delay the initialization of the table to not waste memory
+    # if the function is never called
+    global _hextobyte
+    if _hextobyte is None:
+        _hextobyte = {(a + b).encode(): bytes([int(a + b, 16)])
+                      for a in _hexdig for b in _hexdig}
     for item in bits[1:]:
         try:
             append(_hextobyte[item[:2]])
@@ -665,8 +670,8 @@ def quote(string, safe='/', encoding=None, errors=None):
     called on a path where the existing slash characters are used as
     reserved characters.
 
-    string and safe may be either str or bytes objects. encoding must
-    not be specified if string is a str.
+    string and safe may be either str or bytes objects. encoding and errors
+    must not be specified if string is a bytes object.
 
     The optional encoding and errors parameters specify how to deal with
     non-ASCII characters, as accepted by the str.encode method.
@@ -738,8 +743,9 @@ def urlencode(query, doseq=False, safe='', encoding=None, errors=None):
     input.
 
     The components of a query arg may each be either a string or a bytes type.
-    When a component is a string, the safe, encoding and error parameters are
-    sent to the quote_plus function for encoding.
+
+    The safe, encoding, and errors parameters are passed down to quote_plus()
+    (encoding and errors only if a component is a str).
     """
 
     if hasattr(query, "items"):

@@ -96,7 +96,7 @@ class _PaddedFile:
             self._read -= len(prepend)
             return
         else:
-            self._buffer = self._buffer[read:] + prepend
+            self._buffer = self._buffer[self._read:] + prepend
         self._length = len(self._buffer)
         self._read = 0
 
@@ -339,9 +339,9 @@ class GzipFile(io.BufferedIOBase):
             data = data.tobytes()
 
         if len(data) > 0:
-            self.size = self.size + len(data)
+            self.fileobj.write(self.compress.compress(data))
+            self.size += len(data)
             self.crc = zlib.crc32(data, self.crc) & 0xffffffff
-            self.fileobj.write( self.compress.compress(data) )
             self.offset += len(data)
 
         return len(data)
@@ -500,19 +500,21 @@ class GzipFile(io.BufferedIOBase):
         return self.fileobj is None
 
     def close(self):
-        if self.fileobj is None:
+        fileobj = self.fileobj
+        if fileobj is None:
             return
-        if self.mode == WRITE:
-            self.fileobj.write(self.compress.flush())
-            write32u(self.fileobj, self.crc)
-            # self.size may exceed 2GB, or even 4GB
-            write32u(self.fileobj, self.size & 0xffffffff)
-            self.fileobj = None
-        elif self.mode == READ:
-            self.fileobj = None
-        if self.myfileobj:
-            self.myfileobj.close()
-            self.myfileobj = None
+        self.fileobj = None
+        try:
+            if self.mode == WRITE:
+                fileobj.write(self.compress.flush())
+                write32u(fileobj, self.crc)
+                # self.size may exceed 2GB, or even 4GB
+                write32u(fileobj, self.size & 0xffffffff)
+        finally:
+            myfileobj = self.myfileobj
+            if myfileobj:
+                self.myfileobj = None
+                myfileobj.close()
 
     def flush(self,zlib_mode=zlib.Z_SYNC_FLUSH):
         self._check_closed()

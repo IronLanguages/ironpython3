@@ -330,8 +330,8 @@ class Morsel(dict):
         "comment"  : "Comment",
         "domain"   : "Domain",
         "max-age"  : "Max-Age",
-        "secure"   : "secure",
-        "httponly" : "httponly",
+        "secure"   : "Secure",
+        "httponly" : "HttpOnly",
         "version"  : "Version",
     }
 
@@ -428,11 +428,13 @@ class Morsel(dict):
 # result, the parsing rules here are less strict.
 #
 
-_LegalCharsPatt  = r"[\w\d!#%&'~_`><@,:/\$\*\+\-\.\^\|\)\(\?\}\{\=]"
+_LegalKeyChars  = r"\w\d!#%&'~_`><@,:/\$\*\+\-\.\^\|\)\(\?\}\{\="
+_LegalValueChars = _LegalKeyChars + '\[\]'
 _CookiePattern = re.compile(r"""
     (?x)                           # This is a verbose pattern
+    \s*                            # Optional whitespace at start of cookie
     (?P<key>                       # Start of group 'key'
-    """ + _LegalCharsPatt + r"""+?   # Any word of at least one letter
+    [""" + _LegalKeyChars + r"""]+?   # Any word of at least one letter
     )                              # End of group 'key'
     (                              # Optional group: there may not be a value.
     \s*=\s*                          # Equal Sign
@@ -441,7 +443,7 @@ _CookiePattern = re.compile(r"""
     |                                  # or
     \w{3},\s[\w\d\s-]{9,11}\s[\d:]{8}\sGMT  # Special case for "expires" attr
     |                                  # or
-    """ + _LegalCharsPatt + r"""*      # Any word or empty string
+    [""" + _LegalValueChars + r"""]*      # Any word or empty string
     )                                # End of group 'val'
     )?                             # End of optional value group
     \s*                            # Any number of spaces.
@@ -485,8 +487,12 @@ class BaseCookie(dict):
 
     def __setitem__(self, key, value):
         """Dictionary style assignment."""
-        rval, cval = self.value_encode(value)
-        self.__set(key, rval, cval)
+        if isinstance(value, Morsel):
+            # allow assignment of constructed Morsels (e.g. for pickling)
+            dict.__setitem__(self, key, value)
+        else:
+            rval, cval = self.value_encode(value)
+            self.__set(key, rval, cval)
 
     def output(self, attrs=None, header="Set-Cookie:", sep="\015\012"):
         """Return a string suitable for HTTP."""
@@ -534,7 +540,7 @@ class BaseCookie(dict):
 
         while 0 <= i < n:
             # Start looking for a cookie
-            match = patt.search(str, i)
+            match = patt.match(str, i)
             if not match:
                 # No more cookies
                 break

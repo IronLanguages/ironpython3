@@ -111,6 +111,14 @@ class ContextManagerTestCase(unittest.TestCase):
         baz = self._create_contextmanager_attribs()(None)
         self.assertEqual(baz.__doc__, "Whee!")
 
+    def test_keywords(self):
+        # Ensure no keyword arguments are inhibited
+        @contextmanager
+        def woohoo(self, func, args, kwds):
+            yield (self, func, args, kwds)
+        with woohoo(self=11, func=22, args=33, kwds=44) as target:
+            self.assertEqual(target, (11, 22, 33, 44))
+
 
 class ClosingTestCase(unittest.TestCase):
 
@@ -820,9 +828,11 @@ class TestSuppress(unittest.TestCase):
         with ignore_exceptions:
             len(5)
         with ignore_exceptions:
-            1/0
             with ignore_exceptions: # Check nested usage
                 len(5)
+            outer_continued = True
+            1/0
+        self.assertTrue(outer_continued)
 
 if __name__ == "__main__":
     unittest.main()

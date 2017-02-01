@@ -8,6 +8,8 @@ __all__ = ['Message']
 
 import re
 import uu
+import quopri
+import warnings
 from io import BytesIO, StringIO
 
 # Intrapackage imports
@@ -203,7 +205,11 @@ class Message:
         if self._payload is None:
             self._payload = [payload]
         else:
-            self._payload.append(payload)
+            try:
+                self._payload.append(payload)
+            except AttributeError:
+                raise TypeError("Attach is not valid on a message with a"
+                                " non-multipart payload")
 
     def get_payload(self, i=None, decode=False):
         """Return a reference to the payload.
@@ -267,14 +273,14 @@ class Message:
                     bpayload = payload.encode('ascii')
                 except UnicodeError:
                     # This won't happen for RFC compliant messages (messages
-                    # containing only ASCII codepoints in the unicode input).
+                    # containing only ASCII code points in the unicode input).
                     # If it does happen, turn the string into bytes in a way
                     # guaranteed not to fail.
                     bpayload = payload.encode('raw-unicode-escape')
         if not decode:
             return payload
         if cte == 'quoted-printable':
-            return utils._qdecode(bpayload)
+            return quopri.decodestring(bpayload)
         elif cte == 'base64':
             # XXX: this is a bit of a hack; decode_b should probably be factored
             # out somewhere, but I haven't figured out where yet.
@@ -924,6 +930,17 @@ class Message:
     # I.e. def walk(self): ...
     from email.iterators import walk
 
+# XXX Support for temporary deprecation hack for is_attachment property.
+class _IsAttachment:
+    def __init__(self, value):
+        self.value = value
+    def __call__(self):
+        return self.value
+    def __bool__(self):
+        warnings.warn("is_attachment will be a method, not a property, in 3.5",
+                      DeprecationWarning,
+                      stacklevel=3)
+        return self.value
 
 class MIMEPart(Message):
 
@@ -936,12 +953,12 @@ class MIMEPart(Message):
     @property
     def is_attachment(self):
         c_d = self.get('content-disposition')
-        if c_d is None:
-            return False
-        return c_d.lower() == 'attachment'
+        result = False if c_d is None else c_d.content_disposition == 'attachment'
+        # XXX transitional hack to raise deprecation if not called.
+        return _IsAttachment(result)
 
     def _find_body(self, part, preferencelist):
-        if part.is_attachment:
+        if part.is_attachment():
             return
         maintype, subtype = part.get_content_type().split('/')
         if maintype == 'text':
@@ -1034,7 +1051,7 @@ class MIMEPart(Message):
         for part in parts:
             maintype, subtype = part.get_content_type().split('/')
             if ((maintype, subtype) in self._body_types and
-                    not part.is_attachment and subtype not in seen):
+                    not part.is_attachment() and subtype not in seen):
                 seen.append(subtype)
                 continue
             yield part

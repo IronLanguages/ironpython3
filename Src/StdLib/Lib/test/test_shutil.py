@@ -1,6 +1,7 @@
 # Copyright (C) 2003 Python Software Foundation
 
 import unittest
+import unittest.mock
 import shutil
 import tempfile
 import sys
@@ -10,11 +11,8 @@ import os.path
 import errno
 import functools
 import subprocess
-from test import support
-from test.support import TESTFN
-from os.path import splitdrive
-from distutils.spawn import find_executable, spawn
-from shutil import (_make_tarball, _make_zipfile, make_archive,
+from contextlib import ExitStack
+from shutil import (make_archive,
                     register_archive_format, unregister_archive_format,
                     get_archive_formats, Error, unpack_archive,
                     register_unpack_format, RegistryError,
@@ -45,7 +43,7 @@ try:
     import zipfile
     ZIP_SUPPORT = True
 except ImportError:
-    ZIP_SUPPORT = find_executable('zip')
+    ZIP_SUPPORT = shutil.which('zip')
 
 def _fake_rename(*args, **kwargs):
     # Pretend the destination path is on a different filesystem.
@@ -86,6 +84,18 @@ def read_file(path, binary=False):
     with open(path, 'rb' if binary else 'r') as fp:
         return fp.read()
 
+def rlistdir(path):
+    res = []
+    for name in sorted(os.listdir(path)):
+        p = os.path.join(path, name)
+        if os.path.isdir(p) and not os.path.islink(p):
+            res.append(name + '/')
+            for n in rlistdir(p):
+                res.append(name + '/' + n)
+        else:
+            res.append(name)
+    return res
+
 
 class TestShutil(unittest.TestCase):
 
@@ -116,7 +126,9 @@ class TestShutil(unittest.TestCase):
         write_file(os.path.join(victim, 'somefile'), 'foo')
         victim = os.fsencode(victim)
         self.assertIsInstance(victim, bytes)
-        shutil.rmtree(victim)
+        win = (os.name == 'nt')
+        with self.assertWarns(DeprecationWarning) if win else ExitStack():
+            shutil.rmtree(victim)
 
     @support.skip_unless_symlink
     def test_rmtree_fails_on_symlink(self):
@@ -755,6 +767,20 @@ class TestShutil(unittest.TestCase):
         self.assertEqual(os.stat(restrictive_subdir).st_mode,
                           os.stat(restrictive_subdir_dst).st_mode)
 
+    @unittest.mock.patch('os.chmod')
+    def test_copytree_winerror(self, mock_patch):
+        # When copying to VFAT, copystat() raises OSError. On Windows, the
+        # exception object has a meaningful 'winerror' attribute, but not
+        # on other operating systems. Do not assume 'winerror' is set.
+        src_dir = tempfile.mkdtemp()
+        dst_dir = os.path.join(tempfile.mkdtemp(), 'destination')
+        self.addCleanup(shutil.rmtree, src_dir)
+        self.addCleanup(shutil.rmtree, os.path.dirname(dst_dir))
+
+        mock_patch.side_effect = PermissionError('ka-boom')
+        with self.assertRaises(shutil.Error):
+            shutil.copytree(src_dir, dst_dir)
+
     @unittest.skipIf(os.name == 'nt', 'temporarily disabled on Windows')
     @unittest.skipUnless(hasattr(os, 'link'), 'requires os.link')
     def test_dont_copy_file_onto_link_to_itself(self):
@@ -877,6 +903,26 @@ class TestShutil(unittest.TestCase):
         shutil.copytree(src_dir, dst_dir, symlinks=True)
         self.assertIn('test.txt', os.listdir(dst_dir))
 
+    @support.skip_unless_symlink
+    def test_copytree_symlink_dir(self):
+        src_dir = self.mkdtemp()
+        dst_dir = os.path.join(self.mkdtemp(), 'destination')
+        os.mkdir(os.path.join(src_dir, 'real_dir'))
+        with open(os.path.join(src_dir, 'real_dir', 'test.txt'), 'w'):
+            pass
+        os.symlink(os.path.join(src_dir, 'real_dir'),
+                   os.path.join(src_dir, 'link_to_dir'),
+                   target_is_directory=True)
+
+        shutil.copytree(src_dir, dst_dir, symlinks=False)
+        self.assertFalse(os.path.islink(os.path.join(dst_dir, 'link_to_dir')))
+        self.assertIn('test.txt', os.listdir(os.path.join(dst_dir, 'link_to_dir')))
+
+        dst_dir = os.path.join(self.mkdtemp(), 'destination2')
+        shutil.copytree(src_dir, dst_dir, symlinks=True)
+        self.assertTrue(os.path.islink(os.path.join(dst_dir, 'link_to_dir')))
+        self.assertIn('test.txt', os.listdir(os.path.join(dst_dir, 'link_to_dir')))
+
     def _copy_file(self, method):
         fname = 'test.txt'
         tmpdir = self.mkdtemp()
@@ -915,139 +961,166 @@ class TestShutil(unittest.TestCase):
     @requires_zlib
     def test_make_tarball(self):
         # creating something to tar
-        tmpdir = self.mkdtemp()
-        write_file((tmpdir, 'file1'), 'xxx')
-        write_file((tmpdir, 'file2'), 'xxx')
-        os.mkdir(os.path.join(tmpdir, 'sub'))
-        write_file((tmpdir, 'sub', 'file3'), 'xxx')
+        root_dir, base_dir = self._create_files('')
 
         tmpdir2 = self.mkdtemp()
         # force shutil to create the directory
         os.rmdir(tmpdir2)
-        unittest.skipUnless(splitdrive(tmpdir)[0] == splitdrive(tmpdir2)[0],
-                            "source and target should be on same drive")
+        # working with relative paths
+        work_dir = os.path.dirname(tmpdir2)
+        rel_base_name = os.path.join(os.path.basename(tmpdir2), 'archive')
 
-        base_name = os.path.join(tmpdir2, 'archive')
-
-        # working with relative paths to avoid tar warnings
-        old_dir = os.getcwd()
-        os.chdir(tmpdir)
-        try:
-            _make_tarball(splitdrive(base_name)[1], '.')
-        finally:
-            os.chdir(old_dir)
+        with support.change_cwd(work_dir):
+            base_name = os.path.abspath(rel_base_name)
+            tarball = make_archive(rel_base_name, 'gztar', root_dir, '.')
 
         # check if the compressed tarball was created
-        tarball = base_name + '.tar.gz'
-        self.assertTrue(os.path.exists(tarball))
+        self.assertEqual(tarball, base_name + '.tar.gz')
+        self.assertTrue(os.path.isfile(tarball))
+        self.assertTrue(tarfile.is_tarfile(tarball))
+        with tarfile.open(tarball, 'r:gz') as tf:
+            self.assertCountEqual(tf.getnames(),
+                                  ['.', './sub', './sub2',
+                                   './file1', './file2', './sub/file3'])
 
         # trying an uncompressed one
-        base_name = os.path.join(tmpdir2, 'archive')
-        old_dir = os.getcwd()
-        os.chdir(tmpdir)
-        try:
-            _make_tarball(splitdrive(base_name)[1], '.', compress=None)
-        finally:
-            os.chdir(old_dir)
-        tarball = base_name + '.tar'
-        self.assertTrue(os.path.exists(tarball))
+        with support.change_cwd(work_dir):
+            tarball = make_archive(rel_base_name, 'tar', root_dir, '.')
+        self.assertEqual(tarball, base_name + '.tar')
+        self.assertTrue(os.path.isfile(tarball))
+        self.assertTrue(tarfile.is_tarfile(tarball))
+        with tarfile.open(tarball, 'r') as tf:
+            self.assertCountEqual(tf.getnames(),
+                                  ['.', './sub', './sub2',
+                                  './file1', './file2', './sub/file3'])
 
     def _tarinfo(self, path):
-        tar = tarfile.open(path)
-        try:
+        with tarfile.open(path) as tar:
             names = tar.getnames()
             names.sort()
             return tuple(names)
-        finally:
-            tar.close()
 
-    def _create_files(self):
+    def _create_files(self, base_dir='dist'):
         # creating something to tar
-        tmpdir = self.mkdtemp()
-        dist = os.path.join(tmpdir, 'dist')
-        os.mkdir(dist)
+        root_dir = self.mkdtemp()
+        dist = os.path.join(root_dir, base_dir)
+        os.makedirs(dist, exist_ok=True)
         write_file((dist, 'file1'), 'xxx')
         write_file((dist, 'file2'), 'xxx')
         os.mkdir(os.path.join(dist, 'sub'))
         write_file((dist, 'sub', 'file3'), 'xxx')
         os.mkdir(os.path.join(dist, 'sub2'))
-        tmpdir2 = self.mkdtemp()
-        base_name = os.path.join(tmpdir2, 'archive')
-        return tmpdir, tmpdir2, base_name
+        if base_dir:
+            write_file((root_dir, 'outer'), 'xxx')
+        return root_dir, base_dir
 
     @requires_zlib
-    @unittest.skipUnless(find_executable('tar') and find_executable('gzip'),
+    @unittest.skipUnless(shutil.which('tar'),
                          'Need the tar command to run')
     def test_tarfile_vs_tar(self):
-        tmpdir, tmpdir2, base_name =  self._create_files()
-        old_dir = os.getcwd()
-        os.chdir(tmpdir)
-        try:
-            _make_tarball(base_name, 'dist')
-        finally:
-            os.chdir(old_dir)
+        root_dir, base_dir = self._create_files()
+        base_name = os.path.join(self.mkdtemp(), 'archive')
+        tarball = make_archive(base_name, 'gztar', root_dir, base_dir)
 
         # check if the compressed tarball was created
-        tarball = base_name + '.tar.gz'
-        self.assertTrue(os.path.exists(tarball))
+        self.assertEqual(tarball, base_name + '.tar.gz')
+        self.assertTrue(os.path.isfile(tarball))
 
         # now create another tarball using `tar`
-        tarball2 = os.path.join(tmpdir, 'archive2.tar.gz')
-        tar_cmd = ['tar', '-cf', 'archive2.tar', 'dist']
-        gzip_cmd = ['gzip', '-f9', 'archive2.tar']
-        old_dir = os.getcwd()
-        os.chdir(tmpdir)
-        try:
-            with captured_stdout() as s:
-                spawn(tar_cmd)
-                spawn(gzip_cmd)
-        finally:
-            os.chdir(old_dir)
+        tarball2 = os.path.join(root_dir, 'archive2.tar')
+        tar_cmd = ['tar', '-cf', 'archive2.tar', base_dir]
+        subprocess.check_call(tar_cmd, cwd=root_dir,
+                              stdout=subprocess.DEVNULL)
 
-        self.assertTrue(os.path.exists(tarball2))
+        self.assertTrue(os.path.isfile(tarball2))
         # let's compare both tarballs
         self.assertEqual(self._tarinfo(tarball), self._tarinfo(tarball2))
 
         # trying an uncompressed one
-        base_name = os.path.join(tmpdir2, 'archive')
-        old_dir = os.getcwd()
-        os.chdir(tmpdir)
-        try:
-            _make_tarball(base_name, 'dist', compress=None)
-        finally:
-            os.chdir(old_dir)
-        tarball = base_name + '.tar'
-        self.assertTrue(os.path.exists(tarball))
+        tarball = make_archive(base_name, 'tar', root_dir, base_dir)
+        self.assertEqual(tarball, base_name + '.tar')
+        self.assertTrue(os.path.isfile(tarball))
 
         # now for a dry_run
-        base_name = os.path.join(tmpdir2, 'archive')
-        old_dir = os.getcwd()
-        os.chdir(tmpdir)
-        try:
-            _make_tarball(base_name, 'dist', compress=None, dry_run=True)
-        finally:
-            os.chdir(old_dir)
-        tarball = base_name + '.tar'
-        self.assertTrue(os.path.exists(tarball))
+        tarball = make_archive(base_name, 'tar', root_dir, base_dir,
+                               dry_run=True)
+        self.assertEqual(tarball, base_name + '.tar')
+        self.assertTrue(os.path.isfile(tarball))
 
     @requires_zlib
     @unittest.skipUnless(ZIP_SUPPORT, 'Need zip support to run')
     def test_make_zipfile(self):
-        # creating something to tar
-        tmpdir = self.mkdtemp()
-        write_file((tmpdir, 'file1'), 'xxx')
-        write_file((tmpdir, 'file2'), 'xxx')
+        # creating something to zip
+        root_dir, base_dir = self._create_files()
 
         tmpdir2 = self.mkdtemp()
         # force shutil to create the directory
         os.rmdir(tmpdir2)
-        base_name = os.path.join(tmpdir2, 'archive')
-        _make_zipfile(base_name, tmpdir)
+        # working with relative paths
+        work_dir = os.path.dirname(tmpdir2)
+        rel_base_name = os.path.join(os.path.basename(tmpdir2), 'archive')
 
-        # check if the compressed tarball was created
-        tarball = base_name + '.zip'
-        self.assertTrue(os.path.exists(tarball))
+        with support.change_cwd(work_dir):
+            base_name = os.path.abspath(rel_base_name)
+            res = make_archive(rel_base_name, 'zip', root_dir, base_dir)
 
+        self.assertEqual(res, base_name + '.zip')
+        self.assertTrue(os.path.isfile(res))
+        self.assertTrue(zipfile.is_zipfile(res))
+        with zipfile.ZipFile(res) as zf:
+            self.assertCountEqual(zf.namelist(),
+                    ['dist/', 'dist/sub/', 'dist/sub2/',
+                     'dist/file1', 'dist/file2', 'dist/sub/file3'])
+
+    @requires_zlib
+    @unittest.skipUnless(ZIP_SUPPORT, 'Need zip support to run')
+    @unittest.skipUnless(shutil.which('zip'),
+                         'Need the zip command to run')
+    def test_zipfile_vs_zip(self):
+        root_dir, base_dir = self._create_files()
+        base_name = os.path.join(self.mkdtemp(), 'archive')
+        archive = make_archive(base_name, 'zip', root_dir, base_dir)
+
+        # check if ZIP file  was created
+        self.assertEqual(archive, base_name + '.zip')
+        self.assertTrue(os.path.isfile(archive))
+
+        # now create another ZIP file using `zip`
+        archive2 = os.path.join(root_dir, 'archive2.zip')
+        zip_cmd = ['zip', '-q', '-r', 'archive2.zip', base_dir]
+        subprocess.check_call(zip_cmd, cwd=root_dir,
+                              stdout=subprocess.DEVNULL)
+
+        self.assertTrue(os.path.isfile(archive2))
+        # let's compare both ZIP files
+        with zipfile.ZipFile(archive) as zf:
+            names = zf.namelist()
+        with zipfile.ZipFile(archive2) as zf:
+            names2 = zf.namelist()
+        self.assertEqual(sorted(names), sorted(names2))
+
+    @requires_zlib
+    @unittest.skipUnless(ZIP_SUPPORT, 'Need zip support to run')
+    @unittest.skipUnless(shutil.which('unzip'),
+                         'Need the unzip command to run')
+    def test_unzip_zipfile(self):
+        root_dir, base_dir = self._create_files()
+        base_name = os.path.join(self.mkdtemp(), 'archive')
+        archive = make_archive(base_name, 'zip', root_dir, base_dir)
+
+        # check if ZIP file  was created
+        self.assertEqual(archive, base_name + '.zip')
+        self.assertTrue(os.path.isfile(archive))
+
+        # now check the ZIP file using `unzip -t`
+        zip_cmd = ['unzip', '-t', archive]
+        with support.change_cwd(root_dir):
+            try:
+                subprocess.check_output(zip_cmd, stderr=subprocess.STDOUT)
+            except subprocess.CalledProcessError as exc:
+                details = exc.output.decode(errors="replace")
+                msg = "{}\n\n**Unzip Output**\n{}"
+                self.fail(msg.format(exc, details))
 
     def test_make_archive(self):
         tmpdir = self.mkdtemp()
@@ -1064,40 +1137,37 @@ class TestShutil(unittest.TestCase):
         else:
             group = owner = 'root'
 
-        base_dir, root_dir, base_name =  self._create_files()
-        base_name = os.path.join(self.mkdtemp() , 'archive')
+        root_dir, base_dir = self._create_files()
+        base_name = os.path.join(self.mkdtemp(), 'archive')
         res = make_archive(base_name, 'zip', root_dir, base_dir, owner=owner,
                            group=group)
-        self.assertTrue(os.path.exists(res))
+        self.assertTrue(os.path.isfile(res))
 
         res = make_archive(base_name, 'zip', root_dir, base_dir)
-        self.assertTrue(os.path.exists(res))
+        self.assertTrue(os.path.isfile(res))
 
         res = make_archive(base_name, 'tar', root_dir, base_dir,
                            owner=owner, group=group)
-        self.assertTrue(os.path.exists(res))
+        self.assertTrue(os.path.isfile(res))
 
         res = make_archive(base_name, 'tar', root_dir, base_dir,
                            owner='kjhkjhkjg', group='oihohoh')
-        self.assertTrue(os.path.exists(res))
+        self.assertTrue(os.path.isfile(res))
 
 
     @requires_zlib
     @unittest.skipUnless(UID_GID_SUPPORT, "Requires grp and pwd support")
     def test_tarfile_root_owner(self):
-        tmpdir, tmpdir2, base_name =  self._create_files()
-        old_dir = os.getcwd()
-        os.chdir(tmpdir)
+        root_dir, base_dir = self._create_files()
+        base_name = os.path.join(self.mkdtemp(), 'archive')
         group = grp.getgrgid(0)[0]
         owner = pwd.getpwuid(0)[0]
-        try:
-            archive_name = _make_tarball(base_name, 'dist', compress=None,
-                                         owner=owner, group=group)
-        finally:
-            os.chdir(old_dir)
+        with support.change_cwd(root_dir):
+            archive_name = make_archive(base_name, 'gztar', root_dir, 'dist',
+                                        owner=owner, group=group)
 
         # check if the compressed tarball was created
-        self.assertTrue(os.path.exists(archive_name))
+        self.assertTrue(os.path.isfile(archive_name))
 
         # now checks the rights
         archive = tarfile.open(archive_name)
@@ -1123,6 +1193,21 @@ class TestShutil(unittest.TestCase):
         finally:
             unregister_archive_format('xxx')
 
+    def test_make_tarfile_in_curdir(self):
+        # Issue #21280
+        root_dir = self.mkdtemp()
+        with support.change_cwd(root_dir):
+            self.assertEqual(make_archive('test', 'tar'), 'test.tar')
+            self.assertTrue(os.path.isfile('test.tar'))
+
+    @requires_zlib
+    def test_make_zipfile_in_curdir(self):
+        # Issue #21280
+        root_dir = self.mkdtemp()
+        with support.change_cwd(root_dir):
+            self.assertEqual(make_archive('test', 'zip'), 'test.zip')
+            self.assertTrue(os.path.isfile('test.zip'))
+
     def test_register_archive_format(self):
 
         self.assertRaises(TypeError, register_archive_format, 'xxx', 1)
@@ -1139,40 +1224,28 @@ class TestShutil(unittest.TestCase):
         formats = [name for name, params in get_archive_formats()]
         self.assertNotIn('xxx', formats)
 
-    def _compare_dirs(self, dir1, dir2):
-        # check that dir1 and dir2 are equivalent,
-        # return the diff
-        diff = []
-        for root, dirs, files in os.walk(dir1):
-            for file_ in files:
-                path = os.path.join(root, file_)
-                target_path = os.path.join(dir2, os.path.split(path)[-1])
-                if not os.path.exists(target_path):
-                    diff.append(file_)
-        return diff
-
     @requires_zlib
     def test_unpack_archive(self):
         formats = ['tar', 'gztar', 'zip']
         if BZ2_SUPPORTED:
             formats.append('bztar')
 
+        root_dir, base_dir = self._create_files()
+        expected = rlistdir(root_dir)
+        expected.remove('outer')
         for format in formats:
-            tmpdir = self.mkdtemp()
-            base_dir, root_dir, base_name =  self._create_files()
-            tmpdir2 = self.mkdtemp()
+            base_name = os.path.join(self.mkdtemp(), 'archive')
             filename = make_archive(base_name, format, root_dir, base_dir)
 
             # let's try to unpack it now
+            tmpdir2 = self.mkdtemp()
             unpack_archive(filename, tmpdir2)
-            diff = self._compare_dirs(tmpdir, tmpdir2)
-            self.assertEqual(diff, [])
+            self.assertEqual(rlistdir(tmpdir2), expected)
 
             # and again, this time with the format specified
             tmpdir3 = self.mkdtemp()
             unpack_archive(filename, tmpdir3, format=format)
-            diff = self._compare_dirs(tmpdir, tmpdir3)
-            self.assertEqual(diff, [])
+            self.assertEqual(rlistdir(tmpdir3), expected)
         self.assertRaises(shutil.ReadError, unpack_archive, TESTFN)
         self.assertRaises(ValueError, unpack_archive, TESTFN, format='xxx')
 
@@ -1757,6 +1830,24 @@ class TermsizeTests(unittest.TestCase):
             actual = shutil.get_terminal_size()
 
         self.assertEqual(expected, actual)
+
+
+class PublicAPITests(unittest.TestCase):
+    """Ensures that the correct values are exposed in the public API."""
+
+    def test_module_all_attribute(self):
+        self.assertTrue(hasattr(shutil, '__all__'))
+        target_api = ['copyfileobj', 'copyfile', 'copymode', 'copystat',
+                      'copy', 'copy2', 'copytree', 'move', 'rmtree', 'Error',
+                      'SpecialFileError', 'ExecError', 'make_archive',
+                      'get_archive_formats', 'register_archive_format',
+                      'unregister_archive_format', 'get_unpack_formats',
+                      'register_unpack_format', 'unregister_unpack_format',
+                      'unpack_archive', 'ignore_patterns', 'chown', 'which',
+                      'get_terminal_size', 'SameFileError']
+        if hasattr(os, 'statvfs') or os.name == 'nt':
+            target_api.append('disk_usage')
+        self.assertEqual(set(shutil.__all__), set(target_api))
 
 
 if __name__ == '__main__':

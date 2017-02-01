@@ -358,7 +358,10 @@ namespace IronPython.Runtime.Exceptions {
 
             public BaseException __cause__ {
                 get { return _cause; }
-                set { _cause = value; }
+                set {
+                    _cause = value;
+                    __suppress_context__ = true;
+                }
             }
 
             public BaseException __context__ {
@@ -370,6 +373,8 @@ namespace IronPython.Runtime.Exceptions {
                     _context = value;
                 }
             }
+
+            public bool __suppress_context__ { get; set; }
 
             public TraceBack __traceback__ {
                 get {

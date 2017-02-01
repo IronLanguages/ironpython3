@@ -664,7 +664,7 @@ namespace IronPython.Modules {
         }
 
         [Documentation("int(x[, base]) -> integer\n\nConvert a string or number to an integer, if possible.  A floating point\nargument will be truncated towards zero (this does not include a string\nrepresentation of a floating point number!)  When converting a string, use\nthe optional base.  It is an error to supply a base when converting a\nnon-string.  If base is zero, the proper base is guessed based on the\nstring content.  If the argument is outside the integer range a\nlong object will be returned instead.")]
-        public static int calcsize(CodeContext/*!*/ context, [NotNull]string fmt) {
+        public static int calcsize(CodeContext/*!*/ context, [BytesConversion][NotNull]string fmt) {
             return GetStructFromCache(context, fmt).size;
         }
 

@@ -167,6 +167,9 @@ namespace IronPython.Modules {
         public static PythonType BytesWarning {
             get { return PythonExceptions.BytesWarning; }
         }
+        public static PythonType ResourceWarning {
+            get { return PythonExceptions.ResourceWarning; }
+        }
 
         // *** END GENERATED CODE ***
 

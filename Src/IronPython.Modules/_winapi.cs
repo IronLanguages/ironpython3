@@ -33,10 +33,9 @@ using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 
-[assembly: PythonModule("_subprocess", typeof(IronPython.Modules.PythonSubprocess))]
+[assembly: PythonModule("_winapi", typeof(IronPython.Modules.PythonWinApi))]
 namespace IronPython.Modules {
-    [PythonType("_subprocess")]
-    public static class PythonSubprocess {
+    public static class PythonWinApi {
         public const string __doc__ = "_subprocess Module";
 
 #region Public API
@@ -160,6 +159,10 @@ namespace IronPython.Modules {
                 res.Append('\0');
             }
             return res.ToString();
+        }
+
+        public static void CloseHandle(PythonSubprocessHandle handle) {
+            handle.Close();
         }
 
         /// <summary>
@@ -449,8 +452,8 @@ namespace IronPython.Modules {
         }
 
         private bool PollForExit() {
-            if (PythonSubprocess.WaitForSingleObjectPI(_internalHandle, 0) == PythonSubprocess.WAIT_OBJECT_0) {
-                PythonSubprocess.GetExitCodeProcessPI(_internalHandle, out _exitCode);
+            if (PythonWinApi.WaitForSingleObjectPI(_internalHandle, 0) == PythonWinApi.WAIT_OBJECT_0) {
+                PythonWinApi.GetExitCodeProcessPI(_internalHandle, out _exitCode);
                 return true;
             }
             return false;
@@ -459,7 +462,7 @@ namespace IronPython.Modules {
         public void Close() {
             lock (this) {
                 if (!_closed) {
-                    PythonSubprocess.CloseHandle(_internalHandle);
+                    PythonWinApi.CloseHandle(_internalHandle);
                     _closed = true;
                     GC.SuppressFinalize(this);
                 }

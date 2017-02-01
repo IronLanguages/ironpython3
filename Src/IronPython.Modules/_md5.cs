@@ -48,28 +48,28 @@ namespace IronPython.Modules {
             get { return GetHasher().HashSize / 8; }
         }
 
-        [Documentation("new([data]) -> object (new md5 object)")]
-        public static MD5Type @new(object data) {
+        [Documentation("md5([data]) -> object (new md5 object)")]
+        public static MD5Type md5(object data) {
             return new MD5Type(data);
         }
 
-        [Documentation("new([data]) -> object (new md5 object)")]
-        public static MD5Type @new(Bytes data) {
+        [Documentation("md5([data]) -> object (new md5 object)")]
+        public static MD5Type md5(Bytes data) {
             return new MD5Type((IList<byte>)data);
         }
 
-        [Documentation("new([data]) -> object (new md5 object)")]
-        public static MD5Type @new(PythonBuffer data) {
+        [Documentation("md5([data]) -> object (new md5 object)")]
+        public static MD5Type md5(PythonBuffer data) {
             return new MD5Type(data);
         }
 
-        [Documentation("new([data]) -> object (new md5 object)")]
-        public static MD5Type @new(ByteArray data) {
+        [Documentation("md5([data]) -> object (new md5 object)")]
+        public static MD5Type md5(ByteArray data) {
             return new MD5Type((IList<byte>)data);
         }
 
-        [Documentation("new([data]) -> object (new md5 object)")]
-        public static MD5Type @new() {
+        [Documentation("md5([data]) -> object (new md5 object)")]
+        public static MD5Type md5() {
             return new MD5Type();
         }
 

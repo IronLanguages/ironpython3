@@ -57,6 +57,7 @@ namespace IronPython.Modules {
         public const int S = 0x10;
         public const int U = 0x20;
         public const int X = 0x40;
+        public const int A = 0x100;
 
         // long forms
         public const int IGNORECASE = 0x02;
@@ -65,6 +66,7 @@ namespace IronPython.Modules {
         public const int DOTALL = 0x10;
         public const int UNICODE = 0x20;
         public const int VERBOSE = 0x40;
+        public const int ASCII = 0x100;
 
         #endregion
 

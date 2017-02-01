@@ -54,6 +54,11 @@ namespace IronPython.Modules {
             }
         }
 
+        public static List extension_suffixes() {
+            // TODO: support extensions?
+            return new List();
+        }
+
         public static string get_magic() {
             return "";
         }

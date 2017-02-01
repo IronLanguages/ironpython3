@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
@@ -26,7 +27,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using SpecialName = System.Runtime.CompilerServices.SpecialNameAttribute;
 
-[assembly: PythonModule("thread", typeof(IronPython.Modules.PythonThread))]
+[assembly: PythonModule("_thread", typeof(IronPython.Modules.PythonThread))]
 namespace IronPython.Modules {
     public static class PythonThread {
         public const string __doc__ = "Provides low level primitives for threading.";
@@ -39,8 +40,10 @@ namespace IronPython.Modules {
             context.SetModuleState(_stackSizeKey, 0);
             context.EnsureModuleException("threaderror", dict, "error", "thread");
         }
-      
+
         #region Public API Surface
+
+        public static double TIMEOUT_MAX = 0; // TODO: fill this with a proper value
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly PythonType LockType = DynamicHelpers.GetPythonTypeFromType(typeof(@lock));
@@ -131,6 +134,12 @@ namespace IronPython.Modules {
             return (int)context.LanguageContext.GetOrCreateModuleState<object>(_threadCountKey, () => 0);
         }
 
+        [Documentation("_set_sentinel() -> lock\n\nSet a sentinel lock that will be released when the current thread\nstate is finalized (after it is untied from the interpreter).\n\nThis is a private API for the threading module.")]
+        public static object _set_sentinel(CodeContext context) {
+            // TODO: properly implement this
+            return new @lock();
+        }
+
         #endregion
 
         [PythonType, PythonHidden]
@@ -139,7 +148,7 @@ namespace IronPython.Modules {
             private Thread curHolder;
 
             public object __enter__() {
-                acquire();
+                acquire(true, -1);
                 return this;
             }
 
@@ -147,18 +156,14 @@ namespace IronPython.Modules {
                 release(context);
             }
             
-            public object acquire() {
-                return (acquire(ScriptingRuntimeHelpers.True));
-            }
-
-            public object acquire(object waitflag) {
-                bool fWait = PythonOps.IsTrue(waitflag);
+            public bool acquire([DefaultParameterValue(true)]bool blocking, [DefaultParameterValue(-1)]int timeout) {
+                // TODO: implement timeout
                 for (; ; ) {
                     if (Interlocked.CompareExchange<Thread>(ref curHolder, Thread.CurrentThread, null) == null) {
-                        return ScriptingRuntimeHelpers.True;
+                        return true;
                     }
-                    if (!fWait) {
-                        return ScriptingRuntimeHelpers.False;
+                    if (!blocking) {
+                        return false;
                     }
                     if (blockEvent == null) {
                         // try again in case someone released us, checked the block

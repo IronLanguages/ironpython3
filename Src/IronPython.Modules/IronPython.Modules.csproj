@@ -20,6 +20,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="array.cs" />
+    <Compile Include="atexit.cs" />
     <Compile Include="binascii.cs" />
     <Compile Include="bz2\BZ2Compressor.cs" />
     <Compile Include="bz2\BZ2Decompressor.cs" />
@@ -33,6 +34,7 @@
     <Compile Include="bz2\dotnetzip\BZip2\ParallelBZip2OutputStream.cs" />
     <Compile Include="bz2\dotnetzip\BZip2\Rand.cs" />
     <Compile Include="cmath.cs" />
+    <Compile Include="faulthandler.cs" />
     <Compile Include="msvcrt.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="mmap.cs" />
@@ -72,7 +74,7 @@
     <Compile Include="re.cs" />
     <Compile Include="select.cs" />
     <Compile Include="_multibytecodec.cs" />
-    <Compile Include="_sha.cs" />
+    <Compile Include="_sha1.cs" />
     <Compile Include="_sha256.cs" />
     <Compile Include="_sha512.cs" />
     <Compile Include="socket.cs" />
@@ -101,15 +103,16 @@
     <Compile Include="_ctypes\UnionType.cs" />
     <Compile Include="_ctypes_test.cs" />
     <Compile Include="_heapq.cs" />
+    <Compile Include="_string.cs" />
     <Compile Include="_struct.cs" />
-    <Compile Include="thread.cs" />
+    <Compile Include="_thread.cs" />
     <Compile Include="time.cs" />
     <Compile Include="xxsubtype.cs" />
     <Compile Include="_functools.cs" />
     <Compile Include="_random.cs" />
     <Compile Include="_sre.cs" />
     <Compile Include="_ssl.cs" />
-    <Compile Include="_subprocess.cs" />
+    <Compile Include="_winapi.cs" />
     <Compile Include="_warnings.cs" />
     <Compile Include="_weakref.cs" />
     <Compile Include="..\AssemblyVersion.cs">

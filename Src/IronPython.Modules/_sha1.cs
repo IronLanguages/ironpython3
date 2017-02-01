@@ -28,9 +28,9 @@ using IronPython.Runtime.Operations;
 //!!! Also, we could probably make a generic version of this that could then be specialized
 //!!! for both md5 and sha.
 
-[assembly: PythonModule("_sha", typeof(IronPython.Modules.PythonSha))]
+[assembly: PythonModule("_sha1", typeof(IronPython.Modules.PythonSha1))]
 namespace IronPython.Modules {
-    public static class PythonSha {
+    public static class PythonSha1 {
         public const string __doc__ = "implements the SHA1 hash algorithm";
 
         [ThreadStatic]
@@ -59,28 +59,28 @@ namespace IronPython.Modules {
             get { return blockSize; }
         }
 
-        [Documentation("new([data]) -> object (object used to calculate hash)")]
-        public static sha @new(object data) {
+        [Documentation("sha1([data]) -> object (object used to calculate hash)")]
+        public static sha sha1(object data) {
             return new sha(data);
         }
 
-        [Documentation("new([data]) -> object (object used to calculate hash)")]
-        public static sha @new(Bytes data) {
+        [Documentation("sha1([data]) -> object (object used to calculate hash)")]
+        public static sha sha1(Bytes data) {
             return new sha((IList<byte>)data);
         }
 
-        [Documentation("new([data]) -> object (object used to calculate hash)")]
-        public static sha @new(PythonBuffer data) {
+        [Documentation("sha1([data]) -> object (object used to calculate hash)")]
+        public static sha sha1(PythonBuffer data) {
             return new sha(data);
         }
 
-        [Documentation("new([data]) -> object (object used to calculate hash)")]
-        public static sha @new(ByteArray data) {
+        [Documentation("sha1([data]) -> object (object used to calculate hash)")]
+        public static sha sha1(ByteArray data) {
             return new sha((IList<byte>)data);
         }
 
-        [Documentation("new([data]) -> object (object used to calculate hash)")]
-        public static sha @new() {
+        [Documentation("sha1([data]) -> object (object used to calculate hash)")]
+        public static sha sha1() {
             return new sha();
         }
 
@@ -93,8 +93,8 @@ namespace IronPython.Modules {
         {
             byte[] _bytes;
             byte[] _hash;
-            public static readonly int digest_size = PythonSha.digest_size;
-            public static readonly int block_size = PythonSha.blocksize;
+            public static readonly int digest_size = PythonSha1.digest_size;
+            public static readonly int block_size = PythonSha1.blocksize;
 
             public sha() : this(new byte[0]) { }
 

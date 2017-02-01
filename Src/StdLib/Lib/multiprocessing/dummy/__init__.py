@@ -86,7 +86,7 @@ class Namespace(object):
             if not name.startswith('_'):
                 temp.append('%s=%r' % (name, value))
         temp.sort()
-        return '%s(%s)' % (self.__class__.__name__, ', '.join(temp))
+        return 'Namespace(%s)' % str.join(', ', temp)
 
 dict = dict
 list = list
@@ -104,7 +104,7 @@ class Value(object):
         self._value = value
     value = property(_get, _set)
     def __repr__(self):
-        return '<%s(%r, %r)>'%(type(self).__name__,self._typecode,self._value)
+        return '<%r(%r, %r)>'%(type(self).__name__,self._typecode,self._value)
 
 def Manager():
     return sys.modules[__name__]

@@ -3,6 +3,7 @@ import pprint
 import sys
 import unittest
 
+from test import support
 
 class TestGetProfile(unittest.TestCase):
     def setUp(self):
@@ -164,7 +165,7 @@ class ProfileHookTestCase(TestCaseBase):
                               (1, 'return', g_ident),
                               ])
 
-    def test_exception_propagation(self):
+    def test_exception_propogation(self):
         def f(p):
             1/0
         def g(p):
@@ -259,6 +260,7 @@ class ProfileHookTestCase(TestCaseBase):
         def f():
             for i in range(2):
                 yield i
+            raise StopIteration
         def g(p):
             for i in f():
                 pass
@@ -372,5 +374,13 @@ def show_events(callable):
     pprint.pprint(capture_events(callable))
 
 
+def test_main():
+    support.run_unittest(
+        TestGetProfile,
+        ProfileHookTestCase,
+        ProfileSimulatorTestCase
+    )
+
+
 if __name__ == "__main__":
-    unittest.main()
+    test_main()

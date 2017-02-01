@@ -7,9 +7,11 @@
 __all__ = ['Parser', 'HeaderParser', 'BytesParser', 'BytesHeaderParser',
            'FeedParser', 'BytesFeedParser']
 
+import warnings
 from io import StringIO, TextIOWrapper
 
 from email.feedparser import FeedParser, BytesFeedParser
+from email.message import Message
 from email._policybase import compat32
 
 
@@ -23,7 +25,7 @@ class Parser:
         textual representation of the message.
 
         The string must be formatted as a block of RFC 2822 headers and header
-        continuation lines, optionally preceded by a `Unix-from' header.  The
+        continuation lines, optionally preceeded by a `Unix-from' header.  The
         header block is terminated either by the end of the string or by a
         blank line.
 
@@ -87,7 +89,7 @@ class BytesParser:
         textual representation of the message.
 
         The input must be formatted as a block of RFC 2822 headers and header
-        continuation lines, optionally preceded by a `Unix-from' header.  The
+        continuation lines, optionally preceeded by a `Unix-from' header.  The
         header block is terminated either by the end of the input or by a
         blank line.
 
@@ -106,10 +108,8 @@ class BytesParser:
         meaning it parses the entire contents of the file.
         """
         fp = TextIOWrapper(fp, encoding='ascii', errors='surrogateescape')
-        try:
+        with fp:
             return self.parser.parse(fp, headersonly)
-        finally:
-            fp.detach()
 
 
     def parsebytes(self, text, headersonly=False):

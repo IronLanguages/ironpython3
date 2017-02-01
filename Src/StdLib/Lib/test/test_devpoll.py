@@ -9,8 +9,10 @@ import sys
 import unittest
 from test.support import TESTFN, run_unittest, cpython_only
 
-if not hasattr(select, 'devpoll') :
-    raise unittest.SkipTest('test works only on Solaris OS family')
+try:
+    select.devpoll
+except AttributeError:
+    raise unittest.SkipTest("select.devpoll not defined")
 
 
 def find_ready_matching(ready, flag):

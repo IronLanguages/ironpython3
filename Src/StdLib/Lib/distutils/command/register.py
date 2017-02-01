@@ -296,9 +296,9 @@ Your selection [default 1]: ''', log.INFO)
             result = 500, str(e)
         else:
             if self.show_response:
-                data = self._read_pypi_response(result)
+                data = result.read()
             result = 200, 'OK'
         if self.show_response:
-            msg = '\n'.join(('-' * 75, data, '-' * 75))
-            self.announce(msg, log.INFO)
+            dashes = '-' * 75
+            self.announce('%s%r%s' % (dashes, data, dashes))
         return result

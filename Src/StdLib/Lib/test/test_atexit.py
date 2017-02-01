@@ -177,5 +177,9 @@ class SubinterpreterTest(unittest.TestCase):
         self.assertEqual(atexit._ncallbacks(), n)
 
 
+def test_main():
+    support.run_unittest(__name__)
+
+
 if __name__ == "__main__":
-    unittest.main()
+    test_main()

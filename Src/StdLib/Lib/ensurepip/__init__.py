@@ -8,9 +8,9 @@ import tempfile
 __all__ = ["version", "bootstrap"]
 
 
-_SETUPTOOLS_VERSION = "20.10.1"
+_SETUPTOOLS_VERSION = "2.1"
 
-_PIP_VERSION = "8.1.1"
+_PIP_VERSION = "1.5.4"
 
 # pip currently requires ssl support, so we try to provide a nicer
 # error message when that is missing (http://bugs.python.org/issue19744)
@@ -128,16 +128,15 @@ def _uninstall_helper(*, verbosity=0):
 
     # If the pip version doesn't match the bundled one, leave it alone
     if pip.__version__ != _PIP_VERSION:
-        msg = ("ensurepip will only uninstall a matching version "
+        msg = ("ensurepip will only uninstall a matching pip "
                "({!r} installed, {!r} bundled)")
-        print(msg.format(pip.__version__, _PIP_VERSION), file=sys.stderr)
-        return
+        raise RuntimeError(msg.format(pip.__version__, _PIP_VERSION))
 
     _require_ssl_for_pip()
     _disable_pip_configuration_settings()
 
     # Construct the arguments to be passed to the pip command
-    args = ["uninstall", "-y", "--disable-pip-version-check"]
+    args = ["uninstall", "-y"]
     if verbosity:
         args += ["-" + "v" * verbosity]
 

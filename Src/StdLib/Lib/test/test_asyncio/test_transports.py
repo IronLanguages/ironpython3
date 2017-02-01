@@ -1,7 +1,7 @@
 """Tests for transports.py."""
 
 import unittest
-from unittest import mock
+import unittest.mock
 
 import asyncio
 from asyncio import transports
@@ -23,7 +23,7 @@ class TransportTests(unittest.TestCase):
 
     def test_writelines(self):
         transport = asyncio.Transport()
-        transport.write = mock.Mock()
+        transport.write = unittest.mock.Mock()
 
         transport.writelines([b'line1',
                               bytearray(b'line2'),
@@ -69,9 +69,8 @@ class TransportTests(unittest.TestCase):
             def get_write_buffer_size(self):
                 return 512
 
-        loop = mock.Mock()
-        transport = MyTransport(loop=loop)
-        transport._protocol = mock.Mock()
+        transport = MyTransport()
+        transport._protocol = unittest.mock.Mock()
 
         self.assertFalse(transport._protocol_paused)
 
@@ -80,11 +79,9 @@ class TransportTests(unittest.TestCase):
 
         transport.set_write_buffer_limits(high=1024, low=128)
         self.assertFalse(transport._protocol_paused)
-        self.assertEqual(transport.get_write_buffer_limits(), (128, 1024))
 
         transport.set_write_buffer_limits(high=256, low=128)
         self.assertTrue(transport._protocol_paused)
-        self.assertEqual(transport.get_write_buffer_limits(), (128, 256))
 
 
 if __name__ == '__main__':

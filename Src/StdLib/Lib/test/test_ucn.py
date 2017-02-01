@@ -172,7 +172,7 @@ class UnicodeNamesTest(unittest.TestCase):
 
     def test_named_sequences_full(self):
         # Check all the named sequences
-        url = ("http://www.pythontest.net/unicode/%s/NamedSequences.txt" %
+        url = ("http://www.unicode.org/Public/%s/ucd/NamedSequences.txt" %
                unicodedata.unidata_version)
         try:
             testdata = support.open_urlresource(url, encoding="utf-8",
@@ -233,5 +233,8 @@ class UnicodeNamesTest(unittest.TestCase):
         )
 
 
+def test_main():
+    support.run_unittest(UnicodeNamesTest)
+
 if __name__ == "__main__":
-    unittest.main()
+    test_main()

@@ -1,5 +1,6 @@
 """Test cases for the fnmatch module."""
 
+from test import support
 import unittest
 
 from fnmatch import fnmatch, fnmatchcase, translate, filter
@@ -78,5 +79,11 @@ class FilterTestCase(unittest.TestCase):
         self.assertEqual(filter(['a', 'b'], 'a'), ['a'])
 
 
+def test_main():
+    support.run_unittest(FnmatchTestCase,
+                         TranslateTestCase,
+                         FilterTestCase)
+
+
 if __name__ == "__main__":
-    unittest.main()
+    test_main()

@@ -19,7 +19,7 @@ import logging
 import struct
 import operator
 import test.support
-import test.support.script_helper
+import test.script_helper
 
 
 # Skip tests if _multiprocessing wasn't built.
@@ -455,15 +455,13 @@ class _TestSubclassingProcess(BaseTestCase):
 
     @classmethod
     def _test_stderr_flush(cls, testfn):
-        fd = os.open(testfn, os.O_WRONLY | os.O_CREAT | os.O_EXCL)
-        sys.stderr = open(fd, 'w', closefd=False)
+        sys.stderr = open(testfn, 'w')
         1/0 # MARKER
 
 
     @classmethod
     def _test_sys_exit(cls, reason, testfn):
-        fd = os.open(testfn, os.O_WRONLY | os.O_CREAT | os.O_EXCL)
-        sys.stderr = open(fd, 'w', closefd=False)
+        sys.stderr = open(testfn, 'w')
         sys.exit(reason)
 
     def test_sys_exit(self):
@@ -474,21 +472,15 @@ class _TestSubclassingProcess(BaseTestCase):
         testfn = test.support.TESTFN
         self.addCleanup(test.support.unlink, testfn)
 
-        for reason in (
-            [1, 2, 3],
-            'ignore this',
-        ):
+        for reason, code in (([1, 2, 3], 1), ('ignore this', 1)):
             p = self.Process(target=self._test_sys_exit, args=(reason, testfn))
             p.daemon = True
             p.start()
             p.join(5)
-            self.assertEqual(p.exitcode, 1)
+            self.assertEqual(p.exitcode, code)
 
             with open(testfn, 'r') as f:
-                content = f.read()
-            self.assertEqual(content.rstrip(), str(reason))
-
-            os.unlink(testfn)
+                self.assertEqual(f.read().rstrip(), str(reason))
 
         for reason in (True, False, 8):
             p = self.Process(target=sys.exit, args=(reason,))
@@ -721,35 +713,12 @@ class _TestQueue(BaseTestCase):
         for p in workers:
             p.join()
 
-    def test_no_import_lock_contention(self):
-        with test.support.temp_cwd():
-            module_name = 'imported_by_an_imported_module'
-            with open(module_name + '.py', 'w') as f:
-                f.write("""if 1:
-                    import multiprocessing
-
-                    q = multiprocessing.Queue()
-                    q.put('knock knock')
-                    q.get(timeout=3)
-                    q.close()
-                    del q
-                """)
-
-            with test.support.DirsOnSysPath(os.getcwd()):
-                try:
-                    __import__(module_name)
-                except pyqueue.Empty:
-                    self.fail("Probable regression on import lock contention;"
-                              " see Issue #22853")
-
     def test_timeout(self):
         q = multiprocessing.Queue()
         start = time.time()
-        self.assertRaises(pyqueue.Empty, q.get, True, 0.200)
+        self.assertRaises(pyqueue.Empty, q.get, True, 0.2)
         delta = time.time() - start
-        # Tolerate a delta of 30 ms because of the bad clock resolution on
-        # Windows (usually 15.6 ms)
-        self.assertGreaterEqual(delta, 0.170)
+        self.assertGreaterEqual(delta, 0.18)
 
 #
 #
@@ -1668,14 +1637,6 @@ def sqr(x, wait=0.0):
 def mul(x, y):
     return x*y
 
-class SayWhenError(ValueError): pass
-
-def exception_throwing_generator(total, when):
-    for i in range(total):
-        if i == when:
-            raise SayWhenError("Somebody said when")
-        yield i
-
 class _TestPool(BaseTestCase):
 
     @classmethod
@@ -1774,25 +1735,6 @@ class _TestPool(BaseTestCase):
             self.assertEqual(next(it), i*i)
         self.assertRaises(StopIteration, it.__next__)
 
-    def test_imap_handle_iterable_exception(self):
-        if self.TYPE == 'manager':
-            self.skipTest('test not appropriate for {}'.format(self.TYPE))
-
-        it = self.pool.imap(sqr, exception_throwing_generator(10, 3), 1)
-        for i in range(3):
-            self.assertEqual(next(it), i*i)
-        self.assertRaises(SayWhenError, it.__next__)
-
-        # SayWhenError seen at start of problematic chunk's results
-        it = self.pool.imap(sqr, exception_throwing_generator(20, 7), 2)
-        for i in range(6):
-            self.assertEqual(next(it), i*i)
-        self.assertRaises(SayWhenError, it.__next__)
-        it = self.pool.imap(sqr, exception_throwing_generator(20, 7), 4)
-        for i in range(4):
-            self.assertEqual(next(it), i*i)
-        self.assertRaises(SayWhenError, it.__next__)
-
     def test_imap_unordered(self):
         it = self.pool.imap_unordered(sqr, list(range(1000)))
         self.assertEqual(sorted(it), list(map(sqr, list(range(1000)))))
@@ -1800,45 +1742,14 @@ class _TestPool(BaseTestCase):
         it = self.pool.imap_unordered(sqr, list(range(1000)), chunksize=53)
         self.assertEqual(sorted(it), list(map(sqr, list(range(1000)))))
 
-    def test_imap_unordered_handle_iterable_exception(self):
-        if self.TYPE == 'manager':
-            self.skipTest('test not appropriate for {}'.format(self.TYPE))
-
-        it = self.pool.imap_unordered(sqr,
-                                      exception_throwing_generator(10, 3),
-                                      1)
-        expected_values = list(map(sqr, list(range(10))))
-        with self.assertRaises(SayWhenError):
-            # imap_unordered makes it difficult to anticipate the SayWhenError
-            for i in range(10):
-                value = next(it)
-                self.assertIn(value, expected_values)
-                expected_values.remove(value)
-
-        it = self.pool.imap_unordered(sqr,
-                                      exception_throwing_generator(20, 7),
-                                      2)
-        expected_values = list(map(sqr, list(range(20))))
-        with self.assertRaises(SayWhenError):
-            for i in range(20):
-                value = next(it)
-                self.assertIn(value, expected_values)
-                expected_values.remove(value)
-
     def test_make_pool(self):
-        expected_error = (RemoteError if self.TYPE == 'manager'
-                          else ValueError)
+        self.assertRaises(ValueError, multiprocessing.Pool, -1)
+        self.assertRaises(ValueError, multiprocessing.Pool, 0)
 
-        self.assertRaises(expected_error, self.Pool, -1)
-        self.assertRaises(expected_error, self.Pool, 0)
-
-        if self.TYPE != 'manager':
-            p = self.Pool(3)
-            try:
-                self.assertEqual(3, len(p._pool))
-            finally:
-                p.close()
-                p.join()
+        p = multiprocessing.Pool(3)
+        self.assertEqual(3, len(p._pool))
+        p.close()
+        p.join()
 
     def test_terminate(self):
         result = self.pool.map_async(
@@ -1847,8 +1758,7 @@ class _TestPool(BaseTestCase):
         self.pool.terminate()
         join = TimingWrapper(self.pool.join)
         join()
-        # Sanity check the pool didn't wait for all tasks to finish
-        self.assertLess(join.elapsed, 2.0)
+        self.assertLess(join.elapsed, 0.5)
 
     def test_empty_iterable(self):
         # See Issue 12157
@@ -1866,7 +1776,7 @@ class _TestPool(BaseTestCase):
         if self.TYPE == 'processes':
             L = list(range(10))
             expected = [sqr(i) for i in L]
-            with self.Pool(2) as p:
+            with multiprocessing.Pool(2) as p:
                 r = p.map_async(sqr, L)
                 self.assertEqual(r.get(), expected)
             self.assertRaises(ValueError, p.map_async, sqr, L)
@@ -1899,17 +1809,6 @@ class _TestPool(BaseTestCase):
                     sys.excepthook(*sys.exc_info())
             self.assertIn('raise RuntimeError(123) # some comment',
                           f1.getvalue())
-
-    @classmethod
-    def _test_wrapped_exception(cls):
-        raise RuntimeError('foo')
-
-    def test_wrapped_exception(self):
-        # Issue #20980: Should not wrap exception when using thread pool
-        with self.Pool(1) as p:
-            with self.assertRaises(RuntimeError):
-                p.apply(self._test_wrapped_exception)
-
 
 def raising():
     raise KeyError("key")
@@ -2108,12 +2007,6 @@ SERIALIZER = 'xmlrpclib'
 class _TestRemoteManager(BaseTestCase):
 
     ALLOWED_TYPES = ('manager',)
-    values = ['hello world', None, True, 2.25,
-              'hall\xe5 v\xe4rlden',
-              '\u043f\u0440\u0438\u0432\u0456\u0442 \u0441\u0432\u0456\u0442',
-              b'hall\xe5 v\xe4rlden',
-             ]
-    result = values[:]
 
     @classmethod
     def _putter(cls, address, authkey):
@@ -2122,8 +2015,7 @@ class _TestRemoteManager(BaseTestCase):
             )
         manager.connect()
         queue = manager.get_queue()
-        # Note that xmlrpclib will deserialize object as a list not a tuple
-        queue.put(tuple(cls.values))
+        queue.put(('hello world', None, True, 2.25))
 
     def test_remote(self):
         authkey = os.urandom(32)
@@ -2143,7 +2035,8 @@ class _TestRemoteManager(BaseTestCase):
         manager2.connect()
         queue = manager2.get_queue()
 
-        self.assertEqual(queue.get(), self.result)
+        # Note that xmlrpclib will deserialize object as a list not a tuple
+        self.assertEqual(queue.get(), ['hello world', None, True, 2.25])
 
         # Because we are using xmlrpclib for serialization instead of
         # pickle this will cause a serialization error.
@@ -2639,7 +2532,7 @@ class _TestPicklingConnections(BaseTestCase):
 
         l = socket.socket()
         l.bind((test.support.HOST, 0))
-        l.listen()
+        l.listen(1)
         conn.send(l.getsockname())
         new_conn, addr = l.accept()
         conn.send(new_conn)
@@ -3286,7 +3179,7 @@ class TestWait(unittest.TestCase):
         from multiprocessing.connection import wait
         l = socket.socket()
         l.bind((test.support.HOST, 0))
-        l.listen()
+        l.listen(4)
         addr = l.getsockname()
         readers = []
         procs = []
@@ -3498,13 +3391,13 @@ class TestNoForkBomb(unittest.TestCase):
         sm = multiprocessing.get_start_method()
         name = os.path.join(os.path.dirname(__file__), 'mp_fork_bomb.py')
         if sm != 'fork':
-            rc, out, err = test.support.script_helper.assert_python_failure(name, sm)
-            self.assertEqual(out, b'')
-            self.assertIn(b'RuntimeError', err)
+            rc, out, err = test.script_helper.assert_python_failure(name, sm)
+            self.assertEqual('', out.decode('ascii'))
+            self.assertIn('RuntimeError', err.decode('ascii'))
         else:
-            rc, out, err = test.support.script_helper.assert_python_ok(name, sm)
-            self.assertEqual(out.rstrip(), b'123')
-            self.assertEqual(err, b'')
+            rc, out, err = test.script_helper.assert_python_ok(name, sm)
+            self.assertEqual('123', out.decode('ascii').rstrip())
+            self.assertEqual('', err.decode('ascii'))
 
 #
 # Issue #17555: ForkAwareThreadLock
@@ -3849,7 +3742,7 @@ class ThreadsMixin(object):
     connection = multiprocessing.dummy.connection
     current_process = staticmethod(multiprocessing.dummy.current_process)
     active_children = staticmethod(multiprocessing.dummy.active_children)
-    Pool = staticmethod(multiprocessing.dummy.Pool)
+    Pool = staticmethod(multiprocessing.Pool)
     Pipe = staticmethod(multiprocessing.dummy.Pipe)
     Queue = staticmethod(multiprocessing.dummy.Queue)
     JoinableQueue = staticmethod(multiprocessing.dummy.JoinableQueue)

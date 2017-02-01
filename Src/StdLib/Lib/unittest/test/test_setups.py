@@ -111,7 +111,7 @@ class TestSetups(unittest.TestCase):
         self.assertEqual(len(result.errors), 1)
         error, _ = result.errors[0]
         self.assertEqual(str(error),
-                    'setUpClass (%s.%s)' % (__name__, BrokenTest.__qualname__))
+                    'setUpClass (%s.BrokenTest)' % __name__)
 
     def test_error_in_teardown_class(self):
         class Test(unittest.TestCase):
@@ -144,7 +144,7 @@ class TestSetups(unittest.TestCase):
 
         error, _ = result.errors[0]
         self.assertEqual(str(error),
-                    'tearDownClass (%s.%s)' % (__name__, Test.__qualname__))
+                    'tearDownClass (%s.Test)' % __name__)
 
     def test_class_not_torndown_when_setup_fails(self):
         class Test(unittest.TestCase):
@@ -414,8 +414,7 @@ class TestSetups(unittest.TestCase):
         self.assertEqual(len(result.errors), 0)
         self.assertEqual(len(result.skipped), 1)
         skipped = result.skipped[0][0]
-        self.assertEqual(str(skipped),
-                    'setUpClass (%s.%s)' % (__name__, Test.__qualname__))
+        self.assertEqual(str(skipped), 'setUpClass (%s.Test)' % __name__)
 
     def test_skiptest_in_setupmodule(self):
         class Test(unittest.TestCase):

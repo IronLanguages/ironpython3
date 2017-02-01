@@ -2,6 +2,7 @@
 
 import sys
 import unittest
+from test import support
 
 
 class A:
@@ -171,14 +172,9 @@ class TestSuper(unittest.TestCase):
         c = f().__closure__[0]
         self.assertRaises(TypeError, X.meth, c)
 
-    def test_super_init_leaks(self):
-        # Issue #26718: super.__init__ leaked memory if called multiple times.
-        # This will be caught by regrtest.py -R if this leak.
-        # NOTE: Despite the use in the test a direct call of super.__init__
-        # is not endorsed.
-        sp = super(float, 1.0)
-        for i in range(1000):
-            super.__init__(sp, int, i)
+
+def test_main():
+    support.run_unittest(TestSuper)
 
 
 if __name__ == "__main__":

@@ -1,8 +1,7 @@
 # It's intended that this script be run by hand.  It runs speed tests on
 # hashlib functions; it does not test for correctness.
 
-import sys
-import time
+import sys, time
 import hashlib
 
 
@@ -10,8 +9,8 @@ def creatorFunc():
     raise RuntimeError("eek, creatorFunc not overridden")
 
 def test_scaled_msg(scale, name):
-    iterations = 106201//scale * 20
-    longStr = b'Z'*scale
+    iterations = 106201/scale * 20
+    longStr = 'Z'*scale
 
     localCF = creatorFunc
     start = time.time()

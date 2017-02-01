@@ -1,5 +1,6 @@
 import unittest
 import sys
+from test import support
 
 class PEP3131Test(unittest.TestCase):
 
@@ -32,5 +33,8 @@ class PEP3131Test(unittest.TestCase):
         else:
             self.fail("expected exception didn't occur")
 
-if __name__ == "__main__":
-    unittest.main()
+def test_main():
+    support.run_unittest(PEP3131Test)
+
+if __name__=="__main__":
+    test_main()

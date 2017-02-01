@@ -4,7 +4,6 @@ BaseException
  +-- GeneratorExit
  +-- Exception
       +-- StopIteration
-      +-- StopAsyncIteration
       +-- ArithmeticError
       |    +-- FloatingPointError
       |    +-- OverflowError
@@ -39,7 +38,6 @@ BaseException
       +-- ReferenceError
       +-- RuntimeError
       |    +-- NotImplementedError
-      |    +-- RecursionError
       +-- SyntaxError
       |    +-- IndentationError
       |         +-- TabError

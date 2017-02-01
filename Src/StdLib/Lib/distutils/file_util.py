@@ -80,8 +80,7 @@ def copy_file(src, dst, preserve_mode=1, preserve_times=1, update=0,
     (os.symlink) instead of copying: set it to "hard" or "sym"; if it is
     None (the default), files are copied.  Don't set 'link' on systems that
     don't support it: 'copy_file()' doesn't check if hard or symbolic
-    linking is available. If hardlink fails, falls back to
-    _copy_file_contents().
+    linking is available.
 
     Under Mac OS, uses the native file copy function in macostools; on
     other systems, uses '_copy_file_contents()' to copy file contents.
@@ -133,31 +132,24 @@ def copy_file(src, dst, preserve_mode=1, preserve_times=1, update=0,
     # (Unix only, of course, but that's the caller's responsibility)
     elif link == 'hard':
         if not (os.path.exists(dst) and os.path.samefile(src, dst)):
-            try:
-                os.link(src, dst)
-                return (dst, 1)
-            except OSError:
-                # If hard linking fails, fall back on copying file
-                # (some special filesystems don't support hard linking
-                #  even under Unix, see issue #8876).
-                pass
+            os.link(src, dst)
     elif link == 'sym':
         if not (os.path.exists(dst) and os.path.samefile(src, dst)):
             os.symlink(src, dst)
-            return (dst, 1)
 
     # Otherwise (non-Mac, not linking), copy the file contents and
     # (optionally) copy the times and mode.
-    _copy_file_contents(src, dst)
-    if preserve_mode or preserve_times:
-        st = os.stat(src)
+    else:
+        _copy_file_contents(src, dst)
+        if preserve_mode or preserve_times:
+            st = os.stat(src)
 
-        # According to David Ascher <da@ski.org>, utime() should be done
-        # before chmod() (at least under NT).
-        if preserve_times:
-            os.utime(dst, (st[ST_ATIME], st[ST_MTIME]))
-        if preserve_mode:
-            os.chmod(dst, S_IMODE(st[ST_MODE]))
+            # According to David Ascher <da@ski.org>, utime() should be done
+            # before chmod() (at least under NT).
+            if preserve_times:
+                os.utime(dst, (st[ST_ATIME], st[ST_MTIME]))
+            if preserve_mode:
+                os.chmod(dst, S_IMODE(st[ST_MODE]))
 
     return (dst, 1)
 
@@ -202,7 +194,7 @@ def move_file (src, dst,
     try:
         os.rename(src, dst)
     except OSError as e:
-        (num, msg) = e.args
+        (num, msg) = e
         if num == errno.EXDEV:
             copy_it = True
         else:
@@ -214,7 +206,7 @@ def move_file (src, dst,
         try:
             os.unlink(src)
         except OSError as e:
-            (num, msg) = e.args
+            (num, msg) = e
             try:
                 os.unlink(dst)
             except OSError:

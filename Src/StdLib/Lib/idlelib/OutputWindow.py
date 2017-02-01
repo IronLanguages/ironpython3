@@ -91,7 +91,7 @@ class OutputWindow(EditorWindow):
                     "No special line",
                     "The line you point at doesn't look like "
                     "a valid file name followed by a line number.",
-                    parent=self.text)
+                    master=self.text)
                 return
         filename, lineno = result
         edit = self.flist.open(filename)

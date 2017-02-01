@@ -20,8 +20,8 @@ manage and inserting data into the output.
 
 import sys
 import warnings
-warnings.warn('the formatter module is deprecated', DeprecationWarning,
-              stacklevel=2)
+warnings.warn('the formatter module is deprecated and will be removed in '
+              'Python 3.6', PendingDeprecationWarning)
 
 
 AS_IS = None
@@ -436,15 +436,11 @@ def test(file = None):
         fp = open(sys.argv[1])
     else:
         fp = sys.stdin
-    try:
-        for line in fp:
-            if line == '\n':
-                f.end_paragraph(1)
-            else:
-                f.add_flowing_data(line)
-    finally:
-        if fp is not sys.stdin:
-            fp.close()
+    for line in fp:
+        if line == '\n':
+            f.end_paragraph(1)
+        else:
+            f.add_flowing_data(line)
     f.end_paragraph(0)
 
 

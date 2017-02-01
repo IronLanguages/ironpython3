@@ -590,7 +590,7 @@ bytes8 = ArgumentDescriptor(
               reader=read_bytes8,
               doc="""A counted bytes string.
 
-              The first argument is an 8-byte little-endian unsigned int giving
+              The first argument is a 8-byte little-endian unsigned int giving
               the number of bytes, and the second argument is that many bytes.
               """)
 
@@ -734,7 +734,7 @@ unicodestring8 = ArgumentDescriptor(
                     reader=read_unicodestring8,
                     doc="""A counted Unicode string.
 
-                    The first argument is an 8-byte little-endian signed int
+                    The first argument is a 8-byte little-endian signed int
                     giving the number of bytes in the string, and the second
                     argument-- the UTF-8 encoding of the Unicode string --
                     contains that many bytes.
@@ -1330,7 +1330,7 @@ opcodes = [
       proto=4,
       doc="""Push a Python bytes object.
 
-      There are two arguments:  the first is an 8-byte unsigned int giving
+      There are two arguments:  the first is a 8-byte unsigned int giving
       the number of bytes in the string, and the second is that many bytes,
       which are taken literally as the string content.
       """),
@@ -1417,7 +1417,7 @@ opcodes = [
       proto=4,
       doc="""Push a Python Unicode string object.
 
-      There are two arguments:  the first is an 8-byte little-endian signed int
+      There are two arguments:  the first is a 8-byte little-endian signed int
       giving the number of bytes in the string.  The second is that many
       bytes, and is the UTF-8 encoding of the Unicode string.
       """),
@@ -1898,7 +1898,7 @@ opcodes = [
       arg=None,
       stack_before=[pyunicode, pyunicode],
       stack_after=[anyobject],
-      proto=4,
+      proto=0,
       doc="""Push a global object (module.attr) on the stack.
       """),
 
@@ -2282,61 +2282,40 @@ def genops(pickle):
 
 def optimize(p):
     'Optimize a pickle string by removing unused PUT opcodes'
-    put = 'PUT'
-    get = 'GET'
-    oldids = set()          # set of all PUT ids
-    newids = {}             # set of ids used by a GET opcode
-    opcodes = []            # (op, idx) or (pos, end_pos)
+    not_a_put = object()
+    gets = { not_a_put }    # set of args used by a GET opcode
+    opcodes = []            # (startpos, stoppos, putid)
     proto = 0
-    protoheader = b''
     for opcode, arg, pos, end_pos in _genops(p, yield_end_pos=True):
         if 'PUT' in opcode.name:
-            oldids.add(arg)
-            opcodes.append((put, arg))
-        elif opcode.name == 'MEMOIZE':
-            idx = len(oldids)
-            oldids.add(idx)
-            opcodes.append((put, idx))
+            opcodes.append((pos, end_pos, arg))
         elif 'FRAME' in opcode.name:
             pass
-        elif 'GET' in opcode.name:
-            if opcode.proto > proto:
-                proto = opcode.proto
-            newids[arg] = None
-            opcodes.append((get, arg))
-        elif opcode.name == 'PROTO':
-            if arg > proto:
-                proto = arg
-            if pos == 0:
-                protoheader = p[pos: end_pos]
-            else:
-                opcodes.append((pos, end_pos))
         else:
-            opcodes.append((pos, end_pos))
-    del oldids
+            if 'GET' in opcode.name:
+                gets.add(arg)
+            elif opcode.name == 'PROTO':
+                assert pos == 0, pos
+                proto = arg
+            opcodes.append((pos, end_pos, not_a_put))
+            prevpos, prevarg = pos, None
 
     # Copy the opcodes except for PUTS without a corresponding GET
     out = io.BytesIO()
-    # Write the PROTO header before any framing
-    out.write(protoheader)
-    pickler = pickle._Pickler(out, proto)
+    opcodes = iter(opcodes)
+    if proto >= 2:
+        # Write the PROTO header before any framing
+        start, stop, _ = next(opcodes)
+        out.write(p[start:stop])
+    buf = pickle._Framer(out.write)
     if proto >= 4:
-        pickler.framer.start_framing()
-    idx = 0
-    for op, arg in opcodes:
-        if op is put:
-            if arg not in newids:
-                continue
-            data = pickler.put(idx)
-            newids[arg] = idx
-            idx += 1
-        elif op is get:
-            data = pickler.get(newids[arg])
-        else:
-            data = p[op:arg]
-        pickler.framer.commit_frame()
-        pickler.write(data)
-    pickler.framer.end_framing()
+        buf.start_framing()
+    for start, stop, putid in opcodes:
+        if putid in gets:
+            buf.commit_frame()
+            buf.write(p[start:stop])
+    if proto >= 4:
+        buf.end_framing()
     return out.getvalue()
 
 ##############################################################################
@@ -2793,7 +2772,7 @@ def _test():
     return doctest.testmod()
 
 if __name__ == "__main__":
-    import argparse
+    import sys, argparse
     parser = argparse.ArgumentParser(
         description='disassemble one or more pickle files')
     parser.add_argument(

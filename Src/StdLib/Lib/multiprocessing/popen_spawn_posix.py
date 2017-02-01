@@ -1,3 +1,4 @@
+import fcntl
 import io
 import os
 
@@ -6,6 +7,8 @@ from . import popen_fork
 from . import reduction
 from . import spawn
 from . import util
+
+from . import current_process
 
 __all__ = ['Popen']
 

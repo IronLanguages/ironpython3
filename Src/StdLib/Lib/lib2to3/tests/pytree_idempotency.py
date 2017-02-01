@@ -4,8 +4,6 @@
 
 """Main program for testing the infrastructure."""
 
-from __future__ import print_function
-
 __author__ = "Guido van Rossum <guido@python.org>"
 
 # Support imports (need to be imported first)
@@ -18,8 +16,8 @@ import logging
 
 # Local imports
 from .. import pytree
-from .. import pgen2
-from ..pgen2 import driver
+import pgen2
+from pgen2 import driver
 
 logging.basicConfig()
 

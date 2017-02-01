@@ -354,5 +354,10 @@ class FailingQueueTest(BlockingTestMixin, unittest.TestCase):
         self.failing_queue_test(q)
 
 
+def test_main():
+    support.run_unittest(QueueTest, LifoQueueTest, PriorityQueueTest,
+                              FailingQueueTest)
+
+
 if __name__ == "__main__":
-    unittest.main()
+    test_main()

@@ -8,14 +8,13 @@ import tkinter.messagebox as tkMessageBox
 import tkinter.filedialog as tkFileDialog
 
 class GetHelpSourceDialog(Toplevel):
-    def __init__(self, parent, title, menuItem='', filePath='', _htest=False):
+    def __init__(self, parent, title, menuItem='', filePath=''):
         """Get menu entry and url/ local file location for Additional Help
 
         User selects a name for the Help resource and provides a web url
         or a local file as its source.  The user can enter a url or browse
         for the file.
 
-        _htest - bool, change box location when running htest
         """
         Toplevel.__init__(self, parent)
         self.configure(borderwidth=5)
@@ -23,28 +22,26 @@ class GetHelpSourceDialog(Toplevel):
         self.title(title)
         self.transient(parent)
         self.grab_set()
-        self.protocol("WM_DELETE_WINDOW", self.cancel)
+        self.protocol("WM_DELETE_WINDOW", self.Cancel)
         self.parent = parent
         self.result = None
-        self.create_widgets()
+        self.CreateWidgets()
         self.menu.set(menuItem)
         self.path.set(filePath)
         self.withdraw() #hide while setting geometry
         #needs to be done here so that the winfo_reqwidth is valid
         self.update_idletasks()
-        #centre dialog over parent. below parent if running htest.
-        self.geometry(
-                "+%d+%d" % (
-                    parent.winfo_rootx() +
-                    (parent.winfo_width()/2 - self.winfo_reqwidth()/2),
-                    parent.winfo_rooty() +
-                    ((parent.winfo_height()/2 - self.winfo_reqheight()/2)
-                    if not _htest else 150)))
+        #centre dialog over parent:
+        self.geometry("+%d+%d" %
+                      ((parent.winfo_rootx() + ((parent.winfo_width()/2)
+                                                -(self.winfo_reqwidth()/2)),
+                        parent.winfo_rooty() + ((parent.winfo_height()/2)
+                                                -(self.winfo_reqheight()/2)))))
         self.deiconify() #geometry set, unhide
-        self.bind('<Return>', self.ok)
+        self.bind('<Return>', self.Ok)
         self.wait_window()
 
-    def create_widgets(self):
+    def CreateWidgets(self):
         self.menu = StringVar(self)
         self.path = StringVar(self)
         self.fontSize = StringVar(self)
@@ -65,18 +62,18 @@ class GetHelpSourceDialog(Toplevel):
         labelPath.pack(anchor=W, padx=5, pady=3)
         self.entryPath.pack(anchor=W, padx=5, pady=3)
         browseButton = Button(self.frameMain, text='Browse', width=8,
-                              command=self.browse_file)
+                              command=self.browseFile)
         browseButton.pack(pady=3)
         frameButtons = Frame(self)
         frameButtons.pack(side=BOTTOM, fill=X)
         self.buttonOk = Button(frameButtons, text='OK',
-                               width=8, default=ACTIVE,  command=self.ok)
+                               width=8, default=ACTIVE,  command=self.Ok)
         self.buttonOk.grid(row=0, column=0, padx=5,pady=5)
         self.buttonCancel = Button(frameButtons, text='Cancel',
-                                   width=8, command=self.cancel)
+                                   width=8, command=self.Cancel)
         self.buttonCancel.grid(row=0, column=1, padx=5, pady=5)
 
-    def browse_file(self):
+    def browseFile(self):
         filetypes = [
             ("HTML Files", "*.htm *.html", "TEXT"),
             ("PDF Files", "*.pdf", "TEXT"),
@@ -99,9 +96,9 @@ class GetHelpSourceDialog(Toplevel):
         if file:
             self.path.set(file)
 
-    def menu_ok(self):
+    def MenuOk(self):
         "Simple validity check for a sensible menu item name"
-        menu_ok = True
+        menuOk = True
         menu = self.menu.get()
         menu.strip()
         if not menu:
@@ -109,19 +106,19 @@ class GetHelpSourceDialog(Toplevel):
                                    message='No menu item specified',
                                    parent=self)
             self.entryMenu.focus_set()
-            menu_ok = False
+            menuOk = False
         elif len(menu) > 30:
             tkMessageBox.showerror(title='Menu Item Error',
                                    message='Menu item too long:'
                                            '\nLimit 30 characters.',
                                    parent=self)
             self.entryMenu.focus_set()
-            menu_ok = False
-        return menu_ok
+            menuOk = False
+        return menuOk
 
-    def path_ok(self):
+    def PathOk(self):
         "Simple validity check for menu file path"
-        path_ok = True
+        pathOk = True
         path = self.path.get()
         path.strip()
         if not path: #no path specified
@@ -129,7 +126,7 @@ class GetHelpSourceDialog(Toplevel):
                                    message='No help file path specified.',
                                    parent=self)
             self.entryPath.focus_set()
-            path_ok = False
+            pathOk = False
         elif path.startswith(('www.', 'http')):
             pass
         else:
@@ -140,16 +137,16 @@ class GetHelpSourceDialog(Toplevel):
                                        message='Help file path does not exist.',
                                        parent=self)
                 self.entryPath.focus_set()
-                path_ok = False
-        return path_ok
+                pathOk = False
+        return pathOk
 
-    def ok(self, event=None):
-        if self.menu_ok() and self.path_ok():
+    def Ok(self, event=None):
+        if self.MenuOk() and self.PathOk():
             self.result = (self.menu.get().strip(),
                            self.path.get().strip())
             if sys.platform == 'darwin':
                 path = self.result[1]
-                if path.startswith(('www', 'file:', 'http:', 'https:')):
+                if path.startswith(('www', 'file:', 'http:')):
                     pass
                 else:
                     # Mac Safari insists on using the URI form for local files
@@ -157,14 +154,16 @@ class GetHelpSourceDialog(Toplevel):
                     self.result[1] = "file://" + path
             self.destroy()
 
-    def cancel(self, event=None):
+    def Cancel(self, event=None):
         self.result = None
         self.destroy()
 
 if __name__ == '__main__':
-    import unittest
-    unittest.main('idlelib.idle_test.test_config_help',
-                   verbosity=2, exit=False)
-
-    from idlelib.idle_test.htest import run
-    run(GetHelpSourceDialog)
+    #test the dialog
+    root = Tk()
+    def run():
+        keySeq = ''
+        dlg = GetHelpSourceDialog(root, 'Get Help Source')
+        print(dlg.result)
+    Button(root,text='Dialog', command=run).pack()
+    root.mainloop()

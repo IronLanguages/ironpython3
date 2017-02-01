@@ -143,6 +143,7 @@ class NimView(object):
         self.writer.write(msg1, align="center", font=("Courier",14,"bold"))
         self.screen.tracer(True)
 
+
     def setup(self):
         self.screen.tracer(False)
         for row in range(3):
@@ -180,7 +181,6 @@ class NimView(object):
         if self.game.state == Nim.OVER:
             self.screen.clear()
 
-
 class NimController(object):
 
     def __init__(self, game):
@@ -201,7 +201,6 @@ class NimController(object):
         self.game.model.notify_move(row, col)
         self.BUSY = False
 
-
 class Nim(object):
     CREATED = 0
     RUNNING = 1
@@ -214,12 +213,13 @@ class Nim(object):
         self.controller = NimController(self)
 
 
+mainscreen = turtle.Screen()
+mainscreen.mode("standard")
+mainscreen.setup(SCREENWIDTH, SCREENHEIGHT)
+
 def main():
-    mainscreen = turtle.Screen()
-    mainscreen.mode("standard")
-    mainscreen.setup(SCREENWIDTH, SCREENHEIGHT)
     nim = Nim(mainscreen)
-    return "EVENTLOOP"
+    return "EVENTLOOP!"
 
 if __name__ == "__main__":
     main()

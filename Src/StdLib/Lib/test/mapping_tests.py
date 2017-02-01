@@ -64,7 +64,7 @@ class BasicTestMappingProtocol(unittest.TestCase):
         self.assertEqual(d, d)
         self.assertNotEqual(p, d)
         self.assertNotEqual(d, p)
-        #bool
+        #__non__zero__
         if p: self.fail("Empty mapping must compare to False")
         if not d: self.fail("Full mapping must compare to True")
         # keys(), items(), iterkeys() ...

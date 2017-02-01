@@ -14,13 +14,11 @@ Command line usage:
 Options:
   -n/--number N: how many times to execute 'statement' (default: see below)
   -r/--repeat N: how many times to repeat the timer (default 3)
-  -s/--setup S: statement to be executed once initially (default 'pass').
-                Execution time of this setup statement is NOT timed.
+  -s/--setup S: statement to be executed once initially (default 'pass')
   -p/--process: use time.process_time() (default is time.perf_counter())
   -t/--time: use time.time() (deprecated)
   -c/--clock: use time.clock() (deprecated)
   -v/--verbose: print raw timing results; repeat for more digits precision
-  -u/--unit: set the output time unit (usec, msec, or sec)
   -h/--help: print this usage message and exit
   --: separate options from statement, use when statement starts with -
   statement: statement to be timed (default 'pass')
@@ -62,13 +60,11 @@ default_number = 1000000
 default_repeat = 3
 default_timer = time.perf_counter
 
-_globals = globals
-
 # Don't change the indentation of the template; the reindent() calls
 # in Timer.__init__() depend on setup being indented 4 spaces and stmt
 # being indented 8 spaces.
 template = """
-def inner(_it, _timer{init}):
+def inner(_it, _timer):
     {setup}
     _t0 = _timer()
     for _i in _it:
@@ -81,15 +77,24 @@ def reindent(src, indent):
     """Helper to reindent a multi-line statement."""
     return src.replace("\n", "\n" + " "*indent)
 
+def _template_func(setup, func):
+    """Create a timer function. Used if the "statement" is a callable."""
+    def inner(_it, _timer, _func=func):
+        setup()
+        _t0 = _timer()
+        for _i in _it:
+            _func()
+        _t1 = _timer()
+        return _t1 - _t0
+    return inner
+
 class Timer:
     """Class for timing execution speed of small code snippets.
 
     The constructor takes a statement to be timed, an additional
     statement used for setup, and a timer function.  Both statements
     default to 'pass'; the timer function is platform-dependent (see
-    module doc string).  If 'globals' is specified, the code will be
-    executed within that namespace (as opposed to inside timeit's
-    namespace).
+    module doc string).
 
     To measure the execution time of the first statement, use the
     timeit() method.  The repeat() method is a convenience to call
@@ -99,40 +104,35 @@ class Timer:
     multi-line string literals.
     """
 
-    def __init__(self, stmt="pass", setup="pass", timer=default_timer,
-                 globals=None):
+    def __init__(self, stmt="pass", setup="pass", timer=default_timer):
         """Constructor.  See class doc string."""
         self.timer = timer
-        local_ns = {}
-        global_ns = _globals() if globals is None else globals
-        init = ''
-        if isinstance(setup, str):
-            # Check that the code can be compiled outside a function
-            compile(setup, dummy_src_name, "exec")
-            stmtprefix = setup + '\n'
-            setup = reindent(setup, 4)
-        elif callable(setup):
-            local_ns['_setup'] = setup
-            init += ', _setup=_setup'
-            stmtprefix = ''
-            setup = '_setup()'
-        else:
-            raise ValueError("setup is neither a string nor callable")
+        ns = {}
         if isinstance(stmt, str):
-            # Check that the code can be compiled outside a function
-            compile(stmtprefix + stmt, dummy_src_name, "exec")
             stmt = reindent(stmt, 8)
+            if isinstance(setup, str):
+                setup = reindent(setup, 4)
+                src = template.format(stmt=stmt, setup=setup)
+            elif callable(setup):
+                src = template.format(stmt=stmt, setup='_setup()')
+                ns['_setup'] = setup
+            else:
+                raise ValueError("setup is neither a string nor callable")
+            self.src = src # Save for traceback display
+            code = compile(src, dummy_src_name, "exec")
+            exec(code, globals(), ns)
+            self.inner = ns["inner"]
         elif callable(stmt):
-            local_ns['_stmt'] = stmt
-            init += ', _stmt=_stmt'
-            stmt = '_stmt()'
+            self.src = None
+            if isinstance(setup, str):
+                _setup = setup
+                def setup():
+                    exec(_setup, globals(), ns)
+            elif not callable(setup):
+                raise ValueError("setup is neither a string nor callable")
+            self.inner = _template_func(setup, stmt)
         else:
             raise ValueError("stmt is neither a string nor callable")
-        src = template.format(stmt=stmt, setup=setup, init=init)
-        self.src = src  # Save for traceback display
-        code = compile(src, dummy_src_name, "exec")
-        exec(code, global_ns, local_ns)
-        self.inner = local_ns["inner"]
 
     def print_exc(self, file=None):
         """Helper to print a traceback from the timed code.
@@ -208,14 +208,14 @@ class Timer:
         return r
 
 def timeit(stmt="pass", setup="pass", timer=default_timer,
-           number=default_number, globals=None):
+           number=default_number):
     """Convenience function to create Timer object and call timeit method."""
-    return Timer(stmt, setup, timer, globals).timeit(number)
+    return Timer(stmt, setup, timer).timeit(number)
 
 def repeat(stmt="pass", setup="pass", timer=default_timer,
-           repeat=default_repeat, number=default_number, globals=None):
+           repeat=default_repeat, number=default_number):
     """Convenience function to create Timer object and call repeat method."""
-    return Timer(stmt, setup, timer, globals).repeat(repeat, number)
+    return Timer(stmt, setup, timer).repeat(repeat, number)
 
 def main(args=None, *, _wrap_timer=None):
     """Main program, used when run as a script.
@@ -238,10 +238,10 @@ def main(args=None, *, _wrap_timer=None):
         args = sys.argv[1:]
     import getopt
     try:
-        opts, args = getopt.getopt(args, "n:u:s:r:tcpvh",
+        opts, args = getopt.getopt(args, "n:s:r:tcpvh",
                                    ["number=", "setup=", "repeat=",
                                     "time", "clock", "process",
-                                    "verbose", "unit=", "help"])
+                                    "verbose", "help"])
     except getopt.error as err:
         print(err)
         print("use -h/--help for command line help")
@@ -252,21 +252,12 @@ def main(args=None, *, _wrap_timer=None):
     setup = []
     repeat = default_repeat
     verbose = 0
-    time_unit = None
-    units = {"usec": 1, "msec": 1e3, "sec": 1e6}
     precision = 3
     for o, a in opts:
         if o in ("-n", "--number"):
             number = int(a)
         if o in ("-s", "--setup"):
             setup.append(a)
-        if o in ("-u", "--unit"):
-            if a in units:
-                time_unit = a
-            else:
-                print("Unrecognized unit. Please select usec, msec, or sec.",
-                    file=sys.stderr)
-                return 2
         if o in ("-r", "--repeat"):
             repeat = int(a)
             if repeat <= 0:
@@ -316,21 +307,15 @@ def main(args=None, *, _wrap_timer=None):
         print("raw times:", " ".join(["%.*g" % (precision, x) for x in r]))
     print("%d loops," % number, end=' ')
     usec = best * 1e6 / number
-    if time_unit is not None:
-        print("best of %d: %.*g %s per loop" % (repeat, precision,
-                                             usec/units[time_unit], time_unit))
+    if usec < 1000:
+        print("best of %d: %.*g usec per loop" % (repeat, precision, usec))
     else:
-        if usec < 1000:
-            print("best of %d: %.*g usec per loop" % (repeat, precision, usec))
+        msec = usec / 1000
+        if msec < 1000:
+            print("best of %d: %.*g msec per loop" % (repeat, precision, msec))
         else:
-            msec = usec / 1000
-            if msec < 1000:
-                print("best of %d: %.*g msec per loop" % (repeat,
-                                                          precision, msec))
-            else:
-                sec = msec / 1000
-                print("best of %d: %.*g sec per loop" % (repeat,
-                                                         precision, sec))
+            sec = msec / 1000
+            print("best of %d: %.*g sec per loop" % (repeat, precision, sec))
     return None
 
 if __name__ == "__main__":

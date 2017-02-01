@@ -1,4 +1,4 @@
-from test.support import run_unittest, unload, check_warnings, CleanImport
+from test.support import run_unittest, unload, check_warnings
 import unittest
 import sys
 import importlib
@@ -7,6 +7,7 @@ import pkgutil
 import os
 import os.path
 import tempfile
+import types
 import shutil
 import zipfile
 
@@ -100,89 +101,9 @@ class PkgutilTests(unittest.TestCase):
         for t in pkgutil.walk_packages(path=[self.dirname]):
             self.fail("unexpected package found")
 
-    def test_walkpackages_filesys(self):
-        pkg1 = 'test_walkpackages_filesys'
-        pkg1_dir = os.path.join(self.dirname, pkg1)
-        os.mkdir(pkg1_dir)
-        f = open(os.path.join(pkg1_dir, '__init__.py'), "wb")
-        f.close()
-        os.mkdir(os.path.join(pkg1_dir, 'sub'))
-        f = open(os.path.join(pkg1_dir, 'sub', '__init__.py'), "wb")
-        f.close()
-        f = open(os.path.join(pkg1_dir, 'sub', 'mod.py'), "wb")
-        f.close()
-
-        # Now, to juice it up, let's add the opposite packages, too.
-        pkg2 = 'sub'
-        pkg2_dir = os.path.join(self.dirname, pkg2)
-        os.mkdir(pkg2_dir)
-        f = open(os.path.join(pkg2_dir, '__init__.py'), "wb")
-        f.close()
-        os.mkdir(os.path.join(pkg2_dir, 'test_walkpackages_filesys'))
-        f = open(os.path.join(pkg2_dir, 'test_walkpackages_filesys', '__init__.py'), "wb")
-        f.close()
-        f = open(os.path.join(pkg2_dir, 'test_walkpackages_filesys', 'mod.py'), "wb")
-        f.close()
-
-        expected = [
-            'sub',
-            'sub.test_walkpackages_filesys',
-            'sub.test_walkpackages_filesys.mod',
-            'test_walkpackages_filesys',
-            'test_walkpackages_filesys.sub',
-            'test_walkpackages_filesys.sub.mod',
-        ]
-        actual= [e[1] for e in pkgutil.walk_packages([self.dirname])]
-        self.assertEqual(actual, expected)
-
-        for pkg in expected:
-            if pkg.endswith('mod'):
-                continue
-            del sys.modules[pkg]
-
-    def test_walkpackages_zipfile(self):
-        """Tests the same as test_walkpackages_filesys, only with a zip file."""
-
-        zip = 'test_walkpackages_zipfile.zip'
-        pkg1 = 'test_walkpackages_zipfile'
-        pkg2 = 'sub'
-
-        zip_file = os.path.join(self.dirname, zip)
-        z = zipfile.ZipFile(zip_file, 'w')
-        z.writestr(pkg2 + '/__init__.py', "")
-        z.writestr(pkg2 + '/' + pkg1 + '/__init__.py', "")
-        z.writestr(pkg2 + '/' + pkg1 + '/mod.py', "")
-        z.writestr(pkg1 + '/__init__.py', "")
-        z.writestr(pkg1 + '/' + pkg2 + '/__init__.py', "")
-        z.writestr(pkg1 + '/' + pkg2 + '/mod.py', "")
-        z.close()
-
-        sys.path.insert(0, zip_file)
-        expected = [
-            'sub',
-            'sub.test_walkpackages_zipfile',
-            'sub.test_walkpackages_zipfile.mod',
-            'test_walkpackages_zipfile',
-            'test_walkpackages_zipfile.sub',
-            'test_walkpackages_zipfile.sub.mod',
-        ]
-        actual= [e[1] for e in pkgutil.walk_packages([zip_file])]
-        self.assertEqual(actual, expected)
-        del sys.path[0]
-
-        for pkg in expected:
-            if pkg.endswith('mod'):
-                continue
-            del sys.modules[pkg]
-
-
-
 class PkgutilPEP302Tests(unittest.TestCase):
 
     class MyTestLoader(object):
-        def create_module(self, spec):
-            return None
-
         def exec_module(self, mod):
             # Count how many times the module is reloaded
             mod.__dict__['loads'] = mod.__dict__.get('loads', 0) + 1
@@ -400,67 +321,17 @@ class ImportlibMigrationTests(unittest.TestCase):
 
     def test_importer_deprecated(self):
         with self.check_deprecated():
-            pkgutil.ImpImporter("")
+            x = pkgutil.ImpImporter("")
 
     def test_loader_deprecated(self):
         with self.check_deprecated():
-            pkgutil.ImpLoader("", "", "", "")
+            x = pkgutil.ImpLoader("", "", "", "")
 
     def test_get_loader_avoids_emulation(self):
         with check_warnings() as w:
             self.assertIsNotNone(pkgutil.get_loader("sys"))
             self.assertIsNotNone(pkgutil.get_loader("os"))
             self.assertIsNotNone(pkgutil.get_loader("test.support"))
-            self.assertEqual(len(w.warnings), 0)
-
-    def test_get_loader_handles_missing_loader_attribute(self):
-        global __loader__
-        this_loader = __loader__
-        del __loader__
-        try:
-            with check_warnings() as w:
-                self.assertIsNotNone(pkgutil.get_loader(__name__))
-                self.assertEqual(len(w.warnings), 0)
-        finally:
-            __loader__ = this_loader
-
-    def test_get_loader_handles_missing_spec_attribute(self):
-        name = 'spam'
-        mod = type(sys)(name)
-        del mod.__spec__
-        with CleanImport(name):
-            sys.modules[name] = mod
-            loader = pkgutil.get_loader(name)
-        self.assertIsNone(loader)
-
-    def test_get_loader_handles_spec_attribute_none(self):
-        name = 'spam'
-        mod = type(sys)(name)
-        mod.__spec__ = None
-        with CleanImport(name):
-            sys.modules[name] = mod
-            loader = pkgutil.get_loader(name)
-        self.assertIsNone(loader)
-
-    def test_get_loader_None_in_sys_modules(self):
-        name = 'totally bogus'
-        sys.modules[name] = None
-        try:
-            loader = pkgutil.get_loader(name)
-        finally:
-            del sys.modules[name]
-        self.assertIsNone(loader)
-
-    def test_find_loader_missing_module(self):
-        name = 'totally bogus'
-        loader = pkgutil.find_loader(name)
-        self.assertIsNone(loader)
-
-    def test_find_loader_avoids_emulation(self):
-        with check_warnings() as w:
-            self.assertIsNotNone(pkgutil.find_loader("sys"))
-            self.assertIsNotNone(pkgutil.find_loader("os"))
-            self.assertIsNotNone(pkgutil.find_loader("test.support"))
             self.assertEqual(len(w.warnings), 0)
 
     def test_get_importer_avoids_emulation(self):

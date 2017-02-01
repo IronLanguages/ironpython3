@@ -15,17 +15,32 @@ from distutils.util import convert_path, subst_vars, change_root
 from distutils.util import get_platform
 from distutils.errors import DistutilsOptionError
 
-from site import USER_BASE
-from site import USER_SITE
-HAS_USER_SITE = True
+# this keeps compatibility from 2.3 to 2.5
+if sys.version < "2.6":
+    USER_BASE = None
+    USER_SITE = None
+    HAS_USER_SITE = False
+else:
+    from site import USER_BASE
+    from site import USER_SITE
+    HAS_USER_SITE = True
 
-WINDOWS_SCHEME = {
-    'purelib': '$base/Lib/site-packages',
-    'platlib': '$base/Lib/site-packages',
-    'headers': '$base/Include/$dist_name',
-    'scripts': '$base/Scripts',
-    'data'   : '$base',
-}
+if sys.version < "2.2":
+    WINDOWS_SCHEME = {
+        'purelib': '$base',
+        'platlib': '$base',
+        'headers': '$base/Include/$dist_name',
+        'scripts': '$base/Scripts',
+        'data'   : '$base',
+    }
+else:
+    WINDOWS_SCHEME = {
+        'purelib': '$base/Lib/site-packages',
+        'platlib': '$base/Lib/site-packages',
+        'headers': '$base/Include/$dist_name',
+        'scripts': '$base/Scripts',
+        'data'   : '$base',
+    }
 
 INSTALL_SCHEMES = {
     'unix_prefix': {
@@ -51,7 +66,7 @@ if HAS_USER_SITE:
         'purelib': '$usersite',
         'platlib': '$usersite',
         'headers': '$userbase/Python$py_version_nodot/Include/$dist_name',
-        'scripts': '$userbase/Python$py_version_nodot/Scripts',
+        'scripts': '$userbase/Scripts',
         'data'   : '$userbase',
         }
 

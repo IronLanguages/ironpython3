@@ -12,9 +12,9 @@ very light moon!
 Planet has a circular orbit, moon a stable
 orbit around the planet.
 
-You can hold the movement temporarily by
-pressing the left mouse button with the
-mouse over the scrollbar of the canvas.
+You can hold the movement temporarily by pressing
+the left mouse button with mouse over the
+scrollbar of the canvas.
 
 """
 from turtle import Shape, Turtle, mainloop, Vec2D as Vec
@@ -108,5 +108,6 @@ def main():
     return "Done!"
 
 if __name__ == '__main__':
-    main()
-    mainloop()
+    msg = main()
+    print(msg)
+    #mainloop()

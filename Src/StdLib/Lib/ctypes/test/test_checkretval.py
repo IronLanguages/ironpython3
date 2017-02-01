@@ -1,7 +1,6 @@
 import unittest
 
 from ctypes import *
-from ctypes.test import need_symbol
 
 class CHECKED(c_int):
     def _check_retval_(value):
@@ -26,11 +25,15 @@ class Test(unittest.TestCase):
         del dll._testfunc_p_p.restype
         self.assertEqual(42, dll._testfunc_p_p(42))
 
-    @need_symbol('oledll')
-    def test_oledll(self):
-        self.assertRaises(OSError,
-                              oledll.oleaut32.CreateTypeLib2,
-                              0, None, None)
+    try:
+        oledll
+    except NameError:
+        pass
+    else:
+        def test_oledll(self):
+            self.assertRaises(OSError,
+                                  oledll.oleaut32.CreateTypeLib2,
+                                  0, None, None)
 
 if __name__ == "__main__":
     unittest.main()

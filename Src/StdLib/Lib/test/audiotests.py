@@ -45,9 +45,8 @@ class AudioTests:
         self.assertEqual(params.comptype, comptype)
         self.assertEqual(params.compname, compname)
 
-        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
-            dump = pickle.dumps(params, proto)
-            self.assertEqual(pickle.loads(dump), params)
+        dump = pickle.dumps(params)
+        self.assertEqual(pickle.loads(dump), params)
 
 
 class AudioWriteTests(AudioTests):

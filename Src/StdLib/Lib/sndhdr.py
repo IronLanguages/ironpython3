@@ -32,11 +32,6 @@ explicitly given directories.
 
 __all__ = ['what', 'whathdr']
 
-from collections import namedtuple
-
-SndHeaders = namedtuple('SndHeaders',
-                        'filetype framerate nchannels nframes sampwidth')
-
 def what(filename):
     """Guess the type of a sound file."""
     res = whathdr(filename)
@@ -50,7 +45,7 @@ def whathdr(filename):
         for tf in tests:
             res = tf(h, f)
             if res:
-                return SndHeaders(*res)
+                return res
         return None
 
 

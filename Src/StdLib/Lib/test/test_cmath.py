@@ -1,6 +1,5 @@
-from test.support import requires_IEEE_754, cpython_only
+from test.support import run_unittest, requires_IEEE_754
 from test.test_math import parse_testfile, test_file
-import test.test_math as test_math
 import unittest
 import cmath, math
 from cmath import phase, polar, rect, pi
@@ -382,48 +381,17 @@ class CMathTests(unittest.TestCase):
             self.rAssertAlmostEqual(expected.imag, actual.imag,
                                         msg=error_message)
 
-    def check_polar(self, func):
-        def check(arg, expected):
-            got = func(arg)
-            for e, g in zip(expected, got):
-                self.rAssertAlmostEqual(e, g)
-        check(0, (0., 0.))
-        check(1, (1., 0.))
-        check(-1, (1., pi))
-        check(1j, (1., pi / 2))
-        check(-3j, (3., -pi / 2))
-        inf = float('inf')
-        check(complex(inf, 0), (inf, 0.))
-        check(complex(-inf, 0), (inf, pi))
-        check(complex(3, inf), (inf, pi / 2))
-        check(complex(5, -inf), (inf, -pi / 2))
-        check(complex(inf, inf), (inf, pi / 4))
-        check(complex(inf, -inf), (inf, -pi / 4))
-        check(complex(-inf, inf), (inf, 3 * pi / 4))
-        check(complex(-inf, -inf), (inf, -3 * pi / 4))
-        nan = float('nan')
-        check(complex(nan, 0), (nan, nan))
-        check(complex(0, nan), (nan, nan))
-        check(complex(nan, nan), (nan, nan))
-        check(complex(inf, nan), (inf, nan))
-        check(complex(-inf, nan), (inf, nan))
-        check(complex(nan, inf), (inf, nan))
-        check(complex(nan, -inf), (inf, nan))
+    def assertCISEqual(self, a, b):
+        eps = 1E-7
+        if abs(a[0] - b[0]) > eps or abs(a[1] - b[1]) > eps:
+            self.fail((a ,b))
 
     def test_polar(self):
-        self.check_polar(polar)
-
-    @cpython_only
-    def test_polar_errno(self):
-        # Issue #24489: check a previously set C errno doesn't disturb polar()
-        from _testcapi import set_errno
-        def polar_with_errno_set(z):
-            set_errno(11)
-            try:
-                return polar(z)
-            finally:
-                set_errno(0)
-        self.check_polar(polar_with_errno_set)
+        self.assertCISEqual(polar(0), (0., 0.))
+        self.assertCISEqual(polar(1.), (1., 0.))
+        self.assertCISEqual(polar(-1.), (1., pi))
+        self.assertCISEqual(polar(1j), (1., pi/2))
+        self.assertCISEqual(polar(-1j), (1., -pi/2))
 
     def test_phase(self):
         self.assertAlmostEqual(phase(0), 0.)
@@ -561,46 +529,8 @@ class CMathTests(unittest.TestCase):
             self.assertComplexIdentical(cmath.atanh(z), z)
 
 
-class IsCloseTests(test_math.IsCloseTests):
-    isclose = cmath.isclose
-
-    def test_reject_complex_tolerances(self):
-        with self.assertRaises(TypeError):
-            self.isclose(1j, 1j, rel_tol=1j)
-
-        with self.assertRaises(TypeError):
-            self.isclose(1j, 1j, abs_tol=1j)
-
-        with self.assertRaises(TypeError):
-            self.isclose(1j, 1j, rel_tol=1j, abs_tol=1j)
-
-    def test_complex_values(self):
-        # test complex values that are close to within 12 decimal places
-        complex_examples = [(1.0+1.0j, 1.000000000001+1.0j),
-                            (1.0+1.0j, 1.0+1.000000000001j),
-                            (-1.0+1.0j, -1.000000000001+1.0j),
-                            (1.0-1.0j, 1.0-0.999999999999j),
-                            ]
-
-        self.assertAllClose(complex_examples, rel_tol=1e-12)
-        self.assertAllNotClose(complex_examples, rel_tol=1e-13)
-
-    def test_complex_near_zero(self):
-        # test values near zero that are near to within three decimal places
-        near_zero_examples = [(0.001j, 0),
-                              (0.001, 0),
-                              (0.001+0.001j, 0),
-                              (-0.001+0.001j, 0),
-                              (0.001-0.001j, 0),
-                              (-0.001-0.001j, 0),
-                              ]
-
-        self.assertAllClose(near_zero_examples, abs_tol=1.5e-03)
-        self.assertAllNotClose(near_zero_examples, abs_tol=0.5e-03)
-
-        self.assertIsClose(0.001-0.001j, 0.001+0.001j, abs_tol=2e-03)
-        self.assertIsNotClose(0.001-0.001j, 0.001+0.001j, abs_tol=1e-03)
-
+def test_main():
+    run_unittest(CMathTests)
 
 if __name__ == "__main__":
-    unittest.main()
+    test_main()

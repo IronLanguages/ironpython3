@@ -105,9 +105,7 @@ class Random(_random.Random):
 
         if a is None:
             try:
-                # Seed with enough bytes to span the 19937 bit
-                # state space for the Mersenne Twister
-                a = int.from_bytes(_urandom(2500), 'big')
+                a = int.from_bytes(_urandom(32), 'big')
             except NotImplementedError:
                 import time
                 a = int(time.time() * 256) # use fractional seconds
@@ -231,7 +229,7 @@ class Random(_random.Random):
             while r >= n:
                 r = getrandbits(k)
             return r
-        # There's an overridden random() method but no new getrandbits() method,
+        # There's an overriden random() method but no new getrandbits() method,
         # so we can only use random() from here.
         if n >= maxsize:
             _warn("Underlying random() generator does not supply \n"
@@ -355,10 +353,7 @@ class Random(_random.Random):
 
         """
         u = self.random()
-        try:
-            c = 0.5 if mode is None else (mode - low) / (high - low)
-        except ZeroDivisionError:
-            return low
+        c = 0.5 if mode is None else (mode - low) / (high - low)
         if u > c:
             u = 1.0 - u
             c = 1.0 - c
@@ -687,7 +682,7 @@ def _test_generator(n, func, args):
     print(round(t1-t0, 3), 'sec,', end=' ')
     avg = total/n
     stddev = _sqrt(sqsum/n - avg*avg)
-    print('avg %g, stddev %g, min %g, max %g\n' % \
+    print('avg %g, stddev %g, min %g, max %g' % \
               (avg, stddev, smallest, largest))
 
 

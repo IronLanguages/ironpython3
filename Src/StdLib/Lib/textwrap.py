@@ -79,25 +79,10 @@ class TextWrapper:
     # splits into
     #   Hello/ /there/ /--/ /you/ /goof-/ball,/ /use/ /the/ /-b/ /option!
     # (after stripping out empty strings).
-    word_punct = r'[\w!"\'&.,?]'
-    letter = r'[^\d\W]'
-    wordsep_re = re.compile(r'''
-        ( # any whitespace
-          \s+
-        | # em-dash between words
-          (?<=%(wp)s) -{2,} (?=\w)
-        | # word, possibly hyphenated
-          \S+? (?:
-            # hyphenated word
-              -(?: (?<=%(lt)s{2}-) | (?<=%(lt)s-%(lt)s-))
-              (?= %(lt)s -? %(lt)s)
-            | # end of word
-              (?=\s|\Z)
-            | # em-dash
-              (?<=%(wp)s) (?=-{2,}\w)
-            )
-        )''' % {'wp': word_punct, 'lt': letter}, re.VERBOSE)
-    del word_punct, letter
+    wordsep_re = re.compile(
+        r'(\s+|'                                  # any whitespace
+        r'[^\s\w]*\w+[^0-9\W]-(?=\w+[^0-9\W])|'   # hyphenated words
+        r'(?<=[\w\!\"\'\&\.\,\?])-{2,}(?=\w))')   # em-dash
 
     # This less funky little regex just split on recognized spaces. E.g.
     #   "Hello there -- you goof-ball, use the -b option!"
@@ -148,7 +133,7 @@ class TextWrapper:
         """_munge_whitespace(text : string) -> string
 
         Munge whitespace in text: expand tabs and convert all other
-        whitespace characters to spaces.  Eg. " foo\\tbar\\n\\nbaz"
+        whitespace characters to spaces.  Eg. " foo\tbar\n\nbaz"
         becomes " foo    bar  baz".
         """
         if self.expand_tabs:
@@ -184,7 +169,7 @@ class TextWrapper:
         """_fix_sentence_endings(chunks : [string])
 
         Correct for sentence endings buried in 'chunks'.  Eg. when the
-        original text contains "... foo.\\nBar ...", munge_whitespace()
+        original text contains "... foo.\nBar ...", munge_whitespace()
         and split() will convert that to [..., "foo.", " ", "Bar", ...]
         which has one too few spaces; this method simply changes the one
         space to two.
@@ -420,7 +405,7 @@ def dedent(text):
     in indented form.
 
     Note that tabs and spaces are both treated as whitespace, but they
-    are not equal: the lines "  hello" and "\\thello" are
+    are not equal: the lines "  hello" and "\thello" are
     considered to have no common leading whitespace.  (This behaviour is
     new in Python 2.5; older versions of this module incorrectly
     expanded tabs before searching for common leading whitespace.)
@@ -444,15 +429,11 @@ def dedent(text):
         elif margin.startswith(indent):
             margin = indent
 
-        # Find the largest common whitespace between current line and previous
-        # winner.
+        # Current line and previous winner have no common whitespace:
+        # there is no margin.
         else:
-            for i, (x, y) in enumerate(zip(margin, indent)):
-                if x != y:
-                    margin = margin[:i]
-                    break
-            else:
-                margin = margin[:len(indent)]
+            margin = ""
+            break
 
     # sanity check (testing/debugging only)
     if 0 and margin:

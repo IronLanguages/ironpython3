@@ -345,14 +345,11 @@ def prepare_input_source(source, base=""):
     elif hasattr(source, "read"):
         f = source
         source = xmlreader.InputSource()
-        if isinstance(f.read(0), str):
-            source.setCharacterStream(f)
-        else:
-            source.setByteStream(f)
-        if hasattr(f, "name") and isinstance(f.name, str):
+        source.setByteStream(f)
+        if hasattr(f, "name"):
             source.setSystemId(f.name)
 
-    if source.getCharacterStream() is None and source.getByteStream() is None:
+    if source.getByteStream() is None:
         sysid = source.getSystemId()
         basehead = os.path.dirname(os.path.normpath(base))
         sysidfilename = os.path.join(basehead, sysid)

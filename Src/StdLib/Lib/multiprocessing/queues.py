@@ -35,8 +35,7 @@ class Queue(object):
 
     def __init__(self, maxsize=0, *, ctx):
         if maxsize <= 0:
-            # Can raise ImportError (see issues #3770 and #23400)
-            from .synchronize import SEM_VALUE_MAX as maxsize
+            maxsize = _multiprocessing.SemLock.SEM_VALUE_MAX
         self._maxsize = maxsize
         self._reader, self._writer = connection.Pipe(duplex=False)
         self._rlock = ctx.Lock()
@@ -82,11 +81,14 @@ class Queue(object):
         if not self._sem.acquire(block, timeout):
             raise Full
 
-        with self._notempty:
+        self._notempty.acquire()
+        try:
             if self._thread is None:
                 self._start_thread()
             self._buffer.append(obj)
             self._notempty.notify()
+        finally:
+            self._notempty.release()
 
     def get(self, block=True, timeout=None):
         if block and timeout is None:
@@ -130,13 +132,9 @@ class Queue(object):
 
     def close(self):
         self._closed = True
-        try:
-            self._reader.close()
-        finally:
-            close = self._close
-            if close:
-                self._close = None
-                close()
+        self._reader.close()
+        if self._close:
+            self._close()
 
     def join_thread(self):
         debug('Queue.join_thread()')
@@ -203,9 +201,12 @@ class Queue(object):
     @staticmethod
     def _finalize_close(buffer, notempty):
         debug('telling queue thread to quit')
-        with notempty:
+        notempty.acquire()
+        try:
             buffer.append(_sentinel)
             notempty.notify()
+        finally:
+            notempty.release()
 
     @staticmethod
     def _feed(buffer, notempty, send_bytes, writelock, close, ignore_epipe):
@@ -294,24 +295,35 @@ class JoinableQueue(Queue):
         if not self._sem.acquire(block, timeout):
             raise Full
 
-        with self._notempty, self._cond:
+        self._notempty.acquire()
+        self._cond.acquire()
+        try:
             if self._thread is None:
                 self._start_thread()
             self._buffer.append(obj)
             self._unfinished_tasks.release()
             self._notempty.notify()
+        finally:
+            self._cond.release()
+            self._notempty.release()
 
     def task_done(self):
-        with self._cond:
+        self._cond.acquire()
+        try:
             if not self._unfinished_tasks.acquire(False):
                 raise ValueError('task_done() called too many times')
             if self._unfinished_tasks._semlock._is_zero():
                 self._cond.notify_all()
+        finally:
+            self._cond.release()
 
     def join(self):
-        with self._cond:
+        self._cond.acquire()
+        try:
             if not self._unfinished_tasks._semlock._is_zero():
                 self._cond.wait()
+        finally:
+            self._cond.release()
 
 #
 # Simplified Queue type -- really just a locked pipe

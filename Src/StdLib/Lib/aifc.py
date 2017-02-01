@@ -121,7 +121,7 @@ but when it is set to the correct value, the header does not have to
 be patched up.
 It is best to first set all parameters, perhaps possibly the
 compression type, and then write audio frames using writeframesraw.
-When all frames have been written, either call writeframes(b'') or
+When all frames have been written, either call writeframes('') or
 close() to patch up the sizes in the header.
 Marks can be added anytime.  If there are any marks, you must call
 close() after all frames have been written.
@@ -356,10 +356,7 @@ class Aifc_read:
         self._soundpos = 0
 
     def close(self):
-        file = self._file
-        if file is not None:
-            self._file = None
-            file.close()
+        self._file.close()
 
     def tell(self):
         return self._soundpos

@@ -14,10 +14,6 @@ printable -- a string containing all ASCII characters considered printable
 
 """
 
-__all__ = ["ascii_letters", "ascii_lowercase", "ascii_uppercase", "capwords",
-           "digits", "hexdigits", "octdigits", "printable", "punctuation",
-           "whitespace", "Formatter", "Template"]
-
 import _string
 
 # Some strings for ctype-style character classification
@@ -50,7 +46,7 @@ def capwords(s, sep=None):
 
 ####################################################################
 import re as _re
-from collections import ChainMap as _ChainMap
+from collections import ChainMap
 
 class _TemplateMetaclass(type):
     pattern = r"""
@@ -98,17 +94,13 @@ class Template(metaclass=_TemplateMetaclass):
         raise ValueError('Invalid placeholder in string: line %d, col %d' %
                          (lineno, colno))
 
-    def substitute(*args, **kws):
-        if not args:
-            raise TypeError("descriptor 'substitute' of 'Template' object "
-                            "needs an argument")
-        self, *args = args  # allow the "self" keyword be passed
+    def substitute(self, *args, **kws):
         if len(args) > 1:
             raise TypeError('Too many positional arguments')
         if not args:
             mapping = kws
         elif kws:
-            mapping = _ChainMap(kws, args[0])
+            mapping = ChainMap(kws, args[0])
         else:
             mapping = args[0]
         # Helper function for .sub()
@@ -128,17 +120,13 @@ class Template(metaclass=_TemplateMetaclass):
                              self.pattern)
         return self.pattern.sub(convert, self.template)
 
-    def safe_substitute(*args, **kws):
-        if not args:
-            raise TypeError("descriptor 'safe_substitute' of 'Template' object "
-                            "needs an argument")
-        self, *args = args  # allow the "self" keyword be passed
+    def safe_substitute(self, *args, **kws):
         if len(args) > 1:
             raise TypeError('Too many positional arguments')
         if not args:
             mapping = kws
         elif kws:
-            mapping = _ChainMap(kws, args[0])
+            mapping = ChainMap(kws, args[0])
         else:
             mapping = args[0]
         # Helper function for .sub()
@@ -172,32 +160,16 @@ class Template(metaclass=_TemplateMetaclass):
 # The field name parser is implemented in _string.formatter_field_name_split
 
 class Formatter:
-    def format(*args, **kwargs):
-        if not args:
-            raise TypeError("descriptor 'format' of 'Formatter' object "
-                            "needs an argument")
-        self, *args = args  # allow the "self" keyword be passed
-        try:
-            format_string, *args = args # allow the "format_string" keyword be passed
-        except ValueError:
-            if 'format_string' in kwargs:
-                format_string = kwargs.pop('format_string')
-                import warnings
-                warnings.warn("Passing 'format_string' as keyword argument is "
-                              "deprecated", DeprecationWarning, stacklevel=2)
-            else:
-                raise TypeError("format() missing 1 required positional "
-                                "argument: 'format_string'") from None
+    def format(self, format_string, *args, **kwargs):
         return self.vformat(format_string, args, kwargs)
 
     def vformat(self, format_string, args, kwargs):
         used_args = set()
-        result, _ = self._vformat(format_string, args, kwargs, used_args, 2)
+        result = self._vformat(format_string, args, kwargs, used_args, 2)
         self.check_unused_args(used_args, args, kwargs)
         return result
 
-    def _vformat(self, format_string, args, kwargs, used_args, recursion_depth,
-                 auto_arg_index=0):
+    def _vformat(self, format_string, args, kwargs, used_args, recursion_depth):
         if recursion_depth < 0:
             raise ValueError('Max string recursion exceeded')
         result = []
@@ -213,23 +185,6 @@ class Formatter:
                 # this is some markup, find the object and do
                 #  the formatting
 
-                # handle arg indexing when empty field_names are given.
-                if field_name == '':
-                    if auto_arg_index is False:
-                        raise ValueError('cannot switch from manual field '
-                                         'specification to automatic field '
-                                         'numbering')
-                    field_name = str(auto_arg_index)
-                    auto_arg_index += 1
-                elif field_name.isdigit():
-                    if auto_arg_index:
-                        raise ValueError('cannot switch from manual field '
-                                         'specification to automatic field '
-                                         'numbering')
-                    # disable auto arg incrementing, if it gets
-                    # used later on, then an exception will be raised
-                    auto_arg_index = False
-
                 # given the field_name, find the object it references
                 #  and the argument it came from
                 obj, arg_used = self.get_field(field_name, args, kwargs)
@@ -239,15 +194,13 @@ class Formatter:
                 obj = self.convert_field(obj, conversion)
 
                 # expand the format spec, if needed
-                format_spec, auto_arg_index = self._vformat(
-                    format_spec, args, kwargs,
-                    used_args, recursion_depth-1,
-                    auto_arg_index=auto_arg_index)
+                format_spec = self._vformat(format_spec, args, kwargs,
+                                            used_args, recursion_depth-1)
 
                 # format the object and append to the result
                 result.append(self.format_field(obj, format_spec))
 
-        return ''.join(result), auto_arg_index
+        return ''.join(result)
 
 
     def get_value(self, key, args, kwargs):

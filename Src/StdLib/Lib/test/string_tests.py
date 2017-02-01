@@ -1,5 +1,5 @@
 """
-Common tests shared by test_unicode, test_userstring and test_bytes.
+Common tests shared by test_str, test_unicode, test_userstring and test_string.
 """
 
 import unittest, string, sys, struct
@@ -51,9 +51,6 @@ class BaseTest:
         else:
             return obj
 
-    def test_fixtype(self):
-        self.assertIs(type(self.fixtype("123")), self.type2test)
-
     # check that obj.method(*args) returns result
     def checkequal(self, result, obj, methodname, *args, **kwargs):
         result = self.fixtype(result)
@@ -82,9 +79,11 @@ class BaseTest:
     def checkraises(self, exc, obj, methodname, *args):
         obj = self.fixtype(obj)
         args = self.fixtype(args)
-        with self.assertRaises(exc) as cm:
-            getattr(obj, methodname)(*args)
-        self.assertNotEqual(str(cm.exception), '')
+        self.assertRaises(
+            exc,
+            getattr(obj, methodname),
+            *args
+        )
 
     # call obj.method(*args) without any checks
     def checkcall(self, obj, methodname, *args):
@@ -368,8 +367,6 @@ class BaseTest:
                         sys.maxsize-2)
         self.checkequal(['a|b|c|d'], 'a|b|c|d', 'split', '|', 0)
         self.checkequal(['a', '', 'b||c||d'], 'a||b||c||d', 'split', '|', 2)
-        self.checkequal(['abcd'], 'abcd', 'split', '|')
-        self.checkequal([''], '', 'split', '|')
         self.checkequal(['endcase ', ''], 'endcase |', 'split', '|')
         self.checkequal(['', ' startcase'], '| startcase', 'split', '|')
         self.checkequal(['', 'bothcase', ''], '|bothcase|', 'split', '|')
@@ -437,8 +434,6 @@ class BaseTest:
                         sys.maxsize-100)
         self.checkequal(['a|b|c|d'], 'a|b|c|d', 'rsplit', '|', 0)
         self.checkequal(['a||b||c', '', 'd'], 'a||b||c||d', 'rsplit', '|', 2)
-        self.checkequal(['abcd'], 'abcd', 'rsplit', '|')
-        self.checkequal([''], '', 'rsplit', '|')
         self.checkequal(['', ' begincase'], '| begincase', 'rsplit', '|')
         self.checkequal(['endcase ', ''], 'endcase |', 'rsplit', '|')
         self.checkequal(['', 'bothcase', ''], '|bothcase|', 'rsplit', '|')
@@ -645,6 +640,14 @@ class BaseTest:
         EQ("bobobXbobob", "bobobobXbobobob", "replace", "bobob", "bob")
         EQ("BOBOBOB", "BOBOBOB", "replace", "bob", "bobby")
 
+        # XXX Commented out. Is there any reason to support buffer objects
+        # as arguments for str.replace()?  GvR
+##         ba = bytearray('a')
+##         bb = bytearray('b')
+##         EQ("bbc", "abc", "replace", ba, bb)
+##         EQ("aac", "abc", "replace", bb, ba)
+
+        #
         self.checkequal('one@two!three!', 'one!two!three!', 'replace', '!', '@', 1)
         self.checkequal('onetwothree', 'one!two!three!', 'replace', '!', '')
         self.checkequal('one@two@three!', 'one!two!three!', 'replace', '!', '@', 2)
@@ -681,12 +684,45 @@ class BaseTest:
         self.checkraises(OverflowError, A2_16, "replace", "A", A2_16)
         self.checkraises(OverflowError, A2_16, "replace", "AA", A2_16+A2_16)
 
+
+
+class CommonTest(BaseTest):
+    # This testcase contains test that can be used in all
+    # stringlike classes. Currently this is str, unicode
+    # UserString and the string module.
+
+    def test_hash(self):
+        # SF bug 1054139:  += optimization was not invalidating cached hash value
+        a = self.type2test('DNSSEC')
+        b = self.type2test('')
+        for c in a:
+            b += c
+            hash(b)
+        self.assertEqual(hash(a), hash(b))
+
     def test_capitalize(self):
         self.checkequal(' hello ', ' hello ', 'capitalize')
         self.checkequal('Hello ', 'Hello ','capitalize')
         self.checkequal('Hello ', 'hello ','capitalize')
         self.checkequal('Aaaa', 'aaaa', 'capitalize')
         self.checkequal('Aaaa', 'AaAa', 'capitalize')
+
+        # check that titlecased chars are lowered correctly
+        # \u1ffc is the titlecased char
+        self.checkequal('\u03a9\u0399\u1ff3\u1ff3\u1ff3',
+                        '\u1ff3\u1ff3\u1ffc\u1ffc', 'capitalize')
+        # check with cased non-letter chars
+        self.checkequal('\u24c5\u24e8\u24e3\u24d7\u24de\u24dd',
+                        '\u24c5\u24ce\u24c9\u24bd\u24c4\u24c3', 'capitalize')
+        self.checkequal('\u24c5\u24e8\u24e3\u24d7\u24de\u24dd',
+                        '\u24df\u24e8\u24e3\u24d7\u24de\u24dd', 'capitalize')
+        self.checkequal('\u2160\u2171\u2172',
+                        '\u2160\u2161\u2162', 'capitalize')
+        self.checkequal('\u2160\u2171\u2172',
+                        '\u2170\u2171\u2172', 'capitalize')
+        # check with Ll chars with no upper - nothing changes here
+        self.checkequal('\u019b\u1d00\u1d86\u0221\u1fb7',
+                        '\u019b\u1d00\u1d86\u0221\u1fb7', 'capitalize')
 
         self.checkraises(TypeError, 'hello', 'capitalize', 42)
 
@@ -710,21 +746,16 @@ class BaseTest:
         self.checkequal(['a'], '  a    ', 'split')
         self.checkequal(['a', 'b'], '  a    b   ', 'split')
         self.checkequal(['a', 'b   '], '  a    b   ', 'split', None, 1)
-        self.checkequal(['a    b   c   '], '  a    b   c   ', 'split', None, 0)
         self.checkequal(['a', 'b   c   '], '  a    b   c   ', 'split', None, 1)
         self.checkequal(['a', 'b', 'c   '], '  a    b   c   ', 'split', None, 2)
-        self.checkequal(['a', 'b', 'c'], '  a    b   c   ', 'split', None, 3)
         self.checkequal(['a', 'b'], '\n\ta \t\r b \v ', 'split')
         aaa = ' a '*20
         self.checkequal(['a']*20, aaa, 'split')
         self.checkequal(['a'] + [aaa[4:]], aaa, 'split', None, 1)
         self.checkequal(['a']*19 + ['a '], aaa, 'split', None, 19)
 
-        for b in ('arf\tbarf', 'arf\nbarf', 'arf\rbarf',
-                  'arf\fbarf', 'arf\vbarf'):
-            self.checkequal(['arf', 'barf'], b, 'split')
-            self.checkequal(['arf', 'barf'], b, 'split', None)
-            self.checkequal(['arf', 'barf'], b, 'split', None, 2)
+        # mixed use of str and unicode
+        self.checkequal(['a', 'b', 'c d'], 'a b c d', 'split', ' ', 2)
 
     def test_additional_rsplit(self):
         self.checkequal(['this', 'is', 'the', 'rsplit', 'function'],
@@ -746,36 +777,24 @@ class BaseTest:
         self.checkequal(['a'], '  a    ', 'rsplit')
         self.checkequal(['a', 'b'], '  a    b   ', 'rsplit')
         self.checkequal(['  a', 'b'], '  a    b   ', 'rsplit', None, 1)
-        self.checkequal(['  a    b   c'], '  a    b   c   ', 'rsplit',
-                        None, 0)
         self.checkequal(['  a    b','c'], '  a    b   c   ', 'rsplit',
                         None, 1)
         self.checkequal(['  a', 'b', 'c'], '  a    b   c   ', 'rsplit',
                         None, 2)
-        self.checkequal(['a', 'b', 'c'], '  a    b   c   ', 'rsplit',
-                        None, 3)
         self.checkequal(['a', 'b'], '\n\ta \t\r b \v ', 'rsplit', None, 88)
         aaa = ' a '*20
         self.checkequal(['a']*20, aaa, 'rsplit')
         self.checkequal([aaa[:-4]] + ['a'], aaa, 'rsplit', None, 1)
         self.checkequal([' a  a'] + ['a']*18, aaa, 'rsplit', None, 18)
 
-        for b in ('arf\tbarf', 'arf\nbarf', 'arf\rbarf',
-                  'arf\fbarf', 'arf\vbarf'):
-            self.checkequal(['arf', 'barf'], b, 'rsplit')
-            self.checkequal(['arf', 'barf'], b, 'rsplit', None)
-            self.checkequal(['arf', 'barf'], b, 'rsplit', None, 2)
+        # mixed use of str and unicode
+        self.checkequal(['a b', 'c', 'd'], 'a b c d', 'rsplit', ' ', 2)
 
-    def test_strip_whitespace(self):
+    def test_strip(self):
         self.checkequal('hello', '   hello   ', 'strip')
         self.checkequal('hello   ', '   hello   ', 'lstrip')
         self.checkequal('   hello', '   hello   ', 'rstrip')
         self.checkequal('hello', 'hello', 'strip')
-
-        b = ' \t\n\r\f\vabc \t\n\r\f\v'
-        self.checkequal('abc', b, 'strip')
-        self.checkequal('abc \t\n\r\f\v', b, 'lstrip')
-        self.checkequal(' \t\n\r\f\vabc', b, 'rstrip')
 
         # strip/lstrip/rstrip with None arg
         self.checkequal('hello', '   hello   ', 'strip', None)
@@ -783,16 +802,11 @@ class BaseTest:
         self.checkequal('   hello', '   hello   ', 'rstrip', None)
         self.checkequal('hello', 'hello', 'strip', None)
 
-    def test_strip(self):
         # strip/lstrip/rstrip with str arg
         self.checkequal('hello', 'xyzzyhelloxyzzy', 'strip', 'xyz')
         self.checkequal('helloxyzzy', 'xyzzyhelloxyzzy', 'lstrip', 'xyz')
         self.checkequal('xyzzyhello', 'xyzzyhelloxyzzy', 'rstrip', 'xyz')
         self.checkequal('hello', 'hello', 'strip', 'xyz')
-        self.checkequal('', 'mississippi', 'strip', 'mississippi')
-
-        # only trim the start and end; does not strip internal characters
-        self.checkequal('mississipp', 'mississippi', 'strip', 'i')
 
         self.checkraises(TypeError, 'hello', 'strip', 42, 42)
         self.checkraises(TypeError, 'hello', 'lstrip', 42, 42)
@@ -842,6 +856,11 @@ class BaseTest:
         self.checkequal('0034', '34', 'zfill', 4)
 
         self.checkraises(TypeError, '123', 'zfill')
+
+class MixinStrUnicodeUserStringTest:
+    # additional tests that only work for
+    # stringlike objects, i.e. str, unicode, UserString
+    # (but not the string module)
 
     def test_islower(self):
         self.checkequal(False, '', 'islower')
@@ -945,43 +964,6 @@ class BaseTest:
 
         self.checkraises(TypeError, 'abc', 'splitlines', 42, 42)
 
-
-class CommonTest(BaseTest):
-    # This testcase contains tests that can be used in all
-    # stringlike classes. Currently this is str and UserString.
-
-    def test_hash(self):
-        # SF bug 1054139:  += optimization was not invalidating cached hash value
-        a = self.type2test('DNSSEC')
-        b = self.type2test('')
-        for c in a:
-            b += c
-            hash(b)
-        self.assertEqual(hash(a), hash(b))
-
-    def test_capitalize_nonascii(self):
-        # check that titlecased chars are lowered correctly
-        # \u1ffc is the titlecased char
-        self.checkequal('\u03a9\u0399\u1ff3\u1ff3\u1ff3',
-                        '\u1ff3\u1ff3\u1ffc\u1ffc', 'capitalize')
-        # check with cased non-letter chars
-        self.checkequal('\u24c5\u24e8\u24e3\u24d7\u24de\u24dd',
-                        '\u24c5\u24ce\u24c9\u24bd\u24c4\u24c3', 'capitalize')
-        self.checkequal('\u24c5\u24e8\u24e3\u24d7\u24de\u24dd',
-                        '\u24df\u24e8\u24e3\u24d7\u24de\u24dd', 'capitalize')
-        self.checkequal('\u2160\u2171\u2172',
-                        '\u2160\u2161\u2162', 'capitalize')
-        self.checkequal('\u2160\u2171\u2172',
-                        '\u2170\u2171\u2172', 'capitalize')
-        # check with Ll chars with no upper - nothing changes here
-        self.checkequal('\u019b\u1d00\u1d86\u0221\u1fb7',
-                        '\u019b\u1d00\u1d86\u0221\u1fb7', 'capitalize')
-
-
-class MixinStrUnicodeUserStringTest:
-    # additional tests that only work for
-    # stringlike objects, i.e. str, UserString
-
     def test_startswith(self):
         self.checkequal(True, 'hello', 'startswith', 'he')
         self.checkequal(True, 'hello', 'startswith', 'hello')
@@ -996,9 +978,6 @@ class MixinStrUnicodeUserStringTest:
         self.checkequal(True, 'helloworld', 'startswith', 'lowo', 3)
         self.checkequal(True, 'helloworld', 'startswith', 'lowo', 3, 7)
         self.checkequal(False, 'helloworld', 'startswith', 'lowo', 3, 6)
-        self.checkequal(True, '', 'startswith', '', 0, 1)
-        self.checkequal(True, '', 'startswith', '', 0, 0)
-        self.checkequal(False, '', 'startswith', '', 1, 0)
 
         # test negative indices
         self.checkequal(True, 'hello', 'startswith', 'he', 0, -1)
@@ -1045,9 +1024,6 @@ class MixinStrUnicodeUserStringTest:
         self.checkequal(False, 'helloworld', 'endswith', 'lowo', 3, 8)
         self.checkequal(False, 'ab', 'endswith', 'ab', 0, 1)
         self.checkequal(False, 'ab', 'endswith', 'ab', 0, 0)
-        self.checkequal(True, '', 'endswith', '', 0, 1)
-        self.checkequal(True, '', 'endswith', '', 0, 0)
-        self.checkequal(False, '', 'endswith', '', 1, 0)
 
         # test negative indices
         self.checkequal(True, 'hello', 'endswith', 'lo', -2)
@@ -1143,7 +1119,8 @@ class MixinStrUnicodeUserStringTest:
     def test_join(self):
         # join now works with any sequence type
         # moved here, because the argument order is
-        # different in string.join
+        # different in string.join (see the test in
+        # test.test_string.StringTest.test_join)
         self.checkequal('a b c d', ' ', 'join', ['a', 'b', 'c', 'd'])
         self.checkequal('abcd', '', 'join', ('a', 'b', 'c', 'd'))
         self.checkequal('bd', '', 'join', ('', 'b', '', 'd'))
@@ -1163,7 +1140,6 @@ class MixinStrUnicodeUserStringTest:
         self.checkequal('a b c', ' ', 'join', BadSeq2())
 
         self.checkraises(TypeError, ' ', 'join')
-        self.checkraises(TypeError, ' ', 'join', None)
         self.checkraises(TypeError, ' ', 'join', 7)
         self.checkraises(TypeError, ' ', 'join', [1, 2, bytes()])
         try:
@@ -1202,7 +1178,8 @@ class MixinStrUnicodeUserStringTest:
         self.checkraises(TypeError, 'abc', '__mod__')
         self.checkraises(TypeError, '%(foo)s', '__mod__', 42)
         self.checkraises(TypeError, '%s%s', '__mod__', (42,))
-        self.checkraises(TypeError, '%c', '__mod__', (None,))
+        with self.assertWarns(DeprecationWarning):
+            self.checkraises(TypeError, '%c', '__mod__', (None,))
         self.checkraises(ValueError, '%(foo', '__mod__', {})
         self.checkraises(TypeError, '%(foo)s %(bar)s', '__mod__', ('foo', 42))
         self.checkraises(TypeError, '%d', '__mod__', "42") # not numeric
@@ -1363,7 +1340,7 @@ class MixinStrUnicodeUserStringTest:
 
 
 class MixinStrUnicodeTest:
-    # Additional tests that only work with str.
+    # Additional tests that only work with str and unicode.
 
     def test_bug1001011(self):
         # Make sure join returns a NEW object for single item sequences
@@ -1381,3 +1358,28 @@ class MixinStrUnicodeTest:
         s1 = t("abcd")
         s2 = t().join([s1])
         self.assertIs(s1, s2)
+
+        # Should also test mixed-type join.
+        if t is str:
+            s1 = subclass("abcd")
+            s2 = "".join([s1])
+            self.assertIsNot(s1, s2)
+            self.assertIs(type(s2), t)
+
+            s1 = t("abcd")
+            s2 = "".join([s1])
+            self.assertIs(s1, s2)
+
+##         elif t is str8:
+##             s1 = subclass("abcd")
+##             s2 = "".join([s1])
+##             self.assertIsNot(s1, s2)
+##             self.assertIs(type(s2), str) # promotes!
+
+##             s1 = t("abcd")
+##             s2 = "".join([s1])
+##             self.assertIsNot(s1, s2)
+##             self.assertIs(type(s2), str) # promotes!
+
+        else:
+            self.fail("unexpected type for MixinStrUnicodeTest %r" % t)

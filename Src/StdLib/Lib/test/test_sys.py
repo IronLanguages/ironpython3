@@ -1,5 +1,5 @@
 import unittest, test.support
-from test.support.script_helper import assert_python_ok, assert_python_failure
+from test.script_helper import assert_python_ok, assert_python_failure
 import sys, io, os
 import struct
 import subprocess
@@ -197,61 +197,22 @@ class SysModuleTest(unittest.TestCase):
         self.assertEqual(sys.getrecursionlimit(), 10000)
         sys.setrecursionlimit(oldlimit)
 
+    @unittest.skipIf(hasattr(sys, 'gettrace') and sys.gettrace(),
+                     'fatal error if run with a trace function')
     def test_recursionlimit_recovery(self):
-        if hasattr(sys, 'gettrace') and sys.gettrace():
-            self.skipTest('fatal error if run with a trace function')
-
+        # NOTE: this test is slightly fragile in that it depends on the current
+        # recursion count when executing the test being low enough so as to
+        # trigger the recursion recovery detection in the _Py_MakeEndRecCheck
+        # macro (see ceval.h).
         oldlimit = sys.getrecursionlimit()
         def f():
             f()
         try:
-            for depth in (10, 25, 50, 75, 100, 250, 1000):
-                try:
-                    sys.setrecursionlimit(depth)
-                except RecursionError:
-                    # Issue #25274: The recursion limit is too low at the
-                    # current recursion depth
-                    continue
-
-                # Issue #5392: test stack overflow after hitting recursion
-                # limit twice
-                self.assertRaises(RecursionError, f)
-                self.assertRaises(RecursionError, f)
-        finally:
-            sys.setrecursionlimit(oldlimit)
-
-    @test.support.cpython_only
-    def test_setrecursionlimit_recursion_depth(self):
-        # Issue #25274: Setting a low recursion limit must be blocked if the
-        # current recursion depth is already higher than the "lower-water
-        # mark". Otherwise, it may not be possible anymore to
-        # reset the overflowed flag to 0.
-
-        from _testcapi import get_recursion_depth
-
-        def set_recursion_limit_at_depth(depth, limit):
-            recursion_depth = get_recursion_depth()
-            if recursion_depth >= depth:
-                with self.assertRaises(RecursionError) as cm:
-                    sys.setrecursionlimit(limit)
-                self.assertRegex(str(cm.exception),
-                                 "cannot set the recursion limit to [0-9]+ "
-                                 "at the recursion depth [0-9]+: "
-                                 "the limit is too low")
-            else:
-                set_recursion_limit_at_depth(depth, limit)
-
-        oldlimit = sys.getrecursionlimit()
-        try:
-            sys.setrecursionlimit(1000)
-
-            for limit in (10, 25, 50, 75, 100, 150, 200):
-                # formula extracted from _Py_RecursionLimitLowerWaterMark()
-                if limit > 200:
-                    depth = limit - 50
-                else:
-                    depth = limit * 3 // 4
-                set_recursion_limit_at_depth(depth, limit)
+            for i in (50, 1000):
+                # Issue #5392: stack overflow after hitting recursion limit twice
+                sys.setrecursionlimit(i)
+                self.assertRaises(RuntimeError, f)
+                self.assertRaises(RuntimeError, f)
         finally:
             sys.setrecursionlimit(oldlimit)
 
@@ -264,7 +225,7 @@ class SysModuleTest(unittest.TestCase):
             def f():
                 try:
                     f()
-                except RecursionError:
+                except RuntimeError:
                     f()
 
             sys.setrecursionlimit(%d)
@@ -558,27 +519,6 @@ class SysModuleTest(unittest.TestCase):
         self.assertTrue(repr(sys.flags))
         self.assertEqual(len(sys.flags), len(attrs))
 
-    def assert_raise_on_new_sys_type(self, sys_attr):
-        # Users are intentionally prevented from creating new instances of
-        # sys.flags, sys.version_info, and sys.getwindowsversion.
-        attr_type = type(sys_attr)
-        with self.assertRaises(TypeError):
-            attr_type()
-        with self.assertRaises(TypeError):
-            attr_type.__new__(attr_type)
-
-    def test_sys_flags_no_instantiation(self):
-        self.assert_raise_on_new_sys_type(sys.flags)
-
-    def test_sys_version_info_no_instantiation(self):
-        self.assert_raise_on_new_sys_type(sys.version_info)
-
-    def test_sys_getwindowsversion_no_instantiation(self):
-        # Skip if not being run on Windows.
-        test.support.get_attribute(sys, "getwindowsversion")
-        self.assert_raise_on_new_sys_type(sys.getwindowsversion())
-
-    @test.support.cpython_only
     def test_clear_type_cache(self):
         sys._clear_type_cache()
 
@@ -644,7 +584,7 @@ class SysModuleTest(unittest.TestCase):
         self.assertEqual(os.path.abspath(sys.executable), sys.executable)
 
         # Issue #7774: Ensure that sys.executable is an empty string if argv[0]
-        # has been set to a non existent program name and Python is unable to
+        # has been set to an non existent program name and Python is unable to
         # retrieve the real program name
 
         # For a normal installation, it should work without 'cwd'
@@ -675,72 +615,6 @@ class SysModuleTest(unittest.TestCase):
             expected = None
         self.check_fsencoding(fs_encoding, expected)
 
-    def c_locale_get_error_handler(self, isolated=False, encoding=None):
-        # Force the POSIX locale
-        env = os.environ.copy()
-        env["LC_ALL"] = "C"
-        code = '\n'.join((
-            'import sys',
-            'def dump(name):',
-            '    std = getattr(sys, name)',
-            '    print("%s: %s" % (name, std.errors))',
-            'dump("stdin")',
-            'dump("stdout")',
-            'dump("stderr")',
-        ))
-        args = [sys.executable, "-c", code]
-        if isolated:
-            args.append("-I")
-        if encoding is not None:
-            env['PYTHONIOENCODING'] = encoding
-        else:
-            env.pop('PYTHONIOENCODING', None)
-        p = subprocess.Popen(args,
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.STDOUT,
-                              env=env,
-                              universal_newlines=True)
-        stdout, stderr = p.communicate()
-        return stdout
-
-    def test_c_locale_surrogateescape(self):
-        out = self.c_locale_get_error_handler(isolated=True)
-        self.assertEqual(out,
-                         'stdin: surrogateescape\n'
-                         'stdout: surrogateescape\n'
-                         'stderr: backslashreplace\n')
-
-        # replace the default error handler
-        out = self.c_locale_get_error_handler(encoding=':ignore')
-        self.assertEqual(out,
-                         'stdin: ignore\n'
-                         'stdout: ignore\n'
-                         'stderr: backslashreplace\n')
-
-        # force the encoding
-        out = self.c_locale_get_error_handler(encoding='iso8859-1')
-        self.assertEqual(out,
-                         'stdin: strict\n'
-                         'stdout: strict\n'
-                         'stderr: backslashreplace\n')
-        out = self.c_locale_get_error_handler(encoding='iso8859-1:')
-        self.assertEqual(out,
-                         'stdin: strict\n'
-                         'stdout: strict\n'
-                         'stderr: backslashreplace\n')
-
-        # have no any effect
-        out = self.c_locale_get_error_handler(encoding=':')
-        self.assertEqual(out,
-                         'stdin: surrogateescape\n'
-                         'stdout: surrogateescape\n'
-                         'stderr: backslashreplace\n')
-        out = self.c_locale_get_error_handler(encoding='')
-        self.assertEqual(out,
-                         'stdin: surrogateescape\n'
-                         'stdout: surrogateescape\n'
-                         'stderr: backslashreplace\n')
-
     def test_implementation(self):
         # This test applies to all implementations equally.
 
@@ -763,10 +637,9 @@ class SysModuleTest(unittest.TestCase):
         self.assertEqual(sys.implementation.name,
                          sys.implementation.name.lower())
 
-    @test.support.cpython_only
     def test_debugmallocstats(self):
         # Test sys._debugmallocstats()
-        from test.support.script_helper import assert_python_ok
+        from test.script_helper import assert_python_ok
         args = ['-c', 'import sys; sys._debugmallocstats()']
         ret, out, err = assert_python_ok(*args)
         self.assertIn(b"free PyDictObjects", err)
@@ -803,27 +676,6 @@ class SysModuleTest(unittest.TestCase):
         c = sys.getallocatedblocks()
         self.assertIn(c, range(b - 50, b + 50))
 
-    def test_is_finalizing(self):
-        self.assertIs(sys.is_finalizing(), False)
-        # Don't use the atexit module because _Py_Finalizing is only set
-        # after calling atexit callbacks
-        code = """if 1:
-            import sys
-
-            class AtExit:
-                is_finalizing = sys.is_finalizing
-                print = print
-
-                def __del__(self):
-                    self.print(self.is_finalizing(), flush=True)
-
-            # Keep a reference in the __main__ module namespace, so the
-            # AtExit destructor will be called at Python exit
-            ref = AtExit()
-        """
-        rc, stdout, stderr = assert_python_ok('-c', code)
-        self.assertEqual(stdout.rstrip(), b'True')
-
 
 @test.support.cpython_only
 class SizeofTest(unittest.TestCase):
@@ -833,6 +685,11 @@ class SizeofTest(unittest.TestCase):
         self.longdigit = sys.int_info.sizeof_digit
         import _testcapi
         self.gc_headsize = _testcapi.SIZEOF_PYGC_HEAD
+        self.file = open(test.support.TESTFN, 'wb')
+
+    def tearDown(self):
+        self.file.close()
+        test.support.unlink(test.support.TESTFN)
 
     check_sizeof = test.support.check_sizeof
 
@@ -845,37 +702,6 @@ class SizeofTest(unittest.TestCase):
         # but lists are
         self.assertEqual(sys.getsizeof([]), vsize('Pn') + gc_header_size)
 
-    def test_errors(self):
-        class BadSizeof:
-            def __sizeof__(self):
-                raise ValueError
-        self.assertRaises(ValueError, sys.getsizeof, BadSizeof())
-
-        class InvalidSizeof:
-            def __sizeof__(self):
-                return None
-        self.assertRaises(TypeError, sys.getsizeof, InvalidSizeof())
-        sentinel = ["sentinel"]
-        self.assertIs(sys.getsizeof(InvalidSizeof(), sentinel), sentinel)
-
-        class FloatSizeof:
-            def __sizeof__(self):
-                return 4.5
-        self.assertRaises(TypeError, sys.getsizeof, FloatSizeof())
-        self.assertIs(sys.getsizeof(FloatSizeof(), sentinel), sentinel)
-
-        class OverflowSizeof(int):
-            def __sizeof__(self):
-                return int(self)
-        self.assertEqual(sys.getsizeof(OverflowSizeof(sys.maxsize)),
-                         sys.maxsize + self.gc_headsize)
-        with self.assertRaises(OverflowError):
-            sys.getsizeof(OverflowSizeof(sys.maxsize + 1))
-        with self.assertRaises(ValueError):
-            sys.getsizeof(OverflowSizeof(-1))
-        with self.assertRaises((ValueError, OverflowError)):
-            sys.getsizeof(OverflowSizeof(-sys.maxsize - 1))
-
     def test_default(self):
         size = test.support.calcvobjsize
         self.assertEqual(sys.getsizeof(True), size('') + self.longdigit)
@@ -883,7 +709,6 @@ class SizeofTest(unittest.TestCase):
 
     def test_objecttypes(self):
         # check all types defined in Objects/
-        calcsize = struct.calcsize
         size = test.support.calcobjsize
         vsize = test.support.calcvobjsize
         check = self.check_sizeof
@@ -892,7 +717,7 @@ class SizeofTest(unittest.TestCase):
         # buffer
         # XXX
         # builtin_function_or_method
-        check(len, size('4P')) # XXX check layout
+        check(len, size('3P')) # XXX check layout
         # bytearray
         samples = [b'', b'u'*100000]
         for sample in samples:
@@ -900,9 +725,6 @@ class SizeofTest(unittest.TestCase):
             check(x, vsize('n2Pi') + x.__alloc__())
         # bytearray_iterator
         check(iter(bytearray()), size('nP'))
-        # bytes
-        check(b'', vsize('n') + 1)
-        check(b'x' * 10, vsize('n') + 11)
         # cell
         def get_cell():
             x = 42
@@ -935,23 +757,17 @@ class SizeofTest(unittest.TestCase):
         # method-wrapper (descriptor object)
         check({}.__iter__, size('2P'))
         # dict
-        check({}, size('n2P') + calcsize('2nPn') + 8*calcsize('n2P'))
+        check({}, size('n2P' + '2nPn' + 8*'n2P'))
         longdict = {1:1, 2:2, 3:3, 4:4, 5:5, 6:6, 7:7, 8:8}
-        check(longdict, size('n2P') + calcsize('2nPn') + 16*calcsize('n2P'))
-        # dictionary-keyview
+        check(longdict, size('n2P' + '2nPn') + 16*struct.calcsize('n2P'))
+        # dictionary-keyiterator
         check({}.keys(), size('P'))
-        # dictionary-valueview
+        # dictionary-valueiterator
         check({}.values(), size('P'))
-        # dictionary-itemview
+        # dictionary-itemiterator
         check({}.items(), size('P'))
         # dictionary iterator
         check(iter({}), size('P2nPn'))
-        # dictionary-keyiterator
-        check(iter({}.keys()), size('P2nPn'))
-        # dictionary-valueiterator
-        check(iter({}.values()), size('P2nPn'))
-        # dictionary-itemiterator
-        check(iter({}.items()), size('P2nPn'))
         # dictproxy
         class C(object): pass
         check(C.__dict__, size('P'))
@@ -1002,7 +818,7 @@ class SizeofTest(unittest.TestCase):
             check(bar, size('PP'))
         # generator
         def get_gen(): yield 1
-        check(get_gen(), size('Pb2PPP'))
+        check(get_gen(), size('Pb2P'))
         # iterator
         check(iter('abc'), size('lP'))
         # callable-iterator
@@ -1028,6 +844,8 @@ class SizeofTest(unittest.TestCase):
         check(int(PyLong_BASE), vsize('') + 2*self.longdigit)
         check(int(PyLong_BASE**2-1), vsize('') + 2*self.longdigit)
         check(int(PyLong_BASE**2), vsize('') + 3*self.longdigit)
+        # memoryview
+        check(memoryview(b''), size('Pnin 2P2n2i5P 3cPn'))
         # module
         check(unittest, size('PnPPP'))
         # None
@@ -1056,7 +874,7 @@ class SizeofTest(unittest.TestCase):
         # frozenset
         PySet_MINSIZE = 8
         samples = [[], range(10), range(50)]
-        s = size('3nP' + PySet_MINSIZE*'nP' + '2nP')
+        s = size('3n2P' + PySet_MINSIZE*'nP' + 'nP')
         for sample in samples:
             minused = len(sample)
             if minused == 0: tmp = 1
@@ -1070,8 +888,8 @@ class SizeofTest(unittest.TestCase):
                 check(set(sample), s)
                 check(frozenset(sample), s)
             else:
-                check(set(sample), s + newsize*calcsize('nP'))
-                check(frozenset(sample), s + newsize*calcsize('nP'))
+                check(set(sample), s + newsize*struct.calcsize('nP'))
+                check(frozenset(sample), s + newsize*struct.calcsize('nP'))
         # setiterator
         check(iter(set()), size('P3n'))
         # slice
@@ -1085,15 +903,11 @@ class SizeofTest(unittest.TestCase):
         # static type: PyTypeObject
         s = vsize('P2n15Pl4Pn9Pn11PIP')
         check(int, s)
-        s = vsize('P2n15Pl4Pn9Pn11PIP'  # PyTypeObject
-                  '3P'                  # PyAsyncMethods
-                  '36P'                 # PyNumberMethods
-                  '3P'                  # PyMappingMethods
-                  '10P'                 # PySequenceMethods
-                  '2P'                  # PyBufferProcs
-                  '4P')
+        # (PyTypeObject + PyNumberMethods + PyMappingMethods +
+        #  PySequenceMethods + PyBufferProcs + 4P)
+        s = vsize('P2n15Pl4Pn9Pn11PIP') + struct.calcsize('34P 3P 10P 2P 4P')
         # Separate block for PyDictKeysObject with 4 entries
-        s += calcsize("2nPn") + 4*calcsize("n2P")
+        s += struct.calcsize("2nPn") + 4*struct.calcsize("n2P")
         # class
         class newstyleclass(object): pass
         check(newstyleclass, s)
@@ -1136,36 +950,6 @@ class SizeofTest(unittest.TestCase):
         # XXX
         # weakcallableproxy
         check(weakref.proxy(int), size('2Pn2P'))
-
-    def check_slots(self, obj, base, extra):
-        expected = sys.getsizeof(base) + struct.calcsize(extra)
-        if gc.is_tracked(obj) and not gc.is_tracked(base):
-            expected += self.gc_headsize
-        self.assertEqual(sys.getsizeof(obj), expected)
-
-    def test_slots(self):
-        # check all subclassable types defined in Objects/ that allow
-        # non-empty __slots__
-        check = self.check_slots
-        class BA(bytearray):
-            __slots__ = 'a', 'b', 'c'
-        check(BA(), bytearray(), '3P')
-        class D(dict):
-            __slots__ = 'a', 'b', 'c'
-        check(D(x=[]), {'x': []}, '3P')
-        class L(list):
-            __slots__ = 'a', 'b', 'c'
-        check(L(), [], '3P')
-        class S(set):
-            __slots__ = 'a', 'b', 'c'
-        check(S(), set(), '3P')
-        class FS(frozenset):
-            __slots__ = 'a', 'b', 'c'
-        check(FS(), frozenset(), '3P')
-        from collections import OrderedDict
-        class OD(OrderedDict):
-            __slots__ = 'a', 'b', 'c'
-        check(OD(x=[]), OrderedDict(x=[]), '3P')
 
     def test_pythontypes(self):
         # check all types defined in Python/

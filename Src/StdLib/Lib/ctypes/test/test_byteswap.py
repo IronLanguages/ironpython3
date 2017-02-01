@@ -14,33 +14,12 @@ def bin(s):
 # For Structures and Unions, these types are created on demand.
 
 class Test(unittest.TestCase):
-    @unittest.skip('test disabled')
-    def test_X(self):
+    def X_test(self):
         print(sys.byteorder, file=sys.stderr)
         for i in range(32):
             bits = BITS()
             setattr(bits, "i%s" % i, 1)
             dump(bits)
-
-    def test_slots(self):
-        class BigPoint(BigEndianStructure):
-            __slots__ = ()
-            _fields_ = [("x", c_int), ("y", c_int)]
-
-        class LowPoint(LittleEndianStructure):
-            __slots__ = ()
-            _fields_ = [("x", c_int), ("y", c_int)]
-
-        big = BigPoint()
-        little = LowPoint()
-        big.x = 4
-        big.y = 2
-        little.x = 2
-        little.y = 4
-        with self.assertRaises(AttributeError):
-            big.z = 42
-        with self.assertRaises(AttributeError):
-            little.z = 24
 
     def test_endian_short(self):
         if sys.byteorder == "little":

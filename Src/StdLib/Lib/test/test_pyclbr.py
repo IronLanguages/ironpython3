@@ -2,10 +2,11 @@
    Test cases for pyclbr.py
    Nick Mathewson
 '''
+from test.support import run_unittest
 import sys
 from types import FunctionType, MethodType, BuiltinFunctionType
 import pyclbr
-from unittest import TestCase, main as unittest_main
+from unittest import TestCase
 
 StaticMethodType = type(staticmethod(lambda: None))
 ClassMethodType = type(classmethod(lambda c: None))
@@ -158,7 +159,7 @@ class PyclbrTest(TestCase):
         cm('cgi', ignore=('log',))      # set with = in module
         cm('pickle')
         cm('aifc', ignore=('openfp', '_aifc_params'))  # set with = in module
-        cm('sre_parse', ignore=('dump', 'groups')) # from sre_constants import *; property
+        cm('sre_parse', ignore=('dump',)) # from sre_constants import *
         cm('pdb')
         cm('pydoc')
 
@@ -172,5 +173,9 @@ class PyclbrTest(TestCase):
         self.assertRaises(ImportError, pyclbr.readmodule_ex, 'asyncore.foo')
 
 
+def test_main():
+    run_unittest(PyclbrTest)
+
+
 if __name__ == "__main__":
-    unittest_main()
+    test_main()

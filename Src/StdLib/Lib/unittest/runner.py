@@ -126,13 +126,7 @@ class TextTestRunner(object):
     resultclass = TextTestResult
 
     def __init__(self, stream=None, descriptions=True, verbosity=1,
-                 failfast=False, buffer=False, resultclass=None, warnings=None,
-                 *, tb_locals=False):
-        """Construct a TextTestRunner.
-
-        Subclasses should accept **kwargs to ensure compatibility as the
-        interface changes.
-        """
+                 failfast=False, buffer=False, resultclass=None, warnings=None):
         if stream is None:
             stream = sys.stderr
         self.stream = _WritelnDecorator(stream)
@@ -140,7 +134,6 @@ class TextTestRunner(object):
         self.verbosity = verbosity
         self.failfast = failfast
         self.buffer = buffer
-        self.tb_locals = tb_locals
         self.warnings = warnings
         if resultclass is not None:
             self.resultclass = resultclass
@@ -154,7 +147,6 @@ class TextTestRunner(object):
         registerResult(result)
         result.failfast = self.failfast
         result.buffer = self.buffer
-        result.tb_locals = self.tb_locals
         with warnings.catch_warnings():
             if self.warnings:
                 # if self.warnings is set, use it to filter all the warnings

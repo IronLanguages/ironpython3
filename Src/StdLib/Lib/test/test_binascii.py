@@ -1,5 +1,6 @@
 """Test the binascii C module."""
 
+from test import support
 import unittest
 import binascii
 import array
@@ -135,18 +136,6 @@ class BinASCIITest(unittest.TestCase):
         # Issue #7701 (crash on a pydebug build)
         self.assertEqual(binascii.b2a_uu(b'x'), b'!>   \n')
 
-    def test_crc_hqx(self):
-        crc = binascii.crc_hqx(self.type2test(b"Test the CRC-32 of"), 0)
-        crc = binascii.crc_hqx(self.type2test(b" this string."), crc)
-        self.assertEqual(crc, 14290)
-
-        self.assertRaises(TypeError, binascii.crc_hqx)
-        self.assertRaises(TypeError, binascii.crc_hqx, self.type2test(b''))
-
-        for crc in 0, 1, 0x1234, 0x12345, 0x12345678, -1:
-            self.assertEqual(binascii.crc_hqx(self.type2test(b''), crc),
-                             crc & 0xffff)
-
     def test_crc32(self):
         crc = binascii.crc32(self.type2test(b"Test the CRC-32 of"))
         crc = binascii.crc32(self.type2test(b" this string."), crc)
@@ -173,13 +162,9 @@ class BinASCIITest(unittest.TestCase):
         self.assertRaises(binascii.Error, binascii.a2b_hex, t[:-1])
         self.assertRaises(binascii.Error, binascii.a2b_hex, t[:-1] + b'q')
 
-        # Confirm that b2a_hex == hexlify and a2b_hex == unhexlify
-        self.assertEqual(binascii.hexlify(self.type2test(s)), t)
-        self.assertEqual(binascii.unhexlify(self.type2test(t)), u)
+        self.assertEqual(binascii.hexlify(b'a'), b'61')
 
     def test_qp(self):
-        binascii.a2b_qp(data=b"", header=False)  # Keyword arguments allowed
-
         # A test for SF bug 534347 (segfaults without the proper fix)
         try:
             binascii.a2b_qp(b"", **{1:1})
@@ -187,7 +172,6 @@ class BinASCIITest(unittest.TestCase):
             pass
         else:
             self.fail("binascii.a2b_qp(**{1:1}) didn't raise TypeError")
-
         self.assertEqual(binascii.a2b_qp(b"= "), b"= ")
         self.assertEqual(binascii.a2b_qp(b"=="), b"=")
         self.assertEqual(binascii.a2b_qp(b"=AX"), b"=AX")
@@ -276,5 +260,11 @@ class MemoryviewBinASCIITest(BinASCIITest):
     type2test = memoryview
 
 
+def test_main():
+    support.run_unittest(BinASCIITest,
+                         ArrayBinASCIITest,
+                         BytearrayBinASCIITest,
+                         MemoryviewBinASCIITest)
+
 if __name__ == "__main__":
-    unittest.main()
+    test_main()

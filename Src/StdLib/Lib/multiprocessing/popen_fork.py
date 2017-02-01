@@ -1,6 +1,7 @@
 import os
 import sys
 import signal
+import errno
 
 from . import util
 
@@ -28,6 +29,8 @@ class Popen(object):
                 try:
                     pid, sts = os.waitpid(self.pid, flag)
                 except OSError as e:
+                    if e.errno == errno.EINTR:
+                        continue
                     # Child process not yet created. See #1731717
                     # e.errno == errno.ECHILD == 10
                     return None
@@ -44,7 +47,7 @@ class Popen(object):
     def wait(self, timeout=None):
         if self.returncode is None:
             if timeout is not None:
-                from multiprocessing.connection import wait
+                from .connection import wait
                 if not wait([self.sentinel], timeout):
                     return None
             # This shouldn't block if wait() returned successfully.

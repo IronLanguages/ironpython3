@@ -1,6 +1,5 @@
 import unittest
 from ctypes import *
-from ctypes.test import need_symbol
 
 class StringArrayTestCase(unittest.TestCase):
     def test(self):
@@ -54,33 +53,36 @@ class StringArrayTestCase(unittest.TestCase):
 ##        print BUF.from_param(c_char_p("python"))
 ##        print BUF.from_param(BUF(*"pyth"))
 
-@need_symbol('c_wchar')
-class WStringArrayTestCase(unittest.TestCase):
-    def test(self):
-        BUF = c_wchar * 4
+try:
+    c_wchar
+except NameError:
+    pass
+else:
+    class WStringArrayTestCase(unittest.TestCase):
+        def test(self):
+            BUF = c_wchar * 4
 
-        buf = BUF("a", "b", "c")
-        self.assertEqual(buf.value, "abc")
+            buf = BUF("a", "b", "c")
+            self.assertEqual(buf.value, "abc")
 
-        buf.value = "ABCD"
-        self.assertEqual(buf.value, "ABCD")
+            buf.value = "ABCD"
+            self.assertEqual(buf.value, "ABCD")
 
-        buf.value = "x"
-        self.assertEqual(buf.value, "x")
+            buf.value = "x"
+            self.assertEqual(buf.value, "x")
 
-        buf[1] = "Z"
-        self.assertEqual(buf.value, "xZCD")
+            buf[1] = "Z"
+            self.assertEqual(buf.value, "xZCD")
 
-    @unittest.skipIf(sizeof(c_wchar) < 4,
-                     "sizeof(wchar_t) is smaller than 4 bytes")
-    def test_nonbmp(self):
-        u = chr(0x10ffff)
-        w = c_wchar(u)
-        self.assertEqual(w.value, u)
+        @unittest.skipIf(sizeof(c_wchar) < 4,
+                         "sizeof(wchar_t) is smaller than 4 bytes")
+        def test_nonbmp(self):
+            u = chr(0x10ffff)
+            w = c_wchar(u)
+            self.assertEqual(w.value, u)
 
 class StringTestCase(unittest.TestCase):
-    @unittest.skip('test disabled')
-    def test_basic_strings(self):
+    def XX_test_basic_strings(self):
         cs = c_string("abcdef")
 
         # Cannot call len on a c_string any longer
@@ -106,8 +108,7 @@ class StringTestCase(unittest.TestCase):
 
         self.assertRaises(TypeError, c_string, "123")
 
-    @unittest.skip('test disabled')
-    def test_sized_strings(self):
+    def XX_test_sized_strings(self):
 
         # New in releases later than 0.4.0:
         self.assertRaises(TypeError, c_string, None)
@@ -124,8 +125,7 @@ class StringTestCase(unittest.TestCase):
         self.assertEqual(c_string(2).raw[-1], "\000")
         self.assertEqual(len(c_string(2).raw), 2)
 
-    @unittest.skip('test disabled')
-    def test_initialized_strings(self):
+    def XX_test_initialized_strings(self):
 
         self.assertEqual(c_string("ab", 4).raw[:2], "ab")
         self.assertEqual(c_string("ab", 4).raw[:2:], "ab")
@@ -134,8 +134,7 @@ class StringTestCase(unittest.TestCase):
         self.assertEqual(c_string("ab", 4).raw[-1], "\000")
         self.assertEqual(c_string("ab", 2).raw, "a\000")
 
-    @unittest.skip('test disabled')
-    def test_toolong(self):
+    def XX_test_toolong(self):
         cs = c_string("abcdef")
         # Much too long string:
         self.assertRaises(ValueError, setattr, cs, "value", "123456789012345")
@@ -143,53 +142,54 @@ class StringTestCase(unittest.TestCase):
         # One char too long values:
         self.assertRaises(ValueError, setattr, cs, "value", "1234567")
 
-    @unittest.skip('test disabled')
-    def test_perf(self):
-        check_perf()
+##    def test_perf(self):
+##        check_perf()
 
-@need_symbol('c_wchar')
-class WStringTestCase(unittest.TestCase):
-    def test_wchar(self):
-        c_wchar("x")
-        repr(byref(c_wchar("x")))
-        c_wchar("x")
+try:
+    c_wchar
+except NameError:
+    pass
+else:
+    class WStringTestCase(unittest.TestCase):
+        def test_wchar(self):
+            c_wchar("x")
+            repr(byref(c_wchar("x")))
+            c_wchar("x")
 
 
-    @unittest.skip('test disabled')
-    def test_basic_wstrings(self):
-        cs = c_wstring("abcdef")
+        def X_test_basic_wstrings(self):
+            cs = c_wstring("abcdef")
 
-        # XXX This behaviour is about to change:
-        # len returns the size of the internal buffer in bytes.
-        # This includes the terminating NUL character.
-        self.assertEqual(sizeof(cs), 14)
+            # XXX This behaviour is about to change:
+            # len returns the size of the internal buffer in bytes.
+            # This includes the terminating NUL character.
+            self.assertEqual(sizeof(cs), 14)
 
-        # The value property is the string up to the first terminating NUL.
-        self.assertEqual(cs.value, "abcdef")
-        self.assertEqual(c_wstring("abc\000def").value, "abc")
+            # The value property is the string up to the first terminating NUL.
+            self.assertEqual(cs.value, "abcdef")
+            self.assertEqual(c_wstring("abc\000def").value, "abc")
 
-        self.assertEqual(c_wstring("abc\000def").value, "abc")
+            self.assertEqual(c_wstring("abc\000def").value, "abc")
 
-        # The raw property is the total buffer contents:
-        self.assertEqual(cs.raw, "abcdef\000")
-        self.assertEqual(c_wstring("abc\000def").raw, "abc\000def\000")
+            # The raw property is the total buffer contents:
+            self.assertEqual(cs.raw, "abcdef\000")
+            self.assertEqual(c_wstring("abc\000def").raw, "abc\000def\000")
 
-        # We can change the value:
-        cs.value = "ab"
-        self.assertEqual(cs.value, "ab")
-        self.assertEqual(cs.raw, "ab\000\000\000\000\000")
+            # We can change the value:
+            cs.value = "ab"
+            self.assertEqual(cs.value, "ab")
+            self.assertEqual(cs.raw, "ab\000\000\000\000\000")
 
-        self.assertRaises(TypeError, c_wstring, "123")
-        self.assertRaises(ValueError, c_wstring, 0)
+            self.assertRaises(TypeError, c_wstring, "123")
+            self.assertRaises(ValueError, c_wstring, 0)
 
-    @unittest.skip('test disabled')
-    def test_toolong(self):
-        cs = c_wstring("abcdef")
-        # Much too long string:
-        self.assertRaises(ValueError, setattr, cs, "value", "123456789012345")
+        def X_test_toolong(self):
+            cs = c_wstring("abcdef")
+            # Much too long string:
+            self.assertRaises(ValueError, setattr, cs, "value", "123456789012345")
 
-        # One char too long values:
-        self.assertRaises(ValueError, setattr, cs, "value", "1234567")
+            # One char too long values:
+            self.assertRaises(ValueError, setattr, cs, "value", "1234567")
 
 
 def run_test(rep, msg, func, arg):

@@ -57,8 +57,8 @@ from errno import EALREADY, EINPROGRESS, EWOULDBLOCK, ECONNRESET, EINVAL, \
      ENOTCONN, ESHUTDOWN, EISCONN, EBADF, ECONNABORTED, EPIPE, EAGAIN, \
      errorcode
 
-_DISCONNECTED = frozenset({ECONNRESET, ENOTCONN, ESHUTDOWN, ECONNABORTED, EPIPE,
-                           EBADF})
+_DISCONNECTED = frozenset((ECONNRESET, ENOTCONN, ESHUTDOWN, ECONNABORTED, EPIPE,
+                           EBADF))
 
 try:
     socket_map
@@ -141,7 +141,10 @@ def poll(timeout=0.0, map=None):
             time.sleep(timeout)
             return
 
-        r, w, e = select.select(r, w, e, timeout)
+        try:
+            r, w, e = select.select(r, w, e, timeout)
+        except InterruptedError:
+            return
 
         for fd in r:
             obj = map.get(fd)
@@ -179,8 +182,10 @@ def poll2(timeout=0.0, map=None):
                 flags |= select.POLLOUT
             if flags:
                 pollster.register(fd, flags)
-
-        r = pollster.poll(timeout)
+        try:
+            r = pollster.poll(timeout)
+        except InterruptedError:
+            r = []
         for fd, flags in r:
             obj = map.get(fd)
             if obj is None:
@@ -215,7 +220,7 @@ class dispatcher:
     connecting = False
     closing = False
     addr = None
-    ignore_log_types = frozenset({'warning'})
+    ignore_log_types = frozenset(['warning'])
 
     def __init__(self, sock=None, map=None):
         if map is None:
@@ -250,7 +255,7 @@ class dispatcher:
             self.socket = None
 
     def __repr__(self):
-        status = [self.__class__.__module__+"."+self.__class__.__qualname__]
+        status = [self.__class__.__module__+"."+self.__class__.__name__]
         if self.accepting and self.addr:
             status.append('listening')
         elif self.connected:
@@ -398,6 +403,20 @@ class dispatcher:
             except OSError as why:
                 if why.args[0] not in (ENOTCONN, EBADF):
                     raise
+
+    # cheap inheritance, used to pass all other attribute
+    # references to the underlying socket object.
+    def __getattr__(self, attr):
+        try:
+            retattr = getattr(self.socket, attr)
+        except AttributeError:
+            raise AttributeError("%s instance has no attribute '%s'"
+                                 %(self.__class__.__name__, attr))
+        else:
+            msg = "%(me)s.%(attr)s is deprecated; use %(me)s.socket.%(attr)s " \
+                  "instead" % {'me' : self.__class__.__name__, 'attr' : attr}
+            warnings.warn(msg, DeprecationWarning, stacklevel=2)
+            return retattr
 
     # log and log_info may be overridden to provide more sophisticated
     # logging and warning methods. In general, log is for 'hit' logging
@@ -585,6 +604,8 @@ def close_all(map=None, ignore_all=False):
 # Regardless, this is useful for pipes, and stdin/stdout...
 
 if os.name == 'posix':
+    import fcntl
+
     class file_wrapper:
         # Here we override just enough to make a file
         # look like a socket for the purposes of asyncore.
@@ -592,11 +613,6 @@ if os.name == 'posix':
 
         def __init__(self, fd):
             self.fd = os.dup(fd)
-
-        def __del__(self):
-            if self.fd >= 0:
-                warnings.warn("unclosed file %r" % self, ResourceWarning)
-            self.close()
 
         def recv(self, *args):
             return os.read(self.fd, *args)
@@ -616,10 +632,7 @@ if os.name == 'posix':
         write = send
 
         def close(self):
-            if self.fd < 0:
-                return
             os.close(self.fd)
-            self.fd = -1
 
         def fileno(self):
             return self.fd
@@ -635,7 +648,9 @@ if os.name == 'posix':
                 pass
             self.set_file(fd)
             # set it to non-blocking mode
-            os.set_blocking(fd, False)
+            flags = fcntl.fcntl(fd, fcntl.F_GETFL, 0)
+            flags = flags | os.O_NONBLOCK
+            fcntl.fcntl(fd, fcntl.F_SETFL, flags)
 
         def set_file(self, fd):
             self.socket = file_wrapper(fd)

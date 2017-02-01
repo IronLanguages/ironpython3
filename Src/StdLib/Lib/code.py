@@ -7,7 +7,6 @@
 
 import sys
 import traceback
-import argparse
 from codeop import CommandCompiler, compile_command
 
 __all__ = ["InteractiveInterpreter", "InteractiveConsole", "interact",
@@ -137,18 +136,25 @@ class InteractiveInterpreter:
         The output is written by self.write(), below.
 
         """
-        sys.last_type, sys.last_value, last_tb = ei = sys.exc_info()
-        sys.last_traceback = last_tb
         try:
-            lines = traceback.format_exception(ei[0], ei[1], last_tb.tb_next)
-            if sys.excepthook is sys.__excepthook__:
-                self.write(''.join(lines))
-            else:
-                # If someone has set sys.excepthook, we let that take precedence
-                # over self.write
-                sys.excepthook(ei[0], ei[1], last_tb)
+            type, value, tb = sys.exc_info()
+            sys.last_type = type
+            sys.last_value = value
+            sys.last_traceback = tb
+            tblist = traceback.extract_tb(tb)
+            del tblist[:1]
+            lines = traceback.format_list(tblist)
+            if lines:
+                lines.insert(0, "Traceback (most recent call last):\n")
+            lines.extend(traceback.format_exception_only(type, value))
         finally:
-            last_tb = ei = None
+            tblist = tb = None
+        if sys.excepthook is sys.__excepthook__:
+            self.write(''.join(lines))
+        else:
+            # If someone has set sys.excepthook, we let that take precedence
+            # over self.write
+            sys.excepthook(type, value, tb)
 
     def write(self, data):
         """Write a string.
@@ -293,12 +299,4 @@ def interact(banner=None, readfunc=None, local=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-q', action='store_true',
-                       help="don't print version and copyright messages")
-    args = parser.parse_args()
-    if args.q or sys.flags.quiet:
-        banner = ''
-    else:
-        banner = None
-    interact(banner)
+    interact()

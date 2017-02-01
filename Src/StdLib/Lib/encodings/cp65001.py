@@ -11,23 +11,20 @@ if not hasattr(codecs, 'code_page_encode'):
 ### Codec APIs
 
 encode = functools.partial(codecs.code_page_encode, 65001)
-_decode = functools.partial(codecs.code_page_decode, 65001)
-
-def decode(input, errors='strict'):
-    return codecs.code_page_decode(65001, input, errors, True)
+decode = functools.partial(codecs.code_page_decode, 65001)
 
 class IncrementalEncoder(codecs.IncrementalEncoder):
     def encode(self, input, final=False):
         return encode(input, self.errors)[0]
 
 class IncrementalDecoder(codecs.BufferedIncrementalDecoder):
-    _buffer_decode = _decode
+    _buffer_decode = decode
 
 class StreamWriter(codecs.StreamWriter):
     encode = encode
 
 class StreamReader(codecs.StreamReader):
-    decode = _decode
+    decode = decode
 
 ### encodings module API
 

@@ -1,6 +1,7 @@
 import os
 import time
 import unittest
+from test import support
 
 
 class StructSeqTest(unittest.TestCase):
@@ -122,5 +123,8 @@ class StructSeqTest(unittest.TestCase):
                     self.assertEqual(list(t[start:stop:step]),
                                      L[start:stop:step])
 
+def test_main():
+    support.run_unittest(StructSeqTest)
+
 if __name__ == "__main__":
-    unittest.main()
+    test_main()

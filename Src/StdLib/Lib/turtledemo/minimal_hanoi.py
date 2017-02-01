@@ -50,12 +50,9 @@ def hanoi(n, from_, with_, to_):
 def play():
     onkey(None,"space")
     clear()
-    try:
-        hanoi(6, t1, t2, t3)
-        write("press STOP button to exit",
-              align="center", font=("Courier", 16, "bold"))
-    except Terminator:
-        pass  # turtledemo user pressed STOP
+    hanoi(6, t1, t2, t3)
+    write("press STOP button to exit",
+          align="center", font=("Courier", 16, "bold"))
 
 def main():
     global t1, t2, t3

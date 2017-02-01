@@ -3,7 +3,6 @@
 import collections
 import contextlib
 import io
-import logging
 import os
 import re
 import socket
@@ -13,7 +12,7 @@ import tempfile
 import threading
 import time
 import unittest
-from unittest import mock
+import unittest.mock
 
 from http.server import HTTPServer
 from wsgiref.simple_server import WSGIRequestHandler, WSGIServer
@@ -23,14 +22,10 @@ try:
 except ImportError:  # pragma: no cover
     ssl = None
 
-from . import base_events
-from . import compat
-from . import events
-from . import futures
-from . import selectors
 from . import tasks
-from .coroutines import coroutine
-from .log import logger
+from . import base_events
+from . import events
+from . import selectors
 
 
 if sys.platform == 'win32':  # pragma: no cover
@@ -47,38 +42,38 @@ def dummy_ssl_context():
 
 
 def run_briefly(loop):
-    @coroutine
+    @tasks.coroutine
     def once():
         pass
     gen = once()
-    t = loop.create_task(gen)
-    # Don't log a warning if the task is not done after run_until_complete().
-    # It occurs if the loop is stopped or if a task raises a BaseException.
-    t._log_destroy_pending = False
+    t = tasks.Task(gen, loop=loop)
     try:
         loop.run_until_complete(t)
     finally:
         gen.close()
 
 
-def run_until(loop, pred, timeout=30):
-    deadline = time.time() + timeout
+def run_until(loop, pred, timeout=None):
+    if timeout is not None:
+        deadline = time.time() + timeout
     while not pred():
         if timeout is not None:
             timeout = deadline - time.time()
             if timeout <= 0:
-                raise futures.TimeoutError()
-        loop.run_until_complete(tasks.sleep(0.001, loop=loop))
+                return False
+            loop.run_until_complete(tasks.sleep(timeout, loop=loop))
+        else:
+            run_briefly(loop)
+    return True
 
 
 def run_once(loop):
-    """Legacy API to run once through the event loop.
-
-    This is the recommended pattern for test code.  It will poll the
-    selector once and run all callbacks scheduled in response to I/O
-    events.
+    """loop.stop() schedules _raise_stop_error()
+    and run_forever() runs until _raise_stop_error() callback.
+    this wont work if test waits for some IO events, because
+    _raise_stop_error() runs before any of io events callbacks.
     """
-    loop.call_soon(loop.stop)
+    loop.stop()
     loop.run_forever()
 
 
@@ -92,13 +87,6 @@ class SilentWSGIRequestHandler(WSGIRequestHandler):
 
 
 class SilentWSGIServer(WSGIServer):
-
-    request_timeout = 2
-
-    def get_request(self):
-        request, client_addr = super().get_request()
-        request.settimeout(self.request_timeout)
-        return request, client_addr
 
     def handle_error(self, request, client_address):
         pass
@@ -147,8 +135,7 @@ def _run_test_server(*, address, use_ssl=False, server_cls, server_ssl_cls):
     httpd = server_class(address, SilentWSGIRequestHandler)
     httpd.set_app(app)
     httpd.address = httpd.server_address
-    server_thread = threading.Thread(
-        target=lambda: httpd.serve_forever(poll_interval=0.05))
+    server_thread = threading.Thread(target=httpd.serve_forever)
     server_thread.start()
     try:
         yield httpd
@@ -170,15 +157,12 @@ if hasattr(socket, 'AF_UNIX'):
 
     class UnixWSGIServer(UnixHTTPServer, WSGIServer):
 
-        request_timeout = 2
-
         def server_bind(self):
             UnixHTTPServer.server_bind(self)
             self.setup_environ()
 
         def get_request(self):
             request, client_addr = super().get_request()
-            request.settimeout(self.request_timeout)
             # Code in the stdlib expects that get_request
             # will return a socket and a tuple (host, port).
             # However, this isn't true for UNIX sockets,
@@ -309,7 +293,6 @@ class TestLoop(base_events.BaseEventLoop):
             self._time += advance
 
     def close(self):
-        super().close()
         if self._check_on_close:
             try:
                 self._gen.send(0)
@@ -379,7 +362,7 @@ class TestLoop(base_events.BaseEventLoop):
 
 
 def MockCallback(**kwargs):
-    return mock.Mock(spec=['__call__'], **kwargs)
+    return unittest.mock.Mock(spec=['__call__'], **kwargs)
 
 
 class MockPattern(str):
@@ -393,71 +376,3 @@ class MockPattern(str):
     """
     def __eq__(self, other):
         return bool(re.search(str(self), other, re.S))
-
-
-def get_function_source(func):
-    source = events._get_function_source(func)
-    if source is None:
-        raise ValueError("unable to get the source of %r" % (func,))
-    return source
-
-
-class TestCase(unittest.TestCase):
-    def set_event_loop(self, loop, *, cleanup=True):
-        assert loop is not None
-        # ensure that the event loop is passed explicitly in asyncio
-        events.set_event_loop(None)
-        if cleanup:
-            self.addCleanup(loop.close)
-
-    def new_test_loop(self, gen=None):
-        loop = TestLoop(gen)
-        self.set_event_loop(loop)
-        return loop
-
-    def tearDown(self):
-        events.set_event_loop(None)
-
-        # Detect CPython bug #23353: ensure that yield/yield-from is not used
-        # in an except block of a generator
-        self.assertEqual(sys.exc_info(), (None, None, None))
-
-    if not compat.PY34:
-        # Python 3.3 compatibility
-        def subTest(self, *args, **kwargs):
-            class EmptyCM:
-                def __enter__(self):
-                    pass
-                def __exit__(self, *exc):
-                    pass
-            return EmptyCM()
-
-
-@contextlib.contextmanager
-def disable_logger():
-    """Context manager to disable asyncio logger.
-
-    For example, it can be used to ignore warnings in debug mode.
-    """
-    old_level = logger.level
-    try:
-        logger.setLevel(logging.CRITICAL+1)
-        yield
-    finally:
-        logger.setLevel(old_level)
-
-
-def mock_nonblocking_socket(proto=socket.IPPROTO_TCP, type=socket.SOCK_STREAM,
-                            family=socket.AF_INET):
-    """Create a mock of a non-blocking socket."""
-    sock = mock.MagicMock(socket.socket)
-    sock.proto = proto
-    sock.type = type
-    sock.family = family
-    sock.gettimeout.return_value = 0.0
-    return sock
-
-
-def force_legacy_ssl_support():
-    return mock.patch('asyncio.sslproto._is_sslproto_available',
-                      return_value=False)

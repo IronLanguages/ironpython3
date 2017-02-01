@@ -4,8 +4,7 @@ import sys
 import tracemalloc
 import unittest
 from unittest.mock import patch
-from test.support.script_helper import (assert_python_ok, assert_python_failure,
-                                        interpreter_requires_environment)
+from test.script_helper import assert_python_ok, assert_python_failure
 from test import support
 try:
     import threading
@@ -253,7 +252,7 @@ class TestTracemallocEnabled(unittest.TestCase):
         snapshot.dump(support.TESTFN)
         self.addCleanup(support.unlink, support.TESTFN)
 
-        # load() should recreate the attribute
+        # load() should recreates the attribute
         snapshot2 = tracemalloc.Snapshot.load(support.TESTFN)
         self.assertEqual(snapshot2.test_attr, "new")
 
@@ -346,8 +345,6 @@ class TestSnapshot(unittest.TestCase):
         self.assertIsNot(snapshot5, snapshot)
         self.assertIsNot(snapshot5.traces, snapshot.traces)
         self.assertEqual(snapshot5.traces, snapshot.traces)
-
-        self.assertRaises(TypeError, snapshot.filter_traces, filter1)
 
     def test_snapshot_group_by_line(self):
         snapshot, snapshot2 = create_snapshots()
@@ -661,9 +658,11 @@ class TestFilters(unittest.TestCase):
         self.assertFalse(fnmatch('abcdd', 'a*c*e'))
         self.assertFalse(fnmatch('abcbdefef', 'a*bd*eg'))
 
-        # replace .pyc suffix with .py
+        # replace .pyc and .pyo suffix with .py
         self.assertTrue(fnmatch('a.pyc', 'a.py'))
+        self.assertTrue(fnmatch('a.pyo', 'a.py'))
         self.assertTrue(fnmatch('a.py', 'a.pyc'))
+        self.assertTrue(fnmatch('a.py', 'a.pyo'))
 
         if os.name == 'nt':
             # case insensitive
@@ -671,14 +670,18 @@ class TestFilters(unittest.TestCase):
             self.assertTrue(fnmatch('aBcDe', 'Ab*dE'))
 
             self.assertTrue(fnmatch('a.pyc', 'a.PY'))
+            self.assertTrue(fnmatch('a.PYO', 'a.py'))
             self.assertTrue(fnmatch('a.py', 'a.PYC'))
+            self.assertTrue(fnmatch('a.PY', 'a.pyo'))
         else:
             # case sensitive
             self.assertFalse(fnmatch('aBC', 'ABc'))
             self.assertFalse(fnmatch('aBcDe', 'Ab*dE'))
 
             self.assertFalse(fnmatch('a.pyc', 'a.PY'))
+            self.assertFalse(fnmatch('a.PYO', 'a.py'))
             self.assertFalse(fnmatch('a.py', 'a.PYC'))
+            self.assertFalse(fnmatch('a.PY', 'a.pyo'))
 
         if os.name == 'nt':
             # normalize alternate separator "/" to the standard separator "\"
@@ -692,9 +695,6 @@ class TestFilters(unittest.TestCase):
             self.assertFalse(fnmatch(r'a\b', r'a/b'))
             self.assertFalse(fnmatch(r'a/b\c', r'a\b/c'))
             self.assertFalse(fnmatch(r'a/b/c', r'a\b\c'))
-
-        # as of 3.5, .pyo is no longer munged to .py
-        self.assertFalse(fnmatch('a.pyo', 'a.py'))
 
     def test_filter_match_trace(self):
         t1 = (("a.py", 2), ("b.py", 3))
@@ -746,30 +746,26 @@ class TestFilters(unittest.TestCase):
 
 
 class TestCommandLine(unittest.TestCase):
-    def test_env_var_disabled_by_default(self):
+    def test_env_var(self):
         # not tracing by default
         code = 'import tracemalloc; print(tracemalloc.is_tracing())'
         ok, stdout, stderr = assert_python_ok('-c', code)
         stdout = stdout.rstrip()
         self.assertEqual(stdout, b'False')
 
-    @unittest.skipIf(interpreter_requires_environment(),
-                     'Cannot run -E tests when PYTHON env vars are required.')
-    def test_env_var_ignored_with_E(self):
-        """PYTHON* environment variables must be ignored when -E is present."""
+        # PYTHON* environment variables must be ignored when -E option is
+        # present
         code = 'import tracemalloc; print(tracemalloc.is_tracing())'
         ok, stdout, stderr = assert_python_ok('-E', '-c', code, PYTHONTRACEMALLOC='1')
         stdout = stdout.rstrip()
         self.assertEqual(stdout, b'False')
 
-    def test_env_var_enabled_at_startup(self):
         # tracing at startup
         code = 'import tracemalloc; print(tracemalloc.is_tracing())'
         ok, stdout, stderr = assert_python_ok('-c', code, PYTHONTRACEMALLOC='1')
         stdout = stdout.rstrip()
         self.assertEqual(stdout, b'True')
 
-    def test_env_limit(self):
         # start and set the number of frames
         code = 'import tracemalloc; print(tracemalloc.get_traceback_limit())'
         ok, stdout, stderr = assert_python_ok('-c', code, PYTHONTRACEMALLOC='10')
@@ -808,12 +804,6 @@ class TestCommandLine(unittest.TestCase):
                     self.assertIn(b'-X tracemalloc=NFRAME: invalid '
                                   b'number of frames',
                                   stderr)
-
-    def test_pymem_alloc0(self):
-        # Issue #21639: Check that PyMem_Malloc(0) with tracemalloc enabled
-        # does not crash.
-        code = 'import _testcapi; _testcapi.test_pymem_alloc0(); 1'
-        assert_python_ok('-X', 'tracemalloc', '-c', code)
 
 
 def test_main():

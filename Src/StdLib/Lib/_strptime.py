@@ -14,7 +14,7 @@ import time
 import locale
 import calendar
 from re import compile as re_compile
-from re import IGNORECASE
+from re import IGNORECASE, ASCII
 from re import escape as re_escape
 from datetime import (date as datetime_date,
                       timedelta as datetime_timedelta,
@@ -77,8 +77,6 @@ class LocaleTime(object):
         self.__calc_date_time()
         if _getlang() != self.lang:
             raise ValueError("locale changed during initialization")
-        if time.tzname != self.tzname or time.daylight != self.daylight:
-            raise ValueError("timezone changed during initialization")
 
     def __pad(self, seq, front):
         # Add '' to seq to either the front (is True), else the back.
@@ -163,17 +161,15 @@ class LocaleTime(object):
 
     def __calc_timezone(self):
         # Set self.timezone by using time.tzname.
-        # Do not worry about possibility of time.tzname[0] == time.tzname[1]
-        # and time.daylight; handle that in strptime.
+        # Do not worry about possibility of time.tzname[0] == timetzname[1]
+        # and time.daylight; handle that in strptime .
         try:
             time.tzset()
         except AttributeError:
             pass
-        self.tzname = time.tzname
-        self.daylight = time.daylight
-        no_saving = frozenset({"utc", "gmt", self.tzname[0].lower()})
-        if self.daylight:
-            has_saving = frozenset({self.tzname[1].lower()})
+        no_saving = frozenset(["utc", "gmt", time.tzname[0].lower()])
+        if time.daylight:
+            has_saving = frozenset([time.tzname[1].lower()])
         else:
             has_saving = frozenset()
         self.timezone = (no_saving, has_saving)
@@ -257,8 +253,8 @@ class TimeRE(dict):
         # format directives (%m, etc.).
         regex_chars = re_compile(r"([\\.^$*+?\(\){}\[\]|])")
         format = regex_chars.sub(r"\\\1", format)
-        whitespace_replacement = re_compile(r'\s+')
-        format = whitespace_replacement.sub(r'\\s+', format)
+        whitespace_replacement = re_compile('\s+')
+        format = whitespace_replacement.sub('\s+', format)
         while '%' in format:
             directive_index = format.index('%')+1
             processed_format = "%s%s%s" % (processed_format,
@@ -311,15 +307,13 @@ def _strptime(data_string, format="%a %b %d %H:%M:%S %Y"):
 
     global _TimeRE_cache, _regex_cache
     with _cache_lock:
-        locale_time = _TimeRE_cache.locale_time
-        if (_getlang() != locale_time.lang or
-            time.tzname != locale_time.tzname or
-            time.daylight != locale_time.daylight):
+
+        if _getlang() != _TimeRE_cache.locale_time.lang:
             _TimeRE_cache = TimeRE()
             _regex_cache.clear()
-            locale_time = _TimeRE_cache.locale_time
         if len(_regex_cache) > _CACHE_MAX_SIZE:
             _regex_cache.clear()
+        locale_time = _TimeRE_cache.locale_time
         format_regex = _regex_cache.get(format)
         if not format_regex:
             try:
@@ -354,9 +348,9 @@ def _strptime(data_string, format="%a %b %d %H:%M:%S %Y"):
     # though
     week_of_year = -1
     week_of_year_start = -1
-    # weekday and julian defaulted to None so as to signal need to calculate
+    # weekday and julian defaulted to -1 so as to signal need to calculate
     # values
-    weekday = julian = None
+    weekday = julian = -1
     found_dict = found.groupdict()
     for group_key in found_dict.keys():
         # Directives not explicitly handled below:
@@ -458,18 +452,14 @@ def _strptime(data_string, format="%a %b %d %H:%M:%S %Y"):
         year = 1900
     # If we know the week of the year and what day of that week, we can figure
     # out the Julian day of the year.
-    if julian is None and week_of_year != -1 and weekday is not None:
+    if julian == -1 and week_of_year != -1 and weekday != -1:
         week_starts_Mon = True if week_of_year_start == 0 else False
         julian = _calc_julian_from_U_or_W(year, week_of_year, weekday,
                                             week_starts_Mon)
-        if julian <= 0:
-            year -= 1
-            yday = 366 if calendar.isleap(year) else 365
-            julian += yday
     # Cannot pre-calculate datetime_date() since can change in Julian
     # calculation and thus could have different value for the day of the week
     # calculation.
-    if julian is None:
+    if julian == -1:
         # Need to add 1 to result since first day of the year is 1, not 0.
         julian = datetime_date(year, month, day).toordinal() - \
                   datetime_date(year, 1, 1).toordinal() + 1
@@ -479,7 +469,7 @@ def _strptime(data_string, format="%a %b %d %H:%M:%S %Y"):
         year = datetime_result.year
         month = datetime_result.month
         day = datetime_result.day
-    if weekday is None:
+    if weekday == -1:
         weekday = datetime_date(year, month, day).weekday()
     # Add timezone info
     tzname = found_dict.get("Z")

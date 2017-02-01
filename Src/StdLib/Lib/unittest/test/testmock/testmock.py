@@ -1,6 +1,5 @@
 import copy
 import sys
-import tempfile
 
 import unittest
 from unittest.test.testmock.support import is_instance
@@ -155,33 +154,6 @@ class MockTest(unittest.TestCase):
         mock = Mock(side_effect=side_effect, return_value=sentinel.RETURN)
         self.assertEqual(mock(), sentinel.RETURN)
 
-    def test_autospec_side_effect(self):
-        # Test for issue17826
-        results = [1, 2, 3]
-        def effect():
-            return results.pop()
-        def f():
-            pass
-
-        mock = create_autospec(f)
-        mock.side_effect = [1, 2, 3]
-        self.assertEqual([mock(), mock(), mock()], [1, 2, 3],
-                          "side effect not used correctly in create_autospec")
-        # Test where side effect is a callable
-        results = [1, 2, 3]
-        mock = create_autospec(f)
-        mock.side_effect = effect
-        self.assertEqual([mock(), mock(), mock()], [3, 2, 1],
-                          "callable side effect not used correctly")
-
-    def test_autospec_side_effect_exception(self):
-        # Test for issue 23661
-        def f():
-            pass
-
-        mock = create_autospec(f)
-        mock.side_effect = ValueError('Bazinga!')
-        self.assertRaisesRegex(ValueError, 'Bazinga!', mock)
 
     @unittest.skipUnless('java' in sys.platform,
                           'This test only applies to Jython')
@@ -247,9 +219,6 @@ class MockTest(unittest.TestCase):
         # used to cause recursion
         mock.reset_mock()
 
-    def test_reset_mock_on_mock_open_issue_18622(self):
-        a = mock.mock_open()
-        a.reset_mock()
 
     def test_call(self):
         mock = Mock()
@@ -300,20 +269,6 @@ class MockTest(unittest.TestCase):
         self.assertEqual(mock.call_args,
                          ((sentinel.Arg,), {"kw": sentinel.Kwarg}))
 
-        # Comparing call_args to a long sequence should not raise
-        # an exception. See issue 24857.
-        self.assertFalse(mock.call_args == "a long sequence")
-
-
-    def test_calls_equal_with_any(self):
-        call1 = mock.call(mock.MagicMock())
-        call2 = mock.call(mock.ANY)
-
-        # Check that equality and non-equality is consistent even when
-        # comparing with mock.ANY
-        self.assertTrue(call1 == call2)
-        self.assertFalse(call1 != call2)
-
 
     def test_assert_called_with(self):
         mock = Mock()
@@ -328,12 +283,6 @@ class MockTest(unittest.TestCase):
 
         mock(1, 2, 3, a='fish', b='nothing')
         mock.assert_called_with(1, 2, 3, a='fish', b='nothing')
-
-
-    def test_assert_called_with_any(self):
-        m = MagicMock()
-        m(MagicMock())
-        m.assert_called_with(mock.ANY)
 
 
     def test_assert_called_with_function_spec(self):
@@ -1215,46 +1164,6 @@ class MockTest(unittest.TestCase):
                 func.mock_calls, [call(1, 2), call(3, 4)]
             )
 
-    #Issue21222
-    def test_create_autospec_with_name(self):
-        m = mock.create_autospec(object(), name='sweet_func')
-        self.assertIn('sweet_func', repr(m))
-
-    #Issue21238
-    def test_mock_unsafe(self):
-        m = Mock()
-        with self.assertRaises(AttributeError):
-            m.assert_foo_call()
-        with self.assertRaises(AttributeError):
-            m.assret_foo_call()
-        m = Mock(unsafe=True)
-        m.assert_foo_call()
-        m.assret_foo_call()
-
-    #Issue21262
-    def test_assert_not_called(self):
-        m = Mock()
-        m.hello.assert_not_called()
-        m.hello()
-        with self.assertRaises(AssertionError):
-            m.hello.assert_not_called()
-
-    #Issue21256 printout of keyword args should be in deterministic order
-    def test_sorted_call_signature(self):
-        m = Mock()
-        m.hello(name='hello', daddy='hero')
-        text = "call(daddy='hero', name='hello')"
-        self.assertEqual(repr(m.hello.call_args), text)
-
-    #Issue21270 overrides tuple methods for mock.call objects
-    def test_override_tuple_methods(self):
-        c = call.count()
-        i = call.index(132,'hello')
-        m = Mock()
-        m.count()
-        m.index(132,"hello")
-        self.assertEqual(m.method_calls[0], c)
-        self.assertEqual(m.method_calls[1], i)
 
     def test_mock_add_spec(self):
         class _One(object):
@@ -1392,44 +1301,6 @@ class MockTest(unittest.TestCase):
             self.assertEqual(m.mock_calls, [call.__int__(), call.__float__()])
             self.assertEqual(m.method_calls, [])
 
-    def test_mock_open_reuse_issue_21750(self):
-        mocked_open = mock.mock_open(read_data='data')
-        f1 = mocked_open('a-name')
-        f1_data = f1.read()
-        f2 = mocked_open('another-name')
-        f2_data = f2.read()
-        self.assertEqual(f1_data, f2_data)
-
-    def test_mock_open_write(self):
-        # Test exception in file writing write()
-        mock_namedtemp = mock.mock_open(mock.MagicMock(name='JLV'))
-        with mock.patch('tempfile.NamedTemporaryFile', mock_namedtemp):
-            mock_filehandle = mock_namedtemp.return_value
-            mock_write = mock_filehandle.write
-            mock_write.side_effect = OSError('Test 2 Error')
-            def attempt():
-                tempfile.NamedTemporaryFile().write('asd')
-            self.assertRaises(OSError, attempt)
-
-    def test_mock_open_alter_readline(self):
-        mopen = mock.mock_open(read_data='foo\nbarn')
-        mopen.return_value.readline.side_effect = lambda *args:'abc'
-        first = mopen().readline()
-        second = mopen().readline()
-        self.assertEqual('abc', first)
-        self.assertEqual('abc', second)
-
-    def test_mock_open_after_eof(self):
-        # read, readline and readlines should work after end of file.
-        _open = mock.mock_open(read_data='foo')
-        h = _open('bar')
-        h.read()
-        self.assertEqual('', h.read())
-        self.assertEqual('', h.read())
-        self.assertEqual('', h.readline())
-        self.assertEqual('', h.readline())
-        self.assertEqual([], h.readlines())
-        self.assertEqual([], h.readlines())
 
     def test_mock_parents(self):
         for Klass in Mock, MagicMock:

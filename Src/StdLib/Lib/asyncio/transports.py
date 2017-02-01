@@ -1,6 +1,8 @@
 """Abstract Transport class."""
 
-from asyncio import compat
+import sys
+
+_PY34 = sys.version_info >= (3, 4)
 
 __all__ = ['BaseTransport', 'ReadTransport', 'WriteTransport',
            'Transport', 'DatagramTransport', 'SubprocessTransport',
@@ -18,10 +20,6 @@ class BaseTransport:
     def get_extra_info(self, name, default=None):
         """Get optional transport information."""
         return self._extra.get(name, default)
-
-    def is_closing(self):
-        """Return True if the transport is closing or closed."""
-        raise NotImplementedError
 
     def close(self):
         """Close the transport.
@@ -66,7 +64,7 @@ class WriteTransport(BaseTransport):
         high-water limit.  Neither value can be negative.
 
         The defaults are implementation-specific.  If only the
-        high-water limit is given, the low-water limit defaults to an
+        high-water limit is given, the low-water limit defaults to a
         implementation-specific value less than or equal to the
         high-water limit.  Setting high to zero forces low to zero as
         well, and causes pause_writing() to be called whenever the
@@ -96,8 +94,12 @@ class WriteTransport(BaseTransport):
         The default implementation concatenates the arguments and
         calls write() on the result.
         """
-        data = compat.flatten_list_bytes(list_of_data)
-        self.write(data)
+        if not _PY34:
+            # In Python 3.3, bytes.join() doesn't handle memoryview.
+            list_of_data = (
+                bytes(data) if isinstance(data, memoryview) else data
+                for data in list_of_data)
+        self.write(b''.join(list_of_data))
 
     def write_eof(self):
         """Close the write end after flushing buffered data.
@@ -236,10 +238,8 @@ class _FlowControlMixin(Transport):
     resume_writing() may be called.
     """
 
-    def __init__(self, extra=None, loop=None):
+    def __init__(self, extra=None):
         super().__init__(extra)
-        assert loop is not None
-        self._loop = loop
         self._protocol_paused = False
         self._set_write_buffer_limits()
 
@@ -272,9 +272,6 @@ class _FlowControlMixin(Transport):
                     'transport': self,
                     'protocol': self._protocol,
                 })
-
-    def get_write_buffer_limits(self):
-        return (self._low_water, self._high_water)
 
     def _set_write_buffer_limits(self, high=None, low=None):
         if high is None:

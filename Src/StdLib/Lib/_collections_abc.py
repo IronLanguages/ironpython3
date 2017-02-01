@@ -9,8 +9,7 @@ Unit tests are in test_collections.
 from abc import ABCMeta, abstractmethod
 import sys
 
-__all__ = ["Awaitable", "Coroutine", "AsyncIterable", "AsyncIterator",
-           "Hashable", "Iterable", "Iterator", "Generator",
+__all__ = ["Hashable", "Iterable", "Iterator",
            "Sized", "Container", "Callable",
            "Set", "MutableSet",
            "Mapping", "MutableMapping",
@@ -51,13 +50,6 @@ dict_values = type({}.values())
 dict_items = type({}.items())
 ## misc ##
 mappingproxy = type(type.__dict__)
-generator = type((lambda: (yield))())
-## coroutine ##
-async def _coro(): pass
-_coro = _coro()
-coroutine = type(_coro)
-_coro.close()  # Prevent ResourceWarning
-del _coro
 
 
 ### ONE-TRICK PONIES ###
@@ -78,113 +70,6 @@ class Hashable(metaclass=ABCMeta):
                     if B.__dict__["__hash__"]:
                         return True
                     break
-        return NotImplemented
-
-
-class Awaitable(metaclass=ABCMeta):
-
-    __slots__ = ()
-
-    @abstractmethod
-    def __await__(self):
-        yield
-
-    @classmethod
-    def __subclasshook__(cls, C):
-        if cls is Awaitable:
-            for B in C.__mro__:
-                if "__await__" in B.__dict__:
-                    if B.__dict__["__await__"]:
-                        return True
-                    break
-        return NotImplemented
-
-
-class Coroutine(Awaitable):
-
-    __slots__ = ()
-
-    @abstractmethod
-    def send(self, value):
-        """Send a value into the coroutine.
-        Return next yielded value or raise StopIteration.
-        """
-        raise StopIteration
-
-    @abstractmethod
-    def throw(self, typ, val=None, tb=None):
-        """Raise an exception in the coroutine.
-        Return next yielded value or raise StopIteration.
-        """
-        if val is None:
-            if tb is None:
-                raise typ
-            val = typ()
-        if tb is not None:
-            val = val.with_traceback(tb)
-        raise val
-
-    def close(self):
-        """Raise GeneratorExit inside coroutine.
-        """
-        try:
-            self.throw(GeneratorExit)
-        except (GeneratorExit, StopIteration):
-            pass
-        else:
-            raise RuntimeError("coroutine ignored GeneratorExit")
-
-    @classmethod
-    def __subclasshook__(cls, C):
-        if cls is Coroutine:
-            mro = C.__mro__
-            for method in ('__await__', 'send', 'throw', 'close'):
-                for base in mro:
-                    if method in base.__dict__:
-                        break
-                else:
-                    return NotImplemented
-            return True
-        return NotImplemented
-
-
-Coroutine.register(coroutine)
-
-
-class AsyncIterable(metaclass=ABCMeta):
-
-    __slots__ = ()
-
-    @abstractmethod
-    def __aiter__(self):
-        return AsyncIterator()
-
-    @classmethod
-    def __subclasshook__(cls, C):
-        if cls is AsyncIterable:
-            if any("__aiter__" in B.__dict__ for B in C.__mro__):
-                return True
-        return NotImplemented
-
-
-class AsyncIterator(AsyncIterable):
-
-    __slots__ = ()
-
-    @abstractmethod
-    async def __anext__(self):
-        """Return the next item or raise StopAsyncIteration when exhausted."""
-        raise StopAsyncIteration
-
-    def __aiter__(self):
-        return self
-
-    @classmethod
-    def __subclasshook__(cls, C):
-        if cls is AsyncIterator:
-            if (any("__anext__" in B.__dict__ for B in C.__mro__) and
-                any("__aiter__" in B.__dict__ for B in C.__mro__)):
-                return True
         return NotImplemented
 
 
@@ -238,64 +123,6 @@ Iterator.register(set_iterator)
 Iterator.register(str_iterator)
 Iterator.register(tuple_iterator)
 Iterator.register(zip_iterator)
-
-
-class Generator(Iterator):
-
-    __slots__ = ()
-
-    def __next__(self):
-        """Return the next item from the generator.
-        When exhausted, raise StopIteration.
-        """
-        return self.send(None)
-
-    @abstractmethod
-    def send(self, value):
-        """Send a value into the generator.
-        Return next yielded value or raise StopIteration.
-        """
-        raise StopIteration
-
-    @abstractmethod
-    def throw(self, typ, val=None, tb=None):
-        """Raise an exception in the generator.
-        Return next yielded value or raise StopIteration.
-        """
-        if val is None:
-            if tb is None:
-                raise typ
-            val = typ()
-        if tb is not None:
-            val = val.with_traceback(tb)
-        raise val
-
-    def close(self):
-        """Raise GeneratorExit inside generator.
-        """
-        try:
-            self.throw(GeneratorExit)
-        except (GeneratorExit, StopIteration):
-            pass
-        else:
-            raise RuntimeError("generator ignored GeneratorExit")
-
-    @classmethod
-    def __subclasshook__(cls, C):
-        if cls is Generator:
-            mro = C.__mro__
-            for method in ('__iter__', '__next__', 'send', 'throw', 'close'):
-                for base in mro:
-                    if method in base.__dict__:
-                        break
-                else:
-                    return NotImplemented
-            return True
-        return NotImplemented
-
-
-Generator.register(generator)
-
 
 class Sized(metaclass=ABCMeta):
 
@@ -356,7 +183,7 @@ class Set(Sized, Iterable, Container):
     methods except for __contains__, __iter__ and __len__.
 
     To override the comparisons (presumably for speed, as the
-    semantics are fixed), redefine __le__ and __ge__,
+    semantics are fixed), all you have to do is redefine __le__ and
     then the other operations will automatically follow suit.
     """
 
@@ -380,22 +207,20 @@ class Set(Sized, Iterable, Container):
     def __gt__(self, other):
         if not isinstance(other, Set):
             return NotImplemented
-        return len(self) > len(other) and self.__ge__(other)
+        return other.__lt__(self)
 
     def __ge__(self, other):
         if not isinstance(other, Set):
             return NotImplemented
-        if len(self) < len(other):
-            return False
-        for elem in other:
-            if elem not in self:
-                return False
-        return True
+        return other.__le__(self)
 
     def __eq__(self, other):
         if not isinstance(other, Set):
             return NotImplemented
         return len(self) == len(other) and self.__le__(other)
+
+    def __ne__(self, other):
+        return not (self == other)
 
     @classmethod
     def _from_iterable(cls, it):
@@ -411,8 +236,6 @@ class Set(Sized, Iterable, Container):
             return NotImplemented
         return self._from_iterable(value for value in other if value in self)
 
-    __rand__ = __and__
-
     def isdisjoint(self, other):
         'Return True if two sets have a null intersection.'
         for value in other:
@@ -426,8 +249,6 @@ class Set(Sized, Iterable, Container):
         chain = (e for s in (self, other) for e in s)
         return self._from_iterable(chain)
 
-    __ror__ = __or__
-
     def __sub__(self, other):
         if not isinstance(other, Set):
             if not isinstance(other, Iterable):
@@ -436,22 +257,12 @@ class Set(Sized, Iterable, Container):
         return self._from_iterable(value for value in self
                                    if value not in other)
 
-    def __rsub__(self, other):
-        if not isinstance(other, Set):
-            if not isinstance(other, Iterable):
-                return NotImplemented
-            other = self._from_iterable(other)
-        return self._from_iterable(value for value in other
-                                   if value not in self)
-
     def __xor__(self, other):
         if not isinstance(other, Set):
             if not isinstance(other, Iterable):
                 return NotImplemented
             other = self._from_iterable(other)
         return (self - other) | (other - self)
-
-    __rxor__ = __xor__
 
     def _hash(self):
         """Compute the hash value of a set.
@@ -621,12 +432,13 @@ class Mapping(Sized, Iterable, Container):
             return NotImplemented
         return dict(self.items()) == dict(other.items())
 
+    def __ne__(self, other):
+        return not (self == other)
+
 Mapping.register(mappingproxy)
 
 
 class MappingView(Sized):
-
-    __slots__ = '_mapping',
 
     def __init__(self, mapping):
         self._mapping = mapping
@@ -639,8 +451,6 @@ class MappingView(Sized):
 
 
 class KeysView(MappingView, Set):
-
-    __slots__ = ()
 
     @classmethod
     def _from_iterable(self, it):
@@ -656,8 +466,6 @@ KeysView.register(dict_keys)
 
 
 class ItemsView(MappingView, Set):
-
-    __slots__ = ()
 
     @classmethod
     def _from_iterable(self, it):
@@ -680,8 +488,6 @@ ItemsView.register(dict_items)
 
 
 class ValuesView(MappingView):
-
-    __slots__ = ()
 
     def __contains__(self, value):
         for key in self._mapping:
@@ -759,24 +565,23 @@ class MutableMapping(Mapping):
             If E present and lacks .keys() method, does:     for (k, v) in E: D[k] = v
             In either case, this is followed by: for k, v in F.items(): D[k] = v
         '''
-        if not args:
-            raise TypeError("descriptor 'update' of 'MutableMapping' object "
-                            "needs an argument")
-        self, *args = args
-        if len(args) > 1:
-            raise TypeError('update expected at most 1 arguments, got %d' %
-                            len(args))
-        if args:
-            other = args[0]
-            if isinstance(other, Mapping):
-                for key in other:
-                    self[key] = other[key]
-            elif hasattr(other, "keys"):
-                for key in other.keys():
-                    self[key] = other[key]
-            else:
-                for key, value in other:
-                    self[key] = value
+        if len(args) > 2:
+            raise TypeError("update() takes at most 2 positional "
+                            "arguments ({} given)".format(len(args)))
+        elif not args:
+            raise TypeError("update() takes at least 1 argument (0 given)")
+        self = args[0]
+        other = args[1] if len(args) >= 2 else ()
+
+        if isinstance(other, Mapping):
+            for key in other:
+                self[key] = other[key]
+        elif hasattr(other, "keys"):
+            for key in other.keys():
+                self[key] = other[key]
+        else:
+            for key, value in other:
+                self[key] = value
         for key, value in kwds.items():
             self[key] = value
 
@@ -828,23 +633,13 @@ class Sequence(Sized, Iterable, Container):
         for i in reversed(range(len(self))):
             yield self[i]
 
-    def index(self, value, start=0, stop=None):
-        '''S.index(value, [start, [stop]]) -> integer -- return first index of value.
+    def index(self, value):
+        '''S.index(value) -> integer -- return first index of value.
            Raises ValueError if the value is not present.
         '''
-        if start is not None and start < 0:
-            start = max(len(self) + start, 0)
-        if stop is not None and stop < 0:
-            stop += len(self)
-
-        i = start
-        while stop is None or i < stop:
-            try:
-                if self[i] == value:
-                    return i
-            except IndexError:
-                break
-            i += 1
+        for i, v in enumerate(self):
+            if v == value:
+                return i
         raise ValueError
 
     def count(self, value):

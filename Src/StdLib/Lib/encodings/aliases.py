@@ -109,11 +109,6 @@ aliases = {
     '1258'               : 'cp1258',
     'windows_1258'       : 'cp1258',
 
-    # cp273 codec
-    '273'                : 'cp273',
-    'ibm273'             : 'cp273',
-    'csibm273'           : 'cp273',
-
     # cp424 codec
     '424'                : 'cp424',
     'csibm424'           : 'cp424',
@@ -411,11 +406,6 @@ aliases = {
 
     # koi8_r codec
     'cskoi8r'            : 'koi8_r',
-
-    # kz1048 codec
-    'kz_1048'           : 'kz1048',
-    'rk1048'            : 'kz1048',
-    'strk1048_2002'     : 'kz1048',
 
     # latin_1 codec
     #

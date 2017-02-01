@@ -1,7 +1,5 @@
 import os
 import errno
-import importlib.machinery
-import py_compile
 import shutil
 import unittest
 import tempfile
@@ -210,14 +208,6 @@ a/module.py
                                 from . import *
 """]
 
-bytecode_test = [
-    "a",
-    ["a"],
-    [],
-    [],
-    ""
-]
-
 
 def open_file(path):
     dirname = os.path.dirname(path)
@@ -245,12 +235,11 @@ def create_package(source):
 
 
 class ModuleFinderTest(unittest.TestCase):
-    def _do_test(self, info, report=False, debug=0, replace_paths=[]):
+    def _do_test(self, info, report=False):
         import_this, modules, missing, maybe_missing, source = info
         create_package(source)
         try:
-            mf = modulefinder.ModuleFinder(path=TEST_PATH, debug=debug,
-                                           replace_paths=replace_paths)
+            mf = modulefinder.ModuleFinder(path=TEST_PATH)
             mf.import_hook(import_this)
             if report:
                 mf.report()
@@ -299,39 +288,9 @@ class ModuleFinderTest(unittest.TestCase):
     def test_relative_imports_4(self):
         self._do_test(relative_import_test_4)
 
-    def test_bytecode(self):
-        base_path = os.path.join(TEST_DIR, 'a')
-        source_path = base_path + importlib.machinery.SOURCE_SUFFIXES[0]
-        bytecode_path = base_path + importlib.machinery.BYTECODE_SUFFIXES[0]
-        with open_file(source_path) as file:
-            file.write('testing_modulefinder = True\n')
-        py_compile.compile(source_path, cfile=bytecode_path)
-        os.remove(source_path)
-        self._do_test(bytecode_test)
 
-    def test_replace_paths(self):
-        old_path = os.path.join(TEST_DIR, 'a', 'module.py')
-        new_path = os.path.join(TEST_DIR, 'a', 'spam.py')
-        with support.captured_stdout() as output:
-            self._do_test(maybe_test, debug=2,
-                          replace_paths=[(old_path, new_path)])
-        output = output.getvalue()
-        expected = "co_filename %r changed to %r" % (old_path, new_path)
-        self.assertIn(expected, output)
-
-    def test_extended_opargs(self):
-        extended_opargs_test = [
-            "a",
-            ["a", "b"],
-            [], [],
-            """\
-a.py
-                                %r
-                                import b
-b.py
-""" % list(range(2**16))]  # 2**16 constants
-        self._do_test(extended_opargs_test)
-
+def test_main():
+    support.run_unittest(ModuleFinderTest)
 
 if __name__ == "__main__":
     unittest.main()

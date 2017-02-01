@@ -1,4 +1,4 @@
-"""Regresssion tests for what was in Python 2's "urllib" module"""
+"""Regresssion tests for urllib"""
 
 import urllib.parse
 import urllib.request
@@ -7,13 +7,8 @@ import http.client
 import email.message
 import io
 import unittest
-from unittest.mock import patch
 from test import support
 import os
-try:
-    import ssl
-except ImportError:
-    ssl = None
 import sys
 import tempfile
 from nturl2path import url2pathname, pathname2url
@@ -39,7 +34,10 @@ def urlopen(url, data=None, proxies=None):
     if proxies is not None:
         opener = urllib.request.FancyURLopener(proxies=proxies)
     elif not _urlopener:
-        opener = FancyURLopener()
+        with support.check_warnings(
+                ('FancyURLopener style of invoking requests is deprecated.',
+                DeprecationWarning)):
+            opener = urllib.request.FancyURLopener()
         _urlopener = opener
     else:
         opener = _urlopener
@@ -49,79 +47,46 @@ def urlopen(url, data=None, proxies=None):
         return opener.open(url, data)
 
 
-def FancyURLopener():
-    with support.check_warnings(
-            ('FancyURLopener style of invoking requests is deprecated.',
-            DeprecationWarning)):
-        return urllib.request.FancyURLopener()
-
-
-def fakehttp(fakedata):
-    class FakeSocket(io.BytesIO):
-        io_refs = 1
-
-        def sendall(self, data):
-            FakeHTTPConnection.buf = data
-
-        def makefile(self, *args, **kwds):
-            self.io_refs += 1
-            return self
-
-        def read(self, amt=None):
-            if self.closed:
-                return b""
-            return io.BytesIO.read(self, amt)
-
-        def readline(self, length=None):
-            if self.closed:
-                return b""
-            return io.BytesIO.readline(self, length)
-
-        def close(self):
-            self.io_refs -= 1
-            if self.io_refs == 0:
-                io.BytesIO.close(self)
-
-    class FakeHTTPConnection(http.client.HTTPConnection):
-
-        # buffer to store data for verification in urlopen tests.
-        buf = None
-
-        def connect(self):
-            self.sock = FakeSocket(self.fakedata)
-            type(self).fakesock = self.sock
-    FakeHTTPConnection.fakedata = fakedata
-
-    return FakeHTTPConnection
-
-
 class FakeHTTPMixin(object):
     def fakehttp(self, fakedata):
+        class FakeSocket(io.BytesIO):
+            io_refs = 1
+
+            def sendall(self, data):
+                FakeHTTPConnection.buf = data
+
+            def makefile(self, *args, **kwds):
+                self.io_refs += 1
+                return self
+
+            def read(self, amt=None):
+                if self.closed:
+                    return b""
+                return io.BytesIO.read(self, amt)
+
+            def readline(self, length=None):
+                if self.closed:
+                    return b""
+                return io.BytesIO.readline(self, length)
+
+            def close(self):
+                self.io_refs -= 1
+                if self.io_refs == 0:
+                    io.BytesIO.close(self)
+
+        class FakeHTTPConnection(http.client.HTTPConnection):
+
+            # buffer to store data for verification in urlopen tests.
+            buf = None
+
+            def connect(self):
+                self.sock = FakeSocket(fakedata)
+
         self._connection_class = http.client.HTTPConnection
-        http.client.HTTPConnection = fakehttp(fakedata)
+        http.client.HTTPConnection = FakeHTTPConnection
 
     def unfakehttp(self):
         http.client.HTTPConnection = self._connection_class
-
-
-class FakeFTPMixin(object):
-    def fakeftp(self):
-        class FakeFtpWrapper(object):
-            def __init__(self,  user, passwd, host, port, dirs, timeout=None,
-                     persistent=True):
-                pass
-
-            def retrfile(self, file, type):
-                return io.BytesIO(), 0
-
-            def close(self):
-                pass
-
-        self._ftpwrapper_class = urllib.request.ftpwrapper
-        urllib.request.ftpwrapper = FakeFtpWrapper
-
-    def unfakeftp(self):
-        urllib.request.ftpwrapper = self._ftpwrapper_class
 
 
 class urlopen_FileTests(unittest.TestCase):
@@ -227,61 +192,10 @@ class ProxyTests(unittest.TestCase):
         # getproxies_environment use lowered case truncated (no '_proxy') keys
         self.assertEqual('localhost', proxies['no'])
         # List of no_proxies with space.
-        self.env.set('NO_PROXY', 'localhost, anotherdomain.com, newdomain.com:1234')
+        self.env.set('NO_PROXY', 'localhost, anotherdomain.com, newdomain.com')
         self.assertTrue(urllib.request.proxy_bypass_environment('anotherdomain.com'))
-        self.assertTrue(urllib.request.proxy_bypass_environment('anotherdomain.com:8888'))
-        self.assertTrue(urllib.request.proxy_bypass_environment('newdomain.com:1234'))
 
-    def test_proxy_bypass_environment_host_match(self):
-        bypass = urllib.request.proxy_bypass_environment
-        self.env.set('NO_PROXY',
-            'localhost, anotherdomain.com, newdomain.com:1234')
-        self.assertTrue(bypass('localhost'))
-        self.assertTrue(bypass('LocalHost'))                 # MixedCase
-        self.assertTrue(bypass('LOCALHOST'))                 # UPPERCASE
-        self.assertTrue(bypass('newdomain.com:1234'))
-        self.assertTrue(bypass('anotherdomain.com:8888'))
-        self.assertTrue(bypass('www.newdomain.com:1234'))
-        self.assertFalse(bypass('prelocalhost'))
-        self.assertFalse(bypass('newdomain.com'))            # no port
-        self.assertFalse(bypass('newdomain.com:1235'))       # wrong port
-
-class ProxyTests_withOrderedEnv(unittest.TestCase):
-
-    def setUp(self):
-        # We need to test conditions, where variable order _is_ significant
-        self._saved_env = os.environ
-        # Monkey patch os.environ, start with empty fake environment
-        os.environ = collections.OrderedDict()
-
-    def tearDown(self):
-        os.environ = self._saved_env
-
-    def test_getproxies_environment_prefer_lowercase(self):
-        # Test lowercase preference with removal
-        os.environ['no_proxy'] = ''
-        os.environ['No_Proxy'] = 'localhost'
-        self.assertFalse(urllib.request.proxy_bypass_environment('localhost'))
-        self.assertFalse(urllib.request.proxy_bypass_environment('arbitrary'))
-        os.environ['http_proxy'] = ''
-        os.environ['HTTP_PROXY'] = 'http://somewhere:3128'
-        proxies = urllib.request.getproxies_environment()
-        self.assertEqual({}, proxies)
-        # Test lowercase preference of proxy bypass and correct matching including ports
-        os.environ['no_proxy'] = 'localhost, noproxy.com, my.proxy:1234'
-        os.environ['No_Proxy'] = 'xyz.com'
-        self.assertTrue(urllib.request.proxy_bypass_environment('localhost'))
-        self.assertTrue(urllib.request.proxy_bypass_environment('noproxy.com:5678'))
-        self.assertTrue(urllib.request.proxy_bypass_environment('my.proxy:1234'))
-        self.assertFalse(urllib.request.proxy_bypass_environment('my.proxy'))
-        self.assertFalse(urllib.request.proxy_bypass_environment('arbitrary'))
-        # Test lowercase preference with replacement
-        os.environ['http_proxy'] = 'http://somewhere:3128'
-        os.environ['Http_Proxy'] = 'http://somewhereelse:3128'
-        proxies = urllib.request.getproxies_environment()
-        self.assertEqual('http://somewhere:3128', proxies['http'])
-
-class urlopen_HttpTests(unittest.TestCase, FakeHTTPMixin, FakeFTPMixin):
+class urlopen_HttpTests(unittest.TestCase, FakeHTTPMixin):
     """Test urlopen() opening a fake http connection."""
 
     def check_read(self, ver):
@@ -347,25 +261,10 @@ Connection: close
 Content-Type: text/html; charset=iso-8859-1
 ''')
         try:
-            msg = "Redirection to url 'file:"
-            with self.assertRaisesRegex(urllib.error.HTTPError, msg):
-                urlopen("http://python.org/")
+            self.assertRaises(urllib.error.HTTPError, urlopen,
+                              "http://python.org/")
         finally:
             self.unfakehttp()
-
-    def test_redirect_limit_independent(self):
-        # Ticket #12923: make sure independent requests each use their
-        # own retry limit.
-        for i in range(FancyURLopener().maxtries):
-            self.fakehttp(b'''HTTP/1.1 302 Found
-Location: file://guidocomputer.athome.com:/python/license
-Connection: close
-''')
-            try:
-                self.assertRaises(urllib.error.HTTPError, urlopen,
-                    "http://something")
-            finally:
-                self.unfakehttp()
 
     def test_empty_socket(self):
         # urlopen() raises OSError if the underlying socket does not send any
@@ -410,15 +309,6 @@ Connection: close
         self.assertFalse(e.exception.filename)
         self.assertTrue(e.exception.reason)
 
-    @patch.object(urllib.request, 'MAXFTPCACHE', 0)
-    def test_ftp_cache_pruning(self):
-        self.fakeftp()
-        try:
-            urllib.request.ftpcache['test'] = urllib.request.ftpwrapper('user', 'pass', 'localhost', 21, [])
-            urlopen('ftp://localhost')
-        finally:
-            self.unfakeftp()
-
 
     def test_userpass_inurl(self):
         self.fakehttp(b"HTTP/1.0 200 OK\r\n\r\nHello!")
@@ -453,14 +343,6 @@ Connection: close
     def test_URLopener_deprecation(self):
         with support.check_warnings(('',DeprecationWarning)):
             urllib.request.URLopener()
-
-    @unittest.skipUnless(ssl, "ssl module required")
-    def test_cafile_and_context(self):
-        context = ssl.create_default_context()
-        with self.assertRaises(ValueError):
-            urllib.request.urlopen(
-                "https://localhost", cafile="/nonexistent/path", context=context
-            )
 
 class urlopen_DataTests(unittest.TestCase):
     """Test urlopen() opening a data URL."""
@@ -598,7 +480,7 @@ class urlretrieve_FileTests(unittest.TestCase):
         result = urllib.request.urlretrieve("file:%s" % support.TESTFN)
         self.assertEqual(result[0], support.TESTFN)
         self.assertIsInstance(result[1], email.message.Message,
-                              "did not get an email.message.Message instance "
+                              "did not get a email.message.Message instance "
                               "as second returned value")
 
     def test_copy(self):
@@ -1369,6 +1251,21 @@ class Pathname_Tests(unittest.TestCase):
 class Utility_Tests(unittest.TestCase):
     """Testcase to test the various utility functions in the urllib."""
 
+    def test_splitpasswd(self):
+        """Some of password examples are not sensible, but it is added to
+        confirming to RFC2617 and addressing issue4675.
+        """
+        self.assertEqual(('user', 'ab'),urllib.parse.splitpasswd('user:ab'))
+        self.assertEqual(('user', 'a\nb'),urllib.parse.splitpasswd('user:a\nb'))
+        self.assertEqual(('user', 'a\tb'),urllib.parse.splitpasswd('user:a\tb'))
+        self.assertEqual(('user', 'a\rb'),urllib.parse.splitpasswd('user:a\rb'))
+        self.assertEqual(('user', 'a\fb'),urllib.parse.splitpasswd('user:a\fb'))
+        self.assertEqual(('user', 'a\vb'),urllib.parse.splitpasswd('user:a\vb'))
+        self.assertEqual(('user', 'a:b'),urllib.parse.splitpasswd('user:a:b'))
+        self.assertEqual(('user', 'a b'),urllib.parse.splitpasswd('user:a b'))
+        self.assertEqual(('user 2', 'ab'),urllib.parse.splitpasswd('user 2:ab'))
+        self.assertEqual(('user+1', 'a+b'),urllib.parse.splitpasswd('user+1:a+b'))
+
     def test_thishost(self):
         """Test the urllib.request.thishost utility function returns a tuple"""
         self.assertIsInstance(urllib.request.thishost(), tuple)
@@ -1406,7 +1303,7 @@ class URLopener_Tests(unittest.TestCase):
 #     serv.settimeout(3)
 #     serv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 #     serv.bind(("", 9093))
-#     serv.listen()
+#     serv.listen(5)
 #     try:
 #         conn, addr = serv.accept()
 #         conn.send("1 Hola mundo\n")

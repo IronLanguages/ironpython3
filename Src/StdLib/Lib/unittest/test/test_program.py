@@ -4,7 +4,6 @@ import os
 import sys
 from test import support
 import unittest
-import unittest.test
 
 
 class Test_TestProgram(unittest.TestCase):
@@ -134,7 +133,6 @@ class InitialisableProgram(unittest.TestProgram):
     result = None
     verbosity = 1
     defaultTest = None
-    tb_locals = False
     testRunner = None
     testLoader = unittest.defaultTestLoader
     module = '__main__'
@@ -148,18 +146,17 @@ RESULT = object()
 class FakeRunner(object):
     initArgs = None
     test = None
-    raiseError = 0
+    raiseError = False
 
     def __init__(self, **kwargs):
         FakeRunner.initArgs = kwargs
         if FakeRunner.raiseError:
-            FakeRunner.raiseError -= 1
+            FakeRunner.raiseError = False
             raise TypeError
 
     def run(self, test):
         FakeRunner.test = test
         return RESULT
-
 
 class TestCommandLineArgs(unittest.TestCase):
 
@@ -168,7 +165,7 @@ class TestCommandLineArgs(unittest.TestCase):
         self.program.createTests = lambda: None
         FakeRunner.initArgs = None
         FakeRunner.test = None
-        FakeRunner.raiseError = 0
+        FakeRunner.raiseError = False
 
     def testVerbosity(self):
         program = self.program
@@ -258,7 +255,6 @@ class TestCommandLineArgs(unittest.TestCase):
         self.assertEqual(FakeRunner.initArgs, {'verbosity': 'verbosity',
                                                 'failfast': 'failfast',
                                                 'buffer': 'buffer',
-                                                'tb_locals': False,
                                                 'warnings': 'warnings'})
         self.assertEqual(FakeRunner.test, 'test')
         self.assertIs(program.result, RESULT)
@@ -277,25 +273,10 @@ class TestCommandLineArgs(unittest.TestCase):
         self.assertEqual(FakeRunner.test, 'test')
         self.assertIs(program.result, RESULT)
 
-    def test_locals(self):
-        program = self.program
-
-        program.testRunner = FakeRunner
-        program.parseArgs([None, '--locals'])
-        self.assertEqual(True, program.tb_locals)
-        program.runTests()
-        self.assertEqual(FakeRunner.initArgs, {'buffer': False,
-                                               'failfast': False,
-                                               'tb_locals': True,
-                                               'verbosity': 1,
-                                               'warnings': None})
-
     def testRunTestsOldRunnerClass(self):
         program = self.program
 
-        # Two TypeErrors are needed to fall all the way back to old-style
-        # runners - one to fail tb_locals, one to fail buffer etc.
-        FakeRunner.raiseError = 2
+        FakeRunner.raiseError = True
         program.testRunner = FakeRunner
         program.verbosity = 'verbosity'
         program.failfast = 'failfast'

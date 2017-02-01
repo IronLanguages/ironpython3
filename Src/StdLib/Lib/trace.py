@@ -59,7 +59,10 @@ import gc
 import dis
 import pickle
 from warnings import warn as _warn
-from time import monotonic as _time
+try:
+    from time import monotonic as _time
+except ImportError:
+    from time import time as _time
 
 try:
     import threading
@@ -232,8 +235,8 @@ class CoverageResults:
         if self.infile:
             # Try to merge existing counts file.
             try:
-                with open(self.infile, 'rb') as f:
-                    counts, calledfuncs, callers = pickle.load(f)
+                counts, calledfuncs, callers = \
+                        pickle.load(open(self.infile, 'rb'))
                 self.update(self.__class__(counts, calledfuncs, callers))
             except (OSError, EOFError, ValueError) as err:
                 print(("Skipping counts file %r: %s"
@@ -305,7 +308,7 @@ class CoverageResults:
             if self.is_ignored_filename(filename):
                 continue
 
-            if filename.endswith(".pyc"):
+            if filename.endswith((".pyc", ".pyo")):
                 filename = filename[:-1]
 
             if coverdir is None:
@@ -323,17 +326,16 @@ class CoverageResults:
                 lnotab = _find_executable_linenos(filename)
             else:
                 lnotab = {}
-            if lnotab:
-                source = linecache.getlines(filename)
-                coverpath = os.path.join(dir, modulename + ".cover")
-                with open(filename, 'rb') as fp:
-                    encoding, _ = tokenize.detect_encoding(fp.readline)
-                n_hits, n_lines = self.write_results_file(coverpath, source,
-                                                          lnotab, count, encoding)
-                if summary and n_lines:
-                    percent = int(100 * n_hits / n_lines)
-                    sums[modulename] = n_lines, percent, modulename, filename
 
+            source = linecache.getlines(filename)
+            coverpath = os.path.join(dir, modulename + ".cover")
+            with open(filename, 'rb') as fp:
+                encoding, _ = tokenize.detect_encoding(fp.readline)
+            n_hits, n_lines = self.write_results_file(coverpath, source,
+                                                      lnotab, count, encoding)
+            if summary and n_lines:
+                percent = int(100 * n_hits / n_lines)
+                sums[modulename] = n_lines, percent, modulename, filename
 
         if summary and sums:
             print("lines   cov%   module   (path)")
@@ -361,26 +363,26 @@ class CoverageResults:
 
         n_lines = 0
         n_hits = 0
-        with outfile:
-            for lineno, line in enumerate(lines, 1):
-                # do the blank/comment match to try to mark more lines
-                # (help the reader find stuff that hasn't been covered)
-                if lineno in lines_hit:
-                    outfile.write("%5d: " % lines_hit[lineno])
-                    n_hits += 1
+        for lineno, line in enumerate(lines, 1):
+            # do the blank/comment match to try to mark more lines
+            # (help the reader find stuff that hasn't been covered)
+            if lineno in lines_hit:
+                outfile.write("%5d: " % lines_hit[lineno])
+                n_hits += 1
+                n_lines += 1
+            elif rx_blank.match(line):
+                outfile.write("       ")
+            else:
+                # lines preceded by no marks weren't hit
+                # Highlight them if so indicated, unless the line contains
+                # #pragma: NO COVER
+                if lineno in lnotab and not PRAGMA_NOCOVER in line:
+                    outfile.write(">>>>>> ")
                     n_lines += 1
-                elif rx_blank.match(line):
-                    outfile.write("       ")
                 else:
-                    # lines preceded by no marks weren't hit
-                    # Highlight them if so indicated, unless the line contains
-                    # #pragma: NO COVER
-                    if lineno in lnotab and not PRAGMA_NOCOVER in line:
-                        outfile.write(">>>>>> ")
-                        n_lines += 1
-                    else:
-                        outfile.write("       ")
-                outfile.write(line.expandtabs(8))
+                    outfile.write("       ")
+            outfile.write(line.expandtabs(8))
+        outfile.close()
 
         return n_hits, n_lines
 

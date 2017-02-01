@@ -10,7 +10,7 @@ import unittest
 PORT = None
 
 def make_request_and_skipIf(condition, reason):
-    # If we skip the test, we have to make a request because
+    # If we skip the test, we have to make a request because the
     # the server created in setUp blocks expecting one to come in.
     if not condition:
         return lambda func: func
@@ -87,11 +87,10 @@ class DocXMLRPCHTTPGETServer(unittest.TestCase):
         threading.Thread(target=server, args=(self.evt, 1)).start()
 
         # wait for port to be assigned
-        deadline = time.monotonic() + 10.0
-        while PORT is None:
-            time.sleep(0.010)
-            if time.monotonic() > deadline:
-                break
+        n = 1000
+        while n > 0 and PORT is None:
+            time.sleep(0.001)
+            n -= 1
 
         self.client = http.client.HTTPConnection("localhost:%d" % PORT)
 
@@ -213,5 +212,8 @@ class DocXMLRPCHTTPGETServer(unittest.TestCase):
             response.read())
 
 
+def test_main():
+    support.run_unittest(DocXMLRPCHTTPGETServer)
+
 if __name__ == '__main__':
-    unittest.main()
+    test_main()

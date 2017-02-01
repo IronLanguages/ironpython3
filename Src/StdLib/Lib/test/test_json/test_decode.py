@@ -63,12 +63,12 @@ class TestDecode:
     def test_extra_data(self):
         s = '[1, 2, 3]5'
         msg = 'Extra data'
-        self.assertRaisesRegex(self.JSONDecodeError, msg, self.loads, s)
+        self.assertRaisesRegex(ValueError, msg, self.loads, s)
 
     def test_invalid_escape(self):
         s = '["abc\\y"]'
         msg = 'escape'
-        self.assertRaisesRegex(self.JSONDecodeError, msg, self.loads, s)
+        self.assertRaisesRegex(ValueError, msg, self.loads, s)
 
     def test_invalid_input_type(self):
         msg = 'the JSON object must be str'
@@ -80,20 +80,16 @@ class TestDecode:
     def test_string_with_utf8_bom(self):
         # see #18958
         bom_json = "[1,2,3]".encode('utf-8-sig').decode('utf-8')
-        with self.assertRaises(self.JSONDecodeError) as cm:
+        with self.assertRaises(ValueError) as cm:
             self.loads(bom_json)
         self.assertIn('BOM', str(cm.exception))
-        with self.assertRaises(self.JSONDecodeError) as cm:
+        with self.assertRaises(ValueError) as cm:
             self.json.load(StringIO(bom_json))
         self.assertIn('BOM', str(cm.exception))
         # make sure that the BOM is not detected in the middle of a string
         bom_in_str = '"{}"'.format(''.encode('utf-8-sig').decode('utf-8'))
         self.assertEqual(self.loads(bom_in_str), '\ufeff')
         self.assertEqual(self.json.load(StringIO(bom_in_str)), '\ufeff')
-
-    def test_negative_index(self):
-        d = self.json.JSONDecoder()
-        self.assertRaises(ValueError, d.raw_decode, 'a'*42, -50000)
 
 class TestPyDecode(TestDecode, PyTest): pass
 class TestCDecode(TestDecode, CTest): pass

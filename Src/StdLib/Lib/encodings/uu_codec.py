@@ -1,6 +1,7 @@
 """Python 'uu_codec' Codec - UU content transfer encoding.
 
-This codec de/encodes from bytes to bytes.
+This codec de/encodes from bytes to bytes and is therefore usable with
+bytes.transform() and bytes.untransform().
 
 Written by Marc-Andre Lemburg (mal@lemburg.com). Some details were
 adapted from uu.py which was written by Lance Ellinghouse and
@@ -54,7 +55,7 @@ def uu_decode(input, errors='strict'):
             data = binascii.a2b_uu(s)
         except binascii.Error as v:
             # Workaround for broken uuencoders by /Fredrik Lundh
-            nbytes = (((s[0]-32) & 63) * 4 + 5) // 3
+            nbytes = (((ord(s[0])-32) & 63) * 4 + 5) / 3
             data = binascii.a2b_uu(s[:nbytes])
             #sys.stderr.write("Warning: %s\n" % str(v))
         write(data)

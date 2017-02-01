@@ -27,12 +27,8 @@ __version__ = '1.0'
 import inspect
 import pprint
 import sys
-import builtins
-from types import ModuleType
 from functools import wraps, partial
 
-
-_builtins = {name for name in dir(builtins) if not name.startswith('_')}
 
 BaseExceptions = (BaseException,)
 if 'java' in sys.platform:
@@ -275,11 +271,13 @@ def _copy(value):
     return value
 
 
-_allowed_names = {
-    'return_value', '_mock_return_value', 'side_effect',
-    '_mock_side_effect', '_mock_parent', '_mock_new_parent',
-    '_mock_name', '_mock_new_name'
-}
+_allowed_names = set(
+    [
+        'return_value', '_mock_return_value', 'side_effect',
+        '_mock_side_effect', '_mock_parent', '_mock_new_parent',
+        '_mock_name', '_mock_new_name'
+    ]
+)
 
 
 def _delegating_property(name):
@@ -345,14 +343,7 @@ def _check_and_set_parent(parent, value, name, new_name):
         value._mock_name = name
     return True
 
-# Internal class to identify if we wrapped an iterator object or not.
-class _MockIter(object):
-    def __init__(self, obj):
-        self.obj = iter(obj)
-    def __iter__(self):
-        return self
-    def __next__(self):
-        return next(self.obj)
+
 
 class Base(object):
     _mock_return_value = DEFAULT
@@ -377,7 +368,7 @@ class NonCallableMock(Base):
     def __init__(
             self, spec=None, wraps=None, name=None, spec_set=None,
             parent=None, _spec_state=None, _new_name='', _new_parent=None,
-            _spec_as_instance=False, _eat_self=None, unsafe=False, **kwargs
+            _spec_as_instance=False, _eat_self=None, **kwargs
         ):
         if _new_parent is None:
             _new_parent = parent
@@ -407,7 +398,6 @@ class NonCallableMock(Base):
         __dict__['_mock_mock_calls'] = _CallList()
 
         __dict__['method_calls'] = _CallList()
-        __dict__['_mock_unsafe'] = unsafe
 
         if kwargs:
             self.configure_mock(**kwargs)
@@ -505,12 +495,7 @@ class NonCallableMock(Base):
         delegated = self._mock_delegate
         if delegated is None:
             return self._mock_side_effect
-        sf = delegated.side_effect
-        if (sf is not None and not callable(sf)
-                and not isinstance(sf, _MockIter) and not _is_exception(sf)):
-            sf = _MockIter(sf)
-            delegated.side_effect = sf
-        return sf
+        return delegated.side_effect
 
     def __set_side_effect(self, value):
         value = _try_iter(value)
@@ -523,14 +508,8 @@ class NonCallableMock(Base):
     side_effect = property(__get_side_effect, __set_side_effect)
 
 
-    def reset_mock(self, visited=None):
+    def reset_mock(self):
         "Restore the mock object to its initial state."
-        if visited is None:
-            visited = []
-        if id(self) in visited:
-            return
-        visited.append(id(self))
-
         self.called = False
         self.call_args = None
         self.call_count = 0
@@ -541,11 +520,11 @@ class NonCallableMock(Base):
         for child in self._mock_children.values():
             if isinstance(child, _SpecState):
                 continue
-            child.reset_mock(visited)
+            child.reset_mock()
 
         ret = self._mock_return_value
         if _is_instance_mock(ret) and ret is not self:
-            ret.reset_mock(visited)
+            ret.reset_mock()
 
 
     def configure_mock(self, **kwargs):
@@ -571,16 +550,13 @@ class NonCallableMock(Base):
 
 
     def __getattr__(self, name):
-        if name in {'_mock_methods', '_mock_unsafe'}:
+        if name == '_mock_methods':
             raise AttributeError(name)
         elif self._mock_methods is not None:
             if name not in self._mock_methods or name in _all_magics:
                 raise AttributeError("Mock object has no attribute %r" % name)
         elif _is_magic(name):
             raise AttributeError(name)
-        if not self._mock_unsafe:
-            if name.startswith(('assert', 'assret')):
-                raise AttributeError(name)
 
         result = self._mock_children.get(name)
         if result is _deleted:
@@ -763,14 +739,6 @@ class NonCallableMock(Base):
         else:
             return _call
 
-    def assert_not_called(_mock_self):
-        """assert that the mock was never called.
-        """
-        self = _mock_self
-        if self.call_count != 0:
-            msg = ("Expected '%s' to not have been called. Called %s times." %
-                   (self._mock_name or 'mock', self.call_count))
-            raise AssertionError(msg)
 
     def assert_called_with(_mock_self, *args, **kwargs):
         """assert that the mock was called with the specified arguments.
@@ -1071,7 +1039,7 @@ def _is_started(patcher):
 class _patch(object):
 
     attribute_name = None
-    _active_patches = []
+    _active_patches = set()
 
     def __init__(
             self, getter, attribute, new, spec, create,
@@ -1186,9 +1154,6 @@ class _patch(object):
             original = getattr(target, name, DEFAULT)
         else:
             local = True
-
-        if name in _builtins and isinstance(target, ModuleType):
-            self.create = True
 
         if not self.create and original is DEFAULT:
             raise AttributeError(
@@ -1332,10 +1297,7 @@ class _patch(object):
             setattr(self.target, self.attribute, self.temp_original)
         else:
             delattr(self.target, self.attribute)
-            if not self.create and (not hasattr(self.target, self.attribute) or
-                        self.attribute in ('__doc__', '__module__',
-                                           '__defaults__', '__annotations__',
-                                           '__kwdefaults__')):
+            if not self.create and not hasattr(self.target, self.attribute):
                 # needed for proxy objects like django settings
                 setattr(self.target, self.attribute, self.temp_original)
 
@@ -1350,18 +1312,13 @@ class _patch(object):
     def start(self):
         """Activate a patch, returning any created mock."""
         result = self.__enter__()
-        self._active_patches.append(self)
+        self._active_patches.add(self)
         return result
 
 
     def stop(self):
         """Stop an active patch."""
-        try:
-            self._active_patches.remove(self)
-        except ValueError:
-            # If the patch hasn't been started this will fail
-            pass
-
+        self._active_patches.discard(self)
         return self.__exit__()
 
 
@@ -1483,7 +1440,7 @@ def patch(
     used.
 
     A more powerful form of `spec` is `autospec`. If you set `autospec=True`
-    then the mock will be created with a spec from the object being replaced.
+    then the mock with be created with a spec from the object being replaced.
     All attributes of the mock will also have the spec of the corresponding
     attribute of the object being replaced. Methods and functions being
     mocked will have their arguments checked and will raise a `TypeError` if
@@ -1654,8 +1611,8 @@ def _clear_dict(in_dict):
 
 
 def _patch_stopall():
-    """Stop all active patches. LIFO to unroll nested patches."""
-    for patch in reversed(_patch._active_patches):
+    """Stop all active patches."""
+    for patch in list(_patch._active_patches):
         patch.stop()
 
 
@@ -1671,17 +1628,13 @@ magic_methods = (
     "len contains iter "
     "hash str sizeof "
     "enter exit "
-    # we added divmod and rdivmod here instead of numerics
-    # because there is no idivmod
-    "divmod rdivmod neg pos abs invert "
+    "divmod neg pos abs invert "
     "complex int float index "
     "trunc floor ceil "
     "bool next "
 )
 
-numerics = (
-    "add sub mul matmul div floordiv mod lshift rshift and xor or pow truediv"
-)
+numerics = "add sub mul div floordiv mod lshift rshift and xor or pow "
 inplace = ' '.join('i%s' % n for n in numerics.split())
 right = ' '.join('r%s' % n for n in numerics.split())
 
@@ -1689,12 +1642,11 @@ right = ' '.join('r%s' % n for n in numerics.split())
 # (as they are metaclass methods)
 # __del__ is not supported at all as it causes problems if it exists
 
-_non_defaults = {
-    '__get__', '__set__', '__delete__', '__reversed__', '__missing__',
-    '__reduce__', '__reduce_ex__', '__getinitargs__', '__getnewargs__',
-    '__getstate__', '__setstate__', '__getformat__', '__setformat__',
-    '__repr__', '__dir__', '__subclasses__', '__format__',
-}
+_non_defaults = set('__%s__' % method for method in [
+    'get', 'set', 'delete', 'reversed', 'missing', 'reduce', 'reduce_ex',
+    'getinitargs', 'getnewargs', 'getstate', 'setstate', 'getformat',
+    'setformat', 'repr', 'dir', 'subclasses', 'format',
+])
 
 
 def _get_method(name, func):
@@ -1705,19 +1657,19 @@ def _get_method(name, func):
     return method
 
 
-_magics = {
+_magics = set(
     '__%s__' % method for method in
     ' '.join([magic_methods, numerics, inplace, right]).split()
-}
+)
 
 _all_magics = _magics | _non_defaults
 
-_unsupported_magics = {
+_unsupported_magics = set([
     '__getattr__', '__setattr__',
     '__init__', '__new__', '__prepare__'
     '__instancecheck__', '__subclasscheck__',
     '__del__'
-}
+])
 
 _calculate_return_value = {
     '__hash__': lambda self: object.__hash__(self),
@@ -1799,15 +1751,14 @@ def _set_return_value(mock, method, name):
 
 class MagicMixin(object):
     def __init__(self, *args, **kw):
-        self._mock_set_magics()  # make magic work for kwargs in init
         _safe_super(MagicMixin, self).__init__(*args, **kw)
-        self._mock_set_magics()  # fix magic broken by upper level init
+        self._mock_set_magics()
 
 
     def _mock_set_magics(self):
         these_magics = _magics
 
-        if getattr(self, "_mock_methods", None) is not None:
+        if self._mock_methods is not None:
             these_magics = _magics.intersection(self._mock_methods)
 
             remove_magics = set()
@@ -1906,7 +1857,7 @@ def _format_call_signature(name, args, kwargs):
     formatted_args = ''
     args_string = ', '.join([repr(arg) for arg in args])
     kwargs_string = ', '.join([
-        '%s=%r' % (key, value) for key, value in sorted(kwargs.items())
+        '%s=%r' % (key, value) for key, value in kwargs.items()
     ])
     if args_string:
         formatted_args = args_string
@@ -2008,7 +1959,8 @@ class _Call(tuple):
             else:
                 other_args = ()
                 other_kwargs = value
-        elif len_other == 2:
+        else:
+            # len 2
             # could be (name, args) or (name, kwargs) or (args, kwargs)
             first, second = other
             if isinstance(first, str):
@@ -2019,8 +1971,6 @@ class _Call(tuple):
                     other_args, other_kwargs = (), second
             else:
                 other_args, other_kwargs = first, second
-        else:
-            return False
 
         if self_name and other_name != self_name:
             return False
@@ -2029,7 +1979,8 @@ class _Call(tuple):
         return (other_args, other_kwargs) == (self_args, self_kwargs)
 
 
-    __ne__ = object.__ne__
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
     def __call__(self, *args, **kwargs):
@@ -2046,12 +1997,6 @@ class _Call(tuple):
         name = '%s.%s' % (self.name, attr)
         return _Call(name=name, parent=self, from_kall=False)
 
-
-    def count(self, *args, **kwargs):
-        return self.__getattr__('count')(*args, **kwargs)
-
-    def index(self, *args, **kwargs):
-        return self.__getattr__('index')(*args, **kwargs)
 
     def __repr__(self):
         if not self.from_kall:
@@ -2137,8 +2082,6 @@ def create_autospec(spec, spec_set=False, instance=False, _parent=None,
         Klass = NonCallableMagicMock
     elif is_type and instance and not _instance_callable(spec):
         Klass = NonCallableMagicMock
-
-    _name = _kwargs.pop('name', _name)
 
     _new_name = _name
     if _parent is None:
@@ -2278,10 +2221,9 @@ def _iterate_read_data(read_data):
     # Helper for mock_open:
     # Retrieve lines from read_data via a generator so that separate calls to
     # readline, read, and readlines are properly interleaved
-    sep = b'\n' if isinstance(read_data, bytes) else '\n'
-    data_as_list = [l + sep for l in read_data.split(sep)]
+    data_as_list = ['{}\n'.format(l) for l in read_data.split('\n')]
 
-    if data_as_list[-1] == sep:
+    if data_as_list[-1] == '\n':
         # If the last line ended in a newline, the list comprehension will have an
         # extra entry that's just a newline.  Remove this.
         data_as_list = data_as_list[:-1]
@@ -2293,7 +2235,6 @@ def _iterate_read_data(read_data):
 
     for line in data_as_list:
         yield line
-
 
 def mock_open(mock=None, read_data=''):
     """
@@ -2310,21 +2251,19 @@ def mock_open(mock=None, read_data=''):
     def _readlines_side_effect(*args, **kwargs):
         if handle.readlines.return_value is not None:
             return handle.readlines.return_value
-        return list(_state[0])
+        return list(_data)
 
     def _read_side_effect(*args, **kwargs):
         if handle.read.return_value is not None:
             return handle.read.return_value
-        return type(read_data)().join(_state[0])
+        return ''.join(_data)
 
     def _readline_side_effect():
         if handle.readline.return_value is not None:
             while True:
                 yield handle.readline.return_value
-        for line in _state[0]:
+        for line in _data:
             yield line
-        while True:
-            yield type(read_data)()
 
 
     global file_spec
@@ -2338,7 +2277,7 @@ def mock_open(mock=None, read_data=''):
     handle = MagicMock(spec=file_spec)
     handle.__enter__.return_value = handle
 
-    _state = [_iterate_read_data(read_data), None]
+    _data = _iterate_read_data(read_data)
 
     handle.write.return_value = None
     handle.read.return_value = None
@@ -2346,19 +2285,9 @@ def mock_open(mock=None, read_data=''):
     handle.readlines.return_value = None
 
     handle.read.side_effect = _read_side_effect
-    _state[1] = _readline_side_effect()
-    handle.readline.side_effect = _state[1]
+    handle.readline.side_effect = _readline_side_effect()
     handle.readlines.side_effect = _readlines_side_effect
 
-    def reset_data(*args, **kwargs):
-        _state[0] = _iterate_read_data(read_data)
-        if handle.readline.side_effect == _state[1]:
-            # Only reset the side effect if the user hasn't overridden it.
-            _state[1] = _readline_side_effect()
-            handle.readline.side_effect = _state[1]
-        return DEFAULT
-
-    mock.side_effect = reset_data
     mock.return_value = handle
     return mock
 

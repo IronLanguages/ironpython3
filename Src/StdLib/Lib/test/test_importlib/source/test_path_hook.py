@@ -1,4 +1,5 @@
 from .. import util
+from . import util as source_util
 
 machinery = util.import_importlib('importlib.machinery')
 
@@ -14,7 +15,7 @@ class PathHookTest:
             self.machinery.SOURCE_SUFFIXES))
 
     def test_success(self):
-        with util.create_modules('dummy') as mapping:
+        with source_util.create_modules('dummy') as mapping:
             self.assertTrue(hasattr(self.path_hook()(mapping['.root']),
                                  'find_module'))
 
@@ -22,10 +23,7 @@ class PathHookTest:
         # The empty string represents the cwd.
         self.assertTrue(hasattr(self.path_hook()(''), 'find_module'))
 
-
-(Frozen_PathHookTest,
- Source_PathHooktest
- ) = util.test_both(PathHookTest, machinery=machinery)
+Frozen_PathHookTest, Source_PathHooktest = util.test_both(PathHookTest, machinery=machinery)
 
 
 if __name__ == '__main__':

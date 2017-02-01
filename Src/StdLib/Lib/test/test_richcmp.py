@@ -228,25 +228,25 @@ class MiscTest(unittest.TestCase):
         b = UserList()
         a.append(b)
         b.append(a)
-        self.assertRaises(RecursionError, operator.eq, a, b)
-        self.assertRaises(RecursionError, operator.ne, a, b)
-        self.assertRaises(RecursionError, operator.lt, a, b)
-        self.assertRaises(RecursionError, operator.le, a, b)
-        self.assertRaises(RecursionError, operator.gt, a, b)
-        self.assertRaises(RecursionError, operator.ge, a, b)
+        self.assertRaises(RuntimeError, operator.eq, a, b)
+        self.assertRaises(RuntimeError, operator.ne, a, b)
+        self.assertRaises(RuntimeError, operator.lt, a, b)
+        self.assertRaises(RuntimeError, operator.le, a, b)
+        self.assertRaises(RuntimeError, operator.gt, a, b)
+        self.assertRaises(RuntimeError, operator.ge, a, b)
 
         b.append(17)
         # Even recursive lists of different lengths are different,
         # but they cannot be ordered
         self.assertTrue(not (a == b))
         self.assertTrue(a != b)
-        self.assertRaises(RecursionError, operator.lt, a, b)
-        self.assertRaises(RecursionError, operator.le, a, b)
-        self.assertRaises(RecursionError, operator.gt, a, b)
-        self.assertRaises(RecursionError, operator.ge, a, b)
+        self.assertRaises(RuntimeError, operator.lt, a, b)
+        self.assertRaises(RuntimeError, operator.le, a, b)
+        self.assertRaises(RuntimeError, operator.gt, a, b)
+        self.assertRaises(RuntimeError, operator.ge, a, b)
         a.append(17)
-        self.assertRaises(RecursionError, operator.eq, a, b)
-        self.assertRaises(RecursionError, operator.ne, a, b)
+        self.assertRaises(RuntimeError, operator.eq, a, b)
+        self.assertRaises(RuntimeError, operator.ne, a, b)
         a.insert(0, 11)
         b.insert(0, 12)
         self.assertTrue(not (a == b))
@@ -326,5 +326,8 @@ class ListTest(unittest.TestCase):
             self.assertIs(op(x, y), True)
 
 
+def test_main():
+    support.run_unittest(VectorTest, NumberTest, MiscTest, DictTest, ListTest)
+
 if __name__ == "__main__":
-    unittest.main()
+    test_main()

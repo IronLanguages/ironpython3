@@ -6,12 +6,10 @@ import pickle
 import random
 import subprocess
 import sys
-import textwrap
 import time
 import unittest
 from test import support
 from test.support import MISSING_C_DOCSTRINGS
-from test.support.script_helper import assert_python_failure
 try:
     import _posixsubprocess
 except ImportError:
@@ -22,9 +20,6 @@ except ImportError:
     threading = None
 # Skip this test if the _testcapi module isn't available.
 _testcapi = support.import_module('_testcapi')
-
-# Were we compiled --with-pydebug or with #define Py_DEBUG?
-Py_DEBUG = hasattr(sys, 'gettotalrefcount')
 
 
 def testfunction(self):
@@ -123,7 +118,7 @@ class CAPITest(unittest.TestCase):
         self.assertEqual(_testcapi.no_docstring.__doc__, None)
         self.assertEqual(_testcapi.no_docstring.__text_signature__, None)
 
-        self.assertEqual(_testcapi.docstring_empty.__doc__, None)
+        self.assertEqual(_testcapi.docstring_empty.__doc__, "")
         self.assertEqual(_testcapi.docstring_empty.__text_signature__, None)
 
         self.assertEqual(_testcapi.docstring_no_signature.__doc__,
@@ -150,94 +145,10 @@ class CAPITest(unittest.TestCase):
             "This docstring has a valid signature.")
         self.assertEqual(_testcapi.docstring_with_signature.__text_signature__, "($module, /, sig)")
 
-        self.assertEqual(_testcapi.docstring_with_signature_but_no_doc.__doc__, None)
-        self.assertEqual(_testcapi.docstring_with_signature_but_no_doc.__text_signature__,
-            "($module, /, sig)")
-
         self.assertEqual(_testcapi.docstring_with_signature_and_extra_newlines.__doc__,
             "\nThis docstring has a valid signature and some extra newlines.")
         self.assertEqual(_testcapi.docstring_with_signature_and_extra_newlines.__text_signature__,
             "($module, /, parameter)")
-
-    def test_c_type_with_matrix_multiplication(self):
-        M = _testcapi.matmulType
-        m1 = M()
-        m2 = M()
-        self.assertEqual(m1 @ m2, ("matmul", m1, m2))
-        self.assertEqual(m1 @ 42, ("matmul", m1, 42))
-        self.assertEqual(42 @ m1, ("matmul", 42, m1))
-        o = m1
-        o @= m2
-        self.assertEqual(o, ("imatmul", m1, m2))
-        o = m1
-        o @= 42
-        self.assertEqual(o, ("imatmul", m1, 42))
-        o = 42
-        o @= m1
-        self.assertEqual(o, ("matmul", 42, m1))
-
-    def test_return_null_without_error(self):
-        # Issue #23571: A function must not return NULL without setting an
-        # error
-        if Py_DEBUG:
-            code = textwrap.dedent("""
-                import _testcapi
-                from test import support
-
-                with support.SuppressCrashReport():
-                    _testcapi.return_null_without_error()
-            """)
-            rc, out, err = assert_python_failure('-c', code)
-            self.assertRegex(err.replace(b'\r', b''),
-                             br'Fatal Python error: a function returned NULL '
-                                br'without setting an error\n'
-                             br'SystemError: <built-in function '
-                                 br'return_null_without_error> returned NULL '
-                                 br'without setting an error\n'
-                             br'\n'
-                             br'Current thread.*:\n'
-                             br'  File .*", line 6 in <module>')
-        else:
-            with self.assertRaises(SystemError) as cm:
-                _testcapi.return_null_without_error()
-            self.assertRegex(str(cm.exception),
-                             'return_null_without_error.* '
-                             'returned NULL without setting an error')
-
-    def test_return_result_with_error(self):
-        # Issue #23571: A function must not return a result with an error set
-        if Py_DEBUG:
-            code = textwrap.dedent("""
-                import _testcapi
-                from test import support
-
-                with support.SuppressCrashReport():
-                    _testcapi.return_result_with_error()
-            """)
-            rc, out, err = assert_python_failure('-c', code)
-            self.assertRegex(err.replace(b'\r', b''),
-                             br'Fatal Python error: a function returned a '
-                                br'result with an error set\n'
-                             br'ValueError\n'
-                             br'\n'
-                             br'During handling of the above exception, '
-                                br'another exception occurred:\n'
-                             br'\n'
-                             br'SystemError: <built-in '
-                                br'function return_result_with_error> '
-                                br'returned a result with an error set\n'
-                             br'\n'
-                             br'Current thread.*:\n'
-                             br'  File .*, line 6 in <module>')
-        else:
-            with self.assertRaises(SystemError) as cm:
-                _testcapi.return_result_with_error()
-            self.assertRegex(str(cm.exception),
-                             'return_result_with_error.* '
-                             'returned a result with an error set')
-
-    def test_buildvalue_N(self):
-        _testcapi.test_buildvalue_N()
 
 
 @unittest.skipUnless(threading, 'Threading required for this test.')
@@ -291,11 +202,15 @@ class TestPendingCalls(unittest.TestCase):
         context.lock = threading.Lock()
         context.event = threading.Event()
 
-        threads = [threading.Thread(target=self.pendingcalls_thread,
-                                    args=(context,))
-                   for i in range(context.nThreads)]
-        with support.start_threads(threads):
-            self.pendingcalls_wait(context.l, n, context)
+        for i in range(context.nThreads):
+            t = threading.Thread(target=self.pendingcalls_thread, args = (context,))
+            t.start()
+            threads.append(t)
+
+        self.pendingcalls_wait(context.l, n, context)
+
+        for t in threads:
+            t.join()
 
     def pendingcalls_thread(self, context):
         try:
@@ -346,15 +261,14 @@ class Test6012(unittest.TestCase):
 
 class EmbeddingTests(unittest.TestCase):
     def setUp(self):
-        here = os.path.abspath(__file__)
-        basepath = os.path.dirname(os.path.dirname(os.path.dirname(here)))
+        basepath = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         exename = "_testembed"
         if sys.platform.startswith("win"):
             ext = ("_d" if "_d" in sys.executable else "") + ".exe"
             exename += ext
             exepath = os.path.dirname(sys.executable)
         else:
-            exepath = os.path.join(basepath, "Programs")
+            exepath = os.path.join(basepath, "Modules")
         self.test_exe = exe = os.path.join(exepath, exename)
         if not os.path.exists(exe):
             self.skipTest("%r doesn't exist" % exe)
@@ -373,13 +287,12 @@ class EmbeddingTests(unittest.TestCase):
         cmd.extend(args)
         p = subprocess.Popen(cmd,
                              stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE,
-                             universal_newlines=True)
+                             stderr=subprocess.PIPE)
         (out, err) = p.communicate()
         self.assertEqual(p.returncode, 0,
                          "bad returncode %d, stderr is %r" %
                          (p.returncode, err))
-        return out, err
+        return out.decode("latin1"), err.decode("latin1")
 
     def test_subinterps(self):
         # This is just a "don't crash" test
@@ -406,38 +319,34 @@ class EmbeddingTests(unittest.TestCase):
             print()
             print(out)
             print(err)
-        expected_errors = sys.__stdout__.errors
         expected_stdin_encoding = sys.__stdin__.encoding
         expected_pipe_encoding = self._get_default_pipe_encoding()
-        expected_output = '\n'.join([
+        expected_output = os.linesep.join([
         "--- Use defaults ---",
         "Expected encoding: default",
         "Expected errors: default",
-        "stdin: {in_encoding}:{errors}",
-        "stdout: {out_encoding}:{errors}",
-        "stderr: {out_encoding}:backslashreplace",
+        "stdin: {0}:strict",
+        "stdout: {1}:strict",
+        "stderr: {1}:backslashreplace",
         "--- Set errors only ---",
         "Expected encoding: default",
-        "Expected errors: ignore",
-        "stdin: {in_encoding}:ignore",
-        "stdout: {out_encoding}:ignore",
-        "stderr: {out_encoding}:backslashreplace",
+        "Expected errors: surrogateescape",
+        "stdin: {0}:surrogateescape",
+        "stdout: {1}:surrogateescape",
+        "stderr: {1}:backslashreplace",
         "--- Set encoding only ---",
         "Expected encoding: latin-1",
         "Expected errors: default",
-        "stdin: latin-1:{errors}",
-        "stdout: latin-1:{errors}",
+        "stdin: latin-1:strict",
+        "stdout: latin-1:strict",
         "stderr: latin-1:backslashreplace",
         "--- Set encoding and errors ---",
         "Expected encoding: latin-1",
-        "Expected errors: replace",
-        "stdin: latin-1:replace",
-        "stdout: latin-1:replace",
-        "stderr: latin-1:backslashreplace"])
-        expected_output = expected_output.format(
-                                in_encoding=expected_stdin_encoding,
-                                out_encoding=expected_pipe_encoding,
-                                errors=expected_errors)
+        "Expected errors: surrogateescape",
+        "stdin: latin-1:surrogateescape",
+        "stdout: latin-1:surrogateescape",
+        "stderr: latin-1:backslashreplace"]).format(expected_stdin_encoding,
+                                                    expected_pipe_encoding)
         # This is useful if we ever trip over odd platform behaviour
         self.maxDiff = None
         self.assertEqual(out.strip(), expected_output)
@@ -461,7 +370,7 @@ class SkipitemTest(unittest.TestCase):
         test and not for the other, there's a mismatch, and the test fails.
 
            ** Some format units have special funny semantics and it would
-              be difficult to accommodate them here.  Since these are all
+              be difficult to accomodate them here.  Since these are all
               well-established and properly skipped in skipitem() we can
               get away with not testing them--this test is really intended
               to catch *new* format units.
@@ -492,7 +401,7 @@ class SkipitemTest(unittest.TestCase):
                     format.encode("ascii"), keywords)
                 when_not_skipped = False
             except TypeError as e:
-                s = "argument 1 (impossible<bad format char>)"
+                s = "argument 1 must be impossible<bad format char>, not int"
                 when_not_skipped = (str(e) == s)
             except RuntimeError as e:
                 when_not_skipped = False

@@ -3,7 +3,7 @@
 
 """Pattern compiler.
 
-The grammar is taken from PatternGrammar.txt.
+The grammer is taken from PatternGrammar.txt.
 
 The compiler compiles a pattern to a pytree.*Pattern instance.
 """
@@ -32,7 +32,7 @@ class PatternSyntaxError(Exception):
 
 def tokenize_wrapper(input):
     """Tokenizes a string suppressing significant whitespace."""
-    skip = {token.NEWLINE, token.INDENT, token.DEDENT}
+    skip = set((token.NEWLINE, token.INDENT, token.DEDENT))
     tokens = tokenize.generate_tokens(io.StringIO(input).readline)
     for quintuple in tokens:
         type, value, start, end, line_text = quintuple

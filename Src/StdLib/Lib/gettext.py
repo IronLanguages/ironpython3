@@ -52,9 +52,7 @@ from errno import ENOENT
 
 __all__ = ['NullTranslations', 'GNUTranslations', 'Catalog',
            'find', 'translation', 'install', 'textdomain', 'bindtextdomain',
-           'bind_textdomain_codeset',
-           'dgettext', 'dngettext', 'gettext', 'lgettext', 'ldgettext',
-           'ldngettext', 'lngettext', 'ngettext',
+           'dgettext', 'dngettext', 'gettext', 'ngettext',
            ]
 
 _default_localedir = os.path.join(sys.base_prefix, 'share', 'locale')
@@ -227,13 +225,6 @@ class GNUTranslations(NullTranslations):
     LE_MAGIC = 0x950412de
     BE_MAGIC = 0xde120495
 
-    # Acceptable .mo versions
-    VERSIONS = (0, 1)
-
-    def _get_versions(self, version):
-        """Returns a tuple of major version, minor version"""
-        return (version >> 16, version & 0xffff)
-
     def _parse(self, fp):
         """Override this method to support alternative .mo formats."""
         unpack = struct.unpack
@@ -254,12 +245,6 @@ class GNUTranslations(NullTranslations):
             ii = '>II'
         else:
             raise OSError(0, 'Bad magic number', filename)
-
-        major_version, minor_version = self._get_versions(version)
-
-        if major_version not in self.VERSIONS:
-            raise OSError(0, 'Bad version number ' + str(major_version), filename)
-
         # Now put all messages from the .mo file buffer into the catalog
         # dictionary.
         for i in range(0, msgcount):
@@ -275,12 +260,11 @@ class GNUTranslations(NullTranslations):
             # See if we're looking at GNU .mo conventions for metadata
             if mlen == 0:
                 # Catalog description
-                lastk = None
+                lastk = k = None
                 for b_item in tmsg.split('\n'.encode("ascii")):
                     item = b_item.decode().strip()
                     if not item:
                         continue
-                    k = v = None
                     if ':' in item:
                         k, v = item.split(':', 1)
                         k = k.strip().lower()

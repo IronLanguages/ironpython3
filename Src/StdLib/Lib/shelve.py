@@ -138,21 +138,17 @@ class Shelf(collections.MutableMapping):
         self.close()
 
     def close(self):
-        if self.dict is None:
-            return
+        self.sync()
         try:
-            self.sync()
-            try:
-                self.dict.close()
-            except AttributeError:
-                pass
-        finally:
-            # Catch errors that may happen when close is called from __del__
-            # because CPython is in interpreter shutdown.
-            try:
-                self.dict = _ClosedDict()
-            except:
-                self.dict = None
+            self.dict.close()
+        except AttributeError:
+            pass
+        # Catch errors that may happen when close is called from __del__
+        # because CPython is in interpreter shutdown.
+        try:
+            self.dict = _ClosedDict()
+        except (NameError, TypeError):
+            self.dict = None
 
     def __del__(self):
         if not hasattr(self, 'writeback'):

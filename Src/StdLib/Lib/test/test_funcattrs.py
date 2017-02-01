@@ -1,3 +1,4 @@
+from test import support
 import types
 import unittest
 
@@ -373,5 +374,12 @@ class BuiltinFunctionPropertiesTest(unittest.TestCase):
         self.assertEqual({'foo': 'bar'}.pop.__qualname__, 'dict.pop')
 
 
+def test_main():
+    support.run_unittest(FunctionPropertiesTest, InstancemethodAttrTest,
+                              ArbitraryFunctionAttrTest, FunctionDictsTest,
+                              FunctionDocstringTest, CellTest,
+                              StaticMethodAttrsTest,
+                              BuiltinFunctionPropertiesTest)
+
 if __name__ == "__main__":
-    unittest.main()
+    test_main()

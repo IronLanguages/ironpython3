@@ -1,5 +1,6 @@
 from .. import abc
 from .. import util
+from . import util as source_util
 
 importlib = util.import_importlib('importlib')
 importlib_abc = util.import_importlib('importlib.abc')
@@ -70,7 +71,7 @@ class SimpleTest(abc.LoaderTests):
 
     # [basic]
     def test_module(self):
-        with util.create_modules('_temp') as mapping:
+        with source_util.create_modules('_temp') as mapping:
             loader = self.machinery.SourceFileLoader('_temp', mapping['_temp'])
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore', DeprecationWarning)
@@ -82,7 +83,7 @@ class SimpleTest(abc.LoaderTests):
                 self.assertEqual(getattr(module, attr), value)
 
     def test_package(self):
-        with util.create_modules('_pkg.__init__') as mapping:
+        with source_util.create_modules('_pkg.__init__') as mapping:
             loader = self.machinery.SourceFileLoader('_pkg',
                                                  mapping['_pkg.__init__'])
             with warnings.catch_warnings():
@@ -97,7 +98,7 @@ class SimpleTest(abc.LoaderTests):
 
 
     def test_lacking_parent(self):
-        with util.create_modules('_pkg.__init__', '_pkg.mod')as mapping:
+        with source_util.create_modules('_pkg.__init__', '_pkg.mod')as mapping:
             loader = self.machinery.SourceFileLoader('_pkg.mod',
                                                     mapping['_pkg.mod'])
             with warnings.catch_warnings():
@@ -114,7 +115,7 @@ class SimpleTest(abc.LoaderTests):
         return lambda name: fxn(name) + 1
 
     def test_module_reuse(self):
-        with util.create_modules('_temp') as mapping:
+        with source_util.create_modules('_temp') as mapping:
             loader = self.machinery.SourceFileLoader('_temp', mapping['_temp'])
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore', DeprecationWarning)
@@ -138,7 +139,7 @@ class SimpleTest(abc.LoaderTests):
         attributes = ('__file__', '__path__', '__package__')
         value = '<test>'
         name = '_temp'
-        with util.create_modules(name) as mapping:
+        with source_util.create_modules(name) as mapping:
             orig_module = types.ModuleType(name)
             for attr in attributes:
                 setattr(orig_module, attr, value)
@@ -158,7 +159,7 @@ class SimpleTest(abc.LoaderTests):
 
     # [syntax error]
     def test_bad_syntax(self):
-        with util.create_modules('_temp') as mapping:
+        with source_util.create_modules('_temp') as mapping:
             with open(mapping['_temp'], 'w') as file:
                 file.write('=')
             loader = self.machinery.SourceFileLoader('_temp', mapping['_temp'])
@@ -189,11 +190,10 @@ class SimpleTest(abc.LoaderTests):
             if os.path.exists(pycache):
                 shutil.rmtree(pycache)
 
-    @util.writes_bytecode_files
     def test_timestamp_overflow(self):
         # When a modification timestamp is larger than 2**32, it should be
         # truncated rather than raise an OverflowError.
-        with util.create_modules('_temp') as mapping:
+        with source_util.create_modules('_temp') as mapping:
             source = mapping['_temp']
             compiled = self.util.cache_from_source(source)
             with open(source, 'w') as f:
@@ -235,11 +235,9 @@ class SimpleTest(abc.LoaderTests):
                 warnings.simplefilter('ignore', DeprecationWarning)
                 loader.load_module('bad name')
 
-
-(Frozen_SimpleTest,
- Source_SimpleTest
- ) = util.test_both(SimpleTest, importlib=importlib, machinery=machinery,
-                    abc=importlib_abc, util=importlib_util)
+Frozen_SimpleTest, Source_SimpleTest = util.test_both(
+        SimpleTest, importlib=importlib, machinery=machinery, abc=importlib_abc,
+        util=importlib_util)
 
 
 class BadBytecodeTest:
@@ -276,45 +274,45 @@ class BadBytecodeTest:
         return bytecode_path
 
     def _test_empty_file(self, test, *, del_source=False):
-        with util.create_modules('_temp') as mapping:
+        with source_util.create_modules('_temp') as mapping:
             bc_path = self.manipulate_bytecode('_temp', mapping,
                                                 lambda bc: b'',
                                                 del_source=del_source)
             test('_temp', mapping, bc_path)
 
-    @util.writes_bytecode_files
+    @source_util.writes_bytecode_files
     def _test_partial_magic(self, test, *, del_source=False):
         # When their are less than 4 bytes to a .pyc, regenerate it if
         # possible, else raise ImportError.
-        with util.create_modules('_temp') as mapping:
+        with source_util.create_modules('_temp') as mapping:
             bc_path = self.manipulate_bytecode('_temp', mapping,
                                                 lambda bc: bc[:3],
                                                 del_source=del_source)
             test('_temp', mapping, bc_path)
 
     def _test_magic_only(self, test, *, del_source=False):
-        with util.create_modules('_temp') as mapping:
+        with source_util.create_modules('_temp') as mapping:
             bc_path = self.manipulate_bytecode('_temp', mapping,
                                                 lambda bc: bc[:4],
                                                 del_source=del_source)
             test('_temp', mapping, bc_path)
 
     def _test_partial_timestamp(self, test, *, del_source=False):
-        with util.create_modules('_temp') as mapping:
+        with source_util.create_modules('_temp') as mapping:
             bc_path = self.manipulate_bytecode('_temp', mapping,
                                                 lambda bc: bc[:7],
                                                 del_source=del_source)
             test('_temp', mapping, bc_path)
 
     def _test_partial_size(self, test, *, del_source=False):
-        with util.create_modules('_temp') as mapping:
+        with source_util.create_modules('_temp') as mapping:
             bc_path = self.manipulate_bytecode('_temp', mapping,
                                                 lambda bc: bc[:11],
                                                 del_source=del_source)
             test('_temp', mapping, bc_path)
 
     def _test_no_marshal(self, *, del_source=False):
-        with util.create_modules('_temp') as mapping:
+        with source_util.create_modules('_temp') as mapping:
             bc_path = self.manipulate_bytecode('_temp', mapping,
                                                 lambda bc: bc[:12],
                                                 del_source=del_source)
@@ -323,7 +321,7 @@ class BadBytecodeTest:
                 self.import_(file_path, '_temp')
 
     def _test_non_code_marshal(self, *, del_source=False):
-        with util.create_modules('_temp') as mapping:
+        with source_util.create_modules('_temp') as mapping:
             bytecode_path = self.manipulate_bytecode('_temp', mapping,
                                     lambda bc: bc[:12] + marshal.dumps(b'abcd'),
                                     del_source=del_source)
@@ -334,7 +332,7 @@ class BadBytecodeTest:
             self.assertEqual(cm.exception.path, bytecode_path)
 
     def _test_bad_marshal(self, *, del_source=False):
-        with util.create_modules('_temp') as mapping:
+        with source_util.create_modules('_temp') as mapping:
             bytecode_path = self.manipulate_bytecode('_temp', mapping,
                                                 lambda bc: bc[:12] + b'<test>',
                                                 del_source=del_source)
@@ -343,11 +341,10 @@ class BadBytecodeTest:
                 self.import_(file_path, '_temp')
 
     def _test_bad_magic(self, test, *, del_source=False):
-        with util.create_modules('_temp') as mapping:
+        with source_util.create_modules('_temp') as mapping:
             bc_path = self.manipulate_bytecode('_temp', mapping,
                                     lambda bc: b'\x00\x00\x00\x00' + bc[4:])
             test('_temp', mapping, bc_path)
-
 
 class BadBytecodeTestPEP451(BadBytecodeTest):
 
@@ -356,7 +353,6 @@ class BadBytecodeTestPEP451(BadBytecodeTest):
         module = types.ModuleType(module_name)
         module.__spec__ = self.util.spec_from_loader(module_name, loader)
         loader.exec_module(module)
-
 
 class BadBytecodeTestPEP302(BadBytecodeTest):
 
@@ -374,7 +370,7 @@ class SourceLoaderBadBytecodeTest:
     def setUpClass(cls):
         cls.loader = cls.machinery.SourceFileLoader
 
-    @util.writes_bytecode_files
+    @source_util.writes_bytecode_files
     def test_empty_file(self):
         # When a .pyc is empty, regenerate it if possible, else raise
         # ImportError.
@@ -393,7 +389,7 @@ class SourceLoaderBadBytecodeTest:
 
         self._test_partial_magic(test)
 
-    @util.writes_bytecode_files
+    @source_util.writes_bytecode_files
     def test_magic_only(self):
         # When there is only the magic number, regenerate the .pyc if possible,
         # else raise EOFError.
@@ -404,7 +400,7 @@ class SourceLoaderBadBytecodeTest:
 
         self._test_magic_only(test)
 
-    @util.writes_bytecode_files
+    @source_util.writes_bytecode_files
     def test_bad_magic(self):
         # When the magic number is different, the bytecode should be
         # regenerated.
@@ -416,7 +412,7 @@ class SourceLoaderBadBytecodeTest:
 
         self._test_bad_magic(test)
 
-    @util.writes_bytecode_files
+    @source_util.writes_bytecode_files
     def test_partial_timestamp(self):
         # When the timestamp is partial, regenerate the .pyc, else
         # raise EOFError.
@@ -427,7 +423,7 @@ class SourceLoaderBadBytecodeTest:
 
         self._test_partial_timestamp(test)
 
-    @util.writes_bytecode_files
+    @source_util.writes_bytecode_files
     def test_partial_size(self):
         # When the size is partial, regenerate the .pyc, else
         # raise EOFError.
@@ -438,29 +434,29 @@ class SourceLoaderBadBytecodeTest:
 
         self._test_partial_size(test)
 
-    @util.writes_bytecode_files
+    @source_util.writes_bytecode_files
     def test_no_marshal(self):
         # When there is only the magic number and timestamp, raise EOFError.
         self._test_no_marshal()
 
-    @util.writes_bytecode_files
+    @source_util.writes_bytecode_files
     def test_non_code_marshal(self):
         self._test_non_code_marshal()
         # XXX ImportError when sourceless
 
     # [bad marshal]
-    @util.writes_bytecode_files
+    @source_util.writes_bytecode_files
     def test_bad_marshal(self):
         # Bad marshal data should raise a ValueError.
         self._test_bad_marshal()
 
     # [bad timestamp]
-    @util.writes_bytecode_files
+    @source_util.writes_bytecode_files
     def test_old_timestamp(self):
         # When the timestamp is older than the source, bytecode should be
         # regenerated.
         zeros = b'\x00\x00\x00\x00'
-        with util.create_modules('_temp') as mapping:
+        with source_util.create_modules('_temp') as mapping:
             py_compile.compile(mapping['_temp'])
             bytecode_path = self.util.cache_from_source(mapping['_temp'])
             with open(bytecode_path, 'r+b') as bytecode_file:
@@ -474,10 +470,10 @@ class SourceLoaderBadBytecodeTest:
                 self.assertEqual(bytecode_file.read(4), source_timestamp)
 
     # [bytecode read-only]
-    @util.writes_bytecode_files
+    @source_util.writes_bytecode_files
     def test_read_only_bytecode(self):
         # When bytecode is read-only but should be rewritten, fail silently.
-        with util.create_modules('_temp') as mapping:
+        with source_util.create_modules('_temp') as mapping:
             # Create bytecode that will need to be re-created.
             py_compile.compile(mapping['_temp'])
             bytecode_path = self.util.cache_from_source(mapping['_temp'])
@@ -494,29 +490,21 @@ class SourceLoaderBadBytecodeTest:
                 # Make writable for eventual clean-up.
                 os.chmod(bytecode_path, stat.S_IWUSR)
 
-
 class SourceLoaderBadBytecodeTestPEP451(
         SourceLoaderBadBytecodeTest, BadBytecodeTestPEP451):
     pass
 
-
-(Frozen_SourceBadBytecodePEP451,
- Source_SourceBadBytecodePEP451
- ) = util.test_both(SourceLoaderBadBytecodeTestPEP451, importlib=importlib,
-                    machinery=machinery, abc=importlib_abc,
-                    util=importlib_util)
-
+Frozen_SourceBadBytecodePEP451, Source_SourceBadBytecodePEP451 = util.test_both(
+        SourceLoaderBadBytecodeTestPEP451, importlib=importlib, machinery=machinery,
+        abc=importlib_abc, util=importlib_util)
 
 class SourceLoaderBadBytecodeTestPEP302(
         SourceLoaderBadBytecodeTest, BadBytecodeTestPEP302):
     pass
 
-
-(Frozen_SourceBadBytecodePEP302,
- Source_SourceBadBytecodePEP302
- ) = util.test_both(SourceLoaderBadBytecodeTestPEP302, importlib=importlib,
-                    machinery=machinery, abc=importlib_abc,
-                    util=importlib_util)
+Frozen_SourceBadBytecodePEP302, Source_SourceBadBytecodePEP302 = util.test_both(
+        SourceLoaderBadBytecodeTestPEP302, importlib=importlib, machinery=machinery,
+        abc=importlib_abc, util=importlib_util)
 
 
 class SourcelessLoaderBadBytecodeTest:
@@ -578,29 +566,21 @@ class SourcelessLoaderBadBytecodeTest:
     def test_non_code_marshal(self):
         self._test_non_code_marshal(del_source=True)
 
-
 class SourcelessLoaderBadBytecodeTestPEP451(SourcelessLoaderBadBytecodeTest,
         BadBytecodeTestPEP451):
     pass
 
-
-(Frozen_SourcelessBadBytecodePEP451,
- Source_SourcelessBadBytecodePEP451
- ) = util.test_both(SourcelessLoaderBadBytecodeTestPEP451, importlib=importlib,
-                    machinery=machinery, abc=importlib_abc,
-                    util=importlib_util)
-
+Frozen_SourcelessBadBytecodePEP451, Source_SourcelessBadBytecodePEP451 = util.test_both(
+        SourcelessLoaderBadBytecodeTestPEP451, importlib=importlib,
+        machinery=machinery, abc=importlib_abc, util=importlib_util)
 
 class SourcelessLoaderBadBytecodeTestPEP302(SourcelessLoaderBadBytecodeTest,
         BadBytecodeTestPEP302):
     pass
 
-
-(Frozen_SourcelessBadBytecodePEP302,
- Source_SourcelessBadBytecodePEP302
- ) = util.test_both(SourcelessLoaderBadBytecodeTestPEP302, importlib=importlib,
-                    machinery=machinery, abc=importlib_abc,
-                    util=importlib_util)
+Frozen_SourcelessBadBytecodePEP302, Source_SourcelessBadBytecodePEP302 = util.test_both(
+        SourcelessLoaderBadBytecodeTestPEP302, importlib=importlib,
+        machinery=machinery, abc=importlib_abc, util=importlib_util)
 
 
 if __name__ == '__main__':

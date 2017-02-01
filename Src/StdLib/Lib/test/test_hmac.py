@@ -493,5 +493,14 @@ class CompareDigestTestCase(unittest.TestCase):
         self.assertFalse(hmac.compare_digest(a, b))
 
 
+def test_main():
+    support.run_unittest(
+        TestVectorsTestCase,
+        ConstructorTestCase,
+        SanityTestCase,
+        CopyTestCase,
+        CompareDigestTestCase
+    )
+
 if __name__ == "__main__":
-    unittest.main()
+    test_main()

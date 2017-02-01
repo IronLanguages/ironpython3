@@ -1,7 +1,6 @@
 import datetime
 import textwrap
 import unittest
-import types
 from email import errors
 from email import policy
 from email.message import Message
@@ -236,8 +235,6 @@ class TestContentTypeHeader(TestHeaderBase):
         self.assertEqual(h.maintype, maintype)
         self.assertEqual(h.subtype, subtype)
         self.assertEqual(h.params, parmdict)
-        with self.assertRaises(TypeError):
-            h.params['abc'] = 'xyz'   # params is read-only.
         self.assertDefectsEqual(h.defects, defects)
         self.assertEqual(h, decoded)
         self.assertEqual(h.fold(policy=policy.default), folded)

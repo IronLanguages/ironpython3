@@ -4,14 +4,14 @@ import telnetlib
 import time
 import contextlib
 
+from unittest import TestCase
 from test import support
-import unittest
 threading = support.import_module('threading')
 
 HOST = support.HOST
 
 def server(evt, serv):
-    serv.listen()
+    serv.listen(5)
     evt.set()
     try:
         conn, addr = serv.accept()
@@ -21,7 +21,7 @@ def server(evt, serv):
     finally:
         serv.close()
 
-class GeneralTests(unittest.TestCase):
+class GeneralTests(TestCase):
 
     def setUp(self):
         self.evt = threading.Event()
@@ -165,7 +165,7 @@ def test_telnet(reads=(), cls=TelnetAlike):
         telnet._messages = '' # debuglevel output
     return telnet
 
-class ExpectAndReadTestCase(unittest.TestCase):
+class ExpectAndReadTestCase(TestCase):
     def setUp(self):
         self.old_selector = telnetlib._TelnetSelector
         telnetlib._TelnetSelector = MockSelector
@@ -237,8 +237,8 @@ class ReadTests(ExpectAndReadTestCase):
         self.assertEqual(data, want)
 
     def test_read_eager(self):
-        # read_eager and read_very_eager make the same guarantees
-        # (they behave differently but we only test the guarantees)
+        # read_eager and read_very_eager make the same gaurantees
+        # (they behave differently but we only test the gaurantees)
         self._read_eager('read_eager')
         self._read_eager('read_very_eager')
         # NB -- we need to test the IAC block which is mentioned in the
@@ -284,7 +284,7 @@ class nego_collector(object):
 
 tl = telnetlib
 
-class WriteTests(unittest.TestCase):
+class WriteTests(TestCase):
     '''The only thing that write does is replace each tl.IAC for
     tl.IAC+tl.IAC'''
 
@@ -300,7 +300,7 @@ class WriteTests(unittest.TestCase):
             written = b''.join(telnet.sock.writes)
             self.assertEqual(data.replace(tl.IAC,tl.IAC+tl.IAC), written)
 
-class OptionTests(unittest.TestCase):
+class OptionTests(TestCase):
     # RFC 854 commands
     cmds = [tl.AO, tl.AYT, tl.BRK, tl.EC, tl.EL, tl.GA, tl.IP, tl.NOP]
 
@@ -393,5 +393,9 @@ class ExpectTests(ExpectAndReadTestCase):
         self.assertEqual(data, b''.join(want[:-1]))
 
 
+def test_main(verbose=None):
+    support.run_unittest(GeneralTests, ReadTests, WriteTests, OptionTests,
+                         ExpectTests)
+
 if __name__ == '__main__':
-    unittest.main()
+    test_main()

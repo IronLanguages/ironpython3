@@ -65,8 +65,8 @@ class Token(object):
         (self.typeid, self.address, self.id) = state
 
     def __repr__(self):
-        return '%s(typeid=%r, address=%r, id=%r)' % \
-               (self.__class__.__name__, self.typeid, self.address, self.id)
+        return 'Token(typeid=%r, address=%r, id=%r)' % \
+               (self.typeid, self.address, self.id)
 
 #
 # Function for communication with a manager's server process
@@ -306,7 +306,8 @@ class Server(object):
         '''
         Return some info --- useful to spot problems with refcounting
         '''
-        with self.mutex:
+        self.mutex.acquire()
+        try:
             result = []
             keys = list(self.id_to_obj.keys())
             keys.sort()
@@ -316,6 +317,8 @@ class Server(object):
                                   (ident, self.id_to_refcount[ident],
                                    str(self.id_to_obj[ident][0])[:75]))
             return '\n'.join(result)
+        finally:
+            self.mutex.release()
 
     def number_of_objects(self, c):
         '''
@@ -340,7 +343,8 @@ class Server(object):
         '''
         Create a new shared object and return its id
         '''
-        with self.mutex:
+        self.mutex.acquire()
+        try:
             callable, exposed, method_to_typeid, proxytype = \
                       self.registry[typeid]
 
@@ -370,6 +374,8 @@ class Server(object):
             # has been created.
             self.incref(c, ident)
             return ident, tuple(exposed)
+        finally:
+            self.mutex.release()
 
     def get_methods(self, c, token):
         '''
@@ -386,16 +392,22 @@ class Server(object):
         self.serve_client(c)
 
     def incref(self, c, ident):
-        with self.mutex:
+        self.mutex.acquire()
+        try:
             self.id_to_refcount[ident] += 1
+        finally:
+            self.mutex.release()
 
     def decref(self, c, ident):
-        with self.mutex:
+        self.mutex.acquire()
+        try:
             assert self.id_to_refcount[ident] >= 1
             self.id_to_refcount[ident] -= 1
             if self.id_to_refcount[ident] == 0:
                 del self.id_to_obj[ident], self.id_to_refcount[ident]
                 util.debug('disposing of obj with id %r', ident)
+        finally:
+            self.mutex.release()
 
 #
 # Class to represent state of a manager
@@ -659,11 +671,14 @@ class BaseProxy(object):
 
     def __init__(self, token, serializer, manager=None,
                  authkey=None, exposed=None, incref=True):
-        with BaseProxy._mutex:
+        BaseProxy._mutex.acquire()
+        try:
             tls_idset = BaseProxy._address_to_local.get(token.address, None)
             if tls_idset is None:
                 tls_idset = util.ForkAwareLocal(), ProcessLocalSet()
                 BaseProxy._address_to_local[token.address] = tls_idset
+        finally:
+            BaseProxy._mutex.release()
 
         # self._tls is used to record the connection used by this
         # thread to communicate with the manager at token.address
@@ -803,8 +818,8 @@ class BaseProxy(object):
         return self._getvalue()
 
     def __repr__(self):
-        return '<%s object, typeid %r at %#x>' % \
-               (type(self).__name__, self._token.typeid, id(self))
+        return '<%s object, typeid %r at %s>' % \
+               (type(self).__name__, self._token.typeid, '0x%x' % id(self))
 
     def __str__(self):
         '''
@@ -842,7 +857,7 @@ def RebuildProxy(func, token, serializer, kwds):
 
 def MakeProxyType(name, exposed, _cache={}):
     '''
-    Return a proxy type whose methods are given by `exposed`
+    Return an proxy type whose methods are given by `exposed`
     '''
     exposed = tuple(exposed)
     try:
@@ -901,7 +916,7 @@ class Namespace(object):
             if not name.startswith('_'):
                 temp.append('%s=%r' % (name, value))
         temp.sort()
-        return '%s(%s)' % (self.__class__.__name__, ', '.join(temp))
+        return 'Namespace(%s)' % str.join(', ', temp)
 
 class Value(object):
     def __init__(self, typecode, value, lock=True):
@@ -1062,22 +1077,17 @@ ArrayProxy = MakeProxyType('ArrayProxy', (
     ))
 
 
-BasePoolProxy = MakeProxyType('PoolProxy', (
+PoolProxy = MakeProxyType('PoolProxy', (
     'apply', 'apply_async', 'close', 'imap', 'imap_unordered', 'join',
-    'map', 'map_async', 'starmap', 'starmap_async', 'terminate',
+    'map', 'map_async', 'starmap', 'starmap_async', 'terminate'
     ))
-BasePoolProxy._method_to_typeid_ = {
+PoolProxy._method_to_typeid_ = {
     'apply_async': 'AsyncResult',
     'map_async': 'AsyncResult',
     'starmap_async': 'AsyncResult',
     'imap': 'Iterator',
     'imap_unordered': 'Iterator'
     }
-class PoolProxy(BasePoolProxy):
-    def __enter__(self):
-        return self
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.terminate()
 
 #
 # Definition of SyncManager

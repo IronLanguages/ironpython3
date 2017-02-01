@@ -13,8 +13,7 @@ __all__ = ["code_info", "dis", "disassemble", "distb", "disco",
            "get_instructions", "Instruction", "Bytecode"] + _opcodes_all
 del _opcodes_all
 
-_have_code = (types.MethodType, types.FunctionType, types.CodeType,
-              classmethod, staticmethod, type)
+_have_code = (types.MethodType, types.FunctionType, types.CodeType, type)
 
 def _try_compile(source, name):
     """Attempts to compile the given source, first as an expression and
@@ -30,7 +29,7 @@ def _try_compile(source, name):
     return c
 
 def dis(x=None, *, file=None):
-    """Disassemble classes, methods, functions, generators, or code.
+    """Disassemble classes, methods, functions, or code.
 
     With no argument, disassemble the last traceback.
 
@@ -42,8 +41,6 @@ def dis(x=None, *, file=None):
         x = x.__func__
     if hasattr(x, '__code__'):  # Function
         x = x.__code__
-    if hasattr(x, 'gi_code'):  # Generator
-        x = x.gi_code
     if hasattr(x, '__dict__'):  # Class or module
         items = sorted(x.__dict__.items())
         for name, x1 in items:
@@ -85,8 +82,6 @@ COMPILER_FLAG_NAMES = {
     16: "NESTED",
     32: "GENERATOR",
     64: "NOFREE",
-   128: "COROUTINE",
-   256: "ITERABLE_COROUTINE",
 }
 
 def pretty_flags(flags):
@@ -104,13 +99,11 @@ def pretty_flags(flags):
     return ", ".join(names)
 
 def _get_code_object(x):
-    """Helper to handle methods, functions, generators, strings and raw code objects"""
+    """Helper to handle methods, functions, strings and raw code objects"""
     if hasattr(x, '__func__'): # Method
         x = x.__func__
     if hasattr(x, '__code__'): # Function
         x = x.__code__
-    if hasattr(x, 'gi_code'):  # Generator
-        x = x.gi_code
     if isinstance(x, str):     # Source code
         x = _try_compile(x, "<disassembly>")
     if hasattr(x, 'co_code'):  # Code object
@@ -275,19 +268,33 @@ def _get_instructions_bytes(code, varnames=None, names=None, constants=None,
 
     """
     labels = findlabels(code)
+    extended_arg = 0
     starts_line = None
     free = None
-    for offset, op, arg in _unpack_opargs(code):
+    # enumerate() is not an option, since we sometimes process
+    # multiple elements on a single pass through the loop
+    n = len(code)
+    i = 0
+    while i < n:
+        op = code[i]
+        offset = i
         if linestarts is not None:
-            starts_line = linestarts.get(offset, None)
+            starts_line = linestarts.get(i, None)
             if starts_line is not None:
                 starts_line += line_offset
-        is_jump_target = offset in labels
+        is_jump_target = i in labels
+        i = i+1
+        arg = None
         argval = None
         argrepr = ''
-        if arg is not None:
+        if op >= HAVE_ARGUMENT:
+            arg = code[i] + code[i+1]*256 + extended_arg
+            extended_arg = 0
+            i = i+2
+            if op == EXTENDED_ARG:
+                extended_arg = arg*65536
             #  Set argval to the dereferenced value of the argument when
-            #  available, and argrepr to the string representation of argval.
+            #  availabe, and argrepr to the string representation of argval.
             #    _disassemble_bytes needs the string repr of the
             #    raw name index for LOAD_GLOBAL, LOAD_CONST, etc.
             argval = arg
@@ -296,7 +303,7 @@ def _get_instructions_bytes(code, varnames=None, names=None, constants=None,
             elif op in hasname:
                 argval, argrepr = _get_name_info(arg, names)
             elif op in hasjrel:
-                argval = offset + 3 + arg
+                argval = i + arg
                 argrepr = "to " + repr(argval)
             elif op in haslocal:
                 argval, argrepr = _get_name_info(arg, varnames)
@@ -306,7 +313,7 @@ def _get_instructions_bytes(code, varnames=None, names=None, constants=None,
             elif op in hasfree:
                 argval, argrepr = _get_name_info(arg, cells)
             elif op in hasnargs:
-                argrepr = "%d positional, %d keyword pair" % (arg%256, arg//256)
+                argrepr = "%d positional, %d keyword pair" % (code[i-2], code[i-1])
         yield Instruction(opname[op], op,
                           arg, argval, argrepr,
                           offset, starts_line, is_jump_target)
@@ -342,25 +349,6 @@ def _disassemble_str(source, *, file=None):
 
 disco = disassemble                     # XXX For backwards compatibility
 
-def _unpack_opargs(code):
-    # enumerate() is not an option, since we sometimes process
-    # multiple elements on a single pass through the loop
-    extended_arg = 0
-    n = len(code)
-    i = 0
-    while i < n:
-        op = code[i]
-        offset = i
-        i = i+1
-        arg = None
-        if op >= HAVE_ARGUMENT:
-            arg = code[i] + code[i+1]*256 + extended_arg
-            extended_arg = 0
-            i = i+2
-            if op == EXTENDED_ARG:
-                extended_arg = arg*65536
-        yield (offset, op, arg)
-
 def findlabels(code):
     """Detect all offsets in a byte code which are jump targets.
 
@@ -368,11 +356,19 @@ def findlabels(code):
 
     """
     labels = []
-    for offset, op, arg in _unpack_opargs(code):
-        if arg is not None:
+    # enumerate() is not an option, since we sometimes process
+    # multiple elements on a single pass through the loop
+    n = len(code)
+    i = 0
+    while i < n:
+        op = code[i]
+        i = i+1
+        if op >= HAVE_ARGUMENT:
+            arg = code[i] + code[i+1]*256
+            i = i+2
             label = -1
             if op in hasjrel:
-                label = offset + 3 + arg
+                label = i+arg
             elif op in hasjabs:
                 label = arg
             if label >= 0:

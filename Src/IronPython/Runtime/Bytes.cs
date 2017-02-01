@@ -29,6 +29,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -48,6 +49,10 @@ namespace IronPython.Runtime {
 
         public Bytes() {
             _bytes = new byte[0];
+        }
+
+        public Bytes(IEnumerable<object> source) {
+            _bytes = source.Select(b => ((int)PythonOps.Index(b)).ToByteChecked()).ToArray();
         }
 
         public Bytes([BytesConversion, NotNull]IList<byte>/*!*/ bytes) {

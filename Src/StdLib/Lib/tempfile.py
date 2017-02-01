@@ -1,10 +1,10 @@
 """Temporary files.
 
 This module provides generic, low- and high-level interfaces for
-creating temporary files and directories.  The interfaces listed
-as "safe" just below can be used without fear of race conditions.
-Those listed as "unsafe" cannot, and are provided for backward
-compatibility only.
+creating temporary files and directories.  All of the interfaces
+provided by this module can be used without fear of race conditions
+except for 'mktemp'.  'mktemp' is subject to race conditions and
+should not be used; it is provided for backward compatibility only.
 
 This module also provides some data items to the user:
 
@@ -72,7 +72,7 @@ else:
     # file doesn't exist.
     def _stat(fn):
         fd = _os.open(fn, _os.O_RDONLY)
-        os.close(fd)
+        _os.close(fd)
 
 def _exists(fn):
     try:
@@ -166,6 +166,13 @@ def _get_default_tempdir():
                 return dir
             except FileExistsError:
                 pass
+            except PermissionError:
+                # This exception is thrown when a directory with the chosen name
+                # already exists on windows.
+                if (_os.name == 'nt' and _os.path.isdir(dir) and
+                    _os.access(dir, _os.W_OK)):
+                    continue
+                break   # no point trying more names in this directory
             except OSError:
                 break   # no point trying more names in this directory
     raise FileNotFoundError(_errno.ENOENT,
@@ -204,7 +211,8 @@ def _mkstemp_inner(dir, pre, suf, flags):
         except PermissionError:
             # This exception is thrown when a directory with the chosen name
             # already exists on windows.
-            if _os.name == 'nt':
+            if (_os.name == 'nt' and _os.path.isdir(dir) and
+                _os.access(dir, _os.W_OK)):
                 continue
             else:
                 raise
@@ -296,6 +304,14 @@ def mkdtemp(suffix="", prefix=template, dir=None):
             return file
         except FileExistsError:
             continue    # try again
+        except PermissionError:
+            # This exception is thrown when a directory with the chosen name
+            # already exists on windows.
+            if (_os.name == 'nt' and _os.path.isdir(dir) and
+                _os.access(dir, _os.W_OK)):
+                continue
+            else:
+                raise
 
     raise FileExistsError(_errno.EEXIST,
                           "No usable temporary directory name found")
@@ -357,9 +373,11 @@ class _TemporaryFileCloser:
         def close(self, unlink=_os.unlink):
             if not self.close_called and self.file is not None:
                 self.close_called = True
-                self.file.close()
-                if self.delete:
-                    unlink(self.name)
+                try:
+                    self.file.close()
+                finally:
+                    if self.delete:
+                        unlink(self.name)
 
         # Need to ensure the file is deleted on __del__
         def __del__(self):
@@ -426,7 +444,13 @@ class _TemporaryFileWrapper:
 
     # iter() doesn't use __getattr__ to find the __iter__ method
     def __iter__(self):
-        return iter(self.file)
+        # Don't return iter(self.file), but yield from it to avoid closing
+        # file as long as it's being used as iterator (see issue #23700).  We
+        # can't use 'yield from' here because iter(file) returns the file
+        # object itself, which has a close method, and thus the file would get
+        # closed when the generator is finalized, due to PEP380 semantics.
+        for line in self.file:
+            yield line
 
 
 def NamedTemporaryFile(mode='w+b', buffering=-1, encoding=None,
@@ -458,10 +482,14 @@ def NamedTemporaryFile(mode='w+b', buffering=-1, encoding=None,
         flags |= _os.O_TEMPORARY
 
     (fd, name) = _mkstemp_inner(dir, prefix, suffix, flags)
-    file = _io.open(fd, mode, buffering=buffering,
-                    newline=newline, encoding=encoding)
+    try:
+        file = _io.open(fd, mode, buffering=buffering,
+                        newline=newline, encoding=encoding)
 
-    return _TemporaryFileWrapper(file, name, delete)
+        return _TemporaryFileWrapper(file, name, delete)
+    except Exception:
+        _os.close(fd)
+        raise
 
 if _os.name != 'posix' or _os.sys.platform == 'cygwin':
     # On non-POSIX and Cygwin systems, assume that we cannot unlink a file
@@ -514,7 +542,7 @@ class SpooledTemporaryFile:
         else:
             # Setting newline="\n" avoids newline translation;
             # this is important because otherwise on Windows we'd
-            # hget double newline translation upon rollover().
+            # get double newline translation upon rollover().
             self._file = _io.StringIO(newline="\n")
         self._max_size = max_size
         self._rolled = False
@@ -659,11 +687,6 @@ class TemporaryDirectory(object):
     in it are removed.
     """
 
-    # Handle mkdtemp raising an exception
-    name = None
-    _finalizer = None
-    _closed = False
-
     def __init__(self, suffix="", prefix=template, dir=None):
         self.name = mkdtemp(suffix, prefix, dir)
         self._finalizer = _weakref.finalize(
@@ -671,10 +694,9 @@ class TemporaryDirectory(object):
             warn_message="Implicitly cleaning up {!r}".format(self))
 
     @classmethod
-    def _cleanup(cls, name, warn_message=None):
+    def _cleanup(cls, name, warn_message):
         _shutil.rmtree(name)
-        if warn_message is not None:
-            _warnings.warn(warn_message, ResourceWarning)
+        _warnings.warn(warn_message, ResourceWarning)
 
 
     def __repr__(self):
@@ -687,8 +709,5 @@ class TemporaryDirectory(object):
         self.cleanup()
 
     def cleanup(self):
-        if self._finalizer is not None:
-            self._finalizer.detach()
-        if self.name is not None and not self._closed:
+        if self._finalizer.detach():
             _shutil.rmtree(self.name)
-            self._closed = True

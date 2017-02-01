@@ -14,7 +14,6 @@ import os
 import sys
 import socket
 import struct
-import errno
 import time
 import tempfile
 import itertools
@@ -29,7 +28,7 @@ from .reduction import ForkingPickler
 
 try:
     import _winapi
-    from _winapi import WAIT_OBJECT_0, WAIT_TIMEOUT, INFINITE
+    from _winapi import WAIT_OBJECT_0, WAIT_ABANDONED_0, WAIT_TIMEOUT, INFINITE
 except ImportError:
     if sys.platform == 'win32':
         raise
@@ -77,7 +76,7 @@ def arbitrary_address(family):
         return tempfile.mktemp(prefix='listener-', dir=util.get_temp_dir())
     elif family == 'AF_PIPE':
         return tempfile.mktemp(prefix=r'\\.\pipe\pyc-%d-%d-' %
-                               (os.getpid(), next(_mmap_counter)))
+                               (os.getpid(), next(_mmap_counter)), dir="")
     else:
         raise ValueError('unrecognized family')
 
@@ -221,7 +220,7 @@ class _ConnectionBase:
 
     def recv_bytes_into(self, buf, offset=0):
         """
-        Receive bytes data into a writeable buffer-like object.
+        Receive bytes data into a writeable bytes-like object.
         Return the number of bytes read.
         """
         self._check_closed()
@@ -470,9 +469,10 @@ class Listener(object):
         '''
         Close the bound socket or named pipe of `self`.
         '''
-        if self._listener is not None:
-            self._listener.close()
+        listener = self._listener
+        if listener is not None:
             self._listener = None
+            listener.close()
 
     address = property(lambda self: self._listener._address)
     last_accepted = property(lambda self: self._listener._last_accepted)
@@ -610,9 +610,13 @@ class SocketListener(object):
         return Connection(s.detach())
 
     def close(self):
-        self._socket.close()
-        if self._unlink is not None:
-            self._unlink()
+        try:
+            self._socket.close()
+        finally:
+            unlink = self._unlink
+            if unlink is not None:
+                self._unlink = None
+                unlink()
 
 
 def SocketClient(address):
@@ -845,7 +849,7 @@ if sys.platform == 'win32':
                     try:
                         ov, err = _winapi.ReadFile(fileno(), 0, True)
                     except OSError as e:
-                        err = e.winerror
+                        ov, err = None, e.winerror
                         if err not in _ready_errors:
                             raise
                     if err == _winapi.ERROR_IO_PENDING:
@@ -854,7 +858,16 @@ if sys.platform == 'win32':
                     else:
                         # If o.fileno() is an overlapped pipe handle and
                         # err == 0 then there is a zero length message
-                        # in the pipe, but it HAS NOT been consumed.
+                        # in the pipe, but it HAS NOT been consumed...
+                        if ov and sys.getwindowsversion()[:2] >= (6, 2):
+                            # ... except on Windows 8 and later, where
+                            # the message HAS been consumed.
+                            try:
+                                _, err = ov.GetOverlappedResult(False)
+                            except OSError as e:
+                                err = e.winerror
+                            if not err and hasattr(o, '_got_empty_message'):
+                                o._got_empty_message = True
                         ready_objects.add(o)
                         timeout = 0
 

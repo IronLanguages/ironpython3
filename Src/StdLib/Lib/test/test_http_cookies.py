@@ -3,7 +3,7 @@
 from test.support import run_unittest, run_doctest, check_warnings
 import unittest
 from http import cookies
-
+import pickle
 import warnings
 
 class CookieTests(unittest.TestCase):
@@ -43,6 +43,19 @@ class CookieTests(unittest.TestCase):
              'repr': "<SimpleCookie: key:term='value:term'>",
              'output': 'Set-Cookie: key:term=value:term'},
 
+            # issue22931 - Adding '[' and ']' as valid characters in cookie
+            # values as defined in RFC 6265
+            {
+                'data': 'a=b; c=[; d=r; f=h',
+                'dict': {'a':'b', 'c':'[', 'd':'r', 'f':'h'},
+                'repr': "<SimpleCookie: a='b' c='[' d='r' f='h'>",
+                'output': '\n'.join((
+                    'Set-Cookie: a=b',
+                    'Set-Cookie: c=[',
+                    'Set-Cookie: d=r',
+                    'Set-Cookie: f=h'
+                ))
+            }
         ]
 
         for case in cases:
@@ -114,7 +127,7 @@ class CookieTests(unittest.TestCase):
         C['Customer']['secure'] = True
         C['Customer']['httponly'] = True
         self.assertEqual(C.output(),
-            'Set-Cookie: Customer="WILE_E_COYOTE"; httponly; secure')
+            'Set-Cookie: Customer="WILE_E_COYOTE"; HttpOnly; Secure')
 
     def test_secure_httponly_false_if_not_present(self):
         C = cookies.SimpleCookie()
@@ -152,7 +165,7 @@ class CookieTests(unittest.TestCase):
         C = cookies.SimpleCookie()
         C.load('eggs  =  scrambled  ;  secure  ;  path  =  bar   ; foo=foo   ')
         self.assertEqual(C.output(),
-            'Set-Cookie: eggs=scrambled; Path=bar; secure\r\nSet-Cookie: foo=foo')
+            'Set-Cookie: eggs=scrambled; Path=bar; Secure\r\nSet-Cookie: foo=foo')
 
     def test_quoted_meta(self):
         # Try cookie with quoted meta-data
@@ -178,6 +191,28 @@ class CookieTests(unittest.TestCase):
         // end hiding -->
         </script>
         """)
+
+    def test_invalid_cookies(self):
+        # Accepting these could be a security issue
+        C = cookies.SimpleCookie()
+        for s in (']foo=x', '[foo=x', 'blah]foo=x', 'blah[foo=x'):
+            C.load(s)
+            self.assertEqual(dict(C), {})
+            self.assertEqual(C.output(), '')
+
+    def test_pickle(self):
+        rawdata = 'Customer="WILE_E_COYOTE"; Path=/acme; Version=1'
+        expected_output = 'Set-Cookie: %s' % rawdata
+
+        C = cookies.SimpleCookie()
+        C.load(rawdata)
+        self.assertEqual(C.output(), expected_output)
+
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            with self.subTest(proto=proto):
+                C1 = pickle.loads(pickle.dumps(C, protocol=proto))
+                self.assertEqual(C1.output(), expected_output)
+
 
 class MorselTests(unittest.TestCase):
     """Tests for the Morsel object."""

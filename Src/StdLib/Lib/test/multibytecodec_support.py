@@ -21,7 +21,7 @@ class TestBase:
     roundtriptest   = 1    # set if roundtrip is possible with unicode
     has_iso10646    = 0    # set if this encoding contains whole iso10646 map
     xmlcharnametest = None # string to test xmlcharrefreplace
-    unmappedunicode = '\udeee' # a unicode codepoint that is not mapped.
+    unmappedunicode = '\udeee' # a unicode code point that is not mapped.
 
     def setUp(self):
         if self.codec is None:
@@ -270,6 +270,13 @@ class TestBase:
 
                 self.assertEqual(ostream.getvalue(), self.tstring[0])
 
+    def test_streamwriter_reset_no_pending(self):
+        # Issue #23247: Calling reset() on a fresh StreamWriter instance
+        # (without pending data) must not crash
+        stream = BytesIO()
+        writer = self.writer(stream)
+        writer.reset()
+
 
 class TestBase_Mapping(unittest.TestCase):
     pass_enctest = []
@@ -277,8 +284,7 @@ class TestBase_Mapping(unittest.TestCase):
     supmaps = []
     codectests = []
 
-    def __init__(self, *args, **kw):
-        unittest.TestCase.__init__(self, *args, **kw)
+    def setUp(self):
         try:
             self.open_mapping_file().close() # test it to report the error early
         except (OSError, HTTPException):

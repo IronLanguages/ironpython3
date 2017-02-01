@@ -1,11 +1,10 @@
-from __future__ import nested_scopes    # Backward compat for 2.1
 from unittest import TestCase
 from wsgiref.util import setup_testing_defaults
 from wsgiref.headers import Headers
 from wsgiref.handlers import BaseHandler, BaseCGIHandler
 from wsgiref import util
 from wsgiref.validate import validator
-from wsgiref.simple_server import WSGIServer, WSGIRequestHandler, demo_app
+from wsgiref.simple_server import WSGIServer, WSGIRequestHandler
 from wsgiref.simple_server import make_server
 from io import StringIO, BytesIO, BufferedReader
 from socketserver import BaseServer
@@ -14,8 +13,10 @@ from platform import python_implementation
 import os
 import re
 import sys
+import unittest
 
 from test import support
+
 
 class MockServer(WSGIServer):
     """Non-socket HTTP server"""
@@ -47,6 +48,18 @@ def hello_app(environ,start_response):
         ('Date','Mon, 05 Jun 2006 18:49:54 GMT')
     ])
     return [b"Hello, world!"]
+
+
+def header_app(environ, start_response):
+    start_response("200 OK", [
+        ('Content-Type', 'text/plain'),
+        ('Date', 'Mon, 05 Jun 2006 18:49:54 GMT')
+    ])
+    return [';'.join([
+        environ['HTTP_X_TEST_HEADER'], environ['QUERY_STRING'],
+        environ['PATH_INFO']
+    ]).encode('iso-8859-1')]
+
 
 def run_amock(app=hello_app, data=b"GET / HTTP/1.0\n\n"):
     server = make_server("", 80, app, MockServer, MockHandler)
@@ -117,6 +130,24 @@ class IntegrationTests(TestCase):
     def test_plain_hello(self):
         out, err = run_amock()
         self.check_hello(out)
+
+    def test_environ(self):
+        request = (
+            b"GET /p%61th/?query=test HTTP/1.0\n"
+            b"X-Test-Header: Python test \n"
+            b"X-Test-Header: Python test 2\n"
+            b"Content-Length: 0\n\n"
+        )
+        out, err = run_amock(header_app, request)
+        self.assertEqual(
+            out.splitlines()[-1],
+            b"Python test,Python test 2;query=test;/path/"
+        )
+
+    def test_request_length(self):
+        out, err = run_amock(data=b"GET " + (b"x" * 65537) + b" HTTP/1.0\n\n")
+        self.assertEqual(out.splitlines()[0],
+                         b"HTTP/1.0 414 Request-URI Too Long")
 
     def test_validated_hello(self):
         out, err = run_amock(validator(hello_app))

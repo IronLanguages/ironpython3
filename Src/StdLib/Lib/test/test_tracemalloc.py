@@ -5,7 +5,7 @@ import tracemalloc
 import unittest
 from unittest.mock import patch
 from test.script_helper import assert_python_ok, assert_python_failure
-from test import support
+from test import script_helper, support
 try:
     import threading
 except ImportError:
@@ -345,6 +345,8 @@ class TestSnapshot(unittest.TestCase):
         self.assertIsNot(snapshot5, snapshot)
         self.assertIsNot(snapshot5.traces, snapshot.traces)
         self.assertEqual(snapshot5.traces, snapshot.traces)
+
+        self.assertRaises(TypeError, snapshot.filter_traces, filter1)
 
     def test_snapshot_group_by_line(self):
         snapshot, snapshot2 = create_snapshots()
@@ -746,26 +748,30 @@ class TestFilters(unittest.TestCase):
 
 
 class TestCommandLine(unittest.TestCase):
-    def test_env_var(self):
+    def test_env_var_disabled_by_default(self):
         # not tracing by default
         code = 'import tracemalloc; print(tracemalloc.is_tracing())'
         ok, stdout, stderr = assert_python_ok('-c', code)
         stdout = stdout.rstrip()
         self.assertEqual(stdout, b'False')
 
-        # PYTHON* environment variables must be ignored when -E option is
-        # present
+    @unittest.skipIf(script_helper._interpreter_requires_environment(),
+                     'Cannot run -E tests when PYTHON env vars are required.')
+    def test_env_var_ignored_with_E(self):
+        """PYTHON* environment variables must be ignored when -E is present."""
         code = 'import tracemalloc; print(tracemalloc.is_tracing())'
         ok, stdout, stderr = assert_python_ok('-E', '-c', code, PYTHONTRACEMALLOC='1')
         stdout = stdout.rstrip()
         self.assertEqual(stdout, b'False')
 
+    def test_env_var_enabled_at_startup(self):
         # tracing at startup
         code = 'import tracemalloc; print(tracemalloc.is_tracing())'
         ok, stdout, stderr = assert_python_ok('-c', code, PYTHONTRACEMALLOC='1')
         stdout = stdout.rstrip()
         self.assertEqual(stdout, b'True')
 
+    def test_env_limit(self):
         # start and set the number of frames
         code = 'import tracemalloc; print(tracemalloc.get_traceback_limit())'
         ok, stdout, stderr = assert_python_ok('-c', code, PYTHONTRACEMALLOC='10')
@@ -804,6 +810,12 @@ class TestCommandLine(unittest.TestCase):
                     self.assertIn(b'-X tracemalloc=NFRAME: invalid '
                                   b'number of frames',
                                   stderr)
+
+    def test_pymem_alloc0(self):
+        # Issue #21639: Check that PyMem_Malloc(0) with tracemalloc enabled
+        # does not crash.
+        code = 'import _testcapi; _testcapi.test_pymem_alloc0(); 1'
+        assert_python_ok('-X', 'tracemalloc', '-c', code)
 
 
 def test_main():

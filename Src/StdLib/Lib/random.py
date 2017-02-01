@@ -105,7 +105,9 @@ class Random(_random.Random):
 
         if a is None:
             try:
-                a = int.from_bytes(_urandom(32), 'big')
+                # Seed with enough bytes to span the 19937 bit
+                # state space for the Mersenne Twister
+                a = int.from_bytes(_urandom(2500), 'big')
             except NotImplementedError:
                 import time
                 a = int(time.time() * 256) # use fractional seconds
@@ -353,7 +355,10 @@ class Random(_random.Random):
 
         """
         u = self.random()
-        c = 0.5 if mode is None else (mode - low) / (high - low)
+        try:
+            c = 0.5 if mode is None else (mode - low) / (high - low)
+        except ZeroDivisionError:
+            return low
         if u > c:
             u = 1.0 - u
             c = 1.0 - c

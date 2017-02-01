@@ -9,6 +9,7 @@ import re
 import warnings
 import collections
 import contextlib
+import traceback
 
 from . import result
 from .util import (strclass, safe_repr, _count_diff_all_purpose,
@@ -143,7 +144,7 @@ class _AssertRaisesBaseContext(_BaseTestCaseContext):
                 self.obj_name = str(callable_obj)
         else:
             self.obj_name = None
-        if isinstance(expected_regex, (bytes, str)):
+        if expected_regex is not None:
             expected_regex = re.compile(expected_regex)
         self.expected_regex = expected_regex
         self.msg = None
@@ -178,6 +179,8 @@ class _AssertRaisesContext(_AssertRaisesBaseContext):
                                                                 self.obj_name))
             else:
                 self._raiseFailure("{} not raised".format(exc_name))
+        else:
+            traceback.clear_frames(tb)
         if not issubclass(exc_type, self.expected):
             # let unexpected exceptions pass through
             return False
@@ -560,8 +563,11 @@ class TestCase(object):
             finally:
                 result.stopTest(self)
             return
-        expecting_failure = getattr(testMethod,
-                                    "__unittest_expecting_failure__", False)
+        expecting_failure_method = getattr(testMethod,
+                                           "__unittest_expecting_failure__", False)
+        expecting_failure_class = getattr(self,
+                                          "__unittest_expecting_failure__", False)
+        expecting_failure = expecting_failure_class or expecting_failure_method
         outcome = _Outcome(result)
         try:
             self._outcome = outcome
@@ -1338,9 +1344,6 @@ class FunctionTestCase(TestCase):
                self._tearDownFunc == other._tearDownFunc and \
                self._testFunc == other._testFunc and \
                self._description == other._description
-
-    def __ne__(self, other):
-        return not self == other
 
     def __hash__(self):
         return hash((type(self), self._setUpFunc, self._tearDownFunc,

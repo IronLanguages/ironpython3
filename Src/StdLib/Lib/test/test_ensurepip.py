@@ -153,7 +153,7 @@ class TestBootstrap(EnsurepipMixin, unittest.TestCase):
     def test_altinstall_default_pip_conflict(self):
         with self.assertRaises(ValueError):
             ensurepip.bootstrap(altinstall=True, default_pip=True)
-        self.run_pip.assert_not_called()
+        self.assertFalse(self.run_pip.called)
 
     @requires_usable_pip
     def test_pip_environment_variables_removed(self):
@@ -194,13 +194,15 @@ class TestUninstall(EnsurepipMixin, unittest.TestCase):
     def test_uninstall_skipped_when_not_installed(self):
         with fake_pip(None):
             ensurepip._uninstall_helper()
-        self.run_pip.assert_not_called()
+        self.assertFalse(self.run_pip.called)
 
-    def test_uninstall_fails_with_wrong_version(self):
+    def test_uninstall_skipped_with_warning_for_wrong_version(self):
         with fake_pip("not a valid version"):
-            with self.assertRaises(RuntimeError):
+            with test.support.captured_stderr() as stderr:
                 ensurepip._uninstall_helper()
-        self.run_pip.assert_not_called()
+        warning = stderr.getvalue().strip()
+        self.assertIn("only uninstall a matching version", warning)
+        self.assertFalse(self.run_pip.called)
 
 
     @requires_usable_pip
@@ -209,7 +211,10 @@ class TestUninstall(EnsurepipMixin, unittest.TestCase):
             ensurepip._uninstall_helper()
 
         self.run_pip.assert_called_once_with(
-            ["uninstall", "-y", "pip", "setuptools"]
+            [
+                "uninstall", "-y", "--disable-pip-version-check", "pip",
+                "setuptools",
+            ]
         )
 
     @requires_usable_pip
@@ -218,7 +223,10 @@ class TestUninstall(EnsurepipMixin, unittest.TestCase):
             ensurepip._uninstall_helper(verbosity=1)
 
         self.run_pip.assert_called_once_with(
-            ["uninstall", "-y", "-v", "pip", "setuptools"]
+            [
+                "uninstall", "-y", "--disable-pip-version-check", "-v", "pip",
+                "setuptools",
+            ]
         )
 
     @requires_usable_pip
@@ -227,7 +235,10 @@ class TestUninstall(EnsurepipMixin, unittest.TestCase):
             ensurepip._uninstall_helper(verbosity=2)
 
         self.run_pip.assert_called_once_with(
-            ["uninstall", "-y", "-vv", "pip", "setuptools"]
+            [
+                "uninstall", "-y", "--disable-pip-version-check", "-vv", "pip",
+                "setuptools",
+            ]
         )
 
     @requires_usable_pip
@@ -236,7 +247,10 @@ class TestUninstall(EnsurepipMixin, unittest.TestCase):
             ensurepip._uninstall_helper(verbosity=3)
 
         self.run_pip.assert_called_once_with(
-            ["uninstall", "-y", "-vvv", "pip", "setuptools"]
+            [
+                "uninstall", "-y", "--disable-pip-version-check", "-vvv",
+                "pip", "setuptools",
+            ]
         )
 
     @requires_usable_pip
@@ -270,7 +284,7 @@ class TestMissingSSL(EnsurepipMixin, unittest.TestCase):
         self.os_environ["PIP_THIS_SHOULD_STAY"] = "test fodder"
         with self.assertRaisesRegex(RuntimeError, "requires SSL/TLS"):
             ensurepip_no_ssl.bootstrap()
-        self.run_pip.assert_not_called()
+        self.assertFalse(self.run_pip.called)
         self.assertIn("PIP_THIS_SHOULD_STAY", self.os_environ)
 
     def test_uninstall_requires_ssl(self):
@@ -278,7 +292,7 @@ class TestMissingSSL(EnsurepipMixin, unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "requires SSL/TLS"):
             with fake_pip():
                 ensurepip_no_ssl._uninstall_helper()
-        self.run_pip.assert_not_called()
+        self.assertFalse(self.run_pip.called)
         self.assertIn("PIP_THIS_SHOULD_STAY", self.os_environ)
 
     def test_main_exits_early_with_warning(self):
@@ -286,7 +300,7 @@ class TestMissingSSL(EnsurepipMixin, unittest.TestCase):
             ensurepip_no_ssl._main(["--version"])
         warning = stderr.getvalue().strip()
         self.assertTrue(warning.endswith("requires SSL/TLS"), warning)
-        self.run_pip.assert_not_called()
+        self.assertFalse(self.run_pip.called)
 
 # Basic testing of the main functions and their argument parsing
 
@@ -301,7 +315,7 @@ class TestBootstrappingMainFunction(EnsurepipMixin, unittest.TestCase):
                 ensurepip._main(["--version"])
         result = stdout.getvalue().strip()
         self.assertEqual(result, EXPECTED_VERSION_OUTPUT)
-        self.run_pip.assert_not_called()
+        self.assertFalse(self.run_pip.called)
 
     @requires_usable_pip
     def test_basic_bootstrapping(self):
@@ -326,7 +340,7 @@ class TestUninstallationMainFunction(EnsurepipMixin, unittest.TestCase):
                 ensurepip._uninstall._main(["--version"])
         result = stdout.getvalue().strip()
         self.assertEqual(result, EXPECTED_VERSION_OUTPUT)
-        self.run_pip.assert_not_called()
+        self.assertFalse(self.run_pip.called)
 
     @requires_usable_pip
     def test_basic_uninstall(self):
@@ -334,7 +348,10 @@ class TestUninstallationMainFunction(EnsurepipMixin, unittest.TestCase):
             ensurepip._uninstall._main([])
 
         self.run_pip.assert_called_once_with(
-            ["uninstall", "-y", "pip", "setuptools"]
+            [
+                "uninstall", "-y", "--disable-pip-version-check", "pip",
+                "setuptools",
+            ]
         )
 
 

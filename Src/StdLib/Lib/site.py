@@ -364,12 +364,17 @@ def setcopyright():
         builtins.credits = _sitebuiltins._Printer("credits", """\
     Thanks to CWI, CNRI, BeOpen.com, Zope Corporation and a cast of thousands
     for supporting Python development.  See www.python.org for more information.""")
-    here = os.path.dirname(os.__file__)
+    files, dirs = [], []
+    # Not all modules are required to have a __file__ attribute.  See
+    # PEP 420 for more details.
+    if hasattr(os, '__file__'):
+        here = os.path.dirname(os.__file__)
+        files.extend(["LICENSE.txt", "LICENSE"])
+        dirs.extend([os.path.join(here, os.pardir), here, os.curdir])
     builtins.license = _sitebuiltins._Printer(
         "license",
-        "See http://www.python.org/download/releases/%.5s/license" % sys.version,
-        ["LICENSE.txt", "LICENSE"],
-        [os.path.join(here, os.pardir), here, os.curdir])
+        "See https://www.python.org/psf/license/",
+        files, dirs)
 
 
 def sethelper():
@@ -467,7 +472,9 @@ def venv(known_paths):
         config_line = re.compile(CONFIG_LINE)
         virtual_conf = candidate_confs[0]
         system_site = "true"
-        with open(virtual_conf) as f:
+        # Issue 25185: Use UTF-8, as that's what the venv module uses when
+        # writing the file.
+        with open(virtual_conf, encoding='utf-8') as f:
             for line in f:
                 line = line.strip()
                 m = config_line.match(line)

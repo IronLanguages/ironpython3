@@ -9,7 +9,7 @@ import errno
 
 from test.support import (TESTFN, captured_output, check_impl_detail,
                           check_warnings, cpython_only, gc_collect, run_unittest,
-                          no_tracing, unlink)
+                          no_tracing, unlink, import_module)
 
 class NaiveException(Exception):
     def __init__(self, x):
@@ -230,6 +230,7 @@ class ExceptionTests(unittest.TestCase):
             self.assertEqual(w.winerror, 3)
             self.assertEqual(w.strerror, 'foo')
             self.assertEqual(w.filename, 'bar')
+            self.assertEqual(w.filename2, None)
             self.assertEqual(str(w), "[WinError 3] foo: 'bar'")
             # Unknown win error becomes EINVAL (22)
             w = OSError(0, 'foo', None, 1001)
@@ -237,6 +238,7 @@ class ExceptionTests(unittest.TestCase):
             self.assertEqual(w.winerror, 1001)
             self.assertEqual(w.strerror, 'foo')
             self.assertEqual(w.filename, None)
+            self.assertEqual(w.filename2, None)
             self.assertEqual(str(w), "[WinError 1001] foo")
             # Non-numeric "errno"
             w = OSError('bar', 'foo')
@@ -244,6 +246,17 @@ class ExceptionTests(unittest.TestCase):
             self.assertEqual(w.winerror, None)
             self.assertEqual(w.strerror, 'foo')
             self.assertEqual(w.filename, None)
+            self.assertEqual(w.filename2, None)
+
+    @unittest.skipUnless(sys.platform == 'win32',
+                         'test specific to Windows')
+    def test_windows_message(self):
+        """Should fill in unknown error code in Windows error message"""
+        ctypes = import_module('ctypes')
+        # this error code has no message, Python formats it as hexadecimal
+        code = 3765269347
+        with self.assertRaisesRegex(OSError, 'Windows Error 0x%x' % code):
+            ctypes.pythonapi.PyErr_SetFromWindowsErr(code)
 
     def testAttributes(self):
         # test that exception attributes are happy
@@ -258,13 +271,15 @@ class ExceptionTests(unittest.TestCase):
             (SystemExit, ('foo',),
                 {'args' : ('foo',), 'code' : 'foo'}),
             (OSError, ('foo',),
-                {'args' : ('foo',), 'filename' : None,
+                {'args' : ('foo',), 'filename' : None, 'filename2' : None,
                  'errno' : None, 'strerror' : None}),
             (OSError, ('foo', 'bar'),
-                {'args' : ('foo', 'bar'), 'filename' : None,
+                {'args' : ('foo', 'bar'),
+                 'filename' : None, 'filename2' : None,
                  'errno' : 'foo', 'strerror' : 'bar'}),
             (OSError, ('foo', 'bar', 'baz'),
-                {'args' : ('foo', 'bar'), 'filename' : 'baz',
+                {'args' : ('foo', 'bar'),
+                 'filename' : 'baz', 'filename2' : None,
                  'errno' : 'foo', 'strerror' : 'bar'}),
             (OSError, ('foo', 'bar', 'baz', None, 'quux'),
                 {'args' : ('foo', 'bar'), 'filename' : 'baz', 'filename2': 'quux'}),
@@ -274,7 +289,8 @@ class ExceptionTests(unittest.TestCase):
                  'filename' : 'filenameStr'}),
             (OSError, (1, 'strErrorStr', 'filenameStr'),
                 {'args' : (1, 'strErrorStr'), 'errno' : 1,
-                 'strerror' : 'strErrorStr', 'filename' : 'filenameStr'}),
+                 'strerror' : 'strErrorStr',
+                 'filename' : 'filenameStr', 'filename2' : None}),
             (SyntaxError, (), {'msg' : None, 'text' : None,
                 'filename' : None, 'lineno' : None, 'offset' : None,
                 'print_file_and_line' : None}),
@@ -330,7 +346,8 @@ class ExceptionTests(unittest.TestCase):
                 (WindowsError, (1, 'strErrorStr', 'filenameStr'),
                     {'args' : (1, 'strErrorStr'),
                      'strerror' : 'strErrorStr', 'winerror' : None,
-                     'errno' : 1, 'filename' : 'filenameStr'})
+                     'errno' : 1,
+                     'filename' : 'filenameStr', 'filename2' : None})
             )
         except NameError:
             pass
@@ -661,6 +678,52 @@ class ExceptionTests(unittest.TestCase):
             pass
         self.assertEqual(sys.exc_info(), (None, None, None))
 
+    def test_generator_leaking3(self):
+        # See issue #23353.  When gen.throw() is called, the caller's
+        # exception state should be save and restored.
+        def g():
+            try:
+                yield
+            except ZeroDivisionError:
+                yield sys.exc_info()[1]
+        it = g()
+        next(it)
+        try:
+            1/0
+        except ZeroDivisionError as e:
+            self.assertIs(sys.exc_info()[1], e)
+            gen_exc = it.throw(e)
+            self.assertIs(sys.exc_info()[1], e)
+            self.assertIs(gen_exc, e)
+        self.assertEqual(sys.exc_info(), (None, None, None))
+
+    def test_generator_leaking4(self):
+        # See issue #23353.  When an exception is raised by a generator,
+        # the caller's exception state should still be restored.
+        def g():
+            try:
+                1/0
+            except ZeroDivisionError:
+                yield sys.exc_info()[0]
+                raise
+        it = g()
+        try:
+            raise TypeError
+        except TypeError:
+            # The caller's exception state (TypeError) is temporarily
+            # saved in the generator.
+            tp = next(it)
+        self.assertIs(tp, ZeroDivisionError)
+        try:
+            next(it)
+            # We can't check it immediately, but while next() returns
+            # with an exception, it shouldn't have restored the old
+            # exception state (TypeError).
+        except ZeroDivisionError as e:
+            self.assertIs(sys.exc_info()[1], e)
+        # We used to find TypeError here.
+        self.assertEqual(sys.exc_info(), (None, None, None))
+
     def test_generator_doesnt_retain_old_exc(self):
         def g():
             self.assertIsInstance(sys.exc_info()[1], RuntimeError)
@@ -763,7 +826,7 @@ class ExceptionTests(unittest.TestCase):
             pass
         self.assertEqual(e, (None, None, None))
 
-    def testUnicodeChangeAttributes(self):
+    def test_unicode_change_attributes(self):
         # See issue 7309. This was a crasher.
 
         u = UnicodeEncodeError('baz', 'xxxxx', 1, 5, 'foo')
@@ -799,6 +862,12 @@ class ExceptionTests(unittest.TestCase):
         self.assertEqual(str(u), "can't translate characters in position 1-4: 965230951443685724997")
         u.start = 1000
         self.assertEqual(str(u), "can't translate characters in position 1000-4: 965230951443685724997")
+
+    def test_unicode_errors_no_object(self):
+        # See issue #21134.
+        klasses = UnicodeEncodeError, UnicodeDecodeError, UnicodeTranslateError
+        for klass in klasses:
+            self.assertEqual(str(klass.__new__(klass)), "")
 
     @no_tracing
     def test_badisinstance(self):

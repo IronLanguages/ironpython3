@@ -412,8 +412,11 @@ class ImportSideEffectTests(unittest.TestCase):
                 self.fail("sitecustomize not imported automatically")
 
     @test.support.requires_resource('network')
+    @test.support.system_must_validate_cert
     @unittest.skipUnless(sys.version_info[3] == 'final',
                          'only for released versions')
+    @unittest.skipUnless(hasattr(urllib.request, "HTTPSHandler"),
+                         'need SSL support to download license')
     def test_license_exists_at_url(self):
         # This test is a bit fragile since it depends on the format of the
         # string displayed by license in the absence of a LICENSE file.
@@ -457,7 +460,8 @@ class StartupImportTests(unittest.TestCase):
         # http://bugs.python.org/issue19218>
         collection_mods = {'_collections', 'collections', 'functools',
                            'heapq', 'itertools', 'keyword', 'operator',
-                           'reprlib', 'types', 'weakref'}
+                           'reprlib', 'types', 'weakref'
+                          }.difference(sys.builtin_module_names)
         self.assertFalse(modules.intersection(collection_mods), stderr)
 
 

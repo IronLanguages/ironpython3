@@ -23,7 +23,7 @@ Misc variables:
 
 """
 
-from types import FunctionType, ModuleType
+from types import FunctionType
 from copyreg import dispatch_table
 from copyreg import _extension_registry, _inverted_registry, _extension_cache
 from itertools import islice
@@ -242,7 +242,7 @@ class _Unframer:
             if not data:
                 self.current_frame = None
                 return self.file_readline()
-            if data[-1] != b'\n':
+            if data[-1] != b'\n'[0]:
                 raise UnpicklingError(
                     "pickle exhausted before end of frame")
             return data
@@ -280,7 +280,9 @@ def whichmodule(obj, name, allow_qualname=False):
     module_name = getattr(obj, '__module__', None)
     if module_name is not None:
         return module_name
-    for module_name, module in sys.modules.items():
+    # Protect the iteration by using a list copy of sys.modules against dynamic
+    # modules that trigger imports of other modules upon calls to getattr.
+    for module_name, module in list(sys.modules.items()):
         if module_name == '__main__' or module is None:
             continue
         try:
@@ -360,7 +362,7 @@ class _Pickler:
 
         The *file* argument must have a write() method that accepts a
         single bytes argument. It can thus be a file object opened for
-        binary writing, a io.BytesIO instance, or any other custom
+        binary writing, an io.BytesIO instance, or any other custom
         object that meets this interface.
 
         If *fix_imports* is True and *protocol* is less than 3, pickle
@@ -942,7 +944,7 @@ class _Pickler:
                 r_import_mapping = _compat_pickle.REVERSE_IMPORT_MAPPING
                 if (module_name, name) in r_name_mapping:
                     module_name, name = r_name_mapping[(module_name, name)]
-                if module_name in r_import_mapping:
+                elif module_name in r_import_mapping:
                     module_name = r_import_mapping[module_name]
             try:
                 write(GLOBAL + bytes(module_name, "ascii") + b'\n' +
@@ -981,7 +983,7 @@ class _Unpickler:
         The argument *file* must have two methods, a read() method that
         takes an integer argument, and a readline() method that requires
         no arguments.  Both methods should return bytes.  Thus *file*
-        can be a binary file object opened for reading, a io.BytesIO
+        can be a binary file object opened for reading, an io.BytesIO
         object, or any other custom object that meets this interface.
 
         The file-like object must have two methods, a read() method
@@ -1202,6 +1204,14 @@ class _Unpickler:
         self.append(str(self.read(len), 'utf-8', 'surrogatepass'))
     dispatch[BINUNICODE8[0]] = load_binunicode8
 
+    def load_binbytes8(self):
+        len, = unpack('<Q', self.read(8))
+        if len > maxsize:
+            raise UnpicklingError("BINBYTES8 exceeds system's maximum size "
+                                  "of %d bytes" % maxsize)
+        self.append(self.read(len))
+    dispatch[BINBYTES8[0]] = load_binbytes8
+
     def load_short_binstring(self):
         len = self.read(1)[0]
         data = self.read(len)
@@ -1368,7 +1378,7 @@ class _Unpickler:
         if self.proto < 3 and self.fix_imports:
             if (module, name) in _compat_pickle.NAME_MAPPING:
                 module, name = _compat_pickle.NAME_MAPPING[(module, name)]
-            if module in _compat_pickle.IMPORT_MAPPING:
+            elif module in _compat_pickle.IMPORT_MAPPING:
                 module = _compat_pickle.IMPORT_MAPPING[module]
         __import__(module, level=0)
         return _getattribute(sys.modules[module], name,
@@ -1378,13 +1388,7 @@ class _Unpickler:
         stack = self.stack
         args = stack.pop()
         func = stack[-1]
-        try:
-            value = func(*args)
-        except:
-            print(sys.exc_info())
-            print(func, args)
-            raise
-        stack[-1] = value
+        stack[-1] = func(*args)
     dispatch[REDUCE[0]] = load_reduce
 
     def load_pop(self):

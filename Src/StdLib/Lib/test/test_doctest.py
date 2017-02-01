@@ -2170,7 +2170,7 @@ def test_DocTestSuite():
          ...
          AttributeError: 'module' object has no attribute 'sillySetup'
 
-       The setUp and tearDown funtions are passed test objects. Here
+       The setUp and tearDown functions are passed test objects. Here
        we'll use the setUp function to supply the missing variable y:
 
          >>> def setUp(test):
@@ -2316,7 +2316,7 @@ def test_DocFileSuite():
          ...
          AttributeError: 'module' object has no attribute 'sillySetup'
 
-       The setUp and tearDown funtions are passed test objects.
+       The setUp and tearDown functions are passed test objects.
        Here, we'll use a setUp function to set the favorite color in
        test_doctest.txt:
 
@@ -2611,6 +2611,36 @@ Test the verbose output:
     TestResults(failed=0, attempted=2)
     >>> doctest.master = None  # Reset master.
     >>> sys.argv = save_argv
+"""
+
+def test_lineendings(): r"""
+*nix systems use \n line endings, while Windows systems use \r\n.  Python
+handles this using universal newline mode for reading files.  Let's make
+sure doctest does so (issue 8473) by creating temporary test files using each
+of the two line disciplines.  One of the two will be the "wrong" one for the
+platform the test is run on.
+
+Windows line endings first:
+
+    >>> import tempfile, os
+    >>> fn = tempfile.mktemp()
+    >>> with open(fn, 'wb') as f:
+    ...    f.write(b'Test:\r\n\r\n  >>> x = 1 + 1\r\n\r\nDone.\r\n')
+    35
+    >>> doctest.testfile(fn, False)
+    TestResults(failed=0, attempted=1)
+    >>> os.remove(fn)
+
+And now *nix line endings:
+
+    >>> fn = tempfile.mktemp()
+    >>> with open(fn, 'wb') as f:
+    ...     f.write(b'Test:\n\n  >>> x = 1 + 1\n\nDone.\n')
+    30
+    >>> doctest.testfile(fn, False)
+    TestResults(failed=0, attempted=1)
+    >>> os.remove(fn)
+
 """
 
 def test_testmod(): r"""

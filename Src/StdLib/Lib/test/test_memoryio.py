@@ -366,13 +366,14 @@ class MemoryTestMixin:
         # the module-level.
         import __main__
         PickleTestMemIO.__module__ = '__main__'
+        PickleTestMemIO.__qualname__ = PickleTestMemIO.__name__
         __main__.PickleTestMemIO = PickleTestMemIO
         submemio = PickleTestMemIO(buf, 80)
         submemio.seek(2)
 
         # We only support pickle protocol 2 and onward since we use extended
         # __reduce__ API of PEP 307 to provide pickling support.
-        for proto in range(2, pickle.HIGHEST_PROTOCOL):
+        for proto in range(2, pickle.HIGHEST_PROTOCOL + 1):
             for obj in (memio, submemio):
                 obj2 = pickle.loads(pickle.dumps(obj, protocol=proto))
                 self.assertEqual(obj.getvalue(), obj2.getvalue())
@@ -397,14 +398,19 @@ class BytesIOMixin:
         # raises a BufferError.
         self.assertRaises(BufferError, memio.write, b'x' * 100)
         self.assertRaises(BufferError, memio.truncate)
+        self.assertRaises(BufferError, memio.close)
+        self.assertFalse(memio.closed)
         # Mutating the buffer updates the BytesIO
         buf[3:6] = b"abc"
         self.assertEqual(bytes(buf), b"123abc7890")
         self.assertEqual(memio.getvalue(), b"123abc7890")
-        # After the buffer gets released, we can resize the BytesIO again
+        # After the buffer gets released, we can resize and close the BytesIO
+        # again
         del buf
         support.gc_collect()
         memio.truncate()
+        memio.close()
+        self.assertRaises(ValueError, memio.getbuffer)
 
 
 class PyBytesIOTest(MemoryTestMixin, MemorySeekTestMixin,
@@ -687,7 +693,8 @@ class CBytesIOTest(PyBytesIOTest):
         self.assertEqual(len(state), 3)
         bytearray(state[0]) # Check if state[0] supports the buffer interface.
         self.assertIsInstance(state[1], int)
-        self.assertTrue(isinstance(state[2], dict) or state[2] is None)
+        if state[2] is not None:
+            self.assertIsInstance(state[2], dict)
         memio.close()
         self.assertRaises(ValueError, memio.__getstate__)
 
@@ -743,7 +750,8 @@ class CStringIOTest(PyStringIOTest):
         self.assertIsInstance(state[0], str)
         self.assertIsInstance(state[1], str)
         self.assertIsInstance(state[2], int)
-        self.assertTrue(isinstance(state[3], dict) or state[3] is None)
+        if state[3] is not None:
+            self.assertIsInstance(state[3], dict)
         memio.close()
         self.assertRaises(ValueError, memio.__getstate__)
 

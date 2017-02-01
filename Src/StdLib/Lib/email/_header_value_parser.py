@@ -70,7 +70,8 @@ XXX: provide complete list of token types.
 import re
 import urllib   # For urllib.parse.unquote
 from string import hexdigits
-from collections import namedtuple, OrderedDict
+from collections import OrderedDict
+from operator import itemgetter
 from email import _encoded_words as _ew
 from email import errors
 from email import utils
@@ -1098,15 +1099,34 @@ class MimeParameters(TokenList):
                 params[name] = []
             params[name].append((token.section_number, token))
         for name, parts in params.items():
-            parts = sorted(parts)
-            # XXX: there might be more recovery we could do here if, for
-            # example, this is really a case of a duplicate attribute name.
+            parts = sorted(parts, key=itemgetter(0))
+            first_param = parts[0][1]
+            charset = first_param.charset
+            # Our arbitrary error recovery is to ignore duplicate parameters,
+            # to use appearance order if there are duplicate rfc 2231 parts,
+            # and to ignore gaps.  This mimics the error recovery of get_param.
+            if not first_param.extended and len(parts) > 1:
+                if parts[1][0] == 0:
+                    parts[1][1].defects.append(errors.InvalidHeaderDefect(
+                        'duplicate parameter name; duplicate(s) ignored'))
+                    parts = parts[:1]
+                # Else assume the *0* was missing...note that this is different
+                # from get_param, but we registered a defect for this earlier.
             value_parts = []
-            charset = parts[0][1].charset
-            for i, (section_number, param) in enumerate(parts):
+            i = 0
+            for section_number, param in parts:
                 if section_number != i:
-                    param.defects.append(errors.InvalidHeaderDefect(
-                        "inconsistent multipart parameter numbering"))
+                    # We could get fancier here and look for a complete
+                    # duplicate extended parameter and ignore the second one
+                    # seen.  But we're not doing that.  The old code didn't.
+                    if not param.extended:
+                        param.defects.append(errors.InvalidHeaderDefect(
+                            'duplicate parameter name; duplicate ignored'))
+                        continue
+                    else:
+                        param.defects.append(errors.InvalidHeaderDefect(
+                            "inconsistent RFC2231 parameter numbering"))
+                i += 1
                 value = param.param_value
                 if param.extended:
                     try:
@@ -2897,7 +2917,7 @@ def parse_content_disposition_header(value):
     try:
         token, value = get_token(value)
     except errors.HeaderParseError:
-        ctype.defects.append(errors.InvalidHeaderDefect(
+        disp_header.defects.append(errors.InvalidHeaderDefect(
             "Expected content disposition but found {!r}".format(value)))
         _find_mime_parameters(disp_header, value)
         return disp_header
@@ -2928,8 +2948,8 @@ def parse_content_transfer_encoding_header(value):
     try:
         token, value = get_token(value)
     except errors.HeaderParseError:
-        ctype.defects.append(errors.InvalidHeaderDefect(
-            "Expected content trnasfer encoding but found {!r}".format(value)))
+        cte_header.defects.append(errors.InvalidHeaderDefect(
+            "Expected content transfer encoding but found {!r}".format(value)))
     else:
         cte_header.append(token)
         cte_header.cte = token.value.strip().lower()

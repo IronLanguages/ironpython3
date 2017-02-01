@@ -425,7 +425,7 @@ class NormalizeTest(unittest.TestCase):
 
     def test_valencia_modifier(self):
         self.check('ca_ES.UTF-8@valencia', 'ca_ES.UTF-8@valencia')
-        self.check('ca_ES@valencia', 'ca_ES.ISO8859-1@valencia')
+        self.check('ca_ES@valencia', 'ca_ES.ISO8859-15@valencia')
         self.check('ca@valencia', 'ca_ES.ISO8859-1@valencia')
 
     def test_devanagari_modifier(self):
@@ -511,7 +511,7 @@ class TestMiscellaneous(unittest.TestCase):
             self.skipTest('test needs Turkish locale')
         loc = locale.getlocale(locale.LC_CTYPE)
         if verbose:
-            print('got locale %a' % (loc,))
+            print('testing with %a' % (loc,), end=' ', flush=True)
         locale.setlocale(locale.LC_CTYPE, loc)
         self.assertEqual(loc, locale.getlocale(locale.LC_CTYPE))
 

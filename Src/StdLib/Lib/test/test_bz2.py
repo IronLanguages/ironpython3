@@ -87,11 +87,11 @@ class BZ2FileTest(BaseTest):
 
     def testBadArgs(self):
         self.assertRaises(TypeError, BZ2File, 123.456)
-        self.assertRaises(ValueError, BZ2File, "/dev/null", "z")
-        self.assertRaises(ValueError, BZ2File, "/dev/null", "rx")
-        self.assertRaises(ValueError, BZ2File, "/dev/null", "rbt")
-        self.assertRaises(ValueError, BZ2File, "/dev/null", compresslevel=0)
-        self.assertRaises(ValueError, BZ2File, "/dev/null", compresslevel=10)
+        self.assertRaises(ValueError, BZ2File, os.devnull, "z")
+        self.assertRaises(ValueError, BZ2File, os.devnull, "rx")
+        self.assertRaises(ValueError, BZ2File, os.devnull, "rbt")
+        self.assertRaises(ValueError, BZ2File, os.devnull, compresslevel=0)
+        self.assertRaises(ValueError, BZ2File, os.devnull, compresslevel=10)
 
     def testRead(self):
         self.createTempFile()
@@ -493,10 +493,8 @@ class BZ2FileTest(BaseTest):
                 for i in range(5):
                     f.write(data)
             threads = [threading.Thread(target=comp) for i in range(nthreads)]
-            for t in threads:
-                t.start()
-            for t in threads:
-                t.join()
+            with support.start_threads(threads):
+                pass
 
     def testWithoutThreading(self):
         module = support.import_fresh_module("bz2", blocked=("threading",))
@@ -646,8 +644,9 @@ class BZ2CompressorTest(BaseTest):
             data = None
 
     def testPickle(self):
-        with self.assertRaises(TypeError):
-            pickle.dumps(BZ2Compressor())
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            with self.assertRaises(TypeError):
+                pickle.dumps(BZ2Compressor(), proto)
 
 
 class BZ2DecompressorTest(BaseTest):
@@ -702,8 +701,9 @@ class BZ2DecompressorTest(BaseTest):
             decompressed = None
 
     def testPickle(self):
-        with self.assertRaises(TypeError):
-            pickle.dumps(BZ2Decompressor())
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            with self.assertRaises(TypeError):
+                pickle.dumps(BZ2Decompressor(), proto)
 
 
 class CompressDecompressTest(BaseTest):

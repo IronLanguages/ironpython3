@@ -3,17 +3,21 @@ import sys
 import builtins
 import contextlib
 import difflib
+import importlib.util
 import inspect
 import pydoc
+import py_compile
 import keyword
 import _pickle
 import pkgutil
 import re
+import stat
 import string
 import test.support
 import time
 import types
 import unittest
+import urllib.parse
 import xml.etree
 import textwrap
 from io import StringIO
@@ -31,6 +35,10 @@ try:
 except ImportError:
     threading = None
 
+class nonascii:
+    'Це не латиниця'
+    pass
+
 if test.support.HAVE_DOCSTRINGS:
     expected_data_docstrings = (
         'dictionary for instance variables (if defined)',
@@ -47,6 +55,7 @@ CLASSES
     builtins.object
         A
         B
+        C
 \x20\x20\x20\x20
     class A(builtins.object)
      |  Hello and goodbye
@@ -74,6 +83,26 @@ CLASSES
      |  Data and other attributes defined here:
      |\x20\x20
      |  NO_MEANING = 'eggs'
+\x20\x20\x20\x20
+    class C(builtins.object)
+     |  Methods defined here:
+     |\x20\x20
+     |  get_answer(self)
+     |      Return say_no()
+     |\x20\x20
+     |  is_it_true(self)
+     |      Return self.get_answer()
+     |\x20\x20
+     |  say_no(self)
+     |\x20\x20
+     |  ----------------------------------------------------------------------
+     |  Data descriptors defined here:
+     |\x20\x20
+     |  __dict__
+     |      dictionary for instance variables (if defined)
+     |\x20\x20
+     |  __weakref__
+     |      list of weak references to the object (if defined)
 
 FUNCTIONS
     doc_func()
@@ -124,6 +153,7 @@ expected_html_pattern = """
 <dl>
 <dt><font face="helvetica, arial"><a href="test.pydoc_mod.html#A">A</a>
 </font></dt><dt><font face="helvetica, arial"><a href="test.pydoc_mod.html#B">B</a>
+</font></dt><dt><font face="helvetica, arial"><a href="test.pydoc_mod.html#C">C</a>
 </font></dt></dl>
 </dd>
 </dl>
@@ -165,6 +195,28 @@ Data descriptors defined here:<br>
 Data and other attributes defined here:<br>
 <dl><dt><strong>NO_MEANING</strong> = 'eggs'</dl>
 
+</td></tr></table> <p>
+<table width="100%%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="C">class <strong>C</strong></a>(<a href="builtins.html#object">builtins.object</a>)</font></td></tr>
+\x20\x20\x20\x20
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%%">Methods defined here:<br>
+<dl><dt><a name="C-get_answer"><strong>get_answer</strong></a>(self)</dt><dd><tt>Return&nbsp;<a href="#C-say_no">say_no</a>()</tt></dd></dl>
+
+<dl><dt><a name="C-is_it_true"><strong>is_it_true</strong></a>(self)</dt><dd><tt>Return&nbsp;self.<a href="#C-get_answer">get_answer</a>()</tt></dd></dl>
+
+<dl><dt><a name="C-say_no"><strong>say_no</strong></a>(self)</dt></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
 </td></tr></table></td></tr></table><p>
 <table width="100%%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#eeaa77">
@@ -351,6 +403,13 @@ class PydocBaseTest(unittest.TestCase):
         finally:
             pkgutil.walk_packages = walk_packages
 
+    def call_url_handler(self, url, expected_title):
+        text = pydoc._url_handler(url, "text/html")
+        result = get_html_title(text)
+        # Check the title to ensure an unexpected error page was not returned
+        self.assertEqual(result, expected_title, text)
+        return text
+
 
 class PydocDocTest(unittest.TestCase):
 
@@ -358,14 +417,11 @@ class PydocDocTest(unittest.TestCase):
                      "Docstrings are omitted with -O2 and above")
     @unittest.skipIf(hasattr(sys, 'gettrace') and sys.gettrace(),
                      'trace function introduces __locals__ unexpectedly')
+    @requires_docstrings
     def test_html_doc(self):
         result, doc_loc = get_pydoc_html(pydoc_mod)
         mod_file = inspect.getabsfile(pydoc_mod)
-        if sys.platform == 'win32':
-            import nturl2path
-            mod_url = nturl2path.pathname2url(mod_file)
-        else:
-            mod_url = mod_file
+        mod_url = urllib.parse.quote(mod_file)
         expected_html = expected_html_pattern % (
                         (mod_url, mod_file, doc_loc) +
                         expected_html_data_docstrings)
@@ -377,6 +433,7 @@ class PydocDocTest(unittest.TestCase):
                      "Docstrings are omitted with -O2 and above")
     @unittest.skipIf(hasattr(sys, 'gettrace') and sys.gettrace(),
                      'trace function introduces __locals__ unexpectedly')
+    @requires_docstrings
     def test_text_doc(self):
         result, doc_loc = get_pydoc_text(pydoc_mod)
         expected_text = expected_text_pattern % (
@@ -402,6 +459,14 @@ class PydocDocTest(unittest.TestCase):
         result, doc_loc = get_pydoc_text(xml.etree)
         self.assertEqual(doc_loc, "", "MODULE DOCS incorrectly includes a link")
 
+    def test_getpager_with_stdin_none(self):
+        previous_stdin = sys.stdin
+        try:
+            sys.stdin = None
+            pydoc.getpager() # Shouldn't fail.
+        finally:
+            sys.stdin = previous_stdin
+
     def test_non_str_name(self):
         # issue14638
         # Treat illegal (non-str) name like no name
@@ -419,6 +484,13 @@ class PydocDocTest(unittest.TestCase):
         expected = missing_pattern % missing_module
         self.assertEqual(expected, result,
             "documentation for missing module found")
+
+    @unittest.skipIf(sys.flags.optimize >= 2,
+                     'Docstrings are omitted with -OO and above')
+    def test_not_ascii(self):
+        result = run_pydoc('test.test_pydoc.nonascii', PYTHONIOENCODING='ascii')
+        encoded = nonascii.__doc__.encode('ascii', 'backslashreplace')
+        self.assertIn(encoded, result)
 
     def test_input_strip(self):
         missing_module = " test.i_am_not_here "
@@ -443,6 +515,7 @@ class PydocDocTest(unittest.TestCase):
                      'Docstrings are omitted with -O2 and above')
     @unittest.skipIf(hasattr(sys, 'gettrace') and sys.gettrace(),
                      'trace function introduces __locals__ unexpectedly')
+    @requires_docstrings
     def test_help_output_redirect(self):
         # issue 940286, if output is set in Helper, then all output from
         # Helper.help should be redirected
@@ -498,12 +571,26 @@ class PydocDocTest(unittest.TestCase):
             synopsis = pydoc.synopsis(TESTFN, {})
             self.assertEqual(synopsis, 'line 1: h\xe9')
 
+    @unittest.skipIf(sys.flags.optimize >= 2,
+                     'Docstrings are omitted with -OO and above')
     def test_synopsis_sourceless(self):
         expected = os.__doc__.splitlines()[0]
         filename = os.__cached__
         synopsis = pydoc.synopsis(filename)
 
         self.assertEqual(synopsis, expected)
+
+    def test_synopsis_sourceless_empty_doc(self):
+        with test.support.temp_cwd() as test_dir:
+            init_path = os.path.join(test_dir, 'foomod42.py')
+            cached_path = importlib.util.cache_from_source(init_path)
+            with open(init_path, 'w') as fobj:
+                fobj.write("foo = 1")
+            py_compile.compile(init_path)
+            synopsis = pydoc.synopsis(init_path, {})
+            self.assertIsNone(synopsis)
+            synopsis_cached = pydoc.synopsis(cached_path, {})
+            self.assertIsNone(synopsis_cached)
 
     def test_splitdoc_with_description(self):
         example_string = "I Am A Doc\n\n\nHere is my description"
@@ -560,6 +647,7 @@ class PydocImportTest(PydocBaseTest):
     def setUp(self):
         self.test_dir = os.mkdir(TESTFN)
         self.addCleanup(rmtree, TESTFN)
+        importlib.invalidate_caches()
 
     def test_badimport(self):
         # This tests the fix for issue 5230, where if pydoc found the module
@@ -617,6 +705,45 @@ class PydocImportTest(PydocBaseTest):
         # No result, no error
         self.assertEqual(out.getvalue(), '')
         self.assertEqual(err.getvalue(), '')
+
+    def test_apropos_empty_doc(self):
+        pkgdir = os.path.join(TESTFN, 'walkpkg')
+        os.mkdir(pkgdir)
+        self.addCleanup(rmtree, pkgdir)
+        init_path = os.path.join(pkgdir, '__init__.py')
+        with open(init_path, 'w') as fobj:
+            fobj.write("foo = 1")
+        current_mode = stat.S_IMODE(os.stat(pkgdir).st_mode)
+        try:
+            os.chmod(pkgdir, current_mode & ~stat.S_IEXEC)
+            with self.restrict_walk_packages(path=[TESTFN]), captured_stdout() as stdout:
+                pydoc.apropos('')
+            self.assertIn('walkpkg', stdout.getvalue())
+        finally:
+            os.chmod(pkgdir, current_mode)
+
+    def test_url_search_package_error(self):
+        # URL handler search should cope with packages that raise exceptions
+        pkgdir = os.path.join(TESTFN, "test_error_package")
+        os.mkdir(pkgdir)
+        init = os.path.join(pkgdir, "__init__.py")
+        with open(init, "wt", encoding="ascii") as f:
+            f.write("""raise ValueError("ouch")\n""")
+        with self.restrict_walk_packages(path=[TESTFN]):
+            # Package has to be importable for the error to have any effect
+            saved_paths = tuple(sys.path)
+            sys.path.insert(0, TESTFN)
+            try:
+                with self.assertRaisesRegex(ValueError, "ouch"):
+                    import test_error_package  # Sanity check
+
+                text = self.call_url_handler("search?key=test_error_package",
+                    "Pydoc: Search Results")
+                found = ('<a href="test_error_package.html">'
+                    'test_error_package</a>')
+                self.assertIn(found, text)
+            finally:
+                sys.path[:] = saved_paths
 
     @unittest.skip('causes undesireable side-effects (#20128)')
     def test_modules(self):
@@ -694,7 +821,7 @@ class TestDescriptions(unittest.TestCase):
             try:
                 pydoc.render_doc(name)
             except ImportError:
-                self.fail('finding the doc of {!r} failed'.format(o))
+                self.fail('finding the doc of {!r} failed'.format(name))
 
         for name in ('notbuiltins', 'strrr', 'strr.translate',
                      'str.trrrranslate', 'builtins.strrr',
@@ -751,6 +878,8 @@ class PydocServerTest(unittest.TestCase):
             return text
 
         serverthread = pydoc._start_server(my_url_handler, port=0)
+        self.assertIn('localhost', serverthread.docserver.address)
+
         starttime = time.time()
         timeout = 1  #seconds
 
@@ -792,16 +921,12 @@ class PydocUrlHandlerTest(PydocBaseTest):
 
         with self.restrict_walk_packages():
             for url, title in requests:
-                text = pydoc._url_handler(url, "text/html")
-                result = get_html_title(text)
-                self.assertEqual(result, title, text)
+                self.call_url_handler(url, title)
 
             path = string.__file__
             title = "Pydoc: getfile " + path
             url = "getfile?key=" + path
-            text = pydoc._url_handler(url, "text/html")
-            result = get_html_title(text)
-            self.assertEqual(result, title)
+            self.call_url_handler(url, title)
 
 
 class TestHelper(unittest.TestCase):
@@ -929,6 +1054,14 @@ class PydocWithMetaClasses(unittest.TestCase):
         if result != expected_text:
             print_diffs(expected_text, result)
             self.fail("outputs are not equal, see diff above")
+
+    def test_resolve_false(self):
+        # Issue #23008: pydoc enum.{,Int}Enum failed
+        # because bool(enum.Enum) is False.
+        with captured_stdout() as help_io:
+            pydoc.help('enum.Enum')
+        helptext = help_io.getvalue()
+        self.assertIn('class Enum', helptext)
 
 
 @reap_threads

@@ -1,8 +1,11 @@
+import math
+import os
 import unittest
 import sys
 import _ast
+import tempfile
 import types
-from test import support
+from test import support, script_helper
 
 class TestSpecifics(unittest.TestCase):
 
@@ -303,9 +306,26 @@ if 1:
         l = lambda: "foo"
         self.assertIsNone(l.__doc__)
 
-##     def test_unicode_encoding(self):
-##         code = "# -*- coding: utf-8 -*-\npass\n"
-##         self.assertRaises(SyntaxError, compile, code, "tmp", "exec")
+    def test_encoding(self):
+        code = b'# -*- coding: badencoding -*-\npass\n'
+        self.assertRaises(SyntaxError, compile, code, 'tmp', 'exec')
+        code = '# -*- coding: badencoding -*-\n"\xc2\xa4"\n'
+        compile(code, 'tmp', 'exec')
+        self.assertEqual(eval(code), '\xc2\xa4')
+        code = '"\xc2\xa4"\n'
+        self.assertEqual(eval(code), '\xc2\xa4')
+        code = b'"\xc2\xa4"\n'
+        self.assertEqual(eval(code), '\xa4')
+        code = b'# -*- coding: latin1 -*-\n"\xc2\xa4"\n'
+        self.assertEqual(eval(code), '\xc2\xa4')
+        code = b'# -*- coding: utf-8 -*-\n"\xc2\xa4"\n'
+        self.assertEqual(eval(code), '\xa4')
+        code = b'# -*- coding: iso8859-15 -*-\n"\xc2\xa4"\n'
+        self.assertEqual(eval(code), '\xc2\u20ac')
+        code = '"""\\\n# -*- coding: iso8859-15 -*-\n\xc2\xa4"""\n'
+        self.assertEqual(eval(code), '# -*- coding: iso8859-15 -*-\n\xc2\xa4')
+        code = b'"""\\\n# -*- coding: iso8859-15 -*-\n\xc2\xa4"""\n'
+        self.assertEqual(eval(code), '# -*- coding: iso8859-15 -*-\n\xa4')
 
     def test_subscripts(self):
         # SF bug 1448804
@@ -474,6 +494,26 @@ if 1:
         self.assertInvalidSingle('f()\nxy # blah\nblah()')
         self.assertInvalidSingle('x = 5 # comment\nx = 6\n')
 
+    def test_particularly_evil_undecodable(self):
+        # Issue 24022
+        src = b'0000\x00\n00000000000\n\x00\n\x9e\n'
+        with tempfile.TemporaryDirectory() as tmpd:
+            fn = os.path.join(tmpd, "bad.py")
+            with open(fn, "wb") as fp:
+                fp.write(src)
+            res = script_helper.run_python_until_end(fn)[0]
+        self.assertIn(b"Non-UTF-8", res.err)
+
+    def test_yet_more_evil_still_undecodable(self):
+        # Issue #25388
+        src = b"#\x00\n#\xfd\n"
+        with tempfile.TemporaryDirectory() as tmpd:
+            fn = os.path.join(tmpd, "bad.py")
+            with open(fn, "wb") as fp:
+                fp.write(src)
+            res = script_helper.run_python_until_end(fn)[0]
+        self.assertIn(b"Non-UTF-8", res.err)
+
     @support.cpython_only
     def test_compiler_recursion_limit(self):
         # Expected limit is sys.getrecursionlimit() * the scaling factor
@@ -500,9 +540,65 @@ if 1:
         check_limit("a", "[0]")
         check_limit("a", "*a")
 
+    def test_null_terminated(self):
+        # The source code is null-terminated internally, but bytes-like
+        # objects are accepted, which could be not terminated.
+        # Exception changed from TypeError to ValueError in 3.5
+        with self.assertRaisesRegex(Exception, "cannot contain null"):
+            compile("123\x00", "<dummy>", "eval")
+        with self.assertRaisesRegex(Exception, "cannot contain null"):
+            compile(memoryview(b"123\x00"), "<dummy>", "eval")
+        code = compile(memoryview(b"123\x00")[1:-1], "<dummy>", "eval")
+        self.assertEqual(eval(code), 23)
+        code = compile(memoryview(b"1234")[1:-1], "<dummy>", "eval")
+        self.assertEqual(eval(code), 23)
+        code = compile(memoryview(b"$23$")[1:-1], "<dummy>", "eval")
+        self.assertEqual(eval(code), 23)
 
-def test_main():
-    support.run_unittest(TestSpecifics)
+        # Also test when eval() and exec() do the compilation step
+        self.assertEqual(eval(memoryview(b"1234")[1:-1]), 23)
+        namespace = dict()
+        exec(memoryview(b"ax = 123")[1:-1], namespace)
+        self.assertEqual(namespace['x'], 12)
+
+
+class TestStackSize(unittest.TestCase):
+    # These tests check that the computed stack size for a code object
+    # stays within reasonable bounds (see issue #21523 for an example
+    # dysfunction).
+    N = 100
+
+    def check_stack_size(self, code):
+        # To assert that the alleged stack size is not O(N), we
+        # check that it is smaller than log(N).
+        if isinstance(code, str):
+            code = compile(code, "<foo>", "single")
+        max_size = math.ceil(math.log(len(code.co_code)))
+        self.assertLessEqual(code.co_stacksize, max_size)
+
+    def test_and(self):
+        self.check_stack_size("x and " * self.N + "x")
+
+    def test_or(self):
+        self.check_stack_size("x or " * self.N + "x")
+
+    def test_and_or(self):
+        self.check_stack_size("x and x or " * self.N + "x")
+
+    def test_chained_comparison(self):
+        self.check_stack_size("x < " * self.N + "x")
+
+    def test_if_else(self):
+        self.check_stack_size("x if x else " * self.N + "x")
+
+    def test_binop(self):
+        self.check_stack_size("x + " * self.N + "x")
+
+    def test_func_and(self):
+        code = "def f(x):\n"
+        code += "   x and x\n" * self.N
+        self.check_stack_size(code)
+
 
 if __name__ == "__main__":
-    test_main()
+    unittest.main()

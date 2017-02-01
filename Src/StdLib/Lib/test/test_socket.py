@@ -3,6 +3,7 @@ from test import support
 
 import errno
 import io
+import itertools
 import socket
 import select
 import tempfile
@@ -37,6 +38,11 @@ try:
 except ImportError:
     thread = None
     threading = None
+try:
+    import _socket
+except ImportError:
+    _socket = None
+
 
 def _have_socket_can():
     """Check whether CAN sockets are supported on this host."""
@@ -643,6 +649,13 @@ def requireSocket(*args):
 
 class GeneralModuleTests(unittest.TestCase):
 
+    def test_SocketType_is_socketobject(self):
+        import _socket
+        self.assertTrue(socket.SocketType is _socket.socket)
+        s = socket.socket()
+        self.assertIsInstance(s, socket.SocketType)
+        s.close()
+
     def test_repr(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         with s:
@@ -656,6 +669,19 @@ class GeneralModuleTests(unittest.TestCase):
             self.assertIn(str(s.getsockname()), repr(s))
         self.assertIn('[closed]', repr(s))
         self.assertNotIn('laddr', repr(s))
+
+    @unittest.skipUnless(_socket is not None, 'need _socket module')
+    def test_csocket_repr(self):
+        s = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
+        try:
+            expected = ('<socket object, fd=%s, family=%s, type=%s, proto=%s>'
+                        % (s.fileno(), s.family, s.type, s.proto))
+            self.assertEqual(repr(s), expected)
+        finally:
+            s.close()
+        expected = ('<socket object, fd=-1, family=%s, type=%s, proto=%s>'
+                    % (s.family, s.type, s.proto))
+        self.assertEqual(repr(s), expected)
 
     def test_weakref(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -681,7 +707,7 @@ class GeneralModuleTests(unittest.TestCase):
             raise socket.gaierror
 
     def testSendtoErrors(self):
-        # Testing that sendto doens't masks failures. See #10169.
+        # Testing that sendto doesn't masks failures. See #10169.
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.addCleanup(s.close)
         s.bind(('', 0))
@@ -867,7 +893,7 @@ class GeneralModuleTests(unittest.TestCase):
         # Find one service that exists, then check all the related interfaces.
         # I've ordered this by protocols that have both a tcp and udp
         # protocol, at least for modern Linuxes.
-        if (sys.platform.startswith(('freebsd', 'netbsd'))
+        if (sys.platform.startswith(('freebsd', 'netbsd', 'gnukfreebsd'))
             or sys.platform in ('linux', 'darwin')):
             # avoid the 'echo' service on this platform, as there is an
             # assumption breaking non-standard port/protocol entry
@@ -1145,17 +1171,24 @@ class GeneralModuleTests(unittest.TestCase):
         sock.close()
 
     def test_getsockaddrarg(self):
-        host = '0.0.0.0'
+        sock = socket.socket()
+        self.addCleanup(sock.close)
         port = support.find_unused_port()
         big_port = port + 65536
         neg_port = port - 65536
-        sock = socket.socket()
-        try:
-            self.assertRaises(OverflowError, sock.bind, (host, big_port))
-            self.assertRaises(OverflowError, sock.bind, (host, neg_port))
-            sock.bind((host, port))
-        finally:
-            sock.close()
+        self.assertRaises(OverflowError, sock.bind, (HOST, big_port))
+        self.assertRaises(OverflowError, sock.bind, (HOST, neg_port))
+        # Since find_unused_port() is inherently subject to race conditions, we
+        # call it a couple times if necessary.
+        for i in itertools.count():
+            port = support.find_unused_port()
+            try:
+                sock.bind((HOST, port))
+            except OSError as e:
+                if e.errno != errno.EADDRINUSE or i == 5:
+                    raise
+            else:
+                break
 
     @unittest.skipUnless(os.name == "nt", "Windows specific")
     def test_sock_ioctl(self):
@@ -1198,7 +1231,7 @@ class GeneralModuleTests(unittest.TestCase):
             self.assertEqual(family, socket.AF_INET)
             self.assertEqual(str(family), 'AddressFamily.AF_INET')
             self.assertEqual(type, socket.SOCK_STREAM)
-            self.assertEqual(str(type), 'SocketType.SOCK_STREAM')
+            self.assertEqual(str(type), 'SocketKind.SOCK_STREAM')
         infos = socket.getaddrinfo(HOST, None, 0, socket.SOCK_STREAM)
         for _, socktype, _, _, _ in infos:
             self.assertEqual(socktype, socket.SOCK_STREAM)
@@ -1251,16 +1284,16 @@ class GeneralModuleTests(unittest.TestCase):
     @unittest.skipUnless(support.is_resource_enabled('network'),
                          'network is not enabled')
     def test_idna(self):
-        # Check for internet access before running test (issue #12804).
-        try:
+        # Check for internet access before running test
+        # (issue #12804, issue #25138).
+        with support.transient_internet('python.org'):
             socket.gethostbyname('python.org')
-        except socket.gaierror as e:
-            if e.errno == socket.EAI_NODATA:
-                self.skipTest('internet access required for this test')
+
         # these should all be successful
-        socket.gethostbyname('испытание.python.org')
-        socket.gethostbyname_ex('испытание.python.org')
-        socket.getaddrinfo('испытание.python.org',0,socket.AF_UNSPEC,socket.SOCK_STREAM)
+        domain = 'испытание.pythontest.net'
+        socket.gethostbyname(domain)
+        socket.gethostbyname_ex(domain)
+        socket.getaddrinfo(domain,0,socket.AF_UNSPEC,socket.SOCK_STREAM)
         # this may not work if the forward lookup choses the IPv6 address, as that doesn't
         # have a reverse entry yet
         # socket.gethostbyaddr('испытание.python.org')
@@ -1341,6 +1374,11 @@ class GeneralModuleTests(unittest.TestCase):
         with sock:
             for protocol in range(pickle.HIGHEST_PROTOCOL + 1):
                 self.assertRaises(TypeError, pickle.dumps, sock, protocol)
+        for protocol in range(pickle.HIGHEST_PROTOCOL + 1):
+            family = pickle.loads(pickle.dumps(socket.AF_INET, protocol))
+            self.assertEqual(family, socket.AF_INET)
+            type = pickle.loads(pickle.dumps(socket.SOCK_STREAM, protocol))
+            self.assertEqual(type, socket.SOCK_STREAM)
 
     def test_listen_backlog(self):
         for backlog in 0, -1:
@@ -1370,7 +1408,7 @@ class GeneralModuleTests(unittest.TestCase):
         # reprs.
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             self.assertEqual(str(s.family), 'AddressFamily.AF_INET')
-            self.assertEqual(str(s.type), 'SocketType.SOCK_STREAM')
+            self.assertEqual(str(s.type), 'SocketKind.SOCK_STREAM')
 
     @unittest.skipIf(os.name == 'nt', 'Will not work on Windows')
     def test_uknown_socket_family_repr(self):
@@ -1456,6 +1494,7 @@ class BasicCANTest(unittest.TestCase):
 
 
 @unittest.skipUnless(HAVE_SOCKET_CAN, 'SocketCan required for this test.')
+@unittest.skipUnless(thread, 'Threading required for this test.')
 class CANTest(ThreadedCANSocketTest):
 
     def __init__(self, methodName='runTest'):
@@ -2181,7 +2220,7 @@ class SendmsgStreamTests(SendmsgTests):
     # Linux supports MSG_DONTWAIT when sending, but in general, it
     # only works when receiving.  Could add other platforms if they
     # support it too.
-    @skipWithClientIf(sys.platform not in {"linux2"},
+    @skipWithClientIf(sys.platform not in {"linux"},
                       "MSG_DONTWAIT not known to work on this platform when "
                       "sending")
     def testSendmsgDontWait(self):
@@ -2701,6 +2740,7 @@ class SCMRightsTest(SendrecvmsgServerTimeoutBase):
         self.createAndSendFDs(1)
 
     @unittest.skipIf(sys.platform == "darwin", "skipping, see issue #12958")
+    @unittest.skipIf(sys.platform.startswith("aix"), "skipping, see issue #22397")
     @requireAttrs(socket, "CMSG_SPACE")
     def testFDPassSeparate(self):
         # Pass two FDs in two separate arrays.  Arrays may be combined
@@ -2711,6 +2751,7 @@ class SCMRightsTest(SendrecvmsgServerTimeoutBase):
 
     @testFDPassSeparate.client_skip
     @unittest.skipIf(sys.platform == "darwin", "skipping, see issue #12958")
+    @unittest.skipIf(sys.platform.startswith("aix"), "skipping, see issue #22397")
     def _testFDPassSeparate(self):
         fd0, fd1 = self.newFDs(2)
         self.assertEqual(
@@ -2723,6 +2764,7 @@ class SCMRightsTest(SendrecvmsgServerTimeoutBase):
             len(MSG))
 
     @unittest.skipIf(sys.platform == "darwin", "skipping, see issue #12958")
+    @unittest.skipIf(sys.platform.startswith("aix"), "skipping, see issue #22397")
     @requireAttrs(socket, "CMSG_SPACE")
     def testFDPassSeparateMinSpace(self):
         # Pass two FDs in two separate arrays, receiving them into the
@@ -2735,6 +2777,7 @@ class SCMRightsTest(SendrecvmsgServerTimeoutBase):
 
     @testFDPassSeparateMinSpace.client_skip
     @unittest.skipIf(sys.platform == "darwin", "skipping, see issue #12958")
+    @unittest.skipIf(sys.platform.startswith("aix"), "skipping, see issue #22397")
     def _testFDPassSeparateMinSpace(self):
         fd0, fd1 = self.newFDs(2)
         self.assertEqual(
@@ -3820,6 +3863,7 @@ class NonBlockingTCPTests(ThreadedTCPSocketTest):
         read, write, err = select.select([self.serv], [], [])
         if self.serv in read:
             conn, addr = self.serv.accept()
+            self.assertIsNone(conn.gettimeout())
             conn.close()
         else:
             self.fail("Error trying to do accept after select.")
@@ -4607,7 +4651,7 @@ class TestUnixDomain(unittest.TestCase):
         except OSError as e:
             if str(e) == "AF_UNIX path too long":
                 self.skipTest(
-                    "Pathname {0!a} is too long to serve as a AF_UNIX path"
+                    "Pathname {0!a} is too long to serve as an AF_UNIX path"
                     .format(path))
             else:
                 raise

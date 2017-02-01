@@ -197,9 +197,10 @@ class SysModuleTest(unittest.TestCase):
         self.assertEqual(sys.getrecursionlimit(), 10000)
         sys.setrecursionlimit(oldlimit)
 
-    @unittest.skipIf(hasattr(sys, 'gettrace') and sys.gettrace(),
-                     'fatal error if run with a trace function')
     def test_recursionlimit_recovery(self):
+        if hasattr(sys, 'gettrace') and sys.gettrace():
+            self.skipTest('fatal error if run with a trace function')
+
         # NOTE: this test is slightly fragile in that it depends on the current
         # recursion count when executing the test being low enough so as to
         # trigger the recursion recovery detection in the _Py_MakeEndRecCheck
@@ -519,6 +520,27 @@ class SysModuleTest(unittest.TestCase):
         self.assertTrue(repr(sys.flags))
         self.assertEqual(len(sys.flags), len(attrs))
 
+    def assert_raise_on_new_sys_type(self, sys_attr):
+        # Users are intentionally prevented from creating new instances of
+        # sys.flags, sys.version_info, and sys.getwindowsversion.
+        attr_type = type(sys_attr)
+        with self.assertRaises(TypeError):
+            attr_type()
+        with self.assertRaises(TypeError):
+            attr_type.__new__(attr_type)
+
+    def test_sys_flags_no_instantiation(self):
+        self.assert_raise_on_new_sys_type(sys.flags)
+
+    def test_sys_version_info_no_instantiation(self):
+        self.assert_raise_on_new_sys_type(sys.version_info)
+
+    def test_sys_getwindowsversion_no_instantiation(self):
+        # Skip if not being run on Windows.
+        test.support.get_attribute(sys, "getwindowsversion")
+        self.assert_raise_on_new_sys_type(sys.getwindowsversion())
+
+    @test.support.cpython_only
     def test_clear_type_cache(self):
         sys._clear_type_cache()
 
@@ -637,6 +659,7 @@ class SysModuleTest(unittest.TestCase):
         self.assertEqual(sys.implementation.name,
                          sys.implementation.name.lower())
 
+    @test.support.cpython_only
     def test_debugmallocstats(self):
         # Test sys._debugmallocstats()
         from test.script_helper import assert_python_ok
@@ -702,6 +725,37 @@ class SizeofTest(unittest.TestCase):
         # but lists are
         self.assertEqual(sys.getsizeof([]), vsize('Pn') + gc_header_size)
 
+    def test_errors(self):
+        class BadSizeof:
+            def __sizeof__(self):
+                raise ValueError
+        self.assertRaises(ValueError, sys.getsizeof, BadSizeof())
+
+        class InvalidSizeof:
+            def __sizeof__(self):
+                return None
+        self.assertRaises(TypeError, sys.getsizeof, InvalidSizeof())
+        sentinel = ["sentinel"]
+        self.assertIs(sys.getsizeof(InvalidSizeof(), sentinel), sentinel)
+
+        class FloatSizeof:
+            def __sizeof__(self):
+                return 4.5
+        self.assertRaises(TypeError, sys.getsizeof, FloatSizeof())
+        self.assertIs(sys.getsizeof(FloatSizeof(), sentinel), sentinel)
+
+        class OverflowSizeof(int):
+            def __sizeof__(self):
+                return int(self)
+        self.assertEqual(sys.getsizeof(OverflowSizeof(sys.maxsize)),
+                         sys.maxsize + self.gc_headsize)
+        with self.assertRaises(OverflowError):
+            sys.getsizeof(OverflowSizeof(sys.maxsize + 1))
+        with self.assertRaises(ValueError):
+            sys.getsizeof(OverflowSizeof(-1))
+        with self.assertRaises((ValueError, OverflowError)):
+            sys.getsizeof(OverflowSizeof(-sys.maxsize - 1))
+
     def test_default(self):
         size = test.support.calcvobjsize
         self.assertEqual(sys.getsizeof(True), size('') + self.longdigit)
@@ -725,6 +779,9 @@ class SizeofTest(unittest.TestCase):
             check(x, vsize('n2Pi') + x.__alloc__())
         # bytearray_iterator
         check(iter(bytearray()), size('nP'))
+        # bytes
+        check(b'', vsize('n') + 1)
+        check(b'x' * 10, vsize('n') + 11)
         # cell
         def get_cell():
             x = 42
@@ -844,8 +901,6 @@ class SizeofTest(unittest.TestCase):
         check(int(PyLong_BASE), vsize('') + 2*self.longdigit)
         check(int(PyLong_BASE**2-1), vsize('') + 2*self.longdigit)
         check(int(PyLong_BASE**2), vsize('') + 3*self.longdigit)
-        # memoryview
-        check(memoryview(b''), size('Pnin 2P2n2i5P 3cPn'))
         # module
         check(unittest, size('PnPPP'))
         # None

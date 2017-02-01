@@ -12,7 +12,6 @@ See module py_compile for details of the actual byte-compilation.
 """
 import os
 import sys
-import errno
 import importlib.util
 import py_compile
 import struct
@@ -197,9 +196,6 @@ def main():
 
     compile_dests = args.compile_dest
 
-    if (args.ddir and (len(compile_dests) != 1
-            or not os.path.isdir(compile_dests[0]))):
-        parser.exit('-d destdir requires exactly one directory argument')
     if args.rx:
         import re
         args.rx = re.compile(args.rx)

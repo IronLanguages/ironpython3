@@ -14,7 +14,8 @@ Command line usage:
 Options:
   -n/--number N: how many times to execute 'statement' (default: see below)
   -r/--repeat N: how many times to repeat the timer (default 3)
-  -s/--setup S: statement to be executed once initially (default 'pass')
+  -s/--setup S: statement to be executed once initially (default 'pass').
+                Execution time of this setup statement is NOT timed.
   -p/--process: use time.process_time() (default is time.perf_counter())
   -t/--time: use time.time() (deprecated)
   -c/--clock: use time.clock() (deprecated)
@@ -64,7 +65,7 @@ default_timer = time.perf_counter
 # in Timer.__init__() depend on setup being indented 4 spaces and stmt
 # being indented 8 spaces.
 template = """
-def inner(_it, _timer):
+def inner(_it, _timer{init}):
     {setup}
     _t0 = _timer()
     for _i in _it:
@@ -109,12 +110,19 @@ class Timer:
         self.timer = timer
         ns = {}
         if isinstance(stmt, str):
+            # Check that the code can be compiled outside a function
+            if isinstance(setup, str):
+                compile(setup, dummy_src_name, "exec")
+                compile(setup + '\n' + stmt, dummy_src_name, "exec")
+            else:
+                compile(stmt, dummy_src_name, "exec")
             stmt = reindent(stmt, 8)
             if isinstance(setup, str):
                 setup = reindent(setup, 4)
-                src = template.format(stmt=stmt, setup=setup)
+                src = template.format(stmt=stmt, setup=setup, init='')
             elif callable(setup):
-                src = template.format(stmt=stmt, setup='_setup()')
+                src = template.format(stmt=stmt, setup='_setup()',
+                                      init=', _setup=_setup')
                 ns['_setup'] = setup
             else:
                 raise ValueError("setup is neither a string nor callable")

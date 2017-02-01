@@ -35,10 +35,12 @@ SocketType -- type object for socket objects
 error -- exception raised for I/O errors
 has_ipv6 -- boolean value indicating if IPv6 is supported
 
-Integer constants:
+IntEnum constants:
 
 AF_INET, AF_UNIX -- socket domains (first argument to socket() call)
 SOCK_STREAM, SOCK_DGRAM, SOCK_RAW -- socket types (second argument)
+
+Integer constants:
 
 Many other constants may be defined; these may be used in calls to
 the setsockopt() and getsockopt() methods.
@@ -58,7 +60,8 @@ EBADF = getattr(errno, 'EBADF', 9)
 EAGAIN = getattr(errno, 'EAGAIN', 11)
 EWOULDBLOCK = getattr(errno, 'EWOULDBLOCK', 11)
 
-__all__ = ["getfqdn", "create_connection"]
+__all__ = ["fromfd", "getfqdn", "create_connection",
+        "AddressFamily", "SocketKind"]
 __all__.extend(os._get_exports_list(_socket))
 
 # Set up the socket.AF_* socket.SOCK_* constants as members of IntEnums for
@@ -66,15 +69,15 @@ __all__.extend(os._get_exports_list(_socket))
 # Note that _socket only knows about the integer values. The public interface
 # in this module understands the enums and translates them back from integers
 # where needed (e.g. .family property of a socket object).
-AddressFamily = IntEnum('AddressFamily',
-                        {name: value for name, value in globals().items()
-                         if name.isupper() and name.startswith('AF_')})
-globals().update(AddressFamily.__members__)
+IntEnum._convert(
+        'AddressFamily',
+        __name__,
+        lambda C: C.isupper() and C.startswith('AF_'))
 
-SocketType = IntEnum('SocketType',
-                     {name: value for name, value in globals().items()
-                      if name.isupper() and name.startswith('SOCK_')})
-globals().update(SocketType.__members__)
+IntEnum._convert(
+        'SocketKind',
+        __name__,
+        lambda C: C.isupper() and C.startswith('SOCK_'))
 
 def _intenum_converter(value, enum_klass):
     """Convert a numeric family value to an IntEnum member.
@@ -182,7 +185,11 @@ class socket(_socket.socket):
         For IP sockets, the address info is a pair (hostaddr, port).
         """
         fd, addr = self._accept()
-        sock = socket(self.family, self.type, self.proto, fileno=fd)
+        # If our type has the SOCK_NONBLOCK flag, we shouldn't pass it onto the
+        # new socket. We do not currently allow passing SOCK_NONBLOCK to
+        # accept4, so the returned socket is always blocking.
+        type = self.type & ~globals().get("SOCK_NONBLOCK", 0)
+        sock = socket(self.family, type, self.proto, fileno=fd)
         # Issue #7995: if no default timeout is set and the listening
         # socket had a (non-zero) timeout, force the new socket in blocking
         # mode to override platform-specific socket flags inheritance.
@@ -198,9 +205,8 @@ class socket(_socket.socket):
         except the only mode characters supported are 'r', 'w' and 'b'.
         The semantics are similar too.  (XXX refactor to share code?)
         """
-        for c in mode:
-            if c not in {"r", "w", "b"}:
-                raise ValueError("invalid mode %r (only r, w, b allowed)")
+        if not set(mode) <= {"r", "w", "b"}:
+            raise ValueError("invalid mode %r (only r, w, b allowed)" % (mode,))
         writing = "w" in mode
         reading = "r" in mode or not writing
         assert reading or writing
@@ -269,7 +275,7 @@ class socket(_socket.socket):
     def type(self):
         """Read-only access to the socket type.
         """
-        return _intenum_converter(super().type, SocketType)
+        return _intenum_converter(super().type, SocketKind)
 
     if os.name == 'nt':
         def get_inheritable(self):
@@ -297,10 +303,11 @@ if hasattr(_socket.socket, "share"):
     def fromshare(info):
         """ fromshare(info) -> socket object
 
-        Create a socket object from a the bytes object returned by
+        Create a socket object from the bytes object returned by
         socket.share(pid).
         """
         return socket(0, 0, 0, info)
+    __all__.append("fromshare")
 
 if hasattr(_socket, "socketpair"):
 
@@ -530,6 +537,6 @@ def getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
     for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
         af, socktype, proto, canonname, sa = res
         addrlist.append((_intenum_converter(af, AddressFamily),
-                         _intenum_converter(socktype, SocketType),
+                         _intenum_converter(socktype, SocketKind),
                          proto, canonname, sa))
     return addrlist

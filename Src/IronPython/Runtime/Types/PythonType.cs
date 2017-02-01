@@ -288,14 +288,16 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             PythonType meta = FindMetaClass(cls, bases);
 
             if (meta != TypeCache.PythonType) {
+                object classdict = PythonOps.CallPrepare(context, meta, name, bases, dict);
+
                 if (meta != cls) {
                     // the user has a custom __new__ which picked the wrong meta class, call the correct metaclass
-                    return PythonCalls.Call(context, meta, name, bases, dict);
+                    return PythonCalls.Call(context, meta, name, bases, classdict);
                 }
 
                 // we have the right user __new__, call our ctor method which will do the actual
                 // creation.                   
-                return meta.CreateInstance(context, name, bases, dict);
+                return meta.CreateInstance(context, name, bases, classdict);
             }
 
             // no custom user type for __new__

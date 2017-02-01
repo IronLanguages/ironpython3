@@ -1294,13 +1294,26 @@ namespace IronPython.Runtime.Operations {
             iwr.SetFinalizer(new WeakRefTracker(nif, nif));
         }
 
-        private static object FindMetaclass(CodeContext/*!*/ context, PythonTuple bases, PythonDictionary dict) {
-            // If dict['__metaclass__'] exists, it is used. 
-            object ret;
-            if (dict.TryGetValue("__metaclass__", out ret) && ret != null) return ret;
+        private static bool TryGetMetaclass(CodeContext/*!*/ context, PythonTuple bases, PythonDictionary dict, out object metaclass) {
+            return dict.TryGetValue("__metaclass__", out metaclass) && metaclass != null;
+        }
 
-            // Otherwise, if there is at least one base class, its metaclass is used
-            return DynamicHelpers.GetPythonType(bases[0]);            
+        internal static object CallPrepare(CodeContext/*!*/ context, PythonType meta, string name, PythonTuple bases, PythonDictionary dict) {
+            object classdict = dict;
+
+            PythonTypeSlot pts;
+            // if available, call the __prepare__ method to get the classdict (PEP 3115)
+            if (meta.TryLookupSlot(context, "__prepare__", out pts)) {
+                object value;
+                if (pts.TryGetValue(context, null, meta, out value)) {
+                    classdict = PythonOps.CallWithContext(context, value, name, bases);
+                    // copy the contents of dict to the classdict
+                    foreach (var pair in dict)
+                        context.LanguageContext.SetIndex(classdict, pair.Key, pair.Value);
+                }
+            }
+
+            return classdict;
         }
 
         public static object MakeClass(FunctionCode funcCode, Func<CodeContext, CodeContext> body, CodeContext/*!*/ parentContext, string name, object[] bases, string selfNames) {
@@ -1345,16 +1358,17 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            // we need to make sure that object is always a base
-            if(bases.Length == 0) {
-                bases = new object[1] {DynamicHelpers.GetPythonTypeFromType(typeof(object)) };                
-            }
-
             PythonTuple tupleBases = PythonTuple.MakeTuple(bases);
 
-            object metaclass = FindMetaclass(context, tupleBases, vars);
-            if (metaclass == TypeCache.PythonType) {
+            object metaclass;
+            if (!TryGetMetaclass(context, tupleBases, vars, out metaclass)) {
                 return PythonType.__new__(context, TypeCache.PythonType, name, tupleBases, vars, selfNames);
+            }
+
+            object classdict = vars;
+
+            if (metaclass is PythonType) {
+                classdict = CallPrepare(context, (PythonType)metaclass, name, tupleBases, vars);
             }
 
             // eg:
@@ -1370,7 +1384,7 @@ namespace IronPython.Runtime.Operations {
                 metaclass,
                 name,
                 tupleBases,
-                vars
+                classdict
             );
         }
 
@@ -2276,7 +2290,7 @@ namespace IronPython.Runtime.Operations {
         public static Exception MakeRethrownException(CodeContext/*!*/ context) {
             PythonTuple t = GetExceptionInfo(context);
 
-            Exception e = MakeExceptionWorker(context, t[0], t[1], t[2], t[3], true);
+            Exception e = MakeExceptionWorker(context, t[0], t[1], t[2], null, true);
             return MakeRethrowExceptionWorker(e);
         }
         /// <summary>

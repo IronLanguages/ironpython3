@@ -309,12 +309,7 @@ namespace IronPython.Modules {
 
                 int posInt = (int)pos;
                 if (whence is double || whence is Extensible<double>) {
-                    if (PythonContext.GetContext(context).PythonOptions.Python30) {
-                        throw PythonOps.TypeError("integer argument expected, got float");
-                    } else {
-                        PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "integer argument expected, got float");
-                        return seek(posInt, Converter.ConvertToInt32(whence));
-                    }
+                    throw PythonOps.TypeError("integer argument expected, got float");
                 }
                 
                 return seek(posInt, GetInt(whence));

@@ -636,22 +636,13 @@ namespace IronPython.Runtime {
         }
 
         public bool __contains__(CodeContext/*!*/ context, int value) {
-            if (!PythonContext.GetContext(context).PythonOptions.Python30) {
-                throw PythonOps.TypeError("'in <bytes>' requires string or bytes as left operand, not int");
-            }
-
             return IndexOf(value.ToByteChecked()) != -1;
         }
 
         public bool __contains__(CodeContext/*!*/ context, object value) {
             if (value is Extensible<string>) {
                 return __contains__(PythonOps.MakeBytes(((Extensible<string>)value).Value.MakeByteArray()));
-            }
-            if (!PythonContext.GetContext(context).PythonOptions.Python30) {
-                throw PythonOps.TypeError("'in <bytes>' requires string or bytes as left operand, not {0}", PythonTypeOps.GetName(value));
-            }
-
-            if (value is Extensible<int>) {
+            } else if (value is Extensible<int>) {
                 return IndexOf(((Extensible<int>)value).Value.ToByteChecked()) != -1;
             } else if (value is BigInteger) {
                 return IndexOf(((BigInteger)value).ToByteChecked()) != -1;
@@ -756,12 +747,7 @@ namespace IronPython.Runtime {
 
         public object this[CodeContext/*!*/ context, int index] {
             get {
-                byte res = _bytes[PythonOps.FixIndex(index, _bytes.Length)];
-                if (PythonContext.GetContext(context).PythonOptions.Python30) {
-                    return (int)res;
-                }
-
-                return new Bytes(new byte[] { res });
+                return (int)_bytes[PythonOps.FixIndex(index, _bytes.Length)];
             }
             [PythonHidden]
             set {

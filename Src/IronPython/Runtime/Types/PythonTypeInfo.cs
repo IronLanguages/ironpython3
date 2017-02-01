@@ -1003,18 +1003,12 @@ namespace IronPython.Runtime.Types {
         private static MemberGroup/*!*/ IterResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
             if (type == typeof(string)) {
                 // __iter__ is only exposed in 3.0
-                if (binder.Binder.Context.PythonOptions.Python30) {
-                    return GetInstanceOpsMethod(type, "IterMethodForString");
-                }
-                return MemberGroup.EmptyGroup;
+                return GetInstanceOpsMethod(type, "IterMethodForString");
             }
 
             if (typeof(Bytes).IsAssignableFrom(type)) {
                 // __iter__ is only exposed in 3.0
-                if (binder.Binder.Context.PythonOptions.Python30) {
-                    return GetInstanceOpsMethod(type, "IterMethodForBytes");
-                }
-                return MemberGroup.EmptyGroup;
+                return GetInstanceOpsMethod(type, "IterMethodForBytes");
             }
 
             foreach (Type t in binder.GetContributingTypes(type)) {

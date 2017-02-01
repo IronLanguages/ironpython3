@@ -102,7 +102,7 @@ namespace IronPython.Runtime
 
         public void __init__(CodeContext/*!*/ context, string source, string encoding, [DefaultParameterValue("strict")]string errors)
         {
-            _bytes = new List<byte>(StringOps.encode(context, source, encoding, errors).MakeByteArray());
+            _bytes = new List<byte>(StringOps.encode(context, source, encoding, errors));
         }
 
         #region Public Mutable Sequence API

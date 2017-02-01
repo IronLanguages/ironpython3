@@ -1423,7 +1423,7 @@ namespace IronPython.Modules {
             byte[] data = new byte[n];
             rng.GetBytes(data);
 
-            return PythonBinaryReader.PackDataIntoString(data, n);
+            return Bytes.Make(data);
         }
 
         public static object urandom(BigInteger n) {

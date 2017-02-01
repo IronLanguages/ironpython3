@@ -537,7 +537,7 @@ namespace IronPython.Runtime.Operations {
             return RawDecode(context, s, encoding, errors);
         }
 
-        public static string encode(CodeContext/*!*/ context, string s, [Optional]object encoding, [DefaultParameterValue("strict")]string errors) {
+        public static Bytes encode(CodeContext/*!*/ context, string s, [Optional]object encoding, [DefaultParameterValue("strict")]string errors) {
             return RawEncode(context, s, encoding, errors);
         }
 
@@ -1784,7 +1784,7 @@ namespace IronPython.Runtime.Operations {
             return start;
         }
 
-        private static string RawEncode(CodeContext/*!*/ context, string s, object encodingType, string errors) {
+        private static Bytes RawEncode(CodeContext/*!*/ context, string s, object encodingType, string errors) {
             string encoding = encodingType as string;
             Encoding e = null;
             if (encoding == null) {
@@ -1802,10 +1802,10 @@ namespace IronPython.Runtime.Operations {
                 string normalizedName = NormalizeEncodingName(encoding);
 
                 if ("raw_unicode_escape" == normalizedName) {
-                    return RawUnicodeEscapeEncode(s);
+                    return PythonOps.MakeBytes(RawUnicodeEscapeEncode(s));
                 } else if ("unicode_escape" == normalizedName || "string_escape" == normalizedName) {
                     bool dummy = false;
-                    return ReprEncode(s, '\'', ref dummy);
+                    return PythonOps.MakeBytes(ReprEncode(s, '\'', ref dummy));
                 }
             }
 
@@ -1816,13 +1816,13 @@ namespace IronPython.Runtime.Operations {
             // look for user-registered codecs
             PythonTuple codecTuple = PythonOps.LookupEncoding(context, encoding);
             if (codecTuple != null) {
-                return UserDecodeOrEncode(codecTuple[/*Modules.PythonCodecs.EncoderIndex*/0], s);
+                return PythonOps.MakeBytes(UserDecodeOrEncode(codecTuple[/*Modules.PythonCodecs.EncoderIndex*/0], s));
             }
 
             throw PythonOps.LookupError("unknown encoding: {0}", encoding);
         }
 
-        internal static string DoEncode(CodeContext context, string s, string errors, string encoding, Encoding e) {
+        internal static Bytes DoEncode(CodeContext context, string s, string errors, string encoding, Encoding e) {
 #if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
             // so we just clone the encoding & set the fallback to throw in strict mode
@@ -1846,7 +1846,7 @@ namespace IronPython.Runtime.Operations {
             }
 
 #endif
-            return PythonOps.MakeString(e.GetPreamble(), e.GetBytes(s));
+            return Bytes.Make(e.GetBytes(s));
         }
 
 

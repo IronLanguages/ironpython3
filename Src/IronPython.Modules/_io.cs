@@ -2133,7 +2133,7 @@ namespace IronPython.Modules {
                     str = str.Replace("\n", _writeNL);
                 }
 
-                str = StringOps.encode(context, str, _encoding, _errors);
+                str = PythonOps.MakeString(StringOps.encode(context, str, _encoding, _errors));
                 if (_bufferTyped != null) {
                     _bufferTyped.write(context, str);
                 } else {

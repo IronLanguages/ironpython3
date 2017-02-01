@@ -3441,6 +3441,8 @@ namespace IronPython.Runtime.Operations {
             return new Bytes(bytes);
         }
 
+        internal static Bytes MakeBytes(string s) => MakeBytes(MakeByteArray(s));
+
         public static byte[] MakeByteArray(this string s) {
             byte[] ret = new byte[s.Length];
             for (int i = 0; i < s.Length; i++) {

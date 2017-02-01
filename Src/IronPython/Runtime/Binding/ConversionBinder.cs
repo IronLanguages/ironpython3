@@ -484,9 +484,7 @@ namespace IronPython.Runtime.Binding {
                 return ((CallSite<Func<CallSite, Bytes, IEnumerable>>)site).Update(site, value);
             }
 
-            return _context.PythonOptions.Python30 ?
-                PythonOps.BytesIntEnumerable(value) :
-                PythonOps.BytesEnumerable(value);
+            return PythonOps.BytesIntEnumerable(value);
         }
 
         public IEnumerator BytesToIEnumeratorConversion(CallSite site, Bytes value) {
@@ -494,9 +492,7 @@ namespace IronPython.Runtime.Binding {
                 return ((CallSite<Func<CallSite, Bytes, IEnumerator>>)site).Update(site, value);
             }
 
-            return _context.PythonOptions.Python30 ?
-                (IEnumerator)PythonOps.BytesIntEnumerator(value).Key :
-                (IEnumerator)PythonOps.BytesEnumerator(value).Key;
+            return PythonOps.BytesIntEnumerator(value).Key;
         }
 
         public IEnumerable ObjectToIEnumerableConversion(CallSite site, object value) {
@@ -504,9 +500,7 @@ namespace IronPython.Runtime.Binding {
                 if (value is string) {
                     return PythonOps.StringEnumerable((string)value);
                 } else if (value.GetType() == typeof(Bytes)) {
-                    return _context.PythonOptions.Python30 ?
-                        PythonOps.BytesIntEnumerable((Bytes)value) :
-                        PythonOps.BytesEnumerable((Bytes)value);
+                    return PythonOps.BytesIntEnumerable((Bytes)value);
                 }
             }
 
@@ -518,9 +512,7 @@ namespace IronPython.Runtime.Binding {
                 if (value is string) {
                     return PythonOps.StringEnumerator((string)value).Key;
                 } else if (value.GetType() == typeof(Bytes)) {
-                    return _context.PythonOptions.Python30 ?
-                        (IEnumerator)PythonOps.BytesIntEnumerator((Bytes)value).Key :
-                        (IEnumerator)PythonOps.BytesEnumerator((Bytes)value).Key;
+                    return PythonOps.BytesIntEnumerator((Bytes)value).Key;
                 }
             }
 

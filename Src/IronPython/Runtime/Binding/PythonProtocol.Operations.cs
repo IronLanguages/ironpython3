@@ -470,23 +470,13 @@ namespace IronPython.Runtime.Binding {
             } else if (self.GetLimitType() == typeof(Bytes)) {
                 self = self.Restrict(self.GetLimitType());
 
-                if (operation.Context.PythonOptions.Python30) {
-                    return new DynamicMetaObject(
-                        Expression.Call(
-                            typeof(PythonOps).GetMethod("BytesIntEnumerator"),
-                            self.Expression
-                        ),
-                        self.Restrictions
-                    );
-                } else {
-                    return new DynamicMetaObject(
-                        Expression.Call(
-                            typeof(PythonOps).GetMethod("BytesEnumerator"),
-                            self.Expression
-                        ),
-                        self.Restrictions
-                    );
-                }
+                return new DynamicMetaObject(
+                    Expression.Call(
+                        typeof(PythonOps).GetMethod("BytesIntEnumerator"),
+                        self.Expression
+                    ),
+                    self.Restrictions
+                );
             } else if ((self.Value is IEnumerable ||
                     typeof(IEnumerable).IsAssignableFrom(self.GetLimitType())) && !(self.Value is PythonGenerator)) {
                 self = self.Restrict(self.GetLimitType());

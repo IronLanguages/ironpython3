@@ -47,7 +47,7 @@ class abstractclassmethod(classmethod):
 
     def __init__(self, callable):
         callable.__isabstractmethod__ = True
-        super().__init__(callable)
+        super(abstractclassmethod, self).__init__(callable)
 
 
 class abstractstaticmethod(staticmethod):
@@ -71,7 +71,7 @@ class abstractstaticmethod(staticmethod):
 
     def __init__(self, callable):
         callable.__isabstractmethod__ = True
-        super().__init__(callable)
+        super(abstractstaticmethod, self).__init__(callable)
 
 
 class abstractproperty(property):
@@ -130,7 +130,7 @@ class ABCMeta(type):
     _abc_invalidation_counter = 0
 
     def __new__(mcls, name, bases, namespace):
-        cls = super().__new__(mcls, name, bases, namespace)
+        cls = super(ABCMeta, mcls).__new__(mcls, name, bases, namespace)
         # Compute set of abstract method names
         abstracts = {name
                      for name, value in namespace.items()

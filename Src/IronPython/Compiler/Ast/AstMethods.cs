@@ -95,11 +95,8 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo UpdateStackTrace = GetMethod((Action<Exception, CodeContext, FunctionCode, int>)PythonOps.UpdateStackTrace);
         public static readonly MethodInfo ForLoopDispose = GetMethod((Action<KeyValuePair<IEnumerator, IDisposable>>)PythonOps.ForLoopDispose);
         public static readonly MethodInfo GetClosureTupleFromContext = GetMethod((Func<CodeContext, MutableTuple>)PythonOps.GetClosureTupleFromContext);
-        public static readonly MethodInfo IsUnicode = GetMethod((Func<object, bool>)PythonOps.IsUnicode);
         public static readonly MethodInfo PushFrame = GetMethod((Func<CodeContext, FunctionCode, List<FunctionStack>>)PythonOps.PushFrame);
-        public static readonly MethodInfo FormatUnicode = GetMethod((Func<CodeContext, string, object, string>)PythonOps.FormatUnicode);
         public static readonly MethodInfo FormatString = GetMethod((Func<CodeContext, string, object, string>)PythonOps.FormatString);
-        public static readonly MethodInfo GetUnicodeFunction = GetMethod((Func<BuiltinFunction>)PythonOps.GetUnicodeFuntion);
         public static readonly MethodInfo GeneratorCheckThrowableAndReturnSendValue = GetMethod((Func<object, object>)PythonOps.GeneratorCheckThrowableAndReturnSendValue);
         
         private static MethodInfo GetMethod(Delegate x) {

@@ -37,14 +37,14 @@ namespace IronPython.Runtime {
     /// Summary description for ConstantValue.
     /// </summary>
     public static class LiteralParser {
-        public static string ParseString(string text, bool isRaw, bool isUni) {
-            return ParseString(text.ToCharArray(), 0, text.Length, isRaw, isUni, false);
+        public static string ParseString(string text, bool isRaw) {
+            return ParseString(text.ToCharArray(), 0, text.Length, isRaw, false);
         }
 
-        public static string ParseString(char[] text, int start, int length, bool isRaw, bool isUni, bool normalizeLineEndings) {
+        public static string ParseString(char[] text, int start, int length, bool isRaw, bool normalizeLineEndings) {
             Debug.Assert(text != null);
 
-            if (isRaw && !isUni && !normalizeLineEndings) return new String(text, start, length);
+            if (isRaw && !normalizeLineEndings) return new String(text, start, length);
 
             StringBuilder buf = null;
             int i = start;
@@ -52,7 +52,7 @@ namespace IronPython.Runtime {
             int val;
             while (i < l) {
                 char ch = text[i++];
-                if ((!isRaw || isUni) && ch == '\\') {
+                if (ch == '\\') {
                     if (buf == null) {
                          buf = new StringBuilder(length);
                          buf.Append(text, start, i - start - 1);
@@ -71,7 +71,7 @@ namespace IronPython.Runtime {
                     if (ch == 'u' || ch == 'U') {
                         int len = (ch == 'u') ? 4 : 8;
                         int max = 16;
-                        if (isUni) {
+                        if (!isRaw) {
                             if (TryParseInt(text, i, len, max, out val)) {
                                 if (val < 0 || val > 0x10ffff) {
                                     throw PythonOps.StandardError(@"'unicodeescape' codec can't decode bytes in position {0}: illegal Unicode character", i);

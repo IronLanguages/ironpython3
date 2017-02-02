@@ -399,7 +399,7 @@ namespace IronPython.Compiler {
                     case 'u':
                     case 'U':
                         _state.LastNewLine = false;
-                        return ReadNameOrUnicodeString();
+                        return ReadNameOrString();
 
                     case 'r':
                     case 'R':
@@ -516,14 +516,9 @@ namespace IronPython.Compiler {
             return new CommentToken(GetTokenString());
         }
 
-        private Token ReadNameOrUnicodeString() {
+        private Token ReadNameOrString() {
             if (NextChar('\"')) return ReadString('\"', false, true, false);
             if (NextChar('\'')) return ReadString('\'', false, true, false);
-            if (NextChar('r') || NextChar('R')) {
-                if (NextChar('\"')) return ReadString('\"', true, true, false);
-                if (NextChar('\'')) return ReadString('\'', true, true, false);
-                BufferBack();
-            }
             return ReadName();
         }
 
@@ -706,10 +701,7 @@ namespace IronPython.Compiler {
 
         private Token MakeStringToken(char quote, bool isRaw, bool isUnicode, bool isBytes, bool isTriple, int start, int length) {
             if (!isBytes) {
-                string contents = LiteralParser.ParseString(_buffer, start, length, isRaw, isUnicode || UnicodeLiterals, !_disableLineFeedLineSeparator);
-                if (isUnicode) {
-                    return new UnicodeStringToken(contents);
-                }
+                string contents = LiteralParser.ParseString(_buffer, start, length, isRaw, !_disableLineFeedLineSeparator);
                 return new ConstantValueToken(contents);
             } else {
                 List<byte> data = LiteralParser.ParseBytes(_buffer, start, length, isRaw, !_disableLineFeedLineSeparator);

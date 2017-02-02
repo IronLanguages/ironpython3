@@ -210,62 +210,6 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.TypeError("expected str, got {0} from __str__", DynamicHelpers.GetPythonType(value).Name);
         }
 
-
-        internal static string FastNewUnicode(CodeContext context, object value, object encoding, object errors) {
-            string strErrors = errors as string;
-            if (strErrors == null) {
-                throw PythonOps.TypeError("unicode() argument 3 must be string, not {0}", PythonTypeOps.GetName(errors));
-            }
-
-            if (value != null) {
-                string strValue = value as string;
-                if (strValue != null) {
-                    return StringOps.RawDecode(context, strValue, encoding, strErrors);
-                }
-
-                Extensible<string> es = value as Extensible<string>;
-                if (es != null) {
-                    return StringOps.RawDecode(context, es.Value, encoding, strErrors);
-                }
-
-                Bytes bytes = value as Bytes;
-                if (bytes != null) {                    
-                    return StringOps.RawDecode(context, bytes.ToString(), encoding, strErrors);
-                }
-
-                PythonBuffer buffer = value as PythonBuffer;
-                if (buffer != null) {
-                    return StringOps.RawDecode(context, buffer.ToString(), encoding, strErrors);
-                }                
-            }
-
-            throw PythonOps.TypeError("coercing to Unicode: need string or buffer, {0} found", PythonTypeOps.GetName(value));
-        }
-
-        internal static object FastNewUnicode(CodeContext context, object value, object encoding) {
-            return FastNewUnicode(context, value, encoding, "strict");
-        }
-
-        internal static object FastNewUnicode(CodeContext context, object value) {
-            if (value == null) {
-                return "None";
-            } else if (value is string) {
-                return value;
-            }
-
-            object res;
-
-            if (PythonTypeOps.TryInvokeUnaryOperator(context, value, "__unicode__", out res) ||
-                PythonTypeOps.TryInvokeUnaryOperator(context, value, "__str__", out res)) {
-                if (res is string || res is Extensible<string>) {
-                    return res;
-                }
-                throw PythonOps.TypeError("coercing to Unicode: expected string, got {0}", PythonTypeOps.GetName(value));
-            }
-
-            return FastNewUnicode(context, value, context.LanguageContext.DefaultEncoding.WebName, "strict");
-        }
-
         private static object CheckAsciiString(CodeContext context, string s) {
             for (int i = 0; i < s.Length; i++) {
                 if (s[i] > '\x80')
@@ -392,8 +336,8 @@ namespace IronPython.Runtime.Operations {
 
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, PythonType cls,
-            object @string,
-            [DefaultParameterValue(null)] string encoding,
+            [BytesConversion]object @string,
+            [DefaultParameterValue("utf-8")] string encoding,
             [DefaultParameterValue("strict")] string errors) {
 
             string str = @string as string;
@@ -403,6 +347,20 @@ namespace IronPython.Runtime.Operations {
                 return decode(context, str, encoding ?? PythonContext.GetContext(context).GetDefaultEncodingName(), errors);
             } else {
                 return cls.CreateInstance(context, __new__(context, TypeCache.String, str, encoding, errors));
+            }
+        }
+
+        [StaticExtensionMethod]
+        public static object __new__(CodeContext/*!*/ context, PythonType cls,
+            IList<byte> @object,
+            [DefaultParameterValue("utf-8")] string encoding,
+            [DefaultParameterValue("strict")] string errors) {
+
+            if (cls == TypeCache.String) {
+                if (@object is Bytes) return ((Bytes)@object).decode(context, encoding, errors);
+                return new Bytes(@object).decode(context, encoding, errors);
+            } else {
+                return cls.CreateInstance(context, __new__(context, TypeCache.String, @object, encoding, errors));
             }
         }
       
@@ -801,13 +759,6 @@ namespace IronPython.Runtime.Operations {
             //  violations but also haven't seen an Uppercased char, then this is not a 
             //  title e.g. '\n', all whitespace etc.
             return containsUpper;
-        }
-
-        public static bool isunicode(this string self) {
-            foreach (char c in self) {
-                if (c >= LowestUnicodeValue) return true;
-            }
-            return false;
         }
 
         /// <summary>
@@ -1502,22 +1453,19 @@ namespace IronPython.Runtime.Operations {
         #region Internal implementation details
 
         internal static string Quote(string s) {
-
-            bool isUnicode = false;
             StringBuilder b = new StringBuilder(s.Length + 5);
             char quote = '\'';
             if (s.IndexOf('\'') != -1 && s.IndexOf('\"') == -1) {
                 quote = '\"';
             }
             b.Append(quote);
-            b.Append(ReprEncode(s, quote, ref isUnicode));
+            b.Append(ReprEncode(s, quote));
             b.Append(quote);
-            if (isUnicode) return "u" + b.ToString();
             return b.ToString();
         }
 
-        internal static string ReprEncode(string s, ref bool isUnicode) {
-            return ReprEncode(s, (char)0, ref isUnicode);
+        internal static string ReprEncode(string s) {
+            return ReprEncode(s, (char)0);
         }
 
         internal static bool TryGetEncoding(string name, out Encoding encoding) {
@@ -1622,14 +1570,13 @@ namespace IronPython.Runtime.Operations {
             return new string(rchars);
         }
 
-        internal static string ReprEncode(string s, char quote, ref bool isUnicode) {
+        internal static string ReprEncode(string s, char quote) {
             // in the common case we don't need to encode anything, so we
             // lazily create the StringBuilder only if necessary.
             StringBuilder b = null;
             for (int i = 0; i < s.Length; i++) {
                 char ch = s[i];
 
-                if (ch >= LowestUnicodeValue) isUnicode = true;
                 switch (ch) {
                     case '\\': ReprInit(ref b, s, i); b.Append("\\\\"); break;
                     case '\t': ReprInit(ref b, s, i); b.Append("\\t"); break;
@@ -1725,11 +1672,9 @@ namespace IronPython.Runtime.Operations {
             if (e == null) {
                 string normalizedName = NormalizeEncodingName(encoding);
                 if ("raw_unicode_escape" == normalizedName) {
-                    return LiteralParser.ParseString(s, true, true);
+                    return LiteralParser.ParseString(s, true);
                 } else if ("unicode_escape" == normalizedName) {
-                    return LiteralParser.ParseString(s, false, true);
-                } else if ("string_escape" == normalizedName) {
-                    return LiteralParser.ParseString(s, false, false);
+                    return LiteralParser.ParseString(s, false);
                 }
             }
             
@@ -1817,8 +1762,7 @@ namespace IronPython.Runtime.Operations {
                 if ("raw_unicode_escape" == normalizedName) {
                     return PythonOps.MakeBytes(RawUnicodeEscapeEncode(s));
                 } else if ("unicode_escape" == normalizedName || "string_escape" == normalizedName) {
-                    bool dummy = false;
-                    return PythonOps.MakeBytes(ReprEncode(s, '\'', ref dummy));
+                    return PythonOps.MakeBytes(ReprEncode(s, '\''));
                 }
             }
 
@@ -2650,8 +2594,7 @@ namespace IronPython.Runtime.Operations {
                     return RawUnicodeEscapeEncode(new string(chars, index, count));
                 }
 
-                bool dummy = false;
-                return ReprEncode(new string(chars, index, count), ref dummy);
+                return ReprEncode(new string(chars, index, count));
             }
 
             public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex) {
@@ -2675,7 +2618,7 @@ namespace IronPython.Runtime.Operations {
                     tmpChars[i] = (char)bytes[i + index];
                 }
 
-                return LiteralParser.ParseString(tmpChars, 0, tmpChars.Length, _raw, true, false).Length;
+                return LiteralParser.ParseString(tmpChars, 0, tmpChars.Length, _raw, false).Length;
             }
 
             public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) {
@@ -2684,7 +2627,7 @@ namespace IronPython.Runtime.Operations {
                     chars[i] = (char)bytes[i + byteIndex];
                 }
 
-                string res = LiteralParser.ParseString(tmpChars, 0, tmpChars.Length, _raw, true, false);
+                string res = LiteralParser.ParseString(tmpChars, 0, tmpChars.Length, _raw, false);
                 for (int i = 0; i < res.Length; i++) {
                     chars[i + charIndex] = (char)res[i];
                 }

@@ -1710,12 +1710,6 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return ScriptingRuntimeHelpers.CharToString((char)i);
         }
 
-        public static PythonType unicode {
-            get {
-                return DynamicHelpers.GetPythonTypeFromType(typeof(string));
-            }
-        }
-
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods")]
         [Documentation("vars([object]) -> dictionary\n\nWithout arguments, equivalent to locals().\nWith an argument, equivalent to object.__dict__.")]
         public static object vars(CodeContext/*!*/ context) {

@@ -41,24 +41,9 @@ namespace IronPython.Compiler.Ast {
             _value = value;
         }
 
-        internal static ConstantExpression MakeUnicode(string value) {
-            return new ConstantExpression(new UnicodeWrapper(value));
-        }
-
         public object Value {
             get {
-                UnicodeWrapper wrapper;
-                if ((wrapper = _value as UnicodeWrapper) != null) {
-                    return wrapper.Value;
-                }
-                
                 return _value; 
-            }
-        }
-
-        internal bool IsUnicodeString {
-            get {
-                return _value is UnicodeWrapper;
             }
         }
 
@@ -66,7 +51,6 @@ namespace IronPython.Compiler.Ast {
         private static readonly MSAst.Expression TrueExpr = Ast.Field(null, typeof(ScriptingRuntimeHelpers).GetField("True"));
         private static readonly MSAst.Expression FalseExpr = Ast.Field(null, typeof(ScriptingRuntimeHelpers).GetField("False"));
         public override MSAst.Expression Reduce() {
-            UnicodeWrapper wrapper;
             if (_value == Ellipsis.Value) {
                 return EllipsisExpr;
             } else if (_value is bool) {
@@ -75,8 +59,6 @@ namespace IronPython.Compiler.Ast {
                 } else {
                     return FalseExpr;
                 }
-            } else if ((wrapper = _value as UnicodeWrapper) != null) {
-                return GlobalParent.Constant(wrapper.Value);
             }
 
             return GlobalParent.Constant(_value);
@@ -128,21 +110,11 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        class UnicodeWrapper {
-            public readonly object Value;
-
-            public UnicodeWrapper(string value) {
-                Value = value;
-            }
-        }
-
         #region IInstructionProvider Members
 
         void IInstructionProvider.AddInstructions(LightCompiler compiler) {
             if (_value is bool) {
                 compiler.Instructions.EmitLoad((bool)_value);
-            } else if (_value is UnicodeWrapper) {
-                compiler.Instructions.EmitLoad(((UnicodeWrapper)_value).Value);
             } else {
                 compiler.Instructions.EmitLoad(_value);
             }

@@ -131,12 +131,6 @@ namespace IronPython.Compiler {
         }
     }
 
-    sealed class UnicodeStringToken : ConstantValueToken {
-        public UnicodeStringToken(object value)
-            : base(value) {
-        }
-    }
-
     public sealed class CommentToken : Token {
         private readonly string _comment;
 

@@ -268,10 +268,6 @@ namespace IronPython.Runtime.Exceptions {
                 return _args.ToString();
             }
 
-            public string __unicode__() {
-                return ToString();
-            }
-
             #endregion
 
             #region Member access operators

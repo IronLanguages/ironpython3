@@ -1099,8 +1099,7 @@ namespace IronPython.Modules {
                     }
                     sb.Append(quote);
                     
-                    bool isUnicode = false;
-                    sb.Append(StringOps.ReprEncode(s, quote, ref isUnicode));
+                    sb.Append(StringOps.ReprEncode(s, quote));
                     sb.Append(quote);
                     sb.Append(")");
                 } else {

@@ -158,18 +158,9 @@ namespace IronPython.Compiler.Ast {
             if (_op == PythonOperator.Mod && 
                 (leftConst = _left as ConstantExpression) != null && 
                 leftConst.Value is string) {
-                MethodInfo method;
-                if (leftConst.IsUnicodeString) {
-                    // u'foo' % ...
-                    // we want this to perform unicode string formatting.
-                    method = AstMethods.FormatUnicode;
-                } else {
-                    // inline string formatting
-                    method = AstMethods.FormatString;
-                }
 
                 return Expression.Call(
-                    method,
+                    AstMethods.FormatString,
                     Parent.LocalContext,
                     _left,
                     AstUtils.Convert(_right, typeof(object))

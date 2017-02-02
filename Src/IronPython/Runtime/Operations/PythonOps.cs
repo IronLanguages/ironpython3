@@ -269,10 +269,6 @@ namespace IronPython.Runtime.Operations {
             return new StringFormatter(context, str, data).Format();
         }
 
-        public static string FormatUnicode(CodeContext/*!*/ context, string str, object data) {
-            return new StringFormatter(context, str, data, true).Format();
-        }
-
         public static object Plus(object o) {
             object ret;
 
@@ -4192,51 +4188,12 @@ namespace IronPython.Runtime.Operations {
             return PythonOps.GetAttrNames(context, scope);
         }
 
-        public static bool IsUnicode(object unicodeObj) {
-            return unicodeObj == TypeCache.String;
-        }
-
-        public static BuiltinFunction GetUnicodeFuntion() {
-            return UnicodeHelper.Function;
-        }
-
         public static bool IsExtensionSet(CodeContext codeContext, int id) {
             return codeContext.ModuleContext.ExtensionMethods.Id == id;
         }
 
         public static object GetExtensionMethodSet(CodeContext context) {
             return context.ModuleContext.ExtensionMethods;
-        }
-    }
-
-    /// <summary>
-    /// Helper clas for calls to unicode(...).  We generate code which checks if unicode
-    /// is str and if it is we redirect those calls to the unicode function defined on this
-    /// class.
-    /// </summary>
-    public class UnicodeHelper {
-        internal static BuiltinFunction Function = BuiltinFunction.MakeFunction("unicode",
-            ArrayUtils.ConvertAll(
-                typeof(UnicodeHelper).GetMember("unicode"),
-                x => (MethodInfo)x
-            ),
-            typeof(string)
-        );
-
-        public static object unicode(CodeContext context) {
-            return String.Empty;
-        }
-
-        public static object unicode(CodeContext/*!*/ context, object @string) {
-            return StringOps.FastNewUnicode(context, @string);
-        }
-
-        public static object unicode(CodeContext/*!*/ context, object @string, object encoding) {
-            return StringOps.FastNewUnicode(context, @string, encoding);
-        }
-
-        public static object unicode(CodeContext/*!*/ context, object @string, [Optional]object encoding, object errors) {
-            return StringOps.FastNewUnicode(context, @string, encoding, errors);
         }
     }
 

@@ -404,7 +404,7 @@ namespace IronPython.Compiler {
                     case 'r':
                     case 'R':
                         _state.LastNewLine = false;
-                        return ReadNameOrRawString();
+                        return ReadNameOrRawStringOrBytes();
                     case 'b':
                     case 'B':
                         _state.LastNewLine = false;
@@ -538,9 +538,14 @@ namespace IronPython.Compiler {
             return ReadName();
         }
 
-        private Token ReadNameOrRawString() {
+        private Token ReadNameOrRawStringOrBytes() {
             if (NextChar('\"')) return ReadString('\"', true, false, false);
             if (NextChar('\'')) return ReadString('\'', true, false, false);
+            if (NextChar('b') || NextChar('B')) {
+                if (NextChar('\"')) return ReadString('\"', true, false, true);
+                if (NextChar('\'')) return ReadString('\'', true, false, true);
+                BufferBack();
+            }
             return ReadName();
         }
 

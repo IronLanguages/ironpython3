@@ -52,7 +52,7 @@ namespace IronPythonTest.Cases {
 
         public CaseExecuter() {
             this.defaultEngine = Python.CreateEngine(new Dictionary<string, object> {
-                {"Debug", true },
+                {"Debug", false},
                 {"Frames", true},
                 {"FullFrames", true}
             });

@@ -152,8 +152,15 @@ namespace IronPython.Runtime {
             return new PythonTuple(MakeItems(o));
         }
 
+        /// <summary>
+        /// Create a mutale tuple out of an array
+        /// </summary>
+        /// <param name="items">Array</param>
+        /// <returns>If items > 0 new PythonTuple instance, else an empty tuple</returns>
         internal static PythonTuple MakeTuple(params object[] items) {
-            if (items.Length == 0) return EMPTY;
+            if (items.Length == 0) {
+                return EMPTY;
+            }
             return new PythonTuple(items);
         }
 

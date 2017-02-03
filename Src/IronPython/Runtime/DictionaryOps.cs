@@ -89,16 +89,27 @@ namespace IronPython.Runtime {
             return ret;
         }
 
-        public static IEnumerator iteritems(IDictionary<object, object> self) {
+        public static List keys(IDictionary<object, object> self)
+        {
+            return PythonOps.MakeListFromSequence(self.Keys);
+        }
+
+        /// <summary>
+        /// Old python style but currently required because this iterators are used for internal stuff
+        /// </summary>
+        /// <param name="self"></param>
+        /// <returns></returns>
+        internal static IEnumerator __iteritems__(IDictionary<object, object> self) {
             return ((IEnumerable)items(self)).GetEnumerator();
         }
 
-        public static IEnumerator iterkeys(IDictionary<object, object> self) {
+        /// <summary>
+        /// Old python style but currently required because this iterators are used for internal stuff
+        /// </summary>
+        /// <param name="self"></param>
+        /// <returns></returns>
+        internal static IEnumerator __iterkeys__(IDictionary<object, object> self) {
             return ((IEnumerable)keys(self)).GetEnumerator();
-        }
-
-        public static List keys(IDictionary<object, object> self) {
-            return PythonOps.MakeListFromSequence(self.Keys);
         }
 
         public static object pop(PythonDictionary self, object key) {

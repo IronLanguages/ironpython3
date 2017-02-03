@@ -374,27 +374,33 @@ namespace IronPython.Runtime {
             return res;
         }
 
-        public IEnumerator iteritems() {
+
+        /// <summary>
+        /// Iteritems to enable .net iterator on this dictionary.
+        /// Will be used for internal use only
+        /// </summary>
+        /// <returns>Iterator for iterating over the current instance without creating a copy or some thing similar</returns>
+        internal IEnumerator __iteritems__() {
             return new DictionaryItemEnumerator(_storage);
         }
 
-        public IEnumerator iterkeys() {
+        internal IEnumerator __iterkeys__() {
             return new DictionaryKeyEnumerator(_storage);
         }
 
-        public IEnumerator itervalues() {
+        internal IEnumerator __itervalues__() {
             return new DictionaryValueEnumerator(_storage);
         }
 
-        public IEnumerable viewitems() {
+        internal IEnumerable __viewitems__() {
             return new DictionaryItemView(this);
         }
 
-        public IEnumerable viewkeys() {
+        internal IEnumerable __viewkeys__() {
             return new DictionaryKeyView(this);
         }
 
-        public IEnumerable viewvalues() {
+        internal IEnumerable __viewvalues__() {
             return new DictionaryValueView(this);
         }
 
@@ -526,9 +532,9 @@ namespace IronPython.Runtime {
             IDictionary<object, object> oth = other as IDictionary<object, object>;
             // CompareTo is allowed to throw (string, int, etc... all do it if they don't get a matching type)
             if (oth == null) {
-                object len, iteritems;
+                object len, items;
                 if (!PythonOps.TryGetBoundAttr(context, other, "__len__", out len) ||
-                    !PythonOps.TryGetBoundAttr(context, other, "iteritems", out iteritems)) {
+                    !PythonOps.TryGetBoundAttr(context, other, "items", out items)) {
                     return NotImplementedType.Value;
                 }
 
@@ -538,7 +544,7 @@ namespace IronPython.Runtime {
 
                 if (lcnt != rcnt) return lcnt > rcnt ? 1 : -1;
 
-                return DictionaryOps.CompareToWorker(context, this, new List(PythonOps.CallWithContext(context, iteritems)));
+                return DictionaryOps.CompareToWorker(context, this, new List(PythonOps.CallWithContext(context, items)));
             }
 
             CompareUtil.Push(this, oth);
@@ -1102,7 +1108,7 @@ namespace IronPython.Runtime {
 
         [PythonHidden]
         public IEnumerator GetEnumerator() {
-            return _dict.itervalues();
+            return _dict.__itervalues__();
         }
 
         IEnumerator<object> IEnumerable<object>.GetEnumerator() {
@@ -1144,7 +1150,7 @@ namespace IronPython.Runtime {
 
         [PythonHidden]
         public IEnumerator GetEnumerator() {
-            return _dict.iterkeys();
+            return _dict.__iterkeys__();
         }
 
         IEnumerator<object> IEnumerable<object>.GetEnumerator() {
@@ -1500,7 +1506,7 @@ namespace IronPython.Runtime {
 
         [PythonHidden]
         public IEnumerator GetEnumerator() {
-            return _dict.iteritems();
+            return _dict.__iteritems__();
         }
 
         IEnumerator<object> IEnumerable<object>.GetEnumerator() {

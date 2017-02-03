@@ -1010,7 +1010,7 @@ namespace IronPython.Modules {
                     PythonTuple.MakeTuple(default_factory),
                     null,
                     null,
-                    iteritems()
+                    items()
                 );
             }
         }

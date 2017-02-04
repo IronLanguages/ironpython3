@@ -54,7 +54,8 @@ namespace IronPythonTest.Cases {
             this.defaultEngine = Python.CreateEngine(new Dictionary<string, object> {
                 {"Debug", false},
                 {"Frames", true},
-                {"FullFrames", true}
+                {"FullFrames", true},
+                {"RecursionLimit", 100}
             });
 
             this.defaultEngine.SetHostVariables(
@@ -98,7 +99,8 @@ namespace IronPythonTest.Cases {
 
         private int GetResult(ScriptEngine engine, ScriptSource source) {
             var scope = engine.CreateScope();
-            return engine.Operations.ConvertTo<int>(source.Execute(scope) ?? 0);
+            var compiledCode = source.Compile(new IronPython.Compiler.PythonCompilerOptions() { ModuleName = "__main__" });
+            return engine.Operations.ConvertTo<int>(compiledCode.Execute(scope) ?? 0);
         }
     }
 }

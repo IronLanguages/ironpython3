@@ -1344,11 +1344,6 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            // all classes should inherit from object, so if no base is provided, add object as a base
-            if(bases.Length == 0) {
-                bases = new object[] { DynamicHelpers.GetPythonTypeFromType(typeof(object)) };
-            }
-
             PythonTuple tupleBases = PythonTuple.MakeTuple(bases);
 
             object metaclass;
@@ -1360,7 +1355,7 @@ namespace IronPython.Runtime.Operations {
 
             if (metaclass is PythonType) {
                 classdict = CallPrepare(context, (PythonType)metaclass, name, tupleBases, vars);
-            }
+            }            
 
             // eg:
             // def foo(*args): print args            
@@ -1369,7 +1364,7 @@ namespace IronPython.Runtime.Operations {
             // calls our function...
             PythonContext pc = PythonContext.GetContext(context);
 
-            return pc.MetaClassCallSite.Target(
+            object clazz = pc.MetaClassCallSite.Target(
                 pc.MetaClassCallSite,
                 context,
                 metaclass,
@@ -1377,6 +1372,13 @@ namespace IronPython.Runtime.Operations {
                 tupleBases,
                 classdict
             );
+
+            PythonType newType = clazz as PythonType;
+            if(newType != null && newType.BaseTypes.Count == 0) {
+                newType.BaseTypes.Add(DynamicHelpers.GetPythonTypeFromType(typeof(object)));
+            }
+
+            return clazz;
         }
 
         /// <summary>

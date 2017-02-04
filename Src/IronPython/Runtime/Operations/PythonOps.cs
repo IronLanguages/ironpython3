@@ -1344,6 +1344,11 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
+            // all classes should inherit from object, so if no base is provided, add object as a base
+            if(bases.Length == 0) {
+                bases = new object[] { DynamicHelpers.GetPythonTypeFromType(typeof(object)) };
+            }
+
             PythonTuple tupleBases = PythonTuple.MakeTuple(bases);
 
             object metaclass;

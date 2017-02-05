@@ -18,17 +18,17 @@
 # non-generic version of Action[T].  Therefore it also can't run in test_interpret_sanity.
 import sys
 if sys.platform=="win32":
-    print "Will not run this test on CPython.  Goodbye."
+    print("Will not run this test on CPython.  Goodbye.")
     sys.exit(0)
 import System
 
 if __name__  == '__main__':
-    def f(): print 'hello'
+    def f(): print('hello')
     try:
         System.Action(f)
         if not System.Environment.Version.Major>3:
             raise Exception('action[t] test failed')
-    except TypeError, e:
+    except TypeError as e:
         if e.message!="cannot create instances of Action[T] because it is a generic type definition":
             raise Exception(e.message)
     
@@ -67,7 +67,7 @@ def test_interface_inheritance():
     class MyFurtherDerivedComparer(MyDerivedComparer): pass
 
     # Check that MyDerivedComparer and MyFurtherDerivedComparer can be used as an IComparer
-    array = System.Array[int](range(10))
+    array = System.Array[int](list(range(10)))
     
     System.Array.Sort(array, 0, 10, MyComparer())
     System.Array.Sort(array, 0, 10, MyDerivedComparer())
@@ -158,12 +158,12 @@ def test_bases():
     else:
         try:
             setattr(MyExceptionComparer, "__bases__", MyIncompatibleExceptionComparer.__bases__)
-        except TypeError, e:
+        except TypeError as e:
             Assert(e.args[0].startswith("__bases__ assignment: 'MyExceptionComparer' object layout differs from 'IronPython.NewTypes.System.Exception#IComparer#IDisposable_"))
         
         try:
             setattr(MyExceptionComparer(), "__class__", MyIncompatibleExceptionComparer().__class__)
-        except TypeError, e:
+        except TypeError as e:
             Assert(e.args[0].startswith("__class__ assignment: 'MyExceptionComparer' object layout differs from 'IronPython.NewTypes.System.Exception#IComparer#IDisposable_"))
 
 
@@ -191,7 +191,7 @@ def test_op_Implicit_inheritance():
     """should inherit op_Implicit from base classes"""
     a = NewClass()
     AreEqual(int(a), 1002)
-    AreEqual(long(a), 1002)
+    AreEqual(int(a), 1002)
     AreEqual(NewClass.op_Implicit(a), 1002)
 
 def test_symbol_dict():
@@ -208,8 +208,8 @@ def test_symbol_dict():
         try:
             a.__dict__[1] = '1'
             C.__dict__[2] = '2'
-            AreEqual(a.__dict__.has_key(1), True)
-            AreEqual(C.__dict__.has_key(2), True)
+            AreEqual(1 in a.__dict__, True)
+            AreEqual(2 in C.__dict__, True)
             AreEqual(dir(a).__contains__(1), True)
             AreEqual(dir(a).__contains__(2), True)
             AreEqual(dir(C).__contains__(2), True)
@@ -267,7 +267,7 @@ def test_generic_TypeGroup():
     AreEqual(System.IComparable[int].CompareTo(1,1), 0)
     AreEqual(System.IComparable[int].CompareTo(1,2), -1)
     Assert(dir(System.IComparable).__contains__("CompareTo"))
-    Assert(vars(System.IComparable).keys().__contains__("CompareTo"))
+    Assert(list(vars(System.IComparable).keys()).__contains__("CompareTo"))
 
     import IronPythonTest
     genericTypes = IronPythonTest.NestedClass.InnerGenericClass
@@ -332,7 +332,7 @@ def test_generic_TypeGroup():
 def test_generic_only_TypeGroup():
     try:
         BinderTest.GenericOnlyConflict()
-    except System.TypeLoadException, e:
+    except System.TypeLoadException as e:
         Assert(str(e).find('requires a non-generic type') != -1)
         Assert(str(e).find('GenericOnlyConflict') != -1)
 
@@ -584,35 +584,35 @@ def test_field_descriptor():
 def test_field_const_write():
     try:
         MySize.MaxSize = 23
-    except AttributeError, e:
+    except AttributeError as e:
         Assert(str(e).find('MaxSize') != -1)
         Assert(str(e).find('MySize') != -1)
 
     try:
         ClassWithLiteral.Literal = 23
-    except AttributeError, e:
+    except AttributeError as e:
         Assert(str(e).find('Literal') != -1)
         Assert(str(e).find('ClassWithLiteral') != -1)
 
     try:
         ClassWithLiteral.__dict__['Literal'].__set__(None, 23)
-    except AttributeError, e:
+    except AttributeError as e:
         Assert(str(e).find('int') != -1)
 
     try:
         ClassWithLiteral.__dict__['Literal'].__set__(ClassWithLiteral(), 23)
-    except AttributeError, e:
+    except AttributeError as e:
         Assert(str(e).find('int') != -1)
 
     try:
         MySize().MaxSize = 23
-    except AttributeError, e:
+    except AttributeError as e:
         Assert(str(e).find('MaxSize') != -1)
         Assert(str(e).find('MySize') != -1)
 
     try:
         ClassWithLiteral().Literal = 23
-    except AttributeError, e:
+    except AttributeError as e:
         Assert(str(e).find('Literal') != -1)
         Assert(str(e).find('ClassWithLiteral') != -1)
 
@@ -949,7 +949,7 @@ def test_property_get_set():
     temp.Width = 5
     AreEqual(temp.Width, 5)
         
-    for i in xrange(5):
+    for i in range(5):
         temp.Width = i
         AreEqual(temp.Width, i)    
 
@@ -1003,47 +1003,47 @@ def test_as_bool():
     
     # instance property
     x = System.Uri('http://foo')
-    for i in xrange(2):
+    for i in range(2):
         if x.AbsolutePath: pass
         else: AssertUnreachable()
     
     # instance property on type
-    for i in xrange(2):
+    for i in range(2):
         if System.Uri.AbsolutePath: pass
         else: AssertUnreachable()
     
     # static property
-    for i in xrange(2):
+    for i in range(2):
         if System.Threading.Thread.CurrentThread: pass
         else: AssertUnreachable()
     
     # static field
-    for i in xrange(2):
+    for i in range(2):
         if System.String.Empty: AssertUnreachable()
     
     # instance field
     x = NestedClass()
-    for i in xrange(2):
+    for i in range(2):
         if x.Field: AssertUnreachable()        
     
     # instance field on type
-    for i in xrange(2):
+    for i in range(2):
         if NestedClass.Field: pass
         else: AssertUnreachable()
     
     # math
-    for i in xrange(2):
+    for i in range(2):
         if System.Int64(1) + System.Int64(1): pass
         else: AssertUnreachable()
 
-    for i in xrange(2):
+    for i in range(2):
         if System.Int64(1) + System.Int64(1): pass
         else: AssertUnreachable()
     
     # GetItem
     x = System.Collections.Generic.List[str]()
     x.Add('abc')
-    for i in xrange(2):
+    for i in range(2):
         if x[0]: pass
         else: AssertUnreachable()
         
@@ -1206,10 +1206,10 @@ def test_serialization():
     - way more to test here..
     """
     
-    import cPickle
+    import pickle
     
     # test the primitive data types...    
-    data = [1, 1.0, 2j, 2L, System.Int64(1), System.UInt64(1), 
+    data = [1, 1.0, 2j, 2, System.Int64(1), System.UInt64(1), 
             System.UInt32(1), System.Int16(1), System.UInt16(1), 
             System.Byte(1), System.SByte(1), System.Decimal(1),
             System.Char.MaxValue, System.DBNull.Value, System.Single(1.0),
@@ -1259,11 +1259,11 @@ def test_serialization():
     
     for value in data:
         # use cPickle & clr.Serialize/Deserialize directly
-        for newVal in (cPickle.loads(cPickle.dumps(value)), clr.Deserialize(*clr.Serialize(value))):
+        for newVal in (pickle.loads(pickle.dumps(value)), clr.Deserialize(*clr.Serialize(value))):
             AreEqual(type(newVal), type(value))
             try:
                 AreEqual(newVal, value)
-            except RuntimeError, e:
+            except RuntimeError as e:
                 # we hit one of our recursive structures...
                 AreEqual(e.message, "maximum recursion depth exceeded in cmp")
                 Assert(type(newVal) is list or type(newVal) is dict)
@@ -1279,9 +1279,9 @@ def test_serialization():
     
     # lists...
     for value in (al, gl):
-        for newX in (cPickle.loads(cPickle.dumps(value)), clr.Deserialize(*clr.Serialize(value))):
+        for newX in (pickle.loads(pickle.dumps(value)), clr.Deserialize(*clr.Serialize(value))):
             AreEqual(value.Count, newX.Count)
-            for i in xrange(value.Count):
+            for i in range(value.Count):
                 AreEqual(value[i], newX[i])
     
     ht = System.Collections.Hashtable()
@@ -1292,21 +1292,21 @@ def test_serialization():
 
     # dictionaries
     for value in (ht, gd):
-        for newX in (cPickle.loads(cPickle.dumps(value)), clr.Deserialize(*clr.Serialize(value))):
+        for newX in (pickle.loads(pickle.dumps(value)), clr.Deserialize(*clr.Serialize(value))):
             AreEqual(value.Count, newX.Count)
             for key in value.Keys:
                 AreEqual(value[key], newX[key])
                 
     # interesting cases
     for tempX in [System.Exception("some message")]:
-        for newX in (cPickle.loads(cPickle.dumps(tempX)), clr.Deserialize(*clr.Serialize(tempX))):
+        for newX in (pickle.loads(pickle.dumps(tempX)), clr.Deserialize(*clr.Serialize(tempX))):
             AreEqual(newX.Message, tempX.Message)
 
     try:
-        exec " print 1"
-    except Exception, tempX:
+        exec(" print 1")
+    except Exception as tempX:
         pass
-    newX = cPickle.loads(cPickle.dumps(tempX))
+    newX = pickle.loads(pickle.dumps(tempX))
     for attr in ['args', 'filename', 'text', 'lineno', 'msg', 'offset', 'print_file_and_line',
                  'message',
                  ]:
@@ -1342,7 +1342,7 @@ def test_collection_length():
     Assert(hasattr(a, '__len__'))
     
 def test_dict_copy():
-    Assert(int.__dict__.copy().has_key('MaxValue'))
+    Assert('MaxValue' in int.__dict__.copy())
 
 def test_decimal_bool():
     AreEqual(bool(System.Decimal(0)), False)
@@ -1687,7 +1687,7 @@ def test_convert_int64_to_float():
 
 @skip("silverlight")
 def test_cp24004():
-    Assert(System.Array.__dict__.has_key("Find"))
+    Assert("Find" in System.Array.__dict__)
 
 @skip("silverlight")
 def test_cp23772():

@@ -22,12 +22,13 @@ x = dir(dict.fromkeys)
 from iptest.assert_util import *
 
 import operator
+import collections
 
 def test_sanity():
     items = 0
     
     d = {'key1': 'value1', 'key2': 'value2'}
-    for key, value in d.iteritems():
+    for key, value in d.items():
         items += 1
         Assert((key, value) == ('key1', 'value1') or (key,value) == ('key2', 'value2'))
 
@@ -232,7 +233,7 @@ def repeat_on_class(C):
         Assert(x.find("'abc': <dictproxy object at") != -1)
     del C.abc
 
-    keys, values = d.keys(), d.values()
+    keys, values = list(d.keys()), list(d.values())
     AreEqual(len(keys), len(values))
     contains(keys, '__doc__', 'x1', 'f1')
     
@@ -253,10 +254,10 @@ def repeat_on_class(C):
     
     if not newStyle:
         contains(d, '__doc__', 'x1', 'x2', 'f1', 'f2')
-        contains(d.keys(), '__doc__', 'x1', 'x2', 'f1', 'f2')
+        contains(list(d.keys()), '__doc__', 'x1', 'x2', 'f1', 'f2')
     else:
         contains(d, '__doc__', 'x1', 'f1')
-        contains(d.keys(), '__doc__', 'x1', 'f1')
+        contains(list(d.keys()), '__doc__', 'x1', 'f1')
         
     AreEqual(d['x1'], 10)
     if not newStyle:
@@ -306,11 +307,11 @@ def repeat_on_class(C):
         AreEqual(len(d), l1)
     
     ## has_key
-    Assert(d.has_key('f1'))
+    Assert('f1' in d)
     if not newStyle:
-        Assert(d.has_key('f2'))
-        Assert(d.has_key('f3'))
-    Assert(d.has_key('fx') == False)
+        Assert('f2' in d)
+        Assert('f3' in d)
+    Assert(('fx' in d) == False)
     
     # subclassing, overriding __getitem__, and passing to
     # eval
@@ -322,7 +323,7 @@ def repeat_on_class(C):
                 if key == 'abc':
                     return 'def'
                 return super(self, dictType).__getitem__(key)
-    except TypeError, ex:
+    except TypeError as ex:
         if not newStyle:
             Assert(ex.message.find('cannot derive from sealed or value types') != -1, ex.message)
         else:
@@ -330,7 +331,7 @@ def repeat_on_class(C):
     else:
         try:
             nd = newDict()
-        except TypeError, e:
+        except TypeError as e:
             if sys.platform == 'cli':
                 import clr
                 if clr.GetClrType(dictType).ToString() == 'IronPython.Runtime.Types.NamespaceDictionary':
@@ -343,14 +344,14 @@ def repeat_on_class(C):
 
     ## iteritems
     lk = []
-    for (k, v) in d.iteritems():
+    for (k, v) in d.items():
         lk.append(k)
         exp = None
         if k == 'f1': exp = 11
         elif k == 'f2': exp == 22
         elif k == 'f3': exp == 33
         
-        if exp <> None:
+        if exp != None:
             AreEqual(v(c), exp)
     
     if not newStyle:
@@ -360,7 +361,7 @@ def repeat_on_class(C):
         
     # iterkeys
     lk = []
-    for k in d.iterkeys():
+    for k in d.keys():
         lk.append(k)
     
     if not newStyle:
@@ -369,8 +370,8 @@ def repeat_on_class(C):
         contains(lk, 'f1', '__module__', '__dict__', 'x1', '__weakref__', '__doc__')
     
     # itervalues
-    for v in d.itervalues():
-        if callable(v):
+    for v in d.values():
+        if isinstance(v, collections.Callable):
             exp = v(c)
             Assert(exp in [11, 22, 33])
         elif v is str:
@@ -387,7 +388,7 @@ def repeat_on_class(C):
         l1 = len(d)
         d[int] = 4     # object as key
         if is_cli or is_silverlight:
-            print "CodePlex 16811"
+            print("CodePlex 16811")
             return
         AreEqual(len(d), l1+1)
     
@@ -470,7 +471,7 @@ def test_customfieldiddict_compare():
         # object as key
         d1[int] = int
         d2[int] = int
-        Assert(d1 <> d2)
+        Assert(d1 != d2)
     
         d2['f'] = d1['f']
         Assert([x for x in d1] == [x for x in d2])
@@ -529,7 +530,7 @@ def test_dict_to_idict():
                     ]
     
     for temp_dict in test_dicts:
-        expected = temp_dict.keys() + temp_dict.values()
+        expected = list(temp_dict.keys()) + list(temp_dict.values())
         expected.sort()
         
         to_idict = list(DictConversion.ToIDictionary(temp_dict))
@@ -555,7 +556,7 @@ def test_fieldiddict():
     d[int]  = "int"
     d[dict] = {2:20}
 
-    keys, values = d.keys(), d.values()
+    keys, values = list(d.keys()), list(d.values())
     AreEqual(len(keys), len(values))
     contains(keys, 'x1', 'f1', int, dict)
 
@@ -571,7 +572,7 @@ def test_fieldiddict():
     AreEqual(d.__len__(), l + 2)
 
     contains(d, 'x1', 'x2', 'f1', 'f2', int, dict)
-    contains(d.keys(), 'x1', 'x2', 'f1', 'f2', int, dict)
+    contains(list(d.keys()), 'x1', 'x2', 'f1', 'f2', int, dict)
 
     AreEqual(d['x1'], 10)
     AreEqual(d['x2'], 20)
@@ -616,18 +617,18 @@ def test_fieldiddict():
     AreEqual(len(d), l1)
     
     ## has_key
-    Assert(d.has_key('f1'))
-    Assert(d.has_key('f2'))
-    Assert(d.has_key('f3'))
-    Assert(d.has_key(dict))
-    Assert(d.has_key('fx') == False)
+    Assert('f1' in d)
+    Assert('f2' in d)
+    Assert('f3' in d)
+    Assert(dict in d)
+    Assert(('fx' in d) == False)
 
     ############### IN THIS POINT, d LOOKS LIKE ###############
     # f1, f2, f3, x3, dict as keys
 
     ## iteritems
     lk = []
-    for (k, v) in d.iteritems():
+    for (k, v) in d.items():
         lk.append(k)
         if k == 'f1': AreEqual(v(), 11)
         elif k == 'f2': AreEqual(v(1), 22)
@@ -639,14 +640,14 @@ def test_fieldiddict():
 
     # iterkeys
     lk = []
-    for k in d.iterkeys():
+    for k in d.keys():
         lk.append(k)
 
     contains(lk, 'f1', 'f2', 'f3', 'x3', dict)
 
     # itervalues
-    for v in d.itervalues():
-        if callable(v):
+    for v in d.values():
+        if isinstance(v, collections.Callable):
             try: exp = v(1)
             except: pass
             try: exp = v()
@@ -701,7 +702,7 @@ def test_fieldiddict():
     d2[int] = int
     
     # object as key
-    Assert(d1 <> d2)
+    Assert(d1 != d2)
     
     d2['x'] = 10
     Assert(d1 == d2)
@@ -815,23 +816,23 @@ def test_same_but_different():
     """Test case checks that when two values who are logically different but share hash code & equality
     result in only a single entry"""
     
-    AreEqual({-10:0, -10L:1}, {-10:1})
+    AreEqual({-10:0, -10:1}, {-10:1})
 
 #####################################################################
 def test_module_dict():
     me = sys.modules[__name__]
     moduleDict = me.__dict__
-    AreEqual(operator.isMappingType(moduleDict), True)
+    AreEqual(isinstance(moduleDict, collections.Mapping), True)
     AreEqual(moduleDict.__contains__("test_module_dict"), True)
     AreEqual(moduleDict["test_module_dict"], test_module_dict)
-    AreEqual(moduleDict.keys().__contains__("test_module_dict"), True)
+    AreEqual(list(moduleDict.keys()).__contains__("test_module_dict"), True)
 
 def test_eval_locals_simple():
     class Locals(dict):
         def __getitem__(self, key):
             try:
                 return dict.__getitem__(self, key)
-            except KeyError, e:
+            except KeyError as e:
                 return 'abc'
     
     locs = Locals()
@@ -843,20 +844,20 @@ def test_key_error():
     class d(object): pass
     
     
-    for key in ['abc', 1, c(), d(), 1.0, 1L]:
+    for key in ['abc', 1, c(), d(), 1.0, 1]:
         try:
             {}[key]
-        except KeyError, e:
+        except KeyError as e:
             AreEqual(e.args[0], key)
         
         try:
             del {}[key]
-        except KeyError, e:
+        except KeyError as e:
             AreEqual(e.args[0], key)
             
         try:
             set([]).remove(key)
-        except KeyError, e:
+        except KeyError as e:
             AreEqual(e.args[0], key)
 
 def test_contains():
@@ -877,13 +878,13 @@ def test_contains():
 
 def test_stdtypes_dict():
     temp_types = [  int,
-                    long,
+                    int,
                     float,
                     complex,
                     bool,
                     str,
-                    unicode,
-                    basestring,
+                    str,
+                    str,
                     list,
                     tuple,
                     xrange,
@@ -914,7 +915,7 @@ def test_main_dict():
     for w in __main__.__dict__: t_list.append(w)
     
     t_list.sort()
-    g_list = globals().keys()
+    g_list = list(globals().keys())
     g_list.sort()
     AreEqual(t_list, g_list)
     
@@ -949,8 +950,8 @@ def test_update():
     for start_dict, dict_param, kw_params, expected in test_cases:
         try:
             start_dict.update(*dict_param, **kw_params)
-        except Exception, e:
-            print "ERROR:", start_dict, ".update(*", dict_param, ", **", kw_params, ") failed!"
+        except Exception as e:
+            print("ERROR:", start_dict, ".update(*", dict_param, ", **", kw_params, ") failed!")
             raise e
         
         AreEqual(start_dict, expected)
@@ -1022,15 +1023,15 @@ def test_dict_class_dictionary():
         
         #methods show up?
         for func_name in ["aFunc", "aMethod"]:
-            Assert(func_name in K.__dict__.keys())
-            Assert(func_name in temp_dict.keys())
+            Assert(func_name in list(K.__dict__.keys()))
+            Assert(func_name in list(temp_dict.keys()))
         
     expected_keys = [   '__module__', 'KLASS_MEMBER', 'aFunc', 'aMethod',
                         '__dict__',
                         '__weakref__', '__doc__']
     for expected_key in expected_keys:
-        Assert(KNew.__dict__.has_key(expected_key), expected_key)
-        Assert(temp_dict.has_key(expected_key), expected_key)
+        Assert(expected_key in KNew.__dict__, expected_key)
+        Assert(expected_key in temp_dict, expected_key)
         
 
 def test_cp15882():
@@ -1053,18 +1054,18 @@ def test_cp15882():
                     (), (None),
                     (-1), (0), (1), (2),
                     (1, 2), (1, 2, 3),
-                    xrange(3), 1j, object, test_cp15882,
-                    (xrange(3)), (1j), (object), (test_cp15882),
+                    range(3), 1j, object, test_cp15882,
+                    (range(3)), (1j), (object), (test_cp15882),
                     (()), ((())),
                     ]:
-        for i in xrange(2):
+        for i in range(2):
             x[stuff] = 1
             AreEqual(x[stuff], 1)
             del x[stuff]
             AreEqual(x, {})
             AssertError(KeyError, x.__delitem__, stuff)
     
-        for i in xrange(2):
+        for i in range(2):
             x[stuff] = 1
             AreEqual(x[stuff], 1)
             x.__delitem__(stuff)
@@ -1076,7 +1077,7 @@ def test_comparison_operators():
     x = {2:3}
     y = {2:4}
     for oper in ('__lt__', '__gt__', '__le__', '__ge__'):
-        for data in (y, None, 1, 1.0, 1L, (), [], 1j, "abc"):
+        for data in (y, None, 1, 1.0, 1, (), [], 1j, "abc"):
             AreEqual(getattr(x, oper)(data), NotImplemented)
 
 def test_cp16519():
@@ -1154,15 +1155,15 @@ def test_dict_comp():
     AreEqual(C.abc, {2:2,3:3,4:4})
 
     d = {}
-    exec compile("abc = {locals()['x']:locals()['x'] for x in (2,3,4)}", 'exec', 'exec') in d, d
+    exec(compile("abc = {locals()['x']:locals()['x'] for x in (2,3,4)}", 'exec', 'exec'), d, d)
     AreEqual(d['abc'], {2:2,3:3,4:4})
     
     d = {'y':42}
-    exec compile("abc = {y:y for x in (2,3,4)}", 'exec', 'exec') in d, d
+    exec(compile("abc = {y:y for x in (2,3,4)}", 'exec', 'exec'), d, d)
     AreEqual(d['abc'], {42:42})
 
     d = {'y':42, 't':(2,3,42)}
-    exec compile("abc = {y:y for x in t if x == y}", 'exec', 'exec') in d, d
+    exec(compile("abc = {y:y for x in t if x == y}", 'exec', 'exec'), d, d)
     AreEqual(d['abc'], {42:42})
 
     t = (2,3,4)
@@ -1206,7 +1207,7 @@ def test_cp32527():
     #if working properly, there will now be a recycled bucket (former home of a7) and a single a8 bucket
     #if not working properly, there will instead be two a8 buckets
     expected = 1
-    actual = d.keys().count('a8')
+    actual = list(d.keys()).count('a8')
     AreEqual(actual, expected)
 
 

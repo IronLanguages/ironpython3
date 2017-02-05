@@ -18,7 +18,7 @@ skiptest("win32")
 skiptest("silverlight")
 
 from time   import sleep
-from thread import start_new_thread
+from _thread import start_new_thread
 
 import System
 
@@ -53,7 +53,7 @@ def timer_helper(num_handlers=1, sleep_time=5, event_handlers=[], aTimer=None, e
         if aTimer==None:
             aTimer = System.Timers.Timer()
     
-        for i in xrange(num_handlers): aTimer.Elapsed += System.Timers.ElapsedEventHandler(onTimedEvent)
+        for i in range(num_handlers): aTimer.Elapsed += System.Timers.ElapsedEventHandler(onTimedEvent)
         for handler in event_handlers: aTimer.Elapsed += System.Timers.ElapsedEventHandler(handler)
     
         aTimer.Interval = 1000
@@ -87,9 +87,9 @@ def test_sanity_from_thread():
     
     start_new_thread(test_sanity, tuple())
 
-    print "Waiting for test_sanity to finish",
+    print("Waiting for test_sanity to finish", end=' ')
     while not TIMER_HELPER_FINISHED:
-        print ".",
+        print(".", end=' ')
         sleep(1)
 
 
@@ -121,8 +121,8 @@ def test_elapsed_event_args():
         #BUG? exceptions are not propagated out of events
         try:
             Assert(ea.SignalTime <= System.DateTime.Now)
-        except Exception, e:
-            print e
+        except Exception as e:
+            print(e)
             EVENT_ERRORS.append(e)
         
     #create and run the timer
@@ -265,7 +265,7 @@ def test_timer_description_attribute():
     '''
     http://msdn2.microsoft.com/en-us/library/system.timers.timersdescriptionattribute.aspx
     '''
-    print "Nothing to do from Python?"
+    print("Nothing to do from Python?")
     
     
 run_test(__name__)

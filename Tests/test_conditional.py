@@ -97,8 +97,8 @@ def test_errors():
 def test_conditional_in_lambda():
     try:
         list = [f for f in (1, lambda x: x if x >= 0 else -1)]
-        list = [f for f in 1, lambda x: (x if x >= 0 else -1)]
-        list = [f for f in 1, (lambda x: x if x >= 0 else -1)]
+        list = [f for f in (1, lambda x: (x if x >= 0 else -1))]
+        list = [f for f in (1, (lambda x: x if x >= 0 else -1))]
     except e:
         Assert(False, e.message)
 
@@ -112,13 +112,13 @@ def test_conditional_return_types():
     
     for x in [
                 -2, -1, 0, 1, 2, 2**16,
-                -2L, -1L, 0L, 1L, 2L, 2**32,
+                -2, -1, 0, 1, 2, 2**32,
                 3.14,
                 2j,
                 "", "abc",
                 {}, {'a':'b'}, {'a':'b', 'c':'d'},
                 [], [1], [1, 2],
-                xrange(0), xrange(1), xrange(2),
+                range(0), range(1), range(2),
                 OldK, NewK, OldK(), NewK(),
                 None, str, object,
                 ]:
@@ -137,8 +137,8 @@ def test_conversions():
         Fail("Expression incorrectly evaluated")
 
 def test_cp13299():
-    true_conditions = [ 1, 1L, -1, -1L, True, 1.1, -1.1, "abc", int, 0.1, -0.1]
-    false_conditions = [ 0, 0L, None, 0.0, -0, -0.0, False, (), [], ""]
+    true_conditions = [ 1, 1, -1, -1, True, 1.1, -1.1, "abc", int, 0.1, -0.1]
+    false_conditions = [ 0, 0, None, 0.0, -0, -0.0, False, (), [], ""]
     
     for condition in true_conditions:
         x = condition if condition else False
@@ -149,7 +149,7 @@ def test_cp13299():
         AreEqual(x, condition)
             
     AreEqual(3.14 if True else 1, 3.14)
-    AreEqual(3.14 if True else 1L, 3.14)
+    AreEqual(3.14 if True else 1, 3.14)
     AreEqual(3.14 if True else -1, 3.14)
     AreEqual(3.14 if True else True, 3.14)
     AreEqual(3.14 if True else 1.1, 3.14)
@@ -157,15 +157,15 @@ def test_cp13299():
     AreEqual(3.14 if True else "abc", 3.14)
     AreEqual(3.14 if True else int, 3.14)
     AreEqual(3.14 if True else 0, 3.14)
-    AreEqual(3.14 if True else 0L, 3.14)
+    AreEqual(3.14 if True else 0, 3.14)
     AreEqual(3.14 if True else None, 3.14)
     AreEqual(3.14 if True else False, 3.14)
     AreEqual(3.14 if True else (), 3.14)
     AreEqual(3.14 if True else [[1]], 3.14)
-    AreEqual(3.14 if True else u"", 3.14)
+    AreEqual(3.14 if True else "", 3.14)
     
     AreEqual(1 if False else 3.14, 3.14)
-    AreEqual(1L if False else 3.14, 3.14)
+    AreEqual(1 if False else 3.14, 3.14)
     AreEqual(-1 if False else 3.14, 3.14)
     AreEqual(True if False else 3.14, 3.14)
     AreEqual(1.1 if False else 3.14, 3.14)
@@ -173,12 +173,12 @@ def test_cp13299():
     AreEqual("abc" if False else 3.14, 3.14)
     AreEqual(int if False else 3.14, 3.14)
     AreEqual(0 if False else 3.14, 3.14)
-    AreEqual(0L if False else 3.14, 3.14)
+    AreEqual(0 if False else 3.14, 3.14)
     AreEqual(None if False else 3.14, 3.14)
     AreEqual(False if False else 3.14, 3.14)
     AreEqual(() if False else 3.14, 3.14)
     AreEqual([[1]] if False else 3.14, 3.14)
-    AreEqual(u"" if False else 3.14, 3.14)
+    AreEqual("" if False else 3.14, 3.14)
     
 def test_large_if():    
     def f(value):
@@ -1145,10 +1145,10 @@ def test_large_if():
         elif True:
             return 23
 
-    for i in xrange(10000):
+    for i in range(10000):
         AreEqual(f(True), 42)
 
-    for i in xrange(10000):
+    for i in range(10000):
         AreEqual(f(False), 23)
 
 run_test(__name__)

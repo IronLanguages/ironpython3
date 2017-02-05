@@ -16,7 +16,7 @@
 from iptest.assert_util import *
 
 if is_cli64: #BUG: Skip this test on 64bit only to work around VSWhidbey 560529
-    print "Warning: Skipping test_tcf on 64-bit machines"
+    print("Warning: Skipping test_tcf on 64-bit machines")
 else:
     # test try-catch-finally syntax
     globals()["gblvar"] = 1
@@ -199,7 +199,7 @@ else:
                                             k = test_unified_try(a,b,c,d,e,f,g,h,i)
                                             while(True):
                                                 try:
-                                                    k.next()
+                                                    next(k)
                                                 except MyErr4: setvar();break
                                                 except StopIteration: setvar();break
     
@@ -272,7 +272,7 @@ else:
     try:
         k = test_yiled_finally()
         while(1):
-            k.next()
+            next(k)
     except StopIteration: pass
     
     AreEqual(globals()["gblvar"],8)

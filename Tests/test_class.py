@@ -98,7 +98,7 @@ def test_attrs():
 
 ############################################################
 def test_type_in():
-    AreEqual(type in (None, True, False, 1, {}, [], (), 1.0, 1L, (1+0j)), False)
+    AreEqual(type in (None, True, False, 1, {}, [], (), 1.0, 1, (1+0j)), False)
 
 ############################################################
 def test_init_defaults():
@@ -439,13 +439,13 @@ def test_raise_attrerror():
     
     class A:
         def __getattr__(self, name):
-            raise AttributeError, 'get outta here'
+            raise AttributeError('get outta here')
         def __repr__(self):
             return 'foo'
     
     class B:
         def __getattr__(self, name):
-            raise AttributeError, 'get outta here'
+            raise AttributeError('get outta here')
         def __str__(self):
             return 'foo'
     
@@ -460,13 +460,13 @@ def test_raise_attrerror():
 
 def test_exec_namespace():
     class oldclasswithexec:
-        exec "def oldexecmethod(self): return 'result of oldexecmethod'"
+        exec("def oldexecmethod(self): return 'result of oldexecmethod'")
     
     Assert('oldexecmethod' in dir(oldclasswithexec))
     AreEqual(oldclasswithexec().oldexecmethod(), 'result of oldexecmethod')
     
     class newclasswithexec(object):
-        exec "def newexecmethod(self): return 'result of newexecmethod'"
+        exec("def newexecmethod(self): return 'result of newexecmethod'")
     
     Assert('newexecmethod' in dir(newclasswithexec))
     AreEqual(newclasswithexec().newexecmethod(), 'result of newexecmethod')
@@ -512,7 +512,7 @@ def test_module_name():
     def f(x): x.__module__
     def g(x): getattr(x, '__module__')
     import errno
-    for thing in "", 1, errno, 1L, 1+2j, (), [], {}:
+    for thing in "", 1, errno, 1, 1+2j, (), [], {}:
         AreEqual(getattr(thing, '__module__', 'does_not_exist'), 'does_not_exist')
         AreEqual(hasattr(thing, '__module__'), False)
         AssertError(AttributeError, f, thing)
@@ -542,9 +542,9 @@ def test_check_dictionary():
                 C.__dict__[2] = '2'
                 AssertUnreachable()
             except TypeError: pass
-            AreEqual(C.__dict__.has_key(2), False)
+            AreEqual(2 in C.__dict__, False)
 
-        AreEqual(a.__dict__.has_key(1), True)
+        AreEqual(1 in a.__dict__, True)
         AreEqual(dir(a).__contains__(1), True)
 
         AreEqual(repr(a.__dict__), "{1: '1'}")
@@ -661,7 +661,7 @@ def test_call_type_call():
     call_mapper[KNewArgsKwargs] = lambda: [type(KNewArgsKwargs()).__call__(KNewArgsKwargs())]
 
     
-    for K in call_mapper.keys():        
+    for K in list(call_mapper.keys()):        
         for ret_val in call_mapper[K]():
             AreEqual(ret_val, 2)
 
@@ -1014,7 +1014,7 @@ def test_newstyle_lookup():
             try:
                 eval(testCase)
                 AssertUnreachable()
-            except TypeError, e:
+            except TypeError as e:
                 pass
             
             delattr(obj, method)
@@ -1050,7 +1050,7 @@ def test_newstyle_lookup():
             setattr(obj, method, twoargs)
             
             try:
-                exec testCase in globals(), locals()
+                exec(testCase, globals(), locals())
                 AssertUnreachable()
             except TypeError:
                 pass
@@ -1063,7 +1063,7 @@ def test_newstyle_lookup():
             
             global twoArgsCalled
             twoArgsCalled = False
-            exec testCase in globals(), locals()
+            exec(testCase, globals(), locals())
             AreEqual(twoArgsCalled, True)
             
             delattr(Strange, method)
@@ -1131,7 +1131,7 @@ def test_newstyle_lookup():
         testCases = [
             (('__complex__', 2+0j), 'complex(obj)'),
             (('__int__', 1), 'int(obj)'),
-            (('__long__', 1L), 'long(obj)'),
+            (('__long__', 1), 'long(obj)'),
             (('__float__', 1.0), 'float(obj)'),
           ]
           
@@ -1142,7 +1142,7 @@ def test_newstyle_lookup():
             try:
                 eval(testCase)
                 AssertUnreachable()
-            except (TypeError, ValueError), e:
+            except (TypeError, ValueError) as e:
                 AreEqual(e.args[0].find('returned') == -1, True)    # shouldn't have returned '__complex__ returned ...'
 
             delattr(obj, method[0])
@@ -1317,7 +1317,7 @@ def test_slots():
     AreEqual(a.abc, 42)
     
     x = a.__dict__
-    AreEqual(x.has_key('abc'), False)
+    AreEqual('abc' in x, False)
     a.xyz = 'abc'
     AreEqual(a.xyz, 'abc')
     
@@ -1334,8 +1334,8 @@ def test_slots():
         class foo(type):
             __slots__ = ['abc']
     
-        class bar(object):
-            __metaclass__ = foo
+        class bar(object, metaclass=foo):
+            pass
     
     # complex slots
     
@@ -1569,7 +1569,7 @@ def test_slots11457():
         __slots__ = ['a']
         
     for C in [COld, CNew]:
-        for i in xrange(2):
+        for i in range(2):
             setattr(C, 'a', 5)
             AreEqual(C().a, 5)
             
@@ -1616,7 +1616,7 @@ def test_no_clr_attributes():
     # list, 
     class x: pass
     
-    for stuff in [object, int, float, bool, str, long, complex, dict, set, 
+    for stuff in [object, int, float, bool, str, int, complex, dict, set, 
                   None, NotImplemented, Ellipsis, type(test_no_clr_attributes),
                   classmethod, staticmethod, frozenset, property, sys, 
                   BaseException, type(zip), slice, buffer, enumerate, file,
@@ -1652,7 +1652,7 @@ def test_outer_scope():
             pass
         class C:
             if Referenced: pass
-        Assert("Referenced" not in C.__dict__.keys())
+        Assert("Referenced" not in list(C.__dict__.keys()))
     
     outer_scope_test()
     
@@ -1671,7 +1671,7 @@ def test_default_new_init():
 
     anyInitList = [
                    int,
-                   long,
+                   int,
                    float,
                    complex,
                    tuple,
@@ -1796,14 +1796,14 @@ def test_default_new_init():
     AreEqual(y().__init__(2), None)
 
 def test_hash():
-    for x in [tuple, str, unicode, object, frozenset]:
+    for x in [tuple, str, str, object, frozenset]:
         inst = x()
         AreEqual(inst.__hash__(), hash(inst))
         
     # old style hash can return longs, the result of which is
     # the hash of the long
     class foo:
-        def __hash__(self): return 1<<35L
+        def __hash__(self): return 1<<35
 
     if not is_net40: #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24550
         AreEqual(hash(foo()), 8)
@@ -1958,10 +1958,10 @@ def test_override_container_len():
             d = {1:1, 2:2, 3:3}
             AreEqual(C(d).__cmp__({0:0, 1:1, 2:2}), 1)
             d[4] = 4
-            AreEqual(len(list(C(d).iterkeys())), len(list(d.iterkeys())))
+            AreEqual(len(list(C(d).keys())), len(list(d.keys())))
         else:
             AreEqual(C([1]), x([1]))
-            a = range(4)
+            a = list(range(4))
             AreEqual(len(list(iter(C(a)))), len(list(iter(x(a)))))
 
 @skip("multiple_execute") #http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=17551        
@@ -1988,9 +1988,9 @@ def test_dictproxy_access():
     #Dev10 4844754
     AreEqual(KNew.__class__.__dict__.copy(), dict(KNew.__class__.__dict__))
     
-    AreEqual(set(KNew.__dict__.iteritems()), set(dict(KNew.__dict__).iteritems()))
-    AreEqual(set(KNew.__dict__.iterkeys()), set(dict(KNew.__dict__).iterkeys()))
-    AreEqual(set(KNew.__dict__.itervalues()), set(dict(KNew.__dict__).itervalues()))
+    AreEqual(set(KNew.__dict__.items()), set(dict(KNew.__dict__).items()))
+    AreEqual(set(KNew.__dict__.keys()), set(dict(KNew.__dict__).keys()))
+    AreEqual(set(KNew.__dict__.values()), set(dict(KNew.__dict__).values()))
     
     for value in [None, 'abc', 1, object(), KNew(), KOld(), KNew, KOld, property(lambda x: x)]:
         class KNew(object):
@@ -1999,7 +1999,7 @@ def test_dictproxy_access():
         AreEqual(KNew.__dict__['abc'], value)
         AreEqual(KNew.__dict__.get('abc'), value)
         AreEqual(KNew.__dict__.get('abc', value), value)
-        for items in KNew.__dict__.iteritems(), KNew.__dict__.items(), zip(KNew.__dict__.keys(), KNew.__dict__.values()):
+        for items in iter(KNew.__dict__.items()), list(KNew.__dict__.items()), list(zip(list(KNew.__dict__.keys()), list(KNew.__dict__.values()))):
             for k, v in items:
                 if k == 'abc':
                     AreEqual(v, value)
@@ -2182,8 +2182,8 @@ def test_nonstring_name():
         
         AreEqual(C.__module__, 3)
         
-        class D(object):
-            __metaclass__ = C
+        class D(object, metaclass=C):
+            pass
             
         AreEqual(D.__module__, 3)
     finally:
@@ -2213,9 +2213,9 @@ def test_fastnew_int():
     class C2:
         def __int__(self): return myint(100)
     class C3:
-        def __int__(self): return 100L
+        def __int__(self): return 100
     class C4:
-        def __int__(self): return mylong(100L)
+        def __int__(self): return mylong(100)
     class C5:
         def __int__(self): return -123456789012345678910
     class C6:
@@ -2232,9 +2232,9 @@ def test_fastnew_int():
     class C2(object):
         def __int__(self): return myint(100)
     class C3(object):
-        def __int__(self): return 100L
+        def __int__(self): return 100
     class C4(object):
-        def __int__(self): return mylong(100L)
+        def __int__(self): return mylong(100)
     class C5(object):
         def __int__(self): return -123456789012345678910
     class C6(object):
@@ -2269,8 +2269,8 @@ def test_type_type_is_type():
 
 def test_hash_return_values():
     # new-style classes do conversion to int
-    for retval in [1, 1.0, 1.1, 1L, 1<<30]:
-        for type in [object, int, str, float, long]:
+    for retval in [1, 1.0, 1.1, 1, 1<<30]:
+        for type in [object, int, str, float, int]:
             class foo(object):
                 def __hash__(self): return retval
             
@@ -2283,8 +2283,8 @@ def test_hash_return_values():
         
         AssertError(TypeError, hash, foo())
 
-    tests = {   1L:1,
-                2L:2,
+    tests = {   1:1,
+                2:2,
             }
     if not is_net40: #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24550
         tests.update( { 1<<32: 1,
@@ -2292,7 +2292,7 @@ def test_hash_return_values():
                   1<<34: 4,
                  1<<31: -2147483648,
                 })
-    for retval in tests.keys():
+    for retval in list(tests.keys()):
         class foo:
             def __hash__(self): return retval
         
@@ -2457,7 +2457,7 @@ def test_getattr_exceptions():
     x = AttributeTest()
     try:
         y = x.throws
-    except AttributeError, ex:
+    except AttributeError as ex:
         AreEqual(ex.args, ('catch me',))
     else: Fail("should have thrown")
 
@@ -2473,8 +2473,8 @@ def test_descriptor_meta_magic():
             setattr( cls,nm, o )
             setattr( cls.__class__,nm, o )
     
-    class A:
-        __metaclass__ = Ameta
+    class A(metaclass=Ameta):
+        pass
     
     class B( A ):
         A.createShared("cls2",1)
@@ -2818,7 +2818,7 @@ def test_cp13820():
         def __getattribute__(self, name):
             global GETATTRIBUTE_CALLED
             GETATTRIBUTE_CALLED = True
-            print "__getattribute__ was called by:", name
+            print("__getattribute__ was called by:", name)
             return 1
             
         def __init__(self):
@@ -2861,7 +2861,7 @@ def test_cp13820():
         def __getattribute__(self, name):
             global GETATTRIBUTE_CALLED
             GETATTRIBUTE_CALLED = True
-            print "__getattribute__ was called by:", name
+            print("__getattribute__ was called by:", name)
             return 1
             
         def __init__(self):
@@ -2923,7 +2923,7 @@ def test_keyword_type_construction():
         def __new__(cls, *args, **kwargs):
             return object.__new__(cls)
         def __init__(self, *args, **kwargs):
-            for x, y in kwargs.iteritems():
+            for x, y in kwargs.items():
                 setattr(self, x, y)
             return object.__init__(self)
     
@@ -2986,8 +2986,7 @@ def test_descriptor_object_getattribute_interactions():
         ro_shadowed_class = readonly_data_desc(8)
         ro_shadowed_inst = readonly_data_desc(9)
     
-    class x(object):
-        __metaclass__ = meta
+    class x(object, metaclass=meta):
         def __init__(self):
             self.nondata_shadowed_inst = "nondata_inst"
             self.data_shadowed_inst = "data_inst"
@@ -3028,7 +3027,7 @@ def test_cp5803():
         def __radd__(self, other):
             return
             
-    for x in ["", 1, 3.14, None, u"stuff", object, KSimple]:
+    for x in ["", 1, 3.14, None, "stuff", object, KSimple]:
         AreEqual(x + KSimple(), None)
     AssertErrorWithPartialMessage(TypeError,
                                   "unsupported operand type(s) for +: 'KSimple' and 'str'",
@@ -3221,14 +3220,14 @@ def test_issubclass():
     AssertError(RuntimeError, issubclass, C(), S())
 
     reclimit = sys.getrecursionlimit()
-    if reclimit == sys.maxint:
+    if reclimit == sys.maxsize:
         sys.setrecursionlimit(1001)
         
     # Make sure that calling isinstance with a deeply nested tuple for its
     # argument will raise RuntimeError eventually.
     def blowstack(fxn, arg, compare_to):
         tuple_arg = (compare_to,)
-        for cnt in xrange(sys.getrecursionlimit()+5):
+        for cnt in range(sys.getrecursionlimit()+5):
             tuple_arg = (tuple_arg,)
             fxn(arg, tuple_arg)
     
@@ -3238,14 +3237,14 @@ def test_issubclass():
 
 def test_isinstance_recursion():
     reclimit = sys.getrecursionlimit()
-    if reclimit == sys.maxint:
+    if reclimit == sys.maxsize:
         sys.setrecursionlimit(1001)
 
     # Make sure that calling isinstance with a deeply nested tuple for its
     # argument will raise RuntimeError eventually.
     def blowstack(fxn, arg, compare_to):
         tuple_arg = (compare_to,)
-        for cnt in xrange(sys.getrecursionlimit()+5):
+        for cnt in range(sys.getrecursionlimit()+5):
             tuple_arg = (tuple_arg,)
             fxn(arg, tuple_arg)
     
@@ -3255,7 +3254,7 @@ def test_isinstance_recursion():
 
 def test_call_recursion():
     reclimit = sys.getrecursionlimit()
-    if reclimit == sys.maxint:
+    if reclimit == sys.maxsize:
         sys.setrecursionlimit(1001)
     
     class A(object): pass
@@ -3270,8 +3269,8 @@ def test_metaclass_base_search():
             setattr(cls, "attr_%s" % clsname, "attribute set on %s by MetaClass" % clsname)
             super(MetaClass, cls).__init__(clsname, bases, dict)
     
-    class Mixin(object):
-        __metaclass__ = MetaClass
+    class Mixin(object, metaclass=MetaClass):
+        pass
     
     class Parent(object):
         pass
@@ -3333,8 +3332,8 @@ def test_metaclass_keyword_args():
        def __init__(cls, name, bases, dict):
           super(MetaType, cls).__init__(name, bases, dict)
     
-    class Base(object):
-        __metaclass__ = MetaType
+    class Base(object, metaclass=MetaType):
+        pass
     
     class A(Base):
         def __init__(self, a, b='b', c=12, d=None, e=None):
@@ -3367,8 +3366,8 @@ def test_metaclass_getattribute():
         def __getattr__(self, name):
             return 42
     
-    class nc_ga(object):
-        __metaclass__ = mc
+    class nc_ga(object, metaclass=mc):
+        pass
         
     AreEqual(nc_ga.x, 42)
 
@@ -3394,8 +3393,8 @@ def test_metaclass_multiple_bases():
             log.append('MT1')
             return super(MT1, cls).__new__(cls, name, bases, dict)
     
-    class D(object):
-        __metaclass__ = MT1
+    class D(object, metaclass=MT1):
+        pass
     
     AreEqual(log, ['MT1'])
     
@@ -3404,8 +3403,8 @@ def test_metaclass_multiple_bases():
             log.append('MT2')
             return super(MT2, cls).__new__(cls, name, bases, dict)
     
-    class E(object):
-        __metaclass__ = MT2
+    class E(object, metaclass=MT2):
+        pass
     
     AreEqual(log, ['MT1', 'MT2'])
     class T1(C, D): pass    
@@ -3472,8 +3471,7 @@ def test_metaclass_attribute_lookup():
         @Foo.setter
         def Foo(self, value): self._foo = value
     
-    class y:
-        __metaclass__ = x
+    class y(metaclass=x):
         def Foo(self): return 42
         _foo = 0
     
@@ -3483,8 +3481,7 @@ def test_metaclass_attribute_lookup():
     class x(type):
         Foo = 42
     
-    class y:
-        __metaclass__ = x
+    class y(metaclass=x):
         Foo = 0
         
     # non-data descriptors lookup in the normal class first
@@ -3495,7 +3492,7 @@ def test_len():
         def __int__(self):
             return 42
 
-    vals = (l(), 42L, 42.0)
+    vals = (l(), 42, 42.0)
     if is_cli:
         from iptest.type_util import clr_all_types
         vals += tuple(t(42) for t in clr_all_types)
@@ -3510,7 +3507,7 @@ def test_len():
 def test_descriptor_exception():
     class desc(object):
         def __get__(self, value, ctx):
-            raise AttributeError, 'foo'
+            raise AttributeError('foo')
     
     class x(object):
         a = 42
@@ -3546,7 +3543,7 @@ def test_method_tuple_type():
     
     AreEqual(type(x.f)(f, None, (int, str))(42), 42)
     AreEqual(type(x.f)(f, None, (int, str))('abc'), 'abc')
-    AssertError(TypeError, type(x.f)(f, None, (int, str)), 1L)
+    AssertError(TypeError, type(x.f)(f, None, (int, str)), 1)
 
 def test_mutate_class():
     def f(): object.foo = 42

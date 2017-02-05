@@ -132,7 +132,7 @@ def test_expandtabs():
         
         AreEqual(len(testType(b"aaa\taaa\taaa").expandtabs()), 19)
         AreEqual(testType(b"aaa\taaa\taaa").expandtabs(), b"aaa     aaa     aaa")
-        AssertError(OverflowError, bytearray(b'\t\t').expandtabs, sys.maxint)
+        AssertError(OverflowError, bytearray(b'\t\t').expandtabs, sys.maxsize)
 
 def test_extend():
     b = bytearray(b'abc')
@@ -177,19 +177,19 @@ def test_find():
 def test_fromhex():
     for testType in types:
         if testType != str:
-            AssertError(ValueError, testType.fromhex, u'0')
-            AssertError(ValueError, testType.fromhex, u'A')
-            AssertError(ValueError, testType.fromhex, u'a')
-            AssertError(ValueError, testType.fromhex, u'aG')
-            AssertError(ValueError, testType.fromhex, u'Ga')
+            AssertError(ValueError, testType.fromhex, '0')
+            AssertError(ValueError, testType.fromhex, 'A')
+            AssertError(ValueError, testType.fromhex, 'a')
+            AssertError(ValueError, testType.fromhex, 'aG')
+            AssertError(ValueError, testType.fromhex, 'Ga')
             
-            AreEqual(testType.fromhex(u'00'), b'\x00')
-            AreEqual(testType.fromhex(u'00 '), b'\x00')
-            AreEqual(testType.fromhex(u'00  '), b'\x00')
-            AreEqual(testType.fromhex(u'00  01'), b'\x00\x01')
-            AreEqual(testType.fromhex(u'00  01 0a'), b'\x00\x01\x0a')
-            AreEqual(testType.fromhex(u'00  01 0a 0B'), b'\x00\x01\x0a\x0B')
-            AreEqual(testType.fromhex(u'00  a1 Aa 0B'), b'\x00\xA1\xAa\x0B')
+            AreEqual(testType.fromhex('00'), b'\x00')
+            AreEqual(testType.fromhex('00 '), b'\x00')
+            AreEqual(testType.fromhex('00  '), b'\x00')
+            AreEqual(testType.fromhex('00  01'), b'\x00\x01')
+            AreEqual(testType.fromhex('00  01 0a'), b'\x00\x01\x0a')
+            AreEqual(testType.fromhex('00  01 0a 0B'), b'\x00\x01\x0a\x0B')
+            AreEqual(testType.fromhex('00  a1 Aa 0B'), b'\x00\xA1\xAa\x0B')
 
 def test_index():
     for testType in types:
@@ -225,7 +225,7 @@ def test_insert():
 def check_is_method(methodName, result):
     for testType in types:
         AreEqual(getattr(testType(b''), methodName)(), False)
-        for i in xrange(256):
+        for i in range(256):
             data = bytearray()
             data.append(i)
                
@@ -243,14 +243,14 @@ def test_isdigit():
 def test_islower():
     check_is_method('islower', lambda i : i >= ord('a') and i <= ord('z'))
     for testType in types:
-        for i in xrange(256):
+        for i in range(256):
             if not chr(i).isupper():
                 AreEqual((testType(b'a') + testType([i])).islower(), True)
     
 def test_isspace():
     check_is_method('isspace', lambda i : i in [ord(' '), ord('\t'), ord('\f'), ord('\n'), ord('\r'), 11])
     for testType in types:
-        for i in xrange(256):
+        for i in range(256):
             if not chr(i).islower():
                 AreEqual((testType(b'A') + testType([i])).isupper(), True)
 
@@ -297,7 +297,7 @@ def test_ljust():
     for testType in types:
         AssertError(TypeError, testType(b'').ljust, 42, '  ')
         AssertError(TypeError, testType(b'').ljust, 42, b'  ')
-        AssertError(TypeError, testType(b'').ljust, 42, u'\u0100')
+        AssertError(TypeError, testType(b'').ljust, 42, '\u0100')
         AreEqual(testType(b'abc').ljust(4), b'abc ')
         AreEqual(testType(b'abc').ljust(4, b'x'), b'abcx')
         AreEqual(testType(b'abc').ljust(4, 'x'), b'abcx')
@@ -322,7 +322,7 @@ def test_lower():
     b'\xef\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff'
     
     data = bytearray()
-    for i in xrange(256):
+    for i in range(256):
         data.append(i)
     
     for testType in types:
@@ -479,7 +479,7 @@ def test_rjust():
     for testType in types:
         AssertError(TypeError, testType(b'').rjust, 42, '  ')
         AssertError(TypeError, testType(b'').rjust, 42, b'  ')
-        AssertError(TypeError, testType(b'').rjust, 42, u'\u0100')
+        AssertError(TypeError, testType(b'').rjust, 42, '\u0100')
         AssertError(TypeError, testType(b'').rjust, 42, [2])
         AreEqual(testType(b'abc').rjust(4), b' abc')
         AreEqual(testType(b'abc').rjust(4, b'x'), b'xabc')
@@ -690,7 +690,7 @@ def test_swapcase():
     b'\xef\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff'
     
     data = bytearray()
-    for i in xrange(256):
+    for i in range(256):
         data.append(i)
 
     for testType in types:
@@ -712,7 +712,7 @@ def test_title():
         AreEqual(testType(b'Foo').title(), b'Foo')
         AreEqual(testType(b'foo bar baz').title(), b'Foo Bar Baz')
         
-        for i in xrange(256):
+        for i in range(256):
             b = bytearray()
             b.append(i)
             
@@ -731,7 +731,7 @@ def test_title():
 
 def test_translate():
     identTable = bytearray()
-    for i in xrange(256):
+    for i in range(256):
         identTable.append(i)
 
     repAtable = bytearray(identTable)
@@ -791,7 +791,7 @@ def test_upper():
     b'\xef\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff'
     
     data = bytearray()
-    for i in xrange(256):
+    for i in range(256):
         data.append(i)
 
     for testType in types:
@@ -839,8 +839,8 @@ def test_add_mul():
         AssertError(TypeError, lambda: 3 + testType(b"a"))
     
         AssertError(TypeError, lambda: "a" * "3")
-        AssertError(OverflowError, lambda: "a" * (sys.maxint + 1))
-        AssertError(OverflowError, lambda: (sys.maxint + 1) * "a")
+        AssertError(OverflowError, lambda: "a" * (sys.maxsize + 1))
+        AssertError(OverflowError, lambda: (sys.maxsize + 1) * "a")
     
         class mylong(long): pass
         
@@ -850,14 +850,14 @@ def test_add_mul():
             AreEqual("\\\\", Path.DirectorySeparatorChar + '\\')
     
         # multiply
-        AreEqual("aaaa", "a" * 4L)
-        AreEqual("aaaa", "a" * mylong(4L))
+        AreEqual("aaaa", "a" * 4)
+        AreEqual("aaaa", "a" * mylong(4))
         AreEqual("aaa", "a" * 3)
         AreEqual("a", "a" * True)
         AreEqual("", "a" * False)
     
-        AreEqual("aaaa", 4L * "a")
-        AreEqual("aaaa", mylong(4L) * "a")
+        AreEqual("aaaa", 4 * "a")
+        AreEqual("aaaa", mylong(4) * "a")
         AreEqual("aaa", 3 * "a")
         AreEqual("a", True * "a")
         AreEqual("", False * "a" )
@@ -878,7 +878,7 @@ def test_empty_bytes():
 
 def test_encode_decode():
     for testType in types:
-        AreEqual(testType(b'abc').decode(), u'abc')
+        AreEqual(testType(b'abc').decode(), 'abc')
 
 def test_encode_decode():
     for testType in types:
@@ -939,8 +939,8 @@ def test_bytes_equals():
         AreEqual(id(x), id(True))
 
 def test_bytes_dict():
-    Assert('__init__' not in bytes.__dict__.keys())
-    Assert('__init__' in bytearray.__dict__.keys())
+    Assert('__init__' not in list(bytes.__dict__.keys()))
+    Assert('__init__' in list(bytearray.__dict__.keys()))
 
     for testType in types:
         extra_str_dict_keys = [ "__cmp__", "isdecimal", "isnumeric", "isunicode"]  # "__radd__", 
@@ -950,7 +950,7 @@ def test_bytes_dict():
         Assert(hasattr(testType, "__getattribute__"), str(testType) + " has no __getattribute__ method")
         
         for temp_key in extra_str_dict_keys:
-            Assert(not temp_key in testType.__dict__.keys())
+            Assert(not temp_key in list(testType.__dict__.keys()))
 
 def test_bytes_to_numeric():
     for testType in types:
@@ -958,7 +958,7 @@ def test_bytes_to_numeric():
             def __int__(self): return 1
             def __complex__(self): return 1j
             def __float__(self): return 1.0
-            def __long__(self): return 1L
+            def __long__(self): return 1
         
         class myfloat(float): pass
         class mylong(long): pass
@@ -971,8 +971,8 @@ def test_bytes_to_numeric():
         AreEqual(myfloat(v), 1.0)
         AreEqual(type(myfloat(v)), myfloat)
 
-        AreEqual(long(v), 1L)
-        AreEqual(mylong(v), 1L)
+        AreEqual(int(v), 1)
+        AreEqual(mylong(v), 1)
         AreEqual(type(mylong(v)), mylong)
         
         AreEqual(int(v), 1)
@@ -991,11 +991,11 @@ def test_bytes_to_numeric():
         
         v = substring(b"123")
         
-        AreEqual(long(v), 123L)
+        AreEqual(int(v), 123)
         AreEqual(int(v), 123)
         AreEqual(float(v), 123.0)
         
-        AreEqual(mylong(v), 123L)
+        AreEqual(mylong(v), 123)
         AreEqual(type(mylong(v)), mylong)
         AreEqual(myint(v), 123)
         AreEqual(type(myint(v)), myint)
@@ -1184,7 +1184,7 @@ def test_bytearray():
     x[0:1] = 2
     AreEqual(x, b'\x00\x00bc')
     x = bytearray(b'abc')
-    x[0:1] = 2L
+    x[0:1] = 2
     AreEqual(x, b'\x00\x00bc')
     x[0:2] = b'a'
     AreEqual(x, b'abc')
@@ -1198,10 +1198,10 @@ def test_bytearray():
     def f(): x[0:1] = intobj()
     AssertError(TypeError, f)
 
-    def f(): x[0:1] = sys.maxint
+    def f(): x[0:1] = sys.maxsize
     AssertError(MemoryError, f)
     
-    def f(): x[0:1] = sys.maxint+1
+    def f(): x[0:1] = sys.maxsize+1
     if is_cpython: #http://ironpython.codeplex.com/workitem/28210
         AssertError(OverflowError, f)   
     else:
@@ -1330,15 +1330,15 @@ def test_init():
     for testType in types:
         if testType != str:  # skip on Cpy 2.6 for str type
             AssertError(TypeError, testType, None, 'ascii')
-            AssertError(TypeError, testType, u'abc', None)
+            AssertError(TypeError, testType, 'abc', None)
             AssertError(TypeError, testType, [None])
-            AreEqual(testType(u'abc', 'ascii'), b'abc')
+            AreEqual(testType('abc', 'ascii'), b'abc')
             AreEqual(testType(0), b'')
             AreEqual(testType(5), b'\x00\x00\x00\x00\x00')
             AssertError(ValueError, testType, [256])
             AssertError(ValueError, testType, [257])
             
-        testType(range(256))
+        testType(list(range(256)))
         
     def f():
         yield 42
@@ -1370,10 +1370,10 @@ def test_ord():
         AssertErrorWithPartialMessage(TypeError, "expected a character, but string of length 2 found", ord, testType(b'aa'))
 
 def test_pickle():
-    import cPickle
+    import pickle
     
     for testType in types:
-        AreEqual(cPickle.loads(cPickle.dumps(testType(range(256)))), testType(range(256)))
+        AreEqual(pickle.loads(pickle.dumps(testType(list(range(256))))), testType(list(range(256))))
 
 @skip("win32")
 def test_zzz_cli_features():

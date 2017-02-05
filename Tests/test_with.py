@@ -82,7 +82,7 @@ def test_raise():
                     p = p + 1
     try:
         k = foo()
-        while(k.next()):pass
+        while(next(k)):pass
     except StopIteration: AreEqual(events, expectedEvents)
     else :Fail("Expected StopIteration but found None")
 
@@ -209,7 +209,7 @@ def test_exit_propagates_exception_on_name_deletion():
     try:
         with PropagateException() as PE:
             del PE
-            print PE
+            print(PE)
     except NameError:pass
     else: Fail("Expected NameError but found None")
 
@@ -217,7 +217,7 @@ def test_exit_propagates_exception_on_name_deletion():
         with PropagateException() as PE:
             PE.var1 = 100
             del PE
-            print PE
+            print(PE)
     except AttributeError:pass
     else: Fail("Expected AttributeError but found None")
 

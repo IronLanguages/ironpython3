@@ -34,11 +34,11 @@ import sys
 import os
 
 #Find the location of the 'iptest' package
-mroot = [os.environ[x] for x in os.environ.keys() if x.lower() == "dlr_root"]
+mroot = [os.environ[x] for x in list(os.environ.keys()) if x.lower() == "dlr_root"]
 if len(mroot)==0:
     dlr_bin = os.getcwd() + r"\..\..\bin\debug\lib"
 else:
-    dlr_bin = [os.environ[x] for x in os.environ.keys() if x.lower() == "dlr_bin"]
+    dlr_bin = [os.environ[x] for x in list(os.environ.keys()) if x.lower() == "dlr_bin"]
     if len(dlr_bin)==0:
         dlr_bin = mroot[0] + r"\bin\debug\lib"
     else:
@@ -73,8 +73,8 @@ BAIL_ON_FIRST_FAIL = True
 #get a list of all test_*.py files in the CWD
 test_list = [ x.lower() for x in os.listdir(os.getcwd()) if x.startswith("test_") and x.endswith(".py") ]
 if DEBUG:
-    print "test_list:", test_list
-    print
+    print("test_list:", test_list)
+    print()
 
 #strip out all IP-only tests
 test_list = [ x for x in test_list if EXCLUDE_LIST.count(x)==0 ]
@@ -84,14 +84,14 @@ test_list = [ x for x in test_list if EXCLUDE_LIST.count(x)==0 ]
 EXTRA_INCLUDE_LIST = [ x for x in EXTRA_INCLUDE_LIST if test_list.count(x)==0 ]
 test_list = EXTRA_INCLUDE_LIST + test_list
 if len(test_list)<50:
-    print "Should have been more than 50 tests:", test_list
+    print("Should have been more than 50 tests:", test_list)
     raise Exception("Something's wrong with RunAgainstCpy.py")
 
 #------------------------------------------------------------------------------
 failed_tests = []
 for test_name in test_list:
-    print "-------------------------------------------------------------------"
-    print "-- " + test_name
+    print("-------------------------------------------------------------------")
+    print("-- " + test_name)
     #run the test
     ec = subprocess.call(sys.executable + " -B " + test_name,
                          env=os.environ,
@@ -101,15 +101,15 @@ for test_name in test_list:
     if ec!=0:
         failed_tests.append(test_name + "; Exit Code=" + str(ec))
         if BAIL_ON_FIRST_FAIL:
-            print "%s failed!" % test_name
+            print("%s failed!" % test_name)
             break
-    print
+    print()
 
 #------------------------------------------------------------------------------
 sys.path.append(os.getcwd())
 for test_name in PKG_LIST:
-    print "-------------------------------------------------------------------"
-    print "-- " + test_name
+    print("-------------------------------------------------------------------")
+    print("-- " + test_name)
     #run the test
     ec = subprocess.call(sys.executable + " -B harness.py " + test_name,
                          env=os.environ)
@@ -117,17 +117,17 @@ for test_name in PKG_LIST:
     #if it fails, add it to the list
     if ec!=0:
         failed_tests.append(test_name + "; Exit Code=" + str(ec))
-    print
+    print()
     
 #------------------------------------------------------------------------------
-print
-print
-print "#######################################################################"
+print()
+print()
+print("#######################################################################")
 if  len(failed_tests)==0:
-    print "Everything passed!"
+    print("Everything passed!")
     sys.exit(0)
 else:
-    print "The following tests failed:"
-    for test_name in failed_tests: print test_name
+    print("The following tests failed:")
+    for test_name in failed_tests: print(test_name)
     sys.exit(1)
     

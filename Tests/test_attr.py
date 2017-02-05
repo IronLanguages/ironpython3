@@ -41,7 +41,7 @@ def test_delattr():
 
 def test_non_string_attrs():
     def CheckObjectKeys(d):
-        AreEqual(d.has_key(1), True)
+        AreEqual(1 in d, True)
         AreEqual(repr(d).__contains__("1: '1'"), True)
     
     def SetDictionary(mod, dict):
@@ -169,7 +169,7 @@ def test_meta_attrs():
     if is_cli or is_silverlight:
         AreEqual(C.foo, C.__getattribute__(C, "foo"))
     else:
-        AreEqual(C.foo.im_func, C.__getattribute__(C, "foo"))
+        AreEqual(C.foo.__func__, C.__getattribute__(C, "foo"))
     AreEqual(C.__doc__, C.__getattribute__(C, "__doc__"))
     
     # fancy type.__doc__ access...

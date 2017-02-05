@@ -240,11 +240,11 @@ def test_incomplate_syntax_backslash():
     ipi = IronPythonInstance(executable, exec_prefix, extraArgs)
     AreEqual(ipi.Start(), True)
        
-    for i in xrange(4):
-        for j in xrange(i):
+    for i in range(4):
+        for j in range(i):
             ipi.ExecutePartialLine("\\")
         ipi.ExecutePartialLine("1 + \\")
-        for j in xrange(i):
+        for j in range(i):
             ipi.ExecutePartialLine("\\")
         response = ipi.ExecuteLine("2", True)
         Assert("3" in response)
@@ -859,7 +859,7 @@ def test_remote_runtime_normal_exit():
 # Stress the input-output streams
 def test_remote_io():
     ipi = start_remote_console()
-    for i in xrange(100):
+    for i in range(100):
         AreEqual(ipi.ExecuteLineRemote("2+2"), "4")
     ipi.End()
     
@@ -914,7 +914,7 @@ def get_abort_command_output():
     return result
 
 def test_remote_abort_command():
-    for i in xrange(10):
+    for i in range(10):
         output = get_abort_command_output()
         if "KeyboardInterrupt" in output:
             AssertDoesNotContain(output, "Thread was being aborted.") # ThreadAbortException

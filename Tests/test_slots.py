@@ -267,13 +267,6 @@ def test_slots_wild_choices():
              ]:
         f(x)
 
-def test_old_style():  # ensure no impact on old-style
-    class C:
-        __slots__ = ['a']
-    x = C()
-    x.b = 10
-    AreEqual(10, x.b)
-
 def test_slots_choices():
     # guess: all existing attributes should never be overwriten by __slots__ members
     

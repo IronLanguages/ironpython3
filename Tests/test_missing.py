@@ -217,7 +217,7 @@ def GenerateMethods(ag):
         for t in ref.GetExportedTypes():
             if t.ContainsGenericParameters or t.FullName in skipTypes: continue
 
-            if trace: print counter, t.FullName
+            if trace: print(counter, t.FullName)
             EmitTestMethod(tg, "Test_%d" % counter, t)
             EmitTestMethod(tg, "TestRef_%d" % counter, t.MakeByRefType())
             counter += 1
@@ -229,11 +229,11 @@ def TestCalls(t):
     for i in range(1, counter):
         n = "Test_%d" % i
         r = getattr(t, n)()
-        if trace: print r
+        if trace: print(r)
 
         n = "TestRef_%d" % i
         r = getattr(t, n)()
-        if trace: print r
+        if trace: print(r)
 
 # disabled the test for Orcas CLR bug (DDB#66718)
 @skip("orcas")

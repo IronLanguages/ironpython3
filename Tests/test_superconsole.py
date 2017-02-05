@@ -41,7 +41,7 @@ if is_peverify_run:
 
     tempMauiDir = Path.GetTempPath()
     
-    print "Copying Maui.Core.dll to %s for peverify..." % (tempMauiDir)
+    print("Copying Maui.Core.dll to %s for peverify..." % (tempMauiDir))
     if not File.Exists(tempMauiDir + '\\Maui.Core.dll'):
         File.Copy(testpath.rowan_root + '\\Util\\Internal\\Maui_old\\Maui.Core.dll',
                   tempMauiDir + '\\Maui.Core.dll')
@@ -62,11 +62,11 @@ def getTestOutput():
     #calling the 'close' method of the file object writing to 'ip_session.log'.
     #Give it a few seconds to catch up.
     sleep(1)
-    for i in xrange(5):
+    for i in range(5):
         if "ip_session.log" in nt.listdir(nt.getcwd()):
             tfile = open('ip_session.log', 'r')
             break
-        print "Waiting for ip_session.log to be created..."
+        print("Waiting for ip_session.log to be created...")
         sleep(1)
     
     outlines = tfile.readlines()
@@ -100,7 +100,7 @@ sys.path.append(testpath.rowan_root + '\\Util\\Internal\\Maui_old')
 try:
     clr.AddReference('Maui.Core.dll')
 except:
-    print "test_superconsole.py failed: cannot load Maui.Core assembly"
+    print("test_superconsole.py failed: cannot load Maui.Core assembly")
     sys.exit(int(is_snap))
 
 from Maui.Core import App
@@ -116,8 +116,8 @@ started = proc.Start()
 try:
     superConsole = App(proc.Id)
 except Exception as e:
-    print "test_superconsole.py failed: cannot initialize App object (probably running as service, or in minimized remote window)"
-    print "On VSLGO-MAUI machines close all remote desktop sessions using EXIT command on desktop!"
+    print("test_superconsole.py failed: cannot initialize App object (probably running as service, or in minimized remote window)")
+    print("On VSLGO-MAUI machines close all remote desktop sessions using EXIT command on desktop!")
     proc.Kill()
     sys.exit(1) 
     
@@ -164,7 +164,7 @@ def test_cp12403():
              [])
     #stderr should contain the exception
     errlines = getTestOutput()[1]
-    for i in xrange(len(errlines)):
+    for i in range(len(errlines)):
         Assert(errlines[i].startswith(expected[i]), str(errlines) + " != " + str(expected))
     
 def test_unique_prefix_completion():
@@ -365,7 +365,7 @@ def test_control_character_rendering():
     # check that Ctrl-C breaks an infinite loop (the test is that subsequent things actually appear)
     superConsole.SendKeys('while True: pass{ENTER}{ENTER}')
     superConsole.SendKeys('^(c)')
-    print "CodePlex Work Item 12401"
+    print("CodePlex Work Item 12401")
     errors = [
                 "Traceback (most recent call last):", #CodePlex Work Item 12401
                 "  File", #CodePlex Work Item 12401
@@ -543,7 +543,7 @@ def test_cp4299():
                       'abc def f():\n', 'xyz         pass\n', 'xyz         \n', 
                       'abc outputRedirectStop()\n']
     
-    for i in xrange(len(lines)):
+    for i in range(len(lines)):
         AreEqual(lines[i], expected_lines[i])
     AreEqual(len(lines), len(expected_lines))            
     
@@ -561,7 +561,7 @@ def test_cp16520():
                         ">>> outputRedirectStop()\n"]
                    
     AreEqual(len(lines), len(expected_lines))
-    for i in xrange(0, len(lines)):
+    for i in range(0, len(lines)):
         AreEqual(lines[i], expected_lines[i])                        
     
 def test_decorator_cp21984():
@@ -578,7 +578,7 @@ def test_decorator_cp21984():
                         ">>> outputRedirectStop()\n"]
                    
     AreEqual(len(lines), len(expected_lines))
-    for i in xrange(0, len(lines)):
+    for i in range(0, len(lines)):
         AreEqual(lines[i], expected_lines[i])                        
 
 
@@ -595,7 +595,7 @@ def test_triple_strings():
                         ">>> outputRedirectStop()\n"]
                    
     AreEqual(len(lines), len(expected_lines))
-    for i in xrange(0, len(lines)):
+    for i in range(0, len(lines)):
         AreEqual(lines[i], expected_lines[i])  
 
 def test_areraise():
@@ -671,7 +671,7 @@ sys.stdout = _StreamLog(sys.stdout)
 
 try:
     if len(sys.argv)==2:
-        print "Will run %s only..." % sys.argv[1]
+        print("Will run %s only..." % sys.argv[1])
         temp_func = eval(sys.argv[1])
         temp_func()
     else:

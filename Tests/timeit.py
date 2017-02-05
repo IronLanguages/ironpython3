@@ -15,15 +15,16 @@
 
 import time
 import sys
+import collections
 
 if len(sys.argv) < 2:
-    print 'usage: test [loops]'
-    print
-    print 'default loop count is 1000'
+    print('usage: test [loops]')
+    print()
+    print('default loop count is 1000')
 
 file = sys.argv[1]
 
-print 'running from file', file
+print('running from file', file)
 if len(sys.argv) > 2:
     loopCnt = int(sys.argv[2])
 else:
@@ -32,12 +33,12 @@ else:
 
 runnable = __import__(file)
 if not hasattr(runnable, 'run'):
-    print file, 'must have function named run'
+    print(file, 'must have function named run')
     
-if not callable(runnable.run):
-    print runnable.run, 'in', file, 'is not callable'
+if not isinstance(runnable.run, collections.Callable):
+    print(runnable.run, 'in', file, 'is not callable')
 
-loops = range(loopCnt)
+loops = list(range(loopCnt))
 times = []
 
 for x in loops:
@@ -68,9 +69,9 @@ for x in times:
 stddev = (totalDev / (loopCnt-1)) ** .5
 
 times.sort()
-print 'min', minTime
-print 'max', maxTime
-print 'mean', mean
-print 'median', times[loopCnt/2]
-print 'std deviation', stddev
-print 'total', total
+print('min', minTime)
+print('max', maxTime)
+print('mean', mean)
+print('median', times[loopCnt/2])
+print('std deviation', stddev)
+print('total', total)

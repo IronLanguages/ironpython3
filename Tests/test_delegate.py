@@ -725,7 +725,7 @@ def test_event_lifetime():
         # ensure as long as the objects are still alive the event
         # handler remains alive
         import gc
-        for i in xrange(10):
+        for i in range(10):
             gc.collect()
             
         a.CallInstance()
@@ -737,7 +737,7 @@ def test_event_lifetime():
 
     # now all references are dead, the function should be collectible
     import gc
-    for i in xrange(10):
+    for i in range(10):
         gc.collect()
     
     Assert(not hasattr(func_ref, "abc"))

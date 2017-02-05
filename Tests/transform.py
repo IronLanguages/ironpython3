@@ -24,38 +24,38 @@
     all_types = [x for x in get_Subclass_of(nodeRt)] 
     other_types = list(set(['Expression', 'Statement']) | set(all_types) - set(all_exprs) - set(all_stmts))
 
-    print "        public override Node Visit(Node node) {"
-    print "            if (node == null) return null;"
-    print "            Type type = node.GetType();"
+    print("        public override Node Visit(Node node) {")
+    print("            if (node == null) return null;")
+    print("            Type type = node.GetType();")
     
     for i in range(len(other_types)):
         tn = other_types[i]
-        if i != 0: print " else", 
-        print "    if (type == typeof(%s)) {"  % tn
-        print "         return Visit%s(node as %s);" % (tn, tn)
-        print "}", 
-    print 
-    print "throw new ApplicationException(\"unknown node\");"
-    print "        }"
+        if i != 0: print(" else", end=' ') 
+        print("    if (type == typeof(%s)) {"  % tn)
+        print("         return Visit%s(node as %s);" % (tn, tn))
+        print("}", end=' ') 
+    print() 
+    print("throw new ApplicationException(\"unknown node\");")
+    print("        }")
     
     for (n, ts) in [('Expression', all_exprs), ('Statement', all_stmts)]:        
-        print "        public virtual Node Visit%s(%s node) {" % (n, n)
-        print "            if (node == null) return null;"
-        print "            Type type = node.GetType();"
+        print("        public virtual Node Visit%s(%s node) {" % (n, n))
+        print("            if (node == null) return null;")
+        print("            Type type = node.GetType();")
         for i in range(len(ts)):
             tn = ts[i]
-            if i != 0: print " else", 
-            print "    if (type == typeof(%s)) {"  % tn
-            print "         return Visit%s(node as %s);" % (tn, tn)
-            print "}", 
-        print 
-        print "throw new ApplicationException(\"unknown %s\");" % n.lower()
-        print "        }"
+            if i != 0: print(" else", end=' ') 
+            print("    if (type == typeof(%s)) {"  % tn)
+            print("         return Visit%s(node as %s);" % (tn, tn))
+            print("}", end=' ') 
+        print() 
+        print("throw new ApplicationException(\"unknown %s\");" % n.lower())
+        print("        }")
 
 import nt, sys
 import clr
 import System
-import cPickle
+import pickle
 clr.AddReference("PythonStyle")
 
 from PythonStyle import *
@@ -126,11 +126,11 @@ def try_all(visitor):
         elif (f_name=="test_traceback.py"):          
             pass
         else:
-            print "Attempting to transform: ", f_name
+            print("Attempting to transform: ", f_name)
             rw.Convert(f, generated(f))
            
     
-    print "\nNumber of test cases transformed: ", rw.transformCount, "/", rw.fileCount
+    print("\nNumber of test cases transformed: ", rw.transformCount, "/", rw.fileCount)
     
     _f_list = open('Transformed\\untrans_list.txt', 'w')
     
@@ -150,10 +150,10 @@ def cpy_try_all(visitor):
         if (f_name=="test_builds.py"):
             pass
         else:
-            print "Attempting to transform: ", f_name
+            print("Attempting to transform: ", f_name)
             rw.Convert(f, generated(f))
             
-    print "\nNumber of test cases transformed: ", rw.transformCount, "/", rw.fileCount
+    print("\nNumber of test cases transformed: ", rw.transformCount, "/", rw.fileCount)
      
     _f_list = open('Transformed\\untrans_list.txt', 'w')
     _f_list.write("Files not transformed:\n")
@@ -170,29 +170,29 @@ def compile_all():
         lines = fo.readlines()
         fo.close()
         try:
-            print "compiling", f, 
+            print("compiling", f, end=' ') 
             compile("\n".join(lines), f, "exec")
-            print "pass"
+            print("pass")
         except: 
-            print "fail"
-            print sys.exc_value
+            print("fail")
+            print(sys.exc_info()[1])
 
 if sys.argv[1]=="try_one":
-    exec "t_obj = " + sys.argv[2] + "()" 
+    exec("t_obj = " + sys.argv[2] + "()") 
     try_one(t_obj, sys.argv[3])
 elif sys.argv[1]=="try_ipy":
-    exec "t_obj = " + sys.argv[2] + "()"
+    exec("t_obj = " + sys.argv[2] + "()")
     ipy_only = True
     try_all(t_obj)
 elif sys.argv[1]=="try_cpy":
-    exec "t_obj = " + sys.argv[2] + "()"
+    exec("t_obj = " + sys.argv[2] + "()")
     cpy_try_all(t_obj)
 elif sys.argv[1]=="try_all":
-    exec "t_obj = " + sys.argv[2] + "()"
+    exec("t_obj = " + sys.argv[2] + "()")
     ipy_only = False
     try_all(t_obj)
 else:
-    print "Error: unrecognized argument"
+    print("Error: unrecognized argument")
     
             
 

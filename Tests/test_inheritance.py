@@ -22,6 +22,7 @@ from iptest.assert_util import *
 from iptest.type_util import *
 
 import sys
+from functools import reduce
 
 if is_cli or is_silverlight:
     load_iron_python_test()
@@ -272,7 +273,7 @@ def test_more_inheritance():
 def test_interface_inheritance():
     class C(ITestIt1, ITestIt2):
         def Method(self, x=None):
-            if x: return "Python"+`x`
+            if x: return "Python"+repr(x)
             else: return "Python"
         
     o = C()
@@ -295,7 +296,7 @@ def test_more_interface_inheritance():
             self.x, self.y = x, y
         
         def ToString(self, format=None, fp=None):
-            if format == 'x': return `(self.x, self.y)`
+            if format == 'x': return repr((self.x, self.y))
             return "Point(%r, %r)" % (self.x, self.y)
         
     p = Point(1,2)
@@ -429,7 +430,7 @@ def test_oldstyle_inheritance_dir():
     # BUG 463
     class PythonBaseClass:
         def Func(self):
-            print "PBC::Func"
+            print("PBC::Func")
     
     class PythonDerivedClass(PythonBaseClass): pass
     
@@ -1167,10 +1168,10 @@ if is_silverlight or is_cli:
         DReturnTypes.M_IEnumerable = lambda self: { 1 : "one", 10: "two", 100: "three"}
         AreEqual(reduce(add, used.Use_IEnumerable()), 111)
         
-        DReturnTypes.M_IEnumerator = lambda self: iter(System.Array[int](range(10)))
-        AreEqual(list(used.Use_IEnumerator()), range(10))
+        DReturnTypes.M_IEnumerator = lambda self: iter(System.Array[int](list(range(10))))
+        AreEqual(list(used.Use_IEnumerator()), list(range(10)))
         
-        DReturnTypes.M_IEnumerable = lambda self: System.Array[int](range(10))
+        DReturnTypes.M_IEnumerable = lambda self: System.Array[int](list(range(10)))
         AreEqual(reduce(add, used.Use_IEnumerable()), 45)
         
         ## RtDelegate
@@ -1274,7 +1275,7 @@ if is_silverlight or is_cli:
             def __init__(self):
                 self.funcCalled = False
             for x in range(50):
-                exec 'def M%d(self):\n    self.funcCalled = True\n    return super(type(self), self).M%d()' % (x, x)
+                exec('def M%d(self):\n    self.funcCalled = True\n    return super(type(self), self).M%d()' % (x, x))
         
         a = BigVirtualDerived()
         for x in range(50):

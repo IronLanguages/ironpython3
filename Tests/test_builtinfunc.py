@@ -19,9 +19,11 @@
 for stuff in [bool, True, False]:
     temp = dir(stuff)
 
-items = globals().items() #4716
+items = list(globals().items()) #4716
 
 import sys
+import collections
+from functools import reduce
 def cp946():
     builtins = __builtins__
     if type(builtins) is type(sys):
@@ -47,13 +49,13 @@ AssertError(NameError, lambda: __new__)
 def test_callable():
     class C: x=1
 
-    Assert(callable(min))
-    Assert(not callable("a"))
-    Assert(callable(callable))
-    Assert(callable(lambda x, y: x + y))
-    Assert(callable(C))
-    Assert(not callable(C.x))
-    Assert(not callable(__builtins__))
+    Assert(isinstance(min, collections.Callable))
+    Assert(not isinstance("a", collections.Callable))
+    Assert(isinstance(callable, collections.Callable))
+    Assert(isinstance(lambda x, y: x + y, collections.Callable))
+    Assert(isinstance(C, collections.Callable))
+    Assert(not isinstance(C.x, collections.Callable))
+    Assert(not isinstance(__builtins__, collections.Callable))
 
 def test_callable_oldclass():
     # for class instances, callable related to whether the __call__ attribute is defined.
@@ -62,31 +64,31 @@ def test_callable_oldclass():
         pass
     d=Dold()
     #
-    AreEqual(callable(d), False)
+    AreEqual(isinstance(d, collections.Callable), False)
     #
     d.__call__ = None # This defines the attr, even though it's None
-    AreEqual(callable(d), True) # True for oldinstance, False for new classes.
+    AreEqual(isinstance(d, collections.Callable), True) # True for oldinstance, False for new classes.
     #
     del (d.__call__) # now remove the attr, no longer callable
-    AreEqual(callable(d), False)
+    AreEqual(isinstance(d, collections.Callable), False)
 
 def test_callable_newclass():
     class D(object):
       pass
-    AreEqual(callable(D), True)
+    AreEqual(isinstance(D, collections.Callable), True)
     d=D()
-    AreEqual(callable(d), False)
+    AreEqual(isinstance(d, collections.Callable), False)
     #
     # New class with a __call__ defined is callable()
     class D2(object):
       def __call__(self): pass
     d2=D2()
-    AreEqual(callable(d2), True)
+    AreEqual(isinstance(d2, collections.Callable), True)
     # Inherit callable
     class D3(D2):
       pass
     d3=D3()
-    AreEqual(callable(d3), True)
+    AreEqual(isinstance(d3, collections.Callable), True)
 
 def test_cmp():
     x = {}
@@ -164,11 +166,11 @@ def test_map():
         if y != None: ret += y
         return ret
 
-    Assert(map(cat, ["a","b"],["c","d", "e"]) == ["ac", "bd", "e"])
-    Assert(map(lambda x,y: x+y, [1,1],[2,2]) == [3,3])
-    Assert(map(None, [1,2,3]) == [1,2,3])
+    Assert(list(map(cat, ["a","b"],["c","d", "e"])) == ["ac", "bd", "e"])
+    Assert(list(map(lambda x,y: x+y, [1,1],[2,2])) == [3,3])
+    Assert(list([1,2,3]) == [1,2,3])
     Assert(map(None, [1,2,3], [4,5,6]) == [(1,4),(2,5),(3,6)])
-    AreEqual(map(lambda x:'a' + x + 'c', 'b'), ['abc'])
+    AreEqual(['a' + x + 'c' for x in 'b'], ['abc'])
     
 def test_range():
     AssertErrorWithMessage(TypeError, "range() integer end argument expected, got float.",
@@ -195,10 +197,10 @@ def test_sorted():
 
     def invcmp(a,b): return -cmp(a,b)
 
-    Assert(sorted(range(10), None, None, True) == range(10)[::-1])
-    Assert(sorted(range(9,-1,-1), None, None, False) == range(10))
-    Assert(sorted(range(10), invcmp, None, True) == sorted(range(9,-1,-1), None, None, False))
-    Assert(sorted(range(9,-1,-1),invcmp, None, True) == sorted(range(9,-1,-1), None, None, False))
+    Assert(sorted(list(range(10)), None, None, True) == list(range(10))[::-1])
+    Assert(sorted(list(range(9,-1,-1)), None, None, False) == list(range(10)))
+    Assert(sorted(list(range(10)), invcmp, None, True) == sorted(list(range(9,-1,-1)), None, None, False))
+    Assert(sorted(list(range(9,-1,-1)),invcmp, None, True) == sorted(list(range(9,-1,-1)), None, None, False))
 
     class P:
         def __init__(self, n, s):
@@ -235,7 +237,7 @@ def test_sorted():
     for i,j in zip(x,y): Assert(equal_p(i,j))
 
     d = {'John': 6, 'Jack': 9, 'Gary': 4, 'Carl': 5, 'David': 3, 'Joe': 1, 'Tom': 2, 'Tim': 7, 'Todd': 8}
-    x = sorted([(v,k) for k,v in d.items()])
+    x = sorted([(v,k) for k,v in list(d.items())])
     Assert(x == [(1, 'Joe'), (2, 'Tom'), (3, 'David'), (4, 'Gary'), (5, 'Carl'), (6, 'John'), (7, 'Tim'), (8, 'Todd'), (9, 'Jack')])
 
 def test_sum():
@@ -261,31 +263,31 @@ def test_sum():
     uo = user_object()
     # int + other
     sumtest([1, 1], 2)
-    sumtest([2147483647, 1], 2147483648L)
+    sumtest([2147483647, 1], 2147483648)
     sumtest([1, 1.0], 2.0)
-    sumtest([1, 1L], 2L)
+    sumtest([1, 1], 2)
     sumtest([1, uo], uo)
 
     # double and other
     sumtest([1.0, 1], 2.0)
     sumtest([2147483647.0, 1], 2147483648.0)
     sumtest([1.0, 1.0], 2.0)
-    sumtest([1.0, 1L], 2.0)
+    sumtest([1.0, 1], 2.0)
     sumtest([1.0, uo], uo)
 
     # long and other
-    sumtest([1L, 1], 2L)
-    sumtest([2147483647L, 1], 2147483648L)
-    sumtest([1L, 1.0], 2.0)
-    sumtest([1L, 1L], 2L)
-    sumtest([1L, uo], uo)
+    sumtest([1, 1], 2)
+    sumtest([2147483647, 1], 2147483648)
+    sumtest([1, 1.0], 2.0)
+    sumtest([1, 1], 2)
+    sumtest([1, uo], uo)
 
     # corner cases
-    sumtest([1L, 2.0, 3], 6.0)
+    sumtest([1, 2.0, 3], 6.0)
     sumtest([2147483647, 1, 1.0], 2147483649.0)    
     inf = 1.7976931348623157e+308*2
-    sumtest([1.7976931348623157e+308, long(1.7976931348623157e+308)], inf)        
-    AssertError(OverflowError, sum, [1.0, 100000000L<<2000])
+    sumtest([1.7976931348623157e+308, int(1.7976931348623157e+308)], inf)        
+    AssertError(OverflowError, sum, [1.0, 100000000<<2000])
     
 def test_unichr():
 
@@ -295,18 +297,18 @@ def test_unichr():
     max_uni_plus_one = max_uni + 1
     
     huger_than_max = 100000
-    max_ok_value = u'\uffff'
+    max_ok_value = '\uffff'
     
     #special case for WorkItem #3220
     if max_uni==0x10FFFF:
         huger_than_max = 10000000
-        max_ok_value = u'\u0010FFFF' #OK representation for UCS4???
+        max_ok_value = '\u0010FFFF' #OK representation for UCS4???
         
-    AssertError(ValueError, unichr, -1) # arg must be in the range [0...65535] or [0...1114111] inclusive
-    AssertError(ValueError, unichr, max_uni_plus_one)
-    AssertError(ValueError, unichr, huger_than_max)
-    Assert(unichr(0) == '\x00')
-    Assert(unichr(max_uni) == max_ok_value)
+    AssertError(ValueError, chr, -1) # arg must be in the range [0...65535] or [0...1114111] inclusive
+    AssertError(ValueError, chr, max_uni_plus_one)
+    AssertError(ValueError, chr, huger_than_max)
+    Assert(chr(0) == '\x00')
+    Assert(chr(max_uni) == max_ok_value)
 
 def test_max_min():
     Assert(max([1,2,3]) == 3)
@@ -324,8 +326,8 @@ def test_abs():
     AssertError(TypeError,abs,None)
 
     #long integer passed to abs
-    AreEqual(22L, abs(22L))
-    AreEqual(22L, abs(-22L))
+    AreEqual(22, abs(22))
+    AreEqual(22, abs(-22))
 
     #bool passed to abs
     AreEqual(1, abs(True))
@@ -355,7 +357,7 @@ def test_coerce():
         def __repr__(self):
             return 'x(' + repr(self.value) + ')'
 
-    for value in (x(42), 42., 42L):
+    for value in (x(42), 42., 42):
         AreEqual(int.__coerce__(0, value), NotImplemented)
         l, r = coerce(0, value)
         AreEqual((r, l), (value, type(value)(0)))
@@ -368,20 +370,20 @@ def test_zip():
         yield 2
         yield 3
 
-    AreEqual(zip(foo()), [(2,)])
-    AreEqual(zip(foo(), foo()), [(2,2)])
-    AreEqual(zip(foo(), foo(), foo()), [(2,2,2)])
+    AreEqual(list(zip(foo())), [(2,)])
+    AreEqual(list(zip(foo(), foo())), [(2,2)])
+    AreEqual(list(zip(foo(), foo(), foo())), [(2,2,2)])
 
-    AreEqual(zip(bar(), foo()), [(2,2)])
-    AreEqual(zip(foo(), bar()), [(2,2)])
+    AreEqual(list(zip(bar(), foo())), [(2,2)])
+    AreEqual(list(zip(foo(), bar())), [(2,2)])
     
     # test passing the same object for multiple iterables
-    AreEqual(zip(*[iter([])]), [])
-    AreEqual(zip(*[iter([])] * 2), [])
-    AreEqual(zip(*[xrange(3)] * 2), [(0, 0), (1, 1), (2, 2)])
-    AreEqual(zip(*[iter(["0", "1"])] * 2), [('0', '1')])
-    AreEqual(zip(*[iter(["0", "1", "2"])] * 3), [('0', '1', '2')])
-    AreEqual(zip(*'abc'), [('a', 'b', 'c')])
+    AreEqual(list(zip(*[iter([])])), [])
+    AreEqual(list(zip(*[iter([])] * 2)), [])
+    AreEqual(list(zip(*[list(range(3))] * 2)), [(0, 0), (1, 1), (2, 2)])
+    AreEqual(list(zip(*[iter(["0", "1"])] * 2)), [('0', '1')])
+    AreEqual(list(zip(*[iter(["0", "1", "2"])] * 3)), [('0', '1', '2')])
+    AreEqual(list(zip(*'abc')), [('a', 'b', 'c')])
 
 def test_dir():
     local_var = 10
@@ -424,7 +426,7 @@ def test_dir():
         import clr
         try:
             clr.AddReference("Microsoft.Scripting.Core")
-        except Exception, e:
+        except Exception as e:
             if is_net40:
                 clr.AddReference("System.Core")
             else:
@@ -467,7 +469,7 @@ def test_eval():
     try:
         eval('1+')
         AssertUnreachable()
-    except Exception, exp:
+    except Exception as exp:
         pass
     else:
         AssertUnreachable()
@@ -503,8 +505,8 @@ def test_eval():
                     while 1:
                         try:
                             newx = x
-                            for i in xrange(len(processors)):
-                                new = processors[i].next()
+                            for i in range(len(processors)):
+                                new = next(processors[i])
                                 newx = newx.replace('$inp', new, 1)
                             yield newx
                         except StopIteration:
@@ -515,7 +517,7 @@ def test_eval():
             
     for x in process(0):
         try:
-            print eval(x)
+            print(eval(x))
         except SyntaxError: pass            
         except TypeError: pass
 
@@ -534,16 +536,16 @@ def test_len():
 def test_int_ctor():
     AreEqual(int('0x10', 16), 16)
     AreEqual(int('0X10', 16), 16)
-    AreEqual(long('0x10', 16), 16L)
-    AreEqual(long('0X10', 16), 16L)
+    AreEqual(int('0x10', 16), 16)
+    AreEqual(int('0X10', 16), 16)
    
 def test_type():
     AreEqual(len(type.__bases__), 1)
     AreEqual(type.__bases__[0], object)
     
 def test_globals():
-    Assert(not globals().has_key("_"))
-    AreEqual(globals().keys().count("_"), 0)
+    Assert("_" not in globals())
+    AreEqual(list(globals().keys()).count("_"), 0)
 
 def test_vars():
     """vars should look for user defined __dict__ value and directly return the provided value"""
@@ -609,7 +611,7 @@ def test_compile():
     sys.stdout = out
     try:
         c = compile('2', 'test', 'single')
-        exec c
+        exec(c)
         AreEqual(out.data, ['2', '\n'])
     finally:
         sys.stdout = sys.__stdout__
@@ -633,7 +635,7 @@ def test_not_in_globals():
 
 # Regress bug 319126: __int__ on long should return long, not overflow
 def test_long_int():
-  l=long(1.23e300)
+  l=int(1.23e300)
   i = l.__int__()
   Assert(type(l) == type(i))
   Assert(i == l)
@@ -652,8 +654,8 @@ def test_cp16000():
             return K.FOO * 3.14
 
 
-    temp_list = [   None, str, int, long, K,
-                    "", "abc", u"abc", 34, 1111111111111L, 3.14, K(), K.FOO,
+    temp_list = [   None, str, int, int, K,
+                    "", "abc", "abc", 34, 1111111111111, 3.14, K(), K.FOO,
                     id, hex, K.fooFunc, K.memberFunc, K().memberFunc,
                 ]
 
@@ -663,7 +665,7 @@ def test_cp16000():
                         System.Single, System.UInt16(5), System.Version()]
 
     for x in temp_list:
-        Assert(type(id(x)) in [int, long], 
+        Assert(type(id(x)) in [int, int], 
                str(type(id(x))))
 
 #------------------------------------------------------------------------------

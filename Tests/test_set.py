@@ -49,7 +49,7 @@ def test_sanity():
         y = x()
         AreEqual(len(y), 0)
         # creating with 2 args
-        AssertError(TypeError, x, range(3), 3)
+        AssertError(TypeError, x, list(range(3)), 3)
         #!!!AssertError(TypeError, x.__new__, str)
         #!!!AssertError(TypeError, x.__new__, str, 'abc')
 
@@ -110,19 +110,19 @@ def test_ops():
             for (op, exp1, exp2) in [('&', 'b', 'bd'), ('|', 'abcde', 'abcdefgh'), ('-', 'acd', 'ac'), ('^', 'acde', 'acefgh')]:
                 
                 x1 = t1(s1)
-                exec "x1   %s= t2(s2)" % op
+                exec("x1   %s= t2(s2)" % op)
                 AreEqual(x1, t1(exp1))
 
                 x1 = t1(s1)
-                exec "x1   %s= t2(s3)" % op
+                exec("x1   %s= t2(s3)" % op)
                 AreEqual(x1, t1(exp2))
                 
                 x1 = t1(s1)
-                exec "y = x1 %s t2(s2)" % op
+                exec("y = x1 %s t2(s2)" % op)
                 AreEqual(y, t1(exp1))
 
                 x1 = t1(s1)
-                exec "y = x1 %s t2(s3)" % op
+                exec("y = x1 %s t2(s3)" % op)
                 AreEqual(y, t1(exp2))
 
 def test_none():
@@ -234,7 +234,7 @@ def test_iteration_no_mutation_bad_hash():
         def __hash__(self):
                 return int(random.random()*200)
      
-    l = [c() for i in xrange(1000)]
+    l = [c() for i in range(1000)]
     b = set(l)
     for x in b:
         pass
@@ -327,15 +327,15 @@ def test_set_comp():
     AreEqual(C.abc, set([2,3,4]))
 
     d = {}
-    exec compile("abc = {locals()['x'] for x in (2,3,4)}", 'exec', 'exec') in d, d
+    exec(compile("abc = {locals()['x'] for x in (2,3,4)}", 'exec', 'exec'), d, d)
     AreEqual(d['abc'], set([2,3,4]))
     
     d = {'y':42}
-    exec compile("abc = {y for x in (2,3,4)}", 'exec', 'exec') in d, d
+    exec(compile("abc = {y for x in (2,3,4)}", 'exec', 'exec'), d, d)
     AreEqual(d['abc'], set([42]))
 
     d = {'y':42, 't':(2,3,42)}
-    exec compile("abc = {y for x in t if x == y}", 'exec', 'exec') in d, d
+    exec(compile("abc = {y for x in t if x == y}", 'exec', 'exec'), d, d)
     AreEqual(d['abc'], set([42]))
 
     t = (2,3,4)

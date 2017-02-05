@@ -37,9 +37,9 @@ multipleexecskips = [ ]
 for s in dir(et):
     if s.startswith("Scenario"):
         if s in multipleexecskips:
-            exec '@skip("multiple_execute") \ndef test_Engine_%s(): getattr(et, "%s")()' % (s, s)
+            exec('@skip("multiple_execute") \ndef test_Engine_%s(): getattr(et, "%s")()' % (s, s))
         else :
-            exec 'def test_Engine_%s(): getattr(et, "%s")()' % (s, s)
+            exec('def test_Engine_%s(): getattr(et, "%s")()' % (s, s))
 
 #Rowan Work Item 312902
 @disabled("The ProfileDrivenCompilation feature is removed from DLR")
@@ -73,13 +73,13 @@ def a():
 def b():
     try:
         a()
-    except System.Exception, e:
+    except System.Exception as e:
         raise System.Exception("second", e)
 
 def c():
     try:
         b()
-    except System.Exception, e:
+    except System.Exception as e:
         x = System.Exception("first", e)
     return x
 
@@ -132,7 +132,7 @@ def test_formatexception_exceptiondetail():
     try:
         x = System.Collections.Generic.Dictionary[object, object]()
         x[None] = 42
-    except System.Exception, e:
+    except System.Exception as e:
         pass
     import re
     

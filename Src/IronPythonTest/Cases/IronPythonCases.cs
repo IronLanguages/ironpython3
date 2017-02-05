@@ -1,13 +1,9 @@
-﻿using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using IronPython.Hosting;
-using IronPythonTest.Util;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Hosting;
 using NUnit.Framework;
-using NUnit.Framework.Api;
+
 
 namespace IronPythonTest.Cases {
     [TestFixture(Category="IronPython")]
@@ -21,7 +17,12 @@ namespace IronPythonTest.Cases {
 
         [Test, TestCaseSource(typeof(IronPythonCaseGenerator))]
         public int IronPythonTests(TestInfo testcase) {
-            return this.executor.RunTest(testcase);
+            try {
+                return this.executor.RunTest(testcase);
+            } catch (Exception e) {
+                Assert.Fail(this.executor.FormatException(e));
+                return -1;
+            }
         }
     }
 

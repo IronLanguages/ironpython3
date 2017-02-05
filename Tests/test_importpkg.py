@@ -16,6 +16,7 @@
 import toimport
 
 from iptest.assert_util import *
+import imp
 
 if not is_silverlight:
     from iptest.file_util import *
@@ -84,7 +85,7 @@ j = 10
 ''' % unique_line)
 
 import sys
-result = reload(sys)
+result = imp.reload(sys)
 Assert(not sys.modules.__contains__("Error"))
 
 try:
@@ -125,7 +126,7 @@ if not is_silverlight:
     #u = sys.modules.pop("iptest")
     g = sys.modules.pop("ImportTestDir.Gen")
     from ImportTestDir import Gen
-    AreEqual(Gen.gen().next(), "yield inside try")
+    AreEqual(next(Gen.gen()), "yield inside try")
 
 #########################################################################################
 # using import in nested blocks
@@ -139,7 +140,7 @@ def f():
 f()
 
 try:
-    print time
+    print(time)
 except NameError: pass
 else: Fail("time should be undefined")
 
@@ -154,7 +155,7 @@ def f():
 f()
 
 try:
-    print time
+    print(time)
 except NameError:  pass
 else: Fail("time should be undefined")
 
@@ -170,13 +171,13 @@ if not is_silverlight:
     f()
 
 try:
-    print time
+    print(time)
 except NameError:  pass
 else: Fail("time should be undefined")
 
 if not is_silverlight:
     try:
-        print clock
+        print(clock)
     except NameError:  pass
     else: Fail("clock should be undefined")
 
@@ -195,13 +196,13 @@ if not is_silverlight:
     f()
 
 try:
-    print time
+    print(time)
 except NameError:  pass
 else: Fail("time should be undefined")
 
 if not is_silverlight:
     try:
-        print clock
+        print(clock)
     except NameError:  pass
     else: Fail("clock should be undefined")
 
@@ -353,7 +354,7 @@ def test_c2cs():
     
     
 if not is_silverlight:
-    Assert(sys.modules.has_key("__main__"))
+    Assert("__main__" in sys.modules)
 
 #########################################################################################
 if not is_silverlight:
@@ -639,26 +640,26 @@ def test_import_inside_exec():
     write_to_file(_f_module, 'a1, a2, a3, _a4 = 1, 2, 3, 4')
     
     d = {}
-    exec 'from another import a2' in d
+    exec('from another import a2', d)
     AssertInOrNot(d, ['a2'], ['a1', 'a3', '_a4', 'another'])
     AssertInOrNot(dir(), [], ['a1', 'a2', 'a3', '_a4', 'another'])
     
     d = {}
-    exec 'from another import *' in d
+    exec('from another import *', d)
     AssertInOrNot(d, ['a1', 'a2', 'a3'], ['_a4', 'another'])
     AssertInOrNot(dir(), [], ['a1', 'a2', 'a3', '_a4', 'another'])
 
     d = {}
-    exec 'import another' in d
+    exec('import another', d)
     AssertInOrNot(d, ['another'], ['a1', 'a2', 'a3', '_a4'])
     
     # Also a precondition for the following tests: ensure a1 a2 a3 are not in dict
     AssertInOrNot(dir(), [], ['a1', 'a2', 'a3', '_a4', 'another'])
     
-    exec 'from another import a2'
+    exec('from another import a2')
     AssertInOrNot(dir(), ['a2'], ['a1', 'a3', '_a4'])
     
-    exec 'from another import *'
+    exec('from another import *')
     AssertInOrNot(dir(), ['a1', 'a2', 'a3'], ['_a4'])
 
 @skip("silverlight")
@@ -927,7 +928,7 @@ def test_from_import_publishes_in_package():
 def test_from_import_publishes_in_package_relative():
     try:
         mod_backup = dict(sys.modules)
-        print testpath.public_testdir
+        print(testpath.public_testdir)
         _f_dir      = path_combine(testpath.public_testdir, 'test_dir3')
         _f_init     = path_combine(_f_dir, '__init__.py')
         _f_foo_py   = path_combine(_f_dir, 'foof.py')
@@ -939,7 +940,7 @@ def test_from_import_publishes_in_package_relative():
         write_to_file(_f_foo_py, 'bar = "BxAR"')
                 
         import test_dir3
-        print test_dir3, dir(test_dir3)
+        print(test_dir3, dir(test_dir3))
         #print test_dir2.foof, dir(test_dir2.foof), test_dir2.foof.bar
         AreEqual(test_dir3.bar, 'BxAR')
         AreEqual(type(test_dir3.foof), type(sys))
@@ -952,7 +953,7 @@ def test_from_import_publishes_in_package_relative():
 def test_from_import_publishes_in_package_relative():
     try:
         mod_backup = dict(sys.modules)
-        print testpath.public_testdir
+        print(testpath.public_testdir)
         _f_dir      = path_combine(testpath.public_testdir, 'test_dir3')
         _f_init     = path_combine(_f_dir, '__init__.py')
         _f_foo_py   = path_combine(_f_dir, 'foof.py')
@@ -976,7 +977,7 @@ def test_from_import_publishes_in_package_relative():
 def test_from_import_publishes_in_package_relative_self():
     try:
         mod_backup = dict(sys.modules)
-        print testpath.public_testdir
+        print(testpath.public_testdir)
         _f_dir      = path_combine(testpath.public_testdir, 'test_dir4')
         _f_init     = path_combine(_f_dir, '__init__.py')
         _f_foo_py   = path_combine(_f_dir, 'foof.py')
@@ -988,7 +989,7 @@ def test_from_import_publishes_in_package_relative_self():
         write_to_file(_f_foo_py, 'bar = "BxAR"')
 
         import test_dir4
-        print test_dir4, dir(test_dir4)
+        print(test_dir4, dir(test_dir4))
         #AreEqual(test_dir4.bar, 'BxAR')
         AreEqual(type(test_dir4.foof), type(sys))
     finally:
@@ -1000,7 +1001,7 @@ def test_from_import_publishes_in_package_relative_self():
 def test_multiple_relative_imports_and_package():
     try:
         mod_backup = dict(sys.modules)
-        print testpath.public_testdir
+        print(testpath.public_testdir)
         _f_dir      = path_combine(testpath.public_testdir, 'test_dir5')
         _f_init     = path_combine(_f_dir, '__init__.py')
         _f_foo_py   = path_combine(_f_dir, 'foo5.py')
@@ -1026,7 +1027,7 @@ def test_multiple_relative_imports_and_package():
 def test_cp34551():
     try:
         mod_backup = dict(sys.modules)
-        print testpath.public_testdir
+        print(testpath.public_testdir)
         _f_dir      = path_combine(testpath.public_testdir, 'test_dir6')
         _f_init     = path_combine(_f_dir, '__init__.py')
         _f_subdir   = path_combine(_f_dir, 'sub')

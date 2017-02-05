@@ -104,7 +104,7 @@ EXTRA_INCLUDE_LIST = []
 DEBUG = False
 def debug(*args):
     if DEBUG:
-        print args[0], ":", args[1:]
+        print(args[0], ":", args[1:])
 
 EXCLUDE_LIST = [x.lower() for x in EXCLUDE_LIST]
 SLOW_LIST = [x.lower() for x in SLOW_LIST]
@@ -117,7 +117,7 @@ OUTPUT_COUNT = 0
 
 #--HELP -h/-?
 if '-h' in argv or '-H' in argv or '-?' in argv:
-    print __doc__
+    print(__doc__)
     exit(0)
 
 #--MODES
@@ -205,7 +205,7 @@ def test_exit_code():
     process.WaitForExit()
     
     if process.ExitCode != 99:
-        print 'SEVERE FAILURE: sys.exit test failed, cannot run tests!'
+        print('SEVERE FAILURE: sys.exit test failed, cannot run tests!')
         System.Environment.Exit(1)
 
 
@@ -235,13 +235,13 @@ def run_one_command(*args):
     """runs a single command, exiting if it doesn't return 0, redirecting std out"""
     cmd_line = '"' + executable + '" '.join(args)
     inp, out, err = nt.popen3(cmd_line)
-    print cmd_line
+    print(cmd_line)
     output, err = multireader(out, err)
     res = out.close()
     if res:
-        print '%d running %s failed' % (res, cmd_line)
-        print 'output was', output
-        print 'err', err
+        print('%d running %s failed' % (res, cmd_line))
+        print('output was', output)
+        print('err', err)
     return output, err, res
 
 def runTestSlow(test_name, mode):
@@ -275,7 +275,7 @@ def runTestFast(test_name):
         sys.stderr = f
         __import__(test_name.split(".py")[0])
     except SystemExit:
-        ec = int(str(sys.exc_value))
+        ec = int(str(sys.exc_info()[1]))
     except:
         ec = 1
     finally:
@@ -308,21 +308,21 @@ def runTest(test_name, mode):
     #Error handling
     if ec:
         if OUTPUT_LVL==OUTPUT_MIN:
-            print "X" + test_name,
+            print("X" + test_name, end=' ')
         else:
-            print "\t", test_name, "FAIL"
+            print("\t", test_name, "FAIL")
             if OUTPUT_LVL==OUTPUT_MAX:
-                print >> sys.stderr, errors
-                print
+                print(errors, file=sys.stderr)
+                print()
         FAILED_LIST.append(test_name + "; Exit Code=" + str(ec))
     else:
         if OUTPUT_LVL==OUTPUT_MIN:
-            print ".",
+            print(".", end=' ')
         else:
-            print "\t", test_name, "PASS"
+            print("\t", test_name, "PASS")
     
     if OUTPUT_LVL==OUTPUT_MIN and OUTPUT_COUNT%25==0:
-        print
+        print()
 
 
 #--MAIN------------------------------------------------------------------------
@@ -333,34 +333,34 @@ test_exit_code()
 
 #Using each set of flags supplied to ipy.exe...
 for mode in MODES_TO_RUN:
-    print "-------------------------------------------------------------------"
-    print "RUNNING IRONPYTHON TESTS USING THESE FLAGS:", mode
+    print("-------------------------------------------------------------------")
+    print("RUNNING IRONPYTHON TESTS USING THESE FLAGS:", mode)
 
     #...run all tests.
     for test_name in TEST_LIST:
         runTest(test_name, mode)
-    print
+    print()
 
 
-print "-------------------------------------------------------------------"
-print "SUMMARY"
-print
+print("-------------------------------------------------------------------")
+print("SUMMARY")
+print()
 
 if len(EXCLUDE_LIST)!=0:
-    print "The following tests were excluded due to bugs:"
-    for test_name in EXCLUDE_LIST: print "\t" + test_name
-    print
+    print("The following tests were excluded due to bugs:")
+    for test_name in EXCLUDE_LIST: print("\t" + test_name)
+    print()
 
 if len(SLOW_LIST)!=0 and TIME_LVL!=TIME_MAX:
-    print "The following tests were excluded due to slow execution time:"
-    for test_name in SLOW_LIST: print "\t" + test_name
-    print
+    print("The following tests were excluded due to slow execution time:")
+    for test_name in SLOW_LIST: print("\t" + test_name)
+    print()
 
 if  len(FAILED_LIST)==0:
-    print "Everything passed!"
+    print("Everything passed!")
     exit(0)
 else:
-    print "The following tests failed:"
-    for test_name in FAILED_LIST: print "\t" + test_name
+    print("The following tests failed:")
+    for test_name in FAILED_LIST: print("\t" + test_name)
     exit(1)
     

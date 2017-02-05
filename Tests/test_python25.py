@@ -16,7 +16,7 @@
 #
 # test python25
 #
-from __future__ import with_statement
+
 import sys
 import exceptions
 
@@ -66,7 +66,7 @@ def foo():
                 p = p + 1
 try:
     k = foo()
-    while(k.next()):pass
+    while(next(k)):pass
 except StopIteration: AreEqual(m,427056988)
 else :Fail("Expected StopIteration but found None")
 
@@ -174,7 +174,7 @@ class PropagateException:
 try:
     with PropagateException() as PE:
         del PE
-        print PE
+        print(PE)
 except NameError:pass
 else: Fail("Expected NameError but found None")
 
@@ -182,7 +182,7 @@ try:
     with PropagateException() as PE:
         PE.var1 = 100
         del PE
-        print PE
+        print(PE)
 except AttributeError:pass
 else: Fail("Expected AttributeError but found None")
 
@@ -275,9 +275,9 @@ AreEqual(globals()["gblvar"],116)
 
 #------------------------------------------------------------------------------
 def test_thread_lock():
-    import thread
+    import _thread
 
-    temp_lock = thread.allocate_lock()
+    temp_lock = _thread.allocate_lock()
     Assert(hasattr(temp_lock, "__enter__"))
     Assert(hasattr(temp_lock, "__exit__"))
     Assert(not temp_lock.locked())
@@ -285,7 +285,7 @@ def test_thread_lock():
         Assert(temp_lock.locked())
     Assert(not temp_lock.locked())
     
-    with thread.allocate_lock(): pass
+    with _thread.allocate_lock(): pass
 
 @skip("silverlight")
 def test_with_file():    
@@ -475,7 +475,7 @@ def test_try_catch_finally():
                                             k = TestUnifiedTry(a,b,c,d,e,f,g,h,i)
                                             while(True):
                                                 try:
-                                                    k.next()
+                                                    next(k)
                                                 except MyErr4: setvar();break
                                                 except StopIteration: setvar();break
 
@@ -550,7 +550,7 @@ def test_yield_in_finally():
     try:
         k = test_yiled_finally()
         while(1):
-            k.next()
+            next(k)
     except StopIteration: pass
     
     AreEqual(globals()["gblvar"],8)
@@ -568,8 +568,8 @@ def test_string_partition():
     AreEqual('\00\ff\67\56\d8\89\33\09\99\ee\20\00\56\78\45\77\e9'.partition('\00\56\78'), ('\00\ff\67\56\d8\89\33\09\99\ee\20','\00\56\78','\45\77\e9'))
     AreEqual('\00\ff\67\56\d8\89\33\09\99\ee\20\00\56\78\45\77\e9'.partition('\78\45\77\e9'), ('\00\ff\67\56\d8\89\33\09\99\ee\20\00\56','\78\45\77\e9',''))
     AreEqual('\ff\67\56\d8\89\33\09\99\ee\20\00\56\78\45\77\e9'.partition('\ff\67\56\d8\89\33\09\99'), ('','\ff\67\56\d8\89\33\09\99','\ee\20\00\56\78\45\77\e9'))
-    AreEqual(u'\ff\67\56\d8\89\33\09\99some random 8-bit text here \ee\20\00\56\78\45\77\e9'.partition('random'), (u'\ff\67\56\d8\89\33\09\99some ','random',' 8-bit text here \ee\20\00\56\78\45\77\e9'))
-    AreEqual(u'\ff\67\56\d8\89\33\09\99some random 8-bit text here \ee\20\00\56\78\45\77\e9'.partition(u'\33\09\99some r'), (u'\ff\67\56\d8\89','\33\09\99some r','andom 8-bit text here \ee\20\00\56\78\45\77\e9'))
+    AreEqual('\ff\67\56\d8\89\33\09\99some random 8-bit text here \ee\20\00\56\78\45\77\e9'.partition('random'), ('\ff\67\56\d8\89\33\09\99some ','random',' 8-bit text here \ee\20\00\56\78\45\77\e9'))
+    AreEqual('\ff\67\56\d8\89\33\09\99some random 8-bit text here \ee\20\00\56\78\45\77\e9'.partition('\33\09\99some r'), ('\ff\67\56\d8\89','\33\09\99some r','andom 8-bit text here \ee\20\00\56\78\45\77\e9'))
     AssertError(ValueError,'sometextheretocauseanexeption'.partition,'')
     AssertError(ValueError,''.partition,'')
     AssertError(TypeError,'some\90text\ffhere\78to\88causeanexeption'.partition,None)
@@ -605,8 +605,8 @@ def test_string_rpartition():
     AreEqual('\00\ff\67\56\d8\89\33\09\99\ee\20\00\56\78\00\56\78\45\77\e9'.rpartition('\00\56\78'), ('\00\ff\67\56\d8\89\33\09\99\ee\20\00\56\78','\00\56\78','\45\77\e9'))
     AreEqual('\00\ff\67\56\d8\89\33\09\99\ee\20\00\56\78\45\77\e9\78\45\77\e9'.rpartition('\78\45\77\e9'), ('\00\ff\67\56\d8\89\33\09\99\ee\20\00\56\78\45\77\e9','\78\45\77\e9',''))
     AreEqual('\ff\67\56\d8\89\33\09\99\ee\20\00\56\78\45\77\e9'.rpartition('\ff\67\56\d8\89\33\09\99'), ('','\ff\67\56\d8\89\33\09\99','\ee\20\00\56\78\45\77\e9'))
-    AreEqual(u'\ff\67\56\d8\89\33\09\99some random 8-bit text here \ee\20\00\56\78\45\77\e9'.rpartition('random'), (u'\ff\67\56\d8\89\33\09\99some ','random',' 8-bit text here \ee\20\00\56\78\45\77\e9'))
-    AreEqual(u'\ff\67\56\d8\89\33\09\99some random 8-bit text here \ee\20\00\56\78\45\77\e9'.rpartition(u'\33\09\99some r'), (u'\ff\67\56\d8\89','\33\09\99some r','andom 8-bit text here \ee\20\00\56\78\45\77\e9'))
+    AreEqual('\ff\67\56\d8\89\33\09\99some random 8-bit text here \ee\20\00\56\78\45\77\e9'.rpartition('random'), ('\ff\67\56\d8\89\33\09\99some ','random',' 8-bit text here \ee\20\00\56\78\45\77\e9'))
+    AreEqual('\ff\67\56\d8\89\33\09\99some random 8-bit text here \ee\20\00\56\78\45\77\e9'.rpartition('\33\09\99some r'), ('\ff\67\56\d8\89','\33\09\99some r','andom 8-bit text here \ee\20\00\56\78\45\77\e9'))
     AssertError(ValueError,'sometextheretocauseanexeption'.rpartition,'')
     AssertError(ValueError,''.rpartition,'')
     AssertError(TypeError,'some\90text\ffhere\78to\88causeanexeption'.rpartition,None)
@@ -1023,7 +1023,7 @@ def test_any():
     AreEqual(any(mylist()),True)
 
     class raiser:
-        def __nonzero__(self):
+        def __bool__(self):
             raise RuntimeError
 
     AreEqual(any([None,False,0,1,raiser()]),True) # True before the raiser()
@@ -1061,7 +1061,7 @@ def test_all():
     AreEqual(all(mylist()),False)
     
     class raiser:
-        def __nonzero__(self):
+        def __bool__(self):
             raise RuntimeError
 
     AreEqual(all([None,False,0,1,raiser()]),False) # array With raiser() after false
@@ -1243,7 +1243,7 @@ with J():
     with J():
         yield 100
 ""","","exec")
-    except SyntaxError,e: pass
+    except SyntaxError as e: pass
 
 
 def test_importwarning():
@@ -1258,7 +1258,7 @@ def test_importwarning():
     for exc in exc_list:
         try:
             raise exc
-        except exceptions.ImportWarning, e:
+        except exceptions.ImportWarning as e:
             pass
 
 def test_overflowwarning():

@@ -206,8 +206,8 @@ def _test_interop_set(clr_types, py_types, test_cases):
                 
             try:
                 expression = eval(expression_str)
-            except TypeError, e:
-                print "TYPE BUG:", expression_str
+            except TypeError as e:
+                print("TYPE BUG:", expression_str)
                 raise
             
             try:
@@ -217,7 +217,7 @@ def _test_interop_set(clr_types, py_types, test_cases):
             except:
                 if known_bugs.count(left_type + op + right_type)>0:
                     return
-                print expression_str
+                print(expression_str)
                 raise
             
             
@@ -442,7 +442,7 @@ def test_sanity():
                     ["System.UInt16", 0, 65535],
                     ["System.Int32", -2147483648, 2147483647],
                     ["System.UInt32", 0, 4294967295],
-                    ["System.Int64", -9223372036854775808L, 9223372036854775807L],
+                    ["System.Int64", -9223372036854775808, 9223372036854775807],
                     ["System.UInt64", 0, 18446744073709551615],
                     ["System.Single", -3.40282e+038, 3.40282e+038],
                     ["System.Double", -1.79769313486e+308, 1.79769313486e+308],
@@ -477,8 +477,8 @@ def test_sanity():
     Assert(num_ok_for_type(1, "long"))
     Assert(num_ok_for_type(-1, "long"))
     Assert(num_ok_for_type(5, "long"))
-    Assert(num_ok_for_type(-92233720368547758080000L, "long"))
-    Assert(num_ok_for_type( 18446744073709551615000L, "long"))
+    Assert(num_ok_for_type(-92233720368547758080000, "long"))
+    Assert(num_ok_for_type( 18446744073709551615000, "long"))
     
     Assert(num_ok_for_type(0.0, "float"))
     Assert(num_ok_for_type(1.0, "float"))

@@ -14,6 +14,8 @@
 #####################################################################################
 
 from iptest.assert_util import *
+import collections
+import imp
 if is_cli or is_silverlight:
     from _collections import *
 else:
@@ -116,9 +118,9 @@ def reassignLocalsIter():
 # we used to include _ which got defined during codegen.  Make sure
 # we don't crash
 def localsAfterExpr():
-    exec "pass"
+    exec("pass")
     10
-    exec "pass"
+    exec("pass")
 
 def nested_locals():
     # Test locals in nested functions
@@ -182,9 +184,9 @@ for a in unassignedIter(): pass
 reassignLocals()
 for a in reassignLocalsIter(): pass
 
-Assert(locals().has_key('__builtins__'))
+Assert('__builtins__' in locals())
 a = 5
-Assert(locals().has_key('a'))
+Assert('a' in locals())
 
 exec('a = a+1')
 
@@ -193,16 +195,16 @@ Assert(locals()['a'] == 6)
 def my_locals():
     Fail("Calling wrong locals")
 
-exec "pass"
+exec("pass")
 locals = my_locals
-exec "pass"
-import __builtin__
-save_locals = __builtin__.locals
+exec("pass")
+import builtins
+save_locals = builtins.locals
 try:
-    __builtin__.locals = my_locals
-    exec "pass"
+    builtins.locals = my_locals
+    exec("pass")
 finally:
-    __builtin__.locals = save_locals
+    builtins.locals = save_locals
 
 localsAfterExpr()
 del locals
@@ -210,7 +212,7 @@ del locals
 def f():
     a = 2
     class c:
-        exec "a = 42"
+        exec("a = 42")
         abc = a
     return c
 
@@ -524,18 +526,18 @@ def get_n(n):
 def test_undefined(function, *args):
     try:
         function(*args)
-    except NameError, n:
-        Assert("'undefined'" in str(n), "%s: expected undefined variable exception, but different NameError caught: %s" % (function.func_name, n))
+    except NameError as n:
+        Assert("'undefined'" in str(n), "%s: expected undefined variable exception, but different NameError caught: %s" % (function.__name__, n))
     else:
-        Fail("%s: expected undefined variable exception, but no exception caught" % function.func_name)
+        Fail("%s: expected undefined variable exception, but no exception caught" % function.__name__)
 
 def test_unassigned(function, *args):
     try:
         function(*args)
-    except UnboundLocalError, n:
+    except UnboundLocalError as n:
         pass
     else:
-        Fail("%s: expected unassigned variable exception, but no exception caught" % function.func_name)
+        Fail("%s: expected unassigned variable exception, but no exception caught" % function.__name__)
 
 def test_attribute_error(function, *args):
     try:
@@ -543,7 +545,7 @@ def test_attribute_error(function, *args):
     except AttributeError:
         pass
     else:
-        Fail("%s: expected AttributeError, but no exception caught" % function.func_name)
+        Fail("%s: expected AttributeError, but no exception caught" % function.__name__)
 
 # straightforward undefined local
 def test_simple_1():
@@ -726,7 +728,7 @@ test_undefined(test_for_7)
 def test_for_7():
     for undefined in []:
         pass
-    print undefined
+    print(undefined)
 
 test_undefined(test_for_7)
 
@@ -744,7 +746,7 @@ test_undefined(test_try_1)
 def test_try_2():
     try:
         pass
-    except Error, undefined:
+    except Error as undefined:
         pass
     x = undefined
     
@@ -935,7 +937,7 @@ del C.a
 Assert(not "a" in dir(C))
 
 for m in dir([]):
-    c = callable(m)
+    c = isinstance(m, collections.Callable)
     a = getattr([], m)
 
 success = False
@@ -950,21 +952,21 @@ Assert(success)
 xyz = 'aaa'
 AreEqual(xyz, 'aaa')
 
-import __builtin__
-__builtin__.xyz = 'abc'
+import builtins
+builtins.xyz = 'abc'
 
 xyz = 'def'
 AreEqual(xyz, 'def')
 del xyz
 AreEqual(xyz, 'abc')
 
-del __builtin__.xyz
+del builtins.xyz
 try:
     a = xyz
 except NameError: pass
 
 ## delete builtin func
-import __builtin__
+import builtins
 
 try:
     del pow
@@ -974,23 +976,23 @@ except NameError: pass
 class C(object):
     name = None
     def test(self):
-        print name
+        print(name)
 
 AssertError(NameError, C().test)
 
 try:
-    del __builtin__.pow
+    del builtins.pow
     AssertError(NameError, lambda: pow)
-    AssertError(AttributeError, lambda: __builtin__.pow)
+    AssertError(AttributeError, lambda: builtins.pow)
 finally:
-    reload(__builtin__)
+    imp.reload(__builtin__)
     # make sure we still have access to __builtin__'s after reloading
     # AreEqual(pow(2,2), 4) # bug 359890
     dir('abc')
 
 ## Overriding __builtin__ method inconsistent with -X:LightweightScopes flag
-import __builtin__
-__builtin__.help = 10
+import builtins
+builtins.help = 10
 AssertErrorWithPartialMessage(TypeError, "is not callable", lambda: help(dir))
 
 # Test that run time name lookup skips over class scopes
@@ -1001,7 +1003,7 @@ class C(object):
     def foo(self):
         # this exec statement is here to cause the "a" in the next statement
         # to have its name looked up at run time.
-        exec "dummy = 10"
+        exec("dummy = 10")
         return a  # a should bind to the global a, not C.a
 
 AreEqual(C().foo(), 123)
@@ -1043,7 +1045,7 @@ AreEqual(global_class_member, "global class member value")
 def f():
     abc = eval("locals()")
     abc['foo'] = 42
-    print foo
+    print(foo)
 
 AssertError(NameError, f)
 
@@ -1051,14 +1053,14 @@ AssertError(NameError, f)
 def f():
     x = locals()
     x['foo'] = 42
-    print foo
+    print(foo)
 
 AssertError(NameError, f)
 
 def f():
     x = vars()
     x['foo'] = 42
-    print foo
+    print(foo)
 
 AssertError(NameError, f)
 
@@ -1069,7 +1071,7 @@ if not is_silverlight:
         f.write('foo = 42')
         f.close()
         try:
-            execfile('temptest.py')
+            exec(compile(open('temptest.py').read(), 'temptest.py', 'exec'))
         finally:
             nt.unlink('temptest.py')
         return foo
@@ -1077,7 +1079,7 @@ if not is_silverlight:
     AssertError(NameError, f)
 
 def f():
-    exec "foo = 42"
+    exec("foo = 42")
     return foo
 
 AreEqual(f(), 42)
@@ -1098,7 +1100,7 @@ if not is_silverlight:
 
 
 def f():
-    exec "foo = 42" in {}
+    exec("foo = 42", {})
     return foo
   
 AssertError(NameError, f)
@@ -1134,7 +1136,8 @@ AreEqual(f(), [(10, {'a':10}), {}])
 X = (42, 43)
 class Y:
     def outer_f(self):
-        def f((a,b)=X):     
+        def f(xxx_todo_changeme=X):     
+            (a,b) = xxx_todo_changeme
             return a, b
         return f
         

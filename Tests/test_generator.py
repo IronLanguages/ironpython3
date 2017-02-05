@@ -32,10 +32,10 @@ def ifilterfalse(iterable):
 
 def test_simple_generators():
     ll = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
-    x = ifilter(ll)
+    x = filter(ll)
     l = []
     for i in x: l.append(i)
-    x = ifilterfalse(ll)
+    x = filterfalse(ll)
     Assert(l == [1,2,4,5,7,8,10,11,13,14,16,17,19,20])
     l = []
     for i in x: l.append(i)
@@ -45,8 +45,8 @@ def test_simple_generators():
 
 def test_generator_expressions():
     AreEqual(sum(i+i for i in range(100) if i < 50), 2450)
-    AreEqual(list((i,j) for i in xrange(2) for j in xrange(3)), [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)])
-    AreEqual(list((i,j) for i in xrange(2) for j in xrange(i+1)), [(0, 0), (1, 0), (1, 1)])
+    AreEqual(list((i,j) for i in range(2) for j in range(3)), [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)])
+    AreEqual(list((i,j) for i in range(2) for j in range(i+1)), [(0, 0), (1, 0), (1, 1)])
     AreEqual([x for x, in [(1,)]], [1])
     
     i = 10
@@ -57,12 +57,12 @@ def test_generator_expressions():
     AreEqual(list(g), [0, 2, 4, 6, 8, 10, 12, 14, 16, 18])
     
     g = (i+i for i in range(3))
-    AreEqual(g.next(), 0)
-    AreEqual(g.next(), 2)
-    AreEqual(g.next(), 4)
-    AssertError(StopIteration, g.next)
-    AssertError(StopIteration, g.next)
-    AssertError(StopIteration, g.next)
+    AreEqual(next(g), 0)
+    AreEqual(next(g), 2)
+    AreEqual(next(g), 4)
+    AssertError(StopIteration, g.__next__)
+    AssertError(StopIteration, g.__next__)
+    AssertError(StopIteration, g.__next__)
     AreEqual(list(g), [])
     
     def f(n):
@@ -73,7 +73,7 @@ def test_generator_expressions():
     AreEqual(sum(f(10)), 90)
     
     def f(n):
-        return ((i,j) for i in xrange(n) for j in xrange(i))
+        return ((i,j) for i in range(n) for j in range(i))
     
     AreEqual(list(f(3)), [(1, 0), (2, 0), (2, 1)])
 
@@ -89,14 +89,14 @@ def test_nested_generators():
             yield (i, innergen())
     
     for a,b in outergen():
-        AreEqual(a, b.next())
-        AreEqual(range(a), list(b))
+        AreEqual(a, next(b))
+        AreEqual(list(range(a)), list(b))
     
     
     def f():
         yield "Import inside generator"
     
-    AreEqual(f().next(), "Import inside generator")
+    AreEqual(next(f()), "Import inside generator")
     
     
     def xgen():
@@ -192,10 +192,10 @@ def test_generator_finally():
             yield 3
     
     n = yield_in_finally_w_exception()
-    AreEqual(n.next(), 1)
-    AreEqual(n.next(), 2)
-    AreEqual(n.next(), 3)
-    AssertError(ZeroDivisionError, n.next)
+    AreEqual(next(n), 1)
+    AreEqual(next(n), 2)
+    AreEqual(next(n), 3)
+    AssertError(ZeroDivisionError, n.__next__)
     
     def yield_in_finally_w_exception_2():
         try:
@@ -207,9 +207,9 @@ def test_generator_finally():
             yield 3
     
     n = yield_in_finally_w_exception_2()
-    AreEqual(n.next(), 1)
-    AreEqual(n.next(), 2)
-    AssertError(AssertionError, n.next)
+    AreEqual(next(n), 1)
+    AreEqual(next(n), 2)
+    AssertError(AssertionError, n.__next__)
     
     def test_generator_exp():
         l = ((1,2),(3, 4))
@@ -344,7 +344,7 @@ def test_generator_arg_counts():
     # Generator methods with varying amounts of local state
     def lstate(size):
         args = ''
-        for i in xrange(size-1):
+        for i in range(size-1):
             args = args+('a%i, ' % i)
         args = args+('a%i' % (size-1))
     
@@ -358,10 +358,10 @@ def fetest(%s):
 """ % (args, size)
         #print func
         d = {'AreEqual':AreEqual}
-        exec func in d, d
+        exec(func, d, d)
     
-        args = range(size)
-        exec "AreEqual(list(fetest(%s)),%s)" % (str(args)[1:-1], str([x*x for x in args])) in d, d
+        args = list(range(size))
+        exec("AreEqual(list(fetest(%s)),%s)" % (str(args)[1:-1], str([x*x for x in args])), d, d)
     
     lstate(1)
     lstate(2)
@@ -397,13 +397,13 @@ def test_iterate_closed():
       l[1] += 1  # side effect statement
     
     g=f(l)
-    Assert(g.next() == 'a')
+    Assert(next(g) == 'a')
     Assert(l == [1,0]) # should not have executed past yield
-    AssertError(StopIteration, g.next)
+    AssertError(StopIteration, g.__next__)
     Assert(l == [1,1]) # now should have executed
     
     # Generator is now closed, future calls should just keep throwing
-    AssertError(StopIteration, g.next)
+    AssertError(StopIteration, g.__next__)
     Assert(l == [1,1]) # verify that we didn't execute any more statements
     
     
@@ -417,13 +417,13 @@ def test_iterate_closed():
       l[1] += 1
     
     g=f(l)
-    Assert(g.next() == 'c')
+    Assert(next(g) == 'c')
     Assert(l == [0,0])
-    AssertError(StopIteration, g.next)
+    AssertError(StopIteration, g.__next__)
     Assert(l == [1,0])
     
     # generator is now closed from unhandled exception. Future calls should throw StopIteration
-    AssertError(StopIteration, g.next)
+    AssertError(StopIteration, g.__next__)
     Assert(l == [1,0]) # verify that we didn't execute any more statements
     
     # repeat enumeration in a comprehension.
@@ -446,13 +446,13 @@ def test_iterate_closed():
       raise MyError
     
     g=f(l)
-    Assert(g.next() == 'b')
+    Assert(next(g) == 'b')
     Assert(l == [1,0])
-    AssertError(MyError, g.next)
+    AssertError(MyError, g.__next__)
     Assert(l == [1,1])
     
     # generator is now closed from unhandled exception. Future calls should throw StopIteration
-    AssertError(StopIteration, g.next)
+    AssertError(StopIteration, g.__next__)
     Assert(l == [1,1]) # verify that we didn't execute any more statements
     
     
@@ -474,7 +474,7 @@ def test_generator_reentrancy():
     # Any operation should throw a ValueError if called.
     def f():
       try:
-        i = me.next() # error: reentrant call! Should throw ValueError, which we can catch.
+        i = next(me) # error: reentrant call! Should throw ValueError, which we can catch.
       except ValueError:
         yield 7
       yield 10
@@ -483,12 +483,12 @@ def test_generator_reentrancy():
       Assert(False) # unreachable!
     
     me = f()
-    AreEqual(me.next(), 7)
+    AreEqual(next(me), 7)
     # Generator should still be alive
-    AreEqual(me.next(), 10)
-    AssertError(ValueError, me.next)
+    AreEqual(next(me), 10)
+    AssertError(ValueError, me.__next__)
     # since the last call went unhandled, the generator is now closed.
-    AssertError(StopIteration, me.next)
+    AssertError(StopIteration, me.__next__)
 
 def test_generator_expr_in():
     AreEqual('abc' in (x for x in ('abc', )), True)
@@ -508,20 +508,20 @@ def test_generator_attrs():
     AreEqual(got, expectedAttributes)
     
     temp_gen = f()
-    AreEqual(f.func_code, temp_gen.gi_code)
+    AreEqual(f.__code__, temp_gen.gi_code)
     
 def test_cp24031():
     def f(*args):
         return args
     
-    AreEqual(f(*(x for x in xrange(2))),
+    AreEqual(f(*(x for x in range(2))),
              (0, 1))
     
     class KNew(object):
         pass
     
     AssertErrorWithMessage(TypeError, "object.__new__() takes no parameters",
-                           lambda: KNew(*(i for i in xrange(10))) != None)
+                           lambda: KNew(*(i for i in range(10))) != None)
 
     
 #--MAIN------------------------------------------------------------------------

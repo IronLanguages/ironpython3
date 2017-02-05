@@ -47,8 +47,8 @@ Assert(g.a == 20)
 
 def foo(): pass
 
-AreEqual(foo.func_code.co_filename.lower().endswith('test_function.py'), True)
-AreEqual(foo.func_code.co_firstlineno, 48)  # if you added lines to the top of this file you need to update this number.
+AreEqual(foo.__code__.co_filename.lower().endswith('test_function.py'), True)
+AreEqual(foo.__code__.co_firstlineno, 48)  # if you added lines to the top of this file you need to update this number.
 
 
 # Cannot inherit from a function
@@ -61,7 +61,7 @@ if is_silverlight==False:
 else:
     try:
         CreateSubType(type(foo))
-    except TypeError, e:
+    except TypeError as e:
         Assert(e.message.find("is not an acceptable base type") != -1)
 
 def a(*args): return args
@@ -171,13 +171,13 @@ for i in range(8):
     #line +=  "try: C1.f%d(c2, %s) \nexcept TypeError: pass \nelse: raise AssertionError\n" % (i, args)
 
 #print line
-exec line    
+exec(line)    
 
 def SetAttrOfInstanceMethod():
     C1.f0.attr = 1
 AssertError(AttributeError, SetAttrOfInstanceMethod)
 
-C1.f0.im_func.attr = 1
+C1.f0.__func__.attr = 1
 AreEqual(C1.f0.attr, 1)
 AreEqual(dir(C1.f0).__contains__("attr"), True)
 
@@ -219,7 +219,7 @@ def f(x, *args):
 
 AreEqual(f(1, *[2]), (1, (2,)))
 AreEqual(f(7, *(i for i in range(3))), (7, (0, 1, 2,)))
-AreEqual(f(9, *range(11, 13)), (9, (11, 12)))
+AreEqual(f(9, *list(range(11, 13))), (9, (11, 12)))
 
 #verify we can call sorted w/ keyword args
 
@@ -434,7 +434,7 @@ if is_cli or is_silverlight:
 
     AreEqual(foo('abc'), 'abc')
     AreEqual(foo(2), 2)
-    AreEqual(foo(2L), 2L)
+    AreEqual(foo(2), 2)
     AreEqual(foo(2.0), 2.0)
     AreEqual(foo(True), True)
 
@@ -445,7 +445,7 @@ if is_cli or is_silverlight:
         
     AreEqual(foo('abc'), 'abc')
     AssertError(AssertionError, foo, 2)
-    AssertError(AssertionError, foo, 2L)
+    AssertError(AssertionError, foo, 2)
     AssertError(AssertionError, foo, 2.0)
     AssertError(AssertionError, foo, True)
 
@@ -455,7 +455,7 @@ if is_cli or is_silverlight:
 
     AreEqual(foo('abc', True), ('abc', True))
     AssertError(AssertionError, foo, ('abc',2))
-    AssertError(AssertionError, foo, ('abc',2L))
+    AssertError(AssertionError, foo, ('abc',2))
     AssertError(AssertionError, foo, ('abc',2.0))
 
 
@@ -468,7 +468,7 @@ if is_cli or is_silverlight:
     a = bar()
     AreEqual(a.foo('xyz'), 'xyz')
     AssertError(AssertionError, a.foo, 2)
-    AssertError(AssertionError, a.foo, 2L)
+    AssertError(AssertionError, a.foo, 2)
     AssertError(AssertionError, a.foo, 2.0)
     AssertError(AssertionError, a.foo, True)
 
@@ -479,7 +479,7 @@ if is_cli or is_silverlight:
 
     AreEqual(foo('abc'), 'abc')
     AssertError(AssertionError, foo, 2)
-    AssertError(AssertionError, foo, 2L)
+    AssertError(AssertionError, foo, 2)
     AssertError(AssertionError, foo, 2.0)
     AssertError(AssertionError, foo, True)
 
@@ -502,7 +502,7 @@ if is_cli or is_silverlight:
 
 try:
     buffer()
-except TypeError, e:
+except TypeError as e:
     # make sure we get the right type name when calling w/ wrong # of args
     AreEqual(str(e)[:8], 'buffer()')
     
@@ -569,8 +569,8 @@ if is_cli and not is_silverlight:
 
 p = ((1, 2),)
 
-AreEqual(zip(*(p * 10)), [(1, 1, 1, 1, 1, 1, 1, 1, 1, 1), (2, 2, 2, 2, 2, 2, 2, 2, 2, 2)])
-AreEqual(zip(*(p * 10)), [(1, 1, 1, 1, 1, 1, 1, 1, 1, 1), (2, 2, 2, 2, 2, 2, 2, 2, 2, 2)])
+AreEqual(list(zip(*(p * 10))), [(1, 1, 1, 1, 1, 1, 1, 1, 1, 1), (2, 2, 2, 2, 2, 2, 2, 2, 2, 2)])
+AreEqual(list(zip(*(p * 10))), [(1, 1, 1, 1, 1, 1, 1, 1, 1, 1), (2, 2, 2, 2, 2, 2, 2, 2, 2, 2)])
 
 
 
@@ -658,16 +658,15 @@ class D(object):
 	@classmethod
 	def classmeth(cls): pass
 	
-AreEqual(D.classmeth.im_class, type)
+AreEqual(D.classmeth.__self__.__class__, type)
 
 class MetaType(type): pass
 
-class D(object):
-	__metaclass__ = MetaType
+class D(object, metaclass=MetaType):
 	@classmethod
 	def classmeth(cls): pass
 	
-AreEqual(D.classmeth.im_class, MetaType)
+AreEqual(D.classmeth.__self__.__class__, MetaType)
 
 #####################################################################################
 
@@ -681,7 +680,7 @@ global init
 
 def Assert(val):
     if val == False:
-        raise TypeError, "assertion failed"
+        raise TypeError("assertion failed")
 
 def runTest(testCase):
     global typeMatch
@@ -720,7 +719,7 @@ cases = [TestCase(int, 2, 2, True, 2),
          TestCase(str, 'abc', 'abc', True, 'abc'),
          TestCase(float, 2.3, 2.3, True, 2.3),
          TestCase(type, type(object), type(object), False, object),
-         TestCase(long, 10000000000L, 10000000000L, True, 10000000000L),
+         TestCase(int, 10000000000, 10000000000, True, 10000000000),
          #TestCase(complex, complex(2.0, 0), complex(2.0, 0), True, 2.0),        # complex is currently a struct w/ no extensibel, we fail here
         # TestCase(file, 'abc', True),      # ???
         ]
@@ -758,47 +757,47 @@ def test_func_flags():
     def foo8(a,b,c,d,e,f): pass
     def foo9(a,b): pass
     
-    AreEqual(foo0.func_code.co_flags & 12, 0)
-    AreEqual(foo1.func_code.co_flags & 12, 4)
-    AreEqual(foo2.func_code.co_flags & 12, 8)
-    AreEqual(foo3.func_code.co_flags & 12, 12)
-    AreEqual(foo4.func_code.co_flags & 12, 0)
-    AreEqual(foo5.func_code.co_flags & 12, 4)
-    AreEqual(foo6.func_code.co_flags & 12, 8)
-    AreEqual(foo7.func_code.co_flags & 12, 12)
-    AreEqual(foo8.func_code.co_flags & 12, 0)
-    AreEqual(foo9.func_code.co_flags & 12, 0)
+    AreEqual(foo0.__code__.co_flags & 12, 0)
+    AreEqual(foo1.__code__.co_flags & 12, 4)
+    AreEqual(foo2.__code__.co_flags & 12, 8)
+    AreEqual(foo3.__code__.co_flags & 12, 12)
+    AreEqual(foo4.__code__.co_flags & 12, 0)
+    AreEqual(foo5.__code__.co_flags & 12, 4)
+    AreEqual(foo6.__code__.co_flags & 12, 8)
+    AreEqual(foo7.__code__.co_flags & 12, 12)
+    AreEqual(foo8.__code__.co_flags & 12, 0)
+    AreEqual(foo9.__code__.co_flags & 12, 0)
     
-    AreEqual(foo0.func_code.co_argcount, 0)
-    AreEqual(foo1.func_code.co_argcount, 0)
-    AreEqual(foo2.func_code.co_argcount, 0)
-    AreEqual(foo3.func_code.co_argcount, 0)
-    AreEqual(foo4.func_code.co_argcount, 1)
-    AreEqual(foo5.func_code.co_argcount, 1)
-    AreEqual(foo6.func_code.co_argcount, 1)
-    AreEqual(foo7.func_code.co_argcount, 1)
-    AreEqual(foo8.func_code.co_argcount, 6)
-    AreEqual(foo9.func_code.co_argcount, 2)
+    AreEqual(foo0.__code__.co_argcount, 0)
+    AreEqual(foo1.__code__.co_argcount, 0)
+    AreEqual(foo2.__code__.co_argcount, 0)
+    AreEqual(foo3.__code__.co_argcount, 0)
+    AreEqual(foo4.__code__.co_argcount, 1)
+    AreEqual(foo5.__code__.co_argcount, 1)
+    AreEqual(foo6.__code__.co_argcount, 1)
+    AreEqual(foo7.__code__.co_argcount, 1)
+    AreEqual(foo8.__code__.co_argcount, 6)
+    AreEqual(foo9.__code__.co_argcount, 2)
 
     
 def test_big_calls():
     # check various function call sizes and boundaries
     for size in [3,4,5, 7,8,9, 15,16,17, 23, 24, 25, 31,32,33, 47,48,49, 63,64,65, 127, 128, 129, 254, 255, 256, 257, 258, 511,512,513, 1023,1024,1025, 2047, 2048, 2049]:
         # w/o defaults
-        exec 'def f(' + ','.join(['a' + str(i) for i in range(size)]) + '): return ' + ','.join(['a' + str(i) for i in range(size)])
+        exec('def f(' + ','.join(['a' + str(i) for i in range(size)]) + '): return ' + ','.join(['a' + str(i) for i in range(size)]))
         # w/ defaults
-        exec 'def g(' + ','.join(['a' + str(i) + '=' + str(i) for i in range(size)]) + '): return ' + ','.join(['a' + str(i) for i in range(size)])
+        exec('def g(' + ','.join(['a' + str(i) + '=' + str(i) for i in range(size)]) + '): return ' + ','.join(['a' + str(i) for i in range(size)]))
         if size <= 255 or is_cli:
             # CPython allows function definitions > 255, but not calls w/ > 255 params.
-            exec 'a = f(' + ', '.join([str(x) for x in xrange(size)]) + ')'
-            AreEqual(a, tuple(xrange(size)))
-            exec 'a = g()'
-            AreEqual(a, tuple(xrange(size)))
-            exec 'a = g(' + ', '.join([str(x) for x in xrange(size)]) + ')'
-            AreEqual(a, tuple(xrange(size)))
+            exec('a = f(' + ', '.join([str(x) for x in range(size)]) + ')')
+            AreEqual(a, tuple(range(size)))
+            exec('a = g()')
+            AreEqual(a, tuple(range(size)))
+            exec('a = g(' + ', '.join([str(x) for x in range(size)]) + ')')
+            AreEqual(a, tuple(range(size)))
         
-        exec 'a = f(*(' + ', '.join([str(x) for x in xrange(size)]) + '))'
-        AreEqual(a, tuple(xrange(size)))
+        exec('a = f(*(' + ', '.join([str(x) for x in range(size)]) + '))')
+        AreEqual(a, tuple(range(size)))
     
 def test_compile():
     x = compile("print 2/3", "<string>", "exec", 8192)
@@ -831,7 +830,7 @@ def test_name():
     AreEqual(f.__name__, 'g')
     Assert(repr(f).startswith('<function g'))
     
-    f.func_name = 'x'
+    f.__name__ = 'x'
     AreEqual(f.__name__, 'x')
     Assert(repr(f).startswith('<function x'))
 
@@ -847,39 +846,39 @@ def test_argcount():
     def foo8(a,b,c,d,e,f): pass
     def foo9(a,b): pass
     
-    AreEqual(foo0.func_code.co_argcount, 0)
-    AreEqual(foo1.func_code.co_argcount, 0)
-    AreEqual(foo2.func_code.co_argcount, 0)
-    AreEqual(foo3.func_code.co_argcount, 0)
-    AreEqual(foo4.func_code.co_argcount, 1)
-    AreEqual(foo5.func_code.co_argcount, 1)
-    AreEqual(foo6.func_code.co_argcount, 1)
-    AreEqual(foo7.func_code.co_argcount, 1)
-    AreEqual(foo8.func_code.co_argcount, 6)
-    AreEqual(foo9.func_code.co_argcount, 2)
+    AreEqual(foo0.__code__.co_argcount, 0)
+    AreEqual(foo1.__code__.co_argcount, 0)
+    AreEqual(foo2.__code__.co_argcount, 0)
+    AreEqual(foo3.__code__.co_argcount, 0)
+    AreEqual(foo4.__code__.co_argcount, 1)
+    AreEqual(foo5.__code__.co_argcount, 1)
+    AreEqual(foo6.__code__.co_argcount, 1)
+    AreEqual(foo7.__code__.co_argcount, 1)
+    AreEqual(foo8.__code__.co_argcount, 6)
+    AreEqual(foo9.__code__.co_argcount, 2)
 
 def test_defaults():
     defaults = [None, object, int, [], 3.14, [3.14], (None,), "a string"]
     for default in defaults:
         def helperFunc(): pass
-        AreEqual(helperFunc.func_defaults, None)
-        AreEqual(helperFunc.func_defaults, None)
+        AreEqual(helperFunc.__defaults__, None)
+        AreEqual(helperFunc.__defaults__, None)
     
         def helperFunc1(a): pass
-        AreEqual(helperFunc1.func_defaults, None)
-        AreEqual(helperFunc1.func_defaults, None)
+        AreEqual(helperFunc1.__defaults__, None)
+        AreEqual(helperFunc1.__defaults__, None)
         
         
         def helperFunc2(a=default): pass
-        AreEqual(helperFunc2.func_defaults, (default,))
+        AreEqual(helperFunc2.__defaults__, (default,))
         helperFunc2(a=7)
-        AreEqual(helperFunc2.func_defaults, (default,))
+        AreEqual(helperFunc2.__defaults__, (default,))
         
         
         def helperFunc3(a, b=default, c=[42]): c.append(b)
-        AreEqual(helperFunc3.func_defaults, (default, [42]))
+        AreEqual(helperFunc3.__defaults__, (default, [42]))
         helperFunc3("stuff")
-        AreEqual(helperFunc3.func_defaults, (default, [42, default]))
+        AreEqual(helperFunc3.__defaults__, (default, [42, default]))
 
 def test_splat_defaults():
     def g(a, b, x=None):
@@ -913,9 +912,9 @@ def test_function_closure_negative():
     
     for assignment_val in [None, 1, "a string"]:
         try:
-            f.func_closure = assignment_val
+            f.__closure__ = assignment_val
             AssertUnreachable("func_closure is a read-only attribute of functions")
-        except TypeError, e:
+        except TypeError as e:
             pass
 
 def test_paramless_function_call_error():
@@ -935,20 +934,20 @@ def test_paramless_function_call_error():
 def test_function_closure():
     def f(): pass
     
-    AreEqual(f.func_closure, None)
+    AreEqual(f.__closure__, None)
     
     def f():    
         def g(): pass
         return g
         
-    AreEqual(f().func_closure, None)
+    AreEqual(f().__closure__, None)
 
     def f():
         x = 4
         def g(): return x
         return g
         
-    AreEqual(sorted([x.cell_contents for x in f().func_closure]), [4])
+    AreEqual(sorted([x.cell_contents for x in f().__closure__]), [4])
     
     def f():
         x = 4
@@ -958,7 +957,7 @@ def test_function_closure():
             return h
         return g()
 
-    AreEqual(sorted([x.cell_contents for x in f().func_closure]), [4, 5])
+    AreEqual(sorted([x.cell_contents for x in f().__closure__]), [4, 5])
 
     # don't use z
     def f():
@@ -970,7 +969,7 @@ def test_function_closure():
             return h
         return g()
     
-    AreEqual(sorted([x.cell_contents for x in f().func_closure]), [4, 5])
+    AreEqual(sorted([x.cell_contents for x in f().__closure__]), [4, 5])
     
     def f():
         x = 4
@@ -981,7 +980,7 @@ def test_function_closure():
             return h
         return g()
 
-    AreEqual(sorted([x.cell_contents for x in f().func_closure]), [4, 5, 7])
+    AreEqual(sorted([x.cell_contents for x in f().__closure__]), [4, 5, 7])
 
     def f():
         x = 4
@@ -993,12 +992,12 @@ def test_function_closure():
             return h
         return g()
 
-    AreEqual(sorted([x.cell_contents for x in f().func_closure]), [4, 5])
+    AreEqual(sorted([x.cell_contents for x in f().__closure__]), [4, 5])
     
     # closure cells are not recreated
     callRes = f()
-    a = sorted([id(x) for x in callRes.func_closure])
-    b = sorted([id(x) for x in callRes.func_closure])
+    a = sorted([id(x) for x in callRes.__closure__])
+    b = sorted([id(x) for x in callRes.__closure__])
     AreEqual(a, b)
 
     def f():
@@ -1011,9 +1010,9 @@ def test_function_closure():
             return h
         return g()
 
-    AreEqual(sorted([x.cell_contents for x in f().func_closure]), [4, 5, 7, 9])
+    AreEqual(sorted([x.cell_contents for x in f().__closure__]), [4, 5, 7, 9])
 
-    AssertError(TypeError, hash, f().func_closure[0])
+    AssertError(TypeError, hash, f().__closure__[0])
     
     def f():
         x = 5
@@ -1033,50 +1032,50 @@ def test_function_closure():
             return x
         return g
 
-    AreEqual(f().func_closure[0], h().func_closure[0])
-    Assert(f().func_closure[0] != j().func_closure[0])
+    AreEqual(f().__closure__[0], h().__closure__[0])
+    Assert(f().__closure__[0] != j().__closure__[0])
 
     # <cell at 45: int object at 44>
-    Assert(repr(f().func_closure[0]).startswith('<cell at '))
-    Assert(repr(f().func_closure[0]).find(': int object at ') != -1)
+    Assert(repr(f().__closure__[0]).startswith('<cell at '))
+    Assert(repr(f().__closure__[0]).find(': int object at ') != -1)
     
     
 def test_func_code():
     def foo(): pass
-    def assign(): foo.func_code = None
+    def assign(): foo.__code__ = None
     AssertError(TypeError, assign)
     
 def def_func_doc():
-    foo.func_doc = 'abc'
+    foo.__doc__ = 'abc'
     AreEqual(foo.__doc__, 'abc')
     foo.__doc__ = 'def'
-    AreEqual(foo.func_doc, 'def')
-    foo.func_doc = None
+    AreEqual(foo.__doc__, 'def')
+    foo.__doc__ = None
     AreEqual(foo.__doc__, None)
-    AreEqual(foo.func_doc, None)
+    AreEqual(foo.__doc__, None)
 
 def test_func_defaults():
     def f(a, b): return (a, b)
 
-    f.func_defaults = (1,2)
+    f.__defaults__ = (1,2)
     AreEqual(f(), (1,2))
     
-    f.func_defaults = (1,2,3,4)
+    f.__defaults__ = (1,2,3,4)
     AreEqual(f(), (3,4))
 
-    f.func_defaults = None
+    f.__defaults__ = None
     AssertError(TypeError, f)
 
-    f.func_defaults = (1,2)
-    AreEqual(f.func_defaults, (1,2))
+    f.__defaults__ = (1,2)
+    AreEqual(f.__defaults__, (1,2))
     
-    del f.func_defaults
-    AreEqual(f.func_defaults, None)
-    del f.func_defaults
-    AreEqual(f.func_defaults, None)
+    del f.__defaults__
+    AreEqual(f.__defaults__, None)
+    del f.__defaults__
+    AreEqual(f.__defaults__, None)
     
     def func_with_many_args(one, two, three, four, five, six, seven, eight, nine, ten, eleven=None, twelve=None, thirteen=None, fourteen=None, fifteen=None, sixteen=None, seventeen=None, eighteen=None, nineteen=None):
-        print 'hello'
+        print('hello')
         
     func_with_many_args(None, None, None, None, None, None, None, None, None, None)
 
@@ -1085,11 +1084,11 @@ def test_func_dict():
     def f(): pass
     
     f.abc = 123
-    AreEqual(f.func_dict, {'abc': 123})
-    f.func_dict = {'def': 'def'}
+    AreEqual(f.__dict__, {'abc': 123})
+    f.__dict__ = {'def': 'def'}
     AreEqual(hasattr(f, 'def'), True)
     AreEqual(getattr(f, 'def'), 'def')
-    f.func_dict = {}
+    f.__dict__ = {}
     AreEqual(hasattr(f, 'abc'), False)
     AreEqual(hasattr(f, 'def'), False)
         
@@ -1101,7 +1100,7 @@ def test_method():
         def method(self): pass
     
     method = type(C.method)(id, None, 'abc')
-    AreEqual(method.im_class, 'abc')
+    AreEqual(method.__self__.__class__, 'abc')
     
     class myobj:
         def __init__(self, val):            
@@ -1169,23 +1168,23 @@ def test_splat_none():
 
 def test_exec_funccode():
     # can't exec a func code w/ parameters
-    def f(a, b, c): print a, b, c
+    def f(a, b, c): print(a, b, c)
     
-    AssertError(TypeError, lambda : eval(f.func_code))
+    AssertError(TypeError, lambda : eval(f.__code__))
     
     # can exec *args/**args
     def f(*args): pass
-    exec f.func_code in {}, {}
+    exec(f.__code__, {}, {})
     
     def f(*args, **kwargs): pass
-    exec f.func_code in {}, {}
+    exec(f.__code__, {}, {})
 
     # can't exec function which closes over vars
     def f():
         x = 2
         def g():
-                print x
-        return g.func_code
+                print(x)
+        return g.__code__
     
     AssertError(TypeError, lambda : eval(f()))
     
@@ -1193,15 +1192,15 @@ def test_exec_funccode_filename():
     import sys
     mod = type(sys)('fake_mod_name')
     mod.__file__ = 'some file'
-    exec "def x(): pass" in mod.__dict__
-    AreEqual(mod.x.func_code.co_filename, '<string>')
+    exec("def x(): pass", mod.__dict__)
+    AreEqual(mod.x.__code__.co_filename, '<string>')
 
 
 # defined globally because unqualified exec isn't allowed in
 # a nested function.
 def unqualified_exec():
-    print x
-    exec ""
+    print(x)
+    exec("")
 
 def test_func_code_variables():
     def CompareCodeVars(code, varnames, names, freevars, cellvars):
@@ -1214,50 +1213,50 @@ def test_func_code_variables():
     def f():
         a = 2
     
-    CompareCodeVars(f.func_code, ('a', ), (), (), ())    
+    CompareCodeVars(f.__code__, ('a', ), (), (), ())    
     
     # closed over var
     def f():
         a = 2
         def g():
-            print a
+            print(a)
         return g
         
-    CompareCodeVars(f.func_code, ('g', ), (), (), ('a', ))
-    CompareCodeVars(f().func_code, (), (), ('a', ), ())
+    CompareCodeVars(f.__code__, ('g', ), (), (), ('a', ))
+    CompareCodeVars(f().__code__, (), (), ('a', ), ())
 
     # tuple parameters
-    def f((a, b)): pass
+    def f(xxx_todo_changeme): (a, b) = xxx_todo_changeme; pass
     
-    CompareCodeVars(f.func_code, ('.0', 'a', 'b'), (), (), ())
+    CompareCodeVars(f.__code__, ('.0', 'a', 'b'), (), (), ())
     
-    def f((a, b), (c, d)): pass
+    def f(xxx_todo_changeme1, xxx_todo_changeme2): (a, b) = xxx_todo_changeme1; (c, d) = xxx_todo_changeme2; pass
     
-    CompareCodeVars(f.func_code, ('.0', '.1', 'a', 'b', 'c', 'd'), (), (), ())
+    CompareCodeVars(f.__code__, ('.0', '.1', 'a', 'b', 'c', 'd'), (), (), ())
     
     # explicitly marked global
     def f():
         global a
         a = 2
         
-    CompareCodeVars(f.func_code, (), ('a', ), (), ())
+    CompareCodeVars(f.__code__, (), ('a', ), (), ())
     
     # implicit global
     def f():
-        print some_global
+        print(some_global)
         
-    CompareCodeVars(f.func_code, (), ('some_global', ), (), ())
+    CompareCodeVars(f.__code__, (), ('some_global', ), (), ())
 
     # global that's been "closed over"
     def f():
         global a
         a = 2
         def g():
-            print a
+            print(a)
         return g
         
-    CompareCodeVars(f.func_code, ('g', ), ('a', ), (), ())
-    CompareCodeVars(f().func_code, (), ('a', ), (), ())
+    CompareCodeVars(f.__code__, ('g', ), ('a', ), (), ())
+    CompareCodeVars(f().__code__, (), ('a', ), (), ())
 
     # multi-depth closure
     def f():
@@ -1269,9 +1268,9 @@ def test_func_code_variables():
             return h
         return g
                 
-    CompareCodeVars(f.func_code, ('g', ), (), (), ('a', ))
-    CompareCodeVars(f().func_code, ('x', 'h'), (), ('a', ), ())
-    CompareCodeVars(f()().func_code, ('y', ), (), ('a', ), ())
+    CompareCodeVars(f.__code__, ('g', ), (), (), ('a', ))
+    CompareCodeVars(f().__code__, ('x', 'h'), (), ('a', ), ())
+    CompareCodeVars(f()().__code__, ('y', ), (), ('a', ), ())
 
     # multi-depth closure 2
     def f():
@@ -1282,9 +1281,9 @@ def test_func_code_variables():
             return h
         return g
                 
-    CompareCodeVars(f.func_code, ('g', ), (), (), ('a', ))
-    CompareCodeVars(f().func_code, ('h', ), (), ('a', ), ())
-    CompareCodeVars(f()().func_code, ('y', ), (), ('a', ), ())
+    CompareCodeVars(f.__code__, ('g', ), (), (), ('a', ))
+    CompareCodeVars(f().__code__, ('h', ), (), ('a', ), ())
+    CompareCodeVars(f()().__code__, ('y', ), (), ('a', ), ())
     
     # closed over parameter
     def f(a):
@@ -1292,10 +1291,10 @@ def test_func_code_variables():
             return a
         return g
     
-    CompareCodeVars(f.func_code, ('a', 'g'), (), (), ('a', ))    
-    CompareCodeVars(f(42).func_code, (), (), ('a', ), ())
+    CompareCodeVars(f.__code__, ('a', 'g'), (), (), ('a', ))    
+    CompareCodeVars(f(42).__code__, (), (), ('a', ), ())
         
-    AreEqual(unqualified_exec.func_code.co_names, ('x', ))
+    AreEqual(unqualified_exec.__code__.co_names, ('x', ))
 
 def test_delattr():
     def f(): pass

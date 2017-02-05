@@ -28,7 +28,7 @@ def check(x,y):
 
 def test_integer():
   i = 123456
-  check(i, long(i))
+  check(i, int(i))
   check(i, float(i))
   check(i, complex(i,0))
 
@@ -36,7 +36,7 @@ def test_integer():
 # bug 315746
 def test_float_long():
   f=float(1.23e300)
-  l=long(f)
+  l=int(f)
   check(f,l)
 
 
@@ -71,7 +71,7 @@ def test_floathash_quality():
 # everything to zero.
 # bug 320659
 def test_bigint_hash_quality():
-  l1=long(1.23e300)
+  l1=int(1.23e300)
   h1 = hash(l1)
   Assert(h1 != 0)
   l2 = l1 + 1
@@ -82,12 +82,12 @@ def test_bigint_hash_quality():
 
 def test_userhash_result():
     class x(object):
-        def __hash__(self): return 1L
+        def __hash__(self): return 1
     
     AreEqual(hash(x()), 1)
 
     class x(object):
-        def __hash__(self): return 1<<33L
+        def __hash__(self): return 1<<33
     
     if not is_net40: #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=25894
         AreEqual(hash(x()), 2)
@@ -96,11 +96,11 @@ def test_userhash_result():
 def test_cli_number_hash():
     from iptest.type_util import clr_numbers
     
-    for name, value in clr_numbers.iteritems():
+    for name, value in clr_numbers.items():
         if name.find('Single') != -1:
             AreEqual(hash(value), hash(float(value)))
         else:
-            AreEqual(hash(value), hash(long(value)))
+            AreEqual(hash(value), hash(int(value)))
 
 
 def test_bigint_hash_subclass():

@@ -699,7 +699,7 @@ for base in [object, list]:
     c = C(overloads=1)
     AreEqual(c.overloads, 1)
 
-for base in [int, long, float]:
+for base in [int, int, float]:
     class C(int):
         def __new__(cls, args=None): return base()
     c = C(args=1)

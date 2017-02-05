@@ -320,16 +320,16 @@ def test_generator():
     yield 5
   # call the generator
   g=f()
-  AreEqual(g.next(), 1)
+  AreEqual(next(g), 1)
   A(None) # generator's exc value shouldn't taint the caller
-  AreEqual(g.next(), 2)
+  AreEqual(next(g), 2)
   A(None) # clear after returning from yield
   try:
     raise ValueError(5) # New exception!
   except:
     A(5)
     # Now call back into the generator with a new exc_info!
-    AreEqual(g.next(), 3)
+    AreEqual(next(g), 3)
     A(5)
   A(5)
   try:
@@ -338,10 +338,10 @@ def test_generator():
   except:
     A(6)
     # this will execute a finally in the generator.
-    AreEqual(g.next(), 4)
+    AreEqual(next(g), 4)
     A(6)
   A(6)
-  AreEqual(g.next(), 5)
+  AreEqual(next(g), 5)
 
 
 # throw out of generator
@@ -356,7 +356,7 @@ def test_gen_throw():
   #
   g=f()
   A(None)
-  AreEqual(g.next(), 1)
+  AreEqual(next(g), 1)
   A(None)
   try:
     try:

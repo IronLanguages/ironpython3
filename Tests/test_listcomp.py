@@ -22,7 +22,7 @@ from iptest.assert_util import *
 ## positive
 
 AreEqual([x for x in ""], [])
-AreEqual([x for x in xrange(2)], [0, 1])
+AreEqual([x for x in range(2)], [0, 1])
 AreEqual([x + 10 for x in [-11, 4]], [-1, 14])
 AreEqual([x for x in [y for y in range(3)]], [0, 1, 2])
 AreEqual([x for x in range(3) if x > 1], [2])

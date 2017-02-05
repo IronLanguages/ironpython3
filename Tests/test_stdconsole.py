@@ -57,8 +57,8 @@ def TestCommandLine(args, expected_output, expected_exitcode = 0):
     exitcode = nt.spawnv(0, batfile, realargs)
     cmdline = "ipy " + ' '.join(args)
     
-    print ''
-    print '    ', cmdline
+    print('')
+    print('    ', cmdline)
     
     Assert(exitcode == expected_exitcode, "'" + cmdline + "' generated unexpected exit code " + str(exitcode))
     if (expected_output != None):

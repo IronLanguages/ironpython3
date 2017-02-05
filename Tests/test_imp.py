@@ -14,6 +14,7 @@
 #####################################################################################
 
 from iptest.assert_util import *
+import collections
 if is_silverlight==False:
     from iptest.file_util import *
 
@@ -64,23 +65,23 @@ else:
     glb = {'__name__' : impmodfrmpkg.__name__, '__path__' : impmodfrmpkg.__path__}
     loc = {}
     
-    exec 'import mod' in glb, loc
+    exec('import mod', glb, loc)
     Assert('mod' in loc)
     
     glb = {'__name__' : impmodfrmpkg.__name__, '__path__' : impmodfrmpkg.__path__}
     loc = {}
-    exec 'from mod import *' in glb, loc
+    exec('from mod import *', glb, loc)
     #Assert('value' in loc)         # TODO: Fix me
     
     if is_cli or is_silverlight:
         loc = {}
-        exec 'from System import *' in globals(), loc
+        exec('from System import *', globals(), loc)
         
         Assert('Int32' in loc)
         Assert('Int32' not in globals())
         
         if is_cli or is_silverlight:
-            exec 'from System import *'
+            exec('from System import *')
             Assert('Int32' in dir())
 
 def test_imp_basic():
@@ -239,7 +240,7 @@ def test_redefine_import():
    
 def test_module_dict():
     currentModule = sys.modules[__name__]
-    AreEqual(operator.isMappingType(currentModule.__dict__), True)
+    AreEqual(isinstance(currentModule.__dict__, collections.Mapping), True)
     AreEqual(type({}), type(currentModule.__dict__))
     AreEqual(isinstance(currentModule.__dict__, dict), True)
 
@@ -314,27 +315,27 @@ def test_sys_path_none_builtins():
     #import some builtin modules not previously imported
     try:
         sys.path = [None] + prevPath
-        Assert('datetime' not in sys.modules.keys())
+        Assert('datetime' not in list(sys.modules.keys()))
         import datetime
-        Assert('datetime' in sys.modules.keys())
+        Assert('datetime' in list(sys.modules.keys()))
         
         sys.path = prevPath + [None]
         if not imp.is_builtin('copy_reg'):
-            Assert('copy_reg' not in sys.modules.keys())
+            Assert('copy_reg' not in list(sys.modules.keys()))
         import datetime
-        import copy_reg
-        Assert('datetime' in sys.modules.keys())
-        Assert('copy_reg' in sys.modules.keys())
+        import copyreg
+        Assert('datetime' in list(sys.modules.keys()))
+        Assert('copy_reg' in list(sys.modules.keys()))
         
         sys.path = [None]
         if not imp.is_builtin('binascii'):
-            Assert('binascii' not in sys.modules.keys())
+            Assert('binascii' not in list(sys.modules.keys()))
         import datetime
-        import copy_reg
+        import copyreg
         import binascii
-        Assert('datetime' in sys.modules.keys())
-        Assert('copy_reg' in sys.modules.keys())
-        Assert('binascii' in sys.modules.keys())
+        Assert('datetime' in list(sys.modules.keys()))
+        Assert('copy_reg' in list(sys.modules.keys()))
+        Assert('binascii' in list(sys.modules.keys()))
         
     finally:
         sys.path = prevPath
@@ -465,7 +466,7 @@ def test_constructed_module():
 
 @skip("multiple_execute")
 def test_import_from_custom():
-    import __builtin__
+    import builtins
     try:
         class foo(object):
             b = 'abc'
@@ -474,13 +475,13 @@ def test_import_from_custom():
             received = name, fromlist
             return foo()
     
-        saved = __builtin__.__import__
-        __builtin__.__import__ = __import__
+        saved = builtins.__import__
+        builtins.__import__ = __import__
     
         from a import b
         AreEqual(received, ('a', ('b', )))
     finally:
-        __builtin__.__import__ = saved
+        builtins.__import__ = saved
         
 def test_module_name():
     import imp
@@ -573,10 +574,10 @@ def test_relative_control():
         AreEqual(importArgs, ['d', None, None, ('abc', 'bar')])
 
         code = """from __future__ import absolute_import\nimport abc"""
-        exec code in globals(), locals()
+        exec(code, globals(), locals())
         AreEqual(importArgs, ['abc', None, None, None, 0])
         
-        def f():exec "from import abc"
+        def f():exec("from import abc")
         AssertError(SyntaxError, f)
         
     finally:
@@ -584,7 +585,7 @@ def test_relative_control():
 
 @skip("multiple_execute") #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=26829
 def test_import_relative_error():
-    def f():  exec 'from . import *'
+    def f():  exec('from . import *')
     AssertError(ValueError, f)
 
 @skip("silverlight") #No access to CPython stdlib
@@ -613,10 +614,10 @@ def test_import_hooks_import_precence():
         AreEqual(myimpCalled, None)
                 
         # reload on a built-in hits the loader protocol
-        reload(idlelib)
+        imp.reload(idlelib)
         AreEqual(myimpCalled, ('idlelib', None))
         
-        reload(idlelib.idlever)
+        imp.reload(idlelib.idlever)
         AreEqual(myimpCalled[0], 'idlelib.idlever')
         AreEqual(myimpCalled[1][0][-7:], 'idlelib')
     finally:
@@ -745,7 +746,7 @@ def test_import_hooks_loader():
         AreEqual(does_not_exist_create.fullname, 'does_not_exist_create')
         AreEqual(does_not_exist_create.path, None)
         
-        reload(does_not_exist_create)
+        imp.reload(does_not_exist_create)
         AreEqual(does_not_exist_create.__file__, '<myloader file 2>')
         AreEqual(does_not_exist_create.fullname, 'does_not_exist_create')
         AreEqual(does_not_exist_create.path, None)
@@ -755,7 +756,7 @@ def test_import_hooks_loader():
         AreEqual(testpkg1.does_not_exist_create_sub.fullname, 'testpkg1.does_not_exist_create_sub')
         AreEqual(testpkg1.does_not_exist_create_sub.path[0][-8:], 'testpkg1')
         
-        reload(testpkg1.does_not_exist_create_sub)
+        imp.reload(testpkg1.does_not_exist_create_sub)
         AreEqual(testpkg1.does_not_exist_create_sub.__file__, '<myloader file 4>')
         AreEqual(testpkg1.does_not_exist_create_sub.fullname, 'testpkg1.does_not_exist_create_sub')
         AreEqual(testpkg1.does_not_exist_create_sub.path[0][-8:], 'testpkg1')
@@ -987,7 +988,7 @@ def test_file_coding():
         f.close()
         try:
             import test_coding_3
-        except Exception, e:
+        except Exception as e:
             AreEqual(sys.exc_info()[2].tb_next.tb_lineno, 2)
     finally:
         nt.unlink('test_coding_3.py')

@@ -221,7 +221,7 @@ def test_conversions():
     
     class myFakeLong:
         def __long__(self):
-            return 23L
+            return 23
     
     class myFakeComplex:
         def __complex__(self):
@@ -236,7 +236,7 @@ def test_conversions():
             return 23
     
     AreEqual(int(myFakeInt()), 23)
-    AreEqual(long(myFakeLong()), 23L)
+    AreEqual(int(myFakeLong()), 23)
     AreEqual(complex(myFakeComplex()), 0j + 23)
     AreEqual(get_builtins_dict()['float'](myFakeFloat()), 23.0)   # we redefined float above, go directly to the real float...
     AreEqual(+myNegative(), 23)
@@ -379,7 +379,7 @@ def test_operators():
         Assert(a ^ b == c)
         Assert(b ^ a == c)
     
-    pats = [0L, 1L, 42L, 0x7fffffffL, 0x80000000L, 0xabcdef01L, 0xffffffffL]
+    pats = [0, 1, 42, 0x7fffffff, 0x80000000, 0xabcdef01, 0xffffffff]
     nums = []
     for p0 in pats:
         for p1 in pats:
@@ -414,9 +414,9 @@ def test_operators():
                     z = op(x, y)
                     try:
                         test(x,y,z)
-                    except get_builtins_dict()['Exception'], e:
-                        print x, " ", sym, " ", y, " ", z, "Failed"
-                        print e
+                    except get_builtins_dict()['Exception'] as e:
+                        print(x, " ", sym, " ", y, " ", z, "Failed")
+                        print(e)
                         raise
     
     test_it_all(bignums)
@@ -425,7 +425,7 @@ def test_operators():
     
 #----------------------------------------------------------------------------------
 def scenarios_helper(templates, cmps, gbls, lcls):
-    values = [3.5, 4.5, 4, 0, -200L, 12345678901234567890]
+    values = [3.5, 4.5, 4, 0, -200, 12345678901234567890]
     for l in values:
         for r in values:
             for t in templates:
@@ -620,7 +620,7 @@ def test_new_cmp():
     Assert( (cmp(C(3), C(3)) == 0) == True)
     Assert( (cmp(C2(3.4), D(3.4)) == 0) == True)
     Assert( (cmp(C(3.3), D2(4.9232)) > 0) == False)
-    Assert( (cmp(D(3L), C(4000000000)) < 0) == True)
+    Assert( (cmp(D(3), C(4000000000)) < 0) == True)
     Assert( (cmp(D2(3), D2(4.9)) < 0) == True)
     
 #----------------------------------------------------------------------------------
@@ -2165,11 +2165,11 @@ def test_ipt_integertest():
         class mylong(long):
             def __str__(self): return 'mylong'
             
-        AreEqual(repr(mylong(3L)), '3L')
+        AreEqual(repr(mylong(3)), '3L')
 
 
 def test_override_eq():
-    for base_type in [float, long, int]:
+    for base_type in [float, int, int]:
         class F(base_type):
             def __eq__(self, other):
                 return other == 'abc'
@@ -2182,9 +2182,9 @@ def test_override_eq():
         AreEqual(F() != 'qwe', False)
 
 def bad_float_to_long():
-    AssertError(OverflowError, long, 1.0e340)           # Positive Infinity
-    AssertError(OverflowError, long, -1.0e340)          # Negative Infinity
-    AssertError(OverflowError, long, 1.0e340-1.0e340)   # NAN
+    AssertError(OverflowError, int, 1.0e340)           # Positive Infinity
+    AssertError(OverflowError, int, -1.0e340)          # Negative Infinity
+    AssertError(OverflowError, int, 1.0e340-1.0e340)   # NAN
 
 def test_int___int__():
     for x in [-(int(2**(32-1)-1)), -3, -2, -1, 0, 1, 2, 3, int(2**(32-1)-1)]:
@@ -2193,9 +2193,9 @@ def test_int___int__():
 def test_long_conv():
     class Foo(long):
         def __long__(self):
-            return 42L
+            return 42
 
-    AreEqual(long(Foo()), 42L)
+    AreEqual(int(Foo()), 42)
 
 def test_pow_edges():
     class foo(object):
@@ -2214,19 +2214,19 @@ def test_int_from_long():
     """int(longVal) should return an int if it's within range"""
     class x(long): pass
     
-    for base in (long, x):
+    for base in (int, x):
         for num, num_repr in [
-                                (long(-2**31-2), '-2147483650L'),
-                                (long(-2**31-1), '-2147483649L'),
-                                (long(-2**31), '-2147483648'),
-                                (long(-2**31+1), '-2147483647'),
-                                (long(-2**31+2), '-2147483646'),
-                                (0L, '0'),
-                                (1L, '1'),
-                                (long(2**31-2), '2147483646'),
-                                (long(2**31-1), '2147483647'),
-                                (long(2**31), '2147483648L'),
-                                (long(2**31+1), '2147483649L'),
+                                (int(-2**31-2), '-2147483650L'),
+                                (int(-2**31-1), '-2147483649L'),
+                                (int(-2**31), '-2147483648'),
+                                (int(-2**31+1), '-2147483647'),
+                                (int(-2**31+2), '-2147483646'),
+                                (0, '0'),
+                                (1, '1'),
+                                (int(2**31-2), '2147483646'),
+                                (int(2**31-1), '2147483647'),
+                                (int(2**31), '2147483648L'),
+                                (int(2**31+1), '2147483649L'),
                                 ]:
             AreEqual(repr(int(base(num))), num_repr)
 
@@ -2257,13 +2257,13 @@ def test_float_special_methods():
 
 def test_hex_and_octal():
     for num, num_repr in [
-                            (long(0x20), '32L'),
-                            (long(0X20), '32L'), #Capital X
+                            (int(0x20), '32L'),
+                            (int(0X20), '32L'), #Capital X
                             (int(0x20), '32'),
                             (float(-0x20), '-32.0'),
-                            (long(010), '8L'),
-                            (int(-010), '-8'),
-                            (float(00010), '8.0'),
+                            (int(0o10), '8L'),
+                            (int(-0o10), '-8'),
+                            (float(0o0010), '8.0'),
                          ]:                 
         AreEqual(repr(num), num_repr)
     

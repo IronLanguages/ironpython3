@@ -37,11 +37,11 @@ namespace IronPython.Compiler.Ast {
 
     public class CallExpression : Expression, IInstructionProvider {
         private readonly Expression _target;
-        private readonly Arg[] _args;
+        private readonly List<Arg> _args;
 
         public CallExpression(Expression target, Arg[] args) {
             _target = target;
-            _args = args;
+            _args = new List<Arg>(args);
         }
 
         public Expression Target {
@@ -56,17 +56,17 @@ namespace IronPython.Compiler.Ast {
             NameExpression nameExpr = _target as NameExpression;
             if (nameExpr == null) return false;
 
-            if (_args.Length == 0) {
+            if (_args.Count == 0) {
                 if (nameExpr.Name == "locals") return true;
                 if (nameExpr.Name == "vars") return true;
                 if (nameExpr.Name == "dir") return true;
                 return false;
-            } else if (_args.Length == 1 && (nameExpr.Name == "dir" || nameExpr.Name == "vars")) {
+            } else if (_args.Count == 1 && (nameExpr.Name == "dir" || nameExpr.Name == "vars")) {
                 if (_args[0].Name == "*" || _args[0].Name == "**") {
                     // could be splatting empty list or dict resulting in 0-param call which needs context
                     return true;
                 }
-            } else if (_args.Length == 2 && (nameExpr.Name == "dir" || nameExpr.Name == "vars")) {
+            } else if (_args.Count == 2 && (nameExpr.Name == "dir" || nameExpr.Name == "vars")) {
                 if (_args[0].Name == "*" && _args[1].Name == "**") {
                     // could be splatting empty list and dict resulting in 0-param call which needs context
                     return true;
@@ -83,13 +83,13 @@ namespace IronPython.Compiler.Ast {
         }
 
         private MSAst.Expression NormalCall(MSAst.Expression target) {
-            MSAst.Expression[] values = new MSAst.Expression[_args.Length + 2];
-            Argument[] kinds = new Argument[_args.Length];
+            MSAst.Expression[] values = new MSAst.Expression[_args.Count + 2];
+            Argument[] kinds = new Argument[_args.Count];
 
             values[0] = Parent.LocalContext;
             values[1] = target;
 
-            for (int i = 0; i < _args.Length; i++) {
+            for (int i = 0; i < _args.Count; i++) {
                 kinds[i] = _args[i].GetArgumentInfo();
                 values[i + 2] = _args[i].Expression;
             }
@@ -132,14 +132,14 @@ namespace IronPython.Compiler.Ast {
                 return;
             }
 
-            for (int i = 0; i < _args.Length; i++) {
+            for (int i = 0; i < _args.Count; i++) {
                 if (!_args[i].GetArgumentInfo().IsSimple) {
                     compiler.Compile(Reduce());
                     return;
                 }
             }
 
-            switch (_args.Length) {
+            switch (_args.Count) {
                 #region Generated Python Call Expression Instruction Switch
 
                 // *** BEGIN GENERATED CODE ***

@@ -723,6 +723,7 @@ namespace IronPython.Compiler {
                     if (target.Target is CallExpression) {
                         var e = target.Target as CallExpression;
                         if (e != null && e.Target is NameExpression && ((NameExpression)e.Target).Name == "super" && e.Args.Count == 0) {
+                            clsContext.AddClassCell = true;
                             e.Args.Add(new Arg(new NameExpression("__class__")));
                             if (!string.IsNullOrWhiteSpace(clsContext.FirstArg)) {
                                 e.Args.Add(new Arg(new NameExpression(clsContext.FirstArg)));
@@ -1769,11 +1770,7 @@ namespace IronPython.Compiler {
                 if (clsContext != null) {
                     if (!clsContext.InMember && clsContext.Metaclass != null) {
                         l.Add(new AssignmentStatement(new[] { new NameExpression("__metaclass__") }, clsContext.Metaclass));
-                    }
-                    
-                    if (clsContext.InMember) {
-                        l.Add(new AssignmentStatement(new[] { new NameExpression("__class__") }, new NameExpression(clsContext.Name)));
-                    }
+                    }                    
                 }
 
                 while (true) {
@@ -1786,6 +1783,12 @@ namespace IronPython.Compiler {
                         break; // error handling
                     }
                 }
+
+                if (clsContext.InMember && clsContext.AddClassCell) {
+                    l.Insert(0, new AssignmentStatement(new[] { new NameExpression("__class__") }, new NameExpression(clsContext.Name)));
+                    clsContext.AddClassCell = false;
+                }
+
                 Statement[] stmts = l.ToArray();
                 SuiteStatement ret = new SuiteStatement(stmts);
                 ret.SetLoc(_globalParent, stmts[0].StartIndex, stmts[stmts.Length - 1].EndIndex);

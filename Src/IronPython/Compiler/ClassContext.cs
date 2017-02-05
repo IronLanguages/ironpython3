@@ -11,6 +11,7 @@ namespace IronPython.Compiler {
             Name = name;
             Metaclass = metaclass;
             FirstArg = null;
+            AddClassCell = false;
         }
 
         public string Name {
@@ -28,6 +29,10 @@ namespace IronPython.Compiler {
         }
 
         public string FirstArg {
+            get; set;
+        }
+
+        public bool AddClassCell {
             get; set;
         }
     }

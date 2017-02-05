@@ -742,6 +742,10 @@ namespace IronPython.Runtime {
             }
         }
 
+        public void clear() {
+            Clear();
+        }
+
         public int count(object item) {
             bool lockTaken = false;
             try {

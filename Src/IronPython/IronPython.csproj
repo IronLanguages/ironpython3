@@ -40,8 +40,13 @@
     <Compile Include="Compiler\PythonDynamicExpression.cs" />
     <Compile Include="Compiler\UncollectableCompilationMode.Generated.cs" />
     <Compile Include="Compiler\RunnableScriptCode.cs" />
+    <Compile Include="Modules\array.cs" />
     <Compile Include="Modules\unicodedata.cs" />
     <Compile Include="Modules\_ast.cs" />
+    <Compile Include="Modules\_bytesio.cs" />
+    <Compile Include="Modules\_fileio.cs" />
+    <Compile Include="Modules\_io.cs" />
+    <Compile Include="Modules\_locale.cs" />
     <Compile Include="Properties\BuildInfo.Generated.cs" />
     <Compile Include="Properties\CurrentVersion.Generated.cs" />
     <Compile Include="Runtime\Binding\IPythonExpandable.cs" />

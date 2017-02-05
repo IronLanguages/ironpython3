@@ -425,7 +425,7 @@ namespace IronPython.Compiler {
 
         //stmt: simple_stmt | compound_stmt
         //compound_stmt: if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated | async_stmt        
-        private Statement ParseStmt() {
+        private Statement ParseStmt(ClassContext clsContext=null) {
             switch (PeekToken().Kind) {
                 case TokenKind.KeywordIf:
                     return ParseIfStmt();
@@ -438,7 +438,7 @@ namespace IronPython.Compiler {
                 case TokenKind.At:
                     return ParseDecorated();
                 case TokenKind.KeywordDef:
-                    return ParseFuncDef();
+                    return ParseFuncDef(clsContext);
                 case TokenKind.KeywordClass:
                     return ParseClassDef();
                 case TokenKind.KeywordWith:
@@ -446,13 +446,13 @@ namespace IronPython.Compiler {
                 case TokenKind.KeywordAsync:
                     return ParseAsyncStmt();
                 default:
-                    return ParseSimpleStmt();
+                    return ParseSimpleStmt(clsContext);
             }
         }
 
         //simple_stmt: small_stmt (';' small_stmt)* [';'] Newline
-        private Statement ParseSimpleStmt() {
-            Statement s = ParseSmallStmt();
+        private Statement ParseSimpleStmt(ClassContext clsContext=null) {
+            Statement s = ParseSmallStmt(clsContext);
             if (MaybeEat(TokenKind.Semicolon)) {
                 var start = s.StartIndex;
                 List<Statement> l = new List<Statement>();
@@ -462,7 +462,7 @@ namespace IronPython.Compiler {
                         break;
                     }
 
-                    l.Add(ParseSmallStmt());
+                    l.Add(ParseSmallStmt(clsContext));
 
                     if (MaybeEat(TokenKind.EndOfFile)) {
                         // implies a new line
@@ -495,7 +495,7 @@ namespace IronPython.Compiler {
         return_stmt: 'return' [testlist]
         yield_stmt: yield_expr
         */
-        private Statement ParseSmallStmt() {
+        private Statement ParseSmallStmt(ClassContext clsContext=null) {
             switch (PeekToken().Kind) {
                 case TokenKind.KeywordPass:
                     return FinishSmallStmt(new EmptyStatement());
@@ -530,7 +530,7 @@ namespace IronPython.Compiler {
                 case TokenKind.KeywordYield:
                     return ParseYieldStmt();
                 default:
-                    return ParseExprStmt();
+                    return ParseExprStmt(clsContext);
             }
         }
 
@@ -710,10 +710,27 @@ namespace IronPython.Compiler {
         // augassign: ('+=' | '-=' | '*=' | '@=' | '/=' | '%=' | '&=' | '|=' | '^=' | '<<=' | '>>=' | '**=' | '//=')
         // testlist: test (',' test)* [',']
         // star_expr: '*' expr
-        private Statement ParseExprStmt() {
+        private Statement ParseExprStmt(ClassContext clsContext=null) {
             Expression ret = ParseTestListStarExpr();
             if (ret is ErrorExpression) {
                 NextToken();
+            }
+
+            if (clsContext != null && clsContext.InMember) {
+                var ce = ret as CallExpression;
+                if (ce != null && ce.Target is MemberExpression) {
+                    var target = ce.Target as MemberExpression;
+                    if (target.Target is CallExpression) {
+                        var e = target.Target as CallExpression;
+                        if (e != null && e.Target is NameExpression && ((NameExpression)e.Target).Name == "super" && e.Args.Count == 0) {
+                            clsContext.AddClassCell = true;
+                            e.Args.Add(new Arg(new NameExpression("__class__")));
+                            if (!string.IsNullOrWhiteSpace(clsContext.FirstArg)) {
+                                e.Args.Add(new Arg(new NameExpression(clsContext.FirstArg)));
+                            }
+                        }
+                    }
+                }
             }
 
             if (PeekToken(TokenKind.Assign)) {
@@ -1088,8 +1105,10 @@ namespace IronPython.Compiler {
             // Save private prefix
             string savedPrefix = SetPrivatePrefix(name);
 
+            var context = new ClassContext(name, metaclass);
+
             // Parse the class body
-            Statement body = ParseClassOrFuncBody(metaclass);
+            Statement body = ParseClassOrFuncBody(context);
 
             // Restore the private prefix
             _privatePrefix = savedPrefix;
@@ -1154,7 +1173,7 @@ namespace IronPython.Compiler {
                 res = cls;
             } else if (PeekToken() == Tokens.KeywordAsyncToken) {
                 Eat(TokenKind.KeywordAsync);
-                FunctionDefinition fnc = ParseFuncDef(true);
+                FunctionDefinition fnc = ParseFuncDef(isAsync: true);
                 fnc.Decorators = decorators.ToArray();
                 res = fnc;
             } else {
@@ -1168,10 +1187,14 @@ namespace IronPython.Compiler {
         // funcdef: [decorators] 'def' NAME parameters ':' suite
         // parameters: '(' [typedargslist] ')'
         // this gets called with "def" as the look-ahead
-        private FunctionDefinition ParseFuncDef(bool isAsync=false) {
+        private FunctionDefinition ParseFuncDef(ClassContext clsContext=null, bool isAsync=false) {
             Eat(TokenKind.KeywordDef);
             var start = GetStart();
             string name = ReadName();
+
+            if(clsContext != null) {
+                clsContext.InMember = true;
+            }
 
             Eat(TokenKind.LeftParenthesis);
 
@@ -1194,8 +1217,11 @@ namespace IronPython.Compiler {
             ret = new FunctionDefinition(name, parameters, isAsync);
             PushFunction(ret);
 
+            if(clsContext != null && parameters.Length > 0) {
+                clsContext.FirstArg = parameters[0].Name;
+            }
 
-            Statement body = ParseClassOrFuncBody();
+            Statement body = ParseClassOrFuncBody(clsContext);
             FunctionDefinition ret2 = PopFunction();
             System.Diagnostics.Debug.Assert(ret == ret2);
 
@@ -1211,6 +1237,10 @@ namespace IronPython.Compiler {
             }
 
             ret.SetLoc(_globalParent, start, body.EndIndex);
+
+            if(clsContext != null) {
+                clsContext.InMember = false;
+            }
 
             return ret;
         }
@@ -1481,7 +1511,7 @@ namespace IronPython.Compiler {
             Eat(TokenKind.KeywordAsync);
 
             if(PeekToken().Kind == TokenKind.KeywordDef) {
-                FunctionDefinition def = ParseFuncDef(true);
+                FunctionDefinition def = ParseFuncDef(isAsync: true);
                 return def;
             }
 
@@ -1533,7 +1563,7 @@ namespace IronPython.Compiler {
             return body;
         }
 
-        private Statement ParseClassOrFuncBody(Expression metaclass = null) {
+        private Statement ParseClassOrFuncBody(ClassContext clsContext = null) {
             Statement body;
             bool inLoop = _inLoop, 
                  inFinally = _inFinally, 
@@ -1546,7 +1576,7 @@ namespace IronPython.Compiler {
                 _inFinallyLoop = false;
                 _isGenerator = false;
                 _returnWithValue = false;
-                body = ParseSuite(metaclass);
+                body = ParseSuite(clsContext);
             } finally {
                 _inLoop = inLoop;
                 _inFinally = inFinally;
@@ -1705,7 +1735,7 @@ namespace IronPython.Compiler {
         }
 
         //suite: simple_stmt NEWLINE | Newline INDENT stmt+ DEDENT
-        private Statement ParseSuite(Expression metaclass = null) {
+        private Statement ParseSuite(ClassContext clsContext=null) {
             if (!EatNoEof(TokenKind.Colon)) {
                 // improve error handling...
                 return ErrorStmt();
@@ -1737,12 +1767,14 @@ namespace IronPython.Compiler {
                     return ErrorStmt();
                 }
 
-                if (metaclass != null) {
-                    l.Add(new AssignmentStatement(new[] { new NameExpression("__metaclass__") }, metaclass));
+                if (clsContext != null) {
+                    if (!clsContext.InMember && clsContext.Metaclass != null) {
+                        l.Add(new AssignmentStatement(new[] { new NameExpression("__metaclass__") }, clsContext.Metaclass));
+                    }                    
                 }
 
                 while (true) {
-                    Statement s = ParseStmt();
+                    Statement s = ParseStmt(clsContext);
 
                     l.Add(s);
                     if (MaybeEat(TokenKind.Dedent)) break;
@@ -1751,6 +1783,12 @@ namespace IronPython.Compiler {
                         break; // error handling
                     }
                 }
+
+                if (clsContext.InMember && clsContext.AddClassCell) {
+                    l.Insert(0, new AssignmentStatement(new[] { new NameExpression("__class__") }, new NameExpression(clsContext.Name)));
+                    clsContext.AddClassCell = false;
+                }
+
                 Statement[] stmts = l.ToArray();
                 SuiteStatement ret = new SuiteStatement(stmts);
                 ret.SetLoc(_globalParent, stmts[0].StartIndex, stmts[stmts.Length - 1].EndIndex);

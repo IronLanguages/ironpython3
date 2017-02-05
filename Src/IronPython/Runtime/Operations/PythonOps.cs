@@ -1348,6 +1348,10 @@ namespace IronPython.Runtime.Operations {
 
             object metaclass;
             if (!TryGetMetaclass(context, tupleBases, vars, out metaclass)) {
+                // this makes sure that object is a base
+                if(tupleBases.Count == 0) {
+                    tupleBases = PythonTuple.MakeTuple(DynamicHelpers.GetPythonTypeFromType(typeof(object)));
+                }
                 return PythonType.__new__(context, TypeCache.PythonType, name, tupleBases, vars, selfNames);
             }
 
@@ -1355,7 +1359,7 @@ namespace IronPython.Runtime.Operations {
 
             if (metaclass is PythonType) {
                 classdict = CallPrepare(context, (PythonType)metaclass, name, tupleBases, vars);
-            }
+            }            
 
             // eg:
             // def foo(*args): print args            
@@ -1364,7 +1368,7 @@ namespace IronPython.Runtime.Operations {
             // calls our function...
             PythonContext pc = PythonContext.GetContext(context);
 
-            return pc.MetaClassCallSite.Target(
+            object obj = pc.MetaClassCallSite.Target(
                 pc.MetaClassCallSite,
                 context,
                 metaclass,
@@ -1372,6 +1376,13 @@ namespace IronPython.Runtime.Operations {
                 tupleBases,
                 classdict
             );
+
+            PythonType newType = obj as PythonType;
+            if(newType != null && newType.BaseTypes.Count == 0) {
+                newType.BaseTypes.Add(DynamicHelpers.GetPythonTypeFromType(typeof(object)));
+            }
+
+            return obj;
         }
 
         /// <summary>

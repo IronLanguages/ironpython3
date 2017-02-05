@@ -135,7 +135,8 @@ def _iter_chain(exc, custom_tb=None, seen=None):
     its.append([(exc, custom_tb or exc.__traceback__)])
     # itertools.chain is in an extension module and may be unavailable
     for it in its:
-        yield from it
+        for i in it:
+            yield i
 
 def _format_exception_iter(etype, value, tb, limit, chain):
     if chain:
@@ -150,8 +151,10 @@ def _format_exception_iter(etype, value, tb, limit, chain):
             continue
         if tb:
             yield 'Traceback (most recent call last):\n'
-            yield from _format_list_iter(_extract_tb_iter(tb, limit=limit))
-        yield from _format_exception_only_iter(type(value), value)
+            for i in _format_list_iter(_extract_tb_iter(tb, limit=limit)):
+                yield i
+        for i in _format_exception_only_iter(type(value), value):
+            yield i
 
 def print_exception(etype, value, tb, limit=None, file=None, chain=True):
     """Print exception up to 'limit' stack trace entries from 'tb' to 'file'.

@@ -58,27 +58,27 @@ def test_modify():
         AreEqual(x.__class__.__name__, "D")
     
     for f in [ g_f_modify, g_c_modify ]:
-        class C(object):
-            __metaclass__ = f((New,), "D")
+        class C(object, metaclass=f((New,), "D")):
+            pass
         _check(C)
         
-        class C:
-            __metaclass__ = f((New,), "D")
+        class C(metaclass=f((New,), "D")):
+            pass
         _check(C)
         
-        class C(object):
-            __metaclass__ = f((Old,), "D")
+        class C(object, metaclass=f((Old,), "D")):
+            pass
         _check(C)
 
         try:
-            class C: __metaclass__ = f((Old,), "D")
+            class C(metaclass=f((Old,), "D")): pass
         except TypeError: pass
         else: Fail("Should have thrown")
 
 class dash_attributes(type):
     def __new__(metaclass, name, bases, dict):
         new_dict = {}
-        for key, val in dict.iteritems():
+        for key, val in list(dict.items()):
             new_key = key[0].lower()
             
             for x in key[1:]:
@@ -92,8 +92,7 @@ class dash_attributes(type):
         return super(dash_attributes, metaclass).__new__(metaclass, name, bases, new_dict)
 
 def test_dash_attribute():
-    class C(object):
-        __metaclass__ = dash_attributes
+    class C(object, metaclass=dash_attributes):
         def WriteLine(self, *arg): return 4
     
     x = C()
@@ -102,8 +101,7 @@ def test_dash_attribute():
 
 def test_basic():
     def try_metaclass(t):
-        class C(object):
-            __metaclass__ = t
+        class C(object, metaclass=t):
             def method(self): return 10
         
         x = C()
@@ -115,10 +113,10 @@ def test_basic():
     try_metaclass(sub_type1)
     
     ## subclassing
-    class C1(object):
-        __metaclass__ = g_c_modify()
-    class C2:
-        __metaclass__ = g_f_modify()
+    class C1(object, metaclass=g_c_modify()):
+        pass
+    class C2(metaclass=g_f_modify()):
+        pass
 
     # not defining __metaclass__
     for C in [C1, C2]:
@@ -129,12 +127,11 @@ def test_basic():
     
     # redefining __metaclass__
     try:
-        class D(C1): __metaclass__ = dash_attributes
+        class D(C1, metaclass=dash_attributes): pass
     except TypeError: pass
     else: Fail("metaclass conflict expected")
     
-    class D(C2):
-        __metaclass__ = dash_attributes
+    class D(C2, metaclass=dash_attributes):
         def StartSomethingToday(self): pass
         
     Assert(hasattr(D, "version"))
@@ -145,10 +142,10 @@ def test_find_metaclass():
     class A2(object): pass
     AreEqual(A2.__class__, type)
     
-    class B1:
-        __metaclass__ = dash_attributes
-    class B2(object):
-        __metaclass__ = dash_attributes
+    class B1(metaclass=dash_attributes):
+        pass
+    class B2(object, metaclass=dash_attributes):
+        pass
 
     global __metaclass__
     __metaclass__ = lambda *args: 100
@@ -212,12 +209,12 @@ def test_conflict():
     global flag
     
     class C1(object): pass
-    class C2(object):
-        __metaclass__ = sub_type1
-    class C3(object):
-        __metaclass__ = sub_type2
-    class C4(object):
-        __metaclass__ = sub_type3
+    class C2(object, metaclass=sub_type1):
+        pass
+    class C3(object, metaclass=sub_type2):
+        pass
+    class C4(object, metaclass=sub_type3):
+        pass
     
     flag = 0
     class D(C1, C2): pass
@@ -251,8 +248,8 @@ def test_conflict():
         
 def test_bad_choices():
     def create(x):
-        class C(object):
-            __metaclass__ = x
+        class C(object, metaclass=x):
+            pass
     
     for x in [
                 #None,   # bug 364967
@@ -272,8 +269,8 @@ def test_metaclass_call_override():
         def __call__(self, *args):
             return args
     
-    class myclass(object):
-        __metaclass__ = mytype
+    class myclass(object, metaclass=mytype):
+        pass
         
     AreEqual(myclass(1,2,3), (1,2,3))
     
@@ -286,13 +283,13 @@ def test_metaclass():
         global recvArgs
         recvArgs = args
         
-    class foo:
-        __metaclass__ = funcMeta
+    class foo(metaclass=funcMeta):
+        pass
     
     AreEqual(recvArgs, ('foo', (), {'__module__' : __name__, '__metaclass__' : funcMeta}))
     
-    class foo(object):
-        __metaclass__ = funcMeta
+    class foo(object, metaclass=funcMeta):
+        pass
     
     AreEqual(recvArgs, ('foo', (object, ), {'__module__' : __name__, '__metaclass__' : funcMeta}))
             
@@ -334,8 +331,8 @@ def test_arguments():
         def __init__(cls, name, bases, dict):
             super(MetaType, cls).__init__(name, bases, dict)
 
-    class Base(object):
-        __metaclass__ = MetaType
+    class Base(object, metaclass=MetaType):
+        pass
     
       
     class A(Base):

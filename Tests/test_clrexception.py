@@ -45,8 +45,8 @@ def py_to_clr_positive_with_args(pyExcep, clrExcep, args, msg = "Python exceptio
         raise pyExcep(*args)
     except clrExcep:
         Assert(True)
-    except Exception, e:
-        print e
+    except Exception as e:
+        print(e)
         Assert(False, msg)
 
 # Tests for exact mappings

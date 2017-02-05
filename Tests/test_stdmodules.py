@@ -24,7 +24,7 @@ from iptest.assert_util import *
 skiptest("silverlight")
 
 if not is_stdlib():
-    print "Need access to CPython's libraries to run this test"
+    print("Need access to CPython's libraries to run this test")
     sys.exit(0)
 
 ##GLOBALS######################################################################
@@ -32,33 +32,33 @@ if not is_stdlib():
 
 ##TEST CASES###################################################################
 def test_cp8678():
-    from itertools import izip
-    x = iter(range(4))
+    
+    x = iter(list(range(4)))
     expected = ([0, 1], [2, 3])
     actual = []
     
-    for i, j in izip(x, x):
+    for i, j in zip(x, x):
         actual.append([i, j])
 
     AreEqual(len(expected), len(actual))
-    for i in xrange(len(expected)):
+    for i in range(len(expected)):
         AreEqual(expected[i], actual[i])
 
 @skip("multiple_execute", "cli")
 @retry_on_failure
 def test_cp10825():
-    import urllib
+    import urllib.request, urllib.parse, urllib.error
     from time import sleep
     
     #Give it five chances to connect
     temp_url = None
     
-    for i in xrange(5):
+    for i in range(5):
         try:
-            temp_url = urllib.urlopen("http://www.microsoft.com")
+            temp_url = urllib.request.urlopen("http://www.microsoft.com")
             break
-        except Exception, e:
-            print ".",
+        except Exception as e:
+            print(".", end=' ')
             sleep(5)
             continue
     if temp_url==None: raise e
@@ -74,7 +74,7 @@ def test_cp5566():
     test_str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789~!@#$%^&*()_+-=[]\{}|;':,.//<>?\""
     test_str+= "/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p/q/r/s/t/u/v/w/x/y/z/A/B/C/D/E/F/G/H/I/J/K/L/M/N/O/P/Q/R/S/T/U/V/W/X/Y/Z/0/1/2/3/4/5/6/7/8/9/~/!/@/#/$/%/^/&/*/(/)/_/+/-/=/[/]/\/{/}/|/;/'/:/,/.///</>/?\""
     
-    for str_function in [str, unicode]:
+    for str_function in [str, str]:
         AreEqual(base64.decodestring(str_function(test_str)),
                 'i\xb7\x1dy\xf8!\x8a9%\x9az)\xaa\xbb-\xba\xfc1\xcb0\x01\x081\x05\x18r\t(\xb3\r8\xf4\x11I5\x15Yv\x19\xd3]\xb7\xe3\x9e\xbb\xf3\xdf')
 
@@ -116,7 +116,7 @@ def test_cp12907():
             orig_stdout = sys.stdout
             
             sys.stdout = open(f_name, "w")
-            exec c
+            exec(c)
             sys.stdout.close()
             
             t_file = open(f_name, "r")
@@ -140,7 +140,7 @@ def test_cp12907():
         bad_test_list.append(("if 1:\n    print 1",                  "exec"))
                 
     for test_case, kind in bad_test_list:
-        print test_case, kind
+        print(test_case, kind)
         AssertError(SyntaxError, compile, test_case, "", kind, 0x200, 1)
 
 def test_cp12009():
@@ -164,7 +164,7 @@ def test_cp12009():
 
 def test_cp17040():
     if not is_stdlib(): 
-        print "Will not run w/o the std library"
+        print("Will not run w/o the std library")
         return
         
     ec = nt.system("%s -tt -c \"import os\"" %
@@ -192,7 +192,7 @@ def test_cp13401():
                     System.Double  : [0.00, 3.14],
                     }
     
-    for key in test_dict.keys():
+    for key in list(test_dict.keys()):
         temp_type = key
         Assert(hasattr(temp_type, "__reduce_ex__"), 
                "%s has no attribute '%s'" % (str(temp_type), "__reduce_ex__"))
@@ -253,7 +253,7 @@ def test_cp21929():
 def test_cp34188():
     import locale
     locale.setlocale(locale.LC_COLLATE,"de_CH")
-    Assert(sorted([u'a', u'z', u'ä'], cmp=locale.strcoll) == sorted([u'a', u'z', u'ä'], key=locale.strxfrm))
+    Assert(sorted(['a', 'z', 'ä'], cmp=locale.strcoll) == sorted(['a', 'z', 'ä'], key=locale.strxfrm))
     
 ##MAIN#########################################################################
 run_test(__name__)

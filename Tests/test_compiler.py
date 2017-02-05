@@ -40,7 +40,7 @@ def compilePackage(packageName, codeDict):
     packagePath = path_combine(testpath.temporary_dir, packageName)
     ensure_directory_present(packagePath)
     fileList = []
-    for fileName, code in codeDict.iteritems():
+    for fileName, code in codeDict.items():
         filePath = path_combine(packagePath, fileName)        
         ensure_directory_present(Path.GetDirectoryName(filePath))
         write_to_file(filePath, code)

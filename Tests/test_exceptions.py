@@ -28,7 +28,7 @@ def test_exception_line_no_with_finally():
     
     try:
         f()
-    except Exception, e:
+    except Exception as e:
         tb = sys.exc_info()[2]
         expected = [25, 30]
         while tb:
@@ -50,7 +50,7 @@ if is_cli or is_silverlight:
     def test_raise():
         try:
              Fail("Message")
-        except AssertionError, e:
+        except AssertionError as e:
              AreEqual(e.__str__(), e.args[0])
         else:
             Fail("Expected exception")
@@ -121,7 +121,7 @@ def test_bigint_division():
     big0 = 9999999999999999999999999999999999999999999999999999999999999999999999
     big0 = big0-big0
 
-    pats = [0L, 0, 0.0, big0, (0+0j)]
+    pats = [0, 0, 0.0, big0, (0+0j)]
     nums = [42, 987654321, 7698736985726395723649587263984756239847562983745692837465928374569283746592837465923, 2352345324523532523, 5223523.3453, (10+25j)]
 
     for divisor in pats:
@@ -157,7 +157,7 @@ def test_handlers():
 
     try:
         a()
-    except SystemExit, e:
+    except SystemExit as e:
         handlers.append(e.args[0])
 
     Assert(handlers == ["finally c", "finally b", "finally a", "abnormal termination"])
@@ -166,14 +166,14 @@ def test_sys_exit1():
     try:
         sys.exit()
         Assert(False)
-    except SystemExit, e:
+    except SystemExit as e:
         AreEqual(len(e.args), 0)
 
 def test_sys_exit2():
     try:
         sys.exit(None)
         Assert(False)
-    except SystemExit, e:
+    except SystemExit as e:
         AreEqual(e.args, ())
 
     AreEqual(SystemExit(None).args, (None,))
@@ -181,7 +181,7 @@ def test_sys_exit2():
 def test_sys_exit3():
     try:
         sys.exit(-10)
-    except SystemExit, e:
+    except SystemExit as e:
         AreEqual(e.code, -10)
         AreEqual(e.args, (-10,))
     else:
@@ -201,12 +201,12 @@ if is_cli or is_silverlight:
         
         try:
             a.ThrowException()  # throws index out of range
-        except IndexError, e:
+        except IndexError as e:
             Assert(e.__class__ == IndexError)
         
         class MyTest(ExceptionsTest):
             def VirtualFunc(self):
-                raise ex, "hello world"
+                raise ex("hello world")
         
         
         ex = ValueError
@@ -217,7 +217,7 @@ if is_cli or is_silverlight:
         # raise in python, translate into .NET, catch in Python
         try:
             a.CallVirtual()
-        except ex, e:
+        except ex as e:
             Assert(e.__class__ == ValueError)
             Assert(e.args[0] == "hello world")
         
@@ -225,7 +225,7 @@ if is_cli or is_silverlight:
         
         try:
             x = a.CallVirtCatch()
-        except ex, e:
+        except ex as e:
             Assert(False)
         
         
@@ -235,14 +235,14 @@ if is_cli or is_silverlight:
         
         try:
             a.CallVirtualOverloaded('abc')
-        except ex,e:
+        except ex as e:
             Assert(e.__class__ == ex)
             Assert(e.args[0] == "hello world")
         # Note that sys.exc_info() is still set
        
         try:
             a.CallVirtualOverloaded(5)
-        except ex,e:
+        except ex as e:
             Assert(e.__class__ == ex)
             Assert(e.args[0] == "hello world")
         
@@ -250,7 +250,7 @@ if is_cli or is_silverlight:
         
         try:
             a.CallVirtualOverloaded(a)
-        except ex,e:
+        except ex as e:
             Assert(e.__class__ == ex)
             Assert(e.args[0] == "hello world")
         
@@ -259,13 +259,13 @@ if is_cli or is_silverlight:
         
         try:
             a.CatchAndRethrow()
-        except ex,e:
+        except ex as e:
             Assert(e.__class__ == ex)
             Assert(e.args[0] == "hello world")
         
         try:
             a.CatchAndRethrow2()
-        except ex,e:
+        except ex as e:
             Assert(e.__class__ == ex)
             Assert(e.args[0] == "hello world")
         
@@ -280,7 +280,7 @@ if is_cli or is_silverlight:
         # start in python, call CLS which calls Python which calls CLS which raises the exception
         try:
             a.CallVirtual()  # throws index out of range
-        except IndexError, e:
+        except IndexError as e:
             Assert(e.__class__ == IndexError)
         
         
@@ -290,12 +290,12 @@ if is_cli or is_silverlight:
         try:
             raise MyClass
             Assert(False)
-        except MyClass, mc:
+        except MyClass as mc:
             Assert(mc.__class__ == MyClass)
         
         # BUG 430 intern(None) should throw TypeError
         try:
-            intern(None)
+            sys.intern(None)
             Assert(False)
         except TypeError:
             pass
@@ -324,14 +324,14 @@ if is_cli or is_silverlight:
         # verify we can raise & catch CLR exceptions
         try:
             raise System.Exception('Hello World')
-        except System.Exception, e:
+        except System.Exception as e:
             Assert(type(e) == System.Exception)
         
         
         
         # BUG 481 Trying to pass raise in Traceback should cause an error until it is implemented
         try:
-            raise StopIteration("BadTraceback"), "somedata", "a string is not a traceback"
+            raise StopIteration("BadTraceback")("somedata").with_traceback("a string is not a traceback")
             Assert (False, "fell through raise for some reason")
         except StopIteration:
             Assert(False)
@@ -342,20 +342,20 @@ if is_cli or is_silverlight:
             raise TypeError
         except:
             import sys
-            if (sys.exc_traceback != None):
-                x = dir(sys.exc_traceback)
+            if (sys.exc_info()[2] != None):
+                x = dir(sys.exc_info()[2])
                 for name in ['tb_frame', 'tb_lasti', 'tb_lineno', 'tb_next']:
                     Assert(name in x, name)
                 try:
-                    raise Exception("foo"), "Msg", sys.exc_traceback
-                except Exception, X:
+                    raise Exception("foo")("Msg").with_traceback(sys.exc_info()[2])
+                except Exception as X:
                     pass
         
                           
         
         try:
             raise Exception(3,4,5)
-        except Exception, X:
+        except Exception as X:
             AreEqual(X[0], 3)
             AreEqual(X[1], 4)
             AreEqual(X[2], 5)
@@ -370,7 +370,7 @@ if is_cli or is_silverlight:
             
         try:
             Fail("message")
-        except AssertionError, e:
+        except AssertionError as e:
             import exceptions
             
             AreEqual(e.__class__, exceptions.AssertionError)
@@ -391,9 +391,9 @@ if is_cli or is_silverlight:
 
 def test_str2():
     # verify we can assign to sys.exc_*
-    sys.exc_traceback = None
-    sys.exc_value = None
-    sys.exc_type = None
+    sys.exc_info()[2] = None
+    sys.exc_info()[1] = None
+    sys.exc_info()[0] = None
 
     AreEqual(str(Exception()), '')
 
@@ -404,7 +404,7 @@ if is_cli or is_silverlight:
         import System
         try:
             a = System.Array()
-        except Exception, e:
+        except Exception as e:
             AreEqual(e.__class__, TypeError)
         else:
             Assert(False, "FAILED!")
@@ -422,14 +422,14 @@ def test_dir():
 def test_assert():
     try:
         Assert(False, "Failed message")
-    except AssertionError, e:
+    except AssertionError as e:
         Assert(e.args[0] == "Failed message")
     else:
         Fail("should have thrown")
 
     try:
         Assert(False, "Failed message 2")
-    except AssertionError, e:
+    except AssertionError as e:
         Assert(e.args[0] == "Failed message 2")
     else:
         Fail("should have thrown")
@@ -438,22 +438,22 @@ def test_assert():
 def test_syntax_error_exception():
     try: 
         compile('a = """\n\n', 'foo', 'single', 0x200)
-    except SyntaxError, se: 
+    except SyntaxError as se: 
         AreEqual(se.offset, 9)
     
     try: 
         compile('a = """\n\nxxxx\nxxx\n', 'foo', 'single', 0x200)
-    except SyntaxError, se: 
+    except SyntaxError as se: 
         AreEqual(se.offset, 18)
 
     try: 
         compile('abc\na = """\n\n', 'foo', 'exec', 0x200)
-    except SyntaxError, se: 
+    except SyntaxError as se: 
         AreEqual(se.offset, 9)
 
     try:
         compile("if 2==2: x=2\nelse:y=", "Error", "exec")
-    except SyntaxError, se:
+    except SyntaxError as se:
         l1 = dir(se)
         Assert('lineno' in l1)
         Assert('offset' in l1)
@@ -486,7 +486,7 @@ def test_syntax_error_exception():
 def test_syntax_error_exception_exec():
     try:
         compile("if 2==2: x=", "Error", "exec")
-    except SyntaxError, se:
+    except SyntaxError as se:
         AreEqual(se.lineno, 1)
         # Bug 1132
         #AreEqual(se.offset, 11)
@@ -501,7 +501,7 @@ def test_syntax_error_exception_exec():
 def test_syntax_error_exception_eval():
     try:
         compile("if 2==2: x=", "Error", "eval")
-    except SyntaxError, se:
+    except SyntaxError as se:
         AreEqual(se.lineno, 1)
         # Bug 1132
         #AreEqual(se.offset, 2)
@@ -771,7 +771,7 @@ def test_sanity():
     import exceptions
     #special cases - do not test these like everything else
     special_types = [ "UnicodeTranslateError", "UnicodeEncodeError", "UnicodeDecodeError"]
-    exception_types = [ x for x in exceptions.__dict__.keys() if x.startswith("__")==False and special_types.count(x)==0]
+    exception_types = [ x for x in list(exceptions.__dict__.keys()) if x.startswith("__")==False and special_types.count(x)==0]
     exception_types = [ eval("exceptions." + x) for x in exception_types]
     
     #run a few sanity checks
@@ -781,7 +781,7 @@ def test_sanity():
         for t_except in except_list:
             try:
                 raise t_except
-            except exception_type, e:
+            except exception_type as e:
                 pass
             
             str_except = str(t_except)
@@ -791,9 +791,9 @@ def test_sanity():
     
     if not is_silverlight:
         #special cases
-        encode_except = exceptions.UnicodeEncodeError("1", u"2", 3, 4, "5")
+        encode_except = exceptions.UnicodeEncodeError("1", "2", 3, 4, "5")
         AreEqual(encode_except.encoding, "1")
-        AreEqual(encode_except.object, u"2")
+        AreEqual(encode_except.object, "2")
         AreEqual(encode_except.start, 3)
         AreEqual(encode_except.end, 4)
         AreEqual(encode_except.reason, "5")
@@ -811,8 +811,8 @@ def test_sanity():
         AreEqual(decode_except.reason, "5")
         AreEqual(decode_except.message, "")
         
-        translate_except = exceptions.UnicodeTranslateError(u"1", 2, 3, "4")
-        AreEqual(translate_except.object, u"1")
+        translate_except = exceptions.UnicodeTranslateError("1", 2, 3, "4")
+        AreEqual(translate_except.object, "1")
         AreEqual(translate_except.start, 2)
         AreEqual(translate_except.end, 3)
         AreEqual(translate_except.reason, "4")
@@ -822,11 +822,11 @@ def test_sanity():
 def test_nested_exceptions():
     try:
         raise Exception()
-    except Exception, e:
+    except Exception as e:
         # PushException
         try:
             raise TypeError
-        except TypeError, te:
+        except TypeError as te:
             # PushException
             ei = sys.exc_info()
             # PopException
@@ -854,9 +854,9 @@ def test_newstyle_raise():
         def __new__(cls, *args): return 42
         
     try:
-        raise MyException, 'abc'
+        raise MyException('abc')
         AssertUnreachable()
-    except Exception, e:
+    except Exception as e:
         AreEqual(e, 42)
 
 def test_enverror_init():
@@ -937,8 +937,8 @@ def test_deprecated_string_exception():
     m = w.finish()
     try:
         raise 'foo'
-    except TypeError, e:
-        print e.message
+    except TypeError as e:
+        print(e.message)
     
 
 def test_nested_try():
@@ -995,7 +995,7 @@ def test_raise_inside_str():
     #raising an error inside the __str__ used to cause an unhandled exception.
     class error(Exception):
 	    def __str__(self):
-		    raise TypeError, "inside __str__"
+		    raise TypeError("inside __str__")
 
     def f():
 	    raise error
@@ -1036,7 +1036,7 @@ def test_windows_error():
     AreEqual(err.args, (42, 'bar'))
 
     # winerror code is passed through unmodified
-    for i in xrange(256):
+    for i in range(256):
         x = WindowsError(i, 'foo')
         AreEqual(x.winerror, i)
     

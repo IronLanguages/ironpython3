@@ -16,6 +16,7 @@
 from iptest.assert_util import *
 
 import sys
+import imp
 
 @skip("silverlight")
 def test_file_io():
@@ -94,15 +95,15 @@ def test_redirect():
     old_stdin = sys.stdin
     old_stdout = sys.stdout
     sys.stdout = file("testfile.tmp", "w")
-    print "Into the file"
-    print "2+2"
+    print("Into the file")
+    print("2+2")
     sys.stdout.close()
     sys.stdout = old_stdout
     
     sys.stdin = file("testfile.tmp", "r")
-    s = raw_input()
-    Assert(s == "Into the file")
     s = input()
+    Assert(s == "Into the file")
+    s = eval(input())
     Assert(s == 4)
     sys.stdin.close()
     sys.stdin = old_stdin
@@ -141,17 +142,17 @@ def test_conversions():
     AreEqual(success, True)
     
     AreEqual(str(), "")
-    AreEqual(unicode(), u"")
+    AreEqual(str(), "")
     
-    AreEqual(oct(long(0)), "0L")
+    AreEqual(oct(int(0)), "0L")
     AreEqual(hex(12297829382473034410), "0xaaaaaaaaaaaaaaaaL") #10581
-    AreEqual(hex(-1L), "-0x1L")
-    AreEqual(long("-01L"), -1L)
+    AreEqual(hex(-1), "-0x1L")
+    AreEqual(int("-01L"), -1)
     AreEqual(int(" 1 "), 1)
     AreEqual(int(" -   1  "), -1)
-    AreEqual(long("   -   1 "), -1L)
+    AreEqual(int("   -   1 "), -1)
     
-    for f in [ long, int ]:
+    for f in [ int, int ]:
         AssertError(ValueError, f, 'p')
         AssertError(ValueError, f, 't')
         AssertError(ValueError, f, 'a')
@@ -165,8 +166,8 @@ def test_conversions():
     
     
     
-    AreEqual(int(1e100), 10000000000000000159028911097599180468360808563945281389781327557747838772170381060813469985856815104L)
-    AreEqual(int(-1e100), -10000000000000000159028911097599180468360808563945281389781327557747838772170381060813469985856815104L)
+    AreEqual(int(1e100), 10000000000000000159028911097599180468360808563945281389781327557747838772170381060813469985856815104)
+    AreEqual(int(-1e100), -10000000000000000159028911097599180468360808563945281389781327557747838772170381060813469985856815104)
     
     
     
@@ -187,10 +188,10 @@ def test_reload_sys():
     (old_copyright, old_byteorder) = (sys.copyright, sys.byteorder)
     (sys.copyright, sys.byteorder) = ("foo", "foo")
     
-    (old_argv, old_exc_type) = (sys.argv, sys.exc_type)
-    (sys.argv, sys.exc_type) = ("foo", "foo")
+    (old_argv, old_exc_type) = (sys.argv, sys.exc_info()[0])
+    (sys.argv, sys.exc_info()[0]) = ("foo", "foo")
     
-    reloaded_sys = reload(sys)
+    reloaded_sys = imp.reload(sys)
     
     # Most attributes get reset
     AreEqual((old_copyright, old_byteorder), (reloaded_sys.copyright, reloaded_sys.byteorder))
@@ -198,7 +199,7 @@ def test_reload_sys():
     AreEqual((reloaded_sys.argv, reloaded_sys.exc_type), ("foo", "foo"))
     # Put back the original values
     (sys.copyright, sys.byteorder) = (old_copyright, old_byteorder)
-    (sys.argv, sys.exc_type) = (old_argv, old_exc_type)
+    (sys.argv, sys.exc_info()[0]) = (old_argv, old_exc_type)
     
 
 def test_hijacking_builtins():
@@ -224,7 +225,7 @@ def test_custom_mapping():
         def __getitem__(self, index):
                 if index == 'a': return 2
                 if index == 'b': return 5
-                raise IndexError, 'bad index'
+                raise IndexError('bad index')
     
     AreEqual(eval('a+b', {}, MyMapping()), 7)
 
@@ -271,7 +272,7 @@ def test_getattr():
             elif attrname == "myassert":
                 raise AssertionError
             else:
-                raise AttributeError, attrname
+                raise AttributeError(attrname)
     
     class C2(object):
         def __init__(self):
@@ -284,7 +285,7 @@ def test_getattr():
             elif attrname == "myassert":
                 raise AssertionError
             else:
-                raise AttributeError, attrname
+                raise AttributeError(attrname)
     
     def getattrhelper(t):
         o = t()
@@ -352,7 +353,7 @@ def test_subclassing_builtins():
 # extensible types should hash the same as non-extensibles, and unary operators
 # should work too
 def test_extensible_types_hashing():
-    for x, y in ( (int, 2), (str, 'abc'), (float, 2.0), (long, 2L), (complex, 2+0j) ):
+    for x, y in ( (int, 2), (str, 'abc'), (float, 2.0), (int, 2), (complex, 2+0j) ):
         class foo(x): pass
         
         AreEqual(hash(foo(y)), hash(y))
@@ -379,11 +380,11 @@ def test_kwargs_file():
 def test_kwargs_primitives():
     AreEqual(int(x=1), 1)
     AreEqual(float(x=2), 2.0)
-    AreEqual(long(x=3), 3L)
+    AreEqual(int(x=3), 3)
     AreEqual(complex(imag=4, real=3), 3 + 4j)
     AreEqual(str(object=5), '5')
-    AreEqual(unicode(string='a', errors='strict'), 'a')
-    AreEqual(tuple(sequence=range(3)), (0,1,2))
+    AreEqual(str(string='a', errors='strict'), 'a')
+    AreEqual(tuple(sequence=list(range(3))), (0,1,2))
     AreEqual(list(sequence=(0,1)), [0,1])
 
 #####################################################################
@@ -487,7 +488,7 @@ def test_cli_types():
                     'I': System.UInt32, 'l': System.Int64, 'L': System.UInt64, 'f': System.Single, 'd': System.Double }
                     
     def tryConstructValues(validate, *args):
-        for x in arrayMapping.keys():
+        for x in list(arrayMapping.keys()):
             # construct from DynamicType
             y = System.Array[arrayMapping[x]](*args)
             if not is_silverlight: #BUG DDB #76340
@@ -502,7 +503,7 @@ def test_cli_types():
                 
     
     def tryConstructSize(validate, *args):
-        for x in arrayMapping.keys():
+        for x in list(arrayMapping.keys()):
             # construct from DynamicType
             y = System.Array.CreateInstance(arrayMapping[x], *args)
             
@@ -534,7 +535,7 @@ def test_cli_types():
     def validateValsIter(res, *args):
         len(res) == len(args)
         for x in range(len(args)):
-            print int(res[x]), args[0][x]
+            print(int(res[x]), args[0][x])
             AreEqual(int(res[x]), int(args[0][x]))
         
         
@@ -555,7 +556,7 @@ def test_cli_types():
             try:
                 lhs = int(res[index])
                 rhs = int(x)
-            except Exception, e:
+            except Exception as e:
                 lhs = float(res[index])
                 rhs = float(x)
             
@@ -592,8 +593,7 @@ def test_metaclass_ctor_init():
             super(MetaType, cls).__init__(name, bases,dct)
             cls.xyz = 'abc'
             
-    class MetaInstance(object):
-        __metaclass__ = MetaType
+    class MetaInstance(object, metaclass=MetaType):
         def __init__(self):
             global instInit
             instInit = True
@@ -606,8 +606,7 @@ def test_metaclass_ctor_init():
     AreEqual(MetaInstance.someFunction(), "called someFunction")
     
     
-    class MetaInstance(object):
-        __metaclass__ = MetaType
+    class MetaInstance(object, metaclass=MetaType):
         def __init__(self, xyz):
             global instInit
             instInit = True
@@ -811,14 +810,14 @@ def test_mutable_Valuetypes():
 def test_int_minvalue():
     # Test for type of System.Int32.MinValue
     AreEqual(type(-2147483648), int)
-    AreEqual(type(-(2147483648)), long)
-    AreEqual(type(-2147483648L), long)
+    AreEqual(type(-(2147483648)), int)
+    AreEqual(type(-2147483648), int)
     AreEqual(type(-0x80000000), int)
     
     AreEqual(type(int('-2147483648')), int)
     AreEqual(type(int('-80000000', 16)), int)
-    AreEqual(type(int('-2147483649')), long)
-    AreEqual(type(int('-80000001', 16)), long)
+    AreEqual(type(int('-2147483649')), int)
+    AreEqual(type(int('-80000001', 16)), int)
     
     
     if is_cli:
@@ -900,8 +899,8 @@ def test_class_property():
     
     class foo(type): pass
     
-    class bar(object):
-        __metaclass__ = foo
+    class bar(object, metaclass=foo):
+        pass
         
     AreEqual(bar.__class__, foo)
 
@@ -919,15 +918,15 @@ def test_metaclass_order():
             
     class DerivedMeta(BaseMeta): pass
     
-    class A:
-        __metaclass__ = BaseMeta
+    class A(metaclass=BaseMeta):
+        pass
         
     AreEqual(metaCalled, [BaseMeta])
     
     metaCalled = []
         
-    class B:
-        __metaclass__ = DerivedMeta
+    class B(metaclass=DerivedMeta):
+        pass
         
     AreEqual(metaCalled, [DerivedMeta])
     
@@ -960,18 +959,18 @@ def test_metaclass_order():
     
     
     AreEqual(isinstance(C1(), C2), False)
-    AreEqual(isinstance(C1(), (C2, C2)), False)
-    AreEqual(isinstance(C1(), (C2, C2, (C2, C2), C2)), False)
-    AreEqual(isinstance(C1(), (C2, C2, (C2, (C2, C1), C2), C2)), True)
+    AreEqual(isinstance(C1(), C2), False)
+    AreEqual(isinstance(C1(), (C2, (C2, C2))), False)
+    AreEqual(isinstance(C1(), (C2, (C2, (C2, C1), C2))), True)
     
     class C1: pass
     class C2: pass
     
     
     AreEqual(isinstance(C1(), C2), False)
-    AreEqual(isinstance(C1(), (C2, C2)), False)
-    AreEqual(isinstance(C1(), (C2, C2, (C2, C2), C2)), False)
-    AreEqual(isinstance(C1(), (C2, C2, (C2, (C2, C1), C2), C2)), True)
+    AreEqual(isinstance(C1(), C2), False)
+    AreEqual(isinstance(C1(), (C2, (C2, C2))), False)
+    AreEqual(isinstance(C1(), (C2, (C2, (C2, C1), C2))), True)
     
     class MyInt(int): pass
     
@@ -1053,7 +1052,7 @@ import operator
 pow = 7
 AreEqual(pow, 7)
 del pow
-AreEqual(operator.isCallable(pow), True)
+AreEqual(hasattr(pow, '__call__'), True)
 
 try:
     del pow
@@ -1065,6 +1064,6 @@ except NameError:
 def test_file():
     AreEqual(file_var_present, 1)
 
-file_var_present = vars().keys().count('__file__')
+file_var_present = list(vars().keys()).count('__file__')
 
 run_test(__name__)

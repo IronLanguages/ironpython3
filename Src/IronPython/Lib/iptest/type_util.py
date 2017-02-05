@@ -31,9 +31,6 @@ class myfrozenset(frozenset): pass
 
 import sys
 
-if not sys.platform == 'silverlight':
-  class myfile(file): pass
-
 # to define type constant
 
 def _func(): pass

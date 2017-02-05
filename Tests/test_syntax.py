@@ -134,8 +134,8 @@ og\
 AreEqual(x, y)
 
 AreEqual("\101", "A")
-x='\a\b\c\d\e\f\g\h\i\j\k\l\m\n\o\p\q\r\s\t\u\v\w\y\z'
-y=u'\u0007\u0008\\\u0063\\\u0064\\\u0065\u000C\\\u0067\\\u0068\\\u0069\\\u006a\\\u006b\\\u006c\\\u006d\u000A\\\u006f\\\u0070\\\u0071\u000D\\\u0073\u0009\\\u0075\u000B\\\u0077\\\u0079\\\u007a'
+x='\a\b\c\d\e\f\g\h\i\j\k\l\m\n\o\p\q\r\s\t\\u\v\w\y\z'
+y='\\u0007\\u0008\\\\u0063\\\\u0064\\\\u0065\\u000C\\\\u0067\\\\u0068\\\\u0069\\\\u006a\\\\u006b\\\\u006c\\\\u006d\\u000A\\\\u006f\\\\u0070\\\\u0071\\u000D\\\\u0073\\u0009\\\\u0075\\u000B\\\\u0077\\\\u0079\\\\u007a'
 
 Assert(x == y)
 AreEqual(x, y)
@@ -164,7 +164,7 @@ def run_compile_test(code, msg, lineno, skipCpy):
     filename = "the file name"
     try:
         compile(code, filename, "exec")
-    except SyntaxError, e:
+    except SyntaxError as e:
         AreEqual(e.msg, msg)
         AreEqual(e.lineno, lineno)
         AreEqual(e.filename, filename)
@@ -284,7 +284,7 @@ Assert(title.istitle())
 x = 2 + 5
 AreEqual(x, 7)
 """
-exec s
+exec(s)
 
 if is_cpython:
     # this seems to be a CPython bug, Guido says:
@@ -305,9 +305,9 @@ AssertError(SyntaxError, compile, s, "<string>", "single", 0x200)
 # Assignment to None and constant
 
 def NoneAssign():
-    exec 'None = 2'
+    exec('None = 2')
 def LiteralAssign():
-    exec "'2' = '3'"
+    exec("'2' = '3'")
 
 AssertError(SyntaxError, NoneAssign)
 AssertError(SyntaxError, LiteralAssign)
@@ -321,8 +321,8 @@ AssertError(SyntaxError, compile, "    x = 10\n\n", "", "exec")
 AssertError(SyntaxError, compile, "    \n   #comment\n   x = 10\n\n", "", "exec")
 
 if sys.platform == 'cli':
-    c = compile(u"\u0391 = 10\nif \u0391 != 10: 1/0", "", "exec")
-    exec c
+    c = compile("\\u0391 = 10\nif \\u0391 != 10: 1/0", "", "exec")
+    exec(c)
 
 # from __future__ tests
 AssertError(SyntaxError, compile, "def f():\n    from __future__ import division", "", "exec")
@@ -369,7 +369,8 @@ class B(object):
 AreEqual(B().method("__a passed in"), "__a passed in")
 
 class B(object):
-    def method(self, (__a, )):
+    def method(self, xxx_todo_changeme):
+        (__a, ) = xxx_todo_changeme
         return __a
 
 AreEqual(B().method(("__a passed in", )), "__a passed in")
@@ -410,7 +411,7 @@ def test_augassign_binding():
     for op in ["+=", "-=", "**=", "*=", "//=", "/=", "%=", "<<=", ">>=", "&=", "|=", "^="]:
         code = augassign_code % op
         try:
-            exec code in {}, {}
+            exec(code, {}, {})
         except:
             pass
         else:
@@ -432,7 +433,7 @@ def test_multiline_compound_stmts():
     for test in tests:
         try:
             c = compile(test,"","exec")
-            exec c
+            exec(c)
         except MyException:
             pass
         else:
@@ -501,7 +502,7 @@ def ret_from_finally_x2():
 
 try:
     ret_from_finally_x2()
-except AssertionError, e:
+except AssertionError as e:
     AreEqual(e.args[0], "This one")
 else:
     Fail("Expected AssertionError, got none")
@@ -556,11 +557,11 @@ def test_break_in_else_clause():
     AssertError(SyntaxError, f)
 
 #Just make sure these don't throw
-print "^L"
+print("^L")
 temp = 7
-print temp
+print(temp)
 
-print "No ^L's..."
+print("No ^L's...")
 
 # keep this at the end of the file, do not insert anything below this line
 
@@ -613,8 +614,8 @@ class HasASyntaxException:
     
     for expectedText, testCase in tests:            
         try:
-            exec testCase
-        except SyntaxError, e:
+            exec(testCase)
+        except SyntaxError as e:
             AreEqual(e.text, expectedText)
 
 def test_error_parameters():
@@ -643,7 +644,7 @@ def test_error_parameters():
         try:
             code3 = compile(input, "dummy", "single", flags, 1)
             AssertUnreachable()
-        except SyntaxError, err:
+        except SyntaxError as err:
             AreEqual(err.args, res)
         
 
@@ -653,7 +654,7 @@ try:
         x = 3
             y = 5""")
     AssertUnreachable()
-except IndentationError, e:
+except IndentationError as e:
     AreEqual(e.lineno, 2)
 
 @skip("win32", "silverlight") # no encoding.Default
@@ -736,9 +737,9 @@ def test_parser_recovery():
     def PrintErrors(text):
         """helper for creating new tests"""
         errors = parse_text(text)
-        print
+        print()
         for err in errors.Errors:
-            print err
+            print(err)
     
     TestErrors("""class 
 

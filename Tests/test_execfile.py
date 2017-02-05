@@ -20,10 +20,10 @@ skiptest("silverlight")
 @skip("win32")
 def test_sanity():
     root = testpath.public_testdir
-    execfile(root + "/Inc/toexec.py")
-    execfile(root + "/Inc/toexec.py")
+    exec(compile(open(root + "/Inc/toexec.py").read(), root + "/Inc/toexec.py", 'exec'))
+    exec(compile(open(root + "/Inc/toexec.py").read(), root + "/Inc/toexec.py", 'exec'))
     #execfile(root + "/doc.py")
-    execfile(root + "/Inc/toexec.py")
+    exec(compile(open(root + "/Inc/toexec.py").read(), root + "/Inc/toexec.py", 'exec'))
 
 def test_negative():
     AssertError(TypeError, execfile, None) # arg must be string
@@ -34,7 +34,7 @@ def test_negative():
 def test_scope():
     root = testpath.public_testdir
     z = 10
-    execfile(root + "/Inc/execfile_scope.py")
+    exec(compile(open(root + "/Inc/execfile_scope.py").read(), root + "/Inc/execfile_scope.py", 'exec'))
     
 
 run_test(__name__)

@@ -21,7 +21,7 @@ class It:
     def __init__(self, a):
         self.x = 0
         self.a = a
-    def next(self):
+    def __next__(self):
         if self.x <= 9:
             self.x = self.x+1
             return self.a[self.x-1]
@@ -94,16 +94,16 @@ AssertErrorWithMessages(TypeError, "iter() takes at least 1 argument (0 given)",
 
 
 def test_itertools_same_value():
-    from itertools import izip
-    x = iter(range(4))
-    AreEqual([(i,j) for i,j in izip(x,x)], [(0, 1), (2, 3)])
+    
+    x = iter(list(range(4)))
+    AreEqual([(i,j) for i,j in zip(x,x)], [(0, 1), (2, 3)])
 
 def test_itertools_islice_end():
     """islice shouldn't consume values after the limit specified by step"""
-    from itertools import izip, islice
+    from itertools import islice
     
     # create a zipped iterator w/ odd number of values...
-    it = izip([2,3,4], [4,5,6])
+    it = zip([2,3,4], [4,5,6])
     
     # slice in 2, turn that into a list...
     list(islice(it, 2))
@@ -119,7 +119,7 @@ def test_iterator_for():
         yield 0
         yield 1
     
-    from cStringIO import StringIO
+    from io import StringIO
     strO = StringIO()
     strO.write('abc\n')
     strO.write('def')
@@ -161,13 +161,13 @@ def test_iterator_for():
                      (strO,             'abc\n',        'def'),
                      
                      # objects which when enumerated multiple times reset
-                     (xrange(10),       0,              0), 
+                     (range(10),       0,              0), 
                      ([0, 1],           0,              0),
                      ((0, 1),           0,              0),
                      (fi,               fi[0],          fi[0]),
                      (b'abc',           b'a',           b'a'),
                      (ba,               ord(b'a'),      ord(b'a')),
-                     (u'abc',           u'a',           u'a'),
+                     ('abc',           'a',           'a'),
                      (d,                list(d)[0],    list(d)[0]),
                      (l,                l[0],          l[0]),
                      (s,                list(s)[0],    list(s)[0]),
@@ -205,7 +205,7 @@ def test_no_return_self_in_iter():
         def __iter__(cls):
             return 1
 
-        def next(cls):
+        def __next__(cls):
             return 2
     
     a = A()
@@ -213,7 +213,7 @@ def test_no_return_self_in_iter():
 
 def test_no_iter():
     class A(object):
-        def next(cls):
+        def __next__(cls):
             return 2    
     a = A()
     AreEqual(next(a), 2)
@@ -222,7 +222,7 @@ def test_with_iter():
     class A(object):
         def __iter__(cls):
             return cls
-        def next(self):
+        def __next__(self):
             return 2
              
     a = A()
@@ -232,10 +232,10 @@ def test_with_iter_next_in_init():
     class A(object):
         def __init__(cls):
             AreEqual(next(cls), 2)
-            AreEqual(cls.next(), 2)
+            AreEqual(next(cls), 2)
         def __iter__(cls):
             return cls
-        def next(cls):
+        def __next__(cls):
             return 2
 
     a = A()
@@ -246,13 +246,13 @@ def test_interacting_iterators():
     class A(object):
         def __iter__(cls):
             return cls
-        def next(self):
+        def __next__(self):
             return 3
             
     class B(object):
         def __iter__(cls):
             return A()
-        def next(self):
+        def __next__(self):
             return 2
             
     b = B()
@@ -263,7 +263,7 @@ def test_call_to_iter_or_next():
         def __iter__(cls):
             Assert(False, "__iter__ should not be called.")
             return cls
-        def next(self):
+        def __next__(self):
             return 2
 
     a = A()

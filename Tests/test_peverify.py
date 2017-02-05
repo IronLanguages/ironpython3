@@ -27,14 +27,14 @@ import sys, System
 ipy_exe = System.Reflection.Assembly.LoadFile(sys.executable)
 ca = ipy_exe.GetCustomAttributes(System.Diagnostics.DebuggableAttribute, False)
 if int(ca[0].DebuggingFlags & System.Diagnostics.DebuggableAttribute.DebuggingModes.DisableOptimizations) == 0:
-    print "not debug version of ipy.exe: skip"
+    print("not debug version of ipy.exe: skip")
     sys.exit(0)
 
 switches = ['-D', '-X:SaveAssemblies']
 
 for x in switches:
     if x not in System.Environment.GetCommandLineArgs():
-        print '%s not found in sys.argv: skip' % x
+        print('%s not found in sys.argv: skip' % x)
         sys.exit(0)
 
 process = System.Diagnostics.Process()
@@ -51,14 +51,14 @@ output2 = process.StandardError.ReadToEnd()
 process.WaitForExit()
 ret = process.ExitCode
 
-print "ExitCode:", ret
-print "Output: ", output1
-print "Error:  ", output2
-print
+print("ExitCode:", ret)
+print("Output: ", output1)
+print("Error:  ", output2)
+print()
 
 if ret == 1 and ("Error Verifying" in output1 or "Error(s) Verifying" in output1):
-    print "caught verification failure: pass"
+    print("caught verification failure: pass")
     sys.exit(0)
 else:
-    print "did not see Verification failure: fail"
+    print("did not see Verification failure: fail")
     sys.exit(1)

@@ -19,14 +19,15 @@
 ##
 
 from iptest.assert_util import *
+import imp
 
 skiptest("silverlight")
 
 from iptest.file_util import *
 
 def always_true():
-    exec "AreEqual(1 / 2, 0)"
-    exec "from __future__ import division; AreEqual(1 / 2, 0.5)"
+    exec("AreEqual(1 / 2, 0)")
+    exec("from __future__ import division; AreEqual(1 / 2, 0.5)")
     AreEqual(1/2, 0)
     AreEqual(eval("1/2"), 0)
 
@@ -54,7 +55,7 @@ CustomAssert(1/2 == 0.5)
 CustomAssert(eval('1/2') == 0.5)
 '''
 
-def f1(): execfile(tempfile)
+def f1(): exec(compile(open(tempfile).read(), tempfile, 'exec'))
 def f2(): exec(compile(code, tempfile, "exec"))
 def f3(): exec(code)
 def f4():
@@ -81,8 +82,8 @@ try:
         # test after importing
         import temp_future
         always_true()
-        print temp_future
-        reloaded = reload(temp_future)
+        print(temp_future)
+        reloaded = imp.reload(temp_future)
         always_true()
         
 finally:

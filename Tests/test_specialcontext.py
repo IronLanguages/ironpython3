@@ -20,15 +20,15 @@ skiptest("win32")
 
 AreEqual(hasattr(object, 'ToString'), False)
 AreEqual(dir(object).count('ToString'), 0)
-AreEqual(vars(object).keys().count('ToString'), 0)
+AreEqual(list(vars(object).keys()).count('ToString'), 0)
 
 AreEqual(hasattr('abc', 'ToString'), False)
 AreEqual(dir('abc').count('ToString'), 0)
-AreEqual(vars(str).keys().count('ToString'), 0)
+AreEqual(list(vars(str).keys()).count('ToString'), 0)
 
 AreEqual(hasattr([], 'ToString'), False)
 AreEqual(dir([]).count('ToString'), 0)
-AreEqual(vars(list).keys().count('ToString'), 0)
+AreEqual(list(vars(list).keys()).count('ToString'), 0)
 
 import System
 
@@ -37,28 +37,28 @@ if not is_silverlight:
     AreEqual(hasattr(System.Environment, 'ToString'), True)
     AreEqual(dir(System.Environment).count('ToString'), 1)
     # vars only shows members declared in the type, so it won't be there either
-    AreEqual(vars(System.Environment).keys().count('ToString'), 0)
+    AreEqual(list(vars(System.Environment).keys()).count('ToString'), 0)
 
 # and importing clr should show them all...
 import clr
 
 AreEqual(hasattr(object, 'ToString'), True)
 AreEqual(dir(object).count('ToString'), 1)
-AreEqual(vars(object).keys().count('ToString'), 1)
+AreEqual(list(vars(object).keys()).count('ToString'), 1)
 
 AreEqual(hasattr('abc', 'ToString'), True)
 AreEqual(dir('abc').count('ToString'), 1)
-AreEqual(vars(str).keys().count('ToString'), 1) # string overrides ToString
+AreEqual(list(vars(str).keys()).count('ToString'), 1) # string overrides ToString
 
 AreEqual(hasattr([], 'ToString'), True)
 AreEqual(dir([]).count('ToString'), 1)
-AreEqual(vars(list).keys().count('ToString'), 0) # list doesn't override ToString
+AreEqual(list(vars(list).keys()).count('ToString'), 0) # list doesn't override ToString
 
 if not is_silverlight:
     # and they should still show up on system.
     AreEqual(hasattr(System.Environment, 'ToString'), True)
     AreEqual(dir(System.Environment).count('ToString'), 1)
-    AreEqual(vars(System.Environment).keys().count('ToString'), 0)
+    AreEqual(list(vars(System.Environment).keys()).count('ToString'), 0)
 
 # eval should flow it's context
 a = "hello world"

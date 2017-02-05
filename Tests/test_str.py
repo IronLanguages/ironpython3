@@ -54,8 +54,8 @@ def test_add_mul():
 
     import sys
     AssertError(TypeError, lambda: "a" * "3")
-    AssertError(OverflowError, lambda: "a" * (sys.maxint + 1))
-    AssertError(OverflowError, lambda: (sys.maxint + 1) * "a")
+    AssertError(OverflowError, lambda: "a" * (sys.maxsize + 1))
+    AssertError(OverflowError, lambda: (sys.maxsize + 1) * "a")
 
     class mylong(long): pass
     
@@ -65,14 +65,14 @@ def test_add_mul():
         AreEqual("\\\\", Path.DirectorySeparatorChar + '\\')
 
     # multiply
-    AreEqual("aaaa", "a" * 4L)
-    AreEqual("aaaa", "a" * mylong(4L))
+    AreEqual("aaaa", "a" * 4)
+    AreEqual("aaaa", "a" * mylong(4))
     AreEqual("aaa", "a" * 3)
     AreEqual("a", "a" * True)
     AreEqual("", "a" * False)
 
-    AreEqual("aaaa", 4L * "a")
-    AreEqual("aaaa", mylong(4L) * "a")
+    AreEqual("aaaa", 4 * "a")
+    AreEqual("aaaa", mylong(4) * "a")
     AreEqual("aaa", 3 * "a")
     AreEqual("a", True * "a")
     AreEqual("", False * "a" )
@@ -199,9 +199,9 @@ def test_string_escape():
 @skip("silverlight") # not implemented exception on Silverlight
 def test_encoding_backslashreplace():
                 # codec, input, output
-    tests =   [ ('ascii',      u"a\xac\u1234\u20ac\u8000", "a\\xac\\u1234\\u20ac\\u8000"),
-                ('latin-1',    u"a\xac\u1234\u20ac\u8000", "a\xac\\u1234\\u20ac\\u8000"),
-                ('iso-8859-15', u"a\xac\u1234\u20ac\u8000", "a\xac\\u1234\xa4\\u8000") ]
+    tests =   [ ('ascii',      "a\xac\u1234\u20ac\u8000", "a\\xac\\u1234\\u20ac\\u8000"),
+                ('latin-1',    "a\xac\u1234\u20ac\u8000", "a\xac\\u1234\\u20ac\\u8000"),
+                ('iso-8859-15', "a\xac\u1234\u20ac\u8000", "a\xac\\u1234\xa4\\u8000") ]
     
     for test in tests:
         AreEqual(test[1].encode(test[0], 'backslashreplace'), test[2])
@@ -209,9 +209,9 @@ def test_encoding_backslashreplace():
 @skip("silverlight") # not implemented exception on Silverlight
 def test_encoding_xmlcharrefreplace():
                 # codec, input, output
-    tests =   [ ('ascii',      u"a\xac\u1234\u20ac\u8000", "a&#172;&#4660;&#8364;&#32768;"),
-                ('latin-1',    u"a\xac\u1234\u20ac\u8000", "a\xac&#4660;&#8364;&#32768;"),
-                ('iso-8859-15', u"a\xac\u1234\u20ac\u8000", "a\xac&#4660;\xa4&#32768;") ]
+    tests =   [ ('ascii',      "a\xac\u1234\u20ac\u8000", "a&#172;&#4660;&#8364;&#32768;"),
+                ('latin-1',    "a\xac\u1234\u20ac\u8000", "a\xac&#4660;&#8364;&#32768;"),
+                ('iso-8859-15', "a\xac\u1234\u20ac\u8000", "a\xac&#4660;\xa4&#32768;") ]
     for test in tests:
         AreEqual(test[1].encode(test[0], 'xmlcharrefreplace'), test[2])
 
@@ -290,23 +290,23 @@ def test_str_equals():
     AreEqual(id(x), id(True))
 
 def test_str_dict():
-    print "CodePlex Work Item 13115"
+    print("CodePlex Work Item 13115")
     extra_str_dict_keys = [ "__radd__", "isdecimal", "isnumeric", "isunicode"]
     missing_str_dict_keys = ["__rmod__"]
     
     #It's OK that __getattribute__ does not show up in the __dict__.  It is
     #implemented.
     Assert(hasattr(str, "__getattribute__"), "str has no __getattribute__ method")
-    Assert('__init__' not in str.__dict__.keys())
+    Assert('__init__' not in list(str.__dict__.keys()))
     
     for temp_key in extra_str_dict_keys:
         if sys.platform=="win32":
-            Assert(not temp_key in str.__dict__.keys())
+            Assert(not temp_key in list(str.__dict__.keys()))
         else:
-            Assert(temp_key in str.__dict__.keys(), "str.__dict__ bug was fixed.  Please update test.")
+            Assert(temp_key in list(str.__dict__.keys()), "str.__dict__ bug was fixed.  Please update test.")
         
     for temp_key in missing_str_dict_keys:
-        Assert(temp_key in str.__dict__.keys())
+        Assert(temp_key in list(str.__dict__.keys()))
         
     class x(str): pass
     
@@ -320,7 +320,7 @@ def test_formatting_userdict():
         def __getitem__(self, key):
             if key == 'abc': return 42
             elif key == 'bar': return 23
-            raise KeyError, key
+            raise KeyError(key)
     AreEqual('%(abc)s %(bar)s' % (mydict()), '42 23')
     
     class mydict(dict):
@@ -334,14 +334,14 @@ def test_formatting_userdict():
 def test_str_to_numeric():
     class substring(str):
         def __int__(self): return 1
-        def __long__(self): return 1L
+        def __long__(self): return 1
         def __complex__(self): return 1j
         def __float__(self): return 1.0
     
     v = substring("123")
     
     
-    AreEqual(long(v), 1L)
+    AreEqual(int(v), 1)
     AreEqual(int(v), 1)
     AreEqual(complex(v), 123+0j)
     if is_cpython and sys.version_info[:3] <= (2,6,2):
@@ -353,29 +353,29 @@ def test_str_to_numeric():
     
     v = substring("123")
     
-    AreEqual(long(v), 123L)
+    AreEqual(int(v), 123)
     AreEqual(int(v), 123)
     AreEqual(complex(v), 123+0j)
     AreEqual(float(v), 123.0)
 
 def test_subclass_ctor():
     # verify all of the ctors work for various types...
-    class myunicode(unicode): pass
-    class myunicode2(unicode): 
+    class myunicode(str): pass
+    class myunicode2(str): 
         def __init__(self, *args): pass
     
     class myfloat(float): pass
     class mylong(long): pass
     class myint(int): pass
     
-    for x in [1, 1.0, 1L, 1j, 
-              myfloat(1.0), mylong(1L), myint(1), 
+    for x in [1, 1.0, 1, 1j, 
+              myfloat(1.0), mylong(1), myint(1), 
               True, False, None, object(),
-              "", u""]:
-        AreEqual(myunicode(x), unicode(x))
-        AreEqual(myunicode2(x), unicode(x))
-    AreEqual(myunicode('foo', 'ascii'), unicode('foo', 'ascii'))
-    AreEqual(myunicode2('foo', 'ascii'), unicode('foo', 'ascii'))
+              "", ""]:
+        AreEqual(myunicode(x), str(x))
+        AreEqual(myunicode2(x), str(x))
+    AreEqual(myunicode('foo', 'ascii'), str('foo', 'ascii'))
+    AreEqual(myunicode2('foo', 'ascii'), str('foo', 'ascii'))
 
 def test_upper_lower():
     # CodePlex work item #33133
@@ -393,19 +393,19 @@ def test_upper_lower():
     AreEqual("-".upper(),"-")
 
     # explicit unicode is required for cpython 2.7
-    AreEqual(u"ä".upper(),u"Ä")
-    AreEqual(u"Ä".lower(),u"ä")
-    AreEqual(u"ö".upper(),u"Ö")
-    AreEqual(u"Ö".lower(),u"ö")
-    AreEqual(u"ü".upper(),u"Ü")
-    AreEqual(u"U".lower(),u"u")
+    AreEqual("ä".upper(),"Ä")
+    AreEqual("Ä".lower(),"ä")
+    AreEqual("ö".upper(),"Ö")
+    AreEqual("Ö".lower(),"ö")
+    AreEqual("ü".upper(),"Ü")
+    AreEqual("U".lower(),"u")
 
-    AreEqual(u"ą".upper(),u"Ą")
-    AreEqual(u"Ą".lower(),u"ą")
+    AreEqual("ą".upper(),"Ą")
+    AreEqual("Ą".lower(),"ą")
 
 def test_turkish_upper_lower():
-    AreEqual(u"ı".upper(),u"I")
-    AreEqual(u"İ".lower(),u"i")
+    AreEqual("ı".upper(),"I")
+    AreEqual("İ".lower(),"i")
 
     # as defined in http://www.unicode.org/Public/UNIDATA/SpecialCasing.txt
     PERFECT_UNICODE_CASING=False
@@ -419,12 +419,12 @@ def test_turkish_upper_lower():
         locale.setlocale(locale.LC_ALL,"tr_TR")
 
     if PERFECT_UNICODE_CASING:
-        AreEqual(u"I".lower(),u"ı")
-        AreEqual(u"i".upper(),u"İ")
+        AreEqual("I".lower(),"ı")
+        AreEqual("i".upper(),"İ")
     else:
         # cpython compatibility
-        AreEqual(u"I".lower(),u"i")
-        AreEqual(u"i".upper(),u"I")
+        AreEqual("I".lower(),"i")
+        AreEqual("i".upper(),"I")
 
     locale.setlocale(locale.LC_ALL, (lang,encoding))
 
@@ -434,8 +434,8 @@ def test_turkish_upper_lower():
     # ToUpper/ToLower can be called directly
     if sys.platform == "cli":
         import System.Globalization.CultureInfo as CultureInfo
-        AreEqual(u"I".ToLower(CultureInfo("tr-TR")),u"ı")
-        AreEqual(u"i".ToUpper(CultureInfo("tr-TR")),u"İ")
+        AreEqual("I".ToLower(CultureInfo("tr-TR")),"ı")
+        AreEqual("i".ToUpper(CultureInfo("tr-TR")),"İ")
 
 
 

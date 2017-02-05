@@ -113,26 +113,26 @@ def test_cp16831():
     temp = IronPythonTest.NullableTest()
     
     temp.BProperty = True
-    for i in xrange(2):
+    for i in range(2):
         if not temp.BProperty:
             Fail("Nullable Boolean was set to True")
-    for i in xrange(2):
+    for i in range(2):
         if not temp.BProperty==True:
             Fail("Nullable Boolean was set to True")
             
     temp.BProperty = False
-    for i in xrange(2):
+    for i in range(2):
         if temp.BProperty:
             Fail("Nullable Boolean was set to False")
-    for i in xrange(2):
+    for i in range(2):
         if not temp.BProperty==False:
             Fail("Nullable Boolean was set to False")
             
     temp.BProperty = None
-    for i in xrange(2):
+    for i in range(2):
         if temp.BProperty:
             Fail("Nullable Boolean was set to None")
-    for i in xrange(2):
+    for i in range(2):
         if not temp.BProperty==None:
             Fail("Nullable Boolean was set to None")           
 
@@ -148,7 +148,7 @@ def test_cp_27434():
     }
     
     import re
-    for data, groups in tests.iteritems():
+    for data, groups in tests.items():
         regex = re.compile(data)
         message = "'%s' should have %d groups, not %d" % (data, groups, regex.groups)
         Assert(regex.groups == groups, message)
@@ -303,7 +303,7 @@ def test_reraise_backtrace_cp20051():
                                   excinfo1.tb_frame.f_lineno))
                 excinfo1 = excinfo1.tb_next
             raise
-    except Exception, e:
+    except Exception as e:
         excinfo2 = sys.exc_info()[2]
         exc2_list = []
         while excinfo2:
@@ -317,8 +317,8 @@ def test_reraise_backtrace_cp20051():
 
 @skip("silverlight")
 def test_winreg_error_cp17050():
-    import _winreg
-    AreEqual(_winreg.error, WindowsError)
+    import winreg
+    AreEqual(winreg.error, WindowsError)
 
 
 @skip("win32", "silverlight")
@@ -334,8 +334,8 @@ def test_indexing_value_types_cp20370():
     
     x = {}
     x[p] = p
-    AreEqual(id(list(x.iterkeys())[0]), id(p))
-    AreEqual(id(list(x.itervalues())[0]), id(p))
+    AreEqual(id(list(x.keys())[0]), id(p))
+    AreEqual(id(list(x.values())[0]), id(p))
     
     load_iron_python_test()
     
@@ -348,8 +348,8 @@ def test_enumerate_index_increment_cp20016():
     def f(item):
         return item[0] in [0, 1]
     
-    AreEqual(filter(f, enumerate(['a', 'b'])), [(0, 'a'), (1, 'b')])
-    AreEqual(filter( lambda (j, _): j in [0, 1], enumerate([10.0, 27.0])),
+    AreEqual(list(filter(f, enumerate(['a', 'b']))), [(0, 'a'), (1, 'b')])
+    AreEqual([j__ for j__ in enumerate([10.0, 27.0]) if j__[0] in [0, 1]],
              [(0, 10.0), (1, 27.0)])
 
 @skip("silverlight")
@@ -476,7 +476,7 @@ def test_cp24692():
         nt.chmod(dir_name, stat.S_IREAD)
         try:
             nt.rmdir(dir_name)
-        except WindowsError, e:
+        except WindowsError as e:
             pass
         AreEqual(e.errno, errno.EACCES)
     finally:
@@ -502,14 +502,14 @@ def test_str_ljust_cp21483():
     AreEqual('abc'.ljust(-2147483648), 'abc')
     AreEqual('abc'.ljust(-2147483647), 'abc')
     AssertError(OverflowError, #"long int too large to convert to int",
-                'abc'.ljust, -2147483649L)
+                'abc'.ljust, -2147483649)
 
 
 @skip("win32")
 def test_help_dir_cp11833():
     import System
     Assert(dir(System).count('Action') == 1)
-    from cStringIO import StringIO
+    from io import StringIO
     oldstdout, sys.stdout = sys.stdout, StringIO()
     try:
         help(System.Action)
@@ -524,7 +524,7 @@ def test_not___len___cp_24129():
             return 3
     
     c = C()
-    print bool(c)
+    print(bool(c))
     AreEqual(not c, False)
 
 @skip("win32")
@@ -589,9 +589,9 @@ def test_cp23822():
         class C:
             field=7
             def G(self):
-                print a
+                print(a)
                 b = 4
-                return deepcopy(locals().keys())
+                return deepcopy(list(locals().keys()))
         
         c = C()
         return c.G()
@@ -605,10 +605,10 @@ def test_cp23823():
     def f():
         a = 10
         def g1():
-            print a
-            return deepcopy(locals().keys())
+            print(a)
+            return deepcopy(list(locals().keys()))
         def g2():
-            return deepcopy(locals().keys())
+            return deepcopy(list(locals().keys()))
         return (g1(), g2())
     
     AreEqual(f(), (['a', 'deepcopy'], ['deepcopy']))
@@ -620,15 +620,15 @@ def cp22692_helper(source, flags):
     code = code1 = code2 = None
     try:
         code = compile(source, "dummy", "single", flags, 1)
-    except SyntaxError, err:
+    except SyntaxError as err:
         pass
     try:
         code1 = compile(source + "\n", "dummy", "single", flags, 1)
-    except SyntaxError, err1:
+    except SyntaxError as err1:
         pass
     try:
         code2 = compile(source + "\n\n", "dummy", "single", flags, 1)
-    except SyntaxError, err2:
+    except SyntaxError as err2:
         pass
     if not code:
         retVal.append(type(err1))
@@ -655,7 +655,7 @@ def test_cp23545():
              "<field# Field on ClassWithDefaultField>")
     try:
         ClassWithDefaultField.Field = 20
-    except ValueError, e:
+    except ValueError as e:
         AreEqual(e.message,
                  "assignment to instance field w/o instance")
     AreEqual(ClassWithDefaultField().Field, 10)
@@ -713,7 +713,7 @@ def test_cp23878():
     vi32d = Delegate.VoidInt32Delegate(cwtm.MVoidInt32)
     ar = vi32d.BeginInvoke(32, None, None)
     is_complete = False
-    for i in xrange(100):
+    for i in range(100):
         sleep(1)
         if ar.IsCompleted:
             is_complete = True
@@ -724,12 +724,12 @@ def test_cp23878():
 def test_cp23914():
     class C(object):
         def __init__(self, x,y,z):
-            print x,y,z
+            print(x,y,z)
     
     m = type.__call__
     
     import sys
-    from cStringIO import StringIO
+    from io import StringIO
     oldstdout, sys.stdout = sys.stdout, StringIO()
     try:
         l = m(C,1,2,3)
@@ -752,7 +752,7 @@ def test_cp23992():
         return (l1, l2)
     
     t1, t2 = f()
-    AreEqual(t1.keys(), ['x', 'g'])
+    AreEqual(list(t1.keys()), ['x', 'g'])
     AreEqual(t2, {})
 
 def test_cp24169():
@@ -763,7 +763,7 @@ def test_cp24169():
         sys.path.append(os.getcwd() + r"\encoded_files")
         import cp20472 #no encoding specified and has non-ascii characters
         raise Exception("Line above should had thrown!")
-    except SyntaxError, e:
+    except SyntaxError as e:
         Assert(e.msg.startswith("Non-ASCII character '\\xcf' in file"))
         Assert(e.msg.endswith("on line 1, but no encoding declared; see http://www.python.org/peps/pep-0263.html for details"))
         Assert("\\encoded_files\\cp20472.py" in e.msg, e.msg)
@@ -783,7 +783,7 @@ def test_cp24484():
 
     dc = DictClass()
     k = K(dc)
-    for i in xrange(200):
+    for i in range(200):
         temp = k.test(20)
 
 
@@ -794,22 +794,22 @@ def test_cp23555():
 
         class Real(Base, float):
             def __new__(cls, *args, **kwargs):
-                print 'real new'
+                print('real new')
                 result = Stub.__new__(cls, *args, **kwargs)
                 return result
             def __init__(self, *args, **kwargs):
-                print 'real init'
+                print('real init')
             def __del__(self):
-                print 'real del'
+                print('real del')
         
         class Stub(Real):
             def __new__(cls, *args, **kwargs):
-                print 'stub new'
+                print('stub new')
                 return float.__new__(Stub, args[0])
             def __init__(self, *args, **kwargs):
-                print 'stub init'
+                print('stub init')
             def __del__(self):
-                print "this should never happen; it's just here to ensure I get registered for GC"
+                print("this should never happen; it's just here to ensure I get registered for GC")
         
         def ConstructReal(x):
             f = Real(x)

@@ -49,8 +49,8 @@ NullableInt RefInt32  OutInt32
 DefValInt32 Int32DefValInt32
 '''.split()
 
-arg2func = dict(zip(args, funcs))
-func2arg = dict(zip(funcs, args))
+arg2func = dict(list(zip(args, funcs)))
+func2arg = dict(list(zip(funcs, args)))
 
 TypeE = TypeError
 OverF = OverflowError
@@ -77,7 +77,7 @@ def _helper(func, positiveArgs, flagValue, negativeArgs, exceptType):
     for arg in positiveArgs:
         try:
             _my_call(func, arg)
-        except Exception, e:
+        except Exception as e:
             Fail("unexpected exception %s when calling %s with %s\n%s" % (e, func, arg, func.__doc__))
         else:
             AreEqual(Flag.Value, flagValue)
@@ -86,7 +86,7 @@ def _helper(func, positiveArgs, flagValue, negativeArgs, exceptType):
     for arg in negativeArgs:
         try:
             _my_call(func, arg)
-        except Exception, e:
+        except Exception as e:
             if not isinstance(e, exceptType):
                 Fail("expected '%s', but got '%s' when calling %s with %s\n%s" % (exceptType, e, func, arg, func.__doc__))
         else:
@@ -162,9 +162,9 @@ def test_this_matrix():
 ##################################################  pass in BigInt #########################################################
 ####                 int    int?   double bigint bool   str    sbyte  i16    i64    single byte   ui16   ui32   ui64   char   decm   obj
 ####                 M201   M680   M202   M203   M204   M205   M301   M302   M303   M304   M310   M311   M312   M313   M320   M321   M400
-(               10L, True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
-(              -10L, True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
-( 1234567890123456L, OverF, OverF, True , True,  True,  TypeE, OverF, OverF, True,  True,  OverF, OverF, OverF, True,  TypeE, True,  True,  ),
+(               10, True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
+(              -10, True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
+( 1234567890123456, OverF, OverF, True , True,  True,  TypeE, OverF, OverF, True,  True,  OverF, OverF, OverF, True,  TypeE, True,  True,  ),
 (           mylong1, True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  True,  True,  True,  True,  TypeE, True,  True,  ),
 (           mylong2, True,  True,  True,  True,  True,  TypeE, True,  True,  True,  True,  OverF, OverF, OverF, OverF, TypeE, True,  True,  ),
 ##################################################  pass in Complex #########################################################
@@ -196,10 +196,10 @@ def test_this_matrix():
     for scenario in matrix:
         if isinstance(scenario[0], str):
             value = clr_numbers[scenario[0]]
-            if print_the_matrix: print '(%18s,' % ('"'+ scenario[0] +'"'),
+            if print_the_matrix: print('(%18s,' % ('"'+ scenario[0] +'"'), end=' ')
         else:
             value = scenario[0]
-            if print_the_matrix: print '(%18s,' % value ,
+            if print_the_matrix: print('(%18s,' % value, end=' ')
         
         for i in range(len(funcnames)):
             funcname = funcnames[i]
@@ -208,16 +208,16 @@ def test_this_matrix():
             if print_the_matrix:
                 try:
                     func(value)
-                    print "True, ",
+                    print("True, ", end=' ')
                 except TypeError:
-                    print "TypeE,",
+                    print("TypeE,", end=' ')
                 except OverflowError:
-                    print "OverF,",
-                print "),"
+                    print("OverF,", end=' ')
+                print("),")
             else:
                 try:
                     func(value)
-                except Exception,e:
+                except Exception as e:
                     if scenario[i+1] not in [TypeE, OverF]:
                         Fail("unexpected exception %s, when func %s on arg %s (%s)\n%s" % (e, funcname, scenario[0], type(value), func.__doc__))
                     if isinstance(e, scenario[i+1]): pass
@@ -273,7 +273,7 @@ def test_bool_asked():
         Flag.BValue = False
         
     if is_silverlight==False:
-        for arg in [0, System.Byte.Parse('0'), System.UInt64.Parse('0'), 0.0, 0L, False, None, tuple(), list()]:
+        for arg in [0, System.Byte.Parse('0'), System.UInt64.Parse('0'), 0.0, 0, False, None, tuple(), list()]:
             target.M204(arg)
             Assert(not Flag.BValue, "argument is %s" % (arg,))
             Flag.BValue = True
@@ -322,18 +322,18 @@ def test_pass_in_derived_python_types():
     _helper(target.M411, [C6(), cp2, cp4, ], 411, [C3(), object(), C1(), cp1, cp3,], TypeError)
     
 def test_nullable_int():
-    _helper(target.M680, [None, 100, 100L, System.Byte.MaxValue, System.UInt32.MinValue, myint1, mylong2, 3.6, ], 680, [(), 3+1j], TypeError)
+    _helper(target.M680, [None, 100, 100, System.Byte.MaxValue, System.UInt32.MinValue, myint1, mylong2, 3.6, ], 680, [(), 3+1j], TypeError)
     
 def test_out_int():
     if is_silverlight==False:
-        _helper(target.M701, [], 701, [1, 10L, None, System.Byte.Parse('3')], TypeError)    # not allow to pass in anything
+        _helper(target.M701, [], 701, [1, 10, None, System.Byte.Parse('3')], TypeError)    # not allow to pass in anything
     
 def test_collections():
     arrayInt = array_int((10, 20))
     tupleInt = ((10, 20), )
     listInt  = ([10, 20], )
     tupleBool = ((True, False, True, True, False), )
-    tupleLong1, tupleLong2  = ((10L, 20L), ), ((System.Int64.MaxValue, System.Int32.MaxValue * 2),)
+    tupleLong1, tupleLong2  = ((10, 20), ), ((System.Int64.MaxValue, System.Int32.MaxValue * 2),)
     arrayByte = array_byte((10, 20))
     arrayObj = array_object(['str', 10])
     
@@ -358,8 +358,8 @@ def test_collections():
     _helper(target.M600, [], 600, [tupleLong2, ], OverflowError)
     
     # Int32, params Int32[]
-    _helper(target.M620, [(10, 10), (10L, 10), (10L, 10L), (10, 10L), (10, arrayInt), (10, (10, 20)), ], 620, [(10, [10, 20]), ], TypeError)
-    _helper(target.M620, [], 620, [(10, 123456789101234L), ], OverflowError)
+    _helper(target.M620, [(10, 10), (10, 10), (10, 10), (10, 10), (10, arrayInt), (10, (10, 20)), ], 620, [(10, [10, 20]), ], TypeError)
+    _helper(target.M620, [], 620, [(10, 123456789101234), ], OverflowError)
     
     arrayI1 = System.Array[I]( (C1(), C2()) )
     arrayI2 = System.Array[I]( () )
@@ -472,7 +472,7 @@ def test_other_concern():
     AreEqual(Flag.Value, 200); Flag.Value = 99
     target.M200[int](100.1234)
     AreEqual(Flag.Value, 200); Flag.Value = 99
-    target.M200[long](100)
+    target.M200[int](100)
     AreEqual(Flag.Value, 200); Flag.Value = 99
     AssertError(OverflowError, target.M200[System.Byte], 300)
     AssertError(OverflowError, target.M200[int], 12345678901234)
@@ -532,8 +532,8 @@ def test_other_concern():
     AssertError(TypeError, target.M701, lambda : 10)
     
     # keywords
-    x = target.M800(arg1 = 100, arg2 = 200L, arg3 = 'this'); AreEqual(x, 'THIS')
-    x = target.M800(arg3 = 'Python', arg1 = 100, arg2 = 200L); AreEqual(x, 'PYTHON')
+    x = target.M800(arg1 = 100, arg2 = 200, arg3 = 'this'); AreEqual(x, 'THIS')
+    x = target.M800(arg3 = 'Python', arg1 = 100, arg2 = 200); AreEqual(x, 'PYTHON')
     x = target.M800(100, arg3 = 'iron', arg2 = C1()); AreEqual(x, 'IRON')
     
     try: target.M800(100, 'Yes', arg2 = C1())
@@ -596,7 +596,7 @@ def test_other_concern():
     
     # GOtherConcern<T>
     target = GOtherConcern[int]()
-    for x in [100, 200L, 4.56, myint1]:
+    for x in [100, 200, 4.56, myint1]:
         target.M100(x)
         AreEqual(Flag.Value, 100); Flag.Value = 99
     
@@ -609,7 +609,7 @@ def test_iterator_sequence():
     class C:
         def __init__(self):  self.x = 0
         def __iter__(self):  return self
-        def next(self):
+        def __next__(self):
             if self.x < 10:
                 y = self.x
                 self.x += 1
@@ -735,9 +735,9 @@ def test_nullable_property_long():
     from IronPythonTest import NullableTest
     nt = NullableTest()
     nt.LProperty = 1
-    AreEqual(nt.LProperty, 1L)
-    nt.LProperty = 2L
-    AreEqual(nt.LProperty, 2L)
+    AreEqual(nt.LProperty, 1)
+    nt.LProperty = 2
+    AreEqual(nt.LProperty, 2)
     nt.LProperty = None
     AreEqual(nt.LProperty, None)
 
@@ -787,15 +787,15 @@ def test_xequals_call_for_optimization():
     c = ConfigurationManager.ConnectionStrings
     
     #Invoke tests multiple times to make sure DynamicSites are utilized
-    for i in xrange(3):
+    for i in range(3):
         AreEqual(1, c.Count)
         
-    for i in xrange(3):
+    for i in range(3):
         count = c.Count
         AreEqual(1, count)
         AreEqual(c.Count, count)
             
-    for i in xrange(3):
+    for i in range(3):
         #just ensure it doesn't throw
         c[0].Name
         
@@ -1106,7 +1106,7 @@ def generic_method_tester(method, args, res, kwArgs, excep):
                 AreEqual(method(*(args[0], ), **{'y': args[1], 'z' : args[2]}), res)
                 AreEqual(method(**{'x' : args[0], 'y' : args[1], 'z' : args[2]}), res)
         else:
-            raise Exception, "need to add new case for len %d " % len(args)
+            raise Exception("need to add new case for len %d " % len(args))
             
         AreEqual(method(*args), res)
         AreEqual(method(args[0], *args[1:]), res)
@@ -1128,7 +1128,7 @@ def generic_method_tester(method, args, res, kwArgs, excep):
             fkw = lambda : method(x = args[0], y = args[1], z = args[2])
             fkw2 = lambda : method(**{'x' : args[0], 'y' : args[1], 'z' : args[2]})
         else:
-            raise Exception, "need to add new case for len %d " % len(args)
+            raise Exception("need to add new case for len %d " % len(args))
     
         if not kwArgs:
             fkw = None
@@ -1141,7 +1141,7 @@ def generic_method_tester(method, args, res, kwArgs, excep):
         # test with splatting
         AssertError(excep, method, *args)    
     
-print '>>>> methods in reference type'
+print('>>>> methods in reference type')
 target = CNoOverloads()
 run_test(__name__)
 

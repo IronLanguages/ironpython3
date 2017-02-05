@@ -21,7 +21,7 @@ from sys import exit, argv
 from iptest.assert_util import *
 
 if argv.count("OKtoRun")==0 or is_cli==False:
-    print "Bailing"
+    print("Bailing")
     exit(0)
 
 def test_sanity():
@@ -32,9 +32,9 @@ def test_sanity():
     #first check that our native modules are still present and accounted for...
     import binascii
     import _collections
-    import copy_reg
-    import cPickle
-    import cStringIO
+    import copyreg
+    import pickle
+    import io
     import datetime
     import errno
     import exceptions
@@ -48,14 +48,14 @@ def test_sanity():
     import re
     import socket
     import _struct
-    import thread
+    import _thread
     import time
     
     #next run through our first set of "OK" modules
-    for i in xrange(50):
+    for i in range(50):
         mod_name = "foo" + str(i)
-        exec "import " + mod_name
-        exec "AreEqual(" + mod_name + ".Foo().BAR," + str(i) + ")"
+        exec("import " + mod_name)
+        exec("AreEqual(" + mod_name + ".Foo().BAR," + str(i) + ")")
 
 def test_special_cases():
     '''
@@ -71,8 +71,8 @@ def test_special_cases():
     #test some unusual DLL filenames
     for partial_ns in ["ZERO", "ONE", "a", "UNDERSCORE", "WHITESPACE", "BIGFILENAME"]:
         mod_name = "foo" + partial_ns
-        exec "import " + mod_name
-        exec "AreEqual(" + mod_name + ".Foo().BAR, 1)"
+        exec("import " + mod_name)
+        exec("AreEqual(" + mod_name + ".Foo().BAR, 1)")
     
     
 def test_bad_stuff():
@@ -91,7 +91,7 @@ def test_bad_stuff():
     try:
         import fooCORRUPT
         raise Exception("Corrupted DLL was loaded")
-    except ImportError, e:
+    except ImportError as e:
         pass
     
     #nothing to do for unmanaged DLLs...if the interpreter has made it
@@ -106,16 +106,16 @@ def test_bad_stuff():
     try:
         import fooEXEONLY
         raise Exception("*.exe's should not be autoloaded!")
-    except ImportError, e:
+    except ImportError as e:
         pass
-    except SystemError, e:
-        print "Work Item #189503"
+    except SystemError as e:
+        print("Work Item #189503")
     
     #ensure *.txt's are not autoloaded at all
     try:
         import fooTXTDLL
         raise Exception("*.txt's should not be autoloaded!")
-    except ImportError, e:
+    except ImportError as e:
         pass
     
 run_test(__name__)

@@ -70,9 +70,9 @@ def test_all():
         try:
             try:
                 go.WaitOne()
-                for i in xrange(loopCnt): readerWorker(i)
-            except Exception, e:
-                print 'Test failed, unexpected exception from reader ', e
+                for i in range(loopCnt): readerWorker(i)
+            except Exception as e:
+                print(('Test failed, unexpected exception from reader ', e))
                 AssertUnreachable()
         finally:
             global readerAlive
@@ -86,9 +86,9 @@ def test_all():
             try:
                 try:
                     go.WaitOne()
-                    for i in xrange(loopCnt): self.writer(i, self.index)
-                except Exception, e:
-                    print 'Test failed (writer through exception)', e
+                    for i in range(loopCnt): self.writer(i, self.index)
+                except Exception as e:
+                    print(('Test failed (writer through exception)', e))
                     AssertUnreachable()
             finally:
                 global writerAlive
@@ -145,13 +145,13 @@ def test_all():
         if not writerAlive: return  # writer takes signifcantly less time, stop checking once we're no longer experiencing contention
         
         global prevValues
-        for x in prevValues.keys():
+        for x in list(prevValues.keys()):
             #print 'checking ', x
             AreEqual(hasattr(oc, x), True)
             #print getattr(oc,x), prevValues[x]
             AreEqual(getattr(oc, x), prevValues[x])
         for x in dir(oc):
-            if not prevValues.has_key(x):
+            if x not in prevValues:
                 prevValues[x] = getattr(oc, x)
                 
     # generic writer, just keeps adding more and more attributes
@@ -176,7 +176,7 @@ def test_all():
         setattr(oc, attrName, x)
         AreEqual(getattr(oc, attrName), x)
         if i != 0 and i % 50 == 0:
-            for x in xrange(i-50, i):
+            for x in range(i-50, i):
                 attrName = str(x).translate(transTable)
                 delattr(oc, attrName)
         
@@ -363,7 +363,7 @@ def test_all():
     
     def doOneTest(test):
         """runs a single test, argument is a testCase tuple"""
-        print 'running test', test
+        print(('running test', test))
         global loopCnt, writerWorker, readerWorker
         
         # call init function
@@ -391,15 +391,16 @@ def test_random():
     global zeroCount
     zeroCount = 0
     
-    def foo((ntimes,nbits)):
-        for i in xrange(ntimes):
+    def foo(xxx_todo_changeme):
+        (ntimes,nbits) = xxx_todo_changeme
+        for i in range(ntimes):
             x = random.getrandbits(nbits)
             if x == 0:
                 zeroCount += 1
     
     def run_many(nthreads,ntimes,nbits):
         lst_threads = []
-        for i in xrange(nthreads):
+        for i in range(nthreads):
             t = Thread(ParameterizedThreadStart(foo))
             t.Start((ntimes,nbits))
             lst_threads.append(t)

@@ -34,7 +34,7 @@ def test_append_self():
     fo = open(fn, "wb")
     a = list('abc')
     a.append(a)
-    print >>fo, a,
+    print(a, end=' ', file=fo)
     fo.close()
 
     fo = open(fn, "rb")
@@ -126,12 +126,12 @@ def test_add_mul():
     AreEqual(2 * x, [1,2,3,1,2,3])
 
     class mylong(long): pass
-    AreEqual([1, 2] * mylong(2L), [1, 2, 1, 2])
-    AreEqual([3, 4].__mul__(mylong(2L)), [3, 4, 3, 4])
-    AreEqual([5, 6].__rmul__(mylong(2L)), [5, 6, 5, 6])
-    AreEqual(mylong(2L) * [7,8] , [7, 8, 7, 8])
+    AreEqual([1, 2] * mylong(2), [1, 2, 1, 2])
+    AreEqual([3, 4].__mul__(mylong(2)), [3, 4, 3, 4])
+    AreEqual([5, 6].__rmul__(mylong(2)), [5, 6, 5, 6])
+    AreEqual(mylong(2) * [7,8] , [7, 8, 7, 8])
     AssertError(TypeError, lambda: [1,2] * [3,4])
-    AssertError(OverflowError, lambda: [1,2] * mylong(203958720984752098475023957209L))
+    AssertError(OverflowError, lambda: [1,2] * mylong(203958720984752098475023957209))
 
 def test_reverse():
     x = ["begin",1,2,3,4,5,6,7,8,9,0,"end"]
@@ -165,7 +165,7 @@ def test_equal():
 
     class MyIterable(object):
         def __iter__(self): return MyIterable()
-        def next(self):
+        def __next__(self):
             yield 'a'
             yield 'b'
             
@@ -241,7 +241,7 @@ def test_pass_pythonlist_to_clr():
     import IronPythonTest
         
     # test ListWrapperForIList
-    pl = range(40)
+    pl = list(range(40))
     cl = System.Collections.Generic.List[int]()
     for x in pl: cl.Add(x)
         
@@ -253,9 +253,9 @@ def test_pass_pythonlist_to_clr():
     # test DictWrapperForIDict
     pl = {"redmond" : 10, "seattle" : 20}
     cl = System.Collections.Generic.Dictionary[str, int]()
-    for x, y in pl.iteritems(): cl.Add(x, y)
+    for x, y in pl.items(): cl.Add(x, y)
     
-    pll = list(pl.iteritems())
+    pll = list(pl.items())
     cll = list(cl)
     pll.sort(lambda x, y: cmp(x[0], y[0]))
     cll.sort(lambda x, y: cmp(x.Key, y.Key))
@@ -304,7 +304,7 @@ def test_inplace_addition():
         
     #interesting cases
     x = [None]
-    x += xrange(3)
+    x += range(3)
     AreEqual(x, [None, 0, 1, 2])
     
     x = [None]
@@ -322,7 +322,7 @@ def test_inplace_addition():
     #negative cases
     neg_cases = [   ([],    None),
                     ([],    1),
-                    ([],    1L),
+                    ([],    1),
                     ([],    3.14),
                     ([],    object),
                     ([],    object()),
@@ -331,7 +331,7 @@ def test_inplace_addition():
         try:
             left_operand += right_operand
             AssertUnreachable()
-        except TypeError, e:
+        except TypeError as e:
             pass
             
 def test_indexing():
@@ -371,7 +371,7 @@ def test_getslice():
     # all indexes to __getslice__ should be ints
     for listType in list, mylist:
         for input in [0, 1, False, True, myint(0), myint(1), mylong(0), mylong(1), -1, myint(-1), mylong(-1)]:
-            for x in listType(range(5))[input:input]:
+            for x in listType(list(range(5)))[input:input]:
                 AreEqual(type(x), int)
     
     

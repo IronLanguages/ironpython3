@@ -26,7 +26,7 @@ from System import *
 import clr
 #silverlight already has this
 if is_cli:
-    math_assembly = (1L).GetType().Assembly
+    math_assembly = (1).GetType().Assembly
     clr.AddReference(math_assembly)
 load_iron_python_test()
 import IronPythonTest
@@ -45,35 +45,35 @@ p = myFormatProvider()
 
 
 def test_bigint():
-    AreEqual(BigInteger.Add(1L,99999999999999999999999999999999999999999999999999999999999L) ,BigInteger.Subtract(100000000000000000000000000000000000000000000000000000000001L,1L))
-    AreEqual(BigInteger.Multiply(400L,500L) , BigInteger.Divide(1000000L,5L))
-    AreEqual(BigInteger.Multiply(400L,8L) , BigInteger.LeftShift(400L,3L))
-    AreEqual(BigInteger.Divide(400L,8L) , BigInteger.RightShift(400L,3L))
-    AreEqual(BigInteger.RightShift(BigInteger.LeftShift(400L,100L),100L) , 400L)
-    AreEqual(BigInteger.RightShift(BigInteger.LeftShift(-12345678987654321L,100L),100L) , -12345678987654321L)
+    AreEqual(BigInteger.Add(1,99999999999999999999999999999999999999999999999999999999999) ,BigInteger.Subtract(100000000000000000000000000000000000000000000000000000000001,1))
+    AreEqual(BigInteger.Multiply(400,500) , BigInteger.Divide(1000000,5))
+    AreEqual(BigInteger.Multiply(400,8) , BigInteger.LeftShift(400,3))
+    AreEqual(BigInteger.Divide(400,8) , BigInteger.RightShift(400,3))
+    AreEqual(BigInteger.RightShift(BigInteger.LeftShift(400,100),100) , 400)
+    AreEqual(BigInteger.RightShift(BigInteger.LeftShift(-12345678987654321,100),100) , -12345678987654321)
     if is_net40:
-        AssertError(ValueError, BigInteger.RightShift, 400L, -100L)
-        AssertError(ValueError, BigInteger.LeftShift, 400L, -100L)
-        AssertError(ValueError, BigInteger.RightShift, -12345678987654321L, -100L)
-        AssertError(ValueError, BigInteger.LeftShift, -12345678987654321L, -100L)
+        AssertError(ValueError, BigInteger.RightShift, 400, -100)
+        AssertError(ValueError, BigInteger.LeftShift, 400, -100)
+        AssertError(ValueError, BigInteger.RightShift, -12345678987654321, -100)
+        AssertError(ValueError, BigInteger.LeftShift, -12345678987654321, -100)
     else:
-        AreEqual(BigInteger.LeftShift(BigInteger.RightShift(400L,-100L),-100L) , 400L)
-        AreEqual(BigInteger.LeftShift(BigInteger.RightShift(-12345678987654321L,-100L),-100L) , -12345678987654321L)
-    AreEqual(BigInteger(-123456781234567812345678123456781234567812345678123456781234567812345678L).OnesComplement().OnesComplement() , -123456781234567812345678123456781234567812345678123456781234567812345678L)
-    AreEqual(BigInteger(-1234567812345678123456781234567812345678123456781234567812345678123456781234567812345678L).OnesComplement() , -(-1234567812345678123456781234567812345678123456781234567812345678123456781234567812345678L + 1L ))
-    Assert(BigInteger.Xor(-1234567812345678123456781234567812345678123456781234567812345678123456781234567812345678L,BigInteger(-1234567812345678123456781234567812345678123456781234567812345678123456781234567812345678L).OnesComplement()) , -1L)
+        AreEqual(BigInteger.LeftShift(BigInteger.RightShift(400,-100),-100) , 400)
+        AreEqual(BigInteger.LeftShift(BigInteger.RightShift(-12345678987654321,-100),-100) , -12345678987654321)
+    AreEqual(BigInteger(-123456781234567812345678123456781234567812345678123456781234567812345678).OnesComplement().OnesComplement() , -123456781234567812345678123456781234567812345678123456781234567812345678)
+    AreEqual(BigInteger(-1234567812345678123456781234567812345678123456781234567812345678123456781234567812345678).OnesComplement() , -(-1234567812345678123456781234567812345678123456781234567812345678123456781234567812345678 + 1 ))
+    Assert(BigInteger.Xor(-1234567812345678123456781234567812345678123456781234567812345678123456781234567812345678,BigInteger(-1234567812345678123456781234567812345678123456781234567812345678123456781234567812345678).OnesComplement()) , -1)
     AreEqual(BigInteger.BitwiseAnd(0xff00ff00,BigInteger.BitwiseOr(0x00ff00ff,0xaabbaabb)) , BigInteger(0xaa00aa00))
     AreEqual(BigInteger.Mod(BigInteger(-9999999999999999999999999999999999999999),1000000000000000000) , -BigInteger.Mod(9999999999999999999999999999999999999999,BigInteger(-1000000000000000000)))
     
-    AreEqual(BigInteger.ToInt64(0x7fffffffffffffff) , 9223372036854775807L)
+    AreEqual(BigInteger.ToInt64(0x7fffffffffffffff) , 9223372036854775807)
     AssertError(OverflowError, BigInteger.ToInt64, 0x8000000000000000)
     
     AreEqual(BigInteger(-0).ToBoolean(p) , False )
     AreEqual(BigInteger(-1212321.3213).ToBoolean(p) , True )
-    AreEqual(BigInteger(1212321384892342394723947L).ToBoolean(p) , True )
+    AreEqual(BigInteger(1212321384892342394723947).ToBoolean(p) , True )
     
-    AreEqual(BigInteger(0L).ToChar(p) , Char.MinValue)
-    AreEqual(BigInteger(65L).ToChar(p) , IConvertible.ToChar('A', p))
+    AreEqual(BigInteger(0).ToChar(p) , Char.MinValue)
+    AreEqual(BigInteger(65).ToChar(p) , IConvertible.ToChar('A', p))
     AreEqual(BigInteger(0xffff).ToChar(p) , Char.MaxValue)
     AssertError(OverflowError, BigInteger(-1).ToChar, p)
     
@@ -108,7 +108,7 @@ def test_big_1():
         right = t.MaxValue
         AreEqual(left, right)
     
-        b = BigInteger(0L)
+        b = BigInteger(0)
         left = getattr(b, m)(p)
         right = t.MaxValue - t.MaxValue
         AreEqual(left, 0)
@@ -135,7 +135,7 @@ def test_big_2():
         right = t.MaxValue
         AreEqual(left, right)
     
-        b = BigInteger(0L)
+        b = BigInteger(0)
         left = getattr(b, m)()
         right = t.MaxValue - t.MaxValue
         AreEqual(left, right)
@@ -148,9 +148,9 @@ def test_big_2():
 def test_complex():
     AreEqual(
         Complex.Add(
-            Complex(BigInteger(9999L), -1234),
+            Complex(BigInteger(9999), -1234),
             Complex.Conjugate(Complex(9999, -1234)) ),
-        Complex.Multiply(BigInteger(9999L), 2) )
+        Complex.Multiply(BigInteger(9999), 2) )
     AreEqual(
         Complex.Add(
             Complex(99999.99e-200, 12345.88e+100),

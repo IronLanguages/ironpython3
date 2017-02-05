@@ -121,7 +121,7 @@ def test_creation():
 
 def _ArrayEqual(a,b):
     AreEqual(a.Length, b.Length)
-    for x in xrange(a.Length):
+    for x in range(a.Length):
         AreEqual(a[x], b[x])
     
 ## public static Array CreateInstance (
@@ -133,7 +133,7 @@ def _ArrayEqual(a,b):
 @skip('silverlight', 'win32')
 def test_nonzero_lowerbound():
     a = System.Array.CreateInstance(int, (5,), (5,))
-    for i in xrange(5): a[i] = i
+    for i in range(5): a[i] = i
     
     _ArrayEqual(a[:2], System.Array[int]((0,1)))
     _ArrayEqual(a[2:], System.Array[int]((2,3,4)))
@@ -189,14 +189,14 @@ def test_array_type():
                 
         a_normal = System.Array.CreateInstance(array_type, 3)
         Assert(str(AT)==str(type(a_normal)))
-        for i in xrange(3):
+        for i in range(3):
             a_normal[i] = instance
             Assert(str(AT)==str(type(a_normal)))
    
         a_multi  = System.Array.CreateInstance(array_type, 2, 3)
         Assert(str(AT)==str(type(a_multi)))
-        for i in xrange(2):
-            for j in xrange(3):
+        for i in range(2):
+            for j in range(3):
                 Assert(str(AT)==str(type(a_multi)))
                 a_multi[i, j]=instance
                 
@@ -223,9 +223,9 @@ def test_array_type():
     type_helper(bool, False)
     type_helper(bool, True)
     #type_helper(bool, 1)
-    type_helper(long, 0L)
-    type_helper(long, 1L)
-    type_helper(long, 100L)
+    type_helper(int, 0)
+    type_helper(int, 1)
+    type_helper(int, 100)
     type_helper(float, 0.0)
     type_helper(float, 1.0)
     type_helper(float, 3.14)

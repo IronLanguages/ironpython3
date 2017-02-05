@@ -117,12 +117,12 @@ def get_values(values, itypes, ftypes):
         sv  = str(v)
         py  = int(v)
         clr = get_clr_values(sv, itypes)
-        clr.append(long(py))
+        clr.append(int(py))
         clr.append(myint(py))
         clr.append(mylong(py))
         all.append( (py, clr) )
 
-        py  = long(v)
+        py  = int(v)
         clr = get_clr_values(sv, itypes)
         clr.append(py)
         clr.append(myint(py))
@@ -212,19 +212,19 @@ def verify_u(a, op, x_s, x_v, g_s, g_v):
 def calc_1(op, arg1):
     try:
         return True, op(arg1)
-    except Exception, e:
+    except Exception as e:
         return False, e.clsException
 
 def calc_2(op, arg1, arg2):
     try:
         return True, op(arg1, arg2)
-    except Exception, e:
+    except Exception as e:
         return False, e.clsException
 
 def calc_0(op):
     try:
         return True, op()
-    except Exception, e:
+    except Exception as e:
         return False, e.clsException
 
 def verify_implemented_b(implemented, op, a, b):
@@ -287,7 +287,7 @@ def validate_binary_ops(all, biops):
                         verify_implemented_b(implemented, name, l, r)
 
                         if total - last > 10000:
-                            print "." ,
+                            print(".", end=' ')
                             last = total
 
     return total
@@ -351,73 +351,73 @@ if RUN_ALL or sys.argv[1] == '1':
     @skip('win32')
     def test_validate_biops_bool_simple():
         total = validate_binary_ops(all, biops_bool_simple)
-        print total, "tests ran."
+        print(total, "tests ran.")
 
 if RUN_ALL or sys.argv[1] == '2':
     @skip('win32')
     def test_validate_biops_bool_shift():
         total = validate_binary_ops(all, biops_bool_shift)
-        print total, "tests ran."
+        print(total, "tests ran.")
         
 if RUN_ALL or sys.argv[1] == '3':
     @skip('win32')
     def test_validate_biops_math_add():
         total = validate_binary_ops(all, biops_math_add)
-        print total, "tests ran."
+        print(total, "tests ran.")
         
 if RUN_ALL or sys.argv[1] == '4':
     @skip('win32')
     def test_validate_biops_math_sub():
         total = validate_binary_ops(all, biops_math_sub)
-        print total, "tests ran."
+        print(total, "tests ran.")
         
 if RUN_ALL or sys.argv[1] == '5':
     @skip('win32')
     def test_validate_biops_math_mul():
         total = validate_binary_ops(all, biops_math_mul)
-        print total, "tests ran."
+        print(total, "tests ran.")
         
 if RUN_ALL or sys.argv[1] == '6':
     @skip('win32')
     def test_validate_biops_math_div():
         total = validate_binary_ops(all, biops_math_div)
-        print total, "tests ran."
+        print(total, "tests ran.")
 #------------------------------------------------------------------------------
 if RUN_ALL or sys.argv[1] == '7':
     @skip('win32')
     def test_validate_biops_math_floordiv():
         total = validate_binary_ops(all, biops_math_floordiv)
-        print total, "tests ran."
+        print(total, "tests ran.")
         
 if RUN_ALL or sys.argv[1] == '8':
     @skip('win32')
     def test_validate_biops_math_truediv():
         total = validate_binary_ops(all, biops_math_truediv)
-        print total, "tests ran."
+        print(total, "tests ran.")
         
 if RUN_ALL or sys.argv[1] == '9':
     @skip('win32')
     def test_validate_biops_math_mod():
         total = validate_binary_ops(all, biops_math_mod)
-        print total, "tests ran."
+        print(total, "tests ran.")
         
 if RUN_ALL or sys.argv[1] == '10':
     @skip('win32')
     def test_validate_biops_math_pow():
         total = validate_binary_ops(all, biops_math_pow)
-        print total, "tests ran."
+        print(total, "tests ran.")
         
 #------------------------------------------------------------------------------
 if RUN_ALL or sys.argv[1] == '11':
     @skip('win32')
     def test_validate_unary_ops():
         total = validate_unary_ops(all)
-        print total, "tests ran."
+        print(total, "tests ran.")
   
     @skip('win32')
     def test_validate_constructors():
         total = validate_constructors(values)
-        print total, "tests ran."
+        print(total, "tests ran.")
 
 
 run_test(__name__)

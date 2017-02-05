@@ -31,7 +31,7 @@ class MyError2:
 # ensure the generator is finished.
 def EnsureClosed(g):
   try:
-    g.next()
+    next(g)
     Assert(False)
   except StopIteration:
     pass
@@ -60,7 +60,7 @@ def test_del():
       finally:
         l[0] += 1
     g=ff3(l)
-    AreEqual(g.next(), 10) # move to inside the finally
+    AreEqual(next(g), 10) # move to inside the finally
     del g
     
   nested()
@@ -74,7 +74,7 @@ def test_del():
 def test_yield_lambda():
   f=lambda x: (3+(yield x), (yield x*2))
   g=f(10)
-  AreEqual(g.next(), 10)
+  AreEqual(next(g), 10)
   AreEqual(g.send(9), 10*2)
   if is_cpython: #http://ironpython.codeplex.com/workitem/28219
     AssertError(StopIteration, g.send, 5)
@@ -84,11 +84,11 @@ def test_yield_lambda():
   
 # This usage of lambda expression tests a different parsing path in IPY. (old lambda expressions)
 def test_yield_old_lambda():
-    l=[x for x in lambda : (yield 3),8]
+    l=[x for x in (lambda : (yield 3),8)]
     AreEqual(l[1], 8)
     f=l[0]
     g=f()
-    AreEqual(g.next(), 3)
+    AreEqual(next(g), 3)
 
 
 def test_type_generator():
@@ -107,7 +107,7 @@ def test_yield_default_param():
       yield lambda x=(yield 25): x * 2
       
     g=f()
-    AreEqual(g.next(), 25)
+    AreEqual(next(g), 25)
     l = g.send(15) # this sends in the default parameter, yields the lambda expression
     AreEqual(l(), 15*2) # this now uses the default param
     AreEqual(l(3), 3*2) # use a non-default param.
@@ -136,7 +136,7 @@ def test_yield_index():
     (yield)[(yield)]='x'
     yield
   g=f()
-  AreEqual(g.next(), None)
+  AreEqual(next(g), None)
   l=[10,20,30]
   g.send(l)
   g.send(1)
@@ -162,9 +162,9 @@ def test_yield_exp():
       yield x
     l=[0,0]
     g=f(l)
-    AreEqual(g.next(), 3)
+    AreEqual(next(g), 3)
     AreEqual(g.send(100), None)
-    AreEqual(g.next(), 10)
+    AreEqual(next(g), 10)
     AreEqual(l, [1,0])
     AreEqual(g.send(30), 37)
     AreEqual(l, [1,1])
@@ -195,10 +195,10 @@ def test_yield_exp_parse():
       AreEqual(z,100/25)
       yield 123
     g=f()
-    AreEqual(g.next(), (1,2))
-    AreEqual(g.next(), None)
+    AreEqual(next(g), (1,2))
+    AreEqual(next(g), None)
     AreEqual(g.send(15), 10)
-    AreEqual(g.next(), 99)
+    AreEqual(next(g), 99)
     AreEqual(g.send(100), None)
     AreEqual(g.send(40), (1,2))
     AreEqual(g.send(39), None)
@@ -212,7 +212,7 @@ def test_yy():
   def f():
     yield (yield 5)
   g=f()
-  AreEqual(g.next(), 5)
+  AreEqual(next(g), 5)
   AreEqual(g.send(15), 15)
 
 # Test Send after Close(), should throw StopException, just like Next()
@@ -223,7 +223,7 @@ def test_send_after_closed():
     l[0] += 1
     AreEqual(x, 15)
   g = f()
-  AreEqual(g.next(), 10)
+  AreEqual(next(g), 10)
   def t():
     g.send(15)
   AreEqual(l, [0])
@@ -245,8 +245,8 @@ def test_send_unstarted():
     g.send(1)
   AssertError(TypeError, t) # can't send non-null on unstarted
   # should not change generator status
-  AreEqual(g.next(), 10)
-  AreEqual(g.next(), 5)
+  AreEqual(next(g), 10)
+  AreEqual(next(g), 5)
 
   
 # Ensure that sending an exception doesn't become a throw
@@ -256,7 +256,7 @@ def test_send_exception():
     AreEqual(y, MyError)
     yield
   g=f()
-  g.next()
+  next(g)
   g.send(MyError)
       
  
@@ -277,7 +277,7 @@ def test_throw_unhandled():
 
     g = f()
 
-    i = g.next()
+    i = next(g)
     AreEqual(i,5)
 
     # This should go uncaught from the iterator
@@ -303,8 +303,8 @@ def test_throw_handled():
       yield 4
 
     g = f2()
-    AreEqual(g.next(),1)
-    AreEqual(g.next(),2)
+    AreEqual(next(g),1)
+    AreEqual(next(g),2)
 
     # generator will catch this.
     # this throws from the last yield point, resumes executing the generator
@@ -313,7 +313,7 @@ def test_throw_handled():
     AreEqual(i,3)
 
     # Test that we can call next() after throw.
-    AreEqual(g.next(),4)
+    AreEqual(next(g),4)
 
 
 #
@@ -328,13 +328,13 @@ def test_throw_value():
       try:
         yield 5
         Assert(false)
-      except MyClass2, x:
+      except MyClass2 as x:
         AreEqual(x.val,10)
         yield 15
 
     g=f()
-    AreEqual(g.next(), 5)
-    AreEqual(g.throw(MyClass2, 10), 15)
+    AreEqual(next(g), 5)
+    AreEqual(g.throw(MyClass2(10)), 15)
 
 
 
@@ -351,7 +351,7 @@ def test_catch_rethrow():
         raise MyError2
       
     g=f4()
-    g.next() # move into try block
+    next(g) # move into try block
     try:
       g.throw(MyError) # will get caught and rethrow MyError 2
       Assert(False)
@@ -393,7 +393,7 @@ def test_throw_closed():
       yield 1
 
     g=f5()
-    AreEqual(g.next(),1)
+    AreEqual(next(g),1)
 
     # Loop this to ensure that we're in steady state.
     for i in range(0,3):
@@ -424,10 +424,10 @@ def test_throw_from_finally():
 
     l=[0]
     g=f(l)
-    AreEqual(g.next(), 1)
+    AreEqual(next(g), 1)
     AreEqual(l[0], 1)
 
-    AreEqual(g.next(), 2) # move into finally block
+    AreEqual(next(g), 2) # move into finally block
     try:
       # throw, it will catch and run to completion
       g.throw(MyError)
@@ -465,10 +465,10 @@ def test_throw_run_finally_nonexception():
     # 'Test: simple finally, no exception'
     l = [0]
     g=f1(l)
-    AreEqual(g.next(), 1)
-    AreEqual(g.next(), 2)
+    AreEqual(next(g), 1)
+    AreEqual(next(g), 2)
     AreEqual(l[0], 0)
-    AreEqual(g.next(), 3)
+    AreEqual(next(g), 3)
     AreEqual(l[0], 1)
     EnsureClosed(g)
 
@@ -479,7 +479,7 @@ def test_throw_run_finally_nonexception():
 def test_throw_before_finally():
     l = [0]
     g=f1(l)
-    AreEqual(g.next(), 1)
+    AreEqual(next(g), 1)
     try:
       g.throw(MyError)
       Assert(False)
@@ -497,8 +497,8 @@ def test_throw_run_finally_exception():
     # print 'Test: throw inside try-finally'
     l = [0]
     g=f1(l)
-    AreEqual(g.next(), 1)
-    AreEqual(g.next(), 2)
+    AreEqual(next(g), 1)
+    AreEqual(next(g), 2)
     try:
       g.throw(MyError)
       Assert(False)
@@ -534,7 +534,7 @@ def test_ctor_throws():
         yield 12
 
     g=f()
-    AreEqual(g.next(), 5)
+    AreEqual(next(g), 5)
 
     # MyError's ctor will raise an exception. It should be invoked in the generator's body,
     # and so the generator can catch it and continue running to yield a value.
@@ -555,7 +555,7 @@ def test_throw_none():
       Assert(false) # error shouldn't be raised inside of generator, so can't be caught here
   
   g=f()
-  AreEqual(g.next(), 5)
+  AreEqual(next(g), 5)
   
   # g.throw(None) should:
   # - throw a TypeError immediately, not from generator body (So generator can't catch it)
@@ -565,7 +565,7 @@ def test_throw_none():
   AssertError(TypeError, t)
   
   # verify that generator is still valid and can be resumed
-  AreEqual(g.next(), 10)
+  AreEqual(next(g), 10)
 
 
 #
@@ -599,7 +599,7 @@ def test_close_catch_exit():
     except GeneratorExit:
       pass # catch but exit, that's ok.
   g=f()
-  AreEqual(g.next(), 1)
+  AreEqual(next(g), 1)
   g.close()
 
 def test_close_rethrow():
@@ -611,7 +611,7 @@ def test_close_rethrow():
       # print 'caught and rethrow'
       raise MyError
   g=f()
-  AreEqual(g.next(), 1)
+  AreEqual(next(g), 1)
   # close(), which will raise a GeneratorExit, which gets caught and rethrown as MyError
   def t():
     g.close()
@@ -625,7 +625,7 @@ def test_close_illegal_swallow():
     except GeneratorExit:
       yield 2 # illegal, don't swallow GeneratorExit
   g=f()
-  AreEqual(g.next(), 1)
+  AreEqual(next(g), 1)
   # close(), which will raise a GeneratorExit, which gets caught and rethrown as MyError
   def t():
     g.close()
@@ -645,7 +645,7 @@ def test_close_illegal_swallow():
 def consumer(func):
             def wrapper(*args,**kw):
                 gen = func(*args, **kw)
-                gen.next()
+                next(gen)
                 return gen
             wrapper.__name__ = func.__name__
             wrapper.__dict__ = func.__dict__
@@ -657,7 +657,7 @@ def test_exp_tuple():
   def f():
     yield (1,(yield),3)
   g=f()
-  g.next()
+  next(g)
   AreEqual(g.send(5), (1, 5, 3))
 
 
@@ -676,7 +676,7 @@ def test_exp_base_class():
       # yield expression as a base class.
       class Foo((yield)):
         def m(self):
-          print 'x'
+          print('x')
       yield Foo
 
     g=M()
@@ -696,7 +696,7 @@ class MyWriter:
 def test_exp_print_redirect():
     @consumer
     def f(text):
-      print >> (yield), text,
+      print(text, end=' ', file=(yield))
       yield # extra spot to stop on so send() won't immediately throw
 
     c=MyWriter()
@@ -712,7 +712,7 @@ def test_exp_dict_literals():
       d = { (yield 2): (yield 1), (yield): (yield) }
       yield d
     g=f()
-    AreEqual(g.next(), 1)
+    AreEqual(next(g), 1)
     AreEqual(g.send('a'), 2)
     g.send(10)
     g.send('b')
@@ -730,7 +730,7 @@ def gen_compare():
 # Compare expecting true.
 def test_exp_compare1():
     g=gen_compare()
-    AreEqual(g.next(), 1)
+    AreEqual(next(g), 1)
     AreEqual(g.send(5), 2)
     AreEqual(g.send(10), 3)
     AreEqual(g.send(15), True)
@@ -739,7 +739,7 @@ def test_exp_compare1():
 # compare expecting false. This will short-circuit
 def test_exp_compare2():
     g=gen_compare()
-    AreEqual(g.next(), 1)
+    AreEqual(next(g), 1)
     AreEqual(g.send(5), 2)
     AreEqual(g.send(2), False)
     EnsureClosed(g)
@@ -750,13 +750,13 @@ def test_exp_compare2():
 def test_exp_raise():
     @consumer
     def f():
-      raise (yield), (yield)
+      raise (yield)((yield))
       Assert(False)
     g=f()
     g.send(ValueError)
     try:
       g.send(15)
-    except ValueError, x:
+    except ValueError as x:
       AreEqual(x.args[0], 15)
     # Generator is now closed
     EnsureClosed(g)
@@ -768,7 +768,7 @@ def test_exp_raise():
 def test_exp_slice():
     @consumer
     def f():
-      l=range(0,10)
+      l=list(range(0,10))
       yield l[(yield):(yield)]
 
     g=f()
@@ -787,7 +787,7 @@ def test_layering():
           (a,b) = ((yield), (yield))
           d[a]=(b)
       g=f2()
-      g.next()
+      next(g)
       return g
     # Wrapper around a generator.
     @consumer
@@ -837,9 +837,9 @@ def test_layering_2():
     def Writer(outstream):
        while True:
          try:
-           print >> outstream, 'Page=' + (yield)
+           print('Page=' + (yield), file=outstream)
          except GeneratorExit:
-           print >> outstream, 'done'
+           print('done', file=outstream)
            raise
     #
     def DoIt(l, outstream):
@@ -849,7 +849,7 @@ def test_layering_2():
       pipeline.close()
     #
     o=MyWriter()
-    DoIt(range(8), o)
+    DoIt(list(range(8)), o)
     AreEqual(o.data, 'Page=[0,1,2]\nPage=[3,4,5]\nPage=[6,7...incomplete\ndone\n')
 
 
@@ -863,22 +863,23 @@ def getCatch():
   yield 1
   l=[0,1,2]
   try:
-    raise MyError, 'a'
-  except (yield 'a'), l[(yield 'b')]:
+    raise MyError('a')
+  except (yield 'a') as xxx_todo_changeme:
+    l[(yield 'b')] = xxx_todo_changeme
     AreEqual(sys.exc_info(), (None,None,None)) # will print None from the yields
     Assert(l[1] != 1) # validate that the catch properly assigned to it.
     yield 'c'
   except (yield 'c'): # especially interesting here
     yield 'd'
   except:
-    print 'Not caught'
-  print 4
+    print('Not caught')
+  print(4)
 
 # executes the generators 1st except clause
 def test_yield_except_crazy1():
     g=getCatch()
-    AreEqual(g.next(), 1)
-    AreEqual(g.next(), 'a')
+    AreEqual(next(g), 1)
+    AreEqual(next(g), 'a')
     AreEqual(sys.exc_info(), (None, None, None))
     AreEqual(g.send(MyError), 'b')
     AreEqual(sys.exc_info(), (None, None, None))
@@ -889,8 +890,8 @@ def test_yield_except_crazy1():
 def test_yield_except_crazy2():
     # try the 2nd clause
     g=getCatch()
-    AreEqual(g.next(), 1)
-    AreEqual(g.next(), 'a')
+    AreEqual(next(g), 1)
+    AreEqual(next(g), 'a')
     AreEqual(g.send(ValueError), 'c') # Cause us to skip the first except handler
     AreEqual(g.send(MyError), 'd')
     g.close()
@@ -901,15 +902,15 @@ def test_yield_empty():
         yield
     
     g = f()
-    AreEqual(g.next(), None)
+    AreEqual(next(g), None)
     
     def f():
         if True:
             yield
         yield
     g = f()
-    AreEqual(g.next(), None)
-    AreEqual(g.next(), None)
+    AreEqual(next(g), None)
+    AreEqual(next(g), None)
 
 def test_throw_stop_iteration():
     def f():
@@ -918,8 +919,8 @@ def test_throw_stop_iteration():
     
     x = f()
     try:
-        x.next()
-    except StopIteration, e:
+        next(x)
+    except StopIteration as e:
         AreEqual(e.message, 'foo')
 
 run_test(__name__)

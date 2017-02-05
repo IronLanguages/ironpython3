@@ -199,9 +199,9 @@ AreEqual("%r" % b, "repr")
 # test character
 AreEqual("%c" % 23, chr(23))
 AssertError(OverflowError, (lambda: "%c" % -1) )
-AreEqual("%c" % unicode('x'), unicode('x'))
+AreEqual("%c" % str('x'), str('x'))
 try:
-    AreEqual("%c" % 65535, u'\uffff')
+    AreEqual("%c" % 65535, '\uffff')
 except OverflowError:
     pass
     
@@ -231,8 +231,8 @@ AssertError(TypeError, (lambda:fmtstr % {'x': 'notanint', 'y':'str', 'z':2.1878}
 
 AreEqual('%(key)s %(yek)d' % {'key':'ff', 'yek':200}, "ff 200")
 
-AreEqual(repr(u"\u00F4"), "u'\\xf4'")
-AreEqual(repr(u"\u10F4"), "u'\\u10f4'")
+AreEqual(repr("\u00F4"), "u'\\xf4'")
+AreEqual(repr("\u10F4"), "u'\\u10f4'")
 
 AssertError(TypeError, lambda: "%5c" % None)
 AreEqual("%5c" % 'c', '    c')

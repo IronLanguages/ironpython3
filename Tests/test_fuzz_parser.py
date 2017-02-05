@@ -303,7 +303,7 @@ expr_gens = identifier_exprs + \
              AttributeExpression,
              SubscriptionExpression,
              SlicingExpression,
-             ConstantMaker(1), ConstantMaker('abc'), ConstantMaker(1L), ConstantMaker(1.0), ConstantMaker(1j),
+             ConstantMaker(1), ConstantMaker('abc'), ConstantMaker(1), ConstantMaker(1.0), ConstantMaker(1j),
              ParenthFormMaker(False), ParenthFormMaker(True), 
              StringConversion,
              YieldExpression,
@@ -346,10 +346,10 @@ i = 0
 for x in MakeStatementGenerator(0):    
     i += 1
     if i % 1000 == 0:
-        print '.',
+        print('.', end=' ')
     try:
         compile(x, 'foo', 'exec')
     except SyntaxError:
         pass
 
-print 'Ran %d tests', i
+print('Ran %d tests', i)

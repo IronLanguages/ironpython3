@@ -305,7 +305,7 @@ def test_enum():
         for i in range(l):
             a[i] = "ip" * i
             r.append("IP" * i)
-        m = map(str.upper, a)
+        m = list(map(str.upper, a))
         AreEqual(m, r)
 
     methods = [
@@ -628,7 +628,7 @@ def CheckModify(res, orig):
     Check(res, orig)
 
 def keys_helper(o):
-    if hasattr(o, 'keys'): return o.keys()
+    if hasattr(o, 'keys'): return list(o.keys())
     
     return o.Keys
     
@@ -923,7 +923,7 @@ def test_function():
             line += 'try: c.SM%d(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (i, ",".join(['1'] * (i+1)))
         
         #print line
-        exec line in globals(), locals()
+        exec(line, globals(), locals())
 
         ############ OptimizedFunctionAny ############
         ## 1
@@ -938,7 +938,7 @@ def test_function():
                 line += 'try: c.IDM0(o, %s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (args)
             
         #print line
-        exec line in globals(), locals()
+        exec(line, globals(), locals())
     
         line = ""
         for i in range(7):
@@ -951,7 +951,7 @@ def test_function():
                 line += 'try: c.SDM0(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (args)
             
         #print line
-        exec line in globals(), locals()
+        exec(line, globals(), locals())
 
         ## 2
         line = ""
@@ -969,7 +969,7 @@ def test_function():
                 line += 'AreEqual(c.SDM1(%s), "SDM1-x")\n' % (args)
                 
         #print line
-        exec line in globals(), locals()
+        exec(line, globals(), locals())
     
         line = ""
         for i in range(7):
@@ -986,7 +986,7 @@ def test_function():
                 line += 'AreEqual(c.SDM4(%s), "SDM4-x")\n' % (args)
             
         #print line
-        exec line in globals(), locals()
+        exec(line, globals(), locals())
 
         ## 3
         line = ""
@@ -999,7 +999,7 @@ def test_function():
                 line += 'try: o.IDM2(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (args)
                 line += 'try: c.IDM2(o, %s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (args)
         #print line
-        exec line in globals(), locals()
+        exec(line, globals(), locals())
     
         line = ""
         for i in range(7):
@@ -1012,7 +1012,7 @@ def test_function():
                 line += 'try: c.SDM2(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (args)
 
         #print line
-        exec line in globals(), locals()
+        exec(line, globals(), locals())
     
         ## 4
         line = ""
@@ -1026,7 +1026,7 @@ def test_function():
                 line += 'try: c.IDM5(o, %s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (args)
 
         #print line
-        exec line in globals(), locals()
+        exec(line, globals(), locals())
 
         line = ""
         for i in range(7):
@@ -1039,7 +1039,7 @@ def test_function():
                 line += 'try: c.SDM5(%s) \nexcept TypeError: pass \nelse: raise AssertionError\n' % (args)
 
         #print line
-        exec line in globals(), locals()
+        exec(line, globals(), locals())
 
         ## 5
         line = ""
@@ -1053,7 +1053,7 @@ def test_function():
                 line += 'AreEqual(c.IDM3(o,%s), "IDM3-x")\n' % (args)
             
         #print line
-        exec line in globals(), locals()
+        exec(line, globals(), locals())
     
         line = ""
         for i in range(7):
@@ -1066,7 +1066,7 @@ def test_function():
                 line += 'AreEqual(c.SDM3(%s), "SDM3-x")\n' % (args)
             
         #print line
-        exec line in globals(), locals()
+        exec(line, globals(), locals())
 
         ############ OptimizedFunctionN ############
         line = ""
@@ -1083,7 +1083,7 @@ def test_function():
             line +=  'AreEqual(c.SPM1(0,%s), "SPM1-%d")\n' % (args, i)
 
         #print line
-        exec line in globals(), locals()
+        exec(line, globals(), locals())
         
     class DispatchAgain2(DispatchAgain): pass
     
@@ -1112,10 +1112,10 @@ def test_multicall_generator():
             AssertError(type, meth, arg)
 
     import sys
-    maxint = sys.maxint
+    maxint = sys.maxsize
     import System
     maxlong1 = System.Int64.MaxValue
-    maxlong2 = long(str(maxlong1))
+    maxlong2 = int(str(maxlong1))
 
     class MyInt(int):
         def __repr__(self):
@@ -1129,7 +1129,7 @@ def test_multicall_generator():
 
     func = c.M0
     AllEqual(1, func, [(0,), (1,), (maxint,), (myint,)])
-    AllEqual(2, func, [(maxint + 1,), (-maxint-10,), (10L,)])
+    AllEqual(2, func, [(maxint + 1,), (-maxint-10,), (10,)])
     AllAssert(TypeError, func, [
                                 (-10.2,),
                                 (1+2j,),
@@ -1212,7 +1212,7 @@ def test_multicall_generator():
                 System.Char, System.Decimal, System.Single, System.Double] ]
     else: one = []
     
-    one.extend([True, False, 5L, DispatchHelpers.Color.Red ])
+    one.extend([True, False, 5, DispatchHelpers.Color.Red ])
     
     if not is_silverlight:
         two = [t.Parse("5.5") for t in [ System.Decimal, System.Single, System.Double] ]
@@ -1258,7 +1258,7 @@ def test_multicall_generator():
 
     AllEqual(1, func, [(b, b), (d, b)])
     AllEqual(2, func, [(b, d), (d, d)])
-    AllEqual(3, func, [(1, d), (6L, d)])
+    AllEqual(3, func, [(1, d), (6, d)])
     AllAssert(TypeError, func, [(1,1), (None, None), (None, d), (3, b)])
     
     #############################################################################################

@@ -252,7 +252,7 @@ AreEqual(f().m(), 10)
 
 def f():
     def g():
-        print a
+        print(a)
     g()
     a = 10
 AssertError(NameError, f)
@@ -314,19 +314,19 @@ z = "global z"
 
 def test():
     AreEqual(y, "global y")
-    exec "y = 10"
+    exec("y = 10")
     AreEqual(y, 10)
 test()
 
 def test2():
     AreEqual(x, "global x")
-    exec "x = 5"
+    exec("x = 5")
     AreEqual(x, 5)
     yield x
 
-AreEqual(test2().next(), 5)
+AreEqual(next(test2()), 5)
 
 class C:
     AreEqual(z, "global z")
-    exec "z = 7"
+    exec("z = 7")
     AreEqual(z, 7)

@@ -20,12 +20,12 @@ from iptest.assert_util import *
 ##
 
 def _contains(large, small):
-    for (key, value) in small.items():
+    for (key, value) in list(small.items()):
         Assert(large[key] == value)
 
 def _not_contains(dict, *keylist):
     for key in keylist:
-        Assert(not dict.has_key(key))
+        Assert(key not in dict)
 
 ## exec without in something
 x = 1
@@ -33,29 +33,29 @@ y = "hello"
 _contains(globals(), {"x":1, "y":"hello"})
 _contains(locals(),  {"x":1, "y":"hello"})
 
-exec "x, y"
+exec("x, y")
 _contains(globals(), {"x":1, "y":"hello"})
 _contains(locals(),  {"x":1, "y":"hello"})
 
 ## exec with custom globals
 # -- use global x, y; assign
 g1 = {'x':2, 'y':'world'}
-exec "global x; x, y; x = 4" in g1
+exec("global x; x, y; x = 4", g1)
 _contains(globals(), {"x":1, "y":"hello"})
 _contains(locals(),  {"x":1, "y":"hello"})
 _contains(g1, {"x":4, "y":"world"})
 
-exec "global x; x, y; x = x + 4" in g1
+exec("global x; x, y; x = x + 4", g1)
 _contains(g1, {"x":8})
 
 # -- declare global
-exec "global z" in g1
+exec("global z", g1)
 _not_contains(globals(), 'z')
 _not_contains(locals(), 'z')
 _not_contains(g1, 'z')
 
 # -- new global
-exec "global z; z = -1" in g1
+exec("global z; z = -1", g1)
 _not_contains(globals(), 'z')
 _not_contains(locals(), 'z')
 _contains(g1, {'z':-1})
@@ -63,11 +63,11 @@ _contains(g1, {'z':-1})
 # y is missing in g2
 g2 = {'x':3}
 try:
-    exec "x, y" in g2
+    exec("x, y", g2)
 except NameError: pass
 else:  Assert(False, "should throw NameError exception")
 
-exec "y = 'ironpython'" in g2
+exec("y = 'ironpython'", g2)
 _contains(g2, {"x":3, "y":"ironpython"})
 _contains(globals(), {"y":"hello"})
 _contains(locals(),  {"y":"hello"})
@@ -77,31 +77,31 @@ g = {'x': -1, 'y': 'python' }
 l = {}
 
 # use global
-exec "if x != -1: throw" in g, l
-exec "if y != 'python': throw" in g, l
+exec("if x != -1: throw", g, l)
+exec("if y != 'python': throw", g, l)
 _not_contains(l, 'x', 'y')
 
 # new local
-exec "x = 20; z = 2" in g, l
+exec("x = 20; z = 2", g, l)
 _contains(g, {"x":-1, "y":"python"})
 _contains(l, {"x":20, "z":2})
 
 # changes
-exec "global y; y = y.upper(); z = -2" in g, l
+exec("global y; y = y.upper(); z = -2", g, l)
 _contains(g, {'x': -1, 'y': 'PYTHON'})
 _contains(l, {'x': 20, 'z': -2})
 
 # new global
-exec "global w; w = -2" in g, l
+exec("global w; w = -2", g, l)
 _contains(g, {'x': -1, 'y': 'PYTHON', 'w': -2})
 _contains(l, {'x': 20, 'z': -2})
 
 # x in both g and l; use it
-exec "global x; x = x - 1" in g, l
+exec("global x; x = x - 1", g, l)
 _contains(g, {'x': -2, 'y': 'PYTHON', 'w': -2})
 _contains(l, {'x': 20, 'z': -2})
 
-exec "x = x + 1" in g, l
+exec("x = x + 1", g, l)
 _contains(g, {'x': -2, 'y': 'PYTHON', 'w': -2})
 _contains(l, {'x': 21, 'z': -2})
 
@@ -112,31 +112,31 @@ def InsideFunc():
     l = {}
 
     # use global
-    exec "if x != -1: throw" in g, l
-    exec "if y != 'python': throw" in g, l
+    exec("if x != -1: throw", g, l)
+    exec("if y != 'python': throw", g, l)
     _not_contains(l, 'x', 'y')
 
     # new local
-    exec "x = 20; z = 2" in g, l
+    exec("x = 20; z = 2", g, l)
     _contains(g, {"x":-1, "y":"python"})
     _contains(l, {"x":20, "z":2})
 
     # changes
-    exec "global y; y = y.upper(); z = -2" in g, l
+    exec("global y; y = y.upper(); z = -2", g, l)
     _contains(g, {'x': -1, 'y': 'PYTHON'})
     _contains(l, {'x': 20, 'z': -2})
 
     # new global
-    exec "global w; w = -2" in g, l
+    exec("global w; w = -2", g, l)
     _contains(g, {'x': -1, 'y': 'PYTHON', 'w': -2})
     _contains(l, {'x': 20, 'z': -2})
 
     # x in both g and l; use it
-    exec "global x; x = x - 1" in g, l
+    exec("global x; x = x - 1", g, l)
     _contains(g, {'x': -2, 'y': 'PYTHON', 'w': -2})
     _contains(l, {'x': 20, 'z': -2})
 
-    exec "x = x + 1" in g, l
+    exec("x = x + 1", g, l)
     _contains(g, {'x': -2, 'y': 'PYTHON', 'w': -2})
     _contains(l, {'x': 21, 'z': -2})
 
@@ -146,14 +146,14 @@ InsideFunc()
 
 unique_global_name = 987654321
 class C:
-    exec 'a = unique_global_name'
-    exec "if unique_global_name != 987654321: raise AssertionError('cannott see unique_global_name')"
+    exec('a = unique_global_name')
+    exec("if unique_global_name != 987654321: raise AssertionError('cannott see unique_global_name')")
 
 AreEqual(C.a, 987654321)
 
 def f():
-    exec "if unique_global_name != 987654321: raise AssertionError('cannot see unique_global_name')"
-    def g(): exec "if unique_global_name != 987654321: raise AssertionError('cannot see unique_global_name')"
+    exec("if unique_global_name != 987654321: raise AssertionError('cannot see unique_global_name')")
+    def g(): exec("if unique_global_name != 987654321: raise AssertionError('cannot see unique_global_name')")
     g()
 
 f()
@@ -217,7 +217,7 @@ Assert("b" not in myloc)
 # Statement form of exec.
 myloc = {}
 myglob = {}
-exec "a = 1; global b; b = 1" in myglob, myloc
+exec("a = 1; global b; b = 1", myglob, myloc)
 Assert("a" in myloc)
 Assert("a" not in myglob)
 Assert("b" in myglob)
@@ -238,7 +238,7 @@ Assert("b" not in myloc)
 # Statement form of exec.
 myloc = {}
 myglob = {}
-exec "a = 1; global b; b = 1" in myglob
+exec("a = 1; global b; b = 1", myglob)
 Assert("a" in myglob)
 Assert("a" not in myloc)
 Assert("b" in myglob)
@@ -249,10 +249,10 @@ Assert("b" not in myloc)
 x = "global_x"
 
 def TryExecG(what, glob):
-    exec what in glob
+    exec(what, glob)
 
 def TryExecGL(what, glob, loc):
-    exec what in glob, loc
+    exec(what, glob, loc)
 
 class Nothing:
     pass
@@ -300,7 +300,7 @@ def f(l):
     return {}
 
 l = []
-exec "pass" in f(l)
+exec("pass", f(l))
 AreEqual(l, ["called f"])
 
 def g(l):
@@ -308,14 +308,14 @@ def g(l):
     return {}
 
 l = []
-exec "pass" in f(l), g(l)
+exec("pass", f(l), g(l))
 AreEqual(l, ["called f", "called g"])
 
 # testing exec accepts \n eolns only
 def test_eolns():
-    def f1(sep): exec 'x = 2$y=4$'.replace('$', sep)
-    def f2(sep): exec '''x = 3$y = 5$'''.replace('$', sep)
-    def f3(sep): exec "exec '''x = 3$y = 5$'''".replace('$', sep)
+    def f1(sep): exec('x = 2$y=4$'.replace('$', sep))
+    def f2(sep): exec('''x = 3$y = 5$'''.replace('$', sep))
+    def f3(sep): exec("exec '''x = 3$y = 5$'''".replace('$', sep))
 
     for x in [f1, f2, f3]:
         if is_ironpython: #http://ironpython.codeplex.com/workitem/27991
@@ -331,15 +331,15 @@ def test_eolns():
 def test_set_builtins():
     g = {}
     exec("", g, None)
-    Assert('__builtins__' in g.keys())
+    Assert('__builtins__' in list(g.keys()))
 
 def test_builtins_type():
     x, y = {}, {}
-    exec 'abc = 42' in x, y
+    exec('abc = 42', x, y)
     AreEqual(type(x['__builtins__']), dict)
 
 def test_exec_locals():
-    exec """    
+    exec("""    
 def body():
     AreEqual('anythingatall' in locals(), False)
 
@@ -350,6 +350,6 @@ def body():
 
 body()
     
-"""
+""")
 
 run_test(__name__)

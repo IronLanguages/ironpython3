@@ -71,8 +71,8 @@ def test_metaclass():
         def myget(self): return 'hello'
         aaa = property(fget=myget)
 
-    class foo(object):
-        __metaclass__ = MyType
+    class foo(object, metaclass=MyType):
+        pass
 
     AreEqual(foo.aaa, 'hello')
 
@@ -118,27 +118,6 @@ def test_prop_doc_only():
     AreEqual(x.fdel, None)
     AreEqual(x.__doc__, 'Holliday')
  
-def test_member_lookup_oldclass():
-    class OldC:
-        xprop = property(lambda self: self._xprop)
-        def __init__(self):
-            self._xprop = 42
-            self.xmember = 42
-            
-    c = OldC()
-    c.__dict__['xprop'] = 43
-    c.__dict__['xmember'] = 43
-    AreEqual(c.xprop, 43)
-    AreEqual(c.xmember, 43)
-    
-    c.xprop   = 41
-    c.xmember = 41
-    AreEqual(c.xprop, 41)
-    AreEqual(c.xmember, 41)
-    AreEqual(c.__dict__['xprop'], 41)
-    AreEqual(c.__dict__['xmember'], 41)
-
-
 def test_member_lookup_newclass():
     class NewC(object):
         def xprop_setter(self, xprop):
@@ -205,7 +184,7 @@ def test_property_mutation():
     prop = property()
     x.foo = prop
     inst = x()
-    for i in xrange(42):
+    for i in range(42):
         prop.__init__(lambda self: i)
         AreEqual(inst.foo, i)
         

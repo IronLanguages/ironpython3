@@ -125,7 +125,7 @@ def test_sanity():
     AreEqual(__doc__, "new module doc")
 
     ## builtin
-    Assert(min.__doc__ <> None)
+    Assert(min.__doc__ != None)
     
     AreEqual(abs.__doc__, "abs(number) -> number\n\nReturn the absolute value of the argument.")
     AreEqual(int.__add__.__doc__, "x.__add__(y) <==> x+y")

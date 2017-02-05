@@ -22,19 +22,19 @@ if is_cli: import System
 def test_positive():
     try:
         assert True
-    except AssertionError, e:
+    except AssertionError as e:
         raise "Should have been no exception!"
 
     try:
         assert True, 'this should always pass'
-    except AssertionError, e:
+    except AssertionError as e:
         raise "Should have been no exception!"
         
 def test_negative():
     ok = False
     try:
         assert False
-    except AssertionError, e:
+    except AssertionError as e:
         ok = True
         AreEqual(str(e), "")
     Assert(ok)
@@ -42,7 +42,7 @@ def test_negative():
     ok = False
     try:
         assert False
-    except AssertionError, e:
+    except AssertionError as e:
         ok = True
         AreEqual(str(e), "")
     Assert(ok)
@@ -50,7 +50,7 @@ def test_negative():
     ok = False
     try:
         assert False, 'this should never pass'
-    except AssertionError, e:
+    except AssertionError as e:
         ok = True
         AreEqual(str(e), "this should never pass")
     Assert(ok)
@@ -58,7 +58,7 @@ def test_negative():
     ok = False
     try:
         assert None, 'this should never pass'
-    except AssertionError, e:
+    except AssertionError as e:
         ok = True
         AreEqual(str(e), "this should never pass")
     Assert(ok)

@@ -628,7 +628,7 @@ def test_kwarg_type():
 """
 def test_gen_method_call():
     t = IronPythonTest.Dispatch().M90
-    for x in xrange(loops):
+    for x in range(loops):
         t[int](1)
         t[int](1)
         t[int](1)
@@ -662,7 +662,7 @@ def run_all_tests():
     times = []
     names = []
     
-    tests = [(testname, test) for testname, test in sys.modules[__name__].__dict__.iteritems() if isinstance(testname, str) and testname.startswith('test_')]
+    tests = [(testname, test) for testname, test in sys.modules[__name__].__dict__.items() if isinstance(testname, str) and testname.startswith('test_')]
     tests.sort(lambda x,y: cmp(x[0], y[0]))
     start = prev = time.clock()
     for testname, test in tests:
@@ -675,10 +675,10 @@ def run_all_tests():
         names += testname,
     
     for thetime, name in zip(times, names):
-        print name, thetime-prev, 'seconds'
+        print(name, thetime-prev, 'seconds')
         prev = thetime
         
-    print 'total', prev-start
+    print('total', prev-start)
 
 if __name__ == "__main__":
     run_all_tests()

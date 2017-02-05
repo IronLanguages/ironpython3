@@ -121,8 +121,8 @@ def createAssembly(file_id, namespace_id, bar_num, default_filename="foo"):
     #create the C# file
     file_name = Directory.GetCurrentDirectory() + "\\" + default_filename + str(file_id) + ".cs"
     file = open(file_name, "w")
-    print >> file, cs_ipy % (str(namespace_id),
-                              bar_num)
+    print(cs_ipy % (str(namespace_id),
+                              bar_num), file=file)
     file.close()
     
     #create the assembly
@@ -140,7 +140,7 @@ def uniqueDLLNames():
     createAssembly("", "WHITESPACE", 1, default_filename="a A")
     
     temp = ""
-    for i in xrange(0, 15):
+    for i in range(0, 15):
         temp = temp + "aaaaaaaaaa"
     createAssembly("", "BIGFILENAME", 1, default_filename=temp)
     
@@ -153,7 +153,7 @@ def textFiles():
     #create a fake DLL
     file_name = Directory.GetCurrentDirectory() + "\\fooGARBAGE.dll"
     file = open(file_name, "w")
-    print >> file, garbage
+    print(garbage, file=file)
     file.close()
     
     #create a real DLL and give it the *.txt extension
@@ -168,8 +168,8 @@ def exeOnly():
     #create an EXE C# file
     file_name = Directory.GetCurrentDirectory() + "\\fooEXEONLY.cs"
     file = open(file_name, "w")
-    print >> file, cs_ipy % ("EXEONLY",
-                              100)
+    print(cs_ipy % ("EXEONLY",
+                              100), file=file)
     file.close()
     
     #create the exe
@@ -188,8 +188,8 @@ def dllVsExe():
     #create an EXE C# file
     file_name = Directory.GetCurrentDirectory() + "\\fooEXE.cs"
     file = open(file_name, "w")
-    print >> file, cs_ipy % ("DLLEXE",
-                              0)
+    print(cs_ipy % ("DLLEXE",
+                              0), file=file)
     file.close()
     #create the exe
     compileExe(file_name)
@@ -200,7 +200,7 @@ def okAssemblies(num):
     Creates a number, num, of normal assemblies
     that should be loadable by IP.
     '''
-    for i in xrange(num): createAssembly(i, i, i)
+    for i in range(num): createAssembly(i, i, i)
     
     
 def dupAssemblies(num):
@@ -209,7 +209,7 @@ def dupAssemblies(num):
     duplicates of each other except that foo.FOO.BAR has
     unique values. IP
     '''
-    for i in xrange(num): createAssembly("DUP" + str(i),
+    for i in range(num): createAssembly("DUP" + str(i),
                                           "",
                                           i)
     
@@ -221,7 +221,7 @@ def overrideNative():
     #create the "sys" C# file
     file_name = Directory.GetCurrentDirectory() + "\\sys.cs"
     file = open(file_name, "w")
-    print >> file, cs_native
+    print(cs_native, file=file)
     file.close()
     
     #compile the assembly
@@ -230,7 +230,7 @@ def overrideNative():
     #create the "re" C# file
     file_name = Directory.GetCurrentDirectory() + "\\re.cs"
     file = open(file_name, "w")
-    print >> file, cs_native_re
+    print(cs_native_re, file=file)
     file.close()
     
     #compile the assembly
@@ -272,14 +272,14 @@ def cleanUp():
     #the following while loop is necessary as
     #the Delete call fails (ipy.exe subprocess has
     #not really released some files yet).
-    for i in xrange(5):
+    for i in range(5):
         threw = False
         for file in Directory.GetFiles(DLLS_DIR):
             if not file.endswith('IronPython.Wpf.dll'):
                 try:
                     File.Delete(file)
                 except:
-                    print 'cannot delete', file
+                    print('cannot delete', file)
                     threw = True
                     pass
         if threw:

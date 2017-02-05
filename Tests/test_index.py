@@ -52,7 +52,7 @@ def test_hashtable():
         success=False
         try:
             x[1,2] = 10
-        except TypeError, e:
+        except TypeError as e:
             success=True
         Assert(success)
         
@@ -163,7 +163,7 @@ def test_multiple_indexes():
     
     i_idx = ("Hi", 2.5, 34)
     j_idx = (0, "*", "@")
-    k_idx = range(3)
+    k_idx = list(range(3))
     l_idx = ("Sun", "Moon", "Star")
     m_idx = ((9,8,7), (6,5,4,3,2), (4,))
     
@@ -213,7 +213,7 @@ def test_generic_function():
 def test_getorsetitem_override():
     class old_base: pass
 
-    for base in [object, list, dict, int, str, tuple, float, long, complex, old_base]:
+    for base in [object, list, dict, int, str, tuple, float, int, complex, old_base]:
         class foo(base):
             def __getitem__(self, index):
                 return index
@@ -389,17 +389,17 @@ def test_custom_indexer():
         def __index__(self):
             return self.index
     
-    for sliceable in [x(range(5)) for x in (list, tuple)]:
-        AreEqual(sliceable[cust_index(0L)], 0)
+    for sliceable in [x(list(range(5))) for x in (list, tuple)]:
         AreEqual(sliceable[cust_index(0)], 0)
-        AreEqual(list(sliceable[cust_index(0L) : cust_index(3L)]), [0, 1, 2])
+        AreEqual(sliceable[cust_index(0)], 0)
+        AreEqual(list(sliceable[cust_index(0) : cust_index(3)]), [0, 1, 2])
         AreEqual(list(sliceable[cust_index(0) : cust_index(3)]), [0, 1, 2])
     
     # dictionary indexing shouldn't be affected
     x = cust_index(42)
     d = {x:3}
     AreEqual(d[x], 3)
-    for key in d.keys():
+    for key in list(d.keys()):
         AreEqual(key, x)
 
     if is_cli:

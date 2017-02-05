@@ -289,15 +289,9 @@ from ResolveTestA import Test
 result = Test()
 """
     
-    test1a_cs, test1a_dll, test1b_cs, test1b_dll = map(
-        lambda x: path_combine(tmp1, x),
-        ['ResolveTestA.cs', 'ResolveTestA.dll', 'ResolveTestB.cs', 'ResolveTestB.dll']
-    )
+    test1a_cs, test1a_dll, test1b_cs, test1b_dll = [path_combine(tmp1, x) for x in ['ResolveTestA.cs', 'ResolveTestA.dll', 'ResolveTestB.cs', 'ResolveTestB.dll']]
     
-    test2a_cs, test2a_dll, test2b_cs, test2b_dll = map(
-        lambda x: path_combine(tmp2, x),
-        ['ResolveTestA.cs', 'ResolveTestA.dll', 'ResolveTestB.cs', 'ResolveTestB.dll']
-    )
+    test2a_cs, test2a_dll, test2b_cs, test2b_dll = [path_combine(tmp2, x) for x in ['ResolveTestA.cs', 'ResolveTestA.dll', 'ResolveTestB.cs', 'ResolveTestB.dll']]
 
     write_to_file(test1a_cs, code1a)
     write_to_file(test1b_cs, code1b)

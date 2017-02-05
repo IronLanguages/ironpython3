@@ -124,7 +124,7 @@ def test_cp26005():
     def coroutine():
         try: pass
         except: pass
-        just_numbers = range(1,1000)
+        just_numbers = list(range(1,1000))
         def inner_method():
                     return just_numbers
         yield None
@@ -132,14 +132,14 @@ def test_cp26005():
      
     from System import GC
     def get_memory():
-        for _ in xrange(4):
+        for _ in range(4):
                     GC.Collect()
                     GC.WaitForPendingFinalizers()
         return GC.GetTotalMemory(True)/1e6
     before = get_memory()
-    for j in xrange(10000):
+    for j in range(10000):
         crt = coroutine()
-        crt.next()
+        next(crt)
     after = get_memory()
     Assert(after-before < 10)
 

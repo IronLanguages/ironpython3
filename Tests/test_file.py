@@ -54,7 +54,7 @@ def test_sanity():
         AssertError(ValueError, f.__iter__)
         AssertError(ValueError, f.flush)
         AssertError(ValueError, f.fileno)
-        AssertError(ValueError, f.next)
+        AssertError(ValueError, f.__next__)
         AssertError(ValueError, f.read)
         AssertError(ValueError, f.read, 10)
         AssertError(ValueError, f.readline)
@@ -124,7 +124,7 @@ def test_cp10983():
     AreEqual(ord(data[1]), 51)
     
     x = open(temp_file, 'w')
-    x.write("a2\xa33\u0163\x0F\x0FF\t\\\x0FF\x0FE\x00\x01\x7F\x7E\x80")
+    x.write("a2\xa33\\u0163\x0F\x0FF\t\\\x0FF\x0FE\x00\x01\x7F\x7E\x80")
     x.close()
     
     x = open(temp_file)
@@ -138,7 +138,7 @@ def test_cp27179():
     # file.write() accepting Array[Byte]
     from System import Array, Byte
     data_string = 'abcdef\nghijkl\n\n'
-    data = Array[Byte](map(Byte, map(ord, data_string)))
+    data = Array[Byte](list(map(Byte, list(map(ord, data_string)))))
     
     f = open(temp_file, 'w+')
     f.write(data)
@@ -417,8 +417,8 @@ def test_newlines_attribute():
 def test_coverage():
     f = file(temp_file, 'w')
     Assert(str(f).startswith("<open file '%s', mode 'w'" % temp_file))
-    Assert(f.fileno() <> -1)
-    Assert(f.fileno() <> 0)
+    Assert(f.fileno() != -1)
+    Assert(f.fileno() != 0)
 
     # write
     AssertError(TypeError, f.writelines, [3])
@@ -481,7 +481,7 @@ def test_encoding():
     f = file(temp_file, 'w')
     # we throw on flush, CPython throws on write, so both write & close need to catch
     try:
-        f.write(u'\u6211')
+        f.write('\u6211')
         f.close()
         AssertUnreachable()
     except UnicodeEncodeError:
@@ -494,13 +494,13 @@ def test_encoding():
         try:
             setenc('utf8')
             f = file(temp_file, 'w')
-            f.write(u'\u6211')
+            f.write('\u6211')
             f.close()
 
             f = file(temp_file, 'r')
             txt = f.read()
             f.close()
-            AreEqual(txt, u'\u6211')
+            AreEqual(txt, '\u6211')
         finally:
             setenc(saved)
 
@@ -566,7 +566,7 @@ def test_overwrite_readonly():
         finally:
             nt.chmod(filename, 128)
             nt.unlink(filename)
-    except IOError, e:
+    except IOError as e:
         pass
     else:
         AssertUnreachable() # should throw
@@ -588,7 +588,7 @@ def test_newline():
     def test_newline(norm, mode):
         f = file("testfile.tmp", mode)
         Assert(f.read() == norm)
-        for x in xrange(len(norm)):
+        for x in range(len(norm)):
             f.seek(0)
             a = f.read(x)
             b = f.read(1)
@@ -708,8 +708,8 @@ def test_modes():
     finally:
         nt.unlink('test_file')
 
-import thread
-CP16623_LOCK = thread.allocate_lock()
+import _thread
+CP16623_LOCK = _thread.allocate_lock()
 
 @skip("win32")  #This test is unstable under RunAgainstCpy.py
 def test_cp16623():
@@ -730,23 +730,23 @@ def test_cp16623():
     def write_stuff():
         global FINISHED_COUNTER
         global CP16623_LOCK
-        for j in xrange(100):
-            for i in xrange(50):
-                print >> f, "a"
-            print >> f, "bbb" * 1000
-            for i in xrange(10):
-                print >> f, "cc"
+        for j in range(100):
+            for i in range(50):
+                print("a", file=f)
+            print("bbb" * 1000, file=f)
+            for i in range(10):
+                print("cc", file=f)
         
         with CP16623_LOCK:
             FINISHED_COUNTER += 1
 
-    for i in xrange(total_threads):
-        thread.start_new_thread(write_stuff, ())
+    for i in range(total_threads):
+        _thread.start_new_thread(write_stuff, ())
 
     #Give all threads some time to finish
-    for i in xrange(total_threads):
+    for i in range(total_threads):
         if FINISHED_COUNTER!=total_threads:
-            print "*",
+            print("*", end=' ')
             time.sleep(1)
         else:
             break
@@ -776,7 +776,7 @@ def test_write_buffer():
             foo.close()
         
         foo = open('foo', 'w+')
-        b = buffer(u'hello world', 6)
+        b = buffer('hello world', 6)
         foo.write(b)
         foo.close()
         
@@ -785,7 +785,7 @@ def test_write_buffer():
         foo.close()
         
         foo = open('foo', 'w+b')
-        b = buffer(u'hello world', 6)
+        b = buffer('hello world', 6)
         foo.write(b)
         foo.close()
         
@@ -802,14 +802,14 @@ def test_write_buffer():
 def test_errors():
     try:
         file('some_file_that_really_does_not_exist')        
-    except Exception, e:
+    except Exception as e:
         AreEqual(e.errno, 2)
     else:
         AssertUnreachable()
 
     try:
         file('path_too_long' * 100) 
-    except Exception, e:
+    except Exception as e:
         AreEqual(e.errno, 2)
     else:
         AssertUnreachable()
@@ -845,7 +845,7 @@ def test_buffering_kwparam():
         nt.unlink('some_test_file.txt') 
 
     #--Negative
-    for x in [None, "abc", u"", [], tuple()]:
+    for x in [None, "abc", "", [], tuple()]:
         AssertError(TypeError, #"an integer is required",
                    lambda: file(name = 'some_test_file.txt', mode = 'w', buffering=x))
     

@@ -232,7 +232,7 @@ def test_referenced_assemblies_consoleapp():
     ## CHECK
     Assert(FileExists(tempXml), "File was not generated after running the exe")
     f = open(tempXml)
-    Assert(f.read().find("PythonCompiler") <> -1, "The specified word is not found in the file")
+    Assert(f.read().find("PythonCompiler") != -1, "The specified word is not found in the file")
     f.close()
 
     FileRemoval(tempXml)
@@ -375,7 +375,7 @@ def test_ip_hosting_resource_file():
     rf_list[0].PublicResource = False
                 
                 
-    for i in xrange(len(rf_list)):
+    for i in range(len(rf_list)):
         AreEqual(rf_list[i].Name, "name" + str(i))
         rf_list[i].Name = "name"
         AreEqual(rf_list[i].Name, "name")
@@ -393,7 +393,7 @@ def test_ip_hosting_resource_file():
 def test_compiled_code():
     if System.Environment.GetEnvironmentVariable('DLR_SaveAssemblies'):
         # The SaveAssemblies option is not compatible with saving code to disk
-        print '... skipping test if DLR_SaveAssemblies is set...'
+        print('... skipping test if DLR_SaveAssemblies is set...')
         return
 
     import clr
@@ -424,7 +424,7 @@ def test_cached_types():
     # basic sanity test that we can compile...
     clr.CompileSubclassTypes('test', (object, ))
     clr.CompileSubclassTypes('test', object)
-    clr.CompileSubclassTypes('test', object, str, int, long, float, complex)
+    clr.CompileSubclassTypes('test', object, str, int, int, float, complex)
     clr.CompileSubclassTypes('test', (object, IComparable[()]))
     clr.CompileSubclassTypes('test', (object, IComparable[()]), (str, IComparable[()]))
     

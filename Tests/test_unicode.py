@@ -18,56 +18,56 @@ from iptest.misc_util import ip_supported_encodings
 
 def test_raw_unicode_escape():
     for raw_unicode_escape in ['raw-unicode-escape', 'raw unicode escape']:
-        s = unicode('\u0663\u0661\u0664 ', raw_unicode_escape)
+        s = str('\\u0663\\u0661\\u0664 ', raw_unicode_escape)
         AreEqual(len(s), 4)
         AreEqual(int(s), 314)
-        s = unicode('\u0663.\u0661\u0664 ',raw_unicode_escape)
+        s = str('\\u0663.\\u0661\\u0664 ',raw_unicode_escape)
         AreEqual(float(s), 3.14)
 
 def test_raw_unicode_escape_noescape_lowchars():
     for raw_unicode_escape in ['raw-unicode-escape', 'raw unicode escape']:
         for i in range(0x100):
-            AreEqual(unichr(i).encode(raw_unicode_escape), chr(i))
+            AreEqual(chr(i).encode(raw_unicode_escape), chr(i))
     
-        AreEqual(unichr(0x100).encode(raw_unicode_escape), r'\u0100')
+        AreEqual(chr(0x100).encode(raw_unicode_escape), r'\u0100')
 
 def test_raw_unicode_escape_dashes():
     """Make sure that either dashes or underscores work in raw encoding name"""
     ok = True
     try:
-        unicode('hey', 'raw_unicode-escape')
+        str('hey', 'raw_unicode-escape')
     except LookupError:
         ok = False
 
     Assert(ok, "dashes and underscores should be interchangable")
 
 def test_raw_unicode_escape_trailing_backslash():
-    AreEqual(unicode('\\', 'raw_unicode_escape'), u'\\')
+    AreEqual(str('\\', 'raw_unicode_escape'), '\\')
 
 @skip("silverlight")
 def test_unicode_error():
     
     from _codecs import register_error
     def handler(ex):
-        AreEqual(ex.object, u'\uac00')
-        return (u"", ex.end)
+        AreEqual(ex.object, '\uac00')
+        return ("", ex.end)
     register_error("test_unicode_error", handler)
                         
-    for mode in ip_supported_encodings:  unichr(0xac00).encode(mode, "test_unicode_error")
+    for mode in ip_supported_encodings:  chr(0xac00).encode(mode, "test_unicode_error")
 
 
 @skip("silverlight") # only UTF8, no encoding fallbacks...
 def test_ignore():
-    AreEqual(unicode('', 'ascii', 'ignore'), '')
-    AreEqual(unicode('\xff', 'ascii', 'ignore'), '')
-    AreEqual(unicode('a\xffb\xffc\xff', 'ascii', 'ignore'), 'abc')
+    AreEqual(str('', 'ascii', 'ignore'), '')
+    AreEqual(str('\xff', 'ascii', 'ignore'), '')
+    AreEqual(str('a\xffb\xffc\xff', 'ascii', 'ignore'), 'abc')
 
 def test_cp19005():
-    foo = u'\xef\xbb\xbf'
+    foo = '\xef\xbb\xbf'
     AreEqual(repr(foo), r"u'\xef\xbb\xbf'")
 
 def test_cpcp34689():
-    xx_full_width_a = u'xx\uff21'
+    xx_full_width_a = 'xx\uff21'
     caught = False
     try:
         dummy = str(xx_full_width_a)
@@ -76,7 +76,7 @@ def test_cpcp34689():
         AreEqual(ex.encoding, 'ascii')
         AreEqual(ex.start, 2)
         AreEqual(ex.end, 3)
-        AreEqual(ex.object, u'\uff21')
+        AreEqual(ex.object, '\uff21')
         Assert(ex.reason != None)
         Assert(len(ex.reason) > 0)
 

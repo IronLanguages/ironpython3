@@ -21,6 +21,7 @@ _retb = (18, 0, 'test_traceback.py', '_raise_exception')
 
 from iptest.assert_util import *
 from iptest.file_util import *
+import imp
 if not is_cli: import os
 def _raise_exception_with_finally():
     try:
@@ -269,12 +270,12 @@ def test_cp11923_first():
     raise Exception(x)""")
         
         import cp11923
-        for i in xrange(3):
+        for i in range(3):
             try:
                 cp11923.f()
             except:
                 assert_traceback([(Line263 + 11, 69, 'test_traceback.py', 'test_cp11923_first'), (3, 22, get_full_dir_name(_t_test).lower(), 'f')])
-            reload(cp11923)
+            imp.reload(cp11923)
         
     finally:
         import nt
@@ -373,7 +374,7 @@ def test_xafter_finally_raise():
             
         try:
             g()
-        except Exception, e:
+        except Exception as e:
             assert_traceback([(Line361+14, 30, 'test_traceback.py', 'f'), (Line361+3, 3, 'test_traceback.py', 'g')])
 
     f()
@@ -396,7 +397,7 @@ def test_uncaught_exception_thru_try():
 
 Line397=397
 def test_with_traceback():
-    from thread import allocate_lock
+    from _thread import allocate_lock
     def f():
         g()
     
@@ -430,7 +431,7 @@ def test_xraise_again():
     try:
         try:
             f()
-        except Exception, e:
+        except Exception as e:
             raise e
     except:
         assert_traceback([(Line419+15, 30, 'test_traceback.py', 'test_xraise_again'), ])

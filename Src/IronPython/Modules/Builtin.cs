@@ -1225,16 +1225,16 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         /// <summary>
-        /// Opens a file and returns a new file object.
-        /// 
-        /// name -> the name of the file to open.
-        /// mode -> the mode to open the file (r for reading, w for writing, a for appending, default is r).
-        /// bufsize -> the size of the buffer to be used (&lt;= 0 indicates to use the default size)
+        /// Open file and return a corresponding file object.
         /// </summary>
-        public static PythonFile open(CodeContext context, string name, [DefaultParameterValue("r")]string mode, [DefaultParameterValue(-1)]int buffering) {
-            PythonFile res = new PythonFile(context);
-            res.__init__(context, name, mode, buffering);
-            return res;            
+        public static PythonIOModule._IOBase open(CodeContext context, object file,
+            [DefaultParameterValue("r")]string mode,
+            [DefaultParameterValue(-1)]int buffering,
+            [DefaultParameterValue(null)]string encoding,
+            [DefaultParameterValue(null)]string errors,
+            [DefaultParameterValue(null)]string newline,
+            [DefaultParameterValue(true)]bool closefd) {
+            return PythonIOModule.open(context, file, mode, buffering, encoding, errors, newline, closefd);
         }
 
         /// <summary>

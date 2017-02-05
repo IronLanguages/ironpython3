@@ -19,7 +19,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v4Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="array.cs" />
     <Compile Include="atexit.cs" />
     <Compile Include="binascii.cs" />
     <Compile Include="bz2\BZ2Compressor.cs" />
@@ -50,7 +49,6 @@
     <Compile Include="_bisect.cs" />
     <Compile Include="_codecs.cs" />
     <Compile Include="ModuleOps.cs" />
-    <Compile Include="_bytesio.cs" />
     <Compile Include="_codecs_cn.cs" />
     <Compile Include="_collections.cs" />
     <Compile Include="copyreg.cs" />
@@ -61,12 +59,9 @@
     <Compile Include="gc.cs" />
     <Compile Include="IterTools.cs" />
     <Compile Include="_csv.cs" />
-    <Compile Include="_io.cs" />
-    <Compile Include="_locale.cs" />
     <Compile Include="marshal.cs" />
     <Compile Include="math.cs" />
     <Compile Include="math.Generated.cs" />
-    <Compile Include="_fileio.cs" />
     <Compile Include="_md5.cs" />
     <Compile Include="nt.cs" />
     <Compile Include="operator.cs" />

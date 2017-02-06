@@ -26,8 +26,8 @@ namespace IronPython.SQLite
     {
         private static void InitModuleExceptions(PythonContext context, PythonDictionary dict)
         {
-            Warning = context.EnsureModuleException("sqlite.Warning", PythonExceptions.StandardError, dict, "Warning", "_sqlite3");
-            Error = context.EnsureModuleException("sqlite.Error", PythonExceptions.StandardError, dict, "Error", "_sqlite3");
+            Warning = context.EnsureModuleException("sqlite.Warning", PythonExceptions.Warning, dict, "Warning", "_sqlite3");
+            Error = context.EnsureModuleException("sqlite.Error", PythonExceptions.Exception, dict, "Error", "_sqlite3");
             InterfaceError = context.EnsureModuleException("sqlite.InterfaceError", Error, dict, "InterfaceError", "_sqlite3");
             DatabaseError = context.EnsureModuleException("sqlite.DatabaseError", Error, dict, "DatabaseError", "_sqlite3");
             DataError = context.EnsureModuleException("sqlite.DataError", DatabaseError, dict, "DataError", "_sqlite3");

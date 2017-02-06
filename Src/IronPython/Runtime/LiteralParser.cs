@@ -74,7 +74,7 @@ namespace IronPython.Runtime {
                         if (!isRaw) {
                             if (TryParseInt(text, i, len, max, out val)) {
                                 if (val < 0 || val > 0x10ffff) {
-                                    throw PythonOps.StandardError(@"'unicodeescape' codec can't decode bytes in position {0}: illegal Unicode character", i);
+                                    throw PythonOps.SyntaxError(@"'unicodeescape' codec can't decode bytes in position {0}: illegal Unicode character", i);
                                 }
 
                                 if (val < 0x010000) {
@@ -83,12 +83,12 @@ namespace IronPython.Runtime {
 #if !SILVERLIGHT
                                     buf.Append(char.ConvertFromUtf32(val));
 #else
-                                    throw PythonOps.StandardError(@"'unicodeescape' codec can't decode bytes in position {0}: Unicode character out of range (Silverlight)", i);
+                                    throw PythonOps.SyntaxError(@"'unicodeescape' codec can't decode bytes in position {0}: Unicode character out of range (Silverlight)", i);
 #endif
                                 }
                                 i += len;
                             } else {
-                                throw PythonOps.UnicodeEncodeError(@"'unicodeescape' codec can't decode bytes in position {0}: truncated \uXXXX escape", i);
+                                throw PythonOps.SyntaxError(@"'unicodeescape' codec can't decode bytes in position {0}: truncated \uXXXX escape", i);
                             }
                         } else {
                             buf.Append('\\');
@@ -130,17 +130,17 @@ namespace IronPython.Runtime {
                                         }
 
                                         if(!namecomplete || namebuf.Length  == 0)
-                                            throw PythonOps.StandardError(@"'unicodeescape' codec can't decode bytes in position {0}: malformed \N character escape", i);
+                                            throw PythonOps.SyntaxError(@"'unicodeescape' codec can't decode bytes in position {0}: malformed \N character escape", i);
                                         
                                         try {
                                             string uval = IronPython.Modules.unicodedata.lookup(namebuf.ToString());
                                             buf.Append(uval);
                                         } catch(KeyNotFoundException) {
-                                            throw PythonOps.StandardError(@"'unicodeescape' codec can't decode bytes in position {0}: unknown Unicode character name", i);
+                                            throw PythonOps.SyntaxError(@"'unicodeescape' codec can't decode bytes in position {0}: unknown Unicode character name", i);
                                         }
 
                                     } else {
-                                        throw PythonOps.StandardError(@"'unicodeescape' codec can't decode bytes in position {0}: malformed \N character escape", i);
+                                        throw PythonOps.SyntaxError(@"'unicodeescape' codec can't decode bytes in position {0}: malformed \N character escape", i);
                                     }
                                 }
                                 continue;

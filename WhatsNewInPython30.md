@@ -96,7 +96,7 @@ Changes To Exceptions
 ===========
 - [ ] PEP 0352: All exceptions must be derived (directly or indirectly) from BaseException. This is the root of the exception hierarchy. This is not new as a recommendation, but the requirement to inherit from BaseException is new. (Python 2.6 still allowed classic classes to be raised, and placed no restriction on what you can catch.) As a consequence, string exceptions are finally truly and utterly dead.
 - [ ] Almost all exceptions should actually derive from Exception; BaseException should only be used as a base class for exceptions that should only be handled at the top level, such as SystemExit or KeyboardInterrupt. The recommended idiom for handling all exceptions except for this latter category is to use except Exception.
-- [ ] StandardError was removed (in 2.6 already).
+- [x] StandardError was removed (in 2.6 already).
 - [ ] Exceptions no longer behave as sequences. Use the args attribute instead.
 - [ ] PEP 3109: Raising exceptions. You must now use raise Exception(args) instead of raise Exception, args. Additionally, you can no longer explicitly specify a traceback; instead, if you have to do this, you can assign directly to the \_\_traceback\_\_ attribute (see below).
 - [x] PEP 3110: Catching exceptions. You must now use except SomeException as variable instead of except SomeException, variable. Moreover, the variable is explicitly deleted when the except block is left.

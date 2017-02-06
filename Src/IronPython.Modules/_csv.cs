@@ -1194,7 +1194,7 @@ elements will be converted to string.")]
             PythonDictionary dict)
         {
             Error = context.EnsureModuleException("csv.Error",
-                PythonExceptions.StandardError, dict, "Error", "_csv");
+                PythonExceptions.Exception, dict, "Error", "_csv");
         }
     }
 

@@ -17,6 +17,7 @@ from generate import generate
 import System
 import clr
 
+import functools
 import exceptions
 
 def collect_excs():
@@ -39,7 +40,7 @@ excs = collect_excs()
 pythonExcs = ['ImportError', 'RuntimeError', 'UnicodeTranslateError', 'PendingDeprecationWarning', 'EnvironmentError',
               'LookupError', 'OSError', 'DeprecationWarning', 'UnicodeError', 'FloatingPointError', 'ReferenceError',
               'FutureWarning', 'AssertionError', 'RuntimeWarning', 'ImportWarning', 'UserWarning', 'SyntaxWarning', 
-              'UnicodeWarning', 'StopIteration', 'BytesWarning', 'BufferError', 'ResourceWarning']
+              'UnicodeWarning', 'StopIteration', 'BytesWarning', 'BufferError', 'ResourceWarning', 'FileExistsError']
 
 
 class ExceptionInfo(object):
@@ -122,6 +123,7 @@ exceptionHierarchy = ExceptionInfo('BaseException', 'IronPython.Runtime.Exceptio
                 ExceptionInfo('EnvironmentError', 'System.Runtime.InteropServices.ExternalException', None, ('errno', 'strerror', 'filename'), (
                     ExceptionInfo('IOError', 'System.IO.IOException', None, (), ()),
                     ExceptionInfo('OSError', 'IronPython.Runtime.Exceptions.OSException', None, (), (
+                            ExceptionInfo('FileExistsError', 'IronPython.Runtime.Exceptions.FileExistsException', None, (), ()),
                             ExceptionInfo('WindowsError', 'System.ComponentModel.Win32Exception', None, ('winerror',), ()),
                             ),
                         ),
@@ -179,7 +181,7 @@ exceptionHierarchy = ExceptionInfo('BaseException', 'IronPython.Runtime.Exceptio
             ),      
         ),
     )
-
+)
 
 def get_exception_info(pythonName, curHierarchy):
     for exception in curHierarchy.subclasses:
@@ -209,7 +211,7 @@ def get_all_exceps(l, curHierarchy):
 ip = clr.LoadAssemblyByName('IronPython')
 ms = clr.LoadAssemblyByName('Microsoft.Scripting')
 md = clr.LoadAssemblyByName('Microsoft.Dynamic')
-sysdll = clr.LoadAssemblyByName('System')
+sysdll = clr.LoadAssemblyByPartialName('System')
 
 def get_type(name):
     if name.startswith('IronPython'):            return ip.GetType(name)
@@ -253,15 +255,18 @@ def compare_exceptions(a, b):
     # put exceptions further from System.Exception 1st, those further later...
     if da != db: return db - da
     
+    def cmp(a, b):
+        return (a > b) - (a < b)
+
     return cmp(ta.Name, tb.Name)
     
 def gen_topython_helper(cw):
     cw.enter_block("private static BaseException/*!*/ ToPythonHelper(System.Exception clrException)")
     
     allExceps = get_all_exceps([], exceptionHierarchy)
-    allExceps.sort(cmp=compare_exceptions)
+    allExceps.sort(key=functools.cmp_to_key(compare_exceptions))
     
-    for x in allExceps[:-1]:    # skip System.Exception which is last...
+    for x in allExceps:
         if not x.silverlightSupported: cw.writeline('#if !SILVERLIGHT')
         cw.writeline('if (clrException is %s) return %s;' % (x.ExceptionMappingName, x.MakeNewException()))
         if not x.silverlightSupported: cw.writeline('#endif')

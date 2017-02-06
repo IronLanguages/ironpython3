@@ -3757,10 +3757,6 @@ namespace IronPython.Runtime.Operations {
             return new System.IO.EndOfStreamException(string.Format(format, args));
         }
 
-        public static Exception StandardError(string format, params object[] args) {
-            return new SystemException(string.Format(format, args));
-        }
-
         public static Exception ZeroDivisionError(string format, params object[] args) {
             return new DivideByZeroException(string.Format(format, args));
         }
@@ -3813,6 +3809,10 @@ namespace IronPython.Runtime.Operations {
             CodeContext context = pc.SharedContext;
 
             ShowWarning(context, PythonExceptions.SyntaxWarning, message, sourceUnit.Path, span.Start.Line);
+        }
+
+        public static SyntaxErrorException SyntaxError(string format, params object[] args) {
+            return new SyntaxErrorException(string.Format(format, args));
         }
 
         public static SyntaxErrorException SyntaxError(string message, SourceUnit sourceUnit, SourceSpan span, int errorCode) {

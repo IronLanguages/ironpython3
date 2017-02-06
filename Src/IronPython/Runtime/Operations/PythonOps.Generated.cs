@@ -111,6 +111,14 @@ namespace IronPython.Runtime.Operations {
             return new BufferException(string.Format(format, args));
         }
 
+        public static Exception ResourceWarning(string format, params object[] args) {
+            return new ResourceWarningException(string.Format(format, args));
+        }
+
+        public static Exception FileExistsError(string format, params object[] args) {
+            return new FileExistsException(string.Format(format, args));
+        }
+
         // *** END GENERATED CODE ***
 
         #endregion

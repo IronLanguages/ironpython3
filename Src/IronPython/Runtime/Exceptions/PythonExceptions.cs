@@ -547,7 +547,6 @@ namespace IronPython.Runtime.Exceptions {
             }
         }
 
-
         public partial class _EnvironmentError : BaseException {
             public override object __reduce__() {
                 if (_filename != null) {
@@ -957,6 +956,16 @@ for k, v in toError.iteritems():
 
                 if (args != null && args.Length != 0) {
                     code = message;
+                }
+            }
+        }
+
+        public partial class _StopIteration : BaseException {
+            public override void __init__(params object[] args) {
+                base.__init__(args);
+
+                if (args?.Length > 0) {
+                    value = args[0];
                 }
             }
         }

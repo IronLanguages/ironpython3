@@ -103,10 +103,28 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType StopIteration {
             get {
                 if (StopIterationStorage == null) {
-                    Interlocked.CompareExchange(ref StopIterationStorage, CreateSubType(Exception, "StopIteration", (msg, innerException) => new StopIterationException(msg, innerException)), null);
+                    Interlocked.CompareExchange(ref StopIterationStorage, CreateSubType(Exception, typeof(_StopIteration), (msg, innerException) => new StopIterationException(msg, innerException)), null);
                 }
                 return StopIterationStorage;
             }
+        }
+
+        [PythonType("StopIteration"), PythonHidden, DynamicBaseTypeAttribute, Serializable]
+        public partial class _StopIteration : BaseException {
+            private object _value;
+
+            public _StopIteration() : base(StopIteration) { }
+            public _StopIteration(PythonType type) : base(type) { }
+
+            public new static object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
+                return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
+            }
+
+            public object value {
+                get { return _value; }
+                set { _value = value; }
+            }
+
         }
 
         [MultiRuntimeAware]
@@ -901,7 +919,7 @@ namespace IronPython.Runtime.Exceptions {
             if (clrException is PythonException) return new PythonExceptions.BaseException(PythonExceptions.Exception);
             if (clrException is ReferenceException) return new PythonExceptions.BaseException(PythonExceptions.ReferenceError);
             if (clrException is RuntimeException) return new PythonExceptions.BaseException(PythonExceptions.RuntimeError);
-            if (clrException is StopIterationException) return new PythonExceptions.BaseException(PythonExceptions.StopIteration);
+            if (clrException is StopIterationException) return new PythonExceptions._StopIteration();
             if (clrException is SyntaxErrorException) return new PythonExceptions._SyntaxError();
             if (clrException is SystemException) return new PythonExceptions.BaseException(PythonExceptions.SystemError);
             if (clrException is SystemExitException) return new PythonExceptions._SystemExit();

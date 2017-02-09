@@ -149,7 +149,7 @@ namespace IronPython.Compiler {
                 Expression.Assign(
                     ret,
                     Expression.Call(
-                        typeof(PythonOps).GetMethod("MakeGenerator"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.MakeGenerator)),
                         parameters[0],
                         Expression.Assign(tupleTmp, newTuple),
                         emitDebugSymbols ?
@@ -612,6 +612,13 @@ namespace IronPython.Compiler {
             var value = Visit(node.Value);
 
             var block = new List<Expression>();
+
+            if (node.YieldMarker == -2) {
+                // Yield break with a return value
+                block.Add(MakeAssign(_current, value));
+                value = null;
+            }
+
             if (value == null) {
                 // Yield break
                 block.Add(MakeAssign(_state, AstUtils.Constant(Finished)));

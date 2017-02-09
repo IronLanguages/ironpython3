@@ -62,7 +62,7 @@ def test_cp17420():
     
     test_file = '''
 output = []
-for i in xrange(0, 100):
+for i in range(0, 100):
     output.append(str(i) + "\\n")
 
 file(r"%s", "w").writelines(output)''' % (test_log_name)

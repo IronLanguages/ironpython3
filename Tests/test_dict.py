@@ -887,7 +887,7 @@ def test_stdtypes_dict():
                     str,
                     list,
                     tuple,
-                    xrange,
+                    range,
                     dict,
                     set,
                     frozenset,

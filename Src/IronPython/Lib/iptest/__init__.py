@@ -36,7 +36,7 @@ try:
 
     #Hack needed because IP doesn't implement sys._getframe by default
     if sys.platform!="win32":
-        l.getLogger().findCaller = lambda: ("Unknown", 0, "Unknown")
+        l.getLogger().findCaller = lambda stack_info=False: ("Unknown", 0, "Unknown")
 except:
     #Fake the implementation of logging module under Silverlight
     class __L(object):

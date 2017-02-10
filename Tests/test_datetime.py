@@ -17,7 +17,6 @@
 import unittest
 from datetime import datetime, date
 import time
-from test import test_support
 
 class TestDatetime(unittest.TestCase):
 

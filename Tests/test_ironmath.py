@@ -26,7 +26,7 @@ from System import *
 import clr
 #silverlight already has this
 if is_cli:
-    math_assembly = (1).GetType().Assembly
+    math_assembly = (0j).GetType().Assembly
     clr.AddReference(math_assembly)
 load_iron_python_test()
 import IronPythonTest

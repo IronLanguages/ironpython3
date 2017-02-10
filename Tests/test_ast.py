@@ -1,5 +1,5 @@
 import sys, itertools, unittest
-from test import test_support
+import test.support
 from io import StringIO
 
 import ast
@@ -1265,9 +1265,7 @@ class ASTHelpers_Test(unittest.TestCase):
 
 
 def test_main():
-    with test_support.check_py3k_warnings(("backquote not supported",
-                                             SyntaxWarning)):
-        test_support.run_unittest(AST_Tests, ASTHelpers_Test)
+    test.support.run_unittest(AST_Tests, ASTHelpers_Test)
 
 def main():
     if __name__ != '__main__':

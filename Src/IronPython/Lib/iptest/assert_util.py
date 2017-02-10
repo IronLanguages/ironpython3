@@ -112,7 +112,7 @@ else:
         temporary_dir   = path_combine(get_temp_dir(), "IronPython")
         ensure_directory_present(temporary_dir)
         
-        iron_python_test_dll        = path_combine(sys.prefix, 'IronPythonTest.dll')
+        iron_python_test_dll        = path_combine(sys.prefix, 'IronPythonTest.exe')
 
         if is_cli: 
             ipython_executable  = sys.executable
@@ -158,7 +158,7 @@ def is_interactive():
         if isInteractive != None:
             return True
     else:
-	    return False
+        return False
 
 def is_stdlib():
     if is_cli:
@@ -396,9 +396,9 @@ class skip:
     def orcas_test(self):
         return is_orcas
     def interactive_test(self):
-	    return is_interactive()
+        return is_interactive()
     def multiple_execute_test(self):
-		return get_num_iterations() > 1
+        return get_num_iterations() > 1
     def stdlib_test(self):
         return is_stdlib()
     
@@ -411,7 +411,6 @@ class skip:
             msg = '... Decorated with @skip(%s), skipping %s ...' % (
                 self.platforms, f.__name__)
             return _do_nothing(msg)
-		
         
         platforms = 'silverlight', 'cli64', 'orcas', 'interactive', 'multiple_execute', 'stdlib'
         for to_skip in platforms:
@@ -483,7 +482,7 @@ def print_failures(total, failures):
         print("Test %s failed throwing %s (%s)" % (name, str(extype), str(ex)))            
         while tb:
             print(' ... %s in %s line %d' % (tb.tb_frame.f_code.co_name, tb.tb_frame.f_code.co_filename, tb.tb_lineno))
-            tb = tb.tb_next	
+            tb = tb.tb_next
         print()
     
         if is_cli:
@@ -496,7 +495,7 @@ def print_failures(total, failures):
     print()
     failcount = len(failures)
     print('%d total, %d passed, %d failed' % (total, total - failcount, failcount))
-		
+
 def run_test(mod_name, noOutputPlease=False):
     if not options.RUN_TESTS:
         l.debug("Will not invoke any test cases from '%s'." % mod_name)
@@ -522,8 +521,8 @@ def run_test(mod_name, noOutputPlease=False):
                                 print(">>> %6.2fs testing %-40s" % (round(time.clock(), 2), name, ), end=' ') 
                             else:
                                 print(">>> testing %-40s" % name, end=' ') 
-						#obj()
-						#catches the error and exit at the end of each test
+                        #obj()
+                        #catches the error and exit at the end of each test
                         total += 1
                         try:
                             try:

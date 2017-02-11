@@ -77,6 +77,7 @@
     <Compile Include="Runtime\EmptyDictionaryStorage.cs" />
     <Compile Include="Runtime\Exceptions\ApplicationException.cs" />
     <Compile Include="Runtime\Exceptions\AttributeErrorException.cs" />
+    <Compile Include="Runtime\Exceptions\BlockingIOException.Generated.cs" />
     <Compile Include="Runtime\Exceptions\BufferException.Generated.cs" />
     <Compile Include="Runtime\Exceptions\FileExistsException.Generated.cs" />
     <Compile Include="Runtime\Exceptions\PythonException.cs" />
@@ -84,7 +85,6 @@
     <Compile Include="Runtime\Exceptions\SystemException.cs" />
     <Compile Include="Runtime\Exceptions\TypeErrorException.cs" />
     <Compile Include="Runtime\Exceptions\ValueErrorException.cs" />
-    <Compile Include="Runtime\Exceptions\Win32Exception.cs" />
     <Compile Include="Runtime\ExtensionMethodSet.cs" />
     <Compile Include="Runtime\FormattingHelper.cs" />
     <Compile Include="Runtime\Binding\IPythonConvertible.cs" />
@@ -272,7 +272,6 @@
     <Compile Include="Runtime\ErrorCodes.cs" />
     <Compile Include="Runtime\Exceptions\AssertionException.Generated.cs" />
     <Compile Include="Runtime\Exceptions\DeprecationWarningException.Generated.cs" />
-    <Compile Include="Runtime\Exceptions\EnvironmentException.Generated.cs" />
     <Compile Include="Runtime\Exceptions\FloatingPointException.Generated.cs" />
     <Compile Include="Runtime\Exceptions\FutureWarningException.Generated.cs" />
     <Compile Include="Runtime\Exceptions\GeneratorExitException.cs" />

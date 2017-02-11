@@ -43,7 +43,7 @@ namespace IronPython.Modules {
     public static class PythonWinReg {
         public const string __doc__ = "Provides access to the Windows registry.";
 
-        public static PythonType error = PythonExceptions.WindowsError;
+        public static PythonType error = PythonExceptions.OSError;
 
 #region Constants
 
@@ -193,7 +193,7 @@ namespace IronPython.Modules {
         public static string EnumKey(object key, int index) {
             HKEYType rootKey = GetRootKey(key);
             if (index >= rootKey.GetKey().SubKeyCount) {
-                throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, PythonExceptions._WindowsError.ERROR_BAD_COMMAND, "No more data is available");
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, PythonExceptions._OSError.ERROR_BAD_COMMAND, "No more data is available", null, PythonExceptions._OSError.ERROR_BAD_COMMAND);
             }
             return rootKey.GetKey().GetSubKeyNames()[index];
         }
@@ -204,7 +204,7 @@ namespace IronPython.Modules {
         public static PythonTuple EnumValue(object key, int index) {
             HKEYType rootKey = GetRootKey(key);
             if (index >= rootKey.GetKey().ValueCount) {
-                throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, PythonExceptions._WindowsError.ERROR_BAD_COMMAND, "No more data is available");
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, PythonExceptions._OSError.ERROR_BAD_COMMAND, "No more data is available", null, PythonExceptions._OSError.ERROR_BAD_COMMAND);
             }
 
             var nativeRootKey = rootKey.GetKey();
@@ -343,12 +343,12 @@ namespace IronPython.Modules {
                     throw new Win32Exception("Unexpected mode");
                 }
             } catch (SecurityException) {
-                throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, PythonExceptions._WindowsError.ERROR_ACCESS_DENIED, "Access is denied");
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, PythonExceptions._OSError.ERROR_ACCESS_DENIED, "Access is denied", null, PythonExceptions._OSError.ERROR_ACCESS_DENIED);
             }
 
 
             if (newKey == null) {
-                throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, PythonExceptions._WindowsError.ERROR_FILE_NOT_FOUND, "The system cannot find the file specified");
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, PythonExceptions._OSError.ERROR_FILE_NOT_FOUND, "The system cannot find the file specified", null, PythonExceptions._OSError.ERROR_FILE_NOT_FOUND);
             }
 
             return new HKEYType(newKey);
@@ -372,7 +372,7 @@ namespace IronPython.Modules {
             }
 
             if (rootKey == null) {
-                throw PythonExceptions.CreateThrowable(PythonExceptions.EnvironmentError, "key has been closed");
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, "key has been closed");
             }
 
             try {
@@ -434,7 +434,7 @@ namespace IronPython.Modules {
             try {
                 newKey = RegistryKey.OpenRemoteBaseKey(MapSystemKey(key), computerName);
             }catch(IOException ioe) {
-                throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, PythonExceptions._WindowsError.ERROR_BAD_NETPATH, ioe.Message);
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, PythonExceptions._OSError.ERROR_BAD_NETPATH, ioe.Message, null, PythonExceptions._OSError.ERROR_BAD_NETPATH);
             } catch (Exception e) {
                 throw new ExternalException(e.Message);
             }
@@ -527,7 +527,7 @@ namespace IronPython.Modules {
             public RegistryKey GetKey() {
                 lock (this) {
                     if (key == null) {
-                        throw PythonExceptions.CreateThrowable(PythonExceptions.EnvironmentError, "key has been closed");
+                        throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, "key has been closed");
                     }
                     return key;
                 }

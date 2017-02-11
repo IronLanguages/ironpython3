@@ -47,7 +47,7 @@ namespace IronPython.Runtime.Exceptions {
             }
         }
 
-        [PythonType("SystemExit"), PythonHidden, DynamicBaseTypeAttribute, Serializable]
+        [PythonType("SystemExit"), PythonHidden, DynamicBaseType, Serializable]
         public partial class _SystemExit : BaseException {
             private object _code;
 
@@ -109,7 +109,7 @@ namespace IronPython.Runtime.Exceptions {
             }
         }
 
-        [PythonType("StopIteration"), PythonHidden, DynamicBaseTypeAttribute, Serializable]
+        [PythonType("StopIteration"), PythonHidden, DynamicBaseType, Serializable]
         public partial class _StopIteration : BaseException {
             private object _value;
 
@@ -205,24 +205,26 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         [MultiRuntimeAware]
-        private static PythonType EnvironmentErrorStorage;
-        public static PythonType EnvironmentError {
+        private static PythonType OSErrorStorage;
+        public static PythonType OSError {
             get {
-                if (EnvironmentErrorStorage == null) {
-                    Interlocked.CompareExchange(ref EnvironmentErrorStorage, CreateSubType(Exception, typeof(_EnvironmentError), (msg, innerException) => new ExternalException(msg, innerException)), null);
+                if (OSErrorStorage == null) {
+                    Interlocked.CompareExchange(ref OSErrorStorage, CreateSubType(Exception, typeof(_OSError), (msg, innerException) => new OSException(msg, innerException)), null);
                 }
-                return EnvironmentErrorStorage;
+                return OSErrorStorage;
             }
         }
 
-        [PythonType("EnvironmentError"), PythonHidden, DynamicBaseTypeAttribute, Serializable]
-        public partial class _EnvironmentError : BaseException {
+        [PythonType("OSError"), PythonHidden, DynamicBaseType, Serializable]
+        public partial class _OSError : BaseException {
             private object _errno;
             private object _strerror;
             private object _filename;
+            private object _winerror;
+            private object _filename2;
 
-            public _EnvironmentError() : base(EnvironmentError) { }
-            public _EnvironmentError(PythonType type) : base(type) { }
+            public _OSError() : base(OSError) { }
+            public _OSError(PythonType type) : base(type) { }
 
             public new static object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
@@ -243,28 +245,45 @@ namespace IronPython.Runtime.Exceptions {
                 set { _filename = value; }
             }
 
+            public object winerror {
+                get { return _winerror; }
+                set { _winerror = value; }
+            }
+
+            public object filename2 {
+                get { return _filename2; }
+                set { _filename2 = value; }
+            }
+
         }
 
         [MultiRuntimeAware]
-        private static PythonType IOErrorStorage;
-        public static PythonType IOError {
+        private static PythonType BlockingIOErrorStorage;
+        public static PythonType BlockingIOError {
             get {
-                if (IOErrorStorage == null) {
-                    Interlocked.CompareExchange(ref IOErrorStorage, CreateSubType(EnvironmentError, "IOError", (msg, innerException) => new IOException(msg, innerException)), null);
+                if (BlockingIOErrorStorage == null) {
+                    Interlocked.CompareExchange(ref BlockingIOErrorStorage, CreateSubType(OSError, typeof(_BlockingIOError), (msg, innerException) => new BlockingIOException(msg, innerException)), null);
                 }
-                return IOErrorStorage;
+                return BlockingIOErrorStorage;
             }
         }
 
-        [MultiRuntimeAware]
-        private static PythonType OSErrorStorage;
-        public static PythonType OSError {
-            get {
-                if (OSErrorStorage == null) {
-                    Interlocked.CompareExchange(ref OSErrorStorage, CreateSubType(EnvironmentError, "OSError", (msg, innerException) => new OSException(msg, innerException)), null);
-                }
-                return OSErrorStorage;
+        [PythonType("BlockingIOError"), PythonHidden, DynamicBaseType, Serializable]
+        public partial class _BlockingIOError : _OSError {
+            private object _characters_written;
+
+            public _BlockingIOError() : base(BlockingIOError) { }
+            public _BlockingIOError(PythonType type) : base(type) { }
+
+            public new static object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
+                return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
+
+            public object characters_written {
+                get { return _characters_written; }
+                set { _characters_written = value; }
+            }
+
         }
 
         [MultiRuntimeAware]
@@ -279,32 +298,14 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         [MultiRuntimeAware]
-        private static PythonType WindowsErrorStorage;
-        public static PythonType WindowsError {
+        private static PythonType FileNotFoundErrorStorage;
+        public static PythonType FileNotFoundError {
             get {
-                if (WindowsErrorStorage == null) {
-                    Interlocked.CompareExchange(ref WindowsErrorStorage, CreateSubType(OSError, typeof(_WindowsError), (msg, innerException) => new Win32Exception(msg, innerException)), null);
+                if (FileNotFoundErrorStorage == null) {
+                    Interlocked.CompareExchange(ref FileNotFoundErrorStorage, CreateSubType(OSError, "FileNotFoundError", (msg, innerException) => new FileNotFoundException(msg, innerException)), null);
                 }
-                return WindowsErrorStorage;
+                return FileNotFoundErrorStorage;
             }
-        }
-
-        [PythonType("WindowsError"), PythonHidden, DynamicBaseTypeAttribute, Serializable]
-        public partial class _WindowsError : _EnvironmentError {
-            private object _winerror;
-
-            public _WindowsError() : base(WindowsError) { }
-            public _WindowsError(PythonType type) : base(type) { }
-
-            public new static object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
-                return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
-            }
-
-            public object winerror {
-                get { return _winerror; }
-                set { _winerror = value; }
-            }
-
         }
 
         [MultiRuntimeAware]
@@ -439,7 +440,7 @@ namespace IronPython.Runtime.Exceptions {
             }
         }
 
-        [PythonType("SyntaxError"), PythonHidden, DynamicBaseTypeAttribute, Serializable]
+        [PythonType("SyntaxError"), PythonHidden, DynamicBaseType, Serializable]
         public partial class _SyntaxError : BaseException {
             private object _text;
             private object _print_file_and_line;
@@ -564,7 +565,7 @@ namespace IronPython.Runtime.Exceptions {
             }
         }
 
-        [PythonType("UnicodeDecodeError"), PythonHidden, DynamicBaseTypeAttribute, Serializable]
+        [PythonType("UnicodeDecodeError"), PythonHidden, DynamicBaseType, Serializable]
         public partial class _UnicodeDecodeError : BaseException {
             private object _start;
             private object _reason;
@@ -633,7 +634,7 @@ namespace IronPython.Runtime.Exceptions {
             }
         }
 
-        [PythonType("UnicodeEncodeError"), PythonHidden, DynamicBaseTypeAttribute, Serializable]
+        [PythonType("UnicodeEncodeError"), PythonHidden, DynamicBaseType, Serializable]
         public partial class _UnicodeEncodeError : BaseException {
             private object _start;
             private object _reason;
@@ -702,7 +703,7 @@ namespace IronPython.Runtime.Exceptions {
             }
         }
 
-        [PythonType("UnicodeTranslateError"), PythonHidden, DynamicBaseTypeAttribute, Serializable]
+        [PythonType("UnicodeTranslateError"), PythonHidden, DynamicBaseType, Serializable]
         public partial class _UnicodeTranslateError : BaseException {
             private object _start;
             private object _reason;
@@ -882,7 +883,7 @@ namespace IronPython.Runtime.Exceptions {
             if (clrException is DivideByZeroException) return new PythonExceptions.BaseException(PythonExceptions.ZeroDivisionError);
             if (clrException is EncoderFallbackException) return new PythonExceptions._UnicodeEncodeError();
             if (clrException is EndOfStreamException) return new PythonExceptions.BaseException(PythonExceptions.EOFError);
-            if (clrException is FileExistsException) return new PythonExceptions._EnvironmentError(PythonExceptions.FileExistsError);
+            if (clrException is FileNotFoundException) return new PythonExceptions._OSError(PythonExceptions.FileNotFoundError);
             if (clrException is FutureWarningException) return new PythonExceptions.BaseException(PythonExceptions.FutureWarning);
             if (clrException is ImportWarningException) return new PythonExceptions.BaseException(PythonExceptions.ImportWarning);
             if (clrException is MissingMemberException) return new PythonExceptions.BaseException(PythonExceptions.AttributeError);
@@ -894,16 +895,14 @@ namespace IronPython.Runtime.Exceptions {
             if (clrException is TabException) return new PythonExceptions._SyntaxError(PythonExceptions.TabError);
             if (clrException is UnicodeWarningException) return new PythonExceptions.BaseException(PythonExceptions.UnicodeWarning);
             if (clrException is UserWarningException) return new PythonExceptions.BaseException(PythonExceptions.UserWarning);
-            if (clrException is Win32Exception) return new PythonExceptions._WindowsError();
             if (clrException is ArgumentException) return new PythonExceptions.BaseException(PythonExceptions.ValueError);
             if (clrException is ArithmeticException) return new PythonExceptions.BaseException(PythonExceptions.ArithmeticError);
-            if (clrException is ExternalException) return new PythonExceptions._EnvironmentError();
-            if (clrException is IOException) return new PythonExceptions._EnvironmentError(PythonExceptions.IOError);
+            if (clrException is BlockingIOException) return new PythonExceptions._BlockingIOError();
+            if (clrException is FileExistsException) return new PythonExceptions._OSError(PythonExceptions.FileExistsError);
             if (clrException is IndentationException) return new PythonExceptions._SyntaxError(PythonExceptions.IndentationError);
             if (clrException is IndexOutOfRangeException) return new PythonExceptions.BaseException(PythonExceptions.IndexError);
             if (clrException is KeyNotFoundException) return new PythonExceptions.BaseException(PythonExceptions.KeyError);
             if (clrException is NotImplementedException) return new PythonExceptions.BaseException(PythonExceptions.NotImplementedError);
-            if (clrException is OSException) return new PythonExceptions._EnvironmentError(PythonExceptions.OSError);
             if (clrException is OutOfMemoryException) return new PythonExceptions.BaseException(PythonExceptions.MemoryError);
             if (clrException is UnboundLocalException) return new PythonExceptions.BaseException(PythonExceptions.UnboundLocalError);
             if (clrException is UnicodeTranslateException) return new PythonExceptions._UnicodeTranslateError();
@@ -916,6 +915,7 @@ namespace IronPython.Runtime.Exceptions {
             if (clrException is ImportException) return new PythonExceptions.BaseException(PythonExceptions.ImportError);
             if (clrException is KeyboardInterruptException) return new PythonExceptions.BaseException(PythonExceptions.KeyboardInterrupt);
             if (clrException is LookupException) return new PythonExceptions.BaseException(PythonExceptions.LookupError);
+            if (clrException is OSException) return new PythonExceptions._OSError();
             if (clrException is PythonException) return new PythonExceptions.BaseException(PythonExceptions.Exception);
             if (clrException is ReferenceException) return new PythonExceptions.BaseException(PythonExceptions.ReferenceError);
             if (clrException is RuntimeException) return new PythonExceptions.BaseException(PythonExceptions.RuntimeError);

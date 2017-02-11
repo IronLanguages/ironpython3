@@ -54,20 +54,9 @@ namespace IronPython.Modules {
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
-            PythonType t = context.EnsureModuleException(
-                _blockingIOErrorKey,
-                PythonExceptions.IOError,
-                typeof(BlockingIOError),
-                dict,
-                "BlockingIOError",
-                "builtins",
-                (msg, innerException) => new _BlockingIOErrorException(msg, innerException)
-            );
-            t.IsSystemType = true;
-
             context.EnsureModuleException(
                 _unsupportedOperationKey,
-                new PythonType[] { PythonExceptions.ValueError, PythonExceptions.IOError },
+                new PythonType[] { PythonExceptions.ValueError, PythonExceptions.OSError },
                 typeof(PythonExceptions.BaseException),
                 dict,
                 "UnsupportedOperation",
@@ -1169,7 +1158,7 @@ namespace IronPython.Modules {
                     if (_writeBuf.Count > _bufSize) {
                         try {
                             FlushNoLock(context);
-                        } catch (_BlockingIOErrorException) {
+                        } catch (BlockingIOException) {
                             if (_writeBuf.Count > _bufSize) {
                                 // do a partial write
                                 int extra = _writeBuf.Count - _bufSize;
@@ -1236,7 +1225,7 @@ namespace IronPython.Modules {
                         _writeBuf.RemoveRange(0, written);
                         count += written;
                     }
-                } catch (_BlockingIOErrorException e) {
+                } catch (BlockingIOException e) {
                     object w;
                     int written;
                     if (!PythonOps.TryGetBoundAttr(e, "characters_written", out w) ||
@@ -1604,7 +1593,7 @@ namespace IronPython.Modules {
                     if (_writeBuf.Count > _bufSize) {
                         try {
                             FlushNoLock(context);
-                        } catch (_BlockingIOErrorException) {
+                        } catch (BlockingIOException) {
                             if (_writeBuf.Count > _bufSize) {
                                 // do a partial write
                                 int extra = _writeBuf.Count - _bufSize;
@@ -1638,7 +1627,7 @@ namespace IronPython.Modules {
                         _writeBuf.RemoveRange(0, written);
                         count += written;
                     }
-                } catch (_BlockingIOErrorException e) {
+                } catch (BlockingIOException e) {
                     object w;
                     int written;
                     if (!PythonOps.TryGetBoundAttr(e, "characters_written", out w) ||
@@ -3033,42 +3022,9 @@ namespace IronPython.Modules {
             }
         }
 
-        #region BlockingIOException
-
-        [PythonType, DynamicBaseType]
-        private class BlockingIOError : PythonExceptions._EnvironmentError {
-            private int _characters_written;
-
-            public BlockingIOError(PythonType cls) : base(cls) { }
-
-            public override void __init__(params object[] args) {
-                switch (args.Length) {
-                    case 2:
-                        base.__init__(args);
-                        break;
-                    case 3:
-                        _characters_written = GetInt(args[2], "an integer is required");
-                        base.__init__(args[0], args[1]);
-                        break;
-                    default:
-                        if (args.Length < 2) {
-                            throw PythonOps.TypeError("BlockingIOError() takes at least 2 arguments ({0} given)", args.Length);
-                        }
-                        throw PythonOps.TypeError("BlockingIOError() takes at most 3 arguments ({0} given)", args.Length);
-                }
-            }
-
-            public int characters_written {
-                get { return _characters_written; }
-                set { _characters_written = value; }
-            }
+        public static PythonType BlockingIOError {
+            get { return PythonExceptions.BlockingIOError; }
         }
-
-        private class _BlockingIOErrorException : IOException {
-            public _BlockingIOErrorException(string msg, Exception innerException) : base(msg, innerException) { }
-        }
-
-        #endregion
 
         #region Private implementation details
 

@@ -26,7 +26,7 @@ namespace IronPython.Runtime.Exceptions {
 
 
     [Serializable]
-    public class OSException : EnvironmentException, IPythonAwareException {
+    public class OSException : Exception, IPythonAwareException {
         private object _pyExceptionObject;
         private List<DynamicStackFrame> _frames;
         private TraceBack _traceback;
@@ -50,7 +50,7 @@ namespace IronPython.Runtime.Exceptions {
         object IPythonAwareException.PythonException {
             get { 
                 if (_pyExceptionObject == null) {
-                    var newEx = new PythonExceptions._EnvironmentError(PythonExceptions.OSError);
+                    var newEx = new PythonExceptions._OSError();
                     newEx.InitializeFromClr(this);
                     _pyExceptionObject = newEx;
                 }

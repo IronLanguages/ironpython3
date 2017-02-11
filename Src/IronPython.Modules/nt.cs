@@ -116,7 +116,7 @@ namespace IronPython.Modules {
 #if FEATURE_FILESYSTEM
         public static void chdir([NotNull]string path) {
             if (String.IsNullOrEmpty(path)) {
-                throw PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._WindowsError.ERROR_INVALID_NAME, "Path cannot be an empty string");
+                throw PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_INVALID_NAME, "Path cannot be an empty string", null, PythonExceptions._OSError.ERROR_INVALID_NAME);
             }
 
             try {
@@ -1272,7 +1272,7 @@ namespace IronPython.Modules {
                         mode |= S_IEXEC;
                     }
                 } else {
-                    return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._WindowsError.ERROR_PATH_NOT_FOUND, "file does not exist: " + path));
+                    return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, "file does not exist: " + path, null, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND));
                 }
 
                 long st_atime = (long)PythonTime.TicksToTimestamp(fi.LastAccessTime.ToUniversalTime().Ticks);
@@ -1285,7 +1285,7 @@ namespace IronPython.Modules {
 
                 sr = new stat_result(mode, size, st_atime, st_mtime, st_ctime);
             } catch (ArgumentException) {
-                return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._WindowsError.ERROR_INVALID_NAME, "The path is invalid: " + path));
+                return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_INVALID_NAME, "The path is invalid: " + path, null, PythonExceptions._OSError.ERROR_INVALID_NAME));
             } catch (Exception e) {
                 return LightExceptions.Throw(ToPythonException(e, path));
             }
@@ -1344,11 +1344,7 @@ namespace IronPython.Modules {
 
         private static PythonType WindowsError {
             get {
-#if !SILVERLIGHT
-                return PythonExceptions.WindowsError;
-#else
                 return PythonExceptions.OSError;
-#endif
             }
         }
 
@@ -1399,9 +1395,9 @@ namespace IronPython.Modules {
             if (path == null) {
                 throw new ArgumentNullException("path");
             } else if (path.IndexOfAny(Path.GetInvalidPathChars()) != -1 || Path.GetFileName(path).IndexOfAny(Path.GetInvalidFileNameChars()) != -1) {
-                throw PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._WindowsError.ERROR_INVALID_NAME, "The file could not be found for deletion: " + path);
+                throw PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_INVALID_NAME, "The file could not be found for deletion: " + path, null, PythonExceptions._OSError.ERROR_INVALID_NAME);
             } else if (!File.Exists(path)) {
-                throw PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._WindowsError.ERROR_FILE_NOT_FOUND, "The file could not be found for deletion: " + path);
+                throw PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_FILE_NOT_FOUND, "The file could not be found for deletion: " + path, null, PythonExceptions._OSError.ERROR_FILE_NOT_FOUND);
             }
 
             try {
@@ -1579,7 +1575,7 @@ are defined in the signal module.")]
                 UnauthorizedAccessException unauth = e as UnauthorizedAccessException;
                 if (unauth != null) {
                     isWindowsError = true;
-                    errorCode = PythonExceptions._WindowsError.ERROR_ACCESS_DENIED;
+                    errorCode = PythonExceptions._OSError.ERROR_ACCESS_DENIED;
                     if (filename != null) {
                         message = string.Format("Access is denied: '{0}'", filename);
                     } else {
@@ -1590,11 +1586,11 @@ are defined in the signal module.")]
                 IOException ioe = e as IOException;
                 if (ioe != null) {
                     switch (error) {
-                        case PythonExceptions._WindowsError.ERROR_DIR_NOT_EMPTY:
+                        case PythonExceptions._OSError.ERROR_DIR_NOT_EMPTY:
                             throw PythonExceptions.CreateThrowable(WindowsError, error, "The directory is not empty");
-                        case PythonExceptions._WindowsError.ERROR_ACCESS_DENIED:
+                        case PythonExceptions._OSError.ERROR_ACCESS_DENIED:
                             throw PythonExceptions.CreateThrowable(WindowsError, error, "Access is denied");
-                        case PythonExceptions._WindowsError.ERROR_SHARING_VIOLATION:
+                        case PythonExceptions._OSError.ERROR_SHARING_VIOLATION:
                             throw PythonExceptions.CreateThrowable(WindowsError, error, "The process cannot access the file because it is being used by another process");
                     }
                 }
@@ -1768,7 +1764,7 @@ are defined in the signal module.")]
 #endif
         
         private static Exception DirectoryExists() {
-            return PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._WindowsError.ERROR_ALREADY_EXISTS, "directory already exists");
+            return PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_ALREADY_EXISTS, "directory already exists", null, PythonExceptions._OSError.ERROR_ALREADY_EXISTS);
         }
 
         #endregion

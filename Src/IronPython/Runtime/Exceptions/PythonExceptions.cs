@@ -555,110 +555,6 @@ namespace IronPython.Runtime.Exceptions {
             }
         }
 
-        public partial class _EnvironmentError : BaseException {
-            public override object __reduce__() {
-                if (_filename != null) {
-                    return PythonTuple.MakeTuple(DynamicHelpers.GetPythonType(this), PythonTuple.MakeTuple(ArrayUtils.Append(((PythonTuple)args)._data, _filename)));
-                }
-                return base.__reduce__();
-            }
-
-            public override void __init__(params object[] args) {
-                if (args != null) {
-                    switch (args.Length) {
-                        case 0:
-                        case 1:                     // do nothing special
-                            break;
-                        case 2:                             // errno + strerror
-                            _errno = args[0];
-                            _strerror = args[1];
-                            break;
-                        case 3:                             // errno, str error, filename
-                            _errno = args[0];
-                            _strerror = args[1];
-                            _filename = args[2];
-                            // CPython doesn't include filename in args, remove
-                            // it before calling base init.
-                            args = ArrayUtils.RemoveLast(args);
-                            break;
-                        default:
-                            // do nothing special for four or more args
-                            break;
-                    }
-                }
-
-                base.__init__(args);
-            }
-
-            public override string ToString() {
-                if (_errno != null && _strerror != null) {
-                    if (_filename != null) {
-                        return String.Format("[Errno {0}] {1}: {2}", _errno, _strerror, _filename);
-                    } else {
-                        return String.Format("[Errno {0}] {1}", _errno, _strerror);
-                    }
-                } else if (args is PythonTuple && ((PythonTuple)args).Count > 0) {
-                    return PythonOps.ToString(((PythonTuple)args)[0]);
-                }
-
-                return String.Empty;
-            }
-
-            private const int EACCES = 13;
-            private const int ENOENT = 2;
-            private const int EPIPE = 32;
-
-            [PythonHidden]
-            protected internal override void InitializeFromClr(System.Exception/*!*/ exception) {
-                if (exception is FileNotFoundException ||
-                    exception is DirectoryNotFoundException ||
-                    exception is PathTooLongException 
-#if FEATURE_DRIVENOTFOUNDEXCEPTION
-                    || exception is DriveNotFoundException
-#endif
-                    ) {
-                    __init__(ENOENT, exception.Message);
-                    return;                    
-                }
-
-                UnauthorizedAccessException noAccess = exception as UnauthorizedAccessException;
-                if (noAccess != null) {
-                    __init__(EACCES, exception.Message);
-                    return;
-                }
-
-#if !SILVERLIGHT5
-                var ioExcep = exception as System.IO.IOException;
-                if (ioExcep != null) {
-                    try {
-                        uint hr = (uint)GetHRForException(exception);
-                        if ((hr & 0xffff0000U) == 0x80070000U) {
-                            if ((hr & 0xffff) == _WindowsError.ERROR_BROKEN_PIPE) {
-                                __init__(EPIPE, exception.Message);
-                            } else {
-                                // win32 error code, get the real error code...
-                                __init__(hr & 0xffff, exception.Message);
-                            }
-                            return;
-                        }
-                    } catch (MethodAccessException) {
-                    } catch(SecurityException) {
-                        // not enough permissions to do this...
-                    }
-                }
-#endif
-
-                base.InitAndGetClrException(exception);
-            }
-
-#if !SILVERLIGHT5
-            [MethodImpl(MethodImplOptions.NoInlining)] // don't inline so the link demand is always evaluated here.
-            private static int GetHRForException(System.Exception exception) {
-                return System.Runtime.InteropServices.Marshal.GetHRForException(exception);
-            }
-#endif
-        }
-
         public partial class _UnicodeTranslateError : BaseException {
             public override void __init__(params object[] args) {
                 if (args.Length != 4) {
@@ -684,22 +580,30 @@ namespace IronPython.Runtime.Exceptions {
             }
         }
 
-        public partial class _WindowsError : _EnvironmentError {
+        public partial class _OSError {
             public override void __init__(params object[] args) {
-                if (args.Length == 2 || args.Length == 3) {
-                    if (!(args[0] is int)) {
-                        throw PythonOps.TypeError("an integer is required for the 1st argument of WindowsError");
+                if (args.Length >= 2 && args.Length <= 5) {
+                    errno = args[0];
+                    strerror = args[1];
+                    if (args.Length >= 3) {
+                        filename = args[2];
+                    }
+                    if (args.Length >= 4) {
+                        winerror = args[3];
+                        if (winerror is int) {
+                            errno = WinErrorToErrno((int)winerror);
+                        }
+                    }
+                    if (args.Length >= 5) {
+                        filename2 = args[4];
                     }
                 }
                 base.__init__(args);
+            }
 
-                if (args != null && (args.Length == 2 || args.Length == 3)) {
-                    winerror = args[0];
-                }
-
-                /*
-                 * errors were generated using this script run against CPython: 
-f = file(r'C:\Program Files\Microsoft SDKs\Windows\v6.0A\Include\WinError.h', 'r')
+            /*
+             * errors were generated using this script run against CPython:
+f = open(r'C:\Program Files\Microsoft SDKs\Windows\v6.0A\Include\WinError.h', 'r')
 allErrors = []
 toError = {}
 for x in f:
@@ -708,40 +612,117 @@ for x in f:
         endName = name.find(' ')
         justName = name[:endName]
         error = name[endName + 1:].strip()
-        for i in xrange(len(error)):
+        for i in range(len(error)):
             if error[i] < '0' or error[i] > '9':
                 error = error[:i]
                 break
             
         if not error:
             continue
-            
-        errNo = WindowsError(int(error), justName).errno
-        if errNo == 22:
+
+        errNo = OSError(0, justName, None, int(error)).errno
+        if errNo == 22 or errNo >= 10000:
             continue
-        allErrors.append( (justName, error) )
+        allErrors.append((justName, error))
         
         l = toError.get(errNo) 
         if l is None:
             toError[errNo] = l = []
         l.append(justName)
         
-        
 for name, err in allErrors:
-    print 'internal const int %s = %s;' % (name, err)
+    print('internal const int %s = %s;' % (name, err))
 
-
-for k, v in toError.iteritems():
+for k, v in toError.items():
     for name in v:
-        print 'case %s:' % (name, )
-    print '    errno = %d;' % (k, )
-    print '    break;'
-                 */
+        print('case %s:' % name)
+    print('    errno = %d;' % k)
+    print('    break;')
+             */
 
-                // map from win32 error code to errno
-                object errCode = errno;
-                if (errCode is int) {
-                    switch ((int)errCode) {
+            internal const int ERROR_FILE_NOT_FOUND = 2;
+            internal const int ERROR_PATH_NOT_FOUND = 3;
+            internal const int ERROR_TOO_MANY_OPEN_FILES = 4;
+            internal const int ERROR_ACCESS_DENIED = 5;
+            internal const int ERROR_INVALID_HANDLE = 6;
+            internal const int ERROR_ARENA_TRASHED = 7;
+            internal const int ERROR_NOT_ENOUGH_MEMORY = 8;
+            internal const int ERROR_INVALID_BLOCK = 9;
+            internal const int ERROR_BAD_ENVIRONMENT = 10;
+            internal const int ERROR_BAD_FORMAT = 11;
+            internal const int ERROR_INVALID_DRIVE = 15;
+            internal const int ERROR_CURRENT_DIRECTORY = 16;
+            internal const int ERROR_NOT_SAME_DEVICE = 17;
+            internal const int ERROR_NO_MORE_FILES = 18;
+            internal const int ERROR_WRITE_PROTECT = 19;
+            internal const int ERROR_BAD_UNIT = 20;
+            internal const int ERROR_NOT_READY = 21;
+            internal const int ERROR_BAD_COMMAND = 22;
+            internal const int ERROR_CRC = 23;
+            internal const int ERROR_BAD_LENGTH = 24;
+            internal const int ERROR_SEEK = 25;
+            internal const int ERROR_NOT_DOS_DISK = 26;
+            internal const int ERROR_SECTOR_NOT_FOUND = 27;
+            internal const int ERROR_OUT_OF_PAPER = 28;
+            internal const int ERROR_WRITE_FAULT = 29;
+            internal const int ERROR_READ_FAULT = 30;
+            internal const int ERROR_GEN_FAILURE = 31;
+            internal const int ERROR_SHARING_VIOLATION = 32;
+            internal const int ERROR_LOCK_VIOLATION = 33;
+            internal const int ERROR_WRONG_DISK = 34;
+            internal const int ERROR_SHARING_BUFFER_EXCEEDED = 36;
+            internal const int ERROR_BAD_NETPATH = 53;
+            internal const int ERROR_NETWORK_ACCESS_DENIED = 65;
+            internal const int ERROR_BAD_NET_NAME = 67;
+            internal const int ERROR_FILE_EXISTS = 80;
+            internal const int ERROR_CANNOT_MAKE = 82;
+            internal const int ERROR_FAIL_I24 = 83;
+            internal const int ERROR_NO_PROC_SLOTS = 89;
+            internal const int ERROR_DRIVE_LOCKED = 108;
+            internal const int ERROR_BROKEN_PIPE = 109;
+            internal const int ERROR_DISK_FULL = 112;
+            internal const int ERROR_INVALID_TARGET_HANDLE = 114;
+            internal const int ERROR_WAIT_NO_CHILDREN = 128;
+            internal const int ERROR_CHILD_NOT_COMPLETE = 129;
+            internal const int ERROR_DIRECT_ACCESS_HANDLE = 130;
+            internal const int ERROR_SEEK_ON_DEVICE = 132;
+            internal const int ERROR_DIR_NOT_EMPTY = 145;
+            internal const int ERROR_NOT_LOCKED = 158;
+            internal const int ERROR_BAD_PATHNAME = 161;
+            internal const int ERROR_MAX_THRDS_REACHED = 164;
+            internal const int ERROR_LOCK_FAILED = 167;
+            internal const int ERROR_ALREADY_EXISTS = 183;
+            internal const int ERROR_INVALID_STARTING_CODESEG = 188;
+            internal const int ERROR_INVALID_STACKSEG = 189;
+            internal const int ERROR_INVALID_MODULETYPE = 190;
+            internal const int ERROR_INVALID_EXE_SIGNATURE = 191;
+            internal const int ERROR_EXE_MARKED_INVALID = 192;
+            internal const int ERROR_BAD_EXE_FORMAT = 193;
+            internal const int ERROR_ITERATED_DATA_EXCEEDS_64k = 194;
+            internal const int ERROR_INVALID_MINALLOCSIZE = 195;
+            internal const int ERROR_DYNLINK_FROM_INVALID_RING = 196;
+            internal const int ERROR_IOPL_NOT_ENABLED = 197;
+            internal const int ERROR_INVALID_SEGDPL = 198;
+            internal const int ERROR_AUTODATASEG_EXCEEDS_64k = 199;
+            internal const int ERROR_RING2SEG_MUST_BE_MOVABLE = 200;
+            internal const int ERROR_RELOC_CHAIN_XEEDS_SEGLIM = 201;
+            internal const int ERROR_INFLOOP_IN_RELOC_CHAIN = 202;
+            internal const int ERROR_FILENAME_EXCED_RANGE = 206;
+            internal const int ERROR_NESTING_NOT_ALLOWED = 215;
+            internal const int ERROR_NO_DATA = 232;
+            internal const int ERROR_DIRECTORY = 267;
+            internal const int ERROR_NOT_ENOUGH_QUOTA = 1816;
+
+            // These map to POSIX errno 22 and are added by hand as needed.
+            internal const int ERROR_INVALID_PARAMETER = 87;
+            internal const int ERROR_INVALID_NAME = 123;
+            internal const int ERROR_FILE_INVALID = 1006;
+            internal const int ERROR_MAPPED_ALIGNMENT = 1132;
+
+            internal static int WinErrorToErrno(int winerror) {
+                int errno = winerror;
+                if (winerror < 10000) {
+                    switch (winerror) {
                         case ERROR_BROKEN_PIPE:
                         case ERROR_NO_DATA:
                             errno = 32;
@@ -832,6 +813,9 @@ for k, v in toError.iteritems():
                         case ERROR_NOT_SAME_DEVICE:
                             errno = 18;
                             break;
+                        case ERROR_DIRECTORY:
+                            errno = 20;
+                            break;
                         case ERROR_DIR_NOT_EMPTY:
                             errno = 41;
                             break;
@@ -845,86 +829,9 @@ for k, v in toError.iteritems():
                             errno = 22;
                             break;
                     }
-                }                
+                }
+                return errno;
             }
-
-            internal const int ERROR_FILE_NOT_FOUND = 2;
-            internal const int ERROR_PATH_NOT_FOUND = 3;
-            internal const int ERROR_TOO_MANY_OPEN_FILES = 4;
-            internal const int ERROR_ACCESS_DENIED = 5;
-            internal const int ERROR_INVALID_HANDLE = 6;
-            internal const int ERROR_ARENA_TRASHED = 7;
-            internal const int ERROR_NOT_ENOUGH_MEMORY = 8;
-            internal const int ERROR_INVALID_BLOCK = 9;
-            internal const int ERROR_BAD_ENVIRONMENT = 10;
-            internal const int ERROR_BAD_FORMAT = 11;
-            internal const int ERROR_INVALID_DRIVE = 15;
-            internal const int ERROR_CURRENT_DIRECTORY = 16;
-            internal const int ERROR_NOT_SAME_DEVICE = 17;
-            internal const int ERROR_NO_MORE_FILES = 18;
-            internal const int ERROR_WRITE_PROTECT = 19;
-            internal const int ERROR_BAD_UNIT = 20;
-            internal const int ERROR_NOT_READY = 21;
-            internal const int ERROR_BAD_COMMAND = 22;
-            internal const int ERROR_CRC = 23;
-            internal const int ERROR_BAD_LENGTH = 24;
-            internal const int ERROR_SEEK = 25;
-            internal const int ERROR_NOT_DOS_DISK = 26;
-            internal const int ERROR_SECTOR_NOT_FOUND = 27;
-            internal const int ERROR_OUT_OF_PAPER = 28;
-            internal const int ERROR_WRITE_FAULT = 29;
-            internal const int ERROR_READ_FAULT = 30;
-            internal const int ERROR_GEN_FAILURE = 31;
-            internal const int ERROR_SHARING_VIOLATION = 32;
-            internal const int ERROR_LOCK_VIOLATION = 33;
-            internal const int ERROR_WRONG_DISK = 34;
-            internal const int ERROR_SHARING_BUFFER_EXCEEDED = 36;
-            internal const int ERROR_BAD_NETPATH = 53;
-            internal const int ERROR_NETWORK_ACCESS_DENIED = 65;
-            internal const int ERROR_BAD_NET_NAME = 67;
-            internal const int ERROR_FILE_EXISTS = 80;
-            internal const int ERROR_CANNOT_MAKE = 82;
-            internal const int ERROR_FAIL_I24 = 83;
-            internal const int ERROR_NO_PROC_SLOTS = 89;
-            internal const int ERROR_DRIVE_LOCKED = 108;
-            internal const int ERROR_BROKEN_PIPE = 109;
-            internal const int ERROR_DISK_FULL = 112;
-            internal const int ERROR_INVALID_TARGET_HANDLE = 114;
-            internal const int ERROR_WAIT_NO_CHILDREN = 128;
-            internal const int ERROR_CHILD_NOT_COMPLETE = 129;
-            internal const int ERROR_DIRECT_ACCESS_HANDLE = 130;
-            internal const int ERROR_SEEK_ON_DEVICE = 132;
-            internal const int ERROR_DIR_NOT_EMPTY = 145;
-            internal const int ERROR_NOT_LOCKED = 158;
-            internal const int ERROR_BAD_PATHNAME = 161;
-            internal const int ERROR_MAX_THRDS_REACHED = 164;
-            internal const int ERROR_LOCK_FAILED = 167;
-            internal const int ERROR_ALREADY_EXISTS = 183;
-            internal const int ERROR_INVALID_STARTING_CODESEG = 188;
-            internal const int ERROR_INVALID_STACKSEG = 189;
-            internal const int ERROR_INVALID_MODULETYPE = 190;
-            internal const int ERROR_INVALID_EXE_SIGNATURE = 191;
-            internal const int ERROR_EXE_MARKED_INVALID = 192;
-            internal const int ERROR_BAD_EXE_FORMAT = 193;
-            internal const int ERROR_ITERATED_DATA_EXCEEDS_64k = 194;
-            internal const int ERROR_INVALID_MINALLOCSIZE = 195;
-            internal const int ERROR_DYNLINK_FROM_INVALID_RING = 196;
-            internal const int ERROR_IOPL_NOT_ENABLED = 197;
-            internal const int ERROR_INVALID_SEGDPL = 198;
-            internal const int ERROR_AUTODATASEG_EXCEEDS_64k = 199;
-            internal const int ERROR_RING2SEG_MUST_BE_MOVABLE = 200;
-            internal const int ERROR_RELOC_CHAIN_XEEDS_SEGLIM = 201;
-            internal const int ERROR_INFLOOP_IN_RELOC_CHAIN = 202;
-            internal const int ERROR_FILENAME_EXCED_RANGE = 206;
-            internal const int ERROR_NESTING_NOT_ALLOWED = 215;
-            internal const int ERROR_NO_DATA = 232; // The pipe is being closed.
-            internal const int ERROR_NOT_ENOUGH_QUOTA = 1816;
-
-            // These map to POSIX errno 22 and are added by hand as needed.
-            internal const int ERROR_INVALID_PARAMETER = 87;
-            internal const int ERROR_INVALID_NAME = 123;
-            internal const int ERROR_FILE_INVALID = 1006;
-            internal const int ERROR_MAPPED_ALIGNMENT = 1132;
         }
 
         public partial class _UnicodeDecodeError : BaseException {
@@ -974,6 +881,25 @@ for k, v in toError.iteritems():
 
                 if (args?.Length > 0) {
                     value = args[0];
+                }
+            }
+        }
+
+        public partial class _BlockingIOError {
+            public override void __init__(params object[] args) {
+                switch (args.Length) {
+                    case 2:
+                        base.__init__(args);
+                        break;
+                    case 3:
+                        _characters_written = PythonOps.NonThrowingConvertToInt(args[2]) ?? "an integer is required";
+                        base.__init__(args[0], args[1]);
+                        break;
+                    default:
+                        if (args.Length < 2) {
+                            throw PythonOps.TypeError("BlockingIOError() takes at least 2 arguments ({0} given)", args.Length);
+                        }
+                        throw PythonOps.TypeError("BlockingIOError() takes at most 3 arguments ({0} given)", args.Length);
                 }
             }
         }
@@ -1119,12 +1045,11 @@ for k, v in toError.iteritems():
 #else
                 int errorCode = win32.ErrorCode;
 #endif
-                pyExcep = new _WindowsError();
+                pyExcep = new _OSError();
                 if ((errorCode & 0x80070000) == 0x80070000) {
-                    pyExcep.__init__(errorCode & 0xffff, win32.Message);
-                } else {
-                    pyExcep.__init__(errorCode, win32.Message);
+                    errorCode &= 0xffff;
                 }
+                pyExcep.__init__(errorCode, win32.Message, null, errorCode);
                 return pyExcep;
             } else {
                 // conversions from generated code (in the generated hierarchy)...

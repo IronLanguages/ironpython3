@@ -50,7 +50,7 @@ namespace IronPython.Runtime.Exceptions {
         object IPythonAwareException.PythonException {
             get { 
                 if (_pyExceptionObject == null) {
-                    var newEx = new PythonExceptions._EnvironmentError(PythonExceptions.FileExistsError);
+                    var newEx = new PythonExceptions._OSError(PythonExceptions.FileExistsError);
                     newEx.InitializeFromClr(this);
                     _pyExceptionObject = newEx;
                 }

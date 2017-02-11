@@ -3746,11 +3746,11 @@ namespace IronPython.Runtime.Operations {
 
 
         public static Exception IOError(Exception inner) {
-            return new System.IO.IOException(inner.Message, inner);
+            return OSError(inner.Message, inner);
         }
 
         public static Exception IOError(string format, params object[] args) {
-            return new System.IO.IOException(string.Format(format, args));
+            return OSError(format, args);
         }
 
         public static Exception EofError(string format, params object[] args) {
@@ -3792,12 +3792,9 @@ namespace IronPython.Runtime.Operations {
         public static Exception OverflowError(string format, params object[] args) {
             return new System.OverflowException(string.Format(format, args));
         }
+
         public static Exception WindowsError(string format, params object[] args) {
-#if FEATURE_WIN32EXCEPTION // System.ComponentModel.Win32Exception
-            return new System.ComponentModel.Win32Exception(string.Format(format, args));
-#else
-            return new System.SystemException(string.Format(format, args));
-#endif
+            return OSError(format, args);
         }
 
         public static Exception SystemExit() {

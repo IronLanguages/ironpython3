@@ -43,10 +43,6 @@ namespace IronPython.Runtime.Operations {
             return new PendingDeprecationWarningException(string.Format(format, args));
         }
 
-        public static Exception EnvironmentError(string format, params object[] args) {
-            return new EnvironmentException(string.Format(format, args));
-        }
-
         public static Exception LookupError(string format, params object[] args) {
             return new LookupException(string.Format(format, args));
         }
@@ -117,6 +113,10 @@ namespace IronPython.Runtime.Operations {
 
         public static Exception FileExistsError(string format, params object[] args) {
             return new FileExistsException(string.Format(format, args));
+        }
+
+        public static Exception BlockingIOError(string format, params object[] args) {
+            return new BlockingIOException(string.Format(format, args));
         }
 
         // *** END GENERATED CODE ***

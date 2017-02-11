@@ -147,6 +147,10 @@ namespace IronPython.Runtime.Exceptions {
             Setf_trace(null);
         }
 
+        public void clear() {
+            // TODO: add actual implementation of clear
+        }
+
         internal CodeContext Context {
             get {
                 return _context;

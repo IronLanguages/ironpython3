@@ -27,7 +27,7 @@ namespace IronPython.Compiler.Ast {
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public class ReturnStatement : Statement {
-        private readonly Expression _expression;        
+        private readonly Expression _expression;
 
         public ReturnStatement(Expression expression) {
             _expression = expression;
@@ -39,19 +39,11 @@ namespace IronPython.Compiler.Ast {
 
         public override MSAst.Expression Reduce() {
             if (Parent.IsGeneratorMethod) {
-                if (_expression != null) {
-                    // Statements can't return null, so return a rethrow. 
-                    // Callers should detecet the ag.AddError and avoid trying to execute the tree, 
-                    // but if they accidentally do, use Throw instead of empty so that
-                    // we'll get an exception.
-                    return Ast.Throw(
-                        Ast.New(
-                            typeof(InvalidOperationException).GetConstructor(ReflectionUtils.EmptyTypes)
-                        )
-                    );
+                if (_expression == null) {
+                    return GlobalParent.AddDebugInfo(AstUtils.YieldBreak(GeneratorLabel), Span);
                 }
-
-                return GlobalParent.AddDebugInfo(AstUtils.YieldBreak(GeneratorLabel), Span);
+                // Reduce to a yield return with a marker of -2, this will be interpreted as a yield break with a return value
+                return GlobalParent.AddDebugInfo(AstUtils.YieldReturn(GeneratorLabel, TransformOrConstantNull(_expression, typeof(object)), -2), Span);
             }
 
             return GlobalParent.AddDebugInfo(

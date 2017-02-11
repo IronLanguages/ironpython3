@@ -54,7 +54,7 @@ namespace IronPython.Runtime.Exceptions {
         object IPythonAwareException.PythonException {
             get { 
                 if (_pyExceptionObject == null) {
-                    var newEx = new PythonExceptions.BaseException(PythonExceptions.StopIteration);
+                    var newEx = new PythonExceptions._StopIteration();
                     newEx.InitializeFromClr(this);
                     _pyExceptionObject = newEx;
                 }

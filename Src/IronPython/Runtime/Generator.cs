@@ -91,7 +91,7 @@ namespace IronPython.Runtime {
             
             object res = NextWorker();
             if (res == OperationFailed.Value) {
-                return LightExceptions.Throw(PythonOps.StopIteration());
+                return LightExceptions.Throw(new PythonExceptions._StopIteration().InitAndGetClrException((FinalValue)));
             }
 
             return res;
@@ -271,6 +271,8 @@ namespace IronPython.Runtime {
             }
         }
 
+        private object FinalValue { get; set; }
+
         private MutableTuple<int, object> GetDataTuple() {
             MutableTuple<int, object> res = _data as MutableTuple<int, object>;
             if (res == null) {
@@ -403,6 +405,7 @@ namespace IronPython.Runtime {
                 // 4. Exit via some other unhandled exception: This will close the generator, but the exception still propagates.
                 //    _next does not return, so ret is left assigned to false (closed), which we detect in the finally.
                 if (!(ret = GetNext())) {
+                    FinalValue = CurrentValue;
                     CurrentValue = OperationFailed.Value;
                 }
             } finally {

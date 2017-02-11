@@ -59,7 +59,7 @@ namespace IronPython.Compiler {
         private bool _fromFutureAllowed;
         private string _privatePrefix;
         private bool _parsingStarted, _allowIncomplete;
-        private bool _inLoop, _inFinally, _inFinallyLoop, _isGenerator, _returnWithValue;
+        private bool _inLoop, _inFinally, _inFinallyLoop;
         private SourceCodeReader _sourceReader;
         private int _errorCode;
         private readonly CompilerContext _context;
@@ -565,13 +565,6 @@ namespace IronPython.Compiler {
                 expr = ParseTestListAsExpr();
             }
 
-            if (expr != null) {
-                _returnWithValue = true;
-                if (_isGenerator) {
-                    ReportSyntaxError("'return' with argument inside generator");
-                }
-            }
-
             ReturnStatement ret = new ReturnStatement(expr);
             ret.SetLoc(_globalParent, start, GetEnd());
             return ret;
@@ -590,11 +583,6 @@ namespace IronPython.Compiler {
             FunctionDefinition current = CurrentFunction;
             if (current == null) {
                 ReportSyntaxError(IronPython.Resources.MisplacedYield);
-            }
-
-            _isGenerator = true;
-            if (_returnWithValue) {
-                ReportSyntaxError("'return' with argument inside generator");
             }
 
             Eat(TokenKind.KeywordYield);
@@ -1535,24 +1523,18 @@ namespace IronPython.Compiler {
 
         private Statement ParseClassOrFuncBody(Expression metaclass = null) {
             Statement body;
-            bool inLoop = _inLoop, 
-                 inFinally = _inFinally, 
-                 inFinallyLoop = _inFinallyLoop,
-                 isGenerator = _isGenerator, 
-                 returnWithValue = _returnWithValue;
+            bool inLoop = _inLoop,
+                 inFinally = _inFinally,
+                 inFinallyLoop = _inFinallyLoop;
             try {
                 _inLoop = false;
                 _inFinally = false;
                 _inFinallyLoop = false;
-                _isGenerator = false;
-                _returnWithValue = false;
                 body = ParseSuite(metaclass);
             } finally {
                 _inLoop = inLoop;
                 _inFinally = inFinally;
                 _inFinallyLoop = inFinallyLoop;
-                _isGenerator = isGenerator;
-                _returnWithValue = returnWithValue;
             }
             return body;
         }

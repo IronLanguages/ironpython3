@@ -181,6 +181,11 @@ namespace IronPython.Runtime.Exceptions {
                 }
                 set { _args = PythonTuple.Make(value); }
             }
+
+            public object with_traceback(TraceBack tb) {
+                __traceback__ = tb;
+                return this;
+            }
             
             /// <summary>
             /// Returns a tuple of (type, (arg0, ..., argN)) for implementing pickling/copying
@@ -380,6 +385,9 @@ namespace IronPython.Runtime.Exceptions {
                         _traceback = PythonOps.CreateTraceBack(clrException, frames, frames.Count);
                     }
                     return _traceback;
+                }
+                set {
+                    _traceback = value;
                 }
             }
 

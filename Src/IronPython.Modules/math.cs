@@ -368,24 +368,15 @@ namespace IronPython.Modules {
             if (v0 % 1.0 != 0.0) {
                 throw PythonOps.ValueError("factorial() only accepts integral values");
             }
-            if (v0 < 0.0) {
-                throw PythonOps.ValueError("factorial() not defined for negative values");
-            }
-
-            BigInteger val = 1;
-            for (BigInteger mul = (BigInteger)v0; mul > BigInteger.One; mul -= BigInteger.One) {
-                val *= mul;
-            }
-
-            if (val > SysModule.maxint) {
-                return val;
-            }
-            return (int)val;
+            return factorial((BigInteger)v0);
         }
 
         public static object factorial(BigInteger value) {
             if (value < 0) {
                 throw PythonOps.ValueError("factorial() not defined for negative values");
+            }
+            if (value > SysModule.maxsize) {
+                throw PythonOps.OverflowError("factorial() argument should not exceed {0}", SysModule.maxsize);
             }
 
             BigInteger val = 1;

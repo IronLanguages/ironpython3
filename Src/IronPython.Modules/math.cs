@@ -376,7 +376,7 @@ namespace IronPython.Modules {
                 throw PythonOps.ValueError("factorial() not defined for negative values");
             }
             if (value > SysModule.maxsize) {
-                throw PythonOps.OverflowError("factorial() argument should not exceed {0}", int.MaxValue);
+                throw PythonOps.OverflowError("factorial() argument should not exceed {0}", SysModule.maxsize);
             }
 
             BigInteger val = 1;

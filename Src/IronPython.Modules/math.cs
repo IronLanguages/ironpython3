@@ -384,7 +384,7 @@ namespace IronPython.Modules {
                 val *= mul;
             }
 
-            if (val > SysModule.maxint) {
+            if (val > int.MaxValue) {
                 return val;
             }
             return (int)val;

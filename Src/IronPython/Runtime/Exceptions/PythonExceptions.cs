@@ -116,6 +116,7 @@ namespace IronPython.Runtime.Exceptions {
             private BaseException _cause;
             private BaseException _context;
             private TraceBack _traceback;
+            private bool _tracebackSet;
 
             public static string __doc__ = "Common base class for all non-exit exceptions.";
 
@@ -379,15 +380,16 @@ namespace IronPython.Runtime.Exceptions {
 
             public TraceBack __traceback__ {
                 get {
-                    if (_traceback == null) {
+                    if (!_tracebackSet && _traceback == null) {
                         var clrException = GetClrException();
                         var frames = clrException.GetFrameList();
-                        _traceback = PythonOps.CreateTraceBack(clrException, frames, frames.Count);
+                        __traceback__ = PythonOps.CreateTraceBack(clrException, frames, frames.Count);
                     }
                     return _traceback;
                 }
                 set {
                     _traceback = value;
+                    _tracebackSet = true;
                 }
             }
 

@@ -1620,7 +1620,7 @@ def test_no_clr_attributes():
                   None, NotImplemented, Ellipsis, type(test_no_clr_attributes),
                   classmethod, staticmethod, frozenset, property, sys, 
                   BaseException, type(zip), slice, buffer, enumerate, file,
-                  range, xrange, type(x), type(x())]:
+                  range, type(x), type(x())]:
         for dir_stuff in dir(stuff):
             if dir_stuff[:1].isalpha():
                 Assert(dir_stuff[:1].islower(),

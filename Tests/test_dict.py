@@ -878,26 +878,20 @@ def test_contains():
 
 def test_stdtypes_dict():
     temp_types = [  int,
-                    int,
                     float,
                     complex,
                     bool,
-                    str,
-                    str,
+                    bytes,
                     str,
                     list,
                     tuple,
-                    xrange,
+                    range,
                     dict,
                     set,
                     frozenset,
                     type,
                     object,
                 ] #+ [eval("types." + x) for x in dir(types) if x.endswith("Type")]
-    
-    if not is_silverlight:
-        temp_types.append(file)
-    
     
     temp_keys = [ None, -1, 0, 1, 2.34, "", "None", int, object, test_stdtypes_dict, [], (None,)]
     

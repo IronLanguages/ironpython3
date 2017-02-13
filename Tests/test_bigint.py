@@ -57,10 +57,10 @@ def test_misc():
 def test_hex_conversions():
     # Test hex conversions. CPython 2.5 uses capital L, lowercase letters a...f)
     s = hex(27)  # 0x1b
-    Assert(s == "0x1bL", "27L: Expect lowercase digits. Received: %s." % (s));
+    Assert(s == "0x1b", "27: Expect lowercase digits. Received: %s." % (s));
     
     s = hex(-27)
-    Assert(s == "-0x1bL", "-27L: Expect lowercase digits. Received: %s." % (s));
+    Assert(s == "-0x1b", "-27: Expect lowercase digits. Received: %s." % (s));
 
 def test_negative_misc():
     AssertError(ValueError, #"invalid literal for long() with base 10: ''",

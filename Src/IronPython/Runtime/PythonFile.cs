@@ -1107,8 +1107,8 @@ namespace IronPython.Runtime {
 
             if (!NativeMethods.CreatePipe(out hRead, out hWrite, ref secAttrs, 0)) {
                 var err = Marshal.GetLastWin32Error();
-                throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, err,
-                    new Win32Exception(err).Message);
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, err,
+                    new Win32Exception(err).Message, null, err);
             }
             var pipeFiles = CreatePipe(context, hRead, hWrite);
             return PythonTuple.MakeTuple(
@@ -1692,7 +1692,7 @@ namespace IronPython.Runtime {
                 return _stream.Position;
             }
 
-            throw PythonExceptions.CreateThrowable(PythonExceptions.IOError, 9, "Bad file descriptor");
+            throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
         }
 
         /// <summary>
@@ -1718,7 +1718,7 @@ namespace IronPython.Runtime {
 
         private void TruncateNoLock(long size) {
             if (size < 0) {
-                throw PythonExceptions.CreateThrowable(PythonExceptions.IOError, 22, "Invalid argument");
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 22, "Invalid argument");
             }
 
             lock (this) {
@@ -1727,10 +1727,10 @@ namespace IronPython.Runtime {
                     if (fs.CanWrite) {
                         fs.SetLength(size);
                     } else {
-                        throw PythonExceptions.CreateThrowable(PythonExceptions.IOError, 13, "Permission denied");
+                        throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 13, "Permission denied");
                     }
                 } else {
-                    throw PythonExceptions.CreateThrowable(PythonExceptions.IOError, 9, "Bad file descriptor");
+                    throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
                 }
             }
         }

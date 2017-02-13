@@ -132,7 +132,7 @@ namespace IronPython.Modules {
 
             if (!result) {
                 int error = Marshal.GetLastWin32Error();
-                throw PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, error, CTypes.FormatError(error));
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, error, CTypes.FormatError(error), null, error);
             }
 
             IntPtr hp = lpProcessInformation.hProcess;

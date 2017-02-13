@@ -55,7 +55,7 @@ namespace IronPython.Modules {
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
-            context.EnsureModuleException(_mmapErrorKey, PythonExceptions.EnvironmentError, dict, "error", "mmap");
+            context.EnsureModuleException(_mmapErrorKey, PythonExceptions.OSError, dict, "error", "mmap");
         }
 
         private static Exception Error(CodeContext/*!*/ context, string/*!*/ message) {
@@ -75,7 +75,7 @@ namespace IronPython.Modules {
 
         private static Exception WindowsError(int code) {
             string message = CTypes.FormatError(code);
-            return PythonExceptions.CreateThrowable(PythonExceptions.WindowsError, code, message);
+            return PythonExceptions.CreateThrowable(PythonExceptions.OSError, code, message, null, code);
         }
 
         [PythonType]
@@ -123,7 +123,7 @@ namespace IronPython.Modules {
 
                 // CPython only allows offsets that are a multiple of ALLOCATIONGRANULARITY
                 if (offset % ALLOCATIONGRANULARITY != 0) {
-                    throw WindowsError(PythonExceptions._WindowsError.ERROR_MAPPED_ALIGNMENT);
+                    throw WindowsError(PythonExceptions._OSError.ERROR_MAPPED_ALIGNMENT);
                 }
 
                 // .NET throws on an empty tagname, but CPython treats it as null.
@@ -149,15 +149,15 @@ namespace IronPython.Modules {
                     PythonFile file;
                     PythonContext pContext = PythonContext.GetContext(context);
                     if (!pContext.FileManager.TryGetFileFromId(pContext, fileno, out file)) {
-                        throw Error(context, PythonExceptions._WindowsError.ERROR_INVALID_BLOCK, "Bad file descriptor");
+                        throw Error(context, PythonExceptions._OSError.ERROR_INVALID_BLOCK, "Bad file descriptor");
                     }
 
                     if ((_sourceStream = file._stream as FileStream) == null) {
-                        throw WindowsError(PythonExceptions._WindowsError.ERROR_INVALID_HANDLE);
+                        throw WindowsError(PythonExceptions._OSError.ERROR_INVALID_HANDLE);
                     }
 
                     if (_fileAccess == MemoryMappedFileAccess.ReadWrite && !_sourceStream.CanWrite) {
-                        throw WindowsError(PythonExceptions._WindowsError.ERROR_ACCESS_DENIED);
+                        throw WindowsError(PythonExceptions._OSError.ERROR_ACCESS_DENIED);
                     }
 
                     // Enlarge the file as needed.
@@ -165,7 +165,7 @@ namespace IronPython.Modules {
                         if (_sourceStream.CanWrite) {
                             _sourceStream.SetLength(capacity);
                         } else {
-                            throw WindowsError(PythonExceptions._WindowsError.ERROR_NOT_ENOUGH_MEMORY);
+                            throw WindowsError(PythonExceptions._OSError.ERROR_NOT_ENOUGH_MEMORY);
                         }
                     }
 
@@ -516,14 +516,14 @@ namespace IronPython.Modules {
 
                     if (_sourceStream == null) {
                         // resizing is not supported without an underlying file
-                        throw WindowsError(PythonExceptions._WindowsError.ERROR_INVALID_PARAMETER);
+                        throw WindowsError(PythonExceptions._OSError.ERROR_INVALID_PARAMETER);
                     }
 
                     if (newsize == 0) {
                         // resizing to an empty mapped region is not allowed
                         throw WindowsError(_offset == 0
-                            ? PythonExceptions._WindowsError.ERROR_ACCESS_DENIED
-                            : PythonExceptions._WindowsError.ERROR_FILE_INVALID
+                            ? PythonExceptions._OSError.ERROR_ACCESS_DENIED
+                            : PythonExceptions._OSError.ERROR_FILE_INVALID
                         );
                     }
 

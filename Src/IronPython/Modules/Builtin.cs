@@ -1751,6 +1751,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
+        // OSError aliases
+        public static PythonType EnvironmentError => PythonExceptions.OSError;
+        public static PythonType IOError => PythonExceptions.OSError;
+        public static PythonType WindowsError => PythonExceptions.OSError;
+
         /// <summary>
         /// Gets the appropriate LanguageContext to be used for code compiled with Python's compile, eval, execfile, etc...
         /// </summary>

@@ -69,7 +69,7 @@ namespace IronPython.Modules {
         }
 
         internal static PythonType GetSocketError(PythonContext context, PythonDictionary dict) {
-            return context.EnsureModuleException("socketerror", PythonExceptions.IOError, dict, "error", "socket");
+            return context.EnsureModuleException("socketerror", PythonExceptions.OSError, dict, "error", "socket");
         }
 
         public const string __doc__ = "Implementation module for socket operations.\n\n"
@@ -2615,7 +2615,7 @@ namespace IronPython.Modules {
                     int available = _socket._socket.Available;
 #pragma warning restore 219
                 } catch (SocketException) {
-                    throw PythonExceptions.CreateThrowable(PythonExceptions.IOError, "socket closed before handshake");
+                    throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, "socket closed before handshake");
                 }
 
                 EnsureSslStream(true);

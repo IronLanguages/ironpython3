@@ -37,11 +37,11 @@ def collect_excs():
     return ret
 excs = collect_excs()
 
-pythonExcs = ['ImportError', 'RuntimeError', 'UnicodeTranslateError', 'PendingDeprecationWarning', 'EnvironmentError',
+pythonExcs = ['ImportError', 'RuntimeError', 'UnicodeTranslateError', 'PendingDeprecationWarning',
               'LookupError', 'OSError', 'DeprecationWarning', 'UnicodeError', 'FloatingPointError', 'ReferenceError',
               'FutureWarning', 'AssertionError', 'RuntimeWarning', 'ImportWarning', 'UserWarning', 'SyntaxWarning', 
-              'UnicodeWarning', 'StopIteration', 'BytesWarning', 'BufferError', 'ResourceWarning', 'FileExistsError']
-
+              'UnicodeWarning', 'StopIteration', 'BytesWarning', 'BufferError', 'ResourceWarning', 'FileExistsError',
+              'BlockingIOError']
 
 class ExceptionInfo(object):
     def __init__(self, name, clrException, args, fields, subclasses, silverlightSupported = True, baseMapping = None):
@@ -120,13 +120,10 @@ exceptionHierarchy = ExceptionInfo('BaseException', 'IronPython.Runtime.Exceptio
                 ExceptionInfo('AssertionError', 'IronPython.Runtime.Exceptions.AssertionException', None, (), ()),
                 ExceptionInfo('AttributeError', 'IronPython.Runtime.Exceptions.AttributeErrorException', None, (), (), baseMapping = 'System.MissingMemberException'),
                 ExceptionInfo('BufferError', 'IronPython.Runtime.Exceptions.BufferException', None, (), ()),
-                ExceptionInfo('EnvironmentError', 'System.Runtime.InteropServices.ExternalException', None, ('errno', 'strerror', 'filename'), (
-                    ExceptionInfo('IOError', 'System.IO.IOException', None, (), ()),
-                    ExceptionInfo('OSError', 'IronPython.Runtime.Exceptions.OSException', None, (), (
-                            ExceptionInfo('FileExistsError', 'IronPython.Runtime.Exceptions.FileExistsException', None, (), ()),
-                            ExceptionInfo('WindowsError', 'System.ComponentModel.Win32Exception', None, ('winerror',), ()),
-                            ),
-                        ),
+                ExceptionInfo('OSError', 'IronPython.Runtime.Exceptions.OSException', None, ('errno', 'strerror', 'filename', 'winerror', 'filename2'), (
+                    ExceptionInfo('BlockingIOError', 'IronPython.Runtime.Exceptions.BlockingIOException', None, ('characters_written', ), ()),
+                    ExceptionInfo('FileExistsError', 'IronPython.Runtime.Exceptions.FileExistsException', None, (), ()),
+                    ExceptionInfo('FileNotFoundError', 'System.IO.FileNotFoundException', None, (), ()),
                     ),
                 ),
                 ExceptionInfo('EOFError', 'System.IO.EndOfStreamException', None, (), ()),
@@ -137,7 +134,7 @@ exceptionHierarchy = ExceptionInfo('BaseException', 'IronPython.Runtime.Exceptio
                     ),
                 ),
                 ExceptionInfo('MemoryError', 'System.OutOfMemoryException', None, (), ()),
-                    ExceptionInfo('NameError', 'IronPython.Runtime.UnboundNameException', None, (), (
+                ExceptionInfo('NameError', 'IronPython.Runtime.UnboundNameException', None, (), (
                     ExceptionInfo('UnboundLocalError', 'IronPython.Runtime.UnboundLocalException', None, (), ()),
                     ),
                 ),
@@ -364,7 +361,7 @@ def gen_one_new_exception(cw, exception, parent):
         cw.exit_block()
         cw.writeline()
 
-        cw.writeline('[PythonType("%s"), PythonHidden, DynamicBaseTypeAttribute, Serializable]' % exception.name)
+        cw.writeline('[PythonType("%s"), PythonHidden, DynamicBaseType, Serializable]' % exception.name)
         if exception.ConcreteParent.fields:
             cw.enter_block('public partial class _%s : _%s' % (exception.name, exception.ConcreteParent.name))
         else:

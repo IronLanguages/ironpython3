@@ -59,20 +59,17 @@ namespace IronPython.Modules {
         public static PythonType BufferError {
             get { return PythonExceptions.BufferError; }
         }
-        public static PythonType EnvironmentError {
-            get { return PythonExceptions.EnvironmentError; }
-        }
-        public static PythonType IOError {
-            get { return PythonExceptions.IOError; }
-        }
         public static PythonType OSError {
             get { return PythonExceptions.OSError; }
+        }
+        public static PythonType BlockingIOError {
+            get { return PythonExceptions.BlockingIOError; }
         }
         public static PythonType FileExistsError {
             get { return PythonExceptions.FileExistsError; }
         }
-        public static PythonType WindowsError {
-            get { return PythonExceptions.WindowsError; }
+        public static PythonType FileNotFoundError {
+            get { return PythonExceptions.FileNotFoundError; }
         }
         public static PythonType EOFError {
             get { return PythonExceptions.EOFError; }

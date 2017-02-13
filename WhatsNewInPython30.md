@@ -38,7 +38,7 @@ Text Vs. Data Instead Of Unicode Vs. 8-bit
 - [ ] PEP 3138: The repr() of a string no longer escapes non-ASCII characters. It still escapes control characters and code points with non-printable status in the Unicode standard, however.
 - [ ] PEP 3120: The default source encoding is now UTF-8.
 - [ ] PEP 3131: Non-ASCII letters are now allowed in identifiers. (However, the standard library remains ASCII-only with the exception of contributor names in comments.)
-- [ ] The StringIO and cStringIO modules are gone. Instead, import the io module and use io.StringIO or io.BytesIO for text and data respectively.
+- [x] The StringIO and cStringIO modules are gone. Instead, import the io module and use io.StringIO or io.BytesIO for text and data respectively.
 
 
 New Syntax

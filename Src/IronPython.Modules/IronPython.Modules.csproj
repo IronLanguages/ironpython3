@@ -52,8 +52,7 @@
     <Compile Include="_codecs_cn.cs" />
     <Compile Include="_collections.cs" />
     <Compile Include="copyreg.cs" />
-    <Compile Include="cPickle.cs" />
-    <Compile Include="cStringIO.cs" />
+    <Compile Include="_pickle.cs" />
     <Compile Include="datetime.cs" />
     <Compile Include="errno.cs" />
     <Compile Include="gc.cs" />

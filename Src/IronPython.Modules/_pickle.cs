@@ -34,7 +34,7 @@ using System.Numerics;
 using Microsoft.Scripting.Math;
 #endif
 
-[assembly: PythonModule("cPickle", typeof(IronPython.Modules.PythonPickle))]
+[assembly: PythonModule("_pickle", typeof(IronPython.Modules.PythonPickle))]
 namespace IronPython.Modules {
     public static class PythonPickle {
         public const string __doc__ = "Fast object serialization/deserialization.\n\n"
@@ -485,14 +485,14 @@ namespace IronPython.Modules {
             public PicklerObject(CodeContext/*!*/ context, object file, object protocol, object bin) {
                 int intProtocol;
                 if (file == null) {
-                    _file = new PythonReadableFileOutput(context, new PythonStringIO.StringO());
+                    _file = new PythonReadableFileOutput(context, new PythonIOModule.StringIO(context, "", "\n"));
                 } else if (Converter.TryConvertToInt32(file, out intProtocol)) {
                     // For undocumented (yet tested in official CPython tests) list-based pickler, the
                     // user could do something like Pickler(1), which would create a protocol-1 pickler
                     // with an internal string output buffer (retrievable using getvalue()). For a little
                     // more info, see
                     // https://sourceforge.net/tracker/?func=detail&atid=105470&aid=939395&group_id=5470
-                    _file = new PythonReadableFileOutput(context, new PythonStringIO.StringO());
+                    _file = new PythonReadableFileOutput(context, new PythonIOModule.StringIO(context, "", "\n"));
                     protocol = file;
                 } else if (file is PythonFile) {
                     _file = new PythonFileOutput((PythonFile)file);

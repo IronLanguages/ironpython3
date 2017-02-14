@@ -392,6 +392,9 @@ namespace IronPython.Runtime {
             /// </summary>
             private object ApplyConversion(char? conversion, object argValue) {
                 switch (conversion) {
+                    case 'a':
+                        argValue = PythonOps.Ascii(_context.SharedContext, argValue);
+                        break;
                     case 'r':
                         argValue = PythonOps.Repr(_context.SharedContext, argValue);
                         break;

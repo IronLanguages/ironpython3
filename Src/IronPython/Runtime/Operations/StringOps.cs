@@ -495,7 +495,7 @@ namespace IronPython.Runtime.Operations {
             return RawDecode(context, s, encoding, errors);
         }
 
-        public static Bytes encode(CodeContext/*!*/ context, string s, [Optional]object encoding, [DefaultParameterValue("strict")]string errors) {
+        public static Bytes encode(CodeContext/*!*/ context, string s, [DefaultParameterValue("utf-8")]object encoding, [DefaultParameterValue("strict")]string errors) {
             return RawEncode(context, s, encoding, errors);
         }
 
@@ -679,6 +679,34 @@ namespace IronPython.Runtime.Operations {
             for (int i = 1; i < self.Length; i++) {
                 c = self[i];
                 if (!char.IsLetterOrDigit(c) && c != '_') return false;
+            }
+            return true;
+        }
+
+        internal static bool IsPrintable(char c) {
+            // fast path for latin characters
+            if (0x1f < c && c < 0x7f) return true;
+            if (c <= 0xa0 || c == 0xad) return false;
+            if (c <= 0xff) return true;
+
+            switch (CharUnicodeInfo.GetUnicodeCategory(c))
+            {
+                case UnicodeCategory.Control: // Cc
+                case UnicodeCategory.Format: // Cf
+                case UnicodeCategory.Surrogate: // Cs
+                case UnicodeCategory.OtherNotAssigned: // Cn
+                case UnicodeCategory.LineSeparator: // Zl
+                case UnicodeCategory.ParagraphSeparator: // Zp
+                case UnicodeCategory.SpaceSeparator: // Zs
+                    return false;
+                default:
+                    return true;
+            }
+        }
+
+        public static bool isprintable(this string self) {
+            foreach (char c in self) {
+                if (!IsPrintable(c)) return false;
             }
             return true;
         }
@@ -1570,13 +1598,43 @@ namespace IronPython.Runtime.Operations {
             return new string(rchars);
         }
 
+        internal static string AsciiEncode(string s) {
+            // in the common case we don't need to encode anything, so we
+            // lazily create the StringBuilder only if necessary.
+            StringBuilder b = null;
+            for (int i = 0; i < s.Length; i++) {
+                char ch = s[i];
+                switch (ch) {
+                    default:
+                        if (ch <= 0x1f || ch == 0x7f) {
+                            ReprInit(ref b, s, i);
+                            b.AppendFormat("\\x{0:x2}", (int)ch);
+                        } else if (ch > 0x7f) {
+                            ReprInit(ref b, s, i);
+                            if (ch < 0x100) {
+                                b.AppendFormat("\\x{0:x2}", (int)ch);
+                            } else if (ch < 0x10000) {
+                                b.AppendFormat("\\u{0:x4}", (int)ch);
+                            } else {
+                                b.AppendFormat("\\U00{0:x6}", (int)ch);
+                            }
+                        } else if (b != null) {
+                            b.Append(ch);
+                        }
+                        break;
+                }
+            }
+
+            if (b == null) return s;
+            return b.ToString();
+        }
+
         internal static string ReprEncode(string s, char quote) {
             // in the common case we don't need to encode anything, so we
             // lazily create the StringBuilder only if necessary.
             StringBuilder b = null;
             for (int i = 0; i < s.Length; i++) {
                 char ch = s[i];
-
                 switch (ch) {
                     case '\\': ReprInit(ref b, s, i); b.Append("\\\\"); break;
                     case '\t': ReprInit(ref b, s, i); b.Append("\\t"); break;
@@ -1586,12 +1644,18 @@ namespace IronPython.Runtime.Operations {
                         if (quote != 0 && ch == quote) {
                             ReprInit(ref b, s, i);
                             b.Append('\\'); b.Append(ch);
-                        } else if (ch < ' ' || (ch >= 0x7f && ch <= 0xff)) {
+                        } else if (ch <= 0x1f || ch == 0x7f) {
                             ReprInit(ref b, s, i);
                             b.AppendFormat("\\x{0:x2}", (int)ch);
-                        } else if (ch > 0xff) {
+                        } else if (ch > 0x7f && !IsPrintable(ch)) {
                             ReprInit(ref b, s, i);
-                            b.AppendFormat("\\u{0:x4}", (int)ch);
+                            if (ch < 0x100) {
+                                b.AppendFormat("\\x{0:x2}", (int)ch);
+                            } else if (ch < 0x10000) {
+                                b.AppendFormat("\\u{0:x4}", (int)ch);
+                            } else {
+                                b.AppendFormat("\\U00{0:x6}", (int)ch);
+                            }
                         } else if (b != null) {
                             b.Append(ch);
                         }
@@ -1748,11 +1812,7 @@ namespace IronPython.Runtime.Operations {
             if (encoding == null) {
                 e = encodingType as Encoding;
                 if (e == null) {
-                    if (encodingType == Missing.Value) {
-                        encoding = PythonContext.GetContext(context).GetDefaultEncodingName();
-                    } else {
-                        throw PythonOps.TypeError("encode() expected string, got '{0}'", DynamicHelpers.GetPythonType(encodingType).Name);
-                    }
+                    throw PythonOps.TypeError("encode() expected string, got '{0}'", DynamicHelpers.GetPythonType(encodingType).Name);
                 }
             }
 

@@ -304,6 +304,8 @@ namespace IronPython.Runtime {
         private void WriteConversion() {
             // conversion type (required)
             switch (_curCh) {
+                // string (ascii() version)
+                case 'a': AppendAscii(); return;
                 // signed integer decimal
                 case 'd':
                 case 'i': AppendInt(); return;
@@ -964,6 +966,10 @@ namespace IronPython.Runtime {
 
         private void AppendString() {
             AppendString(PythonOps.ToString(_context, _opts.Value));
+        }
+
+        private void AppendAscii() {
+            AppendString(PythonOps.Ascii(_context, _opts.Value));
         }
 
         private void AppendRepr() {

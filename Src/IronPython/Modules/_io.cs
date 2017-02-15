@@ -64,7 +64,7 @@ namespace IronPython.Modules {
             );
         }
 
-        [PythonType]
+        [PythonType, DontMapGetMemberNamesToDir]
         public class _IOBase : IDisposable, IEnumerator<object>, IEnumerable<object>, IWeakReferenceable, IDynamicMetaObjectProvider, IPythonExpandable {
             private bool _closed;
             internal CodeContext/*!*/ context;

@@ -18,6 +18,7 @@
 using System;
 using System.ComponentModel;
 using System.IO;
+using System.IO.Pipes;
 using System.Runtime.InteropServices;
 
 using Microsoft.Scripting.Runtime;
@@ -72,11 +73,12 @@ if fd is not recognized.")]
         public static object get_osfhandle(CodeContext context, int fd) {
             PythonFile pfile = context.LanguageContext.FileManager.GetFileFromId(context.LanguageContext, fd);
 
-            FileStream stream = pfile._stream as FileStream;
-            if (stream != null) {
-#pragma warning disable 618 // System.IO.FileStream.Handle is obsolete
-                return stream.Handle.ToPython();
-#pragma warning restore 618
+            Stream stream = pfile._stream;
+            if (stream is FileStream) {
+                return ((FileStream)stream).SafeFileHandle.DangerousGetHandle().ToPython();
+            }
+            if (stream is PipeStream) {
+                return ((PipeStream)stream).SafePipeHandle.DangerousGetHandle().ToPython();
             }
             return -1;
         }

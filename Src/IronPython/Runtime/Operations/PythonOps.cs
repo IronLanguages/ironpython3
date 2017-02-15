@@ -207,6 +207,10 @@ namespace IronPython.Runtime.Operations {
             return PythonTypeOps.GetName(obj);
         }
 
+        public static string Ascii(CodeContext/*!*/ context, object o) {
+            return StringOps.AsciiEncode(Repr(context, o));
+        }
+
         public static string Repr(CodeContext/*!*/ context, object o) {
             if (o == null) return "None";
 

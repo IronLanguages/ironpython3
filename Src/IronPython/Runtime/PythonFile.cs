@@ -892,28 +892,8 @@ namespace IronPython.Runtime {
     internal class PythonFileManager {
         private HybridMapping<object> mapping = new HybridMapping<object>(3);
 
-        public int AddToStrongMapping(PythonFile pf, int pos) {
-            return mapping.StrongAdd(pf, pos);
-        }
-
-        public int AddToStrongMapping(PythonFile pf) {
-            return mapping.StrongAdd(pf, -1);
-        }
-
-        public int AddToStrongMapping(object o, int pos) {
+        public int AddToStrongMapping(object o, int pos = -1) {
             return mapping.StrongAdd(o, pos);
-        }
-
-        public int AddToStrongMapping(object o) {
-            return mapping.StrongAdd(o, -1);
-        }
-
-        public void Remove(PythonFile pf) {
-            mapping.RemoveOnObject(pf);
-        }
-
-        public void RemovePythonFileOnId(int id) {
-            mapping.RemoveOnId(id);
         }
 
         public void Remove(object o) {
@@ -933,29 +913,45 @@ namespace IronPython.Runtime {
             return pf;
         }
 
+        // TODO: rename this once PythonFile is gone
+        public Modules.PythonIOModule.FileIO GetFileFromIdNew(PythonContext context, int id) {
+            Modules.PythonIOModule.FileIO pf;
+            if (!TryGetFileFromId(context, id, out pf)) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+            }
+
+            return pf;
+        }
+
         public bool TryGetFileFromId(PythonContext context, int id, out PythonFile pf) {
+            pf = mapping.GetObjectFromId(id) as PythonFile;
+            return pf != null;
+        }
+
+        public bool TryGetFileFromId(PythonContext context, int id, out Modules.PythonIOModule.FileIO pf) {
             // TODO:
             // the meaning of 0, 1 and 2 can be changed by open/close/dup
             // stdin/out/err should be also in the dynamic mapping
             switch (id) {
                 case 0:
-                    pf = (context.GetSystemStateValue("__stdin__") as PythonFile);
+                    pf = context.GetSystemStateValue("__stdin__") as Modules.PythonIOModule.FileIO;
                     break;
                 case 1:
-                    pf = (context.GetSystemStateValue("__stdout__") as PythonFile);
+                    pf = context.GetSystemStateValue("__stdout__") as Modules.PythonIOModule.FileIO;
                     break;
                 case 2:
-                    pf = (context.GetSystemStateValue("__stderr__") as PythonFile);
+                    pf = context.GetSystemStateValue("__stderr__") as Modules.PythonIOModule.FileIO;
                     break;
                 default:
-                    pf = mapping.GetObjectFromId(id) as PythonFile;
+                    pf = mapping.GetObjectFromId(id) as Modules.PythonIOModule.FileIO;
                     break;
             }
 
             return pf != null;
         }
 
-        public bool TryGetObjectFromId(PythonContext context, int id, out Object o) {
+
+        public bool TryGetObjectFromId(PythonContext context, int id, out object o) {
             o = mapping.GetObjectFromId(id);
             return o != null;
         }
@@ -969,8 +965,11 @@ namespace IronPython.Runtime {
             return o;
         }
 
-
         public int GetIdFromFile(PythonFile pf) {
+            return mapping.GetIdFromObject(pf);
+        }
+
+        public int GetIdFromFile(Modules.PythonIOModule.FileIO pf) {
             return mapping.GetIdFromObject(pf);
         }
 
@@ -978,6 +977,13 @@ namespace IronPython.Runtime {
             mapping.RemoveOnId(fd);
             if (-1 == mapping.GetIdFromObject(pf)) {
                 pf.close();
+            }
+        }
+
+        public void CloseIfLast(CodeContext context, int fd, Modules.PythonIOModule.FileIO pf) {
+            mapping.RemoveOnId(fd);
+            if (-1 == mapping.GetIdFromObject(pf)) {
+                pf.close(context);
             }
         }
 
@@ -989,12 +995,19 @@ namespace IronPython.Runtime {
         }
 
         public int GetOrAssignIdForFile(PythonFile pf) {
+            int res = mapping.GetIdFromObject(pf);
+            if (res == -1) {
+                // lazily created weak mapping
+                res = mapping.WeakAdd(pf);
+            }
+            return res;
+        }
+
+        public int GetOrAssignIdForFile(Modules.PythonIOModule.FileIO pf) {
             // TODO: again logic fixed on 0, 1 and 2
-            if (pf.IsConsole) {
-                for (int i = 0; i < 3; i++) {
-                    if (pf == GetFileFromId(pf.Context, i)) {
-                        return i;
-                    }
+            for (int i = 0; i < 3; i++) {
+                if (pf == GetFileFromIdNew(pf.context.LanguageContext, i)) {
+                    return i;
                 }
             }
 
@@ -1030,9 +1043,7 @@ namespace IronPython.Runtime {
     [PythonType("file")]
     [DontMapIEnumerableToContains]
     public class PythonFile : IDisposable, ICodeFormattable, IEnumerator<string>, IEnumerator, IWeakReferenceable {
-        private ConsoleStreamType _consoleStreamType;
-        private SharedIO _io;   // null for non-console
-        internal Stream _stream; // null for console
+        internal Stream _stream;
         private string _mode;
         private string _name, _encoding;
         private PythonFileMode _fileMode;
@@ -1040,18 +1051,12 @@ namespace IronPython.Runtime {
         private PythonStreamReader _reader;
         private PythonStreamWriter _writer;
         [PythonHidden] protected bool _isOpen;
-        private Nullable<long> _reseekPosition; // always null for console
+        private Nullable<long> _reseekPosition;
         private WeakRefTracker _weakref;
         private string _enumValue;
         internal readonly PythonContext/*!*/ _context;
 
         private bool _softspace;
-
-        internal bool IsConsole {
-            get {
-                return _stream == null;
-            }
-        }
 
         internal bool IsOutput {
             get {
@@ -1074,12 +1079,6 @@ namespace IronPython.Runtime {
         internal static PythonFile/*!*/ Create(CodeContext/*!*/ context, Stream/*!*/ stream, Encoding/*!*/ encoding, string/*!*/ name, string/*!*/ mode) {
             PythonFile res = new PythonFile(PythonContext.GetContext(context));
             res.__init__(stream, encoding, name, mode);
-            return res;
-        }
-
-        internal static PythonFile/*!*/ CreateConsole(PythonContext/*!*/ context, SharedIO/*!*/ io, ConsoleStreamType type, string/*!*/ name) {
-            PythonFile res = new PythonFile(context);
-            res.InitializeConsole(io, type, name);
             return res;
         }
 
@@ -1292,13 +1291,6 @@ namespace IronPython.Runtime {
             throw Assert.Unreachable;
         }
 
-        private PythonTextReader/*!*/ CreateConsoleReader() {
-            Debug.Assert(_io != null);
-
-            Encoding encoding;
-            return CreateTextReader(_io.GetReader(out encoding), encoding, 0);
-        }
-
         private PythonTextWriter/*!*/ CreateTextWriter(TextWriter/*!*/ writer) {
             PythonFileMode fileMode = _fileMode;
             if (_fileMode == PythonFileMode.UniversalNewline) {
@@ -1340,18 +1332,11 @@ namespace IronPython.Runtime {
                     _fileMode = PythonFileMode.Binary;
                 }
 
-                if (_stream != null) {
-                    Encoding enc;
-                    if (!StringOps.TryGetEncoding(_encoding, out enc)) {
-                        enc = context.LanguageContext.DefaultEncoding;
-                    }
-                    InitializeReaderAndWriter(_stream, enc);
-                } else if (text) {
-                    InitializeConsole(_io, _consoleStreamType, _name);
-                } else {
-                    // making console binary
-                    InitializeReaderAndWriter(_stream = _io.GetStream(_consoleStreamType), _io.GetEncoding(_consoleStreamType));
+                Encoding enc;
+                if (!StringOps.TryGetEncoding(_encoding, out enc)) {
+                    enc = context.LanguageContext.DefaultEncoding;
                 }
+                InitializeReaderAndWriter(_stream, enc);
 
                 if (_fileMode == PythonFileMode.Binary) {
                     return false;
@@ -1367,7 +1352,6 @@ namespace IronPython.Runtime {
             _stream = stream;
             _mode = mode;
             _isOpen = true;
-            _io = null;
             _fileMode = MapFileMode(mode);
             _encoding = StringOps.GetEncodingName(encoding);
 
@@ -1405,29 +1389,9 @@ namespace IronPython.Runtime {
             }
         }
 
-        internal void InitializeConsole(SharedIO/*!*/ io, ConsoleStreamType type, string/*!*/ name) {
-            Debug.Assert(io != null);
-            Debug.Assert(name != null);
-
-            _consoleStreamType = type;
-            _io = io;
-            _mode = (type == ConsoleStreamType.Input) ? "r" : "w";
-            _isOpen = true;
-            _fileMode = MapFileMode(_mode);
-            _name = name;
-            _encoding = StringOps.GetEncodingName(io.OutputEncoding);
-
-            if (type == ConsoleStreamType.Input) {
-                _reader = CreateConsoleReader();
-            } else {
-                _writer = CreateTextWriter(_io.GetWriter(type));
-            }
-        }
-
 #if FEATURE_PROCESS
         internal void InitializePipe(PipeStream stream, string mode, Encoding encoding) {
             _stream = stream;
-            _io = null;
             _name = "<pipe>";
             _mode = mode;
             _fileMode = PythonFileMode.Binary;
@@ -1507,9 +1471,7 @@ namespace IronPython.Runtime {
                 }
                 _isOpen = false;
 
-                if (!IsConsole) {
-                    _stream.Close();
-                }
+                _stream.Close();
 
                 PythonFileManager myManager = _context.RawFileManager;
                 if (myManager != null) {
@@ -1549,9 +1511,7 @@ namespace IronPython.Runtime {
             ThrowIfClosed();
             if (_writer != null) {
                 _writer.Flush();
-                if (!IsConsole) {
-                    _stream.Flush();
-                }
+                _stream.Flush();
             }
         }
 
@@ -1647,7 +1607,7 @@ namespace IronPython.Runtime {
 
             ThrowIfClosed();
 
-            if (IsConsole || !_stream.CanSeek) {
+            if (!_stream.CanSeek) {
                 throw PythonOps.IOError("Can not seek on file " + _name);
             }
 
@@ -1754,24 +1714,16 @@ namespace IronPython.Runtime {
         private void WriteNoLock(string s) {
             PythonStreamWriter writer = GetWriter();
             int bytesWritten = writer.Write(s);
-            if (!IsConsole && _reader != null && _stream.CanSeek) {
+            if ( _reader != null && _stream.CanSeek) {
                 _reader.Position += bytesWritten;
-            }
-
-            if (IsConsole) {
-                FlushNoLock();
             }
         }
 
         private void WriteNoLock([NotNull]IList<byte> b) {
             PythonStreamWriter writer = GetWriter();
             int bytesWritten = writer.WriteBytes(b);
-            if (!IsConsole && _reader != null && _stream.CanSeek) {
+            if (_reader != null && _stream.CanSeek) {
                 _reader.Position += bytesWritten;
-            }
-
-            if (IsConsole) {
-                FlushNoLock();
             }
         }
 
@@ -1872,7 +1824,6 @@ namespace IronPython.Runtime {
 
         private void SavePositionPreSeek() {
             if (_mode == "a+") {
-                Debug.Assert(!IsConsole);
                 _reseekPosition = _stream.Position;
             }
         }
@@ -1883,16 +1834,6 @@ namespace IronPython.Runtime {
             if (_reader == null) {
                 throw PythonOps.IOError("Can not read from " + _name);
             }
-
-            if (IsConsole) {
-                // update reader if redirected:
-                lock (this) {
-                    if (!ReferenceEquals(_io.InputReader, _reader.TextReader)) {
-                        _reader = CreateConsoleReader();
-                    }
-                }
-            }
-
             return _reader;
         }
 
@@ -1905,22 +1846,7 @@ namespace IronPython.Runtime {
             }
 
             lock (this) {
-                if (IsConsole) {
-                    // update writer if redirected:
-                    if (_stream != _io.GetStream(_consoleStreamType)) {
-                        TextWriter currentWriter = _io.GetWriter(_consoleStreamType);
-
-                        if (!ReferenceEquals(currentWriter, _writer.TextWriter)) {
-                            try {
-                                _writer.Flush();
-                            } catch (ObjectDisposedException) {
-                                //no way to tell if stream has been closed outside of execution
-                                //so don't blow up if it has
-                            }
-                            _writer = CreateTextWriter(currentWriter);
-                        }
-                    }
-                } else if (_reseekPosition != null) {
+                if (_reseekPosition != null) {
                     _stream.Seek(_reseekPosition.Value, SeekOrigin.Begin);
                     _reader.Position = _reseekPosition.Value;
                     _reseekPosition = null;
@@ -1943,25 +1869,9 @@ namespace IronPython.Runtime {
             return this;
         }
 
-#if FEATURE_NATIVE
         public bool isatty() {
-            return IsConsole && !isRedirected();
+            return false;
         }
-
-        private bool isRedirected() {
-            if (_consoleStreamType == ConsoleStreamType.Output) {
-                return StreamRedirectionInfo.IsOutputRedirected;
-            }
-            if (_consoleStreamType == ConsoleStreamType.Input) {
-                return StreamRedirectionInfo.IsInputRedirected;
-            }
-            return StreamRedirectionInfo.IsErrorRedirected;
-        }
-#else
-        public bool isatty() {
-            return IsConsole;
-        }
-#endif
 
         public object __enter__() {
             ThrowIfClosed();
@@ -2042,7 +1952,7 @@ namespace IronPython.Runtime {
 #endif
 
 
-#if FEATURE_NATIVE
+#if FEATURE_NATIVE && !CLR45
     // dotnet45 backport
     // http://msdn.microsoft.com/en-us/library/system.console.isoutputredirected%28v=VS.110%29.aspx
 

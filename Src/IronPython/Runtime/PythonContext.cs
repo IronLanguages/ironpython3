@@ -1492,7 +1492,6 @@ namespace IronPython.Runtime
 
             result.Append(FormatStackTraces(exception));
             result.Append(FormatPythonException(pythonEx));
-            result.AppendLine();
 
             if (Options.ShowClrExceptions) {
                 result.Append(FormatCLSException(exception));
@@ -2052,9 +2051,9 @@ namespace IronPython.Runtime
         private void SetStandardIO() {
             SharedIO io = DomainManager.SharedIO;
 
-            PythonFile stdin = PythonFile.CreateConsole(this, io, ConsoleStreamType.Input, "<stdin>");
-            PythonFile stdout = PythonFile.CreateConsole(this, io, ConsoleStreamType.Output, "<stdout>");
-            PythonFile stderr = PythonFile.CreateConsole(this, io, ConsoleStreamType.ErrorOutput, "<stderr>");
+            var stdin = PythonIOModule.CreateConsole(this, io, ConsoleStreamType.Input, "<stdin>");
+            var stdout = PythonIOModule.CreateConsole(this, io, ConsoleStreamType.Output, "<stdout>");
+            var stderr = PythonIOModule.CreateConsole(this, io, ConsoleStreamType.ErrorOutput, "<stderr>");
 
             SetSystemStateValue("__stdin__", stdin);
             SetSystemStateValue("stdin", stdin);

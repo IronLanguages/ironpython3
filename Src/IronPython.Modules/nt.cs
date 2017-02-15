@@ -246,39 +246,20 @@ namespace IronPython.Modules {
             PythonContext.GetContext(context).DomainManager.Platform.TerminateScriptExecution(code);
         }
 
-        public static object fdopen(CodeContext/*!*/ context, int fd) {
-            return fdopen(context, fd, "r");
-        }
-
-        public static object fdopen(CodeContext/*!*/ context, int fd, string mode) {
-            return fdopen(context, fd, mode, 0);
-        }
-
-        public static object fdopen(CodeContext/*!*/ context, int fd, string mode, int bufsize) {
-            // check for a valid file mode...
-            PythonFile.ValidateMode(mode);
-
-            PythonContext pythonContext = PythonContext.GetContext(context);
-            PythonFile pf;
-            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out pf)) {
-                return pf;
-            }
-
-            Stream stream = pythonContext.FileManager.GetObjectFromId(fd) as Stream;
-            if (stream == null) {
-                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
-            }
-
-            return PythonFile.Create(context, stream, stream.ToString(), mode);
+        public static object fdopen(CodeContext/*!*/ context, int fd,
+            [DefaultParameterValue("r")]string mode,
+            [DefaultParameterValue(-1)]int buffering,
+            [DefaultParameterValue(null)]string encoding,
+            [DefaultParameterValue(null)]string errors,
+            [DefaultParameterValue(null)]string newline,
+            [DefaultParameterValue(true)]bool closefd) {
+            return Builtin.open(context, fd, mode, buffering, encoding, errors, newline, closefd);
         }
 
         [LightThrowing]
         public static object fstat(CodeContext/*!*/ context, int fd) {
             PythonContext pythonContext = PythonContext.GetContext(context);
             PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
-            if (pf.IsConsole) {
-                return new stat_result(8192);
-            }
             return lstat(pf.name);
         }
 

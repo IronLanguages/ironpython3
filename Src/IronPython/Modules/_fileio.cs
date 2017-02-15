@@ -56,7 +56,6 @@ namespace IronPython.Modules {
             )]
         [PythonType, DontMapIDisposableToContextManager]
         public class FileIO : _RawIOBase, IDisposable, IWeakReferenceable, ICodeFormattable, IDynamicMetaObjectProvider {
-
             #region Fields and constructors
 
             private static readonly int DEFAULT_BUF_SIZE = 32;
@@ -69,6 +68,28 @@ namespace IronPython.Modules {
             private PythonContext _context;
             public object name;
 
+            private bool _isConsole;
+            private ConsoleStreamType _consoleStreamType;
+
+            internal FileIO(CodeContext/*!*/ context, Stream stream)
+                : base(context) {
+                _context = context.LanguageContext;
+                string mode;
+                if (stream.CanRead && stream.CanWrite) mode = "w+";
+                else if (stream.CanWrite) mode = "w";
+                else mode = "r";
+                _mode = mode;
+                _writeStream = stream;
+                _readStream = stream;
+                _closefd = true;
+            }
+
+            internal FileIO(CodeContext/*!*/ context, Stream stream, ConsoleStreamType consoleStreamType)
+                : this(context, stream) {
+                _isConsole = true;
+                _consoleStreamType = consoleStreamType;
+            }
+
             public FileIO(CodeContext/*!*/ context, int fd, [DefaultParameterValue("r")]string mode, [DefaultParameterValue(true)]bool closefd)
                 : base(context) {
                 if (fd < 0) {
@@ -76,8 +97,6 @@ namespace IronPython.Modules {
                 }
 
                 PythonContext pc = PythonContext.GetContext(context);
-                FileIO file = (FileIO)pc.FileManager.GetObjectFromId(fd);
-                name = file.name ?? fd;
 
                 _context = pc;
                 switch (StandardizeMode(mode)) {
@@ -94,8 +113,20 @@ namespace IronPython.Modules {
                         BadMode(mode);
                         break;
                 }
-                _readStream = file._readStream;
-                _writeStream = file._writeStream;
+
+                PythonFile pythonFile;
+                if (pc.FileManager.TryGetFileFromId(pc, fd, out pythonFile)) {
+                    name = (object)pythonFile.name ?? fd;
+                    _writeStream = pythonFile._stream;
+                    _readStream = pythonFile._stream;
+                }
+                else {
+                    FileIO file = (FileIO)pc.FileManager.GetObjectFromId(fd);
+                    name = file.name ?? fd;
+                    _readStream = file._readStream;
+                    _writeStream = file._writeStream;
+                }
+
                 _closefd = closefd;
             }
             
@@ -264,7 +295,29 @@ namespace IronPython.Modules {
             public override bool isatty(CodeContext/*!*/ context) {
                 _checkClosed();
 
+                return _isConsole && !isRedirected();
+            }
+
+            private bool isRedirected() {
+#if CLR45
+                if (_consoleStreamType == ConsoleStreamType.Output) {
+                    return Console.IsOutputRedirected;
+                }
+                if (_consoleStreamType == ConsoleStreamType.Input) {
+                    return Console.IsInputRedirected;
+                }
+                return Console.IsErrorRedirected;
+#elif FEATURE_NATIVE
+                if (_consoleStreamType == ConsoleStreamType.Output) {
+                    return StreamRedirectionInfo.IsOutputRedirected;
+                }
+                if (_consoleStreamType == ConsoleStreamType.Input) {
+                    return StreamRedirectionInfo.IsInputRedirected;
+                }
+                return StreamRedirectionInfo.IsErrorRedirected;
+#else
                 return false;
+#endif
             }
 
             [Documentation("String giving the file mode")]

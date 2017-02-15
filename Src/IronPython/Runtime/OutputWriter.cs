@@ -52,6 +52,7 @@ namespace IronPython.Runtime {
             } catch (Exception e) {
                 PythonOps.PrintWithDest(DefaultContext.Default, _context.SystemStandardOut, _context.FormatException(e));
             }
+            Flush(); // we're using a buffered writer so always flush after write
         }
 
         public override void Write(char value) {

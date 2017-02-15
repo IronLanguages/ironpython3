@@ -2848,6 +2848,29 @@ namespace IronPython.Modules {
             return res;
         }
 
+        internal static _IOBase CreateConsole(PythonContext context, SharedIO io, ConsoleStreamType type, string name) {
+            var cc = context.SharedContext;
+            if (type == ConsoleStreamType.Input) {
+                var encoding = StringOps.GetEncodingName(io.InputEncoding);
+                var fio = new FileIO(cc, io.InputStream, type) { name = name };
+                var buffer = BufferedReader.Create(cc, fio, DEFAULT_BUFFER_SIZE);
+                return TextIOWrapper.Create(cc, buffer, encoding, null, null, true);
+            }
+            else if (type == ConsoleStreamType.Output) {
+                var encoding = StringOps.GetEncodingName(io.OutputEncoding);
+                var fio = new FileIO(cc, io.OutputStream, type) { name = name };
+                var buffer = BufferedWriter.Create(cc, fio, DEFAULT_BUFFER_SIZE, null);
+                return TextIOWrapper.Create(cc, buffer, encoding, null, null, true);
+            }
+            else {
+                Debug.Assert(type == ConsoleStreamType.ErrorOutput);
+                var encoding = StringOps.GetEncodingName(io.ErrorEncoding);
+                var fio = new FileIO(cc, io.ErrorStream, type) { name = name };
+                var buffer = BufferedWriter.Create(cc, fio, DEFAULT_BUFFER_SIZE, null);
+                return TextIOWrapper.Create(cc, buffer, encoding, "backslashreplace", null, true);
+            }
+        }
+
         [PythonType]
         public class IncrementalNewlineDecoder {
             [Flags]

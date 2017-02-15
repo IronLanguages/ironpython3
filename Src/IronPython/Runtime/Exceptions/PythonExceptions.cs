@@ -46,7 +46,6 @@ using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-[assembly: PythonModule("exceptions", typeof(IronPython.Runtime.Exceptions.PythonExceptions))]
 namespace IronPython.Runtime.Exceptions {
     /// <summary>
     /// Implementation of the Python exceptions module and the IronPython/CLR exception mapping 

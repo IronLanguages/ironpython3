@@ -334,17 +334,15 @@ namespace IronPython.Modules {
         #region MBCS Functions
 
         public static PythonTuple mbcs_decode(CodeContext/*!*/ context, string input, [DefaultParameterValue("strict")]string errors, [DefaultParameterValue(false)]bool ignored) {
-            // CPython ignores the errors parameter
             return PythonTuple.MakeTuple(
-                StringOps.decode(context, input, Encoding.Default, "replace"),
+                StringOps.decode(context, input, Encoding.Default, errors),
                 Builtin.len(input)
             );
         }
 
         public static PythonTuple mbcs_encode(CodeContext/*!*/ context, string input, [DefaultParameterValue("strict")]string errors) {
-            // CPython ignores the errors parameter
             return PythonTuple.MakeTuple(
-                StringOps.encode(context, input, Encoding.Default, "replace"),
+                StringOps.encode(context, input, Encoding.Default, errors),
                 Builtin.len(input)
             );
         }

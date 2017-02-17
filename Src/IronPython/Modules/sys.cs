@@ -63,19 +63,28 @@ namespace IronPython.Modules {
         /// Prints the value and sets the __builtin__._
         /// </summary>
         [PythonHidden]
-        [Documentation(@"displayhook(object) -> None
-
-Print an object to sys.stdout and also save it in __builtin__._")]
+        [Documentation("displayhook(object) -> None\r\n\r\nPrint an object to sys.stdout and also save it in __builtin__._")]
         public static void displayhookImpl(CodeContext/*!*/ context, object value) {
-            if (value != null) {
-                PythonOps.Print(context, PythonOps.Repr(context, value));
-                context.LanguageContext.BuiltinModuleDict["_"] = value;
+            // based on the pseudcode: https://docs.python.org/3/library/sys.html#sys.displayhook
+            if (value == null) return;
+            context.LanguageContext.BuiltinModuleDict["_"] = null;
+            var text = PythonOps.Repr(context, value);
+            try {
+                PythonOps.Print(context, text);
+            } catch (EncoderFallbackException) {
+                var stdout = context.LanguageContext.SystemStandardOut;
+                var encoding = PythonOps.GetBoundAttr(context, stdout, "encoding") as string;
+                var bytes = StringOps.encode(context, text, encoding, "backslashreplace");
+                // TODO: write the bytes directly to the buffer if possible
+                text = bytes.decode(context, encoding, "strict");
+                PythonOps.Print(context, text);
             }
+            context.LanguageContext.BuiltinModuleDict["_"] = value;
         }
 
         public static BuiltinFunction displayhook = BuiltinFunction.MakeFunction(
-            "displayhook",
-            ArrayUtils.ConvertAll(typeof(SysModule).GetMember("displayhookImpl"), (x) => (MethodBase)x),
+            nameof(displayhook),
+            ArrayUtils.ConvertAll(typeof(SysModule).GetMember(nameof(displayhookImpl)), (x) => (MethodBase)x),
             typeof(SysModule)
         );
 

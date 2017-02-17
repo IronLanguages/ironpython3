@@ -153,6 +153,10 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override string CheckAssign() {
+            foreach (var item in _items) {
+                var res = item.CheckAssign();
+                if (res != null) return res;
+            }
             return null;
         }
 

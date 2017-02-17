@@ -18,24 +18,7 @@ import System
 import clr
 
 import functools
-import exceptions
-
-def collect_excs():
-    ret = []
-    for e in list(exceptions.__dict__.values()):  
-        if not hasattr(e, '__bases__'): continue
-        if e.__name__ == "exceptions": continue
-        if e.__name__ == "__builtin__": continue
-        
-        assert len(e.__bases__) <= 1, e
-        if len(e.__bases__) == 0:
-            continue
-            #supername = None
-        else:
-            supername = e.__bases__[0].__name__
-        ret.append( (e, supername) )
-    return ret
-excs = collect_excs()
+import builtins
 
 pythonExcs = ['ImportError', 'RuntimeError', 'UnicodeTranslateError', 'PendingDeprecationWarning',
               'LookupError', 'OSError', 'DeprecationWarning', 'UnicodeError', 'FloatingPointError', 'ReferenceError',
@@ -57,7 +40,7 @@ class ExceptionInfo(object):
             child.parent = self
     
     @property
-    def ConcreteParent(self):        
+    def ConcreteParent(self):
         while not self.parent.fields:
             self = self.parent
             if self.parent == None: return exceptionHierarchy
@@ -124,6 +107,7 @@ exceptionHierarchy = ExceptionInfo('BaseException', 'IronPython.Runtime.Exceptio
                     ExceptionInfo('BlockingIOError', 'IronPython.Runtime.Exceptions.BlockingIOException', None, ('characters_written', ), ()),
                     ExceptionInfo('FileExistsError', 'IronPython.Runtime.Exceptions.FileExistsException', None, (), ()),
                     ExceptionInfo('FileNotFoundError', 'System.IO.FileNotFoundException', None, (), ()),
+                    ExceptionInfo('PermissionError', 'System.UnauthorizedAccessException', None, (), ()),
                     ),
                 ),
                 ExceptionInfo('EOFError', 'System.IO.EndOfStreamException', None, (), ()),
@@ -331,8 +315,8 @@ public class %(name)s : %(supername)s, IPythonAwareException {
 }
 """
 
-def gen_one_exception(cw, e):    
-    supername = getattr(exceptions, e).__bases__[0].__name__
+def gen_one_exception(cw, e):
+    supername = getattr(builtins, e).__bases__[0].__name__
     if not supername in pythonExcs and supername != 'Warning':
         supername = ''
     cw.write(CLASS1, name=get_clr_name(e), supername=get_clr_name(supername), make_new_exception = get_exception_info(e, exceptionHierarchy).MakeNewException())

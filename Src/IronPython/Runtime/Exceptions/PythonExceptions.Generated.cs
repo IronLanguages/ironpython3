@@ -309,6 +309,17 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         [MultiRuntimeAware]
+        private static PythonType PermissionErrorStorage;
+        public static PythonType PermissionError {
+            get {
+                if (PermissionErrorStorage == null) {
+                    Interlocked.CompareExchange(ref PermissionErrorStorage, CreateSubType(OSError, "PermissionError", (msg, innerException) => new UnauthorizedAccessException(msg, innerException)), null);
+                }
+                return PermissionErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
         private static PythonType EOFErrorStorage;
         public static PythonType EOFError {
             get {
@@ -904,6 +915,7 @@ namespace IronPython.Runtime.Exceptions {
             if (clrException is KeyNotFoundException) return new PythonExceptions.BaseException(PythonExceptions.KeyError);
             if (clrException is NotImplementedException) return new PythonExceptions.BaseException(PythonExceptions.NotImplementedError);
             if (clrException is OutOfMemoryException) return new PythonExceptions.BaseException(PythonExceptions.MemoryError);
+            if (clrException is UnauthorizedAccessException) return new PythonExceptions._OSError(PythonExceptions.PermissionError);
             if (clrException is UnboundLocalException) return new PythonExceptions.BaseException(PythonExceptions.UnboundLocalError);
             if (clrException is UnicodeTranslateException) return new PythonExceptions._UnicodeTranslateError();
             if (clrException is WarningException) return new PythonExceptions.BaseException(PythonExceptions.Warning);

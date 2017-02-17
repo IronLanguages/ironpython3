@@ -17,5 +17,9 @@ namespace IronPython.Modules
         public static void unregister(object func) {
             // TODO: implement this
         }
+
+        public static void _clear() {
+            // TODO: implement this
+        }
     }
 }

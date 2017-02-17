@@ -119,6 +119,10 @@ namespace IronPython.Runtime.Operations {
             return new BlockingIOException(string.Format(format, args));
         }
 
+        public static Exception NotADirectoryError(string format, params object[] args) {
+            return new NotADirectoryException(string.Format(format, args));
+        }
+
         // *** END GENERATED CODE ***
 
         #endregion

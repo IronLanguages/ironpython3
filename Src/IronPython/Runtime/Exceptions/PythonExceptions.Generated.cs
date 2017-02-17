@@ -320,6 +320,17 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         [MultiRuntimeAware]
+        private static PythonType NotADirectoryErrorStorage;
+        public static PythonType NotADirectoryError {
+            get {
+                if (NotADirectoryErrorStorage == null) {
+                    Interlocked.CompareExchange(ref NotADirectoryErrorStorage, CreateSubType(OSError, "NotADirectoryError", (msg, innerException) => new NotADirectoryException(msg, innerException)), null);
+                }
+                return NotADirectoryErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
         private static PythonType EOFErrorStorage;
         public static PythonType EOFError {
             get {
@@ -913,6 +924,7 @@ namespace IronPython.Runtime.Exceptions {
             if (clrException is IndentationException) return new PythonExceptions._SyntaxError(PythonExceptions.IndentationError);
             if (clrException is IndexOutOfRangeException) return new PythonExceptions.BaseException(PythonExceptions.IndexError);
             if (clrException is KeyNotFoundException) return new PythonExceptions.BaseException(PythonExceptions.KeyError);
+            if (clrException is NotADirectoryException) return new PythonExceptions._OSError(PythonExceptions.NotADirectoryError);
             if (clrException is NotImplementedException) return new PythonExceptions.BaseException(PythonExceptions.NotImplementedError);
             if (clrException is OutOfMemoryException) return new PythonExceptions.BaseException(PythonExceptions.MemoryError);
             if (clrException is UnauthorizedAccessException) return new PythonExceptions._OSError(PythonExceptions.PermissionError);

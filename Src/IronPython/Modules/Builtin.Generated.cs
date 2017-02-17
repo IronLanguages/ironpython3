@@ -74,6 +74,9 @@ namespace IronPython.Modules {
         public static PythonType PermissionError {
             get { return PythonExceptions.PermissionError; }
         }
+        public static PythonType NotADirectoryError {
+            get { return PythonExceptions.NotADirectoryError; }
+        }
         public static PythonType EOFError {
             get { return PythonExceptions.EOFError; }
         }

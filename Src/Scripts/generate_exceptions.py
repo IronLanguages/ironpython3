@@ -5,7 +5,7 @@
 # This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
 # copy of the license can be found in the License.html file at the root of this distribution. If 
 # you cannot locate the  Apache License, Version 2.0, please send an email to 
-# ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
+# ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound
 # by the terms of the Apache License, Version 2.0.
 #
 # You must not remove this notice, or any other, from this software.
@@ -24,7 +24,7 @@ pythonExcs = ['ImportError', 'RuntimeError', 'UnicodeTranslateError', 'PendingDe
               'LookupError', 'OSError', 'DeprecationWarning', 'UnicodeError', 'FloatingPointError', 'ReferenceError',
               'FutureWarning', 'AssertionError', 'RuntimeWarning', 'ImportWarning', 'UserWarning', 'SyntaxWarning', 
               'UnicodeWarning', 'StopIteration', 'BytesWarning', 'BufferError', 'ResourceWarning', 'FileExistsError',
-              'BlockingIOError']
+              'BlockingIOError', 'NotADirectoryError']
 
 class ExceptionInfo(object):
     def __init__(self, name, clrException, args, fields, subclasses, silverlightSupported = True, baseMapping = None):
@@ -97,9 +97,9 @@ exceptionHierarchy = ExceptionInfo('BaseException', 'IronPython.Runtime.Exceptio
                 ExceptionInfo('ArithmeticError', 'System.ArithmeticException', None, (), (
                     ExceptionInfo('FloatingPointError', 'IronPython.Runtime.Exceptions.FloatingPointException', None, (), ()),
                     ExceptionInfo('OverflowError', 'System.OverflowException', None, (), ()),
-                    ExceptionInfo('ZeroDivisionError', 'System.DivideByZeroException', None, (), ()),                                    
+                    ExceptionInfo('ZeroDivisionError', 'System.DivideByZeroException', None, (), ()),
                     ),
-                ),                            
+                ),
                 ExceptionInfo('AssertionError', 'IronPython.Runtime.Exceptions.AssertionException', None, (), ()),
                 ExceptionInfo('AttributeError', 'IronPython.Runtime.Exceptions.AttributeErrorException', None, (), (), baseMapping = 'System.MissingMemberException'),
                 ExceptionInfo('BufferError', 'IronPython.Runtime.Exceptions.BufferException', None, (), ()),
@@ -108,6 +108,7 @@ exceptionHierarchy = ExceptionInfo('BaseException', 'IronPython.Runtime.Exceptio
                     ExceptionInfo('FileExistsError', 'IronPython.Runtime.Exceptions.FileExistsException', None, (), ()),
                     ExceptionInfo('FileNotFoundError', 'System.IO.FileNotFoundException', None, (), ()),
                     ExceptionInfo('PermissionError', 'System.UnauthorizedAccessException', None, (), ()),
+                    ExceptionInfo('NotADirectoryError', 'IronPython.Runtime.Exceptions.NotADirectoryException', None, (), ()),
                     ),
                 ),
                 ExceptionInfo('EOFError', 'System.IO.EndOfStreamException', None, (), ()),
@@ -223,7 +224,7 @@ def compare_exceptions(a, b):
     
     if ta == None:
         raise Exception("Exception class not found %s " % a)
-            
+
     if tb == None:
         raise Exception("Exception class not found %s " % b)
     
@@ -248,10 +249,8 @@ def gen_topython_helper(cw):
     allExceps.sort(key=functools.cmp_to_key(compare_exceptions))
     
     for x in allExceps:
-        if not x.silverlightSupported: cw.writeline('#if !SILVERLIGHT')
         cw.writeline('if (clrException is %s) return %s;' % (x.ExceptionMappingName, x.MakeNewException()))
-        if not x.silverlightSupported: cw.writeline('#endif')
-        
+
     cw.writeline('return new BaseException(Exception);')    
     cw.exit_block()
 

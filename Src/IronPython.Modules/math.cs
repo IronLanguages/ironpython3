@@ -420,7 +420,7 @@ namespace IronPython.Modules {
             if (PythonOps.TryGetBoundAttr(value, "__trunc__", out func)) {
                 return PythonOps.CallWithContext(context, func);
             } else {
-                throw PythonOps.AttributeError("__trunc__");
+                throw PythonOps.TypeError("type {0} doesn't define __trunc__ method", PythonTypeOps.GetName(value));
             }
         }
 

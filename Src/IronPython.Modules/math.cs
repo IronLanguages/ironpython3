@@ -15,7 +15,9 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
@@ -54,13 +56,63 @@ namespace IronPython.Modules {
             return Check(v, w, v % w);
         }
 
-        public static double fsum(IEnumerable e) {
-            IEnumerator en = e.GetEnumerator();
-            double value = 0.0;
-            while (en.MoveNext()) {
-                value += Converter.ConvertToDouble(en.Current);
+        private static double sum(List<double> partials) {
+            // sum the partials the same was as CPython does
+            var n = partials.Count;
+            var hi = 0.0;
+
+            if (n == 0) return hi;
+
+            var lo = 0.0;
+
+            // sum exact
+            while (n > 0) {
+                var x = hi;
+                var y = partials[--n];
+                hi = x + y;
+                lo = y - (hi - x);
+                if (lo != 0.0)
+                    break;
             }
-            return value;
+
+            if (n == 0) return hi;
+
+            // half-even rounding
+            if (lo < 0.0 && partials[n - 1] < 0.0 || lo > 0.0 && partials[n - 1] > 0.0) {
+                var y = lo * 2.0;
+                var x = hi + y;
+                var yr = x - hi;
+                if (y == yr)
+                    hi = x;
+            }
+            return hi;
+        }
+
+        public static double fsum(IEnumerable e) {
+            // msum from https://code.activestate.com/recipes/393090/
+            var partials = new List<double>();
+            foreach (var v in e.Cast<object>().Select(o => Converter.ConvertToDouble(o))) {
+                var x = v;
+                var i = 0;
+                for (var j = 0; j < partials.Count; j++) {
+                    var y = partials[j];
+                    if (Math.Abs(x) < Math.Abs(y)) {
+                        var t = x;
+                        x = y;
+                        y = t;
+                    }
+                    var hi = x + y;
+                    var lo = y - (hi - x);
+                    if (lo != 0) {
+                        partials[i++] = lo;
+                    }
+                    x = hi;
+                }
+                partials.RemoveRange(i, partials.Count - i);
+                partials.Add(x);
+            }
+
+            return sum(partials);
         }
 
         public static PythonTuple frexp(double v) {

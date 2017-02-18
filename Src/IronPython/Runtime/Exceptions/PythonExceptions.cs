@@ -941,8 +941,10 @@ for k, v in toError.items():
                 pyEx = PythonOps.CallWithArgsTuple(type, ArrayUtils.EmptyObjects, value);
             } else if (value != null) {
                 pyEx = PythonCalls.Call(context, type, value, cause);
-            } else {
+            } else if (cause != null) {
                 pyEx = PythonCalls.Call(context, type, cause);
+            } else {
+                pyEx = PythonCalls.Call(context, type);
             }
 
             if (PythonOps.IsInstance(pyEx, type)) {

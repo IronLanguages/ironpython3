@@ -248,6 +248,41 @@ namespace IronPython.Modules {
             }
         }
 
+        public static double log2(double x) {
+            if (x <= 0) throw PythonOps.ValueError("math domain error");
+            if (double.IsPositiveInfinity(x) || double.IsNaN(x)) return x;
+
+            if (!BitConverter.IsLittleEndian) return Math.Log(x, 2);
+
+            int exponent = 0;
+            double mantissa = 0;
+
+            byte[] vb = BitConverter.GetBytes(x);
+            DecomposeLe(vb, out mantissa, out exponent);
+
+            if (x >= 1)
+                return Math.Log(mantissa * 2, 2) + (exponent - 1); // similar to CPython for precision
+            else
+                return Math.Log(mantissa, 2) + exponent;
+        }
+
+        public static double log2(BigInteger x) {
+            if (x <= 0) throw PythonOps.ValueError("math domain error");
+
+            // cast to double if we can
+            var d = (double)x;
+            if (!double.IsPositiveInfinity(d)) return log2(d);
+
+            // bring to into double range and try again
+            var y = BigInteger.Log(x, 2);
+            var z = (int)Math.Ceiling(y) - 1023;
+            x >>= z;
+
+            Debug.Assert(!double.IsPositiveInfinity((double)x));
+
+            return log2((double)x) + z;
+        }
+
         public static double log10(double v0) {
             if (v0 <= 0.0) {
                 throw PythonOps.ValueError("math domain error");
@@ -402,6 +437,26 @@ namespace IronPython.Modules {
             return Math.Atan2(v0, v1);
         }
 
+        public static object ceil(CodeContext context, object x) {
+            object val;
+            if (PythonTypeOps.TryInvokeUnaryOperator(context, x, "__ceil__", out val)) {
+                return val;
+            }
+
+            throw PythonOps.TypeError("a float is required");
+        }
+
+        public static object ceil(double v0) {
+            if (double.IsInfinity(v0)) throw PythonOps.OverflowError("cannot convert float infinity to integer");
+            if (double.IsNaN(v0)) throw PythonOps.ValueError("cannot convert float NaN to integer");
+
+            var res = Math.Ceiling(v0);
+            if (res < int.MinValue || res > int.MaxValue) {
+                return (BigInteger)res;
+            }
+            return (int)res;
+        }
+
         /// <summary>
         /// Error function on real values
         /// </summary>
@@ -453,6 +508,26 @@ namespace IronPython.Modules {
             }
         }
 
+        public static object floor(CodeContext context, object x) {
+            object val;
+            if (PythonTypeOps.TryInvokeUnaryOperator(context, x, "__floor__", out val)) {
+                return val;
+            }
+
+            throw PythonOps.TypeError("a float is required");
+        }
+
+        public static object floor(double v0) {
+            if (double.IsInfinity(v0)) throw PythonOps.OverflowError("cannot convert float infinity to integer");
+            if (double.IsNaN(v0)) throw PythonOps.ValueError("cannot convert float NaN to integer");
+
+            var res = Math.Floor(v0);
+            if (res < int.MinValue || res > int.MaxValue) {
+                return (BigInteger)res;
+            }
+            return (int)res;
+        }
+
         /// <summary>
         /// Gamma function on real values
         /// </summary>
@@ -474,6 +549,10 @@ namespace IronPython.Modules {
             } else {
                 throw PythonOps.TypeError("type {0} doesn't define __trunc__ method", PythonTypeOps.GetName(value));
             }
+        }
+
+        public static bool isfinite(double x) {
+            return !double.IsInfinity(x) && !double.IsNaN(x);
         }
 
         public static bool isinf(double v0) {

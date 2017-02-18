@@ -40,7 +40,7 @@ funcs = [
     Func('cos'), Func('sin'), Func('tan'),
     Func('cosh'), Func('sinh'), Func('tanh'),
     Func('acos'), Func('asin'), Func('atan'),
-    Func('floor'), Func('ceil', 1, 'Ceiling'), Func('fabs', 1, 'Abs'),
+    Func('fabs', 1, 'Abs'),
     Func('sqrt'), Func('exp'),
 ]
 

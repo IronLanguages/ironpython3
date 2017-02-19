@@ -63,6 +63,10 @@ namespace IronPython.Runtime.Types {
             return String.Format("<attribute '__weakref__' of '{0}' objects>", _type.Name);
         }
 
+        public void __set__(CodeContext context, object instance, object value) {
+            TrySetValue(context, instance, DynamicHelpers.GetPythonType(instance), value);
+        }
+
         #region ICodeFormattable Members
 
         public string/*!*/ __repr__(CodeContext/*!*/ context) {

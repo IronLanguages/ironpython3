@@ -93,6 +93,10 @@ namespace IronPython.Runtime.Types {
             return false;
         }
 
+        public void __set__(CodeContext context, object instance, object value) {
+            TrySetValue(context, instance, DynamicHelpers.GetPythonType(instance), value);
+        }
+
         #region ICodeFormattable Members
 
         public string/*!*/ __repr__(CodeContext/*!*/ context) {

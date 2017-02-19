@@ -52,17 +52,13 @@ namespace IronPython.Runtime {
             get { return _step; }
         }
 
-        public int __cmp__(Slice obj) {
-            return PythonOps.CompareArrays(new object[] { _start, _stop, _step }, 3,
-                new object[] { obj._start, obj._stop, obj._step }, 3);
+        public void indices(int length, out int ostart, out int ostop, out int ostep) {
+            if (length < 0) throw PythonOps.ValueError("length should not be negative");
+            PythonOps.FixSlice(length, _start, _stop, _step, out ostart, out ostop, out ostep);
         }
 
-        public void indices(int len, out int ostart, out int ostop, out int ostep) {
-            PythonOps.FixSlice(len, _start, _stop, _step, out ostart, out ostop, out ostep);
-        }
-
-        public void indices(object len, out int ostart, out int ostop, out int ostep) {
-            PythonOps.FixSlice(Converter.ConvertToIndex(len), _start, _stop, _step, out ostart, out ostop, out ostep);
+        public void indices(object length, out int ostart, out int ostop, out int ostep) {
+            indices(Converter.ConvertToIndex(length), out ostart, out ostop, out ostep);
         }
 
         public PythonTuple __reduce__() {
@@ -83,7 +79,7 @@ namespace IronPython.Runtime {
         int IComparable.CompareTo(object obj) {
             Slice other = obj as Slice;
             if (other == null) throw new ValueErrorException("expected slice");
-            return __cmp__(other);
+            return Compare(other);
         }
 
         #endregion
@@ -156,6 +152,11 @@ namespace IronPython.Runtime {
             while (enumerator.MoveNext()) sliceData.AddNoLock(enumerator.Current);
 
             DoSliceAssign(assign, start, stop, step, sliceData);
+        }
+
+        private int Compare(Slice obj) {
+            return PythonOps.CompareArrays(new object[] { _start, _stop, _step }, 3,
+                new object[] { obj._start, obj._stop, obj._step }, 3);
         }
 
         #endregion

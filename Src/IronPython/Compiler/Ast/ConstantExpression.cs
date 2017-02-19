@@ -47,18 +47,15 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        private static readonly MSAst.Expression EllipsisExpr = Ast.Property(null, typeof(PythonOps).GetProperty("Ellipsis"));
-        private static readonly MSAst.Expression TrueExpr = Ast.Field(null, typeof(ScriptingRuntimeHelpers).GetField("True"));
-        private static readonly MSAst.Expression FalseExpr = Ast.Field(null, typeof(ScriptingRuntimeHelpers).GetField("False"));
+        private static readonly MSAst.Expression EllipsisExpr = Ast.Property(null, typeof(PythonOps).GetProperty(nameof(PythonOps.Ellipsis)));
+        private static readonly MSAst.Expression TrueExpr = Ast.Field(null, typeof(ScriptingRuntimeHelpers).GetField(nameof(ScriptingRuntimeHelpers.True)));
+        private static readonly MSAst.Expression FalseExpr = Ast.Field(null, typeof(ScriptingRuntimeHelpers).GetField(nameof(ScriptingRuntimeHelpers.False)));
+
         public override MSAst.Expression Reduce() {
             if (_value == Ellipsis.Value) {
                 return EllipsisExpr;
             } else if (_value is bool) {
-                if ((bool)_value) {
-                    return TrueExpr;
-                } else {
-                    return FalseExpr;
-                }
+                return (bool)_value ? TrueExpr : FalseExpr;
             }
 
             return GlobalParent.Constant(_value);
@@ -70,13 +67,14 @@ namespace IronPython.Compiler.Ast {
 
         public override Type Type {
             get {
+                if (_value is bool) return typeof(object);
                 return GlobalParent.CompilationMode.GetConstantType(Value);
             }
         }
 
         internal override string CheckAssign() {
-            if (_value == null) {
-                return "cannot assign to None";
+            if (_value == null || _value is bool) {
+                return "can't assign to keyword";
             }
 
             return "can't assign to literal";

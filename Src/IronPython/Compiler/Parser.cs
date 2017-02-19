@@ -351,7 +351,7 @@ namespace IronPython.Compiler {
             if ((errorCode & ~ErrorCodes.IncompleteMask) == ErrorCodes.IndentationError) {
                 msg = Resources.ExpectedIndentation;
             } else if (t.Kind != TokenKind.EndOfFile) {
-                msg = Resources.UnexpectedToken;
+                msg = "invalid syntax";
             } else {
                 msg = "unexpected EOF while parsing";
             }
@@ -393,24 +393,6 @@ namespace IronPython.Compiler {
             }
 
             return name;
-        }
-
-        private string ReadNameMaybeNone() {
-            // peek for better error recovery
-            Token t = PeekToken();
-            if (t == Tokens.NoneToken) {
-                NextToken();
-                return "None";
-            }
-
-            NameToken n = t as NameToken;
-            if (n == null) {
-                ReportSyntaxError("syntax error");
-                return null;
-            }
-
-            NextToken();
-            return FixName(n.Name);
         }
 
         private string ReadName() {
@@ -1101,7 +1083,7 @@ namespace IronPython.Compiler {
                 Expression decorator = new NameExpression(ReadName());
                 decorator.SetLoc(_globalParent, start, GetEnd());
                 while (MaybeEat(TokenKind.Dot)) {
-                    string name = ReadNameMaybeNone();
+                    string name = ReadName();
                     decorator = new MemberExpression(decorator, name);
                     decorator.SetLoc(_globalParent, GetStart(), GetEnd());
                 }
@@ -2078,7 +2060,7 @@ namespace IronPython.Compiler {
                             break;
                         case TokenKind.Dot:
                             NextToken();
-                            string name = ReadNameMaybeNone();
+                            string name = ReadName();
                             MemberExpression fe = new MemberExpression(ret, name);
                             fe.SetLoc(_globalParent, ret.StartIndex, GetEnd());
                             ret = fe;

@@ -372,6 +372,11 @@ namespace IronPython.Compiler.Ast {
             node.Parent = _currentScope;
             return base.Walk(node);
         }
+        // AsyncStatement
+        public override bool Walk(AsyncStatement node) {
+            node.Parent = _currentScope;
+            return base.Walk(node);
+        }
         // BinaryExpression
         public override bool Walk(BinaryExpression node) {
             node.Parent = _currentScope;
@@ -462,6 +467,12 @@ namespace IronPython.Compiler.Ast {
             node.Parent = _currentScope;
             return base.Walk(node);
         }
+
+        // NonlocalStatement
+        public override bool Walk(NonlocalStatement node) {
+            node.Parent = _currentScope;
+            return base.Walk(node);
+        }
         // OrExpression
         public override bool Walk(OrExpression node) {
             node.Parent = _currentScope;
@@ -492,6 +503,11 @@ namespace IronPython.Compiler.Ast {
             node.Parent = _currentScope;
             return base.Walk(node);
         }
+        // StarredExpression
+        public override bool Walk(StarredExpression node) {
+            node.Parent = _currentScope;
+            return base.Walk(node);
+        }
         // SuiteStatement
         public override bool Walk(SuiteStatement node) {
             node.Parent = _currentScope;
@@ -517,7 +533,7 @@ namespace IronPython.Compiler.Ast {
             node.Parent = _currentScope;
             return base.Walk(node);
         }
-        
+
         // *** END GENERATED CODE ***
 
         #endregion

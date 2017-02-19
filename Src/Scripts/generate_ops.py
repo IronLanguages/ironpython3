@@ -25,7 +25,7 @@ kwlist = [
 ]
 
 class Symbol:
-    def __init__(self, symbol, name, titleName = None):
+    def __init__(self, symbol, name, titleName=None):
         self.symbol = symbol
         self.name = name
         self.titleName = titleName
@@ -62,7 +62,7 @@ class Symbol:
         return self.symbol in ['^', '&', '|', '<<', '>>']
 
 class Operator(Symbol):
-    def __init__(self, symbol, name, rname, clrName=None,prec=-1, opposite=None, bool1=None, bool2=None, bool3=None, dotnetOp=False):
+    def __init__(self, symbol, name, rname, clrName=None, prec=-1, opposite=None, bool1=None, bool2=None, bool3=None, dotnetOp=False):
         Symbol.__init__(self, symbol, name)
         self.rname = rname
         self.clrName = clrName
@@ -374,6 +374,10 @@ def gen_mark_end(cw, keyword):
     cw.write('MarkTokenEnd();')
     if keyword == 'None':
         cw.write('return Tokens.NoneToken;')
+    elif keyword == 'True':
+        cw.write('return Tokens.TrueToken;')
+    elif keyword == 'False':
+        cw.write('return Tokens.FalseToken;')
     else:
         cw.write('return Tokens.Keyword%sToken;' % keywordToFriendly(keyword))
     cw.exit_block()
@@ -416,6 +420,8 @@ def keyword_lookup_generator(cw):
     
     keyword_list = list(kwlist)
     keyword_list.append('None')
+    keyword_list.append('True')
+    keyword_list.append('False')
     keyword_list.sort()
     
     tree = collections.OrderedDict()

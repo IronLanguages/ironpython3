@@ -82,7 +82,7 @@ Library Changes
 - [x] copy\_reg renamed to copyreg
 - [ ] Cleanup of the sys module: removed sys.exitfunc(), sys.exc\_clear(), sys.exc\_type, sys.exc\_value, sys.exc\_traceback.
 - [ ] Cleanup of the array.array type: the read() and write() methods are gone; use fromfile() and tofile() instead. Also, the 'c' typecode for array is gone - use either 'b' for bytes or 'u' for Unicode characters.
-- [ ] Cleanup of the operator module: removed sequenceIncludes() and isCallable().
+- [x] Cleanup of the operator module: removed sequenceIncludes() and isCallable().
 - [ ] Cleanup of the thread module: acquire\_lock() and release\_lock() are gone; use acquire() and release() instead.
 - [x] Cleanup of the random module: removed the jumpahead() API.
 - [x] The functions os.tmpnam(), os.tempnam() and os.tmpfile() have been removed in favor of the tempfile module.
@@ -124,7 +124,7 @@ Builtins
 - [ ] A new builtin next() was added to call the \_\_next\_\_() method on an object.
 - [x] Moved intern() to sys.intern()
 - [x] Removed: apply(). Instead of apply(f, args) use f(*args).
-- [ ] Removed callable(). Instead of callable(f) you can use hasattr(f, '\_\_call\_\_'). The operator.isCallable() function is also gone.
+- [x] ~~Removed callable(). Instead of callable(f) you can use hasattr(f, '\_\_call\_\_').~~ (Readded in Python 3.2) The operator.isCallable() function is also gone.
 - [x] Removed coerce(). This function no longer serves a purpose now that classic classes are gone.
 - [x] Removed execfile(). Instead of execfile(fn) use exec(open(fn).read()).
 - [x] Removed file. Use open().

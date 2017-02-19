@@ -389,29 +389,6 @@ namespace IronPython.Modules {
             throw PythonOps.ValueError("object not in sequence");
         }
 
-        public static object repeat(CodeContext context, object a, object b) {
-            try {
-                PythonOps.GetEnumerator(a);
-            } catch {
-                throw PythonOps.TypeError("object can't be repeated");
-            }
-            try {
-                Int32Ops.__new__(context, b);
-            } catch {
-                throw PythonOps.TypeError("integer required");
-            }
-
-            return PythonContext.GetContext(context).Operation(PythonOperationKind.Multiply, a, b);
-        }
-
-        public static object __repeat__(CodeContext/*!*/  context, object a, object b) {
-            return repeat(context, a, b);
-        }
-
-        public static object sequenceIncludes(CodeContext/*!*/ context, object a, object b) {
-            return contains(context, a, b);
-        }
-
         public static void setitem(CodeContext/*!*/ context, object a, object b, object c) {
             PythonContext.GetContext(context).SetIndex(a, b, c);
         }
@@ -420,30 +397,7 @@ namespace IronPython.Modules {
             setitem(context, a, b, c);
         }
 
-        public static bool isCallable(CodeContext/*!*/ context, object o) {
-            return PythonOps.IsCallable(context, o);
-        }
-
-        public static object isMappingType(CodeContext context, object o) {
-            return PythonOps.IsMappingType(context, o);
-        }
-
-        public static bool isNumberType(object o) {
-            return o is int ||
-                o is long ||
-                o is double ||
-                o is float ||
-                o is short ||
-                o is uint ||
-                o is ulong ||
-                o is ushort ||
-                o is decimal ||
-                o is BigInteger ||
-                o is Complex ||
-                o is byte;
-        }
-
-        public static bool isSequenceType(object o) {
+        private static bool isSequenceType(object o) {
             return
                    CompilerHelpers.GetType(o) != typeof(PythonType) &&
                    !(o is PythonDictionary) && (
@@ -454,16 +408,6 @@ namespace IronPython.Modules {
                    PythonOps.HasAttr(DefaultContext.Default, o, "__getitem__"));
         }
 
-        private static int SliceToInt(object o) {
-            int i;
-            if (Converter.TryConvertToInt32(o, out i)) return i;
-            throw PythonOps.TypeError("integer expected");
-        }
-
-        private static object MakeSlice(object a, object b) {
-            return new Slice(SliceToInt(a), SliceToInt(b), null);
-        }
-        
         public static object iadd(CodeContext/*!*/ context, object a, object b) {
             return PythonContext.GetContext(context).Operation(PythonOperationKind.InPlaceAdd, a, b);
         }
@@ -518,20 +462,6 @@ namespace IronPython.Modules {
             return PythonContext.GetContext(context).Operation(PythonOperationKind.InPlaceAdd, a, b);
         }
 
-        public static object irepeat(CodeContext/*!*/ context, object a, object b) {
-            if (!isSequenceType(a)) {
-                throw PythonOps.TypeError("'{0}' object cannot be repeated", PythonTypeOps.GetName(a));
-            }
-
-            try {
-                Int32Ops.__new__(DefaultContext.Default, b);
-            } catch {
-                throw PythonOps.TypeError("integer required");
-            }
-
-            return PythonContext.GetContext(context).Operation(PythonOperationKind.InPlaceMultiply, a, b);
-        }
-
         public static object __iadd__(CodeContext/*!*/ context, object a, object b) {
             return iadd(context, a, b);
         }
@@ -582,10 +512,6 @@ namespace IronPython.Modules {
 
         public static object __iconcat__(CodeContext/*!*/ context, object a, object b) {
             return iconcat(context, a, b);
-        }
-
-        public static object __irepeat__(CodeContext/*!*/ context, object a, object b) {
-            return irepeat(context, a, b);
         }
 
         public static object index(object a) {

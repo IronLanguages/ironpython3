@@ -111,9 +111,6 @@ namespace IronPython.Runtime {
         }
 
         private int Compute(int index) {
-            if (index < 0) {
-                index += _length;
-            }
             return index * _step + _start;
         }
 

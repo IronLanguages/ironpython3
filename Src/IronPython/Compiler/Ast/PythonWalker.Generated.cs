@@ -83,6 +83,7 @@ namespace IronPython.Compiler.Ast {
         public virtual bool Walk(MemberExpression node) { return true; }
         public virtual void PostWalk(MemberExpression node) { }
 
+
         // NameExpression
         public virtual bool Walk(NameExpression node) { return true; }
         public virtual void PostWalk(NameExpression node) { }
@@ -131,6 +132,10 @@ namespace IronPython.Compiler.Ast {
         public virtual bool Walk(AssignmentStatement node) { return true; }
         public virtual void PostWalk(AssignmentStatement node) { }
 
+        // AsyncStatement
+        public virtual bool Walk(AsyncStatement node) { return true; }
+        public virtual void PostWalk(AsyncStatement node) { }
+
         // AugmentedAssignStatement
         public virtual bool Walk(AugmentedAssignStatement node) { return true; }
         public virtual void PostWalk(AugmentedAssignStatement node) { }
@@ -175,11 +180,6 @@ namespace IronPython.Compiler.Ast {
         public virtual bool Walk(GlobalStatement node) { return true; }
         public virtual void PostWalk(GlobalStatement node) { }
 
-        // NonlocalStatement
-        public virtual bool Walk(NonlocalStatement node) { return true; }
-        public virtual void PostWalk(NonlocalStatement node) { }
-
-
         // IfStatement
         public virtual bool Walk(IfStatement node) { return true; }
         public virtual void PostWalk(IfStatement node) { }
@@ -187,6 +187,10 @@ namespace IronPython.Compiler.Ast {
         // ImportStatement
         public virtual bool Walk(ImportStatement node) { return true; }
         public virtual void PostWalk(ImportStatement node) { }
+
+        // NonlocalStatement
+        public virtual bool Walk(NonlocalStatement node) { return true; }
+        public virtual void PostWalk(NonlocalStatement node) { }
 
         // PythonAst
         public virtual bool Walk(PythonAst node) { return true; }
@@ -347,6 +351,10 @@ namespace IronPython.Compiler.Ast {
         public override bool Walk(SliceExpression node) { return false; }
         public override void PostWalk(SliceExpression node) { }
 
+        // StarredExpression
+        public override bool Walk(StarredExpression node) { return false; }
+        public override void PostWalk(StarredExpression node) { }
+
         // TupleExpression
         public override bool Walk(TupleExpression node) { return false; }
         public override void PostWalk(TupleExpression node) { }
@@ -366,6 +374,10 @@ namespace IronPython.Compiler.Ast {
         // AssignmentStatement
         public override bool Walk(AssignmentStatement node) { return false; }
         public override void PostWalk(AssignmentStatement node) { }
+
+        // AsyncStatement
+        public override bool Walk(AsyncStatement node) { return false; }
+        public override void PostWalk(AsyncStatement node) { }
 
         // AugmentedAssignStatement
         public override bool Walk(AugmentedAssignStatement node) { return false; }
@@ -418,6 +430,10 @@ namespace IronPython.Compiler.Ast {
         // ImportStatement
         public override bool Walk(ImportStatement node) { return false; }
         public override void PostWalk(ImportStatement node) { }
+
+        // NonlocalStatement
+        public override bool Walk(NonlocalStatement node) { return false; }
+        public override void PostWalk(NonlocalStatement node) { }
 
         // PythonAst
         public override bool Walk(PythonAst node) { return false; }

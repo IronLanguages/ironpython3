@@ -1508,18 +1508,18 @@ namespace IronPython.Runtime
                     "  File \"{1}\", line {2}{0}" +
                     "    {3}{0}" +
                     "    {4}^{0}" +
-                    "{5}: {6}{0}",
+                    "{5}: {6}",
                     Environment.NewLine,
                     e.GetSymbolDocumentName(),
                     e.Line > 0 ? e.Line.ToString() : "?",
-                    (sourceLine != null) ? sourceLine.Replace('\t', ' ') : null,
+                    (sourceLine != null) ? sourceLine.TrimEnd('\n').Replace('\t', ' ') : null,
                     new String(' ', e.Column != 0 ? e.Column - 1 : 0),
                     GetPythonExceptionClassName(PythonExceptions.ToPython(e)), e.Message);
             }
 
             return String.Format(
                     "  File \"{1}\", line {2}{0}" +
-                    "{3}: {4}{0}",
+                    "{3}: {4}",
                     Environment.NewLine,
                     e.GetSymbolDocumentName(),
                     new String(' ', e.Column != 0 ? e.Column - 1 : 0),

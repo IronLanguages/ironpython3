@@ -138,6 +138,10 @@ namespace IronPython.Compiler {
         public static readonly Token CommentToken = new SymbolToken(TokenKind.Comment, "<comment>");
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly Token NoneToken = new ConstantValueToken(null);
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
+        public static readonly Token TrueToken = new ConstantValueToken(true);
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
+        public static readonly Token FalseToken = new ConstantValueToken(false);
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly Token DotToken = new SymbolToken(TokenKind.Dot, ".");

@@ -398,8 +398,8 @@ namespace IronPython.Modules
             internal static expr Convert(ConstantExpression expr) {
                 expr ast;
 
-                if (expr.Value == null)
-                    return new Name("None", Load.Instance);
+                if (expr.Value == null || expr.Value is bool)
+                    return new NameConstant(expr.Value);
 
                 if (expr.Value is int || expr.Value is double || expr.Value is Int64 || expr.Value is BigInteger || expr.Value is Complex)
                     ast = new Num(expr.Value);
@@ -2692,6 +2692,31 @@ namespace IronPython.Modules
                 get { return _id; }
                 set { _id = value; }
             }
+        }
+
+
+        [PythonType]
+        public class NameConstant : expr
+        {
+            public NameConstant() {
+                _fields = new PythonTuple(new[] { "value" });
+            }
+
+            public NameConstant(object value, [Optional]int? lineno, [Optional]int? col_offset)
+                : this() {
+                this.value = value;
+                _lineno = lineno;
+                _col_offset = col_offset;
+            }
+
+            public NameConstant(object value)
+                : this(value, null, null) { }
+
+            internal override AstExpression Revert() {
+                return new ConstantExpression(value);
+            }
+
+            public object value { get; set; }
         }
 
         [PythonType]

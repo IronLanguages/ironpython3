@@ -58,7 +58,7 @@ Changed Syntax
 ==========
 - [ ] PEP 3109 and PEP 3134: new raise statement syntax: raise \[expr \[from expr\]\].
 - [x] as and with are now reserved words. (Since 2.6, actually.)
-- [ ] True, False, and None are reserved words. (2.6 partially enforced the restrictions on None already.)
+- [x] True, False, and None are reserved words. (2.6 partially enforced the restrictions on None already.)
 - [ ] Change from except exc, var to except exc as var. See PEP 3110
 - [ ] PEP 3115: New Metaclass Syntax
 - [ ] List comprehensions no longer support the syntactic form [... for var in item1, item2, ...]. Use [... for var in (item1, item2, ...)] instead.

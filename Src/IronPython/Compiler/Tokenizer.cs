@@ -987,10 +987,20 @@ namespace IronPython.Compiler {
             int ch;
             BufferBack();
             ch = NextChar();
-            if (ch == 'N') {
+            if (ch == 'F') {
+                if (NextChar() == 'a' && NextChar() == 'l' && NextChar() == 's' && NextChar() == 'e' && !IsNamePart(Peek())) {
+                    MarkTokenEnd();
+                    return Tokens.FalseToken;
+                }
+            } else if (ch == 'N') {
                 if (NextChar() == 'o' && NextChar() == 'n' && NextChar() == 'e' && !IsNamePart(Peek())) {
                     MarkTokenEnd();
                     return Tokens.NoneToken;
+                }
+            } else if (ch == 'T') {
+                if (NextChar() == 'r' && NextChar() == 'u' && NextChar() == 'e' && !IsNamePart(Peek())) {
+                    MarkTokenEnd();
+                    return Tokens.TrueToken;
                 }
             } else if (ch == 'a') {
                 ch = NextChar();

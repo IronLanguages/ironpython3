@@ -162,17 +162,6 @@ namespace IronPython.Runtime.Exceptions {
             }
 
             /// <summary>
-            /// Returns the exception 'message' if only a single argument was provided 
-            /// during creation or an empty string.
-            /// </summary>
-            public object message {
-                [Python3Warning("BaseException.message has been deprecated as of Python 2.6")]
-                get { return _message; }
-                [Python3Warning("BaseException.message has been deprecated as of Python 2.6")]
-                set { _message = value; }
-            }
-
-            /// <summary>
             /// Gets or sets the arguments used for creating the exception
             /// </summary>
             public object/*!*/ args {
@@ -862,16 +851,6 @@ for k, v in toError.items():
                         new string(ex.CharUnknown, 1), ex.Index, ex.Index + 1, exception.Message);
                 } else {
                     base.InitializeFromClr(exception);
-                }
-            }
-        }
-
-        public partial class _SystemExit : BaseException {
-            public override void __init__(params object[] args) {
-                base.__init__(args);
-
-                if (args != null && args.Length != 0) {
-                    code = message;
                 }
             }
         }

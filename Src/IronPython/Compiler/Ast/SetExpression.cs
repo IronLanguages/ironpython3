@@ -50,6 +50,10 @@ namespace IronPython.Compiler.Ast {
             );
         }
 
+        internal override string CheckAssign() {
+            return "can't assign to literal";
+        }
+
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
                 foreach (Expression s in _items) {

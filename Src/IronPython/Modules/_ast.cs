@@ -2842,59 +2842,33 @@ namespace IronPython.Modules
         [PythonType]
         public class Raise : stmt
         {
-            private expr _type; // Optional
-            private expr _inst; // Optional
-            private expr _tback; // Optional
-            private expr _cause; // Optional
             public Raise() {
-                _fields = new PythonTuple(new[] { "type", "inst", "tback", "cause" });
+                _fields = new PythonTuple(new[] { "exc", "cause" });
             }
 
-            public Raise([Optional]expr type, [Optional]expr inst, [Optional]expr tback,
-                [Optional]int? lineno, [Optional]int? col_offset)
+            public Raise([Optional]expr exc, [Optional]expr cause, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
-                _type = type;
-                _inst = inst;
-                _tback = tback;
+                this.exc = exc;
+                this.cause = cause;
                 _lineno = lineno;
                 _col_offset = col_offset;
             }
 
             internal Raise(RaiseStatement stmt)
                 : this() {
-                if (stmt.ExceptType != null)
-                    _type = Convert(stmt.ExceptType);
-                if (stmt.Value != null)
-                    _inst = Convert(stmt.Value);
-                if (stmt.Traceback != null)
-                    _tback = Convert(stmt.Traceback);
+                if (stmt.Exception != null)
+                    exc = Convert(stmt.Exception);
                 if (stmt.Cause != null)
-                    _cause = Convert(stmt.Cause);
+                    cause = Convert(stmt.Cause);
             }
 
             internal override Statement Revert() {
-                return new RaiseStatement(expr.Revert(type), expr.Revert(inst), expr.Revert(tback), expr.Revert(cause));
+                return new RaiseStatement(expr.Revert(exc), expr.Revert(cause));
             }
 
-            public expr type {
-                get { return _type; }
-                set { _type = value; }
-            }
+            public expr exc { get; set; }
 
-            public expr inst {
-                get { return _inst; }
-                set { _inst = value; }
-            }
-
-            public expr tback {
-                get { return _tback; }
-                set { _tback = value; }
-            }
-
-            public expr cause {
-                get { return _cause; }
-                set { _cause = value; }
-            }
+            public expr cause { get; set; }
         }
 
 

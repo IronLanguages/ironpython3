@@ -14,57 +14,28 @@
  * ***************************************************************************/
 
 using System;
+using System.Diagnostics;
 
-#if FEATURE_CORE_DLR
 using MSAst = System.Linq.Expressions;
-#else
-using MSAst = Microsoft.Scripting.Ast;
-#endif
-
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
     public class RaiseStatement : Statement {
-        private readonly Expression _type, _value, _traceback, _cause;
-        private bool _inFinally;
-
-        public RaiseStatement(Expression exceptionType, Expression exceptionValue, Expression traceBack, Expression cause) {
-            _type = exceptionType;
-            _value = exceptionValue;
-            _traceback = traceBack;
-            _cause = cause;
+        public RaiseStatement(Expression exception, Expression cause) {
+            Exception = exception;
+            Cause = cause;
         }
 
-        [Obsolete("Type is obsolete due to direct inheritance from DLR Expression.  Use ExceptType instead")]
-        public new Expression Type {
-            get { return _type; }
-        }
+        public Expression Exception { get; }
 
-        public Expression ExceptType {
-            get {
-                return _type;
-            }
-        }
-
-        public Expression Cause {
-            get {
-                return _cause;
-            }
-        }
-
-        public Expression Value {
-            get { return _value; }
-        }
-
-        public Expression Traceback {
-            get { return _traceback; }
-        }
+        public Expression Cause { get; }
 
         public override MSAst.Expression Reduce() {
             MSAst.Expression raiseExpression;
-            if (_type == null && _value == null && _traceback == null) {
+            if (Exception == null) {
+                Debug.Assert(Cause == null);
                 raiseExpression = Ast.Call(
                     AstMethods.MakeRethrownException,
                     Parent.LocalContext
@@ -80,10 +51,8 @@ namespace IronPython.Compiler.Ast {
                 raiseExpression = Ast.Call(
                     AstMethods.MakeException,
                     Parent.LocalContext,
-                    TransformOrConstantNull(_type, typeof(object)),
-                    TransformOrConstantNull(_value, typeof(object)),
-                    TransformOrConstantNull(_traceback, typeof(object)),
-                    TransformOrConstantNull(_cause, typeof(object))
+                    TransformOrConstantNull(Exception, typeof(object)),
+                    TransformOrConstantNull(Cause, typeof(object))
                 );
             }
 
@@ -93,29 +62,12 @@ namespace IronPython.Compiler.Ast {
             );
         }
 
-        internal bool InFinally {
-            get {
-                return _inFinally;
-            }
-            set {
-                _inFinally = value;
-            }
-        }
+        internal bool InFinally { get; set; }
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                if (_type != null) {
-                    _type.Walk(walker);
-                }
-                if (_value != null) {
-                    _value.Walk(walker);
-                }
-                if (_traceback != null) {
-                    _traceback.Walk(walker);
-                }
-                if (_cause != null) {
-                    _cause.Walk(walker);
-                }
+                Exception?.Walk(walker);
+                Cause?.Walk(walker);
             }
             walker.PostWalk(this);
         }

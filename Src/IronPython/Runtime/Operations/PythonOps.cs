@@ -1749,6 +1749,33 @@ namespace IronPython.Runtime.Operations {
         }
 #endif
 
+        public static void PrintException(CodeContext/*!*/ context, Exception/*!*/ exception) {
+            PythonContext pc = PythonContext.GetContext(context);
+            PythonTuple exInfo = GetExceptionInfoLocal(context, exception);
+            pc.SetSystemStateValue("last_type", exInfo[0]);
+            pc.SetSystemStateValue("last_value", exInfo[1]);
+            pc.SetSystemStateValue("last_traceback", exInfo[2]);
+
+            object exceptHook = pc.GetSystemStateValue("excepthook");
+            BuiltinFunction bf = exceptHook as BuiltinFunction;
+            if (bf != null && bf.DeclaringType == typeof(SysModule) && bf.Name == "excepthook") {
+                // builtin except hook, display it to the console which may do nice coloring
+                PrintWithDest(context, pc.SystemStandardError, pc.FormatException(exception));
+            } else {
+                // user defined except hook or no console
+                try {
+                    PythonCalls.Call(context, exceptHook, exInfo[0], exInfo[1], exInfo[2]);
+                } catch (Exception e) {
+                    PrintWithDest(context, pc.SystemStandardError, "Error in sys.excepthook:");
+                    PrintWithDest(context, pc.SystemStandardError, pc.FormatException(e));
+                    PrintNewlineWithDest(context, pc.SystemStandardError);
+
+                    PrintWithDest(context, pc.SystemStandardError, "Original exception was:");
+                    PrintWithDest(context, pc.SystemStandardError, pc.FormatException(exception));
+                }
+            }
+        }
+
         #endregion
 
         #region Import support

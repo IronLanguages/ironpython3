@@ -121,24 +121,15 @@ namespace IronPython.Runtime.Exceptions {
 
             #region Public API Surface
 
-            public BaseException(PythonType/*!*/ type, BaseException cause) {
+            public BaseException(PythonType/*!*/ type) {
                 ContractUtils.RequiresNotNull(type, "type");
 
                 _type = type;
-                CreateClrExceptionWithCause(cause, null);
-            }
-
-            public BaseException(PythonType/*!*/ type) : this(type, null) {
-                
             }
 
             public static object __new__(PythonType/*!*/ cls, params object[] args\u00F8) {
                 if (cls.UnderlyingSystemType == typeof(BaseException)) {
-                    if (argsø == null || argsø.Length == 0) {
-                        return new BaseException(cls);
-                    } else if(argsø.Length > 0 && argsø[0] is BaseException) {
-                        return new BaseException(cls, (BaseException)argsø[0]);
-                    }
+                    return new BaseException(cls);
                 }
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
@@ -430,7 +421,7 @@ namespace IronPython.Runtime.Exceptions {
             /// Helper to get the CLR exception associated w/ this Python exception
             /// creating it if one has not already been created.
             /// </summary>
-            internal/*!*/ System.Exception GetClrException(Exception innerException=null) {
+            internal/*!*/ System.Exception GetClrException(Exception innerException = null) {
                 if (_clrException != null) {
                     return _clrException;
                 }
@@ -452,15 +443,14 @@ namespace IronPython.Runtime.Exceptions {
                 _context = context;
                 _traceback = null;
 
-                if(cause != null) {
-                    var causeClrException = cause.GetClrException();
-                    _clrException = GetClrException(causeClrException);
-                } else if(context != null) {
-                    var causeClrException = context.GetClrException();
-                    _clrException = GetClrException(causeClrException);
+                if (cause != null) {
+                    return GetClrException(cause.GetClrException());
+                }
+                if (context != null) {
+                    return GetClrException(context.GetClrException());
                 }
 
-                return _clrException;
+                return GetClrException();
             }
 
             internal System.Exception/*!*/ InitAndGetClrException(params object[] args) {
@@ -911,7 +901,7 @@ for k, v in toError.items():
         /// Used at runtime when creating the exception from a user provided type via the raise statement.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Throwable")]
-        internal static System.Exception CreateThrowableForRaise(CodeContext/*!*/ context, PythonType/*!*/ type, object value, object cause) {
+        internal static System.Exception CreateThrowableForRaise(CodeContext/*!*/ context, PythonType/*!*/ type, object value, BaseException cause) {
             object pyEx;
 
             if (PythonOps.IsInstance(value, type)) {
@@ -919,9 +909,7 @@ for k, v in toError.items():
             } else if (value is PythonTuple) {
                 pyEx = PythonOps.CallWithArgsTuple(type, ArrayUtils.EmptyObjects, value);
             } else if (value != null) {
-                pyEx = PythonCalls.Call(context, type, value, cause);
-            } else if (cause != null) {
-                pyEx = PythonCalls.Call(context, type, cause);
+                pyEx = PythonCalls.Call(context, type, value);
             } else {
                 pyEx = PythonCalls.Call(context, type);
             }
@@ -930,12 +918,13 @@ for k, v in toError.items():
                 var contextException = PythonOps.GetRawContextException();
 
                 // If we have a context-exception or no context/cause return the existing, or a new exception
-                if(cause != null || cause == null && contextException == null) {
-                    // overloaded __new__ can return anything, if
-                    // it's the right exception type use the normal conversion...
-                    // If it's a wrong return an ObjectException which remembers the type
+                if (cause != null) {
+                    return ((BaseException)pyEx).CreateClrExceptionWithCause(cause, null);
+                }
+                else if (contextException == null) {
                     return ((BaseException)pyEx).GetClrException();
-                } else if(context != null) {
+                }
+                else if (context != null) {
                     // Generate new CLR-Exception and return it
                     return ((BaseException)pyEx).CreateClrExceptionWithCause(null, contextException);
                 }

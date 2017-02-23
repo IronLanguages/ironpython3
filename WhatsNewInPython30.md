@@ -56,10 +56,10 @@ New Syntax
 
 Changed Syntax
 ==========
-- [ ] PEP 3109 and PEP 3134: new raise statement syntax: raise \[expr \[from expr\]\].
+- [x] PEP 3109 and PEP 3134: new raise statement syntax: raise \[expr \[from expr\]\].
 - [x] as and with are now reserved words. (Since 2.6, actually.)
 - [x] True, False, and None are reserved words. (2.6 partially enforced the restrictions on None already.)
-- [ ] Change from except exc, var to except exc as var. See PEP 3110
+- [x] Change from except exc, var to except exc as var. See PEP 3110
 - [ ] PEP 3115: New Metaclass Syntax
 - [ ] List comprehensions no longer support the syntactic form [... for var in item1, item2, ...]. Use [... for var in (item1, item2, ...)] instead.
 - [ ] The ellipsis (...) can be used as an atomic expression anywhere. (Previously it was only allowed in slices.) Also, it must now be spelled as .... (Previously it could also be spelled as . . ., by a mere accident of the grammar.)
@@ -71,7 +71,7 @@ Removed Syntax
 - [x] Removed <> (use != instead).
 - [x] Removed keyword: exec() is no longer a keyword; it remains as a function
 - [x] Integer literals no longer support a trailing l or L.
-- [ ] String literals no longer support a leading u or U.
+- [x] ~~String literals no longer support a leading u or U.~~ (Readded in Python 3.3)
 - [ ] The from module import * syntax is only allowed at the module level, no longer inside functions.
 - [ ] The only acceptable syntax for relative imports is from .[module] import name. All import forms not starting with . are interpreted as absolute imports. (PEP 0328)
 - [x] Classic classes are gone.
@@ -98,12 +98,10 @@ Changes To Exceptions
 - [ ] Almost all exceptions should actually derive from Exception; BaseException should only be used as a base class for exceptions that should only be handled at the top level, such as SystemExit or KeyboardInterrupt. The recommended idiom for handling all exceptions except for this latter category is to use except Exception.
 - [x] StandardError was removed (in 2.6 already).
 - [ ] Exceptions no longer behave as sequences. Use the args attribute instead.
-- [ ] PEP 3109: Raising exceptions. You must now use raise Exception(args) instead of raise Exception, args. Additionally, you can no longer explicitly specify a traceback; instead, if you have to do this, you can assign directly to the \_\_traceback\_\_ attribute (see below).
+- [x] PEP 3109: Raising exceptions. You must now use raise Exception(args) instead of raise Exception, args. Additionally, you can no longer explicitly specify a traceback; instead, if you have to do this, you can assign directly to the \_\_traceback\_\_ attribute (see below).
 - [x] PEP 3110: Catching exceptions. You must now use except SomeException as variable instead of except SomeException, variable. Moreover, the variable is explicitly deleted when the except block is left.
-- [ ] PEP 3134: Exception chaining. There are two cases: implicit chaining and explicit chaining. Implicit chaining happens when an exception is raised in an except or finally handler block. This usually happens due to a bug in the handler block; we call this a secondary exception. In this case, the original exception (that was being handled) is saved as the \_\_context\_\_ attribute of the secondary exception. Explicit chaining is invoked with this syntax:
-- [ ] raise SecondaryException() from primary\_exception
-(where primary\_exception is any expression that produces an exception object, probably an exception that was previously caught). In this case, the primary exception is stored on the \_\_cause\_\_ attribute of the secondary exception. The traceback printed when an unhandled exception occurs walks the chain of \_\_cause\_\_ and \_\_context\_\_ attributes and prints a separate traceback for each component of the chain, with the primary exception at the top. (Java users may recognize this behavior.)
-- [ ] PEP 3134: Exception objects now store their traceback as the \_\_traceback\_\_ attribute. This means that an exception object now contains all the information pertaining to an exception, and there are fewer reasons to use sys.exc\_info() (though the latter is not removed).
+- [x] PEP 3134: Exception chaining. There are two cases: implicit chaining and explicit chaining. Implicit chaining happens when an exception is raised in an except or finally handler block. This usually happens due to a bug in the handler block; we call this a secondary exception. In this case, the original exception (that was being handled) is saved as the \_\_context\_\_ attribute of the secondary exception. Explicit chaining is invoked with this syntax: raise SecondaryException() from primary\_exception (where primary\_exception is any expression that produces an exception object, probably an exception that was previously caught). In this case, the primary exception is stored on the \_\_cause\_\_ attribute of the secondary exception. The traceback printed when an unhandled exception occurs walks the chain of \_\_cause\_\_ and \_\_context\_\_ attributes and prints a separate traceback for each component of the chain, with the primary exception at the top. (Java users may recognize this behavior.)
+- [x] PEP 3134: Exception objects now store their traceback as the \_\_traceback\_\_ attribute. This means that an exception object now contains all the information pertaining to an exception, and there are fewer reasons to use sys.exc\_info() (though the latter is not removed).
 - [ ] A few exception messages are improved when Windows fails to load an extension module. For example, error code 193 is now %1 is not a valid Win32 application. Strings now deal with non-English locales.
 
 Operators And Special Methods

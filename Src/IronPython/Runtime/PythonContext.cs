@@ -1474,14 +1474,15 @@ namespace IronPython.Runtime
 
             object pythonEx = PythonExceptions.ToPython(exception);
 
-            if(exception.InnerException != null) {
+            if (exception.InnerException != null) {
                 var pythonInnerException = exception.InnerException.GetPythonException() as PythonExceptions.BaseException;
-                if(pythonInnerException != null) {
+                if (pythonInnerException != null) {
                     // add the nested/chained exception
                     result.AppendLine(FormatException(exception.InnerException));
+                    result.AppendLine();
 
                     // check whether this is implicit or explicit
-                    if(!((PythonExceptions.BaseException)pythonEx).IsImplicitException) {
+                    if (!((PythonExceptions.BaseException)pythonEx).IsImplicitException) {
                         result.AppendLine("The above exception was the direct cause of the following exception.");
                     } else {
                         result.AppendLine("During handing of the above exception, another exception occurred:");
@@ -1675,23 +1676,26 @@ namespace IronPython.Runtime
             return result.ToString();
         }
 
-        internal string FormatStackTraceNoDetail(Exception e, ref bool printedHeader) {
-            var pythonException = e.GetPythonException() as PythonExceptions.BaseException;
-            StringBuilder result = new StringBuilder();
-            // dump inner most exception first, followed by outer most.
-            if (e.InnerException != null && pythonException != null) result.AppendLine(FormatStackTraceNoDetail(e.InnerException, ref printedHeader));
-
+        private void PrintHeader(ref StringBuilder result, ref bool printedHeader) {
             if (!printedHeader) {
                 result.AppendLine("Traceback (most recent call last):");
                 printedHeader = true;
             }
+        }
+
+        internal string FormatStackTraceNoDetail(Exception e, ref bool printedHeader) {
+            var pythonException = e.GetPythonException() as PythonExceptions.BaseException;
+            StringBuilder result = new StringBuilder();
 
             var traceback = e.GetTraceBack();
             if (traceback != null) {
+                PrintHeader(ref result, ref printedHeader);
                 result.Append(traceback.Extract());
                 return result.ToString();
             }
+
             var frames = PythonExceptions.GetDynamicStackFrames(e);
+            if (frames.Length > 0) PrintHeader(ref result, ref printedHeader);
             for (int i = frames.Length - 1; i >= 0; i--) {
                 var frame = frames[i];
 

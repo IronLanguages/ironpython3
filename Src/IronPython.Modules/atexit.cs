@@ -28,15 +28,15 @@ Two public functions, register and unregister, are defined.
             }
 
             public object Func {
-                get; private set;
+                get; 
             }
 
             public IDictionary<object, object> KeywordArgs {
-                get; private set;
+                get; 
             }
 
             public object[] Args {
-                get; private set;
+                get; 
             }
         }
 

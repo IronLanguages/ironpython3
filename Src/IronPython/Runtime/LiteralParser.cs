@@ -115,6 +115,7 @@ namespace IronPython.Runtime {
                             case '\n': continue;
 #if FEATURE_COMPRESSION
                             case 'N': {
+                                    IronPython.Modules.unicodedata.PerformModuleReload(null, null);
                                     if (i < l && text[i] == '{') {
                                         i++;
                                         StringBuilder namebuf = new StringBuilder();

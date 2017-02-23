@@ -2278,7 +2278,7 @@ namespace IronPython.Runtime
             PythonTypeSlot pts;
             object callable;
 
-            if (pt.TryResolveMixedSlot(context, symbol, out pts) &&
+            if (pt.TryResolveSlot(context, symbol, out pts) &&
                 pts.TryGetValue(context, target, pt, out callable)) {
 
                 result = site.Target(site, context, callable);
@@ -2329,7 +2329,7 @@ namespace IronPython.Runtime
             PythonTypeSlot pts;
             object callable;
 
-            if (pt.TryResolveMixedSlot(context, symbol, out pts) &&
+            if (pt.TryResolveSlot(context, symbol, out pts) &&
                 pts.TryGetValue(context, target, pt, out callable)) {
 
                 result = site.Target(site, context, callable, value1, value2);

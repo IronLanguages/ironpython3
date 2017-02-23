@@ -100,7 +100,7 @@ namespace IronPython.Runtime {
             PythonTypeSlot slot;
             object res;
             if (GetType() != typeof(PythonModule) &&
-                DynamicHelpers.GetPythonType(this).TryResolveMixedSlot(context, name, out slot) &&
+                DynamicHelpers.GetPythonType(this).TryResolveSlot(context, name, out slot) &&
                 slot.TryGetValue(context, this, DynamicHelpers.GetPythonType(this), out res)) {
                 return res;
             }
@@ -123,7 +123,7 @@ namespace IronPython.Runtime {
             PythonTypeSlot slot;
             object res;
             if (GetType() != typeof(PythonModule) &&
-                DynamicHelpers.GetPythonType(this).TryResolveMixedSlot(context, name, out slot) &&
+                DynamicHelpers.GetPythonType(this).TryResolveSlot(context, name, out slot) &&
                 slot.TryGetValue(context, this, DynamicHelpers.GetPythonType(this), out res)) {
                 return res;
             }
@@ -138,7 +138,7 @@ namespace IronPython.Runtime {
                 return res;
             } else if (DynamicHelpers.GetPythonType(this).TryGetNonCustomMember(context, this, name, out res)) {
                 return res;
-            } else if (DynamicHelpers.GetPythonType(this).TryResolveMixedSlot(context, "__getattr__", out slot) &&
+            } else if (DynamicHelpers.GetPythonType(this).TryResolveSlot(context, "__getattr__", out slot) &&
                 slot.TryGetValue(context, this, DynamicHelpers.GetPythonType(this), out res)) {
                 return PythonCalls.Call(context, res, name);
             }
@@ -149,7 +149,7 @@ namespace IronPython.Runtime {
         public void __setattr__(CodeContext/*!*/ context, string name, object value) {
             PythonTypeSlot slot;
             if (GetType() != typeof(PythonModule) &&
-                DynamicHelpers.GetPythonType(this).TryResolveMixedSlot(context, name, out slot) &&
+                DynamicHelpers.GetPythonType(this).TryResolveSlot(context, name, out slot) &&
                 slot.TrySetValue(context, this, DynamicHelpers.GetPythonType(this), value)) {
                 return;
             }
@@ -167,7 +167,7 @@ namespace IronPython.Runtime {
         public void __delattr__(CodeContext/*!*/ context, string name) {
             PythonTypeSlot slot;
             if (GetType() != typeof(PythonModule) &&
-                DynamicHelpers.GetPythonType(this).TryResolveMixedSlot(context, name, out slot) &&
+                DynamicHelpers.GetPythonType(this).TryResolveSlot(context, name, out slot) &&
                 slot.TryDeleteValue(context, this, DynamicHelpers.GetPythonType(this))) {
                 return;
             }

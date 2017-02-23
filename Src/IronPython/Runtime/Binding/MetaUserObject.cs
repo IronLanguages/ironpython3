@@ -139,7 +139,7 @@ namespace IronPython.Runtime.Binding {
                 // optimization for meta classes.  Don't dispatch to type.__call__ if it's inherited,
                 // instead produce a normal type call rule.
                 PythonTypeSlot callSlot, typeCallSlot;
-                if (Value.PythonType.TryResolveMixedSlot(context.SharedContext, "__call__", out callSlot) &&
+                if (Value.PythonType.TryResolveSlot(context.SharedContext, "__call__", out callSlot) &&
                     TypeCache.PythonType.TryResolveSlot(context.SharedContext, "__call__", out typeCallSlot) &&
                     callSlot == typeCallSlot) {
                     

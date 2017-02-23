@@ -1286,24 +1286,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         /// <summary>
-        /// Searches the resolution order for a slot matching by name.
-        /// 
-        /// Includes searching for methods in old-style classes
-        /// </summary>
-        internal bool TryResolveMixedSlot(CodeContext context, string name, out PythonTypeSlot slot) {
-            for (int i = 0; i < _resolutionOrder.Count; i++) {
-                PythonType dt = _resolutionOrder[i];
-
-                if (dt.TryLookupSlot(context, name, out slot)) {
-                    return true;
-                }
-            }
-
-            slot = null;
-            return false;
-        }
-
-        /// <summary>
         /// Internal helper to add a new slot to the type
         /// </summary>
         /// <param name="name"></param>

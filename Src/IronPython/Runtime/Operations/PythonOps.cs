@@ -2674,21 +2674,6 @@ namespace IronPython.Runtime.Operations {
             return value;
         }
 
-        public static object GetMixedMember(CodeContext/*!*/ context, PythonType type, object instance, string name) {
-            foreach (PythonType t in type.ResolutionOrder) {
-                PythonTypeSlot dts;
-                if (t.TryLookupSlot(context, name, out dts)) {
-                    object ret;
-                    if (dts.TryGetValue(context, instance, type, out ret)) {
-                        return ret;
-                    }
-                    return dts;
-                }
-            }
-
-            throw AttributeErrorForMissingAttribute(type, name);
-        }
-
         #region Slicing support
 
         /// <summary>

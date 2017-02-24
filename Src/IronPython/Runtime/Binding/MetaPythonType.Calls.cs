@@ -490,25 +490,6 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        private class MixedNewAdapter : NewAdapter {
-            public MixedNewAdapter(ArgumentValues/*!*/ ai, PythonContext/*!*/ state, Expression/*!*/ codeContext)
-                : base(ai, state, codeContext) {
-            }
-
-            public override DynamicMetaObject/*!*/ GetExpression(PythonBinder/*!*/ binder) {
-                return MakeDefaultNew(
-                    binder,
-                    Ast.Call(
-                        typeof(PythonOps).GetMethod("GetMixedMember"),
-                        CodeContext,
-                        Arguments.Self.Expression,
-                        AstUtils.Constant(null),
-                        AstUtils.Constant("__new__")
-                    )
-                );
-            }
-        }
-
         #endregion
 
         #region __init__ adapters
@@ -596,24 +577,6 @@ namespace IronPython.Runtime.Binding {
                     _method.Targets,
                     Arguments.Self.Restrictions
                 );
-            }
-        }
-
-        private class MixedInitAdapter : InitAdapter {
-            public MixedInitAdapter(ArgumentValues/*!*/ ai, PythonContext/*!*/ state, Expression/*!*/ codeContext)
-                : base(ai, state, codeContext) {
-            }
-
-            public override DynamicMetaObject/*!*/ MakeInitCall(PythonBinder/*!*/ binder, DynamicMetaObject/*!*/ createExpr) {
-                Expression init = Ast.Call(
-                    typeof(PythonOps).GetMethod("GetMixedMember"),
-                    CodeContext,
-                    Ast.Convert(Arguments.Self.Expression, typeof(PythonType)),
-                    AstUtils.Convert(createExpr.Expression, typeof(object)),
-                    AstUtils.Constant("__init__")
-                );
-
-                return MakeDefaultInit(binder, createExpr, init);
             }
         }
 

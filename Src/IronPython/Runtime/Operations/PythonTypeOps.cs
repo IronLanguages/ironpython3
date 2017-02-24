@@ -813,7 +813,7 @@ namespace IronPython.Runtime.Operations {
             PythonType pt = DynamicHelpers.GetPythonType(o);
             object callable;
 
-            if (pt.TryResolveMixedSlot(context, name, out pts) &&
+            if (pt.TryResolveSlot(context, name, out pts) &&
                 pts.TryGetValue(context, o, pt, out callable)) {
                 value = PythonCalls.Call(context, callable);
                 return true;
@@ -829,7 +829,7 @@ namespace IronPython.Runtime.Operations {
             PythonTypeSlot pts;
             PythonType pt = DynamicHelpers.GetPythonType(o);
             object callable;
-            if (pt.TryResolveMixedSlot(context, name, out pts) &&
+            if (pt.TryResolveSlot(context, name, out pts) &&
                 pts.TryGetValue(context, o, pt, out callable)) {
                 value = PythonCalls.Call(context, callable, arg1);
                 return true;
@@ -845,7 +845,7 @@ namespace IronPython.Runtime.Operations {
             PythonTypeSlot pts;
             PythonType pt = DynamicHelpers.GetPythonType(o);
             object callable;
-            if (pt.TryResolveMixedSlot(context, name, out pts) &&
+            if (pt.TryResolveSlot(context, name, out pts) &&
                 pts.TryGetValue(context, o, pt, out callable)) {
                 value = PythonCalls.Call(context, callable, arg1, arg2);
                 return true;

@@ -141,36 +141,5 @@ namespace IronPython.Runtime.Types {
         private static IList<PythonType> TupleToList(IList<PythonType> t) {
             return new List<PythonType>(t);
         }
-
-        private static IList<PythonType> GetOldStyleMro(PythonType oldStyleType) {
-            List<PythonType> res = new List<PythonType>();
-            GetOldStyleMroWorker(oldStyleType, res);
-            return res;
-        }
-
-        private static void GetOldStyleMroWorker(PythonType curType, List<PythonType> res) {
-            PythonType dt = curType as PythonType;
-            Debug.Assert(dt != null);
-
-            if (!res.Contains(curType)) {
-                res.Add(curType);
-
-                foreach (PythonType baseDt in dt.BaseTypes) {
-                    GetOldStyleMroWorker(baseDt, res);
-                }
-            }
-        }
-
-        private static IList<PythonType> GetNewStyleMro(PythonType oldStyleType) {
-            PythonType dt = oldStyleType as PythonType;
-            Debug.Assert(dt != null);
-
-            List<PythonType> res = new List<PythonType>();
-            res.Add(oldStyleType);
-            foreach (PythonType baseDt in dt.BaseTypes) {
-                res.AddRange(TupleToList(Calculate(baseDt, baseDt.BaseTypes, true)));
-            }
-            return res;
-        }        
     }
 }

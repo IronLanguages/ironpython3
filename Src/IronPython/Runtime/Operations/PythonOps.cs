@@ -1721,7 +1721,7 @@ namespace IronPython.Runtime.Operations {
         }
 
 #if FEATURE_FULL_CONSOLE
-        public static void PrintException(CodeContext/*!*/ context, Exception/*!*/ exception, IConsole console) {
+        public static void PrintException(CodeContext/*!*/ context, Exception/*!*/ exception, object console=null) {
             PythonContext pc = PythonContext.GetContext(context);
             PythonTuple exInfo = GetExceptionInfoLocal(context, exception);
             pc.SetSystemStateValue("last_type", exInfo[0]);
@@ -1730,9 +1730,14 @@ namespace IronPython.Runtime.Operations {
 
             object exceptHook = pc.GetSystemStateValue("excepthook");
             BuiltinFunction bf = exceptHook as BuiltinFunction;
-            if (console != null && bf != null && bf.DeclaringType == typeof(SysModule) && bf.Name == "excepthook") {
+            if (bf != null && bf.DeclaringType == typeof(SysModule) && bf.Name == "excepthook") {
                 // builtin except hook, display it to the console which may do nice coloring
-                console.WriteLine(pc.FormatException(exception), Style.Error);
+                var con = console as IConsole;
+                if (con != null) {                    
+                    con.WriteLine(pc.FormatException(exception), Style.Error);
+                } else {
+                    PrintWithDest(context, pc.SystemStandardError, pc.FormatException(exception));
+                }
             } else {
                 // user defined except hook or no console
                 try {

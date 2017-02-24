@@ -2911,6 +2911,10 @@ namespace IronPython.Runtime
         }
         
         internal object CallWithKeywords(object func, object[] args, IDictionary<object, object> dict) {
+            return CallWithKeywordsAndContext(SharedContext, func, args, dict);
+        }
+
+        internal object CallWithKeywordsAndContext(CodeContext context, object func, object[] args, IDictionary<object, object> dict) {
             if (_callDictSite == null) {
                 Interlocked.CompareExchange(
                     ref _callDictSite,
@@ -2919,7 +2923,7 @@ namespace IronPython.Runtime
                 );
             }
 
-            return _callDictSite.Target(_callDictSite, SharedContext, func, args, dict);
+            return _callDictSite.Target(_callDictSite, context, func, args, dict);
         }
 
         internal CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>> MakeKeywordSplatSite() {

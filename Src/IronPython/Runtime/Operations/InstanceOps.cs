@@ -199,12 +199,12 @@ namespace IronPython.Runtime.Operations {
 
         // 3.0-only
         public static object IterMethodForString(string self) {
-            return PythonOps.StringEnumerator(self);
+            return StringOps.StringEnumerator(self);
         }
 
         // 3.0-only
         public static object IterMethodForBytes(Bytes self) {
-            return PythonOps.BytesIntEnumerator(self);
+            return IListOfByteOps.BytesIntEnumerator(self);
         }
 
         public static object IterMethodForEnumerator(IEnumerator self) {

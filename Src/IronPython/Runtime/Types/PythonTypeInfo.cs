@@ -1003,12 +1003,12 @@ namespace IronPython.Runtime.Types {
         private static MemberGroup/*!*/ IterResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
             if (type == typeof(string)) {
                 // __iter__ is only exposed in 3.0
-                return GetInstanceOpsMethod(type, "IterMethodForString");
+                return GetInstanceOpsMethod(type, nameof(InstanceOps.IterMethodForString));
             }
 
             if (typeof(Bytes).IsAssignableFrom(type)) {
                 // __iter__ is only exposed in 3.0
-                return GetInstanceOpsMethod(type, "IterMethodForBytes");
+                return GetInstanceOpsMethod(type, nameof(InstanceOps.IterMethodForBytes));
             }
 
             foreach (Type t in binder.GetContributingTypes(type)) {
@@ -1022,13 +1022,13 @@ namespace IronPython.Runtime.Types {
             if (!type.GetTypeInfo().IsDefined(typeof(DontMapIEnumerableToIterAttribute), true)) {
                 // no special __iter__, use the default.
                 if (typeof(IEnumerable<>).IsAssignableFrom(type)) {
-                    return GetInstanceOpsMethod(type, "IterMethodForGenericEnumerable");
+                    return GetInstanceOpsMethod(type, nameof(InstanceOps.IterMethodForGenericEnumerable));
                 } else if (typeof(IEnumerable).IsAssignableFrom(type)) {
-                    return GetInstanceOpsMethod(type, "IterMethodForEnumerable");
+                    return GetInstanceOpsMethod(type, nameof(InstanceOps.IterMethodForEnumerable));
                 } else if (typeof(IEnumerator<>).IsAssignableFrom(type)) {
-                    return GetInstanceOpsMethod(type, "IterMethodForGenericEnumerator");
+                    return GetInstanceOpsMethod(type, nameof(InstanceOps.IterMethodForGenericEnumerator));
                 } else if (typeof(IEnumerator).IsAssignableFrom(type)) {
-                    return GetInstanceOpsMethod(type, "IterMethodForEnumerator");
+                    return GetInstanceOpsMethod(type, nameof(InstanceOps.IterMethodForEnumerator));
                 }
             }
             

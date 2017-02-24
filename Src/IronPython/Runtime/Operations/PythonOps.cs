@@ -1552,7 +1552,7 @@ namespace IronPython.Runtime.Operations {
                 }
             }
             else {
-                if (list._size > expected + argcntafter) {
+                if (list._size >= expected + argcntafter) {
                     return list._data;
                 }
             }

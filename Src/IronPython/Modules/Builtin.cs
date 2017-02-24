@@ -1725,20 +1725,37 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [PythonType("zip")]
-        public class zipobject : IEnumerable {
-            private CodeContext _context;
-            private object[] _iters;
+        public class zipobject : IEnumerator {
+            private readonly IEnumerator[] enumerators;
+            private object current;
+
             public zipobject(CodeContext context, object[] iters) {
-                _context = context;
-                _iters = iters;
+                if (iters == null) throw PythonOps.TypeError("zip argument #{0} must support iteration", 1);
+
+                enumerators = new IEnumerator[iters.Length];
+                for (var i = 0; i < iters.Length; i++) {
+                    if (!PythonOps.TryGetEnumerator(context, iters[i], out enumerators[i]))
+                        throw PythonOps.TypeError("zip argument #{0} must support iteration", i + 1);
+                }
             }
 
-            public IEnumerator GetEnumerator() {
-                var enumerators = _iters.Select(x => PythonOps.GetEnumerator(_context, x)).ToArray();
-                while(enumerators.All(x => x.MoveNext())) {
-                    yield return PythonOps.MakeTuple(enumerators.Select(x => x.Current).ToArray());
-                }                
+            public object Current {
+                get {
+                    if (current == null) throw new InvalidOperationException();
+                    return current;
+                }
             }
+
+            public bool MoveNext() {
+                if (enumerators.Length > 0 && enumerators.All(x => x.MoveNext())) {
+                    current = PythonOps.MakeTuple(enumerators.Select(x => x.Current).ToArray());
+                    return true;
+                }
+                current = null;
+                return false;
+            }
+
+            public void Reset() { throw new NotSupportedException(); }
         }
 
         public static object zip(CodeContext context, params object[] seqs) {

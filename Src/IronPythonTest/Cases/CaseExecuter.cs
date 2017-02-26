@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using IronPython.Hosting;
+using IronPython.Runtime;
 using IronPythonTest.Util;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
@@ -99,6 +100,7 @@ namespace IronPythonTest.Cases {
 
         private int GetResult(ScriptEngine engine, ScriptSource source) {
             var scope = engine.CreateScope();
+            engine.GetSysModule().SetVariable("argv", List.FromArrayNoCopy(new object[] { source.Path }));
             var compiledCode = source.Compile(new IronPython.Compiler.PythonCompilerOptions() { ModuleName = "__main__" });
             return engine.Operations.ConvertTo<int>(compiledCode.Execute(scope) ?? 0);
         }

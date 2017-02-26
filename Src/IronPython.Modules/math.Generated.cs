@@ -49,12 +49,6 @@ namespace IronPython.Modules {
         public static double atan(double v0) {
             return Check(v0, Math.Atan(v0));
         }
-        public static double floor(double v0) {
-            return Check(v0, Math.Floor(v0));
-        }
-        public static double ceil(double v0) {
-            return Check(v0, Math.Ceiling(v0));
-        }
         public static double fabs(double v0) {
             return Check(v0, Math.Abs(v0));
         }

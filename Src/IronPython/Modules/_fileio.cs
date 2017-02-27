@@ -141,15 +141,15 @@ namespace IronPython.Modules {
 
                 switch (StandardizeMode(mode)) {
                     case "r":
-                        _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.Read, FileShare.None);
+                        _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                         _mode = "rb";
                         break;
                     case "w":
-                        _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Create, FileAccess.Write, FileShare.None);
+                        _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
                         _mode = "wb";
                         break;
                     case "a":
-                        _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Append, FileAccess.Write, FileShare.None);
+                        _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
                         _readStream.Seek(0L, SeekOrigin.End);
                         _mode = "w";
                         break;

@@ -23,7 +23,7 @@ namespace IronPython.Runtime.Operations {
     public static class TypeTrackerOps {
         [SpecialName, PropertyMethod]
         public static IDictionary Get__dict__(CodeContext context, TypeTracker self) {
-            return new DictProxy(DynamicHelpers.GetPythonTypeFromType(self.Type));
+            return new MappingProxy(context, DynamicHelpers.GetPythonTypeFromType(self.Type));
         }
     }
 }

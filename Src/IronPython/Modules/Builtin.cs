@@ -1718,7 +1718,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         public static object vars(CodeContext/*!*/ context, object @object) {
             object value;
-            if (!PythonOps.TryGetBoundAttr(@object, "__dict__", out value)) {
+            if (!PythonOps.TryGetBoundAttr(context, @object, "__dict__", out value)) {
                 throw PythonOps.TypeError("vars() argument must have __dict__ attribute");
             }
             return value;

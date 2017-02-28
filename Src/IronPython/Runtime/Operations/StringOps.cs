@@ -1604,24 +1604,20 @@ namespace IronPython.Runtime.Operations {
             StringBuilder b = null;
             for (int i = 0; i < s.Length; i++) {
                 char ch = s[i];
-                switch (ch) {
-                    default:
-                        if (ch <= 0x1f || ch == 0x7f) {
-                            ReprInit(ref b, s, i);
-                            b.AppendFormat("\\x{0:x2}", (int)ch);
-                        } else if (ch > 0x7f) {
-                            ReprInit(ref b, s, i);
-                            if (ch < 0x100) {
-                                b.AppendFormat("\\x{0:x2}", (int)ch);
-                            } else if (ch < 0x10000) {
-                                b.AppendFormat("\\u{0:x4}", (int)ch);
-                            } else {
-                                b.AppendFormat("\\U00{0:x6}", (int)ch);
-                            }
-                        } else if (b != null) {
-                            b.Append(ch);
-                        }
-                        break;
+                if (ch <= 0x1f || ch == 0x7f) {
+                    ReprInit(ref b, s, i);
+                    b.AppendFormat("\\x{0:x2}", (int)ch);
+                } else if (ch > 0x7f) {
+                    ReprInit(ref b, s, i);
+                    if (ch < 0x100) {
+                        b.AppendFormat("\\x{0:x2}", (int)ch);
+                    } else {
+                        b.AppendFormat("\\u{0:x4}", (int)ch);
+                    }
+                    // TODO: support "wide" unicode
+                }
+                else if (b != null) {
+                    b.Append(ch);
                 }
             }
 
@@ -1651,11 +1647,10 @@ namespace IronPython.Runtime.Operations {
                             ReprInit(ref b, s, i);
                             if (ch < 0x100) {
                                 b.AppendFormat("\\x{0:x2}", (int)ch);
-                            } else if (ch < 0x10000) {
-                                b.AppendFormat("\\u{0:x4}", (int)ch);
                             } else {
-                                b.AppendFormat("\\U00{0:x6}", (int)ch);
+                                b.AppendFormat("\\u{0:x4}", (int)ch);
                             }
+                            // TODO: support "wide" unicode
                         } else if (b != null) {
                             b.Append(ch);
                         }

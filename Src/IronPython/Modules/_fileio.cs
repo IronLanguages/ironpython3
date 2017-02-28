@@ -12,17 +12,8 @@
  *
  *
  * ***************************************************************************/
-#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
-#else
-using Microsoft.Scripting.Ast;
-#endif
-
-#if FEATURE_NUMERICS
 using System.Numerics;
-#else
-using Microsoft.Scripting.Math;
-#endif
 
 using System;
 using System.Collections;
@@ -141,15 +132,15 @@ namespace IronPython.Modules {
 
                 switch (StandardizeMode(mode)) {
                     case "r":
-                        _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.Read, FileShare.None);
+                        _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                         _mode = "rb";
                         break;
                     case "w":
-                        _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Create, FileAccess.Write, FileShare.None);
+                        _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
                         _mode = "wb";
                         break;
                     case "a":
-                        _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Append, FileAccess.Write, FileShare.None);
+                        _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
                         _readStream.Seek(0L, SeekOrigin.End);
                         _mode = "w";
                         break;
@@ -246,18 +237,20 @@ namespace IronPython.Modules {
 
                 flush(context);
                 _closed = true;
-                _readStream.Close();
-                _readStream.Dispose();
-                if (!object.ReferenceEquals(_readStream, _writeStream)) {
-                    _writeStream.Close();
-                    _writeStream.Dispose();
-                }
 
+                if (_closefd) {
+                    _readStream.Close();
+                    _readStream.Dispose();
+                    if (!object.ReferenceEquals(_readStream, _writeStream)) {
+                        _writeStream.Close();
+                        _writeStream.Dispose();
+                    }
 
-                PythonFileManager myManager = _context.RawFileManager;
-                if (myManager != null) {
-                    myManager.Remove(this);
-                }
+                    PythonFileManager myManager = _context.RawFileManager;
+                    if (myManager != null) {
+                        myManager.Remove(this);
+                    }
+                }                
             }
 
             [Documentation("True if the file is closed")]

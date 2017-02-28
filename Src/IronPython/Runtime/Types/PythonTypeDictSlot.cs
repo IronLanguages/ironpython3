@@ -33,13 +33,13 @@ namespace IronPython.Runtime.Types {
 
         internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
             if (instance == null) {
-                value = new DictProxy(owner);
+                value = new MappingProxy(context, owner);
                 return true;
             }
 
             PythonType pt = instance as PythonType;
             if (pt != null) {
-                value = new DictProxy(pt);
+                value = new MappingProxy(context, pt);
                 return true;
             }
 

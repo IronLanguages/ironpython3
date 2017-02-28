@@ -384,7 +384,7 @@
     <Compile Include="Runtime\Types\CustomAttributeTracker.cs" />
     <Compile Include="Runtime\Types\CustomInstanceDictionaryStorage.cs" />
     <Compile Include="Runtime\Operations\DelegateOps.cs" />
-    <Compile Include="Runtime\Types\DictProxy.cs" />
+    <Compile Include="Runtime\Types\MappingProxy.cs" />
     <Compile Include="Runtime\Types\FunctionType.cs" />
     <Compile Include="Runtime\Types\OperatorMapping.cs" />
     <Compile Include="Runtime\Types\ParameterInfoWrapper.cs" />

@@ -24,24 +24,28 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Types {
-    [PythonType("dictproxy")]
-    public class DictProxy : IDictionary, IEnumerable, IDictionary<object, object> {
-        private readonly PythonType/*!*/ _dt;
-        
-        public DictProxy(PythonType/*!*/ dt) {
+    [PythonType("mappingproxy")]
+    public class MappingProxy : IDictionary, IEnumerable, IDictionary<object, object> {
+        internal PythonDictionary Dictionary { get; }
+
+        internal MappingProxy(CodeContext context, PythonType/*!*/ dt) {
             Debug.Assert(dt != null);
-            _dt = dt;
+            Dictionary = dt.GetMemberDictionary(context, false);
+        }
+
+        public MappingProxy([NotNull]PythonDictionary dict) {
+            Dictionary = dict;
         }
 
         #region Python Public API Surface
 
         public int __len__(CodeContext context) {
-            return _dt.GetMemberDictionary(context, false).Count;
+            return Dictionary.Count;
         }
 
         public bool __contains__(CodeContext/*!*/ context, object value) {
             object dummy;
-            return TryGetValue(context, value, out dummy);
+            return Dictionary.TryGetValue(value, out dummy);
         }
 
         public string/*!*/ __str__(CodeContext/*!*/ context) {
@@ -50,7 +54,7 @@ namespace IronPython.Runtime.Types {
 
         public object get(CodeContext/*!*/ context, [NotNull]object k, [DefaultParameterValue(null)]object d) {
             object res;
-            if (!TryGetValue(context, k, out res)) {
+            if (!Dictionary.TryGetValue(k, out res)) {
                 res = d;
             }
 
@@ -58,15 +62,15 @@ namespace IronPython.Runtime.Types {
         }
 
         public object keys(CodeContext context) {
-            return _dt.GetMemberDictionary(context, false).keys();
+            return Dictionary.keys();
         }
 
         public object values(CodeContext context) {
-            return _dt.GetMemberDictionary(context, false).values();
+            return Dictionary.values();
         }
 
         public List items(CodeContext context) {
-            return _dt.GetMemberDictionary(context, false).items();
+            return Dictionary.items();
         }
 
         public PythonDictionary copy(CodeContext/*!*/ context) {
@@ -74,15 +78,15 @@ namespace IronPython.Runtime.Types {
         }
 
         public IEnumerator iteritems(CodeContext/*!*/ context) {
-            return new DictionaryItemEnumerator(_dt.GetMemberDictionary(context, false)._storage);
+            return new DictionaryItemEnumerator(Dictionary._storage);
         }
 
         public IEnumerator iterkeys(CodeContext/*!*/ context) {
-            return new DictionaryKeyEnumerator(_dt.GetMemberDictionary(context, false)._storage);
+            return new DictionaryKeyEnumerator(Dictionary._storage);
         }
 
         public IEnumerator itervalues(CodeContext/*!*/ context) {
-            return new DictionaryValueEnumerator(_dt.GetMemberDictionary(context, false)._storage);
+            return new DictionaryValueEnumerator(Dictionary._storage);
         }
 
         #endregion
@@ -90,14 +94,14 @@ namespace IronPython.Runtime.Types {
         #region Object overrides
 
         public override bool Equals(object obj) {
-            DictProxy proxy = obj as DictProxy;
-            if (proxy == null) return false;
+            if (obj is MappingProxy)
+                return ((IStructuralEquatable)Dictionary).Equals(((MappingProxy)obj).Dictionary, DefaultContext.DefaultPythonContext.EqualityComparerNonGeneric);
 
-            return proxy._dt == _dt;
+            return ((IStructuralEquatable)Dictionary).Equals(obj as PythonDictionary, DefaultContext.DefaultPythonContext.EqualityComparerNonGeneric);
         }
 
         public override int GetHashCode() {
-            return ~_dt.GetHashCode();
+            return ~Dictionary.GetHashCode();
         }
 
         #endregion
@@ -106,11 +110,11 @@ namespace IronPython.Runtime.Types {
       
         public object this[object key] {
             get {
-                return GetIndex(DefaultContext.Default, key);
+                return Dictionary[key];
             }
             [PythonHidden]
             set {
-                throw PythonOps.TypeError("cannot assign to dictproxy");
+                throw PythonOps.TypeError("'mappingproxy' object does not support item assignment");
             }
         }
 
@@ -123,7 +127,7 @@ namespace IronPython.Runtime.Types {
         #region IEnumerable Members
 
         System.Collections.IEnumerator IEnumerable.GetEnumerator() {
-            return DictionaryOps.iterkeys(_dt.GetMemberDictionary(DefaultContext.Default, false));
+            return DictionaryOps.iterkeys(Dictionary);
         }
 
         #endregion
@@ -137,11 +141,11 @@ namespace IronPython.Runtime.Types {
 
         [PythonHidden]
         public void Clear() {
-            throw new InvalidOperationException("dictproxy is read-only");
+            throw new InvalidOperationException("mappingproxy is read-only");
         }
 
         IDictionaryEnumerator IDictionary.GetEnumerator() {
-            return new PythonDictionary.DictEnumerator(_dt.GetMemberDictionary(DefaultContext.Default, false).GetEnumerator());
+            return new PythonDictionary.DictEnumerator(Dictionary.GetEnumerator());
         }
 
         bool IDictionary.IsFixedSize {
@@ -154,7 +158,7 @@ namespace IronPython.Runtime.Types {
 
         ICollection IDictionary.Keys {
             get {
-                ICollection<object> res = _dt.GetMemberDictionary(DefaultContext.Default, false).Keys;
+                ICollection<object> res = Dictionary.Keys;
                 ICollection coll = res as ICollection;
                 if (coll != null) {
                     return coll;
@@ -165,13 +169,13 @@ namespace IronPython.Runtime.Types {
         }
 
         void IDictionary.Remove(object key) {
-            throw new InvalidOperationException("dictproxy is read-only");
+            throw new InvalidOperationException("mappingproxy is read-only");
         }
 
         ICollection IDictionary.Values {
             get {
                 List<object> res = new List<object>();
-                foreach (KeyValuePair<object, object> kvp in _dt.GetMemberDictionary(DefaultContext.Default, false)) {
+                foreach (KeyValuePair<object, object> kvp in Dictionary) {
                     res.Add(kvp.Value);
                 }
                 return res;
@@ -210,21 +214,21 @@ namespace IronPython.Runtime.Types {
 
         ICollection<object> IDictionary<object, object>.Keys {
             get {
-                return _dt.GetMemberDictionary(DefaultContext.Default, false).Keys;
+                return Dictionary.Keys;
             }
         }
 
         bool IDictionary<object, object>.Remove(object key) {
-            throw new InvalidOperationException("dictproxy is read-only");
+            throw new InvalidOperationException("mappingproxy is read-only");
         }
 
         bool IDictionary<object, object>.TryGetValue(object key, out object value) {
-            return TryGetValue(DefaultContext.Default, key, out value);
+            return Dictionary.TryGetValue(key, out value);
         }
 
         ICollection<object> IDictionary<object, object>.Values {
             get {
-                return _dt.GetMemberDictionary(DefaultContext.Default, false).Values;
+                return Dictionary.Values;
             }
         }
 
@@ -263,56 +267,9 @@ namespace IronPython.Runtime.Types {
         #region IEnumerable<KeyValuePair<object,object>> Members
 
         IEnumerator<KeyValuePair<object, object>> IEnumerable<KeyValuePair<object, object>>.GetEnumerator() {
-            return _dt.GetMemberDictionary(DefaultContext.Default, false).GetEnumerator();
+            return Dictionary.GetEnumerator();
         }
 
-        #endregion
-
-        #region Internal implementation details
-
-        private object GetIndex(CodeContext context, object index) {
-            string strIndex = index as string;
-            if (strIndex != null) {
-                PythonTypeSlot dts;
-                if (_dt.TryLookupSlot(context, strIndex, out dts)) {
-                    PythonTypeUserDescriptorSlot uds = dts as PythonTypeUserDescriptorSlot;
-                    if (uds != null) {
-                        return uds.Value;
-                    }
-
-                    return dts;
-                }
-            }
-
-            throw PythonOps.KeyError(index.ToString());
-        }
-
-        private bool TryGetValue(CodeContext/*!*/ context, object key, out object value) {
-            string strIndex = key as string;
-            if (strIndex != null) {
-                PythonTypeSlot dts;
-                if (_dt.TryLookupSlot(context, strIndex, out dts)) {
-                    PythonTypeUserDescriptorSlot uds = dts as PythonTypeUserDescriptorSlot;
-                    if (uds != null) {
-                        value = uds.Value;
-                        return true;
-                    }
-
-                    value = dts;
-                    return true;
-                }
-            }
-
-            value = null;
-            return false;
-        }
-        
-        internal PythonType Type {
-            get {
-                return _dt;
-            }
-        }
-        
         #endregion
     }
 }

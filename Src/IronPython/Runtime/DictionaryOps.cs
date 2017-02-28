@@ -157,10 +157,10 @@ namespace IronPython.Runtime {
 
         private static void SlowUpdate(CodeContext/*!*/ context, PythonDictionary/*!*/ self, object other) {
             object keysFunc;
-            DictProxy dictProxy;
+            MappingProxy proxy;
             IDictionary dict;
-            if ((dictProxy = other as DictProxy) != null) {
-                update(context, self, dictProxy.Type.GetMemberDictionary(context, false));
+            if ((proxy = other as MappingProxy) != null) {
+                update(context, self, proxy.Dictionary);
             } else if ((dict = other as IDictionary) != null) {
                 IDictionaryEnumerator e = dict.GetEnumerator();
                 while (e.MoveNext()) {

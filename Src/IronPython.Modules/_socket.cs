@@ -46,7 +46,7 @@ using PythonArray = IronPython.Modules.ArrayModule.array;
 using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribute;
 using Microsoft.Scripting.Utils;
 
-[assembly: PythonModule("socket", typeof(IronPython.Modules.PythonSocket))]
+[assembly: PythonModule("_socket", typeof(IronPython.Modules.PythonSocket))]
 namespace IronPython.Modules {
     public static class PythonSocket {
         private static readonly object _defaultTimeoutKey = new object();

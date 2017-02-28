@@ -71,7 +71,7 @@
     <Compile Include="_sha1.cs" />
     <Compile Include="_sha256.cs" />
     <Compile Include="_sha512.cs" />
-    <Compile Include="socket.cs" />
+    <Compile Include="_socket.cs" />
     <Compile Include="_ctypes\LocalOrArg.cs" />
     <Compile Include="_ctypes\MarshalCleanup.cs" />
     <Compile Include="_ctypes\MemoryHolder.cs" />

@@ -235,9 +235,7 @@ namespace IronPython.Modules {
                     return;
                 }
 
-                if(_closefd)
-                    flush(context);
-
+                flush(context);
                 _closed = true;
 
                 if (_closefd) {
@@ -247,12 +245,12 @@ namespace IronPython.Modules {
                         _writeStream.Close();
                         _writeStream.Dispose();
                     }
-                }
 
-                PythonFileManager myManager = _context.RawFileManager;
-                if (myManager != null) {
-                    myManager.Remove(this);
-                }
+                    PythonFileManager myManager = _context.RawFileManager;
+                    if (myManager != null) {
+                        myManager.Remove(this);
+                    }
+                }                
             }
 
             [Documentation("True if the file is closed")]

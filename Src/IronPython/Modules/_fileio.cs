@@ -12,17 +12,8 @@
  *
  *
  * ***************************************************************************/
-#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
-#else
-using Microsoft.Scripting.Ast;
-#endif
-
-#if FEATURE_NUMERICS
 using System.Numerics;
-#else
-using Microsoft.Scripting.Math;
-#endif
 
 using System;
 using System.Collections;
@@ -246,18 +237,20 @@ namespace IronPython.Modules {
 
                 flush(context);
                 _closed = true;
-                _readStream.Close();
-                _readStream.Dispose();
-                if (!object.ReferenceEquals(_readStream, _writeStream)) {
-                    _writeStream.Close();
-                    _writeStream.Dispose();
-                }
 
+                if (_closefd) {
+                    _readStream.Close();
+                    _readStream.Dispose();
+                    if (!object.ReferenceEquals(_readStream, _writeStream)) {
+                        _writeStream.Close();
+                        _writeStream.Dispose();
+                    }
 
-                PythonFileManager myManager = _context.RawFileManager;
-                if (myManager != null) {
-                    myManager.Remove(this);
-                }
+                    PythonFileManager myManager = _context.RawFileManager;
+                    if (myManager != null) {
+                        myManager.Remove(this);
+                    }
+                }                
             }
 
             [Documentation("True if the file is closed")]

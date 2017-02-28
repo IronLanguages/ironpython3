@@ -26,8 +26,14 @@ namespace IronPython.Runtime {
     /// </summary>
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
     public sealed class PythonModuleAttribute : Attribute {
-        private readonly string/*!*/ _name;
-        private readonly Type/*!*/ _type;
+ 
+        public enum PlatformFamily {
+            Windows,
+            Unix
+        }
+
+        private static readonly PlatformID[] Windows = { PlatformID.Win32NT, PlatformID.Win32S, PlatformID.Win32Windows, PlatformID.WinCE, PlatformID.Xbox };
+        private static readonly PlatformID[] Unix = { PlatformID.MacOSX, PlatformID.Unix };
 
         /// <summary>
         /// Creates a new PythonModuleAttribute that can be used to specify a built-in module that exists
@@ -35,26 +41,53 @@ namespace IronPython.Runtime {
         /// </summary>
         /// <param name="name">The built-in module name</param>
         /// <param name="type">The type that implements the built-in module.</param>
-        public PythonModuleAttribute(string/*!*/ name, Type/*!*/ type) {
-            ContractUtils.RequiresNotNull(name, "name");
-            ContractUtils.RequiresNotNull(type, "type");
+        public PythonModuleAttribute(string/*!*/ name, Type/*!*/ type, params PlatformID[] validPlatforms) {
+            ContractUtils.RequiresNotNull(name, nameof(name));
+            ContractUtils.RequiresNotNull(type, nameof(type));
 
-            _name = name;
-            _type = type;
+            Name = name;
+            Type = type;
+            ValidPlatforms = validPlatforms;
+        }
+
+        public PythonModuleAttribute(string/*!*/ name, Type/*!*/ type, PlatformFamily validPlatformFamily) {
+            ContractUtils.RequiresNotNull(name, nameof(name));
+            ContractUtils.RequiresNotNull(type, nameof(type));
+
+            Name = name;
+            Type = type;
+            switch(validPlatformFamily) {
+                case PlatformFamily.Unix:
+                    ValidPlatforms = Unix;
+                    break;
+                default:
+                    ValidPlatforms = Windows;
+                    break;
+            }
         }
 
         /// <summary>
         /// The built-in module name
         /// </summary>
         public string/*!*/ Name {
-            get { return _name; }
+            get;
         }
 
         /// <summary>
         /// The type that implements the built-in module
         /// </summary>
         public Type/*!*/ Type {
-            get { return _type; }
+            get;
+        }
+
+        public PlatformID[] ValidPlatforms {
+            get;
+        }
+
+        public bool IsPlatformValid {
+            get {
+                return ValidPlatforms == null || ValidPlatforms.Length == 0 || Array.IndexOf(ValidPlatforms, Environment.OSVersion.Platform) >= 0;
+            }
         }
     }
 }

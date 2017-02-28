@@ -1890,8 +1890,10 @@ namespace IronPython.Runtime
             object[] attrs = assem.GetCustomAttributes(typeof(PythonModuleAttribute), false);
             if (attrs.Length > 0) {
                 foreach (PythonModuleAttribute pma in attrs) {
-                    builtinTable[pma.Name] = pma.Type;
-                    BuiltinModuleNames[pma.Type] = pma.Name;
+                    if (pma.IsPlatformValid) {
+                        builtinTable[pma.Name] = pma.Type;
+                        BuiltinModuleNames[pma.Type] = pma.Name;
+                    }
                 }
 
                 if (updateSys) {

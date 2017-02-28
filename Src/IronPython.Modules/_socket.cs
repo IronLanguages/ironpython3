@@ -2537,7 +2537,7 @@ namespace IronPython.Modules {
                 }
 
                 if (throwWhenNotConnected && _sslStream == null) {
-                    var socket = _context.LanguageContext.GetBuiltinModule("socket");
+                    var socket = _context.LanguageContext.GetBuiltinModule("_socket");
                     var socketError = PythonSocket.GetSocketError(_context.LanguageContext, socket.__dict__);
 
                     throw PythonExceptions.CreateThrowable(socketError, 10057, "A request to send or receive data was disallowed because the socket is not connected.");

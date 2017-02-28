@@ -43,7 +43,7 @@ namespace IronPython.Modules {
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {            
-            var socket = context.GetBuiltinModule("socket");
+            var socket = context.GetBuiltinModule("_socket");
             var socketError = PythonSocket.GetSocketError(context, socket.__dict__);
             
             context.EnsureModuleException("SSLError", socketError, dict, "SSLError", "ssl");

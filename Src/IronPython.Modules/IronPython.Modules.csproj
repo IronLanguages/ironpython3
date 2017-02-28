@@ -68,6 +68,7 @@
     <Compile Include="re.cs" />
     <Compile Include="select.cs" />
     <Compile Include="_multibytecodec.cs" />
+    <Compile Include="_posixsubprocess.cs" />
     <Compile Include="_sha1.cs" />
     <Compile Include="_sha256.cs" />
     <Compile Include="_sha512.cs" />

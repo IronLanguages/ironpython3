@@ -35,11 +35,8 @@ namespace IronPython.Runtime {
         }
 
         public void __init__(CodeContext/*!*/ context, object func) {
-            if (!PythonOps.IsCallable(context, func))
-                throw PythonOps.TypeError("{0} object is not callable", PythonTypeOps.GetName(func));
             _func = func;
-        }
-            
+        }            
 
         internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
             value = __get__(instance, PythonOps.ToPythonType(owner));
@@ -84,8 +81,6 @@ namespace IronPython.Runtime {
         internal object _func;
 
         public void __init__(CodeContext/*!*/ context, object func) {
-            if (!PythonOps.IsCallable(context, func))
-                throw PythonOps.TypeError("{0} object is not callable", PythonTypeOps.GetName(func));
             _func = func;
         }
 
@@ -105,7 +100,6 @@ namespace IronPython.Runtime {
                 return _func;
             }
         }
-
         public bool __isabstractmethod__ {
             get {
                 object isabstract;

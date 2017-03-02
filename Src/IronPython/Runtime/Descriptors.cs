@@ -30,9 +30,13 @@ namespace IronPython.Runtime {
     public class staticmethod : PythonTypeSlot {
         internal object _func;
 
-        public staticmethod(object func) {
-            this._func = func;
+        public staticmethod(CodeContext/*!*/ context, object func) {
+            __init__(context, func);
         }
+
+        public void __init__(CodeContext/*!*/ context, object func) {
+            _func = func;
+        }            
 
         internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
             value = __get__(instance, PythonOps.ToPythonType(owner));
@@ -51,6 +55,16 @@ namespace IronPython.Runtime {
             }
         }
 
+        public bool __isabstractmethod__ {
+            get {
+                object isabstract;
+                if (PythonOps.TryGetBoundAttr(_func, "__isabstractmethod__", out isabstract)) {
+                    return PythonOps.IsTrue(isabstract);
+                }
+                return false;
+            }
+        }
+
         #region IDescriptor Members
 
         public object __get__(object instance) { return __get__(instance, null); }
@@ -64,12 +78,10 @@ namespace IronPython.Runtime {
 
     [PythonType]
     public class classmethod : PythonTypeSlot {
-        internal object func;
+        internal object _func;
 
-        public classmethod(CodeContext/*!*/ context, object func) {
-            if (!PythonOps.IsCallable(context, func))
-                throw PythonOps.TypeError("{0} object is not callable", PythonTypeOps.GetName(func));
-            this.func = func;
+        public void __init__(CodeContext/*!*/ context, object func) {
+            _func = func;
         }
 
         internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
@@ -85,7 +97,16 @@ namespace IronPython.Runtime {
 
         public object __func__ {
             get {
-                return func;
+                return _func;
+            }
+        }
+        public bool __isabstractmethod__ {
+            get {
+                object isabstract;
+                if (PythonOps.TryGetBoundAttr(_func, "__isabstractmethod__", out isabstract)) {
+                    return PythonOps.IsTrue(isabstract);
+                }
+                return false;
             }
         }
 
@@ -98,7 +119,7 @@ namespace IronPython.Runtime {
                 if (instance == null) throw PythonOps.TypeError("__get__(None, None) is invalid");
                 owner = DynamicHelpers.GetPythonType(instance);
             }
-            return new Method(func, owner, DynamicHelpers.GetPythonType(owner));
+            return new Method(_func, owner, DynamicHelpers.GetPythonType(owner));
         }
 
         #endregion
@@ -159,6 +180,20 @@ namespace IronPython.Runtime {
             } 
             __delete__(context, instance);
             return true;
+        }
+
+        public bool __isabstractmethod__ {
+            get {
+                object isabstract;
+                if (PythonOps.TryGetBoundAttr(_fget, "__isabstractmethod__", out isabstract)) {
+                    return PythonOps.IsTrue(isabstract);
+                } else if(PythonOps.TryGetBoundAttr(_fset, "__isabstractmethod__", out isabstract)) {
+                    return PythonOps.IsTrue(isabstract);
+                } else if(PythonOps.TryGetBoundAttr(_fdel, "__isabstractmethod__", out isabstract)) {
+                    return PythonOps.IsTrue(isabstract);
+                }
+                return false;
+            }
         }
 
         [SpecialName, PropertyMethod, WrapperDescriptor]

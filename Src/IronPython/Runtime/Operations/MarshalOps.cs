@@ -81,8 +81,8 @@ namespace IronPython.Runtime.Operations {
                 infinite.Add (o);
                 try {
                     if (o == null) _bytes.Add ((byte)'N');
-                    else if (o == ScriptingRuntimeHelpers.True) _bytes.Add ((byte)'T');
-                    else if (o == ScriptingRuntimeHelpers.False) _bytes.Add ((byte)'F');
+                    else if (o == ScriptingRuntimeHelpers.True || (o is bool && (bool)o)) _bytes.Add ((byte)'T');
+                    else if (o == ScriptingRuntimeHelpers.False || (o is bool && (!(bool)o))) _bytes.Add ((byte)'F');
                     else if (o is string) WriteString (o as string);
                     else if (o is int) WriteInt ((int)o);
                     else if (o is float) WriteFloat ((float)o);

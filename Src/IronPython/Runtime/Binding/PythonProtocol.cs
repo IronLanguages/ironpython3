@@ -108,7 +108,21 @@ namespace IronPython.Runtime.Binding {
                 );
             }
 
-            return Ast.NotEqual(callAsInt, AstUtils.Constant(0));
+            var res = Expression.Parameter(typeof(int));
+            return Ast.Block(
+                new[] { res },
+                Ast.Assign(res, callAsInt),
+                Ast.IfThen(Ast.LessThan(res, Ast.Constant(0)),
+                    Ast.Throw(
+                        Ast.Call(
+                            typeof(PythonOps).GetMethod("ValueError"),
+                            Ast.Constant("__len__() should return >= 0"),
+                            Ast.NewArrayInit(typeof(object))
+                        )
+                    )                    
+                ),
+                Ast.NotEqual(res, Ast.Constant(0))
+            );
         }
 
         #endregion

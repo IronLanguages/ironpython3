@@ -470,6 +470,9 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object Is(object x, object y) {
+            if(x is bool && y is bool) {
+                return (bool)x == (bool)y ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            } 
             return x == y ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
         }
 
@@ -478,6 +481,9 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object IsNot(object x, object y) {
+            if(x is bool && y is bool) {
+                return (bool)x != (bool)y ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            }
             return x != y ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
         }
 
@@ -839,7 +845,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             if (res < 0) {
-                throw PythonOps.ValueError("__len__ should return >= 0, got {0}", res);
+                throw PythonOps.ValueError("__len__ should return >= 0");
             }
             return res;
         }

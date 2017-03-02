@@ -35,7 +35,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object Call(CodeContext/*!*/ context, object func, params object[] args) {
-            return PythonContext.GetContext(context).CallSplat(func, args);
+            return PythonContext.GetContext(context).CallSplat(context, func, args);
         }
 
         public static object CallWithKeywordArgs(CodeContext/*!*/ context, object func, object[] args, string[] names) {

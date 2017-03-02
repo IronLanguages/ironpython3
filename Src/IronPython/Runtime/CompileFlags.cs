@@ -26,5 +26,6 @@ namespace IronPython.Runtime {
         CO_FUTURE_WITH_STATEMENT = 0x8000,      // with statement
         CO_FUTURE_PRINT_FUNCTION = 0x10000,     // print function
         CO_FUTURE_UNICODE_LITERALS = 0x20000,   // default unicode literals
+        CO_FUTURE_BARRY_AS_BDFL = 0x40000,      // 
     }
 }

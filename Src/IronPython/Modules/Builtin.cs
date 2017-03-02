@@ -1817,7 +1817,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             CompileFlags cflags = (CompileFlags)flags;
             if ((cflags & ~(CompileFlags.CO_NESTED | CompileFlags.CO_GENERATOR_ALLOWED | CompileFlags.CO_FUTURE_DIVISION | CompileFlags.CO_DONT_IMPLY_DEDENT | 
                 CompileFlags.CO_FUTURE_ABSOLUTE_IMPORT | CompileFlags.CO_FUTURE_WITH_STATEMENT | CompileFlags.CO_FUTURE_PRINT_FUNCTION | 
-                CompileFlags.CO_FUTURE_UNICODE_LITERALS)) != 0) {
+                CompileFlags.CO_FUTURE_UNICODE_LITERALS | CompileFlags.CO_FUTURE_BARRY_AS_BDFL)) != 0) {
                 throw PythonOps.ValueError("unrecognized flags");
             }
 

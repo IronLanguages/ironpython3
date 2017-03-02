@@ -374,21 +374,6 @@ namespace IronPython.Compiler.Ast {
                 foreach (var reference in _references.Values) {
                     PythonVariable variable;
                     reference.PythonVariable = variable = BindReference(binder, reference);
-
-                    // Accessing outer scope variable which is being deleted?
-                    if (variable != null) {
-                        if (variable.Deleted && variable.Scope != this && !variable.Scope.IsGlobal) {
-
-                            // report syntax error
-                            binder.ReportSyntaxError(
-                                String.Format(
-                                    System.Globalization.CultureInfo.InvariantCulture,
-                                    "can not delete variable '{0}' referenced in nested scope",
-                                    reference.Name
-                                    ),
-                                this);
-                        }
-                    }
                 }
             }
         }

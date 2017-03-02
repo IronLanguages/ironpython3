@@ -42,11 +42,11 @@ namespace IronPython.Modules {
             + " - does not implement the undocumented fast mode\n";
         [System.Runtime.CompilerServices.SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
-            context.EnsureModuleException("PickleError", dict, "PickleError", "cPickle");
-            context.EnsureModuleException("PicklingError", dict, "PicklingError", "cPickle");
-            context.EnsureModuleException("UnpicklingError", dict, "UnpicklingError", "cPickle");
-            context.EnsureModuleException("UnpickleableError", dict, "UnpickleableError", "cPickle");
-            context.EnsureModuleException("BadPickleGet", dict, "BadPickleGet", "cPickle");
+            context.EnsureModuleException("PickleError", dict, "PickleError", "_pickle");
+            context.EnsureModuleException("PicklingError", dict, "PicklingError", "_pickle");
+            context.EnsureModuleException("UnpicklingError", dict, "UnpicklingError", "_pickle");
+            context.EnsureModuleException("UnpickleableError", dict, "UnpickleableError", "_pickle");
+            context.EnsureModuleException("BadPickleGet", dict, "BadPickleGet", "_pickle");
             dict["__builtins__"] = context.BuiltinModuleInstance;
             dict["compatible_formats"] = PythonOps.MakeList("1.0", "1.1", "1.2", "1.3", "2.0");
         }

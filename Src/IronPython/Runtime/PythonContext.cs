@@ -2858,6 +2858,12 @@ namespace IronPython.Runtime
             return _callSplatSite.Target(_callSplatSite, SharedContext, func, args);
         }
 
+        internal object CallSplat(CodeContext/*!*/ context, object func, params object[] args) {
+            EnsureCallSplatSite();
+
+            return _callSplatSite.Target(_callSplatSite, context, func, args);
+        }
+
         internal object CallWithContext(CodeContext/*!*/ context, object func, params object[] args) {
             EnsureCallSplatSite();
 

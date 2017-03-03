@@ -17,6 +17,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Security;
 using System.Text;
 
@@ -914,12 +915,22 @@ namespace IronPython.Runtime {
     ///   innerEnum.MoveNext() will throw InvalidOperation even if the values get changed,
     ///   which is supported in python
     /// </summary>
-    [PythonType("dictionary-keyiterator")]
+    [PythonType("dict_keyiterator")]
     public sealed class DictionaryKeyEnumerator : IEnumerator, IEnumerator<object> {
         private readonly int _size;
         private readonly DictionaryStorage _dict;
         private readonly IEnumerator<object> _keys;
         private int _pos;
+
+        #region Pickling
+
+        public object __reduce__(CodeContext context) {
+            object iter;
+            context.TryLookupBuiltin("iter", out iter);
+            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(List.FromArrayNoCopy(_dict.GetKeys().Skip(_pos + 1).ToArray())));
+        }
+
+        #endregion
 
         internal DictionaryKeyEnumerator(DictionaryStorage dict) {
             _dict = dict;
@@ -959,10 +970,6 @@ namespace IronPython.Runtime {
         }
 
         void IDisposable.Dispose() {
-        }
-
-        public object __iter__() {
-            return this;
         }
 
         public int __length_hint__() {

@@ -1466,7 +1466,7 @@ namespace IronPython.Runtime {
         #endregion
     }
 
-    [PythonType("listiterator")]
+    [PythonType("list_iterator")]
     public sealed class ListIterator : IEnumerator, IEnumerable, IEnumerable<object>, IEnumerator<object> {
         private int _index;
         private readonly List _list;
@@ -1476,6 +1476,24 @@ namespace IronPython.Runtime {
             _list = l;
             Reset();
         }
+
+        #region Pickling
+
+        public object __reduce__(CodeContext context) {
+            object iter;
+            context.TryLookupBuiltin("iter", out iter);
+            if (_iterating) {
+                return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(_list), _index + 1);
+            }
+            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(new List()));
+        }
+
+        public void __setstate__(int state) {
+            _index = state - 1;
+            _iterating = _index < _list._size;
+        }
+
+        #endregion
 
         #region IEnumerator Members
 
@@ -1522,9 +1540,13 @@ namespace IronPython.Runtime {
         }
 
         #endregion
+
+        public int __length_hint__() {
+            return _iterating ? _list._size - _index - 1 : 0;
+        }
     }
 
-    [PythonType("listreverseiterator")]
+    [PythonType("list_reverseiterator")]
     public sealed class ListReverseIterator : IEnumerator, IEnumerable, IEnumerable<object>, IEnumerator<object> {
         private int _index;
         private readonly List _list;
@@ -1534,6 +1556,24 @@ namespace IronPython.Runtime {
             _list = l;
             Reset();
         }
+
+        #region Pickling
+
+        public object __reduce__(CodeContext context) {
+            if (_iterating) {
+                return PythonTuple.MakeTuple(Modules.Builtin.reversed, PythonTuple.MakeTuple(_list), _list._size - _index - 1);
+            }
+            object iter;
+            context.TryLookupBuiltin("iter", out iter);
+            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(new List()));
+        }
+
+        public void __setstate__(int state) {
+            _index = _list._size - state - 1;
+            _iterating = _index <= _list._size;
+        }
+
+        #endregion
 
         #region IEnumerator Members
 
@@ -1580,6 +1620,10 @@ namespace IronPython.Runtime {
         }
 
         #endregion
+
+        public int __length_hint__() {
+            return _iterating ? _list._size - _index : 0;
+        }
     }
 
     /// <summary>

@@ -1522,6 +1522,102 @@ are defined in the signal module.")]
 
         public const int TMP_MAX = 32767;
 
+
+#if FEATURE_UNIX
+        public const int WNOHANG = 1;
+
+        public const int WUNTRACED = 2;
+
+        public const int WCONTINUED = 8;
+
+        public const int WSTOPPED = 2;
+
+        public const int WEXITED = 4;
+
+        public const int WNOWAIT = 0x1000000;
+
+        public const int P_ALL = 0;
+
+        public const int P_PID = 1;
+
+        public const int P_PGID = 2;
+
+
+        [Documentation(@"WCOREDUMP(status) -> bool
+
+Return True if the process returning 'status' was dumped to a core file.")]
+        public static bool WCOREDUMP(int status)
+        {
+            //#define WCOREDUMP(s) ((s) & 0x80)
+            return (status & 0x80) != 0;
+        }
+
+        [Documentation(@"WIFCONTINUED(status) -> bool
+
+Return True if the process returning 'status' was continued from a
+job control stop.")]
+        public static bool WIFCONTINUED(int status)
+        {
+            //#define WIFCONTINUED(s) ((s) == 0xffff)
+            return status == 0xffff;
+        }
+
+        [Documentation(@"WIFSTOPPED(status) -> bool
+
+Return True if the process returning 'status' was stopped.")]
+        public static bool WIFSTOPPED(int status)
+        {
+            //#define WIFSTOPPED(s) (((s) & 0xff) == 0x7f)
+            return (status & 0xff) == 0x7f;
+        }
+
+        [Documentation(@"WIFSIGNALED(status) -> bool
+
+Return True if the process returning 'status' was terminated by a signal.")]
+        public static bool WIFSIGNALED(int status)
+        {
+            return ((byte)((status & 0x7f) >> 1)) > 0;
+        }
+
+        [Documentation(@"WIFEXITED(status) -> bool
+
+Return true if the process returning 'status' exited using the exit()
+system call.")]
+        public static bool WIFEXITED(int status)
+        {
+            return WTERMSIG(status) == 0;
+        }
+
+        [Documentation(@"WEXITSTATUS(status) -> integer
+
+Return the process return code from 'status'.")]
+        public static int WEXITSTATUS(int status)
+        {
+            // #define WEXITSTATUS(s) (((s) & 0xff00) >> 8)
+            return (status & 0xff00) >> 8;
+        }
+
+        [Documentation(@"WTERMSIG(status) -> integer
+
+Return the signal that terminated the process that provided the 'status'
+value.")]
+        public static int WTERMSIG(int status)
+        {
+            //#define WTERMSIG(s) ((s) & 0x7f)
+            return (status & 0x7f);
+        }
+
+        [Documentation(@"WSTOPSIG(status) -> integer
+
+Return the signal that stopped the process that provided
+the 'status' value.")]
+        public static int WSTOPSIG(int status)
+        {
+            // #define WSTOPSIG(s) WEXITSTATUS(s)
+            return WEXITSTATUS(status);
+        }
+#endif
+
         #endregion
 
         #region Private implementation details

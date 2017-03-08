@@ -75,11 +75,15 @@ namespace IronPython.Modules {
 
             public object random() {
                 lock (this) {
+                    byte[] randA = new byte[sizeof(uint)];
+                    byte[] randB = new byte[sizeof(uint)];
+                    _rnd.NextBytes(randA);
+                    _rnd.NextBytes(randB);
+
                     // this is pulled from _randommodule.c from CPython
-                    uint a = (uint)_rnd.Next() >> 5;
-                    uint b = (uint)_rnd.Next() >> 6;
-                    double ret = (a*67108864.0+b)*(1.0/9007199254740992.0);
-                    return ret;
+                    uint a = BitConverter.ToUInt32(randA, 0) >> 5;
+                    uint b = BitConverter.ToUInt32(randB, 0) >> 6;
+                    return (a*67108864.0+b)*(1.0/9007199254740992.0);
                 }
             }
 

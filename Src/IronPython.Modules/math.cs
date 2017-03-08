@@ -351,7 +351,7 @@ namespace IronPython.Modules {
             }
             // rewrote ln(v0 + sqrt(v0**2 + 1)) for precision
             if (Math.Abs(v0) > 1.0) {
-                return Math.Log(v0) + Math.Log(1.0 + MathUtils.Hypot(1.0, 1.0 / v0));
+                return Math.Sign(v0) * (Math.Log(Math.Abs(v0)) + Math.Log(1.0 + MathUtils.Hypot(1.0, 1.0 / v0)));
             } else {
                 return Math.Log(v0 + MathUtils.Hypot(1.0, v0));
             }

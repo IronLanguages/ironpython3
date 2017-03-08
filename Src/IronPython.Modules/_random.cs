@@ -83,8 +83,7 @@ namespace IronPython.Modules {
                     // this is pulled from _randommodule.c from CPython
                     uint a = BitConverter.ToUInt32(randA, 0) >> 5;
                     uint b = BitConverter.ToUInt32(randB, 0) >> 6;
-                    double ret = (a*67108864.0+b)*(1.0/9007199254740992.0);
-                    return ret;
+                    return (a*67108864.0+b)*(1.0/9007199254740992.0);
                 }
             }
 

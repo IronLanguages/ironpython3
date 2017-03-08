@@ -1696,14 +1696,17 @@ namespace IronPython.Compiler {
                     return ErrorStmt();
                 }
 
-                if (metaclass != null) {
-                    l.Add(new AssignmentStatement(new[] { new NameExpression("__metaclass__") }, metaclass));
-                }
-
+                bool addMetaclass = true;
                 while (true) {
                     Statement s = ParseStmt();
 
                     l.Add(s);
+
+                    if(addMetaclass && metaclass != null) {
+                        l.Add(new AssignmentStatement(new[] { new NameExpression("__metaclass__") }, metaclass));
+                        addMetaclass = false;
+                    }
+
                     if (MaybeEat(TokenKind.Dedent)) break;
                     if (PeekToken().Kind == TokenKind.EndOfFile) {
                         ReportSyntaxError("unexpected end of file");

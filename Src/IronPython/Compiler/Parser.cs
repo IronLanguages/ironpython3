@@ -1696,20 +1696,22 @@ namespace IronPython.Compiler {
                     return ErrorStmt();
                 }
 
-                if (metaclass != null) {
-                    l.Add(new AssignmentStatement(new[] { new NameExpression("__metaclass__") }, metaclass));
-                }
-
                 while (true) {
                     Statement s = ParseStmt();
 
                     l.Add(s);
+
                     if (MaybeEat(TokenKind.Dedent)) break;
                     if (PeekToken().Kind == TokenKind.EndOfFile) {
                         ReportSyntaxError("unexpected end of file");
                         break; // error handling
                     }
                 }
+
+                if(metaclass != null) {
+                    l.Insert(1, new AssignmentStatement(new[] { new NameExpression("__metaclass__") }, metaclass));
+                }
+
                 Statement[] stmts = l.ToArray();
                 SuiteStatement ret = new SuiteStatement(stmts);
                 ret.SetLoc(_globalParent, stmts[0].StartIndex, stmts[stmts.Length - 1].EndIndex);

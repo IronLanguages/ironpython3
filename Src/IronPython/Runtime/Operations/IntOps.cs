@@ -191,8 +191,6 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        [StaticExtensionMethod]
-
         internal static string TrimRadix(string s, int radix) {
             for (int i = 0; i < s.Length; i++) {
                 if (Char.IsWhiteSpace(s[i])) continue;

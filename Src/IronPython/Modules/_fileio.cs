@@ -81,7 +81,7 @@ namespace IronPython.Modules {
                 _consoleStreamType = consoleStreamType;
             }
 
-            public FileIO(CodeContext/*!*/ context, int fd, [DefaultParameterValue("r")]string mode, [DefaultParameterValue(true)]bool closefd)
+            public FileIO(CodeContext/*!*/ context, int fd, string mode="r", bool closefd=true)
                 : base(context) {
                 if (fd < 0) {
                     throw PythonOps.ValueError("fd must be >= 0");
@@ -121,7 +121,7 @@ namespace IronPython.Modules {
                 _closefd = closefd;
             }
             
-            public FileIO(CodeContext/*!*/ context, string name, [DefaultParameterValue("r")]string mode, [DefaultParameterValue(true)]bool closefd)
+            public FileIO(CodeContext/*!*/ context, string name, string mode="r", bool closefd=true)
                 : base(context) {
                 if (!closefd) {
                     throw PythonOps.ValueError("Cannot use closefd=False with file name");
@@ -325,7 +325,7 @@ namespace IronPython.Modules {
                 + "In non-blocking mode, returns None if no data is available.\n"
                 + "On end-of-file, returns ''."
                 )]
-            public override object read(CodeContext/*!*/ context, [DefaultParameterValue(null)]object size) {
+            public override object read(CodeContext/*!*/ context, object size=null) {
                 int sizeInt = GetInt(size, -1);
                 if (sizeInt < 0) {
                     return readall();
@@ -462,7 +462,7 @@ namespace IronPython.Modules {
                 + "Size defaults to the current file position, as returned by tell()."
                 + "The current file position is changed to the value of size."
                 )]
-            public override BigInteger truncate(CodeContext/*!*/ context, [DefaultParameterValue(null)]object pos) {
+            public override BigInteger truncate(CodeContext/*!*/ context, object pos=null) {
                 if (pos == null) {
                     return truncate(tell(context));
                 }

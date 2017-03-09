@@ -122,7 +122,7 @@ namespace IronPython.Runtime.Types {
             return false;
         }
 
-        public virtual object __get__(CodeContext/*!*/ context, object instance, [DefaultParameterValue(null)]object typeContext) {
+        public virtual object __get__(CodeContext/*!*/ context, object instance, object typeContext=null) {
             PythonType dt = typeContext as PythonType;
 
             object res;

@@ -57,7 +57,7 @@ namespace IronPython.Modules {
             + "Note that select() on IronPython works only with sockets; it will not work with\n"
             + "files or other objects."
             )]
-        public static PythonTuple select(CodeContext/*!*/ context, object iwtd, object owtd, object ewtd, [DefaultParameterValue(null)] object timeout) {
+        public static PythonTuple select(CodeContext/*!*/ context, object iwtd, object owtd, object ewtd, object timeout=null) {
             List readerList, writerList, errorList;
             Dictionary<Socket, object> readerOriginals, writerOriginals, errorOriginals;
             ProcessSocketSequence(context, iwtd, out readerList, out readerOriginals);

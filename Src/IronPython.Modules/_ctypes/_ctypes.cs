@@ -189,7 +189,7 @@ namespace IronPython.Modules {
             NativeFunctions.FreeLibrary(handle);
         }
 
-        public static object LoadLibrary(string library, [DefaultParameterValue(0)]int mode) {
+        public static object LoadLibrary(string library, int mode=0) {
             IntPtr res = NativeFunctions.LoadDLL(library, mode);
             if (res == IntPtr.Zero) {
                 throw PythonOps.OSError("cannot load library {0}", library);
@@ -198,10 +198,13 @@ namespace IronPython.Modules {
             return res.ToPython();
         }
 
+        #if FEATURE_UNIX
         // Provided for Posix compat.
-        public static object dlopen(string library, [DefaultParameterValue(0)]int mode) {
+        public static object dlopen(string library, int mode=0) {
             return LoadLibrary(library, mode);
         }
+        #endif
+
 
         /// <summary>
         /// Returns a new type which represents a pointer given the existing type.
@@ -350,7 +353,7 @@ namespace IronPython.Modules {
             return alignment(DynamicHelpers.GetPythonType(o));
         }
 
-        public static object byref(CData instance, [DefaultParameterValue(0)]int offset) {
+        public static object byref(CData instance, int offset=0) {
             if (offset != 0) {
                 // new in 2.6
                 throw new NotImplementedException("byref w/ arg");
@@ -470,9 +473,9 @@ namespace IronPython.Modules {
             return @sizeof(DynamicHelpers.GetPythonType(instance));
         }
 
-        #endregion
+#endregion
 
-        #region Public Constants
+#region Public Constants
 
         public const int FUNCFLAG_STDCALL = 0;
         public const int FUNCFLAG_CDECL = 1;
@@ -485,9 +488,9 @@ namespace IronPython.Modules {
         public const int RTLD_GLOBAL = 0;
         public const int RTLD_LOCAL = 0;
 
-        #endregion
+#endregion
 
-        #region Implementation Details
+#region Implementation Details
 
         /// <summary>
         /// Gets the ModuleBuilder used to generate our unsafe call stubs into.
@@ -774,7 +777,7 @@ namespace IronPython.Modules {
             }
         }
 
-        #endregion
+#endregion
 
     }
 }

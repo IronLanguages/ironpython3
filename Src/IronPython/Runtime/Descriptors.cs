@@ -139,10 +139,10 @@ namespace IronPython.Runtime {
             [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
         }
 
-        public void __init__([DefaultParameterValue(null)]object fget,
-                        [DefaultParameterValue(null)]object fset,
-                        [DefaultParameterValue(null)]object fdel,
-                        [DefaultParameterValue(null)]object doc) {
+        public void __init__(object fget=null,
+                        object fset=null,
+                        object fdel=null,
+                        object doc=null) {
             _fget = fget; _fset = fset; _fdel = fdel; _doc = doc;
             if (GetType() != typeof(PythonProperty) && _fget is PythonFunction) {
                 // http://bugs.python.org/issue5890
@@ -235,7 +235,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public override object __get__(CodeContext/*!*/ context, object instance, [DefaultParameterValue(null)]object owner) {
+        public override object __get__(CodeContext/*!*/ context, object instance, object owner=null) {
             if (instance == null) {
                 return this;
             } else if (fget != null) {

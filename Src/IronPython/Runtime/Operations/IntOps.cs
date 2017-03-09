@@ -538,7 +538,7 @@ namespace IronPython.Runtime.Operations {
             return self.ToString(CultureInfo.InvariantCulture);
         }
 
-        public static Bytes to_bytes(Int32 value, int length, string byteorder, [DefaultParameterValue(false)]bool signed) {
+        public static Bytes to_bytes(Int32 value, int length, string byteorder, bool signed=false) {
             // TODO: signed should be a keyword only argument
             // TODO: should probably be moved to IntOps.Generated and included in all types
 
@@ -560,7 +560,7 @@ namespace IronPython.Runtime.Operations {
             return Bytes.Make(res.ToArray());
         }
 
-        public static BigInteger from_bytes([BytesConversion]IList<byte> bytes, string byteorder, [DefaultParameterValue(false)]bool signed) {
+        public static BigInteger from_bytes([BytesConversion]IList<byte> bytes, string byteorder, bool signed=false) {
             // TODO: signed should be a keyword only argument
             // TODO: return int when possible?
 

@@ -44,7 +44,7 @@ must be a number between 1 and 9.
             private BZip2OutputStream bz2Output;
             private long lastPosition = 0;
 
-            public BZ2Compressor([DefaultParameterValue(DEFAULT_COMPRESSLEVEL)]int compresslevel) {
+            public BZ2Compressor(int compresslevel=DEFAULT_COMPRESSLEVEL) {
                 this.compresslevel = compresslevel;
 
                 this.output = new MemoryStream();

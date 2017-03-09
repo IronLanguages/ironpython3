@@ -917,9 +917,9 @@ namespace IronPython.Runtime {
         }
 
         public void sort(CodeContext/*!*/ context, 
-                         [DefaultParameterValue(null)] object cmp,
-                         [DefaultParameterValue(null)] object key,
-                         [DefaultParameterValue(false)] bool reverse) {
+                         object cmp=null,
+                         object key=null,
+                         bool reverse=false) {
             // the empty list is already sorted
             if (_size != 0) {                
                 IComparer comparer = PythonContext.GetContext(context).GetComparer(

@@ -39,10 +39,10 @@ using SpecialNameAttribute = System.Runtime.CompilerServices.SpecialNameAttribut
 namespace IronPython.Runtime.Operations {
 
     public static partial class Int32Ops {
-        private static object FastNew(CodeContext/*!*/ context, object o) {
+        private static object FastNew(CodeContext/*!*/ context, object o, int @base=10) {
             Extensible<BigInteger> el;
 
-            if (o is string) return __new__(null, (string)o, 10);
+            if (o is string) return __new__(null, (string)o, @base);
             if (o is double) return DoubleOps.__int__((double)o);
             if (o is int) return o;
             if (o is bool) return ((bool)o) ? 1 : 0;
@@ -107,7 +107,7 @@ namespace IronPython.Runtime.Operations {
                 }
 
                 // otherwise call __new__ on the string value
-                return __new__(null, es.Value, 10);
+                return __new__(null, es.Value, @base);
             }
 
             object result;
@@ -174,12 +174,12 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, IList<byte> s) {
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, IList<byte> s, int @base=10) {
             object value;
             IPythonObject po = s as IPythonObject;
             if (po == null ||
                 !PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__int__", out value)) {
-                value = FastNew(context, s.MakeString());
+                value = FastNew(context, s.MakeString(), @base);
             }
 
             if (cls == TypeCache.Int32) {

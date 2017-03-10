@@ -84,7 +84,7 @@ namespace IronPython.Modules {
             }
         }
 
-        #region Public Functions
+#region Public Functions
 
         /// <summary>
         /// Gets a function which casts the specified memory.  Because this is used only
@@ -473,7 +473,7 @@ namespace IronPython.Modules {
             return @sizeof(DynamicHelpers.GetPythonType(instance));
         }
 
-#endregion
+        #endregion
 
 #region Public Constants
 

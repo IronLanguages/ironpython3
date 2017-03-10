@@ -306,7 +306,7 @@ namespace IronPython.Modules {
                 return RE_Match.makeMatch(_re.Match(input, pos), this, input, pos, input.Length);
             }
 
-            public RE_Match match(object text, int pos=0, int endpos=int.MaxValue) {
+            public RE_Match match(object text, int pos, int endpos) {
                 string input = ValidateString(text, "text");
                 pos = FixPosition(input, pos);
                 endpos = FixPosition(input, endpos);

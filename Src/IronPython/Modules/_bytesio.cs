@@ -313,7 +313,7 @@ namespace IronPython.Modules {
                 }
                 
                 return seek(posInt, GetInt(whence));
-            }            
+            }
 
             public override bool seekable(CodeContext/*!*/ context) {
                 return true;

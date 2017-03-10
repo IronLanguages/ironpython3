@@ -2028,6 +2028,14 @@ namespace IronPython.Runtime.Operations {
         // wrapping it. This is the proper behavior for Builtin.iter().
         public static object GetEnumeratorObject(CodeContext/*!*/ context, object o) {
             object iterFunc;
+
+            if (o is PythonType) {
+                var pt = (PythonType)o;
+                if (!pt.IsIterable(context)) {
+                    throw PythonOps.TypeError("'{0}' object is not iterable", PythonTypeOps.GetName(o));
+                }
+            }
+
             if (PythonOps.TryGetBoundAttr(context, o, "__iter__", out iterFunc) &&
                 !Object.ReferenceEquals(iterFunc, NotImplementedType.Value)) {
                 return PythonOps.CallWithContext(context, iterFunc);

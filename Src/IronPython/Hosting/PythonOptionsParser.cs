@@ -229,7 +229,7 @@ namespace IronPython.Hosting {
                 { "-s",                     "Don't add user site directory to sys.path" },
                 { "-t",                     "Issue warnings about inconsistent tab usage" },
                 { "-tt",                    "Issue errors for inconsistent tab usage" },
-                { "-W arg",                 "Warning control (arg is action:message:category:module:lineno)" },
+                { "-W arg",                 "Warning control (arg is action:message:category:module:lineno) also IRONPYTHONWARNINGS=arg" },
                 { "-3",                     "Warn about Python 3.x incompatibilities" },
 
                 { "-X:Frames",              "Enable basic sys._getframe support" },

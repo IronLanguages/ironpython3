@@ -592,7 +592,6 @@ namespace IronPython.Modules
                 _args = args;
                 _vararg = vararg;
                 _kwarg = kwarg;
-                _kwarg = kwarg;
                 _defaults = defaults;
             }
 

@@ -132,8 +132,14 @@ namespace IronPython.Hosting {
                 result = RunInteractiveLoop();
 
             return result;
+        }
 
-
+        protected override int RunInteractiveLoop() {
+            var sys = Engine.GetSysModule();
+                        
+            sys.SetVariable("ps1", ">>> ");
+            sys.SetVariable("ps2", "... ");
+            return base.RunInteractiveLoop();
         }
 
         #region Initialization
@@ -153,6 +159,7 @@ namespace IronPython.Hosting {
             Language.DomainManager.LoadAssembly(typeof(System.Diagnostics.Debug).Assembly);
 
             InitializePath(ref pathIndex);
+            InitializeEnvironmentVariables();
             InitializeModules();
             InitializeExtensionDLLs();
 
@@ -219,6 +226,27 @@ namespace IronPython.Hosting {
                     string[] paths = path.Split(Path.PathSeparator);
                     foreach (string p in paths) {
                         PythonContext.InsertIntoPath(pathIndex++, p);
+                    }
+                }
+            }
+#endif
+        }
+
+        private void InitializeEnvironmentVariables() {
+#if !SILVERLIGHT
+            if(!Options.IgnoreEnvironmentVariables) {
+                string warnings = Environment.GetEnvironmentVariable("IRONPYTHONWARNINGS");
+                object o = PythonContext.GetSystemStateValue("warnoptions");
+                if (o == null) {
+                    o = new List();
+                    PythonContext.SetSystemStateValue("warnoptions", o);
+                }
+
+                List warnoptions = o as List;
+                if (warnoptions != null && !string.IsNullOrEmpty(warnings)) {
+                    string[] warns = warnings.Split(',');
+                    foreach(string warn in warns) {
+                        warnoptions.Add(warn);
                     }
                 }
             }
@@ -386,7 +414,6 @@ namespace IronPython.Hosting {
             } catch (ThreadAbortException tae) {
                 KeyboardInterruptException pki = tae.ExceptionState as KeyboardInterruptException;
                 if (pki != null) {
-                    Console.WriteLine(Language.FormatException(tae), Style.Error);
                     Thread.ResetAbort();
                 }
 #endif

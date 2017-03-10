@@ -534,10 +534,6 @@ namespace IronPython.Runtime.Operations {
             return spec.AlignNumericText(digits, self == 0, self > 0);
         }
 
-        public static string/*!*/ __repr__(int self) {
-            return self.ToString(CultureInfo.InvariantCulture);
-        }
-
         public static Bytes to_bytes(Int32 value, int length, string byteorder, [DefaultParameterValue(false)]bool signed) {
             // TODO: signed should be a keyword only argument
             // TODO: should probably be moved to IntOps.Generated and included in all types

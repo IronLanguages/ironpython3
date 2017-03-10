@@ -1151,7 +1151,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object IsMappingType(CodeContext/*!*/ context, object o) {
-            if (o is IDictionary || o is PythonDictionary || o is IDictionary<object, object> || o is PythonDictionary) {
+            if (o is IDictionary || o is PythonDictionary || o is IDictionary<object, object>) {
                 return ScriptingRuntimeHelpers.True;
             }
             object getitem;
@@ -1348,6 +1348,13 @@ namespace IronPython.Runtime.Operations {
                     }
                     bases = newBases;
                     break;
+                } else if(dt is PythonType) {
+                    PythonType pt = dt as PythonType;
+                    if (pt.Equals(PythonType.GetPythonType(typeof(Enum))) || pt.Equals(PythonType.GetPythonType(typeof(Array)))
+                    || pt.Equals(PythonType.GetPythonType(typeof(Delegate))) || pt.Equals(PythonType.GetPythonType(typeof(ValueType)))) {
+                        // .NET does not allow inheriting from these types
+                        throw PythonOps.TypeError("cannot derive from special class '{0}'", pt.FinalSystemType.FullName);
+                    }
                 }
             }
 
@@ -2048,6 +2055,14 @@ namespace IronPython.Runtime.Operations {
 
         internal static bool TryGetEnumerator(CodeContext/*!*/ context, object enumerable, out IEnumerator enumerator) {
             enumerator = null;
+
+            if (enumerable is PythonType) {
+                var ptEnumerable = (PythonType)enumerable;
+                if (!ptEnumerable.IsIterable(context)) {
+                    return false;
+                }
+            }
+
             IEnumerable enumer;
             if (PythonContext.GetContext(context).TryConvertToIEnumerable(enumerable, out enumer)) {
                 enumerator = enumer.GetEnumerator();
@@ -3386,7 +3401,7 @@ namespace IronPython.Runtime.Operations {
         /// the exit code that the program reported via SystemExit or 0.
         /// </summary>
         public static int InitializeModule(Assembly/*!*/ precompiled, string/*!*/ main, string[] references) {
-            return InitializeModuleEx(precompiled, main, references, false);
+            return InitializeModuleEx(precompiled, main, references, false, null);
         }
 
         /// <summary>
@@ -3395,10 +3410,17 @@ namespace IronPython.Runtime.Operations {
         /// the exit code that the program reported via SystemExit or 0.
         /// </summary>
         public static int InitializeModuleEx(Assembly/*!*/ precompiled, string/*!*/ main, string[] references, bool ignoreEnvVars) {
+            return InitializeModuleEx(precompiled, main, references, ignoreEnvVars, null);
+        }
+
+
+        public static int InitializeModuleEx(Assembly/*!*/ precompiled, string/*!*/ main, string[] references, bool ignoreEnvVars, Dictionary<string, object> options) {
             ContractUtils.RequiresNotNull(precompiled, "precompiled");
             ContractUtils.RequiresNotNull(main, "main");
 
-            Dictionary<string, object> options = new Dictionary<string, object>();
+            if(options == null) {
+                options = new Dictionary<string, object>();
+            }
             options["Arguments"] = Environment.GetCommandLineArgs();
 
             var pythonEngine = Python.CreateEngine(options);
@@ -3423,7 +3445,7 @@ namespace IronPython.Runtime.Operations {
 
             if (references != null) {
                 foreach (string referenceName in references) {
-                    pythonContext.DomainManager.LoadAssembly(Assembly.Load(referenceName));
+                    pythonContext.DomainManager.LoadAssembly(Assembly.Load(new AssemblyName(referenceName)));
                 }
             }
 
@@ -3721,8 +3743,12 @@ namespace IronPython.Runtime.Operations {
 
         public static Exception AttributeErrorForMissingAttribute(object o, string name) {
             PythonType dt = o as PythonType;
-            if (dt != null)
+            if (dt != null) {
                 return PythonOps.AttributeErrorForMissingAttribute(dt.Name, name);
+            }
+            else if (o is NamespaceTracker) {
+                return PythonOps.AttributeErrorForMissingAttribute(PythonTypeOps.GetName(o), name);
+            }
 
             return AttributeErrorForReadonlyAttribute(PythonTypeOps.GetName(o), name);
         }

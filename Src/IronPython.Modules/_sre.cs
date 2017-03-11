@@ -39,7 +39,7 @@ namespace IronPython.Modules {
             }
         }
 
-        public static object compile(object a, object b, object c, object d, object e, object f) {
+        public static object compile(object a, object b, object c) {
             return null;
         }
     }

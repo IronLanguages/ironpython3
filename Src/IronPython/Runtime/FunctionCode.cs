@@ -404,7 +404,7 @@ namespace IronPython.Runtime {
         /// <param name="nlotab"></param>
         /// <param name="freevars"></param>
         /// <param name="callvars"></param>
-        public FunctionCode(int argcount, int nlocals, int stacksize, int flags, string codestring, object constants, Tuple names, Tuple varnames, string filename, string name, int firstlineno, object nlotab, [DefaultParameterValue(null)]object freevars, [DefaultParameterValue(null)]object callvars) {
+        public FunctionCode(int argcount, int nlocals, int stacksize, int flags, string codestring, object constants, Tuple names, Tuple varnames, string filename, string name, int firstlineno, object nlotab, object freevars=null, object callvars=null) {
         }*/
 
         #endregion

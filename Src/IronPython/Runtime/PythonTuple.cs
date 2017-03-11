@@ -114,7 +114,7 @@ namespace IronPython.Runtime {
             return index(obj, Converter.ConvertToIndex(start), _data.Length);
         }
 
-        public int index(object obj, [DefaultParameterValue(0)]int start) {
+        public int index(object obj, int start=0) {
             return index(obj, start, _data.Length);
         }
 

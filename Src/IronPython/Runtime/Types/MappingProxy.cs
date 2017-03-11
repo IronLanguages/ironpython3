@@ -52,7 +52,7 @@ namespace IronPython.Runtime.Types {
             return DictionaryOps.__repr__(context, this);
         }
 
-        public object get(CodeContext/*!*/ context, [NotNull]object k, [DefaultParameterValue(null)]object d) {
+        public object get(CodeContext/*!*/ context, [NotNull]object k, object d=null) {
             object res;
             if (!Dictionary.TryGetValue(k, out res)) {
                 res = d;

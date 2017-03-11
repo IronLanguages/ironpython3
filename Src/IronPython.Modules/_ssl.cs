@@ -77,12 +77,12 @@ namespace IronPython.Modules {
             CodeContext context,
             PythonSocket.socket socket, 
             bool server_side, 
-            [DefaultParameterValue(null)] string keyfile, 
-            [DefaultParameterValue(null)] string certfile,
-            [DefaultParameterValue(PythonSsl.CERT_NONE)]int certs_mode,
-            [DefaultParameterValue(PythonSsl.PROTOCOL_SSLv23 | PythonSsl.OP_NO_SSLv2 | PythonSsl.OP_NO_SSLv3)]int protocol,
-            [DefaultParameterValue(null)]string cacertsfile,
-            [DefaultParameterValue(null)]object ciphers) {
+            string keyfile=null, 
+            string certfile=null,
+            int certs_mode=PythonSsl.CERT_NONE,
+            int protocol= (PythonSsl.PROTOCOL_SSLv23 | PythonSsl.OP_NO_SSLv2 | PythonSsl.OP_NO_SSLv3),
+            string cacertsfile=null,
+            object ciphers=null) {
             return new PythonSocket.ssl(
                 context,
                 socket,
@@ -99,7 +99,7 @@ namespace IronPython.Modules {
             return (PythonType)PythonContext.GetContext(context).GetModuleState("SSLError");
         }
 
-        public static PythonDictionary _test_decode_cert(CodeContext context, string filename, [DefaultParameterValue(false)]bool complete) {
+        public static PythonDictionary _test_decode_cert(CodeContext context, string filename, bool complete=false) {
             var cert = ReadCertificate(context, filename);
 
             return CertificateToPython(context, cert, complete);

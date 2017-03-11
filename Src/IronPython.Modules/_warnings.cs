@@ -58,7 +58,7 @@ namespace IronPython.Modules {
 
         #region Public API
 
-        public static void warn(CodeContext context, object message, [DefaultParameterValue(null)]PythonType category, [DefaultParameterValue(1)]int stacklevel) {
+        public static void warn(CodeContext context, object message, PythonType category=null, int stacklevel=1) {
             PythonContext pContext = PythonContext.GetContext(context);
             List argv = pContext.GetSystemStateValue("argv") as List;
 
@@ -115,7 +115,7 @@ namespace IronPython.Modules {
             warn_explicit(context, message, category, filename, lineno, module, registry, globals);
         }
 
-        public static void warn_explicit(CodeContext context, object message, PythonType category, string filename, int lineno, [DefaultParameterValue(null)]string module, [DefaultParameterValue(null)]PythonDictionary registry, [DefaultParameterValue(null)]object module_globals) {
+        public static void warn_explicit(CodeContext context, object message, PythonType category, string filename, int lineno, string module=null, PythonDictionary registry=null, object module_globals=null) {
             PythonContext pContext = PythonContext.GetContext(context);
             PythonDictionary fields = (PythonDictionary)pContext.GetModuleState(_keyFields);
             PythonExceptions.BaseException msg;
@@ -215,7 +215,7 @@ namespace IronPython.Modules {
             }
         }
 
-        internal static string formatwarning(object message, PythonType category, string filename, int lineno, [DefaultParameterValue(null)]string line) {
+        internal static string formatwarning(object message, PythonType category, string filename, int lineno, string line=null) {
             StringBuilder sb = new StringBuilder();
             sb.AppendFormat("{0}:{1}: {2}: {3}\n", filename, lineno, category.Name, message);
             if (line == null && lineno > 0 && File.Exists(filename)) {
@@ -231,7 +231,7 @@ namespace IronPython.Modules {
             return sb.ToString();
         }
 
-        internal static void showwarning(CodeContext context, object message, PythonType category, string filename, int lineno, [DefaultParameterValue(null)]object file, [DefaultParameterValue(null)]string line) {
+        internal static void showwarning(CodeContext context, object message, PythonType category, string filename, int lineno, object file=null, string line=null) {
             string text = formatwarning(message, category, filename, lineno, line);
 
             try {

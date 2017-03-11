@@ -104,13 +104,13 @@ namespace IronPython.Modules {
             }
 
             public static timedelta __new__(CodeContext context, PythonType cls,
-                [DefaultParameterValue(0D)] double days,
-                [DefaultParameterValue(0D)] double seconds,
-                [DefaultParameterValue(0D)] double microseconds,
-                [DefaultParameterValue(0D)] double milliseconds,
-                [DefaultParameterValue(0D)] double minutes,
-                [DefaultParameterValue(0D)] double hours,
-                [DefaultParameterValue(0D)] double weeks) {
+                double days=0D,
+                double seconds=0D,
+                double microseconds=0D,
+                double milliseconds=0D,
+                double minutes=0D,
+                double hours=0D,
+                double weeks=0D) {
                 if (cls == DynamicHelpers.GetPythonTypeFromType(typeof(timedelta))) {
                     return new timedelta(days, seconds, microseconds, milliseconds, minutes, hours, weeks);
                 } else {
@@ -721,11 +721,11 @@ namespace IronPython.Modules {
             public datetime(int year,
                 int month,
                 int day,
-               [DefaultParameterValue(0)]int hour,
-               [DefaultParameterValue(0)]int minute,
-               [DefaultParameterValue(0)]int second,
-               [DefaultParameterValue(0)]int microsecond,
-               [DefaultParameterValue(null)]tzinfo tzinfo) {
+               int hour=0,
+               int minute=0,
+               int second=0,
+               int microsecond=0,
+               tzinfo tzinfo=null) {
 
                 PythonDateTime.ValidateInput(InputKind.Year, year);
                 PythonDateTime.ValidateInput(InputKind.Month, month);
@@ -827,7 +827,7 @@ namespace IronPython.Modules {
             }
 
             // other constructors, all class methods:
-            public static object now([DefaultParameterValue(null)]tzinfo tz) {
+            public static object now(tzinfo tz=null) {
                 if (tz != null) {
                     return tz.fromutc(new datetime(DateTime.UtcNow, 0, tz));
                 } else {
@@ -844,7 +844,7 @@ namespace IronPython.Modules {
                 return new datetime(DateTime.Now, 0, null);
             }           
 
-            public static object fromtimestamp(double timestamp, [DefaultParameterValue(null)] tzinfo tz) {
+            public static object fromtimestamp(double timestamp, tzinfo tz=null) {
                 DateTime dt = PythonTime.TimestampToDateTime(timestamp);
                 dt = dt.AddSeconds(-PythonTime.timezone);
 
@@ -1050,7 +1050,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public string isoformat([DefaultParameterValue('T')]char sep) {
+            public string isoformat(char sep='T') {
                 StringBuilder sb = new StringBuilder();
                 sb.AppendFormat("{0:d4}-{1:d2}-{2:d2}{3}{4:d2}:{5:d2}:{6:d2}", year, month, day, sep, hour, minute, second);
 
@@ -1230,11 +1230,11 @@ namespace IronPython.Modules {
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
             public static readonly timedelta resolution = timedelta.resolution;
 
-            public time([DefaultParameterValue(0)]int hour,
-                [DefaultParameterValue(0)]int minute,
-                [DefaultParameterValue(0)]int second,
-                [DefaultParameterValue(0)]int microsecond,
-                [DefaultParameterValue(null)]tzinfo tzinfo) {
+            public time(int hour=0,
+                int minute=0,
+                int second=0,
+                int microsecond=0,
+                tzinfo tzinfo=null) {
 
                 PythonDateTime.ValidateInput(InputKind.Hour, hour);
                 PythonDateTime.ValidateInput(InputKind.Minute, minute);

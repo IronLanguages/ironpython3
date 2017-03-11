@@ -94,7 +94,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         [Documentation("__import__(name, globals, locals, fromlist, level) -> module\n\nImport a module.")]
         [LightThrowing]
-        public static object __import__(CodeContext/*!*/ context, string name, [DefaultParameterValue(null)]object globals, [DefaultParameterValue(null)]object locals, [DefaultParameterValue(null)]object fromlist, [DefaultParameterValue(-1)]int level) {
+        public static object __import__(CodeContext/*!*/ context, string name, object globals=null, object locals=null, object fromlist=null, int level=-1) {
             if (fromlist is string || fromlist is Extensible<string>) {
                 fromlist = new List<object> { fromlist };
             }
@@ -227,7 +227,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [Documentation("compile a unit of source code.\n\nThe source can be compiled either as exec, eval, or single.\nexec compiles the code as if it were a file\neval compiles the code as if were an expression\nsingle compiles a single statement\n\nsource can either be a string or an AST object")]
-        public static object compile(CodeContext/*!*/ context, object source, string filename, string mode, [DefaultParameterValue(null)]object flags, [DefaultParameterValue(null)]object dont_inherit) {
+        public static object compile(CodeContext/*!*/ context, object source, string filename, string mode, object flags=null, object dont_inherit=null) {
 
             bool astOnly = false;
             int iflags = flags != null ? Converter.ConvertToInt32(flags) : 0;
@@ -470,7 +470,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        public static string format(CodeContext/*!*/ context, object argValue, [DefaultParameterValue("")]string formatSpec) {
+        public static string format(CodeContext/*!*/ context, object argValue, string formatSpec="") {
             object res;
             // call __format__ with the format spec (__format__ is defined on object, so this always succeeds)
             PythonTypeOps.TryInvokeBinaryOperator(
@@ -1228,12 +1228,12 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         /// Open file and return a corresponding file object.
         /// </summary>
         public static PythonIOModule._IOBase open(CodeContext context, object file,
-            [DefaultParameterValue("r")]string mode,
-            [DefaultParameterValue(-1)]int buffering,
-            [DefaultParameterValue(null)]string encoding,
-            [DefaultParameterValue(null)]string errors,
-            [DefaultParameterValue(null)]string newline,
-            [DefaultParameterValue(true)]bool closefd) {
+            string mode="r",
+            int buffering=-1,
+            string encoding=null,
+            string errors=null,
+            string newline=null,
+            bool closefd=true) {
             return PythonIOModule.open(context, file, mode, buffering, encoding, errors, newline, closefd);
         }
 
@@ -1478,10 +1478,10 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static List sorted(CodeContext/*!*/ context,
-            [DefaultParameterValue(null)] object iterable,
-            [DefaultParameterValue(null)]object cmp,
-            [DefaultParameterValue(null)]object key,
-            [DefaultParameterValue(false)]bool reverse) {
+            object iterable=null,
+            object cmp=null,
+            object key=null,
+            bool reverse=false) {
 
             IEnumerator iter = PythonOps.GetEnumerator(iterable);
             List l = PythonOps.MakeEmptyList(10);

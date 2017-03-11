@@ -247,12 +247,12 @@ namespace IronPython.Modules {
         }
 
         public static object fdopen(CodeContext/*!*/ context, int fd,
-            [DefaultParameterValue("r")]string mode,
-            [DefaultParameterValue(-1)]int buffering,
-            [DefaultParameterValue(null)]string encoding,
-            [DefaultParameterValue(null)]string errors,
-            [DefaultParameterValue(null)]string newline,
-            [DefaultParameterValue(true)]bool closefd) {
+            string mode="r",
+            int buffering=-1,
+            string encoding=null,
+            string errors=null,
+            string newline=null,
+            bool closefd=true) {
             return Builtin.open(context, fd, mode, buffering, encoding, errors, newline, closefd);
         }
 
@@ -786,7 +786,7 @@ namespace IronPython.Modules {
         }
 
 #if FEATURE_PROCESS
-        public static void startfile(string filename, [DefaultParameterValue("open")]string operation) {
+        public static void startfile(string filename, string operation="open") {
             System.Diagnostics.Process process = new System.Diagnostics.Process();
             process.StartInfo.FileName = filename;
             process.StartInfo.UseShellExecute = true;
@@ -822,7 +822,7 @@ namespace IronPython.Modules {
                 _ino = _dev = _nlink = _uid = _gid = ScriptingRuntimeHelpers.Int32ToObject(0);                
             }
 
-            public stat_result(CodeContext/*!*/ context, IList statResult, [DefaultParameterValue(null)]PythonDictionary dict) {
+            public stat_result(CodeContext/*!*/ context, IList statResult, PythonDictionary dict=null) {
                 // dict is allowed by CPython's stat_result, but doesn't seem to do anything, so we ignore it here.
 
                 if (statResult.Count < 10) {

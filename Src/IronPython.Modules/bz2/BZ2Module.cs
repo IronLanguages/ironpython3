@@ -46,7 +46,7 @@ use an instance of BZ2Compressor instead. The compresslevel parameter, if
 given, must be a number between 1 and 9.
 ")]
         public static Bytes compress([BytesConversion]IList<byte> data, 
-                                      [DefaultParameterValue(DEFAULT_COMPRESSLEVEL)]int compresslevel) {
+                                      int compresslevel=DEFAULT_COMPRESSLEVEL) {
             using (var mem = new MemoryStream()) {
                 using (var bz2 = data.Count > PARALLEL_THRESHOLD ? 
                             (Stream)new ParallelBZip2OutputStream(mem, true) :

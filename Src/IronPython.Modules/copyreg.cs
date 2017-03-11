@@ -80,7 +80,7 @@ namespace IronPython.Modules {
             + "The constructor argument is ignored, and exists only for backwards\n"
             + "compatibility."
             )]
-        public static void pickle(CodeContext/*!*/ context, object type, object function, [DefaultParameterValue(null)] object ctor) {
+        public static void pickle(CodeContext/*!*/ context, object type, object function, object ctor=null) {
             EnsureCallable(context, function, "reduction functions must be callable");
             if (ctor != null) constructor(context, ctor);
             GetDispatchTable(context)[type] = function;

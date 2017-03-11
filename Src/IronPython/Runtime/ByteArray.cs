@@ -100,7 +100,7 @@ namespace IronPython.Runtime
             __init__(GetBytes(source));
         }
 
-        public void __init__(CodeContext/*!*/ context, string source, string encoding, [DefaultParameterValue("strict")]string errors)
+        public void __init__(CodeContext/*!*/ context, string source, string encoding, string errors="strict")
         {
             _bytes = new List<byte>(StringOps.encode(context, source, encoding, errors));
         }
@@ -318,7 +318,7 @@ namespace IronPython.Runtime
             }
         }
 
-        public string decode(CodeContext/*!*/ context, [Optional]object encoding, [DefaultParameterValue("strict")]string errors)
+        public string decode(CodeContext/*!*/ context, [Optional]object encoding, string errors="strict")
         {
             return StringOps.decode(context, _bytes.MakeString(), encoding, errors);
         }

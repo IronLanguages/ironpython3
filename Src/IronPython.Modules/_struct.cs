@@ -178,12 +178,12 @@ namespace IronPython.Modules {
                             break;
                         case FormatType.UnsignedInt:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                WriteUInt(res, _isLittleEndian, GetULongValue(context, _isStandardized, curObj++, values, "unsigned int"));
+                                WriteUInt(res, _isLittleEndian, GetULongValue(context, curObj++, values, "unsigned int"));
                             }
                             break;
                         case FormatType.UnsignedLong:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                WriteUInt(res, _isLittleEndian, GetULongValue(context, _isStandardized, curObj++, values, "unsigned long"));
+                                WriteUInt(res, _isLittleEndian, GetULongValue(context, curObj++, values, "unsigned long"));
                             }
                             break;
                         case FormatType.Pointer:
@@ -945,67 +945,52 @@ namespace IronPython.Modules {
             throw Error(context, "expected int value");
         }
 
-        internal static uint GetUIntValue(CodeContext/*!*/ context, bool isStandardized, int index, object[] args) {
+        internal static uint GetULongValue(CodeContext/*!*/ context, int index, object[] args, string type) {
             object val = GetValue(context, index, args);
-            uint res;
-            if (Converter.TryConvertToUInt32(val, out res)) {
-                return res;
-            }
-
-            if (isStandardized) {
-                throw Error(context, "expected unsigned long value");
-            }
-
-            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "'I' format requires 0 <= number <= 4294967295");
-            return 0;
-        }
-
-        internal static uint GetULongValue(CodeContext/*!*/ context, bool isStandardized, int index, object[] args, string type) {
-            object val = GetValue(context, index, args);
-            uint res;
             if (val is int) {
-                res = (uint)(int)val;
-                WarnRange(context, (int)val, isStandardized, type);
+                CheckRange(context, (int)val, type);
+                return (uint)(int)val;
             } else if (val is BigInteger) {
-                res = (uint)(((BigInteger)val) & 0xffffffff);
-                WarnRange(context, (BigInteger)val, isStandardized, type);                
+                CheckRange(context, (BigInteger)val, type);
+                return (uint)(BigInteger)val;
             } else if (val is Extensible<int>) {
-                res = (uint)((Extensible<int>)val).Value;
-                WarnRange(context, ((Extensible<int>)val).Value, isStandardized, type);
+                CheckRange(context, ((Extensible<int>)val).Value, type);
+                return (uint)((Extensible<int>)val).Value;
             } else if (val is Extensible<BigInteger>) {
-                res = (uint)(((Extensible<BigInteger>)val).Value & 0xffffffff);
-                BigInteger bi = ((Extensible<BigInteger>)val).Value;
-                WarnRange(context, bi, isStandardized, type);                
+                CheckRange(context, ((Extensible<BigInteger>)val).Value, type);
+                return (uint)((Extensible<BigInteger>)val).Value;
             } else {
-                PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "struct integer overflow masking is deprecated");
-                
-                object maskedValue = PythonContext.GetContext(context).Operation(PythonOperationKind.BitwiseAnd, val, (BigInteger)4294967295);
-                if (!Converter.TryConvertToUInt32(maskedValue, out res)) {
-                    throw PythonOps.OverflowError("can't convert to " + type);
+                object objres;
+                if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, val, "__int__", out objres)) {
+                    if (objres is int) {
+                        CheckRange(context, (int)objres, type);
+                        return (uint)(int)objres;
+                    }
+                }
+
+                uint res;
+                if (Converter.TryConvertToUInt32(val, out res)) {
+                    return res;
                 }
             }
 
-            return res;
+            throw Error(context, "cannot convert argument to integer");
         }
 
-        private static void WarnRange(CodeContext context, int val, bool isStandardized, string type) {
+        private static void CheckRange(CodeContext context, int val, string type) {
             if (val < 0) {
-                WarnRange(context, isStandardized, type);
+                OutOfRange(context, type);
             }
         }
 
-        private static void WarnRange(CodeContext context, BigInteger bi, bool isStandardized, string type) {
+        private static void CheckRange(CodeContext context, BigInteger bi, string type) {
             if (bi < 0 || bi > 4294967295) {
-                WarnRange(context, isStandardized, type);
+                OutOfRange(context, type);
             }
         }
 
-        private static void WarnRange(CodeContext context, bool isStandardized, string type) {
-            if (isStandardized) {
-                throw Error(context, "expected " + type + " value");
-            }
-
-            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, (type == "unsigned long" ? "'L'" : "'I'") + " format requires 0 <= number <= 4294967295");
+        private static void OutOfRange(CodeContext context, string type) {
+            throw Error(context, string.Format("integer out of range for '{0}' format code", type == "unsigned long" ? "L" : "I"));
         }
 
         internal static IntPtr GetPointer(CodeContext/*!*/ context, int index, object[] args) {

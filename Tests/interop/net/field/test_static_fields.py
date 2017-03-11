@@ -179,7 +179,7 @@ def _test_set_by_instance(current_type):
     _test_verify(current_type)
     
     # set values which need conversion.
-    o.StaticInt32Field = 100L
+    o.StaticInt32Field = 100
     AreEqual(current_type.StaticInt32Field, 100)
 
     o.StaticInt32Field = 10.01
@@ -225,7 +225,7 @@ def _test_set_by_type(current_type):
     _test_verify(current_type)
 
     # set values which need conversion.
-    current_type.StaticInt16Field = 100L
+    current_type.StaticInt16Field = 100
     AreEqual(current_type.StaticInt16Field, 100)
 
     current_type.StaticBooleanField = 0

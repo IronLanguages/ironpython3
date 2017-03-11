@@ -24,7 +24,7 @@ class K:
     _public_methods_ = ['comMethod']
     
     def comMethod(self, p1):
-        print p1
+        print(p1)
         return hw_retval
         
 def install_pywin32_server():

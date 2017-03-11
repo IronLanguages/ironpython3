@@ -140,8 +140,8 @@ def test_iterator_for():
     
         f = file('test_file.txt')
         
-        import nt    
-        stat = nt.stat(__file__)
+        import os    
+        stat = os.stat(__file__)
 
     class x(object):
         abc = 2
@@ -187,7 +187,7 @@ def test_iterator_for():
                 break
     finally:
         f.close()
-        nt.unlink('test_file.txt')
+        os.unlink('test_file.txt')
 
 
 def test_iterator_closed_file():

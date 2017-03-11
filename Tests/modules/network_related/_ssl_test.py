@@ -27,7 +27,7 @@ import socket
 
 #--GLOBALS---------------------------------------------------------------------
 SSL_URL      = "www.microsoft.com"
-SSL_ISSUER   = "Microsoft Secure Server Authority"
+SSL_ISSUER   = "CN=Symantec Class 3 Secure Server CA - G4, OU=Symantec Trust Network, O=Symantec Corporation, C=US"
 SSL_SERVER   = "www.microsoft.com"
 SSL_PORT     = 443
 SSL_REQUEST  = "GET / HTTP/1.0\r\nHost: www.microsoft.com\r\n\r\n"
@@ -38,47 +38,81 @@ SSL_RESPONSE = "Microsoft Corporation"
 
 
 #--TEST CASES------------------------------------------------------------------
-@skip("cli", "silverlight") #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21411
+@skip("silverlight") #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21411
 def test_CERT_NONE():
     AreEqual(real_ssl.CERT_NONE,
              0)
 
-@skip("cli", "silverlight") #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21411
+@skip("silverlight") #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21411
 def test_CERT_OPTIONAL():
     AreEqual(real_ssl.CERT_OPTIONAL,
              1)
 
-@skip("cli", "silverlight") #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21411
+@skip("silverlight") #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21411
 def test_CERT_REQUIRED():
     AreEqual(real_ssl.CERT_REQUIRED,
              2)
 
-@skip("cli", "silverlight") #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21411
+@skip("silverlight") #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21411
 def test_PROTOCOL_SSLv2():
     AreEqual(real_ssl.PROTOCOL_SSLv2,
              0)
 
-@skip("cli", "silverlight") #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21411
+@skip("silverlight") #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21411
 def test_PROTOCOL_SSLv23():
     AreEqual(real_ssl.PROTOCOL_SSLv23,
              2)
 
-@skip("cli", "silverlight") #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21411
+@skip("silverlight") #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21411
 def test_PROTOCOL_SSLv3():
     AreEqual(real_ssl.PROTOCOL_SSLv3,
              1)
 
-@skip("cli", "silverlight") #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21411
+@skip("silverlight") #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21411
 def test_PROTOCOL_TLSv1():
     AreEqual(real_ssl.PROTOCOL_TLSv1,
              3)
 
+@skip("silverlight")
+def test_PROTOCOL_TLSv1_1():
+    AreEqual(real_ssl.PROTOCOL_TLSv1_1,
+             4)
+
+@skip("silverlight")
+def test_PROTOCOL_TLSv1_2():
+    AreEqual(real_ssl.PROTOCOL_TLSv1_2,
+             5)
+
+@skip("silverlight")
+def test_OP_NO_SSLv2():
+    AreEqual(real_ssl.OP_NO_SSLv2,
+             0x0000000)
+
+@skip("silverlight")
+def test_OP_NO_SSLv3():
+    AreEqual(real_ssl.OP_NO_SSLv3,
+             0x2000000)
+
+@skip("silverlight")
+def test_OP_NO_TLSv1():
+    AreEqual(real_ssl.OP_NO_TLSv1,
+             0x4000000)
+
+@skip("silverlight")
+def test_OP_NO_TLSv1_1():
+    AreEqual(real_ssl.OP_NO_TLSv1_1,
+             0x10000000)
+
+@skip("silverlight")
+def test_OP_NO_TLSv1_2():
+    AreEqual(real_ssl.OP_NO_TLSv1_2,
+             0x8000000)
 
 def test_RAND_add():
     #--Positive
     AreEqual(real_ssl.RAND_add("", 3.14),
              None)
-    AreEqual(real_ssl.RAND_add(u"", 3.14),
+    AreEqual(real_ssl.RAND_add("", 3.14),
              None)
     AreEqual(real_ssl.RAND_add("", 3),
              None)
@@ -86,7 +120,7 @@ def test_RAND_add():
     #--Negative
     for g1, g2 in [ (None, None),
                     ("", None),
-                    #(None, 3.14), #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24276
+                    (None, 3.14), #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24276
                     ]:
         AssertError(TypeError, real_ssl.RAND_add, g1, g2)
     
@@ -94,20 +128,6 @@ def test_RAND_add():
     AssertError(TypeError, real_ssl.RAND_add, "")
     AssertError(TypeError, real_ssl.RAND_add, 3.14)
     AssertError(TypeError, real_ssl.RAND_add, "", 3.14, "")
-
-
-def test_RAND_egd():
-    #--Positive
-    if not is_cpython:
-        AreEqual(real_ssl.RAND_egd(""),
-                 None)
-    
-    #--Negative
-    AssertError(TypeError, real_ssl.RAND_egd)
-    AssertError(TypeError, real_ssl.RAND_add, None)
-    AssertError(TypeError, real_ssl.RAND_add, 1)
-    AssertError(TypeError, real_ssl.RAND_add, 3.14)
-    AssertError(TypeError, real_ssl.RAND_add, "", "")
 
 
 def test_RAND_status():
@@ -162,7 +182,7 @@ def test_SSL_ERROR_ZERO_RETURN():
     AreEqual(real_ssl.SSL_ERROR_ZERO_RETURN, 6)
 
 
-@skip("cli", "silverlight") #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21411
+@skip("silverlight") #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21411
 def test___doc__():
     expected_doc = """Implementation module for SSL socket operations.  See the socket module
 for documentation."""
@@ -172,11 +192,11 @@ for documentation."""
 def test__test_decode_cert():
     if not is_cpython and hasattr(real_ssl, "decode_cert"):
         raise Exception("Please add a test for _ssl.decode_cert")
-    print 'TODO: no implementation to test yet.'
+    print('TODO: no implementation to test yet.')
 
 
 def test_sslwrap():
-    print 'TODO: no implementation to test yet.'
+    print('TODO: no implementation to test yet.')
 
 
 def test_SSLType():
@@ -229,6 +249,7 @@ def test_SSLType_ssl():
     #TODO!
 
 
+@disabled
 @retry_on_failure
 def test_SSLType_ssl_neg():
     '''

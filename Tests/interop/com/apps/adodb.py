@@ -16,7 +16,7 @@
 # ADO Database
 
 from iptest.assert_util import skiptest
-skiptest("win32", "silverlight", "cli64")
+skiptest("win32", "silverlight", "cli64", "posix")
 from iptest.cominterop_util import *
 
 import System

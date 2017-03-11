@@ -15,7 +15,7 @@
 # Word Interop tests for IronPython
 
 from iptest.assert_util import skiptest
-skiptest("win32", "silverlight", "cli64")
+skiptest("win32", "silverlight", "cli64", "posix")
 from iptest.cominterop_util import *
 from iptest.file_util import file_exists, delete_files
 import nt
@@ -24,7 +24,7 @@ import nt
 #--SANITY CHECK
 if not IsWordInstalled():
     from sys import exit
-    print "Word is not installed.  Cannot run this test!"
+    print("Word is not installed.  Cannot run this test!")
     exit(1)
 else:
     TryLoadWordInteropAssembly()
@@ -118,7 +118,7 @@ def test_word_typelibsupport():
     except NameError: pass
     else: Fail("namespace Word has not been imported yet")
 
-    import Word
+    from . import Word
 
     # check __class__ extension is available
     Word.__class__ 
@@ -145,9 +145,9 @@ def test_wordevents():
     SELECTION_COUNTER = 0
     
     if IS_PIA_INSTALLED:
-        print "Found PIAs for Word"
+        print("Found PIAs for Word")
     else:
-        print "No PIAs for Word were Found!!!!" 
+        print("No PIAs for Word were Found!!!!") 
 
     doc.Range().Text = "test"
     

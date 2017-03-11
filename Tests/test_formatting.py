@@ -287,3 +287,52 @@ AssertError(ValueError, Error2)
 
 
 AreEqual('%*s' %(-5,'abc'), 'abc  ')
+
+
+# cp28936
+AreEqual('%10.1e' % 1, '   1.0e+00')
+AreEqual('% 10.1e' % 1, '   1.0e+00')
+AreEqual('%+10.1e' % 1, '  +1.0e+00')
+
+AreEqual('%10.1e' % -1, '  -1.0e+00')
+AreEqual('% 10.1e' % -1, '  -1.0e+00')
+AreEqual('%+10.1e' % -1, '  -1.0e+00')
+
+AreEqual('%-10.1e' % 1, '1.0e+00   ')
+AreEqual('% -10.1e' % 1, ' 1.0e+00  ')
+AreEqual('%+-10.1e' % 1, '+1.0e+00  ')
+
+AreEqual('%-10.1e' % -1, '-1.0e+00  ')
+AreEqual('% -10.1e' % -1, '-1.0e+00  ')
+AreEqual('%+-10.1e' % -1, '-1.0e+00  ')
+
+
+# the following is borrowed from stdlib
+import os
+import math
+
+#locate file with float format test values
+test_dir = os.path.dirname(__file__) or os.curdir
+format_testfile = os.path.join(test_dir, 'formatfloat_testcases.txt')
+
+
+
+def test_format_testfile():
+    with open(format_testfile) as testfile:
+        for line in open(format_testfile):
+            print(line)
+            if line.startswith('--'):
+                continue
+            line = line.strip()
+            if not line:
+                continue
+
+            lhs, rhs = list(map(str.strip, line.split('->')))
+            fmt, arg = lhs.split()
+            arg = float(arg)
+            AreEqual(fmt % arg, rhs)
+            if not math.isnan(arg) and math.copysign(1.0, arg) > 0.0:
+                print("minus")
+                AreEqual(fmt % -arg, '-' + rhs)
+
+test_format_testfile()

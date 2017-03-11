@@ -17,13 +17,14 @@
 ## Test __future__ related areas where __future__ is enabled in the module scope;
 ##
 
-from __future__ import division
+
 from iptest.assert_util import *
+import imp
 
 # the following are alway true in current context
 def always_true():
-    exec "AreEqual(1 / 2, 0.5)"
-    exec "from __future__ import division; AreEqual(1 / 2, 0.5)"
+    exec("AreEqual(1 / 2, 0.5)")
+    exec("from __future__ import division; AreEqual(1 / 2, 0.5)")
     AreEqual(1/2, 0.5)
     AreEqual(eval("1/2"), 0.5)
 
@@ -54,7 +55,7 @@ CustomAssert(eval('1/2') == 0)
 '''
 
 if is_silverlight==False:
-    def f1(): execfile(tempfile)
+    def f1(): exec(compile(open(tempfile).read(), tempfile, 'exec'))
     def f2(): exec(compile(code, tempfile, "exec"))
 else:
     def f1(): pass
@@ -86,7 +87,7 @@ try:
         
         import temp_future
         always_true()
-        reloaded_temp_future = reload(temp_future)
+        reloaded_temp_future = imp.reload(temp_future)
         always_true()
     
 finally:
@@ -97,8 +98,8 @@ finally:
 ## carry context over class def
 class C:
     def check(self):
-        exec "AreEqual(1 / 2, 0.5)"
-        exec "from __future__ import division; AreEqual(1/2, 0.5)"
+        exec("AreEqual(1 / 2, 0.5)")
+        exec("from __future__ import division; AreEqual(1/2, 0.5)")
         AreEqual(1 / 2, 0.5)
         AreEqual(eval("1/2"), 0.5)
 
@@ -111,7 +112,7 @@ class mylong(long): pass
 class myfloat(float): pass
 class mycomplex(complex): pass
 
-l = [2, 10L, (1+2j), 3.4, myint(7), mylong(5), myfloat(2.32), mycomplex(3, 2), True]
+l = [2, 10, (1+2j), 3.4, myint(7), mylong(5), myfloat(2.32), mycomplex(3, 2), True]
 
 if is_cli or is_silverlight:
     import System
@@ -126,8 +127,8 @@ for a in l:
             Fail("True division failed: %r(%s) / %r(%s)" % (a, type(a), b, type(b)))
 
 # check division by zero exceptions for true
-threes = [ 3, 3L, 3.0 ]
-zeroes = [ 0, 0L, 0.0 ]
+threes = [ 3, 3, 3.0 ]
+zeroes = [ 0, 0, 0.0 ]
 
 if is_cli or is_silverlight:
     import System

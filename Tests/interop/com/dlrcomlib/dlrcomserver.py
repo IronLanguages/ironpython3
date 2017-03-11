@@ -60,7 +60,7 @@ def test_perfScenarios():
 def test_errorInfo():
     try:
         com_obj.TestErrorInfo()
-    except COMException, e:
+    except COMException as e:
         # This is commented out to revisit it to see if we want to add coverage for str, or if we are
         # happy to have coverage just for e.Message
         # AreEqual("Test error message" in str(e), True)
@@ -112,7 +112,7 @@ def test_namedArgs():
     # DISP_E_UNKNOWNNAME
     AssertError(COMException, com_obj.SumArgs, 1, 2, 3, 4, 5, **{"a6":6, "bugid":"TODO"})
     
-    AssertError(StandardError, com_obj.SumArgs, 1, 2, 3, 4, 5, **{"a5":5, "bugid":"TODO"}) 
+    AssertError(Exception, com_obj.SumArgs, 1, 2, 3, 4, 5, **{"a5":5, "bugid":"TODO"}) 
 
 #Verify that one is able to enumerate over the object in a loop
 #TODO: add more tests for enumerators - bad enumerator, different array sizes, different types.

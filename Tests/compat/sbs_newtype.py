@@ -68,7 +68,7 @@ cli_exception_map = {
 def get_exception_summary():
     exception_map = is_cli and cli_exception_map or win_exception_map
 
-    for (x, y) in exception_map.items():
+    for (x, y) in list(exception_map.items()):
         if x in sys.exc_value.message: 
             return y
     
@@ -88,7 +88,7 @@ class test(object):
                 code = "class %s(%s): pass" % (new_class, base_types)
                 try: 
                     printwith("case", code)
-                    exec code in globals()
+                    exec(code, globals())
                 except:
                     printwith("same", get_exception_summary())
                     
@@ -105,7 +105,7 @@ class test(object):
                 code = "class %s(%s): __slots__ = 'abc'" % (new_class, base_types)
                 try: 
                     printwith("case", code)
-                    exec code in globals()
+                    exec(code, globals())
                 except:
                     printwith("same", get_exception_summary())
     
@@ -117,7 +117,7 @@ class test(object):
             code = "class dg(%s): pass" % y  # __slots__ = 'a'
             try:
                 printwith("case", code)
-                exec code
+                exec(code)
             except:
                 printwith("same", get_exception_summary())
 

@@ -14,7 +14,6 @@
 #####################################################################################
 
 from iptest.assert_util import *
-import collections
 import imp
 if is_cli or is_silverlight:
     from _collections import *
@@ -496,7 +495,8 @@ if not is_silverlight:
         Assert(res == '')
     
     
-    SimpleTest()
+    if not is_posix: # Finalizers run differently on mono
+        SimpleTest()
     DelBuiltin()
     Assert(UnboundLocalError, EnclosingFunction)
     DelUndefinedGlobal()
@@ -937,7 +937,7 @@ del C.a
 Assert(not "a" in dir(C))
 
 for m in dir([]):
-    c = isinstance(m, collections.Callable)
+    c = callable(m)
     a = getattr([], m)
 
 success = False
@@ -1066,14 +1066,14 @@ AssertError(NameError, f)
 
 if not is_silverlight:
     def f():
-        import nt
+        import os
         f = file('temptest.py', 'w+')
         f.write('foo = 42')
         f.close()
         try:
             exec(compile(open('temptest.py').read(), 'temptest.py', 'exec'))
         finally:
-            nt.unlink('temptest.py')
+            os.unlink('temptest.py')
         return foo
     
     AssertError(NameError, f)
@@ -1086,14 +1086,14 @@ AreEqual(f(), 42)
 
 if not is_silverlight:
     def f():
-        import nt
+        import os
         f = file('temptest.py', 'w+')
         f.write('foo = 42')
         f.close()
         try:
             from temptest import *
         finally:
-            nt.unlink('temptest.py')
+            os.unlink('temptest.py')
         return foo
     
     AreEqual(f(), 42)

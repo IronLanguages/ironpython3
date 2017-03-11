@@ -26,8 +26,9 @@ import os
 # Test that IronPython console behaves as expected (command line argument processing etc.).
 
 # Get a temporary directory in which the tests can scribble.
-tmpdir = Environment.GetEnvironmentVariable("TEMP")
-tmpdir = IO.Path.Combine(tmpdir, "IronPython")
+# This is relative to working directory so the path related tests (e.g.'print __name__')
+# return predictable results.
+tmpdir = "tmp"
 if not os.path.exists(tmpdir):
     nt.mkdir(tmpdir)
 
@@ -144,7 +145,7 @@ def test_nt_abort():
 
 def test_c():
     TestCommandLine(("-c", "print 'foo'"), "foo\n")
-    TestCommandLine(("-c", "raise Exception('foo')"), ("lastline", "Exception: foo"), 1)
+    TestCommandLine(("-c", "raise Exception('foo')"), ("lastline", "Exception: foo\n"), 1)
     TestCommandLine(("-c", "import sys; sys.exit(123)"), "", 123)
     TestCommandLine(("-c", "import sys; print sys.argv", "foo", "bar", "baz"), "['-c', 'foo', 'bar', 'baz']\n")
     TestCommandLine(("-c",), "Argument expected for the -c option.\n", 1)
@@ -171,7 +172,7 @@ def test_S():
     TestCommandLine(("-S", "-c", "import sys; print str(sys.exec_prefix + '\\lib').lower() in [x.lower() for x in sys.path]"), "True\n")
     
     # Now check that we can suppress this with -S.
-    TestCommandLine(("-S", "-c", "import sys; print sys.foo"), ("lastline", "AttributeError: 'module' object has no attribute 'foo'"), 1)
+    TestCommandLine(("-S", "-c", "import sys; print sys.foo"), ("lastline", "AttributeError: 'module' object has no attribute 'foo'\n"), 1)
 
 def test_cp24720():
     f = file(nt.getcwd() + "\\site.py", "w")
@@ -229,7 +230,7 @@ def test_E():
     
     # Re-use the generated site.py from above and verify that we can stop it being picked up from IRONPYTHONPATH
     # using -E.
-    TestCommandLine(("-E", "-c", "import sys; print sys.foo"), ("lastline", "AttributeError: 'module' object has no attribute 'foo'"), 1)
+    TestCommandLine(("-E", "-c", "import sys; print sys.foo"), ("lastline", "AttributeError: 'module' object has no attribute 'foo'\n"), 1)
     
     # Create an override startup script that exits right away
     tmpscript = tmpdir + "\\startupdie.py"
@@ -347,7 +348,8 @@ def test_doc():
 def test_cp11922():
     TestCommandLine(("-c", "assert False"), '''Traceback (most recent call last):
   File "<string>", line 1, in <module>
-AssertionError''',
+AssertionError
+''',
                     1)
 
 def test_cp798():
@@ -360,6 +362,7 @@ def test_logo():
     x = i.EatToPrompt()
     Assert(x.find('\r\r\n') == -1)
 
+@disabled("When run in a batch mode, the stdout/stderr/stdin are redirected")
 def test_isatty():
     # cp33123
     # this test assumes to be run from cmd.exe without redirecting stdout/stderr/stdin
@@ -389,6 +392,90 @@ def test_isatty():
         TestCommandLine(("-c", isattycmd2), "True False True", 0)
     finally:
         batfile = hideDefaultBatch
+
+def test_cp34849():
+    script="""
+import sys
+def f1():
+    raise Exception("test exception")
+def t():
+    try:
+        f1()
+    except:
+        pt = sys.exc_info()
+        raise pt[0], pt[1], pt[2]
+t()
+"""
+    expected = r"""Traceback (most recent call last):
+  File "tmp\script_cp34849.py", line 7, in t
+  File "tmp\script_cp34849.py", line 4, in f1
+Exception: test exception
+"""
+
+    scriptFileName = os.path.join(tmpdir, "script_cp34849.py")
+    f = file(scriptFileName, "w")
+    f.write(script)
+    f.close()
+    TestCommandLine((scriptFileName,), expected, 1)
+
+def test_cp35263():
+    script = """
+import warnings
+def foo():
+    warnings.warn('warning 1')
+warnings.warn('warning 2')
+foo()
+"""
+    expected=r"""tmp\script_cp35263.py:5: UserWarning: warning 2
+  warnings.warn('warning 2')
+tmp\script_cp35263.py:4: UserWarning: warning 1
+  warnings.warn('warning 1')
+"""
+    scriptFileName = os.path.join(tmpdir, "script_cp35263.py")
+    f = file(scriptFileName, "w")
+    f.write(script)
+    f.close()
+    TestCommandLine(("-X:Tracing", "-X:FullFrames", scriptFileName,), expected, 0)
+
+def test_cp35322():
+    TestCommandLine(("-c", "print __name__"), "__main__\n", 0)
+
+def test_cp35379():
+    script1 = r"""
+print __file__
+print __name__"""
+    from zipfile import ZipFile
+    zipname = os.path.join(tmpdir, 'script_cp35379_1.zip')
+    with ZipFile(zipname, 'w') as myzip:
+        myzip.writestr('__main__.py', script1)
+
+    TestCommandLine((zipname,), "tmp\\script_cp35379_1.zip\\__main__.py\n__main__\n", 0)
+
+    script2 = r"""
+import sys
+print __file__
+print __name__
+sys.exit(42)"""
+    from zipfile import ZipFile
+    zipname = os.path.join(tmpdir, 'script_cp35379_2.zip')
+    with ZipFile(zipname, 'w') as myzip:
+        myzip.writestr('__main__.py', script2)
+
+    TestCommandLine((zipname,), "tmp\\script_cp35379_2.zip\\__main__.py\n__main__\n", 42)
+
+    zipname = os.path.join(tmpdir, 'script_cp35379_3.zip')
+    # get some padding in front of 1st zip content
+    with open(zipname, "wb") as padded:
+        with open("cmd.exe", "rb") as cmdexe:
+            padded.write(cmdexe.read())
+        with open(os.path.join(tmpdir, "script_cp35379_1.zip"), "rb") as firstZip:
+            padded.write(firstZip.read())
+
+    TestCommandLine((zipname,), "tmp\\script_cp35379_3.zip\\__main__.py\n__main__\n", 0)
+
+    # it should not matter if relative path is given with \ or /
+    zipname = zipname.replace('\\', '/')
+    TestCommandLine((zipname,), "tmp\\script_cp35379_3.zip\\__main__.py\n__main__\n", 0)
 
 run_test(__name__)
 

@@ -32,22 +32,22 @@ com_obj = getRCWFromProgID(com_type_name)
 #------------------------------------------------------------------------------
 
 def testhelper(function, type, values, equality_func=AreEqual):
-    for i in xrange(len(values)):
+    for i in range(len(values)):
         try:
             strongVar1 = StrongBox[type]()
             function(values[i], strongVar1)
-        except Exception, e:
-            print "FAILED trying to pass", values[i], "of type", type(values[i]) ,"to", function#.__name__
+        except Exception as e:
+            print("FAILED trying to pass", values[i], "of type", type(values[i]) ,"to", function)#.__name__
             raise e
         
-        for j in xrange(i, len(values)):
+        for j in range(i, len(values)):
             equality_func(values[i], values[j]) #Make sure no test issues first
         
             try:
                 strongVar2 = StrongBox[type]()                
                 function(values[j], strongVar2)
-            except Exception, e:
-                print "FAILED trying to pass", values[j], "of type", type(values[j]) ,"to", function#.__name__
+            except Exception as e:
+                print("FAILED trying to pass", values[j], "of type", type(values[j]) ,"to", function)#.__name__
                 raise e
             
             equality_func(strongVar1.Value, strongVar2.Value)
@@ -114,8 +114,8 @@ def test_negative():
     com_obj.mDouble(Double.MaxValue, Double.MaxValue)
 
     #See Dev10 409981 for more info            
-    AssertError(StandardError, com_obj.mDouble, Double.MaxValue)     
-    AssertError(StandardError, com_obj.mCy, Decimal(0)) 
+    AssertError(Exception, com_obj.mDouble, Double.MaxValue)     
+    AssertError(Exception, com_obj.mCy, Decimal(0)) 
 
 #------------------------------------------------------------------------------
 def test_variant_bool():

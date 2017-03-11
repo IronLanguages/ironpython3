@@ -90,19 +90,19 @@ def test_sanity():
 
 
 def test_default_action():
-    print "TODO"
+    print("TODO")
     
 def test_filters():
-    print "TODO"
+    print("TODO")
     
 def test_once_registry():
-    print "TODO"
+    print("TODO")
     
 def test_warn():
-    print "TODO"
+    print("TODO")
     
 def test_warn_explicit():
-    print "TODO"
+    print("TODO")
 
 
 ##############################################################################

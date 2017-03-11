@@ -49,15 +49,15 @@ class AutoAbortableConsoleHost(RemoteConsoleHost):
     
     def OnRemoteRuntimeExited(self, sender, eventArgs):
         super(AutoAbortableConsoleHost, self).OnRemoteRuntimeExited(sender, eventArgs)
-        print "Remote runtime terminated with exit code : %d" % self.RemoteRuntimeProcess.ExitCode
-        print "Press Enter to nudge the old thread out of Console.Readline..."        
+        print("Remote runtime terminated with exit code : %d" % self.RemoteRuntimeProcess.ExitCode)
+        print("Press Enter to nudge the old thread out of Console.Readline...")        
 
 class TestConsoleRestartManager(ConsoleRestartManager):
     def CreateRemoteConsoleHost(self):
         return AutoAbortableConsoleHost()
     
 if __name__ == "__main__":
-    print "TestConsoleRestartManager procId is %d" % Process.GetCurrentProcess().Id
+    print("TestConsoleRestartManager procId is %d" % Process.GetCurrentProcess().Id)
     console = TestConsoleRestartManager(exitOnNormalExit = True)
     console.Start()
     console.ConsoleThread.Join()

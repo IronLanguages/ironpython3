@@ -14,16 +14,19 @@
 #####################################################################################
 
 from iptest.assert_util import *
+from iptest.file_util import path_combine
 skiptest("silverlight")
+
+import os
 
 
 @skip("win32")
 def test_sanity():
     root = testpath.public_testdir
-    exec(compile(open(root + "/Inc/toexec.py").read(), root + "/Inc/toexec.py", 'exec'))
-    exec(compile(open(root + "/Inc/toexec.py").read(), root + "/Inc/toexec.py", 'exec'))
+    exec(compile(open(path_combine(root, "Inc", "toexec.py")).read(), path_combine(root, "Inc", "toexec.py"), 'exec'))
+    exec(compile(open(path_combine(root, "Inc", "toexec.py")).read(), path_combine(root, "Inc", "toexec.py"), 'exec'))
     #execfile(root + "/doc.py")
-    exec(compile(open(root + "/Inc/toexec.py").read(), root + "/Inc/toexec.py", 'exec'))
+    exec(compile(open(path_combine(root, "Inc", "toexec.py")).read(), path_combine(root, "Inc", "toexec.py"), 'exec'))
 
 def test_negative():
     AssertError(TypeError, execfile, None) # arg must be string
@@ -34,7 +37,7 @@ def test_negative():
 def test_scope():
     root = testpath.public_testdir
     z = 10
-    exec(compile(open(root + "/Inc/execfile_scope.py").read(), root + "/Inc/execfile_scope.py", 'exec'))
+    exec(compile(open(path_combine(root, "Inc", "execfile_scope.py")).read(), path_combine(root, "Inc", "execfile_scope.py"), 'exec'))
     
 
 run_test(__name__)

@@ -22,7 +22,7 @@ def test_getrandbits():
 
     #the argument is a random int value
     rand = _random.Random()
-    for i1 in xrange(1, 1984, 6):
+    for i1 in range(1, 1984, 6):
         Assert(rand.getrandbits(i1) < (2**i1))
         Assert(rand.getrandbits(i1) < (2**i1))
         Assert(rand.getrandbits(i1+1) < (2**(i1+1)))

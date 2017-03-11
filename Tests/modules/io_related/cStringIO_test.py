@@ -18,7 +18,7 @@
 ##
 
 from iptest.assert_util import *
-import cStringIO
+import io
 
 text = "Line 1\nLine 2\nLine 3\nLine 4\nLine 5"
 
@@ -100,8 +100,8 @@ def call_getvalue(i):
 # __iter__, next
 def call_next(i):
     AreEqual(i.__iter__(), i)
-    AreEqual(i.next(), "Line 1\n")
-    AreEqual(i.next(), "Line 2\n")
+    AreEqual(next(i), "Line 1\n")
+    AreEqual(next(i), "Line 2\n")
     AreEqual([l for l in i], ["Line 3\n", "Line 4\n", "Line 5"])
     i.close()
     AssertError(ValueError, i.readlines)
@@ -220,16 +220,16 @@ def call_flush(i):
     AreEqual(i,i)
 
 def init_StringI():
-    return cStringIO.StringIO(text)
+    return io.StringIO(text)
 
 def init_StringO():
-    o = cStringIO.StringIO()
+    o = io.StringIO()
     o.write(text)
     o.reset()
     return o
 
 def init_emptyStringI():
-    return cStringIO.StringIO("")
+    return io.StringIO("")
     
 def test_empty():
     i = init_emptyStringI()
@@ -316,7 +316,7 @@ def test_cp8567():
                 #u"123", #CodePlex 19220
                 ]:
         for i in [5, 6, 7, 2**8, 100, 2**16-1, 2**16, 2**16, 2**31-2, 2**31-1]:
-            cio = cStringIO.StringIO(x)
+            cio = io.StringIO(x)
             cio.truncate(i)
             AreEqual(cio.tell(), len(x))
             cio.close()
@@ -351,7 +351,7 @@ def test_o():
         t(o)
 
 def test_cp22017():
-    m = cStringIO.StringIO()
+    m = io.StringIO()
     m.seek(2)
     m.write("hello!")
     AreEqual(m.getvalue(), '\x00\x00hello!')

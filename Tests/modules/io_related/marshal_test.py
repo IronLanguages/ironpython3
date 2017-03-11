@@ -14,7 +14,7 @@
 #####################################################################################
 
 from iptest.assert_util import *
-if is_silverlight==False:
+if not is_silverlight:
     from iptest.file_util import *
 
 import marshal
@@ -33,7 +33,7 @@ def test_functionality():
                 65534, 65535, -65536,
                 3.1415926,
                 
-                0L,
+                0,
                 -1234567890123456789,
                 2**33,
                 [],
@@ -48,10 +48,10 @@ def test_functionality():
                 0+1j, 2-3.23j,
                 set(),
                 set(['abc', -5]),
-                set([1, (2.1, 3L), frozenset([5]), 'x']),
+                set([1, (2.1, 3), frozenset([5]), 'x']),
                 frozenset(),
                 frozenset(['abc', -5]),
-                frozenset([1, (2.1, 3L), frozenset([5]), 'x'])
+                frozenset([1, (2.1, 3), frozenset([5]), 'x'])
             ]
     
     if is_cli or is_silverlight:
@@ -69,6 +69,9 @@ def test_functionality():
         x2 = marshal.loads(s)
         AreEqual(x, x2)
         
+        # on 64-bit the order in set/frozenset isn't the same after dumps/loads
+        if is_cli64 and isinstance(x, (set, frozenset)): continue
+
         s2 = marshal.dumps(x2)
         AreEqual(s, s2)
 
@@ -119,7 +122,7 @@ def test_negative():
 def test_file_multiple_reads():
     """calling load w/ a file should only advance the length of the file"""
     l = []
-    for i in xrange(10):
+    for i in range(10):
         l.append(marshal.dumps({i:i}))
     
     data = ''.join(l)
@@ -129,9 +132,12 @@ def test_file_multiple_reads():
     
     f = file('tempfile.txt')
     
-    for i in xrange(10):
+    for i in range(10):
         obj = marshal.load(f)
         AreEqual(obj, {i:i})
+
+    f.close()
+    delete_files('tempfile.txt')
 
 def test_string_interning():
     AreEqual(marshal.dumps(['abc', 'abc'], 1), '[\x02\x00\x00\x00t\x03\x00\x00\x00abcR\x00\x00\x00\x00')

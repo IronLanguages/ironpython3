@@ -139,7 +139,7 @@ cor_mapper = {
 
 
 def test_cor_exceptions():
-    for meth in cor_mapper.keys():
+    for meth in list(cor_mapper.keys()):
         AssertError(cor_mapper[meth], meth)
     
 ###############################################################################
@@ -149,7 +149,7 @@ disp_mapper = {
                 com_obj.genDispArrayIsLocked :  EnvironmentError,
                 com_obj.genDispBadCallee :      EnvironmentError, 
                 com_obj.genDispBadIndex :       EnvironmentError, #Should be IndexError?
-                com_obj.genDispBadParamCount :  StandardError,    #Should be TypeError?
+                com_obj.genDispBadParamCount :  Exception,    #Should be TypeError?
                 com_obj.genDispBadVarType :     EnvironmentError, #Should be TypeError?
                 com_obj.genDispBufferTooSmall : EnvironmentError, #Should be TypeError?
                 com_obj.genDispDivByZero :      ZeroDivisionError,
@@ -167,7 +167,7 @@ disp_mapper = {
                 }
 
 def test_disp_exceptions():
-    for meth in disp_mapper.keys():
+    for meth in list(disp_mapper.keys()):
         AssertError(disp_mapper[meth], meth)    
     
 ###############################################################################
@@ -187,7 +187,7 @@ error_mapper = {
                 }
 
 def test_error_exceptions():
-    for meth in error_mapper.keys():
+    for meth in list(error_mapper.keys()):
 		#AssertError(error_mapper[meth], meth)
         #Dev10 409945 - none of these actually throw an exception..            
 		meth()
@@ -201,7 +201,7 @@ msee_mapper = {
                 }
 
 def test_msee_exceptions():
-    for meth in msee_mapper.keys():
+    for meth in list(msee_mapper.keys()):
         AssertError(msee_mapper[meth], meth)
 
 ###############################################################################
@@ -213,7 +213,7 @@ nte_mapper = {
                 }
                 
 def test_nte_exceptions():
-    for meth in nte_mapper.keys():
+    for meth in list(nte_mapper.keys()):
         AssertError(COMException, meth)
     
 ###############################################################################
@@ -230,7 +230,7 @@ generic_mapper = {
                     }
                     
 def test_generic_exceptions():
-    for meth in generic_mapper.keys():
+    for meth in list(generic_mapper.keys()):
         AssertError(generic_mapper[meth], meth)
 
 ###############################################################################

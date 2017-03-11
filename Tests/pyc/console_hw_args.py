@@ -15,5 +15,5 @@
 
 if True:
     import sys
-    print "(Compiled) Hello World", sys.argv
+    print("(Compiled) Hello World", sys.argv)
     

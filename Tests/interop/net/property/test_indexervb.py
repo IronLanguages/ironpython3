@@ -17,7 +17,7 @@ Named indexer
 '''
 #------------------------------------------------------------------------------
 from iptest.assert_util import *
-skiptest("silverlight")
+skiptest("silverlight", "posix")
 add_clr_assemblies("indexerdefinitionsvb", "typesamples")
 
 from Merlin.Testing import *
@@ -35,7 +35,7 @@ def test_basic():
         x = t()
         x.Init()
         
-        for y,z in zip(x.PropertyName, range(10)):
+        for y,z in zip(x.PropertyName, list(range(10))):
 		    AreEqual(y,z)
 		    
         AssertError(TypeError, lambda: x[2])
@@ -54,7 +54,7 @@ def test_basic():
 def test_signature():
     x = ClassWithSignature()
     
-    for y,z in zip(x.PropertyName, range(2, 12)):
+    for y,z in zip(x.PropertyName, list(range(2, 12))):
 		AreEqual(y,z)
 		    
     i = x.PropertyName
@@ -65,7 +65,7 @@ def test_signature():
 def test_only_optional():
     x = ClassWithOnlyOptional()
     
-    for y,z in zip(x.PropertyName, range(10)):
+    for y,z in zip(x.PropertyName, list(range(10))):
 		AreEqual(y,z)
     
     i = x.PropertyName
@@ -75,7 +75,7 @@ def test_only_paramarray():
     x = ClassWithOnlyParamArray()
     i = x.PropertyName
     
-    for y,z in zip(x.PropertyName, range(10)):
+    for y,z in zip(x.PropertyName, list(range(10))):
 		AreEqual(y,z)
     
     AreEqual(i[()], -99)
@@ -104,7 +104,7 @@ def test_overloaded_indexer():
     AreEqual(x.PropertyName[6], 6)
     #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=3740
     AreEqual([y for y in x.PropertyName],
-             range(10)) #should be [2]?
+             list(range(10))) #should be [2]?
 
 #--MAIN------------------------------------------------------------------------
 run_test(__name__)

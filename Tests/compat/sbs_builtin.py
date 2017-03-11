@@ -46,14 +46,14 @@ class test_builtin(object):
                     if z == 0:  continue
 
                     line = "l = list(test_str); del l[%s:%s:%s]" % (str(x), str(y), str(z))
-                    exec line                
+                    exec(line)                
                     printwith("case", "del l[%s:%s:%s]" % (str(x), str(y), str(z)))
                     printwith("same", eval("l"), eval("len(l)"))
 
     def test_xrange(self):
         ''' test xrange with corner cases'''
         import sys
-        maxint = sys.maxint
+        maxint = sys.maxsize
         numbers = [1, 2, maxint/2, maxint-1, maxint, maxint+1, maxint+2]
         choices = [0]
         choices.extend(numbers)
@@ -81,7 +81,7 @@ class test_builtin(object):
                         
                         printwith("same", xr, xl, first, last, first2, last2)
                     except: 
-                        printwith("same", sys.exc_type)
+                        printwith("same", sys.exc_info()[0])
 
     def test_complex_ctor_str(self):
         l = [ "-1", "0", "1", "+1", "+1.1", "-1.01", "-.101", ".234", "-1.3e3", "1.09e-3", "33.2e+10"] #, " ", ""] #http://ironpython.codeplex.com/workitem/28385
@@ -93,7 +93,7 @@ class test_builtin(object):
                 c = complex(s)
                 printwithtype(c)
             except: 
-                printwith("same", sys.exc_type, sys.exc_value)
+                printwith("same", sys.exc_info()[0], sys.exc_info()[1])
             
             s += "j"
             try: 
@@ -101,7 +101,7 @@ class test_builtin(object):
                 c = complex(s)
                 printwithtype(c)
             except: 
-                printwith("same", sys.exc_type, sys.exc_value)
+                printwith("same", sys.exc_info()[0], sys.exc_info()[1])
         
         for s1 in l:
             for s2 in l:
@@ -115,11 +115,11 @@ class test_builtin(object):
                     c = complex(s)
                     printwithtype(c)
                 except: 
-                    printwith("same", sys.exc_type, sys.exc_value)
+                    printwith("same", sys.exc_info()[0], sys.exc_info()[1])
                     
     def test_complex_ctor(self):
         # None is not included due to defaultvalue issue
-        ln = [-1, 1L, 1.5, 1.5e+5, 1+2j, -1-9.3j ]
+        ln = [-1, 1, 1.5, 1.5e+5, 1+2j, -1-9.3j ]
         ls = ["1", "1L", "-1.5", "1.5e+5", "-34-2j"]
         
         la = []
@@ -132,7 +132,7 @@ class test_builtin(object):
                 c = complex(s)
                 printwithtype(c)
             except:
-                printwith("same", sys.exc_type, sys.exc_value)
+                printwith("same", sys.exc_info()[0], sys.exc_info()[1])
         
         for s in la:
             try:                
@@ -140,7 +140,7 @@ class test_builtin(object):
                 c = complex(real=s)
                 printwithtype(c)
             except:
-                printwith("same", sys.exc_type, sys.exc_value)
+                printwith("same", sys.exc_info()[0], sys.exc_info()[1])
 
         for s in la:
             try:                
@@ -148,7 +148,7 @@ class test_builtin(object):
                 c = complex(imag=s)
                 printwithtype(c)
             except:
-                printwith("same", sys.exc_type, sys.exc_value)
+                printwith("same", sys.exc_info()[0], sys.exc_info()[1])
                      
         for s1 in la:
             for s2 in ln:
@@ -157,7 +157,7 @@ class test_builtin(object):
                     c = complex(s1, s2)
                     printwithtype(c)
                 except:
-                    printwith("same", sys.exc_type, sys.exc_value)
+                    printwith("same", sys.exc_info()[0], sys.exc_info()[1])
     
     def test_bigint(self):
         s = '1234567890' 
@@ -169,11 +169,11 @@ class test_builtin(object):
             startx = start
             for length in [1, 20, 50, 60, 100]:
                 startx += 1
-                l.append(long(s[startx:startx + length]))
+                l.append(int(s[startx:startx + length]))
         
         for x in l:
             for y in l:
-                print x, y
+                print(x, y)
                 printwith('case', '%s, %s' % (x, y))
                 printwith('same', x+y)
                 printwith('same', x-y)

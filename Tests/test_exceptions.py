@@ -974,7 +974,7 @@ def test_module_exceptions():
     """verify exceptions in modules are like user defined exception objects, not built-in types."""
     
     # these modules have normal types...
-    normal_types = ['sys', 'clr', 'exceptions', '__builtin__', '_winreg', 'mmap', 'nt']       
+    normal_types = ['sys', 'clr', 'exceptions', '__builtin__', '_winreg', 'mmap', 'nt', 'posix']       
     builtins = [x for x in sys.builtin_module_names if x not in normal_types ]
     for module in builtins:
         mod = __import__(module)
@@ -986,10 +986,8 @@ def test_module_exceptions():
                     Assert(repr(val).startswith("<class "))
                     val.x = 2
                     AreEqual(val.x, 2)
-                elif is_cpython:
+                else:
                     Assert(repr(val).startswith("<type "))
-                else: #http://ironpython.codeplex.com/workitem/28383
-                    Assert(repr(val).startswith("<class "))
 
 def test_raise_inside_str():
     #raising an error inside the __str__ used to cause an unhandled exception.
@@ -1049,5 +1047,23 @@ def test_derived_keyword_args():
             pass
     
     AreEqual(type(ED(args='')), ED)
+
+class CP35300_Derived(EnvironmentError):
+    def __init__(self, *args, **kwargs):
+        pass
+
+def test_cp35300():
+    # make sure that classes derived from builtin exceptions which have
+    # generated implementation do not restrict parameters of __init__
+    AreNotEqual(None, CP35300_Derived("a", x="b"))
+
+def test_issue1164():
+    class error(Exception):
+        pass
+
+    def f():
+	    raise error(0)
+
+    AssertError(error, f)
 
 run_test(__name__)

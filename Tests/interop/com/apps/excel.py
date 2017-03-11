@@ -16,12 +16,12 @@
 # Excel COM Interop tests
 
 from iptest.assert_util import *
-skiptest("win32", "silverlight", "cli64")
+skiptest("win32", "silverlight", "cli64", "posix")
 from iptest.cominterop_util import *
 
 if not IsExcelInstalled():
     from sys import exit
-    print "Excel is not installed.  Cannot run this test!"
+    print("Excel is not installed.  Cannot run this test!")
     exit(1)
 else:
     TryLoadExcelInteropAssembly()
@@ -86,7 +86,7 @@ def test_excel():
         System.GC.WaitForPendingFinalizers()
 
         if ex: ex.Quit()
-        else: print "ex is %s" % ex
+        else: print("ex is %s" % ex)
 
 def test_excel_typelibsupport():
     ex = None
@@ -114,7 +114,7 @@ def test_excel_typelibsupport():
         except NameError: pass
         else: Fail("namespace Excel has not been imported yet")
         
-        import Excel
+        from . import Excel
         Assert('Application' in dir(Excel))
         Assert('XlSaveAction' in dir(Excel))
         Assert('xlSaveChanges' in dir(Excel.XlSaveAction))
@@ -125,7 +125,7 @@ def test_excel_typelibsupport():
         System.GC.WaitForPendingFinalizers()
 
         if ex: ex.Quit()
-        else: print "ex is %s" % ex
+        else: print("ex is %s" % ex)
 
 def excel_events_helper(ex):
     ex.Workbooks.Add()
@@ -188,7 +188,7 @@ def test_excelevents():
         System.GC.WaitForPendingFinalizers()
                 
         if ex: ex.Quit()
-        else: print "ex is %s" % ex
+        else: print("ex is %s" % ex)
 
 def test_cp148579():
     AssertErrorWithMessage(TypeError, 
@@ -198,7 +198,7 @@ def test_cp148579():
 def test_cp14539():
     try: 
         ex = CreateExcelApplication() 
-        for i in xrange(3):
+        for i in range(3):
             AreEqual(ex.Visible, False)
             ex.Visible = True
             if not is_stress:

@@ -63,6 +63,9 @@ def test_file_io():
         AreEqual(ms.GetBuffer()[4], ord('o'))
         ms.Close()
 
+    import os
+    os.remove("testfile.tmp")
+
 # more tests for 'open'
 @skip("silverlight")
 def test_open():
@@ -125,6 +128,9 @@ def test_redirect():
     l = f.readlines()
     Assert(l == ["1\n", "2\n", "2\n", "3\n", "4\n", "5\n", "6\n", "7\n", "8\n", "9\n", "0\n"])
     f.close()
+
+    import os
+    os.remove("testfile.tmp")
 
 def test_conversions():
     success=False
@@ -340,8 +346,8 @@ def test_subclassing_builtins():
     f = MyFile('temporary.deleteme','w')
     AreEqual(f.myfield, 0)
     f.close()
-    import nt
-    nt.unlink('temporary.deleteme')
+    import os
+    os.unlink('temporary.deleteme')
     
     
     class C(list):
@@ -373,7 +379,7 @@ def test_extensible_types_hashing():
 def test_kwargs_file():
     f = file(name='temporary.deleteme', mode='w')
     f.close()
-    nt.unlink('temporary.deleteme')
+    os.unlink('temporary.deleteme')
 
 
 
@@ -401,7 +407,15 @@ def test_cli_subclasses():
     Assert(not issubclass(str, int))
     Assert(not issubclass(int, (str, str)))
     Assert(issubclass(int, (str, int)))
-    
+
+    Assert(issubclass(bytes, str))
+    Assert(issubclass(str, str))
+    Assert(issubclass(str, str))
+    Assert(issubclass(str, str))
+    class basestring_subclass(str):
+        pass
+    Assert(issubclass(basestring_subclass, str))
+
     Assert(str(None) == "None")
     Assert(issubclass(type(None),type(None)))
     Assert(str(type(None)) == "<type 'NoneType'>")

@@ -58,7 +58,7 @@ def test_ref_properties():
 #Verify that readonly and writeonly properties work as expected.
 def test_restricted_properties():
     c = com_obj.ReadOnlyProperty
-    AssertError(StandardError, setattr, com_obj, "ReadOnlyProperty", "a")
+    AssertError(Exception, setattr, com_obj, "ReadOnlyProperty", "a")
 	
     com_obj.WriteOnlyProperty = DateTime.Now
 

@@ -1,4 +1,4 @@
-import nt, sys
+import os, sys
 import System
 
 pattern = sys.argv[1]
@@ -14,7 +14,7 @@ for x in System.IO.Directory.GetFiles(".", pattern):
         if "clr.AddReference" in l:
             left = l.index('(')
             right = l.index(')')
-            insert_file = nt.environ["DLR_ROOT"] + "\\Test\\ClrAssembly\\" + l[left+2:right-1] + ".cs"
+            insert_file = os.path.join(os.environ["DLR_ROOT"], "Test", "ClrAssembly", l[left+2:right-1] + ".cs")
             
         nl.append(l.rstrip()) # no matter what, print the current line
         

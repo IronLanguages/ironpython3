@@ -159,7 +159,7 @@ def compare(file1, file2, output=sys.stdout):
 if __name__ == "__main__":
     args = sys.argv
     if len(args) != 3:
-        print "usage: %s <file1> <file2>" % args[0]
+        print("usage: %s <file1> <file2>" % args[0])
         sys.exit(-1)
         
     file1 = args[1]

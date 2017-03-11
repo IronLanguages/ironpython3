@@ -24,7 +24,7 @@ def inn(a, b): return a in b
 def iss(a, b): return a is b
 
 def eq(a, b): return a == b
-def ne(a, b): return a <> b
+def ne(a, b): return a != b
 def lt(a, b): return a < b
 def le(a, b): return a <= b
 def gt(a, b): return a > b
@@ -42,7 +42,7 @@ class mybase(object):
             
 class number_types(mybase):
     def test_ops(self):
-        side1 = [ None, 0, 1, 2, 10, 1.5, 30L, 1+2j ]
+        side1 = [ None, 0, 1, 2, 10, 1.5, 30, 1+2j ]
         side2 = [
                     '', '1', '23', '456', 
                     (), (1,), (2, 3), (4, 5, 6),
@@ -58,12 +58,12 @@ class number_types(mybase):
                         printwith("case", case_repr(x, y, func));
                         printwith("same", func(x, y))
                     except:
-                        printwith("same", sys.exc_type)
+                        printwith("same", sys.exc_info()[0])
                     try:
                         printwith("case", case_repr(y, x, func));
                         printwith("same", func(y, x))
                     except:
-                        printwith("same", sys.exc_type)
+                        printwith("same", sys.exc_info()[0])
                         
     def test_str(self):
         side1 = [ None, '', 'b', 'abc' ]
@@ -74,7 +74,7 @@ class number_types(mybase):
                         printwith("case", case_repr(x, y, func));
                         printwith("same", func(x, y))
                     except:
-                        printwith("same", sys.exc_type)
+                        printwith("same", sys.exc_info()[0])
     
     def test_set(self):
         side1 = [ None, set(), set('a'), set('abc'), set('bde')]
@@ -92,6 +92,6 @@ class number_types(mybase):
                         else:
                             printwith("same", res)                        
                     except:
-                        printwith("same", sys.exc_type)
+                        printwith("same", sys.exc_info()[0])
                     
 runtests(number_types)

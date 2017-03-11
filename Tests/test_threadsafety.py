@@ -72,7 +72,7 @@ def test_all():
                 go.WaitOne()
                 for i in range(loopCnt): readerWorker(i)
             except Exception as e:
-                print(('Test failed, unexpected exception from reader ', e))
+                print('Test failed, unexpected exception from reader ', e)
                 AssertUnreachable()
         finally:
             global readerAlive
@@ -88,7 +88,7 @@ def test_all():
                     go.WaitOne()
                     for i in range(loopCnt): self.writer(i, self.index)
                 except Exception as e:
-                    print(('Test failed (writer through exception)', e))
+                    print('Test failed (writer through exception)', e)
                     AssertUnreachable()
             finally:
                 global writerAlive
@@ -363,7 +363,7 @@ def test_all():
     
     def doOneTest(test):
         """runs a single test, argument is a testCase tuple"""
-        print(('running test', test))
+        print('running test', test)
         global loopCnt, writerWorker, readerWorker
         
         # call init function

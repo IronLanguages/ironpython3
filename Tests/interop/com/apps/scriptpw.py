@@ -16,19 +16,19 @@
 # msagent COM Interop tests
 
 from iptest.assert_util import skiptest
-skiptest("win32", "silverlight", "cli64")
+skiptest("win32", "silverlight", "cli64", "posix")
 from iptest.cominterop_util import *
 
 import clr
 from System import Type, Activator
 
-print "Disabling this test due to Codeplex 18525"
+print("Disabling this test due to Codeplex 18525")
 from sys import exit
 exit(0)
 
 if not file_exists_in_path("tlbimp.exe"):
     from sys import exit
-    print "tlbimp.exe is not in the path!"
+    print("tlbimp.exe is not in the path!")
     exit(1)
 
 
@@ -124,6 +124,6 @@ def test__2_unregistered_nopia():
 
 #------------------------------------------------------------------------------
 if not file_exists(scriptpw_path):
-    print "Cannot test scriptpw.dll when it doesn't exist."
+    print("Cannot test scriptpw.dll when it doesn't exist.")
 else:
     run_com_test(__name__, __file__)

@@ -20,11 +20,11 @@ def f1(arg0, arg1, arg2, arg3): return "same## %s %s %s %s" % (arg0, arg1, arg2,
 def f2(arg0, arg1, arg2=6, arg3=7): return "same## %s %s %s %s" % (arg0, arg1, arg2, arg3)
 def f3(arg0, arg1, arg2, *arg3): return "same## %s %s %s %s" % (arg0, arg1, arg2, arg3)
 
-if is_cli: 
+if is_cli:
     from iptest.process_util import run_csc 
     run_csc("/nologo /target:library /out:sbs_library.dll sbs_library.cs")
     import clr
-    clr.AddReference("sbs_library")
+    clr.AddReferenceToFile("sbs_library.dll")
     from SbsTest import C
     o = C()
     g1 = o.M1
@@ -33,13 +33,13 @@ if is_cli:
     
     #for peverify runs
     from System.IO import Path, File, Directory
-    if File.Exists(Path.GetTempPath() + r"\sbs_library.dll"):
+    if File.Exists(Path.Combine(Path.GetTempPath(), "sbs_library.dll")):
         try:
-            File.Delete(Path.GetTempPath() + r"\sbs_library.dll")
+            File.Delete(Path.Combine(Path.GetTempPath(), "sbs_library.dll"))
         except:
             pass
-    if not File.Exists(Path.GetTempPath() + r"\sbs_library.dll"):
-        File.Copy(Directory.GetCurrentDirectory() + r"\sbs_library.dll", Path.GetTempPath() + r"\sbs_library.dll")
+    if not File.Exists(Path.Combine(Path.GetTempPath(), "sbs_library.dll")):
+        File.Copy(Path.Combine(Directory.GetCurrentDirectory(), "sbs_library.dll"), Path.Combine(Path.GetTempPath(), "sbs_library.dll"))
     
 else:
     g1 = f1
@@ -92,9 +92,9 @@ class func_arg(object):
                         try: 
                             printwith("case", s)
                             x = eval(s)
-                            print x
+                            print(x)
                         except: 
-                            printwith("same", sys.exc_type)
+                            printwith("same", sys.exc_info()[0])
                             
     def test_pure_normal(self): self._test_always_try_4("f1")
     def test_pure_keyword(self): self._test_always_try_4("f2")

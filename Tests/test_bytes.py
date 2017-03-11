@@ -356,10 +356,10 @@ def test_partition():
         
         x = testType(b'abc')
         one, two, three = x.partition(b'd')
-        if is_ironpython or testType==str: #http://ironpython.codeplex.com/workitem/27906
-            AreEqual(id(one), id(x))
+        if testType == bytearray:
+            Assert(id(one) != id(x))
         else:
-            Assert(id(one)!=id(x))
+            AreEqual(id(one), id(x))
     
     one, two, three = b''.partition(b'abc')
     AreEqual(id(one), id(two))
@@ -372,8 +372,8 @@ def test_partition():
 
 def test_pop():
     b = bytearray()
-    AssertError(OverflowError, b.pop)
-    AssertError(OverflowError, b.pop, 0)
+    AssertError(IndexError, b.pop)
+    AssertError(IndexError, b.pop, 0)
     
     b = bytearray(b'abc')
     AreEqual(b.pop(), ord('c'))
@@ -506,10 +506,10 @@ def test_rpartition():
         
         x = testType(b'abc')
         one, two, three = x.rpartition(b'd')        
-        if is_ironpython or testType==str: #http://ironpython.codeplex.com/workitem/27906
-            AreEqual(id(three), id(x))
-        else:
+        if testType == bytearray:
             Assert(id(three) != id(x))
+        else:
+            AreEqual(id(three), id(x))
         
         b = testType(b'mississippi')
         AreEqual(b.rpartition(b'i'), (b'mississipp', b'i', b''))
@@ -748,14 +748,10 @@ def test_translate():
     AreEqual(b'AAA'.translate(None, b'A'), b'')
     AreEqual(b'AAABBB'.translate(None, b'A'), b'BBB')
     AreEqual(b'AAA'.translate(None), b'AAA')
-    if is_ironpython: #http://ironpython.codeplex.com/workitem/27904
-        AssertError(TypeError, bytearray(b'AAA').translate, None, b'A')
-        AssertError(TypeError, bytearray(b'AAA').translate, None)
-    else:
-        AreEqual(bytearray(b'AAA').translate(None, b'A'),
-                 b'')
-        AreEqual(bytearray(b'AAA').translate(None),
-                 b'AAA')
+    AreEqual(bytearray(b'AAA').translate(None, b'A'),
+             b'')
+    AreEqual(bytearray(b'AAA').translate(None),
+             b'AAA')
 
     b = b'abc'    
     AreEqual(id(b.translate(None)), id(b))    
@@ -844,11 +840,6 @@ def test_add_mul():
     
         class mylong(long): pass
         
-        if is_cli:
-            from System.IO import Path
-            AreEqual("foo\\", "foo" + Path.DirectorySeparatorChar)
-            AreEqual("\\\\", Path.DirectorySeparatorChar + '\\')
-    
         # multiply
         AreEqual("aaaa", "a" * 4)
         AreEqual("aaaa", "a" * mylong(4))
@@ -880,7 +871,7 @@ def test_encode_decode():
     for testType in types:
         AreEqual(testType(b'abc').decode(), 'abc')
 
-def test_encode_decode():
+def test_encode_decode_error():
     for testType in types:
         AssertError(TypeError, testType(b'abc').decode, None)
           
@@ -1202,10 +1193,7 @@ def test_bytearray():
     AssertError(MemoryError, f)
     
     def f(): x[0:1] = sys.maxsize+1
-    if is_cpython: #http://ironpython.codeplex.com/workitem/28210
-        AssertError(OverflowError, f)   
-    else:
-        AssertError(TypeError, f)    
+    AssertError(TypeError, f)
         
     for setval in [b'bar', bytearray(b'bar'), [b'b', b'a', b'r'], (b'b', b'a', b'r'), (98, b'a', b'r'), (Indexable(98), b'a', b'r'), (IndexableOC(98), b'a', b'r')]:
         x = bytearray(b'abc')
@@ -1397,10 +1385,12 @@ def test_zzz_cli_features():
         AreEqual(testType(b'').join([myList]), b'abc')
 
     # bytearray
+    '''
     AreEqual(bytearray(b'abc') == 'abc', False)
     if not is_net40:
         AreEqual(Microsoft.Scripting.IValueEquality.ValueEquals(bytearray(b'abc'), 'abc'), False)
-    
+    '''
+    AreEqual(bytearray(b'abc') == 'abc', True)
     AreEqual(b'abc'.IsReadOnly, True)
     AreEqual(bytearray(b'abc').IsReadOnly, False)
         
@@ -1452,5 +1442,8 @@ def test_bytes_hashing():
         #For now just make sure this doesn't throw
         temp = hashLib(bytearray(b'abc'))
         x.update(bytearray(b'abc'))
+
+def test_cp35493():
+    AreEqual(bytearray('\xde\xad\xbe\xef\x80'), bytearray(b'\xde\xad\xbe\xef\x80'))
 
 run_test(__name__)

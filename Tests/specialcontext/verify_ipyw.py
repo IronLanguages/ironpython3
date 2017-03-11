@@ -21,7 +21,7 @@ IronPython tests.
 '''
 
 import sys
-from   thread import start_new_thread
+from   _thread import start_new_thread
 from   time   import sleep
 
 TEMP_FILE = "verify_ipyw.log"
@@ -52,9 +52,9 @@ def print_bad():
     '''
     If any of this makes it to stdout/stderr, ipyw.exe is broken
     '''
-    print BAD_OUTPUT
-    print >> sys.stdout, BAD_OUTPUT
-    print >> sys.stderr, BAD_OUTPUT
+    print(BAD_OUTPUT)
+    print(BAD_OUTPUT, file=sys.stdout)
+    print(BAD_OUTPUT, file=sys.stderr)
     sys.stdout.write(BAD_OUTPUT)
     sys.stdout.writelines([BAD_OUTPUT])    
     sys.stderr.write(BAD_OUTPUT)

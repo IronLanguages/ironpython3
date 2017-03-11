@@ -61,7 +61,7 @@ def simpleTester(a, b, c):
     global SIMPLE_TEST
     global SIMPLE_TEST_COUNT
     
-    import nt
+    import os
     
     test_name = "clrusetest" + str(SIMPLE_TEST_COUNT) + ".py"
     SIMPLE_TEST_COUNT = SIMPLE_TEST_COUNT + 1
@@ -122,8 +122,8 @@ def simpleTester(a, b, c):
     #for key in dir(real_module): AreEqual(real_module.__dict__[key], new_module.__dict__[key])
 
     #cleanup
-    nt.remove(test_name)
-    nt.remove(new_stdout_name)
+    os.remove(test_name)
+    os.remove(new_stdout_name)
 
 #------------------------------------------------------------------------------
 #--TESTS
@@ -193,8 +193,8 @@ def __test_modified_module():
     
     
     #cleanup
-    nt.remove(test_name)
-    nt.remove(new_stdout_name)
+    os.remove(test_name)
+    os.remove(new_stdout_name)
         
 def test_module():
     pass
@@ -207,8 +207,10 @@ def test_pytypes():
     pass
     
 def test_clrtypes():
-    #subclasses...
-    pass
+    # Test whether the correct overload of bytes constructor is used
+    class subclass_overload_test(bytes):
+        pass
+    inst = subclass_overload_test('a')
     
 def test_pyinstances():
     pass

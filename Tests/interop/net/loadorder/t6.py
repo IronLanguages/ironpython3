@@ -21,21 +21,21 @@ clr.AddReferenceToFileAndPath(testpath.rowan_root + r"\Test\ClrAssembly\folder1\
 import Namespace_ToBeRemoved
 
 for x in clr.References: 
-    print x, x.Location
+    print(x, x.Location)
 
 clr.AddReferenceToFileAndPath(testpath.rowan_root + r"\Test\ClrAssembly\folder2\loadorder_6.dll") # TODO
 
 for x in clr.References: 
-    print x, x.Location
+    print(x, x.Location)
 
-print Namespace_ToBeRemoved.C.Flag
+print(Namespace_ToBeRemoved.C.Flag)
 
 import Namespace_JustAdded
 
-print Namespace_JustAdded.C.Flag
+print(Namespace_JustAdded.C.Flag)
 
 del Namespace_ToBeRemoved
-print Namespace_ToBeRemoved.C.Flag
+print(Namespace_ToBeRemoved.C.Flag)
 
 import Namespace_ToBeRemoved
 

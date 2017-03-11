@@ -1330,7 +1330,7 @@ def test_multicall_generator():
     AreEqual(x[0], 10)
     AreEqual(x[1], a)
     # doc for this method should have the out & ref params as return values
-    AreEqual(a.M98.__doc__, 'M98(self: Dispatch, a: str, b: str, c: str, d: str, di: Dispatch) -> (int, Dispatch)\r\n')
+    AreEqual(a.M98.__doc__, 'M98(self: Dispatch, a: str, b: str, c: str, d: str, di: Dispatch) -> (int, Dispatch)%s' % os.linesep)
     
     #DDB 76340
     if not is_silverlight:

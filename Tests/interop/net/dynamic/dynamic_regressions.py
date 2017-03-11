@@ -30,8 +30,10 @@ Work Item number.
 from iptest.assert_util import *
 skiptest("win32")
 skiptest("silverlight")
+skiptest("posix")
+
 if not is_net40:
-    print "This test module should only be run from .NET 4.0!"
+    print("This test module should only be run from .NET 4.0!")
     sys.exit(0)
 
 import sys
@@ -46,7 +48,7 @@ import IronPythonTest.DynamicRegressions as DR
 #--Test cases
 def test_cp24117():
     AreEqual(DR.cp24117(xrange),    "IronPython.Runtime.Types.PythonType")
-    AreEqual(DR.cp24117(xrange(3)), "IronPython.Runtime.XRange")
+    AreEqual(DR.cp24117(range(3)), "IronPython.Runtime.XRange")
 
 #--CodePlex 24118--#
 def GetMethodTest():
@@ -103,12 +105,12 @@ def test_cp24113():
     from iptest.process_util import run_vbc
     from iptest.assert_util import  testpath
 
-    cp24113_vb_filename = testpath.temporary_dir + r"\cp24113_vb_module.vb"
+    cp24113_vb_filename = path_combine(testpath.temporary_dir, "cp24113_vb_module.vb")
     f = open(cp24113_vb_filename, "w")
     f.writelines(cp24113_vb_snippet)
     f.close()
 
-    cp24113_vb_dllname  = testpath.temporary_dir + r"\cp24113_vb_dll"
+    cp24113_vb_dllname  = path_combine(testpath.temporary_dir, "cp24113_vb_dll")
     run_vbc("/target:library /out:%s %s" % (cp24113_vb_dllname, cp24113_vb_filename))
     clr.AddReferenceToFileAndPath(cp24113_vb_dllname)
     import CodePlex24113
@@ -164,19 +166,20 @@ def test_cp20519():
     from iptest.process_util import run_vbc
     from iptest.assert_util import  testpath
 
-    cp20519_vb_filename = testpath.temporary_dir + r"\cp20519_vb_module.vb"
+    cp20519_vb_filename = path_combine(testpath.temporary_dir, "cp20519_vb_module.vb")
     f = open(cp20519_vb_filename, "w")
     f.writelines(cp20519_vb_snippet)
     f.close()
 
-    cp20519_vb_exename  = testpath.temporary_dir + r"\cp20519_vb.exe"
-    compile_cmd = "/target:exe /out:%s %s /reference:%s /reference:%s" % (cp20519_vb_exename, 
+    cp20519_vb_exename  = path_combine(testpath.temporary_dir, "cp20519_vb.exe")
+    compile_cmd = "/target:exe /out:%s %s /reference:%s /reference:%s /reference:%s" % (cp20519_vb_exename,
                                                                           cp20519_vb_filename,
-                                                                          sys.exec_prefix + r"\IronPython.dll",
-                                                                          sys.exec_prefix + r"\Microsoft.Scripting.dll")
+                                                                          path_combine(sys.exec_prefix, "IronPython.dll"),
+                                                                          path_combine(sys.exec_prefix, "Microsoft.Scripting.dll"),
+                                                                          path_combine(sys.exec_prefix, "Microsoft.Dynamic.dll"))
     AreEqual(run_vbc(compile_cmd), 0)
-    for x in [r"\IronPython.dll", r"\Microsoft.Scripting.dll", r"\Microsoft.Dynamic.dll"]:
-        System.IO.File.Copy(sys.exec_prefix + x, testpath.temporary_dir + x, True)
+    for x in ["IronPython.dll", "Microsoft.Scripting.dll", "Microsoft.Dynamic.dll"]:
+        System.IO.File.Copy(path_combine(sys.exec_prefix, x), path_combine(testpath.temporary_dir, x), True)
     
     AreEqual(os.system(cp20519_vb_exename), 0)
     os.remove(cp20519_vb_exename)

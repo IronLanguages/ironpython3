@@ -418,12 +418,8 @@ def test_csharp_enumeration():
 
 def test_error():
     l = []
-    if is_cpython: #http://ironpython.codeplex.com/workitem/28220
-        AssertErrorWithPartialMessage(TypeError, "'builtin_function_or_method' object is not subscriptable", lambda: l.append[float](1.0))
-        AssertErrorWithPartialMessage(TypeError, "'int' object is not subscriptable", lambda: 1[2])
-    else:
-        AssertErrorWithPartialMessage(TypeError, "'builtin_function_or_method' object is unsubscriptable", lambda: l.append[float](1.0))
-        AssertErrorWithPartialMessage(TypeError, "'int' object is unsubscriptable", lambda: 1[2])
+    AssertErrorWithPartialMessage(TypeError, "'builtin_function_or_method' object is not subscriptable", lambda: l.append[float](1.0))
+    AssertErrorWithPartialMessage(TypeError, "'int' object is not subscriptable", lambda: 1[2])
     
 def test_cp19350_index_restrictions():
     global keyValue

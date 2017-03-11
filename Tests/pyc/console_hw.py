@@ -14,5 +14,5 @@
 #####################################################################################
 
 if True:
-    print "(Compiled) Hello World"
+    print("(Compiled) Hello World")
     

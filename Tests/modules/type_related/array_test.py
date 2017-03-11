@@ -57,11 +57,7 @@ def test_array___copy__():
     y = x.__copy__()
     Assert(id(x) != id(y), "copy should copy")
     
-    if is_cli or is_silverlight:
-        #CodePlex 19200
-        y = x.__deepcopy__()
-    else:
-        y = x.__deepcopy__(x)
+    y = x.__deepcopy__(x)
     Assert(id(x) != id(y), "copy should copy")
 
 def test_array___deepcopy__():
@@ -187,7 +183,7 @@ def test_array___init__():
     AreEqual(1732588562, a[0])
 
     #--B
-    a = array.array('B', [0]) * 2L
+    a = array.array('B', [0]) * 2
     AreEqual(2, len(a))
     AreEqual("array('B', [0, 0])", str(a))
     
@@ -241,28 +237,15 @@ def test_array___reduce__():
     TODO: revisit
     '''
     x = array.array('i', [1,2,3])
-    if is_cpython: #http://ironpython.codeplex.com/workitem/28211
-        AreEqual(repr(x.__reduce__()), 
-                 "(<type 'array.array'>, ('i', [1, 2, 3]), None)")
-    else:
-        AreEqual(repr(x.__reduce__()), 
-                 "(<type 'array.array'>, ('i', '\\x01\\x00\\x00\\x00\\x02\\x00\\x00\\x00\\x03\\x00\\x00\\x00'), None)")
+    AreEqual(repr(x.__reduce__()), "(<type 'array.array'>, ('i', [1, 2, 3]), None)")
 
 def test_array___reduce_ex__():
     '''
     TODO: revisit
     '''
     x = array.array('i', [1,2,3])
-    if is_cpython: #http://ironpython.codeplex.com/workitem/28211
-        AreEqual(repr(x.__reduce_ex__(1)), 
-                 "(<type 'array.array'>, ('i', [1, 2, 3]), None)")
-        AreEqual(repr(x.__reduce_ex__()), 
-                 "(<type 'array.array'>, ('i', [1, 2, 3]), None)")
-    else:
-        AreEqual(repr(x.__reduce_ex__(1)), 
-                 "(<type 'array.array'>, ('i', '\\x01\\x00\\x00\\x00\\x02\\x00\\x00\\x00\\x03\\x00\\x00\\x00'), None)")
-        AreEqual(repr(x.__reduce_ex__()), 
-                 "(<type 'array.array'>, ('i', '\\x01\\x00\\x00\\x00\\x02\\x00\\x00\\x00\\x03\\x00\\x00\\x00'), None)")
+    AreEqual(repr(x.__reduce_ex__(1)), "(<type 'array.array'>, ('i', [1, 2, 3]), None)")
+    AreEqual(repr(x.__reduce_ex__()), "(<type 'array.array'>, ('i', [1, 2, 3]), None)")
 
 def test_array___repr__():
     '''
@@ -422,7 +405,7 @@ def test_array_tolist():
 
 def test_array_tostring():
     import array
-    AreEqual(array.array('u', u'abc').tostring(), 'a\x00b\x00c\x00')
+    AreEqual(array.array('u', 'abc').tostring(), 'a\x00b\x00c\x00')
 
 def test_array_tounicode():
     '''
@@ -448,7 +431,7 @@ def test_cp9348():
     test_cases = {  ('c', "a") : "array('c', 'a')",
                     ('b', "a") : "array('b', [97])",
                     ('B', "a") : "array('B', [97])",
-                    ('u', u"a") : "array('u', u'a')",
+                    ('u', "a") : "array('u', u'a')",
                     ('h', "\x12\x34") : "array('h', [13330])",
                     ('H', "\x12\x34") : "array('H', [13330])",
                     ('i', "\x12\x34\x45\x67") : "array('i', [1732588562])",
@@ -464,7 +447,7 @@ def test_cp9348():
         test_cases[('d', "\x12\x34\x45\x67\x12\x34\x45\x67")] = "array('d', [2.9522485325887698e+189])"
         test_cases[('f', "\x12\x34\x45\x67")] = "array('f', [9.3126672485384569e+23])"
 
-    for key in test_cases.keys():
+    for key in list(test_cases.keys()):
         type_code, param = key
         temp_val = array.array(type_code, param)
         AreEqual(str(temp_val), test_cases[key])
@@ -484,18 +467,33 @@ def test_cp8736():
 
 
 def test_cp9350():
-    for i in [1, 1L]:
+    for i in [1, 1]:
         a = array.array('B', [0]) * i
         AreEqual(a, array.array('B', [0]))
 
-    for i in [2, 2L]:
+    for i in [2, 2]:
         a = array.array('B', [0]) * i
         AreEqual(a, array.array('B', [0, 0]))
     
-    for i in [2**8, long(2**8)]:
+    for i in [2**8, int(2**8)]:
         a = array.array('B', [1]) * i
         AreEqual(a, array.array('B', [1]*2**8))
 
+def test_gh870():
+    string_types = ['c', 'b', 'B', 'u']
+    number_types = ['h', 'H', 'i', 'I', 'I', 'l', 'L']
+
+    for typecode in string_types:
+        a = array.array(typecode, 'a')
+        a += a
+        a.extend(a)
+        AreEqual(a, 4*array.array(typecode, 'a'))
+
+    for typecode in number_types:
+        a = array.array(typecode, [1])
+        a += a
+        a.extend(a)
+        AreEqual(a, 4*array.array(typecode, [1]))
 
 def test_coverage():
     '''
@@ -504,18 +502,19 @@ def test_coverage():
     '''
     #--Postive
     a = array.array('b', 'a')
-    for i in [  0L, 1L, 2L, 3L, 32766L, 32767L, 32768L, 65534L, 65535L, 65536L, 
-                456720545L, #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24314
+    for i in [  0, 1, 2, 3, 32766, 32767, 32768, 65534, 65535, 65536, 
+                456720545, #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24314
                 ]:
         AreEqual(i,
                  len(i*a))
         AreEqual(i, len(a*i))
     
     #--Negative
-    AssertError(OverflowError, lambda: 4567206470L*a)
-    AssertError(OverflowError, lambda: a*4567206470L)
-    AssertError(MemoryError,   lambda: 2147483646L*a)
-    AssertError(MemoryError,   lambda: a*2147483646L)
+    AssertError(OverflowError, lambda: 4567206470*a)
+    AssertError(OverflowError, lambda: a*4567206470)
+    if not is_posix: # these do not fail on Mono
+        AssertError(MemoryError,   lambda: 2147483646*a)
+        AssertError(MemoryError,   lambda: a*2147483646)
     
     #--Positive
     a = array.array('b', 'abc')

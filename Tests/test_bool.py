@@ -17,7 +17,7 @@ from iptest.assert_util import *
 
 # types are always true.
 def test_types():
-    for x in [str, int, float, bool]:
+    for x in [str, int, int, float, bool]:
         if not x:
             Fail("should be true: %r", x)
 
@@ -40,7 +40,7 @@ def test_bool_dir():
 
 
 def test__coerce__():
-    for simple_type in [int, float, str, bool, object]:
+    for simple_type in [int, int, float, str, str, bool, object]:
         AreEqual(NotImplemented, True.__coerce__(simple_type))
         AreEqual(NotImplemented, False.__coerce__(simple_type))
         
@@ -52,7 +52,7 @@ def test__index__():
     AreEqual(True.__index__(), 1)
     AreEqual(False.__index__(), 0)
     
-def test__int__():
+def test__long__():
     AreEqual(int(True), 1)
     AreEqual(int(False), 0)
     

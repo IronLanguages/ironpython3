@@ -192,7 +192,7 @@ def _test_set_by_descriptor(current_type):
      lambda : current_type.__dict__['InitOnlyBooleanField'].__set__(None, False),
      lambda : current_type.__dict__['InitOnlySimpleClassField'].__set__(None, None),
     ]: 
-        AssertErrorWithMatch(AttributeError, "attribute .* of .* object is read-only", f)  # ???
+        AssertErrorWithMatch(AttributeError, "'.*' object attribute '.*' is read-only", f)  # ???
         
     for f in [
      lambda : current_type.__dict__['InitOnlySByteField'].__set__(o, 3),
@@ -209,7 +209,7 @@ def _test_set_by_descriptor(current_type):
      lambda : current_type.__dict__['InitOnlyEnumField'].__set__(current_type, EnumInt32.C),
      lambda : current_type.__dict__['InitOnlySimpleInterfaceField'].__set__(o, None),
     ]: 
-        AssertErrorWithMatch(AttributeError, "attribute 'InitOnly.*Field' of '.*' object is read-only", f)
+        AssertErrorWithMatch(AttributeError, "'.*' object attribute 'InitOnly.*Field' is read-only", f)
         
 def _test_delete_via_type(current_type, message="cannot delete attribute 'InitOnly.*' of builtin type"):
     def f1(): del current_type.InitOnlyByteField
@@ -294,7 +294,7 @@ def _test_delete_via_descriptor(current_type):
 types = [
     StructWithInitOnlys, 
     GenericStructWithInitOnlys[int], GenericStructWithInitOnlys[str], 
-    ClassWithInitOnlys, GenericClassWithInitOnlys[long], GenericClassWithInitOnlys[object],
+    ClassWithInitOnlys, GenericClassWithInitOnlys[int], GenericClassWithInitOnlys[object],
     ]
     
 for i in range(len(types)):

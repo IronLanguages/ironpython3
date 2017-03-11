@@ -35,8 +35,7 @@ from Merlin.Testing.TypeSample import *
 
 from System import Array 
 
-@disabled("TODO - this test wasn't enabled in SNAP and was broken")
 def test_creation():
-    Array(int, [1,2])    
+    Array[int]([1,2])
     
 run_test(__name__)

@@ -35,7 +35,7 @@ CPY_DIR = sys.argv[1]  #E.g., C:\Python25
 DISABLED = {
             "test_aepack.py" : "Platform specific test - Mac",
             }
-_temp_keys = DISABLED.keys()
+_temp_keys = list(DISABLED.keys())
 
 TEST_LIST = [x for x in nt.listdir(CPY_DIR + r"\Lib\test") if x.startswith("test_") and x.endswith(".py") and _temp_keys.count(x)==0]
 
@@ -46,7 +46,7 @@ IPY_FAILS = open("IPY_FAILS.log", "w")
 
 #--HELPER FUNCTIONS------------------------------------------------------------
 def ip_passes(mod_name):
-    print mod_name
+    print(mod_name)
     IPY_PASSES.write(mod_name + "\n")
     IPY_PASSES.flush() 
     

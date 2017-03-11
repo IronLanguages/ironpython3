@@ -79,13 +79,13 @@ def log_broken(name, e):
     global BROKEN_LIST
     
     if VERBOSE:
-        print name, "FAILED"
-    print >> LOG_FILE_BUSTED, "----------------------------------------------------------------"
-    print >> LOG_FILE_BUSTED, "--", name
+        print(name, "FAILED")
+    print("----------------------------------------------------------------", file=LOG_FILE_BUSTED)
+    print("--", name, file=LOG_FILE_BUSTED)
     if hasattr(e, "clsException"):
-        print >> LOG_FILE_BUSTED, e.clsException
+        print(e.clsException, file=LOG_FILE_BUSTED)
     else:
-        print >> LOG_FILE_BUSTED, e
+        print(e, file=LOG_FILE_BUSTED)
     
     temp_name = name.replace(".", "\\")
     try:
@@ -102,8 +102,8 @@ def log_broken(name, e):
 
 def log_ok(name):
     if VERBOSE:
-        print name, "PASSED"    
-    print >> LOG_FILE_OK, name
+        print(name, "PASSED")    
+    print(name, file=LOG_FILE_OK)
 
 
 def check_package(package_name):
@@ -122,7 +122,7 @@ def check_package(package_name):
         import_helper(package_name)    
         log_ok(root_name)
         
-    except (Exception, SystemExit), e:
+    except (Exception, SystemExit) as e:
         log_broken(root_name, e)
         
         # no sense continuing
@@ -141,7 +141,7 @@ def check_package(package_name):
                 import_helper(mod_name)   
                 log_ok(mod_name) 
         
-            except (Exception, SystemExit), e:
+            except (Exception, SystemExit) as e:
                 log_broken(mod_name, e)
         
         elif is_package(x) and not x.startswith('test'):
@@ -161,8 +161,8 @@ def main(cpy_dir):
     path.insert(0, ".")
 
 
-    print "------------------------------------------------------------------------"
-    print "--PACKAGES"
+    print("------------------------------------------------------------------------")
+    print("--PACKAGES")
     cwd = nt.getcwd()
     nt.chdir(CPY_LIB_DIR)
 
@@ -173,12 +173,12 @@ def main(cpy_dir):
             continue
         
         check_package(pack_name)
-    print
+    print()
 
     nt.chdir(cwd)
     
-    print "------------------------------------------------------------------------"
-    print "--MODULES"
+    print("------------------------------------------------------------------------")
+    print("--MODULES")
     
     for x in nt.listdir(CPY_LIB_DIR):
         if x.endswith(".py"):
@@ -190,7 +190,7 @@ def main(cpy_dir):
             import_helper(mod_name)   
             log_ok(mod_name) 
             
-        except Exception, e:
+        except Exception as e:
             log_broken(mod_name, e)
     
             

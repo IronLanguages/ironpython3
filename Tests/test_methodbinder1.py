@@ -788,11 +788,17 @@ def test_xequals_call_for_optimization():
     
     #Invoke tests multiple times to make sure DynamicSites are utilized
     for i in range(3):
-        AreEqual(1, c.Count)
+        if is_posix: # Posix has two default connection strings
+            AreEqual(2, c.Count)
+        else:
+            AreEqual(1, c.Count)
         
     for i in range(3):
         count = c.Count
-        AreEqual(1, count)
+        if is_posix:
+            AreEqual(2, count)
+        else:
+            AreEqual(1, count)
         AreEqual(c.Count, count)
             
     for i in range(3):

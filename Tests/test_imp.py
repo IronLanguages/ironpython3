@@ -15,7 +15,7 @@
 
 from iptest.assert_util import *
 import collections
-if is_silverlight==False:
+if not is_silverlight:
     from iptest.file_util import *
 
 import sys
@@ -84,6 +84,9 @@ else:
             exec('from System import *')
             Assert('Int32' in dir())
 
+    delete_files(_f_imfp_start)
+    clean_directory(path_combine(testpath.public_testdir, _imfp), remove=True)
+
 def test_imp_basic():
     magic = imp.get_magic()
     suffixes = imp.get_suffixes()
@@ -93,16 +96,16 @@ def test_imp_basic():
         AreEqual(len(suffix), 3)
     Assert((".py", "U", 1) in suffixes)
 
-if is_silverlight==False:
+if not is_silverlight:
     _testdir = "ImpTest"
     _imptestdir = path_combine(testpath.public_testdir, _testdir)
     _f_init = path_combine(_imptestdir, "__init__.py")
 
 
 
-temp_name = ["nt",
-             "nt.P_WAIT",
-             "nt.chmod",
+temp_name = ["os",
+             "os.P_WAIT",
+             "os.chmod",
              "sys.path",
              "xxxx"
             ]
@@ -288,7 +291,10 @@ def test_is_builtin():
         
     # nt module disabled in Silverlight
     if not is_silverlight:
-        AreEqual(imp.is_builtin("nt"),1)
+        if is_posix:
+            AreEqual(imp.is_builtin("posix"),1)
+        else:
+            AreEqual(imp.is_builtin("nt"),1)
         
     AreEqual(imp.is_builtin("thread"),1)
     
@@ -356,6 +362,7 @@ def test_sys_path_none_userpy():
         
     finally:
         sys.path = prevPath
+        delete_files(path_combine(testpath.public_testdir, "temp_syspath_none.py"))
 
 
 def test_sys_path_none_negative():
@@ -518,7 +525,7 @@ called = 3.14
                             ]
     
     strange_file_names = [ path_combine(testpath.public_testdir, "cp7007", x + ".py") for x in strange_module_names ]
-    sys.path.append(testpath.public_testdir + "\\cp7007")
+    sys.path.append(path_combine(testpath.public_testdir, "cp7007"))
     
     for x in strange_file_names: write_to_file(x, file_contents)
     
@@ -527,8 +534,8 @@ called = 3.14
             temp_mod = __import__(x)
             AreEqual(temp_mod.called, 3.14)
     finally:
-        sys.path.remove(testpath.public_testdir + "\\cp7007")
-        delete_files(strange_file_names)
+        sys.path.remove(path_combine(testpath.public_testdir, "cp7007"))
+        clean_directory(path_combine(testpath.public_testdir, "cp7007"), remove=True)
 
 def test_relative_control():
     """test various flavors of relative/absolute import and ensure the right
@@ -588,6 +595,7 @@ def test_import_relative_error():
     def f():  exec('from . import *')
     AssertError(ValueError, f)
 
+@disabled
 @skip("silverlight") #No access to CPython stdlib
 def test_import_hooks_import_precence():
     """__import__ takes precedence over import hooks"""
@@ -601,8 +609,8 @@ def test_import_hooks_import_precence():
     def myimport(*args):
         return 'myimport'
 
-    import idlelib
-    import idlelib.idlever
+    import distutils
+    import distutils.command
     mi = myimp()
     sys.meta_path.append(mi)
     builtinimp = get_builtins_dict()['__import__']
@@ -614,12 +622,12 @@ def test_import_hooks_import_precence():
         AreEqual(myimpCalled, None)
                 
         # reload on a built-in hits the loader protocol
-        imp.reload(idlelib)
-        AreEqual(myimpCalled, ('idlelib', None))
+        imp.reload(distutils)
+        AreEqual(myimpCalled, ('distutils', None))
         
-        imp.reload(idlelib.idlever)
-        AreEqual(myimpCalled[0], 'idlelib.idlever')
-        AreEqual(myimpCalled[1][0][-7:], 'idlelib')
+        imp.reload(distutils.command)
+        AreEqual(myimpCalled[0], 'distutils.command')
+        AreEqual(myimpCalled[1][0][-7:], 'distutils')
     finally:
         get_builtins_dict()['__import__'] = builtinimp
         sys.meta_path.remove(mi)
@@ -961,14 +969,14 @@ def test_meta_path_before_builtins():
 @skip("silverlight") # no nt module on silverlight
 def test_file_coding():
     try:
-        import nt
+        import os
         f = file('test_coding_mod.py', 'wb+')
         f.write("# coding: utf-8\nx = '\xe6ble'\n")
         f.close()
         import test_coding_mod
         AreEqual(test_coding_mod.x[0], '\xe6')
     finally:
-        nt.unlink('test_coding_mod.py')
+        os.unlink('test_coding_mod.py')
     
     try:
         f = file('test_coding_2.py', 'wb+')
@@ -978,7 +986,7 @@ def test_file_coding():
         import test_coding_2
         AreEqual(test_coding_2.x, 'ABCDE')
     finally:
-        nt.unlink('test_coding_2.py')
+        os.unlink('test_coding_2.py')
         
         
     try:
@@ -991,7 +999,7 @@ def test_file_coding():
         except Exception as e:
             AreEqual(sys.exc_info()[2].tb_next.tb_lineno, 2)
     finally:
-        nt.unlink('test_coding_3.py')
+        os.unlink('test_coding_3.py')
 
 def test_module_subtype():
     class x(type(sys)):
@@ -1049,8 +1057,9 @@ def test_module_subtype():
 
 @runonly("stdlib")
 def test_cp13736():
+    import os
     _f_imp_cp13736 = path_combine(testpath.public_testdir, "impcp13736.py")
-    shortName = _f_imp_cp13736.rsplit("\\", 1)[1].split(".")[0]
+    shortName = _f_imp_cp13736.rsplit(os.sep, 1)[1].split(".")[0]
 
     write_to_file(_f_imp_cp13736, """
 class Test(object):
@@ -1069,6 +1078,9 @@ class Test(object):
     t = new.classobj('Test1', (getattr(module, 'Test'),), {})
     i = t()
     AreEqual(i.a(), 34)
+
+    moduleInfo[0].close()
+    delete_files(_f_imp_cp13736)
     
 def test_import_path_seperator():
     """verify using the path seperator in a direct call will result in an ImportError"""
@@ -1127,7 +1139,7 @@ def test_module_getattribute():
     
 @skip("silverlight", "win32")
 def test_import_lookup_after():
-    import nt
+    import os
     try:
         _x_mod = path_combine(testpath.public_testdir, "x.py")
         _y_mod = path_combine(testpath.public_testdir, "y.py")
@@ -1142,12 +1154,12 @@ sys.modules['y'] = newmod
         import y
         AreEqual(type(y), object)
     finally:
-        nt.unlink(_x_mod)
-        nt.unlink(_y_mod)
+        os.unlink(_x_mod)
+        os.unlink(_y_mod)
 
 @skip("silverlight", "win32")
 def test_imp_load_source():
-    import nt
+    import os
     try:
         _x_mod = path_combine(testpath.public_testdir, "x.py")
         write_to_file(_x_mod, """
@@ -1162,7 +1174,7 @@ X = 3.14
         AreEqual(x.X, 3.14)
         AreEqual(x.__doc__, '''some pydoc''')
     finally:
-        nt.unlink(_x_mod)
+        os.unlink(_x_mod)
 
 @skip("silverlight")        
 def test_imp_load_compiled():
@@ -1175,7 +1187,7 @@ def test_imp_load_compiled():
             with open(_x_mod, "r") as f:
                 AreEqual(imp.load_compiled("", "", f), None)
         finally:
-            nt.unlink(_x_mod)
+            os.unlink(_x_mod)
 
 @skip("silverlight") 
 def test_imp_load_dynamic():
@@ -1188,7 +1200,7 @@ def test_imp_load_dynamic():
             with open(_x_mod, "r") as f:
                 AreEqual(imp.load_dynamic("", "", f), None)
         finally:
-            nt.unlink(_x_mod)        
+            os.unlink(_x_mod)        
 
 def test_override_dict():
     class M(type(sys)):
@@ -1297,8 +1309,8 @@ def test_ximp_load_module():
     with file('test.py') as inp_file:
         imp.load_module('my_module_test', inp_file, 'does_not_exist.py', ('', 'U', 1))
         
-    import nt
-    nt.unlink('test.py')
+    import os
+    os.unlink('test.py')
         
     AreEqual(mod.x, 42)
     
@@ -1320,7 +1332,7 @@ def test_new_builtin_modules():
     AreEqual(test_new_module.StaticProperty, 42)
     
     # built-in functions shouldn't appear to be bound
-    AreEqual(test_new_module.test_method.__doc__, 'test_method() -> object\r\n')
+    AreEqual(test_new_module.test_method.__doc__, 'test_method() -> object%s' % line_sep)
     AreEqual(test_new_module.test_method.__self__, None)
     
     # unassigned attributes should throw as if the callee failed to look them up
@@ -1350,5 +1362,5 @@ def test_new_builtin_modules():
 
 #------------------------------------------------------------------------------
 run_test(__name__)
-if is_silverlight==False:
-    delete_all_f(__name__)
+if not is_silverlight:
+    delete_all_f(__name__, remove_folders=True)

@@ -134,8 +134,8 @@ def test_getattr():
         c.close()
 
     try:
-        import nt
-        nt.unlink(tmpfile)
+        import os
+        os.unlink(tmpfile)
     except:
         pass
             
@@ -2261,7 +2261,7 @@ def test_type_type_is_type():
         
     false_values = [OS]
     if is_cli:
-        false_values += [ System.Boolean(1), System.Int32(3), System.Version(), System.Exception() ]
+        false_values += [ System.Boolean(1), System.Int32(3), System.Version(0, 0), System.Exception() ]
         
     for x in false_values:
         Assert(type(x) is not type)
@@ -3437,11 +3437,8 @@ def test_bad_mro_error_message():
     
     class B(A): pass
     
-    if is_ironpython: #http://ironpython.codeplex.com/workitem/27907
-        AssertErrorWithPartialMessage(TypeError, "A, B", type, "X", (A,B), {})
-    else:
-        AssertErrorWithPartialMessage(TypeError, "Cannot create a consistent method resolution\norder (MRO) for bases", 
-                                      type, "X", (A,B), {})
+    AssertErrorWithPartialMessage(TypeError, "Cannot create a consistent method resolution\norder (MRO) for bases A, B",
+                                  type, "X", (A,B), {})
 
 def test_finalizer():
     """returning the same object from __new__ shouldn't cause it to be finalized"""
@@ -3686,7 +3683,8 @@ def test_cp22832():
         
     Assert("KOldStuff" in dir(KNew))
 
-@skip("silverlight")
+# mono's GC apparently behaves differently...
+@skip("silverlight", "posix")
 def test_cp23564():
     global A
     A = 0
@@ -3720,6 +3718,44 @@ def test_cp33622():
     AreEqual(object.__repr__ in (None,object.__repr__), True)
     AreEqual(object.__repr__ in (None,object.__cmp__), False)
     AreEqual(object.__repr__ in (None,object.__str__), False)
+
+def test_cp24649_gh120():
+    import copy
+
+    class Descriptor(object):
+        def __get__(self, instance, owner):
+            return instance.x
+
+    def clone(cls):
+        """Create clone of provided class"""
+        attrs = vars(cls).copy()
+        skipped = ['__dict__', '__weakref__']
+        for attr in skipped:
+            try:
+                del attrs[attr]
+            except KeyError:
+                pass
+        cattrs = copy.deepcopy(attrs)
+        return type(cls.__name__, cls.__bases__, cattrs)
+
+    class C(object):
+        a = Descriptor()
+        
+        def __init__(self, x):
+            self.x = x
+
+    # make sure all expected keys are present, and only those
+    AreEqual(set(C.__dict__.keys()),
+        {'a', '__module__', '__dict__', '__weakref__', '__doc__', '__init__'})
+    
+    # make sure .items() is the same as indexing
+    for key, value in list(C.__dict__.items()):
+        AreEqual(C.__dict__[key], value)
+
+    CC = clone(C)
+    cc = CC(1)
+    AreEqual(cc.x, 1)
+
 
 #--MAIN------------------------------------------------------------------------
 run_test(__name__)

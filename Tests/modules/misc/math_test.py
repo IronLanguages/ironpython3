@@ -40,9 +40,9 @@ def test_complex():
     AreEqual(pow(1j, 2), (-1.0+0j))
     AreEqual(1+0j, 1)
     AreEqual(1+0j, 1.0)
-    AreEqual(1+0j, 1L)
-    AreEqual((1+1j)/1L, (1+1j))
-    AreEqual((1j) + 1L, (1+1j))
+    AreEqual(1+0j, 1)
+    AreEqual((1+1j)/1, (1+1j))
+    AreEqual((1j) + 1, (1+1j))
     AreEqual(0j ** 0, 1)
     AreEqual(0j ** 0j, 1)
     AreEqual(pow(0j, 0), 1)
@@ -65,15 +65,15 @@ def test_floor_divide():
     AreEqual( 25 % (5+3j), (10-9j))
 
 def test_more_complex():
-    AreEqual((12+3j)/3L, (4+1j))
-    AreEqual(3j - 5L, -5+3j)
+    AreEqual((12+3j)/3, (4+1j))
+    AreEqual(3j - 5, -5+3j)
     if is_cli or is_silverlight: AreEqual(3j - Int64(), 3j)
     AssertError(TypeError, (lambda:3j-[]))
     if is_cli or is_silverlight: AreEqual(pow(5j, Int64()), (1+0j))
-    AreEqual(pow(5j, 0L), (1+0j))
+    AreEqual(pow(5j, 0), (1+0j))
     AssertError(TypeError, (lambda:pow(5j, [])))
     if is_cli or is_silverlight: AreEqual(5j * Int64(), 0)
-    AreEqual(5j * 3L, 15j)
+    AreEqual(5j * 3, 15j)
     AssertError(TypeError, (lambda:(5j*[])))
 
 # TODO: remove @skip when tests are running against 2.7
@@ -209,12 +209,12 @@ def test_erf_erfc():
 @skip('win32')
 def test_gamma():
     AlmostEqual(math.gamma(0.5), math.sqrt(math.pi), 15)
-    for i in xrange(1, 20):
+    for i in range(1, 20):
         AreEqual(math.factorial(i-1), math.gamma(i))
     AreEqual(math.gamma(float('inf')), float('inf'))
     AssertError(ValueError, math.gamma, float('-inf'))
     Assert(math.isnan(math.gamma(float('nan'))))
-    for i in xrange(0, -1001, -1):
+    for i in range(0, -1001, -1):
         AssertError(ValueError, math.gamma, i)
 
 # TODO: remove @skip when tests are running against 2.7
@@ -222,14 +222,14 @@ def test_gamma():
 def test_lgamma():
     tolerance = 14
     AlmostEqual(math.lgamma(0.5), 0.5 * math.log(math.pi), 15)
-    for i in xrange(1, 20):
+    for i in range(1, 20):
         if i > 14:
             tolerance = 13
         AlmostEqual(math.log(math.factorial(i-1)), math.lgamma(i), tolerance)
     AreEqual(math.lgamma(float('inf')), float('inf'))
     AreEqual(math.lgamma(float('-inf')), float('inf'))
     Assert(math.isnan(math.lgamma(float('nan'))))
-    for i in xrange(0, -1001, -1):
+    for i in range(0, -1001, -1):
         AssertError(ValueError, math.lgamma, i)
 
 # TODO: remove @skip when tests are running against 2.7
@@ -259,24 +259,24 @@ def test_pow():
 
 def test_mod_pow():
     for i in range(-100, 100, 7):
-        l = long(i)
+        l = int(i)
         Assert(type(i) == int)
-        Assert(type(l) == long)
+        Assert(type(l) == int)
         for exp in [1, 17, 2863, 234857, 1435435, 234636554, 2147483647]:
-            lexp = long(exp)
+            lexp = int(exp)
             Assert(type(exp) == int)
-            Assert(type(lexp) == long)
+            Assert(type(lexp) == int)
             for mod in [-7, -5293, -2147483647, 7, 5293, 23745, 232474276, 534634665, 2147483647]:
-                lmod = long(mod)
+                lmod = int(mod)
                 Assert(type(mod) == int)
-                Assert(type(lmod) == long)
+                Assert(type(lmod) == int)
     
                 ir = pow(i, exp, mod)
                 lr = pow(l, lexp, lmod)
     
                 AreEqual(ir, lr)
                 
-                for zero in [0, 0L]:
+                for zero in [0, 0]:
                     ir = pow(i, zero, mod)
                     lr = pow(l, zero, lmod)
                     
@@ -287,11 +287,11 @@ def test_mod_pow():
                         AreEqual(ir, mod+1)
                         AreEqual(lr, mod+1)
             AssertError(ValueError, pow, i, exp, 0)
-            AssertError(ValueError, pow, l, lexp, 0L)
+            AssertError(ValueError, pow, l, lexp, 0)
     
         
-        for exp in [0, 0L]:
-            for mod in [-1,1,-1L,1L]:
+        for exp in [0, 0]:
+            for mod in [-1,1,-1,1]:
                 ir = pow(i, exp, mod)
                 lr = pow(l, exp, mod)
                 AreEqual(ir, 0)
@@ -385,7 +385,7 @@ def test_rounding():
         Assert(round(-123.41526375, 7) == -123.4152637)
     else:
         Assert(round(-123.41526375, 7) == -123.4152638)
-    for i in xrange(8, 307):
+    for i in range(8, 307):
         # Note: We can't do exact equality here due to the inexact nature of IEEE
         # double precision floats when multiplied and later divided by huge powers of 10.
         # Neither CPython nor IronPython mantain exact equality for precisions >= 17
@@ -418,7 +418,7 @@ def test_rounding():
     Assert(round(-7182930456.0, -9) == -7000000000.0)
     Assert(round(-7182930456.0, -10) == -10000000000.0)
     Assert(round(-7182930456.0, -11) == 0.0)
-    for i in xrange(-12, -309, -1):
+    for i in range(-12, -309, -1):
         Assert(round(7182930456.0, i) == 0.0)
         Assert(round(-7182930456.0, i) == 0.0)
 
@@ -431,23 +431,23 @@ def test_other():
     z += x
     Assert(y == z)
     
-    Assert(1 << 32 == 4294967296L)
+    Assert(1 << 32 == 4294967296)
     Assert(2 << 32 == (1 << 32) << 1)
     Assert(((1 << 16) << 16) << 16 == 1 << 48)
-    Assert(((1 << 16) << 16) << 16 == 281474976710656L)
+    Assert(((1 << 16) << 16) << 16 == 281474976710656)
     
     for i in [1, 10, 42, 1000000000, 34141235135135135, 13523525234523452345235235234523, 100000000000000000000000000000000000000]:
         Assert(~i == -i - 1)
     
     Assert(7 ** 5 == 7*7*7*7*7)
-    Assert(7L ** 5L == 7L*7L*7L*7L*7L)
-    Assert(7 ** 5L == 7*7*7*7*7)
-    Assert(7L ** 5 == 7L*7L*7L*7L*7L)
+    Assert(7 ** 5 == 7*7*7*7*7)
+    Assert(7 ** 5 == 7*7*7*7*7)
+    Assert(7 ** 5 == 7*7*7*7*7)
     Assert(1 ** 735293857239475 == 1)
     Assert(0 ** 735293857239475 == 0)
     
     # cpython tries to compute this, takes a long time to finish
-    if is_cli or is_silverlight:
+    if is_silverlight:
         y = 735293857239475
         AssertError(ValueError, (lambda: 10 ** y))
 
@@ -505,9 +505,9 @@ def test_negated_comparisons():
     Assert(not (2.5 == None))
     Assert(not (20 == (2,3)))
     
-    AreEqual(long(1234793454934), 1234793454934)
+    AreEqual(int(1234793454934), 1234793454934)
     AreEqual(4 ** -2, 0.0625)
-    AreEqual(4L ** -2, 0.0625)
+    AreEqual(4 ** -2, 0.0625)
 
 def test_zero_division():
     AssertError(ZeroDivisionError, (lambda: (0 ** -1)))
@@ -515,7 +515,7 @@ def test_zero_division():
     AssertError(ZeroDivisionError, (lambda: (0 ** -1.0)))
     AssertError(ZeroDivisionError, (lambda: (0.0 ** -1.0)))
     AssertError(ZeroDivisionError, (lambda: (False ** -1)))
-    AssertError(ZeroDivisionError, (lambda: (0L ** -(2 ** 65))))
+    AssertError(ZeroDivisionError, (lambda: (0 ** -(2 ** 65))))
     AssertError(ZeroDivisionError, (lambda: (0j ** -1)))
     AssertError(ZeroDivisionError, (lambda: (0j ** 1j)))
 
@@ -524,11 +524,11 @@ def test_extensible_math():
     opSymbol  = ['+',       '-',       '**',      '*',       '/',       '//',           '/',           '%']
     
     types = []
-    for baseType in [(int, (100,2)), (long, (100L, 2L)), (float, (100.0, 2.0))]:
+    for baseType in [(int, (100,2)), (int, (100, 2)), (float, (100.0, 2.0))]:
     # (complex, (100+0j, 2+0j)) - cpython doesn't call reverse ops for complex ?
         class prototype(baseType[0]):
             for op in operators:
-                exec '''def %s(self, other):
+                exec('''def %s(self, other):
     global opCalled
     opCalled.append('%s')
     return super(self.__class__, self).%s(other)
@@ -536,7 +536,7 @@ def test_extensible_math():
 def %s(self, other):
     global opCalled
     opCalled.append('%s')
-    return super(self.__class__, self).%s(other)''' % (op, op, op, op[:2] + 'r' + op[2:], op[:2] + 'r' + op[2:], op[:2] + 'r' + op[2:])
+    return super(self.__class__, self).%s(other)''' % (op, op, op, op[:2] + 'r' + op[2:], op[:2] + 'r' + op[2:], op[:2] + 'r' + op[2:]))
         
         types.append( (prototype, baseType[1]) )
     
@@ -609,11 +609,11 @@ def test_long_log():
     # log in a new base
     AreEqual(round(math.log(2 ** 1000, 2), 5), 1000.0)
     
-    AssertError(ValueError, math.log, 0L)
-    AssertError(ValueError, math.log, -1L)
-    AreEqual(math.log(2L, 1e666), 0.0)
-    AssertError(ValueError, math.log, 2L, -1e666)
-    AssertError(ZeroDivisionError, math.log, 2L, 1.0)
+    AssertError(ValueError, math.log, 0)
+    AssertError(ValueError, math.log, -1)
+    AreEqual(math.log(2, 1e666), 0.0)
+    AssertError(ValueError, math.log, 2, -1e666)
+    AssertError(ZeroDivisionError, math.log, 2, 1.0)
 
     #Make sure that an object is converted to float before being passed into log funcs
     class N(object):
@@ -626,7 +626,7 @@ def test_long_log():
     AreEqual(round(math.log(N()), 5),2.30259)
 
 def test_log_neg():
-    for x in [[2,0], [0,2.0], [0], [0L], [0L, 3.14]]:
+    for x in [[2,0], [0,2.0], [0], [0], [0, 3.14]]:
         AssertErrorWithMessage(ValueError, "math domain error",
                                math.log, *x)
 
@@ -708,7 +708,7 @@ def test_float_subclass():
     AreEqual(calledCount, 1)
     
 def test_integer_ratio():
-    int_ratio_tests = [ (2.5, (5, 2)), (1.3, (5854679515581645L, 4503599627370496L))]
+    int_ratio_tests = [ (2.5, (5, 2)), (1.3, (5854679515581645, 4503599627370496))]
     
     for flt, res in int_ratio_tests:
         AreEqual(flt.as_integer_ratio(), res)

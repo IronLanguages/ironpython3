@@ -135,7 +135,7 @@ AreEqual(x, y)
 
 AreEqual("\101", "A")
 x='\a\b\c\d\e\f\g\h\i\j\k\l\m\n\o\p\q\r\s\t\\u\v\w\y\z'
-y='\\u0007\\u0008\\\\u0063\\\\u0064\\\\u0065\\u000C\\\\u0067\\\\u0068\\\\u0069\\\\u006a\\\\u006b\\\\u006c\\\\u006d\\u000A\\\\u006f\\\\u0070\\\\u0071\\u000D\\\\u0073\\u0009\\\\u0075\\u000B\\\\u0077\\\\u0079\\\\u007a'
+y='\u0007\u0008\\\u0063\\\u0064\\\u0065\u000C\\\u0067\\\u0068\\\u0069\\\u006a\\\u006b\\\u006c\\\u006d\u000A\\\u006f\\\u0070\\\u0071\u000D\\\u0073\u0009\\\u0075\u000B\\\u0077\\\u0079\\\u007a'
 
 Assert(x == y)
 AreEqual(x, y)
@@ -222,10 +222,10 @@ compile_tests = [
      """    except IndexError:\n"""
      """        pass\n"""
      """    finally:\n"""
-     """        continue\n""", "'continue' not supported inside 'finally' clause", 7, False)
+     """        continue\n""", "'continue' not supported inside 'finally' clause", 7, False),
 
     #CodePlex 15428
-    #("'abc'.", "invalid syntax", 1),
+    #("'abc'.", "invalid syntax", 1, False),
 ]
 
 compile_tests.append(("None = 2", "cannot assign to None", 1, False))
@@ -321,7 +321,7 @@ AssertError(SyntaxError, compile, "    x = 10\n\n", "", "exec")
 AssertError(SyntaxError, compile, "    \n   #comment\n   x = 10\n\n", "", "exec")
 
 if sys.platform == 'cli':
-    c = compile("\\u0391 = 10\nif \\u0391 != 10: 1/0", "", "exec")
+    c = compile("\u0391 = 10\nif \u0391 != 10: 1/0", "", "exec")
     exec(c)
 
 # from __future__ tests
@@ -710,7 +710,7 @@ def test_parser_recovery():
         def __init__(self, text):
             self.text = text
         def GetReader(self):
-            return SourceCodeReader(StringReader(self.text), Encoding.Default)
+            return SourceCodeReader(StringReader(self.text), Encoding.GetEncoding(0))
 
     def parse_text(text):
         errorSink = MyErrorSink()

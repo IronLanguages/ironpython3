@@ -1,5 +1,5 @@
 import sys, itertools, unittest
-import test.support
+from test import test_support
 from io import StringIO
 
 import ast
@@ -82,6 +82,8 @@ exec_tests = [
     "def f(): yield 1",
     # CP35001
     "def f(): yield",
+    # comment
+    "#"
 
 ]
 
@@ -1159,6 +1161,8 @@ for v in fNone():
                     ast2 = mod.loads(mod.dumps(ast, protocol))
                     self.assertEqual(to_tuple(ast2), to_tuple(ast))
 
+    def test_compile_comment(self):
+        self.assertRaisesRegex( SyntaxError, "unexpected EOF while parsing", compile, "#", "string", "single" )
 
 class ASTHelpers_Test(unittest.TestCase):
 
@@ -1263,9 +1267,20 @@ class ASTHelpers_Test(unittest.TestCase):
         self.assertEqual(ast.literal_eval('1.5 - 2j'), 1.5 - 2j)
         self.assertRaises(ValueError, ast.literal_eval, '2 + (3 + 4j)')
 
+    def test_literal_eval_cp35572(self):
+        self.assertEqual(ast.literal_eval('-1'), -1)
+        self.assertEqual(ast.literal_eval('+1'), 1)
+        self.assertEqual(ast.literal_eval('-1j'), -1j)
+        self.assertEqual(ast.literal_eval('+1j'), 1j)
+        self.assertEqual(ast.literal_eval('-1.1'), -1.1)
+        self.assertEqual(ast.literal_eval('+1.1'), 1.1)
+        self.assertEqual(ast.literal_eval('-1L'), -1)
+        self.assertEqual(ast.literal_eval('+1L'), 1)
 
 def test_main():
-    test.support.run_unittest(AST_Tests, ASTHelpers_Test)
+    with test_support.check_py3k_warnings(("backquote not supported",
+                                             SyntaxWarning)):
+        test_support.run_unittest(AST_Tests, ASTHelpers_Test)
 
 def main():
     if __name__ != '__main__':
@@ -1274,7 +1289,7 @@ def main():
         import os
         # place for a quick individual test
         p = ast.parse( "dict(a=1)", mode="exec") # call function with an argument
-        eval(input("attach to %s and press enter" % os.getpid()))
+        input("attach to %s and press enter" % os.getpid())
         c = compile(p,"<unknown>", mode="exec")
         exec(c)
         sys.exit()
@@ -1282,9 +1297,9 @@ def main():
     if sys.argv[1:] == ['-g']:
         for statements, kind in ((exec_tests, "exec"), (single_tests, "single"),
                                  (eval_tests, "eval")):
-            print((kind+"_results = ["))
+            print(kind+"_results = [")
             for s in statements:
-                print((repr(to_tuple(compile(s, "?", kind, 0x400)))+","))
+                print(repr(to_tuple(compile(s, "?", kind, 0x400)))+",")
             print("]")
         print("main()")
         raise SystemExit
@@ -1324,6 +1339,7 @@ exec_results = [
 ('Module', [('Expr', (1, 0), ('GeneratorExp', (1, 0), ('Tuple', (1, 1), [('Name', (1, 2), 'a', ('Load',)), ('Name', (1, 4), 'b', ('Load',))], ('Load',)), [('comprehension', ('Tuple', (1, 11), [('Name', (1, 11), 'a', ('Store',)), ('Name', (1, 13), 'b', ('Store',))], ('Store',)), ('Name', (1, 18), 'c', ('Load',)), [])]))]),
 ('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], None, None, []), [('Expr', (1, 9), ('Yield', (1, 9), ('Num', (1, 15), 1)))], [])]),
 ('Module', [('FunctionDef', (1, 0), 'f', ('arguments', [], None, None, []), [('Expr', (1, 9), ('Yield', (1, 9), ('Name', (1, 9), 'None', ('Load',))))], [])]),
+('Module', []),
 ]
 single_results = [
 ('Interactive', [('Expr', (1, 0), ('BinOp', (1, 0), ('Num', (1, 0), 1), ('Add',), ('Num', (1, 2), 2)))]),

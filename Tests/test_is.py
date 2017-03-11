@@ -21,10 +21,10 @@ def test_object():
     a = object()
     b = object()
 
-    AssertEqual(True, a is a)
-    AssertEqual(False, a is b)
-    AssertEqual(False, a is not a)
-    AssertEqual(True, a is not b)
+    AreEqual(True, a is a)
+    AreEqual(False, a is b)
+    AreEqual(False, a is not a)
+    AreEqual(True, a is not b)
 
 def test_bool_nullablebool():
     tc = [
@@ -40,7 +40,9 @@ def test_bool_nullablebool():
         ]
         
     for a, b, result in tc:
-        AssertEqual(result, a is b)
-        AssertEqual(result, b is a)
-        AssertEqual(not result, a is not b)
-        AssertEqual(not result, b is not a)
+        AreEqual(result, a is b)
+        AreEqual(result, b is a)
+        AreEqual(not result, a is not b)
+        AreEqual(not result, b is not a)
+
+run_test(__name__)

@@ -650,7 +650,7 @@ def test_nondefault_indexers():
     from iptest.process_util import *
 
     if not has_vbc(): return
-    import nt
+    import os
     import _random
     
     r = _random.Random()
@@ -693,7 +693,7 @@ End Class
     """)
         f.close()
         
-        name = 'vbproptest%f.dll' % (r.random())
+        name = path_combine(testpath.temporary_dir, 'vbproptest%f.dll' % (r.random()))
         x = run_vbc('/target:library vbproptest1.vb "/out:%s"' % name)        
         AreEqual(x, 0)
         
@@ -715,14 +715,14 @@ End Class
     finally:
         if not f.closed: f.close()
               
-        nt.unlink('vbproptest1.vb')
+        os.unlink('vbproptest1.vb')
 
 @skip("silverlight")
 def test_nondefault_indexers_overloaded():
     from iptest.process_util import *
 
     if not has_vbc(): return
-    import nt
+    import os
     import _random
     
     r = _random.Random()
@@ -780,9 +780,8 @@ End Class
     """)
         f.close()
         
-        name = 'vbproptest%f.dll' % (r.random())
-        x = run_vbc('/target:library vbproptest1.vb "/out:%s"' % name)        
-        AreEqual(x, 0)
+        name = path_combine(testpath.temporary_dir, 'vbproptest%f.dll' % (r.random()))
+        AreEqual(run_vbc('/target:library vbproptest1.vb /out:"%s"' % name), 0)
 
         clr.AddReferenceToFileAndPath(name)
         import VbPropertyTest, VbPropertyTest2
@@ -805,7 +804,7 @@ End Class
     finally:
         if not f.closed: f.close()
               
-        nt.unlink('vbproptest1.vb')
+        os.unlink('vbproptest1.vb')
         
 def test_interface_abstract_events():
     # inherit from an interface or abstract event, and define the event
@@ -1139,7 +1138,6 @@ def test_disposable():
 
 def test_dbnull():
     """DBNull should not be true"""
-    
     if System.DBNull.Value:
         AssertUnreachable()
 
@@ -1435,6 +1433,7 @@ def test_clr_dir():
     Assert('IndexOf' not in clr.Dir('abc'))
     Assert('IndexOf' in clr.DirClr('abc'))
 
+@skip("posix")
 def test_array_contains():
     AssertError(KeyError, lambda : System.Array[str].__dict__['__contains__'])
 
@@ -1443,7 +1442,7 @@ def test_a_override_patching():
         clr.AddReference("System.Core")
     else:
         clr.AddReference("Microsoft.Scripting.Core")
-    
+
     # derive from object
     class x(object):
         pass
@@ -1476,7 +1475,7 @@ def test_dir():
     for attr in dir(System):
         dir(getattr(System, attr))
 
-    if not is_silverlight:        
+    if not is_silverlight:
         for x in [System.Collections.Generic.SortedList,
                   System.Collections.Generic.Dictionary,
                   ]:
@@ -1499,7 +1498,7 @@ def test_valuetype_iter():
     AreEqual(it.next().Key, 'a')
     AreEqual(it.next().Key, 'b')
 
-@skip("silverlight")
+@skip("silverlight", "posix")
 def test_abstract_class_no_interface_impl():
     # this can't be defined in C# or VB, it's a class which is 
     # abstract and therefore doesn't implement the interface method
@@ -1578,13 +1577,15 @@ def test_abstract_class_no_interface_impl():
 } // end of class foo
 """
     from iptest.process_util import run_ilasm
-    f = file('testilcode.il', 'w+')
+    testilcode = path_combine(testpath.temporary_dir, 'testilcode.il')
+
+    f = file(testilcode, 'w+')
     f.write(ilcode)
     f.close()
     try:
-        run_ilasm("/dll testilcode.il")
+        run_ilasm("/dll " + testilcode)
         
-        clr.AddReference('testilcode')
+        clr.AddReferenceToFileAndPath(path_combine(testpath.temporary_dir, 'testilcode.dll'))
         import AbstractILTest
         
         class x(AbstractILTest):
@@ -1593,8 +1594,8 @@ def test_abstract_class_no_interface_impl():
         a = x()
         AreEqual(AbstractILTest.Helper(a), "42")
     finally:
-        import nt
-        nt.unlink('testilcode.il')
+        import os
+        os.unlink(testilcode)
 
 def test_field_assign():
     """assign to an instance field through the type"""
@@ -1741,8 +1742,7 @@ def test_silverlight_access_isolated_storage():
         # IsolatedStorage may not actually be available
         pass
     
-
-@skip("silverlight")
+@skip("silverlight", "posix")
 def test_xaml_support():
     text = """<custom:XamlTestObject 
    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -1756,6 +1756,7 @@ def test_xaml_support():
         </custom:InnerXamlTextObject>
     </custom:InnerXamlTextObject>
 </custom:XamlTestObject>"""
+
     import wpf
     import clr
     clr.AddReference('System.Xml')
@@ -1817,8 +1818,8 @@ def test_xaml_support():
                 inp.Dispose()
 
     finally:
-        #nt.unlink('test.xaml')
-        pass
+        import os
+        os.unlink('test.xaml')
 
 
 @skip("silverlight")
@@ -1911,7 +1912,6 @@ AreEqual(object().GenericMethod(), 23)
 """,
 """
 import clr
-clr.AddReference("System.Core")
 import System
 from System import Linq
 
@@ -1974,9 +1974,8 @@ AreEqual(''.join(prod for prod in pd), 'Cat: Flange, ID: F423, Qty: 12')
             import temp_module
             del sys.modules['temp_module']
         finally:
-            nt.unlink('temp_module.py')
+            os.unlink('temp_module.py')
     
     
 #--MAIN------------------------------------------------------------------------
 run_test(__name__)
-

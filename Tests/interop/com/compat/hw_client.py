@@ -31,8 +31,8 @@ else:
     import win32com.client
     com_obj = win32com.client.Dispatch(hw_progid)
 
-print "dir(obj):", dir(com_obj)
-print
+print("dir(obj):", dir(com_obj))
+print()
 
-print "comMethod():", com_obj.comMethod(None)
+print("comMethod():", com_obj.comMethod(None))
 AreEqual(com_obj.comMethod(None), hw_retval)

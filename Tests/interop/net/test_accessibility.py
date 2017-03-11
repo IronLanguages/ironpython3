@@ -43,7 +43,7 @@ def pass_for_read_protected(x):
     #x.protected_static_property  # bug 370438
     #x.protected_static_event     # bug 370432
     if str(x).startswith("<C1 object") or str(x).startswith("<C2 object"):
-        print "Skipping (http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24106)..."
+        print("Skipping (http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24106)...")
     else:
         x.protected_static_nestedclass
     

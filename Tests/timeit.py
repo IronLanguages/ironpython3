@@ -15,7 +15,6 @@
 
 import time
 import sys
-import collections
 
 if len(sys.argv) < 2:
     print('usage: test [loops]')
@@ -35,7 +34,7 @@ runnable = __import__(file)
 if not hasattr(runnable, 'run'):
     print(file, 'must have function named run')
     
-if not isinstance(runnable.run, collections.Callable):
+if not callable(runnable.run):
     print(runnable.run, 'in', file, 'is not callable')
 
 loops = list(range(loopCnt))

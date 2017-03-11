@@ -31,7 +31,7 @@ TEST_DIR = argv[1]
 THIS_MOD = __file__.rsplit("\\", 1)[1]
 TESTS = [x for x in nt.listdir(TEST_DIR) if x.endswith(".py") and x!=THIS_MOD]
 if DEBUG:
-    print "TESTS:", TESTS
+    print("TESTS:", TESTS)
 
 TF_DIR = nt.environ["DevEnvDir"] + r"\tf"
 TFPT_DIR = nt.environ["DLR_ROOT"] + r"\Util\tfpt\tfpt.exe"
@@ -39,16 +39,16 @@ TFPT_DIR = nt.environ["DLR_ROOT"] + r"\Util\tfpt\tfpt.exe"
 #--FUNCTIONS-------------------------------------------------------------------
 def apply_filters(lines):
     for filter in [strip_ws, tabs_are_bad]:
-        filter(lines)
+        list(filter(lines))
 
 def strip_ws(lines):
-    for i in xrange(len(lines)):
+    for i in range(len(lines)):
         #If the line doesn't consist exclusively of WS
         if re.match("^[\s]*$", lines[i])==None:
             lines[i] = lines[i].rstrip() + "\n"
 
 def tabs_are_bad(lines):
-    for i in xrange(len(lines)):
+    for i in range(len(lines)):
         if (re.match("^\t", lines[i])!=None):
             lines[i] = re.sub("\t", "    ", lines[i])
     
@@ -67,12 +67,12 @@ for test in TESTS:
     #Check out the file
     try:
         ec = nt.spawnv(nt.P_WAIT, TF_DIR, ["tf", "edit", test])
-    except Exception, e:
-        print "FAILED: could not check out %s from TFS: %s" % (test, str(e))
+    except Exception as e:
+        print("FAILED: could not check out %s from TFS: %s" % (test, str(e)))
         continue
     
     if ec!=0:
-        print "FAILED: could not check out %s from TFS!" % test
+        print("FAILED: could not check out %s from TFS!" % test)
         continue
         
     #Write it back out
@@ -84,4 +84,4 @@ for test in TESTS:
 #Cleanup
 ec = nt.spawnv(nt.P_WAIT, TFPT_DIR, ["tfpt", "uu", TEST_DIR])        
 if ec!=0:
-    print "FAILED: could not tf undo files that were never changed in %s!" % TEST_DIR
+    print("FAILED: could not tf undo files that were never changed in %s!" % TEST_DIR)

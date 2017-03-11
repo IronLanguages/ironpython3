@@ -47,7 +47,7 @@ def test_neg_wrong_number_params():
                             (com_obj.mTwoOptionalParams, ["a", "b", "c", "d"]),
                             (com_obj.mOptionalParamWithDefaultValue, ()),
                             (com_obj.mOptionalParamWithDefaultValue, ["a", "b", "c"]), ]:
-        AssertError(StandardError, meth, bugid="409926", *params)        
+        AssertError(Exception, meth, bugid="409926", *params)        
     
 def test_defaultvalue():   
     AreEqual(com_obj.mOptionalParamWithDefaultValue("a"), 3)
@@ -86,7 +86,7 @@ def test_optional_kwargs():
     com_obj.mTwoOptionalParams(**{'a':3, 'b':32})
     com_obj.mTwoOptionalParams(**{'a':3, 'c':33})
     com_obj.mTwoOptionalParams(**{'a':3, 'b':12, 'c':33})
-    AssertError(StandardError, com_obj.mTwoOptionalParams, **{'b':3, 'c':33, 'bugid':"TODO"})
+    AssertError(Exception, com_obj.mTwoOptionalParams, **{'b':3, 'c':33, 'bugid':"TODO"})
     
     
 #------------------------------------------------------------------------------

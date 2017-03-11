@@ -18,6 +18,7 @@
 from iptest.assert_util import *
 skiptest("win32")
 skiptest("silverlight")
+skiptest("posix")
 
 import clr
 import System

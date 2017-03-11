@@ -46,7 +46,7 @@ class PackThread(Thread):
         my_args = list(struct_pack_args)
         shuffle(my_args)
         try:
-            for i in range(1000):
+            for i in range(100000):
                 for args in my_args:
                     struct.pack(*args)
         except:

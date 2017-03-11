@@ -15,6 +15,8 @@
 
 from iptest.assert_util import *
 
+from types import FunctionType
+
 def x(a,b,c):
     z = 8
     if a < b:
@@ -48,7 +50,7 @@ Assert(g.a == 20)
 def foo(): pass
 
 AreEqual(foo.__code__.co_filename.lower().endswith('test_function.py'), True)
-AreEqual(foo.__code__.co_firstlineno, 48)  # if you added lines to the top of this file you need to update this number.
+AreEqual(foo.__code__.co_firstlineno, 50)  # if you added lines to the top of this file you need to update this number.
 
 
 # Cannot inherit from a function
@@ -56,7 +58,7 @@ def CreateSubType(t):
     class SubType(t): pass
     return SubType
     
-if is_silverlight==False:
+if not is_silverlight:
     AssertErrorWithMatch(TypeError, ".*\n?.* is not an acceptable base type", CreateSubType, type(foo))
 else:
     try:
@@ -303,7 +305,7 @@ if is_cli or is_silverlight:
     # an OpsExtensibleType and doesn't define __str__ on this
     # overload
     
-    AreEqual('1.00', System.Double.ToString(1.0, 'f'))
+    AreEqual(System.Double.ToString(1.0, 'f'), '1.00')
 
 ######################################################################################
 # Incorrect number of arguments
@@ -547,7 +549,7 @@ AreEqual(foo('', 'index'), True)
 
 # dispatch to a ReflectOptimized method
 
-if is_cli and not is_silverlight:
+if is_cli:
     from iptest.console_util import IronPythonInstance
     from System import Environment
     from sys import executable
@@ -730,7 +732,7 @@ for case in cases:
 
 # verify we can call the base init directly
 
-if is_cli and not is_silverlight:
+if is_cli:
     import clr
     clr.AddReferenceByPartialName('System.Windows.Forms')
     from System.Windows.Forms import *
@@ -782,7 +784,7 @@ def test_func_flags():
     
 def test_big_calls():
     # check various function call sizes and boundaries
-    for size in [3,4,5, 7,8,9, 15,16,17, 23, 24, 25, 31,32,33, 47,48,49, 63,64,65, 127, 128, 129, 254, 255, 256, 257, 258, 511,512,513, 1023,1024,1025, 2047, 2048, 2049]:
+    for size in [3, 4, 5, 7, 8, 9, 13, 15, 16, 17, 23, 24, 25, 31, 32, 33, 47, 48, 49, 63, 64, 65, 127, 128, 129, 254, 255, 256, 257, 258, 511, 512, 513, 1023, 1024, 1025, 2047, 2048, 2049]:
         # w/o defaults
         exec('def f(' + ','.join(['a' + str(i) for i in range(size)]) + '): return ' + ','.join(['a' + str(i) for i in range(size)]))
         # w/ defaults
@@ -1302,5 +1304,96 @@ def test_delattr():
     del f.abc
     def g(): f.abc
     AssertError(AttributeError, g)
+
+
+def copyfunc(f, name):
+    return FunctionType(f.__code__, f.__globals__, name, f.__defaults__, f.__closure__)
+
+def test_cp35180():
+    def foo():
+        return 13
+    def bar():
+        return 42
+    dpf = copyfunc(foo, "dpf")
+    AreEqual(dpf(), 13)
+    foo.__code__ = bar.__code__
+    AreEqual(foo(), 42)
+    AreEqual(dpf(), 13)
+    AreEqual(foo.__module__, '__main__')
+    AreEqual(dpf.__module__, '__main__')
+
+
+def substitute_globals(f, name, globals):
+    return FunctionType(f.__code__, globals, name, f.__defaults__, f.__closure__)
+
+global_variable = 13
+
+def test_cp34932():
+    def get_global_variable():
+        return global_variable
+    def set_global_variable(v):
+        global global_variable
+        global_variable = v
+
+    alt_globals = {'global_variable' : 66 }
+    get_global_variable_x = substitute_globals(get_global_variable, "get_global_variable_x", alt_globals)
+    set_global_variable_x = substitute_globals(set_global_variable, "set_global_variable_x", alt_globals)
+    AreEqual(get_global_variable(), 13)
+    AreEqual(get_global_variable_x(), 66)
+    AreEqual(get_global_variable(), 13)
+    set_global_variable_x(7)
+    AreEqual(get_global_variable_x(), 7)
+    AreEqual(get_global_variable(), 13)
+
+    AreEqual(get_global_variable_x.__module__, None)
+    AreEqual(set_global_variable_x.__module__, None)
+
+    get_global_variable_y = substitute_globals(get_global_variable, "get_global_variable_x", globals())
+    AreEqual(get_global_variable_y(), 13)
+    AreEqual(get_global_variable_y.__module__, '__main__')
+
+def test_issue1351():
+    class X(object):
+        def __init__(self, res):
+            self.called = []
+            self.res = res
+        def __eq__(self, other):
+            self.called.append('eq')
+            return self.res
+        def foo(self):
+            pass
+
+    a = X(True)
+    b = X(False)
+
+    AreEqual(a.foo, a.foo)
+    AssertDoesNotContain(a.called, 'eq')
+    AreEqual(a.foo, b.foo)
+    AssertContains(a.called, 'eq')
+
+    AreEqual(b.foo, b.foo)
+    AssertDoesNotContain(b.called, 'eq')
+    AreNotEqual(b.foo, a.foo)
+    AssertContains(b.called, 'eq')
+
+def create_fn_with_closure():
+    x=13
+    def f():
+        return x
+    return f
+
+def test_function_type():
+    fn_with_closure = create_fn_with_closure()
+    def fn_no_closure():
+        pass
+    AssertError(NotImplementedError, copyfunc, fn_with_closure, "new_fn_name")
+    AssertError(NotImplementedError, FunctionType, fn_with_closure.__code__,
+            fn_with_closure.__globals__, "name", fn_with_closure.__defaults__)
+    AssertError(NotImplementedError, FunctionType, fn_with_closure.__code__,
+            fn_with_closure.__globals__, "name", fn_with_closure.__defaults__,
+            fn_with_closure.__closure__)
+    AssertError(NotImplementedError, FunctionType, fn_no_closure.__code__,
+            fn_no_closure.__globals__, "name", fn_no_closure.__defaults__,
+            fn_with_closure.__closure__)
    
 run_test(__name__)

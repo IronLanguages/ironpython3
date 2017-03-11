@@ -105,7 +105,7 @@ def test_readonly_writeonly_derivation():
 
 @skip("multiple_execute") 
 def test_basic():
-    print 
+    print() 
     for t in [
                 ClassWithProperties,
                 StructWithProperties,

@@ -38,7 +38,7 @@ def run_me_first():
         AreEqual(signal.getsignal(x), 0)
     AreEqual(signal.getsignal(signal.SIGINT), signal.default_int_handler)
 
-    for x in xrange(1, 23):
+    for x in range(1, 23):
         if x in SUPPORTED_SIGNALS: continue
         AreEqual(signal.getsignal(x), None)
 
@@ -78,7 +78,7 @@ def test_signal_signal_neg():
     WEIRD_WORKING_CASES = [6]
     NO_SUCH_DIR = [21]
     
-    for x in xrange(1, 23):
+    for x in range(1, 23):
         if x in SUPPORTED_SIGNALS: continue
         if x in WEIRD_WORKING_CASES: continue
         AssertError(RuntimeError,
@@ -110,7 +110,7 @@ def test_signal_signal():
             return x
         
         ret_val = signal.signal(x, a)
-        if x not in WEIRD_CASES.keys():
+        if x not in list(WEIRD_CASES.keys()):
             AreEqual(ret_val, signal.SIG_DFL)
         else:
             AreEqual(ret_val, WEIRD_CASES[x])

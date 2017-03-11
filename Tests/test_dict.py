@@ -371,7 +371,7 @@ def repeat_on_class(C):
     
     # itervalues
     for v in d.values():
-        if isinstance(v, collections.Callable):
+        if callable(v):
             exp = v(c)
             Assert(exp in [11, 22, 33])
         elif v is str:
@@ -647,7 +647,7 @@ def test_fieldiddict():
 
     # itervalues
     for v in d.values():
-        if isinstance(v, collections.Callable):
+        if callable(v):
             try: exp = v(1)
             except: pass
             try: exp = v()
@@ -1035,7 +1035,7 @@ def test_cp15882():
     for bad_stuff in [
                         [1],
                         {}, {1:1}, {(1,2): 1},
-                        ]:
+                        set()]:
         try:
             x[bad_stuff] = 1
             Fail(str(bad_stuff) + " is unhashable")
@@ -1066,6 +1066,80 @@ def test_cp15882():
             AreEqual(x, {})
             AssertError(KeyError, x.__delitem__, stuff)
             
+def test_cp35348():
+    empty = {}        # underlying type: EmptyDictionaryStorage
+    emptied = {1:1}   # underlying type: CommonDictionaryStorage
+    del emptied[1]
+    not_empty = {42:1}
+
+    #negative cases
+    for bad_stuff in [
+                        [1],
+                        {}, {1:1}, {(1,2): 1},
+                        set()]:
+        try:
+            dummy = bad_stuff in empty
+            Fail(str(bad_stuff) + " is unhashable")
+        except TypeError:
+            pass
+        try:
+            dummy = bad_stuff in emptied
+            Fail(str(bad_stuff) + " is unhashable")
+        except TypeError:
+            pass
+        try:
+            dummy = bad_stuff in not_empty
+            Fail(str(bad_stuff) + " is unhashable")
+        except TypeError:
+            pass
+
+    class C1(object):
+        pass
+    c1=C1()
+    class C2:
+        pass
+    c2=C2()
+
+    #positive cases
+    for stuff in [
+                    (), (None),
+                    (-1), (0), (1), (2),
+                    (1, 2), (1, 2, 3),
+                    range(3), 1j, object, test_cp35348,
+                    (range(3)), (1j), (object), (test_cp35348),
+                    (()), ((())), c1, c2,
+                    ]:
+        AssertFalse(stuff in empty)
+        AssertFalse(stuff in emptied)
+        AssertFalse(stuff in not_empty)
+
+    for stuff in [
+                    (), (None),
+                    (-1), (0), (1), (2),
+                    (1, 2), (1, 2, 3),
+                    range(3), 1j, object, test_cp35348,
+                    (range(3)), (1j), (object), (test_cp35348),
+                    (()), ((())), c1, c2,
+                    ]:
+        emptied[stuff] = 'test_cp35348'
+        Assert(stuff in emptied)
+        del emptied[stuff]
+        AreEqual(len(empty), 0)
+        not_empty[stuff] = 'test_cp35348'
+        Assert(stuff in not_empty)
+        del not_empty[stuff]
+        AreEqual(len(not_empty), 1)
+
+def test_cp35667():
+    try:
+        AssertFalse(type([]) in {})
+        AssertFalse(type({}) in {})
+        d = {list:1, dict:2}
+        Assert(list in d)
+        Assert(dict in d)
+    except Exception as ex:
+        Assert(False, "unexpected exception: %s" % ex)
+
 
 def test_comparison_operators():
     x = {2:3}
@@ -1128,65 +1202,6 @@ def test_missing():
 def test_cp29914():
 	AreEqual(dict(o=42), {'o':42})
 
-def test_dict_comp():
-    pass
-    
-def test_dict_comp():
-    AreEqual({locals()['x'] : locals()['x'] for x in (2,3,4)}, {2:2, 3:3, 4:4})
-    
-    x = 100
-    {x:x for x in (2,3,4)}
-    AreEqual(x, 100)
-    
-    class C:
-        {x:x for x in (2,3,4)}
-    
-    AreEqual(hasattr(C, 'x'), False)
-    
-    class C:
-        abc = {locals()['x']:locals()['x'] for x in (2,3,4)}
-    
-    AreEqual(C.abc, {2:2,3:3,4:4})
-
-    d = {}
-    exec(compile("abc = {locals()['x']:locals()['x'] for x in (2,3,4)}", 'exec', 'exec'), d, d)
-    AreEqual(d['abc'], {2:2,3:3,4:4})
-    
-    d = {'y':42}
-    exec(compile("abc = {y:y for x in (2,3,4)}", 'exec', 'exec'), d, d)
-    AreEqual(d['abc'], {42:42})
-
-    d = {'y':42, 't':(2,3,42)}
-    exec(compile("abc = {y:y for x in t if x == y}", 'exec', 'exec'), d, d)
-    AreEqual(d['abc'], {42:42})
-
-    t = (2,3,4)
-    v = 2
-    abc = {v:v for x in t}
-    AreEqual(abc, {2:2})
-
-    abc = {x:x for x in t if x == v}
-    AreEqual(abc, {2:2})
-    
-    def f():
-        abc = {x:x for x in t if x == v}
-        AreEqual(abc, {2:2})
-        
-    f()
-    
-    def f():
-        abc = {v:v for x in t}
-        AreEqual(abc, {2:2})
-        
-        
-    class C:
-        abc = {v:v for x in t}
-        AreEqual(abc, {2:2})
-        
-    class C:
-        abc = {x:x for x in t if x == v}
-        AreEqual(abc, {2:2})
-
 def test_cp32527():
     '''test for duplicate key in dict under specific hash value conditions'''
     d = {'1': 1, '2': 1, '3': 1, 'a7': 1, 'a8': 1}
@@ -1204,5 +1219,17 @@ def test_cp32527():
     actual = list(d.keys()).count('a8')
     AreEqual(actual, expected)
 
+def test_cp34770():
+    # Entries added with Int64/UInt64 should be findable with Python long
+    from System import Int64, UInt64
+    i64 = Int64(1110766100758387874)
+    u64 = UInt64(9223372036854775808)
+    
+    m = {}
+    m[i64] = 'a'
+    AreEqual(m[1110766100758387874], 'a')
+    
+    m[u64] = 'b'
+    AreEqual(m[9223372036854775808], 'b')
 
 run_test(__name__)

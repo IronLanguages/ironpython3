@@ -351,7 +351,7 @@ def test_generator_arg_counts():
         func = """
 def fetest(%s):        
     ret = 0
-    for i in range(%i):
+    for i in xrange(%i):
         exec('a%%i = a%%i*a%%i' %% (i,i,i))
         exec('ret = a%%i' %% i)
         yield ret

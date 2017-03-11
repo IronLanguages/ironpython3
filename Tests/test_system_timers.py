@@ -56,11 +56,11 @@ def timer_helper(num_handlers=1, sleep_time=5, event_handlers=[], aTimer=None, e
         for i in range(num_handlers): aTimer.Elapsed += System.Timers.ElapsedEventHandler(onTimedEvent)
         for handler in event_handlers: aTimer.Elapsed += System.Timers.ElapsedEventHandler(handler)
     
-        aTimer.Interval = 1000
+        aTimer.Interval = 100
         aTimer.Enabled = True
-        sleep(sleep_time)
+        sleep(sleep_time / 10.0)
         aTimer.Enabled = False
-        sleep(sleep_time)  #give the other thread calling 'onTimedEvent' a chance to catch up
+        sleep(sleep_time / 10.0)  #give the other thread calling 'onTimedEvent' a chance to catch up
         
         #ensure the timer invoked our event handler a reasonable number of times
         Assert(COUNT >= int(sleep_time - sleep_time*error_margin) * (num_handlers+len(event_handlers)), str(COUNT))
@@ -90,7 +90,7 @@ def test_sanity_from_thread():
     print("Waiting for test_sanity to finish", end=' ')
     while not TIMER_HELPER_FINISHED:
         print(".", end=' ')
-        sleep(1)
+        sleep(0.1)
 
 
 def test_multiple_events_one_timer():
@@ -128,11 +128,11 @@ def test_elapsed_event_args():
     #create and run the timer
     aTimer = System.Timers.Timer()
     aTimer.Elapsed += System.Timers.ElapsedEventHandler(checkEventArgs)
-    aTimer.Interval = 1000
+    aTimer.Interval = 100
     aTimer.Enabled = True
-    sleep(sleep_time)
+    sleep(sleep_time / 10.0)
     aTimer.Enabled = False
-    sleep(sleep_time)  #give the other thread calling 'onTimedEvent' a chance to catch up
+    sleep(sleep_time / 10.0)  #give the other thread calling 'onTimedEvent' a chance to catch up
     
     #make sure it was called at least once
     Assert(COUNT > 0)

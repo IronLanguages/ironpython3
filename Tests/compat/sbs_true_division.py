@@ -13,7 +13,7 @@
 #
 #####################################################################################
 
-from __future__ import division
+
 
 # not all are testing true division
 
@@ -83,7 +83,7 @@ class common(object):
                     ret = x / y
                     printwithtype(ret)
                 except:
-                    printwith("same", sys.exc_type)
+                    printwith("same", sys.exc_info()[0])
     def inplace(self, leftc, rightc):
         rc = clone_list(rightc)
         for y in rc:
@@ -93,7 +93,7 @@ class common(object):
                     x /= y
                     printwithtype(x)
                 except:
-                    printwith("same", sys.exc_type)
+                    printwith("same", sys.exc_info()[0])
                     
 class test_division(common):
     def test_simple(self):      super(test_division, self).division(collection, collection)

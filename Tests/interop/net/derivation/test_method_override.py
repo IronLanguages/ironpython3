@@ -342,7 +342,7 @@ def test_generic_method_from_class():
     x = C()
     AreEqual(x.m310a(1), 10)
     AssertErrorWithMessage(TypeError, 
-        "'instancemethod' object is unsubscriptable", 
+        "'instancemethod' object is not subscriptable",
         lambda: x.m310a[int])
     
     AreEqual(C.m310a(x, 1), 10)
@@ -405,7 +405,7 @@ def test_static_methods():
 
         AreEqual(s.m500b(), 205)
         AssertErrorWithMessage(TypeError, 
-            "'function' object is unsubscriptable", 
+            "'function' object is not subscriptable",
             lambda: s.m500b[int])
         
         AreEqual(s.m500c(), 503)
@@ -413,7 +413,7 @@ def test_static_methods():
         
         AreEqual(s.m500d(), 505)
         AssertErrorWithMessage(TypeError, 
-            "'function' object is unsubscriptable", 
+            "'function' object is not subscriptable",
             lambda: s.m500d[int])
 
 def test_super():

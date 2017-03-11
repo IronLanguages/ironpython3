@@ -33,7 +33,7 @@ def test_getframe():
 
     _getframe = sys._getframe
 
-    for val in [None, 0, 1L, str, False]:
+    for val in [None, 0, 1, str, False]:
         sys._getframe = val
         AreEqual(sys._getframe, val)
 
@@ -128,7 +128,7 @@ def test_getframe():
     
     AreEqual(x.abc.f_locals['abc'], x.abc)
 
-    for i in xrange(2):
+    for i in range(2):
         x = _getframe(0)
         y = _getframe(0)
         AreEqual(id(x), id(y))
@@ -142,7 +142,7 @@ def test_getframe():
     
     def verify(code, is_defined):
         d = { 'get_odd_code' : get_odd_code }
-        exec code in d
+        exec(code, d)
         AreEqual('defined' in d, is_defined)
 
     class x(object):
@@ -162,7 +162,7 @@ def test_getframe():
         verify(x.abc, True)
 
     d = {'get_odd_code' : get_odd_code}
-    exec 'defined=42\nabc = get_odd_code()\n' in d
+    exec('defined=42\nabc = get_odd_code()\n', d)
     verify(d['abc'], True)
     
     # bug 24243, code objects should never be null
@@ -190,11 +190,12 @@ def test_getframe():
     AreEqual(method_id, found_id)
 
     # verify thread safety of sys.settrace
-    import thread
+    import _thread
     import time
-    global done
+    global done, failed
     done = 0
-    lock = thread.allocate_lock()
+    failed = False
+    lock = _thread.allocate_lock()
     def starter(events):
         def tracer(*args):
             events.append(args[1])
@@ -204,27 +205,32 @@ def test_getframe():
         def f3(): time.sleep(.5)
         
         def test_thread():
-            global done
-            sys.settrace(tracer)
-            f1()
-            sys.settrace(None)
-            f2()
-            sys.settrace(tracer)
-            f3()
+            global done, failed
+            try:
+                sys.settrace(tracer)
+                f1()
+                sys.settrace(None)
+                f2()
+                sys.settrace(tracer)
+                f3()
+            except:
+                failed = True
             with lock: done += 1
             
-        thread.start_new_thread(test_thread, ())
+        _thread.start_new_thread(test_thread, ())
     
     lists = []
-    for i in xrange(10):
+    for i in range(10):
         cur_list = []
         starter(cur_list)
         lists.append(cur_list)
     
     while done != 10:
        pass    
-    for i in xrange(1, 10):
+    for i in range(1, 10):
         AreEqual(lists[i-1], lists[i])
+
+    Assert(not failed)
 
     # verify we report <module> for top-level code
     frame = sys._getframe()
@@ -315,29 +321,56 @@ print final"""
             Assert('-> print final\n' in out)
             Assert('(Pdb) ' in out)
         finally:
-            nt.unlink('temp.py')
+            os.unlink('temp.py')
 
-
+def test_call_tracing():
+    def f(i):
+        return i * 2
+    def g():
+        pass
+        
+    # outside of a traceback
+    AreEqual(10, sys.call_tracing(f, (5, )))
+    
+    # inside of a traceback
+    log = []
+    def thandler(frm, evt, pl):
+        if evt == 'call':
+            log.append(frm.f_code.co_name)
+            if log[-1] == 'g':
+                sys.call_tracing(f, (5, ))
+        return thandler
+        
+    sys.settrace(thandler)
+    g()
+    sys.settrace(None)
+    
+    AreEqual(log, ['g', 'f'])
+            
 @skip("win32")
 def test_getrefcount():
     # getrefcount
-    Assert(not hasattr(sys, 'getrefcount'))
+    Assert(hasattr(sys, 'getrefcount'))
 
 @skip("win32 silverlight")
 def test_version():
     import re
-    #E.g., 2.5.0 (IronPython 2.0 Alpha (2.0.0.800) on .NET 2.0.50727.1433)
-    regex = "^\d\.\d\.\d \(IronPython \d\.\d(\.\d)? ((Alpha \d+ )|(Beta \d+ )|(RC \d+ )|())((DEBUG )|()|(\d?))\(\d\.\d\.\d{1,8}\.\d{1,8}\) on \.NET \d(\.\d{1,5}){3}\)$"
-    Assert(re.match(regex, sys.version) != None)
+    # 2.7.5 (IronPython 2.7.5 (2.7.5.0) on .NET 4.0.30319.18444 (32-bit))
+    # 2.7.6a0 (IronPython 2.7.6a0 DEBUG (2.7.6.0) on .NET 4.0.30319.18444 (32-bit))
+    # 2.7.6 (IronPython 2.7.6.3 (2.7.6.3) on .NET 4.0.30319.42000 (32-bit))
+    regex = "^\d\.\d\.\d((RC\d+ )|(a\d+ )|(b\d+ )|( ))\(IronPython \d\.\d(\.\d)?(\.\d)?((RC\d+ )|(a\d+ )|(b\d+ )|( ))?((DEBUG )|()|(\d?))\(\d\.\d\.\d{1,8}\.\d{1,8}\) on ((\.NET)|(Mono)) \d(\.\d{1,5}){3} \(((32)|(64))-bit\)\)$"
+    Assert(re.match(regex, sys.version, re.IGNORECASE) != None)
 
 def test_winver():
     import re
     #E.g., "2.5"
     Assert(re.match("^\d\.\d$", sys.winver) != None)
 
+@skip('cli') # BUG, ps1 is not set in non interactive mode
 def test_ps1():
     Assert(not hasattr(sys, "ps1"))
 
+@skip('cli') # BUG, ps2 is not set in non interactive mode
 def test_ps2():
     Assert(not hasattr(sys, "ps2"))    
 
@@ -416,52 +449,12 @@ f()
         import cp24381
     finally:
         sys.settrace(orig_sys_trace_func)
-        nt.unlink(cp24381_file_name)
+        os.unlink(cp24381_file_name)
 
     AreEqual(CP24381_MESSAGES,
              ['call', None, 'line', None, 'line', None, 'line', None, 'line', 
               None, 'line', None, 'call', None, 'line', None, 'return', None, 
               'return', None])
-
-def test_cp30129():
-    frames = []
-    def f(*args):
-        if args[1] == 'call':
-            frames.append(args[0])
-            if len(frames) == 3:
-                res.append('setting' + str(frames[1].f_lineno))
-                frames[1].f_lineno = 447
-        return f
-    
-    
-    import sys
-    sys.settrace(f)
-    
-    res = []
-    def a():
-        res.append('foo')
-        res.append('bar')
-        res.append('baz')
-    
-    def b():
-        a()
-        res.append('x')
-        res.append('y')
-        res.append('z')
-    
-    def c():
-        b()
-        res.append('hello')
-        res.append('goodbye')
-        res.append('see ya')
-    
-    
-    c()
-    
-    AreEqual(res, ['setting447', 'foo', 'bar', 'baz', 'x', 'y', 'z', 'hello', 'goodbye', 'see ya'])
-    
-    sys.settrace(None)
-    
 
 def test_cp30130():
     def f(frame, event, arg):
@@ -484,28 +477,37 @@ def test_cp30130():
     exc_value = ex[1]
     tb_value = ex[2]
     
-    print tb_value
+    print(tb_value)
     import traceback
     Assert(''.join(traceback.format_exception(exc_type, exc_value, tb_value)).find('line') != -1)
     
     sys.settrace(None)
 
+def test_getrefcount():
+    import warnings
+    with warnings.catch_warnings(record = True) as w:
+        count = sys.getrefcount(None)
+        
+    AreNotEqual(0, count)
+    Assert(w)
+    Assert('dummy result' in str(w[0].message))
+    
 #--MAIN------------------------------------------------------------------------    
 
 testDelGetFrame = "Test_GetFrame" in sys.argv
 if testDelGetFrame:
-    print 'Calling test_getframe()...'
+    print('Calling test_getframe()...')
     test_getframe()
-    print 'Calling test_cp24242()...'
+    print('Calling test_cp24242()...')
     test_cp24242()
 else:
     run_test(__name__)
     # this is a destructive test, run it in separate instance of IronPython
-    if not is_silverlight and sys.platform!="win32":
+    if is_cli:
         from iptest.process_util import launch_ironpython_changing_extensions
         AreEqual(0, launch_ironpython_changing_extensions(__file__, ["-X:FullFrames"], [], ("Test_GetFrame",)))
     elif sys.platform == "win32":
-        print 'running test_getframe on cpython'
+        print('running test_getframe on cpython')
         import subprocess
         subprocess.check_call([sys.executable, __file__, "Test_GetFrame"])
         

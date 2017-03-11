@@ -18,7 +18,7 @@ is_cli = sys.platform == "cli"
 
 list_int        = [-2, 0, 2, 5]
 list_float      = [-10.5, 0.0, 2.0, 2.1, 2.9, 50.001]
-list_long       = [-2L, 0L, 5L, 123456789L]
+list_long       = [-2, 0, 5, 123456789]
 list_bool       = [True, False]
 
 list_complex    = [2+0j, -1-3.5j, 4+0j, 4.0+0j, 3-2j, 0j]
@@ -37,7 +37,7 @@ list_mystr      = [mystr(x)     for x in ["world", "b", "bc", '']]
 list_mycomplex  = [mycomplex(x) for x in [2, 0, 2+0j, 3-2j]] 
 
 list_set        = [ set([1, 2]), set(range(5)), set([3, 5]) ]
-list_frozenset  = [ frozenset([1, 2]), frozenset(range(5)), frozenset([3, 5]) ]
+list_frozenset  = [ frozenset([1, 2]), frozenset(list(range(5))), frozenset([3, 5]) ]
 list_dict       = [ {}, {5:2}, {1:2, 5:2}, {4:3, 3:4}, {1:2, 5:2, 7:9} ]
 
 def merge_lists(*args) :
@@ -105,7 +105,8 @@ def get_enums():
     if is_cli:     
         import clr
         import sys
-        clr.AddReferenceToFileAndPath(sys.exec_prefix + "/IronPythonTest.dll")
+        from iptest.file_util import path_combine
+        clr.AddReferenceToFileAndPath(path_combine(sys.exec_prefix, "IronPythonTest.dll"))
         from IronPythonTest import DaysByte, DaysInt, DaysLong, DaysSByte, DaysShort, DaysUInt, DaysULong, DaysUShort
         list_enum_byte      = [DaysByte.None]
         list_enum_sbyte     = [DaysSByte.Mon]

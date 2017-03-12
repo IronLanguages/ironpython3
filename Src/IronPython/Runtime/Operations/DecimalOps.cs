@@ -13,6 +13,7 @@
  *
  * ***************************************************************************/
 
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Runtime;
 
@@ -31,6 +32,10 @@ namespace IronPython.Runtime.Operations {
 
         public static bool __bool__(decimal x) {
             return x != 0;
+        }
+
+        public static string __repr__(decimal x) {
+            return x.ToString(CultureInfo.InvariantCulture);
         }
 
         [SpecialName]

@@ -261,7 +261,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 text = ((Bytes)source).ToString();
             else 
                 // cpython accepts either AST or readable buffer object
-                throw PythonOps.TypeError("srouce can be either AST or string, actual argument: {0}", source.GetType());
+                throw PythonOps.TypeError("source can be either AST or string, actual argument: {0}", source.GetType());
             
             if (text.IndexOf('\0') != -1) {
                 throw PythonOps.TypeError("compile() expected string without null bytes");

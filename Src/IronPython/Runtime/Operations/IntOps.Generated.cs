@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using IronPython.Runtime.Types;
 using Microsoft.Scripting.Runtime;
@@ -98,6 +99,9 @@ namespace IronPython.Runtime.Operations {
             return (x != 0);
         }
 
+        public static string __repr__(SByte x) {
+            return x.ToString(CultureInfo.InvariantCulture);
+        }
         public static SByte __trunc__(SByte x) {
             return x;
         }
@@ -327,6 +331,9 @@ namespace IronPython.Runtime.Operations {
             return (x != 0);
         }
 
+        public static string __repr__(Byte x) {
+            return x.ToString(CultureInfo.InvariantCulture);
+        }
         public static Byte __trunc__(Byte x) {
             return x;
         }
@@ -637,6 +644,9 @@ namespace IronPython.Runtime.Operations {
             return (x != 0);
         }
 
+        public static string __repr__(Int16 x) {
+            return x.ToString(CultureInfo.InvariantCulture);
+        }
         public static Int16 __trunc__(Int16 x) {
             return x;
         }
@@ -870,6 +880,9 @@ namespace IronPython.Runtime.Operations {
             return (x != 0);
         }
 
+        public static string __repr__(UInt16 x) {
+            return x.ToString(CultureInfo.InvariantCulture);
+        }
         public static UInt16 __trunc__(UInt16 x) {
             return x;
         }
@@ -1151,6 +1164,9 @@ namespace IronPython.Runtime.Operations {
             return (x != 0);
         }
 
+        public static string __repr__(Int32 x) {
+            return x.ToString(CultureInfo.InvariantCulture);
+        }
         public static Int32 __trunc__(Int32 x) {
             return x;
         }
@@ -1361,6 +1377,9 @@ namespace IronPython.Runtime.Operations {
             return (x != 0);
         }
 
+        public static string __repr__(UInt32 x) {
+            return x.ToString(CultureInfo.InvariantCulture);
+        }
         public static UInt32 __trunc__(UInt32 x) {
             return x;
         }
@@ -1674,6 +1693,9 @@ namespace IronPython.Runtime.Operations {
             return (x != 0);
         }
 
+        public static string __repr__(Int64 x) {
+            return x.ToString(CultureInfo.InvariantCulture);
+        }
         public static Int64 __trunc__(Int64 x) {
             return x;
         }
@@ -1914,6 +1936,9 @@ namespace IronPython.Runtime.Operations {
             return (x != 0);
         }
 
+        public static string __repr__(UInt64 x) {
+            return x.ToString(CultureInfo.InvariantCulture);
+        }
         public static UInt64 __trunc__(UInt64 x) {
             return x;
         }

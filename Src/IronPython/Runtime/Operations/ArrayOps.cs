@@ -123,6 +123,12 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
+        public static object GetItem(Array data, PythonTuple tuple) {
+            if (data == null) throw PythonOps.TypeError("expected Array, got None");
+            return GetItem(data, tuple.ToArray());
+        }
+
+        [SpecialName]
         public static object GetItem(Array data, params object[] indices) {
             if (indices == null || indices.Length < 1) throw PythonOps.TypeError("__getitem__ requires at least 1 parameter");
 

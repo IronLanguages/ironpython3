@@ -156,7 +156,7 @@ namespace IronPython.Modules {
                 release(context);
             }
             
-            public bool acquire([DefaultParameterValue(true)]bool blocking, [DefaultParameterValue(-1)]int timeout) {
+            public bool acquire(bool blocking=true, int timeout=-1) {
                 // TODO: implement timeout
                 for (; ; ) {
                     if (Interlocked.CompareExchange<Thread>(ref curHolder, Thread.CurrentThread, null) == null) {

@@ -48,9 +48,9 @@ is given, must be a number between 1 and 9.
 
             public void __init__(CodeContext context,
                 string filename,
-                [DefaultParameterValue("r")]string mode,
-                [DefaultParameterValue(0)]int buffering,
-                [DefaultParameterValue(DEFAULT_COMPRESSLEVEL)]int compresslevel) {
+                string mode="r",
+                int buffering=0,
+                int compresslevel=DEFAULT_COMPRESSLEVEL) {
 
                 var pythonContext = PythonContext.GetContext(context);
 
@@ -155,7 +155,7 @@ negative, although many platforms allow seeking beyond the end of a file).
 Note that seeking of bz2 files is emulated, and depending on the parameters
 the operation may be extremely slow.
 ")]
-            public new void seek(long offset, [DefaultParameterValue(0)]int whence) {
+            public new void seek(long offset, int whence=0) {
                 throw new NotImplementedException();
 
                 //if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");

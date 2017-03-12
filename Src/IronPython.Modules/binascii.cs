@@ -183,7 +183,7 @@ namespace IronPython.Modules {
         }
 
         [Documentation("crc32(string[, value]) -> string\n\nComputes a CRC (Cyclic Redundancy Check) checksum of string.")]
-        public static int crc32(string buffer, [DefaultParameterValue(0)] int baseValue) {
+        public static int crc32(string buffer, int baseValue=0) {
             byte[] data = buffer.MakeByteArray();
             uint result = crc32(data, 0, data.Length, unchecked((uint)baseValue));
             return unchecked((int)result);
@@ -197,7 +197,7 @@ namespace IronPython.Modules {
         }
 
         [Documentation("crc32(byte_array[, value]) -> string\n\nComputes a CRC (Cyclic Redundancy Check) checksum of byte_array.")]
-        public static int crc32(byte[] buffer, [DefaultParameterValue(0)] int baseValue) {
+        public static int crc32(byte[] buffer, int baseValue=0) {
             uint result = crc32(buffer, 0, buffer.Length, unchecked((uint)baseValue));
             return unchecked((int)result);
         }

@@ -64,11 +64,11 @@ namespace IronPython.Modules {
                 : base(context) {
             }
 
-            public BytesIO(CodeContext/*!*/ context, [DefaultParameterValue(null)]object initial_bytes)
+            public BytesIO(CodeContext/*!*/ context, object initial_bytes=null)
                 : base(context) {
             }
 
-            public void __init__([DefaultParameterValue(null)]object initial_bytes) {
+            public void __init__(object initial_bytes=null) {
                 if (Object.ReferenceEquals(_data, null)) {
                     _data = new byte[DEFAULT_BUF_SIZE];
                 }
@@ -131,7 +131,7 @@ namespace IronPython.Modules {
                 + "If the size argument is negative, read until EOF is reached.\n"
                 + "Return an empty string at EOF."
                 )]
-            public override object read(CodeContext/*!*/ context, [DefaultParameterValue(null)]object size) {
+            public override object read(CodeContext/*!*/ context, object size=null) {
                 _checkClosed();
                 int sz = GetInt(size, -1);
 
@@ -215,11 +215,11 @@ namespace IronPython.Modules {
                 + "number of bytes to return (an incomplete line may be returned then).\n"
                 + "Return an empty string at EOF."
                 )]
-            public override object readline(CodeContext/*!*/ context, [DefaultParameterValue(-1)]int limit) {
+            public override object readline(CodeContext/*!*/ context, int limit=-1) {
                 return readline(limit);
             }
 
-            private Bytes readline([DefaultParameterValue(-1)]int size) {
+            private Bytes readline(int size=-1) {
                 _checkClosed();
                 if (_pos >= _length || size == 0) {
                     return Bytes.Empty;
@@ -254,7 +254,7 @@ namespace IronPython.Modules {
                 + "The optional size argument, if given, is an approximate bound on the\n"
                 + "total number of bytes in the lines returned."
                 )]
-            public override List readlines([DefaultParameterValue(null)]object hint) {
+            public override List readlines(object hint=null) {
                 _checkClosed();
                 int size = GetInt(hint, -1);
 
@@ -279,7 +279,7 @@ namespace IronPython.Modules {
                 + "     2  End of stream - pos usually negative.\n"
                 + "Returns the new absolute position."
                 )]
-            public BigInteger seek(int pos, [DefaultParameterValue(0)]int whence) {
+            public BigInteger seek(int pos, int whence=0) {
                 _checkClosed();
 
                 switch (whence) {
@@ -300,7 +300,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public BigInteger seek(double pos, [DefaultParameterValue(0)]int whence) {
+            public BigInteger seek(double pos, int whence=0) {
                 throw PythonOps.TypeError("'float' object cannot be interpreted as an index");
             }
 
@@ -344,7 +344,7 @@ namespace IronPython.Modules {
                 return (BigInteger)size;
             }
 
-            public override BigInteger truncate(CodeContext/*!*/ context, [DefaultParameterValue(null)]object size) {
+            public override BigInteger truncate(CodeContext/*!*/ context, object size=null) {
                 if (size == null) {
                     return truncate();
                 }

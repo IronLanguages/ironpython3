@@ -72,7 +72,7 @@ namespace IronPython.Modules {
             + "See documentation for Pickler() for a description the file, protocol, and\n"
             + "(deprecated) bin parameters."
             )]
-        public static void dump(CodeContext/*!*/ context, object obj, object file, [DefaultParameterValue(null)] object protocol, [DefaultParameterValue(null)] object bin) {
+        public static void dump(CodeContext/*!*/ context, object obj, object file, object protocol=null, object bin=null) {
             PicklerObject/*!*/ pickler = new PicklerObject(context, file, protocol, bin);
             pickler.dump(context, obj);
         }
@@ -83,7 +83,7 @@ namespace IronPython.Modules {
             + "See the documentation for Pickler() for a description of the protocol and\n"
             + "(deprecated) bin parameters."
             )]
-        public static string dumps(CodeContext/*!*/ context, object obj, [DefaultParameterValue(null)] object protocol, [DefaultParameterValue(null)] object bin) {
+        public static string dumps(CodeContext/*!*/ context, object obj, object protocol=null, object bin=null) {
             //??? possible perf enhancement: use a C# TextWriter-backed IFileOutput and
             // thus avoid Python call overhead. Also do similar thing for LoadFromString.
             var stringIO = new StringBuilderOutput();
@@ -384,7 +384,7 @@ namespace IronPython.Modules {
 
         #region Pickler object
 
-        public static PicklerObject/*!*/ Pickler(CodeContext/*!*/ context, [DefaultParameterValue(null)]object file, [DefaultParameterValue(null)]object protocol, [DefaultParameterValue(null)]object bin) {
+        public static PicklerObject/*!*/ Pickler(CodeContext/*!*/ context, object file=null, object protocol=null, object bin=null) {
             return new PicklerObject(context, file, protocol, bin);
         }
 

@@ -447,7 +447,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             dictIterator = null;
-            if (self is PythonDictionary || self is PythonDictionary) {
+            if (self is PythonDictionary) {
                 dictIterator = PythonOps.Invoke(context, self, "iteritems", ArrayUtils.EmptyObjects);
             }
 

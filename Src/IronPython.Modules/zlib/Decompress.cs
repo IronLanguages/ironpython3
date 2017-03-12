@@ -79,7 +79,7 @@ Call the flush() method to clear these buffers.
 If the max_length parameter is specified then the return value will be
 no longer than max_length.  Unconsumed input data will be stored in
 the unconsumed_tail attribute.")]
-        public string decompress([BytesConversion]IList<byte> value, [DefaultParameterValue(0)]int max_length)
+        public string decompress([BytesConversion]IList<byte> value, int max_length=0)
         {
             if(max_length < 0) throw new ArgumentException("max_length must be greater than zero");
 
@@ -131,7 +131,7 @@ decompressed data. length, if given, is the initial size of the
 output buffer.
 
 The decompressor object can no longer be used after this call.")]
-        public string flush([DefaultParameterValue(ZlibModule.DEFAULTALLOC)]int length)
+        public string flush(int length=ZlibModule.DEFAULTALLOC)
         {
             if(length < 1)
                 throw PythonOps.ValueError("length must be greater than 0.");

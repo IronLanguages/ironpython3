@@ -1134,7 +1134,7 @@ namespace IronPython.Runtime {
         // 
         // Seems C-Python allows "b|t" at the beginning too.
         // 
-        public void __init__(CodeContext/*!*/ context, string name, [DefaultParameterValue("r")]string mode, [DefaultParameterValue(-1)]int buffering) {
+        public void __init__(CodeContext/*!*/ context, string name, string mode="r", int buffering=-1) {
             FileShare fshare = FileShare.ReadWrite;
             FileMode fmode;
             FileAccess faccess;

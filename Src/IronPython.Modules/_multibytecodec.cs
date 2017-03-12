@@ -34,7 +34,7 @@ namespace IronPython.Modules {
                 _codec = GetCodec(this, context);
             }
 
-            public object decode(CodeContext/*!*/ context, string @string, [DefaultParameterValue("strict")]string errors) {
+            public object decode(CodeContext/*!*/ context, string @string, string errors="strict") {
                 return _codec.decode(context, @string, errors)[0];
             }
 
@@ -57,7 +57,7 @@ namespace IronPython.Modules {
                 _codec = GetCodec(this, context);
             }
 
-            public PythonTuple encode(CodeContext/*!*/ context, string unicode, [DefaultParameterValue("strict")]string errors) {
+            public PythonTuple encode(CodeContext/*!*/ context, string unicode, string errors="strict") {
                 return _codec.encode(context, unicode, errors);
             }
 
@@ -77,7 +77,7 @@ namespace IronPython.Modules {
             private readonly object _stream;
             private readonly string _errors;
 
-            public MultibyteStreamReader(CodeContext context, object stream, [DefaultParameterValue("strict")]string errors) {
+            public MultibyteStreamReader(CodeContext context, object stream, string errors="strict") {
                 _codec = GetCodec(this, context);
                 _stream = stream;
                 _errors = errors;
@@ -120,7 +120,7 @@ namespace IronPython.Modules {
             private readonly object _stream;
             private readonly string _errors;
 
-            public MultibyteStreamWriter(CodeContext context, object stream, [DefaultParameterValue("strict")]string errors) {
+            public MultibyteStreamWriter(CodeContext context, object stream, string errors="strict") {
                 _codec = GetCodec(this, context);
                 _stream = stream;
                 _errors = errors;
@@ -169,14 +169,14 @@ namespace IronPython.Modules {
             _encName = encName;
         }
 
-        public PythonTuple encode(CodeContext/*!*/ context, string unicode, [DefaultParameterValue("strict")]string errors) {
+        public PythonTuple encode(CodeContext/*!*/ context, string unicode, string errors="strict") {
             return PythonTuple.MakeTuple(
                 StringOps.DoEncode(context, unicode, errors, _encName, _encoding),
                 unicode.Length
             );
         }
 
-        public PythonTuple decode(CodeContext/*!*/ context, string @string, [DefaultParameterValue("strict")]string errors) {
+        public PythonTuple decode(CodeContext/*!*/ context, string @string, string errors="strict") {
             return PythonTuple.MakeTuple(
                 StringOps.DoDecode(context, @string, errors, _encName, _encoding),
                 @string.Length

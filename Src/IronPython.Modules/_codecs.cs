@@ -167,7 +167,7 @@ namespace IronPython.Modules {
             return PythonTuple.MakeTuple(res.ToString(), res.Length);
         }
 
-        public static object charmap_encode([BytesConversion]string input, [DefaultParameterValue("strict")]string errors, [DefaultParameterValue(null)]IDictionary<object, object> map) {
+        public static object charmap_encode([BytesConversion]string input, string errors="strict", IDictionary<object, object> map=null) {
             return CharmapDecodeWorker(input, errors, map, false);
         }
 
@@ -207,7 +207,7 @@ namespace IronPython.Modules {
             return PythonOps.GetIndex(context, PythonCalls.Call(context, t[EncoderIndex], obj, errors), 0);
         }
 
-        public static object escape_decode(string text, [DefaultParameterValue("strict")]string errors) {
+        public static object escape_decode(string text, string errors="strict") {
             StringBuilder res = new StringBuilder();
             for (int i = 0; i < text.Length; i++) {
 
@@ -276,7 +276,7 @@ namespace IronPython.Modules {
             return false;            
         }
 
-        public static PythonTuple/*!*/ escape_encode(string text, [DefaultParameterValue("strict")]string errors) {
+        public static PythonTuple/*!*/ escape_encode(string text, string errors="strict") {
             StringBuilder res = new StringBuilder();
             for (int i = 0; i < text.Length; i++) {
                 switch (text[i]) {
@@ -333,14 +333,14 @@ namespace IronPython.Modules {
 #if FEATURE_ENCODING
         #region MBCS Functions
 
-        public static PythonTuple mbcs_decode(CodeContext/*!*/ context, string input, [DefaultParameterValue("strict")]string errors, [DefaultParameterValue(false)]bool ignored) {
+        public static PythonTuple mbcs_decode(CodeContext/*!*/ context, string input, string errors="strict", bool ignored=false) {
             return PythonTuple.MakeTuple(
                 StringOps.decode(context, input, Encoding.Default, errors),
                 Builtin.len(input)
             );
         }
 
-        public static PythonTuple mbcs_encode(CodeContext/*!*/ context, string input, [DefaultParameterValue("strict")]string errors) {
+        public static PythonTuple mbcs_encode(CodeContext/*!*/ context, string input, string errors="strict") {
             return PythonTuple.MakeTuple(
                 StringOps.encode(context, input, Encoding.Default, errors),
                 Builtin.len(input)
@@ -350,14 +350,14 @@ namespace IronPython.Modules {
         #endregion
 #endif
 
-        public static PythonTuple raw_unicode_escape_decode(CodeContext/*!*/ context, object input, [DefaultParameterValue("strict")]string errors) {
+        public static PythonTuple raw_unicode_escape_decode(CodeContext/*!*/ context, object input, string errors="strict") {
             return PythonTuple.MakeTuple(
                 StringOps.decode(context, Converter.ConvertToString(input), "raw-unicode-escape", errors),
                 Builtin.len(input)
             );
         }
 
-        public static PythonTuple raw_unicode_escape_encode(CodeContext/*!*/ context, object input, [DefaultParameterValue("strict")]string errors) {
+        public static PythonTuple raw_unicode_escape_encode(CodeContext/*!*/ context, object input, string errors="strict") {
             return PythonTuple.MakeTuple(
                 StringOps.encode(context, Converter.ConvertToString(input), "raw-unicode-escape", errors),
                 Builtin.len(input)

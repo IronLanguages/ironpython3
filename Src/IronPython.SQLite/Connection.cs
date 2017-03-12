@@ -92,12 +92,12 @@ namespace IronPython.SQLite
             }
 
             public Connection(string database,
-                [Optional][DefaultParameterValue(0.0)]double timeout,
-                [Optional][DefaultParameterValue(0)]int detect_types,
-                [Optional][DefaultParameterValue((string)null)]string isolation_level,
-                [Optional][DefaultParameterValue(true)]bool check_same_thread,
-                [Optional][DefaultParameterValue(null)]object factory,
-                [Optional][DefaultParameterValue(0)]int cached_statements)
+                double timeout=0.0,
+                int detect_types=0,
+                string isolation_level=null,
+                bool check_same_thread=true,
+                object factory=null,
+                int cached_statements=0)
             {
                 this.text_factory = typeof(string);
 
@@ -218,7 +218,7 @@ namespace IronPython.SQLite
             }
 
             [Documentation("Return a cursor for the connection.")]
-            public object cursor(CodeContext context, [Optional][DefaultParameterValue(null)]object factory)
+            public object cursor(CodeContext context, object factory=null)
             {
                 checkThread(); checkConnection();
 

@@ -51,12 +51,12 @@ namespace IronPython.SQLite
 
         public static object connect(CodeContext context,
             string database,
-            [Optional][DefaultParameterValue(0.0)]double timeout,
-            [Optional][DefaultParameterValue(0)]int detect_types,
-            [Optional][DefaultParameterValue((string)null)]string isolation_level,
-            [Optional][DefaultParameterValue(true)]bool check_same_thread,
-            [Optional][DefaultParameterValue(null)]object factory,
-            [Optional][DefaultParameterValue(0)]int cached_statements)
+            double timeout=0.0,
+            int detect_types=0,
+            string isolation_level=null,
+            bool check_same_thread=true,
+            object factory=null,
+            int cached_statements=0)
         {
             if(factory == null)
                 return new Connection(database, timeout, detect_types, isolation_level, check_same_thread, factory, cached_statements);

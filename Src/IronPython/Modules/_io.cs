@@ -156,18 +156,18 @@ namespace IronPython.Modules {
             }
 
             [PythonHidden]
-            public virtual Bytes peek(CodeContext/*!*/ context, [DefaultParameterValue(0)]int length) {
+            public virtual Bytes peek(CodeContext/*!*/ context, int length=0) {
                 _checkClosed();
                 throw AttributeError("peek");
             }
 
             [PythonHidden]
-            public virtual object read(CodeContext/*!*/ context, [DefaultParameterValue(null)]object length) {
+            public virtual object read(CodeContext/*!*/ context, object length=null) {
                 throw AttributeError("read");
             }
 
             [PythonHidden]
-            public virtual Bytes read1(CodeContext/*!*/ context, [DefaultParameterValue(0)]int length) {
+            public virtual Bytes read1(CodeContext/*!*/ context, int length=0) {
                 throw AttributeError("read1");
             }
 
@@ -201,7 +201,7 @@ namespace IronPython.Modules {
                 return Bytes.Concat(res, count);
             }
 
-            public object readline(CodeContext/*!*/ context, [DefaultParameterValue(null)]object limit) {
+            public object readline(CodeContext/*!*/ context, object limit=null) {
                 return readline(context, GetInt(limit, -1));
             }
 
@@ -209,7 +209,7 @@ namespace IronPython.Modules {
                 return readlines(null);
             }
 
-            public virtual List readlines([DefaultParameterValue(null)]object hint) {
+            public virtual List readlines(object hint=null) {
                 int size = GetInt(hint, -1);
 
                 List res = new List();
@@ -260,7 +260,7 @@ namespace IronPython.Modules {
                 return seek(context, 0, 1);
             }
 
-            public virtual BigInteger truncate(CodeContext/*!*/ context, [DefaultParameterValue(null)]object pos) {
+            public virtual BigInteger truncate(CodeContext/*!*/ context, object pos=null) {
                 throw UnsupportedOperation(context, "truncate");
             }
 
@@ -428,7 +428,7 @@ namespace IronPython.Modules {
 
             #region Public API
 
-            public override object read(CodeContext/*!*/ context, [DefaultParameterValue(null)]object size) {
+            public override object read(CodeContext/*!*/ context, object size=null) {
                 int sizeInt = GetInt(size, -1);
                 if (sizeInt < 0) {
                     return readall(context);
@@ -495,7 +495,7 @@ namespace IronPython.Modules {
                 throw UnsupportedOperation(context, "detach");
             }
 
-            public override object read(CodeContext/*!*/ context, [DefaultParameterValue(null)]object length) {
+            public override object read(CodeContext/*!*/ context, object length=null) {
                 throw UnsupportedOperation(context, "read");
             }
 
@@ -573,11 +573,11 @@ namespace IronPython.Modules {
                 throw UnsupportedOperation(context, "read");
             }
 
-            public override object readline(CodeContext/*!*/ context, [DefaultParameterValue(-1)]int limit) {
+            public override object readline(CodeContext/*!*/ context, int limit=-1) {
                 throw UnsupportedOperation(context, "readline");
             }
 
-            public override BigInteger truncate(CodeContext/*!*/ context, [DefaultParameterValue(null)]object pos) {
+            public override BigInteger truncate(CodeContext/*!*/ context, object pos=null) {
                 throw UnsupportedOperation(context, "truncate");
             }
 
@@ -605,7 +605,7 @@ namespace IronPython.Modules {
             private Bytes _readBuf;
             private int _readBufPos;
 
-            internal static BufferedReader Create(CodeContext/*!*/ context, object raw, [DefaultParameterValue(DEFAULT_BUFFER_SIZE)]int buffer_size) {
+            internal static BufferedReader Create(CodeContext/*!*/ context, object raw, int buffer_size=DEFAULT_BUFFER_SIZE) {
                 var res = new BufferedReader(context, raw, buffer_size);
                 res.__init__(context, raw, buffer_size);
                 return res;
@@ -614,14 +614,14 @@ namespace IronPython.Modules {
             public BufferedReader(
                 CodeContext/*!*/ context,
                 object raw,
-                [DefaultParameterValue(DEFAULT_BUFFER_SIZE)]int buffer_size
+                int buffer_size=DEFAULT_BUFFER_SIZE
             ) : base(context) {
             }
 
             public void __init__(
                 CodeContext/*!*/ context,
                 object raw,
-                [DefaultParameterValue(DEFAULT_BUFFER_SIZE)]int buffer_size
+                int buffer_size=DEFAULT_BUFFER_SIZE
             ) {
                 this.raw = raw;
 
@@ -656,7 +656,7 @@ namespace IronPython.Modules {
 
             #region _BufferedIOMixin
 
-            public override BigInteger truncate(CodeContext/*!*/ context, [DefaultParameterValue(null)]object pos) {
+            public override BigInteger truncate(CodeContext/*!*/ context, object pos=null) {
                 if (_rawIO != null) {
                     return _rawIO.truncate(context, pos);
                 }
@@ -753,7 +753,7 @@ namespace IronPython.Modules {
 
             #endregion
 
-            public override object read(CodeContext/*!*/ context, [DefaultParameterValue(null)]object length) {
+            public override object read(CodeContext/*!*/ context, object length=null) {
                 int len = GetInt(length, -1);
 
                 if (len < -1) {
@@ -851,7 +851,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public override Bytes peek(CodeContext/*!*/ context, [DefaultParameterValue(0)]int length) {
+            public override Bytes peek(CodeContext/*!*/ context, int length=0) {
                 _checkClosed();
 
                 if (length <= 0 || length > _bufSize) {
@@ -885,7 +885,7 @@ namespace IronPython.Modules {
                 return _readBuf;
             }
 
-            public override Bytes read1(CodeContext/*!*/ context, [DefaultParameterValue(0)]int length) {
+            public override Bytes read1(CodeContext/*!*/ context, int length=0) {
                 if (length == 0) {
                     return Bytes.Empty;
                 } else if (length < 0) {
@@ -987,8 +987,8 @@ namespace IronPython.Modules {
 
             internal static BufferedWriter Create(CodeContext/*!*/ context,
                 object raw,
-                [DefaultParameterValue(DEFAULT_BUFFER_SIZE)]int buffer_size,
-                [DefaultParameterValue(null)]object max_buffer_size) {
+                int buffer_size=DEFAULT_BUFFER_SIZE,
+                object max_buffer_size=null) {
 
                 var res = new BufferedWriter(context, raw, buffer_size, max_buffer_size);
                 res.__init__(context, raw, buffer_size, max_buffer_size);
@@ -998,8 +998,8 @@ namespace IronPython.Modules {
             public BufferedWriter(
                 CodeContext/*!*/ context,
                 object raw,
-                [DefaultParameterValue(DEFAULT_BUFFER_SIZE)]int buffer_size,
-                [DefaultParameterValue(null)]object max_buffer_size
+                int buffer_size=DEFAULT_BUFFER_SIZE,
+                object max_buffer_size=null
             )
                 : base(context) {
             }
@@ -1007,8 +1007,8 @@ namespace IronPython.Modules {
             public void __init__(
                 CodeContext/*!*/ context,
                 object raw,
-                [DefaultParameterValue(DEFAULT_BUFFER_SIZE)]int buffer_size,
-                [DefaultParameterValue(null)]object max_buffer_size
+                int buffer_size=DEFAULT_BUFFER_SIZE,
+                object max_buffer_size=null
             ) {
                 if (max_buffer_size != null) {
                     PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "max_buffer_size is deprecated");
@@ -1173,7 +1173,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public override BigInteger truncate(CodeContext/*!*/ context, [DefaultParameterValue(null)]object pos) {
+            public override BigInteger truncate(CodeContext/*!*/ context, object pos=null) {
                 lock (this) {
                     FlushNoLock(context);
                     if (pos == null) {
@@ -1302,8 +1302,8 @@ namespace IronPython.Modules {
 
             internal static BufferedRandom Create(CodeContext/*!*/ context,
                 _IOBase raw,
-                [DefaultParameterValue(DEFAULT_BUFFER_SIZE)]int buffer_size,
-                [DefaultParameterValue(null)]object max_buffer_size) {
+                int buffer_size=DEFAULT_BUFFER_SIZE,
+                object max_buffer_size=null) {
                 var res = new BufferedRandom(context, raw, buffer_size, max_buffer_size);
                 res.__init__(context, raw, buffer_size, max_buffer_size);
                 return res;
@@ -1312,16 +1312,16 @@ namespace IronPython.Modules {
             public BufferedRandom(
                 CodeContext/*!*/ context,
                 _IOBase raw,
-                [DefaultParameterValue(DEFAULT_BUFFER_SIZE)]int buffer_size,
-                [DefaultParameterValue(null)]object max_buffer_size
+                int buffer_size=DEFAULT_BUFFER_SIZE,
+                object max_buffer_size=null
             ) : base(context) {
             }
 
             public void __init__(
                 CodeContext/*!*/ context,
                 _IOBase raw,
-                [DefaultParameterValue(DEFAULT_BUFFER_SIZE)]int buffer_size,
-                [DefaultParameterValue(null)]object max_buffer_size
+                int buffer_size=DEFAULT_BUFFER_SIZE,
+                object max_buffer_size=null
             ) {
                 if (max_buffer_size != null) {
                     PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "max_buffer_size is deprecated");
@@ -1423,7 +1423,7 @@ namespace IronPython.Modules {
 
             #region BufferedReader
 
-            public override object read(CodeContext/*!*/ context, [DefaultParameterValue(null)]object length) {
+            public override object read(CodeContext/*!*/ context, object length=null) {
                 flush(context);
                 int len = GetInt(length, -1);
 
@@ -1504,7 +1504,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public override Bytes peek(CodeContext/*!*/ context, [DefaultParameterValue(0)]int length) {
+            public override Bytes peek(CodeContext/*!*/ context, int length=0) {
                 _checkClosed();
 
                 flush(context);
@@ -1532,7 +1532,7 @@ namespace IronPython.Modules {
                 return _readBuf;
             }
 
-            public override Bytes read1(CodeContext/*!*/ context, [DefaultParameterValue(0)]int length) {
+            public override Bytes read1(CodeContext/*!*/ context, int length=0) {
                 flush(context);
                 if (length == 0) {
                     return Bytes.Empty;
@@ -1677,7 +1677,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public override BigInteger truncate(CodeContext/*!*/ context, [DefaultParameterValue(null)]object pos) {
+            public override BigInteger truncate(CodeContext/*!*/ context, object pos=null) {
                 lock (this) {
                     FlushNoLock(context);
                     if (pos == null) {
@@ -1722,8 +1722,8 @@ namespace IronPython.Modules {
                 CodeContext/*!*/ context,
                 object reader,
                 object writer,
-                [DefaultParameterValue(DEFAULT_BUFFER_SIZE)]int buffer_size,
-                [DefaultParameterValue(null)]object max_buffer_size
+                int buffer_size=DEFAULT_BUFFER_SIZE,
+                object max_buffer_size=null
             ) : base(context) {
             }
 
@@ -1731,8 +1731,8 @@ namespace IronPython.Modules {
                 CodeContext/*!*/ context,
                 object reader,
                 object writer,
-                [DefaultParameterValue(DEFAULT_BUFFER_SIZE)]int buffer_size,
-                [DefaultParameterValue(null)]object max_buffer_size
+                int buffer_size=DEFAULT_BUFFER_SIZE,
+                object max_buffer_size=null
             ) {
                 if (max_buffer_size != null) {
                     PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "max_buffer_size is deprecated");
@@ -1772,7 +1772,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public override object read(CodeContext/*!*/ context, [DefaultParameterValue(null)]object length) {
+            public override object read(CodeContext/*!*/ context, object length=null) {
                 var res = _reader.read(context, length);
                 GC.KeepAlive(this);
                 return res;
@@ -1790,7 +1790,7 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            public override Bytes peek(CodeContext/*!*/ context, [DefaultParameterValue(0)]int length) {
+            public override Bytes peek(CodeContext/*!*/ context, int length=0) {
                 var res = _reader.peek(context, length);
                 GC.KeepAlive(this);
                 return res;
@@ -1855,15 +1855,15 @@ namespace IronPython.Modules {
         public class StringIO : TextIOWrapper, IDynamicMetaObjectProvider {
             public StringIO(
                 CodeContext/*!*/ context,
-                [DefaultParameterValue("")]string initial_value,
-                [DefaultParameterValue("\n")]string newline
+                string initial_value="",
+                string newline="\n"
             ) : base(context) {
             }
 
             public void __init__(
                 CodeContext/*!*/ context,
-                [DefaultParameterValue("")]string initial_value,
-                [DefaultParameterValue("\n")]string newline
+                string initial_value="",
+                string newline="\n"
             ) {
                 var buf = new BytesIO(context);
                 buf.__init__(null);
@@ -1930,10 +1930,10 @@ namespace IronPython.Modules {
 
             internal static TextIOWrapper Create(CodeContext/*!*/ context,
                 object buffer,
-                [DefaultParameterValue(null)]string encoding,
-                [DefaultParameterValue(null)]string errors,
-                [DefaultParameterValue(null)]string newline,
-                [DefaultParameterValue(false)]bool line_buffering) {
+                string encoding=null,
+                string errors=null,
+                string newline=null,
+                bool line_buffering=false) {
                 var res = new TextIOWrapper(context, buffer, encoding, errors, newline, line_buffering);
                 res.__init__(context, buffer, encoding, errors, newline, line_buffering);
                 return res;
@@ -1942,20 +1942,20 @@ namespace IronPython.Modules {
             public TextIOWrapper(
                 CodeContext/*!*/ context,
                 object buffer,
-                [DefaultParameterValue(null)]string encoding,
-                [DefaultParameterValue(null)]string errors,
-                [DefaultParameterValue(null)]string newline,
-                [DefaultParameterValue(false)]bool line_buffering
+                string encoding=null,
+                string errors=null,
+                string newline=null,
+                bool line_buffering=false
             ) : base(context) {
             }
 
             public void __init__(
                 CodeContext/*!*/ context,
                 object buffer,
-                [DefaultParameterValue(null)]string encoding,
-                [DefaultParameterValue(null)]string errors,
-                [DefaultParameterValue(null)]string newline,
-                [DefaultParameterValue(false)]bool line_buffering
+                string encoding = null,
+                string errors = null,
+                string newline=null,
+                bool line_buffering=false
             ) {
                 switch(newline) {
                     case null:
@@ -2252,7 +2252,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public override BigInteger truncate(CodeContext/*!*/ context, [DefaultParameterValue(null)]object pos) {
+            public override BigInteger truncate(CodeContext/*!*/ context, object pos=null) {
                 flush(context);
                 if (pos == null) {
                     pos = tell(context);
@@ -2428,7 +2428,7 @@ namespace IronPython.Modules {
                 return cookie;
             }
 
-            public override object read(CodeContext/*!*/ context, [DefaultParameterValue(null)]object length) {
+            public override object read(CodeContext/*!*/ context, object length=null) {
                 _checkClosed();
                 if (!readable(context)) {
                     throw PythonOps.IOError("not readable");
@@ -2474,7 +2474,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public override object readline(CodeContext/*!*/ context, [DefaultParameterValue(-1)]int limit) {
+            public override object readline(CodeContext/*!*/ context, int limit=-1) {
                 _checkClosed("read from closed file");
 
                 string line = GetDecodedChars();
@@ -2747,12 +2747,12 @@ namespace IronPython.Modules {
         public static _IOBase open(
             CodeContext/*!*/ context,
             object file,
-            [DefaultParameterValue("r")]string mode,
-            [DefaultParameterValue(-1)]int buffering,
-            [DefaultParameterValue(null)]string encoding,
-            [DefaultParameterValue(null)]string errors,
-            [DefaultParameterValue(null)]string newline,
-            [DefaultParameterValue(true)]bool closefd
+            string mode="r",
+            int buffering=-1,
+            string encoding=null,
+            string errors=null,
+            string newline=null,
+            bool closefd=true
         ) {
             int fd = -1;
             string fname = file as string;
@@ -2891,13 +2891,13 @@ namespace IronPython.Modules {
             private string _errors;
 #pragma warning restore 414
 
-            public IncrementalNewlineDecoder(object decoder, bool translate, [DefaultParameterValue("strict")]string errors) {
+            public IncrementalNewlineDecoder(object decoder, bool translate, string errors="strict") {
                 _decoder = decoder;
                 _translate = translate;
                 _errors = errors;
             }
 
-            public string decode(CodeContext/*!*/ context, [NotNull]IList<byte> input, [DefaultParameterValue(false)]bool final) {
+            public string decode(CodeContext/*!*/ context, [NotNull]IList<byte> input, bool final=false) {
                 object output;
                 if (_decoder == null) {
                     output = input.MakeString();
@@ -2922,7 +2922,7 @@ namespace IronPython.Modules {
                 return DecodeWorker(context, decoded, final);
             }
 
-            public string decode(CodeContext/*!*/ context, [NotNull]string input, [DefaultParameterValue(false)]bool final) {
+            public string decode(CodeContext/*!*/ context, [NotNull]string input, bool final=false) {
                 if (_decoder == null) {
                     return DecodeWorker(context, input, final);
                 }

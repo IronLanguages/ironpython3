@@ -46,8 +46,8 @@ namespace IronPython.Runtime.Operations {
         public static object __new__(
             CodeContext context, 
             PythonType cls,
-            [DefaultParameterValue(null)]object real,
-            [DefaultParameterValue(null)]object imag
+            object real=null,
+            object imag=null
            ) {
             Complex real2, imag2;
             real2 = imag2 = new Complex();

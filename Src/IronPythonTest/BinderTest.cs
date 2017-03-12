@@ -127,8 +127,8 @@ namespace IronPythonTest.BinderTest {
         public void M701(out Int32 arg) { arg = 2; Flag.Value = 701; }
 
         // Default Value
-        public void M710([DefaultParameterValue(10)] Int32 arg) { Flag.Value = 710; }
-        public void M715(Int32 arg, [DefaultParameterValue(10)] Int32 arg2) { Flag.Value = 715; }
+        public void M710(Int32 arg=10) { Flag.Value = 710; }
+        public void M715(Int32 arg, Int32 arg2=10) { Flag.Value = 715; }
 
     }
 
@@ -159,7 +159,7 @@ namespace IronPythonTest.BinderTest {
         public void M402(Int32 arg3, ref Int32 arg1, out Int32 arg2) { arg1 = arg2 = arg3; }
 
         // default value does get used
-        public void M450([DefaultParameterValue(80)] Int32 arg) { Flag.Value = arg; }
+        public void M450(Int32 arg=80) { Flag.Value = arg; }
 
         // 8 args
         public void M500(Int32 arg1, Int32 arg2, Int32 arg3, Int32 arg4, Int32 arg5, Int32 arg6, Int32 arg7, Int32 arg8) {
@@ -170,13 +170,8 @@ namespace IronPythonTest.BinderTest {
         public void M550(IDictionary<int, int> arg) { Flag.Value = 550; }
 
         // not supported (or partially)
-#if !SILVERLIGHT
         public void M600(Hashtable arg) { Flag.Value = 600; }
         public void M601(ArrayList arg) { Flag.Value = 601; }
-#else
-        public void M600(Dictionary<object, object> arg) { Flag.Value = 600; }
-        public void M601(List<object> arg) { Flag.Value = 601; }
-#endif
         public void M602(List<int> arg) { Flag.Value = 602; }
 
         // iterator support ??
@@ -339,18 +334,18 @@ namespace IronPythonTest.BinderTest {
         public void M100(out Int32 arg) { arg = 1; Flag.Value = 200; }
 
         public void M101() { Flag.Value = 101; }
-        public void M101([DefaultParameterValue(1)] Int32 arg) { Flag.Value = 201; }
+        public void M101(Int32 arg=1) { Flag.Value = 201; }
 
         public void M102() { Flag.Value = 102; }
         public void M102(params Int32[] arg) { Flag.Value = 202; }
 
         public void M103(out Int32 arg) { arg = 1; Flag.Value = 103; }
-        public void M103([DefaultParameterValue(1)] Int32 arg) { Flag.Value = 203; }
+        public void M103(Int32 arg=1) { Flag.Value = 203; }
 
         public void M104(out Int32 arg) { arg = 1; Flag.Value = 104; }
         public void M104(params Int32[] arg) { Flag.Value = 204; }
 
-        public void M105([DefaultParameterValue(1)] Int32 arg) { Flag.Value = 105; }
+        public void M105(Int32 arg=1) { Flag.Value = 105; }
         public void M105(params Int32[] arg) { Flag.Value = 205; }
 
         public void M106(Int32 arg) { Flag.Value = 106; }
@@ -381,7 +376,7 @@ namespace IronPythonTest.BinderTest {
         public void M106(out Int32 arg, ref Int32 arg2) { arg = 1; Flag.Value = 206; }
 
         public void M107(Int32 arg) { Flag.Value = 107; }
-        public void M107(Int32 arg, [DefaultParameterValue(1)] Int32 arg2) { Flag.Value = 207; }
+        public void M107(Int32 arg, Int32 arg2=1) { Flag.Value = 207; }
 
         public void M108(Int32 arg) { Flag.Value = 108; }
         public void M108(Int32 arg, params Int32[] arg2) { Flag.Value = 208; }
@@ -412,7 +407,7 @@ namespace IronPythonTest.BinderTest {
         public void M105(out Int32 arg, ref Int32 arg2) { arg = 1; Flag.Value = 205; }
 
         public void M106(ref Int32 arg) { Flag.Value = 106; }
-        public void M106(Int32 arg, [DefaultParameterValue(1)] Int32 arg2) { Flag.Value = 206; }
+        public void M106(Int32 arg, Int32 arg2=1) { Flag.Value = 206; }
 
         public void M107(ref Int32 arg) { Flag.Value = 107; }
         public void M107(Int32 arg, params Int32[] arg2) { Flag.Value = 207; }
@@ -440,7 +435,7 @@ namespace IronPythonTest.BinderTest {
         public void M104(out Int32 arg, ref Int32 arg2) { arg = 1; Flag.Value = 204; }
 
         public void M105(Int32? arg) { Flag.Value = 105; }
-        public void M105(Int32 arg, [DefaultParameterValue(1)] Int32 arg2) { Flag.Value = 205; }
+        public void M105(Int32 arg, Int32 arg2=1) { Flag.Value = 205; }
 
         public void M106(Int32? arg) { Flag.Value = 106; }
         public void M106(Int32 arg, params Int32[] arg2) { Flag.Value = 206; }
@@ -484,7 +479,7 @@ namespace IronPythonTest.BinderTest {
         public void M102(out Int32 arg, ref Int32 arg2) { arg = 1; Flag.Value = 202; }
 
         public void M103(Int32 arg1, out Int32 arg) { arg = 1; Flag.Value = 103; }
-        public void M103(Int32 arg, [DefaultParameterValue(1)] Int32 arg2) { Flag.Value = 203; }
+        public void M103(Int32 arg, Int32 arg2=1) { Flag.Value = 203; }
 
         public void M104(Int32 arg1, out Int32 arg) { arg = 1; Flag.Value = 104; }
         public void M104(Int32 arg, params Int32[] arg2) { Flag.Value = 204; }
@@ -500,7 +495,7 @@ namespace IronPythonTest.BinderTest {
         public void M100(out Int32 arg, Int32 arg2) { arg = 1; Flag.Value = 200; }
 
         public void M101(ref Int32 arg1, out Int32 arg) { arg = 1; Flag.Value = 101; }
-        public void M101(Int32 arg, [DefaultParameterValue(1)] Int32 arg2) { Flag.Value = 201; }
+        public void M101(Int32 arg, Int32 arg2=1) { Flag.Value = 201; }
 
         public void M102(ref Int32 arg1, out Int32 arg) { arg = 1; Flag.Value = 102; }
         public void M102(Int32 arg, params Int32[] arg2) { Flag.Value = 202; }
@@ -516,7 +511,7 @@ namespace IronPythonTest.BinderTest {
         public void M100(out Int32 arg, ref Int32 arg2) { arg = 1; Flag.Value = 200; }
 
         public void M101(out Int32 arg, Int32 arg2) { arg = 1; Flag.Value = 101; }
-        public void M101(Int32 arg, [DefaultParameterValue(1)] Int32 arg2) { Flag.Value = 201; }
+        public void M101(Int32 arg, Int32 arg2=1) { Flag.Value = 201; }
 
         public void M102(out Int32 arg, Int32 arg2) { arg = 1; Flag.Value = 102; }
         public void M102(Int32 arg, params Int32[] arg2) { Flag.Value = 202; }
@@ -529,7 +524,7 @@ namespace IronPythonTest.BinderTest {
     public class COverloads_OneArg_OutRef {
         #region generated codes
         public void M100(out Int32 arg, ref Int32 arg2) { arg = 1; Flag.Value = 100; }
-        public void M100(Int32 arg, [DefaultParameterValue(1)] Int32 arg2) { Flag.Value = 200; }
+        public void M100(Int32 arg, Int32 arg2=1) { Flag.Value = 200; }
 
         public void M101(out Int32 arg, ref Int32 arg2) { arg = 1; Flag.Value = 101; }
         public void M101(Int32 arg, params Int32[] arg2) { Flag.Value = 201; }
@@ -541,10 +536,10 @@ namespace IronPythonTest.BinderTest {
     }
     public class COverloads_OneArg_NormalDefault {
         #region generated codes
-        public void M100(Int32 arg, [DefaultParameterValue(1)] Int32 arg2) { Flag.Value = 100; }
+        public void M100(Int32 arg, Int32 arg2=1) { Flag.Value = 100; }
         public void M100(Int32 arg, params Int32[] arg2) { Flag.Value = 200; }
 
-        public void M101(Int32 arg, [DefaultParameterValue(1)] Int32 arg2) { Flag.Value = 101; }
+        public void M101(Int32 arg, Int32 arg2=1) { Flag.Value = 101; }
         public void M101(Int32 arg, Int32[] arg2) { Flag.Value = 201; }
 
         #endregion

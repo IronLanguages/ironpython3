@@ -150,7 +150,7 @@ The duration argument specifies the number of milliseconds.
         }
 
         [Documentation("MessageBeep(x) - call Windows MessageBeep(x). x defaults to MB_OK.")]
-        public static void MessageBeep(CodeContext/*!*/ context, [DefaultParameterValue(MB_OK)] int x) {
+        public static void MessageBeep(CodeContext/*!*/ context, int x=MB_OK) {
             MessageBeep(x);
         }
 

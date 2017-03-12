@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Runtime;
 using IronPython.Runtime.Types;
@@ -26,6 +27,10 @@ namespace IronPython.Runtime.Operations {
     /// </summary>
 
     public static class CharOps {
+        public static string/*!*/ __repr__(char self) {
+            return self.ToString(CultureInfo.InvariantCulture);
+        }
+
         public static bool __eq__(char self, char other) {
             return self == other;
         }

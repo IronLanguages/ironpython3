@@ -147,7 +147,7 @@ namespace IronPython.Runtime {
             throw PythonOps.TypeError("expected bytes or bytearray, got list");
         }
 
-        public string decode(CodeContext/*!*/ context, [Optional]object/*!*/ encoding, [DefaultParameterValue("strict")][NotNull]string/*!*/ errors) {
+        public string decode(CodeContext/*!*/ context, [Optional]object/*!*/ encoding, [NotNull]string/*!*/ errors="strict") {
             return StringOps.decode(context, _bytes.MakeString(), encoding, errors);
         }
 

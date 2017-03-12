@@ -100,7 +100,7 @@ mode can be one of the constants Z_SYNC_FLUSH, Z_FULL_FLUSH, Z_FINISH; the
 default value used when mode is not specified is Z_FINISH.
 If mode == Z_FINISH, the compressor object can no longer be used after
 calling the flush() method.  Otherwise, more data can still be compressed.")]
-        public string flush([DefaultParameterValue(Z_FINISH)]int mode)
+        public string flush(int mode=Z_FINISH)
         {
             byte[] output = new byte[ZlibModule.DEFAULTALLOC];
 

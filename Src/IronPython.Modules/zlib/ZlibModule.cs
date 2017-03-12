@@ -84,7 +84,7 @@ objects support decompress() and flush().";
 
 An optional starting value can be specified.  The returned checksum is
 a signed integer.")]
-        public static int adler32([BytesConversion]IList<byte> data, [DefaultParameterValue(1L)] long baseValue)
+        public static int adler32([BytesConversion]IList<byte> data, long baseValue=1L)
         {
             return (int)Adler32.GetAdler32Checksum(baseValue, data.ToArray(), 0, data.Count());
         }
@@ -93,7 +93,7 @@ a signed integer.")]
 
 An optional starting value can be specified.  The returned checksum is
 a signed integer.")]
-        public static int crc32([BytesConversion]IList<byte> data, [DefaultParameterValue(0L)] long baseValue)
+        public static int crc32([BytesConversion]IList<byte> data, long baseValue=0L)
         {
             if(baseValue < int.MinValue || baseValue > uint.MaxValue)
                 throw new ArgumentOutOfRangeException("baseValue");
@@ -108,7 +108,7 @@ a signed integer.")]
 
 Optional arg level is the compression level, in 1-9.")]
         public static string compress([BytesConversion]IList<byte> data,
-            [DefaultParameterValue(Z_DEFAULT_COMPRESSION)]int level)
+            int level=Z_DEFAULT_COMPRESSION)
         {
             byte[] input = data.ToArray();
             byte[] output = new byte[input.Length + input.Length / 1000 + 12 + 1];
@@ -155,11 +155,11 @@ Optional arg level is the compression level, in 1-9.")]
 
 Optional arg level is the compression level, in 1-9.")]
         public static Compress compressobj(
-            [DefaultParameterValue(Z_DEFAULT_COMPRESSION)]int level,
-            [DefaultParameterValue(DEFLATED)]int method,
-            [DefaultParameterValue(MAX_WBITS)]int wbits,
-            [DefaultParameterValue(DEF_MEM_LEVEL)]int memlevel,
-            [DefaultParameterValue(Z_DEFAULT_STRATEGY)]int strategy)
+            int level=Z_DEFAULT_COMPRESSION,
+            int method=DEFLATED,
+            int wbits=MAX_WBITS,
+            int memlevel=DEF_MEM_LEVEL,
+            int strategy=Z_DEFAULT_STRATEGY)
         {
             return new Compress(level, method, wbits, memlevel, strategy);
         }
@@ -169,8 +169,8 @@ Optional arg level is the compression level, in 1-9.")]
 Optional arg wbits is the window buffer size.  Optional arg bufsize is
 the initial output buffer size.")]
         public static string decompress([BytesConversion]IList<byte> data,
-            [DefaultParameterValue(MAX_WBITS)]int wbits,
-            [DefaultParameterValue(DEFAULTALLOC)]int bufsize)
+            int wbits=MAX_WBITS,
+            int bufsize=DEFAULTALLOC)
         {
             var bytes = Decompress(data.ToArray(), wbits, bufsize);
             return PythonAsciiEncoding.Instance.GetString(bytes, 0, bytes.Length);
@@ -179,7 +179,7 @@ the initial output buffer size.")]
         [Documentation(@"decompressobj([wbits]) -- Return a decompressor object.
 
 Optional arg wbits is the window buffer size.")]
-        public static Decompress decompressobj([DefaultParameterValue(MAX_WBITS)]int wbits)
+        public static Decompress decompressobj(int wbits=MAX_WBITS)
         {
             return new Decompress(wbits);
         }

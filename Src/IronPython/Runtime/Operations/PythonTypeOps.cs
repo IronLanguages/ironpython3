@@ -187,6 +187,13 @@ namespace IronPython.Runtime.Operations {
 
         // note: returns "instance" rather than type name if o is an OldInstance
         internal static string GetName(object o) {
+            // Resolve Namespace-Tracker name, which would end in `namespace#` if 
+            // it is not handled indivdualy
+            if (o is NamespaceTracker)
+            {
+                return ((NamespaceTracker)o).Name;
+            }
+
             return DynamicHelpers.GetPythonType(o).Name;
         }
 

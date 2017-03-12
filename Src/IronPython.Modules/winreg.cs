@@ -379,7 +379,7 @@ namespace IronPython.Modules {
             return OpenKey(key, subKeyName, 0, KEY_READ);
         }
 
-        public static HKEYType OpenKey(object key, string subKeyName, int res = 0, int sam = KEY_READ) {
+        public static HKEYType OpenKey(object key, string subKeyName, int res=0, int sam=KEY_READ) {
             HKEYType rootKey = GetRootKey(key);
             RegistryKey newKey = null;
 
@@ -431,7 +431,7 @@ namespace IronPython.Modules {
             return new HKEYType(newKey);
         }
 
-        public static HKEYType OpenKeyEx(object key, string subKeyName, int res = 0, int sam = KEY_READ) {
+        public static HKEYType OpenKeyEx(object key, string subKeyName, int res=0, int sam=KEY_READ) {
             return OpenKey(key, subKeyName, res, sam);
         }
 

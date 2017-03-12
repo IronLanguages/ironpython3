@@ -72,6 +72,26 @@ namespace IronPython.Modules {
             return context.EnsureModuleException("socketerror", PythonExceptions.OSError, dict, "error", "socket");
         }
 
+#if NETSTANDARD
+        private static ConditionalWeakTable<Socket, object> fakeHandles = new ConditionalWeakTable<Socket, object>();
+        private static long maxHandle = 0;
+#endif
+
+        private static IntPtr GetHandle(this Socket socket) {
+#if NETSTANDARD
+            object handle;
+            lock (fakeHandles) {
+                if (!fakeHandles.TryGetValue(socket, out handle)) {
+                    handle = (IntPtr)maxHandle++;
+                    fakeHandles.Add(socket, handle);
+                }
+            }
+            return (IntPtr)handle;
+#else
+            return socket.Handle;
+#endif
+        }
+
         public const string __doc__ = "Implementation module for socket operations.\n\n"
             + "This module is a loose wrapper around the .NET System.Net.Sockets API, so you\n"
             + "may find the corresponding MSDN documentation helpful in decoding error\n"
@@ -187,8 +207,9 @@ namespace IronPython.Modules {
                 }
             }
 
-
+#if !NETSTANDARD
             private IAsyncResult _acceptResult;
+#endif
             [Documentation("accept() -> (conn, address)\n\n"
                 + "Accept a connection. The socket must be bound and listening before calling\n"
                 + "accept(). conn is a new socket object connected to the remote host, and\n"
@@ -199,6 +220,10 @@ namespace IronPython.Modules {
                 socket wrappedRemoteSocket;
                 Socket realRemoteSocket;
                 try {
+#if NETSTANDARD
+                    // TODO: support timeout != 0
+                    realRemoteSocket = _socket.Accept();
+#else
                     if (_acceptResult != null && _acceptResult.IsCompleted) {
                         // previous async result has completed
                         realRemoteSocket = _socket.EndAccept(_acceptResult);
@@ -221,6 +246,7 @@ namespace IronPython.Modules {
                             realRemoteSocket = _socket.Accept();
                         }
                     }
+#endif
                 } catch (Exception e) {
                     throw MakeException(_context, e);
                 }
@@ -263,15 +289,15 @@ namespace IronPython.Modules {
                 if (_socket != null) {
                     lock (_handleToSocket) {
                         WeakReference weakref;
-                        if (_handleToSocket.TryGetValue(_socket.Handle, out weakref)) {
+                        if (_handleToSocket.TryGetValue(_socket.GetHandle(), out weakref)) {
                             Socket target = (weakref.Target as Socket);
                             if (target == _socket || target == null) {
-                                _handleToSocket.Remove(_socket.Handle);
+                                _handleToSocket.Remove(_socket.GetHandle());
                             }
                         }
                     }
 
-                    _socket.Close();
+                    ((IDisposable)_socket).Dispose();
                     _referenceCount = 0;
                 }
             }
@@ -313,7 +339,7 @@ namespace IronPython.Modules {
                 try {
                     _socket.Connect(remoteEP);
                 } catch (SocketException e) {
-                    return e.ErrorCode;
+                    return (int)e.SocketErrorCode;
                 }
                 return (int)SocketError.Success;
             }
@@ -323,7 +349,7 @@ namespace IronPython.Modules {
                 )]
             public Int64 fileno() {
                 try {
-                    return _socket.Handle.ToInt64();
+                    return _socket.GetHandle().ToInt64();
                 } catch (Exception e) {
                     throw MakeException(_context, e);
                 }
@@ -1122,7 +1148,7 @@ namespace IronPython.Modules {
                 }
 
                 lock (_handleToSocket) {
-                    _handleToSocket[socket.Handle] = new WeakReference(socket);
+                    _handleToSocket[socket.GetHandle()] = new WeakReference(socket);
                 }
             }
 
@@ -1289,6 +1315,35 @@ namespace IronPython.Modules {
             return (PythonType)PythonContext.GetContext(context).GetModuleState("socketgaierror");
         }
 
+        private static IPHostEntry GetHostEntry(string host) {
+#if NETSTANDARD
+            try {
+                return Dns.GetHostEntryAsync(host).Result;
+            }
+            catch (AggregateException ae) {
+                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ae.InnerException).Throw();
+                throw;
+            }
+#else
+            return Dns.GetHostEntry(host);
+#endif
+        }
+
+        private static IPAddress[] GetHostAddresses(string host) {
+#if NETSTANDARD
+            try {
+                return Dns.GetHostAddressesAsync(host).Result;
+            }
+            catch (AggregateException ae)
+            {
+                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ae.InnerException).Throw();
+                throw;
+            }
+#else
+            return Dns.GetHostAddresses(host);
+#endif
+        }
+
         [Documentation("getfqdn([hostname_or_ip]) -> hostname\n\n"
             + "Return the fully-qualified domain name for the specified hostname or IP\n"
             + "address. An unspecified or empty name is interpreted as the local host. If the\n"
@@ -1307,7 +1362,7 @@ namespace IronPython.Modules {
                 return host;
             }
             try {
-                IPHostEntry hostEntry = Dns.GetHostEntry(host);
+                IPHostEntry hostEntry = GetHostEntry(host);
                 if (hostEntry.HostName.Contains(".")) {
                     return hostEntry.HostName;
                 } else {
@@ -1365,9 +1420,9 @@ namespace IronPython.Modules {
             } else {
                 IPHostEntry hostEntry;
                 try {
-                    hostEntry = Dns.GetHostEntry(host);
+                    hostEntry = GetHostEntry(host);
                 } catch (SocketException e) {
-                    throw PythonExceptions.CreateThrowable(gaierror(context), e.ErrorCode, "no IPv4 addresses associated with host");
+                    throw PythonExceptions.CreateThrowable(gaierror(context), (int)e.SocketErrorCode, "no IPv4 addresses associated with host");
                 }
                 hostname = hostEntry.HostName;
                 aliases = PythonOps.MakeList(hostEntry.Aliases);
@@ -1400,9 +1455,10 @@ namespace IronPython.Modules {
             IPAddress[] ips = null;
             IPHostEntry hostEntry = null;
             try {
-                ips = Dns.GetHostAddresses(host);
-                hostEntry = Dns.GetHostEntry(host);
-            } catch (Exception e) {
+                ips = GetHostAddresses(host);
+                hostEntry = GetHostEntry(host);
+            }
+            catch (Exception e) {
                 throw MakeException(context, e);
             }
 
@@ -1452,7 +1508,7 @@ namespace IronPython.Modules {
                     throw PythonExceptions.CreateThrowable(error(context), "sockaddr resolved to zero addresses");
                 }
             } catch (SocketException e) {
-                throw PythonExceptions.CreateThrowable(gaierror(context), e.ErrorCode, e.Message);
+                throw PythonExceptions.CreateThrowable(gaierror(context), (int)e.SocketErrorCode, e.Message);
             } catch (IndexOutOfRangeException) {
                 throw PythonExceptions.CreateThrowable(gaierror(context), "sockaddr resolved to zero addresses");
             }
@@ -1477,9 +1533,13 @@ namespace IronPython.Modules {
 
             IPHostEntry hostEntry = null;
             try {
+#if NETSTANDARD
+                hostEntry = Dns.GetHostEntryAsync(addrs[0]).Result;
+#else
                 hostEntry = Dns.GetHostEntry(addrs[0]);
+#endif
             } catch (SocketException e) {
-                throw PythonExceptions.CreateThrowable(gaierror(context), e.ErrorCode, e.Message);
+                throw PythonExceptions.CreateThrowable(gaierror(context), (int)e.SocketErrorCode, e.Message);
             }
             if ((flags & (int)NI_NUMERICHOST) != 0) {
                 resultHost = addrs[0].ToString();
@@ -1896,7 +1956,10 @@ namespace IronPython.Modules {
         public const int IPV6_MULTICAST_LOOP = (int)SocketOptionName.MulticastLoopback;
         public const int IPV6_PKTINFO = (int)SocketOptionName.PacketInformation;
         public const int IPV6_UNICAST_HOPS = (int)SocketOptionName.IpTimeToLive;
-#if FEATURE_IPV6
+#if FEATURE_IPV6 && __MonoCS__
+        //TODO: Is this filed in a Mono bug report?
+        public const int IPV6_V6ONLY = 27;
+#elif FEATURE_IPV6
         public const int IPV6_V6ONLY = (int) SocketOptionName.IPv6Only;
 #endif
         public const int IP_ADD_MEMBERSHIP = (int)SocketOptionName.AddMembership;
@@ -1977,9 +2040,9 @@ namespace IronPython.Modules {
                 switch (se.SocketErrorCode) {
                     case SocketError.NotConnected:  // CPython times out when the socket isn't connected.
                     case SocketError.TimedOut:
-                        return PythonExceptions.CreateThrowable(timeout(context), se.ErrorCode, se.Message);
+                        return PythonExceptions.CreateThrowable(timeout(context), (int)se.SocketErrorCode, se.Message);
                     default:
-                        return PythonExceptions.CreateThrowable(error(context), se.ErrorCode, se.Message);
+                        return PythonExceptions.CreateThrowable(error(context), (int)se.SocketErrorCode, se.Message);
                 }
             } else if (exception is ObjectDisposedException) {
                 return PythonExceptions.CreateThrowable(error(context), (int)EBADF, "the socket is closed");
@@ -2104,7 +2167,7 @@ namespace IronPython.Modules {
                     }
                     // Incorrect family will raise exception below
                 } else {
-                    IPHostEntry hostEntry = Dns.GetHostEntry(host);
+                    IPHostEntry hostEntry = GetHostEntry(host);
                     List<IPAddress> addrs = new List<IPAddress>();
                     foreach (IPAddress ip in hostEntry.AddressList) {
                         if (family == AddressFamily.Unspecified || family == ip.AddressFamily) {
@@ -2115,7 +2178,7 @@ namespace IronPython.Modules {
                 }
                 throw new SocketException((int)SocketError.HostNotFound);
             } catch (SocketException e) {
-                throw PythonExceptions.CreateThrowable(gaierror(context), e.ErrorCode, "no addresses of the specified family associated with host");
+                throw PythonExceptions.CreateThrowable(gaierror(context), (int)e.SocketErrorCode, "no addresses of the specified family associated with host");
             }
         }
 
@@ -2238,13 +2301,6 @@ namespace IronPython.Modules {
                 get { return true; }
             }
 
-            public override void Close() {
-                object closeObj;
-                if(PythonOps.TryGetBoundAttr(_userSocket,"close",out closeObj))
-                    PythonCalls.Call(closeObj);
-                Dispose(false); 
-            }
-
             public override void Flush() {
                 if (_data.Count > 0) {
                     StringBuilder res = new StringBuilder();
@@ -2294,6 +2350,12 @@ namespace IronPython.Modules {
             }
 
             protected override void Dispose(bool disposing) {
+                if (disposing) {
+                    object closeObj;
+                    if (PythonOps.TryGetBoundAttr(_userSocket, "close", out closeObj))
+                        PythonCalls.Call(closeObj);
+                }
+
                 base.Dispose(disposing);
             }
         }
@@ -2325,7 +2387,7 @@ namespace IronPython.Modules {
                 }
                 _sock = socket;
                
-                base.__init__(stream, System.Text.Encoding.Default, mode);
+                base.__init__(stream, Encoding.GetEncoding(0), mode);
 
                 _isOpen = socket != null;
                 _close = (socket == null) ? false : close;
@@ -2358,7 +2420,7 @@ namespace IronPython.Modules {
                     _socket.close();
                 }
                 else if (this._stream != null && _close) {
-                    _stream.Close();
+                    _stream.Dispose();
                 }
                 _isOpen = false;
                 var obj = base.close();
@@ -2450,13 +2512,13 @@ namespace IronPython.Modules {
                 }
             }
 
-            public ssl(CodeContext context, PythonSocket.socket sock, string keyfile=null, string certfile=null) {
+            public ssl(CodeContext context, PythonSocket.socket sock, string keyfile=null, string certfile=null, X509Certificate2Collection certs=null) {
                 _context = context;
                 _sslStream = new SslStream(new NetworkStream(sock._socket, false), true, CertValidationCallback);
                 _socket = sock;
-                _certCollection = new X509Certificate2Collection();
                 _protocol = PythonSsl.PROTOCOL_SSLv23 | PythonSsl.OP_NO_SSLv2 | PythonSsl.OP_NO_SSLv3;
                 _validate = false;
+                _certCollection = certs ?? new X509Certificate2Collection();
             }
 
             internal ssl(CodeContext context,
@@ -2466,15 +2528,10 @@ namespace IronPython.Modules {
                string certfile=null,
                int certs_mode=PythonSsl.CERT_NONE,
                int protocol=(PythonSsl.PROTOCOL_SSLv23 | PythonSsl.OP_NO_SSLv2 | PythonSsl.OP_NO_SSLv3),
-               string cacertsfile=null) {
+               string cacertsfile=null,
+               X509Certificate2Collection certs=null) {
                 if (sock == null) {
                     throw PythonOps.TypeError("expected socket object, got None");
-                }
-                if ((keyfile == null) != (certfile == null)) {
-                    throw PythonExceptions.CreateThrowable(
-                        PythonSsl.SSLError(context),
-                        "When key or certificate is provided both must be provided"
-                    );
                 }
 
                 _serverSide = server_side;
@@ -2501,17 +2558,22 @@ namespace IronPython.Modules {
 
                 _callback = callback;
 
+                if (certs != null) {
+                    _certCollection = certs;
+                }
+
                 if (certfile != null) {
                     _cert = PythonSsl.ReadCertificate(context, certfile);
+                }
+
+                if (cacertsfile != null) {
+                    _certCollection = new X509Certificate2Collection(new[] { PythonSsl.ReadCertificate(context, cacertsfile) });
                 }
 
                 _socket = sock;
 
                 EnsureSslStream(false);
 
-                _certCollection = cacertsfile != null ?
-                    new X509Certificate2Collection(new[] { PythonSsl.ReadCertificate(context, cacertsfile) }) :
-                    new X509Certificate2Collection();
                 _protocol = protocol;
                 _validate = validate;
                 _context = context;
@@ -2558,9 +2620,19 @@ namespace IronPython.Modules {
             }
 
             internal X509Certificate CertSelectLocal(object sender, string targetHost, X509CertificateCollection collection, X509Certificate remoteCertificate, string[] acceptableIssuers) {
-                if (collection.Count > 0) {
+                if (acceptableIssuers != null && acceptableIssuers.Length > 0 && collection != null && collection.Count > 0) {
+                    // Use the first certificate that is from an acceptable issuer.
+                    foreach (X509Certificate certificate in collection) {
+                        string issuer = certificate.Issuer;
+                        if (Array.IndexOf(acceptableIssuers, issuer) != -1)
+                            return certificate;
+                    }
+                }
+
+                if (collection != null && collection.Count > 0) {
                     return collection[0];
                 }
+
                 return null;
             }
 
@@ -2579,8 +2651,23 @@ namespace IronPython.Modules {
 
             private void ValidateCertificate(X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) {
                 chain = new X509Chain();
+#if NETSTANDARD
+                // missing the X509Certificate2.ctor(X509Certificate) in .NET Core 1.0
                 chain.ChainPolicy.ExtraStore.AddRange(_certCollection);
                 chain.Build((X509Certificate2)certificate);
+#else
+                X509Certificate2Collection certificates = new X509Certificate2Collection();
+                foreach (object cert in _certCollection) {
+                    if (cert is X509Certificate2) {
+                        certificates.Add((X509Certificate2)cert);
+                    }
+                    else if (cert is X509Certificate) {
+                        certificates.Add(new X509Certificate2((X509Certificate)cert));
+                    }
+                }
+                chain.ChainPolicy.ExtraStore.AddRange(certificates);
+                chain.Build(new X509Certificate2(certificate));
+#endif
                 if (chain.ChainStatus.Length > 0) {
                     foreach (var elem in chain.ChainStatus) {
                         if (elem.Status == X509ChainStatusFlags.UntrustedRoot) {
@@ -2621,7 +2708,11 @@ namespace IronPython.Modules {
 
                 try {
                     if (_serverSide) {
-                        _sslStream.AuthenticateAsServer(_cert, _certsMode == PythonSsl.CERT_REQUIRED, GetProtocolType(_protocol), false);
+#if NETSTANDARD
+                        _sslStream.AuthenticateAsServerAsync(_cert, _certsMode == PythonSsl.CERT_REQUIRED, SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false).Wait();
+#else
+                        _sslStream.AuthenticateAsServer(_cert, _certsMode == PythonSsl.CERT_REQUIRED, SslProtocols.Default, false);
+#endif
                     } else {
 
                         var collection = new X509CertificateCollection();
@@ -2629,10 +2720,14 @@ namespace IronPython.Modules {
                         if (_cert != null) {
                             collection.Add(_cert);
                         }
-                        _sslStream.AuthenticateAsClient(_socket._hostName, collection, GetProtocolType(_protocol), false);
+#if NETSTANDARD
+                        _sslStream.AuthenticateAsClientAsync(_socket._hostName, collection, SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false).Wait();
+#else
+                        _sslStream.AuthenticateAsClient(_socket._hostName, collection, SslProtocols.Default, false);
+#endif
                     }
                 } catch (AuthenticationException e) {
-                    _socket._socket.Close();
+                    ((IDisposable)_socket._socket).Dispose();
                     throw PythonExceptions.CreateThrowable(PythonSsl.SSLError(_context), "errors while performing handshake: ", e.ToString());
                 }
 
@@ -2642,7 +2737,7 @@ namespace IronPython.Modules {
             }
 
             public socket shutdown() {
-                _sslStream.Close();
+                _sslStream.Dispose();
                 return _socket;
             }
 
@@ -2659,6 +2754,7 @@ namespace IronPython.Modules {
                 SslProtocols result = SslProtocols.None;
 
                 switch (type & ~PythonSsl.OP_NO_ALL) {
+#pragma warning disable CS0618 // Type or member is obsolete
                     case PythonSsl.PROTOCOL_SSLv2:
                         result = SslProtocols.Ssl2;
                         break;
@@ -2668,6 +2764,7 @@ namespace IronPython.Modules {
                     case PythonSsl.PROTOCOL_SSLv23:
                         result = SslProtocols.Ssl2 | SslProtocols.Ssl3 | SslProtocols.Tls | _SslProtocol_Tls11 | _SslProtocol_Tls12;
                         break;
+#pragma warning restore CS0618 // Type or member is obsolete
                     case PythonSsl.PROTOCOL_TLSv1:
                         result = SslProtocols.Tls;
                         break;
@@ -2687,8 +2784,10 @@ namespace IronPython.Modules {
                         throw new InvalidOperationException("bad ssl protocol type: " + type);
                 }
                 // Filter out requested protocol exclusions:
+#pragma warning disable CS0618 // Type or member is obsolete
                 result &= (type & PythonSsl.OP_NO_SSLv3) != 0 ? ~SslProtocols.Ssl3 : ~SslProtocols.None;
                 result &= (type & PythonSsl.OP_NO_SSLv2) != 0 ? ~SslProtocols.Ssl2 : ~SslProtocols.None;
+#pragma warning restore CS0618 // Type or member is obsolete
                 result &= (type & PythonSsl.OP_NO_TLSv1) != 0 ? ~SslProtocols.Tls : ~SslProtocols.None;
                 if (_supportsTls12)
                 {
@@ -2711,8 +2810,10 @@ namespace IronPython.Modules {
 
             private string ProtocolToPython() {
                 switch (_sslStream.SslProtocol) {
+#pragma warning disable CS0618 // Type or member is obsolete
                     case SslProtocols.Ssl2: return "SSLv2";
                     case SslProtocols.Ssl3: return "TLSv1/SSLv3";
+#pragma warning restore CS0618 // Type or member is obsolete
                     case SslProtocols.Tls: return "TLSv1";
                     default: return _sslStream.SslProtocol.ToString();
                 }
@@ -2828,12 +2929,21 @@ namespace IronPython.Modules {
     // for the Linux Mono version and http://www.pinvoke.net/ for dllimports for winsock libraries
     internal static class SocketUtil {
 
-        [StructLayoutAttribute(LayoutKind.Sequential)]
+        [StructLayoutAttribute(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
         public struct servent {
             public string s_name;
             public IntPtr s_aliases;
             public ushort s_port;
             public string s_proto;
+        }
+
+        [StructLayoutAttribute(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+        public struct servent64
+        {
+            public string s_name;
+            public IntPtr s_aliases;
+            public string s_proto;
+            public ushort s_port;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -2860,12 +2970,20 @@ namespace IronPython.Modules {
         static extern Int32 WSAStartup(Int16 wVersionRequested, out WSAData wsaData);
         [DllImport("ws2_32.dll", SetLastError = true, CharSet = CharSet.Ansi)]
         private static extern IntPtr getservbyname(string name, string proto);
-        [DllImport("ws2_32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        [DllImport("ws2_32.dll", SetLastError = true, CharSet = CharSet.Ansi)]
         private static extern IntPtr getservbyport(ushort port, string proto);
-        [DllImport("Ws2_32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        [DllImport("Ws2_32.dll", SetLastError = true)]
         private static extern Int32 WSAGetLastError();
-        [DllImport("ws2_32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        [DllImport("ws2_32.dll", SetLastError = true)]
         static extern Int32 WSACleanup();
+
+        private static T PtrToStructure<T>(IntPtr result) {
+#if NETSTANDARD
+            return Marshal.PtrToStructure<T>(result);
+#else
+            return (T)Marshal.PtrToStructure(result, typeof(T));
+#endif
+        }
 
         public static string GetServiceByPortWindows(ushort port, string protocol) {
 
@@ -2876,19 +2994,21 @@ namespace IronPython.Modules {
             if (IntPtr.Zero == result)
                 throw new SocketUtilException(string.Format("Could not resolve service for port {0}", port));
 
-            var srvent = (servent)Marshal.PtrToStructure(result, typeof(servent));
-            return srvent.s_name;
+            if (Environment.Is64BitProcess)
+                return PtrToStructure<servent64>(result).s_name;
+            else
+                return PtrToStructure<servent>(result).s_name;
         }
 
         public static string GetServiceByPortNonWindows(ushort port, string protocol) {
             var netport = unchecked((ushort)IPAddress.HostToNetworkOrder(unchecked((short)port)));
-            var result = getservbyport(netport, protocol);
+            var result = getservbyport_linux(netport, protocol);
             if (IntPtr.Zero == result) {
                 throw new SocketUtilException(
                     string.Format("Could not resolve service for port {0}", port));
             }
-            var srvent = (servent)Marshal.PtrToStructure(result, typeof(servent));
-            return srvent.s_name;
+
+            return PtrToStructure<servent>(result).s_name;
         }
 
         public static string GetServiceByPort(ushort port, string protocol) {
@@ -2907,25 +3027,29 @@ namespace IronPython.Modules {
             if (IntPtr.Zero == result)
                 throw new SocketUtilException(string.Format("Could not resolve port for service {0}", service));
 
-            var srvent = (servent)Marshal.PtrToStructure(result, typeof(servent));
-            var hostport = IPAddress.NetworkToHostOrder(unchecked((short)srvent.s_port));
+            ushort port;
+            if (Environment.Is64BitProcess)
+                port = PtrToStructure<servent64>(result).s_port;
+            else
+                port = PtrToStructure<servent>(result).s_port;
+
+            var hostport = IPAddress.NetworkToHostOrder(unchecked((short)port));
             return unchecked((ushort)hostport);
 
         }
 
         public static ushort GetServiceByNameNonWindows(string service, string protocol) {
-
-            var result = getservbyname(service, protocol);
+            var result = getservbyname_linux(service, protocol);
             if (IntPtr.Zero == result) {
                 throw new SocketUtilException(
                     string.Format("Could not resolve port for service {0}", service));
             }
 
-            var srvent = (servent)Marshal.PtrToStructure(result, typeof(servent));
-            var hostport = IPAddress.NetworkToHostOrder(unchecked((short)srvent.s_port));
+            ushort port = PtrToStructure<servent>(result).s_port;
+            var hostport = IPAddress.NetworkToHostOrder(unchecked((short)port));
             return unchecked((ushort)hostport);
-
         }
+
         public static ushort GetServiceByName(string service, string protocol) {
             if (Environment.OSVersion.Platform == PlatformID.Unix || Environment.OSVersion.Platform == PlatformID.MacOSX)
                 return GetServiceByNameNonWindows(service, protocol);

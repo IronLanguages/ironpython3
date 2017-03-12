@@ -17,6 +17,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -72,17 +73,9 @@ namespace IronPython.Modules {
 
         #region Public API Surface
 
-        public static RE_Pattern compile(CodeContext/*!*/ context, object pattern) {
+        public static RE_Pattern compile(CodeContext/*!*/ context, object pattern, int flags = 0) {
             try {
-                return GetPattern(context, pattern, 0, true);
-            } catch (ArgumentException e) {
-                throw PythonExceptions.CreateThrowable(error(context), e.Message);
-            }
-        }
-
-        public static RE_Pattern compile(CodeContext/*!*/ context, object pattern, object flags) {
-            try {
-                return GetPattern(context, pattern, PythonContext.GetContext(context).ConvertToInt32(flags), true);
+                return GetPattern(context, pattern, flags, true);
             } catch (ArgumentException e) {
                 throw PythonExceptions.CreateThrowable(error(context), e.Message);
             }
@@ -120,11 +113,7 @@ namespace IronPython.Modules {
             return text;
         }
 
-        public static List findall(CodeContext/*!*/ context, object pattern, string @string) {
-            return findall(context, pattern, @string, 0);
-        }
-
-        public static List findall(CodeContext/*!*/ context, object pattern, string @string, int flags) {
+        public static List findall(CodeContext/*!*/ context, object pattern, string @string, int flags = 0) {
             RE_Pattern pat = GetPattern(context, ValidatePattern(pattern), flags);
             ValidateString(@string, "string");
 
@@ -132,11 +121,7 @@ namespace IronPython.Modules {
             return FixFindAllMatch(pat, mc, null);
         }
 
-        public static List findall(CodeContext/*!*/ context, object pattern, IList<byte> @string) {
-            return findall(context, pattern, @string, 0);
-        }
-
-        public static List findall(CodeContext/*!*/ context, object pattern, IList<byte> @string, int flags) {
+        public static List findall(CodeContext context, object pattern, IList<byte> @string, int flags = 0) {
             RE_Pattern pat = GetPattern(context, ValidatePattern (pattern), flags);
             ValidateString (@string, "string");
 
@@ -191,58 +176,32 @@ namespace IronPython.Modules {
             return List.FromArrayNoCopy(matches);
         }
 
-        public static object finditer(CodeContext/*!*/ context, object pattern, object @string) {
-            return finditer(context, pattern, @string, 0);
-        }
-
-        public static object finditer(CodeContext/*!*/ context, object pattern, object @string, int flags) {
+        public static object finditer(CodeContext/*!*/ context, object pattern, object @string, int flags = 0) {
             RE_Pattern pat = GetPattern(context, ValidatePattern(pattern), flags);
 
             string str = ValidateString(@string, "string");
             return MatchIterator(pat.FindAllWorker(context, str, 0, str.Length), pat, str);
         }
 
-        public static RE_Match match(CodeContext/*!*/ context, object pattern, object @string) {
-            return match(context, pattern, @string, 0);
-        }
-
-        public static RE_Match match(CodeContext/*!*/ context, object pattern, object @string, int flags) {
+        public static RE_Match match(CodeContext/*!*/ context, object pattern, object @string, int flags = 0) {
             return GetPattern(context, ValidatePattern(pattern), flags).match(ValidateString(@string, "string"));
         }
 
-        public static RE_Match search(CodeContext/*!*/ context, object pattern, object @string) {
-            return search(context, pattern, @string, 0);
-        }
-
-        public static RE_Match search(CodeContext/*!*/ context, object pattern, object @string, int flags) {
+        public static RE_Match search(CodeContext/*!*/ context, object pattern, object @string, int flags = 0) {
             return GetPattern(context, ValidatePattern(pattern), flags).search(ValidateString(@string, "string"));
         }
 
         [return: SequenceTypeInfo(typeof(string))]
-        public static List split(CodeContext/*!*/ context, object pattern, object @string) {
-            return split(context, ValidatePattern(pattern), ValidateString(@string, "string"), 0);
+        public static List split(CodeContext/*!*/ context, object pattern, object @string, int maxsplit = 0, int flags = 0) {
+            return GetPattern(context, ValidatePattern(pattern), flags).split(ValidateString(@string, "string"), maxsplit);
         }
 
-        [return: SequenceTypeInfo(typeof(string))]
-        public static List split(CodeContext/*!*/ context, object pattern, object @string, int maxsplit) {
-            return GetPattern(context, ValidatePattern(pattern), 0).split(ValidateString(@string, "string"),
-                maxsplit);
+        public static string sub(CodeContext/*!*/ context, object pattern, object repl, object @string, int count = 0, int flags = 0) {
+            return GetPattern(context, ValidatePattern(pattern), flags).sub(context, repl, ValidateString(@string, "string"), count);
         }
 
-        public static string sub(CodeContext/*!*/ context, object pattern, object repl, object @string) {
-            return sub(context, pattern, repl, @string, Int32.MaxValue);
-        }
-
-        public static string sub(CodeContext/*!*/ context, object pattern, object repl, object @string, int count) {
-            return GetPattern(context, ValidatePattern(pattern), 0).sub(context, repl, ValidateString(@string, "string"), count);
-        }
-
-        public static object subn(CodeContext/*!*/ context, object pattern, object repl, object @string) {
-            return subn(context, pattern, repl, @string, Int32.MaxValue);
-        }
-
-        public static object subn(CodeContext/*!*/ context, object pattern, object repl, object @string, int count) {
-            return GetPattern(context, ValidatePattern(pattern), 0).subn(context, repl, ValidateString(@string, "string"), count);
+        public static object subn(CodeContext/*!*/ context, object pattern, object repl, object @string, int count = 0, int flags = 0) {
+            return GetPattern(context, ValidatePattern(pattern), flags).subn(context, repl, ValidateString(@string, "string"), count);
 
         }
 
@@ -325,12 +284,16 @@ namespace IronPython.Modules {
 
             public RE_Match search(object text, int pos) {
                 string input = ValidateString(text, "text");
-                return RE_Match.make(_re.Match(input, pos, input.Length - pos), this, input);
+                if (pos < 0) pos = 0;
+                return RE_Match.make(_re.Match(input, pos), this, input);
             }
 
             public RE_Match search(object text, int pos, int endpos) {
                 string input = ValidateString(text, "text");
-                return RE_Match.make(_re.Match(input, pos, Math.Min(Math.Max(endpos - pos, 0), input.Length - pos)), this, input);
+                if (pos < 0) pos = 0;
+                if (endpos < pos) return null;
+                if (endpos < input.Length) input = input.Substring(0, endpos);
+                return RE_Match.make(_re.Match(input, pos), this, input);
             }
 
             public object findall(CodeContext/*!*/ context, string @string) {
@@ -380,12 +343,7 @@ namespace IronPython.Modules {
             }
 
             [return: SequenceTypeInfo(typeof(string))]
-            public List split(string @string) {
-                return split(@string, 0);
-            }
-
-            [return: SequenceTypeInfo(typeof(string))]
-            public List split(object @string, int maxsplit) {
+            public List split(object @string, int maxsplit = 0) {
                 List result = new List();
                 // fast path for negative maxSplit ( == "make no splits")
                 if (maxsplit < 0) {
@@ -420,11 +378,7 @@ namespace IronPython.Modules {
                 return result;
             }
 
-            public string sub(CodeContext/*!*/ context, object repl, object @string) {
-                return sub(context, repl, ValidateString(@string, "string"), Int32.MaxValue);
-            }
-
-            public string sub(CodeContext/*!*/ context, object repl, object @string, int count) {
+            public string sub(CodeContext/*!*/ context, object repl, object @string, int count = 0) {
                 if (repl == null) throw PythonOps.TypeError("NoneType is not valid repl");
                 //  if 'count' is omitted or 0, all occurrences are replaced
                 if (count == 0) count = Int32.MaxValue;
@@ -457,11 +411,7 @@ namespace IronPython.Modules {
                     count);
             }
 
-            public object subn(CodeContext/*!*/ context, object repl, string @string) {
-                return subn(context, repl, @string, Int32.MaxValue);
-            }
-
-            public object subn(CodeContext/*!*/ context, object repl, object @string, int count) {
+            public object subn(CodeContext/*!*/ context, object repl, object @string, int count = 0) {
                 if (repl == null) throw PythonOps.TypeError("NoneType is not valid repl");
                 //  if 'count' is omitted or 0, all occurrences are replaced
                 if (count == 0) count = Int32.MaxValue;
@@ -1125,12 +1075,16 @@ namespace IronPython.Modules {
                     case 'd':
                     case 'D':
                     case 'A':
-                    case 'Z':
+                    case 'B':
                     case '\\':
                         // known escape sequences, leave escaped.
                         break;
+                    case 'Z':
+                        // /Z matches "end of string" in Python, replace with /z which is the .NET equivalent
+                        pattern = pattern.Remove(cur, 1).Insert(cur, "z");
+                        break;
                     default:
-                        System.Globalization.UnicodeCategory charClass = Char.GetUnicodeCategory(curChar);
+                        System.Globalization.UnicodeCategory charClass = CharUnicodeInfo.GetUnicodeCategory(curChar);
                         switch (charClass) {
                             // recognized word characters, always unescape.
                             case System.Globalization.UnicodeCategory.ModifierLetter:
@@ -1308,6 +1262,11 @@ namespace IronPython.Modules {
             ByteArray byteArray = str as ByteArray;
             if (byteArray != null) {
                 return byteArray.MakeString();
+            }
+
+            ArrayModule.array array = str as ArrayModule.array;
+            if (array != null) {
+                return Bytes.Make(array.ToByteArray()).ToString();
             }
 
 #if FEATURE_MMAP

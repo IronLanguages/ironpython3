@@ -366,11 +366,9 @@ def test_winver():
     #E.g., "2.5"
     Assert(re.match("^\d\.\d$", sys.winver) != None)
 
-@skip('cli') # BUG, ps1 is not set in non interactive mode
 def test_ps1():
     Assert(not hasattr(sys, "ps1"))
 
-@skip('cli') # BUG, ps2 is not set in non interactive mode
 def test_ps2():
     Assert(not hasattr(sys, "ps2"))    
 

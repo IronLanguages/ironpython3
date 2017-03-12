@@ -8,7 +8,7 @@ namespace IronPython.Modules {
     public static class PythonFaultHandler {
         private const int STDERR = 2;
 
-        public static void dump_traceback(CodeContext context, [DefaultParameterValue(STDERR)]object file, [DefaultParameterValue(true)]bool all_threads) {
+        public static void dump_traceback(CodeContext context, [DefaultParameterValue(STDERR)]object file, bool all_threads=true) {
             // TODO: the default file object should be sys.stderr
 
             // TODO: fill this up

@@ -96,7 +96,7 @@ namespace IronPython.SQLite
             }
 
             [Documentation("Executes a SQL statement.")]
-            public object execute(CodeContext context, object operation, [Optional][DefaultParameterValue(null)]object args)
+            public object execute(CodeContext context, object operation, object args=null)
             {
                 return queryExecute(context, false, operation, args);
             }

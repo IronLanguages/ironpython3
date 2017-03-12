@@ -88,7 +88,7 @@ LC_TIME:      sets the locale for time functions [unused]
 
 If locale is None then the current setting is returned.
 ")]
-        public static object setlocale(CodeContext/*!*/ context, int category, [DefaultParameterValue(null)]string locale) {
+        public static object setlocale(CodeContext/*!*/ context, int category, string locale=null) {
             LocaleInfo li = GetLocaleInfo(context);
             if (locale == null) {
                 return li.GetLocale(context, category);

@@ -122,7 +122,7 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            public SimpleCData from_buffer(ArrayModule.array array, [DefaultParameterValue(0)]int offset) {
+            public SimpleCData from_buffer(ArrayModule.array array, int offset=0) {
                 ValidateArraySizes(array, offset, ((INativeType)this).Size);
 
                 SimpleCData res = (SimpleCData)CreateInstance(Context.SharedContext);
@@ -132,7 +132,7 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            public SimpleCData from_buffer_copy(ArrayModule.array array, [DefaultParameterValue(0)]int offset) {
+            public SimpleCData from_buffer_copy(ArrayModule.array array, int offset=0) {
                 ValidateArraySizes(array, offset, ((INativeType)this).Size);
 
                 SimpleCData res = (SimpleCData)CreateInstance(Context.SharedContext);

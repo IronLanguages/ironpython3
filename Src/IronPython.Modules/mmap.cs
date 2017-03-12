@@ -96,9 +96,9 @@ namespace IronPython.Modules {
                 CodeContext/*!*/ context,
                 int fileno,
                 long length,
-                [DefaultParameterValue(null)]string tagname,
-                [DefaultParameterValue(ACCESS_WRITE)]int access,
-                [DefaultParameterValue(0L)]long offset
+                string tagname=null,
+                int access=ACCESS_WRITE,
+                long offset=0L
             ) {
                 switch (access) {
                     case ACCESS_READ:
@@ -646,7 +646,7 @@ namespace IronPython.Modules {
                 return index == -1 ? -1 : ReturnLong(index + start);
             }
 
-            public void seek(long pos, [DefaultParameterValue(SEEK_SET)]int whence) {
+            public void seek(long pos, int whence=SEEK_SET) {
                 using (new MmapLocker(this)) {
                     switch (whence) {
                         case SEEK_SET:

@@ -154,11 +154,11 @@ beyond the rightmost x already there
 Optional args lo (default 0) and hi (default len(a)) bound the
 slice of a to be searched.
 ")]
-        public static object bisect_right(CodeContext/*!*/ context, List a, object x, [DefaultParameterValue(0)] int lo, [DefaultParameterValue(-1)] int hi) {
+        public static object bisect_right(CodeContext/*!*/ context, List a, object x, int lo=0, int hi=-1) {
             return InternalBisectRight(context, a, x, lo, hi);
         }
 
-        public static object bisect_right(CodeContext/*!*/ context, object a, object x, [DefaultParameterValue(0)] int lo, [DefaultParameterValue(-1)] int hi) {
+        public static object bisect_right(CodeContext/*!*/ context, object a, object x, int lo=0, int hi=-1) {
             return InternalBisectRight(context, a, x, lo, hi);
         }
 
@@ -171,11 +171,11 @@ If x is already in a, insert it to the right of the rightmost x.
 Optional args lo (default 0) and hi (default len(a)) bound the
 slice of a to be searched.
 ")]
-        public static void insort_right(CodeContext/*!*/ context, List a, object x, [DefaultParameterValue(0)] int lo, [DefaultParameterValue(-1)] int hi) {
+        public static void insort_right(CodeContext/*!*/ context, List a, object x, int lo=0, int hi=-1) {
             a.Insert(InternalBisectRight(context, a, x, lo, hi), x);
         }
 
-        public static void insort_right(CodeContext/*!*/ context, object a, object x, [DefaultParameterValue(0)] int lo, [DefaultParameterValue(-1)] int hi) {
+        public static void insort_right(CodeContext/*!*/ context, object a, object x, int lo=0, int hi=-1) {
             PythonOps.Invoke(context, a, "insert", InternalBisectRight(context, a, x, lo, hi), x);
         }
 
@@ -190,11 +190,11 @@ before the leftmost x already there.
 Optional args lo (default 0) and hi (default len(a)) bound the
 slice of a to be searched.
 ")]
-        public static object bisect_left(CodeContext/*!*/ context, List a, object x, [DefaultParameterValue(0)] int lo, [DefaultParameterValue(-1)] int hi) {
+        public static object bisect_left(CodeContext/*!*/ context, List a, object x, int lo=0, int hi=-1) {
             return InternalBisectLeft(context, a, x, lo, hi);
         }
 
-        public static object bisect_left(CodeContext/*!*/ context, object a, object x, [DefaultParameterValue(0)] int lo, [DefaultParameterValue(-1)] int hi) {
+        public static object bisect_left(CodeContext/*!*/ context, object a, object x, int lo=0, int hi=-1) {
             return InternalBisectLeft(context, a, x, lo, hi);
         }
 
@@ -207,31 +207,31 @@ If x is already in a, insert it to the left of the leftmost x.
 Optional args lo (default 0) and hi (default len(a)) bound the
 slice of a to be searched.
 ")]
-        public static void insort_left(CodeContext/*!*/ context, List a, object x, [DefaultParameterValue(0)] int lo, [DefaultParameterValue(-1)] int hi) {
+        public static void insort_left(CodeContext/*!*/ context, List a, object x, int lo=0, int hi=-1) {
             a.Insert(InternalBisectLeft(context, a, x, lo, hi), x);
         }
 
-        public static void insort_left(CodeContext/*!*/ context, object a, object x, [DefaultParameterValue(0)] int lo, [DefaultParameterValue(-1)] int hi) {
+        public static void insort_left(CodeContext/*!*/ context, object a, object x, int lo=0, int hi=-1) {
             PythonOps.Invoke(context, a, "insert", InternalBisectLeft(context, a, x, lo, hi), x);
         }
 
         [Documentation("Alias for bisect_right().")]
-        public static object bisect(CodeContext/*!*/ context, List a, object x, [DefaultParameterValue(0)] int lo, [DefaultParameterValue(-1)] int hi) {
+        public static object bisect(CodeContext/*!*/ context, List a, object x, int lo=0, int hi=-1) {
             return bisect_right(context, a, x, lo, hi);
         }
 
         [Documentation("Alias for bisect_right().")]
-        public static object bisect(CodeContext/*!*/ context, object a, object x, [DefaultParameterValue(0)] int lo, [DefaultParameterValue(-1)] int hi) {
+        public static object bisect(CodeContext/*!*/ context, object a, object x, int lo=0, int hi=-1) {
             return bisect_right(context, a, x, lo, hi);
         }
 
         [Documentation("Alias for insort_right().")]
-        public static void insort(CodeContext/*!*/ context, List a, object x, [DefaultParameterValue(0)] int lo, [DefaultParameterValue(-1)] int hi) {
+        public static void insort(CodeContext/*!*/ context, List a, object x, int lo=0, int hi=-1) {
             insort_right(context, a, x, lo, hi);
         }
 
         [Documentation("Alias for insort_right().")]
-        public static void insort(CodeContext/*!*/ context, object a, object x, [DefaultParameterValue(0)] int lo, [DefaultParameterValue(-1)] int hi) {
+        public static void insort(CodeContext/*!*/ context, object a, object x, int lo=0, int hi=-1) {
             insort_right(context, a, x, lo, hi);
         }
 

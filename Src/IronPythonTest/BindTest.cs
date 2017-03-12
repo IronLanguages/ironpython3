@@ -481,55 +481,55 @@ namespace IronPythonTest {
     }
 
     public class DefaultValueTest {
-        public BindResult Test_Enum([DefaultParameterValue(BindResult.Bool)] BindResult param) {
+        public BindResult Test_Enum(BindResult param=BindResult.Bool) {
             return param;
         }
 
-        public BigEnum Test_BigEnum([DefaultParameterValue(BigEnum.BigValue)] BigEnum param) {
+        public BigEnum Test_BigEnum(BigEnum param=BigEnum.BigValue) {
             return param;
         }
 
-        public string Test_String([DefaultParameterValue("Hello World")] string param) {
+        public string Test_String(string param="Hello World") {
             return param;
         }
 
-        public int Test_Int([DefaultParameterValue(5)] int param) {
+        public int Test_Int(int param=5) {
             return param;
         }
 
-        public uint Test_UInt([DefaultParameterValue(uint.MaxValue)] uint param) {
+        public uint Test_UInt(uint param=uint.MaxValue) {
             return param;
         }
 
-        public bool Test_Bool([DefaultParameterValue(true)] bool param) {
+        public bool Test_Bool(bool param=true) {
             return param;
         }
 
-        public char Test_Char([DefaultParameterValue('A')] char param) {
+        public char Test_Char(char param='A') {
             return param;
         }
 
-        public byte Test_Byte([DefaultParameterValue((byte)2)] byte param) {
+        public byte Test_Byte(byte param=2) {
             return param;
         }
 
-        public sbyte Test_SByte([DefaultParameterValue((sbyte)2)] sbyte param) {
+        public sbyte Test_SByte(sbyte param=2) {
             return param;
         }
 
-        public short Test_Short([DefaultParameterValue((short)2)] short param) {
+        public short Test_Short(short param=2) {
             return param;
         }
 
-        public ushort Test_UShort([DefaultParameterValue((ushort)2)] ushort param) {
+        public ushort Test_UShort(ushort param=2) {
             return param;
         }
 
-        public long Test_Long([DefaultParameterValue(long.MaxValue)] long param) {
+        public long Test_Long(long param=long.MaxValue) {
             return param;
         }
 
-        public ulong Test_ULong([DefaultParameterValue(ulong.MaxValue)] ulong param) {
+        public ulong Test_ULong(ulong param=ulong.MaxValue) {
             return param;
         }
 

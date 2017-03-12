@@ -88,10 +88,10 @@ namespace IronPythonTest.StaticTest {
         public static string M4() { return "GB.M4-A"; }
         public static string M4(ref T arg) { return "GB.M4-B"; }
 
-        public static string M21(int arg1, [DefaultParameterValue(100)]int arg2) { return "GB.M21"; }
+        public static string M21(int arg1, int arg2=100) { return "GB.M21"; }
         public static string M22(int arg1) { return "GB.M22"; }
-        public static string M23([DefaultParameterValue(100)]int arg) { return "GB.M23"; }
-        public static string M24([DefaultParameterValue(100)]int arg) { return "GB.M24"; }
+        public static string M23(int arg=100) { return "GB.M23"; }
+        public static string M24(int arg=100) { return "GB.M24"; }
         public static string M25() { return "GB.M25"; }
     }
 
@@ -103,10 +103,10 @@ namespace IronPythonTest.StaticTest {
         public static string M4(ref int arg) { return "GD.M4"; }
 
         public static string M21(int arg1) { return "GD.M21"; }
-        public static string M22(int arg1, [DefaultParameterValue(100)]int arg2) { return "GD.M22"; }
+        public static string M22(int arg1, int arg2=100) { return "GD.M22"; }
         public new static string M23(int arg1) { return "GD.M23"; }
         public static string M24() { return "GD.M24"; }
-        public static string M25([DefaultParameterValue(100)]int arg) { return "GD.M25"; }
+        public static string M25(int arg=100) { return "GD.M25"; }
     }
 
     public class KB {

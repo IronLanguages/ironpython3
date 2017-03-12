@@ -196,7 +196,7 @@ namespace IronPython.Modules {
                 InnerEnumerator = BigIntYielder(this, start, 1);
             }
 
-            public count([DefaultParameterValue(0)]int start, [DefaultParameterValue(1)]int step) {
+            public count(int start=0, int step=1) {
                 _curInt = start;
                 _step = step;
                 InnerEnumerator = IntYielder(this, start, step);

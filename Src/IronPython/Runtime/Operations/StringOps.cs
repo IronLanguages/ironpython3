@@ -337,8 +337,8 @@ namespace IronPython.Runtime.Operations {
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, PythonType cls,
             [BytesConversion]object @string,
-            [DefaultParameterValue("utf-8")] string encoding,
-            [DefaultParameterValue("strict")] string errors) {
+            string encoding="utf-8",
+            string errors="strict") {
 
             string str = @string as string;
             if (str == null) throw PythonOps.TypeError("converting to unicode: need string, got {0}", DynamicHelpers.GetPythonType(@string).Name);
@@ -353,8 +353,8 @@ namespace IronPython.Runtime.Operations {
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, PythonType cls,
             IList<byte> @object,
-            [DefaultParameterValue("utf-8")] string encoding,
-            [DefaultParameterValue("strict")] string errors) {
+            string encoding="utf-8",
+            string errors="strict") {
 
             if (cls == TypeCache.String) {
                 if (@object is Bytes) return ((Bytes)@object).decode(context, encoding, errors);
@@ -491,11 +491,11 @@ namespace IronPython.Runtime.Operations {
             return decode(context, s, Missing.Value, "strict");
         }
 
-        public static string decode(CodeContext/*!*/ context, string s, [Optional]object encoding, [DefaultParameterValue("strict")]string errors) {
+        public static string decode(CodeContext/*!*/ context, string s, [Optional]object encoding, string errors="strict") {
             return RawDecode(context, s, encoding, errors);
         }
 
-        public static Bytes encode(CodeContext/*!*/ context, string s, [DefaultParameterValue("utf-8")]object encoding, [DefaultParameterValue("strict")]string errors) {
+        public static Bytes encode(CodeContext/*!*/ context, string s, [DefaultParameterValue("utf-8")]object encoding, string errors="strict") {
             return RawEncode(context, s, encoding, errors);
         }
 
@@ -617,7 +617,7 @@ namespace IronPython.Runtime.Operations {
             return find(self, sub, (int)start, (int)end);
         }
 
-        public static int find(this string self, [BytesConversion]string sub, object start, [DefaultParameterValue(null)]object end) {
+        public static int find(this string self, [BytesConversion]string sub, object start, object end=null) {
             return find(self, sub, CheckIndex(start, 0), CheckIndex(end, self.Length));
         }
 
@@ -638,7 +638,7 @@ namespace IronPython.Runtime.Operations {
             return ret;
         }
 
-        public static int index(this string self, [BytesConversion]string sub, object start, [DefaultParameterValue(null)]object end) {
+        public static int index(this string self, [BytesConversion]string sub, object start, object end=null) {
             return index(self, sub, CheckIndex(start, 0), CheckIndex(end, self.Length));
         }
 
@@ -903,7 +903,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static string replace(this string self, [BytesConversion]string old, [BytesConversion]string @new,
-            [DefaultParameterValue(-1)]int count) {
+            int count=-1) {
 
             if (old == null) {
                 throw PythonOps.TypeError("expected a character buffer object"); // cpython message
@@ -969,7 +969,7 @@ namespace IronPython.Runtime.Operations {
             return rfind(self, sub, (int)start, (int)end);
         }
 
-        public static int rfind(this string self, [BytesConversion]string sub, object start, [DefaultParameterValue(null)]object end) {
+        public static int rfind(this string self, [BytesConversion]string sub, object start, object end=null) {
             return rfind(self, sub, CheckIndex(start, 0), CheckIndex(end, self.Length));
         }
 
@@ -987,7 +987,7 @@ namespace IronPython.Runtime.Operations {
             return ret;
         }
 
-        public static int rindex(this string self, [BytesConversion]string sub, object start, [DefaultParameterValue(null)]object end) {
+        public static int rindex(this string self, [BytesConversion]string sub, object start, object end=null) {
             return rindex(self, sub, CheckIndex(start, 0), CheckIndex(end, self.Length));
         }
 

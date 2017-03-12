@@ -17,9 +17,9 @@ using System.Runtime.InteropServices;
 
 namespace IronPythonTest {
     public class DefaultParams {
-        public static int FuncWithDefaults([DefaultParameterValue(1)] int x,
-           [DefaultParameterValue(2)] int y,
-           [DefaultParameterValue(3)] int z) {
+        public static int FuncWithDefaults(int x=1,
+           int y=2,
+           int z=3) {
             return x + y + z;
         }
     }

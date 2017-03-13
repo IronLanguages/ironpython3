@@ -78,7 +78,7 @@ def test_modify():
 class dash_attributes(type):
     def __new__(metaclass, name, bases, dict):
         new_dict = {}
-        for key, val in list(dict.items()):
+        for key, val in dict.items():
             new_key = key[0].lower()
             
             for x in key[1:]:
@@ -354,5 +354,19 @@ def test_arguments():
     y = {'d': 'boom'}
     a = A('hello', *x, **y)
     AreEqual(a.val, 'hellob12boom')
+    
+def test_getattr_optimized():
+    class Meta(type):
+        def __getattr__(self, attr):
+            if attr == 'b':
+                return 'b'
+            raise AttributeError(attr)
+
+    class A(metaclass=Meta):
+        pass
+
+    for i in range(110):
+        AreEqual('A', A.__name__) # after 100 iterations: see https://github.com/IronLanguages/main/issues/1269
+        AreEqual('b', A.b)
     
 run_test(__name__)

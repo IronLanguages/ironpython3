@@ -17,7 +17,7 @@ Covers VB default indexer.
 '''
 #------------------------------------------------------------------------------
 from iptest.assert_util import *
-skiptest("silverlight")
+skiptest("silverlight", "posix")
 
 add_clr_assemblies("defaultmembersvb", "defaultmemberscs", "typesamples")
 

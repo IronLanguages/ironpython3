@@ -196,7 +196,7 @@ def _test_set_by_instance(o, vf, t):
         _test_verify(o)
         
         # set values which need conversion.
-        v.InstanceInt32Field = 100L
+        v.InstanceInt32Field = 100
         AreEqual(o.InstanceInt32Field, 100)
 
         v.InstanceInt32Field = 10.01
@@ -250,7 +250,7 @@ def _test_set_by_type(o, vf, t):
         _test_verify(o)
         
         # set values which need conversion.
-        t.InstanceInt16Field.__set__(v, 100L);        AreEqual(o.InstanceInt16Field, 100)
+        t.InstanceInt16Field.__set__(v, 100);        AreEqual(o.InstanceInt16Field, 100)
         t.InstanceBooleanField.__set__(v, 0);         AreEqual(o.InstanceBooleanField, False)
 
         # set bad values 

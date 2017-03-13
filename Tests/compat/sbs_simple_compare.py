@@ -60,42 +60,42 @@ class common(object):
                         printwith("case", a, '<',  b, type(a), type(b))
                         printwith("same", a < b)
                     except: 
-                        printwith("except", sys.exc_type)
+                        printwith("except", sys.exc_info()[0])
                 if '>' in oplist:  
                     try:
                         printwith("case", a, '>',  b, type(a), type(b))
                         printwith("same", a > b)
                     except: 
-                        printwith("except", sys.exc_type)
+                        printwith("except", sys.exc_info()[0])
                 if '>=' in oplist:  
                     try:
                         printwith("case", a, '>=',  b, type(a), type(b))
                         printwith("same", a >= b)
                     except: 
-                        printwith("except", sys.exc_type)
+                        printwith("except", sys.exc_info()[0])
                 if '<=' in oplist:  
                     try:
                         printwith("case", a, '<=',  b, type(a), type(b))
                         printwith("same", a <= b)
                     except: 
-                        printwith("except", sys.exc_type)
+                        printwith("except", sys.exc_info()[0])
                 if '==' in oplist:  
                     try:
                         printwith("case", a, '==',  b, type(a), type(b))
                         printwith("same", a == b)
                     except: 
-                        printwith("except", sys.exc_type)
+                        printwith("except", sys.exc_info()[0])
                 if '<>' in oplist:  
                     try:
                         printwith("case", a, '<>',  b, type(a), type(b))
-                        printwith("same", a <> b)
+                        printwith("same", a != b)
                     except: 
-                        printwith("except", sys.exc_type)
+                        printwith("except", sys.exc_info()[0])
                 try: 
                     printwith("case", "cmp(", a, ",", b, ")", type(a), type(b))
                     printwith("same", cmp(a, b))
                 except: 
-                    printwith("except", sys.exc_type)
+                    printwith("except", sys.exc_info()[0])
                     
     def compare_asbool(self, leftc, rightc, oplist = ["<", ">", ">=", "<=", "==", "<>" ]):
         for a in leftc:
@@ -103,45 +103,45 @@ class common(object):
                 if '<' in oplist:
                     try:
                         printwith("case", "RetBool", a, "<",  b, type(a), type(b))
-                        if a < b: print 'same##', True 
-                        else: print 'same##', False
+                        if a < b: print('same##', True) 
+                        else: print('same##', False)
                     except: 
-                        printwith("except", sys.exc_type)
+                        printwith("except", sys.exc_info()[0])
                 if '>' in oplist:
                     try:
                         printwith("case", "RetBool", a, ">",  b, type(a), type(b))
-                        if a > b: print 'same##', True 
-                        else: print 'same##', False
+                        if a > b: print('same##', True) 
+                        else: print('same##', False)
                     except: 
-                        printwith("except", sys.exc_type)
+                        printwith("except", sys.exc_info()[0])
                 if '>=' in oplist:
                     try:
                         printwith("case", "RetBool", a, ">=",  b, type(a), type(b))
-                        if a >= b: print 'same##', True 
-                        else: print 'same##', False
+                        if a >= b: print('same##', True) 
+                        else: print('same##', False)
                     except: 
-                        printwith("except", sys.exc_type)
+                        printwith("except", sys.exc_info()[0])
                 if '<=' in oplist:
                     try:
                         printwith("case", "RetBool", a, "<=",  b, type(a), type(b))
-                        if a <= b: print 'same##', True 
-                        else: print 'same##', False
+                        if a <= b: print('same##', True) 
+                        else: print('same##', False)
                     except: 
-                        printwith("except", sys.exc_type)
+                        printwith("except", sys.exc_info()[0])
                 if '==' in oplist:
                     try:
                         printwith("case", "RetBool", a, "==",  b, type(a), type(b))
-                        if a == b: print 'same##', True 
-                        else: print 'same##', False
+                        if a == b: print('same##', True) 
+                        else: print('same##', False)
                     except: 
-                        printwith("except", sys.exc_type)
+                        printwith("except", sys.exc_info()[0])
                 if '<>' in oplist:
                     try:
                         printwith("case", "RetBool", a, "<>",  b, type(a), type(b))
-                        if a <> b: print 'same##', True 
-                        else: print 'same##', False
+                        if a != b: print('same##', True) 
+                        else: print('same##', False)
                     except: 
-                        printwith("except", sys.exc_type)
+                        printwith("except", sys.exc_info()[0])
                         
 class test_simple(common): 
     def __init__(self):
@@ -215,7 +215,7 @@ class test_dict(test_onetype):
         Override this as its busted.
         Please remove the function entirely once Dev10 438851 gets fixed.
         '''
-        if sys.platform!="win32" and not ({} < 2):
+        if sys.platform == "cli" and not ({} < 2):
             printwith("Dev10 438851 has been fixed.  Please remove this.")
             
 
@@ -224,7 +224,7 @@ class test_dict(test_onetype):
         Override this as its busted.
         Please remove the function entirely once Dev10 438851 gets fixed.
         '''
-        if sys.platform!="win32" and not ({} < 2):
+        if sys.platform == "cli" and not ({} < 2):
             printwith("Dev10 438851 has been fixed.  Please remove this.")
 
 
@@ -245,7 +245,7 @@ class oldstyle:
     def __le__(self, other):            return self.value <= other
     def __ge__(self, other):            return self.value >= other        
     def __eq__(self, other):            return self.value == other
-    def __ne__(self, other):            return self.value <> other        
+    def __ne__(self, other):            return self.value != other        
     def __repr__(self):                 return "oldstyle(%s)" % str(self.value)
 
 class newstyle(object):         
@@ -255,7 +255,7 @@ class newstyle(object):
     def __le__(self, other):            return self.value <= other
     def __ge__(self, other):            return self.value >= other        
     def __eq__(self, other):            return self.value == other
-    def __ne__(self, other):            return self.value <> other        
+    def __ne__(self, other):            return self.value != other        
     def __repr__(self):                 return "newstyle(%s)" % str(self.value)
 
 class test_set(test_onetype):

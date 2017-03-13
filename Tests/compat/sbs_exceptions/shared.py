@@ -16,7 +16,7 @@
 from common import runtests, printwith
 
 import sys
-import nt
+import os
 
 class CodeHolder(object):
     def __init__(self):
@@ -270,7 +270,7 @@ class test_exceptions(object):
         ch = CodeHolder()
         
         curTest = 0 # a counter so that trace backs have unique method names and we check left over info properly
-        for depth in xrange(3):
+        for depth in range(3):
             def do_generate(test):
                 global loopCnt, yieldState, finallyCnt, tryOrCatchCount, uniqueCount
                 yieldState += 1
@@ -329,7 +329,7 @@ class test_exceptions(object):
                     if curTest in knownFailures:
                         continue
                     
-                    if 'IRONPYTHON_RUNSLOWTESTS' in nt.environ:
+                    if 'IRONPYTHON_RUNSLOWTESTS' in os.environ:
                         uniqueCount = 0
     
                         # run without a function                    
@@ -339,9 +339,9 @@ class test_exceptions(object):
                         d = {'log': '', 'dump_exc_info': dump_exc_info}
                         try: 
                             #printwith(y.code.text)
-                            exec y.code.text in d, d
-                        except Exception, e:
-                            printwith('same', sys.exc_type)
+                            exec(y.code.text, d, d)
+                        except Exception as e:
+                            printwith('same', sys.exc_info()[0])
 
                     uniqueCount = 0
                     
@@ -353,9 +353,9 @@ class test_exceptions(object):
                     
                     try:
                         printwith(y.code.text)
-                        exec y.code.text in d, d
+                        exec(y.code.text, d, d)
                     except SyntaxError:
-                        printwith("same", sys.exc_type)
+                        printwith("same", sys.exc_info()[0])
                         continue
                     
                     retval = None
@@ -366,7 +366,7 @@ class test_exceptions(object):
                         else:
                             printwith('same', retval)
                     except: 
-                        printwith("same", sys.exc_type)
+                        printwith("same", sys.exc_info()[0])
                     if isinstance(retval, generator_type):
                         retval.close()
                     printwith('same', d['log'])

@@ -229,7 +229,7 @@ def check_baseline(bugdir, baselinedir, module):
             base = base[:comment]
         base, bug = base.strip(), bug.strip()
         if base != bug:
-            print 'Differs from baseline!', base, bug
+            print('Differs from baseline!', base, bug)
             fail = True
     return fail
 
@@ -238,7 +238,7 @@ def gen_one_report(module, cpy_path, outdir = 'baselines'):
     if not Directory.Exists(outdir):
         Directory.CreateDirectory(outdir)
     
-    print 'processing', module
+    print('processing', module)
     diffs = diff_module(module, cpy_path)
     return gen_bug_report(module, diffs, outdir)
 
@@ -256,7 +256,7 @@ def diff_all(cpy_path):
             # TODO: Make sure we don't have an existing baseline
             pass
         elif check_baseline('check', 'baselines', module):
-            print 'Module differs', module
+            print('Module differs', module)
             differs = True
             
     # if a module gets implemented we need to add a new baseline for it
@@ -266,11 +266,11 @@ def diff_all(cpy_path):
         except ImportError:
             pass
         else:
-            print """module %s has been implemented.  
+            print("""module %s has been implemented.  
             
 It needs to be moved into the BUILTIN_MODULES list and a baseline should be generated using:
 
-ipy modulediff.py C:\\Python27\\python.exe %s""" % (mod, mod)
+ipy modulediff.py C:\\Python27\\python.exe %s""" % (mod, mod))
             differs = 1
     
     sys.exit(differs)
@@ -278,24 +278,24 @@ ipy modulediff.py C:\\Python27\\python.exe %s""" % (mod, mod)
 
 if __name__ == '__main__':
     if len(sys.argv) < 2 or not File.Exists(sys.argv[1]):
-        print 'usage: '
-        print '       ipy modulediff.py C:\\Python27\\python.exe module_name [module_name ...]'
-        print '            generates a report for an indivdual module into the baselines directory'
-        print 
-        print '       ipy modulediff.py C:\\Python27\\python.exe --'
-        print '            generates reports for all modules into the baselines directory'
-        print
-        print '       ipy modulediff.py C:\\Python27\\python.exe'
-        print '            generates reports into check directory, compares with baselines directory, if there'
-        print '            are differences exits with a non-zero exit code.'
-        print 
-        print 'For rapdily iteration of finding and fixing issues a good idea is to run:'
-        print '  ipy logmodule.py > out.txt'
-        print '  cpy logmodule.py > outcpy.txt'
-        print '  windiff outcpy.txt out.txt'
-        print 
-        print 'instead of using this script directly.  This will produce all of the diffs in one big file in a matter'
-        print 'of seconds and can avoid the overhead of re-generating the CPython results each run.'
+        print('usage: ')
+        print('       ipy modulediff.py C:\\Python27\\python.exe module_name [module_name ...]')
+        print('            generates a report for an indivdual module into the baselines directory')
+        print() 
+        print('       ipy modulediff.py C:\\Python27\\python.exe --')
+        print('            generates reports for all modules into the baselines directory')
+        print()
+        print('       ipy modulediff.py C:\\Python27\\python.exe')
+        print('            generates reports into check directory, compares with baselines directory, if there')
+        print('            are differences exits with a non-zero exit code.')
+        print() 
+        print('For rapdily iteration of finding and fixing issues a good idea is to run:')
+        print('  ipy logmodule.py > out.txt')
+        print('  cpy logmodule.py > outcpy.txt')
+        print('  windiff outcpy.txt out.txt')
+        print() 
+        print('instead of using this script directly.  This will produce all of the diffs in one big file in a matter')
+        print('of seconds and can avoid the overhead of re-generating the CPython results each run.')
         
         sys.exit(1)
     

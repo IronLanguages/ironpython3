@@ -195,7 +195,7 @@ types = [
     GenericStructWithLiterals[int], 
     GenericStructWithLiterals[str], 
     ClassWithLiterals, 
-    GenericClassWithLiterals[long], 
+    GenericClassWithLiterals[int], 
     GenericClassWithLiterals[object],
     ]
 for i in range(len(types)):

@@ -48,7 +48,7 @@ def test_HRESULT_Error():
     if is_vista:
         AssertErrorWithPartialMessage(COMException, "Migration source incorrect. (Exception from HRESULT: 0x8028005E)", com_obj.mGenericCOMException)
     else:
-        print "By Design: 409994"
+        print("By Design: 409994")
     
 #------------------------------------------------------------------------------
 run_com_test(__name__, __file__)

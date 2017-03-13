@@ -63,7 +63,7 @@ def compile_source(source):
     errorlistener = MyErrorListener()
     try:
         source.Compile(errorlistener)
-    except System.Exception, e:        
+    except System.Exception as e:        
         pass
     return errorlistener.errors
 

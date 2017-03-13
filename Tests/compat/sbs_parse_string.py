@@ -41,8 +41,8 @@ class test_parse_string(object):
         list_string = eval(generate_str1())
         
         for x in list_string:
-            print len(x)
-            print x
+            print(len(x))
+            print(x)
 
     # could be invalid \ sequence
     def test_scenario2(self):
@@ -51,21 +51,21 @@ class test_parse_string(object):
                 "%s\"%s\"",         # "\\\\\"
                 "%s\'%sa\'",        # '\\\\a'
                 "%s\'a%sb\'",       # 'a\\\b'
-                "%s\'\u%s\'",  
-                "%s\'\u0%s\'",  
-                "%s\'\u00%s\'",  
-                "%s\'\u002%s\'",  
-                "%s\'\u0020%s\'",  
+                "%s\'\\u%s\'",  
+                "%s\'\\u0%s\'",  
+                "%s\'\\u00%s\'",  
+                "%s\'\\u002%s\'",  
+                "%s\'\\u0020%s\'",  
                 "%s\'\\u%s\'",   
                 "%s\'\\u0%s\'",   
                 "%s\'\\u00%s\'",   
                 "%s\'\\u002%s\'",   
                 "%s\'\\u0020%s\'",   
-                "%s\'%s\u\'",    
-                "%s\'%s\u0\'",    
-                "%s\'%s\u00\'",    
-                "%s\'%s\u002\'",    
-                "%s\'%s\u0020\'",    
+                "%s\'%s\\u\'",    
+                "%s\'%s\\u0\'",    
+                "%s\'%s\\u00\'",    
+                "%s\'%s\\u002\'",    
+                "%s\'%s\\u0020\'",    
                 "%s\'\\u002%s\'",   
                 ] :
                 for x in range(10):
@@ -73,10 +73,10 @@ class test_parse_string(object):
                     try:
                         printwith("case", line)
                         str = eval(line)
-                        print len(str)
-                        print str
+                        print(len(str))
+                        print(str)
                     except: 
-                        print "exception"
+                        print("exception")
 
 ######################################################################################
 

@@ -55,13 +55,13 @@ def mygt(a, b):  return a.value > b.value
 def myle(a, b):  return a.value <= b.value
 def myge(a, b):  return a.value >= b.value
 def myeq(a, b):  return a.value == b.value
-def myne(a, b):  return a.value <> b.value
+def myne(a, b):  return a.value != b.value
 def mycmp(a, b): return cmp(a.value, b.value)
     
 def get_instances(types):
     #basic_numbers = testdata.get_comparable_numbers_as_list()
     #basic_numbers = (None, 0, 1, 0.0, 34, -34.2, 1L, 123456789012345, False, True, testdata.myint(34), testdata.mylong(1), testdata.myfloat(-23), 2+3j)
-    basic_numbers = (1, 2, 34, -34.2, 1L,testdata.myint(34),)
+    basic_numbers = (1, 2, 34, -34.2, 1,testdata.myint(34),)
     
     collection = []
     for x in basic_numbers: 
@@ -131,8 +131,8 @@ class common(object):
                     if not (preCmpCheck != None and preCmpCheck(a, b, '<>')):
                         try:
                             printwith("case", a.value, '<>',  b.value, a, b)
-                            classval = a <> b
-                            simplval = a.value <> b.value
+                            classval = a != b
+                            simplval = a.value != b.value
                             printwith("same", classval, simplval)
                             #if classval <> simplval: raise MyException
                         except Exception: 
@@ -156,43 +156,43 @@ class common(object):
                 if '<' in oplist:
                     try:
                         printwith("case", "condition", a.value, "<",  b.value, a, b)
-                        if a < b: print 'same##', True 
-                        else: print 'same##', False
+                        if a < b: print('same##', True) 
+                        else: print('same##', False)
                     except: 
                         printwith("except_unexpected")
                 if '>' in oplist:
                     try:
                         printwith("case", "condition", a.value, ">",  b.value, a, b)
-                        if a > b: print 'same##', True 
-                        else: print 'same##', False
+                        if a > b: print('same##', True) 
+                        else: print('same##', False)
                     except: 
                         printwith("except_unexpected")
                 if '>=' in oplist:
                     try:
                         printwith("case", "condition", a.value, ">=",  b.value, a, b)
-                        if a >= b: print 'same##', True 
-                        else: print 'same##', False
+                        if a >= b: print('same##', True) 
+                        else: print('same##', False)
                     except: 
                         printwith("except_unexpected")
                 if '<=' in oplist:
                     try:
                         printwith("case", "condition", a.value, "<=",  b.value, a, b)
-                        if a <= b: print 'same##', True 
-                        else: print 'same##', False
+                        if a <= b: print('same##', True) 
+                        else: print('same##', False)
                     except: 
                         printwith("except_unexpected")
                 if '==' in oplist:
                     try:
                         printwith("case", "condition", a.value, "==",  b.value, a, b)
-                        if a == b: print 'same##', True 
-                        else: print 'same##', False
+                        if a == b: print('same##', True) 
+                        else: print('same##', False)
                     except: 
                         printwith("except_unexpected")
                 if '<>' in oplist:
                     try:
                         printwith("case", "condition", a.value, "<>",  b.value, a, b)
-                        if a <> b: print 'same##', True 
-                        else: print 'same##', False
+                        if a != b: print('same##', True) 
+                        else: print('same##', False)
                     except: 
                         printwith("except_unexpected")
 
@@ -203,7 +203,7 @@ class test_classcmp(common):
         for t in types: t.__lt__ = mylt
             
         collection = get_instances(types)
-        print collection
+        print(collection)
         super(test_classcmp, self).compare(collection, ["<", ">"], False)
         
     # all define consistent __le__

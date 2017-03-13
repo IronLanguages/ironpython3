@@ -22,7 +22,6 @@ for stuff in [bool, True, False]:
 items = list(globals().items()) #4716
 
 import sys
-import collections
 from functools import reduce
 def cp946():
     builtins = __builtins__
@@ -49,13 +48,13 @@ AssertError(NameError, lambda: __new__)
 def test_callable():
     class C: x=1
 
-    Assert(isinstance(min, collections.Callable))
-    Assert(not isinstance("a", collections.Callable))
-    Assert(isinstance(callable, collections.Callable))
-    Assert(isinstance(lambda x, y: x + y, collections.Callable))
-    Assert(isinstance(C, collections.Callable))
-    Assert(not isinstance(C.x, collections.Callable))
-    Assert(not isinstance(__builtins__, collections.Callable))
+    Assert(callable(min))
+    Assert(not callable("a"))
+    Assert(callable(callable))
+    Assert(callable(lambda x, y: x + y))
+    Assert(callable(C))
+    Assert(not callable(C.x))
+    Assert(not callable(__builtins__))
 
 def test_callable_oldclass():
     # for class instances, callable related to whether the __call__ attribute is defined.
@@ -64,31 +63,31 @@ def test_callable_oldclass():
         pass
     d=Dold()
     #
-    AreEqual(isinstance(d, collections.Callable), False)
+    AreEqual(callable(d), False)
     #
     d.__call__ = None # This defines the attr, even though it's None
-    AreEqual(isinstance(d, collections.Callable), True) # True for oldinstance, False for new classes.
+    AreEqual(callable(d), True) # True for oldinstance, False for new classes.
     #
     del (d.__call__) # now remove the attr, no longer callable
-    AreEqual(isinstance(d, collections.Callable), False)
+    AreEqual(callable(d), False)
 
 def test_callable_newclass():
     class D(object):
       pass
-    AreEqual(isinstance(D, collections.Callable), True)
+    AreEqual(callable(D), True)
     d=D()
-    AreEqual(isinstance(d, collections.Callable), False)
+    AreEqual(callable(d), False)
     #
     # New class with a __call__ defined is callable()
     class D2(object):
       def __call__(self): pass
     d2=D2()
-    AreEqual(isinstance(d2, collections.Callable), True)
+    AreEqual(callable(d2), True)
     # Inherit callable
     class D3(D2):
       pass
     d3=D3()
-    AreEqual(isinstance(d3, collections.Callable), True)
+    AreEqual(callable(d3), True)
 
 def test_cmp():
     x = {}
@@ -662,7 +661,7 @@ def test_cp16000():
     if is_cli:
         import System
         temp_list += [  System.Exception, System.InvalidOperationException(),
-                        System.Single, System.UInt16(5), System.Version()]
+                        System.Single, System.UInt16(5), System.Version(0, 0)]
 
     for x in temp_list:
         Assert(type(id(x)) in [int, int], 

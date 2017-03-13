@@ -39,7 +39,7 @@ class oldstyle_reflect:
     def __radd__(self, other):          return other + self.value
     def __rsub__(self, other):          return other - self.value
     def __rmul__(self, other):          
-        print "\toldstyle_reflect.__rmul__"
+        print("\toldstyle_reflect.__rmul__")
         return other * self.value
     def __rdiv__(self, other):          return other / self.value
     def __rfloordiv__(self, other):     return other // self.value
@@ -96,7 +96,7 @@ class newstyle_reflect(object):
     def __radd__(self, other):          return other + self.value
     def __rsub__(self, other):          return other - self.value
     def __rmul__(self, other):          
-        print "\tnewstyle_reflect.__rmul__"
+        print("\tnewstyle_reflect.__rmul__")
         return other * self.value
     def __rdiv__(self, other):          return other / self.value
     def __rfloordiv__(self, other):     return other // self.value
@@ -140,62 +140,62 @@ class common(object):
                     printwith("case", a, "+",  b, type(a), type(b))
                     printwithtype(a + b)
                 except: 
-                    printwith("same", sys.exc_type)
+                    printwith("same", sys.exc_info()[0])
                 try:
                     printwith("case", a, "-",  b, type(a), type(b))
                     printwithtype(a - b)
                 except: 
-                    printwith("same", sys.exc_type)
+                    printwith("same", sys.exc_info()[0])
                 try:
                     printwith("case", a, "*",  b, type(a), type(b))
                     printwithtype(a * b)
                 except: 
-                    printwith("same", sys.exc_type)
+                    printwith("same", sys.exc_info()[0])
                 try:
                     printwith("case", a, "/",  b, type(a), type(b))
                     printwithtype(a / b)
                 except: 
-                    printwith("same", sys.exc_type)
+                    printwith("same", sys.exc_info()[0])
                 try:
                     printwith("case", a, "//",  b, type(a), type(b))
                     printwithtype(a // b)
                 except: 
-                    printwith("same", sys.exc_type)
+                    printwith("same", sys.exc_info()[0])
                 try:
                     printwith("case", a, "%",  b, type(a), type(b))
                     printwithtype(a % b)
                 except: 
-                    printwith("same", sys.exc_type)
+                    printwith("same", sys.exc_info()[0])
                 try:
                     printwith("case", a, "**",  b, type(a), type(b))
                     printwithtype(a ** b)
                 except: 
-                    printwith("same", sys.exc_type)
+                    printwith("same", sys.exc_info()[0])
                 try:
                     printwith("case", a, "<<",  b, type(a), type(b))
                     printwithtype(a << b)
                 except: 
-                    printwith("same", sys.exc_type)
+                    printwith("same", sys.exc_info()[0])
                 try:
                     printwith("case", a, ">>",  b, type(a), type(b))
                     printwithtype(a >> b)
                 except: 
-                    printwith("same", sys.exc_type)
+                    printwith("same", sys.exc_info()[0])
                 try:
                     printwith("case", a, "&",  b, type(a), type(b))
                     printwithtype(a & b)
                 except: 
-                    printwith("same", sys.exc_type)
+                    printwith("same", sys.exc_info()[0])
                 try:
                     printwith("case", a, "^",  b, type(a), type(b))
                     printwithtype(a ^ b)
                 except: 
-                    printwith("same", sys.exc_type)
+                    printwith("same", sys.exc_info()[0])
                 try:
                     printwith("case", a, "|",  b, type(a), type(b))
                     printwithtype(a | b)
                 except: 
-                    printwith("same", sys.exc_type)
+                    printwith("same", sys.exc_info()[0])
     
     def clone_list(self, l):
         l2 = []
@@ -219,7 +219,7 @@ class common(object):
                     a += b
                     printwithtype(a)
                 except: 
-                    printwith("same", sys.exc_type)    
+                    printwith("same", sys.exc_info()[0])    
             lc = self.clone_list(leftc)
             for a in lc:
                 try:
@@ -228,7 +228,7 @@ class common(object):
                     a -= b
                     printwithtype(a)
                 except: 
-                    printwith("same", sys.exc_type)    
+                    printwith("same", sys.exc_info()[0])    
             lc = self.clone_list(leftc)
             for a in lc:
                 try:
@@ -237,7 +237,7 @@ class common(object):
                     a *= b
                     printwithtype(a)
                 except: 
-                    printwith("same", sys.exc_type)    
+                    printwith("same", sys.exc_info()[0])    
             lc = self.clone_list(leftc)
             for a in lc:
                 try:
@@ -246,7 +246,7 @@ class common(object):
                     a //= b
                     printwithtype(a)
                 except: 
-                    printwith("same", sys.exc_type)    
+                    printwith("same", sys.exc_info()[0])    
             lc = self.clone_list(leftc)
             for a in lc:
                 try:
@@ -255,7 +255,7 @@ class common(object):
                     a %= b
                     printwithtype(a)
                 except: 
-                    printwith("same", sys.exc_type)    
+                    printwith("same", sys.exc_info()[0])    
             lc = self.clone_list(leftc)
             for a in lc:
                 try:
@@ -264,7 +264,7 @@ class common(object):
                     a **= b
                     printwithtype(a)
                 except: 
-                    printwith("same", sys.exc_type)    
+                    printwith("same", sys.exc_info()[0])    
             lc = self.clone_list(leftc)
             for a in lc:
                 try:
@@ -273,7 +273,7 @@ class common(object):
                     a <<= b
                     printwithtype(a)
                 except: 
-                    printwith("same", sys.exc_type)    
+                    printwith("same", sys.exc_info()[0])    
             lc = self.clone_list(leftc)
             for a in lc:
                 try:
@@ -282,7 +282,7 @@ class common(object):
                     a >>= b
                     printwithtype(a)
                 except: 
-                    printwith("same", sys.exc_type)    
+                    printwith("same", sys.exc_info()[0])    
             lc = self.clone_list(leftc)
             for a in lc:
                 try:
@@ -291,7 +291,7 @@ class common(object):
                     a &= b
                     printwithtype(a)
                 except: 
-                    printwith("same", sys.exc_type)    
+                    printwith("same", sys.exc_info()[0])    
             lc = self.clone_list(leftc)
             for a in lc:
                 try:
@@ -300,7 +300,7 @@ class common(object):
                     a ^= b
                     printwithtype(a)
                 except: 
-                    printwith("same", sys.exc_type)    
+                    printwith("same", sys.exc_info()[0])    
             lc = self.clone_list(leftc)
             for a in lc:
                 try:
@@ -309,7 +309,7 @@ class common(object):
                     a |= b
                     printwithtype(a)
                 except: 
-                    printwith("same", sys.exc_type)
+                    printwith("same", sys.exc_info()[0])
 
 class ops_simple(common):
     def __init__(self):

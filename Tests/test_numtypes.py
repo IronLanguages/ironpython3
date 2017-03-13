@@ -191,23 +191,30 @@ def get_messageun(a, op, x_s, x_v, g_s, g_v):
     }
 
 def verify_b(a, b, op, x_s, x_v, g_s, g_v):
-    Assert(x_s == g_s, get_message(a, b, op, x_s, x_v, g_s, g_v))
+    if not x_s == g_s:
+        Fail(get_message(a, b, op, x_s, x_v, g_s, g_v))
 
     if x_s:
         # same value
-        Assert(mystr(x_v) == mystr(g_v), get_message(a, b, op, x_s, x_v, g_s, g_v))
+        if not mystr(x_v) == mystr(g_v):
+            Fail(get_message(a, b, op, x_s, x_v, g_s, g_v))
     else:
         # same exception
-        Assert(type(x_v) == type(g_v), get_message(a, b, op, x_s, x_v, g_s, g_v))
+        if not type(x_v) == type(g_v):
+            Fail(get_message(a, b, op, x_s, x_v, g_s, g_v))
 
 def verify_u(a, op, x_s, x_v, g_s, g_v):
-    Assert(x_s == g_s, get_messageun(a, op, x_s, x_v, g_s, g_v))
+    if not x_s == g_s:
+        Fail(get_messageun(a, op, x_s, x_v, g_s, g_v))
+
     if x_s:
         # same value
-        Assert(mystr(x_v) == mystr(g_v), get_messageun(a, op, x_s, x_v, g_s, g_v))
+        if not mystr(x_v) == mystr(g_v):
+            Fail(get_messageun(a, op, x_s, x_v, g_s, g_v))
     else:
         # unary operator should never fail
-        Assert(type(x_v) == type(g_v), get_messageun(a, op, x_s, x_v, g_s, g_v))
+        if not type(x_v) == type(g_v):
+            Fail(get_messageun(a, op, x_s, x_v, g_s, g_v))
 
 def calc_1(op, arg1):
     try:
@@ -244,12 +251,15 @@ def extensible(l, r):
 def validate_binary_ops(all, biops):
     total = 0
     last  = 0
-    for l_rec in all:
-        for r_rec in all:
-            py_l, clr_l = l_rec
-            py_r, clr_r = r_rec
+    for name, bin in biops:
+        l_name = "__" + name + "__"
+        r_name = "__r" + name + "__"
 
-            for name, bin in biops:
+        for l_rec in all:
+            for r_rec in all:
+                py_l, clr_l = l_rec
+                py_r, clr_r = r_rec
+
                 x_s, x_v = calc_2(bin, py_l, py_r)
 
                 for l in clr_l:
@@ -265,23 +275,21 @@ def validate_binary_ops(all, biops):
 
                         # call __xxx__ and __rxxx__ for all types
                         # l.__xxx__(r)
-                        m_name = "__" + name + "__"
-                        if hasattr(l, m_name):
-                            m = getattr(l, m_name)
+                        m = getattr(l, l_name, None)
+                        if m is not None:
                             g_s, g_v = calc_1(m, r)
                             if g_v != NotImplemented:
                                 implemented = True
-                                verify_b(l, r, m_name, x_s, x_v, g_s, g_v)
+                                verify_b(l, r, l_name, x_s, x_v, g_s, g_v)
                                 total += 1
                                 
                         # r.__rxxx__(l)
-                        m_name = "__r" + name + "__"
-                        if hasattr(r, m_name):
-                            m = getattr(r, m_name)
+                        m = getattr(r, r_name, None)
+                        if m is not None:
                             g_s, g_v = calc_1(m, l)
                             if g_v != NotImplemented:
                                 implemented = True
-                                verify_b(l, r, m_name, x_s, x_v, g_s, g_v)
+                                verify_b(l, r, r_name, x_s, x_v, g_s, g_v)
                                 total += 1
 
                         verify_implemented_b(implemented, name, l, r)

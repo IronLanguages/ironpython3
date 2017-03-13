@@ -52,7 +52,7 @@ def test_sanity_interface_impl():
     def f(x, y):
         global EVENT_COUNT
         EVENT_COUNT += 1    
-        print x, y
+        print(x, y)
     
     x.add_Act(f)
     x.call()
@@ -80,7 +80,7 @@ def test_sanity_derived_neg():
     x = PySubclass()
     def f(x, y):
         EVENT_COUNT += 1
-        print x, y
+        print(x, y)
     
     x.add_Act(f)
     AssertErrorWithMessage(TypeError, "BoundEvent is not callable", x.call)

@@ -80,7 +80,7 @@ def test_sanity():
         try:
             Assert(std_attr in m0_attributes, 
                    std_attr + " is not a method attribute of " + str(m0))
-        except Exception, e:
+        except Exception as e:
             #Ignore known failures
             if is_pywin32: raise e
             
@@ -96,9 +96,9 @@ def test_args_m0():
 def test_args_m0_neg():
     #Dev10 409926
     #expected_except_type = TypeError
-    expected_except_type = StandardError
+    expected_except_type = Exception
 
-    bad_cases = [None, 1, "None", object, u""]
+    bad_cases = [None, 1, "None", object, ""]
 
     AssertError(expected_except_type, 
                 lambda: m0(None))
@@ -119,28 +119,28 @@ def test_args_m0_neg():
     
     #m0(*[])
     for bad in bad_cases:
-        for i in xrange(1, 4):
+        for i in range(1, 4):
             AssertError(expected_except_type, 
                         lambda: m0(*list([bad] * i)))
 
     #m0(**{})
-    for i in xrange(1, len(bad_cases)):
+    for i in range(1, len(bad_cases)):
         t_dict = {}
-        for j in xrange(i):
+        for j in range(i):
             t_dict[bad_cases[j]] = bad_cases[j]
         
         AssertError(expected_except_type, 
                     lambda: m0(**t_dict))                        
     
     #m0(*[], **{})
-    for i in xrange(0, len(bad_cases)):
+    for i in range(0, len(bad_cases)):
         t_dict = {}
-        for j in xrange(i):
+        for j in range(i):
             t_dict[bad_cases[j]] = bad_cases[j]
         
         for arg_bad in bad_cases:
-            for k in xrange(0, 4):
-                if k + len(t_dict.keys())==0: continue
+            for k in range(0, 4):
+                if k + len(list(t_dict.keys()))==0: continue
                 AssertError(expected_except_type, 
                             lambda: m0( *list([arg_bad] * k), 
                                         **t_dict))              
@@ -158,12 +158,12 @@ def test_args_m2():
 def test_args_m2_neg():
     #pywin32 throws a pywintypes.com_error.  Just skip it
     if sys.platform=="win32" and not isinstance(com_obj, DlrUniversalObj):
-        print "...skipping under pywin32"
+        print("...skipping under pywin32")
         return
     
     #Dev10 409926
     #expected_except_type = TypeError
-    expected_except_type = StandardError
+    expected_except_type = Exception
     
     bad_cases = ["", "None", "xyz"]
     #m2(.)
@@ -178,13 +178,13 @@ def test_args_m2_neg():
     
     #m2(.,?)
     #m2(.., ?)
-    for arg_len in xrange(3):
-        for kwarg_len in xrange(3):
+    for arg_len in range(3):
+        for kwarg_len in range(3):
             for bad in bad_cases:
                 t_args = [bad] * arg_len
                 t_kwargs = {}
                 #This does not really permute the keyword args though
-                for i in xrange(kwarg_len): t_kwargs[bad_cases[i] + str(i)] = bad_cases[i]
+                for i in range(kwarg_len): t_kwargs[bad_cases[i] + str(i)] = bad_cases[i]
 
                 if arg_len + kwarg_len!=1: #m2(., ?)
                     AssertError(expected_except_type, 
@@ -227,11 +227,11 @@ def test_args_m1kw1_neg():
     '''
     #Dev10 409926
     #expected_except_type = TypeError
-    expected_except_type = StandardError
+    expected_except_type = Exception
     
     #pywin32 throws a pywintypes.com_error.  Just skip it
     if sys.platform=="win32" and not isinstance(com_obj, DlrUniversalObj):
-        print "...skipping under pywin32"
+        print("...skipping under pywin32")
         return
     
     
@@ -374,7 +374,7 @@ def test_method_del():
     try:
         del com_obj.m0
         Fail("Should have been an AttributeError when attempting to delete a class method.")
-    except AttributeError, e:
+    except AttributeError as e:
         pass
 
 def test_method_globals():
@@ -385,13 +385,13 @@ def test_method_globals():
     
     t_locals = {}
     
-    exec "AreEqual(m2(a, 'xyz'), None)" in t_globals, t_locals
-    Assert(t_globals.has_key("__builtins__")) #Should be injected into globals.
-    AreEqual(len(t_globals.keys()), 4)
+    exec("AreEqual(m2(a, 'xyz'), None)", t_globals, t_locals)
+    Assert("__builtins__" in t_globals) #Should be injected into globals.
+    AreEqual(len(list(t_globals.keys())), 4)
     AreEqual(t_locals, {})
     
-    exec "AreEqual(m2(a, 'xyz'), None)" in t_globals
-    AreEqual(len(t_globals.keys()), 4)
+    exec("AreEqual(m2(a, 'xyz'), None)", t_globals)
+    AreEqual(len(list(t_globals.keys())), 4)
     
 def test_method_locals():
     t_globals = {}
@@ -400,10 +400,10 @@ def test_method_locals():
     t_locals["a"]  = "abc"
     t_locals["AreEqual"]  = AreEqual
     
-    exec "AreEqual(m2(a, 'xyz'), None)" in t_globals, t_locals
-    Assert(t_globals.has_key("__builtins__")) #Should be injected into globals.
-    AreEqual(len(t_globals.keys()), 1)
-    AreEqual(len(t_locals.keys()), 3)
+    exec("AreEqual(m2(a, 'xyz'), None)", t_globals, t_locals)
+    Assert("__builtins__" in t_globals) #Should be injected into globals.
+    AreEqual(len(list(t_globals.keys())), 1)
+    AreEqual(len(list(t_locals.keys())), 3)
     
 #--------------------------------------
 def test_invoke_from_exec():
@@ -412,35 +412,35 @@ def test_invoke_from_exec():
                         "AreEqual(m2('abc', 'xyz'), None)",
                         "AreEqual(m1kw1(1, arg2=None), None)",
                         ]:
-        exec exec_string in globals(), {}
+        exec(exec_string, globals(), {})
         
         
 def test_invoke_from_exec_neg():
     #pywin32 throws a pywintypes.com_error.  Just skip it
     if sys.platform=="win32" and not isinstance(com_obj, DlrUniversalObj):
-        print "...skipping under pywin32"
+        print("...skipping under pywin32")
         return
         
     try:
-        exec "AreEqual(m0(3), None)" in globals(), {}
+        exec("AreEqual(m0(3), None)", globals(), {})
         Fail("Should have raised an EnvironmentError")
-    except EnvironmentError, e:
+    except EnvironmentError as e:
         #TODO: this is a bug
         pass
-    except TypeError, e:
+    except TypeError as e:
         if isinstance(com_obj, DlrUniversalObj):
             pass
         
     try:
-        exec "AreEqual(m2('xyz'), None)" in globals(), {}
+        exec("AreEqual(m2('xyz'), None)", globals(), {})
         Fail("Should have raised a StandardError")
-    except StandardError, e:
+    except Exception as e:
         pass
         
     try:
-        exec "AreEqual(m1kw1(arg2=None), None)" in globals(), {}
+        exec("AreEqual(m1kw1(arg2=None), None)", globals(), {})
         Fail("Should have raised a StandardError")
-    except StandardError, e:
+    except Exception as e:
         pass
 
 
@@ -456,12 +456,12 @@ def test_invoke_from_eval():
 def test_invoke_from_eval_neg():
     #pywin32 throws a pywintypes.com_error.  Just skip it
     if sys.platform=="win32" and not isinstance(com_obj, DlrUniversalObj):
-        print "...skipping under pywin32"
+        print("...skipping under pywin32")
         return
     
-    AssertError(StandardError, eval, "m0(3)", globals(), {})
-    AssertError(StandardError, eval, "m2('xyz')", globals(), {})
-    AssertError(StandardError, eval, "m1kw1(arg2=None)", globals(), {})
+    AssertError(Exception, eval, "m0(3)", globals(), {})
+    AssertError(Exception, eval, "m2('xyz')", globals(), {})
+    AssertError(Exception, eval, "m1kw1(arg2=None)", globals(), {})
     
 
 @skip("win32")
@@ -556,8 +556,8 @@ m0(self) method of win32com.client.CDispatch instance
     #verification
     try:
         AreEqual(expected, fake_stdout.text)
-    except Exception, e:
-        print fake_stdout.text
+    except Exception as e:
+        print(fake_stdout.text)
         raise e
 
 #--------------------------------------    
@@ -579,10 +579,10 @@ def test_is():
     Assert(m0 is not K().m0)
     
     bad_is_list = [ None, True, False,
-                    1, 0, -1, 1L, 3L, 3.14,
-                    "abc", u"", 
+                    1, 0, -1, 1, 3, 3.14,
+                    "abc", "", 
                     object, Exception, object(), type, str,
-                    [], (), xrange(3), __builtins__, {}
+                    [], (), range(3), __builtins__, {}
                     ]
     for m in m_list:
         for bad in bad_is_list:
@@ -763,9 +763,9 @@ def test_compile():
 run_com_test(__name__, __file__)
 
 #Keep ourselves honest by running the test again using a normal Python class
-print
-print "#" * 80
-print "-- Re-running test with standard Python class substitute for DlrComLibrary.DlrUniversalObj..."
+print()
+print("#" * 80)
+print("-- Re-running test with standard Python class substitute for DlrComLibrary.DlrUniversalObj...")
 com_obj = DlrUniversalObj()
 m0 = com_obj.m0
 m2 = com_obj.m2

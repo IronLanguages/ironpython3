@@ -16,7 +16,7 @@
 '''
 This tests what CPythons test_sha.py does not hit.
 '''
-from __future__ import absolute_import
+
 
 #--IMPORTS---------------------------------------------------------------------
 from iptest.assert_util import *
@@ -57,14 +57,7 @@ def test_sha256_sanity():
     Assert(x!=x_copy)
     AreEqual(x.hexdigest(), x_copy.hexdigest())
     
-    
 def test_sha224_sanity():
-    if is_cli:
-        #CodePlex 16870
-        AssertError(NotImplementedError, _sha256.sha224)
-        AssertError(NotImplementedError, _sha256.sha224, 1234)
-        return
-
     x = _sha256.sha224()
     AreEqual(x.block_size, 64)
     AreEqual(x.digest(),

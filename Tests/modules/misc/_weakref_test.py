@@ -152,12 +152,12 @@ def test_equals():
     global called
     class C:
         for method, op in [('__eq__', '=='), ('__gt__', '>'), ('__lt__', '<'), ('__ge__', '>='), ('__le__', '<='), ('__ne__', '!=')]:
-            exec """
+            exec("""
 def %s(self, *args, **kwargs):
     global called
     called = '%s'
     return True
-""" % (method, op)
+""" % (method, op))
     
     a = C()
     x = _weakref.proxy(a)

@@ -20,7 +20,7 @@
 from iptest.assert_util import *
 skiptest("silverlight")
 import sys
-import thread
+import _thread
 import time
 
 #workaround - _socket does not appear to be in $PYTHONPATH for CPython
@@ -28,7 +28,7 @@ import time
 try:
     import socket
 except:
-    print "Unable to import socket (_socket) from CPython"
+    print("Unable to import socket (_socket) from CPython")
     sys.exit(0)
 
 #-----------------------
@@ -228,7 +228,7 @@ def test_getprotobyname():
              "ggp": socket.IPPROTO_GGP, #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21918
             })
     
-    for proto_name, good_val in proto_map.iteritems():
+    for proto_name, good_val in proto_map.items():
         temp_val = socket.getprotobyname(proto_name)
         AreEqual(temp_val, good_val)
         
@@ -257,7 +257,7 @@ def test_getaddrinfo():
     tmp = socket.getaddrinfo("127.0.0.1", 0, 0, 0, 0, 0)
 
     #just try them as-is
-    for params,value in joe.iteritems():
+    for params,value in joe.items():
         addrinfo = socket.getaddrinfo(*params)
         AreEqual(repr(addrinfo), value)
     
@@ -285,11 +285,11 @@ def test_getaddrinfo():
         
         
     #change the protocol
-    for proto in IPPROTO_DICT.keys():#["SOCK_DGRAM", "SOCK_RAW", "SOCK_STREAM"]:
+    for proto in list(IPPROTO_DICT.keys()):#["SOCK_DGRAM", "SOCK_RAW", "SOCK_STREAM"]:
         try:
             proto = eval("socket." + proto)
         except:
-            print proto
+            print(proto)
             continue
         addrinfo = socket.getaddrinfo("127.0.0.1",
                                        0,
@@ -325,8 +325,8 @@ def test_getnameinfo():
     host, service = socket.getnameinfo( ("127.0.0.1", 80), 8)
     AreEqual(service, '80')
         
-    if is_cli:
-        AssertError(NotImplementedError, socket.getnameinfo, ("127.0.0.1", 80), 0)
+    host, service = socket.getnameinfo( ("127.0.0.1", 80), 0)
+    AreEqual(service, "http")
     #IP gives a TypeError
     #AssertError(SystemError, socket.getnameinfo, ("127.0.0.1"), 8)
     #AssertError(SystemError, socket.getnameinfo, (321), 8)
@@ -364,23 +364,19 @@ def test_gethostbyname_ex():
     '''
     #sanity
     joe = socket.gethostbyname_ex("localhost")[2]
-    Assert(joe.count("127.0.0.1")==1)
+    Assert("127.0.0.1" in joe)
     joe = socket.gethostbyname_ex("127.0.0.1")[2]
-    Assert(joe.count("127.0.0.1")==1)
+    Assert("127.0.0.1" in joe)
     
     #negative
     AssertError(socket.gaierror, socket.gethostbyname_ex, "should never work")
     
 
-@retry_on_failure
 def test_getservbyport():
-    if is_cli:
-        AssertError(NotImplementedError, socket.getservbyport, 80)
+    AreEqual(socket.getservbyport(80), "http")
 
-@retry_on_failure        
 def test_getservbyname():
-    if is_cli:
-        AssertError(NotImplementedError, socket.getservbyname, "http")
+    AreEqual(socket.getservbyname("http"), 80)
 
 @retry_on_failure        
 def test_inet_ntop():
@@ -461,7 +457,7 @@ def test_makefile_refcount():
     
     port = 50008
     
-    thread.start_new_thread(echoer, (port, ))
+    _thread.start_new_thread(echoer, (port, ))
     time.sleep(0)
     s = socket.socket()
     s.connect(('localhost', port))
@@ -490,8 +486,8 @@ def test_cp5814():
     global EXIT_CODE
     HAS_EXITED = False
     
-    import nt
-    import thread
+    import os
+    import _thread
     import time
     
     #Server code
@@ -526,18 +522,18 @@ finally:
     def server_thread():
         global EXIT_CODE
         global HAS_EXITED
-        import nt
+        import os
         serverFile = path_combine(testpath.temporary_dir, "cp5814server.py")
         write_to_file(serverFile, server)
-        EXIT_CODE = nt.system("%s %s" %
+        EXIT_CODE = os.system("%s %s" %
                     (sys.executable, serverFile))
         HAS_EXITED = True
         try:
-            nt.remove(serverFile)
+            os.remove(serverFile)
         except:
             pass
     
-    thread.start_new_thread(server_thread, ())
+    _thread.start_new_thread(server_thread, ())
     #Give the server a chance to startup
     time.sleep(5)
     
@@ -552,9 +548,9 @@ finally:
     s.close()
     
     #Ensure the server didn't die
-    for i in xrange(100):
+    for i in range(100):
         if not HAS_EXITED:
-            print "*",
+            print("*", end=' ')
             time.sleep(1)
         else:
             AreEqual(EXIT_CODE, 0)
@@ -573,8 +569,8 @@ def test_cp7451():
     global EXIT_CODE
     HAS_EXITED = False
     
-    import nt
-    import thread
+    import os
+    import _thread
     import time
     
     #Server code
@@ -609,18 +605,18 @@ finally:
     def server_thread():
         global EXIT_CODE
         global HAS_EXITED
-        import nt
+        import os
         serverFile = path_combine(testpath.temporary_dir, "cp7451server.py")
         write_to_file(serverFile, server)
-        EXIT_CODE = nt.system("%s %s" %
+        EXIT_CODE = os.system("%s %s" %
                     (sys.executable, serverFile))
         HAS_EXITED = True
         try:
-            nt.remove(serverFile)
+            os.remove(serverFile)
         except:
             pass
     
-    thread.start_new_thread(server_thread, ())
+    _thread.start_new_thread(server_thread, ())
     #Give the server a chance to startup
     time.sleep(5)
     
@@ -635,9 +631,9 @@ finally:
     s.close()
     
     #Ensure the server didn't die
-    for i in xrange(100):
+    for i in range(100):
         if not HAS_EXITED:
-            print "*",
+            print("*", end=' ')
             time.sleep(1)
         else:
             AreEqual(EXIT_CODE, 0)

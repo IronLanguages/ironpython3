@@ -21,7 +21,7 @@ import imp
 if not is_silverlight:
     from iptest.file_util import *
     from iptest.process_util import *
-    import nt
+    import os
 
 
 try:
@@ -38,7 +38,7 @@ def test_cp7766():
         AreEqual(type(__builtins__), dict)
         
     try:
-        _t_test = testpath.public_testdir + "\\cp7766.py"
+        _t_test = path_combine(testpath.public_testdir, "cp7766.py")
         write_to_file(_t_test, "temp = __builtins__")
     
         import cp7766
@@ -46,8 +46,8 @@ def test_cp7766():
         Assert(cp7766.temp != __builtins__)
         
     finally:
-        import nt
-        nt.unlink(_t_test)
+        import os
+        os.unlink(_t_test)
 
 # generate test files on the fly
 if not is_silverlight:
@@ -220,8 +220,9 @@ if not is_silverlight:
 #########################################################################################
 
 def get_local_filename(base):
-    if __file__.count('\\'):
-        return __file__.rsplit("\\", 1)[0] + '\\'+ base
+    import os
+    if __file__.count(os.sep):
+        return path_combine(__file__.rsplit(os.sep, 1)[0], base)
     else:
         return base
 
@@ -229,7 +230,7 @@ def compileAndRef(name, filename, *args):
     if is_cli:
         import clr
         sys.path.append(sys.exec_prefix)
-        AreEqual(run_csc("/nologo /t:library " + ' '.join(args) + " /out:\"" + sys.exec_prefix + "\"\\" + name +".dll \"" + filename + "\""), 0)
+        AreEqual(run_csc("/nologo /t:library " + ' '.join(args) + " /out:\"" + path_combine(sys.exec_prefix, name +".dll") + "\" \"" + filename + "\""), 0)
         clr.AddReference(name)
 
 
@@ -662,6 +663,8 @@ def test_import_inside_exec():
     exec('from another import *')
     AssertInOrNot(dir(), ['a1', 'a2', 'a3'], ['_a4'])
 
+    os.unlink(_f_module)
+
 @skip("silverlight")
 def test___import___and_packages():
     try:
@@ -690,10 +693,11 @@ def test___import___and_packages():
         
     finally:
         sys.modules = mod_backup
-        nt.unlink(_f_module)
-        nt.unlink(_f_init)
-        nt.unlink(_f_pkg_y)
-        nt.unlink(_f_y)
+        os.unlink(_f_module)
+        os.unlink(_f_init)
+        os.unlink(_f_pkg_y)
+        os.unlink(_f_y)
+        os.rmdir(_f_dir)
 
 @skip("silverlight", "multiple_execute")
 def test_relative_imports():
@@ -769,10 +773,22 @@ from ..temp import foo1
         AreEqual(RelTest.foo1().bar(), 'foobar')
     finally:
         sys.modules = mod_backup
-        nt.unlink(_f_init)
-        nt.unlink(_f_pkg_y)
-        nt.unlink(_f_subinit)
-        nt.unlink(_f_subpkg_y)
+        os.unlink(_f_init)
+        os.unlink(_f_pkg_x)
+        os.unlink(_f_pkg_y)
+        os.unlink(_f_subinit)
+        os.unlink(_f_subpkg_x)
+        os.unlink(_f_subpkg_y)
+        os.unlink(_f_subpkg_z)
+        os.unlink(_f_subpkg_a)
+        os.unlink(_f_subpkg_b)
+        os.rmdir(_f_subdir)
+        os.rmdir(_f_dir)
+        os.unlink(_f_o_init)
+        os.unlink(_f_temp)
+        os.unlink(_f_sub_init)
+        os.rmdir(path_combine(testpath.public_testdir, _d_test, _subdir))
+        os.rmdir(path_combine(testpath.public_testdir, _d_test))
 
 @skip("silverlight")
 def test_import_globals():
@@ -813,12 +829,14 @@ sys.test4 = __import__("y", {}, {'__name__' : 'the_dir2.x.y'}).a
         AreEqual(sys.test2, 1)
     finally:
         sys.modules = backup
-        import nt
-        nt.unlink(_f_init)
-        nt.unlink(_f_dir_init)
-        nt.unlink(_f_x_y)
-        nt.unlink(_f_y)
-        nt.unlink(_f_test)
+        import os
+        os.unlink(_f_init)
+        os.unlink(_f_dir_init)
+        os.unlink(_f_x_y)
+        os.unlink(_f_y)
+        os.unlink(_f_test)
+        os.rmdir(_f_x)
+        os.rmdir(_f_dir)
 
 @skip("silverlight", "multiple_execute")
 def test_package_back_patching():
@@ -849,19 +867,19 @@ def test_package_back_patching():
         del sys.foo
     finally:
         sys.modules = mod_backup
-        nt.unlink(_f_init)
-        nt.unlink(_f_pkg_abc)
-        nt.unlink(_f_pkg_xyz)
+        os.unlink(_f_init)
+        os.unlink(_f_pkg_abc)
+        os.unlink(_f_pkg_xyz)
         
     
 #This cannot be placed in a test_* function as it uses 'from mod import *'
 if not is_silverlight: #cp3194
     try:
         mod_backup = dict(sys.modules)
-        _f_module = path_combine(testpath.public_testdir, 'the_test.py')
+        _f_module2 = path_combine(testpath.public_testdir, 'the_test.py')
         
         # write the files
-        write_to_file(_f_module, '''def foo(some_obj): return 3.14''')
+        write_to_file(_f_module2, '''def foo(some_obj): return 3.14''')
         
         from the_test import *
         AreEqual(foo(None), 3.14)
@@ -872,8 +890,8 @@ if not is_silverlight: #cp3194
         
     finally:
         sys.modules = mod_backup
-        import nt
-        nt.unlink(_f_module)
+        import os
+        os.unlink(_f_module2)
         
         
 @skip("silverlight", "multiple_execute")
@@ -899,9 +917,11 @@ def test_pack_module_relative_collision():
         AreEqual(test_dir.bar, 'BAR')
     finally:
         sys.modules = mod_backup
-        nt.unlink(_f_foo_py)
-        nt.unlink(_f_foo_init)
-        nt.unlink(_f_init)
+        os.unlink(_f_foo_py)
+        os.unlink(_f_foo_init)
+        os.unlink(_f_init)
+        os.rmdir(_f_foo_dir)
+        os.rmdir(_f_dir)
 
 @skip("silverlight", "multiple_execute")
 def test_from_import_publishes_in_package():
@@ -921,8 +941,9 @@ def test_from_import_publishes_in_package():
         AreEqual(type(test_dir2.foo), type(sys))
     finally:
         sys.modules = mod_backup
-        nt.unlink(_f_foo_py)
-        nt.unlink(_f_init)
+        os.unlink(_f_foo_py)
+        os.unlink(_f_init)
+        os.rmdir(_f_dir)
 
 @skip("silverlight", "multiple_execute")
 def test_from_import_publishes_in_package_relative():
@@ -946,8 +967,9 @@ def test_from_import_publishes_in_package_relative():
         AreEqual(type(test_dir3.foof), type(sys))
     finally:
         sys.modules = mod_backup
-        nt.unlink(_f_foo_py)
-        nt.unlink(_f_init)
+        os.unlink(_f_foo_py)
+        os.unlink(_f_init)
+        os.rmdir(_f_dir)
 
 @skip("silverlight", "multiple_execute")
 def test_from_import_publishes_in_package_relative():
@@ -970,8 +992,9 @@ def test_from_import_publishes_in_package_relative():
         AreEqual(type(test_dir3.foof), type(sys))
     finally:
         sys.modules = mod_backup
-        nt.unlink(_f_foo_py)
-        nt.unlink(_f_init)
+        os.unlink(_f_foo_py)
+        os.unlink(_f_init)
+        os.rmdir(_f_dir)
 
 @skip("silverlight", "multiple_execute")
 def test_from_import_publishes_in_package_relative_self():
@@ -994,8 +1017,9 @@ def test_from_import_publishes_in_package_relative_self():
         AreEqual(type(test_dir4.foof), type(sys))
     finally:
         sys.modules = mod_backup
-        nt.unlink(_f_foo_py)
-        nt.unlink(_f_init)
+        os.unlink(_f_foo_py)
+        os.unlink(_f_init)
+        os.rmdir(_f_dir)
 
 @skip("silverlight")
 def test_multiple_relative_imports_and_package():
@@ -1019,15 +1043,15 @@ def test_multiple_relative_imports_and_package():
         AreEqual(test_dir5.y, 42)
     finally:
         sys.modules = mod_backup
-        nt.unlink(_f_foo_py)
-        nt.unlink(_f_bar_py)
-        nt.unlink(_f_init)
+        os.unlink(_f_foo_py)
+        os.unlink(_f_bar_py)
+        os.unlink(_f_init)
+        os.rmdir(_f_dir)
 
 @skip("silverlight")
 def test_cp34551():
     try:
         mod_backup = dict(sys.modules)
-        print(testpath.public_testdir)
         _f_dir      = path_combine(testpath.public_testdir, 'test_dir6')
         _f_init     = path_combine(_f_dir, '__init__.py')
         _f_subdir   = path_combine(_f_dir, 'sub')
@@ -1055,9 +1079,65 @@ def bar():
 
     finally:
         sys.modules = mod_backup
-        nt.unlink(_f_foo_py)
-        nt.unlink(_f_subinit)
-        nt.unlink(_f_init)
+        os.unlink(_f_foo_py)
+        os.unlink(_f_subinit)
+        os.unlink(_f_init)
+        os.rmdir(_f_subdir)
+        os.rmdir(_f_dir)
+
+def test_cp35116():
+    try:
+        mod_backup = dict(sys.modules)
+        _f_dir      = path_combine(testpath.public_testdir, 'test_dir7')
+        _f_init     = path_combine(_f_dir, '__init__.py')
+        _f_pkg1     = path_combine(_f_dir, 'pkg1')
+        _f_pkg2     = path_combine(_f_dir, 'pkg2')
+        _f_pkg1init = path_combine(_f_pkg1, '__init__.py')
+        _f_pkg2init = path_combine(_f_pkg2, '__init__.py')
+        _f_m1       = path_combine(_f_pkg1, 'm1.py')
+        _f_m2       = path_combine(_f_pkg2, 'pkg1.py')
+
+        # write the files
+        ensure_directory_present(_f_dir)
+        ensure_directory_present(_f_pkg1)
+        ensure_directory_present(_f_pkg2)
+
+        write_to_file(_f_init, "from .pkg2 import *")
+        write_to_file(_f_pkg1init, "")
+        write_to_file(_f_pkg2init, "from .pkg1 import bar")
+        write_to_file(_f_m1, "foo = 42")
+        write_to_file(_f_m2, "bar = 'fourty two'")
+
+        import test_dir7
+        AreEqual(test_dir7.bar, 'fourty two')
+
+        # The following is not possible, 'sys.modules = mod_backup'
+        # obfuscates content of the real sys.modules
+        # AreEqual(test_dir7.pkg1, sys.modules['test_dir7.pkg2.pkg1'])
+        # AreEqual(test_dir7.pkg2, sys.modules['test_dir7.pkg2'])
+
+        AreEqual(test_dir7.pkg1.__name__, 'test_dir7.pkg2.pkg1')
+        AreEqual(test_dir7.pkg2.__name__, 'test_dir7.pkg2')
+
+        from test_dir7.pkg1.m1 import foo
+        AreEqual(foo, 42)
+
+        AreEqual(test_dir7.pkg1.__name__, 'test_dir7.pkg1')
+        AreEqual(test_dir7.pkg2.__name__, 'test_dir7.pkg2')
+
+    except ImportError:
+        Assert(False)
+
+    finally:
+        sys.modules = mod_backup
+        os.unlink(_f_m2)
+        os.unlink(_f_m1)
+        os.unlink(_f_pkg2init)
+        os.unlink(_f_pkg1init)
+        os.unlink(_f_init)
+        os.rmdir(_f_pkg1)
+        os.rmdir(_f_pkg2)
+        os.rmdir(_f_dir)
 
 
 #--MAIN------------------------------------------------------------------------
@@ -1065,4 +1145,4 @@ run_test(__name__)
 
 # remove all test files
 if not is_silverlight:
-    delete_all_f(__name__)
+    delete_all_f(__name__, remove_folders=True)

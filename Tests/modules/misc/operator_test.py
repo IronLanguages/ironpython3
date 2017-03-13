@@ -21,9 +21,8 @@ if sys.platform!="win32":
     
     import clr
     if not is_silverlight:
-        clr.AddReferenceByPartialName("System.Drawing")
+        clr.AddReference("System.Drawing")
     
-
 @skip("win32 silverlight")
 def test_sys_drawing():
     from System.Drawing import Point, Size, PointF, SizeF, Rectangle, RectangleF
@@ -85,7 +84,7 @@ def test_sys_drawing():
         for day in days:
             y |= day
         Assert(x == y)
-        Assert((x <> y) == False)
+        Assert((x != y) == False)
         if x == y:  # EqualRetBool
             b = True
         else :
@@ -213,7 +212,7 @@ def test_string_mult():
     fooInst = foo(3)
     
     AreEqual('aaa', 'a' * 3)
-    AreEqual('aaa', 'a' * 3L)
+    AreEqual('aaa', 'a' * 3)
     AreEqual('aaa', 'a' * fooInst)
     
     AreEqual('', 'a' * False)
@@ -231,8 +230,8 @@ def test_eq_ne_overloads():
 
     for base_type in [
                         dict, list, tuple,
-                        float, long, int, complex,
-                        str, unicode,
+                        float, int, int, complex,
+                        str, str,
                         object,
                       ]:
 
@@ -256,7 +255,7 @@ def test_num_binary_ops():
     class myfloat(float): pass
     class mycomplex(complex): pass
     
-    l = [2, 10L, (1+2j), 3.4, myint(7), mylong(5), myfloat(2.32), mycomplex(3, 2), True]
+    l = [2, 10, (1+2j), 3.4, myint(7), mylong(5), myfloat(2.32), mycomplex(3, 2), True]
     
     if is_cli or is_silverlight:
         l.append(System.Int64.Parse("5"))
@@ -291,8 +290,8 @@ def test_num_binary_ops():
                         Fail("Binary operator failed: %s, %s: %s %s %s (Message=%s)" % (type(a).__name__, type(b).__name__, str(a), sym, str(b), str(exc_value)))
     
     
-    threes = [ 3, 3L, 3.0 ]
-    zeroes = [ 0, 0L, 0.0 ]
+    threes = [ 3, 3, 3.0 ]
+    zeroes = [ 0, 0, 0.0 ]
     
     if is_cli or is_silverlight:
         threes.append(System.Int64.Parse("3"))
@@ -383,9 +382,9 @@ def test_sanity():
     AreEqual(operator.__abs__(0.0), 0.0)
     AreEqual(operator.__abs__(1.1), 1.1)
     AreEqual(operator.__abs__(-1.1), 1.1)
-    AreEqual(operator.__abs__(0L), 0L)
-    AreEqual(operator.__abs__(1L), 1L)
-    AreEqual(operator.__abs__(-1L), 1L)
+    AreEqual(operator.__abs__(0), 0)
+    AreEqual(operator.__abs__(1), 1)
+    AreEqual(operator.__abs__(-1), 1)
     
     #__neg__
     AreEqual(operator.__neg__(0), 0)
@@ -394,9 +393,9 @@ def test_sanity():
     AreEqual(operator.__neg__(0.0), 0.0)
     AreEqual(operator.__neg__(1.1), -1.1)
     AreEqual(operator.__neg__(-1.1), 1.1)
-    AreEqual(operator.__neg__(0L), 0L)
-    AreEqual(operator.__neg__(1L), -1L)
-    AreEqual(operator.__neg__(-1L), 1L)
+    AreEqual(operator.__neg__(0), 0)
+    AreEqual(operator.__neg__(1), -1)
+    AreEqual(operator.__neg__(-1), 1)
     
     #__pos__
     AreEqual(operator.__pos__(0), 0)
@@ -405,9 +404,9 @@ def test_sanity():
     AreEqual(operator.__pos__(0.0), 0.0)
     AreEqual(operator.__pos__(1.1), 1.1)
     AreEqual(operator.__pos__(-1.1), -1.1)
-    AreEqual(operator.__pos__(0L), 0L)
-    AreEqual(operator.__pos__(1L), 1L)
-    AreEqual(operator.__pos__(-1L), -1L)
+    AreEqual(operator.__pos__(0), 0)
+    AreEqual(operator.__pos__(1), 1)
+    AreEqual(operator.__pos__(-1), -1)
     
     #__add__
     AreEqual(operator.__add__(0, 0), 0)
@@ -416,9 +415,9 @@ def test_sanity():
     AreEqual(operator.__add__(0.0, 0.0), 0.0)
     AreEqual(operator.__add__(1.1, 2.1), 3.2)
     AreEqual(operator.__add__(-1.1, 2.1), 1.0)
-    AreEqual(operator.__add__(0L, 0L), 0L)
-    AreEqual(operator.__add__(1L, 2L), 3L)
-    AreEqual(operator.__add__(-1L, 2L), 1L)
+    AreEqual(operator.__add__(0, 0), 0)
+    AreEqual(operator.__add__(1, 2), 3)
+    AreEqual(operator.__add__(-1, 2), 1)
     
     #__sub__
     AreEqual(operator.__sub__(0, 0), 0)
@@ -427,9 +426,9 @@ def test_sanity():
     AreEqual(operator.__sub__(0.0, 0.0), 0.0)
     AreEqual(operator.__sub__(1.1, 2.1), -1.0)
     AreEqual(operator.__sub__(-1.1, 2.1), -3.2)
-    AreEqual(operator.__sub__(0L, 0L), 0L)
-    AreEqual(operator.__sub__(1L, 2L), -1L)
-    AreEqual(operator.__sub__(-1L, 2L), -3L)
+    AreEqual(operator.__sub__(0, 0), 0)
+    AreEqual(operator.__sub__(1, 2), -1)
+    AreEqual(operator.__sub__(-1, 2), -3)
     
     #__mul__
     AreEqual(operator.__mul__(0, 0), 0)
@@ -438,9 +437,9 @@ def test_sanity():
     AreEqual(operator.__mul__(0.0, 0.0), 0.0)
     AreEqual(operator.__mul__(2.0, 3.0), 6.0)
     AreEqual(operator.__mul__(-2.0, 3.0), -6.0)
-    AreEqual(operator.__mul__(0L, 0L), 0L)
-    AreEqual(operator.__mul__(1L, 2L), 2L)
-    AreEqual(operator.__mul__(-1L, 2L), -2L)
+    AreEqual(operator.__mul__(0, 0), 0)
+    AreEqual(operator.__mul__(1, 2), 2)
+    AreEqual(operator.__mul__(-1, 2), -2)
     
     #__div__
     AreEqual(operator.__div__(0, 1), 0)
@@ -449,9 +448,9 @@ def test_sanity():
     AreEqual(operator.__div__(0.0, 1.0), 0.0)
     AreEqual(operator.__div__(4.0, 2.0), 2.0)
     AreEqual(operator.__div__(-4.0, 2.0), -2.0)
-    AreEqual(operator.__div__(0L, 1L), 0L)
-    AreEqual(operator.__div__(4L, 2L), 2L)
-    AreEqual(operator.__div__(-4L, 2L), -2L)
+    AreEqual(operator.__div__(0, 1), 0)
+    AreEqual(operator.__div__(4, 2), 2)
+    AreEqual(operator.__div__(-4, 2), -2)
     
     #__floordiv__
     AreEqual(operator.__floordiv__(0, 1), 0)
@@ -460,9 +459,9 @@ def test_sanity():
     AreEqual(operator.__floordiv__(0.0, 1.0), 0.0)
     AreEqual(operator.__floordiv__(4.0, 2.0), 2.0)
     AreEqual(operator.__floordiv__(-4.0, 2.0), -2.0)
-    AreEqual(operator.__floordiv__(0L, 1L), 0L)
-    AreEqual(operator.__floordiv__(4L, 2L), 2L)
-    AreEqual(operator.__floordiv__(-4L, 2L), -2L)
+    AreEqual(operator.__floordiv__(0, 1), 0)
+    AreEqual(operator.__floordiv__(4, 2), 2)
+    AreEqual(operator.__floordiv__(-4, 2), -2)
 
     #__truediv__
     AreEqual(operator.__truediv__(0, 1), 0)
@@ -471,9 +470,9 @@ def test_sanity():
     AreEqual(operator.__truediv__(0.0, 1.0), 0.0)
     AreEqual(operator.__truediv__(4.0, 2.0), 2.0)
     AreEqual(operator.__truediv__(-1.0, 2.0), -0.5)
-    AreEqual(operator.__truediv__(0L, 1L), 0L)
-    AreEqual(operator.__truediv__(4L, 2L), 2L)
-    AreEqual(operator.__truediv__(-4L, 2L), -2L)
+    AreEqual(operator.__truediv__(0, 1), 0)
+    AreEqual(operator.__truediv__(4, 2), 2)
+    AreEqual(operator.__truediv__(-4, 2), -2)
     
     #__mod__
     AreEqual(operator.__mod__(0, 1), 0)
@@ -482,49 +481,49 @@ def test_sanity():
     AreEqual(operator.__mod__(0.0, 1.0), 0.0)
     AreEqual(operator.__mod__(4.0, 2.0), 0.0)
     AreEqual(operator.__mod__(-1.0, 2.0), 1.0)
-    AreEqual(operator.__mod__(0L, 1L), 0L)
-    AreEqual(operator.__mod__(4L, 2L), 0L)
-    AreEqual(operator.__mod__(-4L, 2L), 0L)
+    AreEqual(operator.__mod__(0, 1), 0)
+    AreEqual(operator.__mod__(4, 2), 0)
+    AreEqual(operator.__mod__(-4, 2), 0)
     
     #__inv__
     AreEqual(operator.__inv__(0), -1)
     AreEqual(operator.__inv__(1), -2)
     AreEqual(operator.__inv__(-1), 0)
-    AreEqual(operator.__inv__(0L), -1L)
-    AreEqual(operator.__inv__(1L), -2L)
-    AreEqual(operator.__inv__(-1L), 0L)
+    AreEqual(operator.__inv__(0), -1)
+    AreEqual(operator.__inv__(1), -2)
+    AreEqual(operator.__inv__(-1), 0)
 
     #__invert__
     AreEqual(operator.__invert__(0), -1)
     AreEqual(operator.__invert__(1), -2)
     AreEqual(operator.__invert__(-1), 0)
-    AreEqual(operator.__invert__(0L), -1L)
-    AreEqual(operator.__invert__(1L), -2L)
-    AreEqual(operator.__invert__(-1L), 0L)
+    AreEqual(operator.__invert__(0), -1)
+    AreEqual(operator.__invert__(1), -2)
+    AreEqual(operator.__invert__(-1), 0)
 
     #__lshift__
     AreEqual(operator.__lshift__(0, 1), 0)
     AreEqual(operator.__lshift__(1, 1), 2)
     AreEqual(operator.__lshift__(-1, 1), -2)
-    AreEqual(operator.__lshift__(0L, 1), 0L)
-    AreEqual(operator.__lshift__(1L, 1), 2L)
-    AreEqual(operator.__lshift__(-1L, 1), -2L)
+    AreEqual(operator.__lshift__(0, 1), 0)
+    AreEqual(operator.__lshift__(1, 1), 2)
+    AreEqual(operator.__lshift__(-1, 1), -2)
     
     #__rshift__
     AreEqual(operator.__rshift__(1, 1), 0)
     AreEqual(operator.__rshift__(2, 1), 1)
     AreEqual(operator.__rshift__(-1, 1), -1)
-    AreEqual(operator.__rshift__(1L, 1), 0L)
-    AreEqual(operator.__rshift__(2L, 1), 1L)
-    AreEqual(operator.__rshift__(-1L, 1), -1L)
+    AreEqual(operator.__rshift__(1, 1), 0)
+    AreEqual(operator.__rshift__(2, 1), 1)
+    AreEqual(operator.__rshift__(-1, 1), -1)
     
     #__not__
     AreEqual(operator.__not__(0), 1)
     AreEqual(operator.__not__(1), 0)
     AreEqual(operator.__not__(-1), 0)
-    AreEqual(operator.__not__(0L), 1)
-    AreEqual(operator.__not__(1L), 0)
-    AreEqual(operator.__not__(-1L), 0)
+    AreEqual(operator.__not__(0), 1)
+    AreEqual(operator.__not__(1), 0)
+    AreEqual(operator.__not__(-1), 0)
     
     #__and__
     AreEqual(operator.__and__(0, 0), 0)
@@ -622,7 +621,7 @@ def test_py25_operator():
    
     class foo(object):
         for x in ops:
-            exec 'def __%s__(self, other): return "%s", other' % (x, x)
+            exec('def __%s__(self, other): return "%s", other' % (x, x))
 
     for x in ops:
         AreEqual(getattr(operator, x)(foo(), 42), (x, 42))

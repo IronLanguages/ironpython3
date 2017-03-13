@@ -80,7 +80,7 @@ def test_sanity_re():
     AreEqual(re.split("(abc){1}", "abcxyz"), ['', 'abc', 'xyz'])
     #maxsplit
     AreEqual(re.split("(abc){1}", "abc", 0), ['', 'abc', ''])
-    for i in xrange(3):
+    for i in range(3):
         AreEqual(re.split("(abc){1}", "abc", maxsplit=i), ['', 'abc', ''])
         AreEqual(re.split("(abc){1}", "", maxsplit=i), [''])
         AreEqual(re.split("(abc){1}", "abcxyz", maxsplit=i), ['', 'abc', 'xyz'])
@@ -118,6 +118,7 @@ def test_sanity_re():
     AreEqual(re.sub("(abc){1}", "1", "abcd", count=0), "1d")
     AreEqual(re.sub("(abc){1}", "1", "abcdabcd", 1), "1dabcd")
     AreEqual(re.sub("(abc){1}", "1", "abcdabcd", 2), "1d1d")
+    AreEqual(re.sub("(abc){1}", "1", "ABCdabcd", 2, flags=re.I), "1d1d")
     
     #subn
     AreEqual(re.subn("(abc){1}", "9", "abcd"), ("9d", 1))
@@ -126,6 +127,7 @@ def test_sanity_re():
     AreEqual(re.subn("(abc){1}", "1", "abcd", count=0), ("1d",1))
     AreEqual(re.subn("(abc){1}", "1", "abcdabcd", 1), ("1dabcd",1))
     AreEqual(re.subn("(abc){1}", "1", "abcdabcd", 2), ("1d1d",2))
+    AreEqual(re.subn("(abc){1}", "1", "ABCdabcd", 2, flags=re.I), ("1d1d",2))
     
     #escape
     AreEqual(re.escape("abc"), "abc")
@@ -803,6 +805,22 @@ def test_conditional():
         AreEqual(p.match('ab').groups(), ('ab',))
     else:
         AssertError(re.error, re.compile, s)
-    
+
+def test_cp35146():
+    # re.compile returns cached instances
+    AreEqual(re.compile('cp35146'), re.compile('cp35146'))
+
+def test_cp35135():
+    AreEqual(re.match(r"(?iu)aA", "aa").string, "aa")
+    AreEqual(re.match(r"(?iu)Aa", "aa").string, "aa")
+    AreEqual(re.match(r"(?iLmsux)Aa", "aa").string, "aa")
+
+def test_issue506():
+    AreEqual(re.compile("^a", re.M).search("ba", 1), None)
+
+def test_issue1370():
+    AreEqual(re.compile("\Z").match("\n"), None)
+    AreEqual(re.compile("\Z").match("").group(0), "")
+
 #--MAIN------------------------------------------------------------------------        
 run_test(__name__)

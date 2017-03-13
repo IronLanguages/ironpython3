@@ -49,7 +49,7 @@ def test_set_threshold():
     AreEqual(result[0],0)
     AreEqual(result[1],128)
     #CodePlex Work Item 8523
-    #AreEqual(result[2],2)
+    AreEqual(result[2],2)
     
    
     #the method has only one argument
@@ -57,39 +57,39 @@ def test_set_threshold():
     result= gc.get_threshold()
     AreEqual(result[0],-10009)
     #CodePlex Work Item 8523
-    #AreEqual(result[1],128)
-    #AreEqual(result[2],2)
+    AreEqual(result[1],128)
+    AreEqual(result[2],2)
     
     #the argument is a random int
-    for i in xrange(1,65535,6):
+    for i in range(1,65535,6):
         gc.set_threshold(i)
         result = gc.get_threshold()
         AreEqual(result[0],i)
     
     #a argument is a float
     #CodePlex Work Item 8522
-    #gc.set_threshold(2.1)
-    #gc.set_threshold(3,-1.3)
+    AssertError(TypeError,gc.set_threshold,2.1)
+    AssertError(TypeError,gc.set_threshold,3,-1.3)
     
     #a argument is a string
     #CodePlex Work Item 8522
-    #AssertError(TypeError,gc.set_threshold,"1")
-    #AssertError(TypeError,gc.set_threshold,"str","xdv#4")
-    #AssertError(TypeError,gc.set_threshold,2,"1")
-    #AssertError(TypeError,gc.set_threshold,31,-123,"asdfasdf","1")
+    AssertError(TypeError,gc.set_threshold,"1")
+    AssertError(TypeError,gc.set_threshold,"str","xdv#4")
+    AssertError(TypeError,gc.set_threshold,2,"1")
+    AssertError(TypeError,gc.set_threshold,31,-123,"asdfasdf","1")
     
     #a argument is a object
     #CodePlex Work Item 8522
-    #o  = object()
-    #o2 = object()
-    #AssertError(TypeError,gc.set_threshold,o)
-    #AssertError(TypeError,gc.set_threshold,o,o2)
-    #AssertError(TypeError,gc.set_threshold,1,-123,o)
-    #o  = _random.Random()
-    #o2 = _random.Random()
-    #AssertError(TypeError,gc.set_threshold,o)
-    #AssertError(TypeError,gc.set_threshold,o,o2)
-    #AssertError(TypeError,gc.set_threshold,8,64,o)
+    o  = object()
+    o2 = object()
+    AssertError(TypeError,gc.set_threshold,o)
+    AssertError(TypeError,gc.set_threshold,o,o2)
+    AssertError(TypeError,gc.set_threshold,1,-123,o)
+    o  = _random.Random()
+    o2 = _random.Random()
+    AssertError(TypeError,gc.set_threshold,o)
+    AssertError(TypeError,gc.set_threshold,o,o2)
+    AssertError(TypeError,gc.set_threshold,8,64,o)
     
 #get_referrers
 def test_get_referrers():
@@ -168,7 +168,7 @@ def test_setdebug():
     if is_cli or is_silverlight:
         for debug in debug_list:
             AssertError(NotImplementedError, gc.set_debug,debug)
-            AreEqual(None,gc.get_debug())
+            AreEqual(0,gc.get_debug())
     else:
         for debug in debug_list:
             gc.set_debug(debug)
@@ -203,7 +203,7 @@ def test_get_debug():
         Fail("Returned value of getdebug method is not valid value:" + str(result))
 
 #CodePlex Work Item# 8202
-#if gc.get_debug()!=0:
-#    raise "Failed - get_debug should return 0 if set_debug has not been used"
+if gc.get_debug()!=0:
+    raise "Failed - get_debug should return 0 if set_debug has not been used"
    
 run_test(__name__)

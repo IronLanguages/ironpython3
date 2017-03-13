@@ -35,12 +35,12 @@ engine = Python.CreateEngine()
 # Utils
 def pt(tokens):
     for token in tokens:
-        print "t.%s(From(%d,%d,%d), To(%d,%d,%d)%s)," % \
+        print("t.%s(From(%d,%d,%d), To(%d,%d,%d)%s)," % \
         (token.Category.ToString(), token.SourceSpan.Start.Index,
         token.SourceSpan.Start.Line, token.SourceSpan.Start.Column,
         token.SourceSpan.End.Index, token.SourceSpan.End.Line,
         token.SourceSpan.End.Column,
-        "" if token.Trigger == TokenTriggers.None else token.Trigger)
+        "" if token.Trigger == TokenTriggers.None else token.Trigger))
 
 def get_tokens(src, charcount = -1):
     if charcount == -1:

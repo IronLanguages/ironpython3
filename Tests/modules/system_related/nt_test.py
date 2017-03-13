@@ -14,7 +14,7 @@
 #####################################################################################
 
 from iptest.assert_util import *
-skiptest("silverlight")
+skiptest("silverlight", "posix")
 from iptest.file_util import *
 import _random
 from exceptions import IOError
@@ -23,7 +23,7 @@ import nt
 import errno
 
 
-AreEqual(nt.environ.has_key('COMPUTERNAME') or nt.environ.has_key('computername'), True)
+AreEqual('COMPUTERNAME' in nt.environ or 'computername' in nt.environ, True)
 
 # mkdir,listdir,rmdir,getcwd
 def test_mkdir():
@@ -38,7 +38,7 @@ def test_mkdir_negative():
     try:
         nt.mkdir("dir_create_test")
         AssertUnreachable("Cannot create the same directory twice")
-    except WindowsError, e:
+    except WindowsError as e:
         AreEqual(e.errno, 17)
         
     #if it fails once...it should fail again
@@ -50,10 +50,7 @@ def test_mkdir_negative():
 
 def test_listdir():
     AssertError(TypeError, nt.listdir, None)
-    if is_cpython: #http://ironpython.codeplex.com/workitem/28207
-        AreEqual(nt.listdir(nt.getcwd()), nt.listdir('.'))
-    else:
-        AreEqual(nt.listdir(''), nt.listdir('.'))
+    AreEqual(nt.listdir(nt.getcwd()), nt.listdir('.'))
 
 # stat,lstat
 def test_stat():
@@ -149,13 +146,7 @@ def test_chdir():
 
 # fdopen tests
 def test_fdopen():
-    
-    # IronPython does not implement the nt.dup function
-    if not is_cli:
-        fd_lambda = lambda x: nt.dup(x)
-    else:
-        AssertError(AttributeError, lambda: nt.dup)
-        fd_lambda = lambda x: x
+    fd_lambda = lambda x: nt.dup(x)
     
     # fd = 0    
     result = None
@@ -258,10 +249,10 @@ def test_chmod():
 
 def test_popen():
     # open a pipe just for reading...
-    pipe_modes = [["ping 127.0.0.1", "r"],
-                  ["ping 127.0.0.1"]]
+    pipe_modes = [["ping 127.0.0.1 -n 1", "r"],
+                  ["ping 127.0.0.1 -n 1"]]
     if is_cli:
-        pipe_modes.append(["ping 127.0.0.1", ""])
+        pipe_modes.append(["ping 127.0.0.1 -n 1", ""])
         
     for args in pipe_modes:
         x = nt.popen(*args)
@@ -280,7 +271,7 @@ def test_popen():
     #AreEqual(x.close(), None)
 
     # once w/ default mode
-    AssertError(ValueError, nt.popen, "ping 127.0.0.1", "a")
+    AssertError(ValueError, nt.popen, "ping 127.0.0.1 -n 1", "a")
 
     # popen uses cmd.exe to run stuff -- at least sometimes
     dir_pipe = nt.popen('dir')
@@ -349,8 +340,8 @@ def test_popen():
         try:
             nt.chmod(tmpfile, 128)
             nt.unlink(tmpfile)
-        except Exception, e:
-            print "exc", e
+        except Exception as e:
+            print("exc", e)
 
     # verify that nt.stat reports times in seconds, not ticks...
 
@@ -482,7 +473,7 @@ def test_putenv():
     nt.putenv("IPY_TEST_ENV_VAR", "xyz")
        
     #ensure it really does what it claims to do
-    Assert(not nt.environ.has_key("IPY_TEST_ENV_VAR"))
+    Assert("IPY_TEST_ENV_VAR" not in nt.environ)
     
     #negative cases
     AssertError(TypeError, nt.putenv, None, "xyz")
@@ -499,7 +490,7 @@ def test_unsetenv():
     if is_cli:
         nt.putenv("ipy_test_env_var", "xyz")
         nt.unsetenv("ipy_test_env_var_unset")
-        Assert(not nt.environ.has_key("ipy_test_env_var_unset"))
+        Assert("ipy_test_env_var_unset" not in nt.environ)
      
 
 # remove tests
@@ -610,7 +601,7 @@ def test_spawnl():
     #sanity check
     #CPython nt has no spawnl function
     pint_cmd = ping_cmd = get_environ_variable("windir") + "\system32\ping.exe"
-    nt.spawnl(nt.P_WAIT, ping_cmd , "ping","127.0.0.1")
+    nt.spawnl(nt.P_WAIT, ping_cmd , "ping","127.0.0.1","-n","1")
     nt.spawnl(nt.P_WAIT, ping_cmd , "ping","/?")
     nt.spawnl(nt.P_WAIT, ping_cmd , "ping")
     
@@ -624,8 +615,7 @@ def test_spawnv():
     #sanity check
     ping_cmd = get_environ_variable("windir") + "\system32\ping"
     nt.spawnv(nt.P_WAIT, ping_cmd , ["ping"])
-    nt.spawnv(nt.P_WAIT, ping_cmd , ["ping","127.0.0.1"])
-    nt.spawnv(nt.P_WAIT, ping_cmd, ["ping", "-n", "5", "-w", "5000", "127.0.0.1"])
+    nt.spawnv(nt.P_WAIT, ping_cmd , ["ping","127.0.0.1","-n","1"])
     
         
 # spawnve tests
@@ -637,7 +627,7 @@ def test_spawnve():
     #simple sanity checks
     nt.spawnve(nt.P_WAIT, ping_cmd, ["ping", "/?"], {})
     nt.spawnve(nt.P_WAIT, ping_cmd, ["ping", "127.0.0.1"], {})
-    nt.spawnve(nt.P_WAIT, ping_cmd, ["ping", "-n", "6", "-w", "1000", "127.0.0.1"], {})
+    nt.spawnve(nt.P_WAIT, ping_cmd, ["ping", "-n", "2", "-w", "1000", "127.0.0.1"], {})
     
     #negative cases
     AssertError(TypeError, nt.spawnve, nt.P_WAIT, ping_cmd , ["ping", "/?"], None)
@@ -664,7 +654,7 @@ def test_waitpid():
     '''
     #sanity check
     ping_cmd = get_environ_variable("windir") + "\system32\ping"
-    pid = nt.spawnv(nt.P_NOWAIT, ping_cmd ,  ["ping", "-n", "5", "-w", "1000", "127.0.0.1"])
+    pid = nt.spawnv(nt.P_NOWAIT, ping_cmd ,  ["ping", "-n", "1", "127.0.0.1"])
     
     new_pid, exit_stat = nt.waitpid(pid, 0)
     
@@ -692,11 +682,8 @@ def test_stat_result():
     AreEqual(object.st_mtime,8)
     AreEqual(object.st_ctime,9)
     
-    if is_cli: #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21917
-        AreEqual(str(nt.stat_result(range(12))), "(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)") #CodePlex 8755
-    else:
-        AreEqual(str(nt.stat_result(range(12))), 
-                 "nt.stat_result(st_mode=0, st_ino=1, st_dev=2, st_nlink=3, st_uid=4, st_gid=5, st_size=6, st_atime=7, st_mtime=8, st_ctime=9)") #CodePlex 8755
+    AreEqual(str(nt.stat_result(list(range(12)))),
+             "nt.stat_result(st_mode=0, st_ino=1, st_dev=2, st_nlink=3, st_uid=4, st_gid=5, st_size=6, st_atime=7, st_mtime=8, st_ctime=9)") #CodePlex 8755
     
     #negative tests
     statResult = [0,1,2,3,4,5,6,7,8,]
@@ -717,24 +704,24 @@ def test_stat_result():
     AreEqual(x.st_ctime, 'r')
     
     # can pass dict to get values...
-    x = nt.stat_result(xrange(10), {'st_atime': 23, 'st_mtime':42, 'st_ctime':2342})
+    x = nt.stat_result(range(10), {'st_atime': 23, 'st_mtime':42, 'st_ctime':2342})
     AreEqual(x.st_atime, 23)
     AreEqual(x.st_mtime, 42)
     AreEqual(x.st_ctime, 2342)
     
     # positional values take precedence over dict values
-    x = nt.stat_result(xrange(13), {'st_atime': 23, 'st_mtime':42, 'st_ctime':2342})
+    x = nt.stat_result(range(13), {'st_atime': 23, 'st_mtime':42, 'st_ctime':2342})
     AreEqual(x.st_atime, 10)
     AreEqual(x.st_mtime, 11)
     AreEqual(x.st_ctime, 12)
 
-    x = nt.stat_result(xrange(13))
+    x = nt.stat_result(range(13))
     AreEqual(x.st_atime, 10)
     AreEqual(x.st_mtime, 11)
     AreEqual(x.st_ctime, 12)
     
     # other values are ignored...
-    x = nt.stat_result(xrange(13), {'st_dev': 42, 'st_gid': 42, 'st_ino': 42, 'st_mode': 42, 'st_nlink': 42, 'st_size':42, 'st_uid':42})
+    x = nt.stat_result(range(13), {'st_dev': 42, 'st_gid': 42, 'st_ino': 42, 'st_mode': 42, 'st_nlink': 42, 'st_size':42, 'st_uid':42})
     AreEqual(x.st_mode, 0)
     AreEqual(x.st_ino, 1)
     AreEqual(x.st_dev, 2)
@@ -751,59 +738,59 @@ def test_stat_result():
     #--Misc
     
     #+
-    x = nt.stat_result(range(10))
+    x = nt.stat_result(list(range(10)))
     AreEqual(x + (), x)
-    AreEqual(x + tuple(x), tuple(range(10)*2))
+    AreEqual(x + tuple(x), tuple(list(range(10))*2))
     AssertError(TypeError, lambda: x + (1))
     AssertError(TypeError, lambda: x + 1)
     AssertError(TypeError, lambda: x + x)
     
     #> (list/object)
-    Assert(nt.stat_result(range(10)) > None)
-    Assert(nt.stat_result(range(10)) > 1)
-    Assert(nt.stat_result(range(10)) > range(10))
-    Assert(nt.stat_result([1 for x in range(10)]) > nt.stat_result(range(10)))
-    Assert(not nt.stat_result(range(10)) > nt.stat_result(range(10)))
-    Assert(not nt.stat_result(range(10)) > nt.stat_result(range(11)))
-    Assert(not nt.stat_result(range(10)) > nt.stat_result([1 for x in range(10)]))
-    Assert(not nt.stat_result(range(11)) > nt.stat_result(range(10)))
+    Assert(nt.stat_result(list(range(10))) > None)
+    Assert(nt.stat_result(list(range(10))) > 1)
+    Assert(nt.stat_result(list(range(10))) > list(range(10)))
+    Assert(nt.stat_result([1 for x in range(10)]) > nt.stat_result(list(range(10))))
+    Assert(not nt.stat_result(list(range(10))) > nt.stat_result(list(range(10))))
+    Assert(not nt.stat_result(list(range(10))) > nt.stat_result(list(range(11))))
+    Assert(not nt.stat_result(list(range(10))) > nt.stat_result([1 for x in range(10)]))
+    Assert(not nt.stat_result(list(range(11))) > nt.stat_result(list(range(10))))
     
     #< (list/object)
-    Assert(not nt.stat_result(range(10)) < None)
-    Assert(not nt.stat_result(range(10)) < 1)
-    Assert(not nt.stat_result(range(10)) < range(10))
-    Assert(not nt.stat_result([1 for x in range(10)]) < nt.stat_result(range(10)))
-    Assert(not nt.stat_result(range(10)) < nt.stat_result(range(10)))
-    Assert(not nt.stat_result(range(10)) < nt.stat_result(range(11)))
-    Assert(nt.stat_result(range(10)) < nt.stat_result([1 for x in range(10)]))
-    Assert(not nt.stat_result(range(11)) < nt.stat_result(range(10)))
+    Assert(not nt.stat_result(list(range(10))) < None)
+    Assert(not nt.stat_result(list(range(10))) < 1)
+    Assert(not nt.stat_result(list(range(10))) < list(range(10)))
+    Assert(not nt.stat_result([1 for x in range(10)]) < nt.stat_result(list(range(10))))
+    Assert(not nt.stat_result(list(range(10))) < nt.stat_result(list(range(10))))
+    Assert(not nt.stat_result(list(range(10))) < nt.stat_result(list(range(11))))
+    Assert(nt.stat_result(list(range(10))) < nt.stat_result([1 for x in range(10)]))
+    Assert(not nt.stat_result(list(range(11))) < nt.stat_result(list(range(10))))
     
     #>= (list/object)
-    Assert(nt.stat_result(range(10)) >= None)
-    Assert(nt.stat_result(range(10)) >= 1)
-    Assert(nt.stat_result(range(10)) >= range(10))
-    Assert(nt.stat_result([1 for x in range(10)]) >= nt.stat_result(range(10)))
-    Assert(nt.stat_result(range(10)) >= nt.stat_result(range(10)))
-    Assert(nt.stat_result(range(10)) >= nt.stat_result(range(11)))
-    Assert(not nt.stat_result(range(10)) >= nt.stat_result([1 for x in range(10)]))
-    Assert(nt.stat_result(range(11)) >= nt.stat_result(range(10)))
+    Assert(nt.stat_result(list(range(10))) >= None)
+    Assert(nt.stat_result(list(range(10))) >= 1)
+    Assert(nt.stat_result(list(range(10))) >= list(range(10)))
+    Assert(nt.stat_result([1 for x in range(10)]) >= nt.stat_result(list(range(10))))
+    Assert(nt.stat_result(list(range(10))) >= nt.stat_result(list(range(10))))
+    Assert(nt.stat_result(list(range(10))) >= nt.stat_result(list(range(11))))
+    Assert(not nt.stat_result(list(range(10))) >= nt.stat_result([1 for x in range(10)]))
+    Assert(nt.stat_result(list(range(11))) >= nt.stat_result(list(range(10))))
     
     #<= (list/object)
-    Assert(not nt.stat_result(range(10)) <= None)
-    Assert(not nt.stat_result(range(10)) <= 1)
-    Assert(not nt.stat_result(range(10)) <= range(10))
-    Assert(not nt.stat_result([1 for x in range(10)]) <= nt.stat_result(range(10)))
-    Assert(nt.stat_result(range(10)) <= nt.stat_result(range(10)))
-    Assert(nt.stat_result(range(10)) <= nt.stat_result(range(11)))
-    Assert(nt.stat_result(range(10)) <= nt.stat_result([1 for x in range(10)]))
-    Assert(nt.stat_result(range(11)) <= nt.stat_result(range(10)))
+    Assert(not nt.stat_result(list(range(10))) <= None)
+    Assert(not nt.stat_result(list(range(10))) <= 1)
+    Assert(not nt.stat_result(list(range(10))) <= list(range(10)))
+    Assert(not nt.stat_result([1 for x in range(10)]) <= nt.stat_result(list(range(10))))
+    Assert(nt.stat_result(list(range(10))) <= nt.stat_result(list(range(10))))
+    Assert(nt.stat_result(list(range(10))) <= nt.stat_result(list(range(11))))
+    Assert(nt.stat_result(list(range(10))) <= nt.stat_result([1 for x in range(10)]))
+    Assert(nt.stat_result(list(range(11))) <= nt.stat_result(list(range(10))))
     
     #* (size/stat_result)
-    x = nt.stat_result(range(10))
+    x = nt.stat_result(list(range(10)))
     AreEqual(x * 1, tuple(x))
-    AreEqual(x * 2, tuple(range(10)*2))
+    AreEqual(x * 2, tuple(list(range(10))*2))
     AreEqual(1 * x, tuple(x))
-    AreEqual(3 * x, tuple(range(10)*3))
+    AreEqual(3 * x, tuple(list(range(10))*3))
     AssertError(TypeError, lambda: x * x)
     AssertError(TypeError, lambda: x * 3.14)
     AssertError(TypeError, lambda: x * None)
@@ -811,27 +798,22 @@ def test_stat_result():
     AssertError(TypeError, lambda: "abc" * x)
     
     #__repr__
-    x = nt.stat_result(range(10))
-    if is_cpython:
-        AreEqual(x.__repr__(),
-                 "nt.stat_result(st_mode=0, st_ino=1, st_dev=2, st_nlink=3, st_uid=4, st_gid=5, st_size=6, st_atime=7, st_mtime=8, st_ctime=9)")
-    else:
-        #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21917
-        AreEqual(x.__repr__(),
-                 "(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)")
+    x = nt.stat_result(list(range(10)))
+    AreEqual(x.__repr__(),
+             "nt.stat_result(st_mode=0, st_ino=1, st_dev=2, st_nlink=3, st_uid=4, st_gid=5, st_size=6, st_atime=7, st_mtime=8, st_ctime=9)")
     
     #index get/set
-    x = nt.stat_result(range(10))
-    for i in xrange(10):
+    x = nt.stat_result(list(range(10)))
+    for i in range(10):
         AreEqual(x[i], i)
     
     def temp_func():        
-        z = nt.stat_result(range(10))
+        z = nt.stat_result(list(range(10)))
         z[3] = 4
     AssertError(TypeError, temp_func)
     
     #__getslice__
-    x = nt.stat_result(range(10))
+    x = nt.stat_result(list(range(10)))
     AreEqual(x[1:3], (1, 2))
     AreEqual(x[7:100], (7, 8, 9))
     AreEqual(x[7:-100], ())
@@ -840,8 +822,8 @@ def test_stat_result():
     AreEqual(x[-2:1000], (8,9))
     
     #__contains__
-    x = nt.stat_result(range(10))
-    for i in xrange(10):
+    x = nt.stat_result(list(range(10)))
+    for i in range(10):
         Assert(i in x)
         x.__contains__(i)
     Assert(-1 not in x)
@@ -849,11 +831,11 @@ def test_stat_result():
     Assert(20 not in x)
     
     #GetHashCode
-    x = nt.stat_result(range(10))
+    x = nt.stat_result(list(range(10)))
     Assert(type(hash(x))==int)
     
     #IndexOf
-    x = nt.stat_result(range(10))
+    x = nt.stat_result(list(range(10)))
     AreEqual(x.__getitem__(0), 0)
     AreEqual(x.__getitem__(3), 3)
     AreEqual(x.__getitem__(9), 9)
@@ -862,21 +844,21 @@ def test_stat_result():
     AssertError(IndexError, lambda: x.__getitem__(11))
     
     #Insert
-    x = nt.stat_result(range(10))
+    x = nt.stat_result(list(range(10)))
     AreEqual(x.__add__(()), tuple(x))
     AreEqual(x.__add__((1,2,3)), tuple(x) + (1, 2, 3))
     AssertError(TypeError, lambda: x.__add__(3))
     AssertError(TypeError, lambda: x.__add__(None))
     
     #Remove
-    x = nt.stat_result(range(10))
+    x = nt.stat_result(list(range(10)))
     def temp_func():
-        z = nt.stat_result(range(10))
+        z = nt.stat_result(list(range(10)))
         del z[3]
     AssertError(TypeError, temp_func)
     
     #enumerate
-    x = nt.stat_result(range(10))
+    x = nt.stat_result(list(range(10)))
     temp_list = []
     for i in x:
         temp_list.append(i)
@@ -890,7 +872,7 @@ def test_stat_result():
     AreEqual(tuple(x), tuple(temp_list))
     
     temp = Exception()
-    statResult = [temp for i in xrange(10)]
+    statResult = [temp for i in range(10)]
     x = nt.stat_result(statResult)
     temp_list = []
     for i in x:
@@ -981,9 +963,9 @@ def test_open():
 
 def test_system_minimal():
     Assert(hasattr(nt, "system"))
-    AreEqual(nt.system("ping localhost"), 0)
-    AreEqual(nt.system('"ping localhost"'), 0)
-    AreEqual(nt.system('"ping localhost'), 0)
+    AreEqual(nt.system("ping localhost -n 1"), 0)
+    AreEqual(nt.system('"ping localhost -n 1"'), 0)
+    AreEqual(nt.system('"ping localhost -n 1'), 0)
         
     AreEqual(nt.system("ping"), 1)
     
@@ -1014,7 +996,9 @@ def test_access():
     f.close()
     
     AreEqual(nt.access('new_file_name', nt.F_OK), True)
+    AreEqual(nt.access('new_file_name', nt.R_OK), True)
     AreEqual(nt.access('does_not_exist.py', nt.F_OK), False)
+    AreEqual(nt.access('does_not_exist.py', nt.R_OK), False)
 
     nt.chmod('new_file_name', 0x100) # S_IREAD
     AreEqual(nt.access('new_file_name', nt.W_OK), False)
@@ -1031,11 +1015,7 @@ def test_access():
 def test_umask():
     orig = nt.umask(0)
     try:
-       
-        if is_cpython: #http://ironpython.codeplex.com/workitem/28208
-            AssertError(TypeError, nt.umask, 3.14)
-        else:
-            AreEqual(nt.umask(3.14), 0)
+        AssertError(TypeError, nt.umask, 3.14)
 
         for i in [0, 1, 5, int((2**(31))-1)]:
             AreEqual(nt.umask(i), 0)
@@ -1051,7 +1031,7 @@ def test_cp16413():
     tmpfile = 'tmpfile.tmp'
     f = open(tmpfile, 'w')
     f.close()
-    nt.chmod(tmpfile, 0777)
+    nt.chmod(tmpfile, 0o777)
     nt.unlink(tmpfile)
     
 def test__getfullpathname():
@@ -1066,7 +1046,7 @@ def test__getfullpathname():
     AreEqual(nt._getfullpathname('1:\\'), '1:\\')
     
 def test__getfullpathname_neg():
-    for bad in [None, 0, 34, -12345L, 3.14, object, test__getfullpathname]:
+    for bad in [None, 0, 34, -12345, 3.14, object, test__getfullpathname]:
         AssertError(TypeError, nt._getfullpathname, bad)
 
 def test_cp15514():
@@ -1121,9 +1101,8 @@ def test_strerror():
                     41: 'Directory not empty', 42: 'Illegal byte sequence'
                     }
                     
-    for key, value in test_dict.iteritems():
+    for key, value in test_dict.items():
         AreEqual(nt.strerror(key), value)
-
 
 def test_popen_cp34837():
     import subprocess
@@ -1132,6 +1111,63 @@ def test_popen_cp34837():
     Assert(p!=None)
     p.wait()
 
+def test_fsync():
+    fsync_file_name = 'text_fsync.txt'
+    fd = nt.open(fsync_file_name, nt.O_WRONLY | nt.O_CREAT)
+
+    # negative test, make sure it raises on invalid (closed) fd
+    try:
+        nt.close(fd+1)
+    except:
+        pass
+    AssertError(OSError, nt.fsync, fd+1)
+
+    # BUG (or implementation detail)
+    # On a posix system, once written to a file descriptor
+    # it can be read using another fd without any additional intervention.
+    # In case of IronPython the data lingers in a stream which
+    # is used to simulate file descriptor.
+    fd2 = nt.open(fsync_file_name, nt.O_RDONLY)
+    AreEqual(nt.read(fd2, 1), '')
+
+    nt.write(fd, '1')
+    AreEqual(nt.read(fd2, 1), '') # this should be visible right away, but is not
+    nt.fsync(fd)
+    AreEqual(nt.read(fd2, 1), '1')
+
+    nt.close(fd)
+    nt.close(fd2)
+
+    # fsync on read file descriptor
+    fd = nt.open(fsync_file_name, nt.O_RDONLY)
+    AssertError(OSError, nt.fsync, fd)
+    nt.close(fd)
+
+    # fsync on rdwr file descriptor
+    fd = nt.open(fsync_file_name, nt.O_RDWR)
+    nt.fsync(fd)
+    nt.close(fd)
+
+    # fsync on derived fd
+    for mode in ('rb', 'r'):
+        f = open(fsync_file_name, mode)
+        AssertError(OSError, nt.fsync, f.fileno())
+        f.close()
+
+    for mode in ('wb', 'w'):
+        f = open(fsync_file_name, mode)
+        nt.fsync(f.fileno())
+        f.close()
+
+    nt.unlink(fsync_file_name)
+
+    # fsync on pipe ends
+    r,w = nt.pipe()
+    AssertError(OSError, nt.fsync, r)
+    nt.write(w, '1')
+    nt.fsync(w)
+    nt.close(w)
+    nt.close(r)
 
 #------------------------------------------------------------------------------
 try:

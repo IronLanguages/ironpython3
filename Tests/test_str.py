@@ -48,6 +48,14 @@ def test_none():
     AssertError(TypeError, #"cannot concatenate 'str' and 'NoneType' objects", #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21947
                            lambda: '' + None)
 
+def test_constructor():
+    AreEqual('', str())
+    AreEqual('None', str(None))
+    
+    # https://github.com/IronLanguages/main/issues/1108
+    AreEqual('ä', str('ä')) # StringOps.__new__(..., string)
+    AreEqual('ä', str('ä'.Chars[0])) # StringOps.__new__(..., char)
+                           
 def test_add_mul():
     AssertError(TypeError, lambda: "a" + 3)
     AssertError(TypeError, lambda: 3 + "a")
@@ -61,8 +69,8 @@ def test_add_mul():
     
     if is_cli:
         from System.IO import Path
-        AreEqual("foo\\", "foo" + Path.DirectorySeparatorChar)
-        AreEqual("\\\\", Path.DirectorySeparatorChar + '\\')
+        AreEqual("foo" + os.sep, "foo" + Path.DirectorySeparatorChar)
+        AreEqual(os.sep + os.sep, Path.DirectorySeparatorChar + os.sep)
 
     # multiply
     AreEqual("aaaa", "a" * 4)
@@ -219,7 +227,7 @@ def test_encode_decode():
     AreEqual('abc'.encode(), 'abc')
     AreEqual('abc'.decode(), 'abc')
 
-def test_encode_decode():
+def test_encode_decode_error():
     AssertError(TypeError, 'abc'.encode, None)
     AssertError(TypeError, 'abc'.decode, None)
       
@@ -437,7 +445,10 @@ def test_turkish_upper_lower():
         AreEqual("I".ToLower(CultureInfo("tr-TR")),"ı")
         AreEqual("i".ToUpper(CultureInfo("tr-TR")),"İ")
 
-
-
+def test_translate():
+    AreEqual("abcd".translate(None), "abcd")
+    AreEqual("abcd".translate({ord('a') : ord('A'), ord('b') : None, ord('d') : "XY"}) , "AcXY")
+    AssertErrorWithMessage(TypeError, "character mapping must be in range(0x%lx)", lambda: 'a'.translate({ord('a') : 65536}))
+    AssertErrorWithMessage(TypeError, "character mapping must return integer, None or unicode", lambda: 'a'.translate({ord('a') : 2.0}))
 
 run_test(__name__)

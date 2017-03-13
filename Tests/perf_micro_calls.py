@@ -25,7 +25,7 @@ loops = 1000
 """
 # simple tests
 def zero_arg_maker(f):
-    for x in range(loops):
+    for x in xrange(loops):
         f()
         f()
         f()
@@ -55,7 +55,7 @@ def zero_arg_maker(f):
         f()
 
 def one_arg_maker(f):
-    for x in range(loops):
+    for x in xrange(loops):
         f(1)
         f(1)
         f(1)
@@ -120,7 +120,7 @@ def test_two_args():
     global f
     def f(a, b): pass
 
-    for x in range(loops):
+    for x in xrange(loops):
         f(1, 2)
         f(1, 2)
         f(1, 2)
@@ -153,7 +153,7 @@ def test_three_args():
     global f
     def f(a, b, c): pass
 
-    for x in range(loops):
+    for x in xrange(loops):
         f(1, 2, 3)
         f(1, 2, 3)
         f(1, 2, 3)
@@ -186,7 +186,7 @@ def test_four_args():
     global f
     def f(a, b, c, d): pass
 
-    for x in range(loops):
+    for x in xrange(loops):
         f(1, 2, 3, 4)
         f(1, 2, 3, 4)
         f(1, 2, 3, 4)
@@ -219,7 +219,7 @@ def test_five_args():
     global f
     def f(a, b, c, d, e): pass
 
-    for x in range(loops):
+    for x in xrange(loops):
         f(1, 2, 3, 4, 5)
         f(1, 2, 3, 4, 5)
         f(1, 2, 3, 4, 5)
@@ -252,7 +252,7 @@ def test_six_args():
     global f
     def f(a, b, c, d, e, f): pass
 
-    for x in range(loops):
+    for x in xrange(loops):
         f(1, 2, 3, 4, 5, 6)
         f(1, 2, 3, 4, 5, 6)
         f(1, 2, 3, 4, 5, 6)
@@ -285,7 +285,7 @@ def test_seven_args():
     global f
     def f(a, b, c, d, e, f, g): pass
 
-    for x in range(loops):
+    for x in xrange(loops):
         f(1, 2, 3, 4, 5, 6, 7)
         f(1, 2, 3, 4, 5, 6, 7)
         f(1, 2, 3, 4, 5, 6, 7)
@@ -333,7 +333,7 @@ def default_test_maker(size):
     elif size == 7:
         def f(a=1,b=2,c=3,d=4,e=5,f=6,g=7): pass
         
-    for x in range(loops):
+    for x in xrange(loops):
         f()
         f()
         f()
@@ -381,7 +381,7 @@ def kwdict_test_maker(size):
         def f(a=1,b=2,c=3,d=4,e=5,f=6,**g): pass
 
     dt = {}
-    for x in range(loops):
+    for x in xrange(loops):
         f(a=dt,b=dt,c=dt,d=dt,e=dt,f=dt,g=dt)
         f(a=dt,b=dt,c=dt,d=dt,e=dt,f=dt,g=dt)
         f(a=dt,b=dt,c=dt,d=dt,e=dt,f=dt,g=dt)
@@ -429,7 +429,7 @@ def splat_test_maker(size):
         def f(a,b,c,d,e,f,*g): pass
     
     l = (1,2,3,4,5,6,7)
-    for x in range(loops):
+    for x in xrange(loops):
         f(*l)
         f(*l)
         f(*l)
@@ -477,7 +477,7 @@ def dict_splat_test_maker(size):
         def f(a=1,b=2,c=3,d=4,e=5,f=6,**g): pass
     
     l = {'a':1,'b':2,'c':3,'d':4, 'e':5, 'f':6, 'g':7 }
-    for x in range(loops):
+    for x in xrange(loops):
         f(**l)
         f(**l)
         f(**l)
@@ -597,7 +597,7 @@ def test_dict_splat_seven():
 
 def test_kwarg_type():
     t = System.Drawing.Point
-    for x in range(loops):
+    for x in xrange(loops):
         t(X=3, Y=5)
         t(X=3, Y=5)
         t(X=3, Y=5)

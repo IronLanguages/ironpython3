@@ -1195,8 +1195,8 @@ def test_builtin_types_that_implement_format():
     formatTypes.sort()
     if is_cli:
         # no unicode
-        # 'float', 'int', 'long', 
-        AreEqual(formatTypes, ['complex', 'float', 'int', 'long', 'object', 'str'])
+        # why does bool have __format__ in ipy?
+        AreEqual(formatTypes, ['bool', 'complex', 'float', 'int', 'long', 'object', 'str'])
     else:
         AreEqual(formatTypes, ['complex', 'float', 'int', 'long', 'object', 'str', 'unicode'])
     

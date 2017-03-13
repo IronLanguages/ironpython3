@@ -243,7 +243,7 @@ def another_raise():
     except:
         assert_traceback([(LINE250 + 8, 0, FILE, 'test_throw_in_another_file'), (3, 0, _f_file.lower(), 'another_raise')])
     finally:
-        nt.remove(_f_file)
+        os.remove(_f_file)
 
 class MyException(Exception): pass
 
@@ -264,7 +264,7 @@ Line263 = 263
 @skip("silverlight")
 def test_cp11923_first():
     try:
-        _t_test = testpath.public_testdir + "\\cp11923.py"
+        _t_test = path_combine(testpath.public_testdir, "cp11923.py")
         write_to_file(_t_test, """def f():
     x = 'something bad'
     raise Exception(x)""")
@@ -278,22 +278,22 @@ def test_cp11923_first():
             imp.reload(cp11923)
         
     finally:
-        import nt
-        nt.unlink(_t_test)
+        import os
+        os.unlink(_t_test)
 
 ###############################################################################
 ##TESTS BEYOND THIS POINT SHOULD NOT DEPEND ON LINE NUMBERS IN THIS FILE#######
 ###############################################################################
 @skip("silverlight")
 def test_cp11923_second():
-    import nt
+    import os
     import sys
     old_path = [x for x in sys.path]
-    sys.path.append(nt.getcwd())
+    sys.path.append(os.getcwd())
         
     try:
         #Test setup
-        _t_test = testpath.public_testdir + "\\cp11116_main.py"
+        _t_test = os.path.join(testpath.public_testdir, "cp11116_main.py")
         write_to_file(_t_test, """import cp11116_a
 try:
     cp11116_a.a()
@@ -303,13 +303,13 @@ except:
 cp11116_a.a()
 """)
        
-        _t_test_a = testpath.public_testdir + "\\cp11116_a.py"
+        _t_test_a = os.path.join(testpath.public_testdir, "cp11116_a.py")
         write_to_file(_t_test_a, """def a():
     raise None
 """) 
         
         #Actual test
-        t_out, t_in, t_err = nt.popen3(sys.executable + " " + nt.getcwd() + r"\cp11116_main.py")
+        t_out, t_in, t_err = os.popen3(sys.executable + " " + os.getcwd() + r"\cp11116_main.py")
         lines = t_err.readlines()
         t_err.close()
         t_out.close()
@@ -324,8 +324,8 @@ cp11116_a.a()
         
     finally:
         sys.path = old_path
-        nt.unlink(_t_test)
-        nt.unlink(_t_test_a)
+        os.unlink(_t_test)
+        os.unlink(_t_test_a)
 
 Line331 = 332
 def test_reraise():

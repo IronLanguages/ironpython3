@@ -36,7 +36,7 @@ of this coverage through our .NET interop inheritance tests.
 #--PRE-CLR IMPORT TESTS--------------------------------------------------------
 if hasattr(type, "__clrtype__"):
     exc_msg = "type.__clrtype__ should not exist until the 'clr/System' module has been imported"
-    print exc_msg
+    print(exc_msg)
     raise Exception(exc_msg)
 
 
@@ -46,7 +46,13 @@ skiptest("win32")
 
 import System
 import clr
-import nt, os
+
+if is_posix:
+    import posix as _os
+else:
+    import nt as _os
+
+import os
 
 clr.AddReference("Microsoft.Dynamic")
 
@@ -74,8 +80,8 @@ def test_sanity___clrtype___gets_called():
             called = True
             return super(MyType, self).__clrtype__()
     
-    class X(object):
-        __metaclass__ = MyType
+    class X(object, metaclass=MyType):
+        pass
 
     AreEqual(called, True)
     
@@ -115,8 +121,7 @@ def test_sanity_override_constructors():
                 newType = t.CreateType()
                 return newType
         
-        class X(object):
-            __metaclass__ = MyType
+        class X(object, metaclass=MyType):
             def __init__(self):
                 self.abc = 3
               
@@ -181,8 +186,7 @@ def test_sanity_static_dot_net_type():
             newType.GetField('$$type').SetValue(None, self)
             return newType
     
-    class MyCreatableDotNetType(object):
-        __metaclass__ = MyType
+    class MyCreatableDotNetType(object, metaclass=MyType):
         def __init__(self):
             self.abc = 3
 
@@ -238,8 +242,8 @@ def test_clrtype_returns_existing_python_types():
                 type(sys._getframe(0)),
                 xrange,
                 int,
-                long,
-                unicode,
+                int,
+                str,
                 tuple,
                 type(lambda: 3),
                 type(None),
@@ -256,8 +260,8 @@ def test_clrtype_returns_existing_python_types():
                 called = True
                 return x
         
-        class X(object):
-            __metaclass__ = MyType
+        class X(object, metaclass=MyType):
+            pass
         
         AreEqual(called, True)
 
@@ -270,7 +274,7 @@ def test_clrtype_returns_existing_clr_types():
     global called
     clr.AddReference("System.Data")
     
-    for x in [
+    types = [
                 System.Byte,
                 System.Int16,
                 System.UInt32,
@@ -286,8 +290,11 @@ def test_clrtype_returns_existing_clr_types():
                 System.String,
                 System.Collections.BitArray,
                 System.Collections.Generic.List[System.Char],
-                System.Data.Common.DataAdapter,
-                ]:
+                ]
+
+    types.append(System.Data.Common.DataAdapter)
+
+    for x in types:
         called = False
         
         class MyType(type):
@@ -296,8 +303,8 @@ def test_clrtype_returns_existing_clr_types():
                 called = True
                 return x
         
-        class X(object):
-            __metaclass__ = MyType
+        class X(object, metaclass=MyType):
+            pass
         
         AreEqual(called, True)
         
@@ -329,8 +336,8 @@ def test_interesting_type_implementations():
                 called = True
                 return x
         
-        class X(object):
-            __metaclass__ = MyType
+        class X(object, metaclass=MyType):
+            pass
         
         AreEqual(called, True)
         
@@ -361,10 +368,7 @@ def test_type_constructor_overloads():
             called = True
             return IPT.SanityConstructorOverloads
     
-    class X(object):
-        __metaclass__ = MyType
-        #def __new__(self, *args, **kwargs):
-        #    return object.__new__(self, *args, **kwargs)
+    class X(object, metaclass=MyType):
         def __init__(self, *args, **kwargs):
             pass #print "(__init__):", args, kwargs
     
@@ -430,8 +434,8 @@ def test_critical_custom_attributes():
             called = True
             return typebld.CreateType()
 
-    class X(object):
-        __metaclass__ = MyType
+    class X(object, metaclass=MyType):
+        pass
 
 
     #Verification
@@ -519,8 +523,8 @@ def test_critical_clr_reflection():
             called = True
             return new_type
 
-    class X(object):
-        __metaclass__ = MyType
+    class X(object, metaclass=MyType):
+        pass
 
 
     #Verification
@@ -539,7 +543,7 @@ def test_critical_clr_reflection():
     try:
         x.NOT_SO_DYNAMIC = "0"
         Fail("TypeError should have been thrown!")
-    except TypeError, e:
+    except TypeError as e:
         AreEqual(e.message,
                  "expected UInt64, got str")
     finally:
@@ -578,8 +582,8 @@ def test_critical_parameterless_constructor():
             called = True
             return IPT.SanityParameterlessConstructor
     
-    class X(object):
-        __metaclass__ = MyType
+    class X(object, metaclass=MyType):
+        pass
     
     AreEqual(called, True)
     AreEqual(IPT.SanityParameterlessConstructor.WhichConstructor, 0)
@@ -603,8 +607,8 @@ def test_clrtype_metaclass_characteristics():
         def __clrtype__(self):
             return type.__clrtype__(self)
 
-    class X(object):
-        __metaclass__ = T
+    class X(object, metaclass=T):
+        pass
         
     AreEqual(X.__class__, T)
     AreEqual(X.__metaclass__, X.__class__)
@@ -639,8 +643,8 @@ def test_neg_type___clrtype__():
     AssertErrorWithPartialMessage(TypeError, ", got float", 
                                   type.__clrtype__, 3.14)
                            
-    for x in [None, [], (None,), Exception("message"), 3.14, 3L, 0, 5j, "string", u"string",
-              True, System, nt, os, exit, lambda: 3.14]:
+    for x in [None, [], (None,), Exception("message"), 3.14, 3, 0, 5j, "string", "string",
+              True, System, _os, os, exit, lambda: 3.14]:
         AssertError(TypeError, 
                     type.__clrtype__, x)
 
@@ -662,8 +666,8 @@ def test_neg_clrtype_wrong_case():
             called = True
             return super(MyType, self).__clrtype__()
     
-    class X(object):
-        __metaclass__ = MyType
+    class X(object, metaclass=MyType):
+        pass
 
     AreEqual(called, False)
 
@@ -685,11 +689,11 @@ def test_neg_clrtype_wrong_params():
             return super(MyType, self).__clrtype__()
     
     try:
-        class X(object):
-            __metaclass__ = MyType 
+        class X(object, metaclass=MyType):
+            pass
         Fail("Bad __clrtype__ signature!")
        
-    except TypeError, e:
+    except TypeError as e:
         AreEqual(e.message,
                  "__clrtype__() takes no arguments (1 given)")
                  
@@ -705,8 +709,8 @@ def test_neg_clrtype_wrong_params():
             called = True
             return super(MyType, not_self).__clrtype__()
     
-    class X(object):
-        __metaclass__ = MyType 
+    class X(object, metaclass=MyType):
+        pass
        
     AreEqual(called, True)
 
@@ -720,11 +724,11 @@ def test_neg_clrtype_wrong_params():
             return super(MyType, self).__clrtype__()
     
     try:
-        class X(object):
-            __metaclass__ = MyType 
+        class X(object, metaclass=MyType):
+            pass
         Fail("Bad __clrtype__ signature!")
        
-    except TypeError, e:
+    except TypeError as e:
         AreEqual(e.message,
                  "__clrtype__() takes exactly 2 arguments (1 given)")
                  
@@ -745,7 +749,7 @@ def test_neg_clrtype_returns_nonsense_values():
                             [3.14, "expected Type, got float"], 
                             ["a string", "expected Type, got str"],
                             [System.UInt16(32), "expected Type, got UInt16"],
-                            [1L, "expected Type, got long"],
+                            [1, "expected Type, got long"],
                 ]:
         called = False
         
@@ -756,10 +760,10 @@ def test_neg_clrtype_returns_nonsense_values():
                 return x
 
         try:
-            class X(object):
-                __metaclass__ = MyType
+            class X(object, metaclass=MyType):
+                pass
             Fail("Arbitrary return values of __clrtype__ should not be allowed: " + str(x))
-        except TypeError, e:
+        except TypeError as e:
             AreEqual(e.message,
                      expected_msg)
         finally:    
@@ -776,10 +780,10 @@ def test_neg_clrtype_returns_nonsense_values():
             return None
     
     try:
-        class X(object):
-            __metaclass__ = MyType
+        class X(object, metaclass=MyType):
+            pass
         Fail("Arbitrary return values of __clrtype__ are not allowed: ", + str(x))
-    except ValueError, e:
+    except ValueError as e:
         AreEqual(e.message, "__clrtype__ must return a type, not None")
     finally:
         AreEqual(called, True)
@@ -808,10 +812,10 @@ def test_neg_clrtype_raises_exceptions():
                 called = True
 
         try:
-            class X(object):
-                __metaclass__ = MyType
+            class X(object, metaclass=MyType):
+                pass
             Fail("Exception was never thrown from __clrtype__: " + str(x))
-        except type(x), e:
+        except type(x) as e:
             if (hasattr(e, "message")):
                 AreEqual(e.message,
                          expected_msg)
@@ -840,10 +844,10 @@ def test_neg_type___new___args():
             return super(MyType, self).__clrtype__()
     
     try:
-        class X(object):
-            __metaclass__ = MyType
+        class X(object, metaclass=MyType):
+            pass
         Fail("type.__new__ signature is wrong")
-    except TypeError, e:
+    except TypeError as e:
         AreEqual(e.message,
                  "__new__() takes exactly 1 argument (4 given)")
     finally:
@@ -869,8 +873,8 @@ def test_neg_type_misc():
             called = True
             return IPT.NegativeEmpty
     
-    class X(object):
-        __metaclass__ = MyType
+    class X(object, metaclass=MyType):
+        pass
 
     a = X()
     AreEqual(clr.GetClrType(type(a)), clr.GetClrType(IPT.NegativeEmpty))
@@ -881,8 +885,8 @@ def test_neg_type_misc():
             called = True
             return IPT.NegativeNoConstructor
 
-    class X(object):
-            __metaclass__ = MyType
+    class X(object, metaclass=MyType):
+            pass
     
     a = X()
     AreEqual(clr.GetClrType(type(a)), clr.GetClrType(int))

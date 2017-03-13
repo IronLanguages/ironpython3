@@ -2255,6 +2255,23 @@ def test_float_special_methods():
     AreEqual(float.__ne__(2.0, 3.0), True)
     AreEqual(float.__ne__(3.0, 3.0), False)
 
+def test_float_divmod():
+    # https://github.com/IronLanguages/main/issues/1236
+    AreEqual(divmod(0.123, 0.001), (122.0, 0.0009999999999999957))
+    AreEqual(divmod(-0.123, 0.001), (-123.0, 4.336808689942018e-18))
+    AreEqual(divmod(0.123, -0.001), (-123.0, -4.336808689942018e-18))
+    AreEqual(divmod(-0.123, -0.001), (122.0, -0.0009999999999999957))
+    
+def test_float_mod():
+    AreEqual(0.123 % 0.001, 0.0009999999999999957)
+    AreEqual(-0.123 % 0.001, 4.336808689942018e-18)
+    AreEqual(0.123 % -0.001, -4.336808689942018e-18)
+    AreEqual(-0.123 % -0.001, -0.0009999999999999957)
+    
+def test_float_format_gprec():
+    # https://github.com/IronLanguages/main/issues/1276
+    AreEqual("%.17g" % 1021095.0286738087, '1021095.0286738087')
+    
 def test_hex_and_octal():
     for num, num_repr in [
                             (int(0x20), '32L'),
@@ -2275,4 +2292,5 @@ def test_cp27383():
     AreEqual(int(' 0', 0), 0)
     AreEqual(int('0', 0), 0)
     
+   
 run_test(__name__)

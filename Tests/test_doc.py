@@ -181,12 +181,10 @@ def test_builtin_nones():
     for x in [Ellipsis, None, NotImplemented, ]:
         Assert(x.__doc__==None, str(x) + ".__doc__ != None")
 
-#Needs CPython's site.py for this to work under IP.
-#See CodePlex 10823 for details.
-@skip("cli", "silverlight")
+@skip("silverlight")
 def test_builtin_nones_cpy_site():
     for x in [exit, quit, ]:
-        Assert(x.__doc__==None, str(x) + ".__doc__ != None")
+        Assert(x.__doc__ is None, str(x) + ".__doc__ != None")
 
 def test_class_doc():
     # sanity, you can assign to __doc__

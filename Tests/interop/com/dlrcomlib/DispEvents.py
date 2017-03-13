@@ -43,13 +43,13 @@ def handler_helper(e_trigger, com_event, expected_retval, event_handlers):
         #add the handler and verify events are received
         try:
             com_event += handler
-            for i in xrange(N):
+            for i in range(N):
                 retval = e_trigger()
                 AreEqual(retval, expected_retval)
                 AreEqual(HANDLER_CALL_COUNT, i+1)
         
-        except Exception, e:
-                    print "handler_helper(", e_trigger, com_event, expected_retval, handler, ")"
+        except Exception as e:
+                    print("handler_helper(", e_trigger, com_event, expected_retval, handler, ")")
                     raise e
         finally:
             #remove the handler
@@ -76,7 +76,7 @@ def bad_handler_signature_helper(e_trigger, com_event, bad_arg_handlers):
         try:
             e_trigger()
             Fail("Trying to call " + str(handler) + " as an event handler should have failed")
-        except Exception, e:
+        except Exception as e:
             pass
 
         AreEqual(HANDLER_CALL_COUNT, 0)
@@ -114,7 +114,7 @@ def test_one_handler():
     AreEqual(expected_val, None)
     
     #Send N events w/ no handlers attached
-    for i in xrange(N):
+    for i in range(N):
         com_obj.triggerUShort(i)
         AreEqual(expected_count, ONE_HANDLER_COUNT)
         AreEqual(expected_val, ONE_HANDLER_VAL)
@@ -123,7 +123,7 @@ def test_one_handler():
     com_event += one_handler
     
     #Send N events
-    for i in xrange(N):
+    for i in range(N):
         com_obj.triggerUShort(i)
         expected_count += 1
         expected_val = i
@@ -134,7 +134,7 @@ def test_one_handler():
     com_event -= one_handler
     
     #Send N events
-    for i in xrange(N):
+    for i in range(N):
         com_obj.triggerUShort(i)
         AreEqual(expected_count, ONE_HANDLER_COUNT)
         AreEqual(expected_val, ONE_HANDLER_VAL)
@@ -143,7 +143,7 @@ def test_one_handler():
     com_event += one_handler
     
     #Send N events
-    for i in xrange(N):
+    for i in range(N):
         com_obj.triggerUShort(i)
         expected_count += 1
         expected_val = i
@@ -154,7 +154,7 @@ def test_one_handler():
     com_event -= one_handler
     
     #Send N events
-    for i in xrange(N):
+    for i in range(N):
         com_obj.triggerUShort(i)
         AreEqual(expected_count, ONE_HANDLER_COUNT)
         AreEqual(expected_val, ONE_HANDLER_VAL)
@@ -185,18 +185,18 @@ def test_two_ident_handlers():
     AreEqual(expected_val, None)
     
     #Send N events w/ no handlers attached
-    for i in xrange(N):
+    for i in range(N):
         com_obj.triggerUShort(i)
         AreEqual(expected_count, TWO_IDENT_HANDLERS_COUNT)
         AreEqual(expected_val, TWO_IDENT_HANDLERS_VAL)
        
          
     #Attach two event handlers
-    for i in xrange(2): 
+    for i in range(2): 
         com_event += two_ident_handlers
     
     #Send N events
-    for i in xrange(N):
+    for i in range(N):
         com_obj.triggerUShort(i)
         expected_count += 2
         expected_val = i
@@ -207,7 +207,7 @@ def test_two_ident_handlers():
     com_event -= two_ident_handlers
     
     #Send N events
-    for i in xrange(N):
+    for i in range(N):
         com_obj.triggerUShort(i)
         expected_count += 1
         expected_val = i
@@ -218,7 +218,7 @@ def test_two_ident_handlers():
     com_event += two_ident_handlers
     
     #Send N events
-    for i in xrange(N):
+    for i in range(N):
         com_obj.triggerUShort(i)
         expected_count += 2
         expected_val = i
@@ -226,21 +226,21 @@ def test_two_ident_handlers():
         AreEqual(expected_val, TWO_IDENT_HANDLERS_VAL)
     
     #Remove them both
-    for i in xrange(2):
+    for i in range(2):
         com_event -= two_ident_handlers
     
     #Send N events w/ no handlers attached
-    for i in xrange(N):
+    for i in range(N):
         com_obj.triggerUShort(i)
         AreEqual(expected_count, TWO_IDENT_HANDLERS_COUNT)
         AreEqual(expected_val, TWO_IDENT_HANDLERS_VAL)
     
     #Re-add the event handlers
-    for i in xrange(2):
+    for i in range(2):
         com_event += two_ident_handlers
     
     #Send N events
-    for i in xrange(N):
+    for i in range(N):
         com_obj.triggerUShort(i)
         expected_count += 2
         expected_val = i
@@ -248,11 +248,11 @@ def test_two_ident_handlers():
         AreEqual(expected_val, TWO_IDENT_HANDLERS_VAL)
     
     #Remove them
-    for i in xrange(2):
+    for i in range(2):
         com_event -= two_ident_handlers
     
     #Send N events
-    for i in xrange(N):
+    for i in range(N):
         com_obj.triggerUShort(i)
         AreEqual(expected_count, TWO_IDENT_HANDLERS_COUNT)
         AreEqual(expected_val, TWO_IDENT_HANDLERS_VAL)
@@ -291,7 +291,7 @@ def test_two_unique_handlers():
     AreEqual(expected_val_b, TWO_UNIQUE_HANDLERS_VAL_B)
     
     #Send N events w/ no handlers attached
-    for i in xrange(N):
+    for i in range(N):
         com_obj.triggerUShort(i)
         AreEqual(expected_count, TWO_UNIQUE_HANDLERS_COUNT)
         AreEqual(expected_val_a, TWO_UNIQUE_HANDLERS_VAL_A)
@@ -301,7 +301,7 @@ def test_two_unique_handlers():
     com_event += two_unique_handlers_a
     
     #Send N events
-    for i in xrange(N):
+    for i in range(N):
         com_obj.triggerUShort(i)
         expected_count += 1
         expected_val_a = i
@@ -313,7 +313,7 @@ def test_two_unique_handlers():
     com_event += two_unique_handlers_b
     
     #Send N events
-    for i in xrange(N):
+    for i in range(N):
         com_obj.triggerUShort(i)
         expected_count += 2
         expected_val_a = i
@@ -326,7 +326,7 @@ def test_two_unique_handlers():
     com_event -= two_unique_handlers_a
     
     #Send N events
-    for i in xrange(N):
+    for i in range(N):
         com_obj.triggerUShort(i)
         expected_count += 1
         expected_val_b = i
@@ -338,7 +338,7 @@ def test_two_unique_handlers():
     com_event += two_unique_handlers_a
     
     #Send N events
-    for i in xrange(N):
+    for i in range(N):
         com_obj.triggerUShort(i)
         expected_count += 2
         expected_val_a = i
@@ -351,7 +351,7 @@ def test_two_unique_handlers():
     com_event -= two_unique_handlers_a
     
     #Send N events
-    for i in xrange(N):
+    for i in range(N):
         com_obj.triggerUShort(i)
         expected_count += 1
         expected_val_b = i
@@ -363,7 +363,7 @@ def test_two_unique_handlers():
     com_event -= two_unique_handlers_b
     
     #Send N events w/ no handlers attached
-    for i in xrange(N):
+    for i in range(N):
         com_obj.triggerUShort(i)
         AreEqual(expected_count, TWO_UNIQUE_HANDLERS_COUNT)
         AreEqual(expected_val_a, TWO_UNIQUE_HANDLERS_VAL_A)
@@ -375,7 +375,7 @@ def test_two_unique_handlers():
     com_event += two_unique_handlers_b
     
     #Send N events
-    for i in xrange(N):
+    for i in range(N):
         com_obj.triggerUShort(i)
         expected_count += 2
         expected_val_a = i
@@ -388,7 +388,7 @@ def test_two_unique_handlers():
     com_event += two_unique_handlers_b
     
     #Send N events
-    for i in xrange(N):
+    for i in range(N):
         com_obj.triggerUShort(i)
         expected_count += 3
         expected_val_a = i
@@ -401,7 +401,7 @@ def test_two_unique_handlers():
     com_event -= two_unique_handlers_b
     
     #Send N events
-    for i in xrange(N):
+    for i in range(N):
         com_obj.triggerUShort(i)
         expected_count += 2
         expected_val_a = i
@@ -415,7 +415,7 @@ def test_two_unique_handlers():
     com_event -= two_unique_handlers_b
     
     #Send N events
-    for i in xrange(N):
+    for i in range(N):
         com_obj.triggerUShort(i)
         AreEqual(expected_count, TWO_UNIQUE_HANDLERS_COUNT)
         AreEqual(expected_val_a, TWO_UNIQUE_HANDLERS_VAL_A)
@@ -445,13 +445,13 @@ def test_eNull():
     def f3(**kwargs):
         global HANDLER_CALL_COUNT
         HANDLER_CALL_COUNT += 1
-        if len(kwargs.keys())!=0: raise TypeError("Too many kwargs:" + str(kwargs))
+        if len(list(kwargs.keys()))!=0: raise TypeError("Too many kwargs:" + str(kwargs))
     
     def f4(*args, **kwargs):
         global HANDLER_CALL_COUNT
         HANDLER_CALL_COUNT += 1
         if len(args)!=0: raise TypeError("Too many args:" + str(args))
-        if len(kwargs.keys())!=0: raise TypeError("Too many kwargs:" + str(kwargs))
+        if len(list(kwargs.keys()))!=0: raise TypeError("Too many kwargs:" + str(kwargs))
     
     event_handlers = [f1, f2, f3, f4]    
     handler_helper(e_trigger, com_event, None, event_handlers)
@@ -483,21 +483,21 @@ def test_eInOutretBool():
     def f4(a, **kwargs):
         global HANDLER_CALL_COUNT
         HANDLER_CALL_COUNT += 1
-        if len(kwargs.keys())!=0: raise TypeError("Too many kwargs:" + str(kwargs))
+        if len(list(kwargs.keys()))!=0: raise TypeError("Too many kwargs:" + str(kwargs))
         return a
     
     def f5(*args, **kwargs):
         global HANDLER_CALL_COUNT
         HANDLER_CALL_COUNT += 1
         if len(args)!=1: raise TypeError("Too few/many args:" + str(args))
-        if len(kwargs.keys())!=0: raise TypeError("Too many kwargs:" + str(kwargs))
+        if len(list(kwargs.keys()))!=0: raise TypeError("Too many kwargs:" + str(kwargs))
         return args[0]
         
     def f6(a, *args, **kwargs):
         global HANDLER_CALL_COUNT
         HANDLER_CALL_COUNT += 1
         if len(args)!=0: raise TypeError("Too few/many args:" + str(args))
-        if len(kwargs.keys())!=0: raise TypeError("Too many kwargs:" + str(kwargs))
+        if len(list(kwargs.keys()))!=0: raise TypeError("Too many kwargs:" + str(kwargs))
         return a
     
     event_handlers = [f1, f2, f3, f4, f5, f6]
@@ -534,21 +534,21 @@ def test_eInOutBstr():
     def f4(a, o, **kwargs):
         global HANDLER_CALL_COUNT
         HANDLER_CALL_COUNT += 1
-        if len(kwargs.keys())!=0: raise TypeError("Too many kwargs:" + str(kwargs))
+        if len(list(kwargs.keys()))!=0: raise TypeError("Too many kwargs:" + str(kwargs))
         return a
     
     def f5(*args, **kwargs):
         global HANDLER_CALL_COUNT
         HANDLER_CALL_COUNT += 1
         if len(args)!=2: raise TypeError("Too few/many args:" + str(args))
-        if len(kwargs.keys())!=0: raise TypeError("Too many kwargs:" + str(kwargs))
+        if len(list(kwargs.keys()))!=0: raise TypeError("Too many kwargs:" + str(kwargs))
         return args[0]
         
     def f6(a, *args, **kwargs):
         global HANDLER_CALL_COUNT
         HANDLER_CALL_COUNT += 1
         if len(args)!=1: raise TypeError("Too few/many args:" + str(args))
-        if len(kwargs.keys())!=0: raise TypeError("Too many kwargs:" + str(kwargs))
+        if len(list(kwargs.keys()))!=0: raise TypeError("Too many kwargs:" + str(kwargs))
         return a
     
     event_handlers = [f1, f2, f3, f4, f5, f6]
@@ -560,8 +560,8 @@ def test_eInOutBstr():
         o = StrongBox[str]('www')
         handler_helper(lambda: e_trigger("abc", o), com_event, None, event_handlers)
         
-    except EnvironmentError, e:
-        print "Dev10 409998"
+    except EnvironmentError as e:
+        print("Dev10 409998")
 
 def test_eInUshort():
     global HANDLER_CALL_COUNT
@@ -588,21 +588,21 @@ def test_eInUshort():
     def f4(a, **kwargs):
         global HANDLER_CALL_COUNT
         HANDLER_CALL_COUNT += 1
-        if len(kwargs.keys())!=0: raise TypeError("Too many kwargs:" + str(kwargs))
+        if len(list(kwargs.keys()))!=0: raise TypeError("Too many kwargs:" + str(kwargs))
         return
     
     def f5(*args, **kwargs):
         global HANDLER_CALL_COUNT
         HANDLER_CALL_COUNT += 1
         if len(args)!=1: raise TypeError("Too few/many args:" + str(args))
-        if len(kwargs.keys())!=0: raise TypeError("Too many kwargs:" + str(kwargs))
+        if len(list(kwargs.keys()))!=0: raise TypeError("Too many kwargs:" + str(kwargs))
         return
         
     def f6(a, *args, **kwargs):
         global HANDLER_CALL_COUNT
         HANDLER_CALL_COUNT += 1
         if len(args)!=0: raise TypeError("Too few/many args:" + str(args))
-        if len(kwargs.keys())!=0: raise TypeError("Too many kwargs:" + str(kwargs))
+        if len(list(kwargs.keys()))!=0: raise TypeError("Too many kwargs:" + str(kwargs))
         return
     
     event_handlers = [f1, f2, f3, f4, f5, f6]
@@ -629,14 +629,14 @@ def test_eNullShort():
     def f3(**kwargs):
         global HANDLER_CALL_COUNT
         HANDLER_CALL_COUNT += 1
-        if len(kwargs.keys())!=0: raise TypeError("Too many kwargs:" + str(kwargs))
+        if len(list(kwargs.keys()))!=0: raise TypeError("Too many kwargs:" + str(kwargs))
         return 42
     
     def f4(*args, **kwargs):
         global HANDLER_CALL_COUNT
         HANDLER_CALL_COUNT += 1
         if len(args)!=0: raise TypeError("Too many args:" + str(args))
-        if len(kwargs.keys())!=0: raise TypeError("Too many kwargs:" + str(kwargs))
+        if len(list(kwargs.keys()))!=0: raise TypeError("Too many kwargs:" + str(kwargs))
         return 42
     
     event_handlers = [f1, f2, f3, f4]    
@@ -930,7 +930,7 @@ def test_eInOutBstr_neg_handler_return_values():
     e_trigger = com_obj.triggerInOutBstr
     com_event = com_obj.eInOutBstr
             
-    for retVal in [3.14, True, 42L, []]:
+    for retVal in [3.14, True, 42, []]:
         
         def bad_handler(a):
             global HANDLER_CALL_COUNT
@@ -941,7 +941,7 @@ def test_eInOutBstr_neg_handler_return_values():
         
         #Expect this to throw an exception
         #AssertError(EnvironmentError, e_trigger, "abc")
-        print "Dev10 409998"  #cannot continue as bad_handler never gets called
+        print("Dev10 409998")  #cannot continue as bad_handler never gets called
         com_event -= bad_handler
         continue
         
@@ -1029,7 +1029,7 @@ def test_slow_handler_sta():
     def slow_handler():
         global HANDLER_CALL_COUNT
         HANDLER_CALL_COUNT += 1
-        print "slow_handler...sleeping"
+        print("slow_handler...sleeping")
         sleep(5)
         HANDLER_CALL_COUNT += 1
      
@@ -1065,7 +1065,7 @@ def test_handler_spawns_thread():
     
     def thread_handler():
         #Start a thread which increments the HANDLER_CALL_COUNT
-        import thread
+        import _thread
         
         def f():
             global HANDLER_CALL_COUNT
@@ -1074,7 +1074,7 @@ def test_handler_spawns_thread():
             sleep(10)
             HANDLER_CALL_COUNT += 1
         
-        thread.start_new_thread(f, ())
+        _thread.start_new_thread(f, ())
         
      
     #send an event with no handlers to ensure the test is OK

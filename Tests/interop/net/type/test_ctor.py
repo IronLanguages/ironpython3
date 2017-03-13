@@ -135,9 +135,9 @@ def test_cp14861():
         AreEqual(x.IntField, 2)
         AreEqual(x.StringField, "abc")
         AreEqual(x.ObjectField, 4)
-    for i in xrange(2):
+    for i in range(2):
         foo()
-        exec "foo()" in globals(), locals() 
+        exec("foo()", globals(), locals()) 
 
 run_test(__name__)
 

@@ -71,7 +71,7 @@ def test_add_mul():
 
     
 
-def test_tuple_hash():
+def test_tuple_custom_hash():
     class myhashable(object):
         def __init__(self):
             self.hashcalls = 0
@@ -89,7 +89,8 @@ def test_tuple_hash():
     AreEqual(test[0].hashcalls, 1)
     AreEqual(test[1].hashcalls, 1)
     AreEqual(test[2].hashcalls, 1)
-    
+
+def test_tuple_hash_uniqueness():
     hashes = set()
     for i in range(1000):
         for j in range(1000):
@@ -97,7 +98,14 @@ def test_tuple_hash():
 
     AreEqual(len(hashes), 1000000)
 
+def test_tuple_hash_none():
+    import clr # Make sure .GetHashCode() is available
+    example = (1, None)
+    expected = 1625286227
     
+    AreEqual(hash(example), expected)
+    AreEqual(hash(example), example.GetHashCode())
+
 @skip('win32')
 def test_tuple_cli_interactions():
     # verify you can call ToString on a tuple after importing clr

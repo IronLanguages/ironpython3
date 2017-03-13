@@ -41,7 +41,7 @@ def test_params():
     x = ClassWithParamsIndexer()
     x.Init()
 
-    for y, z in [(y,z) for y,z in zip(x, range(100)) if z != 0]:
+    for y, z in [(y,z) for y,z in zip(x, list(range(100))) if z != 0]:
 	    AreEqual(y,z)
     
     x[1] = 2
@@ -58,7 +58,7 @@ def test_overload1():
     x = ClassWithIndexerOverloads1()
     x.Init()
     
-    for y, z in [(y,z) for y,z in zip(x, range(100)) if z != 0]:
+    for y, z in [(y,z) for y,z in zip(x, list(range(100))) if z != 0]:
 	    AreEqual(y,z)
 	    
     AreEqual(x[()], -200)
@@ -81,7 +81,7 @@ def test_overload1():
 def test_overload2():
     x = ClassWithIndexerOverloads2()
 
-    for y, z in zip(x, range(10)):
+    for y, z in zip(x, list(range(10))):
 	    AreEqual(y,z)
 	
     x[1] = 2
@@ -97,7 +97,7 @@ def test_basic():
         x = t()
         x.Init()
         
-        for y, z in zip(x, range(10)):
+        for y, z in zip(x, list(range(10))):
             AreEqual(y,z)
 	    
         a, b, c = 2, SimpleStruct(3), SimpleClass(4)
@@ -143,7 +143,7 @@ def test_writeonly():
     Flag.Check(11)
     
     AssertErrorWithMatch(TypeError, 
-        "'WriteOnlyIndexer' object is unsubscriptable",
+        "'WriteOnlyIndexer' object is not subscriptable",
         lambda: x[1])
 
 
@@ -151,7 +151,7 @@ def test_access_from_derived_class():
     x = DerivedClassWithoutIndexer()
     x.Init()
     
-    for y, z in zip(x, range(10)):
+    for y, z in zip(x, list(range(10))):
 	    AreEqual(y,z)
     
     x[2] = 4
@@ -166,7 +166,7 @@ def test_access_from_derived_class():
 def test_new_indexer():
     x = DerivedClassWithNewIndexer()
     
-    for y, z in zip(x, range(0, -10, -1)):
+    for y, z in zip(x, list(range(0, -10, -1))):
 	    AreEqual(y,z)
 	    
     x[2] = 9

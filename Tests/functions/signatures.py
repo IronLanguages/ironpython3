@@ -27,66 +27,66 @@ def gen_major_cases():
     NUM_KWPARAMS = 15
     NICE_SPACE = " " *3
     
-    for num_params in xrange(0, NUM_PARAMS):
-        for num_kwparams in xrange(0, NUM_KWPARAMS):
-            print NICE_SPACE, "#--%d params with %d keyword params--#" % (num_params, num_kwparams)
-            print NICE_SPACE, "def f%dParams%dKwparams(" % (num_params, num_kwparams),
-            for i in xrange(0, num_params):
+    for num_params in range(0, NUM_PARAMS):
+        for num_kwparams in range(0, NUM_KWPARAMS):
+            print(NICE_SPACE, "#--%d params with %d keyword params--#" % (num_params, num_kwparams))
+            print(NICE_SPACE, "def f%dParams%dKwparams(" % (num_params, num_kwparams), end=' ')
+            for i in range(0, num_params):
                 if i==num_params-1 and num_kwparams==0:
-                    print "p%d" % (i+1),
+                    print("p%d" % (i+1), end=' ')
                 else:
-                    print "p%d," % (i+1),
-            for i in xrange(0, num_kwparams):
+                    print("p%d," % (i+1), end=' ')
+            for i in range(0, num_kwparams):
                 if i!=num_kwparams-1:
-                    print "kw%d=%d," % (i+1, i+1), 
+                    print("kw%d=%d," % (i+1, i+1), end=' ') 
                 else:
-                    print "kw%d=%d" % (i+1, i+1), 
-            print "):"
+                    print("kw%d=%d" % (i+1, i+1), end=' ') 
+            print("):")
             if num_params==0:
-                print NICE_SPACE, "    ret_valP = ()"
+                print(NICE_SPACE, "    ret_valP = ()")
             else:
-                print NICE_SPACE, "    ret_valP = (",
-                for i in xrange(0, num_params):
-                    print "p%d" % (i+1),
-                    print ",",
+                print(NICE_SPACE, "    ret_valP = (", end=' ')
+                for i in range(0, num_params):
+                    print("p%d" % (i+1), end=' ')
+                    print(",", end=' ')
                     if i==num_params-1:
-                        print ")"
+                        print(")")
             
             if num_kwparams==0:
-                print NICE_SPACE, "    ret_valKW = ()"
+                print(NICE_SPACE, "    ret_valKW = ()")
             else:
-                print NICE_SPACE, "    ret_valKW = (",
-                for i in xrange(0, num_kwparams):
-                    print "kw%d" % (i+1),
-                    print ",",
+                print(NICE_SPACE, "    ret_valKW = (", end=' ')
+                for i in range(0, num_kwparams):
+                    print("kw%d" % (i+1), end=' ')
+                    print(",", end=' ')
                     if i==num_kwparams-1:
-                        print ")"
+                        print(")")
                                          
-            print NICE_SPACE, "    return ret_valP, ret_valKW"                    
-            print ""
+            print(NICE_SPACE, "    return ret_valP, ret_valKW")                    
+            print("")
             
-            params = str(range(1, num_params+1))[1:-1]
+            params = str(list(range(1, num_params+1)))[1:-1]
             params_expected = params
             if num_params==1:
                 params_expected += ","
                 
-            kwparams_expected = str(range(1, num_kwparams+1))[1:-1]
+            kwparams_expected = str(list(range(1, num_kwparams+1)))[1:-1]
             if num_kwparams==1:
                 kwparams_expected += ","
-            print NICE_SPACE, "AreEqual(f%dParams%dKwparams(%s" % (num_params, num_kwparams, params), "),"
-            print NICE_SPACE, "         ((%s), " % params_expected, "(%s))" % kwparams_expected, ")"
-            print NICE_SPACE, ""
+            print(NICE_SPACE, "AreEqual(f%dParams%dKwparams(%s" % (num_params, num_kwparams, params), "),")
+            print(NICE_SPACE, "         ((%s), " % params_expected, "(%s))" % kwparams_expected, ")")
+            print(NICE_SPACE, "")
             
-            for i in xrange(0, num_kwparams):
-                kwparams = str(["kw%d=None" % (x+1) for x in xrange(0, i+1)])[1:-1].replace("'", "")
+            for i in range(0, num_kwparams):
+                kwparams = str(["kw%d=None" % (x+1) for x in range(0, i+1)])[1:-1].replace("'", "")
                 kwparams_expected = "None," * (i+1)
-                kwparams_expected += str(range(i+2, num_kwparams+1))[1:-1]
-                print NICE_SPACE, "AreEqual(f%dParams%dKwparams(%s" % (num_params, num_kwparams, params),
+                kwparams_expected += str(list(range(i+2, num_kwparams+1)))[1:-1]
+                print(NICE_SPACE, "AreEqual(f%dParams%dKwparams(%s" % (num_params, num_kwparams, params), end=' ')
                 if num_params!=0:
-                    print ",", 
-                print kwparams, "),"
-                print NICE_SPACE, "         ((%s), " % params_expected, "(%s))" % kwparams_expected, ")"
-            print ""
+                    print(",", end=' ') 
+                print(kwparams, "),")
+                print(NICE_SPACE, "         ((%s), " % params_expected, "(%s))" % kwparams_expected, ")")
+            print("")
 
     
 

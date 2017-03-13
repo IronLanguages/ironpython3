@@ -14,9 +14,10 @@
 #####################################################################################
 
 import sys
+import atexit
 
 def foo():
-   print 'hello world'
+   print('hello world')
 
-sys.exitfunc = foo
+atexit.register(foo)
 

@@ -217,7 +217,7 @@ def test_date():
     x = datetime.date.fromtimestamp(1000000000.0)
     AreEqual(x.year, 2001)
     AreEqual(x.month, 9)
-    AreEqual(x.day, 8)
+    Assert(x.day == 8 or x.day == 9) # depends on the time zone
     
     #max
     x = datetime.date.max
@@ -309,7 +309,7 @@ def test_datetime():
                   ((1, 1, 1, 0, 0, 0, 0), (1, 1, 1, 0, 0, 0, 0)) : ((0, 0, 0),(0, 0, 0)),
                   ((9999, 12, 31, 23, 59, 59, 999999), (9999, 12, 31, 23, 59, 59, 999999)) : ((0, 0, 0),(0, 0, 0))
                   }
-    for key, (value0, value1) in test_data.iteritems():
+    for key, (value0, value1) in test_data.items():
         dt1 = datetime.datetime(*key[1])
         dt0 = datetime.datetime(*key[0])
         
@@ -341,7 +341,7 @@ def test_datetime():
                   ((9999, 12, 31, 23, 59, 59, 999999), (9999*365, 0, 0)) : (7, 8, 21, 23, 59, 59, 999999),
                   ((9999, 12, 31, 23, 59, 59, 999999), (0, 0, 0)) : (9999, 12, 31, 23, 59, 59, 999999),
                   }
-    for (dt1, td0), value in test_data.iteritems():
+    for (dt1, td0), value in test_data.items():
         
         x = datetime.datetime(*dt1) - datetime.timedelta(*td0)
         AreEqual(x.year,value[0])
@@ -370,7 +370,7 @@ def test_datetime():
                   ((9999, 12, 31, 23, 59, 59, 999999), (-9999*365, 0, 0)) : (7, 8, 21, 23, 59, 59, 999999),
                   ((9999, 12, 31, 23, 59, 59, 999999), (0, 0, 0)) : (9999, 12, 31, 23, 59, 59, 999999),
                   }
-    for (dt1, td0), value in test_data.iteritems():
+    for (dt1, td0), value in test_data.items():
         
         x = datetime.datetime(*dt1) + datetime.timedelta(*td0)
         AreEqual(x.year,value[0])
@@ -420,18 +420,16 @@ def test_datetime():
     x = datetime.datetime.fromtimestamp(1000000000.0)
     AreEqual(x.year, 2001)
     AreEqual(x.month, 9)
-    AreEqual(x.day, 8)
-    #CodePlex 4862
-    #AreEqual(x.hour, 18)
+    Assert(x.day == 8 or x.day == 9) # depends on the time zone
+    # skip x.hours since it depends on the time zone
     AreEqual(x.minute, 46)
     AreEqual(x.second, 40)
     
     x = datetime.datetime.fromtimestamp(1000000000)
     AreEqual(x.year, 2001)
     AreEqual(x.month, 9)
-    AreEqual(x.day, 8)
-    #CodePlex Work Item 4862
-    #AreEqual(x.hour, 18)
+    Assert(x.day == 8 or x.day == 9) # depends on the time zone
+    # skip x.hours since it depends on the time zone
     AreEqual(x.minute, 46)
     AreEqual(x.second, 40)
     
@@ -446,8 +444,7 @@ def test_datetime():
     AreEqual(x.year, 2001)
     AreEqual(x.month, 9)
     AreEqual(x.day, 9)
-    #CodePlex 4862
-    #AreEqual(x.hour, 1)
+    AreEqual(x.hour, 1)
     AreEqual(x.minute, 46)
     AreEqual(x.second, 40)
     
@@ -746,7 +743,7 @@ def test_timedelta():
                   ((-1, -1, -1), (37, 28, 686000)) : (36, 27, 685999),
                   }
                   
-    for key, value0 in test_data.iteritems():
+    for key, value0 in test_data.items():
         dt1 = datetime.timedelta(*key[1])
         dt0 = datetime.timedelta(*key[0])
         
@@ -767,7 +764,7 @@ def test_timedelta():
                   #CodePlex Work Item 5135
                   ((999999999, 0, 0), (999999999, 0, 0)) : ((0, 0, 0),(0, 0, 0))
                   }
-    for key, (value0, value1) in test_data.iteritems():
+    for key, (value0, value1) in test_data.items():
         dt1 = datetime.timedelta(*key[1])
         dt0 = datetime.timedelta(*key[0])
         
@@ -1111,21 +1108,21 @@ def test_cp13704():
                            
 
 def test_pickle():
-    import cPickle
+    import pickle
     now = datetime.datetime.now()
-    nowstr = cPickle.dumps(now)
-    AreEqual(now, cPickle.loads(nowstr))
+    nowstr = pickle.dumps(now)
+    AreEqual(now, pickle.loads(nowstr))
 
 @skip("silverlight")
 def test_datetime_datetime_pickled_by_cpy():
-    import cPickle
-    with open(r"pickles\cp18666.pickle", "rb") as f:
+    import pickle
+    with open(r"pickles/cp18666.pickle", "rb") as f:
         expected_dt    = datetime.datetime(2009, 8, 6, 8, 42, 38, 196000)
-        pickled_cpy_dt = cPickle.load(f)
+        pickled_cpy_dt = pickle.load(f)
         AreEqual(expected_dt, pickled_cpy_dt)
 
     expected_dt    = datetime.datetime(2009, 8, 6, 8, 42, 38, 196000, mytzinfo())
-    pickled_cpy_dt = cPickle.loads("cdatetime\ndatetime\np1\n(S'\\x07\\xd9\\x01\\x02\\x03\\x04\\x05\\x00\\x00\\x06'\nc" + __name__ + "\nmytzinfo\np2\n(tRp3\ntRp4\n.")
+    pickled_cpy_dt = pickle.loads("cdatetime\ndatetime\np1\n(S'\\x07\\xd9\\x01\\x02\\x03\\x04\\x05\\x00\\x00\\x06'\nc" + __name__ + "\nmytzinfo\np2\n(tRp3\ntRp4\n.")
     AreEqual(expected_dt.tzinfo, pickled_cpy_dt.tzinfo)
 
 class mytzinfo(datetime.tzinfo):

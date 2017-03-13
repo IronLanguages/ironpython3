@@ -43,7 +43,10 @@ def test_assemblybuilder_instance():
         AreEqual(len(asm_builder_dir), 78)
         Assert("GetCustomAttributesData" not in asm_builder_dir)
     else:
-        AreEqual(len(asm_builder_dir), 84)
+        if is_posix: # Mono has another member
+            AreEqual(len(asm_builder_dir), 90)
+        else:
+            AreEqual(len(asm_builder_dir), 89)
         Assert("GetCustomAttributesData" in asm_builder_dir)
         
     Assert("AddResourceFile" in asm_builder_dir)
@@ -56,8 +59,14 @@ def test_type():
         AreEqual(len(dir(Assembly)), 65)
         AreEqual(len(dir(AssemblyBuilder)), 78)
     else:
-        AreEqual(len(dir(Assembly)), 71)
-        AreEqual(len(dir(AssemblyBuilder)), 84)
+        if is_posix: # Mono has another member
+            AreEqual(len(dir(Assembly)), 76)
+        else:
+            AreEqual(len(dir(Assembly)), 75)
+        if is_posix: # Mono has another member
+            AreEqual(len(dir(AssemblyBuilder)), 90)
+        else:
+            AreEqual(len(dir(AssemblyBuilder)), 89)
         
 #####################################################################################
 run_test(__name__)

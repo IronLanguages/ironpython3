@@ -16,12 +16,12 @@
 # Office Multi-application COM Interop tests
 
 from iptest.assert_util import *
-skiptest("win32", "silverlight", "cli64")
+skiptest("win32", "silverlight", "cli64", "posix")
 from iptest.cominterop_util import *
 
 if not IsExcelInstalled():
     from sys import exit
-    print "Excel is not installed.  Cannot run this test!"
+    print("Excel is not installed.  Cannot run this test!")
     exit(1)
 else:
     TryLoadExcelInteropAssembly()
@@ -29,7 +29,7 @@ else:
 
 if not IsWordInstalled():
     from sys import exit
-    print "Word is not installed.  Cannot run this test!"
+    print("Word is not installed.  Cannot run this test!")
     exit(1)
 else:
     TryLoadWordInteropAssembly()

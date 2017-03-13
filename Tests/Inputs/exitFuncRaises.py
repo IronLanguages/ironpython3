@@ -14,8 +14,9 @@
 #####################################################################################
 
 import sys
+import atexit
 
 def foo():
 	raise Exception
 
-sys.exitfunc = foo
+atexit.register(foo)

@@ -42,9 +42,6 @@ def test_not_implemented():
     test_cases = [
                     lambda: binascii.a2b_qp(None),
                     lambda: binascii.a2b_qp(None, None),
-                    lambda: binascii.b2a_qp(None),
-                    lambda: binascii.b2a_qp(None, None),
-                    lambda: binascii.b2a_qp(None, None, None, None),
                     lambda: binascii.a2b_hqx(None),
                     lambda: binascii.rledecode_hqx(None),
                     lambda: binascii.rlecode_hqx(None),

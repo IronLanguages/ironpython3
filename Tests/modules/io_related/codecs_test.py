@@ -90,7 +90,7 @@ def test_escape_encode():
         AreEqual(length, 2)
     
     l = []
-    for i in xrange(256):
+    for i in range(256):
         l.append(chr(i))
         
     value, length = codecs.escape_encode(''.join(l))
@@ -107,9 +107,9 @@ def test_register_error():
         TODO: test that these are actually used.
         '''
         #Sanity
-        def garbage_error0(): print "garbage_error0"
-        def garbage_error1(param1): print "garbage_error1:", param1
-        def garbage_error2(param1, param2): print "garbage_error2:", param1, "; ", param2
+        def garbage_error0(): print("garbage_error0")
+        def garbage_error1(param1): print("garbage_error1:", param1)
+        def garbage_error2(param1, param2): print("garbage_error2:", param1, "; ", param2)
         
         codecs.register_error("garbage0", garbage_error0)
         codecs.register_error("garbage1", garbage_error1)
@@ -122,7 +122,7 @@ def test_utf_16_ex_decode():
     '''
     #sanity
     new_str, size, zero = codecs.utf_16_ex_decode("abc")
-    AreEqual(new_str, u'\u6261')
+    AreEqual(new_str, '\u6261')
     AreEqual(size, 2)
     AreEqual(zero, 0)
     
@@ -131,14 +131,14 @@ def test_charmap_decode():
     '''
     #Sanity
     new_str, size = codecs.charmap_decode("abc")
-    AreEqual(new_str, u'abc')
+    AreEqual(new_str, 'abc')
     AreEqual(size, 3)
-    AreEqual(codecs.charmap_decode("a", 'strict', {ord('a') : u'a'})[0], u'a')
-    AreEqual(codecs.charmap_decode("a", "replace", {})[0], u'\ufffd')
-    AreEqual(codecs.charmap_decode("a", "replace", {ord('a'): None})[0], u'\ufffd')
+    AreEqual(codecs.charmap_decode("a", 'strict', {ord('a') : 'a'})[0], 'a')
+    AreEqual(codecs.charmap_decode("a", "replace", {})[0], '\ufffd')
+    AreEqual(codecs.charmap_decode("a", "replace", {ord('a'): None})[0], '\ufffd')
     
     AreEqual(codecs.charmap_decode(""),
-             (u'', 0))
+             ('', 0))
 
     if not is_silverlight:
         #Negative
@@ -155,7 +155,7 @@ def test_decode():
     '''
     #sanity
     new_str = codecs.decode("abc")
-    AreEqual(new_str, u'abc')
+    AreEqual(new_str, 'abc')
         
     
 @skip("silverlight") # no std lib
@@ -171,7 +171,7 @@ def test_raw_unicode_escape_decode():
     '''
     #sanity
     new_str, size = codecs.raw_unicode_escape_decode("abc")
-    AreEqual(new_str, u'abc')
+    AreEqual(new_str, 'abc')
     AreEqual(size, 3)
 
 def test_raw_unicode_escape_encode():
@@ -188,7 +188,7 @@ def test_utf_7_decode():
     '''
     #sanity
     new_str, size = codecs.utf_7_decode("abc")
-    AreEqual(new_str, u'abc')
+    AreEqual(new_str, 'abc')
     AreEqual(size, 3)
 
 @skip('silverlight')
@@ -205,7 +205,7 @@ def test_ascii_decode():
     '''
     #sanity
     new_str, size = codecs.ascii_decode("abc")
-    AreEqual(new_str, u'abc')
+    AreEqual(new_str, 'abc')
     AreEqual(size, 3)
 
 def test_ascii_encode():
@@ -222,7 +222,7 @@ def test_latin_1_decode():
     '''
     #sanity
     new_str, size = codecs.latin_1_decode("abc")
-    AreEqual(new_str, u'abc')
+    AreEqual(new_str, 'abc')
     AreEqual(size, 3)
 
 @skip('silverlight')
@@ -279,9 +279,9 @@ def test_unicode_internal_encode():
     AssertError(TypeError, codecs.unicode_internal_encode)
     AssertError(TypeError, codecs.unicode_internal_encode, 'abc', 'def', 'qrt')
     if is_ironpython: #http://ironpython.codeplex.com/workitem/27899
-        AreEqual(codecs.unicode_internal_encode(u'abc'), ('a\x00b\x00c\x00', 6))
+        AreEqual(codecs.unicode_internal_encode('abc'), ('a\x00b\x00c\x00', 6))
     else:
-        AreEqual(codecs.unicode_internal_encode(u'abc'), ('a\x00b\x00c\x00', 3))
+        AreEqual(codecs.unicode_internal_encode('abc'), ('a\x00b\x00c\x00', 3))
 
 def test_unicode_internal_decode():
     '''
@@ -289,7 +289,7 @@ def test_unicode_internal_decode():
     # takes one or two parameters, not zero or three
     AssertError(TypeError, codecs.unicode_internal_decode)
     AssertError(TypeError, codecs.unicode_internal_decode, 'abc', 'def', 'qrt')
-    AreEqual(codecs.unicode_internal_decode('ab'), (u'\u6261', 2))
+    AreEqual(codecs.unicode_internal_decode('ab'), ('\u6261', 2))
 
 @skip('silverlight')
 def test_utf_16_be_decode():
@@ -297,7 +297,7 @@ def test_utf_16_be_decode():
     '''
     #sanity
     new_str, size = codecs.utf_16_be_decode("abc")
-    AreEqual(new_str, u'\u6162')
+    AreEqual(new_str, '\u6162')
     AreEqual(size, 2)
 
 def test_utf_16_be_encode():
@@ -314,7 +314,7 @@ def test_utf_16_decode():
     '''
     #sanity
     new_str, size = codecs.utf_16_decode("abc")
-    AreEqual(new_str, u'\u6261')
+    AreEqual(new_str, '\u6261')
     AreEqual(size, 2)
 
 @skip('silverlight')
@@ -323,7 +323,7 @@ def test_utf_16_le_decode():
     '''
     #sanity
     new_str, size = codecs.utf_16_le_decode("abc")
-    AreEqual(new_str, u'\u6261')
+    AreEqual(new_str, '\u6261')
     AreEqual(size, 2)
 
 def test_utf_16_le_encode():
@@ -344,8 +344,28 @@ def test_utf_8_decode():
     '''
     #sanity
     new_str, size = codecs.utf_8_decode("abc")
-    AreEqual(new_str, u'abc')
+    AreEqual(new_str, 'abc')
     AreEqual(size, 3)
+
+
+def test_cp34951():
+    def internal_cp34951(sample1):
+        AreEqual(codecs.utf_8_decode(sample1), ('12\u20ac\x0a', 6))
+        sample1 = sample1[:-1] # 12<euro>
+        AreEqual(codecs.utf_8_decode(sample1), ('12\u20ac', 5))
+        sample1 = sample1[:-1] # 12<uncomplete euro>
+        AreEqual(codecs.utf_8_decode(sample1), ('12', 2))
+
+        sample1 = sample1 + 'x7f' # makes it invalid
+        try:
+            r = codecs.utf_8_decode(sample1)
+            Assert(False, "expected UncodeDecodeError not raised")
+        except Exception as e:
+            AreEqual(type(e), UnicodeDecodeError)
+
+    internal_cp34951(b'\x31\x32\xe2\x82\xac\x0a') # 12<euro><cr>
+    internal_cp34951(b'\xef\xbb\xbf\x31\x32\xe2\x82\xac\x0a') # <BOM>12<euro><cr>
+
 
 def test_utf_8_encode():
     '''
@@ -358,11 +378,8 @@ def test_utf_8_encode():
 def test_charbuffer_encode():
     '''
     '''
-    #function takes one parameter, not 0
     if is_cli:
-        #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=4563
-        #AssertError(NotImplementedError, codecs.charbuffer_encode, "abc")
-        AssertError(NotImplementedError, codecs.charbuffer_encode)
+        AssertError(NotImplementedError, codecs.charbuffer_encode, "abc")
 
 def test_charmap_encode():
     #Sanity
@@ -375,7 +392,7 @@ def test_charmap_encode():
              ('', 0))
 
     charmap = dict([ (ord(c), c.upper()) for c in "abcdefgh"])
-    AreEqual(codecs.charmap_encode(u"abc", "strict", charmap),
+    AreEqual(codecs.charmap_encode("abc", "strict", charmap),
              ('ABC', 3))
 
                  
@@ -390,8 +407,8 @@ def test_mbcs_decode():
     '''
     for mode in ['strict', 'replace', 'ignore', 'badmodethatdoesnotexist']:
         AreEqual(codecs.mbcs_decode('foo', mode), ('foo', 3))
-        cpyres = u'\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\x7f\u20ac\x81\u201a\u0192\u201e\u2026\u2020\u2021\u02c6\u2030\u0160\u2039\u0152\x8d\u017d\x8f\x90\u2018\u2019\u201c\u201d\u2022\u2013\u2014\u02dc\u2122\u0161\u203a\u0153\x9d\u017e\u0178\xa0\xa1\xa2\xa3\xa4\xa5\xa6\xa7\xa8\xa9\xaa\xab\xac\xad\xae\xaf\xb0\xb1\xb2\xb3\xb4\xb5\xb6\xb7\xb8\xb9\xba\xbb\xbc\xbd\xbe\xbf\xc0\xc1\xc2\xc3\xc4\xc5\xc6\xc7\xc8\xc9\xca\xcb\xcc\xcd\xce\xcf\xd0\xd1\xd2\xd3\xd4\xd5\xd6\xd7\xd8\xd9\xda\xdb\xdc\xdd\xde\xdf\xe0\xe1\xe2\xe3\xe4\xe5\xe6\xe7\xe8\xe9\xea\xeb\xec\xed\xee\xef\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff'
-        allchars = ''.join([chr(i) for i in xrange(256)])
+        cpyres = '\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\x7f\u20ac\x81\u201a\u0192\u201e\u2026\u2020\u2021\u02c6\u2030\u0160\u2039\u0152\x8d\u017d\x8f\x90\u2018\u2019\u201c\u201d\u2022\u2013\u2014\u02dc\u2122\u0161\u203a\u0153\x9d\u017e\u0178\xa0\xa1\xa2\xa3\xa4\xa5\xa6\xa7\xa8\xa9\xaa\xab\xac\xad\xae\xaf\xb0\xb1\xb2\xb3\xb4\xb5\xb6\xb7\xb8\xb9\xba\xbb\xbc\xbd\xbe\xbf\xc0\xc1\xc2\xc3\xc4\xc5\xc6\xc7\xc8\xc9\xca\xcb\xcc\xcd\xce\xcf\xd0\xd1\xd2\xd3\xd4\xd5\xd6\xd7\xd8\xd9\xda\xdb\xdc\xdd\xde\xdf\xe0\xe1\xe2\xe3\xe4\xe5\xe6\xe7\xe8\xe9\xea\xeb\xec\xed\xee\xef\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff'
+        allchars = ''.join([chr(i) for i in range(256)])
         AreEqual(codecs.mbcs_decode(allchars, mode)[0], cpyres)
         
         # round tripping
@@ -404,38 +421,32 @@ def test_mbcs_encode():
     '''
     for mode in ['strict', 'replace', 'ignore', 'badmodethatdoesnotexist']:
         AreEqual(codecs.mbcs_encode('foo', mode), ('foo', 3))
-        uall = u''.join([unichr(i) for i in xrange(256)])
+        uall = ''.join([chr(i) for i in range(256)])
         cpyres = '\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\x7f?\x81???????????\x8d?\x8f\x90????????????\x9d??\xa0\xa1\xa2\xa3\xa4\xa5\xa6\xa7\xa8\xa9\xaa\xab\xac\xad\xae\xaf\xb0\xb1\xb2\xb3\xb4\xb5\xb6\xb7\xb8\xb9\xba\xbb\xbc\xbd\xbe\xbf\xc0\xc1\xc2\xc3\xc4\xc5\xc6\xc7\xc8\xc9\xca\xcb\xcc\xcd\xce\xcf\xd0\xd1\xd2\xd3\xd4\xd5\xd6\xd7\xd8\xd9\xda\xdb\xdc\xdd\xde\xdf\xe0\xe1\xe2\xe3\xe4\xe5\xe6\xe7\xe8\xe9\xea\xeb\xec\xed\xee\xef\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff'
         ipyres = codecs.mbcs_encode(uall, mode)[0]
         AreEqual(cpyres, ipyres)
         
         # all weird unicode characters that are supported
-        chrs = u'\u20ac\u201a\u0192\u201e\u2026\u2020\u2021\u02c6\u2030\u0160\u2039\u0152\u017d\u2018\u2019\u201c\u201d\u2022\u2013\u2014\u02dc\u2122\u0161\u203a\u0153\u017e\u0178'
+        chrs = '\u20ac\u201a\u0192\u201e\u2026\u2020\u2021\u02c6\u2030\u0160\u2039\u0152\u017d\u2018\u2019\u201c\u201d\u2022\u2013\u2014\u02dc\u2122\u0161\u203a\u0153\u017e\u0178'
         AreEqual(codecs.mbcs_encode(chrs, mode), ('\x80\x82\x83\x84\x85\x86\x87\x88\x89\x8a\x8b\x8c\x8e\x91\x92\x93\x94\x95\x96\x97\x98\x99\x9a\x9b\x9c\x9e\x9f', 27))
 
 def test_readbuffer_encode():
     '''
     '''
-    #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=4563
     if is_cli:
-        #AssertError(NotImplementedError, codecs.readbuffer_encode, "abc")
-        AssertError(NotImplementedError, codecs.readbuffer_encode)
+        AssertError(NotImplementedError, codecs.readbuffer_encode, "abc")
 
 def test_unicode_escape_decode():
     '''
     '''
-    #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=4563
     if is_cli:
-        #AssertError(NotImplementedError, codecs.unicode_escape_decode, "abc")
-        AssertError(NotImplementedError, codecs.unicode_escape_decode)
+        AssertError(NotImplementedError, codecs.unicode_escape_decode, "abc")
 
 def test_unicode_escape_encode():
     '''
     '''
-    #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=4563
     if is_cli:
-        #AssertError(NotImplementedError, codecs.unicode_escape_encode, "abc")
-        AssertError(NotImplementedError, codecs.unicode_escape_encode)
+        AssertError(NotImplementedError, codecs.unicode_escape_encode, "abc")
 
 def test_utf_16_encode():
     #Sanity
@@ -449,7 +460,7 @@ def test_misc_encodings():
         AreEqual('abc'.encode('utf-16-be'), '\x00a\x00b\x00c')
     for unicode_escape in ['unicode-escape', 'unicode escape']:
         AreEqual('abc'.encode('unicode-escape'), 'abc')
-        AreEqual('abc\u1234'.encode('unicode-escape'), 'abc\\\\u1234')
+        AreEqual('abc\\u1234'.encode('unicode-escape'), 'abc\\\\u1234')
 
 @skip("silverlight")
 def test_file_encodings():
@@ -459,9 +470,9 @@ def test_file_encodings():
     names.
     '''
     
-    sys.path.append(nt.getcwd() + "\\tmp_encodings")
+    sys.path.append(path_combine(os.getcwd(), "tmp_encodings"))
     try:
-        nt.mkdir(nt.getcwd() + "\\tmp_encodings")
+        os.mkdir(path_combine(os.getcwd(), "tmp_encodings"))
     except:
         pass
     
@@ -469,26 +480,27 @@ def test_file_encodings():
         #positive cases
         for coding in ip_supported_encodings:
             if is_net40 and coding.lower().replace(" ", "-")=="utf-16-be":
-                print "http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24082"
+                print("http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24082")
                 continue
             temp_mod_name = "test_encoding_" + coding.replace("-", "_").replace(" ", "_")
-            f = open(nt.getcwd() + "\\tmp_encodings\\" + temp_mod_name + ".py",
+            f = open(path_combine(os.getcwd(), "tmp_encodings", temp_mod_name + ".py"),
                     "w")
             f.write("# coding: %s" % (coding))
             f.close()
             if temp_mod_name not in ["test_encoding_uTf!!!8"]: #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=20302
                 __import__(temp_mod_name)
-            nt.remove(nt.getcwd() + "\\tmp_encodings\\" + temp_mod_name + ".py")
+            os.remove(path_combine(os.getcwd(), "tmp_encodings", temp_mod_name + ".py"))
             
     finally:
         #cleanup
-        sys.path.remove(nt.getcwd() + "\\tmp_encodings")
+        sys.path.remove(path_combine(os.getcwd(), "tmp_encodings"))
+        os.rmdir(path_combine(os.getcwd(), "tmp_encodings"))
 
 @skip("silverlight")
 def test_cp11334():
     
     #--Test that not using "# coding ..." results in a warning
-    t_in, t_out, t_err = nt.popen3(sys.executable + " " + nt.getcwd() + r"\encoded_files\cp11334_warn.py")
+    t_in, t_out, t_err = os.popen3(sys.executable + " " + path_combine(os.getcwd(), "encoded_files", "cp11334_warn.py"))
     t_err_lines = t_err.readlines()
     t_out_lines = t_out.readlines()
     t_err.close()
@@ -500,7 +512,7 @@ def test_cp11334():
     Assert(t_err_lines[1].startswith("SyntaxError: Non-ASCII character '\\xb5' in file"))
     
     #--Test that using "# coding ..." is OK
-    t_in, t_out, t_err = nt.popen3(sys.executable + " " + nt.getcwd() + r"\encoded_files\cp11334_ok.py")
+    t_in, t_out, t_err = os.popen3(sys.executable + " " + path_combine(os.getcwd(), "encoded_files", "cp11334_ok.py"))
     t_err_lines = t_err.readlines()
     t_out_lines = t_out.readlines()
     t_err.close()
@@ -511,7 +523,7 @@ def test_cp11334():
     if not is_cli:
         AreEqual(t_out_lines[0], "\xb5ble\n")
     else:
-        print "CodePlex 11334"
+        print("CodePlex 11334")
         AreEqual(t_out_lines[0], "\xe6ble\n")
     AreEqual(len(t_out_lines), 1)
 
@@ -525,22 +537,23 @@ def test_file_encodings_negative():
     - need variations on the encoding names
     '''
     import sys
-    import nt
-    sys.path.append(nt.getcwd() + "\\tmp_encodings")
+    sys.path.append(path_combine(os.getcwd(), "tmp_encodings"))
     try:
-        nt.mkdir(nt.getcwd() + "\\tmp_encodings")
+        os.mkdir(path_combine(os.getcwd(), "tmp_encodings"))
     except:
         pass
              
     try:
         #negative case
-        f = open(nt.getcwd() + "\\tmp_encodings\\" + "bad_encoding.py", "w")
+        f = open(path_combine(os.getcwd(), "tmp_encodings", "bad_encoding.py"), "w")
         f.write("# coding: bad")
         f.close()
         AssertError(SyntaxError, __import__, "bad_encoding")
+        os.remove(path_combine(os.getcwd(), "tmp_encodings", "bad_encoding.py"))
     finally:
         #cleanup
-        sys.path.remove(nt.getcwd() + "\\tmp_encodings")
+        sys.path.remove(path_combine(os.getcwd(), "tmp_encodings"))
+        os.rmdir(path_combine(os.getcwd(), "tmp_encodings"))
 
 @disabled
 def test_cp1214():
@@ -557,7 +570,7 @@ def test_codecs_lookup():
         l.append(encoding)
     
     codecs.register(my_func)
-    allchars = ''.join([chr(i) for i in xrange(1, 256)])
+    allchars = ''.join([chr(i) for i in range(1, 256)])
     try:
         codecs.lookup(allchars)
         AssertUnreachable()
@@ -565,7 +578,7 @@ def test_codecs_lookup():
         pass
         
     lowerchars = allchars.lower().replace(' ', '-')
-    for i in xrange(1, 255):
+    for i in range(1, 255):
         if l[0][i] != lowerchars[i]:
             Assert(False, 'bad chars at index %d: %r %r' % (i, l[0][i], lowerchars[i]))
             
@@ -585,7 +598,7 @@ def test_lookup_encodings():
 @skip("silverlight cli") #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=1019
 def test_cp1019():
     #--Test that bogus encodings fail properly
-    t_in, t_out, t_err = nt.popen3(sys.executable + " " + nt.getcwd() + r"\encoded_files\cp1019.py")
+    t_in, t_out, t_err = os.popen3(sys.executable + " " + path_combine(os.getcwd(), "encoded_files", "cp1019.py"))
     t_err_lines = t_err.readlines()
     t_out_lines = t_out.readlines()
     t_err.close()
@@ -605,10 +618,10 @@ def test_cp20302():
         temp = _codecs.lookup(encoding)
 
 def test_charmap_build():
-    decodemap = ''.join([unichr(i).upper() if chr(i).islower() else unichr(i).lower() for i in xrange(256)])    
+    decodemap = ''.join([chr(i).upper() if chr(i).islower() else chr(i).lower() for i in range(256)])    
     encodemap = codecs.charmap_build(decodemap)
-    AreEqual(codecs.charmap_decode(u'Hello World', 'strict', decodemap), ('hELLO wORLD', 11))
-    AreEqual(codecs.charmap_encode(u'Hello World', 'strict', encodemap), ('hELLO wORLD', 11))
+    AreEqual(codecs.charmap_decode('Hello World', 'strict', decodemap), ('hELLO wORLD', 11))
+    AreEqual(codecs.charmap_encode('Hello World', 'strict', encodemap), ('hELLO wORLD', 11))
     
 #--MAIN------------------------------------------------------------------------        
 run_test(__name__)

@@ -26,7 +26,7 @@ import System
 
 if System.Environment.Version.Major<4:
     import sys
-    print "Will not run this test against versions of the CLR earlier than 4.0"
+    print("Will not run this test against versions of the CLR earlier than 4.0")
     sys.exit(0)
 
 import System.Threading.Tasks.Parallel as Parallel
@@ -50,7 +50,7 @@ def test_system_threading_tasks():
     sanity test is in order here.
     '''
     #0..10000
-    temp_list  = range(10000)
+    temp_list  = list(range(10000))
     temp_list_output = []
     
     #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=25859
@@ -62,10 +62,10 @@ def test_system_threading_tasks():
     AreEqual(temp_list, temp_list_output)
     
     #0..10000 (foreach)
-    temp_list  = range(10000)
+    temp_list  = list(range(10000))
     temp_list_output = []
     
-    Parallel.ForEach(xrange(10000),
+    Parallel.ForEach(range(10000),
                      lambda x: temp_list_output.append(x))
     AreEqual(len(temp_list), len(temp_list_output))
     temp_list_output.sort()
@@ -93,7 +93,7 @@ def test_system_dynamic():
     Only a sanity check here.  Exhaustive testing of 'dynamic' will exist
     elsewhere.  Piggyback off of CSharp/VB's work.
     '''
-    print "TODO"
+    print("TODO")
     
 def test_covariance():
     '''
@@ -104,7 +104,7 @@ def test_covariance():
     
     Only reference types should work.
     '''
-    print "TODO"
+    print("TODO")
     
 def test_contravariance():
     '''
@@ -115,7 +115,7 @@ def test_contravariance():
     
     Only reference types should work.
     '''
-    print "TODO"
+    print("TODO")
 
 def test_system_numerics_biginteger():
     '''
@@ -124,7 +124,7 @@ def test_system_numerics_biginteger():
     This should be tested minimally here, and hit comprehensively from number
     tests. Basically any "long" test should pass against a BigInteger.
     '''
-    print "TODO"
+    print("TODO")
 
 def test_system_numerics_complex():
     '''
@@ -133,7 +133,7 @@ def test_system_numerics_complex():
     This should be tested minimally here, and hit comprehensively from number
     tests. Basically any "complex" test should pass against a Complex.
     '''
-    print "TODO"
+    print("TODO")
 
 def test_system_tuple():
     '''
@@ -141,7 +141,7 @@ def test_system_tuple():
     
     - Python tuple interchangeable? If so, quite a bit to do here
     '''
-    print "TODO"
+    print("TODO")
 
 def test_file_system_enumerations():
     '''
@@ -150,13 +150,13 @@ def test_file_system_enumerations():
     Only minimal sanity tests should be needed. We already have 
     "for x in IEnumerable:..."-like tests elsewhere.
     '''
-    import nt
-    nt_dir   = nt.listdir(".")
-    nt_dir.sort()
+    import os
+    os_dir   = os.listdir(".")
+    os_dir.sort()
     
     enum_dir = [x[2:] for x in System.IO.Directory.EnumerateFileSystemEntries(".")]
     enum_dir.sort()
-    AreEqual(nt_dir, enum_dir)
+    AreEqual(os_dir, enum_dir)
 
 def test_memory_mapped_files():
     '''
@@ -165,7 +165,7 @@ def test_memory_mapped_files():
     Do these play nice with Python's existing memory-mapped file
     support? Should they?
     '''
-    print "TODO"
+    print("TODO")
 
 def test_named_args():
     '''
@@ -174,7 +174,7 @@ def test_named_args():
     Existing use of (VB) named args tests look woefully insufficient. Lots of
     work needed.
     '''
-    print "TODO"
+    print("TODO")
 
 def test_optional_args():
     '''
@@ -183,7 +183,7 @@ def test_optional_args():
     Existing use of (VB) optional args tests look woefully insufficient. Lots
     of work needed.
     '''
-    print "TODO"
+    print("TODO")
     
 def test_misc():
     #http://msdn.microsoft.com/en-us/library/dd409610(VS.100).aspx
@@ -230,7 +230,7 @@ def test_misc():
     #http://msdn.microsoft.com/en-us/library/system.componentmodel.composition(VS.100).aspx
     #Is MEF relevant to IP at all?
     
-    print "TODO"
+    print("TODO")
 
 #--MAIN------------------------------------------------------------------------
 run_test(__name__)

@@ -18,7 +18,7 @@ import nt
 
 from iptest.cominterop_util import is_pywin32
 if not is_pywin32:
-    print "pywin32 is not installed.  Skipping this test."
+    print("pywin32 is not installed.  Skipping this test.")
     sys.exit(0)
 
 if sys.platform=="win32":
@@ -37,7 +37,7 @@ if cpy_location not in nt.environ["Path"]:
 
 if sys.platform=="win32":
     #At this point it should be possible to install the pywin32com server
-    from hw import install_pywin32_server
+    from .hw import install_pywin32_server
     install_pywin32_server()
 
 

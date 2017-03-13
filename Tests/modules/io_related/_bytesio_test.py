@@ -45,109 +45,109 @@ def bytesio_helper():
 
 #--TEST CASES------------------------------------------------------------------
 def test__BytesIO___class__():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO___delattr__():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO___doc__():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO___format__():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO___getattribute__():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO___hash__():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO___init__():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO___iter__():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO___new__():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO___reduce__():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO___reduce_ex__():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO___repr__():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO___setattr__():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO___sizeof__():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO___str__():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO___subclasshook__():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO_close():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO_closed():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO_flush():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO_getvalue():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO_isatty():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO_next():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO_read():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO_read1():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO_readable():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO_readinto():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO_readline():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO_readlines():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO_seek():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO_seekable():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO_tell():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO_truncate():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO_writable():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO_write():
-    print "TODO"
+    print("TODO")
 
 def test__BytesIO_writelines():
-    print "TODO"
+    print("TODO")
 
 
 def test_coverage():
@@ -201,7 +201,7 @@ def test_coverage():
                         [('u',),
                          [[],[],[],[],[],[],[],[],[],[]],
                          [0,0,0,0,0,0,0,0,0,0]],
-                        [('u',u''),
+                        [('u',''),
                          [[],[],[],[],[],[],[],[],[],[]],
                          [0,0,0,0,0,0,0,0,0,0]],
                         #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24303
@@ -250,11 +250,11 @@ def test_coverage():
                         [('I',),
                          [[],[],[],[],[],[],[],[],[],[]],
                          [0,0,0,0,0,0,0,0,0,0]],
-                        [('I',[1L]),
-                         [[1L],[97L],[25185L],[6513249L],[1684234849L],[1684234849L],[1684234849L],[1684234849L],[1684234849L],[1684234849L]],
+                        [('I',[1]),
+                         [[1],[97],[25185],[6513249],[1684234849],[1684234849],[1684234849],[1684234849],[1684234849],[1684234849]],
                          [0,1,2,3,4,4,4,4,4,4]],
-                        [('I',[1L,999L,47L]),
-                         [[1L,999L,47L],[97L,999L,47L],[25185L,999L,47L],[6513249L,999L,47L],[1684234849L,999L,47L],[1684234849L,869L,47L],[1684234849L,26213L,47L],[1684234849L,6776421L,47L],[1684234849L,1751606885L,47L],[1684234849L,1751606885L,105L]],
+                        [('I',[1,999,47]),
+                         [[1,999,47],[97,999,47],[25185,999,47],[6513249,999,47],[1684234849,999,47],[1684234849,869,47],[1684234849,26213,47],[1684234849,6776421,47],[1684234849,1751606885,47],[1684234849,1751606885,105]],
                          [0,1,2,3,4,5,6,7,8,9]],
                         [('l',),
                          [[],[],[],[],[],[],[],[],[],[]],
@@ -274,11 +274,11 @@ def test_coverage():
                         [('L',),
                          [[],[],[],[],[],[],[],[],[],[]],
                          [0,0,0,0,0,0,0,0,0,0]],
-                        [('L',[100000000L]),
-                         [[100000000L],[100000097L],[99967585L],[90399329L],[1684234849L],[1684234849L],[1684234849L],[1684234849L],[1684234849L],[1684234849L]],
+                        [('L',[100000000]),
+                         [[100000000],[100000097],[99967585],[90399329],[1684234849],[1684234849],[1684234849],[1684234849],[1684234849],[1684234849]],
                          [0,1,2,3,4,4,4,4,4,4]],
-                        [('L',[1L,99L,47L]),
-                         [[1L,99L,47L],[97L,99L,47L],[25185L,99L,47L],[6513249L,99L,47L],[1684234849L,99L,47L],[1684234849L,101L,47L],[1684234849L,26213L,47L],[1684234849L,6776421L,47L],[1684234849L,1751606885L,47L],[1684234849L,1751606885L,105L]],
+                        [('L',[1,99,47]),
+                         [[1,99,47],[97,99,47],[25185,99,47],[6513249,99,47],[1684234849,99,47],[1684234849,101,47],[1684234849,26213,47],[1684234849,6776421,47],[1684234849,1751606885,47],[1684234849,1751606885,105]],
                          [0,1,2,3,4,5,6,7,8,9]],
                         [('f',[]),
                          [[],[],[],[],[],[],[],[],[],[]],
@@ -309,7 +309,7 @@ def test_coverage():
     for a_params, a_expected, b_expected in readinto_cases:
         b_list = bytesio_helper()
         
-        for i in xrange(len(b_list)):
+        for i in range(len(b_list)):
             a = array.array(*a_params)
             b = b_list[i]
             AreEqual(b.readinto(a),

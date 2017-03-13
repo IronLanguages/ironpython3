@@ -30,9 +30,9 @@ multipleexecskips = [ "ScenarioXGC"]
 for s in dir(engine):
     if s.startswith("Scenario"):
         if s in multipleexecskips:
-            exec '@skip("multiple_execute") \ndef test_Engine_%s(): getattr(engine, "%s")()' % (s, s)
+            exec('@skip("multiple_execute") \ndef test_Engine_%s(): getattr(engine, "%s")()' % (s, s))
         else :
-            exec 'def test_Engine_%s(): getattr(engine, "%s")()' % (s, s)
+            exec('def test_Engine_%s(): getattr(engine, "%s")()' % (s, s))
 
 #--MAIN------------------------------------------------------------------------
 run_test(__name__)

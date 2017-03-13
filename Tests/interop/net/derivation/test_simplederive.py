@@ -91,11 +91,12 @@ def test_negative_simply_derive():
     def f():
         class C(IEmpty, EmptyClass, IEmpty): pass
     AssertErrorWithMessage(TypeError, "duplicate base class IEmpty", f)
-                            
+
+    assemblyqualifiedname = clr.GetClrType(int).AssemblyQualifiedName
     def f():
         class C(EmptyClass, EmptyGenericClass[int]): pass
     AssertErrorWithMessage(TypeError, 
-        "C: can only extend one CLI or builtin type, not both Merlin.Testing.BaseClass.EmptyClass (for IronPython.Runtime.Types.PythonType) and Merlin.Testing.BaseClass.EmptyGenericClass`1[[System.Int32, mscorlib, Version=%d.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]] (for IronPython.Runtime.Types.PythonType)" % System.Environment.Version.Major,
+        "C: can only extend one CLI or builtin type, not both Merlin.Testing.BaseClass.EmptyClass (for IronPython.Runtime.Types.PythonType) and Merlin.Testing.BaseClass.EmptyGenericClass`1[[%s]] (for IronPython.Runtime.Types.PythonType)" % assemblyqualifiedname,
         f)
     
     class B:pass
@@ -103,7 +104,7 @@ def test_negative_simply_derive():
     def f(): 
         class C(object, b): pass
     AssertErrorWithPartialMessage(TypeError, 
-        "metaclass conflict instance and type",
+        "metaclass conflict: the metaclass of a derived class must be a (non-strict) subclass of the metaclasses of all its bases",
         f)
     
     def f():

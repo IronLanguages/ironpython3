@@ -20,11 +20,13 @@ How to re-define a property in Python.
 from iptest.assert_util import *
 skiptest("silverlight")
 
-add_clr_assemblies("baseclasscs", "baseclassvb", "typesamples")
+if is_posix:
+    add_clr_assemblies("baseclasscs", "typesamples")
+else:
+    add_clr_assemblies("baseclasscs", "baseclassvb", "typesamples")
 
 from Merlin.Testing import *
 from Merlin.Testing.BaseClass import *
-
 
 def test_read_write_interface(): 
     class C(IProperty10):   
@@ -66,7 +68,7 @@ def test_read_write_interface():
     x = C()
     AreEqual(p.GetValue(x), 30)
     AssertErrorWithMessage(AttributeError, "readonly attribute", lambda: p.__set__(x, 40))
-    
+
 def test_readonly_interface():
     class C(IProperty11):
         def set_StrProperty(self, value):
@@ -146,6 +148,7 @@ def test_csindexer():
     x[1, 2] = x[3, 4] + "something"
     AreEqual(x.field, "-1 2 start-3 4something")
 
+@skip("posix")
 def test_vbindexer():
     class C(IVbIndexer10): 
         def __init__(self):
@@ -306,7 +309,7 @@ def test_readonly_writeonly_indexer():
                 return self.f + index
         return C
     
-    RO, WO = map(create_type, [IIndexer21, IIndexer22])
+    RO, WO = list(map(create_type, [IIndexer21, IIndexer22]))
     
     x = RO()
     AreEqual(IIndexer21.__getitem__(x, 10), 11)

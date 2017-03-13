@@ -53,10 +53,10 @@ from sys import exit
 from sys import executable
 import sys
 
-from nt  import environ
-from nt  import listdir
-from nt  import getcwd
-import nt
+from os  import environ
+from os  import listdir
+from os  import getcwd
+import os
 from System import Threading
 import System
 
@@ -234,7 +234,7 @@ def multireader(*streams):
 def run_one_command(*args):
     """runs a single command, exiting if it doesn't return 0, redirecting std out"""
     cmd_line = '"' + executable + '" '.join(args)
-    inp, out, err = nt.popen3(cmd_line)
+    inp, out, err = os.popen3(cmd_line)
     print(cmd_line)
     output, err = multireader(out, err)
     res = out.close()

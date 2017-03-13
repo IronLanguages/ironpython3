@@ -19,7 +19,7 @@
 
 from iptest.assert_util import *
 
-from cStringIO import StringIO
+from io import StringIO
 
 skiptest("silverlight")
 
@@ -29,14 +29,14 @@ skiptest("silverlight")
 # to determine whether or not to memoize objects, which is hard to reproduce on
 # IronPython.)
 if is_cli:
-    import cPickle
+    import pickle
 else:
     import pickle as cPickle
 
 # Acquire refs to interned strings in an attempt to force deterministic CPython
 # memo behavior if testing against CPython's cPickle module.
 # (see http://mail.python.org/pipermail/python-dev/2006-August/067882.html)
-held_refs = [u'hey', u'Bob', 'name', 'age', u'state1', u'state2', u'arg1']
+held_refs = ['hey', 'Bob', 'name', 'age', 'state1', 'state2', 'arg1']
 
 def sorted_dict_repr(obj, memo=None):
     if memo is None:
@@ -56,7 +56,7 @@ def sorted_dict_repr(obj, memo=None):
         # We do str(k) to force unicode dict keys to look like strings. On
         # IronPython this doesn't matter, since everything is unicode. However,
         # this allows us to test against CPython for compatibility.
-        if isinstance(k, unicode):
+        if isinstance(k, str):
             k = str(k)
 
         kv_reprs.append('%s: %s' % (normalized_repr(k, memo), val_repr))
@@ -83,10 +83,10 @@ class OldClass:
             self.__class__, normalized_repr(state))
 class OldClass_GetState(OldClass):
     def __getstate__(self):
-        return (u'state1', u'state2')
+        return ('state1', 'state2')
     def __setstate__(self, state): pass
 class OldClass_GetInitArgs(OldClass):
-    initargs = (u'arg1', 2, 3)
+    initargs = ('arg1', 2, 3)
     def __init__(self, *args):
         AreEqual(args, self.initargs)
     def __getinitargs__(self):
@@ -103,10 +103,10 @@ class NewClass(object):
             type(self).__name__, normalized_repr(state))
 class NewClass_GetState(NewClass):
     def __getstate__(self):
-        return (u'state1', u'state2')
+        return ('state1', 'state2')
     def __setstate__(self, state): pass
 class NewClass_GetNewArgs(NewClass):
-    newargs = (u'arg1', 2, 3)
+    newargs = ('arg1', 2, 3)
     def __getnewargs__(self):
         return self.newargs
     def __new__(cls, *args):
@@ -138,39 +138,39 @@ class TestBank:
         return obj, expectations, display_name
     normalize = staticmethod(normalize)
 
-    hey = u'hey'
+    hey = 'hey'
     long_smallest_neg = -2**(8*255-1)
     long_largest_pos = 2**(8*255-1)-1
     list_recursive = [1]
     list_recursive.append(list_recursive)
-    dict_recursive = {0:u'hey'}
+    dict_recursive = {0:'hey'}
     dict_recursive[1] = dict_recursive
     oldinst0 = OldClass()
     oldinst1 = OldClass()
-    oldinst1.name = u'Bob'
+    oldinst1.name = 'Bob'
     oldinst1.age = 3
     oldinst2 = OldClass_GetState()
     oldinst3 = OldClass_GetState()
-    oldinst3.name = u'Bob'
+    oldinst3.name = 'Bob'
     oldinst4 = OldClass_GetInitArgs(*OldClass_GetInitArgs.initargs)
     oldinst5 = OldClass_GetInitArgs(*OldClass_GetInitArgs.initargs)
-    oldinst5.name = u'Bob'
+    oldinst5.name = 'Bob'
     oldinst6 = OldClass_GetState_GetInitArgs(*OldClass_GetState_GetInitArgs.initargs)
     oldinst7 = OldClass_GetState_GetInitArgs(*OldClass_GetState_GetInitArgs.initargs)
-    oldinst7.name = u'Bob'
+    oldinst7.name = 'Bob'
     newinst0 = NewClass()
     newinst1 = NewClass()
-    newinst1.name = u'Bob'
+    newinst1.name = 'Bob'
     newinst1.age = 3
     newinst2 = NewClass_GetState()
     newinst3 = NewClass_GetState()
-    newinst3.name = u'Bob'
+    newinst3.name = 'Bob'
     newinst4 = NewClass_GetNewArgs(*NewClass_GetNewArgs.newargs)
     newinst5 = NewClass_GetNewArgs(*NewClass_GetNewArgs.newargs)
-    newinst5.name = u'Bob'
+    newinst5.name = 'Bob'
     newinst6 = NewClass_GetState_GetNewArgs(*NewClass_GetState_GetNewArgs.newargs)
     newinst7 = NewClass_GetState_GetNewArgs(*NewClass_GetState_GetNewArgs.newargs)
-    newinst7.name = u'Bob'
+    newinst7.name = 'Bob'
 
     # Test description format:
     # (thing_to_pickle, {
@@ -228,22 +228,22 @@ class TestBank:
             0:'I1073741824\n.',
             1:'J\x00\x00\x00\x40.',
             }),
-        (0L, {
+        (0, {
             0:'L0L\n.',
             1:'L0L\n.',
             2:'\x8a\x00.',
             }),
-        (1L, {
+        (1, {
             0:'L1L\n.',
             1:'L1L\n.',
             2:'\x8a\x01\x01.',
             }),
-        (-1L, {
+        (-1, {
             0:'L-1L\n.',
             1:'L-1L\n.',
             2:'\x8a\x01\xff.',
             }),
-        (-1L, {
+        (-1, {
             0:'L-1L\n.',
             1:'L-1L\n.',
             2:'\x8a\x01\xff.',
@@ -290,29 +290,29 @@ class TestBank:
             0:'F1e-14\n.',
             1:'G=\x06\x84\x9b\x86\xa1+\x9b.',
             }),
-        (u'hey\x00hey', {
+        ('hey\x00hey', {
             0:'Vhey\x00hey\np<0>\n.',
             1:'X\x07\x00\x00\x00hey\x00heyq<\x00>.',
             }),
-        (u'hey\xffhey', {
+        ('hey\xffhey', {
             0:'Vhey\xffhey\np<0>\n.',
             1:'X\x08\x00\x00\x00hey\xc3\xbfheyq<\x00>.',
             }),
-        (u'hey\u0100hey', {
+        ('hey\u0100hey', {
             0:'Vhey\\u0100hey\np<0>\n.',
             1:'X\x08\x00\x00\x00hey\xc4\x80heyq<\x00>.',
             }),
-        (u'hey\u07ffhey', {
+        ('hey\u07ffhey', {
             0:( 'Vhey\\u07ffhey\np<0>\n.',
                 'Vhey\\u07FFhey\np<0>\n.',
                 ),
             1:'X\x08\x00\x00\x00hey\xdf\xbfheyq<\x00>.',
             }),
-        (u'hey\u0800hey', {
+        ('hey\u0800hey', {
             0:'Vhey\\u0800hey\np<0>\n.',
             1:'X\t\x00\x00\x00hey\xe0\xa0\x80heyq<\x00>.',
             }),
-        (u'hey\uffffhey', {
+        ('hey\uffffhey', {
             0:( 'Vhey\\uffffhey\np<0>\n.',
                 'Vhey\\uFFFFhey\np<0>\n.',
                 ),
@@ -620,14 +620,14 @@ def test_pickler(module=cPickle, verbose=True):
 
         obj, _unused, display_name = TestBank.normalize(test)
 
-        if verbose: print "Testing %s..." % display_name,
+        if verbose: print("Testing %s..." % display_name, end=' ')
         for proto in range(len(picklers)):
             pickler = picklers[proto]
 
             s.truncate(0)
             pickler.clear_memo()
             pickler.dump(obj)
-            if verbose: print proto,
+            if verbose: print(proto, end=' ')
             expected = get_expected(expectations, proto)
             if not isinstance(expected, tuple):
                 expected = (expected,)
@@ -645,10 +645,10 @@ def test_pickler(module=cPickle, verbose=True):
                 else:
                     Fail('expected one of\n%r, got\n%r' % (expected, actual))
 
-        if verbose: print 'ok'
+        if verbose: print('ok')
 
 
-    if verbose: print "Tests completed"
+    if verbose: print("Tests completed")
 
 def test_unpickler(module=cPickle, verbose=True):
     s = StringIO()
@@ -656,13 +656,13 @@ def test_unpickler(module=cPickle, verbose=True):
         obj, pickle_lists, display_name = TestBank.normalize(test)
         expected = normalized_repr(obj)
 
-        if verbose: print "Testing %s..." % display_name,
+        if verbose: print("Testing %s..." % display_name, end=' ')
 
         for proto in range(3):
             if proto not in pickle_lists:
                 continue
 
-            if verbose: print proto,
+            if verbose: print(proto, end=' ')
 
             pickles = pickle_lists[proto]
             if not isinstance(pickles, tuple):
@@ -679,7 +679,7 @@ def test_unpickler(module=cPickle, verbose=True):
                 actual = normalized_repr(unpickled_obj)
 
                 if expected != actual:
-                    print
+                    print()
                     Fail('Wrong unpickled value:\n'
                         'with pickle %d %r\n'
                         'expected\n'
@@ -688,7 +688,7 @@ def test_unpickler(module=cPickle, verbose=True):
 
                 pickle_num += 1
 
-        if verbose: print 'ok'
+        if verbose: print('ok')
         
 
 def test_persistent_load():
@@ -707,14 +707,14 @@ def test_persistent_load():
 
     for binary in [True, False]:
         src = StringIO()
-        p = cPickle.Pickler(src)
+        p = pickle.Pickler(src)
         p.persistent_id = persistent_id
         p.binary = binary
         
         value = MyData('abc')
         p.dump(value)
         
-        up = cPickle.Unpickler(StringIO(src.getvalue()))
+        up = pickle.Unpickler(StringIO(src.getvalue()))
         up.persistent_load = persistent_load
         res = up.load()
         
@@ -722,20 +722,20 @@ def test_persistent_load():
 
         # errors
         src = StringIO()
-        p = cPickle.Pickler(src)
+        p = pickle.Pickler(src)
         p.persistent_id = persistent_id
         p.binary = binary
         
         value = MyData('abc')
         p.dump(value)
 
-        up = cPickle.Unpickler(StringIO(src.getvalue()))
+        up = pickle.Unpickler(StringIO(src.getvalue()))
         
         # exceptions vary between cPickle & Pickle
         try:
             up.load()
             AssertUnreachable()
-        except Exception, e:
+        except Exception as e:
             pass
     
 
@@ -755,14 +755,14 @@ def persistent_load(id):
 def test_pers_load():
     for binary in [True, False]:
         src = StringIO()
-        p = cPickle.Pickler(src)
+        p = pickle.Pickler(src)
         p.persistent_id = persistent_id
         p.binary = binary
         
         value = MyData('abc')
         p.dump(value)
         
-        up = cPickle.Unpickler(StringIO(src.getvalue()))
+        up = pickle.Unpickler(StringIO(src.getvalue()))
         up.persistent_load = persistent_load
         res = up.load()
         
@@ -770,33 +770,33 @@ def test_pers_load():
 
         # errors
         src = StringIO()
-        p = cPickle.Pickler(src)
+        p = pickle.Pickler(src)
         p.persistent_id = persistent_id
         p.binary = binary
         
         value = MyData('abc')
         p.dump(value)
 
-        up = cPickle.Unpickler(StringIO(src.getvalue()))
+        up = pickle.Unpickler(StringIO(src.getvalue()))
         
         # exceptions vary betwee cPickle & Pickle
         try:
             up.load()
             AssertUnreachable()
-        except Exception, e:
+        except Exception as e:
             pass
     
     
 def test_loads_negative():
-    AssertError(EOFError, cPickle.loads, "")
+    AssertError(EOFError, pickle.loads, "")
     
 def test_load_negative():
-    if cPickle.__name__ == "cPickle":   # pickle vs. cPickle report different exceptions, even on Cpy
-        filename = nt.tempnam()
+    if pickle.__name__ == "cPickle":   # pickle vs. cPickle report different exceptions, even on Cpy
+        filename = os.tempnam()
         for temp in ['\x02', "No"]:
             write_to_file(filename, content=temp)
             f = open(filename)
-            AssertError(cPickle.UnpicklingError, cPickle.load, f)
+            AssertError(pickle.UnpicklingError, pickle.load, f)
             f.close()
 
 def test_cp15803():
@@ -851,29 +851,29 @@ FROM_MOD_IN_SUBMOD = mod.KMod()
                     newname.mod.KMod(), newname.mod.FROM_MOD, newname.mod.K(), newname.mod.FROM_INIT_IN_MOD,
                     ]:
             with open(pickle_file, "w") as f:
-                cPickle.dump(x, f)
+                pickle.dump(x, f)
             
             with open(pickle_file, "r") as f:
-                x_unpickled = cPickle.load(f)
+                x_unpickled = pickle.load(f)
             
                 AreEqual(x.__class__.__name__, x_unpickled.__class__.__name__)
                 AreEqual(x.static_member, x_unpickled.static_member)
                 AreEqual(x.member, x_unpickled.member)
                 
     finally:
-        import nt
+        import os
         try:
-            nt.unlink(pickle_file)
+            os.unlink(pickle_file)
             for f_name in [ _testdir_init, _testdir_mod,
                             _testdir_sub_init, _testdir_sub_submod,
                             ]:
-                nt.unlink(f_name)
+                os.unlink(f_name)
                 if sys.platform=="win32":
-                    nt.unlink(f_name + "c")
+                    os.unlink(f_name + "c")
             
             
             for dir_name in [ _testdir_sub, _testdir]:
-                nt.rmdir(dir_name)
+                os.rmdir(dir_name)
         except:
             pass
         
@@ -882,19 +882,19 @@ def test_cp945():
     try:
         x = 1/0
         Fail("should have been division by zero error")
-    except Exception, e:
+    except Exception as e:
         temp_msg = e.message
      
         
-    x_pickled = cPickle.dumps(e)
-    x_unpickled = cPickle.loads(x_pickled)
+    x_pickled = pickle.dumps(e)
+    x_unpickled = pickle.loads(x_pickled)
     AreEqual(x_unpickled.message, temp_msg)
     
     #--comprehensive
     import exceptions
     
     special_types = [ "UnicodeTranslateError", "UnicodeEncodeError", "UnicodeDecodeError"]
-    exception_types = [ x for x in exceptions.__dict__.keys() if x.startswith("__")==False and special_types.count(x)==0]
+    exception_types = [ x for x in list(exceptions.__dict__.keys()) if x.startswith("__")==False and special_types.count(x)==0]
     exception_types = [ eval("exceptions." + x) for x in exception_types]
     
     for exception_type in exception_types:
@@ -903,33 +903,33 @@ def test_cp945():
         for t_except in except_list:
             try:
                 raise t_except
-            except exception_type, e:
+            except exception_type as e:
                 temp_msg = e.message
             
-            x_pickled = cPickle.dumps(e)
-            x_unpickled = cPickle.loads(x_pickled)
+            x_pickled = pickle.dumps(e)
+            x_unpickled = pickle.loads(x_pickled)
             AreEqual(x_unpickled.message, temp_msg)
                         
     #--special cases
     if not is_silverlight:
-        for e in [  exceptions.UnicodeEncodeError("1", u"2", 3, 4, "5"),
+        for e in [  exceptions.UnicodeEncodeError("1", "2", 3, 4, "5"),
                     exceptions.UnicodeDecodeError("1", "2", 3, 4, "5"),
-                    exceptions.UnicodeTranslateError(u"1", 2, 3, "4")
+                    exceptions.UnicodeTranslateError("1", 2, 3, "4")
                     ]:
-            x_pickled = cPickle.dumps(e)
-            x_unpickled = cPickle.loads(x_pickled)
+            x_pickled = pickle.dumps(e)
+            x_unpickled = pickle.loads(x_pickled)
             AreEqual(x_unpickled.object, e.object)
 
 
 def test_carriage_return_round_trip():
     # pickler shouldn't use ASCII and strip off \r
-    import cPickle
-    AreEqual(cPickle.loads(cPickle.dumps('\r\n')), '\r\n')
+    import pickle
+    AreEqual(pickle.loads(pickle.dumps('\r\n')), '\r\n')
 
 def test_metaclass_mixed_new_old_style():
     class mc(type): pass
     
-    class mo(object): __metaclass__ = mc
+    class mo(object, metaclass=mc): pass
     
     class c:
         def f(self): pass
@@ -939,7 +939,7 @@ def test_metaclass_mixed_new_old_style():
     global d
     class d(c, mo): pass
     
-    import cPickle
-    AreEqual(type(cPickle.loads(cPickle.dumps(d()))), d)
+    import pickle
+    AreEqual(type(pickle.loads(pickle.dumps(d()))), d)
 
 run_test(__name__)

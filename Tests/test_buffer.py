@@ -172,5 +172,7 @@ def test_write_file():
         
         AssertError(TypeError, f.write, inp)
         f.close()
-        
+
+    delete_files('foo')
+
 run_test(__name__)

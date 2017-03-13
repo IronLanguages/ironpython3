@@ -18,7 +18,7 @@ Ensures we can import from .NET 2.0 namespaces and types
 '''
 
 #--IMPORTS---------------------------------------------------------------------
-from iptest.assert_util import skiptest, is_cli, run_test
+from iptest.assert_util import skiptest, is_cli, run_test, is_posix
 skiptest("win32", "silverlight")
 
 import clr
@@ -26,7 +26,10 @@ clr.AddReference("System.Configuration")
 clr.AddReference("System.Configuration.Install")
 clr.AddReference("System.Data")
 clr.AddReference("System.Data.OracleClient")
-clr.AddReference("System.Data.SqlXml")
+if is_posix:
+    clr.AddReference("System.Data.SqlClient")
+else:
+    clr.AddReference("System.Data.SqlXml")
 clr.AddReference("System.Deployment")
 clr.AddReference("System.Design")
 clr.AddReference("System.DirectoryServices")
@@ -46,7 +49,7 @@ clr.AddReference("System.Web.Mobile")
 clr.AddReference("System.Web.RegularExpressions")
 clr.AddReference("System.Web.Services")
 clr.AddReference("System.Windows.Forms")
-clr.AddReference("System.XML")
+clr.AddReference("System.Xml")
 
 from System import *
 from System.CodeDom import *
@@ -73,8 +76,9 @@ from System.Data.OracleClient import *
 from System.Data.Sql import *
 from System.Data.SqlClient import *
 from System.Data.SqlTypes import *
-from System.Deployment.Application import *
-from System.Deployment.Internal import *
+if not is_posix:
+    from System.Deployment.Application import *
+    from System.Deployment.Internal import *
 from System.Diagnostics import *
 from System.Diagnostics.CodeAnalysis import *
 from System.Diagnostics.Design import *
@@ -101,8 +105,7 @@ from System.Management.Instrumentation import *
 from System.Media import *
 from System.Messaging import *
 from System.Messaging.Design import *
-#http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=25806
-#from System.Net import *
+from System.Net import *
 from System.Net.Cache import *
 from System.Net.Configuration import *
 from System.Net.Mail import *
@@ -167,9 +170,10 @@ from System.Web.Handlers import *
 from System.Web.Hosting import *
 from System.Web.Mail import *
 from System.Web.Management import *
-from System.Web.Mobile import *
+if not is_posix:
+    from System.Web.Mobile import *
+    from System.Web.RegularExpressions import *
 from System.Web.Profile import *
-from System.Web.RegularExpressions import *
 from System.Web.Security import *
 from System.Web.Services import *
 from System.Web.Services.Configuration import *
@@ -180,14 +184,15 @@ from System.Web.SessionState import *
 from System.Web.UI import *
 from System.Web.UI.Adapters import *
 from System.Web.UI.Design import *
-from System.Web.UI.Design.MobileControls import *
-from System.Web.UI.Design.MobileControls.Converters import *
+if not is_posix:
+    from System.Web.UI.Design.MobileControls import *
+    from System.Web.UI.Design.MobileControls.Converters import *
+    from System.Web.UI.MobileControls import *
+    from System.Web.UI.MobileControls.Adapters import *
+    from System.Web.UI.MobileControls.Adapters.XhtmlAdapters import *
+    from System.Web.UI.Design.WebControls.WebParts import *
 from System.Web.UI.Design.WebControls import *
-from System.Web.UI.Design.WebControls.WebParts import *
 from System.Web.UI.HtmlControls import *
-from System.Web.UI.MobileControls import *
-from System.Web.UI.MobileControls.Adapters import *
-from System.Web.UI.MobileControls.Adapters.XhtmlAdapters import *
 from System.Web.UI.WebControls import *
 from System.Web.UI.WebControls.Adapters import *
 from System.Web.UI.WebControls.WebParts import *
@@ -222,7 +227,7 @@ def deep_dive(in_name, in_type):
         member_fullname = in_name + "." + member
         if (member_type in [type, type(System)]) and (member not in ["__class__"]):
             if member_fullname in broken_types:
-                print "SKIPPING", member_fullname
+                print("SKIPPING", member_fullname)
                 continue
                         
             net_type = Type.GetType(member_fullname)
@@ -230,8 +235,8 @@ def deep_dive(in_name, in_type):
             if not net_type or (not (net_type.IsAbstract and net_type.IsSealed) and not net_type.IsEnum):
                 continue
                 
-            print member_fullname
-            exec "from " + member_fullname + " import *"
+            print(member_fullname)
+            exec("from " + member_fullname + " import *")
             
             
             deep_dive(member_fullname, member_type)

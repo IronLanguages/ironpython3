@@ -42,8 +42,8 @@ def test_basic():
     
     AreEqual(C.__dict__['a'], C.a)
     
-    #C.__dict__['a'].__set__(x, 3)  # bug 364459
-    #AreEqual(4, C.a.__get__(x))
+    C.__dict__['a'].__set__(x, 3)  # bug 364459
+    AreEqual(3, C.a.__get__(x))
 
 def test_remove_slots_afterwards():
     class C(object):
@@ -159,7 +159,16 @@ def test_subclassing():
         __slots__ = ['a']    
     
     class D1(C1, C2): pass
-
+    
+    # https://github.com/IronLanguages/main/issues/1374 (C was marked as not having a dictionary)
+    class A(object):
+        def __init__(self):
+            self.a = 1
+    class B(A):
+        pass
+    class C(B):
+        __slots__ = ('c', )
+    c = C()
     
 def test_subclass_with_interesting_slots():
     class C1(object):
@@ -266,6 +275,13 @@ def test_slots_wild_choices():
                 ('abc', 'def'),
              ]:
         f(x)
+
+def test_old_style():  # ensure no impact on old-style
+    class C:
+        __slots__ = ['a']
+    x = C()
+    x.b = 10
+    AreEqual(10, x.b)
 
 def test_slots_choices():
     # guess: all existing attributes should never be overwriten by __slots__ members

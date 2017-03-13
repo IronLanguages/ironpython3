@@ -14,7 +14,7 @@
 #####################################################################################
 
 from iptest.assert_util import *
-import thread
+import _thread
 import time
 import sys
 if not is_cpython:
@@ -66,12 +66,12 @@ def test_thread():
     sys.stdout = myStdOut()
     sys.stderr = myStdOut()
     
-    import thread
+    import _thread
     
     def raises(*p):
         raise Exception
     
-    id = thread.start_new_thread(raises, ())
+    id = _thread.start_new_thread(raises, ())
     Thread.Sleep(1000)  # wait a bit and make sure we don't get ripped.
     
     sys.stdout = so
@@ -80,39 +80,39 @@ def test_thread():
 def test_stack_size():
     import sys
     if is_cli or (sys.version_info[0] == 2 and sys.version_info[1] > 4) or sys.version_info[0] > 2:
-        import thread
+        import _thread
         
-        size = thread.stack_size()
+        size = _thread.stack_size()
         Assert(size==0 or size>=32768)
 
         bad_size_list = [ 1, -1, -32768, -32769, -32767, -40000, 32767, 32766]
         for bad_size in bad_size_list:
-            AssertError(ValueError, thread.stack_size, bad_size)
+            AssertError(ValueError, _thread.stack_size, bad_size)
             
         good_size_list = [4096*10, 4096*100, 4096*1000, 4096*10000]
         for good_size in good_size_list:
             #CodePlex Work Item 7827
-            if (is_cli or is_silverlight) and good_size<=50000: print "Ignoring", good_size, "for CLI"; continue
-            temp = thread.stack_size(good_size)
+            if (is_cli or is_silverlight) and good_size<=50000: print("Ignoring", good_size, "for CLI"); continue
+            temp = _thread.stack_size(good_size)
             Assert(temp>=32768 or temp==0)
         
         def temp(): pass
-        thread.start_new_thread(temp, ())
-        temp = thread.stack_size(1024*1024)
+        _thread.start_new_thread(temp, ())
+        temp = _thread.stack_size(1024*1024)
         Assert(temp>=32768 or temp==0)
 
 @skip("win32")
 def test_new_thread_is_background():
     """verify new threads created during Python are background threads"""
-    import thread
+    import _thread
     global done
     done = None
     def f():
         global done
         done = Thread.CurrentThread.IsBackground
-    thread.start_new_thread(f, ())
+    _thread.start_new_thread(f, ())
     while done == None:
-        Thread.Sleep(1000)
+        Thread.Sleep(100)
     Assert(done)
 
 @skip("silverlight")
@@ -143,13 +143,12 @@ t1.start()
         stdin, stdout = os.popen2(sys.executable +  ' temp.py')
         Assert('bye bye\n' in list(stdout))
     finally:
-        import nt
-        nt.unlink('temp.py')
+        os.unlink('temp.py')
     
 @skip("win32")
 def test_thread_local():
-    import thread
-    x = thread._local()
+    import _thread
+    x = _thread._local()
     
     #--Sanity
     x.foo = 42
@@ -161,10 +160,10 @@ def test_thread_local():
         global found
         found = hasattr(x, 'foo')
         
-    thread.start_new_thread(f, ())
+    _thread.start_new_thread(f, ())
 
     while found == None:
-        Thread.Sleep(1000)
+        Thread.Sleep(100)
 
     Assert(not found)
     
@@ -172,13 +171,13 @@ def test_thread_local():
     try:
         x.__dict__ = None
         Fail("Should not be able to set thread._local().__dict__!")
-    except AttributeError, e:
+    except AttributeError as e:
         pass
     
     try:
-        print x.bar
+        print(x.bar)
         Fail("There is no 'bar' member on thread._local()")
-    except AttributeError, e:
+    except AttributeError as e:
         pass
     
     del x.foo
@@ -193,10 +192,10 @@ def test_start_new():
         global CALLED
         CALLED = 3.14
     
-    thread.start_new(tempFunc, ())
+    _thread.start_new(tempFunc, ())
     while CALLED==False:
-        print ".",
-        time.sleep(1)
+        print(".", end=' ')
+        time.sleep(0.1)
     AreEqual(CALLED, 3.14)
     CALLED = False
 
@@ -205,24 +204,24 @@ def test_start_new_thread():
     global CALLED
     CALLED = False
     
-    lock = thread.allocate()    
+    lock = _thread.allocate()    
     def tempFunc(mykw_param=1):
         global CALLED
         lock.acquire()
         CALLED = mykw_param
         lock.release()
-        thread.exit_thread()
+        _thread.exit_thread()
         
-    id = thread.start_new_thread(tempFunc, (), {"mykw_param":7})
+    id = _thread.start_new_thread(tempFunc, (), {"mykw_param":7})
     while CALLED==False:
-        print ".",
-        time.sleep(1)
+        print(".", end=' ')
+        time.sleep(0.1)
     AreEqual(CALLED, 7)
     
-    id = thread.start_new_thread(tempFunc, (), {"mykw_param":8})
+    id = _thread.start_new_thread(tempFunc, (), {"mykw_param":8})
     while CALLED!=8:  #Hang forever if this is broken
-        print ".",
-        time.sleep(1)
+        print(".", end=' ')
+        time.sleep(0.1)
     
     #--Sanity Negative
     global temp_stderr
@@ -237,8 +236,8 @@ def test_start_new_thread():
     try:
         sys.stderr = myStdOut()
         
-        id = thread.start_new_thread(tempFunc, (), {"my_misspelled_kw_param":9})
-        time.sleep(5)
+        id = _thread.start_new_thread(tempFunc, (), {"my_misspelled_kw_param":9})
+        time.sleep(1)
         if not is_silverlight:
             se.flush()
     finally:
@@ -248,9 +247,10 @@ def test_start_new_thread():
     Assert("tempFunc() got an unexpected keyword argument 'my_misspelled_kw_param" in temp_stderr)
 
     
-@skip("win32")
+@skip("cli", "win32")
 def test_thread_interrupt_main():
-    AssertError(NotImplementedError, thread.interrupt_main)
+    # TODO: add real test for thread_interrupt_main
+    AssertError(NotImplementedError, _thread.interrupt_main)
 
 #------------------------------------------------------------------------------
 run_test(__name__)

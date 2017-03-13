@@ -150,8 +150,8 @@ def test_meta_attrs():
         dateTime = System.DateTime()
     
         AreEqual(dateTime.ToString, dateTime.__getattribute__("ToString"))
-        AssertErrorWithMessage(AttributeError, "attribute 'ToString' of 'DateTime' object is read-only", dateTime.__setattr__, "ToString", "foo")
-        AssertErrorWithMessage(AttributeError, "attribute 'ToString' of 'DateTime' object is read-only", dateTime.__delattr__, "ToString")
+        AssertErrorWithMessage(AttributeError, "'DateTime' object attribute 'ToString' is read-only", dateTime.__setattr__, "ToString", "foo")
+        AssertErrorWithMessage(AttributeError, "'DateTime' object attribute 'ToString' is read-only", dateTime.__delattr__, "ToString")
     
         arrayList = System.Collections.Generic.List[int]()
         arrayList.__setattr__("Capacity", 123)
@@ -193,11 +193,9 @@ def test_meta_attrs():
     
     AreEqual(s.center, s.__getattribute__("center"))
     
-    AssertErrorWithMessages(AttributeError, "attribute 'center' of 'str' object is read-only",
-                                            "'str' object attribute 'center' is read-only", s.__setattr__, "center", "foo")
+    AssertErrorWithMessage(AttributeError, "'str' object attribute 'center' is read-only", s.__setattr__, "center", "foo")
     
-    AssertErrorWithMessages(AttributeError, "attribute 'center' of 'str' object is read-only",
-                                            "'str' object attribute 'center' is read-only", s.__delattr__, "center")
+    AssertErrorWithMessage(AttributeError, "'str' object attribute 'center' is read-only", s.__delattr__, "center")
     
     AssertError(TypeError, getattr, object(), None)
 
@@ -254,8 +252,13 @@ def test_access_checks():
 def test_cp13686():
     import toimport
     import sys
-    import nt
-    mod_list = [toimport, sys, nt]
+    mod_list = [toimport, sys]
+    if is_posix:
+        import posix
+        mod_list.append(posix)
+    else:
+        import nt
+        mod_list.append(nt)
     
     mod_names = {}
     for mod in mod_list:

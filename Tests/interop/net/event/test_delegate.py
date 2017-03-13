@@ -218,7 +218,7 @@ def test_explicit_invocation():
     #Flag.Check(543)
     
     def callback(ar): 
-        print "callbacked"
+        print("callbacked")
         
     #y = x.BeginInvoke(321, callback, None)
     #Flag.Check(321)

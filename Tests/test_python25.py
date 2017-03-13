@@ -1266,7 +1266,7 @@ def test_overflowwarning():
 
 @skip("silverlight")
 def test_cp5609():
-    from nt import remove
+    from os import remove
     temp_name = "test_cp5609.txt"
 
     with open(temp_name, "w") as f:

@@ -44,7 +44,7 @@ def test_sanity():
         '15p': 'another string'
         }
     
-    for (k, v) in mapping.iteritems():
+    for (k, v) in mapping.items():
         s = pack(k, v)
         v2 = unpack(k, s)
         
@@ -195,7 +195,7 @@ def test_new_init():
     try:
         a.__init__('bad')
         AssertUnreachable()
-    except _struct.error, e: 
+    except _struct.error as e: 
         pass
     
     AreEqual(a.format, 'bad')
@@ -217,12 +217,12 @@ def test_weakref():
 
 def test_cp16476():
     for expected, encoded_val in [(156909,       '\xedd\x02\x00'),
-                                  (sys.maxint,   '\xff\xff\xff\x7f'),
-                                  (sys.maxint-1, '\xfe\xff\xff\x7f'),
-                                  (sys.maxint-2, '\xfd\xff\xff\x7f'),
-                                  (sys.maxint+1, '\x00\x00\x00\x80'),
-                                  (sys.maxint+2, '\x01\x00\x00\x80'),
-                                  (sys.maxint+3, '\x02\x00\x00\x80'),
+                                  (sys.maxsize,   '\xff\xff\xff\x7f'),
+                                  (sys.maxsize-1, '\xfe\xff\xff\x7f'),
+                                  (sys.maxsize-2, '\xfd\xff\xff\x7f'),
+                                  (sys.maxsize+1, '\x00\x00\x00\x80'),
+                                  (sys.maxsize+2, '\x01\x00\x00\x80'),
+                                  (sys.maxsize+3, '\x02\x00\x00\x80'),
                                   (2**16,        '\x00\x00\x01\x00'),
                                   (2**16+1,      '\x01\x00\x01\x00'),
                                   (2**16-1,      '\xff\xff\x00\x00'),

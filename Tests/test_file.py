@@ -15,21 +15,20 @@
 
 from iptest.assert_util import *
 skiptest("silverlight")
-import io
 import sys
-import nt
+import os
 
 # This module tests operations on the builtin file object. It is not yet complete, the tests cover read(),
 # read(size), readline() and write() for binary, text and universal newline modes.
 def test_sanity():
     for i in range(5):
         ### general file robustness tests
-        f = open("onlyread.tmp", "w")
+        f = file("onlyread.tmp", "w")
         f.write("will only be read")
         f.flush()
         f.close()
-        sin = open("onlyread.tmp", "r")
-        sout = open("onlywrite.tmp", "w")
+        sin = file("onlyread.tmp", "r")
+        sout = file("onlywrite.tmp", "w")
         
         # writer is null for sin
         AssertError(IOError, sin.write, "abc")
@@ -49,7 +48,7 @@ def test_sanity():
 
         # now close a file and try to perform other I/O operations on it...
         # should throw ValueError according to docs
-        f = open("onlywrite.tmp", "w")
+        f = file("onlywrite.tmp", "w")
         f.close()
         f.close()
         AssertError(ValueError, f.__iter__)
@@ -66,6 +65,9 @@ def test_sanity():
         AssertError(ValueError, f.seek, 10, 10)
         AssertError(ValueError, f.write, "abc")
         AssertError(ValueError, f.writelines, ["abc","def"])
+
+    os.unlink("onlyread.tmp")
+    os.unlink("onlywrite.tmp")
 
     ###
 
@@ -99,12 +101,12 @@ def test_read_write_fidelity():
     orig_data = data;
 
     # Write the data to disk in binary mode.
-    f = open(temp_file, "wb")
+    f = file(temp_file, "wb")
     f.write(data)
     f.close()
 
     # And read it back in again.
-    f = open(temp_file, "rb")
+    f = file(temp_file, "rb")
     data = f.read()
     f.close()
 
@@ -214,7 +216,7 @@ def test_newlines():
     def test_read_pattern(pattern):
         # Write the initial data to disk using binary mode (we test this
         # functionality earlier so we're satisfied it gets there unaltered).
-        f = open(temp_file, "wb")
+        f = file(temp_file, "wb")
         f.write(pattern[0])
         f.close()
 
@@ -226,7 +228,7 @@ def test_newlines():
     # Test a specific read mode pattern for a given reading mode.
     def test_read_mode(pattern, mode):
         # Read the data back from disk using the given read mode.
-        f = open(temp_file, read_modes[mode][1])
+        f = file(temp_file, read_modes[mode][1])
         contents = f.read()
         f.close()
 
@@ -241,13 +243,13 @@ def test_newlines():
     # Test a specific write mode pattern for a given write mode.
     def test_write_mode(pattern, mode):
         # Write the raw data using the given mode.
-        f = open(temp_file, write_modes[mode][1])
+        f = file(temp_file, write_modes[mode][1])
         f.write(pattern[0])
         f.close()
 
         # Read the data back in using binary mode (we tested this gets us back
         # unaltered data earlier).
-        f = open(temp_file, "rb")
+        f = file(temp_file, "rb")
         contents = f.read()
         f.close()
 
@@ -287,13 +289,13 @@ def test_read_size():
     
     for test in read_size_tests:
         # Write the test pattern to disk in binary mode.
-        f = open(temp_file, "wb")
+        f = file(temp_file, "wb")
         f.write(test[0])
         f.close()
 
         # Read the data back in each of the read modes we test.
         for mode in range(3):
-            f = open(temp_file, read_modes[mode][1])
+            f = file(temp_file, read_modes[mode][1])
             AreEqual(f.closed, False)
 
             # We read the data in the size specified by the test and expect to get
@@ -334,13 +336,13 @@ def test_readline():
                                                        ("Mary \n", "had \n", "a little lamb")))
     for test in readline_tests:
         # Write the test pattern to disk in binary mode.
-        f = open(temp_file, "wb")
+        f = file(temp_file, "wb")
         f.write(test[0])
         f.close()
 
         # Read the data back in each of the read modes we test.
         for mode in range(3):
-            f = open(temp_file, read_modes[mode][1])
+            f = file(temp_file, read_modes[mode][1])
 
             # We read the data by line and expect to get a specific sets of lines back.
             strings = test[1 + mode]
@@ -383,26 +385,26 @@ def test_newlines_attribute():
     
     for test in newlines_tests:
         # Write the test pattern to disk in binary mode.
-        f = open(temp_file, "wb")
+        f = file(temp_file, "wb")
         f.write(test[0])
         # Verify newlines isn't set while writing.
         Assert(f.newlines == None)
         f.close()
 
         # Verify that reading the file in binary or text mode won't set newlines.
-        f = open(temp_file, "rb")
+        f = file(temp_file, "rb")
         data = f.read()
         Assert(f.newlines == None)
         f.close()
 
-        f = open(temp_file, "r")
+        f = file(temp_file, "r")
         data = f.read()
         Assert(f.newlines == None)
         f.close()
 
         # Read file in universal mode line by line and verify we see the expected output at each stage.
         expected = test[1]
-        f = open(temp_file, "rU")
+        f = file(temp_file, "rU")
         Assert(f.newlines == None)
         count = 0
         while True:
@@ -416,7 +418,7 @@ def test_newlines_attribute():
     
 ## coverage: a sequence of file operation
 def test_coverage():
-    f = open(temp_file, 'w')
+    f = file(temp_file, 'w')
     Assert(str(f).startswith("<open file '%s', mode 'w'" % temp_file))
     Assert(f.fileno() != -1)
     Assert(f.fileno() != 0)
@@ -429,7 +431,7 @@ def test_coverage():
     Assert(str(f).startswith("<closed file '%s', mode 'w'" % temp_file))
 
     # append
-    f = open(temp_file, 'a+')
+    f = file(temp_file, 'a+')
     f.writelines(['\n', 'secondline\n'])
 
     pos = len('secondline\n') + 1
@@ -439,7 +441,7 @@ def test_coverage():
     f.close()
 
     # read
-    f = open(temp_file, 'r+', 512)
+    f = file(temp_file, 'r+', 512)
     f.seek(-1 * pos - 2, 2)
 
     AreEqual(f.readline(), 'e\n')
@@ -449,7 +451,7 @@ def test_coverage():
     f.close()
 
     # read
-    f = open(temp_file, 'rb', 512)
+    f = file(temp_file, 'rb', 512)
     f.seek(-1 * pos - 2, 2)
 
     AreEqual(f.readline(), 'e\r\n')
@@ -458,28 +460,28 @@ def test_coverage():
     AreEqual(f.read(-1), '')
     f.close()
 
-    ## file op in nt    
-    nt.unlink(temp_file)
+    ## file op in os
+    os.unlink(temp_file)
 
-    fd = nt.open(temp_file, nt.O_CREAT | nt.O_WRONLY)
-    nt.write(fd, "hello ")
-    nt.close(fd)
+    fd = os.open(temp_file, os.O_CREAT | os.O_WRONLY)
+    os.write(fd, "hello ")
+    os.close(fd)
 
-    fd = nt.open(temp_file, nt.O_APPEND | nt.O_WRONLY)
-    nt.write(fd, "world")
-    nt.close(fd)
+    fd = os.open(temp_file, os.O_APPEND | os.O_WRONLY)
+    os.write(fd, "world")
+    os.close(fd)
 
-    fd = nt.open(temp_file, 0)
-    AreEqual(nt.read(fd, 1024), "hello world")
-    nt.close(fd)
+    fd = os.open(temp_file, 0)
+    AreEqual(os.read(fd, 1024), "hello world")
+    os.close(fd)
 
-    nt.unlink(temp_file)
+    os.unlink(temp_file)
 
 def test_encoding():
     #verify we start w/ ASCII
     import sys
 
-    f = open(temp_file, 'w')
+    f = file(temp_file, 'w')
     # we throw on flush, CPython throws on write, so both write & close need to catch
     try:
         f.write('\u6211')
@@ -494,11 +496,11 @@ def test_encoding():
         saved = sys.getdefaultencoding()
         try:
             setenc('utf8')
-            f = open(temp_file, 'w')
+            f = file(temp_file, 'w')
             f.write('\u6211')
             f.close()
 
-            f = open(temp_file, 'r')
+            f = file(temp_file, 'r')
             txt = f.read()
             f.close()
             AreEqual(txt, '\u6211')
@@ -508,65 +510,69 @@ def test_encoding():
 if is_cli:
     def test_net_stream():
         import System
+        if is_netstandard:
+            import clr
+            clr.AddReference("System.IO.FileSystem")
+            clr.AddReference("System.IO.FileSystem.Primitives")
         fs = System.IO.FileStream(temp_file, System.IO.FileMode.Create, System.IO.FileAccess.Write)
-        f = open(fs, "wb")
+        f = file(fs, "wb")
         f.write('hello\rworld\ngoodbye\r\n')
         f.close()
         
-        f = open(temp_file, 'rb')
+        f = file(temp_file, 'rb')
         AreEqual(f.read(), 'hello\rworld\ngoodbye\r\n')
         f.close()
         
-        f = open(temp_file, 'rU')
+        f = file(temp_file, 'rU')
         AreEqual(f.read(), 'hello\nworld\ngoodbye\n')
         f.close()
     
     def test_file_manager():
         def return_fd1():
-            f = open(temp_file, 'w')
+            f = file(temp_file, 'w')
             return f.fileno()
             
         def return_fd2():
-            return nt.open(temp_file, 0)
+            return os.open(temp_file, 0)
         
         import System
 
         fd = return_fd1()
         System.GC.Collect()
         System.GC.WaitForPendingFinalizers()
-        AssertError(OSError, nt.fdopen, fd)
+        AssertError(OSError, os.fdopen, fd)
 
         fd = return_fd2()
         System.GC.Collect()
         System.GC.WaitForPendingFinalizers()
-        f = nt.fdopen(fd)
+        f = os.fdopen(fd)
         f.close()
-        AssertError(OSError, nt.fdopen, fd)
+        AssertError(OSError, os.fdopen, fd)
 
 def test_sharing():
     modes = ['w', 'w+', 'a+', 'r', 'w']
     for xx in modes:
         for yy in modes:
-            x = open('tempfile.txt', xx)
-            y = open('tempfile.txt', yy)
+            x = file('tempfile.txt', xx)
+            y = file('tempfile.txt', yy)
             
             x.close()
             y.close()
             
-    nt.unlink('tempfile.txt')
+    os.unlink('tempfile.txt')
 
 def test_overwrite_readonly():
     filename = "tmp.txt"
-    f = open(filename, "w+")
+    f = file(filename, "w+")
     f.write("I am read-only")
     f.close()
-    nt.chmod(filename, 256)
+    os.chmod(filename, 256)
     try:
         try:
-            f = open(filename, "w+") # FAIL
+            f = file(filename, "w+") # FAIL
         finally:
-            nt.chmod(filename, 128)
-            nt.unlink(filename)
+            os.chmod(filename, 128)
+            os.unlink(filename)
     except IOError as e:
         pass
     else:
@@ -574,20 +580,20 @@ def test_overwrite_readonly():
     #any other exceptions fail
 
 def test_inheritance_kwarg_override():
-    class TEST(io.IOBase):
+    class TEST(file):
         def __init__(self,fname,VERBOSITY=0):
-            io.IOBase.__init__(self,fname,"w",1)
+            file.__init__(self,fname,"w",1)
             self.VERBOSITY = VERBOSITY
     
     f=TEST(r'sometext.txt',VERBOSITY=1)
     AreEqual(f.VERBOSITY, 1)
     f.close()
-    nt.unlink('sometext.txt')
+    os.unlink('sometext.txt')
 
 # file newline handling test
 def test_newline():
     def test_newline(norm, mode):
-        f = open("testfile.tmp", mode)
+        f = file("testfile.tmp", mode)
         Assert(f.read() == norm)
         for x in range(len(norm)):
             f.seek(0)
@@ -597,73 +603,78 @@ def test_newline():
             Assert(a+b+c == norm)
         f.close()
     
-    AssertError(TypeError, io.IOBase, None) # arg must be string
-    AssertError(TypeError, io.IOBase, [])
-    AssertError(TypeError, io.IOBase, 1)
+    AssertError(TypeError, file, None) # arg must be string
+    AssertError(TypeError, file, [])
+    AssertError(TypeError, file, 1)
     
     norm   = "Hi\nHello\nHey\nBye\nAhoy\n"
     unnorm = "Hi\r\nHello\r\nHey\r\nBye\r\nAhoy\r\n"
-    f = open("testfile.tmp", "wb")
+    f = file("testfile.tmp", "wb")
     f.write(unnorm)
     f.close()
     
     test_newline(norm, "r")
     test_newline(unnorm, "rb")
 
+    os.unlink("testfile.tmp")
+
 def test_creation():
-    f = io.IOBase.__new__(io.IOBase, None)
+    f = file.__new__(file, None)
     Assert(repr(f).startswith("<closed file '<uninitialized file>', mode '<uninitialized file>' at"))
     
-    AssertError(TypeError, io.IOBase, None)
+    AssertError(TypeError, file, None)
 
 
 def test_repr():
-    class x(io.IOBase):
+    class x(file):
         def __repr__(self): return 'abc'
         
     f = x('repr_does_not_exist', 'w')
     AreEqual(repr(f), 'abc')
     f.close()
-    nt.unlink('repr_does_not_exist')
+    os.unlink('repr_does_not_exist')
 
 def test_truncate():
     
     # truncate()
-    a = open('abc.txt', 'w')
+    a = file('abc.txt', 'w')
     a.write('hello world\n')
     a.truncate()
     a.close()
     
-    a = open('abc.txt', 'r')
+    a = file('abc.txt', 'r')
     AreEqual(a.readlines(), ['hello world\n'])
     a.close()
-    nt.unlink('abc.txt')
+    os.unlink('abc.txt')
 
     # truncate(#)
-    a = open('abc.txt', 'w')
+    a = file('abc.txt', 'w')
     a.write('hello\nworld\n')
     a.truncate(6)
     a.close()
     
-    a = open('abc.txt', 'r')
-    AreEqual(a.readlines(), ['hello\r'])
+    a = file('abc.txt', 'r')
+    if is_posix:
+        AreEqual(a.readlines(), ['hello\n'])
+    else:
+        AreEqual(a.readlines(), ['hello\r'])
     a.close()
 
-    nt.unlink('abc.txt')
+    os.unlink('abc.txt')
     
     # truncate(#) invalid args
-    a = open('abc.txt', 'w')
+    a = file('abc.txt', 'w')
     AssertError(IOError, a.truncate, -1)
     AssertError(TypeError, a.truncate, None)
     a.close()
     
     # read-only file
-    a = open('abc.txt', 'r')
+    a = file('abc.txt', 'r')
     AssertError(IOError, a.truncate)
     AssertError(IOError, a.truncate, 0)
     a.close()
     
-    nt.unlink('abc.txt')
+    os.unlink('abc.txt')
     
     # std-out
     AssertError(IOError, sys.stdout.truncate)
@@ -671,43 +682,27 @@ def test_truncate():
 def test_modes():
     """test various strange mode combinations and error reporting"""
     try:
-        x = open('test_file', 'w')
+        x = file('test_file', 'w')
         AreEqual(x.mode, 'w')
         x.close()
         # don't allow empty modes
-        AssertErrorWithMessage(ValueError, 'empty mode string', open, 'abc', '')
+        AssertErrorWithMessage(ValueError, 'empty mode string', file, 'abc', '')
         
         # mode must start with valid value
-        AssertErrorWithMessage(ValueError, "mode string must begin with one of 'r', 'w', 'a' or 'U', not 'p'", open, 'abc', 'p')
+        AssertErrorWithMessage(ValueError, "mode string must begin with one of 'r', 'w', 'a' or 'U', not 'p'", file, 'abc', 'p')
         
         # allow anything w/ U but r and w
-        AssertErrorWithMessage(ValueError, "universal newline mode can only be used with modes starting with 'r'", open, 'abc', 'Uw')
-        AssertErrorWithMessage(ValueError, "universal newline mode can only be used with modes starting with 'r'", open, 'abc', 'Ua')
-        AssertErrorWithMessage(ValueError, "universal newline mode can only be used with modes starting with 'r'", open, 'abc', 'Uw+')
-        AssertErrorWithMessage(ValueError, "universal newline mode can only be used with modes starting with 'r'", open, 'abc', 'Ua+')
+        AssertErrorWithMessage(ValueError, "universal newline mode can only be used with modes starting with 'r'", file, 'abc', 'Uw')
+        AssertErrorWithMessage(ValueError, "universal newline mode can only be used with modes starting with 'r'", file, 'abc', 'Ua')
+        AssertErrorWithMessage(ValueError, "universal newline mode can only be used with modes starting with 'r'", file, 'abc', 'Uw+')
+        AssertErrorWithMessage(ValueError, "universal newline mode can only be used with modes starting with 'r'", file, 'abc', 'Ua+')
     
-        if is_cli:
-            #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21910
-            x = open('test_file', 'pU')
-            AreEqual(x.mode, 'pU')
-            x.close()
-            
-            #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21910
-            x = open('test_file', 'pU+')
-            AreEqual(x.mode, 'pU+')
-            x.close()
-            
-            #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21911
-            # extra info can be passed and is retained
-            x = open('test_file', 'rFOOBAR')
-            AreEqual(x.mode, 'rFOOBAR')
-            x.close()
-        else:
-            AssertError(ValueError, open, 'test_file', 'pU')
-            AssertError(ValueError, open, 'test_file', 'pU+')
-            AssertError(ValueError, open, 'test_file', 'rFOOBAR')
+        # check invalid modes
+        AssertError(ValueError, file, 'test_file', 'pU')
+        AssertError(ValueError, file, 'test_file', 'pU+')
+        AssertError(ValueError, file, 'test_file', 'rFOOBAR')
     finally:
-        nt.unlink('test_file')
+        os.unlink('test_file')
 
 import _thread
 CP16623_LOCK = _thread.allocate_lock()
@@ -802,14 +797,14 @@ def test_write_buffer():
 
 def test_errors():
     try:
-        open('some_file_that_really_does_not_exist')        
+        file('some_file_that_really_does_not_exist')        
     except Exception as e:
         AreEqual(e.errno, 2)
     else:
         AssertUnreachable()
 
     try:
-        open('path_too_long' * 100) 
+        file('path_too_long' * 100) 
     except Exception as e:
         AreEqual(e.errno, 2)
     else:
@@ -820,39 +815,48 @@ def test_write_bytes():
     try:
         f.write(b"Hello\n")
         f.close()
-        f = open('temp_ip')
+        f = file('temp_ip')
         AreEqual(f.readlines(), ['Hello\n'])
         f.close()
     finally:
-        nt.unlink('temp_ip')
+        os.unlink('temp_ip')
 
 def test_kw_args():
-    open(file='some_test_file.txt', mode='w').close()
-    nt.unlink('some_test_file.txt')
+    file(name = 'some_test_file.txt', mode = 'w').close()
+    os.unlink('some_test_file.txt')
 
 def test_buffering_kwparam():
     #--Positive
     for x in [-2147483648, -1, 0, 1, 2, 1024, 2147483646, 2147483647]:
-        f = open(file='some_test_file.txt', mode='w', buffering=x)
+        f = file(name = 'some_test_file.txt', mode = 'w', buffering=x)
         f.close()
-        nt.unlink('some_test_file.txt')
+        os.unlink('some_test_file.txt')
     
-    if is_cpython: #http://ironpython.codeplex.com/workitem/28214
-        AssertErrorWithMessage(TypeError, "integer argument expected, got float",
-                               open, 'some_test_file.txt', 'w', 3.14)
-    else:
-        f = open(file='some_test_file.txt', mode='w', buffering=3.14)
-        f.close()
-        nt.unlink('some_test_file.txt') 
+    AssertErrorWithMessage(TypeError, "integer argument expected, got float",
+                               file, 'some_test_file.txt', 'w', 3.14)
 
     #--Negative
     for x in [None, "abc", "", [], tuple()]:
         AssertError(TypeError, #"an integer is required",
-                   lambda: open(file='some_test_file.txt', mode='w', buffering=x))
+                   lambda: file(name = 'some_test_file.txt', mode = 'w', buffering=x))
     
     for x in [2147483648, -2147483649]:
         AssertError(OverflowError, #"long int too large to convert to int",
-                    lambda: open(file='some_test_file.txt', mode='w', buffering=x))
+                    lambda: file(name = 'some_test_file.txt', mode = 'w', buffering=x))
+
+def test_open_with_BOM():
+    # gh1088
+    # https://github.com/IronLanguages/main/issues/1088
+    with open("file_without_BOM.txt", "r") as f:
+        AreEqual(f.read(), "\x42\xc3\x93\x4d\x0a")
+    with open("file_without_BOM.txt", "rb") as f:
+        AreEqual(f.read(), "\x42\xc3\x93\x4d\x0d\x0a")
+    with open("file_with_BOM.txt", "r") as f:
+        AreEqual(f.read(), "\xef\xbb\xbf\x42\xc3\x93\x4d\x0a")
+    with open("file_with_BOM.txt", "rb") as f:
+        AreEqual(f.read(), "\xef\xbb\xbf\x42\xc3\x93\x4d\x0d\x0a")
+
+
 
 #------------------------------------------------------------------------------    
 run_test(__name__)

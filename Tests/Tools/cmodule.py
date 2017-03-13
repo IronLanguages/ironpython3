@@ -228,7 +228,7 @@ def get_cpython_results(name, level=0, temp_mod=None):
         
         try:
             temp_mod = __import__(mod_name)
-        except ImportError, e:
+        except ImportError as e:
             ip_missing(mod_name)
             return
 
@@ -260,23 +260,23 @@ def get_cpython_results(name, level=0, temp_mod=None):
         #Ensure this is also present CPython
         for x in [y for y in ipymod_dir if cpymod_dir.count(y)==0]:
             ip_extra(name + "." + x)
-    except TypeError, e:
+    except TypeError as e:
         #CodePlex 15715
         if not ipymod_dir_str.endswith(".fromkeys)"):
-            print "ERROR:", ipymod_dir_str
+            print("ERROR:", ipymod_dir_str)
             raise e
     
     #Look through all attributes the CPython version of the 
     #module implements
     for x in cpymod_dir:
         if name + "." + x in IGNORE_LIST:
-            print "Will not reflect on", name + "." + x
+            print("Will not reflect on", name + "." + x)
             return
     
         #Check if IronPython is missing the CPython attribute
         try:    
             temp = eval("temp_mod." + rest_of_name + x)
-        except AttributeError, e:
+        except AttributeError as e:
             ip_missing(name + "." + x)
             continue
         
@@ -293,7 +293,7 @@ def get_cpython_results(name, level=0, temp_mod=None):
         elif name.startswith("datetime") and x in ["min", "max", "resolution"]:
             continue
         elif level>=MAX_DEPTH:
-            print "Recursion too deep:", name, x
+            print("Recursion too deep:", name, x)
             continue
         get_cpython_results(name + "." + x, level+1, temp_mod)
     

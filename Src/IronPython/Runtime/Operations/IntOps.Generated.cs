@@ -143,7 +143,6 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static double TrueDivide(SByte x, SByte y) {
             return DoubleOps.TrueDivide((double)x, (double)y);
-
         }
         [SpecialName]
         public static object FloorDivide(SByte x, SByte y) {
@@ -399,7 +398,6 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static double TrueDivide(Byte x, Byte y) {
             return DoubleOps.TrueDivide((double)x, (double)y);
-
         }
         [SpecialName]
         public static double TrueDivide(Byte x, SByte y) {
@@ -688,7 +686,6 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static double TrueDivide(Int16 x, Int16 y) {
             return DoubleOps.TrueDivide((double)x, (double)y);
-
         }
         [SpecialName]
         public static object FloorDivide(Int16 x, Int16 y) {
@@ -816,7 +813,6 @@ namespace IronPython.Runtime.Operations {
         public static Int16 Getdenominator(Int16 x) {
             return (Int16)1;
         }
-
         public static int bit_length(Int16 value) {
             return MathUtils.BitLength((int)value);
         }
@@ -948,7 +944,6 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static double TrueDivide(UInt16 x, UInt16 y) {
             return DoubleOps.TrueDivide((double)x, (double)y);
-
         }
         [SpecialName]
         public static double TrueDivide(UInt16 x, Int16 y) {
@@ -1130,7 +1125,6 @@ namespace IronPython.Runtime.Operations {
         public static UInt16 Getdenominator(UInt16 x) {
             return (UInt16)1;
         }
-
         public static int bit_length(UInt16 value) {
             return MathUtils.BitLength((int)value);
         }
@@ -1185,7 +1179,6 @@ namespace IronPython.Runtime.Operations {
                 return Microsoft.Scripting.Runtime.ScriptingRuntimeHelpers.Int32ToObject((Int32)(result));
             } 
             return BigIntegerOps.Add((BigInteger)x, (BigInteger)y);
-
         }
         [SpecialName]
         public static object Subtract(Int32 x, Int32 y) {
@@ -1194,7 +1187,6 @@ namespace IronPython.Runtime.Operations {
                 return Microsoft.Scripting.Runtime.ScriptingRuntimeHelpers.Int32ToObject((Int32)(result));
             } 
             return BigIntegerOps.Subtract((BigInteger)x, (BigInteger)y);
-
         }
         [SpecialName]
         public static object Multiply(Int32 x, Int32 y) {
@@ -1203,7 +1195,6 @@ namespace IronPython.Runtime.Operations {
                 return Microsoft.Scripting.Runtime.ScriptingRuntimeHelpers.Int32ToObject((Int32)(result));
             } 
             return BigIntegerOps.Multiply((BigInteger)x, (BigInteger)y);
-
         }
         [SpecialName]
         public static double TrueDivide(Int32 x, Int32 y) {
@@ -1741,10 +1732,6 @@ namespace IronPython.Runtime.Operations {
             }
         }
         [SpecialName]
-        public static object Divide(Int64 x, Int64 y) {
-            return FloorDivide(x, y);
-        }
-        [SpecialName]
         public static double TrueDivide(Int64 x, Int64 y) {
             return DoubleOps.TrueDivide((double)x, (double)y);
         }
@@ -1872,7 +1859,6 @@ namespace IronPython.Runtime.Operations {
         public static Int64 Getdenominator(Int64 x) {
             return (Int64)1;
         }
-        
         public static int bit_length(Int64 value) {
             return MathUtils.BitLength(value);
         }
@@ -2191,7 +2177,6 @@ namespace IronPython.Runtime.Operations {
         public static UInt64 Getdenominator(UInt64 x) {
             return (UInt64)1;
         }
-        
         public static int bit_length(UInt64 value) {
             return MathUtils.BitLengthUnsigned(value);
         }

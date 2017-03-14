@@ -35,7 +35,10 @@ class NumType:
         self.is_signed = self.min < 0
         self.size = self.max-self.min + 1
         
-        self.is_float = (self.type(1)/self.type(2) != 0)
+        try:
+            self.is_float = self.type(1) // self.type(2) != self.type(0.5)
+        except:
+            self.is_float = True
         
     def get_dict(self):
         toObj = "(%s)" % self.name
@@ -254,8 +257,7 @@ long result = (long) x %(symbol)s y;
 if (%(type)s.MinValue <= result && result <= %(type)s.MaxValue) {
     return %(type_to_object)s(result)%(type_to_object_footer)s;
 } 
-return %(bigger_type)sOps.%(method_name)s((%(bigger_type)s)x, (%(bigger_type)s)y);
-"""
+return %(bigger_type)sOps.%(method_name)s((%(bigger_type)s)x, (%(bigger_type)s)y);"""
 
 unsigned_signed_body = "return %(bigger_signed)sOps.%(method_name)s((%(bigger_signed)s)x, (%(bigger_signed)s)y);"
 
@@ -264,17 +266,14 @@ float_divide_body = "return TrueDivide(x, y);"
 
 float_floor_divide_body = """\
 if (y == 0) throw PythonOps.ZeroDivisionError();
-return (%(type)s)Math.Floor(x / y);
-"""
+return (%(type)s)Math.Floor(x / y);"""
 
 float_true_divide_body = """\
 if (y == 0) throw PythonOps.ZeroDivisionError();
-return x / y;
-"""
+return x / y;"""
 
 int_true_divide_body = """\
-return DoubleOps.TrueDivide((double)x, (double)y);
-"""
+return DoubleOps.TrueDivide((double)x, (double)y);"""
 
 div_body = """\
 if (y == -1 && x == %(type)s.MinValue) {
@@ -304,7 +303,7 @@ def write_binop1_general(func, cw, body, name, ty, **kws):
     
     if not ty.is_signed:
         oty = ty.get_signed()
-        if not kws.has_key('return_type') or kws['return_type'] == ty.name:
+        if 'return_type' not in kws or kws['return_type'] == ty.name:
             if name == 'FloorDivide':
                 kws['return_type'] = 'object'
             else:
@@ -341,11 +340,9 @@ def gen_binaryops(cw, ty):
                 write_binop1(cw, body, name, ty, return_type='object', symbol=symbol)  
         
         if ty.is_float:
-             write_binop1(cw, float_divide_body, "Divide", ty)
              write_binop1(cw, float_true_divide_body, "TrueDivide", ty)
              write_binop1(cw, float_floor_divide_body, "FloorDivide", ty)
         else:
-             write_binop1(cw, int_divide_body, "Divide", ty, return_type='object')
              write_binop1(cw, int_true_divide_body, "TrueDivide", ty, return_type='double')
         
              if ty.name not in ['BigInteger', 'Int32']:
@@ -461,11 +458,6 @@ def gen_api(cw, ty):
     else:
         write_property(cw, ty, "numerator")
         write_property(cw, ty, "denominator", const="1")
-        
-        if ty.name != 'Int32':
-            cw.enter_block('public static string __hex__(%s value)' % ty.name)
-            cw.write('return BigIntegerOps.__hex__(value);')        
-            cw.exit_block()
         
         cast = "(int)"
         counter = "BitLength"

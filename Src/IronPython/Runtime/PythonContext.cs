@@ -72,7 +72,6 @@ namespace IronPython.Runtime
         private readonly Dictionary<string, Type>/*!*/ _builtinModulesDict;
         private readonly PythonOverloadResolverFactory _sharedOverloadResolverFactory;
         private readonly PythonBinder _binder;
-        private readonly SysModuleDictionaryStorage _sysDict = new SysModuleDictionaryStorage();
 #if FEATURE_ASSEMBLY_RESOLVE && FEATURE_FILESYSTEM
         private readonly AssemblyResolveHolder _resolveHolder;
 #if !CLR2
@@ -235,8 +234,9 @@ namespace IronPython.Runtime
             PythonDictionary defaultScope = new PythonDictionary();
             ModuleContext modContext = new ModuleContext(defaultScope, this);
             _defaultContext = modContext.GlobalContext;
-            
-            PythonDictionary sysDict = new PythonDictionary(_sysDict);
+
+            ModuleDictionaryStorage sysStorage = new ModuleDictionaryStorage(typeof(SysModule));
+            PythonDictionary sysDict = new PythonDictionary(sysStorage);
             _systemState = new PythonModule(sysDict);
             _systemState.__dict__["__name__"] = "sys";
             _systemState.__dict__["__package__"] = null;
@@ -743,18 +743,6 @@ namespace IronPython.Runtime
             get {
                 return _modulesDict;
             }
-        }
-
-        internal void UpdateExceptionInfo(object type, object value, object traceback) {
-            _sysDict.UpdateExceptionInfo(type, value, traceback);
-        }
-
-        internal void UpdateExceptionInfo(Exception clrException, object type, object value, List<DynamicStackFrame> traceback) {
-            _sysDict.UpdateExceptionInfo(clrException, type, value, traceback);            
-        }
-
-        internal void ExceptionHandled() {
-            _sysDict.ExceptionHandled();
         }
 
         internal PythonModule GetModuleByName(string/*!*/ name) {

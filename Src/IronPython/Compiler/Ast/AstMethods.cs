@@ -59,11 +59,9 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo MakeRethrowExceptionWorker = GetMethod((Func<Exception, Exception>)PythonOps.MakeRethrowExceptionWorker);
         public static readonly MethodInfo MakeException = GetMethod((Func<CodeContext, object, object, Exception>)PythonOps.MakeException);
         public static readonly MethodInfo MakeSlice = GetMethod((Func<object, object, object, Slice>)PythonOps.MakeSlice);
-        public static readonly MethodInfo ExceptionHandled = GetMethod((Action<CodeContext>)PythonOps.ExceptionHandled);
         public static readonly MethodInfo GetExceptionInfoLocal = GetMethod((Func<CodeContext, Exception, PythonTuple>)PythonOps.GetExceptionInfoLocal);
         public static readonly MethodInfo CheckException = GetMethod((Func<CodeContext, object, object, object>)PythonOps.CheckException);
         public static readonly MethodInfo SetCurrentException = GetMethod((Func<CodeContext, Exception, object>)PythonOps.SetCurrentException);
-        public static readonly MethodInfo BuildExceptionInfo = GetMethod((Action<CodeContext, Exception>)PythonOps.BuildExceptionInfo);
         public static readonly MethodInfo MakeTuple = GetMethod((Func<object[], PythonTuple>)PythonOps.MakeTuple);
         public static readonly MethodInfo IsNot = GetMethod((Func<object, object, object>)PythonOps.IsNot);
         public static readonly MethodInfo Is = GetMethod((Func<object, object, object>)PythonOps.Is);

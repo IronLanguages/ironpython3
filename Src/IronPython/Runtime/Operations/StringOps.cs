@@ -1892,7 +1892,7 @@ namespace IronPython.Runtime.Operations {
                             d["cp" + encs[i].CodePage.ToString()] = d[normalizedName] = d["us"] = d["ascii"] = d["646"] = d["us_ascii"] = new AsciiEncodingInfoWrapper();
                             continue;
                         case "iso_8859_1":
-                            d["8859"] = d["latin_1"] = d["latin1"] = d["iso 8859_1"] = d["iso8859_1"] = d["cp819"] = d["819"] = d["latin"] = d["latin1"] = d["l1"] = encs[i];
+                            d["8859"] = d["latin_1"] = d["latin1"] = d["iso 8859_1"] = d["iso8859_1"] = d["cp819"] = d["819"] = d["latin"] = d["l1"] = encs[i];
                             break;
                         case "utf_7":
                             d["u7"] = d["unicode-1-1-utf-7"] = encs[i];

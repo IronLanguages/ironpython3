@@ -2140,7 +2140,7 @@ namespace IronPython.Modules {
                 }
 
                 PythonType cls = PopStack() as PythonType;
-                if (args == null) {
+                if (cls == null) {
                     throw PythonOps.TypeError("expected new-style type as first argument to NEWOBJ, got {0}", DynamicHelpers.GetPythonType(args));
                 }
 

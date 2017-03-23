@@ -592,7 +592,7 @@ namespace IronPython.Modules {
         }
 
         public static double copysign(double x, double y) {
-            return DoubleOps.Sign(y) * Math.Abs(x);
+            return DoubleOps.CopySign(x, y);
         }
 
         public static double copysign(object x, object y) {
@@ -601,7 +601,7 @@ namespace IronPython.Modules {
                 !Converter.TryConvertToDouble(y, out sign)) {
                 throw PythonOps.TypeError("TypeError: a float is required");
             }
-            return DoubleOps.Sign(sign) * Math.Abs(val);
+            return DoubleOps.CopySign(val, sign);
         }
 
         #region Private Implementation Details

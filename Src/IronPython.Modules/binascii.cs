@@ -31,6 +31,8 @@ namespace IronPython.Modules {
     public static class PythonBinaryAscii {
         public const string __doc__ = "Provides functions for converting between binary data encoded in various formats and ASCII.";
 
+        private const int MAXLINESIZE = 76;
+
         private static readonly object _ErrorKey = new object();
         private static readonly object _IncompleteKey = new object();
 
@@ -153,18 +155,144 @@ namespace IronPython.Modules {
         public static object a2b_qp(object data, object header) {
             return LightExceptions.Throw(new NotImplementedException());
         }
-        public static object b2a_qp(object data) {
-            throw new NotImplementedException();
-        }
-        public static object b2a_qp(object data, object quotetabs) {
-            throw new NotImplementedException();
-        }
-        public static object b2a_qp(object data, object quotetabs, object istext) {
-            throw new NotImplementedException();
+
+        private static void to_hex(char ch, StringBuilder s, int index) {
+            int uvalue = ch, uvalue2 = ch / 16;
+            s.Append("0123456789ABCDEF"[uvalue2 % 16]);
+            s.Append("0123456789ABCDEF"[uvalue % 16]);
         }
 
-        public static object b2a_qp(object data, object quotetabs, object istext, object header) {
-            throw new NotImplementedException();
+        [Documentation(@"b2a_qp(data, quotetabs=0, istext=1, header=0) -> s; 
+ Encode a string using quoted-printable encoding. 
+
+On encoding, when istext is set, newlines are not encoded, and white 
+space at end of lines is.  When istext is not set, \\r and \\n (CR/LF) are 
+both encoded.  When quotetabs is set, space and tabs are encoded.")]
+        public static object b2a_qp(string data, int quotetabs = 0, int istext = 1, int header = 0) {
+            bool crlf = data.Contains("\r\n");
+            int linelen = 0, odatalen = 0;
+            int incount = 0, outcount = 0;
+
+            bool quotetabs_ = quotetabs != 0;
+            bool header_ = header != 0;
+            bool istext_ = istext != 0;
+
+            while(incount < data.Length) {
+                if ((data[incount] > 126) || (data[incount] == '=') ||
+                    (header_ && data[incount] == '_') || ((data[incount] == '.') && (linelen == 0) &&
+                    (data[incount+1] == '\n' || data[incount+1] == '\r' || data[incount+1] == 0)) ||
+                    (!istext_ && ((data[incount] == '\r') || (data[incount] == '\n'))) ||
+                    ((data[incount] == '\t' || data[incount] == ' ') && (incount +1 == data.Length)) ||
+                    ((data[incount] < 33) && (data[incount] != '\r') && (data[incount] != '\n') &&
+                    (quotetabs_ || (!quotetabs_ && ((data[incount] != '\t') && (data[incount] != ' ')))))) {
+
+                    if ((linelen + 3) >= MAXLINESIZE) {
+                        linelen = 0;
+                        if (crlf)
+                            odatalen += 3;
+                        else
+                            odatalen += 2;
+                    }
+                    linelen += 3;
+                    odatalen += 3;
+                    incount++;
+                } else {
+                    if (istext_ &&
+                        ((data[incount] == '\n') ||
+                         ((incount + 1 < data.Length) && (data[incount] == '\r') &&
+                         (data[incount + 1] == '\n')))) {
+                        linelen = 0;
+                        /* Protect against whitespace on end of line */
+                        if (incount > 0 && ((data[incount - 1] == ' ') || (data[incount - 1] == '\t')))
+                            odatalen += 2;
+                        if (crlf)
+                            odatalen += 2;
+                        else
+                            odatalen += 1;
+                        if (data[incount] == '\r')
+                            incount += 2;
+                        else
+                            incount++;
+                    } else {
+                        if ((incount + 1 != data.Length) &&
+                           (data[incount + 1] != '\n') &&
+                           (linelen + 1) >= MAXLINESIZE) {
+                            linelen = 0;
+                            if (crlf)
+                                odatalen += 3;
+                            else
+                                odatalen += 2;
+                        }
+                        linelen++;
+                        odatalen++;
+                        incount++;
+                    }
+                }
+            }
+
+            StringBuilder odata = new StringBuilder();
+
+            incount = outcount = linelen = 0;
+            while (incount < data.Length) {
+                if ((data[incount] > 126) || (data[incount] == '=') || (header_ && data[incount] == '_') ||
+                    ((data[incount] == '.') && (linelen == 0) && (data[incount + 1] == '\n' || data[incount + 1] == '\r' || data[incount + 1] == 0)) ||
+                    (!istext_ && ((data[incount] == '\r') || (data[incount] == '\n'))) ||
+                    ((data[incount] == '\t' || data[incount] == ' ') && (incount + 1 == data.Length)) ||
+                   ((data[incount] < 33) && (data[incount] != '\r') && (data[incount] != '\n') &&
+                    (quotetabs_ || (!quotetabs_ && ((data[incount] != '\t') && (data[incount] != ' ')))))) {
+
+                    if ((linelen + 3) >= MAXLINESIZE) {
+                        odata.Append('=');
+                        if (crlf) odata.Append('\r');
+                        odata.Append('\n');
+                        linelen = 0;
+                    }
+                    odata.Append('=');
+                    to_hex(data[incount], odata, outcount);
+                    outcount += 2;
+                    incount++;
+                    linelen += 3;
+                } else {
+                    if (istext_ &&
+                        ((data[incount] == '\n') ||
+                         ((incount + 1 < data.Length) && (data[incount] == '\r') &&
+                         (data[incount + 1] == '\n')))) {
+                        linelen = 0;
+                        /* Protect against whitespace on end of line */
+                        if (outcount != 0 && ((odata[outcount - 1] == ' ') || (odata[outcount - 1] == '\t'))) {
+                            char ch = odata[outcount - 1];
+                            odata[outcount - 1] = '=';
+                            to_hex(ch, odata, outcount);
+                            outcount += 2;
+                        }
+
+                        if (crlf) odata[outcount++] = '\r';
+                        odata[outcount++] = '\n';
+                        if (data[incount] == '\r')
+                            incount += 2;
+                        else
+                            incount++;
+                    } else {
+                        if ((incount +1 != data.Length) &&
+                           (data[incount + 1] != '\n') &&
+                           (linelen + 1) >= MAXLINESIZE) {
+                            odata[outcount++] = '=';
+                            if (crlf) odata[outcount++] = '\r';
+                            odata[outcount++] = '\n';
+                            linelen = 0;
+                        }
+                        linelen++;
+                        if (header_ && data[incount] == ' ') {
+                            odata[outcount++] = '_';
+                            incount++;
+                        } else {
+                            odata[outcount++] = data[incount++];
+                        }
+                    }
+                }
+            }
+
+            return odata.ToString();
         }
         public static object a2b_hqx(object data) {
             throw new NotImplementedException();

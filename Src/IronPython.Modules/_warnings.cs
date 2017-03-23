@@ -38,10 +38,12 @@ namespace IronPython.Modules {
         private static readonly string _keyFilters = "filters";
         private static readonly string _keyOnceRegistry = "once_registry";
 
+        public static PythonDictionary MODULE_STATE;
+
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             List defaultFilters = new List();
-            if (context.PythonOptions.WarnPython30) {
+            if (!context.PythonOptions.WarnPython30) {
                 defaultFilters.AddNoLock(PythonTuple.MakeTuple("ignore", null, PythonExceptions.DeprecationWarning, null, 0));
             }
             defaultFilters.AddNoLock(PythonTuple.MakeTuple("ignore", null, PythonExceptions.PendingDeprecationWarning, null, 0));
@@ -118,6 +120,7 @@ namespace IronPython.Modules {
         public static void warn_explicit(CodeContext context, object message, PythonType category, string filename, int lineno, string module=null, PythonDictionary registry=null, object module_globals=null) {
             PythonContext pContext = PythonContext.GetContext(context);
             PythonDictionary fields = (PythonDictionary)pContext.GetModuleState(_keyFields);
+            object warnings = pContext.GetWarningsModule();
             PythonExceptions.BaseException msg;
             string text; // message text
 
@@ -147,7 +150,16 @@ namespace IronPython.Modules {
             string action = Converter.ConvertToString(fields[_keyDefaultAction]);
             PythonTuple last_filter = null;
             bool loop_break = false;
-            foreach (PythonTuple filter in (List)fields[_keyFilters]) {
+
+            List filters = (List)fields[_keyFilters];
+            if (warnings != null) {
+                filters = PythonOps.GetBoundAttr(context, warnings, "filters") as List;
+                if(filters == null) {
+                    throw PythonOps.ValueError("_warnings.filters must be a list");
+                }
+            }
+
+            foreach (PythonTuple filter in filters) {
                 last_filter = filter;
                 action = (string)filter._data[0];
                 PythonRegex.RE_Pattern fMsg = (PythonRegex.RE_Pattern)filter._data[1];
@@ -204,12 +216,16 @@ namespace IronPython.Modules {
                     throw PythonOps.RuntimeError("Unrecognized action ({0}) in warnings.filters:\n {1}", action, last_filter);
             }
 
-            object warnings = pContext.GetWarningsModule();
             if (warnings != null) {
-                PythonCalls.Call(
-                    context,
-                    PythonOps.GetBoundAttr(context, warnings, "showwarning"),
-                    msg, category, filename, lineno, null, null);
+                object show_fxn = PythonOps.GetBoundAttr(context, warnings, "showwarning");
+                if(show_fxn != null) {
+                    PythonCalls.Call(
+                        context,
+                        show_fxn,
+                        msg, category, filename, lineno, null, null);
+                } else {
+                    showwarning(context, msg, category, filename, lineno, null, null);
+                }
             } else {
                 showwarning(context, msg, category, filename, lineno, null, null);
             }

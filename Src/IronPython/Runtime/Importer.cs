@@ -116,8 +116,13 @@ namespace IronPython.Runtime {
 
                     object path;
                     List listPath;
-                    if (scope.__dict__._storage.TryGetPath(out path) && (listPath = path as List) != null) {
-                        return ImportNestedModule(context, scope, new [] {name}, 0, listPath);
+                    string stringPath;
+                    if (scope.__dict__._storage.TryGetPath(out path)) {
+                        if ((listPath = path as List) != null) {
+                            return ImportNestedModule(context, scope, new[] { name }, 0, listPath);
+                        } else if((stringPath = path as string) != null) {
+                            return ImportNestedModule(context, scope, new[] { name }, 0, List.FromArrayNoCopy(stringPath));
+                        }
                     }
                 } else if ((pt = from as PythonType) != null) {
                     PythonTypeSlot pts;
@@ -147,8 +152,22 @@ namespace IronPython.Runtime {
             if (scope != null) {
                 object path;
                 List listPath;
-                if (scope.__dict__._storage.TryGetPath(out path) && (listPath = path as List) != null) {
-                    return ImportNestedModule(context, scope, parts, current, listPath);
+                string stringPath;
+                if (scope.__dict__._storage.TryGetPath(out path)) {
+                    if ((listPath = path as List) != null) {
+                        return ImportNestedModule(context, scope, parts, current, listPath);
+                    } else if((stringPath = path as string) != null) {
+                        return ImportNestedModule(context, scope, parts, current, List.FromArrayNoCopy(stringPath));
+                    }
+                } else {
+                    PythonType t = DynamicHelpers.GetPythonType(scope);
+                    if (t.TryGetMember(context, scope, "__path__", out path)) {
+                        if((listPath = path as List) != null) {
+                            return ImportNestedModule(context, scope, parts, current, listPath);
+                        } else if((stringPath = path as string) != null) {
+                            return ImportNestedModule(context, scope, parts, current, List.FromArrayNoCopy(stringPath));
+                        }
+                    }
                 }
             }
 
@@ -982,6 +1001,10 @@ namespace IronPython.Runtime {
             path = GetFullPathAndValidateCase(PythonContext.GetContext(context), path, true);
             if (path == null) {
                 return null;
+            }
+
+            if(context.LanguageContext.DomainManager.Platform.DirectoryExists(path) && !context.LanguageContext.DomainManager.Platform.FileExists(context.LanguageContext.DomainManager.Platform.CombinePaths(path, "__init__.py"))) {
+                PythonOps.Warn(context, PythonExceptions.ImportWarning, "Not importing directory '{0}': missing __init__.py", path);
             }
 
             return LoadModuleFromSource(context, name, context.LanguageContext.DomainManager.Platform.CombinePaths(path, "__init__.py"));

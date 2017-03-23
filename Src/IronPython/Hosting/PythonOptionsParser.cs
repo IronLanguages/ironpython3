@@ -190,6 +190,15 @@ namespace IronPython.Hosting {
                     break;
 
                 default:
+                    if(arg.StartsWith("-W")) {
+                        if (_warningFilters == null) {
+                            _warningFilters = new List<string>();
+                        }
+
+                        _warningFilters.Add(arg.Substring(2));
+                        break;
+                    }
+
                     base.ParseArgument(arg);
 
                     if (ConsoleOptions.FileName != null) {
@@ -256,7 +265,7 @@ namespace IronPython.Hosting {
             }
             
             int[] indicies = indiciesList.ToArray();
-            Array.Sort(optName.ToArray(), indicies, StringComparer.InvariantCulture);
+            Array.Sort(optName.ToArray(), indicies, StringComparer.OrdinalIgnoreCase);
 
             options = new string[allOptions.Length / 2, 2];
             for (int i = 0; i < indicies.Length; i++) {

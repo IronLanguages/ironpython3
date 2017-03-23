@@ -2162,35 +2162,9 @@ namespace IronPython.Runtime.Operations {
             return res;
         }
 
-        /// <summary>
-        /// Called from generated code at the start of a catch block.
-        /// </summary>
-        public static void BuildExceptionInfo(CodeContext/*!*/ context, Exception clrException) {
-            object pyExcep = PythonExceptions.ToPython(clrException);
-            List<DynamicStackFrame> frames = clrException.GetFrameList();
-            IPythonObject pyObj = pyExcep as IPythonObject;
-
-            object excType;
-            if (pyObj != null) {
-                // class is always the Python type for new-style types (this is also the common case)
-                excType = pyObj.PythonType;
-            } else {
-                excType = PythonOps.GetBoundAttr(context, pyExcep, "__class__");
-            }
-
-            context.LanguageContext.UpdateExceptionInfo(clrException, excType, pyExcep, frames);
-        }
-
         // Clear the current exception. Most callers should restore the exception.
-        // This is mainly for sys.exc_clear()        
         public static void ClearCurrentException() {
             RestoreCurrentException(null);
-        }
-
-        public static void ExceptionHandled(CodeContext context) {
-            var pyCtx = context.LanguageContext;
-
-            pyCtx.ExceptionHandled();
         }
 
         // Called by code-gen to save it. Codegen just needs to pass this back to RestoreCurrentException.
@@ -2310,8 +2284,6 @@ namespace IronPython.Runtime.Operations {
             } else {
                 excType = PythonOps.GetBoundAttr(context, pyExcep, "__class__");
             }
-
-            pc.UpdateExceptionInfo(excType, pyExcep, tb);
 
             return PythonTuple.MakeTuple(excType, pyExcep, tb);
         }

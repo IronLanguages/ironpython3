@@ -170,7 +170,6 @@ namespace IronPython.Compiler.Ast {
                             @catch,
                             // restore existing line updated after exception handler completes
                             PopLineUpdated(lineUpdated),
-                            Ast.Call(AstMethods.ExceptionHandled, Parent.LocalContext),
                             Ast.Assign(exception, Ast.Constant(null, typeof(Exception))),
                             AstUtils.Constant(null)
                         )
@@ -440,11 +439,6 @@ namespace IronPython.Compiler.Ast {
             return Ast.Block(
                 // pass false so if we take another exception we'll add it to the frame list
                 node.Parent.GetSaveLineNumberExpression(exception, false),
-                Ast.Call(
-                    AstMethods.BuildExceptionInfo,
-                    node.Parent.LocalContext,
-                    exception
-                ),
                 body,
                 AstUtils.Empty()
             );

@@ -239,7 +239,6 @@
     <Compile Include="Runtime\SetStorage.cs" />
     <Compile Include="Runtime\SiteLocalStorage.cs" />
     <Compile Include="Runtime\StringFormatSpec.cs" />
-    <Compile Include="Runtime\SysModuleDictionaryStorage.cs" />
     <Compile Include="Runtime\Types\CachedNewTypeInfo.cs" />
     <Compile Include="Runtime\Types\DynamicBaseTypeAttribute.cs" />
     <Compile Include="Runtime\Types\InstanceCreator.cs" />

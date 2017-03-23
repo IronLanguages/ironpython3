@@ -63,7 +63,7 @@
     <Compile Include="math.Generated.cs" />
     <Compile Include="_md5.cs" />
     <Compile Include="nt.cs" />
-    <Compile Include="operator.cs" />
+    <Compile Include="_operator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="re.cs" />
     <Compile Include="select.cs" />

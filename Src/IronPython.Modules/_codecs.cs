@@ -116,7 +116,7 @@ namespace IronPython.Modules {
             return PythonTuple.MakeTuple(res.ToString(), res.Length);
         }
 
-        public static object charbuffer_encode() {
+        public static object charbuffer_encode(string input) {
             throw PythonOps.NotImplementedError("charbuffer_encode");
         }
 
@@ -364,7 +364,7 @@ namespace IronPython.Modules {
             );
         }
 
-        public static object readbuffer_encode() {
+        public static object readbuffer_encode(string input) {
             throw PythonOps.NotImplementedError("readbuffer_encode");
         }
 
@@ -378,11 +378,11 @@ namespace IronPython.Modules {
 
         #region Unicode Escape Encoding
 
-        public static PythonTuple unicode_escape_decode() {
+        public static PythonTuple unicode_escape_decode(string input) {
             throw PythonOps.NotImplementedError("unicode_escape_decode");
         }
 
-        public static PythonTuple unicode_escape_encode() {
+        public static PythonTuple unicode_escape_encode(string input) {
             throw PythonOps.NotImplementedError("unicode_escape_encode");
         }
 
@@ -605,6 +605,34 @@ namespace IronPython.Modules {
 
         public static PythonTuple utf_32_le_encode(object input, string errors) {
             return DoEncode(Encoding.UTF32, input, errors);
+        }
+
+        #endregion
+
+        #region Utf-32 Be Functions
+
+        private static Encoding utf32BeEncoding = null;
+        private static Encoding UTF32BE {
+            get {
+                if (utf32BeEncoding == null) utf32BeEncoding = new UTF32Encoding(true, true);
+                return utf32BeEncoding;
+            }
+        }
+
+        public static PythonTuple utf_32_be_decode(object input) {
+            return utf_32_be_decode(input, "strict", false);
+        }
+
+        public static PythonTuple utf_32_be_decode(object input, string errors, [Optional]bool ignored) {
+            return DoDecode(UTF32BE, input, errors);
+        }
+
+        public static PythonTuple utf_32_be_encode(object input) {
+            return utf_32_be_encode(input, "strict");
+        }
+
+        public static PythonTuple utf_32_be_encode(object input, string errors) {
+            return DoEncode(UTF32BE, input, errors);
         }
 
         #endregion

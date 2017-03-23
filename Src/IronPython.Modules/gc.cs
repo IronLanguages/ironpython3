@@ -14,6 +14,7 @@
  * ***************************************************************************/
 
 using System;
+using System.Linq;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
@@ -69,7 +70,7 @@ namespace IronPython.Modules {
         }
 
         public static object get_debug() {
-            return null;
+            return 0;
         }
 
         public static object[] get_objects() {
@@ -77,7 +78,27 @@ namespace IronPython.Modules {
         }
 
         public static void set_threshold(CodeContext/*!*/ context, params object[] args) {
-            SetThresholds(context, PythonTuple.MakeTuple(args));
+            if(args.Length == 0) {
+                throw PythonOps.TypeError("set_threshold() takes at least 1 argument (0 given)");
+            }
+
+            if(args.Length > 3) {
+                throw PythonOps.TypeError("set_threshold() takes at most 3 arguments ({0} given)", args.Length);
+            }
+
+            if(args.Any(x => x is double)) {
+                throw PythonOps.TypeError("integer argument expected, got float");
+            }
+
+            if(!args.All(x => x is int)) {
+                throw PythonOps.TypeError("an integer is required");
+            }
+
+            PythonTuple current = get_threshold(context);
+            object[] threshold = args.Take(args.Length)
+                                     .Concat(current.ToArray().Skip(args.Length))
+                                     .ToArray();
+            SetThresholds(context, PythonTuple.MakeTuple(threshold));
         }
 
         public static PythonTuple get_threshold(CodeContext/*!*/ context) {

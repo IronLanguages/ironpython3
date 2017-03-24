@@ -1284,7 +1284,7 @@ namespace IronPython.Runtime.Operations {
             Debug.Assert(iwr != null);
 
             InstanceFinalizer nif = new InstanceFinalizer(context, newObject);
-            iwr.SetFinalizer(new WeakRefTracker(nif, nif));
+            iwr.SetFinalizer(new WeakRefTracker(iwr, nif, nif));
         }
 
         private static bool TryGetMetaclass(CodeContext/*!*/ context, PythonTuple bases, PythonDictionary dict, out object metaclass) {

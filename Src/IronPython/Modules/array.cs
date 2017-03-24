@@ -202,8 +202,15 @@ namespace IronPython.Modules {
 
             public void extend(object iterable) {
                 array pa = iterable as array;
-                if (pa != null && typecode != pa.typecode) {
-                    throw PythonOps.TypeError("cannot extend with different typecode");
+                if (pa != null) {
+                    if (typecode != pa.typecode) {
+                        throw PythonOps.TypeError("cannot extend with different typecode");
+                    }
+                    int l = pa._data.Length;
+                    for (int i = 0; i < l; i++) {
+                        _data.Append(pa._data.GetData(i));
+                    }
+                    return;
                 }
 
                 string str = iterable as string;
@@ -349,10 +356,6 @@ namespace IronPython.Modules {
                 object res = _data.GetData(i);
                 _data.RemoveAt(i);
                 return res;
-            }
-
-            public void read(PythonFile f, int n) {
-                fromfile(f, n);
             }
 
             public void remove(object value) {
@@ -560,7 +563,7 @@ namespace IronPython.Modules {
                     DynamicHelpers.GetPythonType(this),
                     PythonOps.MakeTuple(
                         typecode,
-                        ToByteArray().MakeString()
+                        tolist()
                     ),
                     null
                 );
@@ -570,9 +573,9 @@ namespace IronPython.Modules {
                 return new array(typecode, this);
             }
 
-            public array __deepcopy__() {
+            public array __deepcopy__(array arg) {
                 // we only have simple data so this is the same as a copy
-                return __copy__();
+                return arg.__copy__();
             }
 
             public PythonTuple __reduce_ex__(int version) {
@@ -615,10 +618,6 @@ namespace IronPython.Modules {
                 if (_typeCode != 'u') throw PythonOps.ValueError("only 'u' arrays can be converted to unicode");
 
                 return new string(((ArrayData<char>)_data).Data, 0, _data.Length);
-            }
-
-            public void write(PythonFile f) {
-                tofile(f);
             }
 
             public string/*!*/ typecode {

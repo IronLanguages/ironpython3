@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -37,7 +38,6 @@ using System.IO.Pipes;
 
 #if FEATURE_NUMERICS
 using System.Numerics;
-
 #else
 using Microsoft.Scripting.Math;
 #endif
@@ -1083,15 +1083,15 @@ namespace IronPython.Runtime {
         }
 
 #if FEATURE_PROCESS
-        internal static PythonFile[] CreatePipe(CodeContext/*!*/ context, SafePipeHandle hRead, SafePipeHandle hWrite) {
+        internal static PythonFile[] CreatePipe(CodeContext/*!*/ context) {
             var pythonContext = PythonContext.GetContext(context);
             var encoding = pythonContext.DefaultEncoding;
 
-            var inPipe = new AnonymousPipeStream(PipeDirection.In, hRead);
+            var inPipe = new AnonymousPipeServerStream(PipeDirection.In);
             var inPipeFile = new PythonFile(context);
             inPipeFile.InitializePipe(inPipe, "r", encoding);
 
-            var outPipe = new AnonymousPipeStream(PipeDirection.Out, hWrite);
+            var outPipe = new AnonymousPipeClientStream(PipeDirection.Out, inPipe.ClientSafePipeHandle);
             var outPipeFile = new PythonFile(context);
             outPipeFile.InitializePipe(outPipe, "w", encoding);
             return new [] {inPipeFile, outPipeFile};
@@ -1099,16 +1099,7 @@ namespace IronPython.Runtime {
 
         [PythonHidden]
         public static PythonTuple CreatePipeAsFd(CodeContext context) {
-                    SafePipeHandle hRead, hWrite;
-            var secAttrs = new NativeMethods.SECURITY_ATTRIBUTES();
-            secAttrs.nLength = Marshal.SizeOf(secAttrs);
-
-            if (!NativeMethods.CreatePipe(out hRead, out hWrite, ref secAttrs, 0)) {
-                var err = Marshal.GetLastWin32Error();
-                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, err,
-                    new Win32Exception(err).Message, null, err);
-            }
-            var pipeFiles = CreatePipe(context, hRead, hWrite);
+            var pipeFiles = CreatePipe(context);
             return PythonTuple.MakeTuple(
                 PythonContext.GetContext(context).FileManager.AddToStrongMapping(pipeFiles[0]),
                 PythonContext.GetContext(context).FileManager.AddToStrongMapping(pipeFiles[1]));
@@ -1310,7 +1301,7 @@ namespace IronPython.Runtime {
                     return new PythonTextWriter(writer, "\r");
 
                 case PythonFileMode.TextLf:
-                    return new PythonTextWriter(writer, null);
+                    return new PythonTextWriter(writer, "\n");
             }
 
             throw Assert.Unreachable;
@@ -1408,6 +1399,31 @@ namespace IronPython.Runtime {
         }
 
         #endregion
+
+#if !SILVERLIGHT
+        internal bool TryGetFileHandle(out object handle) {
+            Stream stream = _stream;
+
+            if (stream is FileStream) {
+                handle = ((FileStream)stream).SafeFileHandle.DangerousGetHandle().ToPython();
+                return true;
+            }
+            if (stream is PipeStream) {
+                handle = ((PipeStream)stream).SafePipeHandle.DangerousGetHandle().ToPython();
+                return true;
+            }
+
+            // if all else fails try reflection
+            var sfh = stream.GetType().GetField("_handle", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(stream);
+            if (sfh is SafeFileHandle) {
+                handle = ((SafeFileHandle)sfh).DangerousGetHandle().ToPython();
+                return true;
+            }
+
+            handle = null;
+            return false;
+        }
+#endif
 
         // Enumeration of each stream mode.
         private enum PythonFileMode {
@@ -1941,16 +1957,6 @@ namespace IronPython.Runtime {
 
         #endregion
     }
-
-#if FEATURE_PROCESS
-    internal class AnonymousPipeStream : PipeStream {
-        public AnonymousPipeStream(PipeDirection direction, SafePipeHandle sph) : base(direction, 0) {
-            InitializeHandle(sph, true, false);
-            IsConnected = true;
-        }
-    }
-#endif
-
 
 #if FEATURE_NATIVE && !CLR45
     // dotnet45 backport

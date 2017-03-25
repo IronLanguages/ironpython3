@@ -358,7 +358,7 @@ namespace IronPython.Modules {
 
         public static List listdir(CodeContext/*!*/ context, [NotNull]string path) {
             if (path == String.Empty) {
-                path = ".";
+                throw PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, "The system cannot find the path specified: ''", null, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND);
             }
 
             List ret = PythonOps.MakeList();
@@ -792,7 +792,6 @@ namespace IronPython.Modules {
             process.StartInfo.UseShellExecute = true;
             process.StartInfo.Verb = operation;
             try {
-
                 process.Start();
             } catch (Exception e) {
                 throw ToPythonException(e, filename);
@@ -994,7 +993,17 @@ namespace IronPython.Modules {
             }
 
             public override string ToString() {
-                return MakeTuple().ToString();
+                return string.Format("nt.stat_result("
+                    + "st_mode={0}, "
+                    + "st_ino={1}, "
+                    + "st_dev={2}, "
+                    + "st_nlink={3}, "
+                    + "st_uid={4}, "
+                    + "st_gid={5}, "
+                    + "st_size={6}, "
+                    + "st_atime={7}, "
+                    + "st_mtime={8}, "
+                    + "st_ctime={9})", MakeTuple().ToArray());
             }
 
             public string/*!*/ __repr__() {
@@ -1423,6 +1432,14 @@ namespace IronPython.Modules {
             }
         }
 
+        public static int umask(CodeContext/*!*/ context, BigInteger mask) {
+            return umask(context, (int)mask);
+        }
+
+        public static int umask(double mask) {
+            throw PythonOps.TypeError("integer argument expected, got float");
+        }
+
 #if FEATURE_FILESYSTEM
         public static void utime(string path, PythonTuple times) {
             try {
@@ -1469,7 +1486,7 @@ namespace IronPython.Modules {
         }
 #endif
 
-        public static int write(CodeContext/*!*/ context, int fd, string text) {
+        public static int write(CodeContext/*!*/ context, int fd, [BytesConversion]string text) {
             try {
                 PythonContext pythonContext = PythonContext.GetContext(context);
                 PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
@@ -1484,6 +1501,8 @@ namespace IronPython.Modules {
         [Documentation(@"Send signal sig to the process pid. Constants for the specific signals available on the host platform 
 are defined in the signal module.")]
         public static void kill(CodeContext/*!*/ context, int pid, int sig) {
+            if (PythonSignal.NativeSignal.GenerateConsoleCtrlEvent((uint)sig, (uint)pid)) return;
+
             //If the calls to GenerateConsoleCtrlEvent didn't work, simply
             //forcefully kill the process.
             Process toKill = Process.GetProcessById(pid);

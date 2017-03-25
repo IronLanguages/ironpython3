@@ -112,10 +112,19 @@ namespace IronPython.Modules {
                     _readStream = pythonFile._stream;
                 }
                 else {
-                    FileIO file = (FileIO)pc.FileManager.GetObjectFromId(fd);
-                    name = file.name ?? fd;
-                    _readStream = file._readStream;
-                    _writeStream = file._writeStream;
+                    object obj = pc.FileManager.GetObjectFromId(fd);
+                    if (obj is FileIO) {
+                        FileIO file = (FileIO)obj;
+                        name = file.name ?? fd;
+                        _readStream = file._readStream;
+                        _writeStream = file._writeStream;
+                    }
+                    else if (obj is Stream) {
+                        Stream stream = (Stream)obj;
+                        name = fd;
+                        _readStream = stream;
+                        _writeStream = stream;
+                    }
                 }
 
                 _closefd = closefd;
@@ -281,7 +290,9 @@ namespace IronPython.Modules {
             public override void flush(CodeContext/*!*/ context) {
                 _checkClosed();
 
-                _writeStream.Flush();
+                if (_writeStream != null) {
+                    _writeStream.Flush();
+                }
             }
 
             [Documentation("isatty() -> bool.  True if the file is connected to a tty device.")]

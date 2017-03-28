@@ -21,7 +21,6 @@ using System.Text;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
 
@@ -89,6 +88,7 @@ namespace IronPython.Runtime.Exceptions {
     }
 
     [PythonType("frame")]
+    [DebuggerDisplay("Code = {f_code.co_name}, Line = {f_lineno}")]
     [Serializable]
     public class TraceBackFrame {
         private readonly PythonTracebackListener _traceAdapter;
@@ -243,24 +243,14 @@ namespace IronPython.Runtime.Exceptions {
                     throw PythonOps.ValueError("lineno must be an integer");
                 }
 
-                int newLineNum = (int)value;
-
-                if (_traceAdapter != null) {
-                    SetLineNumber(newLineNum);
-                } else {
-                    throw PythonOps.ValueError("f_lineno can only be set by a trace function");
-                }
+                SetLineNumber((int)value);
             }
         }
 
         private void SetLineNumber(int newLineNum) {
             var pyThread = PythonOps.GetFunctionStackNoCreate();
-            if (!IsTopMostFrame(pyThread)) {
-                if (!TracingThisFrame(pyThread)) {
-                    throw PythonOps.ValueError("f_lineno can only be set by a trace function");
-                } else {
-                    return;
-                }
+            if (_traceAdapter == null || !IsTopMostFrame(pyThread)) {
+                throw PythonOps.ValueError("f_lineno can only be set by a trace function on the topmost frame");
             }
 
             FunctionCode funcCode = _debugProperties.Code;
@@ -310,7 +300,7 @@ namespace IronPython.Runtime.Exceptions {
                     }
                 }
 
-                if (_traceAdapter.PythonContext.TracePipeline.TrySetNextStatement((string)((FunctionCode)_code).co_filename, span)) {
+                if (_traceAdapter.PythonContext.TracePipeline.TrySetNextStatement(_code.co_filename, span)) {
                     _lineNo = newLineNum;
                     return;
                 }
@@ -321,13 +311,8 @@ namespace IronPython.Runtime.Exceptions {
             throw PythonOps.ValueError("line {0} is invalid jump location ({1} - {2} are valid)", originalNewLine, funcCode.Span.Start.Line, funcCode.Span.End.Line);
         }
 
-        private bool TracingThisFrame(List<FunctionStack> pyThread) {
-            return pyThread != null &&
-                pyThread.FindIndex(x => x.Frame == this) != -1;
-        }
-
         private bool IsTopMostFrame(List<FunctionStack> pyThread) {
-            return pyThread != null && pyThread.Count != 0 && Type.ReferenceEquals(this, pyThread[pyThread.Count - 1].Frame);
+            return pyThread != null && pyThread.Count != 0 && pyThread[pyThread.Count - 1].Frame == this;
         }
 
         private static Exception BadForOrFinallyJump(int newLineNum, Dictionary<int, bool> jumpIntoLoopIds) {

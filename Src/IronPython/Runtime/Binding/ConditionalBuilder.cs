@@ -62,9 +62,13 @@ namespace IronPython.Runtime.Binding {
         }
 
         /// <summary>
-        /// Adds a new condition to the last added body / condition.
+        /// If present, converts the finish condition body be a normal conditional body.
+        /// The builder instance will become unfinished again.
+        ///
+        /// If no finish condition body is available, this extends the last condition check
+        /// with the new condition.
         /// </summary>
-        public void AddCondition(Expression condition) {
+        public void ExtendLastCondition(Expression condition) {
             if (_body != null) {
                 AddCondition(condition, _body);
                 _body = null;

@@ -429,12 +429,21 @@ namespace IronPython.Runtime.Types {
                 if (origIndex >= 0) {
                     ParameterInfo pi = pis[origIndex];
 
+                    // Defines attributes that might be used in .net methods for overload detection and other
+                    // parameter based attribute logic. E.g. [BytesConversionAttribute] to make
+                    // enable automatic cast between .net IList<byte> and string
                     if (pi.IsDefined(typeof(ParamArrayAttribute), false)) {
                         pb.SetCustomAttribute(new CustomAttributeBuilder(
                             typeof(ParamArrayAttribute).GetConstructor(ReflectionUtils.EmptyTypes), ArrayUtils.EmptyObjects));
                     } else if (pi.IsDefined(typeof(ParamDictionaryAttribute), false)) {
                         pb.SetCustomAttribute(new CustomAttributeBuilder(
                             typeof(ParamDictionaryAttribute).GetConstructor(ReflectionUtils.EmptyTypes), ArrayUtils.EmptyObjects));
+                    } else if (pi.IsDefined(typeof(BytesConversionAttribute), false)) {
+                        pb.SetCustomAttribute(new CustomAttributeBuilder(
+                            typeof(BytesConversionAttribute).GetConstructor(ReflectionUtils.EmptyTypes), ArrayUtils.EmptyObjects));
+                    } else if (pi.IsDefined(typeof(BytesConversionNoStringAttribute), false)) {
+                        pb.SetCustomAttribute(new CustomAttributeBuilder(
+                            typeof(BytesConversionNoStringAttribute).GetConstructor(ReflectionUtils.EmptyTypes), ArrayUtils.EmptyObjects));
                     }
 
                     if ((pi.Attributes & ParameterAttributes.HasDefault) != 0) {
@@ -443,7 +452,7 @@ namespace IronPython.Runtime.Types {
                         } else {
                             pb.SetConstant(Convert.ChangeType(
                                 pi.DefaultValue, pi.ParameterType,
-                                System.Threading.Thread.CurrentThread.CurrentCulture
+                                System.Globalization.CultureInfo.CurrentCulture
                             ));
                         }
                     }

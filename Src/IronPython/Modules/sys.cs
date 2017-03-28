@@ -25,11 +25,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 
-using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
@@ -144,7 +142,8 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             return PythonOps.GetExceptionInfo(context);
         }
 
-		#if !NET_STANDARD
+        // exec_prefix and executable are set by PythonContext and updated on each reload
+
         public static string intern(object o) {
             string s = o as string;
             if (s == null) {
@@ -152,7 +151,6 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             }
             return string.Intern(s);
         }
-		#endif
 
         public static void exit() {
             exit(null);
@@ -319,42 +317,15 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
 #endif
 
         public static void settrace(CodeContext/*!*/ context, object o) {
-            PythonContext pyContext = PythonContext.GetContext(context);
-            pyContext.EnsureDebugContext();
-
-            if (o == null) {
-                pyContext.UnregisterTracebackHandler();
-                PythonTracebackListener.SetTrace(null, null);
-            } else {
-                // We're following CPython behavior here.
-                // If CurrentPythonFrame is not null then we're currently inside a traceback, and
-                // enabling trace while inside a traceback is only allowed through sys.call_tracing()
-                var pyThread = PythonOps.GetFunctionStackNoCreate();
-                if (pyThread == null || !PythonTracebackListener.InTraceBack) {
-                    pyContext.PushTracebackHandler(new PythonTracebackListener((PythonContext)context.LanguageContext));
-                    pyContext.RegisterTracebackHandler();
-                    PythonTracebackListener.SetTrace(o, (TracebackDelegate)Converter.ConvertToDelegate(o, typeof(TracebackDelegate)));
-                }
-            }
+            context.LanguageContext.SetTrace(o);
         }
 
-        public static void call_tracing(CodeContext/*!*/ context, object func, PythonTuple args) {
-            PythonContext pyContext = (PythonContext)context.LanguageContext;
-            pyContext.EnsureDebugContext();
-
-            pyContext.UnregisterTracebackHandler();
-            pyContext.PushTracebackHandler(new PythonTracebackListener((PythonContext)context.LanguageContext));
-            pyContext.RegisterTracebackHandler();
-            try {
-                PythonCalls.Call(func, args.ToArray());
-            } finally {
-                pyContext.PopTracebackHandler();
-                pyContext.UnregisterTracebackHandler();
-            }
+        public static object call_tracing(CodeContext/*!*/ context, object func, PythonTuple args) {
+            return context.LanguageContext.CallTracing(func, args);
         }
 
         public static object gettrace(CodeContext/*!*/ context) {
-            return PythonTracebackListener.GetTraceObject();
+            return context.LanguageContext.GetTrace();
         }
 
         public static void setrecursionlimit(CodeContext/*!*/ context, int limit) {

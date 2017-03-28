@@ -36,6 +36,7 @@ using System.Threading;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
+using Microsoft.Scripting.Debugging.CompilerServices;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
@@ -186,18 +187,15 @@ namespace IronPython.Runtime
         private DynamicDelegateCreator _delegateCreator;
 
         // tracing / in-proc debugging support
-        private Debugging.CompilerServices.DebugContext _debugContext;
-        private Debugging.ITracePipeline _tracePipeline;
-
-        private Microsoft.Scripting.Utils.ThreadLocal<Stack<PythonTracebackListener>> _tracebackListeners;
-        private int _tracingThreads;
+        private DebugContext _debugContext;
+        private Debugging.TracePipeline _tracePipeline;
+        private readonly Microsoft.Scripting.Utils.ThreadLocal<PythonTracebackListener> _tracebackListeners = new Microsoft.Scripting.Utils.ThreadLocal<PythonTracebackListener>();
+        private int _tracebackListenersCount;
 
         internal FunctionCode.CodeList _allCodes;
         internal readonly object _codeCleanupLock = new object(), _codeUpdateLock = new object();
         internal int _codeCount, _nextCodeCleanup = 200;
         private int _recursionLimit;
-
-        private Microsoft.Scripting.Utils.ThreadLocal<bool> _enableTracing = new Microsoft.Scripting.Utils.ThreadLocal<bool>();
 
         internal readonly List<FunctionStack> _mainThreadFunctionStack;
         private CallSite<Func<CallSite, CodeContext, object, object>> _callSite0LightEh;
@@ -280,7 +278,6 @@ namespace IronPython.Runtime
 
             if (_options.Tracing) {
                 EnsureDebugContext();
-                RegisterTracebackHandler();
             }
 
             List path = new List(_options.SearchPaths);
@@ -340,7 +337,7 @@ namespace IronPython.Runtime
             }
             manager.AssemblyLoaded += new EventHandler<AssemblyLoadedEventArgs>(ManagerAssemblyLoaded);
 
-            _mainThreadFunctionStack = Runtime.Operations.PythonOps.GetFunctionStack();
+            _mainThreadFunctionStack = PythonOps.GetFunctionStack();
         }
 
         void ManagerAssemblyLoaded(object sender, AssemblyLoadedEventArgs e) {
@@ -374,31 +371,7 @@ namespace IronPython.Runtime
 
         internal bool EnableTracing {
             get {
-                return _tracingThreads > 0 || PythonOptions.Tracing;
-            }
-            set {
-                lock (_codeUpdateLock) {
-                    bool oldEnableTracing = _enableTracing.Value;
-                    _enableTracing.Value = value;
-
-                    bool flip = false;
-                    if (value && !oldEnableTracing) {
-                        flip = _tracingThreads == 0;
-                        _tracingThreads++;
-                    } else if (!value && oldEnableTracing) {
-                        _tracingThreads--;
-                        flip = _tracingThreads == 0;
-                        if (flip) {
-                            _tracePipeline.TraceCallback = null;
-                        }
-                    }
-
-                    if (flip) {
-                        // recursion setting has changed, we need to update all of our
-                        // function codes to enforce or un-enforce recursion.
-                        FunctionCode.UpdateAllCode(this);
-                    }
-                }
+                return PythonOptions.Tracing || _tracebackListenersCount > 0;
             }
         }
 
@@ -1200,7 +1173,7 @@ namespace IronPython.Runtime
                 // rather than having them get populated w/ the ReflectedType.  W/o this the
                 // cctor runs after we've done a bunch of reflection over the type that doesn't
                 // force the cctor to run.
-                System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+                RuntimeHelpers.RunClassConstructor(type.TypeHandle);
                 return CreateBuiltinModule(name, type);
             }
 
@@ -4119,7 +4092,7 @@ namespace IronPython.Runtime
 
 #region Tracing
 
-        internal Debugging.CompilerServices.DebugContext DebugContext {
+        internal DebugContext DebugContext {
             get {
                 EnsureDebugContext();
 
@@ -4127,21 +4100,43 @@ namespace IronPython.Runtime
             }
         }
 
-        internal void EnsureDebugContext() {
-            if (_debugContext == null || _tracePipeline == null) {
+        private void EnsureDebugContext() {
+            if (_debugContext == null) {
                 lock(this) {
                     if (_debugContext == null) {
-                        _debugContext = Debugging.CompilerServices.DebugContext.CreateInstance();
-                        _tracePipeline = Debugging.TracePipeline.CreateInstance(_debugContext);
-                    }                    
+                        try {
+                            _debugContext = DebugContext.CreateInstance();
+                            _tracePipeline = Debugging.TracePipeline.CreateInstance(_debugContext);
+                            _tracePipeline.TraceCallback = new PythonTracebackListenersDispatcher(this);
+                        } catch {
+                            _debugContext = null;
+                            _tracePipeline = null;
+                            throw;
+                        }
+                    }
                 }
             }
+        }
 
-            if (_tracebackListeners == null) {
-                _tracebackListeners = new Microsoft.Scripting.Utils.ThreadLocal<Stack<PythonTracebackListener>>();
-                _tracebackListeners.Value = new Stack<PythonTracebackListener>();
-                // push the default listener
-                _tracebackListeners.Value.Push(new PythonTracebackListener(this));
+        private class PythonTracebackListenersDispatcher : Debugging.ITraceCallback  {
+            private readonly PythonContext _parent;
+
+            public PythonTracebackListenersDispatcher(PythonContext parent) {
+                _parent = parent;
+            }
+
+            void Debugging.ITraceCallback.OnTraceEvent(Debugging.TraceEventKind kind, string name, string sourceFileName, SourceSpan sourceSpan, Func<IDictionary<object, object>> scopeCallback, object payload, object customPayload)
+            {
+                var listener = _parent._tracebackListeners.Value;
+
+                if (listener == null && _parent.PythonOptions.Tracing) {
+                    // If tracing without sys.set_trace() is enabled, we need to register a dummy traceback listener,
+                    // because of the FunctionStack handling done there.
+                    _parent._tracebackListeners.Value = listener = new PythonTracebackListener(_parent, null);
+                }
+
+                if (listener != null)
+                    listener.OnTraceEvent(kind, name, sourceFileName, sourceSpan, scopeCallback, payload, customPayload);
             }
         }
 
@@ -4151,35 +4146,74 @@ namespace IronPython.Runtime
             }
         }
 
-        internal void RegisterTracebackHandler() {
-            Debug.Assert(_tracePipeline != null);   // ensure debug context should have been called
+        internal void SetTrace(object o) {
+            if (o == null && _debugContext == null)
+                return;
 
-            _tracePipeline.TraceCallback = _tracebackListeners.Value.Peek();
-            EnableTracing = true;
-        }
+            EnsureDebugContext();
 
-        internal void UnregisterTracebackHandler() {
-            Debug.Assert(_tracePipeline != null);  // ensure debug context should have been called
+            // thread-local
+            var oldTraceListener = _tracebackListeners.Value;
+            var newTraceListener = oldTraceListener;
 
-            EnableTracing = false;
-        }
-
-        internal void PushTracebackHandler(PythonTracebackListener listener) {
-            var tracebackListeners = _tracebackListeners.Value;
-            if (_debugContext != null) {
-                while (tracebackListeners.Count > 0 && tracebackListeners.Peek().ExceptionThrown) {
-                    // remove any orphaned traceback listeners that are just doing pops
-                    tracebackListeners.Pop();
+            if (o == null) {
+                _tracebackListeners.Value = newTraceListener = null;
+            } else {
+                // We're following CPython behavior here.
+                // If CurrentPythonFrame is not null then we're currently inside a traceback, and
+                // enabling trace while inside a traceback is only allowed through sys.call_tracing()
+                var pyThread = PythonOps.GetFunctionStackNoCreate();
+                if (pyThread == null || (oldTraceListener == null || !oldTraceListener.InTraceBack)) {
+                    _tracebackListeners.Value = newTraceListener = new PythonTracebackListener(this, o);
                 }
-                tracebackListeners.Push(listener);
+            }
+
+            // global
+            lock (_codeUpdateLock)
+            {
+                var oldEnableTracing = EnableTracing;
+
+                if ((oldTraceListener != null) != (newTraceListener != null)) {
+                    _tracebackListenersCount += (newTraceListener != null) ? 1 : -1;
+                }
+
+                if (EnableTracing != oldEnableTracing) {
+                    // DebugContext invocation has changed, we need to update all of our
+                    // function codes.
+                    FunctionCode.UpdateAllCode(this);
+                }
             }
         }
 
-        internal void PopTracebackHandler() {
-            var tracebackListeners = _tracebackListeners.Value;
-            if (_debugContext != null && tracebackListeners.Count > 1) {
-                tracebackListeners.Pop();
+        internal object CallTracing(object func, PythonTuple args) {
+            // The CPython implementation basically only stores/restores the
+            // nesting level and the recursion control (e.g. that the trace handler
+            // is not called from inside of the trace handler)
+
+            var tblistener = (_debugContext != null) ? _tracebackListeners.Value : null;
+            var backupInTraceBack = (tblistener != null) ? tblistener.InTraceBack : false;
+
+            if (tblistener != null && backupInTraceBack)
+                tblistener.InTraceBack = false;
+
+            try {
+                return PythonCalls.Call(func, args.ToArray());
+            } finally {
+                if (tblistener != null)
+                    tblistener.InTraceBack = backupInTraceBack;
             }
+        }
+
+        internal object GetTrace()
+        {
+            if (_debugContext == null)
+                return null;
+
+            var listener = _tracebackListeners.Value;
+            if (listener == null)
+                return null;
+
+            return listener.TraceObject;
         }
 
 #endregion

@@ -2454,7 +2454,7 @@ if id(a) == id(b):
         }
 
         class DictThreadGlobalState {
-            public int DoneCount;
+            volatile public int DoneCount;
             public bool IsDone;
             public ManualResetEvent Event;
             public ManualResetEvent DoneEvent;

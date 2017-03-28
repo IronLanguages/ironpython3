@@ -38,13 +38,17 @@ internal sealed class PythonConsoleHost : ConsoleHost {
     }
 
     protected override ScriptRuntimeSetup CreateRuntimeSetup() {
-        ScriptRuntimeSetup srs = ScriptRuntimeSetup.ReadConfiguration();
+        ScriptRuntimeSetup srs = base.CreateRuntimeSetup();
         foreach (var langSetup in srs.LanguageSetups) {
             if (langSetup.FileExtensions.Contains(".py")) {
                 langSetup.Options["SearchPaths"] = new string[0];
             }
         }
         return srs;
+    }
+
+    protected override LanguageSetup CreateLanguageSetup() {
+        return Python.CreateLanguageSetup(null);
     }
 
     protected override IConsole CreateConsole(ScriptEngine engine, CommandLine commandLine, ConsoleOptions options) {

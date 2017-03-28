@@ -316,7 +316,7 @@ namespace IronPython.Runtime.Binding {
                     );
 
                 if (!pts.IsAlwaysVisible) {
-                    _cb.AddCondition(Ast.Call(typeof(PythonOps).GetMethod("IsClsVisible"), _codeContext));
+                    _cb.ExtendLastCondition(Ast.Call(typeof(PythonOps).GetMethod("IsClsVisible"), _codeContext));
                     return false;
                 }
 
@@ -332,23 +332,29 @@ namespace IronPython.Runtime.Binding {
             protected override void AddMetaGetAttribute(PythonType metaType, PythonTypeSlot pts) {
                 EnsureTmp();
 
-                _cb.AddCondition(
-                    Ast.Call(
-                        typeof(PythonOps).GetMethod("SlotTryGetBoundValue"),
-                        _codeContext,
-                        AstUtils.Constant(pts, typeof(PythonTypeSlot)),
-                        Expression,
-                        AstUtils.Constant(metaType),
-                        _tmp
-                    ),
-                    DynamicExpression.Dynamic(
-                            _state.InvokeOne,
-                            typeof(object),
-                            _codeContext,
-                            _tmp,
-                            AstUtils.Constant(GetGetMemberName(_member))
-                    )
+                // implementation similar to PythonTypeSlot.MakeGetExpression()
+
+                Expression getExpr = Ast.Call(
+                    typeof(PythonOps).GetMethod("SlotTryGetBoundValue"),
+                    _codeContext,
+                    AstUtils.Constant(pts, typeof(PythonTypeSlot)),
+                    Expression,
+                    AstUtils.Constant(metaType),
+                    _tmp
                 );
+                DynamicExpression invokeExpr = DynamicExpression.Dynamic(
+                    _state.InvokeOne,
+                    typeof(object),
+                    _codeContext,
+                    _tmp,
+                    AstUtils.Constant(GetGetMemberName(_member))
+                );
+
+                if (!pts.GetAlwaysSucceeds) {
+                    _cb.AddCondition(getExpr, invokeExpr);
+                } else {
+                    _cb.FinishCondition(Ast.Block(getExpr, invokeExpr));
+                }
             }
 
             protected override bool AddMetaSlotAccess(PythonType metaType, PythonTypeSlot pts) {
@@ -365,7 +371,7 @@ namespace IronPython.Runtime.Binding {
                 );
 
                 if (!pts.IsAlwaysVisible) {
-                    _cb.AddCondition(Ast.Call(typeof(PythonOps).GetMethod("IsClsVisible"), _codeContext));
+                    _cb.ExtendLastCondition(Ast.Call(typeof(PythonOps).GetMethod("IsClsVisible"), _codeContext));
                     return false;
                 }
 

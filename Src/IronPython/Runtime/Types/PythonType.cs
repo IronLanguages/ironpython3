@@ -2207,7 +2207,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             PythonTypeSlot val;
             if (_dict.TryGetValue("__new__", out val) && val is PythonFunction) {
-                AddSlot("__new__", new staticmethod(val));
+                AddSlot("__new__", new staticmethod(context, val));
             }
         }
 

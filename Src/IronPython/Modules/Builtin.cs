@@ -178,7 +178,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 return BigIntegerOps.ToBinary((BigInteger)res);
             }
 
-            throw PythonOps.TypeError("__index__ returned non-(int, long) (type {0})", PythonOps.GetPythonTypeName(res));
+            throw PythonOps.TypeError("__index__ returned non-int (type {0})", PythonOps.GetPythonTypeName(res));
         }
 
         public static PythonType @bool {

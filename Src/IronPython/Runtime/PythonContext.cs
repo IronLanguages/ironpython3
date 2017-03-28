@@ -107,7 +107,7 @@ namespace IronPython.Runtime
         private CallSite<Func<CallSite, object, object, int>> _compareSite;
         private Dictionary<AttrKey, CallSite<Func<CallSite, object, object, object>>> _setAttrSites;
         private Dictionary<AttrKey, CallSite<Action<CallSite, object>>> _deleteAttrSites;
-        private CallSite<Func<CallSite, CodeContext, object, string, PythonTuple, PythonDictionary, object>> _metaClassSite;
+        private CallSite<Func<CallSite, CodeContext, object, string, PythonTuple, object, object>> _metaClassSite;
         private CallSite<Func<CallSite, CodeContext, object, string, object>> _writeSite;
         private CallSite<Func<CallSite, object, object, object>> _getIndexSite, _equalSite;
         private CallSite<Action<CallSite, object, object>> _delIndexSite;

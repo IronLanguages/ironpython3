@@ -4217,6 +4217,7 @@ namespace IronPython.Runtime.Operations {
         }
     }
 
+    [DebuggerDisplay("Code = {Code.co_name}, Line = {Frame.f_lineno}")]
     public struct FunctionStack {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public readonly CodeContext/*!*/ Context;

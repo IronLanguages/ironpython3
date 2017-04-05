@@ -1708,24 +1708,6 @@ namespace IronPython.Runtime.Operations {
         }
 
         /// <summary>
-        /// Prints value into default standard output with Python comma semantics.
-        /// </summary>
-        public static void PrintComma(CodeContext/*!*/ context, object o) {
-            PrintCommaWithDest(context, PythonContext.GetContext(context).SystemStandardOut, o);
-        }
-
-        /// <summary>
-        /// Prints value into specified destination with Python comma semantics.
-        /// </summary>
-        public static void PrintCommaWithDest(CodeContext/*!*/ context, object dest, object o) {
-            PythonOps.WriteSoftspace(context, dest);
-            string s = o == null ? "None" : PythonOps.ToString(o);
-
-            PythonOps.Write(context, dest, s);
-            PythonOps.SetSoftspace(dest, !s.EndsWith("\n"));
-        }
-
-        /// <summary>
         /// Called from generated code when we are supposed to print an expression value
         /// </summary>
         public static void PrintExpressionValue(CodeContext/*!*/ context, object value) {

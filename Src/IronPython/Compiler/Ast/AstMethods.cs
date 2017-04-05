@@ -35,9 +35,7 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo UnqualifiedExec = GetMethod((Action<CodeContext, object>)PythonOps.UnqualifiedExec);
         public static readonly MethodInfo QualifiedExec = GetMethod((Action<CodeContext, object, PythonDictionary, object>)PythonOps.QualifiedExec);
         public static readonly MethodInfo PrintExpressionValue = GetMethod((Action<CodeContext, object>)PythonOps.PrintExpressionValue);
-        public static readonly MethodInfo PrintCommaWithDest = GetMethod((Action<CodeContext, object, object>)PythonOps.PrintCommaWithDest);
         public static readonly MethodInfo PrintWithDest = GetMethod((Action<CodeContext, object, object>)PythonOps.PrintWithDest);
-        public static readonly MethodInfo PrintComma = GetMethod((Action<CodeContext, object>)PythonOps.PrintComma);
         public static readonly MethodInfo Print = GetMethod((Action<CodeContext, object>)PythonOps.Print);
         public static readonly MethodInfo ImportWithNames = GetMethod((Func<CodeContext, string, string[], int, object>)PythonOps.ImportWithNames);
         public static readonly MethodInfo ImportFrom = GetMethod((Func<CodeContext, object, string, object>)PythonOps.ImportFrom);

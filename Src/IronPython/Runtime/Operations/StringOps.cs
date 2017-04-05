@@ -1750,6 +1750,10 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.LookupError("unknown encoding: {0}", encoding);
         }
 
+#if FEATURE_ENCODING
+        private static DecoderFallback ReplacementFallback = new DecoderReplacementFallback("\ufffd");
+#endif
+
         internal static string DoDecode(CodeContext context, string s, string errors, string encoding, Encoding e) {
 #if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
@@ -1760,7 +1764,7 @@ namespace IronPython.Runtime.Operations {
                 case "backslashreplace":
                 case "xmlcharrefreplace":
                 case "strict": e.DecoderFallback = DecoderFallback.ExceptionFallback; break;
-                case "replace": e.DecoderFallback = DecoderFallback.ReplacementFallback; break;
+                case "replace": e.DecoderFallback = ReplacementFallback; break;
                 case "ignore":
                     e.DecoderFallback = new PythonDecoderFallback(encoding,
                         s,

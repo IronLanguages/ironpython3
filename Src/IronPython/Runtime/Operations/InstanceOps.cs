@@ -225,7 +225,9 @@ namespace IronPython.Runtime.Operations {
 
         public static object NextMethod(object self) {
             IEnumerator i = (IEnumerator)self;
-            if (i.MoveNext()) return i.Current;
+            lock (i) {
+                if (i.MoveNext()) return i.Current;
+            }
             throw PythonOps.StopIteration();
         }
 

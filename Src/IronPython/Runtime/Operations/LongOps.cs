@@ -53,12 +53,12 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, IList<byte> s) {
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, IList<byte> s, int @base=10) {
             object value;
             IPythonObject po = s as IPythonObject;
             if (po == null ||
                 !PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, po, "__long__", out value)) {
-                    value = ParseBigIntegerSign(s.MakeString(), 10);
+                    value = ParseBigIntegerSign(s.MakeString(), @base);
             }
 
             if (cls == TypeCache.BigInteger) {
@@ -122,7 +122,7 @@ namespace IronPython.Runtime.Operations {
                     throw PythonOps.TypeError("__trunc__ returned non-Integral (type {0})", PythonTypeOps.GetName(result));
                 }
             }
-            
+
             throw PythonOps.TypeError("long() argument must be a string or a number, not '{0}'",
                     DynamicHelpers.GetPythonType(x).Name);
         }
@@ -233,11 +233,25 @@ namespace IronPython.Runtime.Operations {
             return x.Power(y);
         }
 
+#if !CLR2 && !WP75
+        [SpecialName]
+        public static object Power([NotNull]BigInteger x, long y) {
+            if(y < 0) {
+                return DoubleOps.Power(x.ToFloat64(), y);
+            }
+            return x.Power(y);
+        }
+#endif
+
         [SpecialName]
         public static object Power([NotNull]BigInteger x, [NotNull]BigInteger y) {
             int yl;
+            long y2;
+
             if (y.AsInt32(out yl)) {
                 return Power(x, yl);
+            } else if (y.AsInt64(out y2)) {
+                return Power(x, y2);
             } else {
                 if (x == BigInteger.Zero) {
                     if (y.Sign < 0)

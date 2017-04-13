@@ -1304,14 +1304,15 @@ namespace IronPython.Runtime.Operations {
         /// 
         /// Conversion can be 'r' for repr or 's' for string.
         /// </summary>
-        public static string/*!*/ format(CodeContext/*!*/ context, string format_string, [ParamDictionary]IDictionary<object, object> kwargs, params object[] args) {
+        public static string/*!*/ format(CodeContext/*!*/ context, string format_string\u00F8, [ParamDictionary]IDictionary<object, object> kwargs\u00F8, params object[] args\u00F8) {
             return NewStringFormatter.FormatString(
                 PythonContext.GetContext(context),
-                format_string,
-                PythonTuple.MakeTuple(args),
-                kwargs
+                format_string\u00F8,
+                PythonTuple.MakeTuple(args\u00F8),
+                kwargs\u00F8
             );
         }
+
 
         public static IEnumerable<PythonTuple>/*!*/ _formatter_parser(this string/*!*/ self) {
             return NewStringFormatter.GetFormatInfo(self);

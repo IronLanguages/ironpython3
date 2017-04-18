@@ -14,8 +14,8 @@
 #####################################################################################
 
 ##IMPORTS######################################################################
-import nt
 import sys
+import os
 
 ##LOGGING######################################################################
 from iptest.util     import get_env_var
@@ -23,7 +23,7 @@ from iptest.util     import get_env_var
 try:
     import logging as l
     
-    __log_file = get_env_var("TMP") + "\\iptest.log"
+    __log_file = os.path.join(get_env_var("TMP"), "iptest.log")
     l.basicConfig(level=l.DEBUG,
                   format="%(asctime)s %(levelname)-8s %(message)s",
                   filename=__log_file,

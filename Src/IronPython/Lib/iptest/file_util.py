@@ -14,11 +14,12 @@
 #####################################################################################
 
 ## BE PLATFORM NETURAL
-import nt
+import os
 import sys
 
 colon = ':'
-separator = '\\'
+separator = os.sep
+line_sep = os.linesep
 
 def create_new_file(filename):
     f = file(filename, "w")
@@ -32,34 +33,34 @@ def append_string_to_file(filename, *lines):
 
 def directory_exists(path):
     if sys.platform=="win32":
-        return nt.access(path, nt.F_OK)
+        return os.access(path, os.F_OK)
     else:
-        try:    
-            nt.stat(path)
+        try:
+            os.stat(path)
             return True
         except: 
             return False
 
 def file_exists(file):
     if sys.platform=="win32":
-        return nt.access(file, nt.F_OK)
+        return os.access(file, os.F_OK)
     else:
         try:    
-            nt.stat(file)
+            os.stat(file)
             return True
         except: 
             return False
         
 def file_exists_in_path(file):
-    full_path = [nt.environ[x] for x in nt.environ.keys() if x.lower() == "path"]
+    full_path = [os.environ[x] for x in os.environ.keys() if x.lower() == "path"]
     if len(full_path)==0:
         return False
     else:
         full_path = full_path[0]
     
-    for path in [nt.getcwd()] + full_path.split(";"):
+    for path in [os.getcwd()] + full_path.split(os.pathsep):
         path = path.lstrip().rstrip()
-        if file_exists(path + "\\" + file) == True:
+        if file_exists(path_combine(path, file)):
             return True
     
     return False
@@ -67,9 +68,9 @@ def file_exists_in_path(file):
 
 # need consider .. and . later
 def fullpath(path):
-    if colon not in path:
-        return nt.getcwd() + separator + path
-    elif sys.platform!="win32":
+    if sys.platform == "win32" and colon not in path:
+        return path_combine(os.getcwd(), path)
+    elif sys.platform != "win32":
         from System.IO.Path import GetFullPath
         return GetFullPath(path)
     else: 
@@ -97,7 +98,7 @@ def ensure_directory_present(path):
     for x in path.split(separator):
         p += x + separator
         if not directory_exists(p):
-            nt.mkdir(p)
+            os.mkdir(p)
         
 def write_to_file(filename, content=''):
     filename = fullpath(filename)
@@ -112,7 +113,7 @@ def write_to_file(filename, content=''):
     
 def delete_files(*files):
     for f in files: 
-        try:    nt.remove(f)
+        try:    os.remove(f)
         except: pass
         
 def get_parent_directory(path, levels=1):
@@ -144,11 +145,16 @@ def filecopy(oldpath, newpath):
         if of: of.close()
         if nf: nf.close()
         
-def clean_directory(path):
-    for f in nt.listdir(path):
+def clean_directory(path, remove=False):
+    for f in os.listdir(path):
         try: 
-            nt.unlink(path_combine(path, f))
+            os.unlink(path_combine(path, f))
         except: 
+            pass
+    if remove:
+        try:
+            os.rmdir(path)
+        except:
             pass
 
 def get_directory_name(file):
@@ -160,8 +166,11 @@ def find_peverify():
     if sys.platform != 'cli': return None
     
     import System
-    for d in System.Environment.GetEnvironmentVariable("PATH").split(';'):
-        file = path_combine(d, "peverify.exe")
+    for d in System.Environment.GetEnvironmentVariable("PATH").split(os.pathsep):
+        if is_posix:
+            file = path_combine(d, "peverify")
+        else:
+            file = path_combine(d, "peverify.exe")
         if file_exists(file):
             return file
 
@@ -185,19 +194,25 @@ def get_mod_names(filename):
         raise Exception("%s does not exist!" % (str(filename)))
     
     #Only look at files with the .py extension and directories.    
-    ret_val = [x.rsplit(".py")[0] for x in nt.listdir(directory) if (x.endswith(".py") or "." not in x) \
+    ret_val = [x.rsplit(".py")[0] for x in os.listdir(directory) if (x.endswith(".py") or "." not in x) \
                and x.lower()!="__init__.py"]
     
     return ret_val
     
-        
-
-def delete_all_f(module_name):
+def delete_all_f(module_name, remove_folders=False):
     module = sys.modules[module_name]
+    folders = {}
     for x in dir(module):
         if x.startswith('_f_'):
             fn = getattr(module, x)
             if isinstance(fn, str):
-                try:    nt.unlink(fn)
+                try:
+                    os.unlink(fn)
+                    name = os.path.dirname(fn)
+                    if os.path.isdir(name):
+                        folders[name] = None
                 except: pass
-                
+    if remove_folders:
+        for x in sorted(iter(folders.keys()), reverse=True):
+            try: os.rmdir(x)
+            except: pass

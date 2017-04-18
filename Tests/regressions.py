@@ -968,7 +968,32 @@ def test_gh1284():
     AreEqual(round(math.asinh(.4),12),round(math.log(math.sqrt(1.16)+.4),12))
     AreEqual(round(math.asinh(-.5),12),round(math.log(math.sqrt(1.25)-.5),12))
     AreEqual(round(math.asinh(-6.),12),round(math.log(math.sqrt(37.)-6.),12))
-    
+
+def test_gh1612():
+    def stack_depth(frame):
+        i = 0
+        while frame is not None:
+            i += 1
+            frame = frame.f_back
+        return i
+
+    try:
+        depth = stack_depth(sys._getframe())
+    except AttributeError:
+        return
+
+    def gen():
+        while True:
+            yield stack_depth(sys._getframe())
+
+    x = gen()
+    AreEqual(next(x), depth + 1)
+
+    def test():
+        AreEqual(next(x), depth + 2)
+
+    test()
+
 #------------------------------------------------------------------------------
 #--Main
 run_test(__name__)

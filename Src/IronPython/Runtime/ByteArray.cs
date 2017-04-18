@@ -647,7 +647,7 @@ namespace IronPython.Runtime
                 int index = find(sep);
                 if (index == -1)
                 {
-                    obj[0] = this;
+                    obj[0] = CopyThis();
                 }
                 else
                 {
@@ -786,7 +786,7 @@ namespace IronPython.Runtime
                     int index = rfind(sep);
                     if (index == -1)
                     {
-                        obj[2] = this;
+                        obj[2] = CopyThis();
                     }
                     else
                     {

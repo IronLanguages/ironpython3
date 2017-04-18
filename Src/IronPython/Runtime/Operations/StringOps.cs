@@ -1304,14 +1304,15 @@ namespace IronPython.Runtime.Operations {
         /// 
         /// Conversion can be 'r' for repr or 's' for string.
         /// </summary>
-        public static string/*!*/ format(CodeContext/*!*/ context, string format_string, [ParamDictionary]IDictionary<object, object> kwargs, params object[] args) {
+        public static string/*!*/ format(CodeContext/*!*/ context, string format_string\u00F8, [ParamDictionary]IDictionary<object, object> kwargs\u00F8, params object[] args\u00F8) {
             return NewStringFormatter.FormatString(
                 PythonContext.GetContext(context),
-                format_string,
-                PythonTuple.MakeTuple(args),
-                kwargs
+                format_string\u00F8,
+                PythonTuple.MakeTuple(args\u00F8),
+                kwargs\u00F8
             );
         }
+
 
         public static IEnumerable<PythonTuple>/*!*/ _formatter_parser(this string/*!*/ self) {
             return NewStringFormatter.GetFormatInfo(self);
@@ -1750,6 +1751,10 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.LookupError("unknown encoding: {0}", encoding);
         }
 
+#if FEATURE_ENCODING
+        private static DecoderFallback ReplacementFallback = new DecoderReplacementFallback("\ufffd");
+#endif
+
         internal static string DoDecode(CodeContext context, string s, string errors, string encoding, Encoding e) {
 #if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
@@ -1760,7 +1765,7 @@ namespace IronPython.Runtime.Operations {
                 case "backslashreplace":
                 case "xmlcharrefreplace":
                 case "strict": e.DecoderFallback = DecoderFallback.ExceptionFallback; break;
-                case "replace": e.DecoderFallback = DecoderFallback.ReplacementFallback; break;
+                case "replace": e.DecoderFallback = ReplacementFallback; break;
                 case "ignore":
                     e.DecoderFallback = new PythonDecoderFallback(encoding,
                         s,

@@ -36,7 +36,7 @@ def usage(code, msg=''):
 
 if not is_silverlight:
     def get_environ_variable(key):
-        l = [os.environ[x] for x in os.environ.keys() if x.lower() == key.lower()]
+        l = [os.environ[x] for x in os.environ if x.lower() == key.lower()]
         if l: return l[0]
         else: return None
 

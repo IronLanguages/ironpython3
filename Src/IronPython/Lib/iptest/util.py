@@ -28,7 +28,7 @@ def get_env_var(key):
     if not hasattr(os, "environ"):
         raise Exception("os.environ not implemented!")
         
-    l = [os.environ[x] for x in os.environ.keys() if x.lower() == key.lower()]
+    l = [os.environ[x] for x in os.environ if x.lower() == key.lower()]
     if len(l)>0: 
         return l[0]
     else: 

@@ -212,24 +212,6 @@ namespace IronPython.Runtime.Exceptions {
             }
         }
 
-        public object f_exc_traceback {
-            get {
-                return null;
-            }
-        }
-
-        public object f_exc_type {
-            get {
-                return null;
-            }
-        }
-
-        public bool f_restricted {
-            get {
-                return false;
-            }
-        }
-
         public object f_lineno {
             get {
                 if (_traceAdapter != null) {

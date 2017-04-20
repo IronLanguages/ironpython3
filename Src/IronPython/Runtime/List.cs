@@ -904,26 +904,13 @@ namespace IronPython.Runtime {
             lock (this) Array.Reverse(_data, index, count);
         }
 
-        public void sort(CodeContext/*!*/ context) {
-            sort(context, null, null, false);
-        }
-
-        public void sort(CodeContext/*!*/ context, object cmp) {
-            sort(context, cmp, null, false);
-        }
-
-        public void sort(CodeContext/*!*/ context, object cmp, object key) {
-            sort(context, cmp, key, false);
-        }
-
         public void sort(CodeContext/*!*/ context, 
-                         object cmp=null,
                          object key=null,
                          bool reverse=false) {
             // the empty list is already sorted
             if (_size != 0) {                
                 IComparer comparer = PythonContext.GetContext(context).GetComparer(
-                    cmp,
+                    null,
                     GetComparisonType());
 
                 DoSort(context, comparer, key, reverse, 0, _size);

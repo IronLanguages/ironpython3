@@ -13,7 +13,7 @@
 #
 #####################################################################################
 
-import nt
+import os
 
 #------------------------------------------------------------------------------
 #--Helper functions
@@ -25,10 +25,10 @@ def get_env_var(key):
     of environment variables.
     '''
     #nt.environ won't be on platforms like Silverlight
-    if not hasattr(nt, "environ"):
-        raise Exception("nt.environ not implemented!")
+    if not hasattr(os, "environ"):
+        raise Exception("os.environ not implemented!")
         
-    l = [nt.environ[x] for x in nt.environ.keys() if x.lower() == key.lower()]
+    l = [os.environ[x] for x in os.environ if x.lower() == key.lower()]
     if len(l)>0: 
         return l[0]
     else: 
@@ -42,7 +42,10 @@ def get_temp_dir():
     temp = get_environ_variable("TMP")
     if temp == None: 
         temp = get_environ_variable("TEMP")
-    if (temp == None) or (' ' in temp): 
+    if ((temp == None) or (' ' in temp)) and os.name == 'nt':
         temp = r"C:\temp"
+    if ((temp == None) or (' ' in temp)) and os.name == 'posix':
+        temp = "/tmp"
+
     return temp
 

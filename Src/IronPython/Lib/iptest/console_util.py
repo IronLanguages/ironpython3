@@ -105,7 +105,7 @@ console for testing purposes, and direct input to and from the instance.
     # Execute a single-line command, and return the output
     def ExecuteLine(self, line, readError=False):
         self.writer.Write(line+"\n")
-        return self.EatToPrompt(readError)[0:-2]
+        return self.EatToPrompt(readError).rstrip()
 
     def ExecuteAndExit(self, line):
         self.writer.Write(line+"\n")

@@ -660,7 +660,7 @@ namespace IronPython.Runtime {
                     for (int i = 0; i < _buckets.Length; i++) {
                         Bucket curBucket = _buckets[i];
                         
-                        if (curBucket.Key != null && !(curBucket.Key is string)) {
+                        if (curBucket.Key != null && curBucket.Key != _removed && !(curBucket.Key is string)) {
                             return true;
                         }
                     }

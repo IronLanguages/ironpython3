@@ -783,9 +783,6 @@ namespace IronPython.Runtime
 
             SetSystemStateValue("path", new List(3));
 
-            SetSystemStateValue("ps1", ">>> ");
-            SetSystemStateValue("ps2", "... ");
-
             SetStandardIO();
 
             SysModule.PerformModuleReload(this, _systemState.__dict__);

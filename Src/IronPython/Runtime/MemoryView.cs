@@ -35,7 +35,7 @@ namespace IronPython.Runtime {
         }
 
         private MemoryView(IBufferProtocol @object, int start, int? end) {
-            _buffer =@object;
+            _buffer = @object;
             _start = start;
             _end = end;
         }
@@ -91,71 +91,71 @@ namespace IronPython.Runtime {
 
         public object this[int index] {
             get {
-                index = ValidateIndex(index);
+                index = PythonOps.FixIndex(index, __len__());
                 return _buffer.GetItem(index + _start);
             }
             set {
                 if (_buffer.ReadOnly) {
                     throw PythonOps.TypeError("cannot modify read-only memory");
                 }
-                ValidateIndex(index);
+                index = PythonOps.FixIndex(index, __len__());
                 _buffer.SetItem(index + _start, value);
             }
         }
 
-        private int ValidateIndex(int index) {
-            if (_end != null && (index + _start) >= _end) {
-                throw PythonOps.IndexError("index out of range ", index);
-            } else if (index < 0) {
-                int len = __len__();
-                if (index * -1 > len) {
-                    throw PythonOps.IndexError("index out of range ", index);
-                }
-                index = len + index;
-            }
-            return index;
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public void __delitem__(int index) {
-            // crashes CPython
-            throw new NotImplementedException();
+            if (_buffer.ReadOnly) {
+                throw PythonOps.TypeError("cannot modify read-only memory");
+            }
+            throw PythonOps.TypeError("cannot delete memory");
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
-        public void __delitem__(Slice slice) {
-            // crashes CPython
-            throw new NotImplementedException();
+        public void __delitem__([NotNull]Slice slice) {
+            if (_buffer.ReadOnly) {
+                throw PythonOps.TypeError("cannot modify read-only memory");
+            }
+            throw PythonOps.TypeError("cannot delete memory");
         }
 
         public object this[[NotNull]Slice slice] {
             get {
-                if (slice.step != null) {
-                    throw PythonOps.NotImplementedError("");
-                }
+                int start, stop;
+                FixSlice(slice, __len__(), out start, out stop);
 
-                return new MemoryView(
-                    _buffer,
-                    slice.start == null ? _start : (Converter.ConvertToInt32(slice.start) + _start),
-                    slice.stop == null ? _end : (Converter.ConvertToInt32(slice.stop) + _start)
-                );
+                return new MemoryView(_buffer, _start + start, _start + stop);
             }
             set {
-                if (_start != 0 || _end != null) {
-                    slice = new Slice(
-                        slice.start == null ? _start : (Converter.ConvertToInt32(slice.start) + _start),
-                        slice.stop == null ? _end : (Converter.ConvertToInt32(slice.stop) + _start)
-                    );
+                if (_buffer.ReadOnly) {
+                    throw PythonOps.TypeError("cannot modify read-only memory");
                 }
 
-                int len = PythonOps.Length(value);
-                int start, stop, step;
-                slice.indices(PythonOps.Length(_buffer), out start, out stop, out step);
-                if (stop - start != len) {
+                int start, stop;
+                FixSlice(slice, __len__(), out start, out stop);
+
+                int newLen = PythonOps.Length(value);
+                if (stop - start != newLen) {
                     throw PythonOps.ValueError("cannot resize memory view");
                 }
 
-                _buffer.SetSlice(slice, value);
+                _buffer.SetSlice(new Slice(_start + start, _start + stop), value);
+            }
+        }
+
+        /// <summary>
+        /// MemoryView slicing is somewhat different and more restricted than
+        /// standard slicing.
+        /// </summary>
+        public static void FixSlice(Slice slice, int len, out int start, out int stop) {
+            if (slice.step != null) {
+                throw PythonOps.NotImplementedError("");
+            }
+
+            int step;
+            slice.indices(len, out start, out stop, out step);
+
+            if (stop < start) {
+                // backwards iteration is interpreted as empty slice
+                stop = start;
             }
         }
 

@@ -362,17 +362,45 @@ namespace IronPython.Runtime {
             }
         }
 
+        private FunctionStack? fnStack = null;
+
+        private void SaveFunctionStack(bool done) {
+            if (!Context.LanguageContext.PythonOptions.Frames || Context.LanguageContext.EnableTracing) return;
+            if (!done) {
+                var stack = PythonOps.GetFunctionStack();
+                var functionStack = stack[stack.Count - 1];
+                Debug.Assert(functionStack.Context != null);
+                functionStack.Frame = null; // don't keep the frame since f_back may be invalid
+                stack.RemoveAt(stack.Count - 1);
+                fnStack = functionStack;
+            }
+            else {
+                fnStack = null;
+            }
+        }
+
+        private void RestoreFunctionStack() {
+            if (!Context.LanguageContext.PythonOptions.Frames) return;
+            if (fnStack != null) {
+                List<FunctionStack> stack = PythonOps.GetFunctionStack();
+                stack.Add(fnStack.Value);
+            }
+        }
+
         /// <summary>
         /// Core implementation of IEnumerator.MoveNext()
         /// </summary>
         private bool MoveNextWorker() {
             bool ret = false;
             try {
+                RestoreFunctionStack();
                 try {
-                    _next(_data);
-                    ret = State != GeneratorRewriter.Finished;
+                    ret = GetNext();
                 } finally {
                     Active = false;
+
+                    SaveFunctionStack(!ret);
+
                     if (!ret) {
                         Close();
                     }
@@ -394,6 +422,8 @@ namespace IronPython.Runtime {
             // includes exception handling blocks.
             Exception save = SaveCurrentException();
 
+            RestoreFunctionStack();
+
             bool ret = false;
             try {
                 // This calls into the delegate that has the real body of the generator.
@@ -412,6 +442,8 @@ namespace IronPython.Runtime {
                 // A generator restores the sys.exc_info() status after each yield point.
                 RestoreCurrentException(save);
                 Active = false;
+
+                SaveFunctionStack(!ret);
 
                 // If _next() returned false, or did not return (thus leavintg ret assigned to its initial value of false), then 
                 // the body of the generator has exited and the generator is now closed.

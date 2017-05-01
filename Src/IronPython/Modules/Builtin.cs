@@ -1465,20 +1465,15 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static List sorted(CodeContext/*!*/ context, object iterable) {
-            return sorted(context, iterable, null, null, false);
+            return sorted(context, iterable, null, false);
         }
 
-        public static List sorted(CodeContext/*!*/ context, object iterable, object cmp) {
-            return sorted(context, iterable, cmp, null, false);
-        }
-
-        public static List sorted(CodeContext/*!*/ context, object iterable, object cmp, object key) {
-            return sorted(context, iterable, cmp, key, false);
+        public static List sorted(CodeContext/*!*/ context, object iterable, object key) {
+            return sorted(context, iterable, key, false);
         }
 
         public static List sorted(CodeContext/*!*/ context,
             object iterable=null,
-            object cmp=null,
             object key=null,
             bool reverse=false) {
 
@@ -1487,7 +1482,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             while (iter.MoveNext()) {
                 l.AddNoLock(iter.Current);
             }
-            l.sort(context, cmp, key, reverse);
+            l.sort(context, key, reverse);
             return l;
         }
 

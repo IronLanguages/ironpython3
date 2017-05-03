@@ -1464,14 +1464,6 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        public static List sorted(CodeContext/*!*/ context, object iterable) {
-            return sorted(context, iterable, null, false);
-        }
-
-        public static List sorted(CodeContext/*!*/ context, object iterable, object key) {
-            return sorted(context, iterable, key, false);
-        }
-
         public static List sorted(CodeContext/*!*/ context,
             object iterable=null,
             object key=null,

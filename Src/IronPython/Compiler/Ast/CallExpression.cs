@@ -22,6 +22,7 @@ using MSAst = Microsoft.Scripting.Ast;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting.Actions;
@@ -38,6 +39,7 @@ namespace IronPython.Compiler.Ast {
     public class CallExpression : Expression, IInstructionProvider {
         private readonly Expression _target;
         private readonly Arg[] _args;
+        private readonly IList<Arg> _implicitArgs = new List<Arg>();
 
         public CallExpression(Expression target, Arg[] args) {
             _target = target;
@@ -48,9 +50,13 @@ namespace IronPython.Compiler.Ast {
             get { return _target; }
         }
 
-        public IList<Arg> Args {
+        public Arg[] Args {
             get { return _args; }
         } 
+
+        public IList<Arg> ImplicitArgs {
+            get { return _implicitArgs; }
+        }
 
         public bool NeedsLocalsDictionary() {
             NameExpression nameExpr = _target as NameExpression;
@@ -73,21 +79,25 @@ namespace IronPython.Compiler.Ast {
                 }
             } else {
                 if (nameExpr.Name == "eval") return true;
-                if (nameExpr.Name == "execfile") return true;
             }
             return false;
         }
 
         public override MSAst.Expression Reduce() {
-            MSAst.Expression[] values = new MSAst.Expression[_args.Length + 2];
-            Argument[] kinds = new Argument[_args.Length];
+            Arg[] args = _args;
+            if(_args.Length == 0 && _implicitArgs.Count > 0) {
+                args = _implicitArgs.ToArray();
+            }
+
+            MSAst.Expression[] values = new MSAst.Expression[args.Length + 2];
+            Argument[] kinds = new Argument[args.Length];
 
             values[0] = Parent.LocalContext;
             values[1] = _target;
 
-            for (int i = 0; i < _args.Length; i++) {
-                kinds[i] = _args[i].GetArgumentInfo();
-                values[i + 2] = _args[i].Expression;
+            for (int i = 0; i < args.Length; i++) {
+                kinds[i] = args[i].GetArgumentInfo();
+                values[i + 2] = args[i].Expression;
             }
 
             return Parent.Invoke(
@@ -99,14 +109,19 @@ namespace IronPython.Compiler.Ast {
         #region IInstructionProvider Members
 
         void IInstructionProvider.AddInstructions(LightCompiler compiler) {
-            for (int i = 0; i < _args.Length; i++) {
-                if (!_args[i].GetArgumentInfo().IsSimple) {
+            Arg[] args = _args;
+            if(args.Length == 0 && _implicitArgs.Count > 0) {
+                args = _implicitArgs.ToArray();
+            }
+
+            for (int i = 0; i < args.Length; i++) {
+                if (!args[i].GetArgumentInfo().IsSimple) {
                     compiler.Compile(Reduce());
                     return;
                 }
             }
 
-            switch (_args.Length) {
+            switch (args.Length) {
                 #region Generated Python Call Expression Instruction Switch
 
                 // *** BEGIN GENERATED CODE ***
@@ -120,52 +135,52 @@ namespace IronPython.Compiler.Ast {
                 case 1:
                     compiler.Compile(Parent.LocalContext);
                     compiler.Compile(_target);
-                    compiler.Compile(_args[0].Expression);
+                    compiler.Compile(args[0].Expression);
                     compiler.Instructions.Emit(new Invoke1Instruction(Parent.PyContext));
                     return;
                 case 2:
                     compiler.Compile(Parent.LocalContext);
                     compiler.Compile(_target);
-                    compiler.Compile(_args[0].Expression);
-                    compiler.Compile(_args[1].Expression);
+                    compiler.Compile(args[0].Expression);
+                    compiler.Compile(args[1].Expression);
                     compiler.Instructions.Emit(new Invoke2Instruction(Parent.PyContext));
                     return;
                 case 3:
                     compiler.Compile(Parent.LocalContext);
                     compiler.Compile(_target);
-                    compiler.Compile(_args[0].Expression);
-                    compiler.Compile(_args[1].Expression);
-                    compiler.Compile(_args[2].Expression);
+                    compiler.Compile(args[0].Expression);
+                    compiler.Compile(args[1].Expression);
+                    compiler.Compile(args[2].Expression);
                     compiler.Instructions.Emit(new Invoke3Instruction(Parent.PyContext));
                     return;
                 case 4:
                     compiler.Compile(Parent.LocalContext);
                     compiler.Compile(_target);
-                    compiler.Compile(_args[0].Expression);
-                    compiler.Compile(_args[1].Expression);
-                    compiler.Compile(_args[2].Expression);
-                    compiler.Compile(_args[3].Expression);
+                    compiler.Compile(args[0].Expression);
+                    compiler.Compile(args[1].Expression);
+                    compiler.Compile(args[2].Expression);
+                    compiler.Compile(args[3].Expression);
                     compiler.Instructions.Emit(new Invoke4Instruction(Parent.PyContext));
                     return;
                 case 5:
                     compiler.Compile(Parent.LocalContext);
                     compiler.Compile(_target);
-                    compiler.Compile(_args[0].Expression);
-                    compiler.Compile(_args[1].Expression);
-                    compiler.Compile(_args[2].Expression);
-                    compiler.Compile(_args[3].Expression);
-                    compiler.Compile(_args[4].Expression);
+                    compiler.Compile(args[0].Expression);
+                    compiler.Compile(args[1].Expression);
+                    compiler.Compile(args[2].Expression);
+                    compiler.Compile(args[3].Expression);
+                    compiler.Compile(args[4].Expression);
                     compiler.Instructions.Emit(new Invoke5Instruction(Parent.PyContext));
                     return;
                 case 6:
                     compiler.Compile(Parent.LocalContext);
                     compiler.Compile(_target);
-                    compiler.Compile(_args[0].Expression);
-                    compiler.Compile(_args[1].Expression);
-                    compiler.Compile(_args[2].Expression);
-                    compiler.Compile(_args[3].Expression);
-                    compiler.Compile(_args[4].Expression);
-                    compiler.Compile(_args[5].Expression);
+                    compiler.Compile(args[0].Expression);
+                    compiler.Compile(args[1].Expression);
+                    compiler.Compile(args[2].Expression);
+                    compiler.Compile(args[3].Expression);
+                    compiler.Compile(args[4].Expression);
+                    compiler.Compile(args[5].Expression);
                     compiler.Instructions.Emit(new Invoke6Instruction(Parent.PyContext));
                     return;
 
@@ -379,6 +394,11 @@ namespace IronPython.Compiler.Ast {
                 }
                 if (_args != null) {
                     foreach (Arg arg in _args) {
+                        arg.Walk(walker);
+                    }
+                }
+                if (_implicitArgs.Count > 0) {
+                    foreach (Arg arg in _implicitArgs) {
                         arg.Walk(walker);
                     }
                 }

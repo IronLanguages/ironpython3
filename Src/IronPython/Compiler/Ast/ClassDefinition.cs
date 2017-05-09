@@ -59,8 +59,7 @@ namespace IronPython.Compiler.Ast {
         private static MSAst.ParameterExpression _parentContextParam = Ast.Parameter(typeof(CodeContext), "$parentContext");
         private static MSAst.Expression _tupleExpression = MSAst.Expression.Call(AstMethods.GetClosureTupleFromContext, _parentContextParam);
 
-        public ClassDefinition(string name, Expression[] bases, Expression[] keywords, Statement body) {
-            ContractUtils.RequiresNotNull(body, nameof(body));
+        public ClassDefinition(string name, Expression[] bases, Expression[] keywords, Statement body=null, Expression metaclass=null) {
             ContractUtils.RequiresNotNullItems(bases, nameof(bases));
             ContractUtils.RequiresNotNullItems(keywords, nameof(keywords));
 
@@ -68,6 +67,7 @@ namespace IronPython.Compiler.Ast {
             _bases = bases;
             _keywords = keywords;
             _body = body;
+            Metaclass = metaclass;
         }
 
         public SourceLocation Header {
@@ -91,8 +91,13 @@ namespace IronPython.Compiler.Ast {
             get { return _keywords; }
         }
 
+        public Expression Metaclass {
+            get; set;
+        }
+
         public Statement Body {
             get { return _body; }
+            set { _body = value; }
         }
 
         public IList<Expression> Decorators {
@@ -135,6 +140,21 @@ namespace IronPython.Compiler.Ast {
         
         internal override bool ExposesLocalVariable(PythonVariable variable) {
             return true;
+        }
+
+        internal override bool TryBindOuter(ScopeStatement from, PythonReference reference, out PythonVariable variable) {
+            if(reference.Name == "__class__") {
+                variable = EnsureVariable("__class__");
+                variable.AccessedInNestedScope = true;
+
+                from.AddFreeVariable(variable, true);
+
+                for (ScopeStatement scope = from.Parent; scope != this; scope = scope.Parent) {
+                    scope.AddFreeVariable(variable, false);
+                }
+                return true;
+            }
+            return base.TryBindOuter(from, reference, out variable);
         }
 
         internal override PythonVariable BindReference(PythonNameBinder binder, PythonReference reference) {

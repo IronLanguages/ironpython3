@@ -385,6 +385,16 @@ namespace IronPython.Compiler.Ast {
         // CallExpression
         public override bool Walk(CallExpression node) {
             node.Parent = _currentScope;
+
+            var nameExpr = node.Target as NameExpression;
+            var func = _currentScope as FunctionDefinition;
+            if (nameExpr != null && nameExpr.Name == "super" && func != null) {
+                _currentScope.Reference("__class__");
+                if(node.Args.Length == 0 && func.ParameterNames.Length > 0) {
+                    node.ImplicitArgs.Add(new Arg(new NameExpression("__class__")));
+                    node.ImplicitArgs.Add(new Arg(new NameExpression(func.ParameterNames[0])));
+                }
+            }
             return base.Walk(node);
         }
         // ComprehensionIf

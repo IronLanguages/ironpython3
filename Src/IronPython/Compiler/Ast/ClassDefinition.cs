@@ -144,14 +144,7 @@ namespace IronPython.Compiler.Ast {
 
         internal override bool TryBindOuter(ScopeStatement from, PythonReference reference, out PythonVariable variable) {
             if(reference.Name == "__class__") {
-                variable = EnsureVariable("__class__");
-                variable.AccessedInNestedScope = true;
-
-                from.AddFreeVariable(variable, true);
-
-                for (ScopeStatement scope = from.Parent; scope != this; scope = scope.Parent) {
-                    scope.AddFreeVariable(variable, false);
-                }
+                variable = from.EnsureVariable(reference.Name);
                 return true;
             }
             return base.TryBindOuter(from, reference, out variable);

@@ -54,7 +54,7 @@ namespace IronPython.Compiler.Ast {
             get { return _args; }
         } 
 
-        public IList<Arg> ImplicitArgs {
+        internal IList<Arg> ImplicitArgs {
             get { return _implicitArgs; }
         }
 

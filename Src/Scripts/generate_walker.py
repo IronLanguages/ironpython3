@@ -104,6 +104,7 @@ def gen_python_name_binder(cw):
                   "ImportStatement",
                   "TryStatement",
                   "ComprehensionFor",
+                  "CallExpression"
                   ]
     nodes = get_python_nodes()
     nodes.sort()

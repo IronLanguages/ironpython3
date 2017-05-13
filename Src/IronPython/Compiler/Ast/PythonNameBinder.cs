@@ -382,21 +382,6 @@ namespace IronPython.Compiler.Ast {
             node.Parent = _currentScope;
             return base.Walk(node);
         }
-        // CallExpression
-        public override bool Walk(CallExpression node) {
-            node.Parent = _currentScope;
-
-            var nameExpr = node.Target as NameExpression;
-            var func = _currentScope as FunctionDefinition;
-            if (nameExpr != null && nameExpr.Name == "super" && func != null) {
-                _currentScope.Reference("__class__");
-                if(node.Args.Length == 0 && func.ParameterNames.Length > 0) {
-                    node.ImplicitArgs.Add(new Arg(new NameExpression("__class__")));
-                    node.ImplicitArgs.Add(new Arg(new NameExpression(func.ParameterNames[0])));
-                }
-            }
-            return base.Walk(node);
-        }
         // ComprehensionIf
         public override bool Walk(ComprehensionIf node) {
             node.Parent = _currentScope;
@@ -858,6 +843,22 @@ namespace IronPython.Compiler.Ast {
             node.Parent = _currentScope;
             node.Left.Walk(_define);
             return true;
+        }
+
+        // CallExpression
+        public override bool Walk(CallExpression node) {
+            node.Parent = _currentScope;
+
+            var nameExpr = node.Target as NameExpression;
+            var func = _currentScope as FunctionDefinition;
+            if (nameExpr != null && nameExpr.Name == "super" && func != null) {
+                _currentScope.Reference("__class__");
+                if (node.Args.Length == 0 && func.ParameterNames.Length > 0) {
+                    node.ImplicitArgs.Add(new Arg(new NameExpression("__class__")));
+                    node.ImplicitArgs.Add(new Arg(new NameExpression(func.ParameterNames[0])));
+                }
+            }
+            return base.Walk(node);
         }
 
         #endregion

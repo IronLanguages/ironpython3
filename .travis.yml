@@ -8,7 +8,7 @@ env:
   - CONFIGURATION=Release FLAVOUR=release
 
 mono:
-  - latest
+  - 4.8.0
 
 solution: IronPython.sln
 

@@ -35,6 +35,10 @@ namespace IronPython.Runtime {
 
         #region Python Public API Surface
 
+        public void __init__() {
+            throw PythonOps.RuntimeError("super(): no arguments");
+        }
+
         public void __init__(PythonType type) {
             __init__(type, null);
         }

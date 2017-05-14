@@ -56,6 +56,7 @@ namespace IronPython.Compiler {
         private TokenWithSpan _token;
         private TokenWithSpan _lookahead;
         private Stack<FunctionDefinition> _functions;
+        private Stack<ClassDefinition> _classes;
         private bool _fromFutureAllowed;
         private string _privatePrefix;
         private bool _parsingStarted, _allowIncomplete;
@@ -1053,13 +1054,19 @@ namespace IronPython.Compiler {
             // Save private prefix
             string savedPrefix = SetPrivatePrefix(name);
 
+            var ret = new ClassDefinition(name, bases.ToArray(), keywords.ToArray(), metaclass: metaclass);
+            PushClass(ret);
+
             // Parse the class body
-            Statement body = ParseClassOrFuncBody(metaclass);
+            Statement body = ParseClassOrFuncBody();
+
+            ClassDefinition ret2 = PopClass();
+            Debug.Assert(ret == ret2);
 
             // Restore the private prefix
             _privatePrefix = savedPrefix;
 
-            ClassDefinition ret = new ClassDefinition(name, bases.ToArray(), keywords.ToArray(), body);
+            ret.Body = body;
             ret.HeaderIndex =  mid;
             ret.SetLoc(_globalParent, start, GetEnd());
             return ret;
@@ -1159,10 +1166,9 @@ namespace IronPython.Compiler {
             ret = new FunctionDefinition(name, parameters, isAsync);
             PushFunction(ret);
 
-
             Statement body = ParseClassOrFuncBody();
             FunctionDefinition ret2 = PopFunction();
-            System.Diagnostics.Debug.Assert(ret == ret2);
+            Debug.Assert(ret == ret2);
 
             ret.Body = body;
             ret.HeaderIndex = rEnd;
@@ -1498,7 +1504,7 @@ namespace IronPython.Compiler {
             return body;
         }
 
-        private Statement ParseClassOrFuncBody(Expression metaclass = null) {
+        private Statement ParseClassOrFuncBody() {
             Statement body;
             bool inLoop = _inLoop,
                  inFinally = _inFinally,
@@ -1507,7 +1513,7 @@ namespace IronPython.Compiler {
                 _inLoop = false;
                 _inFinally = false;
                 _inFinallyLoop = false;
-                body = ParseSuite(metaclass);
+                body = ParseSuite();
             } finally {
                 _inLoop = inLoop;
                 _inFinally = inFinally;
@@ -1664,7 +1670,7 @@ namespace IronPython.Compiler {
         }
 
         //suite: simple_stmt NEWLINE | Newline INDENT stmt+ DEDENT
-        private Statement ParseSuite(Expression metaclass = null) {
+        private Statement ParseSuite() {
             if (!EatNoEof(TokenKind.Colon)) {
                 // improve error handling...
                 return ErrorStmt();
@@ -1708,8 +1714,8 @@ namespace IronPython.Compiler {
                     }
                 }
 
-                if(metaclass != null) {
-                    l.Insert(1, new AssignmentStatement(new[] { new NameExpression("__metaclass__") }, metaclass));
+                if(CurrentClass != null && CurrentClass.Metaclass != null) {
+                    l.Insert(1, new AssignmentStatement(new[] { new NameExpression("__metaclass__") }, CurrentClass.Metaclass));
                 }
 
                 Statement[] stmts = l.ToArray();
@@ -2999,6 +3005,29 @@ namespace IronPython.Compiler {
 
                 default: return false;
             }
+        }
+
+        private ClassDefinition CurrentClass {
+            get {
+                if(_classes != null && _classes.Count > 0) {
+                    return _classes.Peek();
+                }
+                return null;
+            }
+        }
+
+        private ClassDefinition PopClass() {
+            if(_classes != null && _classes.Count > 0) {
+                return _classes.Pop();
+            }
+            return null;
+        }
+
+        private void PushClass(ClassDefinition clazz) {
+            if(_classes == null) {
+                _classes = new Stack<ClassDefinition>();
+            }
+            _classes.Push(clazz);
         }
 
         private FunctionDefinition CurrentFunction {

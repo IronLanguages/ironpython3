@@ -1283,7 +1283,7 @@ namespace IronPython.Modules
 
             internal Call(CallExpression call)
                 : this() {
-                _args = PythonOps.MakeEmptyList(call.Args.Count);
+                _args = PythonOps.MakeEmptyList(call.Args.Length);
                 _keywords = new PythonList();
                 _func = Convert(call.Target);
                 foreach (Arg arg in call.Args) {

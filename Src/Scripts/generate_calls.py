@@ -516,7 +516,7 @@ def gen_call_expression_instruction_switch(cw):
         cw.write('compiler.Compile(Parent.LocalContext);')
         cw.write('compiler.Compile(_target);')
         for j in range(i):
-            cw.write('compiler.Compile(_args[%d].Expression);' % j)
+            cw.write('compiler.Compile(args[%d].Expression);' % j)
         cw.write('compiler.Instructions.Emit(new Invoke%dInstruction(Parent.PyContext));' % i)        
         cw.write('return;')
         cw.dedent()

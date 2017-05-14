@@ -69,8 +69,23 @@ IronPythonTest.exe --labels=All --where:Category==StandardCPython --result:smoke
 popd
 goto :exit
 
+:test-smoke-release
+pushd bin\v4Release
+IronPythonTest.exe --labels=All --where:Category==StandardCPython --result:smoke-result-net40.xml
+popd
+pushd bin\Release
+IronPythonTest.exe --labels=All --where:Category==StandardCPython --result:smoke-result-net45.xml
+popd
+goto :exit
+
 :test-ironpython
 pushd bin\Debug
+IronPythonTest.exe --labels=All --where:Category==IronPython --result:ironpython-result.xml
+popd
+goto :exit
+
+:test-ironpython-release
+pushd bin\Release
 IronPythonTest.exe --labels=All --where:Category==IronPython --result:ironpython-result.xml
 popd
 goto :exit
@@ -81,8 +96,20 @@ IronPythonTest.exe --labels=All --where:"Category==StandardCPython || Category==
 popd
 goto :exit
 
+:test-cpython-release
+pushd bin\Release
+IronPythonTest.exe --labels=All --where:"Category==StandardCPython || Category==AllCPython" --result:cpython-result.xml
+popd
+goto :exit
+
 :test-all
 pushd bin\Debug
+IronPythonTest.exe --labels=All --result:all-result.xml
+popd
+goto :exit
+
+:test-all-release
+pushd bin\Release
 IronPythonTest.exe --labels=All --result:all-result.xml
 popd
 goto :exit

@@ -45,7 +45,7 @@ class _EnumDict(dict):
 
     """
     def __init__(self):
-        super(_EnumDict, self).__init__()
+        super().__init__()
         self._member_names = []
 
     def __setitem__(self, key, value):
@@ -69,7 +69,7 @@ class _EnumDict(dict):
                 # enum overwriting a descriptor?
                 raise TypeError('Key already defined as: %r' % self[key])
             self._member_names.append(key)
-        super(_EnumDict, self).__setitem__(key, value)
+        super().__setitem__(key, value)
 
 
 
@@ -107,7 +107,7 @@ class EnumMeta(type):
                 ','.join(invalid_names)))
 
         # create our new Enum type
-        enum_class = super(EnumMeta, metacls).__new__(metacls, cls, bases, classdict)
+        enum_class = super().__new__(metacls, cls, bases, classdict)
         enum_class._member_names_ = []               # names in definition order
         enum_class._member_map_ = OrderedDict()      # name->value map
         enum_class._member_type_ = member_type
@@ -238,7 +238,7 @@ class EnumMeta(type):
         if attr in cls._member_map_:
             raise AttributeError(
                     "%s: cannot delete Enum member." % cls.__name__)
-        super(EnumMeta, cls).__delattr__(attr)
+        super().__delattr__(attr)
 
     def __dir__(self):
         return (['__class__', '__doc__', '__members__', '__module__'] +
@@ -296,7 +296,7 @@ class EnumMeta(type):
         member_map = cls.__dict__.get('_member_map_', {})
         if name in member_map:
             raise AttributeError('Cannot reassign members.')
-        super(EnumMeta, cls).__setattr__(name, value)
+        super().__setattr__(name, value)
 
     def _create_(cls, class_name, names=None, *, module=None, qualname=None, type=None):
         """Convenience method to create a new Enum class.

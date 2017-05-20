@@ -549,13 +549,12 @@ namespace IronPython.Runtime.Operations {
             }
 
             object ReadInt () {
+                
                 // bytes not present are treated as being -1
-                byte b1, b2, b3, b4;
-
-                b1 = ReadIntPart ();
-                b2 = ReadIntPart ();
-                b3 = ReadIntPart ();
-                b4 = ReadIntPart ();
+                byte b1 = ReadIntPart ();
+                byte b2 = ReadIntPart ();
+                byte b3 = ReadIntPart ();
+                byte b4 = ReadIntPart ();
 
                 byte[] bytes = new byte[] { b1, b2, b3, b4 };
                 return ScriptingRuntimeHelpers.Int32ToObject (BitConverter.ToInt32 (bytes, 0));

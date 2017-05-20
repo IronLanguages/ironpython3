@@ -1158,8 +1158,7 @@ namespace IronPython.Runtime.Operations {
         private static string ToBinary(BigInteger val, bool includeType, bool lowercase) {
             Debug.Assert(!val.IsNegative());
 
-            string digits;
-            digits = ToDigits(val, 2, lowercase);
+            string digits = ToDigits(val, 2, lowercase);
             
             if (includeType) {
                 digits = (lowercase ? "0b" : "0B") + digits;

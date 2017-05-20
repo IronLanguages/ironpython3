@@ -363,8 +363,7 @@ namespace IronPython.Runtime.Types {
         }
 
         private void ImplementConstructors() {
-            ConstructorInfo[] constructors;
-            constructors = _baseType.GetConstructors(BindingFlags.Public |
+            ConstructorInfo[] constructors = _baseType.GetConstructors(BindingFlags.Public |
                                                     BindingFlags.NonPublic |
                                                     BindingFlags.Instance
                                                     );

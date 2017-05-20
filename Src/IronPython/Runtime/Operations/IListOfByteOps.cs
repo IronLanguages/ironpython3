@@ -464,9 +464,8 @@ namespace IronPython.Runtime.Operations {
                 return -1;
             }
 
-            int iStart, iEnd;
-            iStart = FixStart(bytes, start);
-            iEnd = FixEnd(bytes, end);
+            int iStart = FixStart(bytes, start);
+            int iEnd = FixEnd(bytes, end);
 
             if (iStart > iEnd) {
                 // can't possibly match anything, not even an empty string

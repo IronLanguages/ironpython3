@@ -50,10 +50,9 @@ namespace IronPython.Runtime
         }
 
         public static string/*!*/ ToCultureString<T>(T/*!*/ val, NumberFormatInfo/*!*/ nfi, StringFormatSpec spec) {
-            string digits;
             string separator = nfi.NumberGroupSeparator;
             int[] separatorLocations = nfi.NumberGroupSizes;
-            digits = val.ToString();
+            string digits = val.ToString();
 
             // If we're adding leading zeros, we need to know how
             // many we need.

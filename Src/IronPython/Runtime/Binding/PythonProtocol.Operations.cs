@@ -1048,11 +1048,10 @@ namespace IronPython.Runtime.Binding {
             // reverse
             DynamicMetaObject[] rTypes = new DynamicMetaObject[] { types[1], types[0] };
 
-            SlotOrFunction fop, rop, cmp, rcmp;
-            fop = SlotOrFunction.GetSlotOrFunction(state, opSym, types);
-            rop = SlotOrFunction.GetSlotOrFunction(state, ropSym, rTypes);
-            cmp = SlotOrFunction.GetSlotOrFunction(state, "__cmp__", types);
-            rcmp = SlotOrFunction.GetSlotOrFunction(state, "__cmp__", rTypes);
+            SlotOrFunction fop = SlotOrFunction.GetSlotOrFunction(state, opSym, types);
+            SlotOrFunction rop = SlotOrFunction.GetSlotOrFunction(state, ropSym, rTypes);
+            SlotOrFunction cmp = SlotOrFunction.GetSlotOrFunction(state, "__cmp__", types);
+            SlotOrFunction rcmp = SlotOrFunction.GetSlotOrFunction(state, "__cmp__", rTypes);
 
             ConditionalBuilder bodyBuilder = new ConditionalBuilder(operation);
 

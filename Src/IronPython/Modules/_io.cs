@@ -3184,9 +3184,7 @@ namespace IronPython.Modules {
         /// Convert most bytearray-like objects into IList of byte
         /// </summary>
         private static IList<byte> GetBytes(object buf) {
-            IList<byte> bytes;
-
-            bytes = buf as IList<byte>;
+            IList<byte> bytes = buf as IList<byte>;
             if (bytes != null) {
                 return bytes;
             }

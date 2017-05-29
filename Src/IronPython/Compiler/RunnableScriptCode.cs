@@ -49,13 +49,12 @@ namespace IronPython.Compiler {
         }
 
         protected static CodeContext GetContextForScope(Scope scope, SourceUnit sourceUnit) {
-            CodeContext ctx;
             var ext = scope.GetExtension(sourceUnit.LanguageContext.ContextId) as PythonScopeExtension;
             if (ext == null) {
                 ext = sourceUnit.LanguageContext.EnsureScopeExtension(scope) as PythonScopeExtension;
             }
 
-            ctx = ext.ModuleContext.GlobalContext;
+            CodeContext ctx = ext.ModuleContext.GlobalContext;
             return ctx;
         }
 

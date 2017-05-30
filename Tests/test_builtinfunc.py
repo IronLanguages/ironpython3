@@ -473,6 +473,19 @@ def test_eval():
     else:
         AssertUnreachable()
         
+    # gh1636 - don't use AssertError since it hides the error
+    zzz = 1
+    try:
+        eval("zzz", {})
+        AssertUnreachable()
+    except NameError:
+        pass
+    try:
+        eval("zzz", {}, None)
+        AssertUnreachable()
+    except NameError:
+        pass
+        
     # test one of each expression in all sorts of combinations
     foo = 1
     bar = 2

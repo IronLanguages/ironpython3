@@ -19,15 +19,10 @@ using System.Collections.Generic;
 using Microsoft.Scripting.Utils;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Hosting.Providers;
-using Microsoft.Scripting.Runtime;
 
 using IronPython.Modules;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
-
-#if SILVERLIGHT
-[assembly: DynamicLanguageProvider(typeof(PythonContext), PythonContext.IronPythonDisplayName, PythonContext.IronPythonNames, PythonContext.IronPythonFileExtensions)]
-#endif
 
 namespace IronPython.Hosting {
 

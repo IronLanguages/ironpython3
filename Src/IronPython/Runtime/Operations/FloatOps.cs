@@ -288,11 +288,7 @@ namespace IronPython.Runtime.Operations {
                 bits |= unchecked((long)0x8000000000000000);
             }
 
-#if SILVERLIGHT
-            double res = BitConverter.ToDouble(BitConverter.GetBytes(bits), 0);
-#else
             double res = BitConverter.Int64BitsToDouble(bits);
-#endif
             if (cls == TypeCache.Double) {
                 return res;
             }
@@ -335,11 +331,7 @@ namespace IronPython.Runtime.Operations {
                 return "nan";
             }
 
-#if SILVERLIGHT
-            ulong bits = BitConverter.ToUInt64(BitConverter.GetBytes(self), 0);
-#else
             ulong bits = (ulong)BitConverter.DoubleToInt64Bits(self);
-#endif
             int exponent = (int)((bits >> 52) & 0x7ff) - 1023;
             long mantissa = (long)(bits & 0xfffffffffffff);
 

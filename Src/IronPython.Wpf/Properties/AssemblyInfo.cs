@@ -47,10 +47,8 @@ using System.Security;
 
 [assembly: SecurityTransparent]
 
-#if !SILVERLIGHT
 [assembly: AllowPartiallyTrustedCallers]
 #if !CLR2
 [assembly: SecurityRules(SecurityRuleSet.Level1)]
-#endif
 #endif
 

@@ -298,8 +298,6 @@ namespace IronPython.Modules {
         }
 
         #region Latin-1 Functions
-
-#if !SILVERLIGHT
         
         public static object latin_1_decode(object input) {
             return latin_1_decode(input, "strict");
@@ -316,8 +314,6 @@ namespace IronPython.Modules {
         public static object latin_1_encode(object input, string errors) {
             return DoEncode(Encoding.GetEncoding("iso-8859-1"), input, errors);
         }
-
-#endif
 
         #endregion
 

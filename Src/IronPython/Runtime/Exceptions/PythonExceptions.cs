@@ -1242,7 +1242,6 @@ for k, v in toError.items():
                 return new DynamicStackFrame[0];
             }
 
-#if !SILVERLIGHT
             frames = new List<DynamicStackFrame>(frames);
             List<DynamicStackFrame> identified = new List<DynamicStackFrame>();
 
@@ -1282,9 +1281,6 @@ for k, v in toError.items():
             // this is equivalent of adding remaining frames in front of identified
             frames.AddRange(identified);
             return frames.ToArray();
-#else 
-            return frames.ToArray();
-#endif
         }
 
         private static bool MethodsMatch(MethodBase method, MethodBase other) {

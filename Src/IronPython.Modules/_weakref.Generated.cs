@@ -18,7 +18,6 @@ using IronPython.Runtime.Types;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
-#if !SILVERLIGHT
 namespace IronPython.Modules {
     public static partial class PythonWeakRef {
         public sealed partial class weakproxy {
@@ -162,4 +161,3 @@ namespace IronPython.Modules {
         }
     }
 }
-#endif

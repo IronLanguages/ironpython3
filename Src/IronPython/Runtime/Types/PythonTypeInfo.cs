@@ -841,7 +841,6 @@ namespace IronPython.Runtime.Types {
         }
 #endif
 
-#if !SILVERLIGHT
         /// <summary>
         /// Helper to see if the type explicitly overrides the method.  This ignores members
         /// defined on object.
@@ -861,7 +860,6 @@ namespace IronPython.Runtime.Types {
             }
             return false;
         }
-#endif
 
         /// <summary>
         /// Provides a resolution for __hash__, first looking for IStructuralEquatable.GetHashCode,

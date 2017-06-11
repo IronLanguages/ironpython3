@@ -123,7 +123,6 @@ import Namespace.")]
             }
         }
 
-#if !SILVERLIGHT
         [Documentation(@"Adds a reference to a .NET assembly.  Parameters are a partial assembly name. 
 After the load the assemblies namespaces and top-level types will be available via 
 import Namespace.")]
@@ -136,7 +135,6 @@ import Namespace.")]
                 AddReferenceByPartialName(context, name);
             }
         }
-#endif
 
 #if FEATURE_FILESYSTEM
         [Documentation(@"Adds a reference to a .NET assembly.  Parameters are a full path to an. 

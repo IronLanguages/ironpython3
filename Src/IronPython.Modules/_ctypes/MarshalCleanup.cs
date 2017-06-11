@@ -17,7 +17,6 @@ using System;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 
-#if !SILVERLIGHT
 //[assembly: PythonModule("_ctypes", typeof(IronPython.Modules.CTypes))]
 namespace IronPython.Modules {
     internal abstract class MarshalCleanup {
@@ -37,5 +36,3 @@ namespace IronPython.Modules {
         }
     }
 }
-
-#endif

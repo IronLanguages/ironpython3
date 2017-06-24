@@ -10,12 +10,7 @@
     <AssemblyName>ipyw64</AssemblyName>
     <ApplicationIcon>..\IronPythonWindow\ipy.ico</ApplicationIcon>
     <CodeAnalysisRuleSet>IronPythonWindowAny.ruleset</CodeAnalysisRuleSet>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v4Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v4Release|AnyCPU' ">
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\IronPythonWindow\IronPythonWindow.cs" />

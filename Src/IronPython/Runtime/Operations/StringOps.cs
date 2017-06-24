@@ -189,7 +189,6 @@ namespace IronPython.Runtime.Operations {
     /// </summary>
     public static class StringOps {
         internal const int LowestUnicodeValue = 0x7f;
-        private static readonly char[] Whitespace = new char[] { ' ', '\t', '\n', '\r', '\f' };
 
         internal static object FastNew(CodeContext/*!*/ context, object x) {
             if (x == null) {
@@ -872,7 +871,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static string lstrip(this string self) {
-            return self.TrimStart(Whitespace);
+            return self.TrimStart();
         }
 
         public static string lstrip(this string self, [BytesConversion]string chars) {
@@ -1056,7 +1055,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static string rstrip(this string self) {
-            return self.TrimEnd(Whitespace);
+            return self.TrimEnd();
         }
 
         public static string rstrip(this string self, [BytesConversion]string chars) {

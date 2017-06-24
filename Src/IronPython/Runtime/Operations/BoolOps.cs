@@ -87,9 +87,12 @@ namespace IronPython.Runtime.Operations {
             return self ? "True" : "False";
         }
 
-        public static string/*!*/ __format__(CodeContext/*!*/ context, bool self, [NotNull]string/*!*/ formatSpec)
-        {
-            return __repr__(self);
+        public static string/*!*/ __format__(CodeContext/*!*/ context, bool self, [NotNull]string/*!*/ formatSpec) {
+            StringFormatSpec spec = StringFormatSpec.FromString(formatSpec);
+            if (spec.IsEmpty) {
+                return __repr__(self);
+            }
+            return spec.AlignNumericText(self ? "1" : "0", !self, true);
         }
 
         // Binary Operations - Comparisons

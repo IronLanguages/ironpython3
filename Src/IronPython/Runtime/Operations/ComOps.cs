@@ -13,14 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT
-
 using System;
-using System.Collections.Generic;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-using IronPython.Runtime.Binding;
-using IronPython.Runtime.Types;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.ComponentModel;
@@ -48,5 +41,3 @@ namespace IronPython.Runtime.Operations {
         }
     }
 }
-
-#endif

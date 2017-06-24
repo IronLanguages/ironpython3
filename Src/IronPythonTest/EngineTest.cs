@@ -56,7 +56,6 @@ using DependencyObject = System.Windows.DependencyObject;
 
 [assembly: ExtensionType(typeof(IronPythonTest.IFooable), typeof(IronPythonTest.FooableExtensions))]
 namespace IronPythonTest {
-#if !SILVERLIGHT
     class Common {
         public static string RootDirectory;
         public static string RuntimeDirectory;
@@ -75,7 +74,6 @@ namespace IronPythonTest {
             InputTestDirectory = Path.Combine(ScriptTestDirectory, "Inputs");
         }
     }
-#endif
 
     public static class TestHelpers {
         public static LanguageContext GetContext(CodeContext context) {

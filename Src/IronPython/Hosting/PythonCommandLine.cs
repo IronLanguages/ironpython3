@@ -181,7 +181,6 @@ namespace IronPython.Hosting {
                 if (Options.FileName == "-") {
                     Options.FileName = "<stdin>";
                 } else {
-#if !SILVERLIGHT
                     if (Directory.Exists(Options.FileName)) {
                         Options.FileName = Path.Combine(Options.FileName, "__main__.py");
                     }
@@ -195,7 +194,7 @@ namespace IronPython.Hosting {
                             Style.Error);
                         Environment.Exit(1);
                     }
-#endif
+
                     fullPath = Path.GetDirectoryName(
                         Language.DomainManager.Platform.GetFullPath(Options.FileName)
                     );
@@ -219,7 +218,8 @@ namespace IronPython.Hosting {
         }
         
         private void InitializePath(ref int pathIndex) {
-#if !SILVERLIGHT // paths, environment vars
+
+            // paths, environment vars
             if (!Options.IgnoreEnvironmentVariables) {
                 string path = Environment.GetEnvironmentVariable("IRONPYTHONPATH");
                 if (path != null && path.Length > 0) {
@@ -229,11 +229,9 @@ namespace IronPython.Hosting {
                     }
                 }
             }
-#endif
         }
 
         private void InitializeEnvironmentVariables() {
-#if !SILVERLIGHT
             if(!Options.IgnoreEnvironmentVariables) {
                 string warnings = Environment.GetEnvironmentVariable("IRONPYTHONWARNINGS");
                 object o = PythonContext.GetSystemStateValue("warnoptions");
@@ -250,13 +248,12 @@ namespace IronPython.Hosting {
                     }
                 }
             }
-#endif
         }
 
         private void InitializeModules() {
             string executable = "";
             string prefix = null;
-#if !SILVERLIGHT // paths     
+ 
             Assembly entryAssembly = Assembly.GetEntryAssembly();
             //Can be null if called from unmanaged code (VS integration scenario)
             if (entryAssembly != null) {
@@ -268,7 +265,6 @@ namespace IronPython.Hosting {
             while (prefix != null && !File.Exists(Path.Combine(prefix, "Lib/os.py"))) {
                 prefix = Path.GetDirectoryName(prefix);
             }
-#endif
 
             PythonContext.SetHostVariables(prefix ?? "", executable, null);
         }
@@ -363,7 +359,6 @@ namespace IronPython.Hosting {
             if (Options.IgnoreEnvironmentVariables)
                 return;
 
-#if !SILVERLIGHT // Environment.GetEnvironmentVariable
             string startup = Environment.GetEnvironmentVariable("IRONPYTHONSTARTUP");
             if (startup != null && startup.Length > 0) {
                 if (Options.HandleExceptions) {
@@ -377,10 +372,7 @@ namespace IronPython.Hosting {
                     ExecuteCommand(Engine.CreateScriptSourceFromFile(startup));
                 }
             }
-#endif
         }
-
-
 
         protected override int? TryInteractiveAction() {
             try {

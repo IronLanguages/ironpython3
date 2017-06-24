@@ -1691,7 +1691,6 @@ the 'status' value.")]
                     }
                 }
 
-#if !SILVERLIGHT5
                 errorCode = System.Runtime.InteropServices.Marshal.GetHRForException(e);
 
                 if ((errorCode & ~0xfff) == (unchecked((int)0x80070000))) {
@@ -1701,7 +1700,6 @@ the 'status' value.")]
                     message = GetFormattedException(e, errorCode);
                     isWindowsError = true;
                 }
-#endif
             }
 
             if (isWindowsError) {

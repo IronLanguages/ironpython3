@@ -376,12 +376,7 @@ namespace IronPython.Runtime.Types {
         }
 
         private static bool CanOverrideMethod(MethodInfo mi) {
-#if !SILVERLIGHT
             return true;
-#else
-            // can only override the method if it is not SecurityCritical
-            return mi.GetCustomAttributes(typeof(System.Security.SecurityCriticalAttribute), false).Length == 0;
-#endif
         }
 
         private void DoInterfaceType(Type interfaceType, Dictionary<Type, bool> doneTypes, Dictionary<string, string[]> specialNames) {

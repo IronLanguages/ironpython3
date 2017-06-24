@@ -33,9 +33,7 @@ namespace IronPython.Compiler {
     /// 
     /// The cached value is provided by the LanguageContext.GetModuleCache API.
     /// </summary>
-#if !SILVERLIGHT
     [DebuggerDisplay("{Display}")]
-#endif
     public sealed class PythonGlobal {
         private object _value;
         private ModuleGlobalCache _global;

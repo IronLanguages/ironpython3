@@ -13,8 +13,6 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT // TypeDescriptor, COM
-
 using System;
 using System.Collections;
 using System.ComponentModel;
@@ -162,5 +160,3 @@ namespace IronPythonTest {
 
     }
 }
-
-#endif

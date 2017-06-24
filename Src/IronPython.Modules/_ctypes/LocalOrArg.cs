@@ -16,7 +16,6 @@
 using System;
 using System.Reflection.Emit;
 
-#if !SILVERLIGHT
 namespace IronPython.Modules {
     /// <summary>
     /// Wrapper class for emitting locals/variables during marshalling code gen.
@@ -62,4 +61,3 @@ namespace IronPython.Modules {
         }
     }
 }
-#endif

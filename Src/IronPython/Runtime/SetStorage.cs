@@ -170,13 +170,17 @@ namespace IronPython.Runtime {
             Debug.Assert(buckets != null);
             Debug.Assert(item != null);
 
+            int add_index = -1;
             for (int index = hashCode & (buckets.Length - 1); ; ProbeNext(buckets, ref index)) {
                 Bucket bucket = buckets[index];
-                if (bucket.Item == null || bucket.Item == Removed) {
+                if (bucket.Item == null) {
                     version++;
+                    if (add_index != -1) index = add_index;
                     buckets[index].HashCode = hashCode;
                     buckets[index].Item = item;
                     return true;
+                } else if (bucket.Item == Removed && add_index == -1) {
+                    add_index = index;
                 } else if (bucket.HashCode == hashCode && eqFunc(item, bucket.Item)) {
                     return false;
                 }

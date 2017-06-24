@@ -264,7 +264,7 @@ namespace IronPython.Runtime {
 
                 for (int i = 0; i < buckets.Length; i++) {
                     Bucket bucket = buckets[i];
-                    if (bucket.Item != null) {
+                    if (bucket.Item != null && bucket.Item != Removed) {
                         res._buckets[i].Item = bucket.Item;
                         res._buckets[i].HashCode = bucket.HashCode;
                         res._count++;

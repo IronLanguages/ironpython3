@@ -80,12 +80,6 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        public static object quit {
-            get {
-                return "Use Ctrl-Z plus Return to exit";
-            }
-        }
-
         [Documentation("__import__(name) -> module\n\nImport a module.")]
         [LightThrowing]
         public static object __import__(CodeContext/*!*/ context, string name) {
@@ -395,12 +389,6 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 PythonOps.UnqualifiedExec(context, code);
             } else {
                 PythonOps.QualifiedExec(context, code, globals, locals);
-            }
-        }
-
-        public static object exit {
-            get {
-                return "Use Ctrl-Z plus Return to exit";
             }
         }
 

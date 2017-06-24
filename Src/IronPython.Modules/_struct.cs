@@ -308,7 +308,7 @@ namespace IronPython.Modules {
                             for (int j = 0; j < curFormat.Count; j++) {
                                 res.Add(BigIntegerOps.__int__((BigInteger)CreateUIntValue(context, ref curIndex, _isLittleEndian, data)));
                             }
-                            break;                        
+                            break;
                         case FormatType.Pointer:
                             for (int j = 0; j < curFormat.Count; j++) {
                                 if (IntPtr.Size == 4) {
@@ -350,17 +350,16 @@ namespace IronPython.Modules {
                 return new PythonTuple(res);
             }
 
+            public PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [BytesConversion][NotNull]IList<byte> buffer) {
+                return unpack_from(context, buffer, 0);
+            }
+
             public PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [NotNull]ArrayModule.array/*!*/ buffer) {
                 return unpack_from(context, buffer, 0);
             }
 
             public PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [NotNull]PythonBuffer/*!*/ buffer) {
                 return unpack_from(context, buffer, 0);
-            }
-
-            [Documentation("reads the current format from the specified array")]
-            public PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [NotNull]ArrayModule.array/*!*/ buffer, int offset=0) {
-                return unpack_from(context, buffer.ToByteArray().MakeString(), offset);
             }
 
             [Documentation("reads the current format from the specified string")]
@@ -371,6 +370,16 @@ namespace IronPython.Modules {
                 }
 
                 return unpack(context, buffer.Substring(offset, size));
+            }
+
+            [Documentation("reads the current format from the specified array")]
+            public PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [BytesConversion][NotNull]IList<byte>/*!*/ buffer, [DefaultParameterValue(0)] int offset) {
+                return unpack_from(context, buffer.MakeString(), offset);
+            }
+
+            [Documentation("reads the current format from the specified array")]
+            public PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [NotNull]ArrayModule.array/*!*/ buffer, int offset = 0) {
+                return unpack_from(context, buffer.ToByteArray().MakeString(), offset);
             }
 
             [Documentation("reads the current format from the specified buffer object")]
@@ -669,50 +678,52 @@ namespace IronPython.Modules {
         }
 
         [Documentation("Return string containing values v1, v2, ... packed according to fmt.")]
-        public static string/*!*/ pack(CodeContext/*!*/ context, [BytesConversion][NotNull]string fmt/*!*/, params object[] values)
-        {
+        public static string/*!*/ pack(CodeContext/*!*/ context, [BytesConversion][NotNull]string fmt/*!*/, params object[] values) {
             return GetStructFromCache(context, fmt).pack(context, values);
         }
 
         [Documentation("Pack the values v1, v2, ... according to fmt.\nWrite the packed bytes into the writable buffer buf starting at offset.")]
-        public static void pack_into(CodeContext/*!*/ context, [BytesConversion][NotNull]string/*!*/ fmt, [NotNull]ArrayModule.array/*!*/ buffer, int offset, params object[] args)
-        {
+        public static void pack_into(CodeContext/*!*/ context, [BytesConversion][NotNull]string/*!*/ fmt, [NotNull]ArrayModule.array/*!*/ buffer, int offset, params object[] args) {
             GetStructFromCache(context, fmt).pack_into(context, buffer, offset, args);
         }
 
         [Documentation("Unpack the string containing packed C structure data, according to fmt.\nRequires len(string) == calcsize(fmt).")]
-        public static PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [BytesConversion][NotNull]string/*!*/ fmt, [BytesConversion][NotNull]string/*!*/ @string)
-        {
+        public static PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [BytesConversion][NotNull]string/*!*/ fmt, [NotNull]string/*!*/ @string) {
             return GetStructFromCache(context, fmt).unpack(context, @string);
         }
 
         [Documentation("Unpack the string containing packed C structure data, according to fmt.\nRequires len(string) == calcsize(fmt).")]
-        public static PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [BytesConversion][NotNull]string/*!*/ fmt, [NotNull]ArrayModule.array/*!*/ buffer)
-        {
+        public static PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [BytesConversion][NotNull]string/*!*/ fmt, [BytesConversion][NotNull]IList<byte>/*!*/ buffer) {
             return GetStructFromCache(context, fmt).unpack(context, buffer);
         }
 
         [Documentation("Unpack the string containing packed C structure data, according to fmt.\nRequires len(string) == calcsize(fmt).")]
-        public static PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [BytesConversion][NotNull]string fmt/*!*/, [NotNull]PythonBuffer/*!*/ buffer)
-        {
+        public static PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [BytesConversion][NotNull]string/*!*/ fmt, [NotNull]ArrayModule.array/*!*/ buffer) {
+            return GetStructFromCache(context, fmt).unpack(context, buffer);
+        }
+
+        [Documentation("Unpack the string containing packed C structure data, according to fmt.\nRequires len(string) == calcsize(fmt).")]
+        public static PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [BytesConversion][NotNull]string fmt/*!*/, [NotNull]PythonBuffer/*!*/ buffer) {
             return GetStructFromCache(context, fmt).unpack(context, buffer);
         }
 
         [Documentation("Unpack the buffer, containing packed C structure data, according to\nfmt, starting at offset. Requires len(buffer[offset:]) >= calcsize(fmt).")]
-        public static PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [BytesConversion][NotNull]string fmt/*!*/, [NotNull]ArrayModule.array/*!*/ buffer, int offset=0)
-        {
+        public static PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [BytesConversion][NotNull]string fmt/*!*/, [NotNull]string/*!*/ buffer, int offset = 0) {
             return GetStructFromCache(context, fmt).unpack_from(context, buffer, offset);
         }
 
         [Documentation("Unpack the buffer, containing packed C structure data, according to\nfmt, starting at offset. Requires len(buffer[offset:]) >= calcsize(fmt).")]
-        public static PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [BytesConversion][NotNull]string fmt/*!*/, [BytesConversion][NotNull]string/*!*/ buffer, int offset=0)
-        {
+        public static PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [BytesConversion][NotNull]string fmt/*!*/, [BytesConversion][NotNull]IList<byte>/*!*/ buffer, int offset = 0) {
             return GetStructFromCache(context, fmt).unpack_from(context, buffer, offset);
         }
 
         [Documentation("Unpack the buffer, containing packed C structure data, according to\nfmt, starting at offset. Requires len(buffer[offset:]) >= calcsize(fmt).")]
-        public static PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [BytesConversion][NotNull]string fmt/*!*/, [NotNull]PythonBuffer/*!*/ buffer, int offset=0)
-        {
+        public static PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [BytesConversion][NotNull]string fmt/*!*/, [NotNull]ArrayModule.array/*!*/ buffer, int offset = 0) {
+            return GetStructFromCache(context, fmt).unpack_from(context, buffer, offset);
+        }
+
+        [Documentation("Unpack the buffer, containing packed C structure data, according to\nfmt, starting at offset. Requires len(buffer[offset:]) >= calcsize(fmt).")]
+        public static PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [BytesConversion][NotNull]string fmt/*!*/, [NotNull]PythonBuffer/*!*/ buffer, int offset = 0) {
             return GetStructFromCache(context, fmt).unpack_from(context, buffer, offset);
         }
 

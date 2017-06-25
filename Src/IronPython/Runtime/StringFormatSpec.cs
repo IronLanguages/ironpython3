@@ -44,8 +44,9 @@ namespace IronPython.Runtime {
         internal readonly char? Fill, Alignment, Sign, Type;
         internal readonly int? Width, Precision;
         internal readonly bool IncludeType, ThousandsComma;
+        internal readonly bool IsEmpty;
 
-        private StringFormatSpec(char? fill, char? alignment, char? sign, int? width, bool thousandsComma, int? precision, char? type, bool includeType) {
+        private StringFormatSpec(char? fill, char? alignment, char? sign, int? width, bool thousandsComma, int? precision, char? type, bool includeType, bool isEmpty) {
             Fill = fill;
             Alignment = alignment;
             Sign = sign;
@@ -54,6 +55,7 @@ namespace IronPython.Runtime {
             Precision = precision;
             Type = type;
             IncludeType = includeType;
+            IsEmpty = isEmpty;
         }
 
         /// <summary>
@@ -65,6 +67,7 @@ namespace IronPython.Runtime {
             char? fill = null, sign = null, align = null, type = null;
             int? width = null, precision = null;
             bool includeType = false, thousandsComma = false;
+            bool isEmpty = formatSpec.Length == 0;
 
             int curOffset = 0;
             if (formatSpec.Length >= 2) {
@@ -173,7 +176,8 @@ namespace IronPython.Runtime {
                 thousandsComma,
                 precision,
                 type,
-                includeType
+                includeType,
+                isEmpty
             );
         }
 

@@ -324,7 +324,11 @@ namespace IronPython.Modules {
                 foreach (char c in Path.GetInvalidPathChars()) {
                     newdir = newdir.Replace(c, Char.MaxValue);
                 }
-                
+
+                foreach (char c in Path.GetInvalidFileNameChars()) {
+                    newdir = newdir.Replace(c, Char.MaxValue);
+                }
+
                 // walk backwards through the path replacing the same characters.  We should have
                 // only updated the directory leaving the filename which we're fixing.
                 string res = pal.GetFullPath(newdir);

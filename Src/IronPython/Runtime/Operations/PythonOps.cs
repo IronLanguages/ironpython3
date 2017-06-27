@@ -2319,7 +2319,13 @@ namespace IronPython.Runtime.Operations {
             return null;
         }
 
-        private static Exception MakeExceptionWorker(CodeContext/*!*/ context, object type, object value, object traceback, object cause, bool forRethrow) {
+        public static Exception MakeExceptionForGenerator(CodeContext/*!*/ context, object type, object value, object traceback, object cause) {
+            Exception e = MakeExceptionWorker(context, type, value, traceback, cause, false, true);
+            e.RemoveFrameList();
+            return e;
+        }
+
+        private static Exception MakeExceptionWorker(CodeContext/*!*/ context, object type, object value, object traceback, object cause, bool forRethrow, bool forGenerator = false) {
             Exception throwable;
             PythonType pt;
 
@@ -2344,7 +2350,7 @@ namespace IronPython.Runtime.Operations {
                 // TODO: maybe add cause?
                 throwable = type as Exception;
             } else {
-                throwable = MakeExceptionTypeError(type);
+                throwable = MakeExceptionTypeError(type, forGenerator);
             }
 
             if (traceback != null) {
@@ -3977,8 +3983,10 @@ namespace IronPython.Runtime.Operations {
         /// </summary>
         /// <param name="type">original type of exception requested</param>
         /// <returns>a TypeEror exception</returns>
-        internal static Exception MakeExceptionTypeError(object type) {
-            return PythonOps.TypeError("exceptions must be classes or instances deriving from BaseException, not {0}", PythonTypeOps.GetName(type));
+        internal static Exception MakeExceptionTypeError(object type, bool forGenerator = false) {
+                        return PythonOps.TypeError(forGenerator ?
+            "exceptions must be classes or instances deriving from BaseException, not {0}" :
+            "exceptions must derive from BaseException", PythonTypeOps.GetName(type));
         }
 
         public static Exception AttributeErrorForObjectMissingAttribute(object obj, string attributeName) {

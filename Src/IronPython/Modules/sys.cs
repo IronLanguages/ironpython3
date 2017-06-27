@@ -160,11 +160,6 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             if (code == null) {
                 throw new PythonExceptions._SystemExit().InitAndGetClrException();
             } else {
-                PythonTuple pt = code as PythonTuple;
-                if (pt != null && pt.__len__() == 1) {
-                    code = pt[0];
-                }
-
                 // throw as a python exception here to get the args set.
                 throw new PythonExceptions._SystemExit().InitAndGetClrException(code);
             }

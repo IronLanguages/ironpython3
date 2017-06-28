@@ -101,7 +101,7 @@ module, or raises ResourceImportError if it wasn't found."
             ScriptCode script;
             var mod = pythonContext.CompileModule(modpath, fullname,
                                                   new SourceUnit(pythonContext,
-                                                                 new ZipImportModule.SourceStringContentProvider(code),
+                                                                 new ZipImportModule.MemoryStreamContentProvider(pythonContext, code, modpath),
                                                                  modpath, SourceCodeKind.File),
                                                   ModuleOptions.None, out script);
 
@@ -139,7 +139,7 @@ module, or raises ResourceImportError if it wasn't found."
             return mod;
         }
 
-        private string GetModuleCode(CodeContext /*!*/ context, string fullname, out bool ispackage,
+        private byte[] GetModuleCode(CodeContext /*!*/ context, string fullname, out bool ispackage,
                                      out string modpath) {
             var path = MakeFilename(fullname);
             ispackage = false;
@@ -158,7 +158,7 @@ module, or raises ResourceImportError if it wasn't found."
 
                 // we currently don't support bytecode modules, so we don't check
                 // the time of the bytecode file vs. the time of the source file.
-                string code = GetCodeFromData(context, false, tocEntry);
+                byte[] code = GetCodeFromData(context, false, tocEntry);
                 if (code == null) {
                     continue;
                 }
@@ -168,16 +168,16 @@ module, or raises ResourceImportError if it wasn't found."
             throw MakeError("can't find module '{0}'", fullname);
         }
 
-        private string GetCodeFromData(CodeContext /*!*/ context, bool isbytecode, PackedResourceInfo tocEntry) {
+        private byte[] GetCodeFromData(CodeContext /*!*/ context, bool isbytecode, PackedResourceInfo tocEntry) {
             byte[] data = GetData(tocEntry);
-            string code = null;
+            byte[] code = null;
 
             if (data != null) {
                 if (isbytecode) {
                     // would put in code to unmarshal the bytecode here...                                     
                 }
                 else {
-                    code = context.LanguageContext.DefaultEncoding.GetString(data, 0, data.Length);
+                    code = data;
                 }
             }
             return code;

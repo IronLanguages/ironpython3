@@ -212,13 +212,13 @@ module, or raises ZipImportError if it wasn't found.")]
                 PythonContext pythonContext = PythonContext.GetContext(context);
                 PythonDictionary dict;
                 ScriptCode script = null;
-                string code = GetModuleCode(context, fullname, out ispackage, out modpath);
+                byte[] code = GetModuleCode(context, fullname, out ispackage, out modpath);
                 if (code == null) {
                     return null;
                 }
 
                 mod = pythonContext.CompileModule(modpath, fullname,
-                    new SourceUnit(pythonContext, new SourceStringContentProvider(code), modpath, SourceCodeKind.File),
+                    new SourceUnit(pythonContext, new MemoryStreamContentProvider(pythonContext, code, modpath), modpath, SourceCodeKind.File),
                     ModuleOptions.None, out script);
 
                 dict = mod.__dict__;
@@ -254,7 +254,7 @@ Return the filename for the specified module.")]
                 // would come from if the module was actually loaded
                 bool ispackage;
                 string modpath;
-                string code = GetModuleCode(context, fullname, out ispackage, out modpath);
+                byte[] code = GetModuleCode(context, fullname, out ispackage, out modpath);
                 if (code == null)
                     return null;
 
@@ -338,11 +338,11 @@ contain the module, but has no source for it.")]
 
             #endregion
 
-            private string GetModuleCode(CodeContext/*!*/ context, string fullname, out bool ispackage, out string modpath) {
+            private byte[] GetModuleCode(CodeContext/*!*/ context, string fullname, out bool ispackage, out string modpath) {
                 PythonTuple toc_entry = null;
                 string subname = GetSubName(fullname);
                 string path = MakeFilename(context, _prefix, subname);
-                string code = null;
+                byte[] code = null;
                 ispackage = false;
                 modpath = string.Empty;
 
@@ -438,16 +438,16 @@ contain the module, but has no source for it.")]
             /// <param name="mtime"></param>
             /// <param name="toc_entry"></param>
             /// <returns></returns>
-            private string GetCodeFromData(CodeContext/*!*/ context, bool ispackage, bool isbytecode, int mtime, PythonTuple toc_entry) {
+            private byte[] GetCodeFromData(CodeContext/*!*/ context, bool ispackage, bool isbytecode, int mtime, PythonTuple toc_entry) {
                 byte[] data = GetData(context, _archive, toc_entry);
                 string modpath = (string)toc_entry[0];
-                string code = null;
+                byte[] code = null;
 
                 if (data != null) {
                     if (isbytecode) {
                         // would put in code to unmarshal the bytecode here...                                     
                     } else {
-                        code = context.LanguageContext.DefaultEncoding.GetString(data, 0, data.Length);
+                        code = data;
                     }
                 }
                 return code;
@@ -634,20 +634,21 @@ contain the module, but has no source for it.")]
         /// Provides a StreamContentProvider for a stream of content backed by a file on disk.
         /// </summary>
         [Serializable]
-        internal sealed class SourceStringContentProvider : TextContentProvider {
-            private readonly string _code;
+        internal sealed class MemoryStreamContentProvider : TextContentProvider {
+            private readonly PythonContext _context;
+            private readonly MemoryStream _stream;
+            private readonly string _path;
 
-            internal SourceStringContentProvider(string code) {
-                ContractUtils.RequiresNotNull(code, "code");
-                _code = NormalizeLineEndings(code);
+            internal MemoryStreamContentProvider(PythonContext context, byte[] data, string path) {
+                ContractUtils.RequiresNotNull(context, nameof(context));
+                ContractUtils.RequiresNotNull(data, nameof(data));
+                _context = context;
+                _stream = new MemoryStream(data);
+                _path = path;
             }
 
             public override SourceCodeReader GetReader() {
-                return new SourceCodeReader(new StringReader(_code), null);
-            }
-
-            private string NormalizeLineEndings(string input) {
-                return input.Replace("\r\n", "\n") + "\n";
+                return _context.GetSourceReader(_stream, _context.DefaultEncoding, _path);
             }
         }
     }

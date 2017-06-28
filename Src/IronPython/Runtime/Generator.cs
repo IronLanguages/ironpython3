@@ -134,7 +134,7 @@ namespace IronPython.Runtime {
             // - not update any other generator state (so future calls to Next() will still work)
             if (type == null) {
                 // Create the appropriate exception and throw it.
-                throw PythonOps.MakeExceptionTypeError(null);
+                throw PythonOps.MakeExceptionTypeError(null, true);
             }
 
             // Set fields which will then be used by CheckThrowable.
@@ -530,7 +530,7 @@ namespace IronPython.Runtime {
 
             // This may invoke user code such as __init__, thus MakeException may throw. 
             // Since this is invoked from the generator's body, the generator can catch this exception. 
-            return LightExceptions.Throw(PythonOps.MakeException(Context, throwableBackup[0], throwableBackup[1], throwableBackup[2], null));
+            return LightExceptions.Throw(PythonOps.MakeExceptionForGenerator(Context, throwableBackup[0], throwableBackup[1], throwableBackup[2], null));
         }
 
         private void Close() {

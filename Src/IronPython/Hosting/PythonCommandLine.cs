@@ -117,8 +117,7 @@ namespace IronPython.Hosting {
                         new string[] { "run_name", "alter_sys" }
                     );
                 } catch (SystemExitException e) {
-                    object dummy;
-                    return e.GetExitCode(out dummy);
+                    return GetEffectiveExitCode(e);
                 }
 
                 return 0;
@@ -455,8 +454,7 @@ namespace IronPython.Hosting {
             try {
                 PythonContext.DispatchCommand(action);
             } catch (SystemExitException sx) {
-                object dummy;
-                return sx.GetExitCode(out dummy);
+                return GetEffectiveExitCode(sx);
             }
 
             return null;

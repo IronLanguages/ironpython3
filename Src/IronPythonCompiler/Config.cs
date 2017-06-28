@@ -93,6 +93,8 @@ namespace IronPythonCompiler {
         }
 
         public void ParseArgs(IEnumerable<string> args, List<string> respFiles = null) {
+            var helpStrings = new string[] { "/?", "-?", "/h", "-h" };
+
             foreach (var a in args) {
                 var arg = a.Trim();
                 if (arg.StartsWith("#")) {
@@ -148,7 +150,7 @@ namespace IronPythonCompiler {
                     Standalone = true;
                 } else if (arg.StartsWith("/mta")) {
                     UseMta = true;
-                } else if (Array.IndexOf(new string[] { "/?", "-?", "/h", "-h" }, args) >= 0) {
+                } else if (Array.IndexOf(helpStrings, arg) >= 0) {
                     ConsoleOps.Usage(true);
                 } else {
                     if (arg.StartsWith("@")) {

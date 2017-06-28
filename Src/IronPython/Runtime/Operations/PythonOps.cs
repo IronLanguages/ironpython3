@@ -836,7 +836,8 @@ namespace IronPython.Runtime.Operations {
                 return os.Length;
             }
 
-            object len = PythonContext.InvokeUnaryOperator(DefaultContext.Default, UnaryOperators.Length, o, "len() of unsized object");
+            object len = PythonContext.InvokeUnaryOperator(DefaultContext.Default, UnaryOperators.Length, o,
+                string.Format("object of type '{0}' has no len()", PythonOps.GetPythonTypeName(o)));
 
             int res;
             if (len is int) {
@@ -1403,14 +1404,26 @@ namespace IronPython.Runtime.Operations {
         /// Python runtime helper for raising assertions. Used by AssertStatement.
         /// </summary>
         /// <param name="msg">Object representing the assertion message</param>
-        public static void RaiseAssertionError(object msg) {
-            if (msg == null) {
-                throw PythonOps.AssertionError(String.Empty, ArrayUtils.EmptyObjects);
-            } else {
-                string message = PythonOps.ToString(msg);
-                throw PythonOps.AssertionError("{0}", new object[] { message });
+        public static void RaiseAssertionError(CodeContext context, object msg) {
+            PythonDictionary builtins = context.GetBuiltinsDict() ?? PythonContext.GetContext(context).BuiltinModuleDict;
+
+            object obj;
+            var message = String.Empty;
+
+            if (msg != null) {
+                message = PythonOps.ToString(msg);
             }
 
+            if (builtins._storage.TryGetValue("AssertionError", out obj)) {
+                PythonType type = obj as PythonType;
+                if (type != null) {
+                    throw PythonOps.CreateThrowable(type, message);
+                } else {
+                    throw PythonOps.CreateThrowable(DynamicHelpers.GetPythonType(obj), message);
+                }
+            }
+
+            throw PythonOps.AssertionError("{0}", message);
         }
 
         /// <summary>
@@ -2319,7 +2332,13 @@ namespace IronPython.Runtime.Operations {
             return null;
         }
 
-        private static Exception MakeExceptionWorker(CodeContext/*!*/ context, object type, object value, object traceback, object cause, bool forRethrow) {
+        public static Exception MakeExceptionForGenerator(CodeContext/*!*/ context, object type, object value, object traceback, object cause) {
+            Exception e = MakeExceptionWorker(context, type, value, traceback, cause, false, true);
+            e.RemoveFrameList();
+            return e;
+        }
+
+        private static Exception MakeExceptionWorker(CodeContext/*!*/ context, object type, object value, object traceback, object cause, bool forRethrow, bool forGenerator = false) {
             Exception throwable;
             PythonType pt;
 
@@ -2344,7 +2363,7 @@ namespace IronPython.Runtime.Operations {
                 // TODO: maybe add cause?
                 throwable = type as Exception;
             } else {
-                throwable = MakeExceptionTypeError(type);
+                throwable = MakeExceptionTypeError(type, forGenerator);
             }
 
             if (traceback != null) {
@@ -3977,8 +3996,10 @@ namespace IronPython.Runtime.Operations {
         /// </summary>
         /// <param name="type">original type of exception requested</param>
         /// <returns>a TypeEror exception</returns>
-        internal static Exception MakeExceptionTypeError(object type) {
-            return PythonOps.TypeError("exceptions must be classes or instances deriving from BaseException, not {0}", PythonTypeOps.GetName(type));
+        internal static Exception MakeExceptionTypeError(object type, bool forGenerator = false) {
+                        return PythonOps.TypeError(forGenerator ?
+            "exceptions must be classes or instances deriving from BaseException, not {0}" :
+            "exceptions must derive from BaseException", PythonTypeOps.GetName(type));
         }
 
         public static Exception AttributeErrorForObjectMissingAttribute(object obj, string attributeName) {

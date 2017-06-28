@@ -199,6 +199,12 @@ namespace IronPython.Hosting {
                         break;
                     }
 
+                    if (arg.StartsWith("-m")) {
+                        ConsoleOptions.ModuleToRun = arg.Substring(2);
+                        LanguageSetup.Options["Arguments"] = PopRemainingArgs();
+                        break;
+                    }
+
                     base.ParseArgument(arg);
 
                     if (ConsoleOptions.FileName != null) {

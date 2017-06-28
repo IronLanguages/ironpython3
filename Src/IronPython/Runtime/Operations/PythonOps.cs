@@ -836,7 +836,8 @@ namespace IronPython.Runtime.Operations {
                 return os.Length;
             }
 
-            object len = PythonContext.InvokeUnaryOperator(DefaultContext.Default, UnaryOperators.Length, o, "len() of unsized object");
+            object len = PythonContext.InvokeUnaryOperator(DefaultContext.Default, UnaryOperators.Length, o,
+                string.Format("object of type '{0}' has no len()", PythonOps.GetPythonTypeName(o)));
 
             int res;
             if (len is int) {

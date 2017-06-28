@@ -1404,14 +1404,26 @@ namespace IronPython.Runtime.Operations {
         /// Python runtime helper for raising assertions. Used by AssertStatement.
         /// </summary>
         /// <param name="msg">Object representing the assertion message</param>
-        public static void RaiseAssertionError(object msg) {
-            if (msg == null) {
-                throw PythonOps.AssertionError(String.Empty, ArrayUtils.EmptyObjects);
-            } else {
-                string message = PythonOps.ToString(msg);
-                throw PythonOps.AssertionError("{0}", new object[] { message });
+        public static void RaiseAssertionError(CodeContext context, object msg) {
+            PythonDictionary builtins = context.GetBuiltinsDict() ?? PythonContext.GetContext(context).BuiltinModuleDict;
+
+            object obj;
+            var message = String.Empty;
+
+            if (msg != null) {
+                message = PythonOps.ToString(msg);
             }
 
+            if (builtins._storage.TryGetValue("AssertionError", out obj)) {
+                PythonType type = obj as PythonType;
+                if (type != null) {
+                    throw PythonOps.CreateThrowable(type, message);
+                } else {
+                    throw PythonOps.CreateThrowable(DynamicHelpers.GetPythonType(obj), message);
+                }
+            }
+
+            throw PythonOps.AssertionError("{0}", message);
         }
 
         /// <summary>

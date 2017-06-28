@@ -29,7 +29,7 @@ using IronPython.Runtime.Types;
 namespace IronPython.Compiler.Ast {
     static class AstMethods {
         public static readonly MethodInfo IsTrue = GetMethod((Func<object, bool>)PythonOps.IsTrue);
-        public static readonly MethodInfo RaiseAssertionError = GetMethod((Action<object>)PythonOps.RaiseAssertionError);
+        public static readonly MethodInfo RaiseAssertionError = GetMethod((Action<CodeContext, object>)PythonOps.RaiseAssertionError);
         public static readonly MethodInfo Repr = GetMethod((Func<CodeContext, object, string>)PythonOps.Repr);
         public static readonly MethodInfo MakeClass = GetMethod((Func<FunctionCode, Func<CodeContext, CodeContext>, CodeContext, string, object[], string, object>)PythonOps.MakeClass);
         public static readonly MethodInfo UnqualifiedExec = GetMethod((Action<CodeContext, object>)PythonOps.UnqualifiedExec);

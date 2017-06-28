@@ -56,6 +56,7 @@ namespace IronPython.Compiler.Ast {
                     TransformAndDynamicConvert(_test, typeof(bool)), // _test
                     Ast.Call(                                           // else branch
                         AstMethods.RaiseAssertionError,
+                        Parent.LocalContext,
                         TransformOrConstantNull(_message, typeof(object))
                     )
                 ),

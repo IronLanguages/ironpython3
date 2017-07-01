@@ -17,143 +17,79 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Scripting.Runtime;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
-
-//!!! This is pretty inefficient. We should probably use hasher.TransformBlock instead of
-//!!! hanging onto all of the bytes.
-//!!! Also, we could probably make a generic version of this that could then be specialized
-//!!! for both md5 and sha.
 
 [assembly: PythonModule("_md5", typeof(IronPython.Modules.PythonMD5))]
 namespace IronPython.Modules {
     public static class PythonMD5 {
         public const string __doc__ = "MD5 hash algorithm";
 
-        [ThreadStatic]
-        private static MD5CryptoServiceProvider _hasher;
+        private const int DIGEST_SIZE = 16;
+        private const int BLOCK_SIZE = 64;
 
-        private static MD5CryptoServiceProvider GetHasher() {
-            if (_hasher == null) {
-                _hasher = new MD5CryptoServiceProvider();
-            }
-            return _hasher;
-        }
-
-        public static int digest_size {
-            [Documentation("Size of the resulting digest in bytes (constant)")]
-            get { return GetHasher().HashSize / 8; }
+        [Documentation("Size of the resulting digest in bytes (constant)")]
+        public static int digest_size {            
+            get { return DIGEST_SIZE; }
         }
 
         [Documentation("md5([data]) -> object (new md5 object)")]
-        public static MD5Type md5(object data) {
-            return new MD5Type(data);
+        public static MD5Object md5(object data) {
+            return new MD5Object(data);
+        }
+
+        public static MD5Object md5(ArrayModule.array data) {
+            return new MD5Object(data);
         }
 
         [Documentation("md5([data]) -> object (new md5 object)")]
-        public static MD5Type md5(Bytes data) {
-            return new MD5Type((IList<byte>)data);
+        public static MD5Object md5(Bytes data) {
+            return new MD5Object((IList<byte>)data);
         }
 
         [Documentation("md5([data]) -> object (new md5 object)")]
-        public static MD5Type md5(PythonBuffer data) {
-            return new MD5Type(data);
+        public static MD5Object md5(PythonBuffer data) {
+            return new MD5Object(data);
         }
 
         [Documentation("md5([data]) -> object (new md5 object)")]
-        public static MD5Type md5(ByteArray data) {
-            return new MD5Type((IList<byte>)data);
+        public static MD5Object md5(ByteArray data) {
+            return new MD5Object((IList<byte>)data);
         }
 
         [Documentation("md5([data]) -> object (new md5 object)")]
-        public static MD5Type md5() {
-            return new MD5Type();
+        public static MD5Object md5() {
+            return new MD5Object();
         }
 
-        [Documentation("new([data]) -> object (object used to calculate MD5 hash)")]
-        [PythonType]
-        public class MD5Type : ICloneable {
-            private byte[] _bytes;
-            private byte[] _hash;
-            public const int digest_size = 16, digestsize = 16;
+        [Documentation("md5([data]) -> object (object used to calculate MD5 hash)")]
+        [PythonHidden]
+        public class MD5Object : HashBase<MD5> {
+            public MD5Object() : base("MD5", BLOCK_SIZE, DIGEST_SIZE) { }
 
-            public MD5Type() : this(new byte[0]) { }
-
-            public MD5Type(object initialData) {                
-                _bytes = new byte[0];
+            public MD5Object(object initialData) : this() {
                 update(initialData);
             }
 
-            public string name {
-                get {
-                    return "MD5";
-                }
-            }
-
-            public int block_size {
-                get {
-                    return GetHasher().InputBlockSize;
-                }
-            }
-
-            internal MD5Type(IList<byte> initialBytes) {
-                _bytes = new byte[0];
+            internal MD5Object(IList<byte> initialBytes) : this() {
                 update(initialBytes);
             }
 
-            [Documentation("update(string) -> None (update digest with string data)")]
-            public void update(object newData) {
-                update(Converter.ConvertToString(newData).MakeByteArray());
-            }
-
-            [Documentation("update(bytes) -> None (update digest with string data)")]
-            public void update(Bytes newData) {
-                update((IList<byte>)newData);
-            }
-
-            [Documentation("update(bytes) -> None (update digest with string data)")]
-            public void update(ByteArray newData) {
-                update((IList<byte>)newData);
-            }
-
-            [Documentation("update(bytes) -> None (update digest with string data)")]
-            public void update(PythonBuffer newData) {
-                update((IList<byte>)newData);
-            }
-
-            private void update(IList<byte> newBytes) {
-                byte[] updatedBytes = new byte[_bytes.Length + newBytes.Count];
-                Array.Copy(_bytes, updatedBytes, _bytes.Length);
-                newBytes.CopyTo(updatedBytes, _bytes.Length);
-                _bytes = updatedBytes;
-                _hash = GetHasher().ComputeHash(_bytes);
-            }
-
-            [Documentation("digest() -> int (current digest value)")]
-            public string digest() {
-                return _hash.MakeString();
-            }
-
-            [Documentation("hexdigest() -> string (current digest as hex digits)")]
-            public string hexdigest() {
-                StringBuilder result = new StringBuilder(2 * _hash.Length);
-                for (int i = 0; i < _hash.Length; i++) {
-                    result.Append(_hash[i].ToString("x2"));
-                }
-                return result.ToString();
+            protected override void CreateHasher() {
+                _hasher = new Mono.Security.Cryptography.MD5CryptoServiceProvider();
             }
 
             [Documentation("copy() -> object (copy of this md5 object)")]
-            public MD5Type copy() {
-                return new MD5Type(_bytes);
-            }
-
-            object ICloneable.Clone() {
-                return copy();
-            }
+            public override HashBase<MD5> copy() {
+                MD5Object res = new MD5Object();
+                res._hasher = CloneHasher();
+                return res;
+            }          
         }
     }
 }

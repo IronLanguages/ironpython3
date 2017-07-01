@@ -15,37 +15,32 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 
 using Microsoft.Scripting.Runtime;
 
+using Mono.Security.Cryptography;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
-
-//!!! This is pretty inefficient. We should probably use hasher.TransformBlock instead of
-//!!! hanging onto all of the bytes.
-//!!! Also, we could probably make a generic version of this that could then be specialized
-//!!! for both md5 and sha.
 
 [assembly: PythonModule("_sha256", typeof(IronPython.Modules.PythonSha256))]
 namespace IronPython.Modules {
     [Documentation("SHA256 hash algorithm")]
     public static class PythonSha256 {
-        [ThreadStatic]
-        private static SHA256 _hasher256;
-        private const int blockSize = 64;
+
+        private const int BLOCK_SIZE = 64;
 
         public const string __doc__ = "SHA256 hash algorithm";
 
-        private static SHA256 GetHasher() {
-            if (_hasher256 == null) {
-                _hasher256 = new SHA256Managed();
-            }
-            return _hasher256;
+        public static Sha256Object sha256(object data) {
+            return new Sha256Object(data);
         }
 
-        public static Sha256Object sha256(object data) {
+        public static Sha256Object sha256(ArrayModule.array data) {
             return new Sha256Object(data);
         }
 
@@ -65,6 +60,35 @@ namespace IronPython.Modules {
             return new Sha256Object();
         }
 
+        [PythonHidden]
+        public sealed class Sha256Object : HashBase<SHA256> {
+            internal Sha256Object() : base("SHA256", BLOCK_SIZE, 32) { }
+
+            internal Sha256Object(object initialData) : this() {
+                update(initialData);
+            }
+
+            internal Sha256Object(IList<byte> initialBytes) : this() {
+                update(initialBytes);
+            }
+
+            [Documentation("copy() -> object (copy of this object)")]
+            public override HashBase<SHA256> copy() {
+                Sha256Object res = new Sha256Object();
+                res._hasher = CloneHasher();
+                return res;
+            }
+
+            protected override void CreateHasher() {
+#if SILVERLIGHT || WP75
+                _hasher = new SHA256Managed();
+#else
+                _hasher = SHA256.Create();
+#endif
+            }
+        }
+
+#if NETSTANDARD
         public static Sha256Object sha224(object data) {
             throw new NotImplementedException();
         }
@@ -72,99 +96,54 @@ namespace IronPython.Modules {
         public static Sha256Object sha224() {
             throw new NotImplementedException();
         }
+#else
+        public static Sha224Object sha224(object data) {
+            return new Sha224Object(data);
+        }
+
+        public static Sha224Object sha224(ArrayModule.array data) {
+            return new Sha224Object(data);
+        }
+
+        public static Sha224Object sha224(Bytes data) {
+            return new Sha224Object((IList<byte>)data);
+        }
+
+        public static Sha224Object sha224(PythonBuffer data) {
+            return new Sha224Object((IList<byte>)data);
+        }
+
+        public static Sha224Object sha224(ByteArray data) {
+            return new Sha224Object((IList<byte>)data);
+        }
+
+        public static Sha224Object sha224() {
+            return new Sha224Object();
+        }
 
         [PythonHidden]
-        public sealed class Sha256Object : HashBase
-#if FEATURE_ICLONEABLE
-            , ICloneable 
-#endif
-        {
-            internal Sha256Object() : this(new byte[0]) { }
+        public sealed class Sha224Object : HashBase<SHA224> {
+            internal Sha224Object() : base("SHA224", BLOCK_SIZE, 28) { }
 
-            internal Sha256Object(object initialData) {
-                _bytes = new byte[0];
+            internal Sha224Object(object initialData) : this() {
                 update(initialData);
             }
 
-            internal Sha256Object(IList<byte> initialBytes) {
-                _bytes = new byte[0];
+            internal Sha224Object(IList<byte> initialBytes) : this() {
                 update(initialBytes);
             }
 
-            internal override HashAlgorithm Hasher {
-                get {
-                    return GetHasher();
-                }
+            protected override void CreateHasher() {
+                _hasher = SHA224.Create();
             }
-
 
             [Documentation("copy() -> object (copy of this object)")]
-            public Sha256Object copy() {
-                return new Sha256Object(_bytes);
+            public override HashBase<SHA224> copy() {
+                Sha224Object res = new Sha224Object();
+                res._hasher = CloneHasher();
+                return res;
             }
-#if FEATURE_ICLONEABLE
-            object ICloneable.Clone() {
-                return copy();
-            }
+        }
 #endif
-
-            public const int block_size = 64;
-            public const int digest_size = 32;
-            public const int digestsize = 32;
-            public const string name = "SHA256";
-        }
-    }
-
-    public class HashBase {
-        internal byte[] _bytes;
-        private byte[] _hash;
-
-        internal HashBase() {
-        }
-
-        internal virtual HashAlgorithm Hasher {
-            get {
-                throw new NotImplementedException();
-            }
-        }
-
-        public void update(Bytes newBytes) {
-            update((IList<byte>)newBytes);
-        }
-
-        public void update(ByteArray newBytes) {
-            update((IList<byte>)newBytes);
-        }
-
-        internal void update(IList<byte> newBytes) {
-            byte[] updatedBytes = new byte[_bytes.Length + newBytes.Count];
-            Array.Copy(_bytes, updatedBytes, _bytes.Length);
-            newBytes.CopyTo(updatedBytes, _bytes.Length);
-            _bytes = updatedBytes;
-            _hash = Hasher.ComputeHash(_bytes);
-        }
-
-        [Documentation("update(string) -> None (update digest with string data)")]
-        public void update(object newData) {
-            update(Converter.ConvertToString(newData).MakeByteArray());
-        }
-
-        public void update(PythonBuffer buffer) {
-            update((IList<byte>)buffer);
-        }
-
-        [Documentation("digest() -> int (current digest value)")]
-        public string digest() {
-            return _hash.MakeString();
-        }
-
-        [Documentation("hexdigest() -> string (current digest as hex digits)")]
-        public string hexdigest() {
-            StringBuilder result = new StringBuilder(2 * _hash.Length);
-            for (int i = 0; i < _hash.Length; i++) {
-                result.Append(_hash[i].ToString("x2"));
-            }
-            return result.ToString();
-        }
     }
 }

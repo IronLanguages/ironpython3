@@ -414,7 +414,7 @@ namespace IronPython.Runtime.Operations {
 
             switch (spec.Type) {
                 case 'n':
-                    CultureInfo culture = PythonContext.GetContext(context).NumericCulture;
+                    CultureInfo culture = context.LanguageContext.NumericCulture;
 
                     if (culture == CultureInfo.InvariantCulture) {
                         // invariant culture maps to CPython's C culture, which doesn't

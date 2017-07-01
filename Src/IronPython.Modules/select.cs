@@ -98,7 +98,7 @@ namespace IronPython.Modules {
         }
 
         private static Exception MakeException(CodeContext/*!*/ context, object value) {
-            return PythonExceptions.CreateThrowable((PythonType)PythonContext.GetContext(context).GetModuleState("selecterror"), value);
+            return PythonExceptions.CreateThrowable((PythonType)context.LanguageContext.GetModuleState("selecterror"), value);
         }
 
         /// <summary>
@@ -151,7 +151,7 @@ namespace IronPython.Modules {
             socket = PythonSocket.socket.HandleToSocket(handle);
             if (socket == null) {
                 SocketException e = new SocketException((int)SocketError.NotSocket);
-                throw PythonExceptions.CreateThrowable((PythonType)PythonContext.GetContext(context).GetModuleState("selecterror"), PythonTuple.MakeTuple(e.ErrorCode, e.Message));
+                throw PythonExceptions.CreateThrowable((PythonType)context.LanguageContext.GetModuleState("selecterror"), PythonTuple.MakeTuple(e.ErrorCode, e.Message));
             }
             return socket;
         }

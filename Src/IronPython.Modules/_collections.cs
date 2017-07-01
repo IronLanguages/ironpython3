@@ -344,7 +344,7 @@ namespace IronPython.Modules {
                     if (_itemCnt == 0) return;
 
                     // set rot to the appropriate positive int
-                    int rot = PythonContext.GetContext(context).ConvertToInt32(n) % _itemCnt;
+                    int rot = context.LanguageContext.ConvertToInt32(n) % _itemCnt;
                     rot = rot % _itemCnt;
                     if (rot == 0) return; // no need to rotate if we'll end back up where we started
                     if (rot < 0) rot += _itemCnt;
@@ -683,7 +683,7 @@ namespace IronPython.Modules {
                     throw PythonOps.IndexError("deque index out of range");
                 }
 
-                int intIndex = PythonContext.GetContext(context).ConvertToInt32(index);
+                int intIndex = context.LanguageContext.ConvertToInt32(index);
                 if (intIndex >= 0) {
                     if (intIndex >= _itemCnt) {
                         throw PythonOps.IndexError("deque index out of range");
@@ -944,7 +944,7 @@ namespace IronPython.Modules {
             public defaultdict(CodeContext/*!*/ context) {
                 _missingSite = CallSite<Func<CallSite, CodeContext, object, object>>.Create(
                     new PythonInvokeBinder(
-                        PythonContext.GetContext(context),
+                        context.LanguageContext,
                         new CallSignature(0)
                     )
                 );

@@ -172,7 +172,7 @@ namespace IronPython.Modules {
         }
 
         public static object decode(CodeContext/*!*/ context, object obj) {
-            PythonTuple t = lookup(context, PythonContext.GetContext(context).GetDefaultEncodingName());
+            PythonTuple t = lookup(context, context.LanguageContext.GetDefaultEncodingName());
 
             return PythonOps.GetIndex(context, PythonCalls.Call(context, t[DecoderIndex], obj, null), 0);
         }
@@ -190,7 +190,7 @@ namespace IronPython.Modules {
         }
 
         public static object encode(CodeContext/*!*/ context, object obj) {
-            PythonTuple t = lookup(context, PythonContext.GetContext(context).GetDefaultEncodingName());
+            PythonTuple t = lookup(context, context.LanguageContext.GetDefaultEncodingName());
 
             return PythonOps.GetIndex(context, PythonCalls.Call(context, t[EncoderIndex], obj, null), 0);
         }

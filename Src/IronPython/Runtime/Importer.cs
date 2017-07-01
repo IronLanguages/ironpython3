@@ -56,7 +56,7 @@ namespace IronPython.Runtime {
         /// </summary>
         [LightThrowing]
         internal static object ImportLightThrow(CodeContext/*!*/ context, string fullName, PythonTuple from, int level) {
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
 
             if (level == -1) {
                 // no specific level provided, call the 4 param version so legacy code continues to work
@@ -266,7 +266,7 @@ namespace IronPython.Runtime {
                 // try an absolute import
                 if (newmod == null) {
                     object parentPkg;
-                    if (!String.IsNullOrEmpty(package) && !PythonContext.GetContext(context).SystemStateModules.TryGetValue(package, out parentPkg)) {
+                    if (!String.IsNullOrEmpty(package) && !context.LanguageContext.SystemStateModules.TryGetValue(package, out parentPkg)) {
                         PythonModule warnModule = new PythonModule();
                         warnModule.__dict__["__file__"] = package;
                         warnModule.__dict__["__name__"] = package;
@@ -367,7 +367,7 @@ namespace IronPython.Runtime {
                         // absolute import of some module
                         full = modName + "." + name;
                         object parentModule;
-                        if (PythonContext.GetContext(context).SystemStateModules.TryGetValue(modName, out parentModule)) {
+                        if (context.LanguageContext.SystemStateModules.TryGetValue(modName, out parentModule)) {
                             parentMod = parentModule as PythonModule;
                         }
                     } else if (String.IsNullOrEmpty(name)) {
@@ -378,7 +378,7 @@ namespace IronPython.Runtime {
                         string parentName = (StringOps.rsplit(modName, ".", level - 1)[0] as string);
                         full = parentName + "." + name;
                         object parentModule;
-                        if (PythonContext.GetContext(context).SystemStateModules.TryGetValue(parentName, out parentModule)) {
+                        if (context.LanguageContext.SystemStateModules.TryGetValue(parentName, out parentModule)) {
                             parentMod = parentModule as PythonModule;
                         }
                     }
@@ -447,7 +447,7 @@ namespace IronPython.Runtime {
         }
 
         internal static object ReloadModule(CodeContext/*!*/ context, PythonModule/*!*/ module, PythonFile file) {
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
 
             // We created the module and it only contains Python code. If the user changes
             // __file__ we'll reload from that file. 
@@ -475,7 +475,7 @@ namespace IronPython.Runtime {
                 }
 
                 List sysPath;
-                if (PythonContext.GetContext(context).TryGetSystemPath(out sysPath)) {
+                if (context.LanguageContext.TryGetSystemPath(out sysPath)) {
                     object ret = ImportFromPathHook(context, name, name, sysPath, null);
                     if (ret != null) {
                         return ret;
@@ -517,7 +517,7 @@ namespace IronPython.Runtime {
             parentModule = null;
 
             // Try lookup parent module in the sys.modules
-            if (PythonContext.GetContext(context).SystemStateModules.TryGetValue(parentModuleName, out parentModuleObj)) {
+            if (context.LanguageContext.SystemStateModules.TryGetValue(parentModuleName, out parentModuleObj)) {
                 // see if it's a module
                 parentModule = parentModuleObj as PythonModule;
                 if (parentModule != null) {
@@ -537,7 +537,7 @@ namespace IronPython.Runtime {
             Type type;
 
             string name = (string)module.GetName();
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
 
             if (!pc.BuiltinModules.TryGetValue(name, out type)) {
                 throw PythonOps.ImportError("no module named {0}", module.GetName());
@@ -567,7 +567,7 @@ namespace IronPython.Runtime {
         /// searching sys.path but after searching built-in modules.
         /// </summary>
         private static bool TryLoadMetaPathModule(CodeContext/*!*/ context, string fullName, List path, out object ret) {
-            List metaPath = PythonContext.GetContext(context).GetSystemStateValue("meta_path") as List;
+            List metaPath = context.LanguageContext.GetSystemStateValue("meta_path") as List;
             if (metaPath != null) {
                 foreach (object importer in (IEnumerable)metaPath) {
                     if (FindAndLoadModuleFromImporter(context, importer, fullName, path, out ret)) {
@@ -588,7 +588,7 @@ namespace IronPython.Runtime {
         private static bool FindAndLoadModuleFromImporter(CodeContext/*!*/ context, object importer, string fullName, List path, out object ret) {
             object find_module = PythonOps.GetBoundAttr(context, importer, "find_module");
 
-            PythonContext pycontext = PythonContext.GetContext(context);
+            PythonContext pycontext = context.LanguageContext;
             object loader = pycontext.Call(context, find_module, fullName, path);
             if (loader != null) {
                 object findMod = PythonOps.GetBoundAttr(context, loader, "load_module");
@@ -601,7 +601,7 @@ namespace IronPython.Runtime {
         }
 
         internal static bool TryGetExistingModule(CodeContext/*!*/ context, string/*!*/ fullName, out object ret) {
-            if (PythonContext.GetContext(context).SystemStateModules.TryGetValue(fullName, out ret)) {
+            if (context.LanguageContext.SystemStateModules.TryGetValue(fullName, out ret)) {
                 return true;
             }
             return false;
@@ -621,7 +621,7 @@ namespace IronPython.Runtime {
                 }
 
                 NamespaceTracker rp = ret as NamespaceTracker;
-                if (rp != null || ret == PythonContext.GetContext(context).ClrModule) {
+                if (rp != null || ret == context.LanguageContext.ClrModule) {
                     context.ShowCls = true;
                 }
 
@@ -636,7 +636,7 @@ namespace IronPython.Runtime {
             if (ret != null) return ret;
 
             List path;
-            if (PythonContext.GetContext(context).TryGetSystemPath(out path)) {
+            if (context.LanguageContext.TryGetSystemPath(out path)) {
                 ret = ImportFromPath(context, name, name, path);
                 if (ret != null) return ret;
             }
@@ -693,7 +693,7 @@ namespace IronPython.Runtime {
 
             ImportFromPath(context, name, fullName, path);
             object importedModule;
-            if (PythonContext.GetContext(context).SystemStateModules.TryGetValue(fullName, out importedModule)) {
+            if (context.LanguageContext.SystemStateModules.TryGetValue(fullName, out importedModule)) {
                 module.__dict__[name] = importedModule;
                 return importedModule;
             }
@@ -702,7 +702,7 @@ namespace IronPython.Runtime {
         }
 
         private static object FindImportFunction(CodeContext/*!*/ context) {
-            PythonDictionary builtins = context.GetBuiltinsDict() ?? PythonContext.GetContext(context).BuiltinModuleDict;
+            PythonDictionary builtins = context.GetBuiltinsDict() ?? context.LanguageContext.BuiltinModuleDict;
 
             object import;
             if (builtins._storage.TryGetImport(out import)) {
@@ -715,7 +715,7 @@ namespace IronPython.Runtime {
         internal static object ImportBuiltin(CodeContext/*!*/ context, string/*!*/ name) {
             Assert.NotNull(context, name);
 
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
             if (name == "sys") {
                 return pc.SystemState;
             } else if (name == "clr") {
@@ -729,7 +729,7 @@ namespace IronPython.Runtime {
 
         private static object ImportReflected(CodeContext/*!*/ context, string/*!*/ name) {
             object ret;
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
             if (!PythonOps.ScopeTryGetMember(context, pc.DomainManager.Globals, name, out ret) &&
                 (ret = pc.TopNamespace.TryGetPackageAny(name)) == null) {
                 ret = TryImportSourceFile(pc, name);
@@ -737,7 +737,7 @@ namespace IronPython.Runtime {
 
             ret = MemberTrackerToPython(context, ret);
             if (ret != null) {
-                PythonContext.GetContext(context).SystemStateModules[name] = ret;
+                context.LanguageContext.SystemStateModules[name] = ret;
             }
             return ret;
         }
@@ -854,7 +854,7 @@ namespace IronPython.Runtime {
         private static object ImportFromPathHook(CodeContext/*!*/ context, string/*!*/ name, string/*!*/ fullName, List/*!*/ path, Func<CodeContext, string, string, string, object> defaultLoader) {
             Assert.NotNull(context, name, fullName, path);
 
-            IDictionary<object, object> importCache = PythonContext.GetContext(context).GetSystemStateValue("path_importer_cache") as IDictionary<object, object>;
+            IDictionary<object, object> importCache = context.LanguageContext.GetSystemStateValue("path_importer_cache") as IDictionary<object, object>;
 
             if (importCache == null) {
                 return null;
@@ -889,7 +889,7 @@ namespace IronPython.Runtime {
 
         internal static bool TryImportMainFromZip(CodeContext/*!*/ context, string/*!*/ path, out object importer) {
             Assert.NotNull(context, path);
-            var importCache = PythonContext.GetContext(context).GetSystemStateValue("path_importer_cache") as IDictionary<object, object>;
+            var importCache = context.LanguageContext.GetSystemStateValue("path_importer_cache") as IDictionary<object, object>;
             if (importCache == null) {
                 importer = null;
                 return false;
@@ -899,7 +899,7 @@ namespace IronPython.Runtime {
                 return false;
             }
             // for consistency with cpython, insert zip as a first entry into sys.path
-            var syspath = PythonContext.GetContext(context).GetSystemStateValue("path") as List;
+            var syspath = context.LanguageContext.GetSystemStateValue("path") as List;
             if (syspath != null) {
                 syspath.Insert(0, path);
             }
@@ -930,7 +930,7 @@ namespace IronPython.Runtime {
         /// handles this path.
         /// </summary>
         private static object FindImporterForPath(CodeContext/*!*/ context, string dirname) {
-            List pathHooks = PythonContext.GetContext(context).GetSystemStateValue("path_hooks") as List;
+            List pathHooks = context.LanguageContext.GetSystemStateValue("path_hooks") as List;
 
             foreach (object hook in (IEnumerable)pathHooks) {
                 try {
@@ -954,7 +954,7 @@ namespace IronPython.Runtime {
         private static PythonModule LoadModuleFromSource(CodeContext/*!*/ context, string/*!*/ name, string/*!*/ path) {
             Assert.NotNull(context, name, path);
 
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
 
             string fullPath = GetFullPathAndValidateCase(pc, path, false);
             if (fullPath == null || !pc.DomainManager.Platform.FileExists(fullPath)) {
@@ -991,7 +991,7 @@ namespace IronPython.Runtime {
         internal static PythonModule LoadPackageFromSource(CodeContext/*!*/ context, string/*!*/ name, string/*!*/ path) {
             Assert.NotNull(context, name, path);
 
-            path = GetFullPathAndValidateCase(PythonContext.GetContext(context), path, true);
+            path = GetFullPathAndValidateCase(context.LanguageContext, path, true);
             if (path == null) {
                 return null;
             }
@@ -1005,7 +1005,7 @@ namespace IronPython.Runtime {
 
         private static PythonModule/*!*/ LoadFromSourceUnit(CodeContext/*!*/ context, SourceUnit/*!*/ sourceCode, string/*!*/ name, string/*!*/ path) {
             Assert.NotNull(sourceCode, name, path);
-            return PythonContext.GetContext(context).CompileModule(path, name, sourceCode, ModuleOptions.Initialize | ModuleOptions.Optimized);
+            return context.LanguageContext.CompileModule(path, name, sourceCode, ModuleOptions.Initialize | ModuleOptions.Optimized);
         }
     }
 }

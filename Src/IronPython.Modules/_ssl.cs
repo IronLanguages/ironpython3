@@ -343,7 +343,7 @@ namespace IronPython.Modules {
         }
 
         internal static PythonType SSLError(CodeContext/*!*/ context) {
-            return (PythonType)PythonContext.GetContext(context).GetModuleState("SSLError");
+            return (PythonType)context.LanguageContext.GetModuleState("SSLError");
         }
 
         public static PythonDictionary _test_decode_cert(CodeContext context, string filename, bool complete=false) {

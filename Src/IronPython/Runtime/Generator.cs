@@ -335,8 +335,8 @@ namespace IronPython.Runtime {
 
                 string message = "Exception in generator " + __repr__(Context) + " ignored";
 
-                PythonOps.PrintWithDest(Context, PythonContext.GetContext(Context).SystemStandardError, message);
-                PythonOps.PrintWithDest(Context, PythonContext.GetContext(Context).SystemStandardError, Context.LanguageContext.FormatException(e));
+                PythonOps.PrintWithDest(Context, Context.LanguageContext.SystemStandardError, message);
+                PythonOps.PrintWithDest(Context, Context.LanguageContext.SystemStandardError, Context.LanguageContext.FormatException(e));
             } catch {
                 // if stderr is closed then ignore any exceptions.
             }

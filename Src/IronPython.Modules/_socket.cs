@@ -1312,7 +1312,7 @@ namespace IronPython.Modules {
         }
 
         private static PythonType gaierror(CodeContext/*!*/ context) {
-            return (PythonType)PythonContext.GetContext(context).GetModuleState("socketgaierror");
+            return (PythonType)context.LanguageContext.GetModuleState("socketgaierror");
         }
 
         private static IPHostEntry GetHostEntry(string host) {
@@ -2222,7 +2222,7 @@ namespace IronPython.Modules {
 
             int port;
             try {
-                port = PythonContext.GetContext(context).ConvertToInt32(address[1]);
+                port = context.LanguageContext.ConvertToInt32(address[1]);
             } catch (ArgumentTypeException) {
                 throw PythonOps.TypeError("port must be integer");
             }
@@ -2372,7 +2372,7 @@ namespace IronPython.Modules {
             public object bufsize = DefaultBufferSize; // Only present for compatibility with CPython public API
 
             public _fileobject(CodeContext/*!*/ context, object socket, string mode="rb", int bufsize=-1, bool close=false)
-                : base(PythonContext.GetContext(context)) {
+                : base(context.LanguageContext) {
 
                 Stream stream;
                 _close = close;
@@ -2434,35 +2434,35 @@ namespace IronPython.Modules {
 
             [SpecialName, PropertyMethod, StaticExtensionMethod]
             public static object Getdefault_bufsize(CodeContext/*!*/ context) {
-                return PythonContext.GetContext(context).GetModuleState(_defaultBufsizeKey);
+                return context.LanguageContext.GetModuleState(_defaultBufsizeKey);
             }
 
             [SpecialName, PropertyMethod, StaticExtensionMethod]
             public static void Setdefault_bufsize(CodeContext/*!*/ context, object value) {
-                PythonContext.GetContext(context).SetModuleState(_defaultBufsizeKey, value);
+                context.LanguageContext.SetModuleState(_defaultBufsizeKey, value);
             }
 
         }
         #endregion
 
         private static int? GetDefaultTimeout(CodeContext/*!*/ context) {
-            return (int?)PythonContext.GetContext(context).GetModuleState(_defaultTimeoutKey);
+            return (int?)context.LanguageContext.GetModuleState(_defaultTimeoutKey);
         }
 
         private static void SetDefaultTimeout(CodeContext/*!*/ context, int? timeout) {
-            PythonContext.GetContext(context).SetModuleState(_defaultTimeoutKey, timeout);
+            context.LanguageContext.SetModuleState(_defaultTimeoutKey, timeout);
         }
 
         private static PythonType error(CodeContext/*!*/ context) {
-            return (PythonType)PythonContext.GetContext(context).GetModuleState("socketerror");
+            return (PythonType)context.LanguageContext.GetModuleState("socketerror");
         }
 
         private static PythonType herror(CodeContext/*!*/ context) {
-            return (PythonType)PythonContext.GetContext(context).GetModuleState("socketherror");
+            return (PythonType)context.LanguageContext.GetModuleState("socketherror");
         }
 
         private static PythonType timeout(CodeContext/*!*/ context) {
-            return (PythonType)PythonContext.GetContext(context).GetModuleState("sockettimeout");
+            return (PythonType)context.LanguageContext.GetModuleState("sockettimeout");
         }
 
         public class ssl {

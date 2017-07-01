@@ -84,7 +84,7 @@ namespace IronPython.Runtime.Types {
                 }
             }
 
-            return CallSetter(context, PythonContext.GetContext(context).GetGenericCallSiteStorage(), instance, ArrayUtils.EmptyObjects, value);
+            return CallSetter(context, context.LanguageContext.GetGenericCallSiteStorage(), instance, ArrayUtils.EmptyObjects, value);
         }
 
         internal override Type DeclaringType {
@@ -112,7 +112,7 @@ namespace IronPython.Runtime.Types {
         internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
             PerfTrack.NoteEvent(PerfTrack.Categories.Properties, this);
 
-            value = CallGetter(context, owner, PythonContext.GetContext(context).GetGenericCallSiteStorage0(), instance);
+            value = CallGetter(context, owner, context.LanguageContext.GetGenericCallSiteStorage0(), instance);
             return true;
         }
 

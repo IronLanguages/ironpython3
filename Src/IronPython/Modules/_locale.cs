@@ -296,13 +296,13 @@ Note: Return value differs from CPython - it is not a string.")]
         }
 
         internal static LocaleInfo/*!*/ GetLocaleInfo(CodeContext/*!*/ context) {
-            EnsureLocaleInitialized(PythonContext.GetContext(context));
+            EnsureLocaleInitialized(context.LanguageContext);
 
-            return (LocaleInfo)PythonContext.GetContext(context).GetModuleState(_localeKey);
+            return (LocaleInfo)context.LanguageContext.GetModuleState(_localeKey);
         }        
 
         private static PythonType _localeerror(CodeContext/*!*/ context) {
-            return (PythonType)PythonContext.GetContext(context).GetModuleState("_localeerror");
+            return (PythonType)context.LanguageContext.GetModuleState("_localeerror");
         }
     }
 }

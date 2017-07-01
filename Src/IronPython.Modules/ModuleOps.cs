@@ -191,7 +191,7 @@ namespace IronPython.Modules {
         }
 
         public static void CallbackException(Exception e, CodeContext/*!*/ context) {
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
             object stderr = pc.SystemStandardError;
             PythonOps.PrintWithDest(context, stderr, pc.FormatException(e));
         }

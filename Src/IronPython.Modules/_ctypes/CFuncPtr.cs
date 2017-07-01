@@ -361,7 +361,7 @@ namespace IronPython.Modules {
                 }
 
                 private Expression AddReturnChecks(CodeContext context, DynamicMetaObject[] args, Expression res) {
-                    PythonContext ctx = PythonContext.GetContext(context); 
+                    PythonContext ctx = context.LanguageContext; 
                     
                     object resType = Value.Getrestype();
                     if (resType != null) {

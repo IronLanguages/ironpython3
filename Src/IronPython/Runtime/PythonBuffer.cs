@@ -189,7 +189,7 @@ namespace IronPython.Runtime {
         }
 
         public static object operator +(PythonBuffer a, PythonBuffer b) {
-            PythonContext context = PythonContext.GetContext(a._context);
+            PythonContext context = a._context.LanguageContext;
 
             return context.Operation(
                 PythonOperationKind.Add,
@@ -203,7 +203,7 @@ namespace IronPython.Runtime {
         }
 
         public static object operator *(PythonBuffer b, int n) {
-            PythonContext context = PythonContext.GetContext(b._context);
+            PythonContext context = b._context.LanguageContext;
 
             return context.Operation(
                 PythonOperationKind.Multiply,
@@ -213,7 +213,7 @@ namespace IronPython.Runtime {
         }
 
         public static object operator *(int n, PythonBuffer b) {
-            PythonContext context = PythonContext.GetContext(b._context);
+            PythonContext context = b._context.LanguageContext;
 
             return context.Operation(
                 PythonOperationKind.Multiply,

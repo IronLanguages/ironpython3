@@ -164,7 +164,7 @@ namespace IronPython.Modules {
                 !Object.ReferenceEquals(ret, NotImplementedType.Value)) {
                 return !Converter.ConvertToBoolean(ret);
             } else {
-                return PythonContext.GetContext(context).LessThan(x, y);
+                return context.LanguageContext.LessThan(x, y);
             }
         }
 

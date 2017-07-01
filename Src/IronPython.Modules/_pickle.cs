@@ -651,7 +651,7 @@ namespace IronPython.Modules {
 
             private bool TrySavePersistId(CodeContext context, object obj) {
                 Debug.Assert(_persist_id != null);
-                string res = Converter.ConvertToString(PythonContext.GetContext(context).CallSplat(_persist_id, obj));
+                string res = Converter.ConvertToString(context.LanguageContext.CallSplat(_persist_id, obj));
                 if (res != null) {
                     SavePersId(context, res);
                     return true;
@@ -1211,7 +1211,7 @@ namespace IronPython.Modules {
                 if (value is int) {
                     return IsUInt8((int)value);
                 }
-                PythonContext pc = PythonContext.GetContext(context);
+                PythonContext pc = context.LanguageContext;
 
                 return pc.LessThanOrEqual(0, value) && pc.LessThan(value, 1 << 8);
             }
@@ -1231,7 +1231,7 @@ namespace IronPython.Modules {
                 if (value is int) {
                     return IsUInt16((int)value);
                 }
-                PythonContext pc = PythonContext.GetContext(context);
+                PythonContext pc = context.LanguageContext;
 
                 return pc.LessThanOrEqual(1 << 8, value) && pc.LessThan(value, 1 << 16);
             }
@@ -1248,7 +1248,7 @@ namespace IronPython.Modules {
             /// Return true if value is appropriate for formatting in pickle int4 format.
             /// </summary>
             private static bool IsInt32(CodeContext/*!*/ context, object value) {
-                PythonContext pc = PythonContext.GetContext(context);
+                PythonContext pc = context.LanguageContext;
 
                 return pc.LessThanOrEqual(Int32.MinValue, value) && pc.LessThanOrEqual(value, Int32.MaxValue);
             }
@@ -1297,7 +1297,7 @@ namespace IronPython.Modules {
 
             private void WriteGetOrPut(CodeContext context, bool isGet, PythonTuple tup) {
                 object index = tup[0];
-                Debug.Assert(PythonContext.GetContext(context).GreaterThanOrEqual(index, 0));
+                Debug.Assert(context.LanguageContext.GreaterThanOrEqual(index, 0));
                 if (_protocol < 1) {
                     Write(context, isGet ? Opcode.Get : Opcode.Put);
                     WriteIntAsString(context, index);
@@ -1945,7 +1945,7 @@ namespace IronPython.Modules {
             private void LoadBinPersid(CodeContext/*!*/ context) {
                 if (_pers_loader == null) throw CannotUnpickle(context, "cannot unpickle binary persistent ID w/o persistent_load");
 
-                _stack.Add(PythonContext.GetContext(context).CallSplat(_pers_loader, PopStack()));
+                _stack.Add(context.LanguageContext.CallSplat(_pers_loader, PopStack()));
             }
 
             private void LoadBinPut(CodeContext/*!*/ context) {
@@ -2187,7 +2187,7 @@ namespace IronPython.Modules {
                 if (_pers_loader == null) {
                     throw CannotUnpickle(context, "A load persistent ID instruction is present but no persistent_load function is available");
                 }
-                _stack.Add(PythonContext.GetContext(context).CallSplat(_pers_loader, ReadLineNoNewline(context)));
+                _stack.Add(context.LanguageContext.CallSplat(_pers_loader, ReadLineNoNewline(context)));
             }
 
             private void LoadPop(CodeContext/*!*/ context) {
@@ -2299,19 +2299,19 @@ namespace IronPython.Modules {
         #endregion
 
         private static PythonType PicklingError(CodeContext/*!*/ context) {
-            return (PythonType)PythonContext.GetContext(context).GetModuleState("PicklingError");
+            return (PythonType)context.LanguageContext.GetModuleState("PicklingError");
         }
 
         private static PythonType PickleError(CodeContext/*!*/ context) {
-            return (PythonType)PythonContext.GetContext(context).GetModuleState("PickleError");
+            return (PythonType)context.LanguageContext.GetModuleState("PickleError");
         }
 
         private static PythonType UnpicklingError(CodeContext/*!*/ context) {
-            return (PythonType)PythonContext.GetContext(context).GetModuleState("UnpicklingError");
+            return (PythonType)context.LanguageContext.GetModuleState("UnpicklingError");
         }
 
         private static PythonType BadPickleGet(CodeContext/*!*/ context) {
-            return (PythonType)PythonContext.GetContext(context).GetModuleState("BadPickleGet");
+            return (PythonType)context.LanguageContext.GetModuleState("BadPickleGet");
         }
 
         class ReferenceEqualityComparer : IEqualityComparer<object> {

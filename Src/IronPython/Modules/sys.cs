@@ -83,7 +83,7 @@ Print an object to sys.stdout and also save it in __builtin__._")]
         public static void displayhookImpl(CodeContext/*!*/ context, object value) {
             if (value != null) {
                 PythonOps.Print(context, PythonOps.Repr(context, value));
-                PythonContext.GetContext(context).BuiltinModuleDict["_"] = value;
+                context.LanguageContext.BuiltinModuleDict["_"] = value;
             }
         }
 
@@ -102,7 +102,7 @@ Print an object to sys.stdout and also save it in __builtin__._")]
 
 Handle an exception by displaying it with a traceback on sys.stderr._")]
         public static void excepthookImpl(CodeContext/*!*/ context, object exctype, object value, object traceback) {
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
 
             PythonOps.PrintWithDest(
                 context,
@@ -166,7 +166,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
         }
 
         public static string getdefaultencoding(CodeContext/*!*/ context) {
-            return PythonContext.GetContext(context).GetDefaultEncodingName();
+            return context.LanguageContext.GetDefaultEncodingName();
         }
 
         public static object getfilesystemencoding() {
@@ -279,7 +279,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             string strName = name as string;
             if (strName == null) throw PythonOps.TypeError("name must be a string");
 
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
             Encoding enc;
             if (!StringOps.TryGetEncoding(strName, out enc)) {
                 throw PythonOps.LookupError("'{0}' does not match any available encodings", strName);
@@ -293,7 +293,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
         // difficult because it's hard to flip tracing on/off for them w/o a perf overhead in the 
         // non-profiling case.
         public static void setprofile(CodeContext/*!*/ context, TracebackDelegate o) {
-            PythonContext pyContext = PythonContext.GetContext(context);
+            PythonContext pyContext = context.LanguageContext;
             pyContext.EnsureDebugContext();
 
             if (o == null) {
@@ -320,11 +320,11 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
         }
 
         public static void setrecursionlimit(CodeContext/*!*/ context, int limit) {
-            PythonContext.GetContext(context).RecursionLimit = limit;
+            context.LanguageContext.RecursionLimit = limit;
         }
 
         public static int getrecursionlimit(CodeContext/*!*/ context) {
-            return PythonContext.GetContext(context).RecursionLimit;
+            return context.LanguageContext.RecursionLimit;
         }
 
         // stdin, stdout, stderr, __stdin__, __stdout__, and __stderr__ added by PythonContext

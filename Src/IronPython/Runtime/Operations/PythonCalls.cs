@@ -23,19 +23,19 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object Call(CodeContext context, object func) {
-            return PythonContext.GetContext(context).Call(context, func);
+            return context.LanguageContext.Call(context, func);
         }
 
         public static object Call(CodeContext/*!*/ context, object func, object arg0) {
-            return PythonContext.GetContext(context).Call(context, func, arg0);
+            return context.LanguageContext.Call(context, func, arg0);
         }
 
         public static object Call(CodeContext/*!*/ context, object func, object arg0, object arg1) {
-            return PythonContext.GetContext(context).Call(context, func, arg0, arg1);
+            return context.LanguageContext.Call(context, func, arg0, arg1);
         }
 
         public static object Call(CodeContext/*!*/ context, object func, params object[] args) {
-            return PythonContext.GetContext(context).CallSplat(context, func, args);
+            return context.LanguageContext.CallSplat(context, func, args);
         }
 
         public static object CallWithKeywordArgs(CodeContext/*!*/ context, object func, object[] args, string[] names) {
@@ -52,7 +52,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object CallWithKeywordArgs(CodeContext context, object func, object[] args, IDictionary<object, object> dict) {
-            return PythonContext.GetContext(context).CallWithKeywords(func, args, dict);
+            return context.LanguageContext.CallWithKeywords(func, args, dict);
         }        
     }
 }

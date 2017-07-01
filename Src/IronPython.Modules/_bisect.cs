@@ -39,7 +39,7 @@ common approach.
             if (hi == -1) {
                 hi = list.Count;
             }
-            IComparer comparer = PythonContext.GetContext(context).GetComparer(null, GetComparisonType(list));
+            IComparer comparer = context.LanguageContext.GetComparer(null, GetComparisonType(list));
             while (lo < hi) {
                 mid = (int)(((long)lo + hi) / 2);
                 litem = list[mid];
@@ -62,7 +62,7 @@ common approach.
             if (hi == -1) {
                 hi = PythonOps.Length(list);
             }
-            IComparer comparer = PythonContext.GetContext(context).GetComparer(null, GetComparisonType(context, list));
+            IComparer comparer = context.LanguageContext.GetComparer(null, GetComparisonType(context, list));
             while (lo < hi) {
                 mid = (int)(((long)lo + hi) / 2);
                 litem = PythonOps.GetIndex(context, list, mid);
@@ -85,7 +85,7 @@ common approach.
             if (hi == -1) {
                 hi = list.Count;
             }
-            IComparer comparer = PythonContext.GetContext(context).GetComparer(null, GetComparisonType(list));
+            IComparer comparer = context.LanguageContext.GetComparer(null, GetComparisonType(list));
             while (lo < hi) {
                 mid = (int)(((long)lo + hi) / 2);
                 litem = list[mid];
@@ -109,7 +109,7 @@ common approach.
                 hi = PythonOps.Length(list);
             }
 
-            IComparer comparer = PythonContext.GetContext(context).GetComparer(null, GetComparisonType(context, list));
+            IComparer comparer = context.LanguageContext.GetComparer(null, GetComparisonType(context, list));
             while (lo < hi) {
                 mid = (int)(((long)lo + hi) / 2);
                 litem = PythonOps.GetIndex(context, list, mid);

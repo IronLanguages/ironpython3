@@ -210,7 +210,7 @@ namespace IronPython.Modules {
         /// Returns a new type which represents a pointer given the existing type.
         /// </summary>
         public static PythonType POINTER(CodeContext/*!*/ context, PythonType type) {
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
             PythonDictionary dict = (PythonDictionary)pc.GetModuleState(_pointerTypeCacheKey);
 
             lock (dict) {
@@ -240,7 +240,7 @@ namespace IronPython.Modules {
 
         public static PythonType POINTER(CodeContext/*!*/ context, [NotNull]string name) {
             PythonType res = MakePointer(context, name, new PythonDictionary());
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
             PythonDictionary dict = (PythonDictionary)pc.GetModuleState(_pointerTypeCacheKey);
 
             lock (dict) {
@@ -441,7 +441,7 @@ namespace IronPython.Modules {
 
         public static PythonTuple/*!*/ set_conversion_mode(CodeContext/*!*/ context, string encoding, string errors) {
             // TODO: Need an atomic update for module state
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
             PythonTuple prev = (PythonTuple)pc.GetModuleState(_conversion_mode);
 
             pc.SetModuleState(_conversion_mode, PythonTuple.MakeTuple(encoding, errors));

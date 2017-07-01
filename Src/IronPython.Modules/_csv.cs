@@ -48,7 +48,7 @@ namespace IronPython.Modules
 
         public static int field_size_limit(CodeContext /*!*/ context, int new_limit)
         {
-            PythonContext ctx = PythonContext.GetContext(context);
+            PythonContext ctx = context.LanguageContext;
             int old_limit = (int)ctx.GetModuleState(_fieldSizeLimitKey);
             ctx.SetModuleState(_fieldSizeLimitKey, new_limit);
             return old_limit;
@@ -56,7 +56,7 @@ namespace IronPython.Modules
 
         public static int field_size_limit(CodeContext/*!*/ context)
         {
-            return (int)PythonContext.GetContext(context).
+            return (int)context.LanguageContext.
                 GetModuleState(_fieldSizeLimitKey);
         }
 
@@ -107,7 +107,7 @@ dialect = csv.register_dialect(name, dialect)")]
         /// <returns></returns>
         private static DialectRegistry GetDialects(CodeContext/*!*/ context)
         {
-            PythonContext ctx = PythonContext.GetContext(context);
+            PythonContext ctx = context.LanguageContext;
             if (!ctx.HasModuleState(_dialectRegistryKey))
             {
                 ctx.SetModuleState(_dialectRegistryKey,
@@ -119,7 +119,7 @@ dialect = csv.register_dialect(name, dialect)")]
 
         private static int GetFieldSizeLimit(CodeContext/*!*/ context)
         {
-            PythonContext ctx = PythonContext.GetContext(context);
+            PythonContext ctx = context.LanguageContext;
             if (!ctx.HasModuleState(_fieldSizeLimitKey))
             {
                 ctx.SetModuleState(_fieldSizeLimitKey, FieldSizeLimit);

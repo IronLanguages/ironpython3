@@ -1101,7 +1101,7 @@ namespace IronPython.Modules {
             }
             float res = BitConverter.ToSingle(bytes, 0);
 
-            if (PythonContext.GetContext(context).FloatFormat == FloatFormat.Unknown) {
+            if (context.LanguageContext.FloatFormat == FloatFormat.Unknown) {
                 if (Single.IsNaN(res) || Single.IsInfinity(res)) {
                     throw PythonOps.ValueError("can't unpack IEEE 754 special value on non-IEEE platform");
                 }
@@ -1192,7 +1192,7 @@ namespace IronPython.Modules {
             }
 
             double res = BitConverter.ToDouble(bytes, 0);
-            if (PythonContext.GetContext(context).DoubleFormat == FloatFormat.Unknown) {
+            if (context.LanguageContext.DoubleFormat == FloatFormat.Unknown) {
                 if (Double.IsNaN(res) || Double.IsInfinity(res)) {
                     throw PythonOps.ValueError("can't unpack IEEE 754 special value on non-IEEE platform");
                 }
@@ -1237,7 +1237,7 @@ namespace IronPython.Modules {
         }
 
         private static Exception Error(CodeContext/*!*/ context, string msg) {
-            return PythonExceptions.CreateThrowable((PythonType)PythonContext.GetContext(context).GetModuleState("structerror"), msg);
+            return PythonExceptions.CreateThrowable((PythonType)context.LanguageContext.GetModuleState("structerror"), msg);
         }
 
         #endregion

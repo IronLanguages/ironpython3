@@ -50,7 +50,7 @@ namespace IronPython.Runtime.Operations {
             Type curType = type;
             while (curType != null) {
                 string moduleName;
-                if (PythonContext.GetContext(context).BuiltinModuleNames.TryGetValue(curType, out moduleName)) {
+                if (context.LanguageContext.BuiltinModuleNames.TryGetValue(curType, out moduleName)) {
                     return moduleName;
                 }
 
@@ -139,7 +139,7 @@ namespace IronPython.Runtime.Operations {
             // check if object has finalizer...
             PythonTypeSlot dummy;
             if (dt.TryResolveSlot(context, "__del__", out dummy)) {
-                IWeakReferenceable iwr = context.GetPythonContext().ConvertToWeakReferenceable(newObject);
+                IWeakReferenceable iwr = context.LanguageContext.ConvertToWeakReferenceable(newObject);
                 Debug.Assert(iwr != null);
 
                 InstanceFinalizer nif = new InstanceFinalizer(context, newObject);

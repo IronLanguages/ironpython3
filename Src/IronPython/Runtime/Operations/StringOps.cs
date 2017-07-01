@@ -343,7 +343,7 @@ namespace IronPython.Runtime.Operations {
             if (str == null) throw PythonOps.TypeError("converting to unicode: need string, got {0}", DynamicHelpers.GetPythonType(@string).Name);
 
             if (cls == TypeCache.String) {
-                return decode(context, str, encoding ?? PythonContext.GetContext(context).GetDefaultEncodingName(), errors);
+                return decode(context, str, encoding ?? context.LanguageContext.GetDefaultEncodingName(), errors);
             } else {
                 return cls.CreateInstance(context, __new__(context, TypeCache.String, str, encoding, errors));
             }
@@ -1286,7 +1286,7 @@ namespace IronPython.Runtime.Operations {
         /// </summary>
         public static string/*!*/ format(CodeContext/*!*/ context, string format_string, [NotNull]params object[] args) {
             return NewStringFormatter.FormatString(
-                PythonContext.GetContext(context),
+                context.LanguageContext,
                 format_string,
                 PythonTuple.MakeTuple(args),
                 new PythonDictionary()
@@ -1305,7 +1305,7 @@ namespace IronPython.Runtime.Operations {
         /// </summary>
         public static string/*!*/ format(CodeContext/*!*/ context, string format_string\u00F8, [ParamDictionary]IDictionary<object, object> kwargs\u00F8, params object[] args\u00F8) {
             return NewStringFormatter.FormatString(
-                PythonContext.GetContext(context),
+                context.LanguageContext,
                 format_string\u00F8,
                 PythonTuple.MakeTuple(args\u00F8),
                 kwargs\u00F8
@@ -1713,7 +1713,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         private static string RawDecode(CodeContext/*!*/ context, string s, object encodingType, string errors) {
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
 
             Encoding e = null;
             string encoding = encodingType as string;

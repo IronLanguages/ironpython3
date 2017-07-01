@@ -405,17 +405,17 @@ namespace IronPython.Runtime.Operations {
         // Structural Equality and Hashing Helpers
 
         public static int StructuralHashMethod(CodeContext/*!*/ context, IStructuralEquatable x) {
-            return x.GetHashCode(PythonContext.GetContext(context).EqualityComparerNonGeneric);
+            return x.GetHashCode(context.LanguageContext.EqualityComparerNonGeneric);
         }
 
         public static bool StructuralEqualityMethod<T>(CodeContext/*!*/ context, T x, [NotNull]T y)
             where T : IStructuralEquatable {
-            return x.Equals(y, PythonContext.GetContext(context).EqualityComparerNonGeneric);
+            return x.Equals(y, context.LanguageContext.EqualityComparerNonGeneric);
         }
 
         public static bool StructuralInequalityMethod<T>(CodeContext/*!*/ context, T x, [NotNull]T y)
             where T : IStructuralEquatable {
-            return !x.Equals(y, PythonContext.GetContext(context).EqualityComparerNonGeneric);
+            return !x.Equals(y, context.LanguageContext.EqualityComparerNonGeneric);
         }
 
         [return: MaybeNotImplemented]
@@ -424,7 +424,7 @@ namespace IronPython.Runtime.Operations {
             if (!(y is T)) return NotImplementedType.Value;
 
             return ScriptingRuntimeHelpers.BooleanToObject(
-                x.Equals(y, PythonContext.GetContext(context).EqualityComparerNonGeneric)
+                x.Equals(y, context.LanguageContext.EqualityComparerNonGeneric)
             );
         }
 
@@ -434,7 +434,7 @@ namespace IronPython.Runtime.Operations {
             if (!(y is T)) return NotImplementedType.Value;
 
             return ScriptingRuntimeHelpers.BooleanToObject(
-                !x.Equals(y, PythonContext.GetContext(context).EqualityComparerNonGeneric)
+                !x.Equals(y, context.LanguageContext.EqualityComparerNonGeneric)
             );
         }
 
@@ -444,7 +444,7 @@ namespace IronPython.Runtime.Operations {
             if (!(y is T)) return NotImplementedType.Value;
 
             return ScriptingRuntimeHelpers.BooleanToObject(
-                x.Equals(y, PythonContext.GetContext(context).EqualityComparerNonGeneric)
+                x.Equals(y, context.LanguageContext.EqualityComparerNonGeneric)
             );
         }
 
@@ -454,14 +454,14 @@ namespace IronPython.Runtime.Operations {
             if (!(y is T)) return NotImplementedType.Value;
 
             return ScriptingRuntimeHelpers.BooleanToObject(
-                !x.Equals(y, PythonContext.GetContext(context).EqualityComparerNonGeneric)
+                !x.Equals(y, context.LanguageContext.EqualityComparerNonGeneric)
             );
         }
 
         // Structural Comparison Helpers
 
         private static int StructuralCompare(CodeContext/*!*/ context, IStructuralComparable x, object y) {
-            return x.CompareTo(y, PythonContext.GetContext(context).GetComparer(null, null));
+            return x.CompareTo(y, context.LanguageContext.GetComparer(null, null));
         }
 
         public static bool StructuralComparableEquality<T>(CodeContext/*!*/ context, T x, [NotNull]T y)
@@ -893,7 +893,7 @@ namespace IronPython.Runtime.Operations {
             PythonTuple data = ClrModule.Serialize(self);
 
             object deserializeNew;
-            bool res = PythonContext.GetContext(context).ClrModule.__dict__.TryGetValue(
+            bool res = context.LanguageContext.ClrModule.__dict__.TryGetValue(
                 "Deserialize",
                 out deserializeNew
             );

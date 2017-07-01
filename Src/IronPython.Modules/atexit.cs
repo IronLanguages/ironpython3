@@ -62,7 +62,7 @@ Register a function to be executed upon normal program termination\n\
                 throw PythonOps.TypeError("the first argument must be callable");
             }
 
-            var functions = context.GetPythonContext().GetModuleState(_registry_key) as List<FunctionDescriptor>;
+            var functions = context.LanguageContext.GetModuleState(_registry_key) as List<FunctionDescriptor>;
             if (functions != null) {
                 lock (functions) {
                     functions.Add(new FunctionDescriptor(func, kwargs, args));
@@ -78,7 +78,7 @@ atexit.register
 
     func - function to be unregistered")]
         public static void unregister(CodeContext context, object func) {
-            var functions = context.GetPythonContext().GetModuleState(_registry_key) as List<FunctionDescriptor>;
+            var functions = context.LanguageContext.GetModuleState(_registry_key) as List<FunctionDescriptor>;
             if (functions != null) {
                 lock (functions) {
                     functions.RemoveAll(x => PythonOps.Compare(context, x.Func, func) == 0);
@@ -90,7 +90,7 @@ atexit.register
 
 Clear the list of previously registered exit functions.")]
         public static void _clear(CodeContext context) {
-            var functions = context.GetPythonContext().GetModuleState(_registry_key) as List<FunctionDescriptor>;
+            var functions = context.LanguageContext.GetModuleState(_registry_key) as List<FunctionDescriptor>;
             if (functions != null) {
                 lock (functions) {
                     functions.Clear();
@@ -102,7 +102,7 @@ Clear the list of previously registered exit functions.")]
 
 Run all registered exit functions.")]
         public static void _run_exitfuncs(CodeContext context) {
-            var pc = context.GetPythonContext();
+            var pc = context.LanguageContext;
             var functions = pc.GetModuleState(_registry_key) as List<FunctionDescriptor>;
             if (functions != null) {
                 Exception lastException = null;
@@ -136,7 +136,7 @@ Run all registered exit functions.")]
 Return the number of registered exit functions.")]
         public static int _ncallbacks(CodeContext context) {
             int result = 0;
-            var functions = context.GetPythonContext().GetModuleState(_registry_key) as List<FunctionDescriptor>;
+            var functions = context.LanguageContext.GetModuleState(_registry_key) as List<FunctionDescriptor>;
             if (functions != null) {
                 lock (functions) {
                     result = functions.Count;

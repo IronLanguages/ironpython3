@@ -252,7 +252,7 @@ namespace IronPython.Runtime {
             if (_curCh == '*') {
                 if (!(_data is PythonTuple)) { throw PythonOps.TypeError("* requires a tuple for values"); }
                 _curCh = _str[_index++];
-                res = PythonContext.GetContext(_context).ConvertToInt32(GetData(_dataIndex++));
+                res = _context.LanguageContext.ConvertToInt32(GetData(_dataIndex++));
             } else {
                 if (Char.IsDigit(_curCh)) {
                     res = 0;
@@ -383,7 +383,7 @@ namespace IronPython.Runtime {
             object val;
             int intVal;
 
-            if (PythonContext.GetContext(_context).TryConvertToInt32(_opts.Value, out intVal)) {
+            if (_context.LanguageContext.TryConvertToInt32(_opts.Value, out intVal)) {
                 val = intVal;
                 fPos = intVal >= 0;
             } else {

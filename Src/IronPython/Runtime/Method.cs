@@ -97,12 +97,12 @@ namespace IronPython.Runtime {
 
         [SpecialName]
         public object Call(CodeContext/*!*/ context, params object[] args) {
-            return PythonContext.GetContext(context).CallSplat(this, args);
+            return context.LanguageContext.CallSplat(this, args);
         }
 
         [SpecialName]
         public object Call(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
-            return PythonContext.GetContext(context).CallWithKeywords(this, args, kwArgs);
+            return context.LanguageContext.CallWithKeywords(this, args, kwArgs);
         }
 
         private Exception BadSelf(object got) {

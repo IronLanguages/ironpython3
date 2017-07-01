@@ -726,7 +726,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             IList<WeakReference> subtypes = SubTypes;
 
             if (subtypes != null) {
-                PythonContext pc = PythonContext.GetContext(context);
+                PythonContext pc = context.LanguageContext;
 
                 foreach (WeakReference wr in subtypes) {
                     if (wr.IsAlive) {
@@ -947,7 +947,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         internal bool TryGetLength(CodeContext context, object o, out int length) {
             CallSite<Func<CallSite, CodeContext, object, object>> lenSite;
             if (IsSystemType) {
-                lenSite = PythonContext.GetContext(context).GetSiteCacheForSystemType(UnderlyingSystemType).GetLenSite(context);
+                lenSite = context.LanguageContext.GetSiteCacheForSystemType(UnderlyingSystemType).GetLenSite(context);
             } else {
                 lenSite = _siteCache.GetLenSite(context);
             }
@@ -1000,7 +1000,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         internal bool TryGetBoundAttr(CodeContext context, object o, string name, out object ret) {
             CallSite<Func<CallSite, object, CodeContext, object>> site;
             if (IsSystemType) {
-                site = PythonContext.GetContext(context).GetSiteCacheForSystemType(UnderlyingSystemType).GetTryGetMemberSite(context, name);
+                site = context.LanguageContext.GetSiteCacheForSystemType(UnderlyingSystemType).GetTryGetMemberSite(context, name);
             } else {
                 site = _siteCache.GetTryGetMemberSite(context, name);
             }
@@ -1352,7 +1352,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         internal bool TryGetCustomSetAttr(CodeContext context, out PythonTypeSlot pts) {
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
             return pc.Binder.TryResolveSlot(
                     context,
                     DynamicHelpers.GetPythonType(this),
@@ -1592,7 +1592,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private object InvokeGetAttributeMethod(CodeContext context, string name, object getattr) {
             CallSite<Func<CallSite, CodeContext, object, string, object>> getAttributeSite;
             if (IsSystemType) {
-                getAttributeSite = PythonContext.GetContext(context).GetSiteCacheForSystemType(UnderlyingSystemType).GetGetAttributeSite(context);
+                getAttributeSite = context.LanguageContext.GetSiteCacheForSystemType(UnderlyingSystemType).GetGetAttributeSite(context);
             } else {
                 getAttributeSite = _siteCache.GetGetAttributeSite(context);
             }
@@ -1674,7 +1674,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             if (TryResolveNonObjectSlot(context, instance, "__setattr__", out setattr)) {
                 CallSite<Func<CallSite, CodeContext, object, object, string, object, object>> setAttrSite;
                 if (IsSystemType) {
-                    setAttrSite = PythonContext.GetContext(context).GetSiteCacheForSystemType(UnderlyingSystemType).GetSetAttrSite(context);
+                    setAttrSite = context.LanguageContext.GetSiteCacheForSystemType(UnderlyingSystemType).GetSetAttrSite(context);
                 } else {
                     setAttrSite = _siteCache.GetSetAttrSite(context);
                 }
@@ -1812,7 +1812,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 if (TryResolveNonObjectSlot(context, self, "__dir__", out dir)) {
                     CallSite<Func<CallSite, CodeContext, object, object>> dirSite;
                     if (IsSystemType) {
-                        dirSite = PythonContext.GetContext(context).GetSiteCacheForSystemType(UnderlyingSystemType).GetDirSite(context);
+                        dirSite = context.LanguageContext.GetSiteCacheForSystemType(UnderlyingSystemType).GetDirSite(context);
                     } else {
                         dirSite = _siteCache.GetDirSite(context);
                     }
@@ -1912,7 +1912,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             _name = name;
             _bases = GetBasesAsList(bases).ToArray();
-            _pythonContext = PythonContext.GetContext(context);
+            _pythonContext = context.LanguageContext;
             _resolutionOrder = CalculateMro(this, _bases);
 
             bool hasSlots = false;
@@ -3121,12 +3121,12 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         private object GetAttr(CodeContext context, object res) {
             if (_isNoThrow) {
                 try {
-                    return PythonContext.GetContext(context).Call(context, res, _name);
+                    return context.LanguageContext.Call(context, res, _name);
                 } catch (MissingMemberException) {
                     return OperationFailed.Value;
                 }
             } else {
-                return PythonContext.GetContext(context).Call(context, res, _name);
+                return context.LanguageContext.Call(context, res, _name);
             }
         }
 

@@ -613,7 +613,7 @@ namespace IronPython.Modules {
 
             int[] ints = new int[MaxIndex];
             for (int i = 0; i < MaxIndex; i++) {
-                ints[i] = PythonContext.GetContext(context).ConvertToInt32(t[i]);
+                ints[i] = context.LanguageContext.ConvertToInt32(t[i]);
             }
 
             int year = ints[YearIndex];

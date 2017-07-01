@@ -195,7 +195,7 @@ the assembly object.")]
                 throw new TypeErrorException("LoadAssemblyByName: arg 1 must be a string");
             }
 
-            return PythonContext.GetContext(context).DomainManager.Platform.LoadAssembly(name);
+            return context.LanguageContext.DomainManager.Platform.LoadAssembly(name);
         }
 
         /// <summary>
@@ -210,7 +210,7 @@ the assembly object.")]
                 throw new TypeErrorException("Use: arg 1 must be a string");
             }
 
-            var scope = Importer.TryImportSourceFile(PythonContext.GetContext(context), name);
+            var scope = Importer.TryImportSourceFile(context.LanguageContext, name);
             if (scope == null) {
                 throw new ValueErrorException(String.Format("couldn't find module {0} to use", name));
             }
@@ -506,7 +506,7 @@ import Namespace.")]
             string path = System.IO.Path.GetDirectoryName(Path.GetFullPath(file));
             List list;
 
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
             if (!pc.TryGetSystemPath(out list)) {
                 throw PythonOps.TypeError("cannot update path, it is not a list");
             }
@@ -828,7 +828,7 @@ import Namespace.")]
             ContractUtils.RequiresNotNull(assemblyName, "assemblyName");
             ContractUtils.RequiresNotNullItems(filenames, "filenames");
 
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
 
             for (int i = 0; i < filenames.Length; i++) {
                 filenames[i] = Path.GetFullPath(filenames[i]);
@@ -879,7 +879,7 @@ import Namespace.")]
                     SourceCodeKind.File
                 );
 
-                sc = PythonContext.GetContext(context).GetScriptCode(su, modName, ModuleOptions.Initialize, Compiler.CompilationMode.ToDisk);
+                sc = context.LanguageContext.GetScriptCode(su, modName, ModuleOptions.Initialize, Compiler.CompilationMode.ToDisk);
 
                 code.Add((SavableScriptCode)sc);
             }
@@ -893,7 +893,7 @@ import Namespace.")]
                     }
                     
                     SourceUnit su = pc.CreateFileUnit(strModule, pc.DefaultEncoding, SourceCodeKind.File);
-                    code.Add((SavableScriptCode)PythonContext.GetContext(context).GetScriptCode(su, "__main__", ModuleOptions.Initialize, Compiler.CompilationMode.ToDisk));
+                    code.Add((SavableScriptCode)context.LanguageContext.GetScriptCode(su, "__main__", ModuleOptions.Initialize, Compiler.CompilationMode.ToDisk));
                 }
             }
 
@@ -1088,14 +1088,14 @@ import Namespace.")]
         /// All times are expressed in the same unit of measure as DateTime.Ticks
         /// </summary>
         public static PythonTuple GetProfilerData(CodeContext/*!*/ context, bool includeUnused=false) {
-            return new PythonTuple(Profiler.GetProfiler(PythonContext.GetContext(context)).GetProfile(includeUnused));
+            return new PythonTuple(Profiler.GetProfiler(context.LanguageContext).GetProfile(includeUnused));
         }
 
         /// <summary>
         /// Resets all profiler counters back to zero
         /// </summary>
         public static void ClearProfilerData(CodeContext/*!*/ context) {
-            Profiler.GetProfiler(PythonContext.GetContext(context)).Reset();
+            Profiler.GetProfiler(context.LanguageContext).Reset();
         }
 
         /// <summary>
@@ -1106,7 +1106,7 @@ import Namespace.")]
         /// The easiest way to recompile a module is to reload() it.
         /// </summary>
         public static void EnableProfiler(CodeContext/*!*/ context, bool enable) {
-            var pc = PythonContext.GetContext(context);
+            var pc = context.LanguageContext;
             var po = pc.Options as PythonOptions;
             po.EnableProfiler = enable;
         }

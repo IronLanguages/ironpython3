@@ -30,7 +30,7 @@ namespace IronPython.Runtime {
         }
 
         public PythonModule load_module(CodeContext/*!*/ context, string fullName) {
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
 
             CodeContext newContext = _sc.CreateContext();
             newContext.ModuleContext.InitializeBuiltins(false);

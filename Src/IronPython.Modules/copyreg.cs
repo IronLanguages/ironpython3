@@ -43,25 +43,25 @@ namespace IronPython.Modules {
         internal static PythonDictionary GetDispatchTable(CodeContext/*!*/ context) {
             EnsureModuleInitialized(context);
 
-            return (PythonDictionary)PythonContext.GetContext(context).GetModuleState(_dispatchTableKey);
+            return (PythonDictionary)context.LanguageContext.GetModuleState(_dispatchTableKey);
         }
 
         internal static PythonDictionary GetExtensionRegistry(CodeContext/*!*/ context) {
             EnsureModuleInitialized(context);
 
-            return (PythonDictionary)PythonContext.GetContext(context).GetModuleState(_extensionRegistryKey);
+            return (PythonDictionary)context.LanguageContext.GetModuleState(_extensionRegistryKey);
         }
 
         internal static PythonDictionary GetInvertedRegistry(CodeContext/*!*/ context) {
             EnsureModuleInitialized(context);
 
-            return (PythonDictionary)PythonContext.GetContext(context).GetModuleState(_invertedRegistryKey);
+            return (PythonDictionary)context.LanguageContext.GetModuleState(_invertedRegistryKey);
         }
 
         internal static PythonDictionary GetExtensionCache(CodeContext/*!*/ context) {
             EnsureModuleInitialized(context);
 
-            return (PythonDictionary)PythonContext.GetContext(context).GetModuleState(_extensionCacheKey);
+            return (PythonDictionary)context.LanguageContext.GetModuleState(_extensionCacheKey);
         }
 
         #region Public API
@@ -202,7 +202,7 @@ namespace IronPython.Modules {
         /// </summary>
         private static int GetCode(CodeContext/*!*/ context, object value) {
             try {
-                int intValue = PythonContext.GetContext(context).ConvertToInt32(value);
+                int intValue = context.LanguageContext.ConvertToInt32(value);
                 if (intValue > 0) return intValue;
                 // fall through and throw below
             } catch (OverflowException) {
@@ -214,7 +214,7 @@ namespace IronPython.Modules {
         #endregion
 
         private static void EnsureModuleInitialized(CodeContext context) {
-            if (!PythonContext.GetContext(context).HasModuleState(_dispatchTableKey)) {
+            if (!context.LanguageContext.HasModuleState(_dispatchTableKey)) {
                 Importer.ImportBuiltin(context, "copyreg");
             }
         }

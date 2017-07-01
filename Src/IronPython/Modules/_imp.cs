@@ -89,7 +89,7 @@ namespace IronPython.Modules {
                 throw PythonOps.TypeError("load_module() argument 4 must be sequence of length 3, not {0}", description.__len__());
             }
 
-            PythonContext pythonContext = PythonContext.GetContext(context);
+            PythonContext pythonContext = context.LanguageContext;
 
             // already loaded? do reload()
             PythonModule module = pythonContext.GetModuleByName(name);
@@ -98,7 +98,7 @@ namespace IronPython.Modules {
                 return module;
             }
 
-            int type = PythonContext.GetContext(context).ConvertToInt32(description[2]);
+            int type = context.LanguageContext.ConvertToInt32(description[2]);
             switch (type) {
                 case PythonSource:
                     return LoadPythonSource(pythonContext, name, file, filename);
@@ -170,7 +170,7 @@ namespace IronPython.Modules {
         public static int is_builtin(CodeContext/*!*/ context, string/*!*/ name) {
             if (name == null) throw PythonOps.TypeError("is_builtin() argument 1 must be string, not None");
             Type ty;
-            if (PythonContext.GetContext(context).BuiltinModules.TryGetValue(name, out ty)) {
+            if (context.LanguageContext.BuiltinModules.TryGetValue(name, out ty)) {
                 if (ty.GetTypeInfo().Assembly == typeof(PythonContext).GetTypeInfo().Assembly) {
                     // supposedly these can't be re-initialized and return -1 to
                     // indicate that here, but CPython does allow passing them
@@ -213,7 +213,7 @@ namespace IronPython.Modules {
         }
 
         private static PythonModule/*!*/ CreateEmptyPackage(CodeContext/*!*/ context, string/*!*/ name, string/*!*/ pathname) {
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
 
             PythonModule mod = new PythonModule();
             mod.__dict__["__name__"] = name;
@@ -230,7 +230,7 @@ namespace IronPython.Modules {
             
             // TODO: is this supposed to open PythonFile with Python-specific behavior?
             // we may need to insert additional layer to SourceUnit content provider if so
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
             if (!pc.DomainManager.Platform.FileExists(pathname)) {
                 throw PythonOps.IOError("Couldn't find file: {0}", pathname);
             }
@@ -244,7 +244,7 @@ namespace IronPython.Modules {
             if (pathname == null) throw PythonOps.TypeError("load_source() argument 2 must be string, not None");
             if (file == null) throw PythonOps.TypeError("load_source() argument 3 must be file, not None");
             
-            return LoadPythonSource(PythonContext.GetContext(context), name, file, pathname);
+            return LoadPythonSource(context.LanguageContext, name, file, pathname);
         }
 
         [ThreadStatic]
@@ -277,7 +277,7 @@ namespace IronPython.Modules {
 
         private static PythonTuple FindBuiltinOrSysPath(CodeContext/*!*/ context, string/*!*/ name) {
             List sysPath;
-            if (!PythonContext.GetContext(context).TryGetSystemPath(out sysPath)) {
+            if (!context.LanguageContext.TryGetSystemPath(out sysPath)) {
                 throw PythonOps.ImportError("sys.path must be a list of directory names");
             }
             return FindModuleBuiltinOrPath(context, name, sysPath);
@@ -319,7 +319,7 @@ namespace IronPython.Modules {
                 return BuiltinModuleTuple(name);
             }
             Type ty;
-            if (PythonContext.GetContext(context).BuiltinModules.TryGetValue(name, out ty)) {
+            if (context.LanguageContext.BuiltinModules.TryGetValue(name, out ty)) {
                 return BuiltinModuleTuple(name);
             }
 
@@ -350,11 +350,11 @@ namespace IronPython.Modules {
         #endregion
 
         private static long GetLockCount(CodeContext/*!*/ context) {
-            return (long)PythonContext.GetContext(context).GetModuleState(_lockCountKey);
+            return (long)context.LanguageContext.GetModuleState(_lockCountKey);
         }
 
         private static void SetLockCount(CodeContext/*!*/ context, long lockCount) {
-            PythonContext.GetContext(context).SetModuleState(_lockCountKey, lockCount);
+            context.LanguageContext.SetModuleState(_lockCountKey, lockCount);
         }
 
         [PythonType]

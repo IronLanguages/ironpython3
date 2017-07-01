@@ -55,11 +55,11 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object Call(CodeContext/*!*/ context, Delegate @delegate, params object[] args) {
-            return PythonContext.GetContext(context).CallSplat(@delegate, args);
+            return context.LanguageContext.CallSplat(@delegate, args);
         }
 
         public static object Call(CodeContext/*!*/ context, Delegate @delegate, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
-            return PythonContext.GetContext(context).CallWithKeywords(@delegate, args, dict);
+            return context.LanguageContext.CallWithKeywords(@delegate, args, dict);
         }
 
     }

@@ -308,7 +308,7 @@ namespace IronPython.Modules {
             internal MatchCollection FindAllWorker(CodeContext/*!*/ context, string str, int pos, object endpos) {
                 string against = str;
                 if (endpos != null) {
-                    int end = PythonContext.GetContext(context).ConvertToInt32(endpos);
+                    int end = context.LanguageContext.ConvertToInt32(endpos);
                     against = against.Substring(0, Math.Max(end, 0));
                 }
                 return _re.Matches(against, pos);
@@ -317,7 +317,7 @@ namespace IronPython.Modules {
             internal MatchCollection FindAllWorker(CodeContext/*!*/ context, IList<byte> str, int pos, object endpos) {
                 string against = str.MakeString();
                 if (endpos != null) {
-                    int end = PythonContext.GetContext(context).ConvertToInt32(endpos);
+                    int end = context.LanguageContext.ConvertToInt32(endpos);
                     against = against.Substring(0, Math.Max(end, 0));
                 }
                 return _re.Matches(against, pos);
@@ -1272,7 +1272,7 @@ namespace IronPython.Modules {
         }
 
         private static PythonType error(CodeContext/*!*/ context) {
-            return (PythonType)PythonContext.GetContext(context).GetModuleState("reerror");
+            return (PythonType)context.LanguageContext.GetModuleState("reerror");
         }
 
         class PatternKey : IEquatable<PatternKey> {

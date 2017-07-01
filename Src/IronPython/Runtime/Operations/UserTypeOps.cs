@@ -354,7 +354,7 @@ namespace IronPython.Runtime.Operations {
 
         private static CallSite<Func<CallSite, CodeContext, object, string, object>> MakeGetAttrSite(CodeContext context) {
             return CallSite<Func<CallSite, CodeContext, object, string, object>>.Create(
-                PythonContext.GetContext(context).InvokeOne
+                context.LanguageContext.InvokeOne
             );
         }
 

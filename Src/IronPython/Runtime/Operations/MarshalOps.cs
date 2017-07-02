@@ -626,51 +626,6 @@ namespace IronPython.Runtime.Operations {
 
                 byte[] bytes = ReadBytes (len);
 
-#if CLR2
-                // first read the values in shorts so we can work
-                // with them as 15-bit bytes easier...
-                short[] shData = new short[encodingSize];
-                for (int i = 0; i < shData.Length; i++) {
-                    shData[i] = (short)(bytes[i * 2] | (bytes[1 + i * 2] << 8));
-                }
-
-                // then convert the short's into BigInteger's 32-bit 
-                // format.
-                uint[] numData = new uint[(shData.Length + 1) / 2];
-                int bitWriteIndex = 0, shortIndex = 0, bitReadIndex = 0;
-                while (shortIndex < shData.Length) {
-                    short val = shData[shortIndex];
-                    int shift = bitWriteIndex % 32;
-
-                    if (bitReadIndex != 0) {
-                        // we're read some bits, mask them off
-                        // and adjust the shift.
-                        int maskOff = ~((1 << bitReadIndex) - 1);
-                        val = (short)(val & maskOff);
-                        shift -= bitReadIndex;
-                    }
-
-                    // write the value into numData
-                    if (shift < 0) {
-                        numData[bitWriteIndex / 32] |= (uint)(val >> (shift * -1));
-                    } else {
-                        numData[bitWriteIndex / 32] |= (uint)(val << shift);
-                    }
-
-                    // and advance our indices
-                    if ((bitWriteIndex % 32) <= 16) {
-                        bitWriteIndex += (15 - bitReadIndex);
-                        bitReadIndex = 0;
-                        shortIndex++;
-                    } else {
-                        bitReadIndex = (32 - (bitWriteIndex % 32));
-                        bitWriteIndex += bitReadIndex;
-                    }
-                }
-
-                // and finally pass the data onto the big integer.
-                return new BigInteger(sign, numData);
-#else
                 // re-pack our 15-bit values into bytes
                 byte[] data = new byte[bytes.Length];
                 for (int bytesIndex = 0, dataIndex = 0, shift = 0; bytesIndex < len; bytesIndex++) {
@@ -705,9 +660,7 @@ namespace IronPython.Runtime.Operations {
                 // and finally pass the data onto the big integer.
                 BigInteger res = new BigInteger (data);
                 return sign < 0 ? -res : res;
-#endif
             }
         }
-
     }
 }

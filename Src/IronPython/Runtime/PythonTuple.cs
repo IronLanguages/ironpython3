@@ -50,9 +50,6 @@ namespace IronPython.Runtime {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     [PythonType("tuple"), Serializable, DebuggerTypeProxy(typeof(CollectionDebugProxy)), DebuggerDisplay("tuple, {Count} items")]
     public class PythonTuple : ICollection, IEnumerable, IEnumerable<object>, IList, IList<object>, ICodeFormattable, IExpressionSerializable,
-#if CLR2
-        IValueEquality,
-#endif
         IStructuralEquatable, IStructuralComparable
 #if FEATURE_READONLY_COLLECTION_INTERFACE
         , IReadOnlyList<object>
@@ -526,34 +523,6 @@ namespace IronPython.Runtime {
         public override string ToString() {
             return __repr__(DefaultContext.Default);
         }
-
-        #region IValueEquality Members
-#if CLR2
-        int IValueEquality.GetValueHashCode() {
-            return GetHashCode(DefaultContext.DefaultPythonContext.InitialHasher);
-        }
-
-        bool IValueEquality.ValueEquals(object other) {
-            if (!Object.ReferenceEquals(other, this)) {
-                PythonTuple l = other as PythonTuple;
-                if (l == null || _data.Length != l._data.Length) {
-                    return false;
-                }
-
-                for (int i = 0; i < _data.Length; i++) {
-                    object obj1 = _data[i], obj2 = l._data[i];
-
-                    if (Object.ReferenceEquals(obj1, obj2)) {
-                        continue;
-                    } else if (!PythonOps.EqualRetBool(obj1, obj2)) {
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
-#endif
-        #endregion
 
         #region IStructuralEquatable Members
 

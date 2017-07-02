@@ -21,10 +21,7 @@ using IronPython.Hosting;
 
 namespace IronPythonTest.Stress {
 
-    public class Engine
-#if !SILVERLIGHT // remoting not supported in Silverlight
-        : MarshalByRefObject
-#endif
+    public class Engine : MarshalByRefObject
     {
         private readonly ScriptEngine _pe;
         private readonly ScriptRuntime _env;

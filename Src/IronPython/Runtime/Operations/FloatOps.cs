@@ -656,9 +656,6 @@ namespace IronPython.Runtime.Operations {
             // BigInts can hold doubles, but doubles can't hold BigInts, so
             // if we're comparing against a BigInt then we should convert ourself
             // to a long and then compare.
-#if CLR2
-            if (object.ReferenceEquals(x, null)) return -1;
-#endif
             BigInteger by = (BigInteger)y;
             if (by == x) {
                 double mod = y % 1;

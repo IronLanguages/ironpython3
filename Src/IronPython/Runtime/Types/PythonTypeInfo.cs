@@ -294,12 +294,6 @@ namespace IronPython.Runtime.Types {
                     return new MemberGroup(
                         GetEqualityMethods(type, equality ? "StructuralEqualityMethod" : "StructuralInequalityMethod")
                     );
-#if CLR2
-                } else if (typeof(IValueEquality).IsAssignableFrom(type)) {
-                    return new MemberGroup(
-                        GetEqualityMethods(type, equality ? "ValueEqualsMethod" : "ValueNotEqualsMethod")
-                    );
-#endif
                 }
 
                 return MemberGroup.EmptyGroup;
@@ -386,14 +380,12 @@ namespace IronPython.Runtime.Types {
 
                         if (opInfo != null) {
                             foreach (Type curType in binder.GetContributingTypes(type)) {
-#if !CLR2
                                 if (curType == typeof(double)) {
                                     if ((opInfo.Operator & PythonOperationKind.Comparison) != 0) {
                                         // we override these with our own comparisons in DoubleOps
                                         continue;
                                     }
                                 } else
-#endif
                                 if (curType == typeof(BigInteger)) {
                                     if (opInfo.Operator == PythonOperationKind.Mod ||
                                         opInfo.Operator == PythonOperationKind.RightShift ||
@@ -403,11 +395,10 @@ namespace IronPython.Runtime.Types {
                                         // we override these with our own modulus/power PythonOperationKind which are different from BigInteger.
                                         continue;
                                     }
-#if !CLR2
+
                                 } else if (curType == typeof(Complex) && opInfo.Operator == PythonOperationKind.TrueDivide) {
                                     // we override this with our own division PythonOperationKind which is different from .NET Complex.
                                     continue;
-#endif
                                 }
 
                                 Debug.Assert(opInfo.Name != "Equals");
@@ -1057,15 +1048,7 @@ namespace IronPython.Runtime.Types {
                         ParameterInfo[] pis = method.Method.GetParameters();
                         if (pis.Length == 1) {
                             if (pis[0].ParameterType == typeof(object)) {
-#if CLR2
-                                if (curType == typeof(Type)) {
-                                    return new MemberGroup(MethodTracker.FromMemberInfo(typeof(InstanceOps).GetMethod("TypeNotEqualsMethod"), curType));
-                                } else {
-                                    return new MemberGroup(MethodTracker.FromMemberInfo(typeof(InstanceOps).GetMethod("NotEqualsMethod"), curType));
-                                }
-#else
                                 return new MemberGroup(MethodTracker.FromMemberInfo(typeof(InstanceOps).GetMethod("NotEqualsMethod"), curType));
-#endif
                             }
                         }
                     }

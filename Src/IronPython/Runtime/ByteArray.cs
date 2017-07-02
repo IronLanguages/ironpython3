@@ -50,9 +50,6 @@ namespace IronPython.Runtime
     /// </summary>
     [PythonType("bytearray")]
     public class ByteArray : IList<byte>, ICodeFormattable, IBufferProtocol
-#if CLR2
-        , IValueEquality
-#endif
     {
         internal List<byte>/*!*/ _bytes;
 
@@ -1773,17 +1770,6 @@ namespace IronPython.Runtime
         #endregion
 
         #region IValueEquality Members
-#if CLR2
-        int IValueEquality.GetValueHashCode()
-        {
-            throw PythonOps.TypeError("bytearray object is unhashable");
-        }
-
-        bool IValueEquality.ValueEquals(object other)
-        {
-            return Equals(other);
-        }
-#endif
 
         public const object __hash__ = null;
 

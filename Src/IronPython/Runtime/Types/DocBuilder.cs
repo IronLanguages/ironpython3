@@ -573,15 +573,15 @@ namespace IronPython.Runtime.Types {
             string baseFile = Path.GetFileNameWithoutExtension(location) + ".xml";
             string xml = Path.Combine(Path.Combine(baseDir, ci.Name), baseFile);
 
-            if (!System.IO.File.Exists(xml)) {
+            if (!File.Exists(xml)) {
                 int hyphen = ci.Name.IndexOf('-');
                 if (hyphen != -1) {
                     xml = Path.Combine(Path.Combine(baseDir, ci.Name.Substring(0, hyphen)), baseFile);
                 }
-                if (!System.IO.File.Exists(xml)) {
+                if (!File.Exists(xml)) {
                     xml = Path.Combine(baseDir, baseFile);
-                    if (!System.IO.File.Exists(xml)) {
-#if !CLR2
+                    if (!File.Exists(xml)) {
+
                         // On .NET 4.0 documentation is in the reference assembly location
                         // for 64-bit processes, we need to look in Program Files (x86)
                         xml = Path.Combine(
@@ -593,7 +593,6 @@ namespace IronPython.Runtime.Types {
                         );
 
                         if (!File.Exists(xml)) 
-#endif
                         {
                             _AssembliesWithoutXmlDoc.Add(asm);
                             return null;

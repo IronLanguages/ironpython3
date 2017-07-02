@@ -43,9 +43,6 @@ namespace IronPython.Runtime {
     [PythonType("list"), Serializable, System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     [DebuggerTypeProxy(typeof(ObjectCollectionDebugProxy)), DebuggerDisplay("list, {Count} items")]
     public class List : IList, ICodeFormattable, IList<object>, IReversible, IStructuralEquatable, IStructuralComparable
-#if CLR2
-        , IValueEquality
-#endif
 #if FEATURE_READONLY_COLLECTION_INTERFACE
         , IReadOnlyList<object>
 #endif
@@ -1294,22 +1291,6 @@ namespace IronPython.Runtime {
             }
         }
 
-        #endregion
-
-        #region IValueEquality Members
-#if CLR2
-        int IValueEquality.GetValueHashCode() {
-            throw PythonOps.TypeError("list object is unhashable");
-        }
-
-        bool IValueEquality.ValueEquals(object other) {
-            if (Object.ReferenceEquals(this, other)) return true;
-
-            List l = other as List;
-            if (l == null || l.Count != Count) return false;
-            return Equals(l);
-        }
-#endif
         #endregion
 
         #region IStructuralEquatable Members

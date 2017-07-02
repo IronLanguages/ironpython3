@@ -31,9 +31,6 @@ namespace IronPython.Runtime {
 
     [PythonType("dict"), Serializable, DebuggerTypeProxy(typeof(PythonDictionary.DebugProxy)), DebuggerDisplay("Count = {Count}")]
     public class PythonDictionary : IDictionary<object, object>, IDictionary, 
-#if CLR2
-        IValueEquality,
-#endif
         ICodeFormattable, IStructuralEquatable {
         internal DictionaryStorage _storage;
 
@@ -584,18 +581,6 @@ namespace IronPython.Runtime {
             return PythonOps.NotImplemented;
         }
 
-        #endregion
-
-        #region IValueEquality Members
-#if CLR2
-        int IValueEquality.GetValueHashCode() {
-            throw PythonOps.TypeErrorForUnhashableType("dict");
-        }
-
-        bool IValueEquality.ValueEquals(object other) {
-            return EqualsWorker(other, null);
-        }
-#endif
         #endregion
 
         #region IStructuralEquatable Members

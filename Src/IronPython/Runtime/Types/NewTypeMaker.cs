@@ -312,9 +312,6 @@ namespace IronPython.Runtime.Types {
 #if FEATURE_CUSTOM_TYPE_DESCRIPTOR
             ImplementCustomTypeDescriptor();
 #endif
-#if CLR2
-            ImplementPythonEquals();
-#endif
             ImplementWeakReference();
 
             AddDebugView();
@@ -809,14 +806,6 @@ namespace IronPython.Runtime.Types {
                 _tg.DefineMethodOverride(impl, mi);
             }
         }
-
-#if CLR2
-        private void ImplementPythonEquals() {
-            if (this._baseType.GetInterface("IValueEquality", false) == null) {
-                DefineHelperInterface(typeof(IValueEquality));
-            }
-        }
-#endif
 
         private void ImplementWeakReference() {
             if (typeof(IWeakReferenceable).IsAssignableFrom(_baseType)) {

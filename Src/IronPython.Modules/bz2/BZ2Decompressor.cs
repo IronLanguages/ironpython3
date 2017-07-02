@@ -49,11 +49,7 @@ decompress() function instead.
                     var unusedCount = this.input.Length - this.lastSuccessfulPosition;
                     var unused = new byte[unusedCount];
 
-#if !SILVERLIGHT && !WP75
                     Array.Copy(buffer, this.lastSuccessfulPosition, unused, 0, unusedCount);
-#else
-                    Array.Copy(buffer, (int)this.lastSuccessfulPosition, unused, 0, (int)unusedCount);
-#endif
                     
                     return new Bytes(unused);
                 }

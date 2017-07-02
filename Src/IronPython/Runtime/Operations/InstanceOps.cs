@@ -331,55 +331,6 @@ namespace IronPython.Runtime.Operations {
 
         #region Comparison and Hashing
 
-#if CLR2
-        // Value equality helpers:  These are the default implementation for classes that implement
-        // IValueEquality.  We promote the ReflectedType to having these helper methods which will
-        // automatically test the type and return NotImplemented for mixed comparisons.  For non-mixed
-        // comparisons we have a fully optimized version which returns bool.
-
-        public static bool ValueEqualsMethod<T>(T x, [NotNull]T y) 
-            where T : IValueEquality {
-            return x.ValueEquals(y);
-        }
-
-        public static bool ValueNotEqualsMethod<T>(T x, [NotNull]T y)
-            where T : IValueEquality {
-            return !x.ValueEquals(y);
-        }
-
-        [return: MaybeNotImplemented]
-        public static object ValueEqualsMethod<T>([NotNull]T x, object y) 
-            where T : IValueEquality {
-            if (!(y is T)) return NotImplementedType.Value;
-
-            return ScriptingRuntimeHelpers.BooleanToObject(x.ValueEquals(y));
-        }
-
-        [return: MaybeNotImplemented]
-        public static object ValueNotEqualsMethod<T>([NotNull]T x, object y) 
-            where T : IValueEquality {
-            if (!(y is T)) return NotImplementedType.Value;
-
-            return ScriptingRuntimeHelpers.BooleanToObject(!x.ValueEquals(y));
-        }
-
-        [return: MaybeNotImplemented]
-        public static object ValueEqualsMethod<T>(object y, [NotNull]T x)
-            where T : IValueEquality {
-            if (!(y is T)) return NotImplementedType.Value;
-
-            return ScriptingRuntimeHelpers.BooleanToObject(x.ValueEquals(y));
-        }
-
-        [return: MaybeNotImplemented]
-        public static object ValueNotEqualsMethod<T>(object y, [NotNull]T x)
-            where T : IValueEquality {
-            if (!(y is T)) return NotImplementedType.Value;
-
-            return ScriptingRuntimeHelpers.BooleanToObject(!x.ValueEquals(y));
-        }
-#endif
-
         public static bool EqualsMethod(object x, object y) {
             return x.Equals(y);
         }
@@ -387,20 +338,6 @@ namespace IronPython.Runtime.Operations {
         public static bool NotEqualsMethod(object x, object y) {
             return !x.Equals(y);
         }
-
-#if CLR2
-        public static bool TypeNotEqualsMethod(Type x, object y) {
-            ContractUtils.RequiresNotNull(x, "x");
-
-            PythonType pythonType = y as PythonType;
-            if (pythonType != null) {
-                return !x.Equals((Type)pythonType);
-            }
-
-            Type type = y as Type;
-            return y == null || !x.Equals(type);
-        }
-#endif
 
         // Structural Equality and Hashing Helpers
 

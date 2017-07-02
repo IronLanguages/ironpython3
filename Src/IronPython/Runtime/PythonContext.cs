@@ -75,9 +75,7 @@ namespace IronPython.Runtime
         private readonly PythonBinder _binder;
 #if FEATURE_ASSEMBLY_RESOLVE && FEATURE_FILESYSTEM
         private readonly AssemblyResolveHolder _resolveHolder;
-#if !CLR2
         private readonly HashSet<Assembly> _loadedAssemblies = new HashSet<Assembly>();
-#endif
 #endif
         private Encoding _defaultEncoding = PythonAsciiEncoding.Instance;
 
@@ -1295,9 +1293,7 @@ namespace IronPython.Runtime
             if (File.Exists(path) && Path.IsPathRooted(path)) {
                 res = Assembly.LoadFile(path);
                 if (res != null) {
-#if !CLR2
                     _loadedAssemblies.Add(res);
-#endif
                     return true;
                 }
             }
@@ -1307,11 +1303,10 @@ namespace IronPython.Runtime
         }
 
         internal Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args) {
-#if !CLR2 && !ANDROID
             if (args.RequestingAssembly != null && !_loadedAssemblies.Contains(args.RequestingAssembly)) {
                 return null;
             }
-#endif
+
             AssemblyName an = new AssemblyName(args.Name);
             try {
                 return LoadAssemblyFromFile(an.Name);

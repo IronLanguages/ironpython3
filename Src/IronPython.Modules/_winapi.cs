@@ -15,11 +15,7 @@
 
 #if FEATURE_PROCESS
 
-#if CLR2
-using Microsoft.Scripting.Math;
-#else
 using System.Numerics;
-#endif
 
 using System;
 using System.Collections.Generic;

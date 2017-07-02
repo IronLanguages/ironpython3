@@ -42,9 +42,6 @@ namespace IronPython.Runtime.Operations {
     /// our converter recognizes it as a string.
     /// </summary>
     public class ExtensibleString : Extensible<string>, ICodeFormattable, IStructuralEquatable
-#if CLR2
-        , IValueEquality
-#endif
     {
         public ExtensibleString() : base(String.Empty) { }
         public ExtensibleString(string self) : base(self) { }
@@ -78,18 +75,6 @@ namespace IronPython.Runtime.Operations {
 
             return NotImplementedType.Value;
         }
-
-        #region IValueEquality members
-#if CLR2
-        int IValueEquality.GetValueHashCode() {
-            return GetHashCode();
-        }
-
-        bool IValueEquality.ValueEquals(object other) {
-            return EqualsWorker(other);
-        }
-#endif
-        #endregion
 
         #region IStructuralEquatable Members
 

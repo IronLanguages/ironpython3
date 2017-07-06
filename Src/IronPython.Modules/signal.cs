@@ -195,11 +195,11 @@ The fd must be non-blocking.")]
         private static readonly object _PythonSignalStateKey = new object();
         
         private static PythonSignalState GetPythonSignalState(CodeContext/*!*/ context) {
-            return (PythonSignalState)PythonContext.GetContext(context).GetModuleState(_PythonSignalStateKey);
+            return (PythonSignalState)context.LanguageContext.GetModuleState(_PythonSignalStateKey);
         }
         
         private static void SetPythonSignalState(CodeContext/*!*/ context, PythonSignalState pss) {
-            PythonContext.GetContext(context).SetModuleState(_PythonSignalStateKey, pss);
+            context.LanguageContext.SetModuleState(_PythonSignalStateKey, pss);
         }
 
         internal class PythonSignalState {

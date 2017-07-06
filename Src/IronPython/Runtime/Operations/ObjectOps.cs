@@ -163,7 +163,7 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            if (PythonContext.GetContext(context).ConvertToInt32(protocol) < 2) {
+            if (context.LanguageContext.ConvertToInt32(protocol) < 2) {
                 return ReduceProtocol0(context, self);
             } else {
                 return ReduceProtocol2(context, self);
@@ -353,7 +353,7 @@ namespace IronPython.Runtime.Operations {
 
             PythonType closestNonPythonBase = FindClosestNonPythonBase(myType); // PEP 307 calls this "B"
 
-            object func = PythonContext.GetContext(context).PythonReconstructor;
+            object func = context.LanguageContext.PythonReconstructor;
 
             object funcArgs = PythonTuple.MakeTuple(
                 myType,
@@ -404,7 +404,7 @@ namespace IronPython.Runtime.Operations {
             object func, state, listIterator, dictIterator;
             object[] funcArgs;
 
-            func = PythonContext.GetContext(context).NewObject;
+            func = context.LanguageContext.NewObject;
 
             object getNewArgsCallable;
             if (PythonOps.TryGetBoundAttr(context, myType, "__getnewargs__", out getNewArgsCallable)) {

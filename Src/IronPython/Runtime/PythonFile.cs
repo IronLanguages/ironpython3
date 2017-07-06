@@ -1069,22 +1069,22 @@ namespace IronPython.Runtime {
         }
 
         public PythonFile(CodeContext/*!*/ context)
-            : this(PythonContext.GetContext(context)) {
+            : this(context.LanguageContext) {
         }
 
         internal static PythonFile/*!*/ Create(CodeContext/*!*/ context, Stream/*!*/ stream, string/*!*/ name, string/*!*/ mode) {
-            return Create(context, stream, PythonContext.GetContext(context).DefaultEncoding, name, mode);
+            return Create(context, stream, context.LanguageContext.DefaultEncoding, name, mode);
         }
 
         internal static PythonFile/*!*/ Create(CodeContext/*!*/ context, Stream/*!*/ stream, Encoding/*!*/ encoding, string/*!*/ name, string/*!*/ mode) {
-            PythonFile res = new PythonFile(PythonContext.GetContext(context));
+            PythonFile res = new PythonFile(context.LanguageContext);
             res.__init__(stream, encoding, name, mode);
             return res;
         }
 
 #if FEATURE_PROCESS
         internal static PythonFile[] CreatePipe(CodeContext/*!*/ context) {
-            var pythonContext = PythonContext.GetContext(context);
+            var pythonContext = context.LanguageContext;
             var encoding = pythonContext.DefaultEncoding;
 
             var inPipe = new AnonymousPipeServerStream(PipeDirection.In);
@@ -1101,8 +1101,8 @@ namespace IronPython.Runtime {
         public static PythonTuple CreatePipeAsFd(CodeContext context) {
             var pipeFiles = CreatePipe(context);
             return PythonTuple.MakeTuple(
-                PythonContext.GetContext(context).FileManager.AddToStrongMapping(pipeFiles[0]),
-                PythonContext.GetContext(context).FileManager.AddToStrongMapping(pipeFiles[1]));
+                context.LanguageContext.FileManager.AddToStrongMapping(pipeFiles[0]),
+                context.LanguageContext.FileManager.AddToStrongMapping(pipeFiles[1]));
         }
 #endif
 
@@ -1151,9 +1151,9 @@ namespace IronPython.Runtime {
                     if (Environment.OSVersion.Platform == PlatformID.Win32NT && name == "nul") {
                         stream = Stream.Null;
                     } else if (buffering <= 0) {
-                        stream = PythonContext.GetContext(context).DomainManager.Platform.OpenInputFileStream(name, fmode, faccess, fshare);
+                        stream = context.LanguageContext.DomainManager.Platform.OpenInputFileStream(name, fmode, faccess, fshare);
                     } else {
-                        stream = PythonContext.GetContext(context).DomainManager.Platform.OpenInputFileStream(name, fmode, faccess, fshare, buffering);
+                        stream = context.LanguageContext.DomainManager.Platform.OpenInputFileStream(name, fmode, faccess, fshare, buffering);
                     }
                 } catch (IOException e) {
                     AddFilename(context, name, e);
@@ -1165,7 +1165,7 @@ namespace IronPython.Runtime {
 
                 if (seekEnd) stream.Seek(0, SeekOrigin.End);
 
-                __init__(stream, PythonContext.GetContext(context).DefaultEncoding, name, mode);
+                __init__(stream, context.LanguageContext.DefaultEncoding, name, mode);
                 this._isOpen = true;
             } catch (UnauthorizedAccessException e) {
                 throw ToIoException(context, name, e);
@@ -1246,11 +1246,11 @@ namespace IronPython.Runtime {
             else if (stream.CanWrite) mode = "w";
             else mode = "r";
 
-            __init__(stream, PythonContext.GetContext(context).DefaultEncoding, mode);
+            __init__(stream, context.LanguageContext.DefaultEncoding, mode);
         }
 
         public void __init__(CodeContext/*!*/ context, [NotNull]Stream/*!*/ stream, string mode) {
-            __init__(stream, PythonContext.GetContext(context).DefaultEncoding, mode);
+            __init__(stream, context.LanguageContext.DefaultEncoding, mode);
         }
 
         public void __init__([NotNull]Stream/*!*/ stream, Encoding encoding, string mode) {

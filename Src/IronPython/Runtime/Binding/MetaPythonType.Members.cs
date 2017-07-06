@@ -200,7 +200,7 @@ namespace IronPython.Runtime.Binding {
                 PythonTypeSlot pts;
 
                 bool isFinal = false, metaOnly = false;
-                CodeContext lookupContext = PythonContext.GetContext(_context).SharedClsContext;
+                CodeContext lookupContext = _context.LanguageContext.SharedClsContext;
 
                 // first look in the meta-class to see if we have a get/set descriptor
                 PythonType metaType = DynamicHelpers.GetPythonType(Value);
@@ -609,7 +609,7 @@ namespace IronPython.Runtime.Binding {
                         _weakMetaType = metaType.GetSharedWeakReference();
                         _weakSlot = new WeakReference(slot);
                     }
-                    _invokeSite = CallSite<Func<CallSite, CodeContext, object, string, object>>.Create(PythonContext.GetContext(context).InvokeOne);
+                    _invokeSite = CallSite<Func<CallSite, CodeContext, object, string, object>>.Create(context.LanguageContext.InvokeOne);
                 }
 
                 public bool Target(CodeContext context, object self, out object result) {

@@ -239,7 +239,7 @@ namespace IronPython.Runtime {
             if (instance == null) {
                 return this;
             } else if (fget != null) {
-                var site = PythonContext.GetContext(context).PropertyGetSite;
+                var site = context.LanguageContext.PropertyGetSite;
 
                 return site.Target(site, context, fget, instance);
             }
@@ -248,7 +248,7 @@ namespace IronPython.Runtime {
 
         public override void __set__(CodeContext/*!*/ context, object instance, object value) {
             if (fset != null) {
-                var site = PythonContext.GetContext(context).PropertySetSite;
+                var site = context.LanguageContext.PropertySetSite;
 
                 site.Target(site, context, fset, instance, value);
             } else {
@@ -258,7 +258,7 @@ namespace IronPython.Runtime {
 
         public override void __delete__(CodeContext/*!*/ context, object instance) {
             if (fdel != null) {
-                var site = PythonContext.GetContext(context).PropertyDeleteSite;
+                var site = context.LanguageContext.PropertyDeleteSite;
 
                 site.Target(site, context, fdel, instance);
             } else {

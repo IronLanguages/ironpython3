@@ -86,7 +86,7 @@ namespace IronPython.Runtime.Operations {
                     return mt;
                 }
 
-                PythonTypeSlot pts = PythonTypeOps.GetSlot(new MemberGroup(mt), name, PythonContext.GetContext(context).Binder.PrivateBinding);
+                PythonTypeSlot pts = PythonTypeOps.GetSlot(new MemberGroup(mt), name, context.LanguageContext.Binder.PrivateBinding);
                 object value;
                 if (pts != null && pts.TryGetValue(context, null, TypeCache.PythonType, out value)) {
                     return value;

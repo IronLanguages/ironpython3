@@ -406,7 +406,7 @@ namespace IronPython.Modules {
 
             internal Exception UnsupportedOperation(CodeContext/*!*/ context, string attr) {
                 throw PythonExceptions.CreateThrowable(
-                    (PythonType)PythonContext.GetContext(context).GetModuleState(_unsupportedOperationKey),
+                    (PythonType)context.LanguageContext.GetModuleState(_unsupportedOperationKey),
                     string.Format("{0}.{1} not supported", PythonTypeOps.GetName(this), attr)
                 );
             }

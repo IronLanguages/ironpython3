@@ -60,7 +60,7 @@ namespace IronPython.Runtime.Types {
             object res;
             Debug.Assert(_desc.GetAlwaysSucceeds);
             _desc.TryGetValue(context, _value, DynamicHelpers.GetPythonType(_value), out res);
-            return PythonContext.GetContext(context).Call(context, res, instance, owner);
+            return context.LanguageContext.Call(context, res, instance, owner);
         }
 
         private void CalculateDescriptorInfo() {

@@ -61,14 +61,14 @@ namespace IronPython.Modules {
 
         private static Exception Error(CodeContext/*!*/ context, string/*!*/ message) {
             return PythonExceptions.CreateThrowable(
-                (PythonType)PythonContext.GetContext(context).GetModuleState(_mmapErrorKey),
+                (PythonType)context.LanguageContext.GetModuleState(_mmapErrorKey),
                 message
             );
         }
 
         private static Exception Error(CodeContext/*!*/ context, int errno, string/*!*/ message) {
             return PythonExceptions.CreateThrowable(
-                (PythonType)PythonContext.GetContext(context).GetModuleState(_mmapErrorKey),
+                (PythonType)context.LanguageContext.GetModuleState(_mmapErrorKey),
                 errno,
                 message
             );
@@ -153,7 +153,7 @@ namespace IronPython.Modules {
                     _offset = offset;
 
                     PythonFile file;
-                    PythonContext pContext = PythonContext.GetContext(context);
+                    PythonContext pContext = context.LanguageContext;
                     if (!pContext.FileManager.TryGetFileFromId(pContext, fileno, out file)) {
                         throw Error(context, PythonExceptions._OSError.ERROR_INVALID_BLOCK, "Bad file descriptor");
                     }

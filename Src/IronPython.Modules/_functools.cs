@@ -65,7 +65,7 @@ namespace IronPython.Modules {
         private static void EnsureReduceData(CodeContext context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object, object, object>>> siteData) {
             if (siteData.Data == null) {
                 siteData.Data = CallSite<Func<CallSite, CodeContext, object, object, object, object>>.Create(
-                    PythonContext.GetContext(context).Invoke(
+                    context.LanguageContext.Invoke(
                         new CallSignature(2)
                     )
                 );
@@ -269,7 +269,7 @@ namespace IronPython.Modules {
                     Interlocked.CompareExchange(
                         ref _splatSite,
                         CallSite<Func<CallSite, CodeContext, object, object[], object>>.Create(
-                            Binders.InvokeSplat(PythonContext.GetContext(_context))
+                            Binders.InvokeSplat(_context.LanguageContext)
                         ),
                         null
                     );
@@ -281,7 +281,7 @@ namespace IronPython.Modules {
                     Interlocked.CompareExchange(
                         ref _dictSite,
                         CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>>.Create(
-                            Binders.InvokeKeywords(PythonContext.GetContext(_context))
+                            Binders.InvokeKeywords(_context.LanguageContext)
                         ),
                         null
                     );

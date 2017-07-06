@@ -503,7 +503,7 @@ namespace IronPython.Runtime.Binding {
         /// Gets the PythonBinder associated with tihs CodeContext
         /// </summary>
         public static PythonBinder/*!*/ GetBinder(CodeContext/*!*/ context) {
-            return (PythonBinder)PythonContext.GetContext(context).Binder;
+            return (PythonBinder)context.LanguageContext.Binder;
         }
 
         /// <summary>

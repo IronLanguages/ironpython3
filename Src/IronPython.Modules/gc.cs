@@ -58,7 +58,7 @@ namespace IronPython.Modules {
         }
 
         public static int collect(CodeContext context, int generation) {
-            return PythonContext.GetContext(context).Collect(generation);
+            return context.LanguageContext.Collect(generation);
         }
 
         public static int collect(CodeContext context) {
@@ -121,11 +121,11 @@ namespace IronPython.Modules {
         }
 
         private static PythonTuple GetThresholds(CodeContext/*!*/ context) {
-            return (PythonTuple)PythonContext.GetContext(context).GetModuleState(_threadholdKey);
+            return (PythonTuple)context.LanguageContext.GetModuleState(_threadholdKey);
         }
 
         private static void SetThresholds(CodeContext/*!*/ context, PythonTuple thresholds) {
-            PythonContext.GetContext(context).SetModuleState(_threadholdKey, thresholds);
+            context.LanguageContext.SetModuleState(_threadholdKey, thresholds);
         }
     }
 }

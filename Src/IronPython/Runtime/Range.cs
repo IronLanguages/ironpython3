@@ -216,7 +216,7 @@ namespace IronPython.Runtime {
         }
 
         private int CountOf(CodeContext context, object obj) {
-            var pythonContext = PythonContext.GetContext(context);
+            var pythonContext = context.LanguageContext;
             var count = 0;
             foreach (var i in this) {
                 if ((bool)pythonContext.Operation(PythonOperationKind.Equal, obj, i)) {
@@ -228,7 +228,7 @@ namespace IronPython.Runtime {
 
         private int IndexOf(CodeContext context, object obj) {
             var idx = 0;
-            var pythonContext = PythonContext.GetContext(context);
+            var pythonContext = context.LanguageContext;
             foreach (var i in this) {
                 if ((bool)pythonContext.Operation(PythonOperationKind.Equal, obj, i)) {
                     return idx;

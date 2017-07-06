@@ -37,10 +37,10 @@ namespace IronPython.Modules {
         private static readonly object _IncompleteKey = new object();
 
         private static Exception Error(CodeContext/*!*/ context, params object[] args) {
-            return PythonExceptions.CreateThrowable((PythonType)PythonContext.GetContext(context).GetModuleState(_ErrorKey), args);
+            return PythonExceptions.CreateThrowable((PythonType)context.LanguageContext.GetModuleState(_ErrorKey), args);
         }
         private static Exception Incomplete(CodeContext/*!*/ context, params object[] args) {
-            return PythonExceptions.CreateThrowable((PythonType)PythonContext.GetContext(context).GetModuleState(_IncompleteKey), args);
+            return PythonExceptions.CreateThrowable((PythonType)context.LanguageContext.GetModuleState(_IncompleteKey), args);
         }
 
         [SpecialName]

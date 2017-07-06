@@ -29,8 +29,8 @@ namespace IronPython.Modules {
         public const int CODESIZE = 2;
 
         public static object getlower(CodeContext/*!*/ context, object val, object encoding) {
-            int encInt = PythonContext.GetContext(context).ConvertToInt32(val);
-            int charVal = PythonContext.GetContext(context).ConvertToInt32(val);
+            int encInt = context.LanguageContext.ConvertToInt32(val);
+            int charVal = context.LanguageContext.ConvertToInt32(val);
 
             if (encInt == (int)PythonRegex.UNICODE) {
                 return (int)Char.ToLower((char)charVal);

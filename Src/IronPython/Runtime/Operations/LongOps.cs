@@ -987,7 +987,7 @@ namespace IronPython.Runtime.Operations {
             
             switch (spec.Type) {
                 case 'n':
-                    CultureInfo culture = PythonContext.GetContext(context).NumericCulture;
+                    CultureInfo culture = context.LanguageContext.NumericCulture;
 
                     if (culture == CultureInfo.InvariantCulture) {
                         // invariant culture maps to CPython's C culture, which doesn't
@@ -995,7 +995,7 @@ namespace IronPython.Runtime.Operations {
                         goto case 'd';
                     }
 
-                    digits = FormattingHelper.ToCultureString(val, PythonContext.GetContext(context).NumericCulture.NumberFormat, spec);
+                    digits = FormattingHelper.ToCultureString(val, context.LanguageContext.NumericCulture.NumberFormat, spec);
                     break;
 #if !FEATURE_NUMERICS
                 case null:

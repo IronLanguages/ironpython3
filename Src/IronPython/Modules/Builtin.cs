@@ -94,7 +94,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
 
             IList from = fromlist as IList;
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
 
             object ret = Importer.ImportModule(context, globals, name, from != null && from.Count > 0, level);
             if (ret == null) {
@@ -323,7 +323,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         public static object divmod(CodeContext/*!*/ context, object x, object y) {
             Debug.Assert(NotImplementedType.Value != null);
 
-            return PythonContext.GetContext(context).DivMod(x, y);
+            return context.LanguageContext.DivMod(x, y);
         }
 
         public static PythonType enumerate {
@@ -372,7 +372,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
             expression = RemoveBom(expression);
             var scope = GetExecEvalScopeOptional(context, globals, locals, false);
-            var pythonContext = PythonContext.GetContext(context);
+            var pythonContext = context.LanguageContext;
 
             // TODO: remove TrimStart
             var sourceUnit = pythonContext.CreateSnippet(expression.TrimStart(' ', '\t'), SourceCodeKind.Expression);
@@ -485,7 +485,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static int hash(CodeContext/*!*/ context, [NotNull]PythonTuple o) {
-            return ((IStructuralEquatable)o).GetHashCode(PythonContext.GetContext(context).EqualityComparerNonGeneric);
+            return ((IStructuralEquatable)o).GetHashCode(context.LanguageContext.EqualityComparerNonGeneric);
         }
 
         // this is necessary because overload resolution selects the int form.
@@ -562,7 +562,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
                 // try and find things that string could refer to,
                 // then call help on them.
-                foreach (object module in PythonContext.GetContext(context).SystemStateModules.Values) {
+                foreach (object module in context.LanguageContext.SystemStateModules.Values) {
                     IList<object> attrs = PythonOps.GetAttrNames(context, module);
                     List candidates = new List();
                     foreach (string s in attrs) {
@@ -753,7 +753,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 // Recursively inspect nested tuple(s)
                 foreach (object subTypeInfo in pt) {
                     try {
-                        PythonOps.FunctionPushFrame(PythonContext.GetContext(context));
+                        PythonOps.FunctionPushFrame(context.LanguageContext);
                         var res = issubclass(context, o, subTypeInfo);
                         if (res == ScriptingRuntimeHelpers.True) {
                             return ScriptingRuntimeHelpers.True;
@@ -877,7 +877,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         private static CallSite<Func<CallSite, CodeContext, T, T1, object>> MakeMapSite<T, T1>(CodeContext/*!*/ context) {
             return CallSite<Func<CallSite, CodeContext, T, T1, object>>.Create(
-                PythonContext.GetContext(context).InvokeOne
+                context.LanguageContext.InvokeOne
             );
         }
 
@@ -925,7 +925,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             if (!i.MoveNext())
                 throw PythonOps.ValueError("max() arg is an empty sequence");
             object ret = i.Current;
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
             while (i.MoveNext()) {
                 if (pc.GreaterThan(i.Current, ret)) ret = i.Current;
             }
@@ -933,7 +933,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object max(CodeContext/*!*/ context, object x, object y) {
-            return PythonContext.GetContext(context).GreaterThan(x, y) ? x : y;
+            return context.LanguageContext.GreaterThan(x, y) ? x : y;
         }
 
         public static object max(CodeContext/*!*/ context, params object[] args) {
@@ -943,7 +943,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                     return max(context, ret);
                 }
 
-                PythonContext pc = PythonContext.GetContext(context);
+                PythonContext pc = context.LanguageContext;
                 for (int i = 1; i < args.Length; i++) {
                     if (pc.GreaterThan(args[i], ret)) {
                         ret = args[i];
@@ -963,7 +963,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             object method = GetMaxKwArg(dict);
             object ret = i.Current;
             object retValue = PythonCalls.Call(context, method, i.Current);
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
             while (i.MoveNext()) {
                 object tmpRetValue = PythonCalls.Call(context, method, i.Current);
                 if (pc.GreaterThan(tmpRetValue, retValue)) {
@@ -976,7 +976,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         public static object max(CodeContext/*!*/ context, object x, object y, [ParamDictionary] IDictionary<object, object> dict) {
             object method = GetMaxKwArg(dict);
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
             return pc.GreaterThan(PythonCalls.Call(context, method, x), PythonCalls.Call(context, method, y)) ? x : y;
         }
 
@@ -988,7 +988,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 }
                 object method = GetMaxKwArg(dict);
                 object retValue = PythonCalls.Call(context, method, args[retIndex]);
-                PythonContext pc = PythonContext.GetContext(context);
+                PythonContext pc = context.LanguageContext;
                 for (int i = 1; i < args.Length; i++) {
                     object tmpRetValue = PythonCalls.Call(context, method, args[i]);
                     if (pc.GreaterThan(tmpRetValue, retValue)) {
@@ -1015,7 +1015,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 throw PythonOps.ValueError("empty sequence");
             }
             object ret = i.Current;
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
             while (i.MoveNext()) {
                 if (pc.LessThan(i.Current, ret)) ret = i.Current;
             }
@@ -1023,7 +1023,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object min(CodeContext/*!*/ context, object x, object y) {
-            return PythonContext.GetContext(context).LessThan(x, y) ? x : y;
+            return context.LanguageContext.LessThan(x, y) ? x : y;
         }
 
         public static object min(CodeContext/*!*/ context, params object[] args) {
@@ -1033,7 +1033,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                     return min(context, ret);
                 }
 
-                PythonContext pc = PythonContext.GetContext(context);
+                PythonContext pc = context.LanguageContext;
                 for (int i = 1; i < args.Length; i++) {
                     if (pc.LessThan(args[i], ret)) ret = args[i];
                 }
@@ -1050,7 +1050,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             object method = GetMinKwArg(dict);
             object ret = i.Current;
             object retValue = PythonCalls.Call(context, method, i.Current);
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
             while (i.MoveNext()) {
                 object tmpRetValue = PythonCalls.Call(context, method, i.Current);
 
@@ -1064,7 +1064,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         public static object min(CodeContext/*!*/ context, object x, object y, [ParamDictionary]IDictionary<object, object> dict) {
             object method = GetMinKwArg(dict);
-            return PythonContext.GetContext(context).LessThan(PythonCalls.Call(context, method, x), PythonCalls.Call(context, method, y)) ? x : y;
+            return context.LanguageContext.LessThan(PythonCalls.Call(context, method, x), PythonCalls.Call(context, method, y)) ? x : y;
         }
 
         public static object min(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
@@ -1075,7 +1075,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 }
                 object method = GetMinKwArg(dict);
                 object retValue = PythonCalls.Call(context, method, args[retIndex]);
-                PythonContext pc = PythonContext.GetContext(context);
+                PythonContext pc = context.LanguageContext;
 
                 for (int i = 1; i < args.Length; i++) {
                     object tmpRetValue = PythonCalls.Call(context, method, args[i]);
@@ -1246,7 +1246,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object pow(CodeContext/*!*/ context, object x, object y) {
-            return PythonContext.GetContext(context).Operation(PythonOperationKind.Power, x, y);
+            return context.LanguageContext.Operation(PythonOperationKind.Power, x, y);
         }
 
         public static object pow(CodeContext/*!*/ context, object x, object y, object z) {
@@ -1295,7 +1295,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         private static void print(CodeContext/*!*/ context, string/*!*/ sep, string/*!*/ end, object file, object[]/*!*/ args) {
-            PythonContext pc = PythonContext.GetContext(context);
+            PythonContext pc = context.LanguageContext;
 
             if (file == null) {
                 file = pc.SystemStandardOut;
@@ -1368,7 +1368,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static string input(CodeContext/*!*/ context, object prompt) {
-            var pc = PythonContext.GetContext(context);
+            var pc = context.LanguageContext;
             var readlineModule = pc.GetModuleByName("readline");
             string line;
             if (readlineModule != null) {
@@ -1378,7 +1378,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 if (prompt != null) {
                     PythonOps.PrintNoNewline(context, prompt);
                 }
-                line = PythonOps.ReadLineFromSrc(context, PythonContext.GetContext(context).SystemStandardIn) as string;
+                line = PythonOps.ReadLineFromSrc(context, context.LanguageContext.SystemStandardIn) as string;
             }
 
             if (line != null && line.EndsWith("\n")) return line.Substring(0, line.Length - 1);
@@ -1795,7 +1795,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             PythonDictionary locals, bool copyModule, bool setBuiltinsToModule) {
 
             Assert.NotNull(context, globals);
-            PythonContext python = PythonContext.GetContext(context);
+            PythonContext python = context.LanguageContext;
 
             // TODO: Need to worry about propagating changes to MC out?
             var mc = new ModuleContext(PythonDictionary.FromIAC(context, globals), context.LanguageContext);

@@ -766,10 +766,10 @@ namespace IronPython.Runtime.Operations {
             FloatFormat res;
             switch (typestr) {
                 case "float":
-                    res = PythonContext.GetContext(context).FloatFormat;
+                    res = context.LanguageContext.FloatFormat;
                     break;
                 case "double":
-                    res = PythonContext.GetContext(context).DoubleFormat;
+                    res = context.LanguageContext.DoubleFormat;
                     break;
                 default:
                     throw PythonOps.ValueError("__getformat__() argument 1 must be 'double' or 'float'");
@@ -927,7 +927,7 @@ namespace IronPython.Runtime.Operations {
                             }
 
                             string fmt;
-                            if (spec.Type == 'n' && PythonContext.GetContext(context).NumericCulture != PythonContext.CCulture) {
+                            if (spec.Type == 'n' && context.LanguageContext.NumericCulture != PythonContext.CCulture) {
                                 // we've already figured out, we don't have any digits for decimal points, so just format as a number + exponent
                                 fmt = "0";
                             } else if (spec.Precision > 1 || digitCnt > 6) {
@@ -953,7 +953,7 @@ namespace IronPython.Runtime.Operations {
 
                             self = MathUtils.RoundAwayFromZero(self, decimalPoints);
 
-                            if (spec.Type == 'n' && PythonContext.GetContext(context).NumericCulture != PythonContext.CCulture) {
+                            if (spec.Type == 'n' && context.LanguageContext.NumericCulture != PythonContext.CCulture) {
                                 if (digitCnt != precision && (self % 1) != 0) {
                                     digits = self.ToString("#,0.0" + new string('#', decimalPoints));
                                 } else {
@@ -1014,10 +1014,10 @@ namespace IronPython.Runtime.Operations {
 
             switch (typestr) {
                 case "float":
-                    PythonContext.GetContext(context).FloatFormat = format;
+                    context.LanguageContext.FloatFormat = format;
                     break;
                 case "double":
-                    PythonContext.GetContext(context).DoubleFormat = format;
+                    context.LanguageContext.DoubleFormat = format;
                     break;
                 default:
                     throw PythonOps.ValueError("__setformat__() argument 1 must be 'double' or 'float'");

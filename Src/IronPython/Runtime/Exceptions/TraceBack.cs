@@ -202,7 +202,7 @@ namespace IronPython.Runtime.Exceptions {
 
         public object f_builtins {
             get {
-                return PythonContext.GetContext(_context).BuiltinModuleDict;
+                return _context.LanguageContext.BuiltinModuleDict;
             }
         }
 

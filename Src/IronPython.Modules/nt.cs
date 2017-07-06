@@ -140,7 +140,7 @@ namespace IronPython.Modules {
         }
 #endif
         public static void close(CodeContext/*!*/ context, int fd) {
-            PythonContext pythonContext = PythonContext.GetContext(context);
+            PythonContext pythonContext = context.LanguageContext;
             PythonFileManager fileManager = pythonContext.FileManager;
             PythonFile file;
             if (fileManager.TryGetFileFromId(pythonContext, fd, out file)) {
@@ -164,7 +164,7 @@ namespace IronPython.Modules {
             }
         }
         private static bool IsValidFd(CodeContext/*!*/ context, int fd) {
-            PythonContext pythonContext = PythonContext.GetContext(context);
+            PythonContext pythonContext = context.LanguageContext;
             PythonFile file;
             if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out file)) {
                 return true;
@@ -180,7 +180,7 @@ namespace IronPython.Modules {
         }
 
         public static int dup(CodeContext/*!*/ context, int fd) {
-            PythonContext pythonContext = PythonContext.GetContext(context);
+            PythonContext pythonContext = context.LanguageContext;
             PythonFile file;
             if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out file)) {
                 return pythonContext.FileManager.AddToStrongMapping(file);
@@ -195,7 +195,7 @@ namespace IronPython.Modules {
 
 
         public static int dup2(CodeContext/*!*/ context, int fd, int fd2) {
-            PythonContext pythonContext = PythonContext.GetContext(context);
+            PythonContext pythonContext = context.LanguageContext;
             PythonFile file;
 
             if (!IsValidFd(context, fd)) {
@@ -243,7 +243,7 @@ namespace IronPython.Modules {
         public static readonly PythonType error = Builtin.OSError;
 
         public static void _exit(CodeContext/*!*/ context, int code) {
-            PythonContext.GetContext(context).DomainManager.Platform.TerminateScriptExecution(code);
+            context.LanguageContext.DomainManager.Platform.TerminateScriptExecution(code);
         }
 
         public static object fdopen(CodeContext/*!*/ context, int fd,
@@ -258,13 +258,13 @@ namespace IronPython.Modules {
 
         [LightThrowing]
         public static object fstat(CodeContext/*!*/ context, int fd) {
-            PythonContext pythonContext = PythonContext.GetContext(context);
+            PythonContext pythonContext = context.LanguageContext;
             PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
             return lstat(pf.name);
         }
 
         public static void fsync(CodeContext context, int fd) {
-            PythonContext pythonContext = PythonContext.GetContext(context);
+            PythonContext pythonContext = context.LanguageContext;
             PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
             if (!pf.IsOutput) {
                 throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
@@ -448,7 +448,7 @@ namespace IronPython.Modules {
                     mode2 += "b";
                 }
 
-                return PythonContext.GetContext(context).FileManager.AddToStrongMapping(PythonFile.Create(context, fs, filename, mode2));
+                return context.LanguageContext.FileManager.AddToStrongMapping(PythonFile.Create(context, fs, filename, mode2));
             } catch (Exception e) {
                 throw ToPythonException(e, filename);
             }
@@ -585,7 +585,7 @@ namespace IronPython.Modules {
             }
 
             try {
-                PythonContext pythonContext = PythonContext.GetContext(context);
+                PythonContext pythonContext = context.LanguageContext;
                 PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
                 return pf.read(buffersize);
             } catch (Exception e) {
@@ -1428,7 +1428,7 @@ namespace IronPython.Modules {
 
         public static int umask(CodeContext/*!*/ context, int mask) {
             mask &= 0x180;
-            object oldMask = PythonContext.GetContext(context).GetSetModuleState(_umaskKey, mask);
+            object oldMask = context.LanguageContext.GetSetModuleState(_umaskKey, mask);
             if (oldMask == null) {
                 return 0;
             } else {
@@ -1492,7 +1492,7 @@ namespace IronPython.Modules {
 
         public static int write(CodeContext/*!*/ context, int fd, [BytesConversion]string text) {
             try {
-                PythonContext pythonContext = PythonContext.GetContext(context);
+                PythonContext pythonContext = context.LanguageContext;
                 PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
                 pf.write(text);
                 return text.Length;
@@ -1762,8 +1762,8 @@ the 'status' value.")]
             private Process _process;
 
             internal POpenFile(CodeContext/*!*/ context, string command, Process process, Stream stream, string mode) 
-                : base(PythonContext.GetContext(context)) {
-                __init__(stream, PythonContext.GetContext(context).DefaultEncoding, command, mode);
+                : base(context.LanguageContext) {
+                __init__(stream, context.LanguageContext.DefaultEncoding, command, mode);
                 this._process = process;
             }
 

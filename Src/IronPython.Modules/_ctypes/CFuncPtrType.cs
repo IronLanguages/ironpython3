@@ -215,7 +215,7 @@ namespace IronPython.Modules {
 
                 DynamicMethod dm = new DynamicMethod("ReverseInteropInvoker", retType, ArrayUtils.RemoveLast(sigTypes), DynamicModule);
                 ILGenerator ilGen = dm.GetILGenerator();
-                PythonContext pc = PythonContext.GetContext(context);
+                PythonContext pc = context.LanguageContext;
 
                 Type callDelegateSiteType = CompilerHelpers.MakeCallSiteDelegateType(callSiteType);
                 CallSite site = CallSite.Create(callDelegateSiteType, pc.Invoke(new CallSignature(_argtypes.Length)));

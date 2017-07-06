@@ -453,7 +453,7 @@ namespace IronPython.Runtime {
                 }
             } else {
                 // slow path, cls.__new__ returned a user defined dictionary instead of a PythonDictionary.
-                PythonContext pc = PythonContext.GetContext(context);
+                PythonContext pc = context.LanguageContext;
                 IEnumerator i = PythonOps.GetEnumerator(o);
                 while (i.MoveNext()) {
                     pc.SetIndex(dict, i.Current, value);
@@ -473,7 +473,7 @@ namespace IronPython.Runtime {
             Range xr = seq as Range;
             if (xr != null) {
                 int n = xr.__len__();
-                object ret = PythonContext.GetContext(context).CallSplat(cls);
+                object ret = context.LanguageContext.CallSplat(cls);
                 if (ret.GetType() == typeof(PythonDictionary)) {
                     PythonDictionary dr = ret as PythonDictionary;
                     for (int i = 0; i < n; i++) {
@@ -481,7 +481,7 @@ namespace IronPython.Runtime {
                     }
                 } else {
                     // slow path, user defined dict
-                    PythonContext pc = PythonContext.GetContext(context);
+                    PythonContext pc = context.LanguageContext;
                     for (int i = 0; i < n; i++) {
                         pc.SetIndex(ret, xr[i], value);
                     }
@@ -508,7 +508,7 @@ namespace IronPython.Runtime {
                 return NotImplementedType.Value;
 
             return ScriptingRuntimeHelpers.BooleanToObject(
-                ((IStructuralEquatable)this).Equals(other, PythonContext.GetContext(context).EqualityComparerNonGeneric)
+                ((IStructuralEquatable)this).Equals(other, context.LanguageContext.EqualityComparerNonGeneric)
             );
         }
 
@@ -518,7 +518,7 @@ namespace IronPython.Runtime {
                 return NotImplementedType.Value;
 
             return ScriptingRuntimeHelpers.BooleanToObject(
-                !((IStructuralEquatable)this).Equals(other, PythonContext.GetContext(context).EqualityComparerNonGeneric)
+                !((IStructuralEquatable)this).Equals(other, context.LanguageContext.EqualityComparerNonGeneric)
             );
         }
 
@@ -535,7 +535,7 @@ namespace IronPython.Runtime {
 
                 // user-defined dictionary...
                 int lcnt = Count;
-                int rcnt = PythonContext.GetContext(context).ConvertToInt32(PythonOps.CallWithContext(context, len));
+                int rcnt = context.LanguageContext.ConvertToInt32(PythonOps.CallWithContext(context, len));
 
                 if (lcnt != rcnt) return lcnt > rcnt ? 1 : -1;
 

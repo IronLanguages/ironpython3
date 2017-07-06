@@ -206,7 +206,7 @@ namespace IronPython.Runtime.Types {
 
                 MethodInfo remove = _event.Tracker.GetCallableRemoveMethod();
                 if (CompilerHelpers.IsVisible(remove) || context.LanguageContext.DomainManager.Configuration.PrivateBinding) {
-                    _event.Tracker.RemoveHandler(_instance, func, PythonContext.GetContext(context).EqualityComparer);
+                    _event.Tracker.RemoveHandler(_instance, func, context.LanguageContext.EqualityComparer);
                 } else {
                     throw new TypeErrorException("Cannot add handler to a private event.");
                 }

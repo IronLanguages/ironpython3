@@ -52,7 +52,7 @@ namespace IronPython.Runtime.Types {
                 lock (_tryGetMemSiteShowCls) {
                     if (!_tryGetMemSiteShowCls.TryGetValue(name, out site)) {
                         _tryGetMemSiteShowCls[name] = site = CallSite<Func<CallSite, object, CodeContext, object>>.Create(
-                            PythonContext.GetContext(context).GetMember(
+                            context.LanguageContext.GetMember(
                                 name,
                                 true
                             )
@@ -71,7 +71,7 @@ namespace IronPython.Runtime.Types {
                 lock (_tryGetMemSite) {
                     if (!_tryGetMemSite.TryGetValue(name, out site)) {
                         _tryGetMemSite[name] = site = CallSite<Func<CallSite, object, CodeContext, object>>.Create(
-                            PythonContext.GetContext(context).GetMember(
+                            context.LanguageContext.GetMember(
                                 name,
                                 true
                             )
@@ -87,7 +87,7 @@ namespace IronPython.Runtime.Types {
                 Interlocked.CompareExchange(
                     ref _dirSite,
                     CallSite<Func<CallSite, CodeContext, object, object>>.Create(
-                        PythonContext.GetContext(context).InvokeNone
+                        context.LanguageContext.InvokeNone
                     ),
                     null);
             }
@@ -99,7 +99,7 @@ namespace IronPython.Runtime.Types {
                 Interlocked.CompareExchange(
                     ref _getAttributeSite,
                     CallSite<Func<CallSite, CodeContext, object, string, object>>.Create(
-                        PythonContext.GetContext(context).InvokeOne
+                        context.LanguageContext.InvokeOne
                     ),
                     null
                 );
@@ -112,7 +112,7 @@ namespace IronPython.Runtime.Types {
                 Interlocked.CompareExchange(
                     ref _setAttrSite,
                     CallSite<Func<CallSite, CodeContext, object, object, string, object, object>>.Create(
-                        PythonContext.GetContext(context).Invoke(
+                        context.LanguageContext.Invoke(
                             new CallSignature(4)
                         )
                     ),
@@ -127,7 +127,7 @@ namespace IronPython.Runtime.Types {
                 Interlocked.CompareExchange(
                     ref _lenSite,
                     CallSite<Func<CallSite, CodeContext, object, object>>.Create(
-                        PythonContext.GetContext(context).InvokeNone
+                        context.LanguageContext.InvokeNone
                     ),
                     null
                 );

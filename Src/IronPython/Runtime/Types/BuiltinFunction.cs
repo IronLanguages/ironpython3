@@ -165,11 +165,11 @@ namespace IronPython.Runtime.Types {
 
         private static SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object[], object>>> GetInitializedStorage(CodeContext context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object[], object>>> storage) {
             if (storage == null) {
-                storage = PythonContext.GetContext(context).GetGenericCallSiteStorage();
+                storage = context.LanguageContext.GetGenericCallSiteStorage();
             }
 
             if (storage.Data == null) {
-                storage.Data = PythonContext.GetContext(context).MakeSplatSite();
+                storage.Data = context.LanguageContext.MakeSplatSite();
             }
             return storage;
         }
@@ -177,7 +177,7 @@ namespace IronPython.Runtime.Types {
         private static SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object>>> GetInitializedStorage(CodeContext context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object>>> storage) {
             if (storage.Data == null) {
                 storage.Data = CallSite<Func<CallSite, CodeContext, object, object>>.Create(
-                    PythonContext.GetContext(context).InvokeNone
+                    context.LanguageContext.InvokeNone
                 );
             }
             return storage;
@@ -185,11 +185,11 @@ namespace IronPython.Runtime.Types {
 
         internal object Call(CodeContext context, SiteLocalStorage<CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>>> storage, object instance, object[] args, IDictionary<object, object> keywordArgs) {
             if (storage == null) {
-                storage = PythonContext.GetContext(context).GetGenericKeywordCallSiteStorage();
+                storage = context.LanguageContext.GetGenericKeywordCallSiteStorage();
             }
 
             if (storage.Data == null) {
-                storage.Data = PythonContext.GetContext(context).MakeKeywordSplatSite();
+                storage.Data = context.LanguageContext.MakeKeywordSplatSite();
             }
 
             if (instance != null) {

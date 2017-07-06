@@ -35,7 +35,7 @@ namespace IronPython.Runtime {
         }
 
         public override void Add(ref DictionaryStorage storage, object key, object value) {
-            PythonContext.GetContext(_context).SetIndex(_backing, key, value);
+            _context.LanguageContext.SetIndex(_backing, key, value);
         }
 
         public override bool Contains(object key) {
@@ -45,7 +45,7 @@ namespace IronPython.Runtime {
 
         public override bool Remove(ref DictionaryStorage storage, object key) {
             try {
-                PythonContext.GetContext(_context).DelIndex(_backing, key);
+                _context.LanguageContext.DelIndex(_backing, key);
                 return true;
             } catch (KeyNotFoundException) {
                 return false;

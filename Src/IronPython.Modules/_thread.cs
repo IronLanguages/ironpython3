@@ -180,7 +180,7 @@ namespace IronPython.Modules {
 
             public void release(CodeContext/*!*/ context) {
                 if (Interlocked.Exchange<Thread>(ref curHolder, null) == null) {
-                    throw PythonExceptions.CreateThrowable((PythonType)PythonContext.GetContext(context).GetModuleState("threaderror"), "lock isn't held", null);
+                    throw PythonExceptions.CreateThrowable((PythonType)context.LanguageContext.GetModuleState("threaderror"), "lock isn't held", null);
                 }
                 if (blockEvent != null) {
                     // if this isn't set yet we race, it's handled in Acquire()
@@ -237,9 +237,9 @@ namespace IronPython.Modules {
                 } catch (SystemExitException) {
                     // ignore and quit
                 } catch (Exception e) {
-                    PythonOps.PrintWithDest(_context, PythonContext.GetContext(_context).SystemStandardError, "Unhandled exception on thread");
+                    PythonOps.PrintWithDest(_context, _context.LanguageContext.SystemStandardError, "Unhandled exception on thread");
                     string result = _context.LanguageContext.FormatException(e);
-                    PythonOps.PrintWithDest(_context, PythonContext.GetContext(_context).SystemStandardError, result);
+                    PythonOps.PrintWithDest(_context, _context.LanguageContext.SystemStandardError, result);
                 } finally {
                     lock (_threadCountKey) {
                         int curCount = (int)_context.LanguageContext.GetModuleState(_threadCountKey);
@@ -252,11 +252,11 @@ namespace IronPython.Modules {
         #endregion
 
         private static int GetStackSize(CodeContext/*!*/ context) {
-            return (int)PythonContext.GetContext(context).GetModuleState(_stackSizeKey);
+            return (int)context.LanguageContext.GetModuleState(_stackSizeKey);
         }
 
         private static void SetStackSize(CodeContext/*!*/ context, int stackSize) {
-            PythonContext.GetContext(context).SetModuleState(_stackSizeKey, stackSize);
+            context.LanguageContext.SetModuleState(_stackSizeKey, stackSize);
         }
 
         [PythonType]

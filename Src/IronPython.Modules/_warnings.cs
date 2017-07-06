@@ -61,7 +61,7 @@ namespace IronPython.Modules {
         #region Public API
 
         public static void warn(CodeContext context, object message, PythonType category=null, int stacklevel=1) {
-            PythonContext pContext = PythonContext.GetContext(context);
+            PythonContext pContext = context.LanguageContext;
             List argv = pContext.GetSystemStateValue("argv") as List;
 
             if (PythonOps.IsInstance(message, PythonExceptions.Warning)) {
@@ -77,7 +77,7 @@ namespace IronPython.Modules {
             TraceBackFrame caller = null;
             PythonDictionary globals;
             int lineno;
-            if (PythonContext.GetContext(context).PythonOptions.Frames) {
+            if (context.LanguageContext.PythonOptions.Frames) {
                 try {
                     caller = SysModule._getframeImpl(context, stacklevel - 1);
                 } catch (ValueErrorException) { }
@@ -118,7 +118,7 @@ namespace IronPython.Modules {
         }
 
         public static void warn_explicit(CodeContext context, object message, PythonType category, string filename, int lineno, string module=null, PythonDictionary registry=null, object module_globals=null) {
-            PythonContext pContext = PythonContext.GetContext(context);
+            PythonContext pContext = context.LanguageContext;
             PythonDictionary fields = (PythonDictionary)pContext.GetModuleState(_keyFields);
             object warnings = pContext.GetWarningsModule();
             PythonExceptions.BaseException msg;
@@ -252,7 +252,7 @@ namespace IronPython.Modules {
 
             try {
                 if (file == null) {
-                    PythonContext pContext = PythonContext.GetContext(context);
+                    PythonContext pContext = context.LanguageContext;
                     PythonFile stderr = pContext.GetSystemStateValue("stderr") as PythonFile;
                     if (stderr != null) {
                         stderr.write(text);

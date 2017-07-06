@@ -209,7 +209,7 @@ module, or raises ZipImportError if it wasn't found.")]
                 bool ispackage;
                 string modpath;
                 PythonModule mod;
-                PythonContext pythonContext = PythonContext.GetContext(context);
+                PythonContext pythonContext = context.LanguageContext;
                 PythonDictionary dict;
                 ScriptCode script = null;
                 byte[] code = GetModuleCode(context, fullname, out ispackage, out modpath);
@@ -307,7 +307,7 @@ contain the module, but has no source for it.")]
             public string get_source(CodeContext/*!*/ context, string fullname) {
                 ModuleStatus mi = GetModuleInfo(context, fullname);
                 string res = null;
-                PythonContext pythonContext = PythonContext.GetContext(context);
+                PythonContext pythonContext = context.LanguageContext;
                 if (mi == ModuleStatus.Error) {
                     return null;
                 }

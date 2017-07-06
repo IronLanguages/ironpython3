@@ -61,7 +61,6 @@
     <Compile Include="marshal.cs" />
     <Compile Include="math.cs" />
     <Compile Include="math.Generated.cs" />
-    <Compile Include="_md5.cs" />
     <Compile Include="nt.cs" />
     <Compile Include="_operator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -69,9 +68,14 @@
     <Compile Include="select.cs" />
     <Compile Include="_multibytecodec.cs" />
     <Compile Include="_posixsubprocess.cs" />
-    <Compile Include="_sha1.cs" />
-    <Compile Include="_sha256.cs" />
-    <Compile Include="_sha512.cs" />
+    <Compile Include="hashlib\_hashlib.cs" />
+    <Compile Include="hashlib\_md5.cs" />
+    <Compile Include="hashlib\_sha1.cs" />
+    <Compile Include="hashlib\_sha256.cs" />
+    <Compile Include="hashlib\_sha512.cs" />
+    <Compile Include="hashlib\MD5CryptoServiceProvider.cs" />
+    <Compile Include="hashlib\SHA224.cs" />
+    <Compile Include="hashlib\SHA224Managed.cs" />
     <Compile Include="_socket.cs" />
     <Compile Include="_ctypes\LocalOrArg.cs" />
     <Compile Include="_ctypes\MarshalCleanup.cs" />

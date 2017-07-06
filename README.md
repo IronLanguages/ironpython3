@@ -12,6 +12,8 @@ strings, and all of the other new features.
 Builds of IronPython 3 are not yet provided.
 
 ## Build
+Make sure you **clone the Git repository recursively** (with `--recurse`) to clone all submodules.
+
 On Windows machines, start a Visual Studio command prompt and type:
 
     > make

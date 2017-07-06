@@ -124,10 +124,6 @@ namespace IronPythonTest {
                 Console.WriteLine(rewriteRecord[i]);
                 Console.WriteLine();
             }
-#if CLR2
-            Console.WriteLine("Before: " + Environment.NewLine + lambda.DebugView);
-            Console.WriteLine("After: " + Environment.NewLine + LightExceptions.Rewrite(lambda).DebugView);
-#endif
         }
 
         private int _depth = 0;

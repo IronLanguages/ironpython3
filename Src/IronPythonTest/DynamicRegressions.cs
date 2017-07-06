@@ -15,7 +15,6 @@
 
 using System;
 
-#if !CLR2
 namespace IronPythonTest {
     public static class DynamicRegressions {
         
@@ -87,4 +86,3 @@ namespace IronPythonTest {
         }
     }
 }
-#endif

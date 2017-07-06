@@ -743,9 +743,6 @@ namespace IronPython.Modules {
                     private static MethodInfo BigIntToInt32 {
                         get {
                             if (_bigIntToInt32 == null) {
-#if CLR2
-                                _bigIntToInt32 = typeof(BigInteger).GetMethod("ToInt32", ReflectionUtils.EmptyTypes);
-#else
                                 MemberInfo[] mis = typeof(BigInteger).GetMember(
                                     "op_Explicit",
                                     MemberTypes.Method,
@@ -760,7 +757,6 @@ namespace IronPython.Modules {
                                 }
 
                                 Debug.Assert(_bigIntToInt32 != null);
-#endif
                             }
 
                             return _bigIntToInt32;

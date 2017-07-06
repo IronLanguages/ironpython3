@@ -30,12 +30,7 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 using System.Text;
 
-#if CLR2
-using Microsoft.Scripting.Math;
-#else
 using System.Numerics;
-using Microsoft.Scripting.Utils;
-#endif
 
 namespace IronPython.Modules {
     /// <summary>

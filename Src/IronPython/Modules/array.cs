@@ -44,9 +44,6 @@ namespace IronPython.Modules {
 
         [PythonType]
         public class array : IPythonArray, IEnumerable, IWeakReferenceable, ICollection, ICodeFormattable, IList<object>, IStructuralEquatable
-#if CLR2
-            , IValueEquality
-#endif
         {
             private ArrayData _data;
             private char _typeCode;
@@ -998,28 +995,6 @@ namespace IronPython.Modules {
                     return res;
                 }
             }
-
-            #region IValueEquality Members
-#if CLR2
-            int IValueEquality.GetValueHashCode() {
-                throw PythonOps.TypeError("unhashable type");
-            }
-
-            bool IValueEquality.ValueEquals(object other) {
-                array pa = other as array;
-                if (pa == null) return false;
-
-                if (_data.Length != pa._data.Length) return false;
-                for (int i = 0; i < _data.Length; i++) {
-                    if (!_data.GetData(i).Equals(pa._data.GetData(i))) {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-#endif
-            #endregion
 
             #region IStructuralEquatable Members
 

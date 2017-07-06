@@ -805,13 +805,10 @@ namespace IronPython.Modules {
                 pickler.WritePut(context, index);
                 pickler.BatchAppends(context, ((IEnumerable)obj).GetEnumerator());
             }
-#if CLR2
-            private static readonly BigInteger MaxInt = BigInteger.Create(Int32.MaxValue);
-            private static readonly BigInteger MinInt = BigInteger.Create(Int32.MinValue);
-#else
+
             private static readonly BigInteger MaxInt = new BigInteger(Int32.MaxValue);
             private static readonly BigInteger MinInt = new BigInteger(Int32.MinValue);
-#endif
+
             private static void SaveLong(PicklerObject/*!*/ pickler, CodeContext/*!*/ context, object obj) {
                 Debug.Assert(DynamicHelpers.GetPythonType(obj).Equals(TypeCache.BigInteger), "arg must be long");
 

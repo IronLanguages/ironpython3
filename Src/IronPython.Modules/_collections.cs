@@ -47,9 +47,6 @@ namespace IronPython.Modules {
         [PythonType]
         [DontMapIEnumerableToContains, DebuggerDisplay("deque, {__len__()} items"), DebuggerTypeProxy(typeof(CollectionDebugProxy))]
         public class deque : IEnumerable, IComparable, ICodeFormattable, IStructuralEquatable, IStructuralComparable, ICollection, IReversible
-#if CLR2
-            , IValueEquality
-#endif
         {
             private object[] _data;
             private object _lockObj = new object();
@@ -779,20 +776,6 @@ namespace IronPython.Modules {
                 }
             }
 
-            #endregion
-
-            #region IValueEquality Members
-#if CLR2
-            int IValueEquality.GetValueHashCode() {
-                throw PythonOps.TypeError("deque objects are unhashable");
-            }
-
-            bool IValueEquality.ValueEquals(object other) {
-                if (!(other is deque)) return false;
-
-                return EqualsWorker((deque)other);
-            }
-#endif
             #endregion
 
             #region IStructuralEquatable Members

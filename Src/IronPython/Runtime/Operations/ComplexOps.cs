@@ -212,35 +212,25 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object __getnewargs__(CodeContext context, Complex self) {
-#if CLR2
-            if (!Object.ReferenceEquals(self, null)) {
-#endif
                 return PythonTuple.MakeTuple(
                     PythonOps.GetBoundAttr(context, self, "real"),
                     PythonOps.GetBoundAttr(context, self, "imag")
                 );
-#if CLR2
-            }
-            throw PythonOps.TypeErrorForBadInstance("__getnewargs__ requires a 'complex' object but received a '{0}'", self);
-#endif
         }
 
-#if !CLR2
         public static object __pos__(Complex x) {
             return x;
         }
-#endif
 
         #endregion
 
         public static object __coerce__(Complex x, object y) {
             Complex right;
             if (Converter.TryConvertToComplex(y, out right)) {
-#if !CLR2
                 if (double.IsInfinity(right.Real) && (y is BigInteger || y is Extensible<BigInteger>)) {
                     throw new OverflowException("long int too large to convert to float");
                 }
-#endif
+
                 return PythonTuple.MakeTuple(x, right);
             }
 

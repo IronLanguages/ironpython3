@@ -31,11 +31,7 @@ using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-#if CLR2
-using Microsoft.Scripting.Math;
-#else
 using System.Numerics;
-#endif
 
 namespace IronPython.Modules {
     /// <summary>

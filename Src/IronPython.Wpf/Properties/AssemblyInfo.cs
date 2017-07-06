@@ -48,7 +48,4 @@ using System.Security;
 [assembly: SecurityTransparent]
 
 [assembly: AllowPartiallyTrustedCallers]
-#if !CLR2
 [assembly: SecurityRules(SecurityRuleSet.Level1)]
-#endif
-

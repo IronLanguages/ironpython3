@@ -1204,15 +1204,4 @@ elements will be converted to string.")]
                 PythonExceptions.Exception, dict, "Error", "_csv");
         }
     }
-
-#if CLR2
-    static class StringBuilderExtensions
-    {
-        internal static StringBuilder Clear(this StringBuilder sb) 
-        {
-            sb.Length = 0;
-            return sb;
-        }
-    }
-#endif
 }

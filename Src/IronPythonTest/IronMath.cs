@@ -13,19 +13,12 @@
  *
  * ***************************************************************************/
 
-#if CLR2
-using Microsoft.Scripting.Math; 
-#else
 using System.Numerics;
 using Microsoft.Scripting.Utils;
-#endif
 
 namespace IronPythonTest {
     public static class System_Scripting_Math {
         public static BigInteger CreateBigInteger(int sign, params uint[] data) {
-#if CLR2
-            return new BigInteger(sign, data);
-#else
             ContractUtils.RequiresNotNull(data, "data");
             ContractUtils.Requires(sign >= -1 && sign <= +1, "sign");
             int length = data.Length - 1;
@@ -50,7 +43,6 @@ namespace IronPythonTest {
 
             BigInteger res = new BigInteger(dataBytes);
             return sign < 0 ? -res : res;
-#endif
         }
     }
 }

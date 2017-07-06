@@ -42,7 +42,6 @@ namespace IronPython.Modules {
             context.DomainManager.LoadAssembly(typeof(System.Xaml.XamlReader).Assembly);// System.Xaml
         }
 
-#if !CLR2 && !SILVERLIGHT
         /// <summary>
         /// Loads XAML from the specified XmlReader and returns the deserialized object.  Any event handlers
         /// are bound to methods defined in the provided module.  Any named objects are assigned to the object.
@@ -112,7 +111,6 @@ namespace IronPython.Modules {
             }
             return DynamicXamlReader.LoadComponent(self, context.LanguageContext.Operations, reader);
         }
-#endif
     }
 }
 

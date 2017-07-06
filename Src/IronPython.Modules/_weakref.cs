@@ -69,9 +69,6 @@ namespace IronPython.Modules {
 
         [PythonType]
         public class @ref : IStructuralEquatable
-#if CLR2
-            , IValueEquality
-#endif
         {
             private CodeContext _context;
             private WeakHandle _target;
@@ -199,18 +196,6 @@ namespace IronPython.Modules {
                 return PythonOps.NotImplemented;
             }
 
-            #region IValueEquality Members
-#if CLR2
-            int IValueEquality.GetValueHashCode() {
-                return __hash__(DefaultContext.Default);
-            }
-
-            bool IValueEquality.ValueEquals(object other) {
-                return EqualsWorker(other, null);
-            }
-#endif
-            #endregion
-
             #region IStructuralEquatable Members
 
             /// <summary>
@@ -298,9 +283,6 @@ namespace IronPython.Modules {
 
         [PythonType, DynamicBaseTypeAttribute, PythonHidden]
         public sealed partial class weakproxy : IPythonObject, ICodeFormattable, IProxyObject, IPythonMembersList, IStructuralEquatable
-#if CLR2
-            , IValueEquality
-#endif
         {
             private readonly WeakHandle _target;
             private readonly CodeContext/*!*/ _context;
@@ -471,21 +453,6 @@ namespace IronPython.Modules {
 
             #endregion
 
-            #region IValueEquality Members
-#if CLR2
-            int IValueEquality.GetValueHashCode() {
-                throw PythonOps.TypeErrorForUnhashableType("weakproxy");
-            }
-
-            bool IValueEquality.ValueEquals(object other) {
-                weakproxy wrp = other as weakproxy;
-                if (wrp != null) return EqualsWorker(wrp);
-
-                return PythonOps.EqualRetBool(_context, GetObject(), other);
-            }
-#endif
-            #endregion
-
             #region IStructuralEquatable Members
 
             public const object __hash__ = null;
@@ -555,9 +522,6 @@ namespace IronPython.Modules {
             ICodeFormattable,            
             IProxyObject,
             IStructuralEquatable,
-#if CLR2
-            IValueEquality,
-#endif
             IPythonMembersList {
 
             private WeakHandle _target;
@@ -746,18 +710,6 @@ namespace IronPython.Modules {
                 get { return GetObject(); }
             }
 
-            #endregion
-
-            #region IValueEquality Members
-#if CLR2
-            int IValueEquality.GetValueHashCode() {
-                throw PythonOps.TypeErrorForUnhashableType("weakcallableproxy");
-            }
-
-            bool IValueEquality.ValueEquals(object other) {
-                return __eq__(other);
-            }
-#endif
             #endregion
 
             #region IStructuralEquatable Members

@@ -33,9 +33,7 @@ using System.Security;
 using System.Security.Policy;
 using System.Text;
 using System.Threading;
-#if !CLR2 && !SILVERLIGHT
 using System.Windows.Markup;
-#endif
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
@@ -50,9 +48,7 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-#if !CLR2 && !SILVERLIGHT
 using DependencyObject = System.Windows.DependencyObject;
-#endif
 
 [assembly: ExtensionType(typeof(IronPythonTest.IFooable), typeof(IronPythonTest.FooableExtensions))]
 namespace IronPythonTest {
@@ -90,15 +86,14 @@ namespace IronPythonTest {
     public delegate int RefIntDelegate(ref int arg);
     public delegate T GenericDelegate<T, U, V>(U arg1, V arg2);
 
-#if !CLR2 && !SILVERLIGHT
     [ContentProperty("Content")]
     public class XamlTestObject : DependencyObject {
         public event IntIntDelegate Event;
         public int Method(int arg) {
             if (Event != null)
                 return Event(arg);
-            else
-                return -1;
+            
+            return -1;
         }
 
         public object Content {
@@ -134,7 +129,7 @@ namespace IronPythonTest {
             set;
         }
     }
-#endif
+
     public class ClsPart {
         public int Field;
         int m_property;
@@ -181,12 +176,8 @@ namespace IronPythonTest {
         }
     }
 
-    public class EngineTest
-#if !SILVERLIGHT // remoting not supported in Silverlight
-        : MarshalByRefObject
-#endif
+    public class EngineTest : MarshalByRefObject
     {
-
         private readonly ScriptEngine _pe;
         private readonly ScriptRuntime _env;
 
@@ -227,7 +218,6 @@ namespace IronPythonTest {
             return null;
         }
 
-#if !SILVERLIGHT
         public void ScenarioHostingHelpers() {
             AppDomain remote = AppDomain.CreateDomain("foo");
             Dictionary<string, object> options = new Dictionary<string,object>();
@@ -332,7 +322,6 @@ namespace IronPythonTest {
             } catch (ImportException) {
             }
         }
-#endif
 
         public class ScopeDynamicObject : DynamicObject {
             internal readonly Dictionary<string, object> _members = new Dictionary<string, object>();
@@ -434,8 +423,7 @@ x = 42", scope);
                 AreEqual(((ScopeDynamicObject5)myScope).__doc__, "hello world");
             }
         }
-
-#if !SILVERLIGHT        
+ 
         public void ScenarioCodePlex20472() {
             try {
                 string fileName = System.IO.Directory.GetCurrentDirectory() + "\\encoded_files\\cp20472.py";
@@ -448,7 +436,6 @@ x = 42", scope);
             }
             catch (IronPython.Runtime.Exceptions.ImportException) { }
         }
-#endif
 
         public void ScenarioInterpterNestedVariables() {
             ParameterExpression arg = Expression.Parameter(typeof(object), "tmp");
@@ -1408,11 +1395,6 @@ range = range
                 site = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(string)));
                 AreEqual(site.Target(site, inst), "Converted");
 
-#if CLR2
-                site = CallSite<Func<CallSite, object, object>>.Create(new MyConvertBinder(typeof(BigInteger), (BigInteger)23));
-                AreEqual(site.Target(site, inst), (BigInteger)23);
-#endif
-
                 // strongly typed return versions
                 var ssite = CallSite<Func<CallSite, object, string>>.Create(new MyConvertBinder(typeof(string)));
                 AreEqual(ssite.Target(ssite, inst), "Converted");
@@ -2138,7 +2120,6 @@ instOC = TestOC()
             AreEqual(42, t());
         }
 
-#if !SILVERLIGHT
         // ExecuteFile
         public void ScenarioExecuteFile() {
             ScriptSource tempFile1, tempFile2;
@@ -2172,9 +2153,7 @@ instOC = TestOC()
 
             tempFile2.Execute(scope); 
         }
-#endif
 
-#if !SILVERLIGHT
         // Bug: 542
         public void Scenario542() {
             ScriptSource tempFile1;
@@ -2229,7 +2208,6 @@ instOC = TestOC()
             //pe.Execute(pe.CreateScriptSourceFromString("if C1.M() != -1: raise AssertionError('test failed')");
             //pe.Execute(pe.CreateScriptSourceFromString("if C2.M() != +1: raise AssertionError('test failed')");
         }
-#endif
 
         // Bug: 167 
         public void Scenario167() {
@@ -2267,7 +2245,6 @@ instOC = TestOC()
         // Options.DebugMode
 #endif
 
-#if !SILVERLIGHT
         public void ScenarioPartialTrust() {
             // basic check of running a host in partial trust
             
@@ -2280,12 +2257,9 @@ instOC = TestOC()
 #pragma warning disable 612, 618 // obsolete API
             evidence.AddHost(new Zone(SecurityZone.Internet));
 #pragma warning restore 612, 618
-#if !CLR2
-            System.Security.PermissionSet permSet = SecurityManager.GetStandardSandbox(evidence);
+
+            PermissionSet permSet = SecurityManager.GetStandardSandbox(evidence);
             AppDomain newDomain = AppDomain.CreateDomain("test", evidence, info, permSet, null);
-#else
-            AppDomain newDomain = AppDomain.CreateDomain("test", evidence, info);
-#endif
             
             // create runtime in partial trust...
             ScriptRuntime runtime = Python.CreateRuntime(newDomain);
@@ -2384,8 +2358,6 @@ if id(a) == id(b):
                     throw new Exception("Debugging is enabled even though Options.DebugMode is not specified");
             }
         }
-
-#endif
 
         // Compile and Run
         public void ScenarioCompileAndRun() {

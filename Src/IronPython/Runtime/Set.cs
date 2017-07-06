@@ -33,10 +33,7 @@ namespace IronPython.Runtime {
     /// </summary>
     [PythonType("set"), DebuggerDisplay("set, {Count} items", TargetTypeName = "set"), DebuggerTypeProxy(typeof(CollectionDebugProxy))]
     public class SetCollection : IEnumerable, IEnumerable<object>, ICollection, IStructuralEquatable, ICodeFormattable
-#if CLR2
-        , IValueEquality
-#endif
- {
+    {
         internal SetStorage _items;
 
         #region Set Construction
@@ -163,18 +160,6 @@ namespace IronPython.Runtime {
             return SetStorage.Reduce(_items, type);
         }
 
-        #endregion
-
-        #region IValueEquality Members
-#if CLR2
-        int IValueEquality.GetValueHashCode() {
-            throw PythonOps.TypeError("set objects are unhashable");
-        }
-
-        bool IValueEquality.ValueEquals(object o) {
-            return __eq__(o);
-        }
-#endif
         #endregion
 
         #region IStructuralEquatable Members
@@ -905,9 +890,6 @@ namespace IronPython.Runtime {
     /// </summary>
     [PythonType("frozenset"), DebuggerDisplay("frozenset, {Count} items", TargetTypeName = "frozenset"), DebuggerTypeProxy(typeof(CollectionDebugProxy))]
     public class FrozenSetCollection : IEnumerable, IEnumerable<object>, ICollection, IStructuralEquatable, ICodeFormattable
-#if CLR2
-        , IValueEquality
-#endif
     {
         internal SetStorage _items;
         private HashCache _hashCache;
@@ -1039,18 +1021,6 @@ namespace IronPython.Runtime {
             return SetStorage.Reduce(_items, type);
         }
 
-        #endregion
-
-        #region IValueEquality Members
-#if CLR2
-        int IValueEquality.GetValueHashCode() {
-            return CalculateHashCode(DefaultContext.DefaultPythonContext.EqualityComparerNonGeneric);
-        }
-
-        bool IValueEquality.ValueEquals(object o) {
-            return __eq__(o);
-        }
-#endif
         #endregion
 
         #region IStructuralEquatable Members

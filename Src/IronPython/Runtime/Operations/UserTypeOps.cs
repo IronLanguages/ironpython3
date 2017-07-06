@@ -358,38 +358,6 @@ namespace IronPython.Runtime.Operations {
             );
         }
 
-        #region IValueEquality Helpers
-#if CLR2
-        public static int GetValueHashCodeHelper(object self) {
-            // new-style classes only lookup in slots, not in instance
-            // members
-            object func;
-            if (DynamicHelpers.GetPythonType(self).TryGetBoundMember(DefaultContext.Default, self, "__hash__", out func)) {
-                return Converter.ConvertToInt32(PythonCalls.Call(func));
-            }
-
-            return self.GetHashCode();
-        }
-
-        public static bool ValueEqualsHelper(object self, object other) {
-            object res = RichEqualsHelper(self, other);
-            if (res != NotImplementedType.Value && res != null && res.GetType() == typeof(bool))
-                return (bool)res;
-
-            return false;
-        }
-
-        private static object RichEqualsHelper(object self, object other) {
-            object res;
-
-            if (PythonTypeOps.TryInvokeBinaryOperator(DefaultContext.Default, self, other, "__eq__", out res))
-                return res;
-
-            return NotImplementedType.Value;
-        }
-#endif
-        #endregion
-
         internal static Binding.FastBindResult<T> MakeGetBinding<T>(CodeContext codeContext, CallSite<T> site, IPythonObject self, Binding.PythonGetMemberBinder getBinder) where T : class {
             Type finalType = self.PythonType.FinalSystemType;
             if (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(finalType) &&

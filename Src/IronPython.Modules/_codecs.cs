@@ -68,140 +68,64 @@ namespace IronPython.Modules {
         }
 
         /// <summary>
-        /// Optimied encoding mapping that can be consumed by charmap_encode.
+        /// Encodes the input string with the specified optimized encoding map.
         /// </summary>
-        [PythonHidden]
-        public class EncodingMap {
-            internal Dictionary<int, char> Mapping = new Dictionary<int, char>();
+        public static PythonTuple charmap_encode(CodeContext context, [BytesConversion]string input, string errors, [NotNull]EncodingMap map) {
+            return CharmapDecodeWorker(context, input, errors, new EncodingMapEncoding(map, errors), false);
+        }
+
+        public static PythonTuple charmap_encode(CodeContext context, [BytesConversion]string input, string errors = "strict", IDictionary<object, object> map = null) {
+            Encoding e = map != null ? new CharmapEncoding(map, errors) : null;
+            return CharmapDecodeWorker(context, input, errors, e, false);
         }
 
         /// <summary>
         /// Decodes the input string using the provided string mapping.
         /// </summary>
-        public static PythonTuple charmap_decode([BytesConversion]string input, string errors, [NotNull]string map) {
-            StringBuilder res = new StringBuilder();
-            for (int i = 0; i < input.Length; i++) {
-                var charIndex = (int)input[i];
-
-                if (map.Length <= charIndex) {
-                    if (errors == "strict") {
-                        throw PythonOps.UnicodeDecodeError("failed to find key in mapping");
-                    }
-                    res.Append("\ufffd");
-                } else {
-                    res.Append(map[input[i]]);
-                }
+        public static PythonTuple charmap_decode(CodeContext context, [BytesConversion]string input, string errors, [NotNull]string map) {
+            EncodingMap m = new EncodingMap();
+            for (int i = 0; i < map.Length; i++) {
+                m.Mapping[(int)map[i]] = (char)i;
             }
-            return PythonTuple.MakeTuple(res.ToString(), res.Length);
+            return CharmapDecodeWorker(context, input, errors, new EncodingMapEncoding(m, errors), true);
         }
 
-        /// <summary>
-        /// Encodes the input string with the specified optimized encoding map.
-        /// </summary>
-        public static PythonTuple charmap_encode([BytesConversion]string input, string errors, [NotNull]EncodingMap map) {
-            StringBuilder res = new StringBuilder();
-            var dict = map.Mapping;
-            for (int i = 0; i < input.Length; i++) {
-                char val;
-
-                if (!dict.TryGetValue(input[i], out val)) {
-                    if (errors == "strict") {
-                        throw PythonOps.UnicodeEncodeError("failed to find key in mapping");
-                    }
-                    res.Append("\ufffd");
-                } else {
-                    res.Append(val);
-                }
-            }
-            return PythonTuple.MakeTuple(res.ToString(), res.Length);
+        public static PythonTuple charmap_decode(CodeContext context, [BytesConversion]string input, string errors="strict", IDictionary<object, object> map=null) {
+            Encoding e = map != null ? new CharmapEncoding(map, errors) : null;
+            return CharmapDecodeWorker(context, input, errors, e, true);
         }
 
-        public static object charbuffer_encode(string input) {
-            throw PythonOps.NotImplementedError("charbuffer_encode");
-        }
 
-        public static object charmap_decode([BytesConversion]string input, [Optional]string errors, [Optional]IDictionary<object, object> map) {
-            return CharmapDecodeWorker(input, errors, map, true);
-        }
-
-        private static object CharmapDecodeWorker(string input, string errors, IDictionary<object, object> map, bool isDecode) {
+        private static PythonTuple CharmapDecodeWorker(CodeContext context, string input, string errors, Encoding e, bool isDecode) {
             if (input.Length == 0) {
                 return PythonTuple.MakeTuple(String.Empty, 0);
             }
 
-            StringBuilder res = new StringBuilder();
-            for (int i = 0; i < input.Length; i++) {
-                object val;
+            string encoding = "charmap";
 
-                if (map == null) {
-                    res.Append(input[i]);
-                    continue;
-                }
-
-                object charObj = ScriptingRuntimeHelpers.Int32ToObject((int)input[i]);
-
-                if (!map.TryGetValue(charObj, out val)) {
-                    if (errors == "strict" && isDecode) {
-                        throw PythonOps.UnicodeDecodeError("failed to find key in mapping");
-                    } else if (!isDecode) {
-                        throw PythonOps.UnicodeEncodeError("failed to find key in mapping");
-                    }
-                    res.Append("\ufffd");
-                } else if (val == null) {
-                    if (errors == "strict" && isDecode) {
-                        throw PythonOps.UnicodeDecodeError("'charmap' codec can't decode characters at index {0} because charmap maps to None", i);
-                    } else if (!isDecode) {
-                        throw PythonOps.UnicodeEncodeError("charmap", input[i], i,
-                            "'charmap' codec can't encode characters at index {0} because charmap maps to None", i);
-                    }
-                    res.Append("\ufffd");
-                } else if (val is string) {
-                    res.Append((string)val);
-                } else if (val is int) {
-                    res.Append((char)(int)val);
-                } else {
-                    throw PythonOps.TypeError("charmap must be an int, str, or None");
-                }
-                
+            // default to latin-1 if an encoding is not specified
+            if (e == null) {
+                e = Encoding.GetEncoding("iso-8859-1");
+                encoding = "latin-1";
             }
-            return PythonTuple.MakeTuple(res.ToString(), res.Length);
+
+            string res = isDecode ? StringOps.DoDecode(context, input, errors, encoding, e) : StringOps.DoEncode(context, input, errors, encoding, e).ToString();
+            return PythonTuple.MakeTuple(res, res.Length);
         }
 
-        public static object charmap_encode([BytesConversion]string input, string errors="strict", IDictionary<object, object> map=null) {
-            return CharmapDecodeWorker(input, errors, map, false);
-        }
-
-        public static object decode(CodeContext/*!*/ context, object obj) {
-            PythonTuple t = lookup(context, context.LanguageContext.GetDefaultEncodingName());
-
-            return PythonOps.GetIndex(context, PythonCalls.Call(context, t[DecoderIndex], obj, null), 0);
-        }
-
-        public static object decode(CodeContext/*!*/ context, object obj, string encoding) {
-            PythonTuple t = lookup(context, encoding);
-
-            return PythonOps.GetIndex(context, PythonCalls.Call(context, t[DecoderIndex], obj, null), 0);
-        }
-
-        public static object decode(CodeContext/*!*/ context, object obj, string encoding, string errors) {
+        public static object decode(CodeContext/*!*/ context, object obj, string encoding=null, string errors="strict") {
+            if(encoding == null) {
+                encoding = context.LanguageContext.DefaultEncoding.EncodingName;
+            }
             PythonTuple t = lookup(context, encoding);
 
             return PythonOps.GetIndex(context, PythonCalls.Call(context, t[DecoderIndex], obj, errors), 0);
         }
 
-        public static object encode(CodeContext/*!*/ context, object obj) {
-            PythonTuple t = lookup(context, context.LanguageContext.GetDefaultEncodingName());
-
-            return PythonOps.GetIndex(context, PythonCalls.Call(context, t[EncoderIndex], obj, null), 0);
-        }
-
-        public static object encode(CodeContext/*!*/ context, object obj, string encoding) {
-            PythonTuple t = lookup(context, encoding);
-
-            return PythonOps.GetIndex(context, PythonCalls.Call(context, t[EncoderIndex], obj, null), 0);
-        }
-
-        public static object encode(CodeContext/*!*/ context, object obj, string encoding, string errors) {
+        public static object encode(CodeContext/*!*/ context, object obj, string encoding=null, string errors="strict") {
+            if (encoding == null) {
+                encoding = context.LanguageContext.DefaultEncoding.EncodingName;
+            }
             PythonTuple t = lookup(context, encoding);
 
             return PythonOps.GetIndex(context, PythonCalls.Call(context, t[EncoderIndex], obj, errors), 0);
@@ -294,11 +218,11 @@ namespace IronPython.Modules {
                         break;
                 }
             }
-            return PythonTuple.MakeTuple(res.ToString(), ScriptingRuntimeHelpers.Int32ToObject(res.Length));
+            return PythonTuple.MakeTuple(res.ToString(), res.Length);
         }
 
         #region Latin-1 Functions
-        
+
         public static object latin_1_decode(object input) {
             return latin_1_decode(input, "strict");
         }
@@ -360,8 +284,8 @@ namespace IronPython.Modules {
             );
         }
 
-        public static object readbuffer_encode(string input) {
-            throw PythonOps.NotImplementedError("readbuffer_encode");
+        public static PythonTuple readbuffer_encode([BytesConversion]string input, string errors=null) {
+            return PythonTuple.MakeTuple(input, input.Length);
         }
 
         public static void register(CodeContext/*!*/ context, object search_function) {
@@ -753,7 +677,276 @@ namespace IronPython.Modules {
         #endregion
     }
 
+    /// <summary>
+    /// Optimized encoding mapping that can be consumed by charmap_encode.
+    /// </summary>
+    [PythonHidden]
+    public class EncodingMap {
+        internal Dictionary<int, char> Mapping = new Dictionary<int, char>();
+    }
+
 #if FEATURE_ENCODING    // Encoding
+
+    class EncodingMapEncoding : Encoding {
+        private EncodingMap _map;
+        private string _errors;
+
+        public EncodingMapEncoding(EncodingMap map, string errors) {
+            _map = map;
+            _errors = errors;
+        }
+
+        public override int GetByteCount(char[] chars, int index, int count) {
+            int byteCount = 0;
+            int charEnd = index + count;
+            while (index < charEnd) {
+                char val;
+                char c = chars[index];
+
+                if (!_map.Mapping.TryGetValue(c, out val)) {
+                    EncoderFallbackBuffer efb = EncoderFallback.CreateFallbackBuffer();
+                    if (efb.Fallback(c, index)) {
+                        byteCount += efb.Remaining;
+                    }
+                } else {
+                    byteCount++;
+                }
+                index++;
+            }
+            return byteCount;
+        }
+
+        public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex) {
+            int charEnd = charIndex + charCount;
+            int outputBytes = 0;
+            while (charIndex < charEnd) {
+                char c = chars[charIndex];
+                char val;
+
+                if (!_map.Mapping.TryGetValue((int)c, out val)) {
+                    EncoderFallbackBuffer efb = EncoderFallback.CreateFallbackBuffer();
+                    if (efb.Fallback(c, charIndex)) {
+                        while (efb.Remaining != 0) {
+                            bytes[byteIndex++] = (byte)_map.Mapping[(int)efb.GetNextChar()];
+                            outputBytes++;
+                        }
+                    }
+                } else {
+                    bytes[byteIndex++] = (byte)val;
+                    outputBytes++;
+                }
+                charIndex++;
+            }
+            return outputBytes;
+        }
+
+        public override int GetCharCount(byte[] bytes, int index, int count) {
+            int byteEnd = index + count;
+            int outputChars = 0;
+            while (index < byteEnd) {
+                byte b = bytes[index];
+                char val;
+                if (!_map.Mapping.TryGetValue(b, out val)) {
+                    DecoderFallbackBuffer dfb = DecoderFallback.CreateFallbackBuffer();
+                    if (dfb.Fallback(new[] { b }, 0)) {
+                        outputChars += dfb.Remaining;
+                    }
+                } else {
+                    outputChars++;
+                }
+                index++;
+            }
+            return outputChars;
+        }
+
+        public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) {
+            int byteEnd = byteIndex + byteCount;
+            int outputChars = 0;
+            while (byteIndex < byteEnd) {
+                byte b = bytes[byteIndex];
+                char val;
+
+                if (!_map.Mapping.TryGetValue(b, out val)) {
+                    DecoderFallbackBuffer dfb = DecoderFallback.CreateFallbackBuffer();
+                    if (dfb.Fallback(new[] { b }, 0)) {
+                        while (dfb.Remaining != 0) {
+                            chars[charIndex++] = (char)((int)_map.Mapping[(int)dfb.GetNextChar()]);
+                            outputChars++;
+                        }
+                    }
+                } else {
+                    chars[charIndex++] = val;
+                    outputChars++;
+                }
+                byteIndex++;
+            }
+            return outputChars;
+        }
+
+        public override int GetMaxByteCount(int charCount) {
+            // TODO: revisit
+            return charCount * 4;
+        }
+
+        public override int GetMaxCharCount(int byteCount) {
+            // TODO: revisit
+            return byteCount;
+        }
+    }
+
+    class CharmapEncoding : Encoding {
+        private IDictionary<object, object> _map;
+        private string _errors;
+
+        public CharmapEncoding(IDictionary<object, object> map, string errors) {
+            _map = map;
+            _errors = errors;
+            FixupMap();
+        }
+
+        private void FixupMap() {
+            // this is required if someone passes in a mapping like { 'a' : None }
+            foreach(var k in _map) {
+                if(k.Key is string) {
+                    var s = (string)k.Key;
+                    if(s.Length == 1)
+                        _map[(int)s[0]] = k.Value;
+                }
+            }
+        }
+
+        public override int GetByteCount(char[] chars, int index, int count) {
+            int byteCount = 0;
+            int charEnd = index + count;
+            while (index < charEnd) {
+                char c = chars[index];
+                object val;
+                object charObj = (int)c;
+
+                if (!_map.TryGetValue(charObj, out val) || (val == null && _errors == "strict")) {
+                    EncoderFallbackBuffer efb = EncoderFallback.CreateFallbackBuffer();
+                    if (efb.Fallback(c, index)) {
+                        byteCount += efb.Remaining;
+                    }
+                } else if(val == null) {
+                    throw PythonOps.UnicodeEncodeError("charmap", c, index, "'charmap' codec can't encode character u'\\x{0:x}' in position {1}: character maps to <undefined>", (int)c, index);
+                } else if (val is string) {
+                    byteCount += ((string)val).Length;
+                } else if(val is int) {
+                    byteCount++;
+                } else {
+                    throw PythonOps.TypeError("charmap must be an int, str, or None");
+                }
+                index++;
+            }
+            return byteCount;
+        }
+
+        public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex) {
+            int charEnd = charIndex + charCount;
+            int outputBytes = 0;
+            while(charIndex < charEnd) {
+                char c = chars[charIndex];
+                object val;
+                object obj = (int)c;
+                if (!_map.TryGetValue(obj, out val) || (val == null && _errors == "strict")) {
+                    EncoderFallbackBuffer efb = EncoderFallback.CreateFallbackBuffer();
+                    if (efb.Fallback(c, charIndex)) {
+                        while (efb.Remaining != 0) {
+                            obj = (int)efb.GetNextChar();
+                            bytes[byteIndex++] = (byte)((int)_map[obj]);
+                            outputBytes++;
+                        }
+                    }
+                } else if(val == null) {
+                    throw PythonOps.UnicodeEncodeError("charmap", c, charIndex, "'charmap' codec can't encode character u'\\x{0:x}' in position {1}: character maps to <undefined>", (int)c, charIndex);
+                } else if (val is string) {
+                    string v = val as string;
+                    for (int i = 0; i < v.Length; i++) {
+                        bytes[byteIndex++] = (byte)v[i];
+                        outputBytes++;
+                    }
+                } else if(val is int) {
+                    bytes[byteIndex++] = (byte)(int)val;
+                    outputBytes++;
+                } else {
+                    throw PythonOps.TypeError("charmap must be an int, str, or None");
+                }
+                charIndex++;
+            }
+            return outputBytes;
+        }
+
+        public override int GetCharCount(byte[] bytes, int index, int count) {
+            int byteEnd = index + count;
+            int outputChars = 0;
+            while (index < byteEnd) {
+                byte b = bytes[index];
+
+                object val;
+                object byteObj = ScriptingRuntimeHelpers.Int32ToObject((int)b);
+
+                if (!_map.TryGetValue(byteObj, out val) || val == null) {
+                    DecoderFallbackBuffer dfb = DecoderFallback.CreateFallbackBuffer();
+                    if (dfb.Fallback(new[] { b }, 0)) {
+                        outputChars += dfb.Remaining;
+                    }
+                } else if (val is string) {
+                    outputChars += ((string)val).Length;
+                } else if(val is int) {
+                    outputChars++;
+                } else {
+                    throw PythonOps.TypeError("charmap must be an int, str, or None");
+                }
+                index++;
+            }
+            return outputChars;
+        }
+
+        public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) {
+            int byteEnd = byteIndex + byteCount;
+            int outputChars = 0;
+            while (byteIndex < byteEnd) {
+                byte b = bytes[byteIndex];
+                object val;
+                object obj = ScriptingRuntimeHelpers.Int32ToObject((int)b);
+
+                if (!_map.TryGetValue(obj, out val) || val == null) {
+                    DecoderFallbackBuffer dfb = DecoderFallback.CreateFallbackBuffer();
+                    if (dfb.Fallback(new[] { b }, 0)) {
+                        while (dfb.Remaining != 0) {
+                            chars[charIndex++] = dfb.GetNextChar();
+                            outputChars++;
+                        }
+                    }
+                } else if (val is string) {
+                    string v = val as string;
+                    for (int i = 0; i < v.Length; i++) {
+                        chars[charIndex++] = v[i];
+                        outputChars++;
+                    }
+                } else if (val is int) {
+                    chars[charIndex++] = (char)(int)val;
+                    outputChars++;
+                } else {
+                    throw PythonOps.TypeError("charmap must be an int, str, or None");
+                }
+                byteIndex++;
+            }
+            return outputChars;
+        }
+
+        public override int GetMaxByteCount(int charCount) {
+            // TODO: revisit
+            return charCount * 4;
+        }
+
+        public override int GetMaxCharCount(int byteCount) {
+            // TODO: revisit
+            return byteCount;
+        }
+    }
+
     class ExceptionFallBack : DecoderFallback {
         internal ExceptionFallbackBuffer buffer;
 

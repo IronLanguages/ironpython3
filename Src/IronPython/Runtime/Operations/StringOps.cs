@@ -1729,7 +1729,7 @@ namespace IronPython.Runtime.Operations {
             // look for user-registered codecs
             PythonTuple codecTuple = PythonOps.LookupEncoding(context, encoding);
             if (codecTuple != null) {
-                return UserDecodeOrEncode(codecTuple[/*Modules.PythonCodecs.DecoderIndex*/1], s);
+                return UserDecodeOrEncode(codecTuple[1], s, errors);
             }
 
             throw PythonOps.LookupError("unknown encoding: {0}", encoding);
@@ -1817,7 +1817,7 @@ namespace IronPython.Runtime.Operations {
             // look for user-registered codecs
             PythonTuple codecTuple = PythonOps.LookupEncoding(context, encoding);
             if (codecTuple != null) {
-                return PythonOps.MakeBytes(UserDecodeOrEncode(codecTuple[/*Modules.PythonCodecs.EncoderIndex*/0], s));
+                return PythonOps.MakeBytes(UserDecodeOrEncode(codecTuple[0], s, errors));
             }
 
             throw PythonOps.LookupError("unknown encoding: {0}", encoding);
@@ -1851,8 +1851,13 @@ namespace IronPython.Runtime.Operations {
         }
 
 
-        private static string UserDecodeOrEncode(object function, string data) {
-            object res = PythonCalls.Call(function, data);
+        private static string UserDecodeOrEncode(object function, string data, string errors) {
+            object res;
+            if (errors != null) {
+                res = PythonCalls.Call(function, data, errors);
+            } else {
+                res = PythonCalls.Call(function, data);
+            }
 
             string strRes = AsString(res);
             if (strRes != null) return strRes;

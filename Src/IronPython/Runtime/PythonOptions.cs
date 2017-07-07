@@ -255,7 +255,7 @@ namespace IronPython {
             _enableProfiler = GetOption(options, "EnableProfiler", false);
             _lightweightScopes = GetOption(options, "LightweightScopes", false);
             _fullFrames = GetOption(options, "FullFrames", false);
-            _frames = _fullFrames || GetOption(options, "Frames", false);
+            _frames = _fullFrames || GetOption(options, "Frames", true);
             _gcStress = GetOption<int?>(options, "GCStress", null);
             _tracing = GetOption(options, "Tracing", false);
             _noDebug = GetOption(options, "NoDebug", (Regex)null);

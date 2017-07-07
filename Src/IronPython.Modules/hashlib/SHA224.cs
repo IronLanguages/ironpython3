@@ -71,22 +71,13 @@ namespace Mono.Security.Cryptography {
             HashSizeValue = 224;
         }
 
-#if SILVERLIGHT
-        public static SHA224 Create() {
-#else
         public static new SHA224 Create() {
-#endif
             // for this to work we must register ourself with CryptoConfig
             return Create("SHA224");
         }
 
-#if SILVERLIGHT
-        public static SHA224 Create(string hashName) {
-            object o = null;
-#else
         public static new SHA224 Create(string hashName) {
             object o = CryptoConfig.CreateFromName(hashName);
-#endif
             // in case machine.config isn't configured to use any SHA224 implementation
             if (o == null) {
                 o = new SHA224Managed();

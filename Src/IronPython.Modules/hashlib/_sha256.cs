@@ -80,11 +80,7 @@ namespace IronPython.Modules {
             }
 
             protected override void CreateHasher() {
-#if SILVERLIGHT || WP75
-                _hasher = new SHA256Managed();
-#else
                 _hasher = SHA256.Create();
-#endif
             }
         }
 

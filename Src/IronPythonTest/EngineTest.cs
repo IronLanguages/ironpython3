@@ -1001,37 +1001,38 @@ i = int
         public void ScenarioDlrInterop() {
             string actionOfT = typeof(Action<>).FullName.Split('`')[0];
 
-#if !SILVERLIGHT
             ScriptScope scope = _env.CreateScope();
             ScriptSource src = _pe.CreateScriptSourceFromString(@"
 from System.Collections import ArrayList
 import clr
-clr.AddReference('System.Windows.Forms')
-from System.Windows.Forms import Control
+if not clr.IsMono:
+    clr.AddReference('System.Windows.Forms')
+    from System.Windows.Forms import Control
 import System
 
 
 somecallable = " + actionOfT + @"[object](lambda : 'Delegate')
 
-class control(Control):
-    pass
-
-class control_setattr(Control):
-    def __init__(self):
-        object.__setattr__(self, 'lastset', None)
-    
-    def __setattr__(self, name, value):
-        object.__setattr__(self, 'lastset', (name, value))
-
-class control_override_prop(Control):
-    def __setattr__(self, name, value):
+if not clr.IsMono:
+    class control(Control):
         pass
 
-    def get_AllowDrop(self):
-        return 'abc'
+    class control_setattr(Control):
+        def __init__(self):
+            object.__setattr__(self, 'lastset', None)
+    
+        def __setattr__(self, name, value):
+            object.__setattr__(self, 'lastset', (name, value))
 
-    def set_AllowDrop(self, value):
-        super(control_setattr, self).AllowDrop.SetValue(value)
+    class control_override_prop(Control):
+        def __setattr__(self, name, value):
+            pass
+
+        def get_AllowDrop(self):
+            return 'abc'
+
+        def set_AllowDrop(self, value):
+            super(control_setattr, self).AllowDrop.SetValue(value)
 
 class ns(object):
     ClassVal = 'ClassVal'
@@ -1231,7 +1232,8 @@ TestFunc.TestFunc = TestFunc
 TestFunc.InstVal = 'InstVal'
 TestFunc.ClassVal = 'ClassVal'  # just here to simplify tests
 
-controlinst = control()
+if not clr.IsMono:
+    controlinst = control()
 nsinst = ns()
 iterable = IterableObject()
 iterableos = IterableObjectOs()
@@ -1417,22 +1419,23 @@ range = range
 
             // get on .NET member should fallback
 
-            // property
-            site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("AllowDrop"));
-            AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
+            if (!ClrModule.IsMono) {
+                // property
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("AllowDrop"));
+                AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
 
-            // method
-            site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("BringToFront"));
-            AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
+                // method
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("BringToFront"));
+                AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
 
-            // protected method
-            site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("OnParentChanged"));
-            AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
+                // protected method
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("OnParentChanged"));
+                AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
 
-            // event
-            site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("DoubleClick"));
-            AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
-
+                // event
+                site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("DoubleClick"));
+                AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
+            }
 
             site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("something", new CallInfo(0)));
             AreEqual(site.Target(site, (object)scope.GetVariable("ns_getattrinst")), "FallbackInvokegetattrsomething");
@@ -1497,7 +1500,6 @@ range = range
 
             site = CallSite<Func<CallSite, object, object>>.Create(new MyInvokeMemberBinder("DoesNotExist", new CallInfo(0)));
             AreEqual(site.Target(site, (object)scope.GetVariable("TestFunc")), "FallbackInvokeMember");
-#endif
         }
 
         class MyDynamicObject : DynamicObject {

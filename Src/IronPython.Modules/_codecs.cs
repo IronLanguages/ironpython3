@@ -326,7 +326,7 @@ namespace IronPython.Modules {
             return PythonOps.LookupEncodingError(context, name);
         }
 
-#if FEATURE_ENCODING
+#if FEATURE_ENCODING && FEATURE_WINDOWS
         #region MBCS Functions
 
         public static PythonTuple mbcs_decode(CodeContext/*!*/ context, string input, string errors="strict", bool ignored=false) {

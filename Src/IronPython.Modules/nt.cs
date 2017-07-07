@@ -390,6 +390,23 @@ namespace IronPython.Modules {
             return stat(path);
         }
 
+#if FEATURE_WINDOWS
+        public static void symlink(CodeContext context, string source, string link_name) {
+            // TODO: implement me!
+            throw new NotImplementedException();
+        }
+#elif FEATURE_UNIX && FEATURE_NATIVE
+        [DllImport("libc")]
+        private static extern int symlink(string source, string dest);
+
+        public static void symlink(CodeContext context, string source, string link_name) {
+            int result = symlink(source, link_name);
+            if(result != 0) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 0, source, link_name);
+            }
+        }
+#endif
+
 #if FEATURE_FILESYSTEM
         public static void mkdir(string path) {
             if (Directory.Exists(path))

@@ -47,6 +47,16 @@ namespace IronPython.Modules {
         private const int SEEK_CUR = 1;
         private const int SEEK_END = 2;
 
+#if FEATURE_UNIX
+        public const int MAP_SHARED = 1;
+        public const int MAP_PRIVATE = 2;
+
+        public const int PROT_NONE = 0;
+        public const int PROT_READ = 1;
+        public const int PROT_WRITE = 2;
+        public const int PROT_EXEC = 4;
+#endif
+
         public static readonly int ALLOCATIONGRANULARITY = GetAllocationGranularity();
         public static readonly int PAGESIZE = System.Environment.SystemPageSize;
 
@@ -103,6 +113,10 @@ namespace IronPython.Modules {
                 string tagname=null,
                 int access=ACCESS_WRITE,
                 long offset=0L
+#if FEATURE_UNIX
+                ,[DefaultParameterValue(MAP_SHARED)] int flags,
+                [DefaultParameterValue(PROT_WRITE | PROT_READ)] int prot
+#endif
             ) {
                 switch (access) {
                     case ACCESS_READ:

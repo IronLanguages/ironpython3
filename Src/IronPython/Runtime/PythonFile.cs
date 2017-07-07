@@ -459,6 +459,7 @@ namespace IronPython.Runtime {
                 if (c == -1) {
                     return String.Empty;
                 }
+                _position++;
                 if (c == '\r') c = '\n';
                 return ScriptingRuntimeHelpers.CharToString((char)c);
             }
@@ -550,6 +551,7 @@ namespace IronPython.Runtime {
                 if (c == -1) {
                     return String.Empty;
                 }
+                _position++;
 
                 return ScriptingRuntimeHelpers.CharToString((char)c);
             }

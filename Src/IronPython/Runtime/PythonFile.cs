@@ -459,6 +459,7 @@ namespace IronPython.Runtime {
                 if (c == -1) {
                     return String.Empty;
                 }
+                _position++;
                 if (c == '\r') c = '\n';
                 return ScriptingRuntimeHelpers.CharToString((char)c);
             }
@@ -550,6 +551,7 @@ namespace IronPython.Runtime {
                 if (c == -1) {
                     return String.Empty;
                 }
+                _position++;
 
                 return ScriptingRuntimeHelpers.CharToString((char)c);
             }
@@ -1087,13 +1089,19 @@ namespace IronPython.Runtime {
             var pythonContext = context.LanguageContext;
             var encoding = pythonContext.DefaultEncoding;
 
-            var inPipe = new AnonymousPipeServerStream(PipeDirection.In);
             var inPipeFile = new PythonFile(context);
+            var outPipeFile = new PythonFile(context);
+#if FEATURE_WINDOWS
+            var inPipe = new AnonymousPipeServerStream(PipeDirection.In);
             inPipeFile.InitializePipe(inPipe, "r", encoding);
 
             var outPipe = new AnonymousPipeClientStream(PipeDirection.Out, inPipe.ClientSafePipeHandle);
-            var outPipeFile = new PythonFile(context);
             outPipeFile.InitializePipe(outPipe, "w", encoding);
+#else
+            Mono.Unix.UnixPipes pipes = Mono.Unix.UnixPipes.CreatePipes();
+            inPipeFile.InitializePipe(pipes.Reading, "r", encoding);
+            outPipeFile.InitializePipe(pipes.Writing, "w", encoding);
+#endif
             return new [] {inPipeFile, outPipeFile};
         }
 
@@ -1377,7 +1385,7 @@ namespace IronPython.Runtime {
         }
 
 #if FEATURE_PROCESS
-        internal void InitializePipe(PipeStream stream, string mode, Encoding encoding) {
+        internal void InitializePipe(Stream stream, string mode, Encoding encoding) {
             _stream = stream;
             _name = "<pipe>";
             _mode = mode;
@@ -1385,7 +1393,6 @@ namespace IronPython.Runtime {
             _encoding = StringOps.GetEncodingName(encoding);
             _isOpen = true;
             InitializeReaderAndWriter(stream, encoding);
-
         }
 #endif
 
@@ -1407,6 +1414,12 @@ namespace IronPython.Runtime {
                 handle = ((PipeStream)stream).SafePipeHandle.DangerousGetHandle().ToPython();
                 return true;
             }
+#if FEATURE_UNIX
+            if (stream is Mono.Unix.UnixStream) {
+                handle = ((Mono.Unix.UnixStream)stream).Handle;
+                return true;
+            }
+#endif
 
             // if all else fails try reflection
             var sfh = stream.GetType().GetField("_handle", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(stream);
@@ -1952,7 +1965,7 @@ namespace IronPython.Runtime {
         #endregion
     }
 
-#if FEATURE_NATIVE && !CLR45
+#if FEATURE_WINDOWS && FEATURE_NATIVE && !CLR45
     // dotnet45 backport
     // http://msdn.microsoft.com/en-us/library/system.console.isoutputredirected%28v=VS.110%29.aspx
 

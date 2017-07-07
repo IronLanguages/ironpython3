@@ -59,9 +59,13 @@ namespace IronPython.Modules {
         [DllImport("libdl")]
         private static extern IntPtr dlsym(IntPtr handle, string symbol);
 
+        private const int RTLD_NOW = 2;
+
         public static IntPtr LoadDLL(string filename, int flags) {
             if (Environment.OSVersion.Platform == PlatformID.Unix ||
                 Environment.OSVersion.Platform == PlatformID.MacOSX) {
+                if (flags == 0)
+                    flags = RTLD_NOW;
                 return dlopen(filename, flags);
             }
 

@@ -1280,8 +1280,8 @@ namespace IronPython.Runtime
                         Assembly res;
 
                         if (TryLoadAssemblyFromFileWithPath(fullName, out res)) return res;
-                        if (TryLoadAssemblyFromFileWithPath(fullName + ".EXE", out res)) return res;
-                        if (TryLoadAssemblyFromFileWithPath(fullName + ".DLL", out res)) return res;
+                        if (TryLoadAssemblyFromFileWithPath(fullName + ".exe", out res)) return res;
+                        if (TryLoadAssemblyFromFileWithPath(fullName + ".dll", out res)) return res;
                     }
                 }
             }

@@ -8,3 +8,11 @@ indent_size = 4
 [*.cs]
 csharp_new_line_before_open_brace = none
 csharp_new_line_before_else = false
+
+# disable default VS2017 naming rule
+dotnet_naming_rule.methods_and_properties_must_be_pascal_case.severity = none
+dotnet_naming_rule.methods_and_properties_must_be_pascal_case.symbols  = method_and_property_symbols
+dotnet_naming_rule.methods_and_properties_must_be_pascal_case.style    = pascal_case_style
+dotnet_naming_symbols.method_and_property_symbols.applicable_kinds           = method;property
+dotnet_naming_symbols.method_and_property_symbols.applicable_accessibilities = *
+dotnet_naming_style.pascal_case_style.capitalization = pascal_case

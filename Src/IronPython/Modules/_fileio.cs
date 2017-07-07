@@ -18,6 +18,7 @@ using System.Numerics;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -299,7 +300,21 @@ namespace IronPython.Modules {
             public override bool isatty(CodeContext/*!*/ context) {
                 _checkClosed();
 
+#if FEATURE_UNIX
+                if (_isConsole) {
+                    if (_consoleStreamType == ConsoleStreamType.Input) {
+                        return Mono.Unix.Native.Syscall.isatty(0);
+                    }
+                    if (_consoleStreamType == ConsoleStreamType.Output) {
+                        return Mono.Unix.Native.Syscall.isatty(1);
+                    }
+                    Debug.Assert(_consoleStreamType == ConsoleStreamType.ErrorOutput);
+                    return Mono.Unix.Native.Syscall.isatty(2);
+                }
+                return false;
+#else
                 return _isConsole && !isRedirected();
+#endif
             }
 
             private bool isRedirected() {
@@ -310,6 +325,7 @@ namespace IronPython.Modules {
                 if (_consoleStreamType == ConsoleStreamType.Input) {
                     return Console.IsInputRedirected;
                 }
+                Debug.Assert(_consoleStreamType == ConsoleStreamType.ErrorOutput);
                 return Console.IsErrorRedirected;
 #elif FEATURE_NATIVE
                 if (_consoleStreamType == ConsoleStreamType.Output) {
@@ -318,6 +334,7 @@ namespace IronPython.Modules {
                 if (_consoleStreamType == ConsoleStreamType.Input) {
                     return StreamRedirectionInfo.IsInputRedirected;
                 }
+                Debug.Assert(_consoleStreamType == ConsoleStreamType.ErrorOutput);
                 return StreamRedirectionInfo.IsErrorRedirected;
 #else
                 return false;

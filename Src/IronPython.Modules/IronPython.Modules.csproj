@@ -34,6 +34,7 @@
     <Compile Include="bz2\dotnetzip\BZip2\Rand.cs" />
     <Compile Include="cmath.cs" />
     <Compile Include="faulthandler.cs" />
+    <Compile Include="fcntl.cs" />
     <Compile Include="msvcrt.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="mmap.cs" />
@@ -119,6 +120,11 @@
     </Compile>
     <Compile Include="winreg.cs" />
     <Compile Include="_weakref.Generated.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Mono)' == 'true'">
+    <Reference Include="Mono.Posix, Version=4.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <None Include="IronPython.Modules.ruleset" />

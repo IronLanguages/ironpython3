@@ -21,11 +21,7 @@ using Microsoft.Scripting.Runtime;
 using IronPython.Runtime;
 using IronPython.Runtime.Binding;
 
-#if FEATURE_CORE_DLR
 using MSAst = System.Linq.Expressions;
-#else
-using MSAst = Microsoft.Scripting.Ast;
-#endif
 
 
 namespace IronPython.Compiler.Ast {

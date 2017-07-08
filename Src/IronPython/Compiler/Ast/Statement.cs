@@ -15,11 +15,7 @@
 
 using System;
 
-#if FEATURE_CORE_DLR
 using MSAst = System.Linq.Expressions;
-#else
-using MSAst = Microsoft.Scripting.Ast;
-#endif
 
 
 namespace IronPython.Compiler.Ast {

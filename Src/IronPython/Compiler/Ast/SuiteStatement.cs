@@ -13,11 +13,7 @@
  *
  * ***************************************************************************/
 
-#if FEATURE_CORE_DLR
 using MSAst = System.Linq.Expressions;
-#else
-using MSAst = Microsoft.Scripting.Ast;
-#endif
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

@@ -13,12 +13,7 @@
  *
  * ***************************************************************************/
 
-#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
-#else
-using dynamic = System.Object;
-using Microsoft.Scripting.Ast;
-#endif
 
 using System;
 using System.Collections;

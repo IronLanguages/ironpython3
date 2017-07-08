@@ -21,11 +21,7 @@ using IronPython.Runtime;
 using Microsoft.Scripting.Interpreter;
 using IronPython.Runtime.Operations;
 
-#if FEATURE_CORE_DLR
 using MSAst = System.Linq.Expressions;
-#else
-using MSAst = Microsoft.Scripting.Ast;
-#endif
 
 namespace IronPython.Compiler.Ast {
     class GetGlobalContextExpression : MSAst.Expression, IInstructionProvider {

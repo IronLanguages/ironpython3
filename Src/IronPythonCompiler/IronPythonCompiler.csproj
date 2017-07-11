@@ -1,65 +1,41 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <Import Project="$(ProjectDir)..\..\Build\Common.proj" />
   <PropertyGroup>
+    <TargetFrameworks>net45</TargetFrameworks>
+    <PlatformTarget>anycpu</PlatformTarget>
     <ProjectGuid>{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>IronPythonCompiler</RootNamespace>
     <AssemblyName>ipyc</AssemblyName>
-  </PropertyGroup>
-  <PropertyGroup>
     <StartupObject>IronPythonCompiler.Program</StartupObject>
+    <BaseAddress>885063680</BaseAddress>
+    <CodeAnalysisRuleSet>$(AssemblyName).ruleset</CodeAnalysisRuleSet>
+    <DocumentationFile>$(OutputPath)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="IKVM.Reflection, Version=7.2.4630.5, Culture=neutral, PublicKeyToken=13235d27fcbfff58, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <ProjectReference Include="..\IronPython\IronPython.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="IKVM.Reflection">
       <HintPath>..\..\Util\References\IKVM\IKVM.Reflection.dll</HintPath>
     </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
     <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Config.cs" />
-    <Compile Include="ConsoleOps.cs" />
-    <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Properties\BuildInfo.Generated.cs" />
-    <Compile Include="..\AssemblyVersion.cs">
-      <Link>Properties\AssemblyVersion.cs</Link>
-    </Compile>
+    <Compile Include="..\AssemblyVersion.cs" Link="Properties\AssemblyVersion.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="..\App.Debug.config">
-      <Link>App.Debug.config</Link>
-    </None>
-    <None Include="..\App.Release.config">
-      <Link>App.Release.config</Link>
-    </None>
-    <None Include="IronPythonCompiler.ruleset" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\DLR\Src\Microsoft.Dynamic\Microsoft.Dynamic.csproj">
-      <Project>{eb66b766-6354-4208-a3d4-aacbdcb5c3b3}</Project>
-      <Name>Microsoft.Dynamic</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\DLR\Src\Microsoft.Scripting\Microsoft.Scripting.csproj">
-      <Project>{02ff0909-f5ad-48cf-a86a-345e721b7e40}</Project>
-      <Name>Microsoft.Scripting</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\IronPython\IronPython.csproj">
-      <Project>{95289ea9-5778-489d-ab48-f81f2ce2da32}</Project>
-      <Name>IronPython</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <Import Project="$(CSharpTargets)" />
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Import Project="$(BeforeTargetFiles)" />
-  <Target Name="BeforeBuild" DependsOnTargets="$(BeforeTargets)" />
+  <Target Name="BeforeBuild" DependsOnTargets="$(BeforeTargets);GenerateCurrentVersion" />
+  <ItemGroup>
+    <!-- if the file does not exist it's not picked up automatically -->
+    <Compile Remove="Properties\CurrentVersion.Generated.cs" />
+    <Compile Include="Properties\CurrentVersion.Generated.cs" />
+    <Compile Remove="Properties\BuildInfo.Generated.cs" />
+    <Compile Include="Properties\BuildInfo.Generated.cs" />
+  </ItemGroup>
   <Import Project="$(AfterTargetFiles)" />
   <Target Name="AfterBuild" DependsOnTargets="$(AfterTargets)" />
 </Project>

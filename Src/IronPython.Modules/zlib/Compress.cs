@@ -41,7 +41,7 @@ namespace IronPython.Zlib
         internal Compress(int level, int method, int wbits, int memlevel, int strategy)
         {
             zst = new ZStream();
-            int err = zst.deflateInit(level, wbits);
+            int err = zst.DeflateInit(level, wbits);
             switch(err)
             {
                 case ZlibModule.Z_OK:

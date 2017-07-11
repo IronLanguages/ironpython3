@@ -13,7 +13,13 @@ env:
 mono:
   - latest
 
+sudo: required
+dist: trusty
+
+dotnet: 1.0.3
+
 script:
+  - dotnet restore IronPython.sln --packages ./packages
   - if [[ "$TRAVIS_OS_NAME" != "osx" ]] ; then make ; fi
   - if [[ "$TRAVIS_OS_NAME" != "osx" ]] ; then docker run -v /home/travis/build/IronLanguages/ironpython3:/home/travis/build/IronLanguages/ironpython3 mono:4.8 /bin/sh -c "apt-get update ; apt-get install make ; cd /home/travis/build/IronLanguages/ironpython3 && make test-all" ; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]] ; then make ; fi

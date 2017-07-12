@@ -2,7 +2,6 @@
 
 release:
 	@msbuild Build.proj /t:Build /p:Mono=true /p:BuildFlavour=Release /p:Platform="Any CPU" /verbosity:minimal /nologo
-	ls -la Src/DLR/bin
 	cp Src/DLR/bin/Release/rowantest.*.dll bin/Release/
 
 debug:

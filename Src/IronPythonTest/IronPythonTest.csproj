@@ -86,11 +86,11 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="nunit.framework">
-      <HintPath>$(ReferenceDir)\NUnit.3.5.0\lib\net40\nunit.framework.dll</HintPath>
+      <HintPath>$(ReferenceDir)\NUnit.3.7.1\lib\net40\nunit.framework.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="nunitlite">
-      <HintPath>$(ReferenceDir)\NUnitLite.3.5.0\lib\net40\nunitlite.dll</HintPath>
+      <HintPath>$(ReferenceDir)\NUnitLite.3.7.1\lib\net40\nunitlite.dll</HintPath>
       <Private>True</Private>
     </Reference>
   </ItemGroup>

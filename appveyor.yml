@@ -51,12 +51,12 @@ nuget:
 #---------------------------------#
 
 # build Configuration, i.e. Debug, Release, etc.
-#configuration: Debug
+configuration: Release
 
 # scripts to run before build
 before_build:
   - git submodule update --init --recursive
-  - ps: $xml = [xml] (Get-Content CurrentVersion.props); $major = $xml.Project.PropertyGroup.MajorVersion; $minor = $xml.Project.PropertyGroup.MinorVersion; $micro = $xml.Project.PropertyGroup.MicroVersion; $serial = $xml.Project.PropertyGroup.ReleaseSerial; Update-AppveyorBuild -Version "$($major).$($minor).$($micro).$($serial)-$($env:APPVEYOR_BUILD_NUMBER)"
+  - ps: $xml = [xml] (Get-Content CurrentVersion.props); $major = $xml.Project.PropertyGroup.MajorVersion; $minor = $xml.Project.PropertyGroup.MinorVersion; $micro = $xml.Project.PropertyGroup.MicroVersion; $serial = $xml.Project.PropertyGroup.ReleaseSerial; Update-AppveyorBuild -Version "$($major).$($minor).$($micro).$($serial)-$($env:APPVEYOR_BUILD_NUMBER)".replace(" ","")
 
 # scripts to run *after* solution is built and *before* automatic packaging occurs (web apps, NuGet packages, Azure Cloud Services)
 before_package:
@@ -73,26 +73,14 @@ build_script:
 
 # to run your custom scripts instead of automatic tests
 test_script:
-  #- .\make.cmd test-smoke
-  #- .\make.cmd test-cpython
-  #- .\make.cmd test-ironpython
+  - .\make.cmd ngen
   - .\make.cmd test-all
-  #- nunit3-console .\bin\Debug\IronPythonTest.dll
-
-# to run custom scripts after tests
-after_test:
-  # upload results to AppVeyor
-  #- ps: $wc = New-Object 'System.Net.WebClient'; $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\bin\Debug\all-result.xml))
 
 #---------------------------------#
 #      artifacts configuration    #
 #---------------------------------#
 
-artifacts:
-
-  # make.cmd test-* creates a resulting *-result.xml file
-  # pushing all *-result.xml files in build directory recursively
-  - path: '**\*result.xml'
+#artifacts:
 
 #  # pushing a single file
 #  - path: test.zip
@@ -132,37 +120,28 @@ artifacts:
 #        global handlers          #
 #---------------------------------#
 
-# on successful build
-on_success:
-  - ps: Get-ChildItem -Include *result.xml -Recurse
-  - ps: $wc = New-Object 'System.Net.WebClient'; $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", (Get-ChildItem -Include *result.xml -Recurse))
-
-# on build failure
 on_failure:
-  - ps: Get-ChildItem -Include *result.xml -Recurse
-  - ps: $wc = New-Object 'System.Net.WebClient'; $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", (Get-ChildItem -Include *result.xml -Recurse))
-
-# after build failure or success
-#on_finish:
-  # For DEBUG: If test_script aborts, after_test will not be run
-  #
-  # upload test results to AppVeyor
-  #- ps: $wc = New-Object 'System.Net.WebClient'; $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\bin\Debug\all-result.xml))
-
+  - ps: Write-Host "Uploading test results"
+  - ps: $wc = New-Object 'System.Net.WebClient'; foreach($file in (Get-ChildItem -Include *-result.xml -Recurse)) { $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", $file) }
+  - ps: Write-Host "Done uploading test results"
   
+on_success:
+  - ps: Write-Host "Uploading test results"
+  - ps: $wc = New-Object 'System.Net.WebClient'; foreach($file in (Get-ChildItem -Include *-result.xml -Recurse)) { $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", $file) }
+  - ps: Write-Host "Done uploading test results"
+
+
 #---------------------------------#
 #         notifications           #
 #---------------------------------#
-  
+
 notifications:
 
   # Email
   - provider: Email
     to:
-      - slide.o.mix@gmail.com
-      - ticotimo@gmail.com
-    # use defaults for now
-    #subject: 'Build {{status}}'                  # optional
+      - developers+int+211+854770831703316759@ironpython.groups.io
+    subject: 'IronPython3 Build {{status}}'
     #message: "{{message}}, {{commitId}}, ..."    # optional
     on_build_status_changed: true
 

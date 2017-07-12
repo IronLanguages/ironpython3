@@ -59,13 +59,10 @@
 
   <PropertyGroup Condition="'$(ReferencedPlatform)' == ''">
     <ReferencedPlatform>net45</ReferencedPlatform>
-    <ReferencedPlatform
-        Condition="'$(Configuration)' == 'v4Release' or '$(Configuration)' == 'v4Debug'">net40</ReferencedPlatform>
   </PropertyGroup>
 
   <PropertyGroup>
     <CSharpTargets Condition="'$(CSharpTargets)' == ''">$(MSBuildBinPath)\Microsoft.CSharp.targets</CSharpTargets>
-    <CSharpTargets Condition="'$(CSharpTargets)' == '' and '$(ReferencedPlatform)' == 'android'">$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets</CSharpTargets>
     <WpfReferences>$(RootDir)\Util\References\WPF\4.0</WpfReferences>
   </PropertyGroup>
 

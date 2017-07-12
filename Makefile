@@ -17,8 +17,6 @@ clean:
 
 test-smoke:
 	(cd bin/Debug && mono ./IronPythonTest.exe --labels=All --where:Category==StandardCPython --result=smoke-result-net45.xml) || true
-	(cd bin/v4Debug && mono ./IronPythonTest.exe --labels=All --where:Category==StandardCPython --result=smoke-result-net40.xml) || true
 
 test-smoke-release:
 	(cd bin/Release && mono ./IronPythonTest.exe --labels=All --where:Category==StandardCPython --result=smoke-result-net45.xml) || true
-	(cd bin/v4Release && mono ./IronPythonTest.exe --labels=All --where:Category==StandardCPython --result=smoke-result-net40.xml) || true

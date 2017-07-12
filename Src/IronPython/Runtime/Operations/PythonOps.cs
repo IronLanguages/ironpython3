@@ -3474,7 +3474,7 @@ namespace IronPython.Runtime.Operations {
                 if (s[i] < 0x100) ret[i] = (byte)s[i];
                 else {
                     throw PythonOps.UnicodeEncodeError("ascii", s[i], i,
-                        "'ascii' codec can't decode byte {0:X} in position {1}: ordinal not in range", (int)s[i], i);
+                        "'ascii' codec can't encode character '\\u{0:X}' in position {1}: ordinal not in range(128)", (int)s[i], i);
                 }
             }
             return ret;

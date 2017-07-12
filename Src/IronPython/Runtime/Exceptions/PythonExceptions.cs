@@ -830,6 +830,10 @@ for k, v in toError.items():
                     base.InitializeFromClr(exception);
                 }
             }
+
+            public override string ToString() {
+                return reason.ToString();
+            }
         }
 
         public partial class _UnicodeEncodeError : BaseException {
@@ -842,6 +846,10 @@ for k, v in toError.items():
                 } else {
                     base.InitializeFromClr(exception);
                 }
+            }
+
+            public override string ToString() {
+                return reason.ToString();
             }
         }
 

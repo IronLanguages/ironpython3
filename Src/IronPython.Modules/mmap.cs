@@ -114,8 +114,8 @@ namespace IronPython.Modules {
                 int access=ACCESS_WRITE,
                 long offset=0L
 #if FEATURE_UNIX
-                ,[DefaultParameterValue(MAP_SHARED)] int flags,
-                [DefaultParameterValue(PROT_WRITE | PROT_READ)] int prot
+                ,int flags=MAP_SHARED,
+                int prot=PROT_WRITE|PROT_READ
 #endif
             ) {
                 switch (access) {

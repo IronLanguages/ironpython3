@@ -13,9 +13,7 @@
  *
  * ***************************************************************************/
 
-#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
-#endif
 
 using System;
 using System.Collections.Generic;

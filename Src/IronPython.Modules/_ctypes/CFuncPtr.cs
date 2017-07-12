@@ -14,12 +14,8 @@
  * ***************************************************************************/
 #if FEATURE_NATIVE
 
-#if FEATURE_CORE_DLR
 using System.Linq.Expressions;
 using System.Numerics;
-#else
-using Microsoft.Scripting.Math;
-#endif
 
 using System;
 using System.Collections.Generic;

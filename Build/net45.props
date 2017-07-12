@@ -17,7 +17,6 @@
     <Features>$(Features);FEATURE_DEFAULT_PARAMETER_VALUE</Features>
     <Features>$(Features);FEATURE_FUNCS_5_16</Features>
     <Features>$(Features);FEATURE_VARIANCE</Features>
-    <Features>$(Features);FEATURE_CORE_DLR</Features>
     <Features>$(Features);FEATURE_TASKS</Features>
     <Features>$(Features);FEATURE_CRYPTOGRAPHY</Features>
     <Features>$(Features);FEATURE_SYNC_SOCKETS</Features>

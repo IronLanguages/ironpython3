@@ -61,18 +61,12 @@ echo No target 'test'. Try 'test-smoke', 'test-ironpython', 'test-cpython', or '
 goto :exit
 
 :test-smoke
-pushd bin\v4Debug
-IronPythonTest.exe --labels=All --where:Category==StandardCPython --result:smoke-result-net40.xml
-popd
 pushd bin\Debug
 IronPythonTest.exe --labels=All --where:Category==StandardCPython --result:smoke-result-net45.xml
 popd
 goto :exit
 
 :test-smoke-release
-pushd bin\v4Release
-IronPythonTest.exe --labels=All --where:Category==StandardCPython --result:smoke-result-net40.xml
-popd
 pushd bin\Release
 IronPythonTest.exe --labels=All --where:Category==StandardCPython --result:smoke-result-net45.xml
 popd

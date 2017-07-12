@@ -8,12 +8,6 @@
     <RootNamespace>IronPythonCompiler</RootNamespace>
     <AssemblyName>ipyc</AssemblyName>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v4Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v4Release|AnyCPU' ">
-  </PropertyGroup>
   <PropertyGroup>
     <StartupObject>IronPythonCompiler.Program</StartupObject>
   </PropertyGroup>

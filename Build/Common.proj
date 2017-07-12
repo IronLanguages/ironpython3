@@ -54,7 +54,6 @@
     <BuildFlavour>Debug</BuildFlavour>
     <BuildFlavour Condition="'$(Configuration)' == 'FxCop'">Release</BuildFlavour>
     <BuildFlavour Condition="'$(Configuration)' == 'Release'">Release</BuildFlavour>
-    <BuildFlavour Condition="'$(Configuration)' == 'v4Release'">Release</BuildFlavour>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(ReferencedPlatform)' == ''">

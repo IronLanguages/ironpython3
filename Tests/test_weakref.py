@@ -30,24 +30,8 @@
 ##
 
 import weakref
-from iptest.assert_util import *
 
-def create_weakrefs(o, count, cb = None):
-    # Helper method to work around the (to me yet unexplicable) fact that
-    # 'o = factory(); del o; force_gc();' does not lead to the collection of 'o'.
-
-    # force creation of different instances for the same target
-    if not cb and count > 1:
-        cb = lambda r: None
-
-    if count==1:
-        return weakref.ref(o, cb)
-    elif count==2:
-        r1, r2 = weakref.ref(o, cb), weakref.ref(o, cb)
-        Assert(r1 is not r2)
-        return r1, r2
-    else:
-        raise Exception("not implemented")
+from iptest import IronPythonTestCase, run_test
 
 class C(object):
     def __init__(self, value=0):
@@ -59,49 +43,67 @@ class C(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+def _create_weakrefs(self, o, count, cb = None):
+        # Helper method to work around the (to me yet unexplicable) fact that
+        # 'o = factory(); del o; force_gc();' does not lead to the collection of 'o'.
 
-def test_ref_callable():
-    # "if the referent is no longer alive, calling the reference object will cause None to 
-    # be returned"
+        # force creation of different instances for the same target
+        if not cb and count > 1:
+            cb = lambda r: None
 
-    r = create_weakrefs(C("a"), 1)
-    # for reasons stated in create_weakrefs(), we cannot test on instance equality
-    Assert(r().value == "a") 
+        if count==1:
+            return weakref.ref(o, cb)
+        elif count==2:
+            r1, r2 = weakref.ref(o, cb), weakref.ref(o, cb)
+            self.assertTrue(r1 is not r2)
+            return r1, r2
+        else:
+            raise Exception("not implemented")
 
-    force_gc()
+class WeakrefTest(IronPythonTestCase):
+    def test_ref_callable(self):
+        # "if the referent is no longer alive, calling the reference object will cause None to 
+        # be returned"
 
-    Assert(r() is None)
+        r = _create_weakrefs(self, C("a"), 1)
+        # for reasons stated in create_weakrefs(), we cannot test on instance equality
+        self.assertTrue(r().value == "a") 
 
-def test_ref_hashable():
-    # "Weak references are hashable if the object is hashable. They will maintain their hash value 
-    # even after the object was deleted. If hash() is called the first time only after the object 
-    # was deleted, the call will raise TypeError."
+        self.force_gc()
 
-    r1, r2 = create_weakrefs(C("a"), 2)
-    Assert(hash(r1) == hash("a"))
+        self.assertTrue(r() is None)
 
-    force_gc()
+    def test_ref_hashable(self):
+        # "Weak references are hashable if the object is hashable. They will maintain their hash value 
+        # even after the object was deleted. If hash() is called the first time only after the object 
+        # was deleted, the call will raise TypeError."
 
-    Assert(r1() is None)
-    Assert(r2() is None)
-    Assert(hash(r1) == hash("a"))
-    AssertError(TypeError, lambda: hash(r2))
+        r1, r2 = _create_weakrefs(self, C("a"), 2)
+        self.assertTrue(hash(r1) == hash("a"))
 
-def test_ref_equality():
-    # "If the referents are still alive, two references have the same equality relationship as 
-    # their referents (regardless of the callback). If either referent has been deleted, the 
-    # references are equal only if the reference objects are the same object."
+        self.force_gc()
 
-    r1, r2 = create_weakrefs(C("a"), 2)
-    r3 = create_weakrefs(C("a"), 1)
-    Assert(r1 == r2)
-    Assert(r1 == r3)
+        self.assertTrue(r1() is None)
+        self.assertTrue(r2() is None)
+        self.assertTrue(hash(r1) == hash("a"))
+        self.assertRaises(TypeError, lambda: hash(r2))
 
-    force_gc()
+    def test_ref_equality(self):
+        # "If the referents are still alive, two references have the same equality relationship as 
+        # their referents (regardless of the callback). If either referent has been deleted, the 
+        # references are equal only if the reference objects are the same object."
 
-    Assert(r1() is None)
-    Assert(r3() is None)
-    Assert(r1 == r2)
-    Assert(r1 != r3)
+        r1, r2 = _create_weakrefs(self, C("a"), 2)
+        r3 = _create_weakrefs(self, C("a"), 1)
+        self.assertTrue(r1 == r2)
+        self.assertTrue(r1 == r3)
+
+        self.force_gc()
+
+        self.assertTrue(r1() is None)
+        self.assertTrue(r3() is None)
+        self.assertTrue(r1 == r2)
+        self.assertTrue(r1 != r3)
+
 
 run_test(__name__)

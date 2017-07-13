@@ -18,26 +18,25 @@ clean:
 	@msbuild Build.proj /t:Clean /p:Mono=true /verbosity:minimal /nologo
 
 test-ironpython:
-	(cd bin/Release && mono ./IronPythonTest.exe --labels=All --where:Category==IronPython --result:ironpython-net45-release-result.xml) || true
+	cd bin/Release && mono ./IronPythonTest.exe --labels=All --where:Category==IronPython --result:ironpython-net45-release-result.xml
 
 test-ironpython-debug:
-	(cd bin/Debug && mono ./IronPythonTest.exe --labels=All --where:Category==IronPython --result:ironpython-net45-debug-result.xml) || true
+	cd bin/Debug && mono ./IronPythonTest.exe --labels=All --where:Category==IronPython --result:ironpython-net45-debug-result.xml
 
 test-cpython:
-	(cd bin/Release && mono ./IronPythonTest.exe --labels=All --where:"Category==StandardCPython || Category==AllCPython" --result:cpython-net45-release-result.xml) || true
+	cd bin/Release && mono ./IronPythonTest.exe --labels=All --where:"Category==StandardCPython || Category==AllCPython" --result:cpython-net45-release-result.xml
 
 test-cpython-debug:
-	(cd bin/Debug && mono ./IronPythonTest.exe --labels=All --where:"Category==StandardCPython || Category==AllCPython" --result:cpython-net45-debug-result.xml) || true
-
+	cd bin/Debug && mono ./IronPythonTest.exe --labels=All --where:"Category==StandardCPython || Category==AllCPython" --result:cpython-net45-debug-result.xml
 
 test-smoke:
-	(cd bin/Release && mono ./IronPythonTest.exe --labels=All --where:Category==StandardCPython --result=smoke-net45-release-result.xml) || true
+	cd bin/Release && mono ./IronPythonTest.exe --labels=All --where:Category==StandardCPython --result=smoke-net45-release-result.xml
 
 test-smoke-debug:
-	(cd bin/Debug && mono ./IronPythonTest.exe --labels=All --where:Category==StandardCPython --result=smoke-net45-debug-result.xml) || true
+	cd bin/Debug && mono ./IronPythonTest.exe --labels=All --where:Category==StandardCPython --result=smoke-net45-debug-result.xml
 
 test-all:
-	(cd bin/Release && mono ./IronPythonTest.exe --labels=All --result=all-net45-release-result.xml) || true
+	cd bin/Release && mono ./IronPythonTest.exe --labels=All --result=all-net45-release-result.xml
 
 test-all-debug:
-	(cd bin/Debug && mono ./IronPythonTest.exe --labels=All --result=all-result-debug-net45.xml) || true
+	cd bin/Debug && mono ./IronPythonTest.exe --labels=All --result=all-result-debug-net45.xml

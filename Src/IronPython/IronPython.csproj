@@ -425,7 +425,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Lib\iptest\assert_util.py">
+    <Content Include="Lib\iptest\ipunittest.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Lib\iptest\cominterop_util.py">
@@ -452,14 +452,12 @@
     <Content Include="Lib\iptest\type_util.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Lib\iptest\util.py">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Lib\iptest\warning_util.py">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Content Include="Lib\iptest\__init__.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\StdLib\Lib\os.py">
+        <Link>Lib\os.py</Link>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   <ItemGroup>
@@ -481,7 +479,7 @@
     <Reference Include="System.Configuration" />
     <Reference Include="System.Runtime.Remoting" />
     <Reference Condition="'$(Mono)' == 'true'" Include="Mono.Posix, Version=4.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756">
-        <SpecificVersion>False</SpecificVersion>
+      <SpecificVersion>False</SpecificVersion>
     </Reference>
   </ItemGroup>
   <ItemGroup>

@@ -25,12 +25,9 @@ TODO:
 
 '''
 
-from iptest.assert_util import *
-skiptest("win32")
-   
-import System
-import clr
-      
+import unittest
+from iptest import is_cli, run_test
+
 #Test Python/CLR number interop.
 clr_integer_types = [ "System.Byte",
                       "System.SByte",
@@ -128,121 +125,6 @@ unsupported_operands = [
 
 known_bugs = []
 
-#------------------------------------------------------------------------------
-def num_ok_for_type(number, proposed_type):
-    '''
-    Helper function returns true if the number param is within the range of
-    valid values for the proposed type
-    '''
-    #handle special cases first
-    if proposed_type=="long":
-        #arbitrary precision
-        return True
-    if proposed_type=="float":
-        #arbitrary precision
-        return True
-    
-    
-    if number >= eval(proposed_type + ".MinValue") and number <= eval(proposed_type + ".MaxValue"):
-        return True
-    #must give it another shot...maybe the operator is broken
-    if eval(proposed_type + ".MinValue") <= number and eval(proposed_type + ".MaxValue") >= number:
-        return True
-        
-    return False
-            
-
-#------------------------------------------------------------------------------
-def _test_interop_set(clr_types, py_types, test_cases):
-    '''
-    Helper function which permutes Python/CLR types onto test cases
-    '''
-    global unsupported_operands
-    global known_bugs
-    
-    #each test case
-    for leftop, op, rightop, expected_value in test_cases:
-        
-        #get the left operand as a Python type
-        py_left = eval(leftop)
-        
-        #------------------------------------------------------------------
-        #create a list of values where each element is the lefthand operand
-        #converted to a CLR type
-        leftop_clr_types = [x for x in clr_types if num_ok_for_type(py_left, x)]
-        leftop_clr_values = [eval(x + "(" + leftop + ")") for x in leftop_clr_types]
-                    
-        #------------------------------------------------------------------
-        #create a list of values where each element is the lefthand operand
-        #converted to a Python type
-        leftop_py_types = [x for x in py_types if num_ok_for_type(py_left, x)]
-        leftop_py_values = [eval(x + "(" + leftop + ")") for x in leftop_py_types]
-        
-        #------------------------------------------------------------------
-        #get the right operand as a Python type
-        py_right = eval(rightop)
-        rightop_clr_types = [x for x in clr_types if num_ok_for_type(py_right, x)]
-        rightop_clr_values = [eval(x + "(" + rightop + ")") for x in rightop_clr_types]
-                    
-        #------------------------------------------------------------------
-        #create a list of values where each element is the righthand operand
-        #converted to a Python type
-        rightop_py_types = [x for x in py_types if num_ok_for_type(py_right, x)]
-        rightop_py_values = [eval(x + "(" + rightop + ")") for x in rightop_py_types]
-                
-        #------------------------------------------------------------------
-        #Comparisons between CPython/CLR types
-        def assertionHelper(left_type, left_op, op, right_type, right_op, expected):
-            '''
-            Helper function used to figure out which test cases fail
-            without blowing up the rest of the test.
-            '''
-            expression_str = left_type + "("+ left_op +") " + str(op) + " " + right_type + "("+ right_op +")"
-            
-            #if it's supposedly unsupported...make sure
-            if unsupported_operands.count(left_type + op + right_type)>0:
-                AssertError(TypeError, eval, expression_str)
-                return
-                
-            try:
-                expression = eval(expression_str)
-            except TypeError as e:
-                print("TYPE BUG:", expression_str)
-                raise
-            
-            try:
-                AreEqual(expression, expected)
-                if known_bugs.count(left_type + op + right_type)>0:
-                    raise "NO BUG FOR: " + expression_str
-            except:
-                if known_bugs.count(left_type + op + right_type)>0:
-                    return
-                print(expression_str)
-                raise
-            
-            
-        #CLR-CLR
-        for x in leftop_clr_types:
-            for y in rightop_clr_types:
-                assertionHelper(x, leftop, op, y, rightop, expected_value)
-                
-        #CLR-PY
-        for x in leftop_clr_types:
-            for y in rightop_py_types:
-                assertionHelper(x, leftop, op, y, rightop, expected_value)
-                             
-        #PY-CLR
-        for x in leftop_py_types:
-            for y in rightop_clr_types:
-                assertionHelper(x, leftop, op, y, rightop, expected_value)
-            
-        #PY-PY
-        for x in leftop_py_types:
-            for y in rightop_py_types:
-                assertionHelper(x, leftop, op, y, rightop, expected_value)
-
-#------------------------------------------------------------------------------
-#--BOOLEAN
 bool_test_cases = [
                     #x==x
                     ("0","==","0", True),
@@ -324,16 +206,7 @@ bool_test_cases = [
                     ("3.14", ">=", "19", False),
                     ("3.14", ">", "19", False),
                    ]
-              
-def test_boolean():
-    '''
-    Test boolean operations involving a left and right operand
-    '''
-    _test_interop_set(clr_types, py_types, bool_test_cases)
-    
-#------------------------------------------------------------------------------
-#--ARITHMETIC
-#TODO - unary minus, unary plus
+
 arith_test_cases = [
                     #add
                     ("0", "+", "0", 0),
@@ -383,16 +256,6 @@ arith_test_cases = [
                     ("2", "%", "-1", 0),
                    ]
 
-def test_arithmetic():
-    '''
-    Test general arithmetic operations.
-    '''
-    _test_interop_set(clr_types, py_types, arith_test_cases)
-    
-    
-#------------------------------------------------------------------------------
-#BITWISE and SHIFT
-#TODO: bitwise negation
 bitwise_test_cases = [
                         #left shift
                         ("0", "<<", "1", 0),
@@ -423,70 +286,189 @@ bitwise_test_cases = [
                         ("-1", "^", "1", -2),
                      ]
 
-def test_bitwiseshift():
-    '''
-    Test bitwise and shifting operations.
-    '''
-    _test_interop_set(clr_integer_types, py_integer_types, bitwise_test_cases)
+@unittest.skipUnless(is_cli, 'IronPython specific test case')
+class ClrNumInteropTest(unittest.TestCase):
+    def num_ok_for_type(self, number, proposed_type):
+        '''Helper function returns true if the number param is within the range of valid values for the proposed type'''
 
+        import clr
+        import System
+        #handle special cases first
+        if proposed_type=="long":
+            #arbitrary precision
+            return True
+        if proposed_type=="float":
+            #arbitrary precision
+            return True
+        
+        
+        if number >= eval(proposed_type + ".MinValue") and number <= eval(proposed_type + ".MaxValue"):
+            return True
+        #must give it another shot...maybe the operator is broken
+        if eval(proposed_type + ".MinValue") <= number and eval(proposed_type + ".MaxValue") >= number:
+            return True
+            
+        return False
+            
 
-def test_sanity():
-    '''
-    Make sure that numbers within the constraints of the numerical types
-    are allowed.
-    '''
-    temp_list = [   ["System.Byte", 0, 255],
-                    ["System.SByte", -128, 127],
-                    ["System.Byte", 0, 255],
-                    ["System.Int16", -32768, 32767],
-                    ["System.UInt16", 0, 65535],
-                    ["System.Int32", -2147483648, 2147483647],
-                    ["System.UInt32", 0, 4294967295],
-                    ["System.Int64", -9223372036854775808, 9223372036854775807],
-                    ["System.UInt64", 0, 18446744073709551615],
-                    ["System.Single", -3.40282e+038, 3.40282e+038],
-                    ["System.Double", -1.79769313486e+308, 1.79769313486e+308],
-                    ["System.Decimal", -79228162514264337593543950335, 79228162514264337593543950335],
-                    ["int", -2147483648, 2147483647]
-                ]
+    def _test_interop_set(self, clr_types, py_types, test_cases):
+        '''Helper function which permutes Python/CLR types onto test cases'''
+        global unsupported_operands
+        global known_bugs
+
+        import clr
+        import System
+        
+        #each test case
+        for leftop, op, rightop, expected_value in test_cases:
+            
+            #get the left operand as a Python type
+            py_left = eval(leftop)
+            
+            #------------------------------------------------------------------
+            #create a list of values where each element is the lefthand operand
+            #converted to a CLR type
+            leftop_clr_types = [x for x in clr_types if self.num_ok_for_type(py_left, x)]
+            leftop_clr_values = [eval(x + "(" + leftop + ")") for x in leftop_clr_types]
+                        
+            #------------------------------------------------------------------
+            #create a list of values where each element is the lefthand operand
+            #converted to a Python type
+            leftop_py_types = [x for x in py_types if self.num_ok_for_type(py_left, x)]
+            leftop_py_values = [eval(x + "(" + leftop + ")") for x in leftop_py_types]
+            
+            #------------------------------------------------------------------
+            #get the right operand as a Python type
+            py_right = eval(rightop)
+            rightop_clr_types = [x for x in clr_types if self.num_ok_for_type(py_right, x)]
+            rightop_clr_values = [eval(x + "(" + rightop + ")") for x in rightop_clr_types]
+                        
+            #------------------------------------------------------------------
+            #create a list of values where each element is the righthand operand
+            #converted to a Python type
+            rightop_py_types = [x for x in py_types if self.num_ok_for_type(py_right, x)]
+            rightop_py_values = [eval(x + "(" + rightop + ")") for x in rightop_py_types]
+                    
+            #------------------------------------------------------------------
+            #Comparisons between CPython/CLR types
+            def assertionHelper(left_type, left_op, op, right_type, right_op, expected):
+                '''Helper function used to figure out which test cases fail without blowing up the rest of the test.'''
+
+                import clr
+                import System
+
+                expression_str = '{0}({1}) {2} {3}({4})'.format(left_type, left_op, str(op), right_type, right_op)
                 
-    for num_type, small_val, large_val in temp_list:
-        Assert(num_ok_for_type(1, num_type))
-        Assert(num_ok_for_type(1.0, num_type))
-        
-    
-        #Minimum value
-        Assert(num_ok_for_type(small_val, num_type))
-        Assert(num_ok_for_type(small_val + 1, num_type))
-        Assert(num_ok_for_type(small_val + 2, num_type))
-        
-        #Maximum value
-        Assert(num_ok_for_type(large_val, num_type))
-        Assert(num_ok_for_type(large_val - 1, num_type))
-        Assert(num_ok_for_type(large_val - 2, num_type))
-        
-        #Negative cases
-        if num_type!="System.Single" and num_type!="System.Double" and num_type!="System.Decimal":
-            Assert(not num_ok_for_type(small_val - 1, num_type))
-            Assert(not num_ok_for_type(small_val - 2, num_type))
-            Assert(not num_ok_for_type(large_val + 1, num_type))
-            Assert(not num_ok_for_type(large_val + 2, num_type))
-        
-    #Special cases
-    Assert(num_ok_for_type(0, "long"))
-    Assert(num_ok_for_type(1, "long"))
-    Assert(num_ok_for_type(-1, "long"))
-    Assert(num_ok_for_type(5, "long"))
-    Assert(num_ok_for_type(-92233720368547758080000, "long"))
-    Assert(num_ok_for_type( 18446744073709551615000, "long"))
-    
-    Assert(num_ok_for_type(0.0, "float"))
-    Assert(num_ok_for_type(1.0, "float"))
-    Assert(num_ok_for_type(-1.0, "float"))
-    Assert(num_ok_for_type(3.14, "float"))
-    Assert(num_ok_for_type(-92233720368547758080000.0, "float"))
-    Assert(num_ok_for_type( 18446744073709551615000.0, "float"))
-    
+                #if it's supposedly unsupported...make sure
+                if unsupported_operands.count(left_type + op + right_type)>0:
+                    self.assertRaises(TypeError, eval, expression_str)
+                    return
+                    
+                try:
+                    expression = eval(expression_str)
+                except TypeError as e:
+                    self.fail("TYPE BUG: %s" % expression_str)
+                
+                try:
+                    self.assertEqual(expression, expected)
+                    if known_bugs.count(left_type + op + right_type)>0:
+                        self.fail("NO BUG FOR: %s" % expression_str)
+                except:
+                    if known_bugs.count(left_type + op + right_type)>0:
+                        return
+                    self.fail(expression_str)
+                
+                
+            #CLR-CLR
+            for x in leftop_clr_types:
+                for y in rightop_clr_types:
+                    assertionHelper(x, leftop, op, y, rightop, expected_value)
+                    
+            #CLR-PY
+            for x in leftop_clr_types:
+                for y in rightop_py_types:
+                    assertionHelper(x, leftop, op, y, rightop, expected_value)
+                                
+            #PY-CLR
+            for x in leftop_py_types:
+                for y in rightop_clr_types:
+                    assertionHelper(x, leftop, op, y, rightop, expected_value)
+                
+            #PY-PY
+            for x in leftop_py_types:
+                for y in rightop_py_types:
+                    assertionHelper(x, leftop, op, y, rightop, expected_value)
 
+
+    def test_boolean(self):
+        '''Test boolean operations involving a left and right operand'''
+        self._test_interop_set(clr_types, py_types, bool_test_cases)
+
+    @unittest.expectedFailure
+    def test_arithmetic(self):
+        '''Test general arithmetic operations.'''
+        self._test_interop_set(clr_types, py_types, arith_test_cases)
+
+    def test_bitwiseshift(self):
+        '''Test bitwise and shifting operations.'''
+        self._test_interop_set(clr_integer_types, py_integer_types, bitwise_test_cases)
+
+
+    def test_sanity(self):
+        '''Make sure that numbers within the constraints of the numerical types are allowed.'''
+        import clr
+        import System
+        temp_list = [   ["System.Byte", 0, 255],
+                        ["System.SByte", -128, 127],
+                        ["System.Byte", 0, 255],
+                        ["System.Int16", -32768, 32767],
+                        ["System.UInt16", 0, 65535],
+                        ["System.Int32", -2147483648, 2147483647],
+                        ["System.UInt32", 0, 4294967295],
+                        ["System.Int64", -9223372036854775808, 9223372036854775807],
+                        ["System.UInt64", 0, 18446744073709551615],
+                        ["System.Single", -3.40282e+038, 3.40282e+038],
+                        ["System.Double", -1.79769313486e+308, 1.79769313486e+308],
+                        ["System.Decimal", -79228162514264337593543950335, 79228162514264337593543950335],
+                        ["int", -2147483648, 2147483647]
+                    ]
+                    
+        for num_type, small_val, large_val in temp_list:
+            self.assertTrue(self.num_ok_for_type(1, num_type))
+            self.assertTrue(self.num_ok_for_type(1.0, num_type))
+            
+        
+            #Minimum value
+            self.assertTrue(self.num_ok_for_type(small_val, num_type))
+            self.assertTrue(self.num_ok_for_type(small_val + 1, num_type))
+            self.assertTrue(self.num_ok_for_type(small_val + 2, num_type))
+            
+            #Maximum value
+            self.assertTrue(self.num_ok_for_type(large_val, num_type))
+            self.assertTrue(self.num_ok_for_type(large_val - 1, num_type))
+            self.assertTrue(self.num_ok_for_type(large_val - 2, num_type))
+            
+            #Negative cases
+            if num_type!="System.Single" and num_type!="System.Double" and num_type!="System.Decimal":
+                self.assertTrue(not self.num_ok_for_type(small_val - 1, num_type))
+                self.assertTrue(not self.num_ok_for_type(small_val - 2, num_type))
+                self.assertTrue(not self.num_ok_for_type(large_val + 1, num_type))
+                self.assertTrue(not self.num_ok_for_type(large_val + 2, num_type))
+            
+        #Special cases
+        self.assertTrue(self.num_ok_for_type(0, "long"))
+        self.assertTrue(self.num_ok_for_type(1, "long"))
+        self.assertTrue(self.num_ok_for_type(-1, "long"))
+        self.assertTrue(self.num_ok_for_type(5, "long"))
+        self.assertTrue(self.num_ok_for_type(-92233720368547758080000, "long"))
+        self.assertTrue(self.num_ok_for_type( 18446744073709551615000, "long"))
+        
+        self.assertTrue(self.num_ok_for_type(0.0, "float"))
+        self.assertTrue(self.num_ok_for_type(1.0, "float"))
+        self.assertTrue(self.num_ok_for_type(-1.0, "float"))
+        self.assertTrue(self.num_ok_for_type(3.14, "float"))
+        self.assertTrue(self.num_ok_for_type(-92233720368547758080000.0, "float"))
+        self.assertTrue(self.num_ok_for_type( 18446744073709551615000.0, "float"))
+    
 
 run_test(__name__)

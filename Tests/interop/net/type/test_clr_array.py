@@ -24,18 +24,15 @@ Array Type
 * Passing the array object as argument to methods
   - C#: Array covariance specifically does not extend to arrays of value-types
 '''
-#------------------------------------------------------------------------------ 
-from iptest.assert_util import *
-skiptest("silverlight")
 
-add_clr_assemblies("typesamples")
+import unittest
 
-from Merlin.Testing import *
-from Merlin.Testing.TypeSample import *
+from iptest import IronPythonTestCase, run_test, skipUnlessIronPython
 
-from System import Array 
-
-def test_creation():
-    Array[int]([1,2])
+@skipUnlessIronPython()
+class ClrArrayTest(IronPythonTestCase):
+    def test_creation(self):
+        from System import Array
+        Array[int]([1,2])
     
 run_test(__name__)

@@ -15,50 +15,45 @@
 
 # make sure the peverify logic works
 
-from iptest.assert_util import *
-from iptest.process_util import *
+import os
+import sys
+import unittest
 
-skiptest("silverlight")
-skiptest("win32")
+from iptest import IronPythonTestCase, is_cli, is_netstandard, is_mono, run_test, skipUnlessIronPython
 
-import sys, System
-
-# ipy.exe should be DEBUG version
-ipy_exe = System.Reflection.Assembly.LoadFile(sys.executable)
-ca = ipy_exe.GetCustomAttributes(System.Diagnostics.DebuggableAttribute, False)
-if int(ca[0].DebuggingFlags & System.Diagnostics.DebuggableAttribute.DebuggingModes.DisableOptimizations) == 0:
-    print("not debug version of ipy.exe: skip")
-    sys.exit(0)
-
-switches = ['-D', '-X:SaveAssemblies']
-
-for x in switches:
-    if x not in System.Environment.GetCommandLineArgs():
-        print('%s not found in sys.argv: skip' % x)
-        sys.exit(0)
-
-process = System.Diagnostics.Process()
-process.StartInfo.FileName = sys.executable
-process.StartInfo.Arguments = '-D -X:SaveAssemblies badil.py'
-process.StartInfo.CreateNoWindow = True
-process.StartInfo.UseShellExecute = False
-process.StartInfo.RedirectStandardInput = True
-process.StartInfo.RedirectStandardOutput = True
-process.StartInfo.RedirectStandardError = True
-process.Start()
-output1 = process.StandardOutput.ReadToEnd()
-output2 = process.StandardError.ReadToEnd()
-process.WaitForExit()
-ret = process.ExitCode
-
-print("ExitCode:", ret)
-print("Output: ", output1)
-print("Error:  ", output2)
-print()
-
-if ret == 1 and ("Error Verifying" in output1 or "Error(s) Verifying" in output1):
-    print("caught verification failure: pass")
-    sys.exit(0)
+if is_cli:
+    import clr
 else:
-    print("did not see Verification failure: fail")
-    sys.exit(1)
+    class clr(object):
+        IsDebug=False
+
+@unittest.skipIf(is_mono, 'mono doe not add a debuggable attribute')
+@unittest.skipIf(is_netstandard, 'no assembly saving in netstandard')
+@skipUnlessIronPython()
+@unittest.skipUnless(clr.IsDebug, 'Need debug mode assemblies')
+class PEVerifyTest(IronPythonTestCase):
+    def test_badil(self):
+        import System
+        process = System.Diagnostics.Process()
+        process.StartInfo.FileName = sys.executable
+        process.StartInfo.Arguments = '-D -X:SaveAssemblies "%s"'  % os.path.join(self.test_dir, 'badil.py')
+        process.StartInfo.CreateNoWindow = True
+        process.StartInfo.UseShellExecute = False
+        process.StartInfo.RedirectStandardInput = True
+        process.StartInfo.RedirectStandardOutput = True
+        process.StartInfo.RedirectStandardError = True
+        process.Start()
+        output1 = process.StandardOutput.ReadToEnd()
+        output2 = process.StandardError.ReadToEnd()
+        process.WaitForExit()
+        ret = process.ExitCode
+
+        print "ExitCode:", ret
+        print "Output: ", output1
+        print "Error:  ", output2
+        print
+
+        self.assertEqual(ret, 1)
+        self.assertTrue("Error Verifying" in output1 or "Error(s) Verifying" in output1)
+
+run_test(__name__)

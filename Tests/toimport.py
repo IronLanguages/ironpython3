@@ -13,5 +13,5 @@
 #
 #####################################################################################
 
-from iptest.assert_util import *
-Assert(__name__ == "toimport", __name__)
+if __name__ != "toimport":
+    raise AssertionError(__name__)

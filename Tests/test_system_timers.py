@@ -13,14 +13,12 @@
 #
 #####################################################################################
 
-from iptest.assert_util import *
-skiptest("win32")
-skiptest("silverlight")
+import unittest
 
+from iptest import is_netstandard, run_test, skipUnlessIronPython
 from time   import sleep
-from _thread import start_new_thread
+from thread import start_new_thread
 
-import System
 
 COUNT = 0
 TIMER_HELPER_FINISHED = False
@@ -38,234 +36,243 @@ def disposed_helper(a, b):
     global DISPOSED_CALLED
     DISPOSED_CALLED = True
 
-def timer_helper(num_handlers=1, sleep_time=5, event_handlers=[], aTimer=None, error_margin = 0.25):
-    '''
-    Helper function used to test a single Timer object under various conditions
-    '''
-    global COUNT
-    global TIMER_HELPER_FINISHED
+@unittest.skipIf(is_netstandard, 'no System.Timers in netstandard')
+@skipUnlessIronPython()
+class SystemTimersTest(unittest.TestCase):
+
+    def timer_helper(self, num_handlers=1, sleep_time=5, event_handlers=[], aTimer=None, error_margin = 0.25):
+        '''
+        Helper function used to test a single Timer object under various conditions
+        '''
+        import System
+        global COUNT
+        global TIMER_HELPER_FINISHED
+        
+        COUNT = 0
+        TIMER_HELPER_FINISHED = False
+        
+        try:
+            #create and run the timer
+            if aTimer==None:
+                aTimer = System.Timers.Timer()
+        
+            for i in xrange(num_handlers): aTimer.Elapsed += System.Timers.ElapsedEventHandler(onTimedEvent)
+            for handler in event_handlers: aTimer.Elapsed += System.Timers.ElapsedEventHandler(handler)
+        
+            aTimer.Interval = 100
+            aTimer.Enabled = True
+            sleep(sleep_time / 10.0)
+            aTimer.Enabled = False
+            sleep(sleep_time / 10.0)  #give the other thread calling 'onTimedEvent' a chance to catch up
+
+            #ensure the timer invoked our event handler a reasonable number of times
+            self.assertTrue(COUNT >= int(sleep_time - sleep_time*error_margin) * (num_handlers+len(event_handlers)), '%d is not >= %d' % (COUNT, int(sleep_time - sleep_time*error_margin) * (num_handlers+len(event_handlers))))
+            self.assertTrue(COUNT <= int(sleep_time + sleep_time*error_margin) * (num_handlers+len(event_handlers)), '%d is not <= %d' % (COUNT, int(sleep_time + sleep_time*error_margin) * (num_handlers+len(event_handlers))))
+        finally:
+            TIMER_HELPER_FINISHED = True
+
+    def test_sanity(self):
+        '''
+        http://msdn2.microsoft.com/en-us/library/system.timers.timer.aspx
+        Minimal sanity check.
+        '''
+        self.timer_helper(num_handlers=1)
+
     
-    COUNT = 0
-    TIMER_HELPER_FINISHED = False
+    def test_sanity_from_thread(self):
+        '''
+        Simply runs test_sanity from a thread.
+        '''
+        global TIMER_HELPER_FINISHED
+        TIMER_HELPER_FINISHED = False
+        
+        start_new_thread(self.test_sanity, tuple())
+
+        print "Waiting for test_sanity to finish",
+        while not TIMER_HELPER_FINISHED:
+            print ".",
+            sleep(0.1)
+
+
+    def test_multiple_events_one_timer(self):
+        '''
+        Multiple event handlers hooked up to a single Timer object
+        '''
+        global COUNT
+        COUNT=0
+        self.timer_helper(num_handlers=5)
+        self.timer_helper(num_handlers=500)
     
-    try:
+    
+    def test_elapsed_event_args(self):
+        '''
+        http://msdn2.microsoft.com/en-us/library/system.timers.elapsedeventargs.aspx
+        '''
+        import System
+        global COUNT
+        COUNT = 0
+        
+        sleep_time = 3
+        
+        def checkEventArgs(source, ea):
+            '''
+            Helper function just verifies that the second parameter is indeed the correct
+            type and has a reasonable value.
+            '''
+            global COUNT
+            COUNT = COUNT + 1
+            
+            #BUG? exceptions are not propagated out of events
+            try:
+                self.assertTrue(ea.SignalTime <= System.DateTime.Now)
+            except Exception, e:
+                print e
+                EVENT_ERRORS.append(e)
+            
         #create and run the timer
-        if aTimer==None:
-            aTimer = System.Timers.Timer()
-    
-        for i in range(num_handlers): aTimer.Elapsed += System.Timers.ElapsedEventHandler(onTimedEvent)
-        for handler in event_handlers: aTimer.Elapsed += System.Timers.ElapsedEventHandler(handler)
-    
+        aTimer = System.Timers.Timer()
+        aTimer.Elapsed += System.Timers.ElapsedEventHandler(checkEventArgs)
         aTimer.Interval = 100
         aTimer.Enabled = True
         sleep(sleep_time / 10.0)
         aTimer.Enabled = False
         sleep(sleep_time / 10.0)  #give the other thread calling 'onTimedEvent' a chance to catch up
         
-        #ensure the timer invoked our event handler a reasonable number of times
-        Assert(COUNT >= int(sleep_time - sleep_time*error_margin) * (num_handlers+len(event_handlers)), str(COUNT))
-        Assert(COUNT <= int(sleep_time + sleep_time*error_margin) * (num_handlers+len(event_handlers)), str(COUNT))
-    finally:
-        TIMER_HELPER_FINISHED = True
+        #make sure it was called at least once
+        self.assertTrue(COUNT > 0)
+    
+        #Let checkEventArgs take care of verification
+        self.assertEqual(EVENT_ERRORS, [])
+    
 
-#------------------------------------------------------------------------------
-#--Test functions
-def test_sanity():
-    '''
-    http://msdn2.microsoft.com/en-us/library/system.timers.timer.aspx
-    Minimal sanity check.
-    '''
-    timer_helper(num_handlers=1)
-
-    
-def test_sanity_from_thread():
-    '''
-    Simply runs test_sanity from a thread.
-    '''
-    global TIMER_HELPER_FINISHED
-    TIMER_HELPER_FINISHED = False
-    
-    start_new_thread(test_sanity, tuple())
-
-    print("Waiting for test_sanity to finish", end=' ')
-    while not TIMER_HELPER_FINISHED:
-        print(".", end=' ')
-        sleep(0.1)
-
-
-def test_multiple_events_one_timer():
-    '''
-    Multiple event handlers hooked up to a single Timer object
-    '''
-    timer_helper(num_handlers=5)
-    timer_helper(num_handlers=500)
-    
-    
-def test_elapsed_event_args():
-    '''
-    http://msdn2.microsoft.com/en-us/library/system.timers.elapsedeventargs.aspx
-    '''
-    global COUNT
-    COUNT = 0
-    
-    sleep_time = 3
-    
-    def checkEventArgs(source, ea):
+    def test_elapsed_event_handler(self):
         '''
-        Helper function just verifies that the second parameter is indeed the correct
-        type and has a reasonable value.
+        http://msdn2.microsoft.com/en-us/library/system.timers.elapsedeventhandler.aspx
         '''
+        import System
         global COUNT
-        COUNT = COUNT + 1
+        COUNT = 0
+        #################################
+        def bad0(): pass
+        def bad1(a): pass
+        def bad3(a, b, c): pass
+        bad_list = [bad0, bad1, bad3]
         
-        #BUG? exceptions are not propagated out of events
+        for bad_func in bad_list:
+            eeh = System.Timers.ElapsedEventHandler(bad_func)
+            self.assertRaises(TypeError, eeh, "Sender", None)
+
+        #################################
+        def good2(a, b):
+            global COUNT
+            COUNT = COUNT + 1
+            
+        def goodDefault1(a, b=2):
+            global COUNT
+            COUNT = COUNT + 1
+            
+        def goodDefault2(a=1, b=2):
+            global COUNT
+            COUNT = COUNT + 1
+            
+        def goodAny(*a, **b):
+            global COUNT
+            COUNT = COUNT + 1
+            
+        good_list = [good2, goodDefault1, goodDefault2, goodAny]
+        
+        for good_func in good_list:
+            self.timer_helper(num_handlers=0,
+                        sleep_time=4,
+                        event_handlers=[System.Timers.ElapsedEventHandler(good_func)])
+            
+        self.timer_helper(num_handlers=0, sleep_time=3, event_handlers=good_list)
+
+    #TODO: @skip("multiple_execute")
+    def test_timer(self):
+        '''
+        http://msdn2.microsoft.com/en-us/library/system.timers.timer_members.aspx
+        '''
+        import System
+        global COUNT
+        aTimer = System.Timers.Timer()        
+        
+        #--Public Events...
+        
+        #Disposed
+        self.assertFalse(DISPOSED_CALLED)
+        aTimer.Disposed += disposed_helper
+        
+        #Elapsed
+        #well covered by other tests
+        
+        
+        #--Properties...
+        
+        #Container
+        self.assertEqual(aTimer.Container, None)
+        
+        #Enabled
+        #well tested by other tests
+        self.assertFalse(aTimer.Enabled)
+        aTimer.Enabled = True
+        self.assertTrue(aTimer.Enabled)
+        aTimer.Enabled = False
+        
+        #Interval
+        #well tested by other tests
+        self.assertEqual(aTimer.Interval, 100.0)
+        aTimer.Interval = 20000.0
+        self.assertEqual(aTimer.Interval, 20000.0)
+        aTimer.Interval = 100.0
+        
+        #Site
+        self.assertEqual(aTimer.Site, None)
+        
+        #SynchronizingObject
+        self.assertEqual(aTimer.SynchronizingObject, None)
+        
+        #AutoReset
+        self.assertTrue(aTimer.AutoReset)
+        aTimer.AutoReset = False
         try:
-            Assert(ea.SignalTime <= System.DateTime.Now)
-        except Exception as e:
-            print(e)
-            EVENT_ERRORS.append(e)
+            self.timer_helper(num_handlers=1, sleep_time=3, aTimer=aTimer)
+            raise "Expected an AssertionError"
+        except AssertionError:
+            pass
+        self.assertFalse(aTimer.AutoReset)
+        aTimer.AutoReset = True
         
-    #create and run the timer
-    aTimer = System.Timers.Timer()
-    aTimer.Elapsed += System.Timers.ElapsedEventHandler(checkEventArgs)
-    aTimer.Interval = 100
-    aTimer.Enabled = True
-    sleep(sleep_time / 10.0)
-    aTimer.Enabled = False
-    sleep(sleep_time / 10.0)  #give the other thread calling 'onTimedEvent' a chance to catch up
-    
-    #make sure it was called at least once
-    Assert(COUNT > 0)
-   
-    #Let checkEventArgs take care of verification
-    AreEqual(EVENT_ERRORS, [])
-    
-
-def test_elapsed_event_handler():
-    '''
-    http://msdn2.microsoft.com/en-us/library/system.timers.elapsedeventhandler.aspx
-    '''
-    #################################
-    def bad0(): pass
-    def bad1(a): pass
-    def bad3(a, b, c): pass
-    bad_list = [bad0, bad1, bad3]
-    
-    for bad_func in bad_list:
-        eeh = System.Timers.ElapsedEventHandler(bad_func)
-        AssertError(TypeError, eeh, "Sender", None)
-
-    #################################
-    def good2(a, b):
-        global COUNT
-        COUNT = COUNT + 1
+        #--Methods...
         
-    def goodDefault1(a, b=2):
-        global COUNT
-        COUNT = COUNT + 1
+        #BeginInit
+        aTimer.BeginInit()
         
-    def goodDefault2(a=1, b=2):
-        global COUNT
-        COUNT = COUNT + 1
+        #EndInit
+        aTimer.EndInit()
         
-    def goodAny(*a, **b):
-        global COUNT
-        COUNT = COUNT + 1
+        #Start
+        aTimer.Enabled = False
+        self.assertFalse(aTimer.Enabled)
+        aTimer.Start()
+        self.assertTrue(aTimer.Enabled)
+        #Stop
+        aTimer.Stop()
+        self.assertFalse(aTimer.Enabled)
         
-    good_list = [good2, goodDefault1, goodDefault2, goodAny]
-    
-    for good_func in good_list:
-        timer_helper(num_handlers=0,
-                     sleep_time=4,
-                     event_handlers=[System.Timers.ElapsedEventHandler(good_func)])
+        #Close
+        aTimer.Close()
         
-    timer_helper(num_handlers=0, sleep_time=3, event_handlers=good_list)
-
-@skip("multiple_execute")
-def test_timer():
-    '''
-    http://msdn2.microsoft.com/en-us/library/system.timers.timer_members.aspx
-    '''
-    global COUNT
-    aTimer = System.Timers.Timer()
+        #Dispose
+        aTimer.Dispose()
+        self.assertTrue(DISPOSED_CALLED)
     
     
-    #--Public Events...
-    
-    #Disposed
-    AreEqual(DISPOSED_CALLED, False)
-    aTimer.Disposed += disposed_helper
-    
-    #Elapsed
-    #well covered by other tests
-    
-    
-    #--Properties...
-    
-    #Container
-    AreEqual(aTimer.Container, None)
-    
-    #Enabled
-    #well tested by other tests
-    AreEqual(aTimer.Enabled, False)
-    aTimer.Enabled = True
-    AreEqual(aTimer.Enabled, True)
-    aTimer.Enabled = False
-    
-    #Interval
-    #well tested by other tests
-    AreEqual(aTimer.Interval, 100.0)
-    aTimer.Interval = 20000.0
-    AreEqual(aTimer.Interval, 20000.0)
-    aTimer.Interval = 100.0
-    
-    #Site
-    AreEqual(aTimer.Site, None)
-    
-    #SynchronizingObject
-    AreEqual(aTimer.SynchronizingObject, None)
-    
-    #AutoReset
-    AreEqual(aTimer.AutoReset, True)
-    aTimer.AutoReset = False
-    try:
-        timer_helper(num_handlers=1, sleep_time=3, aTimer=aTimer)
-        raise "Expected an AssertionError"
-    except AssertionError:
-        pass
-    AreEqual(aTimer.AutoReset, False)
-    aTimer.AutoReset = True
-    
-    #--Methods...
-    
-    #BeginInit
-    aTimer.BeginInit()
-    
-    #EndInit
-    aTimer.EndInit()
-    
-    #Start
-    aTimer.Enabled = False
-    AreEqual(aTimer.Enabled, False)
-    aTimer.Start()
-    AreEqual(aTimer.Enabled, True)
-    #Stop
-    aTimer.Stop()
-    AreEqual(aTimer.Enabled, False)
-    
-    #Close
-    aTimer.Close()
-    
-    #Dispose
-    aTimer.Dispose()
-    AreEqual(DISPOSED_CALLED, True)
-    
-    
-def test_timer_description_attribute():
-    '''
-    http://msdn2.microsoft.com/en-us/library/system.timers.timersdescriptionattribute.aspx
-    '''
-    print("Nothing to do from Python?")
+    def test_timer_description_attribute(self):
+        '''
+        http://msdn2.microsoft.com/en-us/library/system.timers.timersdescriptionattribute.aspx
+        '''
+        print "Nothing to do from Python?"
     
     
 run_test(__name__)

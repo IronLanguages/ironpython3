@@ -13,9 +13,9 @@
 #
 #####################################################################################
 
-from iptest.assert_util import *
+import unittest
 
-Assert('abc' in 'abcd')
+from iptest import run_test
 
 class C:
     x = "Hello"
@@ -28,18 +28,22 @@ class D:
     def __getitem__(self, y):
         return self.x[y];
 
+class InTest(unittest.TestCase):
+    def test_basic(self):
+        self.assertTrue('abc' in 'abcd')
 
-h = "Hello"
-c = C()
-Assert(c.__contains__("Hello"))
-Assert(c.__contains__(h))
-Assert(not (c.__contains__('abc')))
+    def test_class(self):
+        h = "Hello"
+        c = C()
+        self.assertTrue(c.__contains__("Hello"))
+        self.assertTrue(c.__contains__(h))
+        self.assertTrue(not (c.__contains__('abc')))
 
-Assert(h in c)
-Assert("Hello" in c)
+        self.assertTrue(h in c)
+        self.assertTrue("Hello" in c)
 
-d = D()
-Assert(1 in d)
-Assert(not(11 in d))
+        d = D()
+        self.assertTrue(1 in d)
+        self.assertTrue(not(11 in d))
 
-#***** Above code are from 'InTest' *****
+run_test(__name__)

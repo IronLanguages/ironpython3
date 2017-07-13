@@ -16,28 +16,30 @@
 Operations on enum type and its' members
 '''
 #------------------------------------------------------------------------------
-from iptest import *    
-from iptest.assert_util import *
-skiptest("silverlight")
 
-add_clr_assemblies("fieldtests", "typesamples")
+import unittest
 
-if options.RUN_TESTS: #TODO - bug when generating Pydoc
-    from Merlin.Testing.FieldTest import *
-    from Merlin.Testing.TypeSample import *
+from iptest import IronPythonTestCase, run_test, skipUnlessIronPython
 
-def test_accessibility():
-    o = Misc()
-    o.Set()
-    AreEqual(o.PublicField, 100)
-    Assert(not hasattr(o, 'ProtectedField'))
-    AssertErrorWithMatch(AttributeError, "'Misc' object has no attribute 'PrivateField'", lambda: o.PrivateField)
-    AreEqual(o.InterfaceField.PublicStaticField, 500)
-    
-    o = DerivedMisc()
-    o.Set()
-    AreEqual(o.PublicField, 400)
-    Assert(not hasattr(o, 'ProtectedField'))
+@skipUnlessIronPython()
+class FieldMiscTest(IronPythonTestCase):
+    def setUp(self):
+        super(FieldMiscTest, self).setUp()
+        self.add_clr_assemblies("fieldtests", "typesamples")
+
+    def test_accessibility(self):
+        from Merlin.Testing.FieldTest import DerivedMisc, Misc
+        o = Misc()
+        o.Set()
+        self.assertEqual(o.PublicField, 100)
+        self.assertTrue(not hasattr(o, 'ProtectedField'))
+        self.assertRaisesRegexp(AttributeError, "'Misc' object has no attribute 'PrivateField'", lambda: o.PrivateField)
+        self.assertEqual(o.InterfaceField.PublicStaticField, 500)
+        
+        o = DerivedMisc()
+        o.Set()
+        self.assertEqual(o.PublicField, 400)
+        self.assertTrue(not hasattr(o, 'ProtectedField'))
 
 run_test(__name__)
 

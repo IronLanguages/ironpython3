@@ -13,64 +13,67 @@
 #
 #####################################################################################
 
-from iptest.assert_util import *
+import unittest
 
-# types are always true.
-def test_types():
-    for x in [str, int, int, float, bool]:
-        if not x:
-            Fail("should be true: %r", x)
+from iptest import is_cli, run_test
 
-def test_bool_dir():
-    bool_dir = ['__abs__', '__add__', '__and__', '__class__', '__cmp__',
-                '__coerce__', '__delattr__', '__div__', '__divmod__', '__doc__',
-                '__float__', '__floordiv__', '__getattribute__', '__getnewargs__',
-                '__hash__', '__hex__', '__index__', '__init__', '__int__',
-                '__invert__', '__long__', '__lshift__', '__mod__', '__mul__',
-                '__neg__', '__new__', '__bool__', '__oct__', '__or__', '__pos__',
-                '__pow__', '__radd__', '__rand__', '__rdiv__', '__rdivmod__', '__reduce__',
-                '__reduce_ex__', '__repr__', '__rfloordiv__', '__rlshift__', '__rmod__',
-                '__rmul__', '__ror__', '__rpow__', '__rrshift__', '__rshift__',
-                '__rsub__', '__rtruediv__', '__rxor__', '__setattr__', '__str__',
-                '__sub__', '__truediv__', '__xor__']
+class BoolTest(unittest.TestCase):
+    def test_types(self):
+        for x in [str, int, int, float, bool]:
+            if not x:
+                self.fail("should be true: %r", x)
 
-    for t_list in [dir(bool), dir(True), dir(False)]:
-        for stuff in bool_dir:
-            Assert(stuff in t_list, "%s should be in dir(bool), but is not" % (stuff))
+    def test_bool_dir(self):
+        bool_dir = ['__abs__', '__add__', '__and__', '__class__', '__cmp__',
+                    '__coerce__', '__delattr__', '__div__', '__divmod__', '__doc__',
+                    '__float__', '__floordiv__', '__getattribute__', '__getnewargs__',
+                    '__hash__', '__hex__', '__index__', '__init__', '__int__',
+                    '__invert__', '__long__', '__lshift__', '__mod__', '__mul__',
+                    '__neg__', '__new__', '__nonzero__', '__oct__', '__or__', '__pos__',
+                    '__pow__', '__radd__', '__rand__', '__rdiv__', '__rdivmod__', '__reduce__',
+                    '__reduce_ex__', '__repr__', '__rfloordiv__', '__rlshift__', '__rmod__',
+                    '__rmul__', '__ror__', '__rpow__', '__rrshift__', '__rshift__',
+                    '__rsub__', '__rtruediv__', '__rxor__', '__setattr__', '__str__',
+                    '__sub__', '__truediv__', '__xor__']
+
+        for t_list in [dir(bool), dir(True), dir(False)]:
+            for stuff in bool_dir:
+                self.assertTrue(stuff in t_list, "%s should be in dir(bool), but is not" % (stuff))
 
 
-def test__coerce__():
-    for simple_type in [int, int, float, str, str, bool, object]:
-        AreEqual(NotImplemented, True.__coerce__(simple_type))
-        AreEqual(NotImplemented, False.__coerce__(simple_type))
+    def test__coerce__(self):
+        for simple_type in [int, int, float, str, str, bool, object]:
+            self.assertEqual(NotImplemented, True.__coerce__(simple_type))
+            self.assertEqual(NotImplemented, False.__coerce__(simple_type))
         
-def test__float__():
-    AreEqual(float(True), 1.0)
-    AreEqual(float(False), 0.0)
+    def test__float__(self):
+        self.assertEqual(float(True), 1.0)
+        self.assertEqual(float(False), 0.0)
     
-def test__index__():
-    AreEqual(True.__index__(), 1)
-    AreEqual(False.__index__(), 0)
+    def test__index__(self):
+        self.assertEqual(True.__index__(), 1)
+        self.assertEqual(False.__index__(), 0)
     
-def test__long__():
-    AreEqual(int(True), 1)
-    AreEqual(int(False), 0)
+    def test__long__(self):
+        self.assertEqual(int(True), 1)
+        self.assertEqual(int(False), 0)
     
-def test__rdivmod__():
-    AreEqual(divmod(True, True),  (1, 0))
-    AreEqual(divmod(False, True), (0, 0))
-    AssertError(ZeroDivisionError, divmod, True,  False)
-    AssertError(ZeroDivisionError, divmod, False, False)
+    def test__rdivmod__(self):
+        self.assertEqual(divmod(True, True),  (1, 0))
+        self.assertEqual(divmod(False, True), (0, 0))
+        self.assertRaises(ZeroDivisionError, divmod, True,  False)
+        self.assertRaises(ZeroDivisionError, divmod, False, False)
 
-@skip("win32")    
-def test_decimal():
-    import System
-    if not System.Decimal:
-        Fail("should be true: %r", System.Decimal)
-        
-    AreEqual(bool(System.Decimal(0)), False)
-    AreEqual(bool(System.Decimal(1)), True)
-    AreEqual(System.Decimal(True), System.Decimal(1))
-    AreEqual(System.Decimal(False), System.Decimal(0))
+    @unittest.skipUnless(is_cli, 'IronPython specific test')
+    def test_decimal(self):
+        import System
+        if not System.Decimal:
+            Fail("should be true: %r", System.Decimal)
+            
+        self.assertEqual(bool(System.Decimal(0)), False)
+        self.assertEqual(bool(System.Decimal(1)), True)
+        self.assertEqual(System.Decimal(True), System.Decimal(1))
+        self.assertEqual(System.Decimal(False), System.Decimal(0))
     
 run_test(__name__)
+

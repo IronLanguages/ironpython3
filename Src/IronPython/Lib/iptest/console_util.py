@@ -20,6 +20,10 @@ Its purpose is to enable testing behaviour of the top-level console,
 when that differs from behaviour while importing a module and executing
 its statements.
 """
+from .test_env import is_netstandard, is_posix
+if is_netstandard:
+    import clr
+    clr.AddReference("System.Diagnostics.Process")
 from System.Diagnostics import Process, ProcessStartInfo
 from System.IO import StreamReader, StreamWriter
 from System.Threading import Thread
@@ -55,7 +59,7 @@ console for testing purposes, and direct input to and from the instance.
             return False
         else:
             self.reader = self.proc.StandardOutput
-            self.reader2 = self.proc.StandardError
+            self.reader2 = self.proc.Exception
             self.writer = self.proc.StandardInput
             self.InitializeErrorWatcher()
             self.EatToPrompt()
@@ -66,7 +70,7 @@ console for testing purposes, and direct input to and from the instance.
             return (False, None, None)
         else:
             self.reader = self.proc.StandardOutput
-            self.reader2 = self.proc.StandardError
+            self.reader2 = self.proc.Exception
             self.writer = self.proc.StandardInput
             # This will hang if the output exceeds the buffer size
             output = self.reader.ReadToEnd()
@@ -131,6 +135,12 @@ console for testing purposes, and direct input to and from the instance.
     def End(self):
         if 'writer' in dir(self) and 'Close' in dir(self.writer):
             self.writer.Close()
+
+        try:
+            if not self.proc.HasExited:
+                self.proc.Kill()
+        except:
+            print('Leaked ipy process could not kill!')
     
     # Functions for the remote console
     

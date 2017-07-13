@@ -20,8 +20,12 @@ import os
 from exceptions import SystemExit
 
 from iptest import *
+from iptest.test_env import is_netstandard
 
 if sys.platform!="win32":
+    if is_netstandard:
+        import clr
+        clr.AddReference("System.IO.FileSystem")
     from System.IO.Path import GetFullPath as get_path
     from System.IO.File import Exists as file_exists
 else:

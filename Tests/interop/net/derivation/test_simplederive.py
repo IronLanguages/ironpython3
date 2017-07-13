@@ -15,116 +15,136 @@
 '''
 Create a Python class which derives from CLR type(s).
 '''
-#------------------------------------------------------------------------------
 
-from iptest.assert_util import *
-skiptest("silverlight")
+import unittest
 
-add_clr_assemblies("baseclasscs", "typesamples")
+from iptest import IronPythonTestCase, is_netstandard, run_test, skipUnlessIronPython
 
-from Merlin.Testing import *
-from Merlin.Testing.BaseClass import *
-import System
+@skipUnlessIronPython()
+class SimpleDeriveTest(IronPythonTestCase):
+    def setUp(self):
+        super(SimpleDeriveTest, self).setUp()
+        self.add_clr_assemblies("baseclasscs", "typesamples")
 
-def test_simply_derive():
-    class C(EmptyClass): pass
-    class C(EmptyTypeGroup2): pass
-    class C(EmptyGenericClass[int]): pass
-    class C(IEmpty): pass
-    class C(IGenericEmpty[int]): pass
-    class C(AbstractEmptyClass): pass
+    def test_simply_derive(self):
+        import System
+        from Merlin.Testing.BaseClass import EmptyClass, EmptyTypeGroup2, EmptyGenericClass, IEmpty, IGenericEmpty, AbstractEmptyClass, INotEmpty, AbstractNotEmptyClass
+        class C(EmptyClass): pass
+        class C(EmptyTypeGroup2): pass
+        class C(EmptyGenericClass[int]): pass
+        class C(IEmpty): pass
+        class C(IGenericEmpty[int]): pass
+        class C(AbstractEmptyClass): pass
 
-    class C(INotEmpty): pass
-    class C(AbstractNotEmptyClass): pass
+        class C(INotEmpty): pass
+        class C(AbstractNotEmptyClass): pass
+        
+        #class C(EmptyDelegate): pass
+        
+        class C(System.Double): pass
+
+    def test_multiple_typegroup(self):
+        from Merlin.Testing.BaseClass import EmptyClass, EmptyTypeGroup2, IInterfaceGroup1, IInterfaceGroup2
+        class C(IInterfaceGroup1, IInterfaceGroup2): pass
+        class C(IInterfaceGroup1, IInterfaceGroup2, EmptyClass): pass
+        class C(EmptyTypeGroup2, IInterfaceGroup1, IInterfaceGroup2): pass
+        class C(EmptyTypeGroup2, IInterfaceGroup1[int], IInterfaceGroup2): pass
     
-    #class C(EmptyDelegate): pass
-    
-    class C(System.Double): pass
+    def test_negative_simply_derive(self):
+        import clr
+        import System
+        from Merlin.Testing.BaseClass import EmptyClass, EmptyEnum, EmptyGenericClass, EmptyStruct, EmptyTypeGroup1, IEmpty, IGenericEmpty, SealedClass
+        # value type, sealed ref type
+        def f1():
+            class C(EmptyStruct): pass
+        def f2():
+            class C(EmptyEnum): pass
+        def f3():
+            class C(SealedClass): pass
+        def f4():
+            class C(System.Single): pass
 
-def test_multiple_typegroup():
-    class C(IInterfaceGroup1, IInterfaceGroup2): pass
-    class C(IInterfaceGroup1, IInterfaceGroup2, EmptyClass): pass
-    class C(EmptyTypeGroup2, IInterfaceGroup1, IInterfaceGroup2): pass    
-    class C(EmptyTypeGroup2, IInterfaceGroup1[int], IInterfaceGroup2): pass    
-    
-def test_negative_simply_derive():
-    # value type, sealed ref type
-    def f1():
-        class C(EmptyStruct): pass
-    def f2():
-        class C(EmptyEnum): pass
-    def f3():
-        class C(SealedClass): pass
-    def f4():
-        class C(System.Single): pass
+        
+        self.assertRaisesMessage(TypeError, "cannot derive from Merlin.Testing.BaseClass.EmptyStruct because it is a value type", f1)
+        self.assertRaisesMessage(TypeError, "cannot derive from Merlin.Testing.BaseClass.EmptyEnum because it is a value type", f2)
+        self.assertRaisesMessage(TypeError, "cannot derive from Merlin.Testing.BaseClass.SealedClass because it is sealed", f3)
+        self.assertRaisesMessage(TypeError, "cannot derive from System.Single because it is a value type", f4)
 
-    
-    AssertErrorWithMessage(TypeError, "cannot derive from Merlin.Testing.BaseClass.EmptyStruct because it is a value type", f1)
-    AssertErrorWithMessage(TypeError, "cannot derive from Merlin.Testing.BaseClass.EmptyEnum because it is a value type", f2)
-    AssertErrorWithMessage(TypeError, "cannot derive from Merlin.Testing.BaseClass.SealedClass because it is sealed", f3)
-    AssertErrorWithMessage(TypeError, "cannot derive from System.Single because it is a value type", f4)
+        # open generic
+        def f():
+            class C(EmptyGenericClass): pass
+        self.assertRaisesMessage(TypeError, 
+            "C: cannot inhert from open generic instantiation IronPython.Runtime.Types.PythonType. Only closed instantiations are supported.",
+            f)
+        
+        def f():
+            class C(IGenericEmpty): pass
+        self.assertRaisesMessage(TypeError, 
+            "C: cannot inhert from open generic instantiation Merlin.Testing.BaseClass.IGenericEmpty`1[T]. Only closed instantiations are supported.",
+            f)
+        
+        def f():
+            class C(EmptyTypeGroup1): pass
+        self.assertRaisesMessage(TypeError, 
+            "cannot derive from open generic types <types 'EmptyTypeGroup1[T]', 'EmptyTypeGroup1[K, V]'>",
+            f)
 
-    # open generic
-    def f():
-        class C(EmptyGenericClass): pass
-    AssertErrorWithMessage(TypeError, 
-        "C: cannot inhert from open generic instantiation IronPython.Runtime.Types.PythonType. Only closed instantiations are supported.",
-        f)
+        # too many base (same or diff)
+        def f():    
+            class C(EmptyClass, EmptyClass): pass
+        self.assertRaisesMessage(TypeError, "duplicate base class EmptyClass", f)
     
-    def f():
-        class C(IGenericEmpty): pass
-    AssertErrorWithMessage(TypeError, 
-        "C: cannot inhert from open generic instantiation Merlin.Testing.BaseClass.IGenericEmpty`1[T]. Only closed instantiations are supported.",
-        f)
-    
-    def f():
-        class C(EmptyTypeGroup1): pass
-    AssertErrorWithMessage(TypeError, 
-        "cannot derive from open generic types <types 'EmptyTypeGroup1[T]', 'EmptyTypeGroup1[K, V]'>",
-        f)
+        def f():
+            class C(IEmpty, EmptyClass, IEmpty): pass
+        self.assertRaisesMessage(TypeError, "duplicate base class IEmpty", f)
 
-    # too many base (same or diff)
-    def f():    
-        class C(EmptyClass, EmptyClass): pass
-    AssertErrorWithMessage(TypeError, "duplicate base class EmptyClass", f)
-   
-    def f():
-        class C(IEmpty, EmptyClass, IEmpty): pass
-    AssertErrorWithMessage(TypeError, "duplicate base class IEmpty", f)
+        assemblyqualifiedname = clr.GetClrType(int).AssemblyQualifiedName
+        def f():
+            class C(EmptyClass, EmptyGenericClass[int]): pass
+        self.assertRaisesMessage(TypeError, 
+            "C: can only extend one CLI or builtin type, not both Merlin.Testing.BaseClass.EmptyClass (for IronPython.Runtime.Types.PythonType) and Merlin.Testing.BaseClass.EmptyGenericClass`1[[%s]] (for IronPython.Runtime.Types.PythonType)" % assemblyqualifiedname,
+            f)
+        
+        class B:pass
+        b = B()
+        def f(): 
+            class C(object, b): pass
+        self.assertRaisesPartialMessage(TypeError, 
+            "metaclass conflict: the metaclass of a derived class must be a (non-strict) subclass of the metaclasses of all its bases",
+            f)
+        
+        def f():
+            class C(EmptyGenericClass[()]): pass
+        self.assertRaises(ValueError, f)
+    
+    def test_system_type_cs0644(self):
+        # http://msdn2.microsoft.com/en-us/library/hxds244y(VS.80).aspx
+        # bug 363984
+        import System
+        def inheritDelegate():
+            class C(System.Delegate): pass
 
-    assemblyqualifiedname = clr.GetClrType(int).AssemblyQualifiedName
-    def f():
-        class C(EmptyClass, EmptyGenericClass[int]): pass
-    AssertErrorWithMessage(TypeError, 
-        "C: can only extend one CLI or builtin type, not both Merlin.Testing.BaseClass.EmptyClass (for IronPython.Runtime.Types.PythonType) and Merlin.Testing.BaseClass.EmptyGenericClass`1[[%s]] (for IronPython.Runtime.Types.PythonType)" % assemblyqualifiedname,
-        f)
-    
-    class B:pass
-    b = B()
-    def f(): 
-        class C(object, b): pass
-    AssertErrorWithPartialMessage(TypeError, 
-        "metaclass conflict: the metaclass of a derived class must be a (non-strict) subclass of the metaclasses of all its bases",
-        f)
-    
-    def f():
-        class C(EmptyGenericClass[()]): pass
-    AssertError(ValueError, f)
-    
-def test_system_type_cs0644():
-    # http://msdn2.microsoft.com/en-us/library/hxds244y(VS.80).aspx
-    # bug 363984
-    #class C(System.Delegate): pass
-    #class C(System.Array): pass
-    #class C(System.ValueType): pass
-    #class C(System.Enum): pass
-    pass
+        def inheritArray():
+            class C(System.Array): pass
+
+        def inheritValueType():
+            class C(System.ValueType): pass
+
+        def inheritEnum():
+            class C(System.Enum): pass
+
+        self.assertRaises(TypeError, inheritDelegate)
+        self.assertRaises(TypeError, inheritArray)
+        self.assertRaises(TypeError, inheritValueType)
+        self.assertRaises(TypeError, inheritEnum)
 
 
-def test_mbr():
-    class C(System.MarshalByRefObject): pass
+    @unittest.skipIf(is_netstandard, 'no System.MarshalByRefObject in netstandard')
+    def test_mbr(self):
+        import System
+        class C(System.MarshalByRefObject): pass
 
-    #class C('abc'): pass
+        #class C('abc'): pass
 
 
 # scenarios
@@ -133,7 +153,4 @@ def test_mbr():
 # interface's base types: interfaces (implement them)
 # ctor: params/param_dict
 
-
-
 run_test(__name__)
-

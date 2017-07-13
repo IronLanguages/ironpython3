@@ -13,65 +13,43 @@
 #
 #####################################################################################
 
-##
-## Testing list comprehension
-##
+import unittest
 
-from iptest.assert_util import *
+from iptest import run_test
 
-## positive
+class ListCompTest(unittest.TestCase):
+    def test_positive(self):
+        self.assertEqual([x for x in ""], [])
+        self.assertEqual([x for x in range(2)], [0, 1])
+        self.assertEqual([x + 10 for x in [-11, 4]], [-1, 14])
+        self.assertEqual([x for x in [y for y in range(3)]], [0, 1, 2])
+        self.assertEqual([x for x in range(3) if x > 1], [2])
+        self.assertEqual([x for x in range(10) if x > 1 if x < 4], [2, 3])
+        self.assertEqual([x for x in range(30) for y in range(2) if x > 1 if x < 4], [2, 2, 3, 3])
+        self.assertEqual([(x,y) for x in range(30) for y in range(3) if x > 1 if x < 4 if y > 1], [(2, 2), (3, 2)])
+        self.assertEqual([(x,y) for x in range(30) if x > 1 for y in range(3) if x < 4 if y > 1], [(2, 2), (3, 2)])
+        self.assertEqual([(x,y) for x in range(30) if x > 1 if x < 4 for y in range(3) if y > 1], [(2, 2), (3, 2)])
+        self.assertEqual([(x,y) for x in range(30) if x > 1 for y in range(5) if x < 4 if y > x], [(2, 3), (2, 4), (3, 4)])
+        self.assertEqual([(x,y) for x in range(30) if x > 1 for y in range(5) if y > x if x < 4], [(2, 3), (2, 4), (3, 4)])
+        self.assertEqual([(y, x) for (x, y) in ((1, 2), (2, 4))], [(2, 1), (4, 2)])
+        y = 10
+        self.assertEqual([y for x in "python"], [y] * 6)
+        self.assertEqual([y for y in "python"], list("python"))
+        y = 10
+        self.assertEqual([x for x in "python" if y > 5], list("python"))
+        self.assertEqual([x for x in "python" if y > 15], list())
+        self.assertEqual([x for x, in [(1,)]], [1])
 
-AreEqual([x for x in ""], [])
-AreEqual([x for x in range(2)], [0, 1])
-AreEqual([x + 10 for x in [-11, 4]], [-1, 14])
-AreEqual([x for x in [y for y in range(3)]], [0, 1, 2])
-AreEqual([x for x in range(3) if x > 1], [2])
-AreEqual([x for x in range(10) if x > 1 if x < 4], [2, 3])
-AreEqual([x for x in range(30) for y in range(2) if x > 1 if x < 4], [2, 2, 3, 3])
-AreEqual([(x,y) for x in range(30) for y in range(3) if x > 1 if x < 4 if y > 1], [(2, 2), (3, 2)])
-AreEqual([(x,y) for x in range(30) if x > 1 for y in range(3) if x < 4 if y > 1], [(2, 2), (3, 2)])
-AreEqual([(x,y) for x in range(30) if x > 1 if x < 4 for y in range(3) if y > 1], [(2, 2), (3, 2)])
-AreEqual([(x,y) for x in range(30) if x > 1 for y in range(5) if x < 4 if y > x], [(2, 3), (2, 4), (3, 4)])
-AreEqual([(x,y) for x in range(30) if x > 1 for y in range(5) if y > x if x < 4], [(2, 3), (2, 4), (3, 4)])
-AreEqual([(y, x) for (x, y) in ((1, 2), (2, 4))], [(2, 1), (4, 2)])
-y = 10
-AreEqual([y for x in "python"], [y] * 6)
-AreEqual([y for y in "python"], list("python"))
-y = 10
-AreEqual([x for x in "python" if y > 5], list("python"))
-AreEqual([x for x in "python" if y > 15], list())
-AreEqual([x for x, in [(1,)]], [1])
+    def test_negative(self):
+        self.assertRaises(SyntaxError, compile, "[x if x > 1 for x in range(3)]", "", "eval")
+        self.assertRaises(SyntaxError, compile, "[x for x in range(3);]", "", "eval")
+        self.assertRaises(SyntaxError, compile, "[x for x in range(3) for y]", "", "eval")
 
-## negative
+        self.assertRaises(NameError, lambda: [z for x in "python"])
+        self.assertRaises(NameError, lambda: [x for x in "python" if z > 5])
+        self.assertRaises(NameError, lambda: [x for x in "iron" if z > x for z in "python" ])
+        self.assertRaises(NameError, lambda: [x for x in "iron" if never_shown_before > x ])
+        self.assertRaises(NameError, lambda: [(x, z) for x in "iron" if z > x for z in "python" ])
+        self.assertRaises(NameError, lambda: [(i, j) for i in range(10) if j < 'c' for j in ['a', 'b', 'c'] if i % 3 == 0])
 
-AssertError(SyntaxError, compile, "[x if x > 1 for x in range(3)]", "", "eval")
-AssertError(SyntaxError, compile, "[x for x in range(3);]", "", "eval")
-AssertError(SyntaxError, compile, "[x for x in range(3) for y]", "", "eval")
-
-del y
-AssertError(NameError, lambda: [y for x in "python"])
-AssertError(NameError, lambda: [x for x in "python" if y > 5])
-AssertError(NameError, lambda: [x for x in "iron" if y > x for y in "python" ])
-AssertError(NameError, lambda: [x for x in "iron" if never_shown_before > x ])
-AssertError(NameError, lambda: [(x, y) for x in "iron" if y > x for y in "python" ])
-AssertError(NameError, lambda: [(i, j) for i in range(10) if j < 'c' for j in ['a', 'b', 'c'] if i % 3 == 0])
-
-## flow checker
-def test_negative():
-    try: [y for x in "python"]
-    except NameError: pass
-    else: Fail()
-    try: [x for x in "python" if y > 5]
-    except NameError: pass
-    else: Fail()
-    try: [x for x in "iron" if y > x for y in "python" ]
-    except NameError: pass
-    else: Fail()
-    try: [(x, y) for x in "iron" if y > x for y in "python" ]
-    except NameError: pass
-    else: Fail()
-    try: [(i, j) for i in range(10) if j < 'c' for j in ['a', 'b', 'c'] if i % 3 == 0]
-    except NameError: pass
-    else: Fail()
-
-test_negative()
+run_test(__name__)

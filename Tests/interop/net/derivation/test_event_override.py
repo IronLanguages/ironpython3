@@ -18,77 +18,79 @@ How to re-define an event in Python.
 NOTES:
 - all bugs in this module are currently test blocking.
 '''
-#------------------------------------------------------------------------------
 
-from iptest.assert_util import *
-skiptest("silverlight")
+import unittest
 
-add_clr_assemblies("baseclasscs", "typesamples")
+from iptest import IronPythonTestCase, run_test, skipUnlessIronPython
 
-from Merlin.Testing import *
-from Merlin.Testing.TypeSample import *
-from Merlin.Testing.BaseClass import *
-
-#--GLOBALS---------------------------------------------------------------------
 EVENT_COUNT = 0
 
-#--TEST CASES------------------------------------------------------------------
-def test_sanity_interface_impl():
-    global EVENT_COUNT
-    EVENT_COUNT = 0
-    
-    class PySubclass(IEvent10):
-        def __init__(self):
-            self.events = []
-        def add_Act(self, value):
-            self.events.append(value)
-        def remove_Act(self, value):
-            self.events.remove(value)
-        def call(self):
-            for x in self.events:
-                x(1, 2)
-    
-    x = PySubclass()
-    def f(x, y):
+@skipUnlessIronPython()
+class EventOverrideTest(IronPythonTestCase):
+    def setUp(self):
+        super(EventOverrideTest, self).setUp()
+        self.add_clr_assemblies("baseclasscs", "typesamples")
+
+    def test_sanity_interface_impl(self):
+        from Merlin.Testing.BaseClass import IEvent10
+
         global EVENT_COUNT
-        EVENT_COUNT += 1    
-        print(x, y)
-    
-    x.add_Act(f)
-    x.call()
-    AreEqual(EVENT_COUNT, 1)
-    x.remove_Act(f)
-    x.call()
-    AreEqual(EVENT_COUNT, 1)
+        EVENT_COUNT = 0
+        
+        class PySubclass(IEvent10):
+            def __init__(self):
+                self.events = []
+            def add_Act(self, value):
+                self.events.append(value)
+            def remove_Act(self, value):
+                self.events.remove(value)
+            def call(self):
+                for x in self.events:
+                    x(1, 2)
+        
+        x = PySubclass()
+        def f(x, y):
+            global EVENT_COUNT
+            EVENT_COUNT += 1
+            print(x, y)
+        
+        x.add_Act(f)
+        x.call()
+        self.assertEqual(EVENT_COUNT, 1)
+        x.remove_Act(f)
+        x.call()
+        self.assertEqual(EVENT_COUNT, 1)
 
-def test_sanity_derived_neg():
-    '''
-    The snippet below does not work and the related bug, Dev10 438724,
-    was closed by design.  Keeping this around as a negative scenario.
-    '''
-    global EVENT_COUNT
-    EVENT_COUNT = 0
-    
-    class PySubclass(CEvent40):
-        def add_Act(self, value):
-            self.Act += value
-        def remove_Act(self, value):
-            self.Act -= value
-        def call(self):
-            self.Act(1, 2)
-    
-    x = PySubclass()
-    def f(x, y):
-        EVENT_COUNT += 1
-        print(x, y)
-    
-    x.add_Act(f)
-    AssertErrorWithMessage(TypeError, "BoundEvent is not callable", x.call)
-    #x.call()
-    #AreEqual(EVENT_COUNT, 1)
-    #x.remove_Act(f)
-    #x.call()
-    #AreEqual(EVENT_COUNT, 1)
+    def test_sanity_derived_neg(self):
+        '''
+        The snippet below does not work and the related bug, Dev10 438724,
+        was closed by design.  Keeping this around as a negative scenario.
+        '''
+        from Merlin.Testing.BaseClass import CEvent40
 
-#--MAIN------------------------------------------------------------------------
+        global EVENT_COUNT
+        EVENT_COUNT = 0
+        
+        class PySubclass(CEvent40):
+            def add_Act(self, value):
+                self.Act += value
+            def remove_Act(self, value):
+                self.Act -= value
+            def call(self):
+                self.Act(1, 2)
+        
+        x = PySubclass()
+        def f(x, y):
+            EVENT_COUNT += 1
+            print(x, y)
+        
+        x.add_Act(f)
+        self.assertRaisesMessage(TypeError, "BoundEvent is not callable", x.call)
+        #x.call()
+        #self.assertEqual(EVENT_COUNT, 1)
+        #x.remove_Act(f)
+        #x.call()
+        #self.assertEqual(EVENT_COUNT, 1)
+
+
 run_test(__name__)

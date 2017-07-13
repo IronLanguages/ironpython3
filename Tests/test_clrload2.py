@@ -14,54 +14,50 @@
 #####################################################################################
 
 import sys
-from iptest.assert_util import *
-skiptest("win32")
+import unittest
 
-"""Test cases for CLR types that don't involve actually loading CLR into the module
-using the CLR types"""
+from iptest import IronPythonTestCase, is_cli, is_netstandard, is_mono, run_test, skipUnlessIronPython
 
-@skip("silverlight")
-def test_clrload2():
-    if not is_silverlight:
-        sys.path.append(testpath.test_inputs_dir)
-    else:
-        #if System.Windows.Forms is ever supported by silverlight...
-        for p in sys.path:
-            if not p.lower().endswith("\\languages\\ironpython\\tests"): continue
-            sys.path.append(p + "\\Inputs")
-            break
+@skipUnlessIronPython()
+class ClrLoad2Test(IronPythonTestCase):
+    """Test cases for CLR types that don't involve actually loading CLR into the module using the CLR types"""
 
-@skip("silverlight")
-def test_nested_classes():
-    import UseCLI
+    def test_nested_classes(self):
+        old_path = [x for x in sys.path]
+        sys.path.append(self.test_inputs_dir)
 
-    UseCLI.Form().Controls.Add(UseCLI.Control())
+        import UseCLI
 
-    nc = UseCLI.NestedClass()
-    
-    ic = UseCLI.NestedClass.InnerClass()
-    
-    tc = UseCLI.NestedClass.InnerClass.TripleNested()
-    
-    # This will use TypeCollision
-    gc1 = UseCLI.NestedClass.InnerGenericClass[int]()
-    gc2 = UseCLI.NestedClass.InnerGenericClass[int, int]()
-    
-    # access methods, fields, and properties on the class w/ nesteds,
-    # the nested class, and the triple nested class
-    for x in ((nc, ''), (ic, 'Inner'), (tc, 'Triple'), (gc1, "InnerGeneric"), (gc2, "InnerGeneric")):
-        obj, name = x[0], x[1]
+        if not is_netstandard and not is_mono: # no System.Windows.Forms in netstandard
+            UseCLI.Form().Controls.Add(UseCLI.Control())
+
+        nc = UseCLI.NestedClass()
         
-        AreEqual(getattr(obj, 'CallMe' + name)(), name + ' Hello World')
+        ic = UseCLI.NestedClass.InnerClass()
         
-        AreEqual(getattr(obj, name+'Field'), None)
+        tc = UseCLI.NestedClass.InnerClass.TripleNested()
         
-        AreEqual(getattr(obj, name+'Property'), None)
+        # This will use TypeCollision
+        gc1 = UseCLI.NestedClass.InnerGenericClass[int]()
+        gc2 = UseCLI.NestedClass.InnerGenericClass[int, int]()
         
-        setattr(obj, name+'Property', name)
-        
-        AreEqual(getattr(obj, name+'Field'), name)
-        
-        AreEqual(getattr(obj, name+'Property'), name)
+        # access methods, fields, and properties on the class w/ nesteds,
+        # the nested class, and the triple nested class
+        for x in ((nc, ''), (ic, 'Inner'), (tc, 'Triple'), (gc1, "InnerGeneric"), (gc2, "InnerGeneric")):
+            obj, name = x[0], x[1]
+            
+            self.assertEqual(getattr(obj, 'CallMe' + name)(), name + ' Hello World')
+            
+            self.assertEqual(getattr(obj, name+'Field'), None)
+            
+            self.assertEqual(getattr(obj, name+'Property'), None)
+            
+            setattr(obj, name+'Property', name)
+            
+            self.assertEqual(getattr(obj, name+'Field'), name)
+            
+            self.assertEqual(getattr(obj, name+'Property'), name)
+
+        sys.path = [x for x in old_path]
         
 run_test(__name__)

@@ -21,7 +21,6 @@ _retb = (18, 0, 'test_traceback.py', '_raise_exception')
 
 from iptest.assert_util import *
 from iptest.file_util import *
-import imp
 if not is_cli: import os
 def _raise_exception_with_finally():
     try:
@@ -261,7 +260,7 @@ def test_catch_MyException():
         assert_traceback([(Line260+8, 0, FILE, 'test_catch_MyException'), (Line260+2, 0, FILE, 'catch_MyException'), _retb])
 
 Line263 = 263
-@skip("silverlight")
+
 def test_cp11923_first():
     try:
         _t_test = path_combine(testpath.public_testdir, "cp11923.py")
@@ -270,12 +269,12 @@ def test_cp11923_first():
     raise Exception(x)""")
         
         import cp11923
-        for i in range(3):
+        for i in xrange(3):
             try:
                 cp11923.f()
             except:
                 assert_traceback([(Line263 + 11, 69, 'test_traceback.py', 'test_cp11923_first'), (3, 22, get_full_dir_name(_t_test).lower(), 'f')])
-            imp.reload(cp11923)
+            reload(cp11923)
         
     finally:
         import os
@@ -284,7 +283,7 @@ def test_cp11923_first():
 ###############################################################################
 ##TESTS BEYOND THIS POINT SHOULD NOT DEPEND ON LINE NUMBERS IN THIS FILE#######
 ###############################################################################
-@skip("silverlight")
+
 def test_cp11923_second():
     import os
     import sys
@@ -309,7 +308,7 @@ cp11116_a.a()
 """) 
         
         #Actual test
-        t_out, t_in, t_err = os.popen3(sys.executable + " " + os.getcwd() + r"\cp11116_main.py")
+        t_out, t_in, t_err = os.popen3(sys.executable + " " + os.path.join(os.getcwd(), "cp11116_main.py"))
         lines = t_err.readlines()
         t_err.close()
         t_out.close()
@@ -374,7 +373,7 @@ def test_xafter_finally_raise():
             
         try:
             g()
-        except Exception as e:
+        except Exception, e:
             assert_traceback([(Line361+14, 30, 'test_traceback.py', 'f'), (Line361+3, 3, 'test_traceback.py', 'g')])
 
     f()
@@ -397,7 +396,7 @@ def test_uncaught_exception_thru_try():
 
 Line397=397
 def test_with_traceback():
-    from _thread import allocate_lock
+    from thread import allocate_lock
     def f():
         g()
     
@@ -431,7 +430,7 @@ def test_xraise_again():
     try:
         try:
             f()
-        except Exception as e:
+        except Exception, e:
             raise e
     except:
         assert_traceback([(Line419+15, 30, 'test_traceback.py', 'test_xraise_again'), ])

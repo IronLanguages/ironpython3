@@ -16,11 +16,7 @@
 import clr
 import System
 
-if System.Environment.Version.Major >=4:
-    clr.AddReference("System.Core")
-else:
-    clr.AddReference("Microsoft.Scripting.Core")
-
+clr.AddReference("System.Core")
 clr.AddReference("Microsoft.Scripting")
 clr.AddReference("IronPython")
 clr.AddReference("Microsoft.Dynamic")

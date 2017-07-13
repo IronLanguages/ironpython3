@@ -12,64 +12,64 @@
 #
 #
 #####################################################################################
-'''
-'''
-#------------------------------------------------------------------------------
-from iptest import *
-from iptest.assert_util import *
-skiptest("silverlight")
 
-add_clr_assemblies("fieldtests", "typesamples", "baseclasscs")
-if options.RUN_TESTS: #TODO - bug when generating Pydoc
-    from Merlin.Testing.FieldTest import *
-    from Merlin.Testing.TypeSample import *
+import unittest
 
+from iptest import IronPythonTestCase, run_test, skipUnlessIronPython
 
-def test_get_set():
-    o = EnumInt32()
-    AreEqual(o.A, EnumInt32.A)
-   
-    desc = EnumInt32.__dict__['B']
-    AreEqual(EnumInt32.B, desc)
+@skipUnlessIronPython()
+class FieldsInsideEnumTest(IronPythonTestCase):
+    def setUp(self):
+        super(FieldsInsideEnumTest, self).setUp()
+        self.add_clr_assemblies("fieldtests", "typesamples", "baseclasscs")
+
+    def test_get_set(self):
+        from Merlin.Testing.TypeSample import EnumInt32
+        o = EnumInt32()
+        self.assertEqual(o.A, EnumInt32.A)
     
-    def f(): o.A = 10
-    AssertErrorWithMatch(AttributeError, "attribute 'A' of 'EnumInt32' object is read-only", f)
+        desc = EnumInt32.__dict__['B']
+        self.assertEqual(EnumInt32.B, desc)
+        
+        def f(): o.A = 10
+        self.assertRaisesRegexp(AttributeError, "attribute 'A' of 'EnumInt32' object is read-only", f)
+        
+        def f(): EnumInt32.B = 10
+        self.assertRaisesRegexp(AttributeError, "attribute 'B' of 'EnumInt32' object is read-only", f)
+
+        def f(): EnumInt32.B = EnumInt32.A
+        self.assertRaisesRegexp(AttributeError, "attribute 'B' of 'EnumInt32' object is read-only", f)
+
+    def test_enum_bool(self):
+        from Merlin.Testing.BaseClass import EmptyEnum
+        from Merlin.Testing.TypeSample import EnumByte, EnumSByte, EnumUInt16, EnumInt16, EnumUInt32, EnumInt32, EnumUInt64, EnumInt64
+        
+        #An empty enumeration
+        self.assertTrue(not bool(EmptyEnum())) 
+
+        #__nonzero__
+        o = EnumInt32()
+        self.assertTrue(not o.A.__nonzero__())
+        self.assertTrue(o.B.__nonzero__())
+
+        for enum_type in [
+                            EnumByte,
+                            EnumSByte,
+                            EnumUInt16, 
+                            EnumInt16,
+                            EnumUInt32, 
+                            EnumInt32,
+                            EnumUInt64, 
+                            EnumInt64,
+                            ]:
+            self.assertTrue(not bool(enum_type().A))
+            self.assertTrue(not bool(enum_type.A))
+            self.assertTrue(bool(enum_type().B))
+            self.assertTrue(bool(enum_type.B))
+            self.assertTrue(bool(enum_type().C))
+            self.assertTrue(bool(enum_type.C))
+            self.assertTrue(enum_type)
+            self.assertTrue(not bool(enum_type()))
     
-    def f(): EnumInt32.B = 10
-    AssertErrorWithMatch(AttributeError, "attribute 'B' of 'EnumInt32' object is read-only", f)
 
-    def f(): EnumInt32.B = EnumInt32.A
-    AssertErrorWithMatch(AttributeError, "attribute 'B' of 'EnumInt32' object is read-only", f)
-
-def test_enum_bool():
-    from Merlin.Testing.BaseClass import EmptyEnum
-    
-    #An empty enumeration
-    Assert(not bool(EmptyEnum())) 
-
-    #__bool__
-    o = EnumInt32()
-    Assert(not o.A.__bool__())
-    Assert(o.B.__bool__())
-
-    for enum_type in [
-                        EnumByte,
-                        EnumSByte,
-                        EnumUInt16, 
-                        EnumInt16,
-                        EnumUInt32, 
-                        EnumInt32,
-                        EnumUInt64, 
-                        EnumInt64,
-                        ]:
-        Assert(not bool(enum_type().A))
-        Assert(not bool(enum_type.A))
-        Assert(bool(enum_type().B))
-        Assert(bool(enum_type.B))
-        Assert(bool(enum_type().C))
-        Assert(bool(enum_type.C))
-        Assert(enum_type)
-        Assert(not bool(enum_type()))
-    
 run_test(__name__)
-

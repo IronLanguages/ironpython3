@@ -46,6 +46,12 @@ namespace IronPythonTest.Util {
             }
         }
 
+        public string Reason {
+            get {
+                return this.manifest.GetValue(this.testName, "Reason", string.Empty);
+            }
+        }
+
         public TestIsolationLevel IsolationLevel {
             get {
                 return this.manifest.GetEnum<TestIsolationLevel>(this.testName, "IsolationLevel", TestIsolationLevel.DEFAULT);
@@ -60,7 +66,7 @@ namespace IronPythonTest.Util {
 
         public bool Frames {
             get {
-                return this.manifest.GetBool(this.testName, "Frames", false);
+                return this.manifest.GetBool(this.testName, "Frames", true);
             }
         }
 
@@ -69,6 +75,35 @@ namespace IronPythonTest.Util {
                 return this.manifest.GetBool(this.testName, "FullFrames", false);
             }
         }
-    }
 
+        public string Condition {
+            get {
+                return this.manifest.GetValue(this.testName, "Condition", string.Empty);
+            }
+        }
+
+        public int MaxRecursion {
+            get {
+                return this.manifest.GetInt(this.testName, "MaxRecursion", Int32.MaxValue);
+            }
+        }
+
+        public bool Tracing {
+            get {
+                return this.manifest.GetBool(this.testName, "Tracing", false);
+            }
+        }
+
+        public string Arguments {
+            get {
+                return this.manifest.GetValue(this.testName, "Arguments", string.Empty);
+            }
+        }
+
+        public string WorkingDirectory {
+            get {
+                return this.manifest.GetValue(this.testName, "WorkingDirectory", string.Empty);
+            }
+        }
+    }
 }

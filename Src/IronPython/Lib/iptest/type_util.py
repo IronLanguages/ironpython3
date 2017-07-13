@@ -29,9 +29,7 @@ class mydict(dict): pass
 class myset(set): pass
 class myfrozenset(frozenset): pass
 
-import sys
-
-# to define type constant
+from .test_env import is_cli
 
 def _func(): pass
 class _class:
@@ -43,7 +41,7 @@ class types:
     classType           = type(_class)
     lambdaType          = type(lambda : 1)
 
-if sys.platform in ['cli', 'silverlight']:
+if is_cli:
     object_attrs_before_clr_import = dir(object())
     import System
     object_attrs_after_clr_import = dir(object())

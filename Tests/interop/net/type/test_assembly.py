@@ -12,62 +12,56 @@
 #
 #
 #####################################################################################
-'''
-'''
-#------------------------------------------------------------------------------
-from iptest.assert_util import *
 
-import clr
-from System.Reflection import Assembly
-from System.Reflection.Emit import AssemblyBuilder
-    
-def test_assembly_instance():
-    mscorlib = clr.LoadAssemblyByName("mscorlib")
-        
-    #GetMemberNames
-    Assert(len(dir(mscorlib)), 65)
-    for x in ["System", "Microsoft"]:
-        Assert( x in dir(mscorlib), "dir(mscorlib) does not have %s" % x)
-    
-    #GetBoundMember
-    AreEqual(mscorlib.System.Int32(42), 42)    
-    AssertError(AttributeError, lambda: mscorlib.NonExistentNamespace)
+import unittest
 
-def test_assemblybuilder_instance():    
-    name = System.Reflection.AssemblyName()
-    name.Name = 'Test'
-    assemblyBuilder = System.AppDomain.CurrentDomain.DefineDynamicAssembly(name, System.Reflection.Emit.AssemblyBuilderAccess.Run)    
+from iptest import IronPythonTestCase, is_mono, is_netstandard, run_test, skipUnlessIronPython
+
+@unittest.skipIf(is_netstandard, 'TODO')
+@skipUnlessIronPython()
+class AssemlbyTest(IronPythonTestCase):
     
-    asm_builder_dir = dir(assemblyBuilder)
-    if not is_net40:
-        AreEqual(len(asm_builder_dir), 78)
-        Assert("GetCustomAttributesData" not in asm_builder_dir)
-    else:
-        if is_posix: # Mono has another member
-            AreEqual(len(asm_builder_dir), 90)
-        else:
-            AreEqual(len(asm_builder_dir), 89)
-        Assert("GetCustomAttributesData" in asm_builder_dir)
+    def test_assembly_instance(self):
+        import clr
+        mscorlib = clr.LoadAssemblyByName("mscorlib")
+
+        #GetMemberNames
+        self.assertEqual(len(dir(mscorlib)), 78)
+        for x in ["System", "Microsoft"]:
+            self.assertTrue( x in dir(mscorlib), "dir(mscorlib) does not have %s" % x)
         
-    Assert("AddResourceFile" in asm_builder_dir)
-    Assert("CreateInstance" in asm_builder_dir)
+        #GetBoundMember
+        self.assertEqual(mscorlib.System.Int32(42), 42)
+        self.assertRaises(AttributeError, lambda: mscorlib.NonExistentNamespace)
+
+    def test_assemblybuilder_instance(self):
+        import System
+        name = System.Reflection.AssemblyName()
+        name.Name = 'Test'
+        assemblyBuilder = System.AppDomain.CurrentDomain.DefineDynamicAssembly(name, System.Reflection.Emit.AssemblyBuilderAccess.Run)
+        
+        asm_builder_dir = dir(assemblyBuilder)
+        if is_mono: # Mono has another member
+            self.assertEqual(len(asm_builder_dir), 90)
+        else:
+            self.assertEqual(len(asm_builder_dir), 89)
+        self.assertTrue("GetCustomAttributesData" in asm_builder_dir)
+            
+        self.assertTrue("AddResourceFile" in asm_builder_dir)
+        self.assertTrue("CreateInstance" in asm_builder_dir)
     
-def test_type():
-    mscorlib = Assembly.Load("mscorlib")
-    Assert("Assembly" in repr(mscorlib))  
-    if not is_net40:
-        AreEqual(len(dir(Assembly)), 65)
-        AreEqual(len(dir(AssemblyBuilder)), 78)
-    else:
-        if is_posix: # Mono has another member
-            AreEqual(len(dir(Assembly)), 76)
+    def test_type(self):
+        from System.Reflection import Assembly
+        from System.Reflection.Emit import AssemblyBuilder
+        mscorlib = Assembly.Load("mscorlib")
+        self.assertTrue("Assembly" in repr(mscorlib))
+        if is_mono: # Mono has another member
+            self.assertEqual(len(dir(Assembly)), 76)
         else:
-            AreEqual(len(dir(Assembly)), 75)
-        if is_posix: # Mono has another member
-            AreEqual(len(dir(AssemblyBuilder)), 90)
+            self.assertEqual(len(dir(Assembly)), 75)
+        if is_mono: # Mono has another member
+            self.assertEqual(len(dir(AssemblyBuilder)), 90)
         else:
-            AreEqual(len(dir(AssemblyBuilder)), 89)
+            self.assertEqual(len(dir(AssemblyBuilder)), 89)
         
-#####################################################################################
 run_test(__name__)
-#####################################################################################

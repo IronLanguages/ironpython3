@@ -18,20 +18,16 @@
 ## in the module scope
 ##
 
-from iptest.assert_util import *
-import imp
+import os
+import unittest
 
-skiptest("silverlight")
+from iptest import IronPythonTestCase, is_cli, path_modifier, run_test
 
-from iptest.file_util import *
-
-def always_true():
-    exec("AreEqual(1 / 2, 0)")
-    exec("from __future__ import division; AreEqual(1 / 2, 0.5)")
-    AreEqual(1/2, 0)
-    AreEqual(eval("1/2"), 0)
-
-tempfile = path_combine(testpath.temporary_dir, "temp_future.py")
+def always_true(self):
+    exec "self.assertEqual(1 / 2, 0)"
+    exec "from __future__ import division; self.assertEqual(1 / 2, 0.5)"
+    self.assertEqual(1/2, 0)
+    self.assertEqual(eval("1/2"), 0)
 
 assert_code = '''
 def CustomAssert(c):
@@ -55,38 +51,36 @@ CustomAssert(1/2 == 0.5)
 CustomAssert(eval('1/2') == 0.5)
 '''
 
-def f1(): exec(compile(open(tempfile).read(), tempfile, 'exec'))
-def f2(): exec(compile(code, tempfile, "exec"))
-def f3(): exec(code)
+def f1(tempfile): execfile(tempfile)
+def f2(code, tempfile): exec(compile(code, tempfile, "exec"))
+def f3(code): exec(code)
 def f4():
     if is_cli:
         # import IronPython
         #pe = IronPython.Hosting.PythonEngine()
         #issue around py hosting py again.
         pass
-        
-always_true()
-try:
-    import sys
-    save = sys.path[:]
-    sys.path.append(testpath.temporary_dir)
-    
-    for code in (code1, code2):
-        always_true()
-        write_to_file(tempfile, code)
 
-        for f in (f1, f2, f3, f4):
-            f()
-            always_true()
+class NoFutureTest(IronPythonTestCase):
+    def setUp(self):
+        super(NoFutureTest, self).setUp()
+        self.tempfile = os.path.join(self.temporary_dir, "temp_future.py")
 
-        # test after importing
-        import temp_future
-        always_true()
-        print(temp_future)
-        reloaded = imp.reload(temp_future)
-        always_true()
-        
-finally:
-    sys.path = save
-    delete_files(tempfile)
-    
+    def test_simple(self):
+        always_true(self)
+        try:
+            import sys
+            with path_modifier(self.temporary_dir):
+                for code in (code1, code2) :
+                    self.write_to_file(self.tempfile, code)
+                    
+                    f1(self.tempfile)
+                    always_true(self)
+                    f2(code, self.tempfile)
+                    always_true(self)
+                    f3(code)
+                    always_true(self)
+        finally:
+            self.delete_files(self.tempfile)
+
+run_test(__name__)

@@ -21,7 +21,7 @@ DLLS_DIR = IP_DIR + "\\DLLs"
 Assert(DLLS_DIR.lower() in orig_syspath)
 
 skiptest("win32")
-skiptest("silverlight")
+
 
 from System.IO          import Directory
 from System             import Environment

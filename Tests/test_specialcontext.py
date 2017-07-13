@@ -13,61 +13,71 @@
 #
 #####################################################################################
 
-from iptest.assert_util import *
-skiptest("win32")
+import unittest
 
-# our built in types shouldn't show CLS methods
+from iptest import run_test, skipUnlessIronPython
+x = None
+@skipUnlessIronPython()
+class SpecialContextTest(unittest.TestCase):
+    def test_special_context(self):
+        # our built in types shouldn't show CLS methods
 
-AreEqual(hasattr(object, 'ToString'), False)
-AreEqual(dir(object).count('ToString'), 0)
-AreEqual(list(vars(object).keys()).count('ToString'), 0)
+        self.assertEqual(hasattr(object, 'ToString'), False)
+        self.assertEqual(dir(object).count('ToString'), 0)
+        self.assertEqual(vars(object).keys().count('ToString'), 0)
 
-AreEqual(hasattr('abc', 'ToString'), False)
-AreEqual(dir('abc').count('ToString'), 0)
-AreEqual(list(vars(str).keys()).count('ToString'), 0)
+        self.assertEqual(hasattr('abc', 'ToString'), False)
+        self.assertEqual(dir('abc').count('ToString'), 0)
+        self.assertEqual(vars(str).keys().count('ToString'), 0)
 
-AreEqual(hasattr([], 'ToString'), False)
-AreEqual(dir([]).count('ToString'), 0)
-AreEqual(list(vars(list).keys()).count('ToString'), 0)
+        self.assertEqual(hasattr([], 'ToString'), False)
+        self.assertEqual(dir([]).count('ToString'), 0)
+        self.assertEqual(vars(list).keys().count('ToString'), 0)
 
-import System
+        import System
 
-if not is_silverlight:
-    # but CLS types w/o the attribute should....
-    AreEqual(hasattr(System.Environment, 'ToString'), True)
-    AreEqual(dir(System.Environment).count('ToString'), 1)
-    # vars only shows members declared in the type, so it won't be there either
-    AreEqual(list(vars(System.Environment).keys()).count('ToString'), 0)
+        # but CLS types w/o the attribute should....
+        self.assertEqual(hasattr(System.Environment, 'ToString'), True)
+        self.assertEqual(dir(System.Environment).count('ToString'), 1)
+        # vars only shows members declared in the type, so it won't be there either
+        self.assertEqual(vars(System.Environment).keys().count('ToString'), 0)
 
-# and importing clr should show them all...
-import clr
+        # and importing clr should show them all...
+        import clr
 
-AreEqual(hasattr(object, 'ToString'), True)
-AreEqual(dir(object).count('ToString'), 1)
-AreEqual(list(vars(object).keys()).count('ToString'), 1)
+        self.assertEqual(hasattr(object, 'ToString'), True)
+        self.assertEqual(dir(object).count('ToString'), 1)
+        self.assertEqual(vars(object).keys().count('ToString'), 1)
 
-AreEqual(hasattr('abc', 'ToString'), True)
-AreEqual(dir('abc').count('ToString'), 1)
-AreEqual(list(vars(str).keys()).count('ToString'), 1) # string overrides ToString
+        self.assertEqual(hasattr('abc', 'ToString'), True)
+        self.assertEqual(dir('abc').count('ToString'), 1)
+        self.assertEqual(vars(str).keys().count('ToString'), 1) # string overrides ToString
 
-AreEqual(hasattr([], 'ToString'), True)
-AreEqual(dir([]).count('ToString'), 1)
-AreEqual(list(vars(list).keys()).count('ToString'), 0) # list doesn't override ToString
+        self.assertEqual(hasattr([], 'ToString'), True)
+        self.assertEqual(dir([]).count('ToString'), 1)
+        self.assertEqual(vars(list).keys().count('ToString'), 0) # list doesn't override ToString
 
-if not is_silverlight:
-    # and they should still show up on system.
-    AreEqual(hasattr(System.Environment, 'ToString'), True)
-    AreEqual(dir(System.Environment).count('ToString'), 1)
-    AreEqual(list(vars(System.Environment).keys()).count('ToString'), 0)
+        # and they should still show up on system.
+        self.assertEqual(hasattr(System.Environment, 'ToString'), True)
+        self.assertEqual(dir(System.Environment).count('ToString'), 1)
+        self.assertEqual(vars(System.Environment).keys().count('ToString'), 0)
 
-# eval should flow it's context
-a = "hello world"
-c = compile("x = a.Split(' ')", "<string>", "single")
-eval(c)
-AreEqual(x[0], "hello")
-AreEqual(x[1], "world")
+def assertEqual(first, second):
+    if first != second:
+        raise AssertionError('assertion failed')
 
-y = eval("a.Split(' ')")
-AreEqual(y[0], "hello")
-AreEqual(y[1], "world")
+
+if __name__ == '__main__':
+    run_test(__name__)
+
+    # these have to be tested at the global scope
+    a = "hello world"
+    c = compile("x = a.Split(' ')", "<string>", "single")
+    eval(c)
+    assertEqual(x[0], "hello")
+    assertEqual(x[1], "world")
+
+    y = eval("a.Split(' ')")
+    assertEqual(y[0], "hello")
+    assertEqual(y[1], "world")
 

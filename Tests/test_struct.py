@@ -13,58 +13,62 @@
 #
 #####################################################################################
 
-from iptest.assert_util import *
-import struct
 import array
+import struct
+import unittest
 
-def test_pack():
-	# test string format string
-	result = struct.pack(">HH", 1, 2)
-	SequencesAreEqual(result, b"\x00\x01\x00\x02")
+from iptest import run_test
 
-	# test bytes format string
-	result = struct.pack(b">HH", 1, 2)
-	SequencesAreEqual(result, b"\x00\x01\x00\x02")
+class StructTest(unittest.TestCase):
 
-def test_unpack():
-	# test string/string combination
-	a,b = struct.unpack(">HH", "\x00\x01\x00\x02")
-	AreEqual(a, 1)
-	AreEqual(b, 2)
+    def test_pack(self):
+        # test string format string
+        result = struct.pack(">HH", 1, 2)
+        self.assertSequenceEqual(result, b"\x00\x01\x00\x02")
 
-	# test bytes/string combination
-	a,b = struct.unpack(b">HH", "\x00\x01\x00\x02")
-	AreEqual(a, 1)
-	AreEqual(b, 2)
+        # test bytes format string
+        result = struct.pack(b">HH", 1, 2)
+        self.assertSequenceEqual(result, b"\x00\x01\x00\x02")
 
-	# test bytes/string combination
-	a,b = struct.unpack(b">HH", b"\x00\x01\x00\x02")
-	AreEqual(a, 1)
-	AreEqual(b, 2)
+    def test_unpack(self):
+        # test string/string combination
+        a,b = struct.unpack(">HH", "\x00\x01\x00\x02")
+        self.assertEqual(a, 1)
+        self.assertEqual(b, 2)
 
-	# test string/bytes combination
-	a,b = struct.unpack(">HH", b"\x00\x01\x00\x02")
-	AreEqual(a, 1)
-	AreEqual(b, 2)
+        # test bytes/string combination
+        a,b = struct.unpack(b">HH", "\x00\x01\x00\x02")
+        self.assertEqual(a, 1)
+        self.assertEqual(b, 2)
 
-def test_unpack_from():
-	# test string format string
-	a, = struct.unpack_from('>H', buffer("\x00\x01"))
-	AreEqual(a, 1)
+        # test bytes/string combination
+        a,b = struct.unpack(b">HH", b"\x00\x01\x00\x02")
+        self.assertEqual(a, 1)
+        self.assertEqual(b, 2)
 
-	# test bytes format string
-	a, = struct.unpack_from(b'>H', buffer("\x00\x01"))
-	AreEqual(a, 1)
+        # test string/bytes combination
+        a,b = struct.unpack(">HH", b"\x00\x01\x00\x02")
+        self.assertEqual(a, 1)
+        self.assertEqual(b, 2)
 
-def test_pack_into():
-	# test string format string
-	result = array.array('b', [0, 0])
-	struct.pack_into('>H', result, 0, 0xABCD )
-	SequencesAreEqual(result, array.array('b', b"\xAB\xCD"))
+    def test_unpack_from(self):
+        # test string format string
+        a, = struct.unpack_from('>H', buffer("\x00\x01"))
+        self.assertEqual(a, 1)
 
-	# test bytes format string
-	result = array.array('b', [0, 0])
-	struct.pack_into(b'>H', result, 0, 0xABCD )
-	SequencesAreEqual(result, array.array('b', b"\xAB\xCD"))
+        # test bytes format string
+        a, = struct.unpack_from(b'>H', buffer("\x00\x01"))
+        self.assertEqual(a, 1)
+
+    def test_pack_into(self):
+        # test string format string
+        result = array.array('b', [0, 0])
+        struct.pack_into('>H', result, 0, 0xABCD )
+        self.assertSequenceEqual(result, array.array('b', b"\xAB\xCD"))
+
+        # test bytes format string
+        result = array.array('b', [0, 0])
+        struct.pack_into(b'>H', result, 0, 0xABCD )
+        self.assertSequenceEqual(result, array.array('b', b"\xAB\xCD"))
 
 run_test(__name__)

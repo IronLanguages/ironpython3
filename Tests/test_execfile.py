@@ -13,32 +13,29 @@
 #
 #####################################################################################
 
-from iptest.assert_util import *
-from iptest.file_util import path_combine
-skiptest("silverlight")
-
 import os
+import unittest
+
+from iptest import IronPythonTestCase, run_test
 
 
-@skip("win32")
-def test_sanity():
-    root = testpath.public_testdir
-    exec(compile(open(path_combine(root, "Inc", "toexec.py")).read(), path_combine(root, "Inc", "toexec.py"), 'exec'))
-    exec(compile(open(path_combine(root, "Inc", "toexec.py")).read(), path_combine(root, "Inc", "toexec.py"), 'exec'))
-    #execfile(root + "/doc.py")
-    exec(compile(open(path_combine(root, "Inc", "toexec.py")).read(), path_combine(root, "Inc", "toexec.py"), 'exec'))
+class ExecFileTest(IronPythonTestCase):
+    def test_sanity(self):
+        root = self.test_dir
+        execfile(os.path.join(root, "Inc", "toexec.py"))
+        execfile(os.path.join(root, "Inc", "toexec.py"))
+        #execfile(root + "/doc.py")
+        execfile(os.path.join(root, "Inc", "toexec.py"))
 
-def test_negative():
-    AssertError(TypeError, execfile, None) # arg must be string
-    AssertError(TypeError, execfile, [])
-    AssertError(TypeError, execfile, 1)
-    AssertError(TypeError, execfile, "somefile", "")
+    def test_negative(self):
+        self.assertRaises(TypeError, execfile, None) # arg must be string
+        self.assertRaises(TypeError, execfile, [])
+        self.assertRaises(TypeError, execfile, 1)
+        self.assertRaises(TypeError, execfile, "somefile", "")
 
-def test_scope():
-    root = testpath.public_testdir
-    z = 10
-    exec(compile(open(path_combine(root, "Inc", "execfile_scope.py")).read(), path_combine(root, "Inc", "execfile_scope.py"), 'exec'))
+    def test_scope(self):
+        root = self.test_dir
+        z = 10
+        execfile(os.path.join(root, "Inc", "execfile_scope.py"))
     
-
 run_test(__name__)
-

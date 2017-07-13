@@ -43,6 +43,14 @@ namespace IronPythonTest.Util {
             return GetValue(sectionName, key, @default ? "t" : "f").AsBool();
         }
 
+        public int GetInt(string sectionName, string key) {
+            return GetValue(sectionName, key).AsInt();
+        }
+
+        public int GetInt(string sectionName, string key, int @default) {
+            return GetValue(sectionName, key, @default.ToString()).AsInt();
+        }
+
         public TEnum GetEnum<TEnum>(string sectionName, string key) {
             return this.GetValue(sectionName, key).AsEnum<TEnum>();
         }
@@ -56,6 +64,9 @@ namespace IronPythonTest.Util {
             OptionStore options = new OptionStore(StringComparer.OrdinalIgnoreCase) { { "DEFAULT", currentSection } };
             foreach (var rawline in lines) {
                 string line = rawline.Split(new [] { ';', '#' }, 2)[0].Trim();
+
+                if (string.IsNullOrEmpty(line)) continue;
+
                 if (line.StartsWith("[") && line.EndsWith("]")) {
                     var sectionName = line.Substring(1, line.Length - 2);
                     if (!options.TryGetValue(sectionName, out currentSection)) {
@@ -91,7 +102,7 @@ namespace IronPythonTest.Util {
 
         public static bool AsBool(this string s) {
             if (s == null) {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
 
             var l = s.ToLowerInvariant();
@@ -102,6 +113,14 @@ namespace IronPythonTest.Util {
             } else {
                 throw new ArgumentException(string.Format("'{0}' is neither true nor false.", s));
             }
+        }
+
+        public static int AsInt(this string s) {
+            if(s == null) {
+                throw new ArgumentNullException(nameof(s));
+            }
+
+            return int.Parse(s);
         }
 
         public static TEnum AsEnum<TEnum>(this string s) {

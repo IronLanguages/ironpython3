@@ -14,77 +14,74 @@
 #
 #####################################################################################
 
-import clr
-
 import unittest
 import datetime
 import time
-from test import test_support
 
-from System import DateTime, TimeSpan
+from iptest import is_cli, run_test
 
 class TestDatetime(unittest.TestCase):
 
     def test_strptime_1(self):
         # cp34706
         d = datetime.datetime.strptime("2013-11-29T16:38:12.507000", "%Y-%m-%dT%H:%M:%S.%f")
-        self.assertEqual(d, datetime.datetime(2013, 11, 29, 16, 38, 12, 507000))
+        self.assertEquals(d, datetime.datetime(2013, 11, 29, 16, 38, 12, 507000))
 
     def test_strptime_2(self):
         d = datetime.datetime.strptime("2013-11-29T16:38:12.507042", "%Y-%m-%dT%H:%M:%S.%f")
-        self.assertEqual(d, datetime.datetime(2013, 11, 29, 16, 38, 12, 507042))
+        self.assertEquals(d, datetime.datetime(2013, 11, 29, 16, 38, 12, 507042))
 
     def test_strptime_3(self):
         d = datetime.datetime.strptime("2013-11-29T16:38:12.5070", "%Y-%m-%dT%H:%M:%S.%f")
-        self.assertEqual(d, datetime.datetime(2013, 11, 29, 16, 38, 12, 507000))
+        self.assertEquals(d, datetime.datetime(2013, 11, 29, 16, 38, 12, 507000))
 
     def test_strptime_4(self):
         d = datetime.datetime.strptime("2013-11-29T16:38:12.507", "%Y-%m-%dT%H:%M:%S.%f")
-        self.assertEqual(d, datetime.datetime(2013, 11, 29, 16, 38, 12, 507000))
+        self.assertEquals(d, datetime.datetime(2013, 11, 29, 16, 38, 12, 507000))
 
     def test_strptime_5(self):
         d = datetime.datetime.strptime("2013-11-29T16:38:12.50", "%Y-%m-%dT%H:%M:%S.%f")
-        self.assertEqual(d, datetime.datetime(2013, 11, 29, 16, 38, 12, 500000))
+        self.assertEquals(d, datetime.datetime(2013, 11, 29, 16, 38, 12, 500000))
 
     def test_strptime_6(self):
         d = datetime.datetime.strptime("2013-11-29T16:38:12.5", "%Y-%m-%dT%H:%M:%S.%f")
-        self.assertEqual(d, datetime.datetime(2013, 11, 29, 16, 38, 12, 500000))
+        self.assertEquals(d, datetime.datetime(2013, 11, 29, 16, 38, 12, 500000))
 
     def test_strptime_7(self):
         d = datetime.datetime.strptime("11-29T16:38:12.123", "%m-%dT%H:%M:%S.%f")
-        self.assertEqual(d, datetime.datetime(1900, 11, 29, 16, 38, 12, 123000))
+        self.assertEquals(d, datetime.datetime(1900, 11, 29, 16, 38, 12, 123000))
 
     def test_strptime_8(self):
         d = datetime.datetime.strptime("11-29T16:38:12.123", "%m-%dT%H:%M:%S.%f")
-        self.assertEqual(d, datetime.datetime(1900, 11, 29, 16, 38, 12, 123000))
+        self.assertEquals(d, datetime.datetime(1900, 11, 29, 16, 38, 12, 123000))
 
     def test_strptime_9(self):
         d = datetime.datetime.strptime('Monday 11. March 2002', "%A %d. %B %Y")
-        self.assertEqual(d, datetime.datetime(2002, 3, 11, 0, 0))
+        self.assertEquals(d, datetime.datetime(2002, 3, 11, 0, 0))
     
     def test_strftime_1(self):
         d = datetime.datetime(2013, 11, 29, 16, 38, 12, 507000)
-        self.assertEqual(d.strftime("%Y-%m-%dT%H:%M:%S.%f"), "2013-11-29T16:38:12.507000")
+        self.assertEquals(d.strftime("%Y-%m-%dT%H:%M:%S.%f"), "2013-11-29T16:38:12.507000")
 
     def test_strftime_2(self):
         d = datetime.datetime(2013, 11, 29, 16, 38, 12, 507042)
-        self.assertEqual(d.strftime("%Y-%m-%dT%H:%M:%S.%f"), "2013-11-29T16:38:12.507042")
+        self.assertEquals(d.strftime("%Y-%m-%dT%H:%M:%S.%f"), "2013-11-29T16:38:12.507042")
 
     def test_strftime_3(self):
         # cp32215
         d = datetime.datetime(2012,2,8,4,5,6,12314)
-        self.assertEqual(d.strftime('%f'), "012314")
+        self.assertEquals(d.strftime('%f'), "012314")
 
     def test_cp23965(self):
         # this is locale dependant and assumes test will be run under en_US
-        self.assertEqual(datetime.date(2013, 11, 30).strftime("%Y %A %B"), "2013 Saturday November")
-        self.assertEqual(datetime.date(2013, 11, 30).strftime("%y %a %b"), "13 Sat Nov")
+        self.assertEquals(datetime.date(2013, 11, 30).strftime("%Y %A %B"), "2013 Saturday November")
+        self.assertEquals(datetime.date(2013, 11, 30).strftime("%y %a %b"), "13 Sat Nov")
 
     def test_invalid_strptime(self):
         # cp30047
         self.assertRaises(ValueError, datetime.datetime.strptime, "9 August", "%B %d")
         d = datetime.datetime.strptime("9 August", "%d %B")
-        self.assertEqual(d, datetime.datetime(1900, 8, 9, 0, 0))
+        self.assertEquals(d, datetime.datetime(1900, 8, 9, 0, 0))
 
     def test_strptime_day_of_week(self):
         t = time.strptime("2013", "%Y")
@@ -111,26 +108,26 @@ class TestDatetime(unittest.TestCase):
 
     def test_datime_replace(self):
         # cp35075
-        dt = datetime.datetime.now().replace(microsecond=1000)
+        dt = datetime.datetime.now().replace(microsecond=1000L)
         self.assertEqual(dt.time().microsecond, 1000)
-        self.assertRaises(ValueError, datetime.datetime.now().replace, microsecond=10000000)
-        self.assertRaises(OverflowError, datetime.datetime.now().replace, microsecond=1000000000000)
+        self.assertRaises(ValueError, datetime.datetime.now().replace, microsecond=10000000L)
+        self.assertRaises(OverflowError, datetime.datetime.now().replace, microsecond=1000000000000L)
         self.assertRaises(TypeError, datetime.datetime.now().replace, microsecond=1000.1)
 
     def test_time_replace(self):
         # cp35075
-        t = datetime.time().replace(microsecond=1000)
+        t = datetime.time().replace(microsecond=1000L)
         self.assertEqual(t.microsecond, 1000)
-        self.assertRaises(ValueError, datetime.time().replace, microsecond=10000000)
-        self.assertRaises(OverflowError, datetime.time().replace, microsecond=1000000000000)
+        self.assertRaises(ValueError, datetime.time().replace, microsecond=10000000L)
+        self.assertRaises(OverflowError, datetime.time().replace, microsecond=1000000000000L)
         self.assertRaises(TypeError, datetime.time().replace, microsecond=1000.1)
 
     def test_time_replace(self):
         # cp35075
-        d = datetime.date.today().replace(year=1000)
+        d = datetime.date.today().replace(year=1000L)
         self.assertEqual(d.year, 1000)
-        self.assertRaises(ValueError, datetime.date.today().replace, year=10000000)
-        self.assertRaises(OverflowError, datetime.date.today().replace, year=1000000000000)
+        self.assertRaises(ValueError, datetime.date.today().replace, year=10000000L)
+        self.assertRaises(OverflowError, datetime.date.today().replace, year=1000000000000L)
         self.assertRaises(TypeError, datetime.date.today().replace, year=1000.1)
 
     def test_fromtimestamp(self):
@@ -140,7 +137,10 @@ class TestDatetime(unittest.TestCase):
         ts = 5399410716.777882
         self.assertEqual(datetime.datetime.fromtimestamp(ts).microsecond, 777882)
 
+    @unittest.skipUnless(is_cli, 'IronPython specific test')
     def test_System_DateTime_conversion(self):
+        import clr
+        from System import DateTime
         example = datetime.datetime(2015, 4, 25, 8, 39, 54)
         result = clr.Convert(example, DateTime)
         self.assertIsInstance(result, DateTime)
@@ -148,7 +148,10 @@ class TestDatetime(unittest.TestCase):
         expected = DateTime(2015, 4, 25, 8, 39, 54)
         self.assertEqual(expected, result)
     
+    @unittest.skipUnless(is_cli, 'IronPython specific test')
     def test_System_DateTime_binding(self):
+        import clr
+        from System import DateTime, TimeSpan
         pydt = datetime.datetime(2015, 4, 25, 8, 39, 54)
         netdt = DateTime(2015, 4, 25, 9, 39, 54)
         
@@ -157,11 +160,6 @@ class TestDatetime(unittest.TestCase):
         
         self.assertEqual(expected, result)
 
-def test_main():
-    from unittest import main
-    main(module='test_datetime')
-
-if __name__ == "__main__":
-    test_main()
+run_test(__name__)
 
 

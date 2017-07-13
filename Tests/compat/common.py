@@ -51,7 +51,7 @@ def get_all_paths():
             cpython_lib_path   = os.path.join(get_environ_variable('DLR_ROOT'), 'External.LCA_RESTRICTED', 'Languages', 'IronPython', '27', 'Lib')
 
             
-    elif sys.platform == "win32" or sys.platform.startswith("linux"):
+    elif sys.platform in ["win32", "darwin"] or sys.platform.startswith("linux"):
         dlr_bin = get_environ_variable('DLR_BIN')
         if dlr_bin:
             if dlr_bin.startswith('"'):
@@ -150,8 +150,8 @@ def get_platform_string(current = None):
     if current == None:
         import sys
         current = sys.platform
-        
-    if current.startswith("win") or current.startswith("linux"): return "nat"
+    
+    if any(current.startswith(x) for x in ["win", "linux", "darwin"]): return "nat"
     if current.startswith("cli"): return "cli"
     return "non"
 

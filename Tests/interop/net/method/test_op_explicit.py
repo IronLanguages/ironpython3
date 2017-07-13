@@ -17,18 +17,6 @@ TODO:
 - no test cases defined here!
 '''
 #------------------------------------------------------------------------------
-from iptest.assert_util import *
-skiptest("silverlight")
 
-add_clr_assemblies("userdefinedconversions", "typesamples")
 
-import System
-from Merlin.Testing import *
-from Merlin.Testing.Call import *
-from Merlin.Testing.TypeSample import *
-
-# to cover __int__, __long__, __float__, __complex__, __bool__ 
-# on CLR objects (and derived python object)
-
-run_test(__name__)
 

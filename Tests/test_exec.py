@@ -172,19 +172,22 @@ else: Fail("Should already thrown (3)")
 codeobj = compile ('1+1', '<compiled code>', 'exec')
 exec(codeobj)
 
-if is_silverlight==False:
-    # verify exec(...) takes a file...
-    fn = path_combine(testpath.temporary_dir, 'testfile.tmp')
-    write_to_file(fn, "x = [1,2,3,4,5]\nx.reverse()\nAssert(x == [5,4,3,2,1])\n")
+# verify exec(...) takes a file...
+fn = path_combine(testpath.temporary_dir, 'testfile.tmp')
+write_to_file(fn, "x = [1,2,3,4,5]\nx.reverse()\nAssert(x == [5,4,3,2,1])\n")
 
-    f = file(fn, "r")
-    exec(f)
-    Assert(x == [5,4,3,2,1])
-    f.close()
+f = file(fn, "r")
+exec(f)
+Assert(x == [5,4,3,2,1])
+f.close()
 
 # and now verify it'll take a .NET Stream as well...
 if is_cli:
     import System
+    if is_netstandard:
+        import clr
+        clr.AddReference("System.IO.FileSystem")
+        clr.AddReference("System.IO.FileSystem.Primitives")
     f = System.IO.FileStream(fn, System.IO.FileMode.Open)
     exec(f)
     f.Close()

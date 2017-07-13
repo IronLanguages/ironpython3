@@ -13,13 +13,17 @@
 #
 #####################################################################################
 
-from iptest.assert_util import *
+import unittest
 
-def test_trival():
-    AreEqual(type(None), None.__class__)
-    AreEqual(str(None), None.__str__())
-    AreEqual(repr(None), None.__repr__())
-    None.__init__('abc')
-    AssertErrorWithPartialMessage(TypeError, 'NoneType', lambda : None())
+from iptest import IronPythonTestCase, run_test
+
+class NoneTypeTest(IronPythonTestCase):
+        
+    def test_trival(self):
+        self.assertEqual(type(None), None.__class__)
+        self.assertEqual(str(None), None.__str__())
+        self.assertEqual(repr(None), None.__repr__())
+        None.__init__('abc')
+        self.assertRaisesMessage(TypeError, 'NoneType', lambda : None())
     
 run_test(__name__)

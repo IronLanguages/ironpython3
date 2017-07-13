@@ -17,7 +17,9 @@
 ## Test whether super() behaves as expected
 ##
 
-from iptest.assert_util import *
+import unittest
+
+from iptest import run_test
 
 class A(object):
     """Doc string A"""
@@ -50,12 +52,13 @@ class D(B):
     def inst_getDoc(self):
         return super(D,self).inst_getDoc()
 
-def test_classSupermethods():
-    for cls in (A,B,C,D):
-        AreEqual(cls.cls_getDoc(), cls.__doc__)
+class SuperTest(unittest.TestCase):
+    def test_classSupermethods(self):
+        for cls in (A,B,C,D):
+            self.assertEqual(cls.cls_getDoc(), cls.__doc__)
 
-def test_instanceSupermethods():
-    for cls in (A,B,C,D):
-        AreEqual(cls().inst_getDoc(), cls.__doc__)
+    def test_instanceSupermethods(self):
+        for cls in (A,B,C,D):
+            self.assertEqual(cls().inst_getDoc(), cls.__doc__)
 
 run_test(__name__)

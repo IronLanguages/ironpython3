@@ -56,3 +56,6 @@ Util/References
 *.bak
 __pycache__/
 .vscode/
+Src/StdLib/Lib/shelftemp*
+Src/StdLib/Lib/@test*
+Tests/clrusetest*

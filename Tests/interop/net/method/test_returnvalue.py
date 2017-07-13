@@ -16,99 +16,105 @@
 NOTES:
 - seems not a good test?
 '''
-#------------------------------------------------------------------------------
-from iptest.assert_util import *
-skiptest("silverlight")
 
-add_clr_assemblies("returnvalues", "typesamples")
+import unittest
 
-from Merlin.Testing import *
-from Merlin.Testing.Call import *
-from Merlin.Testing.TypeSample import *
+from iptest import IronPythonTestCase, run_test, skipUnlessIronPython
 
+@skipUnlessIronPython()
+class ReturnValueTest(IronPythonTestCase):
+    def setUp(self):
+        super(ReturnValueTest, self).setUp()
+        self.add_clr_assemblies("returnvalues", "typesamples")
 
-c = C()
+        from Merlin.Testing.Call import C
+        self.c = C()
 
-def test_return_null():
-    for f in [ 
-        c.ReturnVoid, 
-        c.ReturnNull, 
-        c.ReturnNullableInt2, 
-        c.ReturnNullableStruct2,
-    ]:
-        AreEqual(f(), None)
+    def test_return_null(self):
+        for f in [ 
+            self.c.ReturnVoid, 
+            self.c.ReturnNull, 
+            self.c.ReturnNullableInt2, 
+            self.c.ReturnNullableStruct2,
+        ]:
+            self.assertEqual(f(), None)
     
-def test_return_numbers():
-    for (f, t, val) in [
-        (c.ReturnByte, System.Byte, 0), 
-        (c.ReturnSByte, System.SByte, 1), 
-        (c.ReturnUInt16, System.UInt16, 2), 
-        (c.ReturnInt16, System.Int16, 3), 
-        (c.ReturnUInt32, System.UInt32, 4), 
-        (c.ReturnInt32, System.Int32, 5), 
-        (c.ReturnUInt64, System.UInt64, 6), 
-        (c.ReturnInt64, System.Int64, 7), 
-        (c.ReturnDouble, System.Double, 8), 
-        (c.ReturnSingle, System.Single, 9), 
-        (c.ReturnDecimal, System.Decimal, 10), 
+    def test_return_numbers(self):
+        import clr
+        import System
+        from Merlin.Testing.Call import Int32RInt32EventHandler
+        from Merlin.Testing.TypeSample import EnumInt16, SimpleStruct
+        for (f, t, val) in [
+            (self.c.ReturnByte, System.Byte, 0), 
+            (self.c.ReturnSByte, System.SByte, 1), 
+            (self.c.ReturnUInt16, System.UInt16, 2), 
+            (self.c.ReturnInt16, System.Int16, 3), 
+            (self.c.ReturnUInt32, System.UInt32, 4), 
+            (self.c.ReturnInt32, System.Int32, 5), 
+            (self.c.ReturnUInt64, System.UInt64, 6), 
+            (self.c.ReturnInt64, System.Int64, 7), 
+            (self.c.ReturnDouble, System.Double, 8), 
+            (self.c.ReturnSingle, System.Single, 9), 
+            (self.c.ReturnDecimal, System.Decimal, 10), 
+            
+            (self.c.ReturnChar, System.Char, 'A'), 
+            (self.c.ReturnBoolean, System.Boolean, True), 
+            (self.c.ReturnString, System.String, "CLR"), 
+            
+            (self.c.ReturnEnum, EnumInt16, EnumInt16.C),
+        ]:
+            x = f()
+            self.assertEqual(x.GetType(), clr.GetClrType(t))
+            self.assertEqual(x, val)
+            
+        # return value type
+        x= self.c.ReturnStruct()
+        self.assertEqual(x.Flag, 100)
         
-        (c.ReturnChar, System.Char, 'A'), 
-        (c.ReturnBoolean, System.Boolean, True), 
-        (c.ReturnString, System.String, "CLR"), 
+        x= self.c.ReturnClass()
+        self.assertEqual(x.Flag, 200)
         
-        (c.ReturnEnum, EnumInt16, EnumInt16.C),
-    ]:
-        x = f()
-        AreEqual(x.GetType(), clr.GetClrType(t))
-        AreEqual(x, val)
+        x= self.c.ReturnNullableInt1()
+        self.assertEqual(x.GetType(), clr.GetClrType(int))
+        self.assertEqual(x, 300)
         
-    # return value type
-    x = c.ReturnStruct()
-    AreEqual(x.Flag, 100)
-    
-    x = c.ReturnClass()
-    AreEqual(x.Flag, 200)
-    
-    x = c.ReturnNullableInt1()
-    AreEqual(x.GetType(), clr.GetClrType(int))
-    AreEqual(x, 300)
-    
-    x = c.ReturnNullableStruct1()
-    AreEqual(x.GetType(), clr.GetClrType(SimpleStruct))
-    AreEqual(x.Flag, 400)
-    
-    x = c.ReturnInterface()
-    AreEqual(x.Flag, 500)
-    
-    # return delegate
-    x = c.ReturnDelegate()
-    AreEqual(x.GetType(), clr.GetClrType(Int32RInt32EventHandler))
-    AreEqual(x(3), 6)
-    AreEqual(x(3.0), 6)
-    
-    # array
-    x = c.ReturnInt32Array()
-    AreEqual(x[0], 1)
-    AreEqual(x[1], 2)
-    
-    x = c.ReturnStructArray()
-    AreEqual(x[0].Flag, 1)
-    AreEqual(x[1].Flag, 2)
+        x= self.c.ReturnNullableStruct1()
+        self.assertEqual(x.GetType(), clr.GetClrType(SimpleStruct))
+        self.assertEqual(x.Flag, 400)
+        
+        x= self.c.ReturnInterface()
+        self.assertEqual(x.Flag, 500)
+        
+        # return delegate
+        x= self.c.ReturnDelegate()
+        self.assertEqual(x.GetType(), clr.GetClrType(Int32RInt32EventHandler))
+        self.assertEqual(x(3), 6)
+        self.assertEqual(x(3.0), 6)
+        
+        # array
+        x= self.c.ReturnInt32Array()
+        self.assertEqual(x[0], 1)
+        self.assertEqual(x[1], 2)
+        
+        x= self.c.ReturnStructArray()
+        self.assertEqual(x[0].Flag, 1)
+        self.assertEqual(x[1].Flag, 2)
 
-def test_return_from_generic():
-    for (t, v) in [
-        (int, 2), 
-        (str, "python"),
-    ]:
-        g = G[t](v)
-        
-        AreEqual(g.ReturnT(), v)
-        AreEqual(g.ReturnStructT().Flag, v)
-        AreEqual(g.ReturnClassT().Flag, v)
+    def test_return_from_generic(self):
+        from Merlin.Testing.Call import G
+        for (t, v) in [
+            (int, 2), 
+            (str, "python"),
+        ]:
+            g = G[t](v)
+            
+            self.assertEqual(g.ReturnT(), v)
+            self.assertEqual(g.ReturnStructT().Flag, v)
+            self.assertEqual(g.ReturnClassT().Flag, v)
 
-        x = g.ReturnArrayT()
-        AreEqual(len(x), 3)
-        AreEqual(x[2], v)
+            x = g.ReturnArrayT()
+            self.assertEqual(len(x), 3)
+            self.assertEqual(x[2], v)
     
 run_test(__name__)
 

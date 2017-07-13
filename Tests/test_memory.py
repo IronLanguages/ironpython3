@@ -13,33 +13,31 @@
 #
 #####################################################################################
 
-from iptest.assert_util import *
-skiptest("win32")
-skiptest("silverlight")  #no time.clock or GetTotalMemory
-
-import clr
-clr.AddReference("Microsoft.Dynamic")
-from Microsoft.Scripting.Generation import Snippets
 import gc
-skipMemoryCheck = Snippets.Shared.SaveSnippets or clr.GetCurrentRuntime().Configuration.DebugMode
+import unittest
 
 from time import clock
 
-# GetTotalMemory() actually pulls in System
-def evalLoop(N):
+from iptest import is_cli, is_cli64, is_mono, run_test, skipUnlessIronPython
+
+def evalLoop(code, N):
     for i in range(N):
         func = compile(code, '<>', 'exec')
         eval(func)
     
-def evalTest(N):
-    startMem = GetTotalMemory()
+def evalTest(code, N):
+    from System import GC
+    startMem = GC.GetTotalMemory(True)
     startTime = clock()
-    evalLoop(N)
+    evalLoop(code, N)
     endTime = clock()
-    gc.collect(2)
-    endMem = GetTotalMemory()
+    if is_mono:
+        gc.collect()
+    else:
+        gc.collect(2)
+    endMem = GC.GetTotalMemory(True)
     return max(endMem-startMem, 0)
-    
+
 t_list = [
         "if not 1 + 2 == 3: raise AssertionError('Assertion Failed')",
         "(a,b) = (0, 1)",
@@ -85,63 +83,73 @@ t_list = [
         "def f():pass\nclass C:pass\nf()",
     ]
 
-# account for adaptive compilation
-expectedMem = 24000
+@skipUnlessIronPython()
+class MemoryTest(unittest.TestCase):
+    def setUp(self):
+        super(MemoryTest, self).setUp()
 
-if is_cli64:
-    expectedMem = int(expectedMem*1.25)
+        import clr
+        clr.AddReference("Microsoft.Dynamic")
+        from Microsoft.Scripting.Generation import Snippets
 
-for code in t_list:    
-    baseMem = evalTest(10)
+        self.skipMemoryCheck = Snippets.Shared.SaveSnippets or clr.GetCurrentRuntime().Configuration.DebugMode
+        self.expectedMem = 24000
+
+        # account for adaptive compilation
+        if is_cli64:
+            self.expectedMem = int(self.expectedMem*1.25)
+
+    def test_t_list(self):
+        for code in t_list:
+            baseMem = evalTest(code, 10)
+            
+            usedMax = max(self.expectedMem, 4*baseMem)
+            if not self.skipMemoryCheck:
+                for repetitions in [100, 500]:
+                    usedMem = evalTest(code, repetitions)
+                    self.assertTrue(usedMem < usedMax, "Allocated %i (max %i, base %i) running %s %d times" % (usedMem, usedMax, baseMem, code, repetitions))
+            else:
+                # not to measure the memory usage, but still try to peverify the code at the end
+                evalTest(code, 2)
     
-    usedMax = max(expectedMem, 4*baseMem)
-    if not skipMemoryCheck:
-        for repetitions in [100, 500]:
-            usedMem = evalTest(repetitions)
-            Assert(usedMem < usedMax, "Allocated %i (max %i, base %i) running %s %d times" % (usedMem, usedMax, baseMem, code, repetitions))
-    else:
-        # not to measure the memory usage, but still try to peverify the code at the end
-        evalTest(2)
-    
-e = compile("def f(): return 42\n", "", "single")
-names = {}
-eval(e, names)
-AreEqual(names['f'](), 42)
-    
-code = """
+        e = compile("def f(): return 42\n", "", "single")
+        names = {}
+        eval(e, names)
+        self.assertEqual(names['f'](), 42)
+            
+        code = """
 x=2
 def f(y):
     return x+y
 z = f(3)
-"""
-e = compile(code, "", "exec")
-names = {}
-eval(e, names)
-AreEqual(names['z'], 5)
+        """
+        e = compile(code, "", "exec")
+        names = {}
+        eval(e, names)
+        self.assertEqual(names['z'], 5)
+
+    def test_cp26005(self):
+        def coroutine():
+            try: pass
+            except: pass
+            just_numbers = list(range(1,1000))
+            def inner_method():
+                        return just_numbers
+            yield None
+            yield None
+        
+        from System import GC
+        def get_memory():
+            for _ in range(4):
+                GC.Collect()
+                GC.WaitForPendingFinalizers()
+            return GC.GetTotalMemory(True)/1e6
+        before = get_memory()
+        for j in range(10000):
+            crt = coroutine()
+            next(crt)
+        after = get_memory()
+        self.assertTrue(after-before < 10)
 
 
-def test_cp26005():
-    def coroutine():
-        try: pass
-        except: pass
-        just_numbers = list(range(1,1000))
-        def inner_method():
-                    return just_numbers
-        yield None
-        yield None
-     
-    from System import GC
-    def get_memory():
-        for _ in range(4):
-                    GC.Collect()
-                    GC.WaitForPendingFinalizers()
-        return GC.GetTotalMemory(True)/1e6
-    before = get_memory()
-    for j in range(10000):
-        crt = coroutine()
-        next(crt)
-    after = get_memory()
-    Assert(after-before < 10)
-
-
-test_cp26005()
+run_test(__name__)

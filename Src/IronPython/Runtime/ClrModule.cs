@@ -52,6 +52,19 @@ namespace IronPython.Runtime {
     /// .NET/CLS interop with Python.  
     /// </summary>
     public static class ClrModule {
+
+#if NETSTANDARD
+        public static readonly bool IsNetStandard = true;
+#else
+        public static readonly bool IsNetStandard = false;
+#endif
+
+#if DEBUG
+        public static readonly bool IsDebug = true;
+#else
+        public static readonly bool IsDebug = false;
+#endif
+
         private static int _isMono = -1;
         public static bool IsMono {
             get {

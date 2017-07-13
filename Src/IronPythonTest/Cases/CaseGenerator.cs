@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -46,13 +47,76 @@ namespace IronPythonTest.Cases {
                     .SetName(testcase.Name)
                     .Returns(0);
 
-                if (testcase.Options.Ignore)
-                    result.Ignore("ignored");
+                if (testcase.Options.Ignore) {
+                    if (!string.IsNullOrWhiteSpace(testcase.Options.Reason)) {
+                        result.Ignore(string.Format("ignored - {0}", testcase.Options.Reason));
+                    } else {
+                        result.Ignore("ignored");
+                    }
+                }
+
+                if(!ConditionMatched(testcase.Options.Condition)) {
+                    if (!string.IsNullOrWhiteSpace(testcase.Options.Reason)) {
+                        result.Ignore(string.Format("condition ({0}) - {1}", testcase.Options.Condition, testcase.Options.Reason));
+                    } else {
+                        result.Ignore(string.Format("condition ({0})", testcase.Options.Condition));
+                    }
+                }
 
                 yield return result;
             }
         }
 
         protected abstract IEnumerable<TestInfo> GetTests();
+
+        protected bool ConditionMatched(string condition) {
+            bool result = true;
+            if(!string.IsNullOrEmpty(condition)) {
+                try {
+                    result = EvaluateExpression(condition);
+                } catch(Exception ex) {
+                    Console.WriteLine("Error evaluating test condition '{0}', will run the test anyway: {1}", condition, ex.Message);
+                    result = true;
+                }
+            }
+
+            return result;
+        }
+
+        private bool EvaluateExpression(string expression) {
+            var dummy = new DataTable();
+            string filter = expression;
+            var replacements = new Dictionary<string, string>() {
+                // variables
+                { "$(OS)", Environment.OSVersion.Platform.ToString() },
+
+                // operators
+                { "==", "=" },
+                { "||", "OR" },
+                { "\"\"", "\"" },
+                { "\"", "'" },
+                { "&&", "AND" },
+                { "!=", "<>" }
+            };
+
+            foreach (var replacement in replacements) {
+                expression = expression.Replace(replacement.Key, replacement.Value);
+            }
+
+            try {
+                object res = dummy.Compute(expression, null);
+                if (res is bool) {
+                    return (bool)res;
+                }
+            } catch (EvaluateException ex) {
+                if (ex.Message.StartsWith("The expression contains undefined function call", StringComparison.Ordinal))
+                    throw new Exception("A variable used in the filter expression is not defined");
+                throw new Exception(string.Format("Invalid filter: {0}", ex.Message));
+            } catch(SyntaxErrorException ex) {
+                throw new Exception(string.Format("Invalid filter: {0}", ex.Message));
+            }
+
+            throw new Exception(string.Format("Invalid filter, does not evaluate to true or false: {0}", filter));
+        }
     }
 }

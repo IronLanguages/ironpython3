@@ -21,10 +21,7 @@ from iptest.assert_util import *
 skiptest("win32")
 import System
 
-if not is_silverlight:
-    privateBinding = "-X:PrivateBinding" in System.Environment.GetCommandLineArgs()
-else:
-    privateBinding = False
+privateBinding = "-X:PrivateBinding" in System.Environment.GetCommandLineArgs()
 
 load_iron_python_test()
 import IronPythonTest
@@ -94,7 +91,7 @@ else:
         AreEqual("_InternalClsPart__Property" in dir(InternalClsPart), True)
         AreEqual("_InternalClsPart__Method" in dir(InternalClsPart), True)
 
-    @skip("silverlight") # no winforms
+    @skip("netstandard", "posix") # no System.Windows.Forms
     def test_override_createparams():
         """verify we can override the CreateParams property and get the expected value from the base class"""
     
@@ -129,6 +126,6 @@ else:
 
 run_test(__name__, noOutputPlease=True)
 
-if not privateBinding and not is_silverlight:
+if not privateBinding:
     from iptest.process_util import launch_ironpython_changing_extensions
     AreEqual(launch_ironpython_changing_extensions(__file__, add=["-X:PrivateBinding"]), 0)

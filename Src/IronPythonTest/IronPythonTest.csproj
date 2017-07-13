@@ -93,6 +93,7 @@
       <HintPath>$(ReferenceDir)\NUnitLite.3.7.1\lib\net40\nunitlite.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="System.Data" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

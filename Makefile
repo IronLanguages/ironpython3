@@ -1,21 +1,26 @@
+MSBUILD := msbuild
+
 .PHONY: debug release test stage package clean test-smoke test-smoke-debug test-ironpython test-ironpython-debug test-cpython test-cpython-debug test-all test-all-debug
 
-release:
-	@msbuild Build.proj /t:Build /p:Mono=true /p:BuildFlavour=Release /p:Platform="Any CPU" /verbosity:minimal /nologo
+release: update-submodules
+	@$(MSBUILD) Build.proj /t:Build /p:Mono=true /p:BuildFlavour=Release /p:Platform="Any CPU" /verbosity:minimal /nologo
 	cp Src/DLR/bin/Release/rowantest.*.dll bin/Release/
 
-debug:
-	@msbuild Build.proj /t:Build /p:Mono=true /p:BuildFlavour=Debug /p:Platform="Any CPU" /verbosity:minimal /nologo
+debug: update-submodules
+	@$(MSBUILD) Build.proj /t:Build /p:Mono=true /p:BuildFlavour=Debug /p:Platform="Any CPU" /verbosity:minimal /nologo
 	cp Src/DLR/bin/Debug/rowantest.*.dll bin/Debug/
 
-stage:
-	@msbuild Build.proj /t:Stage /p:Mono=true /p:BuildFlavour=Release /verbosity:minimal /nologo
+stage: update-submodules
+	@$(MSBUILD) Build.proj /t:Stage /p:Mono=true /p:BuildFlavour=Release /verbosity:minimal /nologo
 
-package:
-	@msbuild Build.proj /t:Package /p:Mono=true /p:BuildFlavour=Release /verbosity:minimal /nologo
+package: update-submodules
+	@$(MSBUILD) Build.proj /t:Package /p:Mono=true /p:BuildFlavour=Release /verbosity:minimal /nologo
 
 clean:
-	@msbuild Build.proj /t:Clean /p:Mono=true /verbosity:minimal /nologo
+	@$(MSBUILD) Build.proj /t:Clean /p:Mono=true /verbosity:minimal /nologo
+
+update-submodules:
+	@git submodule update --init
 
 test-ironpython:
 	cd bin/Release && mono ./IronPythonTest.exe --labels=All --where:Category==IronPython --result:ironpython-net45-release-result.xml

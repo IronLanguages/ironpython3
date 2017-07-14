@@ -30,7 +30,10 @@
   <ItemGroup>
     <None Update="Lib\**\*.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>   
+    </None>
+    <None Include="..\StdLib\Lib\os.py" Link="Lib\os.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\AssemblyVersion.cs" Link="Properties\AssemblyVersion.cs" />

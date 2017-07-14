@@ -2,23 +2,13 @@ MSBUILD := msbuild
 
 .PHONY: debug release test stage package clean test-smoke test-smoke-debug test-ironpython test-ironpython-debug test-cpython test-cpython-debug test-all test-all-debug
 
-<<<<<<< c33d0dd9cd7a552662ed84f8f0aab3a39f13ffbd
 release: update-submodules
 	@$(MSBUILD) Build.proj /t:Build /p:Mono=true /p:BuildFlavour=Release /p:Platform="Any CPU" /verbosity:minimal /nologo
-	cp Src/DLR/bin/Release/rowantest.*.dll bin/Release/
+	cp Src/DLR/bin/Release/net45/rowantest.*.dll bin/Release/net45/
 
 debug: update-submodules
 	@$(MSBUILD) Build.proj /t:Build /p:Mono=true /p:BuildFlavour=Debug /p:Platform="Any CPU" /verbosity:minimal /nologo
-	cp Src/DLR/bin/Debug/rowantest.*.dll bin/Debug/
-=======
-release:
-	@msbuild Build.proj /t:Build /p:Mono=true /p:BuildFlavour=Release /p:Platform="Any CPU" /verbosity:minimal /nologo
-	cp Src/DLR/bin/Release/net45/rowantest.*.dll bin/Release/
-
-debug:
-	@msbuild Build.proj /t:Build /p:Mono=true /p:BuildFlavour=Debug /p:Platform="Any CPU" /verbosity:minimal /nologo
-	cp Src/DLR/bin/Debug/net45/rowantest.*.dll bin/Debug/
->>>>>>> Update to latest DLR and upgrade to VS2017 and new csproj format
+	cp Src/DLR/bin/Debug/net45/rowantest.*.dll bin/Debug/net45/
 
 stage: update-submodules
 	@$(MSBUILD) Build.proj /t:Stage /p:Mono=true /p:BuildFlavour=Release /verbosity:minimal /nologo

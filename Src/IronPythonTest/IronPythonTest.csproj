@@ -25,10 +25,6 @@
     <EmbeddedResource Include="Cases\AllCPythonCasesManifest.ini" />
     <EmbeddedResource Include="Cases\StandardCPythonCasesManifest.ini" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="..\App.Debug.config" Link="App.Debug.config" />
-    <None Include="..\App.Release.config" Link="App.Release.config" />
-  </ItemGroup>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Import Project="$(BeforeTargetFiles)" />
   <Target Name="BeforeBuild" DependsOnTargets="$(BeforeTargets);GenerateCurrentVersion" />

@@ -62,56 +62,56 @@ goto :exit
 
 :test-smoke
 pushd bin\Release
-IronPythonTest.exe --labels=All --where:Category==StandardCPython --result:smoke-net45-release-result.xml
+net45\IronPythonTest.exe --labels=All --where:Category==StandardCPython --result:smoke-net45-release-result.xml
 popd
 goto :exit
 
 :test-smoke-debug
 pushd bin\Debug
-IronPythonTest.exe --labels=All --where:Category==StandardCPython --result:smoke-net45-debug-result.xml
+net45\IronPythonTest.exe --labels=All --where:Category==StandardCPython --result:smoke-net45-debug-result.xml
 popd
 goto :exit
 
 :test-ironpython
 pushd bin\Release
-IronPythonTest.exe --labels=All --where:Category==IronPython --result:ironpython-net45-release-result.xml
+net45\IronPythonTest.exe --labels=All --where:Category==IronPython --result:ironpython-net45-release-result.xml
 popd
 goto :exit
 
 :test-ironpython-debug
 pushd bin\Release
-IronPythonTest.exe --labels=All --where:Category==IronPython --result:ironpython-net45-debug-result.xml
+net45\IronPythonTest.exe --labels=All --where:Category==IronPython --result:ironpython-net45-debug-result.xml
 popd
 goto :exit
 
 :test-cpython
 pushd bin\Release
-IronPythonTest.exe --labels=All --where:"Category==StandardCPython || Category==AllCPython" --result:cpython-net45-release-result.xml
+net45\IronPythonTest.exe --labels=All --where:"Category==StandardCPython || Category==AllCPython" --result:cpython-net45-release-result.xml
 popd
 goto :exit
 
 :test-cpython-debug
 pushd bin\Debug
-IronPythonTest.exe --labels=All --where:"Category==StandardCPython || Category==AllCPython" --result:cpython-net45-debug-result.xml
+net45\IronPythonTest.exe --labels=All --where:"Category==StandardCPython || Category==AllCPython" --result:cpython-net45-debug-result.xml
 popd
 goto :exit
 
 :test-all
 pushd bin\Release
-IronPythonTest.exe --labels=All --result:all-net45-release-result.xml
+net45\IronPythonTest.exe --labels=All --result:all-net45-release-result.xml
 popd
 goto :exit
 
 :test-all-debug
 pushd bin\Debug
-IronPythonTest.exe --labels=All --result:all-net45-debug-result.xml
+net45\IronPythonTest.exe --labels=All --result:all-net45-debug-result.xml
 popd
 goto :exit
 
 :test-custom
 pushd bin\Release
 shift
-IronPythonTest.exe --labels=All --result:custom-result.xml %1 %2 %3 %4 %5 %6 %7 %8 %9
+net45\IronPythonTest.exe --labels=All --result:custom-result.xml %1 %2 %3 %4 %5 %6 %7 %8 %9
 popd
 goto :exit
 
@@ -126,14 +126,14 @@ msbuild /t:DistClean /p:BuildFlavour=Debug /verbosity:minimal /nologo /p:Platfor
 goto :main
 
 :ngen
-%SystemRoot%\Microsoft.NET\Framework\v4.0.30319\ngen.exe install bin\Release\ipy.exe
+%SystemRoot%\Microsoft.NET\Framework\v4.0.30319\ngen.exe install bin\Release\net45\ipy.exe
 goto :exit
 
 :main
 msbuild Build.proj /t:%_target% /p:BuildFlavour=%_flavour% /verbosity:minimal /nologo /p:Platform="Any CPU"
 if "%_target%" == "Build" (
     echo "Copying %_flavour% test dlls"
-    xcopy /y /q Src\DLR\bin\%_flavour%\*.dll bin\%_flavour%\
+    xcopy /y /q Src\DLR\bin\%_flavour%\net45\rowantest.*.dll bin\%_flavour%\net45\
 )
 goto :exit
 

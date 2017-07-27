@@ -15,6 +15,7 @@
          additional assembly references. -->
     <NoConfig>true</NoConfig>
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   
   <Import Project="$(RootDir)\CurrentVersion.props" />
@@ -26,7 +27,11 @@
 
   <PropertyGroup Condition="Exists('$(PublicKey)') and '$(AssemblyOriginatorKeyFile)'==''">
     <AssemblyOriginatorKeyFile>$(PublicKey)</AssemblyOriginatorKeyFile>
-    <SignAssembly Condition="'$(SignAssembly)' == ''">true</SignAssembly>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(SignAssembly)' == 'true'">
+    <SignedSym>SIGNED</SignedSym>
   </PropertyGroup>
 
   <PropertyGroup>

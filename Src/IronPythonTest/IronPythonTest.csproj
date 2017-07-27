@@ -1,99 +1,38 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+﻿<Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <Import Project="$(ProjectDir)..\..\Build\Common.proj" />
   <PropertyGroup>
-    <SchemaVersion>2.0</SchemaVersion>
+    <TargetFrameworks>net45</TargetFrameworks>
+    <PlatformTarget>anycpu</PlatformTarget>
     <ProjectGuid>{B6B42537-07F8-4F6C-A99A-B155CAEB124E}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>IronPythonTest</RootNamespace>
     <AssemblyName>IronPythonTest</AssemblyName>
   </PropertyGroup>
-  <PropertyGroup>
-    <StartupObject />
-  </PropertyGroup>
   <ItemGroup>
-    <Compile Include="AssemblyInfo.cs" />
-    <Compile Include="AttrInjectorTest.cs" />
-    <Compile Include="Cases\CaseExecuter.cs" />
-    <Compile Include="Cases\CaseGenerator.cs" />
-    <Compile Include="ExtensionMethodTest.cs" />
-    <Compile Include="Cases\IronPythonCases.cs" />
-    <Compile Include="Cases\CPythonCases.cs" />
-    <Compile Include="LightExceptionTests.cs" />
-    <Compile Include="MemberOverloadTest.cs" />
-    <Compile Include="BinderTest.cs" />
-    <Compile Include="BindTest.cs" />
-    <Compile Include="ClrType.cs" />
-    <Compile Include="Cmplx.cs" />
-    <Compile Include="Conversions.cs" />
-    <Compile Include="DefaultParams.cs" />
-    <Compile Include="DelegateTest.cs" />
-    <Compile Include="DeTest.cs" />
-    <Compile Include="DynamicRegressions.cs" />
-    <Compile Include="MemberMappingTests.cs" />
-    <Compile Include="Program.cs" />
-    <Compile Include="Stress\Engine.cs" />
-    <Compile Include="EngineTest.cs" />
-    <Compile Include="Enums.cs" />
-    <Compile Include="Events.cs" />
-    <Compile Include="ExceptionConverter.cs" />
-    <Compile Include="Exceptions.cs" />
-    <Compile Include="Explicit.cs" />
-    <Compile Include="GenMeth.cs" />
-    <Compile Include="Indexable.cs" />
-    <Compile Include="InheritTest.cs" />
-    <Compile Include="IntegerTest.cs" />
-    <Compile Include="LoadTest.cs" />
-    <Compile Include="IronMath.cs" />
-    <Compile Include="NestedClass.cs" />
-    <Compile Include="NullableTest.cs" />
-    <Compile Include="OperatorTest.cs" />
-    <Compile Include="ProtocolTest.cs" />
-    <Compile Include="StaticTest.cs" />
-    <Compile Include="StringDictionaryStorage.cs" />
-    <Compile Include="TestBuiltinModule.cs" />
-    <Compile Include="TypeDescriptor.cs" />
-    <Compile Include="Util\IniParser.cs" />
-    <Compile Include="Util\TestManifest.cs" />
-    <AppDesigner Include="Properties\" />
+    <ProjectReference Include="..\IronPython\IronPython.csproj" />
   </ItemGroup>
   <ItemGroup Condition=" '$(IsFullFramework)' == 'true' and '$(TargetFrameworkVersion)' != 'v3.5'">
     <Reference Include="System.Xaml" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\DLR\Src\Microsoft.Dynamic\Microsoft.Dynamic.csproj">
-      <Project>{eb66b766-6354-4208-a3d4-aacbdcb5c3b3}</Project>
-      <Name>Microsoft.Dynamic</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\DLR\Src\Microsoft.Scripting\Microsoft.Scripting.csproj">
-      <Project>{02ff0909-f5ad-48cf-a86a-345e721b7e40}</Project>
-      <Name>Microsoft.Scripting</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\IronPython\IronPython.csproj">
-      <Project>{95289EA9-5778-489D-AB48-F81F2CE2DA32}</Project>
-      <Name>IronPython</Name>
-    </ProjectReference>
+    <PackageReference Include="NUnit" Version="3.7.1" />
+    <PackageReference Include="NUnitLite" Version="3.7.1" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Cases\IronPythonCasesManifest.ini" />
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="Cases\AllCPythonCasesManifest.ini" />
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="Cases\StandardCPythonCasesManifest.ini" />
   </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+  <Import Project="$(BeforeTargetFiles)" />
+  <Target Name="BeforeBuild" DependsOnTargets="$(BeforeTargets);GenerateCurrentVersion" />
   <ItemGroup>
-    <Reference Include="nunit.framework">
-      <HintPath>$(ReferenceDir)\NUnit.3.7.1\lib\net40\nunit.framework.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="nunitlite">
-      <HintPath>$(ReferenceDir)\NUnitLite.3.7.1\lib\net40\nunitlite.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Data" />
+    <!-- if the file does not exist it's not picked up automatically -->
+    <Compile Remove="Properties\CurrentVersion.Generated.cs" />
+    <Compile Remove="Properties\BuildInfo.Generated.cs" />
   </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(AfterTargetFiles)" />
+  <Target Name="AfterBuild" DependsOnTargets="$(AfterTargets)" />
 </Project>

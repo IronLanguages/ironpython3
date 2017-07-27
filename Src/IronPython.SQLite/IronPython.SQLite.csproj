@@ -1,11 +1,13 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <Import Project="$(ProjectDir)..\..\Build\Common.proj" />
   <PropertyGroup>
-    <SchemaVersion>2.0</SchemaVersion>
+    <TargetFrameworks>net45</TargetFrameworks>
+    <PlatformTarget>anycpu</PlatformTarget>
     <ProjectGuid>{4A617A40-2BA7-4713-AAFE-F90C4325C581}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <OutputPath>$(OutputPath)\DLLs</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath>$(OutputPath)\$(TargetFramework)\DLLs</OutputPath>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>IronPython.SQLite</RootNamespace>
     <AssemblyName>IronPython.SQLite</AssemblyName>
@@ -25,125 +27,24 @@
     <DefineConstants>NET_40;$(DefineConstants);$(SQLiteCommon);$(SQLiteCommonOmit);SQLITE_MUTEX_W32;SQLITE_THREADSAFE;NDEBUG</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\DLR\Src\Microsoft.Dynamic\Microsoft.Dynamic.csproj">
-      <Project>{eb66b766-6354-4208-a3d4-aacbdcb5c3b3}</Project>
-      <Name>Microsoft.Dynamic</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\DLR\Src\Microsoft.Scripting\Microsoft.Scripting.csproj">
-      <Project>{02ff0909-f5ad-48cf-a86a-345e721b7e40}</Project>
-      <Name>Microsoft.Scripting</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\IronPython\IronPython.csproj">
-      <Project>{95289EA9-5778-489D-AB48-F81F2CE2DA32}</Project>
-      <Name>IronPython</Name>
-      <Private>False</Private>
-    </ProjectReference>
     <Reference Include="System.Management" Condition=" '$(IsFullFramework)' == 'true'" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\AssemblyVersion.cs">
-      <Link>Properties\AssemblyVersion.cs</Link>
-    </Compile>
-    <Compile Include="c#sqlite\alter_c.cs" />
-    <Compile Include="c#sqlite\analyze_c.cs" />
-    <Compile Include="c#sqlite\attach_c.cs" />
-    <Compile Include="c#sqlite\auth_c.cs" />
-    <Compile Include="c#sqlite\backup_c.cs" />
-    <Compile Include="c#sqlite\bitvec_c.cs" />
-    <Compile Include="c#sqlite\btmutex_c.cs" />
-    <Compile Include="c#sqlite\BtreeInt_h.cs" />
-    <Compile Include="c#sqlite\btree_c.cs" />
-    <Compile Include="c#sqlite\Btree_h.cs" />
-    <Compile Include="c#sqlite\build_c.cs" />
-    <Compile Include="c#sqlite\callback_c.cs" />
-    <Compile Include="c#sqlite\complete_c.cs" />
-    <Compile Include="c#sqlite\crypto.cs" />
-    <Compile Include="c#sqlite\ctime_c.cs" />
-    <Compile Include="c#sqlite\date_c.cs" />
-    <Compile Include="c#sqlite\Delegates.cs" />
-    <Compile Include="c#sqlite\delete_c.cs" />
-    <Compile Include="c#sqlite\expr_c.cs" />
-    <Compile Include="c#sqlite\fault_c.cs" />
-    <Compile Include="c#sqlite\fkey_c.cs" />
-    <Compile Include="c#sqlite\func_c.cs" />
-    <Compile Include="c#sqlite\global_c.cs" />
-    <Compile Include="c#sqlite\hash_c.cs" />
-    <Compile Include="c#sqlite\Hash_h.cs" />
-    <Compile Include="c#sqlite\hwtime_c.cs" />
-    <Compile Include="c#sqlite\insert_c.cs" />
-    <Compile Include="c#sqlite\journal_c.cs" />
-    <Compile Include="c#sqlite\keywordhash_h.cs" />
-    <Compile Include="c#sqlite\legacy_c.cs" />
-    <Compile Include="c#sqlite\loadext_c.cs" />
-    <Compile Include="c#sqlite\main_c.cs" />
-    <Compile Include="c#sqlite\malloc_c.cs" />
-    <Compile Include="c#sqlite\memjournal_c.cs" />
-    <Compile Include="c#sqlite\mem_Pool.cs" />
-    <Compile Include="c#sqlite\mutex_c.cs" />
-    <Compile Include="c#sqlite\mutex_h.cs" />
-    <Compile Include="c#sqlite\mutex_noop_c.cs" />
-    <Compile Include="c#sqlite\mutex_w32.cs" />
-    <Compile Include="c#sqlite\notify_c.cs" />
-    <Compile Include="c#sqlite\opcodes_c.cs" />
-    <Compile Include="c#sqlite\opcodes_h.cs" />
-    <Compile Include="c#sqlite\os_c.cs" />
-    <Compile Include="c#sqlite\os_common_h.cs" />
-    <Compile Include="c#sqlite\os_h.cs" />
-    <Compile Include="c#sqlite\os_win_c.cs" />
-    <Compile Include="c#sqlite\pager_c.cs" />
-    <Compile Include="c#sqlite\pager_h.cs" />
-    <Compile Include="c#sqlite\parse_c.cs" />
-    <Compile Include="c#sqlite\parse_h.cs" />
-    <Compile Include="c#sqlite\pcache1_c.cs" />
-    <Compile Include="c#sqlite\pcache_c.cs" />
-    <Compile Include="c#sqlite\pcache_h.cs" />
-    <Compile Include="c#sqlite\pragma_c.cs" />
-    <Compile Include="c#sqlite\prepare_c.cs" />
-    <Compile Include="c#sqlite\printf_c.cs" />
-    <Compile Include="c#sqlite\random_c.cs" />
-    <Compile Include="c#sqlite\resolve_c.cs" />
-    <Compile Include="c#sqlite\rowset_c.cs" />
-    <Compile Include="c#sqlite\select_c.cs" />
-    <Compile Include="c#sqlite\sqlite3_h.cs" />
-    <Compile Include="c#sqlite\sqliteInt_h.cs" />
-    <Compile Include="c#sqlite\sqliteLimit_h.cs" />
-    <Compile Include="c#sqlite\wal_c.cs" />
-    <Compile Include="c#sqlite\wal_h.cs" />
-    <Compile Include="Extensions.cs" />
-    <Compile Include="Properties\BuildInfo.Generated.cs" />
-    <Compile Include="Row.cs" />
-    <Compile Include="Statement.cs" />
-    <Compile Include="c#sqlite\status_c.cs" />
-    <Compile Include="c#sqlite\table_c.cs" />
-    <Compile Include="c#sqlite\tokenize_c.cs" />
-    <Compile Include="c#sqlite\trigger_c.cs" />
-    <Compile Include="c#sqlite\update_c.cs" />
-    <Compile Include="c#sqlite\utf_c.cs" />
-    <Compile Include="c#sqlite\util_c.cs" />
-    <Compile Include="c#sqlite\vacuum_c.cs" />
-    <Compile Include="c#sqlite\vdbeapi_c.cs" />
-    <Compile Include="c#sqlite\vdbeaux_c.cs" />
-    <Compile Include="c#sqlite\vdbeblob_c.cs" />
-    <Compile Include="c#sqlite\VdbeInt_h.cs" />
-    <Compile Include="c#sqlite\vdbemem_c.cs" />
-    <Compile Include="c#sqlite\vdbetrace_c.cs" />
-    <Compile Include="c#sqlite\vdbe_c.cs" />
-    <Compile Include="c#sqlite\Vdbe_h.cs" />
-    <Compile Include="c#sqlite\vtab_c.cs" />
-    <Compile Include="c#sqlite\walker_c.cs" />
-    <Compile Include="c#sqlite\where_c.cs" />
-    <Compile Include="c#sqlite\_Custom.cs" />
-    <Compile Include="Connection.cs" />
-    <Compile Include="Contants.cs" />
-    <Compile Include="Cursor.cs" />
-    <Compile Include="Exceptions.cs" />
-    <Compile Include="Util.cs" />
-    <Compile Include="_sqlite.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
+    <ProjectReference Include="..\IronPython\IronPython.csproj" />
   </ItemGroup>
-  <Import Project="$(CSharpTargets)" />
+  <ItemGroup>
+    <Compile Include="..\AssemblyVersion.cs" Link="Properties\AssemblyVersion.cs" />
+  </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Import Project="$(BeforeTargetFiles)" />
-  <Target Name="BeforeBuild" DependsOnTargets="$(BeforeTargets)" />
+  <Target Name="BeforeBuild" DependsOnTargets="$(BeforeTargets);GenerateCurrentVersion" />
+  <ItemGroup>
+    <!-- if the file does not exist it's not picked up automatically -->
+    <Compile Remove="Properties\CurrentVersion.Generated.cs" />
+    <Compile Include="Properties\CurrentVersion.Generated.cs" />
+    <Compile Remove="Properties\BuildInfo.Generated.cs" />
+    <Compile Include="Properties\BuildInfo.Generated.cs" />
+  </ItemGroup>
   <Import Project="$(AfterTargetFiles)" />
   <Target Name="AfterBuild" DependsOnTargets="$(AfterTargets)" />
 </Project>

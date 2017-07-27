@@ -119,7 +119,7 @@ Optional arg level is the compression level, in 1-9.")]
             zst.next_out = output;
             zst.avail_out = output.Length;
 
-            int err = zst.deflateInit(level);
+            int err = zst.DeflateInit(level);
             switch(err)
             {
                 case (Z_OK):

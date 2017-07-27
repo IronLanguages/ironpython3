@@ -1,58 +1,41 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+﻿<Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <Import Project="$(ProjectDir)..\..\Build\Common.proj" />
   <PropertyGroup>
-    <SchemaVersion>2.0</SchemaVersion>
+    <TargetFrameworks>net45</TargetFrameworks>
+    <PlatformTarget>x86</PlatformTarget>
     <ProjectGuid>{81DA19C7-4FEC-47E7-981B-D9310D549F95}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>IronPythonWindow</RootNamespace>
     <AssemblyName>ipyw</AssemblyName>
     <ApplicationIcon>ipy.ico</ApplicationIcon>
-    <PlatformTarget>x86</PlatformTarget>
     <CodeAnalysisRuleSet>IronPythonWindow.ruleset</CodeAnalysisRuleSet>
+    <DocumentationFile>$(OutputPath)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\IronPython\IronPython.csproj" />
+  </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="IronPythonWindow.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="..\AssemblyVersion.cs">
-      <Link>Properties\AssemblyVersion.cs</Link>
-    </Compile>
+    <None Include="..\App.Debug.config" Link="App.Debug.config" />
+    <None Include="..\App.Release.config" Link="App.Release.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\AssemblyVersion.cs" Link="Properties\AssemblyVersion.cs" />
+  </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+  <Import Project="$(BeforeTargetFiles)" />
+  <Target Name="BeforeBuild" DependsOnTargets="$(BeforeTargets);GenerateCurrentVersion" />
+  <ItemGroup>
+    <!-- if the file does not exist it's not picked up automatically -->
+    <Compile Remove="Properties\CurrentVersion.Generated.cs" />
+    <Compile Include="Properties\CurrentVersion.Generated.cs" />
+    <Compile Remove="Properties\BuildInfo.Generated.cs" />
     <Compile Include="Properties\BuildInfo.Generated.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\DLR\Src\Microsoft.Dynamic\Microsoft.Dynamic.csproj">
-      <Project>{eb66b766-6354-4208-a3d4-aacbdcb5c3b3}</Project>
-      <Name>Microsoft.Dynamic</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\DLR\Src\Microsoft.Scripting\Microsoft.Scripting.csproj">
-      <Project>{02ff0909-f5ad-48cf-a86a-345e721b7e40}</Project>
-      <Name>Microsoft.Scripting</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\IronPython\IronPython.csproj">
-      <Project>{95289EA9-5778-489D-AB48-F81F2CE2DA32}</Project>
-      <Name>IronPython</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="ipy.ico" />
-  </ItemGroup>
-  <ItemGroup />
-  <ItemGroup>
-    <None Include="..\App.Debug.config">
-      <Link>App.Debug.config</Link>
-    </None>
-    <None Include="..\App.Release.config">
-      <Link>App.Release.config</Link>
-    </None>
-    <None Include="IronPythonWindow.ruleset" />
-  </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-  <Import Project="$(BeforeTargetFiles)" />
-  <Target Name="BeforeBuild" DependsOnTargets="$(BeforeTargets)" />
   <Import Project="$(AfterTargetFiles)" />
   <Target Name="AfterBuild" DependsOnTargets="$(AfterTargets)" />
 </Project>

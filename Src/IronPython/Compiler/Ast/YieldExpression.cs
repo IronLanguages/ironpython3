@@ -42,7 +42,7 @@ namespace IronPython.Compiler.Ast {
         // This needs to be injected at any yield suspension points, mainly:
         // - at the start of the generator body
         // - after each yield statement.
-        static internal MSAst.Expression CreateCheckThrowExpression(SourceSpan span) {
+        internal static MSAst.Expression CreateCheckThrowExpression(SourceSpan span) {
             MSAst.Expression instance = GeneratorRewriter._generatorParam;
             Debug.Assert(instance.Type == typeof(IronPython.Runtime.PythonGenerator));
 

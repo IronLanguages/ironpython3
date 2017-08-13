@@ -17,17 +17,11 @@ using Microsoft.Scripting;
 
 namespace IronPython.Compiler.Ast {
     public class RelativeModuleName : ModuleName {
-        private readonly int _dotCount;
-
         public RelativeModuleName(string[] names, int dotCount)
             : base(names) {
-            _dotCount = dotCount;
+            DotCount = dotCount;
         }
 
-        public int DotCount {
-            get {
-                return _dotCount;
-            }
-        }
+        public int DotCount { get; }
     }
 }

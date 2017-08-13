@@ -34,18 +34,12 @@ namespace IronPython.Compiler.Ast {
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public abstract class ScopeStatement : Statement {
-        private bool _importStar;                   // from module import *
-        private bool _unqualifiedExec;              // exec "code"
-        private bool _nestedFreeVariables;          // nested function with free variable
-        private bool _locals;                       // The scope needs locals dictionary
-                                                    // due to "exec" or call to dir, locals, eval, vars...
-        private bool _hasLateboundVarSets;          // calls code which can assign to variables
-        private bool _containsExceptionHandling;    // true if this block contains a try/with statement
+        // due to "exec" or call to dir, locals, eval, vars...
+
         private bool _forceCompile;                 // true if this scope should always be compiled
 
         private FunctionCode _funcCode;             // the function code object created for this scope
 
-        private Dictionary<string, PythonVariable> _variables;          // mapping of string to variables
         private ClosureInfo[] _closureVariables;                        // closed over variables, bool indicates if we accessed it in this scope.
         private List<PythonVariable> _freeVars;                         // list of variables accessed from outer scopes
         private List<string> _globalVars;                               // global variables accessed from this scope
@@ -53,31 +47,17 @@ namespace IronPython.Compiler.Ast {
         private Dictionary<string, PythonReference> _references;        // names of all variables referenced, null after binding completes
 
         internal Dictionary<PythonVariable, MSAst.Expression> _variableMapping = new Dictionary<PythonVariable, MSAst.Expression>();
-        private MSAst.ParameterExpression _localParentTuple;                                        // parent's tuple local saved locally
         private readonly DelayedFunctionCode _funcCodeExpr = new DelayedFunctionCode();             // expression that refers to the function code for this scope
 
         internal static MSAst.ParameterExpression LocalCodeContextVariable = Ast.Parameter(typeof(CodeContext), "$localContext");
         private static MSAst.ParameterExpression _catchException = Ast.Parameter(typeof(Exception), "$updException");
         internal const string NameForExec = "module: <exec>";
         
-        internal bool ContainsImportStar {
-            get { return _importStar; }
-            set { _importStar = value; }
-        }
+        internal bool ContainsImportStar { get; set; }
 
-        internal bool ContainsExceptionHandling {
-            get {
-                return _containsExceptionHandling;
-            }
-            set {
-                _containsExceptionHandling = value;
-            }
-        }
+        internal bool ContainsExceptionHandling { get; set; }
 
-        internal bool ContainsUnqualifiedExec {
-            get { return _unqualifiedExec; }
-            set { _unqualifiedExec = value; }
-        }
+        internal bool ContainsUnqualifiedExec { get; set; }
 
         internal virtual bool IsGeneratorMethod {
             get {
@@ -88,11 +68,7 @@ namespace IronPython.Compiler.Ast {
         /// <summary>
         /// The variable used to hold out parents closure tuple in our local scope.
         /// </summary>
-        internal MSAst.ParameterExpression LocalParentTuple {
-            get {
-                return _localParentTuple;
-            }
-        }
+        internal MSAst.ParameterExpression LocalParentTuple { get; private set; }
 
         /// <summary>
         /// Gets the expression associated with the local CodeContext.  If the function
@@ -114,10 +90,7 @@ namespace IronPython.Compiler.Ast {
         /// <summary>
         /// True if an inner scope is accessing a variable defined in this scope.
         /// </summary>
-        internal bool ContainsNestedFreeVariables {
-            get { return _nestedFreeVariables; }
-            set { _nestedFreeVariables = value; }
-        }
+        internal bool ContainsNestedFreeVariables { get; set; }
 
         /// <summary>
         /// True if we are forcing the creation of a dictionary for storing locals.
@@ -125,10 +98,7 @@ namespace IronPython.Compiler.Ast {
         /// This occurs for calls to locals(), dir(), vars(), unqualified exec, and
         /// from ... import *.
         /// </summary>
-        internal bool NeedsLocalsDictionary {
-            get { return _locals; }
-            set { _locals = value; }
-        }
+        internal bool NeedsLocalsDictionary { get; set; }
 
         public virtual string Name {
             get {
@@ -148,18 +118,9 @@ namespace IronPython.Compiler.Ast {
         /// 
         /// This is tracked independently of the ContainsUnqualifiedExec/NeedsLocalsDictionary
         /// </summary>
-        internal virtual bool HasLateBoundVariableSets {
-            get {
-                return _hasLateboundVarSets;
-            }
-            set {
-                _hasLateboundVarSets = value;
-            }
-        }
+        internal virtual bool HasLateBoundVariableSets { get; set; }
 
-        internal Dictionary<string, PythonVariable> Variables {
-            get { return _variables; }
-        }
+        internal Dictionary<string, PythonVariable> Variables { get; private set; }
 
         internal virtual bool IsGlobal {
             get { return false; }
@@ -236,7 +197,9 @@ namespace IronPython.Compiler.Ast {
             get {
                 if (_forceCompile) {
                     return false;
-                } else if (GlobalParent.CompilationMode == CompilationMode.Lookup) {
+                }
+
+                if (GlobalParent.CompilationMode == CompilationMode.Lookup) {
                     return true;
                 }
                 CompilerContext context = GlobalParent.CompilerContext;
@@ -340,8 +303,8 @@ namespace IronPython.Compiler.Ast {
         }
 
         private bool TryGetAnyVariable(string name, out PythonVariable variable) {
-            if (_variables != null) {
-                return _variables.TryGetValue(name, out variable);
+            if (Variables != null) {
+                return Variables.TryGetValue(name, out variable);
             } else {
                 variable = null;
                 return false;
@@ -391,7 +354,7 @@ namespace IronPython.Compiler.Ast {
             List<ClosureInfo> closureVariables = null;
             
             if (FreeVariables != null && FreeVariables.Count > 0) {
-                _localParentTuple = Ast.Parameter(Parent.GetClosureTupleType(), "$tuple");
+                LocalParentTuple = Ast.Parameter(Parent.GetClosureTupleType(), "$tuple");
 
                 foreach (var variable in _freeVars) {
                     var parentClosure = Parent._closureVariables;                    
@@ -399,7 +362,7 @@ namespace IronPython.Compiler.Ast {
                     
                     for (int i = 0; i < parentClosure.Length; i++) {
                         if (parentClosure[i].Variable == variable) {
-                            _variableMapping[variable] = new ClosureExpression(variable, Ast.Property(_localParentTuple, String.Format("Item{0:D3}", i)), null);
+                            _variableMapping[variable] = new ClosureExpression(variable, Ast.Property(LocalParentTuple, String.Format("Item{0:D3}", i)), null);
                             break;
                         }
                     }
@@ -457,14 +420,14 @@ namespace IronPython.Compiler.Ast {
         }
 
         private void EnsureVariables() {
-            if (_variables == null) {
-                _variables = new Dictionary<string, PythonVariable>(StringComparer.Ordinal);
+            if (Variables == null) {
+                Variables = new Dictionary<string, PythonVariable>(StringComparer.Ordinal);
             }
         }
 
         internal void AddGlobalVariable(PythonVariable variable) {
             EnsureVariables();
-            _variables[variable.Name] = variable;
+            Variables[variable.Name] = variable;
         }
 
         internal PythonReference Reference(string name) {
@@ -485,9 +448,9 @@ namespace IronPython.Compiler.Ast {
 
         internal PythonVariable/*!*/ CreateVariable(string name, VariableKind kind) {
             EnsureVariables();
-            Debug.Assert(!_variables.ContainsKey(name));
+            Debug.Assert(!Variables.ContainsKey(name));
             PythonVariable variable;
-            _variables[name] = variable = new PythonVariable(name, kind, this);
+            Variables[name] = variable = new PythonVariable(name, kind, this);
             return variable;
         }
 
@@ -551,7 +514,7 @@ namespace IronPython.Compiler.Ast {
         /// exception is thrown.
         /// </summary>
         internal MSAst.Expression GetUpdateTrackbackExpression(MSAst.ParameterExpression exception) {
-            if (!_containsExceptionHandling) {
+            if (!ContainsExceptionHandling) {
                 Debug.Assert(Name != null);
                 Debug.Assert(exception.Type == typeof(Exception));
                 return UpdateStackTrace(exception);

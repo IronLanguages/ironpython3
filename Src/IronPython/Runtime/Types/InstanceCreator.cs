@@ -29,12 +29,10 @@ namespace IronPython.Runtime.Types {
     /// doesn't prepend the type.
     /// </summary>
     abstract class InstanceCreator {
-        private readonly PythonType/*!*/ _type;
-
         protected InstanceCreator(PythonType type) {
             Assert.NotNull(type);
 
-            _type = type;
+            Type = type;
         }
 
         public static InstanceCreator Make(PythonType type) {
@@ -45,11 +43,7 @@ namespace IronPython.Runtime.Types {
             return new UserInstanceCreator(type);
         }
 
-        protected PythonType Type {
-            get {
-                return _type;
-            }
-        }
+        protected PythonType Type { get; }
 
         internal abstract object CreateInstance(CodeContext/*!*/ context);
         internal abstract object CreateInstance(CodeContext/*!*/ context, object arg0);

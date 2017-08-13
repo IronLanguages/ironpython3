@@ -166,12 +166,11 @@ namespace IronPython.Runtime.Binding {
         /// </summary>
         /// <typeparam name="TResult"></typeparam>
         public abstract class GetBinderHelper<TResult> {
-            private readonly PythonType _value;
             private readonly string _name;
             internal readonly CodeContext/*!*/ _context;
 
             public GetBinderHelper(PythonType value, CodeContext/*!*/ context, string name) {
-                _value = value;
+                Value = value;
                 _name = name;
                 _context = context;
             }
@@ -253,11 +252,7 @@ namespace IronPython.Runtime.Binding {
 
             #endregion
 
-            protected PythonType Value {
-                get {
-                    return _value;
-                }
-            }
+            protected PythonType Value { get; }
         }
 
         /// <summary>

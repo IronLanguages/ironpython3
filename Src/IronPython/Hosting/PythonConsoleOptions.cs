@@ -19,43 +19,21 @@ using Microsoft.Scripting.Hosting.Shell;
 namespace IronPython.Hosting {
     [CLSCompliant(true)]
     public /* TODO: sealed */ class PythonConsoleOptions : ConsoleOptions {
+        public bool IgnoreEnvironmentVariables { get; set; }
 
-        private bool _ignoreEnvironmentVariables;
-        private bool _skipImportSite;
-        private bool _skipFistSourceLine;
-        private string _runAsModule;
-        private bool _basicConsole = false;
+        public bool SkipImportSite { get; set; }
 
-        public bool IgnoreEnvironmentVariables {
-            get { return _ignoreEnvironmentVariables; }
-            set { _ignoreEnvironmentVariables = value; }
-        }
-
-        public bool SkipImportSite {
-            get { return _skipImportSite; }
-            set { _skipImportSite = value; }
-        }
-
-        public string ModuleToRun {
-            get { return _runAsModule; }
-            set { _runAsModule = value; }
-        }
+        public string ModuleToRun { get; set; }
 
         /// <summary>
-        /// Skip the first line of the code to execute. This is useful for executing Unix scripts which
-        /// have the command to execute specified in the first line.
+        /// Gets or sets a value indicating whether to skip the first line of the code to execute.
+        /// This is useful for executing Unix scripts which have the command to execute specified in the first line.
         /// This only apply to the script code executed by the ScriptEngine APIs, but not for other script code 
         /// that happens to get called as a result of the execution.
         /// </summary>
-        public bool SkipFirstSourceLine {
-            get { return _skipFistSourceLine; }
-            set { _skipFistSourceLine = value; }
-        }
+        public bool SkipFirstSourceLine { get; set; }
 
-        public bool BasicConsole {
-            get { return _basicConsole; }
-            set { _basicConsole = value; }
-        }
+        public bool BasicConsole { get; set; } = false;
     }
 }
 #endif

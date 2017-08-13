@@ -549,21 +549,15 @@ namespace IronPython.Compiler.Ast {
             if (node.Left != null) {
                 node.Left.Walk(this);
             }
-            if (node.List != null) {
-                node.List.Walk(this);
-            }
-            
+            node.List?.Walk(this);
+
             PushLoop(node);
 
-            if (node.Body != null) {
-                node.Body.Walk(this);
-            }
-            
+            node.Body?.Walk(this);
+
             PopLoop();
-            
-            if (node.Else != null) {
-                node.Else.Walk(this);
-            }
+
+            node.Else?.Walk(this);
 
             return false;
         }
@@ -596,15 +590,11 @@ namespace IronPython.Compiler.Ast {
             }
             
             PushLoop(node);
-            if (node.Body != null) {
-                node.Body.Walk(this);
-            }
+            node.Body?.Walk(this);
             PopLoop();
 
-            if (node.ElseStatement != null) {
-                node.ElseStatement.Walk(this);
-            }
-            
+            node.ElseStatement?.Walk(this);
+
             return false;
         }
 
@@ -636,9 +626,7 @@ namespace IronPython.Compiler.Ast {
             node.Parent = _currentScope;
             _currentScope.ContainsExceptionHandling = true;
 
-            if (node.Variable != null) {
-                node.Variable.Walk(_define);
-            }
+            node.Variable?.Walk(_define);
             return true;
         }
 
@@ -674,9 +662,7 @@ namespace IronPython.Compiler.Ast {
             
             // process the default arg values in the outer context
             foreach (Parameter p in node.Parameters) {
-                if (p.DefaultValue != null) {
-                    p.DefaultValue.Walk(this);
-                }
+                p.DefaultValue?.Walk(this);
             }
             // process the decorators in the outer context
             if (node.Decorators != null) {

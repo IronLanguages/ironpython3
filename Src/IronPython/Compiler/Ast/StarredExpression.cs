@@ -44,9 +44,7 @@ namespace IronPython.Compiler.Ast {
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                if (Value != null) {
-                    Value.Walk(walker);
-                }
+                Value?.Walk(walker);
             }
             walker.PostWalk(this);
         }

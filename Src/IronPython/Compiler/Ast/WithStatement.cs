@@ -282,15 +282,9 @@ namespace IronPython.Compiler.Ast {
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                if (_contextManager != null) {
-                    _contextManager.Walk(walker);
-                }
-                if (_var != null) {
-                    _var.Walk(walker);
-                }
-                if (_body != null) {
-                    _body.Walk(walker);
-                }
+                _contextManager?.Walk(walker);
+                _var?.Walk(walker);
+                _body?.Walk(walker);
             }
             walker.PostWalk(this);
         }

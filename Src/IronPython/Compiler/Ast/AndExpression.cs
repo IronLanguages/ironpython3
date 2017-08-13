@@ -83,12 +83,8 @@ namespace IronPython.Compiler.Ast {
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                if (_left != null) {
-                    _left.Walk(walker);
-                }
-                if (_right != null) {
-                    _right.Walk(walker);
-                }
+                _left?.Walk(walker);
+                _right?.Walk(walker);
             }
             walker.PostWalk(this);
         }

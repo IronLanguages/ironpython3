@@ -454,12 +454,12 @@ namespace IronPython.Runtime {
         private static readonly Type IEnumerableType = typeof(IEnumerable);
         private static readonly Type TypeType = typeof(Type);
         private static readonly Type NullableOfTType = typeof(Nullable<>);
-        private static readonly Type IListOfTType = typeof(System.Collections.Generic.IList<>);
-        private static readonly Type IDictOfTType = typeof(System.Collections.Generic.IDictionary<,>);
-        private static readonly Type IEnumerableOfTType = typeof(System.Collections.Generic.IEnumerable<>);
-        private static readonly Type IListOfObjectType = typeof(System.Collections.Generic.IList<object>);
+        private static readonly Type IListOfTType = typeof(IList<>);
+        private static readonly Type IDictOfTType = typeof(IDictionary<,>);
+        private static readonly Type IEnumerableOfTType = typeof(IEnumerable<>);
+        private static readonly Type IListOfObjectType = typeof(IList<object>);
         private static readonly Type IEnumerableOfObjectType = typeof(IEnumerable<object>);
-        private static readonly Type IDictionaryOfObjectType = typeof(System.Collections.Generic.IDictionary<object, object>);
+        private static readonly Type IDictionaryOfObjectType = typeof(IDictionary<object, object>);
         
         #endregion
 

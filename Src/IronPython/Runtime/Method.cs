@@ -140,7 +140,7 @@ namespace IronPython.Runtime {
             if (other == null) return false;
 
             return
-                (object.ReferenceEquals(_inst, other._inst) || PythonOps.EqualRetBool(_inst, other._inst)) &&
+                (ReferenceEquals(_inst, other._inst) || PythonOps.EqualRetBool(_inst, other._inst)) &&
                 PythonOps.EqualRetBool(_func, other._func);
         }
 

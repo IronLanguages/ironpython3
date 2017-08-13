@@ -29,7 +29,7 @@ using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
 
-    [PythonType("dict"), Serializable, DebuggerTypeProxy(typeof(PythonDictionary.DebugProxy)), DebuggerDisplay("Count = {Count}")]
+    [PythonType("dict"), Serializable, DebuggerTypeProxy(typeof(DebugProxy)), DebuggerDisplay("Count = {Count}")]
     public class PythonDictionary : IDictionary<object, object>, IDictionary, 
         ICodeFormattable, IStructuralEquatable {
         internal DictionaryStorage _storage;
@@ -1282,7 +1282,7 @@ namespace IronPython.Runtime {
         }
 
         public static bool operator !=(DictionaryKeyView x, DictionaryKeyView y) {
-            if (object.ReferenceEquals(x._dict, y._dict)) {
+            if (ReferenceEquals(x._dict, y._dict)) {
                 return false;
             }
             SetStorage xs = SetStorage.GetItemsWorker(x.GetEnumerator());
@@ -1372,7 +1372,7 @@ namespace IronPython.Runtime {
         }
 
         public static bool operator <=(DictionaryKeyView x, DictionaryItemView y) {
-            if (object.ReferenceEquals(x._dict, y._dict)) {
+            if (ReferenceEquals(x._dict, y._dict)) {
                 return false;
             }
             SetStorage xs = SetStorage.GetItemsWorker(x.GetEnumerator());
@@ -1635,7 +1635,7 @@ namespace IronPython.Runtime {
         }
 
         public static bool operator ==(DictionaryItemView x, DictionaryItemView y) {
-            if (object.ReferenceEquals(x._dict, y._dict)) {
+            if (ReferenceEquals(x._dict, y._dict)) {
                 return true;
             }
             SetStorage xs = SetStorage.GetItemsWorker(x.GetEnumerator());
@@ -1680,7 +1680,7 @@ namespace IronPython.Runtime {
         }
 
         public static bool operator <=(DictionaryItemView x, DictionaryItemView y) {
-            if (object.ReferenceEquals(x._dict, y._dict)) {
+            if (ReferenceEquals(x._dict, y._dict)) {
                 return true;
             }
             SetStorage xs = SetStorage.GetItemsWorker(x.GetEnumerator());

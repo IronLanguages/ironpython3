@@ -3748,7 +3748,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static Exception UnicodeEncodeError(string format, params object[] args) {
-            return new System.Text.EncoderFallbackException(string.Format(format, args));
+            return new EncoderFallbackException(string.Format(format, args));
         }
 
         public static Exception UnicodeEncodeError(string encoding, char charUnkown, int index,
@@ -3770,7 +3770,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static Exception EofError(string format, params object[] args) {
-            return new System.IO.EndOfStreamException(string.Format(format, args));
+            return new EndOfStreamException(string.Format(format, args));
         }
 
         public static Exception ZeroDivisionError(string format, params object[] args) {
@@ -3786,7 +3786,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static Exception IndexError(string format, params object[] args) {
-            return new System.IndexOutOfRangeException(string.Format(format, args));
+            return new IndexOutOfRangeException(string.Format(format, args));
         }
 
         public static Exception MemoryError(string format, params object[] args) {
@@ -3806,7 +3806,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static Exception OverflowError(string format, params object[] args) {
-            return new System.OverflowException(string.Format(format, args));
+            return new OverflowException(string.Format(format, args));
         }
 
         public static Exception WindowsError(string format, params object[] args) {

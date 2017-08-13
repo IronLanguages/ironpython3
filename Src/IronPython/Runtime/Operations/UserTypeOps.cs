@@ -40,7 +40,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static PythonDictionary SetDictHelper(ref PythonDictionary dict, PythonDictionary value) {
-            if (System.Threading.Interlocked.CompareExchange<PythonDictionary>(ref dict, value, null) == null)
+            if (Interlocked.CompareExchange<PythonDictionary>(ref dict, value, null) == null)
                 return value;
             return dict;
         }
@@ -369,7 +369,7 @@ namespace IronPython.Runtime.Operations {
                 getBinder).GetBinding(codeContext, getBinder.Name);
         }
 
-        internal static FastBindResult<T> MakeSetBinding<T>(CodeContext codeContext, CallSite<T> site, IPythonObject self, object value, Binding.PythonSetMemberBinder setBinder) where T : class {
+        internal static FastBindResult<T> MakeSetBinding<T>(CodeContext codeContext, CallSite<T> site, IPythonObject self, object value, PythonSetMemberBinder setBinder) where T : class {
             if (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(self.GetType().BaseType)) {
                 // very tricky, user is inheriting from a class which implements IDO, we
                 // don't optimize this yet.

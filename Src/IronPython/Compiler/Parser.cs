@@ -861,10 +861,10 @@ namespace IronPython.Compiler {
 
             if (dname.Names.Count == 1 && dname.Names[0] == "__future__") {
                 if (!_fromFutureAllowed) {
-                    ReportSyntaxError(IronPython.Resources.MisplacedFuture);
+                    ReportSyntaxError(Resources.MisplacedFuture);
                 }
                 if (names == FromImportStatement.Star) {
-                    ReportSyntaxError(IronPython.Resources.NoFutureStar);
+                    ReportSyntaxError(Resources.NoFutureStar);
                 }
                 fromFuture = true;
                 foreach (string name in names) {
@@ -886,10 +886,10 @@ namespace IronPython.Compiler {
                         fromFuture = false;
 
                         if (strName != "braces") {
-                            ReportSyntaxError(IronPython.Resources.UnknownFutureFeature + strName);
+                            ReportSyntaxError(Resources.UnknownFutureFeature + strName);
                         } else {
                             // match CPython error message
-                            ReportSyntaxError(IronPython.Resources.NotAChance);
+                            ReportSyntaxError(Resources.NotAChance);
                         }
                     }
                 }
@@ -3278,7 +3278,7 @@ namespace IronPython.Compiler {
             // position where the exception came from.  There are too many levels
             // of buffering below us to re-wind and calculate the actual line number, so
             // we'll give the last line number the tokenizer was at.
-            return IronPython.Runtime.Operations.PythonOps.BadSourceError(
+            return Runtime.Operations.PythonOps.BadSourceError(
                 bse._badByte,
                 new SourceSpan(_tokenizer.CurrentPosition, _tokenizer.CurrentPosition),
                 _sourceUnit.Path

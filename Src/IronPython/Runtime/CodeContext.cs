@@ -27,7 +27,7 @@ namespace IronPython.Runtime {
     /// Captures and flows the state of executing code from the generated 
     /// Python code into the IronPython runtime.
     /// </summary>    
-    [DebuggerTypeProxy(typeof(CodeContext.DebugProxy)), DebuggerDisplay("ModuleName = {ModuleName}")]
+    [DebuggerTypeProxy(typeof(DebugProxy)), DebuggerDisplay("ModuleName = {ModuleName}")]
     public sealed class CodeContext {
         private readonly ModuleContext/*!*/ _modContext;
         private readonly PythonDictionary/*!*/ _dict;

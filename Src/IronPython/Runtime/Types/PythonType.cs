@@ -1416,7 +1416,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             if (!_dict.Remove(name)) {
                 throw new MissingMemberException(String.Format(CultureInfo.CurrentCulture,
-                    IronPython.Resources.MemberDoesNotExist,
+                    Resources.MemberDoesNotExist,
                     name.ToString()));
             }
 
@@ -1472,7 +1472,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
 
             throw new MissingMemberException(String.Format(CultureInfo.CurrentCulture,
-                IronPython.Resources.CantFindMember,
+                Resources.CantFindMember,
                 name));
         }
 

@@ -64,7 +64,7 @@ namespace IronPython.Runtime {
             object value;
             if (TryGetLazyValue(strKey, out value)) {
                 // hide the deleted value
-                base.Add(key, Uninitialized.Instance);
+                Add(key, Uninitialized.Instance);
                 found = true;
             }
 

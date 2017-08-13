@@ -455,11 +455,11 @@ namespace IronPython.Modules
             }
 
             internal static PythonList Convert(ComprehensionIterator[] iters) {
-                Generic.List<ComprehensionFor> cfCollector =
-                    new Generic.List<ComprehensionFor>();
-                Generic.List<Generic.List<ComprehensionIf>> cifCollector =
-                    new Generic.List<Generic.List<ComprehensionIf>>();
-                Generic.List<ComprehensionIf> cif = null;
+                List<ComprehensionFor> cfCollector =
+                    new List<ComprehensionFor>();
+                List<List<ComprehensionIf>> cifCollector =
+                    new List<List<ComprehensionIf>>();
+                List<ComprehensionIf> cif = null;
                 for (int i = 0; i < iters.Length; i++) {
                     if (iters[i] is ComprehensionFor) {
                         ComprehensionFor cf = (ComprehensionFor)iters[i];

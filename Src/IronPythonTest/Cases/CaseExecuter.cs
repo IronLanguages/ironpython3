@@ -37,7 +37,7 @@ namespace IronPythonTest.Cases {
             return engine;
         }
 
-        private static string FindRoot() {
+        internal static string FindRoot() {
             // we start at the current directory and look up until we find the "Src" directory
             var current = System.Reflection.Assembly.GetEntryAssembly().Location;
             var found = false;

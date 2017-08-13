@@ -10,7 +10,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Features>FEATURE_CUSTOM_MODIFIERS</Features>
     <Features>$(Features);FEATURE_NATIVE</Features>
     <Features>$(Features);FEATURE_XMLDOC</Features>
     <Features>$(Features);FEATURE_EXCEPTION_STATE</Features>
@@ -46,19 +45,14 @@
     <Features>$(Features);FEATURE_LCG</Features>
     <Features>$(Features);FEATURE_CODEDOM</Features>
     <Features>$(Features);FEATURE_VALUE_EQUALITY</Features>
-    <Features>$(Features);FEATURE_COMPRESSION</Features>
     <Features>$(Features);FEATURE_WARNING_EXCEPTION</Features>
     <Features>$(Features);FEATURE_SECURITY_RULES</Features>
-    <Features>$(Features);FEATURE_APTCA</Features>
     <Features>$(Features);FEATURE_WIN32EXCEPTION</Features>
     <Features>$(Features);FEATURE_REGISTRY</Features>
     <Features>$(Features);FEATURE_ASSEMBLY_LOCATION</Features>
-    <Features>$(Features);FEATURE_ENUM_NAMES_VALUES</Features>
     <Features>$(Features);FEATURE_OS_SERVICEPACK</Features>
     <Features>$(Features);FEATURE_APPLICATIONEXCEPTION</Features>
-    <Features>$(Features);FEATURE_STOPWATCH</Features>
     <Features>$(Features);FEATURE_APARTMENTSTATE</Features>
-    <Features>$(Features);FEATURE_GETINVALIDFILENAMECHARS</Features>
     <Features>$(Features);FEATURE_LOADWITHPARTIALNAME</Features>
     <Features>$(Features);FEATURE_DRIVENOTFOUNDEXCEPTION</Features>
     <Features>$(Features);FEATURE_ASSEMBLY_CODEBASE</Features>

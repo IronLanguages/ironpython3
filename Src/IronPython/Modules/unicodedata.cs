@@ -13,8 +13,6 @@
  *
  * ***************************************************************************/
 
-#if FEATURE_COMPRESSION
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -465,5 +463,3 @@ namespace IronPython.Modules {
         internal readonly int Last;
     }
 }
-
-#endif

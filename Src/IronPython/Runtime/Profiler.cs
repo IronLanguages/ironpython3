@@ -193,11 +193,9 @@ namespace IronPython.Runtime {
         }
 
         private static long DateTimeTicksFromTimeData(long elapsedStopwatchTicks) {
-#if FEATURE_STOPWATCH
             if (Stopwatch.IsHighResolution) {
                 return (long)(((double)elapsedStopwatchTicks) * 10000000.0 / (double)Stopwatch.Frequency);
             }
-#endif
             return elapsedStopwatchTicks;
         }
 
@@ -205,39 +203,23 @@ namespace IronPython.Runtime {
 
         public long StartCall(int index) {
             Interlocked.Increment(ref _profileData[index, NumberOfCalls]);
-#if FEATURE_STOPWATCH
             return Stopwatch.GetTimestamp();
-#else
-            return DateTime.Now.Ticks;
-#endif
         }
 
         public long StartNestedCall(int index, long timestamp) {
-#if FEATURE_STOPWATCH
             long now = Stopwatch.GetTimestamp();
-#else
-            long now = DateTime.Now.Ticks;
-#endif
             Interlocked.Add(ref _profileData[index, TimeInBody], now - timestamp);
             return now;
         }
 
         public long FinishNestedCall(int index, long timestamp) {
-#if FEATURE_STOPWATCH
             long now = Stopwatch.GetTimestamp();
-#else
-            long now = DateTime.Now.Ticks;
-#endif
             Interlocked.Add(ref _profileData[index, TimeInChildMethods], now - timestamp);
             return now;
         }
 
         public void FinishCall(int index, long timestamp) {
-#if FEATURE_STOPWATCH
             long now = Stopwatch.GetTimestamp();
-#else
-            long now = DateTime.Now.Ticks;
-#endif
             Interlocked.Add(ref _profileData[index, TimeInBody], now - timestamp);
         }
 

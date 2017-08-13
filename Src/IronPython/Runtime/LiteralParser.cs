@@ -110,7 +110,6 @@ namespace IronPython.Runtime {
                             case '\"': buf.Append('\"'); continue;
                             case '\r': if (i < l && text[i] == '\n') i++; continue;
                             case '\n': continue;
-#if FEATURE_COMPRESSION
                             case 'N': {
                                     IronPython.Modules.unicodedata.PerformModuleReload(null, null);
                                     if (i < l && text[i] == '{') {
@@ -142,7 +141,6 @@ namespace IronPython.Runtime {
                                     }
                                 }
                                 continue;
-#endif
                             case 'x': //hex
                                 if (!TryParseInt(text, i, 2, 16, out val)) {
                                     goto default;

@@ -185,10 +185,8 @@ namespace IronPython.SQLite
                 rc = Sqlite3.sqlite3_bind_int64(st, index, (long)arg);
             else if(arg is Microsoft.Scripting.Math.BigInteger)
                 rc = Sqlite3.sqlite3_bind_int64(st, index, ((Microsoft.Scripting.Math.BigInteger)arg).ToInt64());
-#if FEATURE_NUMERICS
             else if (arg is System.Numerics.BigInteger)
                 rc = Sqlite3.sqlite3_bind_int64(st, index, (long)((System.Numerics.BigInteger)arg));
-#endif
             else if(arg is float)
                 rc = Sqlite3.sqlite3_bind_double(st, index, (float)arg);
             else if(arg is double)

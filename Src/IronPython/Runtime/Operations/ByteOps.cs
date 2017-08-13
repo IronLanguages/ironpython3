@@ -16,17 +16,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Numerics;
 
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime.Types;
-
-#if FEATURE_NUMERICS
-using System.Numerics;
-#else
-using Microsoft.Scripting.Math;
-#endif
 
 namespace IronPython.Runtime.Operations {
     public static partial class ByteOps {

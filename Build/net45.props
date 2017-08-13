@@ -29,7 +29,6 @@
     <Features>$(Features);FEATURE_PROCESS</Features>
     <Features>$(Features);FEATURE_STACK_TRACE</Features>
     <Features>$(Features);FEATURE_TYPE_EQUIVALENCE</Features>
-    <Features>$(Features);FEATURE_NUMERICS</Features>
     <Features>$(Features);FEATURE_TYPECONVERTER</Features>
     <Features>$(Features);FEATURE_PDBEMIT</Features>
     <Features>$(Features);FEATURE_METADATA_READER</Features>

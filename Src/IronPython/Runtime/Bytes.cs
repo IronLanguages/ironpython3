@@ -13,23 +13,14 @@
  *
  * ***************************************************************************/
 
-using System.Linq.Expressions;
-
-#if FEATURE_NUMERICS
-using System.Numerics;
-#else
-using Microsoft.Scripting.Math;
-#endif
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection.Emit;
+using System.Linq.Expressions;
+using System.Numerics;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
 
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;

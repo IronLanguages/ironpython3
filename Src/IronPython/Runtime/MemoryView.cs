@@ -13,15 +13,12 @@
  *
  * ***************************************************************************/
 
-#if FEATURE_NUMERICS
-using System.Numerics;
-#else
-using Microsoft.Scripting.Math;
-#endif
-
 using System;
-using IronPython.Runtime.Operations;
+using System.Numerics;
+
 using Microsoft.Scripting.Runtime;
+
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
     [PythonType("memoryview")]

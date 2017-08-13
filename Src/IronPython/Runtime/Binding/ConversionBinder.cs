@@ -18,22 +18,19 @@ using System.Linq.Expressions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System.Diagnostics;
 using System.Dynamic;
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+
+using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-using Microsoft.Scripting;
-using System.Reflection;
-using System.Diagnostics;
-
-#if FEATURE_NUMERICS
-using System.Numerics;
-#endif
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
@@ -301,7 +298,6 @@ namespace IronPython.Runtime.Binding {
                 // Special cases:
                 //  - string or bytes to IEnumerable or IEnumerator
                 //  - CLR 4 only: BigInteger -> Complex
-#if FEATURE_NUMERICS
                 if (target is BigInteger) {
                     if (typeof(T) == typeof(Func<CallSite, BigInteger, Complex>)) {
                         res = (T)(object)new Func<CallSite, BigInteger, Complex>(BigIntegerToComplexConversion);
@@ -310,9 +306,7 @@ namespace IronPython.Runtime.Binding {
                     } else if (typeof(T) == typeof(Func<CallSite, BigInteger, object>)) {
                         res = (T)(object)new Func<CallSite, BigInteger, object>(BigIntegerToComplexObjectConversion);
                     }
-                } else
-#endif
-                if (target is string) {
+                } else if (target is string) {
                     if (typeof(T) == typeof(Func<CallSite, string, IEnumerable>)) {
                         res = (T)(object)new Func<CallSite, string, IEnumerable>(StringToIEnumerableConversion);
                     } else if (typeof(T) == typeof(Func<CallSite, string, IEnumerator>)) {
@@ -515,7 +509,6 @@ namespace IronPython.Runtime.Binding {
             return ((CallSite<Func<CallSite, object, IEnumerator>>)site).Update(site, value);
         }
 
-#if FEATURE_NUMERICS
         public Complex BigIntegerToComplexConversion(CallSite site, BigInteger value) {
             return BigIntegerOps.ConvertToComplex(value);
         }
@@ -531,8 +524,6 @@ namespace IronPython.Runtime.Binding {
         public object BigIntegerToComplexObjectConversion(CallSite site, BigInteger value) {
             return (object)BigIntegerOps.ConvertToComplex((BigInteger)value);
         }
-#endif
-
         class IdentityConversion {
             private readonly Type _type;
 

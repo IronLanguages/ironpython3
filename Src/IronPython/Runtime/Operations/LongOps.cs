@@ -17,22 +17,14 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-using IronPython.Modules;
 using IronPython.Runtime.Types;
-
-#if FEATURE_NUMERICS
-using System.Numerics;
-#else
-using Microsoft.Scripting.Math;
-using Complex = Microsoft.Scripting.Math.Complex64;
-#endif
 
 namespace IronPython.Runtime.Operations {
 
@@ -265,14 +257,7 @@ namespace IronPython.Runtime.Operations {
 
         private static BigInteger DivMod(BigInteger x, BigInteger y, out BigInteger r) {
             BigInteger rr;
-            BigInteger qq;
-
-#if !FEATURE_NUMERICS
-            if (Object.ReferenceEquals(x, null)) throw PythonOps.TypeError("unsupported operands for div/mod: NoneType and long");
-            if (Object.ReferenceEquals(y, null)) throw PythonOps.TypeError("unsupported operands for div/mod: long and NoneType");
-#endif
-
-            qq = BigInteger.DivRem(x, y, out rr);
+            BigInteger qq = BigInteger.DivRem(x, y, out rr);
 
             if (x >= BigInteger.Zero) {
                 if (y > BigInteger.Zero) {
@@ -303,20 +288,6 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-#if !FEATURE_NUMERICS
-        [SpecialName]
-        public static BigInteger Add([NotNull]BigInteger x, [NotNull]BigInteger y) {
-            return x + y;
-        }
-        [SpecialName]
-        public static BigInteger Subtract([NotNull]BigInteger x, [NotNull]BigInteger y) {
-            return x - y;
-        }
-        [SpecialName]
-        public static BigInteger Multiply([NotNull]BigInteger x, [NotNull]BigInteger y) {
-            return x * y;
-        }
-#else
         [PythonHidden]
         public static BigInteger Add(BigInteger x, BigInteger y) {
             return x + y;
@@ -329,7 +300,6 @@ namespace IronPython.Runtime.Operations {
         public static BigInteger Multiply(BigInteger x, BigInteger y) {
             return x * y;
         }
-#endif
 
         [SpecialName]
         public static BigInteger FloorDivide([NotNull]BigInteger x, [NotNull]BigInteger y) {
@@ -369,46 +339,6 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.OverflowError("long/long too large for a float");
         }
 
-#if !FEATURE_NUMERICS
-        [SpecialName]
-        public static BigInteger Divide([NotNull]BigInteger x, [NotNull]BigInteger y) {
-            BigInteger r;
-            return DivMod(x, y, out r);
-        }
-
-        [SpecialName]
-        public static BigInteger Mod([NotNull]BigInteger x, [NotNull]BigInteger y) {
-            BigInteger r;
-            DivMod(x, y, out r);
-            return r;
-        }
-
-        [SpecialName]
-        public static BigInteger LeftShift([NotNull]BigInteger x, int y) {
-            if (y < 0) {
-                throw PythonOps.ValueError("negative shift count");
-            }
-            return x << y;
-        }
-
-        [SpecialName]
-        public static BigInteger RightShift([NotNull]BigInteger x, int y) {
-            if (y < 0) {
-                throw PythonOps.ValueError("negative shift count");
-            }
-            return x >> y;
-        }
-
-        [SpecialName]
-        public static BigInteger LeftShift([NotNull]BigInteger x, [NotNull]BigInteger y) {
-            return LeftShift(x, (int)y);
-        }
-
-        [SpecialName]
-        public static BigInteger RightShift([NotNull]BigInteger x, [NotNull]BigInteger y) {
-            return RightShift(x, (int)y);
-        }
-#else
         // The op_* nomenclature is required here to avoid name collisions with the
         // PythonHidden methods Divide, Mod, and [Left,Right]Shift.
 
@@ -450,7 +380,6 @@ namespace IronPython.Runtime.Operations {
         public static BigInteger op_RightShift(BigInteger x, BigInteger y) {
             return op_RightShift(x, (int)y);
         }
-#endif
 
         #endregion
 
@@ -495,25 +424,14 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object __getnewargs__(CodeContext context, BigInteger self) {
-#if !FEATURE_NUMERICS
-            if (!Object.ReferenceEquals(self, null)) {
-                return PythonTuple.MakeTuple(BigIntegerOps.__new__(context, TypeCache.BigInteger, self));
-            }
-            throw PythonOps.TypeErrorForBadInstance("__getnewargs__ requires a 'long' object but received a '{0}'", self);
-#else
             return PythonTuple.MakeTuple(BigIntegerOps.__new__(context, TypeCache.BigInteger, self));
-#endif
         }
 
         #endregion
 
         // These functions make the code generation of other types more regular
-#if !FEATURE_NUMERICS
-        internal
-#else
-        [PythonHidden] public
-#endif
-        static BigInteger OnesComplement(BigInteger x) {
+        [PythonHidden]
+        public static BigInteger OnesComplement(BigInteger x) {
             return ~x;
         }
 
@@ -521,20 +439,6 @@ namespace IronPython.Runtime.Operations {
             return FloorDivide(x, y);
         }
 
-#if !FEATURE_NUMERICS
-        [SpecialName]
-        public static BigInteger BitwiseAnd([NotNull]BigInteger x, [NotNull]BigInteger y) {
-            return x & y;
-        }
-        [SpecialName]
-        public static BigInteger BitwiseOr([NotNull]BigInteger x, [NotNull]BigInteger y) {
-            return x | y;
-        }
-        [SpecialName]
-        public static BigInteger ExclusiveOr([NotNull]BigInteger x, [NotNull]BigInteger y) {
-            return x ^ y;
-        }
-#else
         [PythonHidden]
         public static BigInteger BitwiseAnd(BigInteger x, BigInteger y) {
             return x & y;
@@ -547,7 +451,6 @@ namespace IronPython.Runtime.Operations {
         public static BigInteger ExclusiveOr(BigInteger x, BigInteger y) {
             return x ^ y;
         }
-#endif
 
         [PropertyMethod, SpecialName]
         public static BigInteger Getreal(BigInteger self) {
@@ -705,7 +608,6 @@ namespace IronPython.Runtime.Operations {
             return checked((float)self.ToFloat64());
         }
 
-#if FEATURE_NUMERICS
         #region Binary Ops
         
         [PythonHidden]
@@ -966,7 +868,6 @@ namespace IronPython.Runtime.Operations {
         }
 
         #endregion
-#endif
 
         #endregion
 
@@ -995,49 +896,6 @@ namespace IronPython.Runtime.Operations {
 
                     digits = FormattingHelper.ToCultureString(val, context.LanguageContext.NumericCulture.NumberFormat, spec);
                     break;
-#if !FEATURE_NUMERICS
-                case null:
-                case 'd':
-                    digits = val.ToString();
-                    break;
-                case '%':
-                    if (val == BigInteger.Zero) {
-                        digits = "0.000000%";
-                    } else {
-                        digits = val.ToString() + "00.000000%";
-                    }
-                    break;
-                case 'e': digits = ToExponent(val, true, 6, 7); break;
-                case 'E': digits = ToExponent(val, false, 6, 7); break;
-                case 'f':
-                    if (val != BigInteger.Zero) {
-                        digits = val.ToString() + ".000000";
-                    } else {
-                        digits = "0.000000";
-                    }
-                    break;
-                case 'F':
-                    if (val != BigInteger.Zero) {
-                        digits = val.ToString() + ".000000";
-                    } else {
-                        digits = "0.000000";
-                    }
-                    break;
-                case 'g':
-                    if (val >= 1000000) {
-                        digits = ToExponent(val, true, 0, 6);
-                    } else {
-                        digits = val.ToString();
-                    }
-                    break;
-                case 'G':                    
-                    if (val >= 1000000) {
-                        digits = ToExponent(val, false, 0, 6);
-                    } else {
-                        digits = val.ToString();
-                    }
-                    break;
-#else
                 case null:
                 case 'd':
                     if (spec.ThousandsComma) {
@@ -1103,7 +961,6 @@ namespace IronPython.Runtime.Operations {
                         digits = val.ToString(CultureInfo.InvariantCulture);
                     }
                     break;
-#endif
                 case 'X':
                     digits = AbsToHex(val, false);
                     break;

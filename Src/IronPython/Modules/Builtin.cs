@@ -17,15 +17,13 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
+
 using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
@@ -36,12 +34,6 @@ using IronPython.Runtime.Binding;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-#if FEATURE_NUMERICS
-using System.Numerics;
-#else
-using Microsoft.Scripting.Math;
-using Complex = Microsoft.Scripting.Math.Complex64;
-#endif
 
 [assembly: PythonModule("builtins", typeof(IronPython.Modules.Builtin))]
 namespace IronPython.Modules {
@@ -1555,13 +1547,8 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-#if FEATURE_NUMERICS
         private static BigInteger MaxDouble = new BigInteger(Double.MaxValue);
         private static BigInteger MinDouble = new BigInteger(Double.MinValue);
-#else
-        private static BigInteger MaxDouble = BigInteger.Create(Double.MaxValue);
-        private static BigInteger MinDouble = BigInteger.Create(Double.MinValue);
-#endif
 
         private static void SumBigIntAndDouble(ref SumState state, BigInteger bigInt, double dbl) {
             if (bigInt <= MaxDouble && bigInt >= MinDouble) {

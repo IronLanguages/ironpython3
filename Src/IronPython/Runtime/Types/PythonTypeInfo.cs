@@ -14,13 +14,13 @@
  * ***************************************************************************/
 
 using System;
-using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
 using System.Dynamic;
-using System.Threading;
+using System.Linq;
+using System.Numerics;
+using System.Reflection;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
@@ -29,15 +29,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Binding;
-using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
-
-#if FEATURE_NUMERICS
-using System.Numerics;
-#else
-using Microsoft.Scripting.Math;
-using Complex = Microsoft.Scripting.Math.Complex64;
-#endif
 
 namespace IronPython.Runtime.Types {
     /// <summary>
@@ -777,10 +769,7 @@ namespace IronPython.Runtime.Types {
         /// </summary>
         private static MemberGroup/*!*/ StringResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
             if (type != typeof(double) && type != typeof(float)
-#if FEATURE_NUMERICS
-                && type != typeof(Complex)
-#endif
-            ) {
+                && type != typeof(Complex)) {
                 MethodInfo tostr = type.GetMethod("ToString", ReflectionUtils.EmptyTypes);
                 if (tostr != null && tostr.DeclaringType != typeof(object)) {
                     return GetInstanceOpsMethod(type, "ToStringMethod");

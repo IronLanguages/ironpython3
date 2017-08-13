@@ -14,16 +14,11 @@
  * ***************************************************************************/
 
 using System;
+using System.Numerics;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using Microsoft.Scripting.Utils;
-
-#if FEATURE_NUMERICS
-using System.Numerics;
-#else
-using Microsoft.Scripting.Math;
-using Complex = Microsoft.Scripting.Math.Complex64;
-#endif
 
 [assembly: PythonModule("cmath", typeof(IronPython.Modules.ComplexMath))]
 namespace IronPython.Modules {

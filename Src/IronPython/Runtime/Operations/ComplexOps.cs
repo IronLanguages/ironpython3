@@ -14,19 +14,13 @@
  * ***************************************************************************/
 
 using System;
+using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using IronPython.Runtime.Exceptions;
-using IronPython.Runtime.Types;
 
-#if !FEATURE_NUMERICS
-using Microsoft.Scripting.Math;
-using Complex = Microsoft.Scripting.Math.Complex64;
-#else
-using System.Numerics;
-#endif
+using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Operations {
     public class ExtensibleComplex : Extensible<Complex> {
@@ -145,7 +139,6 @@ namespace IronPython.Runtime.Operations {
                 return y.IsZero() ? Complex.One : Complex.Zero;
             }
 
-#if FEATURE_NUMERICS
             // Special case for higher precision with real integer powers
             // TODO: A similar check may get added to CLR 4 upon resolution of Dev10 bug 863171,
             // in which case this code should go away.
@@ -167,7 +160,6 @@ namespace IronPython.Runtime.Operations {
                     return res;
                 }
             }
-#endif
 
             return x.Pow(y);
         }

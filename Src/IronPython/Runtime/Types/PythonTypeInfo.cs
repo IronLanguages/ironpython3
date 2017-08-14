@@ -846,12 +846,8 @@ namespace IronPython.Runtime.Types {
         /// then IValueEquality.GetValueHashCode.
         /// </summary>
         private static MemberGroup/*!*/ HashResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-#if FEATURE_VALUE_EQUALITY
             if (typeof(IStructuralEquatable).IsAssignableFrom(type) && !type.IsInterface()) {
-#else
-            if ((typeof(IStructuralEquatable).IsAssignableFrom(type) ||
-                 typeof(IValueEquality).IsAssignableFrom(type)) && !type.IsInterface) {
-#endif
+
                 // check and see if __hash__ has been overridden by the base type.
                 foreach (Type t in binder.GetContributingTypes(type)) {
                     // if it's defined on object, it's not overridden
@@ -865,17 +861,7 @@ namespace IronPython.Runtime.Types {
                     }
                 }
 
-#if FEATURE_VALUE_EQUALITY
                 return GetInstanceOpsMethod(type, "StructuralHashMethod");
-#else
-                if (typeof(IStructuralEquatable).IsAssignableFrom(type)) {
-                    return GetInstanceOpsMethod(type, "StructuralHashMethod");
-                }
-
-                if (typeof(IValueEquality).IsAssignableFrom(type)) {
-                    return new MemberGroup(typeof(IValueEquality).GetMethod("GetValueHashCode"));
-                }
-#endif
             }
 
             // otherwise we'll pick up __hash__ from ObjectOps which will call .NET's .GetHashCode therefore

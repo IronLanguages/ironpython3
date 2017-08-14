@@ -13,9 +13,7 @@
     <Features>$(Features);FEATURE_NATIVE</Features>
     <Features>$(Features);FEATURE_XMLDOC</Features>
     <Features>$(Features);FEATURE_EXCEPTION_STATE</Features>
-    <Features>$(Features);FEATURE_FUNCS_5_16</Features>
     <Features>$(Features);FEATURE_VARIANCE</Features>
-    <Features>$(Features);FEATURE_CRYPTOGRAPHY</Features>
     <Features>$(Features);FEATURE_SYNC_SOCKETS</Features>
     <Features>$(Features);FEATURE_ASSEMBLY_RESOLVE</Features>
     <Features>$(Features);FEATURE_CUSTOM_TYPE_DESCRIPTOR</Features>
@@ -41,7 +39,6 @@
     <Features>$(Features);FEATURE_REFEMIT</Features>
     <Features>$(Features);FEATURE_LCG</Features>
     <Features>$(Features);FEATURE_CODEDOM</Features>
-    <Features>$(Features);FEATURE_VALUE_EQUALITY</Features>
     <Features>$(Features);FEATURE_WARNING_EXCEPTION</Features>
     <Features>$(Features);FEATURE_SECURITY_RULES</Features>
     <Features>$(Features);FEATURE_WIN32EXCEPTION</Features>
@@ -58,9 +55,8 @@
     <Features>$(Features);FEATURE_FULL_CRYPTO</Features>
     <Features>$(Features);FEATURE_ICLONEABLE</Features>
     <Features>$(Features);FEATURE_ANSICP</Features>
-    <Features>$(Features);FEATURE_TIMEZONE</Features>
     <Features>$(Features);FEATURE_ASYNC</Features>
-    <Features>$(Features);FEATURE_GET_TYPE_INFO</Features>
+    <Features>$(Features);FEATURE_TYPE_INFO</Features>
     <Features>$(Features);FEATURE_DYNAMIC_EXPRESSION_VISITOR</Features>
     <Features>$(Features);FEATURE_ASSEMBLYBUILDER_DEFINEDYNAMICASSEMBLY</Features>
     <Features>$(Features);FEATURE_READONLY_DICTIONARY</Features>

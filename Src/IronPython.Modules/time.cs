@@ -71,7 +71,6 @@ namespace IronPython.Modules {
 
             // altzone, timezone are offsets from UTC in seconds, so they always fit in the
             // -13*3600 to 13*3600 range and are safe to cast to ints
-#if FEATURE_TIMEZONE
             DaylightTime dayTime = TimeZone.CurrentTimeZone.GetDaylightChanges(DateTime.Now.Year);
             daylight = (dayTime.Start == dayTime.End && dayTime.Start == DateTime.MinValue && dayTime.Delta.Ticks == 0) ? 0 : 1;
 
@@ -87,12 +86,6 @@ namespace IronPython.Modules {
                     altzone -= (int)dayTime.Delta.TotalSeconds;
                 }
             }
-#else
-            daylight = TimeZoneInfo.Local.SupportsDaylightSavingTime ? 1 : 0;
-            tzname = PythonTuple.MakeTuple(TimeZoneInfo.Local.StandardName, TimeZoneInfo.Local.DaylightName);
-            timezone = (int)-TimeZoneInfo.Local.BaseUtcOffset.TotalSeconds;
-            altzone = (int)-TimeZoneInfo.Local.GetUtcOffset(DateTime.Now).TotalSeconds;
-#endif
         }
 
         internal static long TimestampToTicks(double seconds) {
@@ -332,30 +325,20 @@ namespace IronPython.Modules {
         }
 
         private static DateTime RemoveDst(DateTime dt, bool always) {
-#if FEATURE_TIMEZONE
             DaylightTime dayTime = TimeZone.CurrentTimeZone.GetDaylightChanges(dt.Year);
             if (always || (dt > dayTime.Start && dt < dayTime.End)) {
                 dt -= dayTime.Delta;
             }
-#else
-            if (always || TimeZoneInfo.Local.IsDaylightSavingTime(dt)) {
-                dt = dt - (TimeZoneInfo.Local.GetUtcOffset(dt) - TimeZoneInfo.Local.BaseUtcOffset);
-            }
-#endif
+
             return dt;
         }
 
         private static DateTime AddDst(DateTime dt) {
-#if FEATURE_TIMEZONE
             DaylightTime dayTime = TimeZone.CurrentTimeZone.GetDaylightChanges(dt.Year);
             if (dt > dayTime.Start && dt < dayTime.End) {
                 dt += dayTime.Delta;
             }
-#else
-            if (TimeZoneInfo.Local.IsDaylightSavingTime(dt)) {
-                dt = dt + (TimeZoneInfo.Local.GetUtcOffset(dt) - TimeZoneInfo.Local.BaseUtcOffset);
-            }
-#endif
+
             return dt;
         }
 

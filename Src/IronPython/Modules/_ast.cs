@@ -52,7 +52,7 @@ namespace IronPython.Modules
 
         private class ThrowingErrorSink : ErrorSink
         {
-            public static new readonly ThrowingErrorSink/*!*/ Default = new ThrowingErrorSink();
+            public new static readonly ThrowingErrorSink/*!*/ Default = new ThrowingErrorSink();
 
             private ThrowingErrorSink() {
             }

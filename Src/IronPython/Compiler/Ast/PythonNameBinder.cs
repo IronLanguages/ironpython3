@@ -546,9 +546,7 @@ namespace IronPython.Compiler.Ast {
             // so we need to walk the for statement ourselves
             node.Left.Walk(_define);
 
-            if (node.Left != null) {
-                node.Left.Walk(this);
-            }
+            node.Left?.Walk(this);
             node.List?.Walk(this);
 
             PushLoop(node);
@@ -585,10 +583,8 @@ namespace IronPython.Compiler.Ast {
 
             // we only push the loop for the body of the loop
             // so we need to walk the while statement ourselves
-            if (node.Test != null) {
-                node.Test.Walk(this);
-            }
-            
+            node.Test?.Walk(this);
+
             PushLoop(node);
             node.Body?.Walk(this);
             PopLoop();
@@ -799,17 +795,13 @@ namespace IronPython.Compiler.Ast {
 
             if (node.Handlers != null) {
                 foreach (TryStatementHandler tsh in node.Handlers) {
-                    if (tsh.Target != null) {
-                        tsh.Target.Walk(_define);
-                    }
+                    tsh.Target?.Walk(_define);
                     tsh.Parent = _currentScope;
                     tsh.Walk(this);
                 }
             }
 
-            if (node.Else != null) {
-                node.Else.Walk(this);
-            }
+            node.Else?.Walk(this);
 
             if (node.Finally != null) {
                 _finallyCount[_finallyCount.Count - 1]++;

@@ -14,19 +14,11 @@
  * ***************************************************************************/
 
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Numerics;
 
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Operations;
-
-#if FEATURE_NUMERICS
-using System.Numerics;
-#else
-using Microsoft.Scripting.Math;
-using Complex = Microsoft.Scripting.Math.Complex64;
-#endif
 
 namespace IronPython.Compiler.Ast {
     public partial class BinaryExpression {

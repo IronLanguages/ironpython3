@@ -14,20 +14,15 @@
  * ***************************************************************************/
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Numerics;
 using System.Text;
-using IronPython.Runtime.Operations;
-using Microsoft.Scripting;
+
 using Microsoft.Scripting.Runtime;
 
-#if FEATURE_NUMERICS
-using System.Numerics;
-#else
-using Microsoft.Scripting.Math;
-#endif
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
     /// <summary>

@@ -12,25 +12,18 @@
  *
  *
  * ***************************************************************************/
-using System.Linq.Expressions;
-
-#if FEATURE_NUMERICS
-using System.Numerics;
-#else
-using Microsoft.Scripting.Math;
-#endif
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
-using System.IO;
+using System.Linq.Expressions;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
-using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 

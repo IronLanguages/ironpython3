@@ -17,15 +17,13 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Numerics;
+
+using Microsoft.Scripting.Runtime;
+
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
-using Microsoft.Scripting.Runtime;
-#if FEATURE_NUMERICS
-using System.Numerics;
-#else
-using Microsoft.Scripting.Math;
-#endif
 
 namespace IronPython.Runtime {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]

@@ -14,18 +14,12 @@
  * ***************************************************************************/
 
 using System;
+using System.Numerics;
 
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Modules;
 using IronPython.Runtime.Exceptions;
-
-#if FEATURE_NUMERICS
-using System.Numerics;
-#else
-using Microsoft.Scripting.Math;
-using Complex = Microsoft.Scripting.Math.Complex64;
-#endif
 
 namespace IronPython.Runtime.Types {
     public static class TypeCache {

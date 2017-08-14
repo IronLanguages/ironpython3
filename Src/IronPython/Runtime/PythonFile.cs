@@ -16,14 +16,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Numerics;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
-using Microsoft.Scripting;
+
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 using Microsoft.Win32.SafeHandles;
@@ -34,12 +32,6 @@ using IronPython.Runtime.Types;
 
 #if FEATURE_PROCESS
 using System.IO.Pipes;
-#endif
-
-#if FEATURE_NUMERICS
-using System.Numerics;
-#else
-using Microsoft.Scripting.Math;
 #endif
 
 namespace IronPython.Runtime {

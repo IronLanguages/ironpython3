@@ -19,28 +19,22 @@ using System.Collections;
 using System.Collections.Generic;
 using Generic = System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
+using System.Numerics;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
+
 using IronPython.Compiler;
 using IronPython.Compiler.Ast;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-using IronPython.Runtime.Exceptions;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
 using PyOperator = IronPython.Compiler.PythonOperator;
 using PythonList = IronPython.Runtime.List;
 using System.Runtime.InteropServices;
 using AstExpression = IronPython.Compiler.Ast.Expression;
-
-#if FEATURE_NUMERICS
-using System.Numerics;
-#else
-using Microsoft.Scripting.Math;
-using Complex = Microsoft.Scripting.Math.Complex64;
-#endif
 
 [assembly: PythonModule("_ast", typeof(IronPython.Modules._ast))]
 namespace IronPython.Modules

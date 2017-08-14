@@ -56,10 +56,8 @@ namespace IronPython.Modules {
         public static readonly PythonTuple tzname;
         public const bool accept2dyear = true;
 
-#if FEATURE_STOPWATCH    // System.Diagnostics.Stopwatch
         [MultiRuntimeAware]
         private static Stopwatch sw;
-#endif
 
         public const string __doc__ = "This module provides various functions to manipulate time values.";
 
@@ -131,12 +129,8 @@ namespace IronPython.Modules {
         }
 
         public static double clock() {
-#if FEATURE_STOPWATCH    // System.Diagnostics.Stopwatch
             InitStopWatch();
             return ((double)sw.ElapsedTicks) / Stopwatch.Frequency;
-#else
-            return (double)DateTime.Now.Ticks / (double)TimeSpan.TicksPerSecond;
-#endif
         }
 
         public static string ctime(CodeContext/*!*/ context) {
@@ -637,14 +631,12 @@ namespace IronPython.Modules {
             return -1;
         }
 
-#if FEATURE_STOPWATCH    // Stopwatch
         private static void InitStopWatch() {
             if (sw == null) {
                 sw = new Stopwatch();
                 sw.Start();
             }
         }
-#endif
 
         [PythonType]
         public class struct_time : PythonTuple {

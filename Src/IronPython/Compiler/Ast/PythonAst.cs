@@ -504,13 +504,8 @@ namespace IronPython.Compiler.Ast {
                 PythonCompilerOptions pco = _compilerContext.Options as PythonCompilerOptions;
                 string moduleName = pco.ModuleName;
                 if (moduleName == null) {
-#if FEATURE_GETINVALIDFILENAMECHARS
                     if (_compilerContext.SourceUnit.HasPath && _compilerContext.SourceUnit.Path.IndexOfAny(Path.GetInvalidFileNameChars()) == -1) {
                         moduleName = Path.GetFileNameWithoutExtension(_compilerContext.SourceUnit.Path);
-#else
-                    if (_compilerContext.SourceUnit.HasPath) {                    
-                        moduleName = _compilerContext.SourceUnit.Path;
-#endif
                     } else {
                         moduleName = "<module>";
                     }

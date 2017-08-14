@@ -154,8 +154,6 @@ namespace IronPython.Runtime.Types {
             GetXmlDoc(t, out summary);
 #endif
             if (t.IsEnum) {
-
-#if FEATURE_ENUM_NAMES_VALUES // GetNames/GetValues
                 string[] names = Enum.GetNames(t);
                 Array values = Enum.GetValues(t);
                 for (int i = 0; i < names.Length; i++) {
@@ -164,14 +162,6 @@ namespace IronPython.Runtime.Types {
                         Convert.ChangeType(values.GetValue(i), Enum.GetUnderlyingType(t), null).ToString(),
                         ")");
                 }
-#else
-                FieldInfo[] fields = t.GetFields(BindingFlags.Static | BindingFlags.Public);
-                string[] names = new string[fields.Length];
-                for (int i = 0; i < fields.Length; i++) {
-                    object value = Convert.ChangeType(fields[i].GetValue(null), Enum.GetUnderlyingType(t), Thread.CurrentThread.CurrentCulture);
-                    names[i] = String.Concat(fields[i].Name, " (", value.ToString(), ")");
-                }
-#endif
 
                 Array.Sort<string>(names);
 

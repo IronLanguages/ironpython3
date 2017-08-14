@@ -47,9 +47,7 @@ using System.Security;
 
 [assembly: SecurityTransparent]
 
-#if FEATURE_APTCA
 [assembly: AllowPartiallyTrustedCallers]
-#endif
 
 #if FEATURE_SECURITY_RULES
 [assembly: SecurityRules(SecurityRuleSet.Level1)]

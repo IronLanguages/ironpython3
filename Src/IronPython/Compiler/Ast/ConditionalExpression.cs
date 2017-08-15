@@ -59,15 +59,9 @@ namespace IronPython.Compiler.Ast {
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                if (_testExpr != null) {
-                    _testExpr.Walk(walker);
-                }
-                if (_trueExpr != null) {
-                    _trueExpr.Walk(walker);
-                }
-                if (_falseExpr != null) {
-                    _falseExpr.Walk(walker);
-                }
+                _testExpr?.Walk(walker);
+                _trueExpr?.Walk(walker);
+                _falseExpr?.Walk(walker);
             }
             walker.PostWalk(this);
         }

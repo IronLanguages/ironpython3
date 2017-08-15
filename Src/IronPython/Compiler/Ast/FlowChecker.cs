@@ -500,14 +500,10 @@ namespace IronPython.Compiler.Ast {
                     _bits.Or(save);
 
                     // Flow the test
-                    if (tsh.Test != null) {
-                        tsh.Test.Walk(this);
-                    }
+                    tsh.Test?.Walk(this);
 
                     // Define the target
-                    if (tsh.Target != null) {
-                        tsh.Target.Walk(_fdef);
-                    }
+                    tsh.Target?.Walk(_fdef);
 
                     // Flow the body
                     tsh.Body.Walk(this);

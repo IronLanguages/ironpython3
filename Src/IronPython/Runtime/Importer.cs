@@ -900,9 +900,7 @@ namespace IronPython.Runtime {
             }
             // for consistency with cpython, insert zip as a first entry into sys.path
             var syspath = context.LanguageContext.GetSystemStateValue("path") as List;
-            if (syspath != null) {
-                syspath.Insert(0, path);
-            }
+            syspath?.Insert(0, path);
             object dummy;
             return FindAndLoadModuleFromImporter(context, importer, "__main__", null, out dummy);
         }

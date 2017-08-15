@@ -121,9 +121,7 @@ namespace IronPython.Compiler.Ast {
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                if (_item != null) {
-                    _item.Walk(walker);
-                }
+                _item?.Walk(walker);
                 if (_iterators != null) {
                     foreach (ComprehensionIterator ci in _iterators) {
                         ci.Walk(walker);

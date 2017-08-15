@@ -100,7 +100,7 @@ namespace IronPython.Runtime.Binding {
                 FastBindResult<T> res = ifi.MakeInvokeBinding(site, this, (CodeContext)args[0], ArrayUtils.ShiftLeft(args, 2));
                 if (res.Target != null) {
                     if (res.ShouldCache) {
-                        base.CacheTarget(res.Target);
+                        CacheTarget(res.Target);
                     }
 
                     return res.Target;
@@ -114,7 +114,7 @@ namespace IronPython.Runtime.Binding {
             }
 
             var target = this.LightBind<T>(args, Context.Options.CompilationThreshold);
-            base.CacheTarget(target);
+            CacheTarget(target);
             return target;
         }
 

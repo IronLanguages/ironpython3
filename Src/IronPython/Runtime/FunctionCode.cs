@@ -238,7 +238,9 @@ namespace IronPython.Runtime {
             get {
                 if (_lambda is Compiler.Ast.SerializedScopeStatement) {
                     return true;
-                } else if (_lambda is Compiler.Ast.PythonAst) {
+                }
+
+                if (_lambda is Compiler.Ast.PythonAst) {
                     return ((Compiler.Ast.PythonAst)_lambda).OnDiskProxy;
                 }
                 return false;
@@ -784,7 +786,7 @@ namespace IronPython.Runtime {
         private LambdaExpression GetGeneratorOrNormalLambdaTracing(PythonContext context) {
             var debugProperties = new PythonDebuggingPayload(this);
 
-            var debugInfo = new Microsoft.Scripting.Debugging.CompilerServices.DebugLambdaInfo(
+            var debugInfo = new DebugLambdaInfo(
                 null,           // IDebugCompilerSupport
                 null,           // lambda alias
                 false,          // optimize for leaf frames
@@ -965,11 +967,11 @@ namespace IronPython.Runtime {
                 _context = context;
             }
 
-            public void SetCompiledTarget(object sender, Microsoft.Scripting.Interpreter.LightLambdaCompileEventArgs e) {
+            public void SetCompiledTarget(object sender, LightLambdaCompileEventArgs e) {
                 _code.SetTarget(_code.AddRecursionCheck(_context, _code._normalDelegate = e.Compiled));
             }
 
-            public void SetCompiledTargetTracing(object sender, Microsoft.Scripting.Interpreter.LightLambdaCompileEventArgs e) {
+            public void SetCompiledTargetTracing(object sender, LightLambdaCompileEventArgs e) {
                 _code.SetTarget(_code.AddRecursionCheck(_context, _code._tracingDelegate = e.Compiled));
             }
         }
@@ -1131,88 +1133,87 @@ namespace IronPython.Runtime {
                 return false;
             }
 
-
-            public override bool Walk(IronPython.Compiler.Ast.AssertStatement node) {
+            public override bool Walk(Compiler.Ast.AssertStatement node) {
                 UpdateLoops(node);
                 return base.Walk(node);
             }
 
-            public override bool Walk(IronPython.Compiler.Ast.AssignmentStatement node) {
+            public override bool Walk(Compiler.Ast.AssignmentStatement node) {
                 UpdateLoops(node);
                 return base.Walk(node);
             }
 
-            public override bool Walk(IronPython.Compiler.Ast.AugmentedAssignStatement node) {
+            public override bool Walk(Compiler.Ast.AugmentedAssignStatement node) {
                 UpdateLoops(node);
                 return base.Walk(node);
             }
 
-            public override bool Walk(IronPython.Compiler.Ast.BreakStatement node) {
+            public override bool Walk(Compiler.Ast.BreakStatement node) {
                 UpdateLoops(node);
                 return base.Walk(node);
             }
 
-            public override bool Walk(IronPython.Compiler.Ast.ClassDefinition node) {
+            public override bool Walk(Compiler.Ast.ClassDefinition node) {
                 UpdateLoops(node);
                 return false;
             }
 
-            public override bool Walk(IronPython.Compiler.Ast.ContinueStatement node) {
+            public override bool Walk(Compiler.Ast.ContinueStatement node) {
                 UpdateLoops(node);
                 return base.Walk(node);
             }
 
-            public override void PostWalk(IronPython.Compiler.Ast.EmptyStatement node) {
+            public override void PostWalk(Compiler.Ast.EmptyStatement node) {
                 UpdateLoops(node);
                 base.PostWalk(node);
             }
 
-            public override bool Walk(IronPython.Compiler.Ast.DelStatement node) {
+            public override bool Walk(Compiler.Ast.DelStatement node) {
                 UpdateLoops(node);
                 return base.Walk(node);
             }
 
-            public override bool Walk(IronPython.Compiler.Ast.EmptyStatement node) {
+            public override bool Walk(Compiler.Ast.EmptyStatement node) {
                 UpdateLoops(node);
                 return base.Walk(node);
             }
 
-            public override bool Walk(IronPython.Compiler.Ast.GlobalStatement node) {
+            public override bool Walk(Compiler.Ast.GlobalStatement node) {
                 UpdateLoops(node);
                 return base.Walk(node);
             }
 
-            public override bool Walk(IronPython.Compiler.Ast.FromImportStatement node) {
+            public override bool Walk(Compiler.Ast.FromImportStatement node) {
                 UpdateLoops(node);
                 return base.Walk(node);
             }
 
-            public override bool Walk(IronPython.Compiler.Ast.ExpressionStatement node) {
+            public override bool Walk(Compiler.Ast.ExpressionStatement node) {
                 UpdateLoops(node);
                 return base.Walk(node);
             }
 
-            public override bool Walk(IronPython.Compiler.Ast.FunctionDefinition node) {
+            public override bool Walk(Compiler.Ast.FunctionDefinition node) {
                 UpdateLoops(node);
                 return base.Walk(node);
             }
 
-            public override bool Walk(IronPython.Compiler.Ast.IfStatement node) {
+            public override bool Walk(Compiler.Ast.IfStatement node) {
                 UpdateLoops(node);
                 return base.Walk(node);
             }
 
-            public override bool Walk(IronPython.Compiler.Ast.ImportStatement node) {
+            public override bool Walk(Compiler.Ast.ImportStatement node) {
                 UpdateLoops(node);
                 return base.Walk(node);
             }
 
-            public override bool Walk(IronPython.Compiler.Ast.RaiseStatement node) {
+            public override bool Walk(Compiler.Ast.RaiseStatement node) {
                 UpdateLoops(node);
                 return base.Walk(node);
             }
 
-            public override bool Walk(IronPython.Compiler.Ast.WithStatement node) {
+            public override bool Walk(Compiler.Ast.WithStatement node) {
                 UpdateLoops(node);
                 return base.Walk(node);
             }

@@ -75,7 +75,7 @@ namespace IronPython.Runtime
         private Encoding _defaultEncoding = PythonAsciiEncoding.Instance;
 
         // conditional variables for silverlight/desktop CLR features
-        private Hosting.PythonService _pythonService;
+        private PythonService _pythonService;
         private string _initialExecutable, _initialPrefix = GetInitialPrefix();
 
         // other fields which might only be conditionally used

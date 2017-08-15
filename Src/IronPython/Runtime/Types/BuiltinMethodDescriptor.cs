@@ -179,7 +179,7 @@ namespace IronPython.Runtime.Types {
         #region IDynamicMetaObjectProvider Members
 
         DynamicMetaObject/*!*/ IDynamicMetaObjectProvider.GetMetaObject(Expression/*!*/ parameter) {
-            return new Binding.MetaBuiltinMethodDescriptor(parameter, BindingRestrictions.Empty, this);
+            return new MetaBuiltinMethodDescriptor(parameter, BindingRestrictions.Empty, this);
         }
 
         #endregion

@@ -28,9 +28,9 @@ namespace IronPython.Runtime.Types {
         internal ConstructorFunction(BuiltinFunction realTarget, IList<MethodBase> constructors)
             : base("__new__", ArrayUtils.ToArray(GetTargetsValidateFunction(realTarget)), realTarget.DeclaringType, FunctionType.Function | FunctionType.AlwaysVisible) {
 
-            base.Name = realTarget.Name;
-            base.FunctionType = realTarget.FunctionType;
-            this._ctors = ArrayUtils.ToArray(constructors);
+            Name = realTarget.Name;
+            FunctionType = realTarget.FunctionType;
+            _ctors = ArrayUtils.ToArray(constructors);
         }
 
         internal IList<MethodBase> ConstructorTargets {

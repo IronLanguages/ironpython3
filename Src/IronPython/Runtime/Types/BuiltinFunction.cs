@@ -678,12 +678,12 @@ namespace IronPython.Runtime.Types {
         /// Gets the overload dictionary for the logical function.  These overloads
         /// are never bound to an instance.
         /// </summary>
-        internal Dictionary<BuiltinFunction.TypeList, BuiltinFunction> OverloadDictionary {
+        internal Dictionary<TypeList, BuiltinFunction> OverloadDictionary {
             get {
                 if (_data.OverloadDictionary == null) {
                     Interlocked.CompareExchange(
                         ref _data.OverloadDictionary,
-                        new Dictionary<BuiltinFunction.TypeList, BuiltinFunction>(),
+                        new Dictionary<TypeList, BuiltinFunction>(),
                         null);
                 }
 

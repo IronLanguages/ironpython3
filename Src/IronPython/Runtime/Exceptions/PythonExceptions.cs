@@ -220,7 +220,7 @@ namespace IronPython.Runtime.Exceptions {
             /// Gets the CLR exception associated w/ this Python exception.  Not visible
             /// until a .NET namespace is imported.
             /// </summary>
-            public System.Exception/*!*/ clsException {
+            public Exception/*!*/ clsException {
                 [PythonHidden]
                 get {
                     return GetClrException();
@@ -239,7 +239,9 @@ namespace IronPython.Runtime.Exceptions {
 
                     if ((str = _args[0] as string) != null) {
                         return str;
-                    } else if ((extStr = _args[0] as Extensible<string>) != null) {
+                    }
+
+                    if ((extStr = _args[0] as Extensible<string>) != null) {
                         return extStr.Value;
                     }
 
@@ -942,14 +944,14 @@ for k, v in toError.items():
         /// Returns the CLR exception associated with a Python exception
         /// creating a new exception if necessary
         /// </summary>
-        internal static System.Exception ToClr(object pythonException) {
+        internal static Exception ToClr(object pythonException) {
             PythonExceptions.BaseException pyExcep = pythonException as PythonExceptions.BaseException;
             if (pyExcep != null) {
                 return pyExcep.GetClrException();
             }
 
             // default exception message is the exception type (from Python)
-            System.Exception res = new System.Exception(PythonOps.ToString(pythonException));
+            Exception res = new Exception(PythonOps.ToString(pythonException));
 
             res.SetPythonException(pythonException);
 

@@ -43,7 +43,7 @@ namespace IronPython.Compiler {
         private CodeContext _defaultContext;
         private LookupCompilationDelegate/*!*/ _target, _tracingTarget; // lazily compiled targets
 
-        public PythonScriptCode(Compiler.Ast.PythonAst/*!*/ ast)
+        public PythonScriptCode(PythonAst/*!*/ ast)
             : base(ast) {
             Assert.NotNull(ast);
             Debug.Assert(ast.Type == typeof(Expression<LookupCompilationDelegate>));

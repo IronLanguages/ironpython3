@@ -1878,7 +1878,7 @@ namespace IronPython.Compiler {
 
         private void RefillBuffer() {
             if (_end == _buffer.Length) {
-                int new_size = System.Math.Max(System.Math.Max((_end - _start) * 2, _buffer.Length), _position);
+                int new_size = Math.Max(System.Math.Max((_end - _start) * 2, _buffer.Length), _position);
                 ResizeInternal(ref _buffer, new_size, _start, _end - _start);
                 _end -= _start;
                 _position -= _start;

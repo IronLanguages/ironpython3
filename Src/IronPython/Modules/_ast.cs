@@ -455,16 +455,14 @@ namespace IronPython.Modules
             }
 
             internal static PythonList Convert(ComprehensionIterator[] iters) {
-                List<ComprehensionFor> cfCollector =
-                    new List<ComprehensionFor>();
-                List<List<ComprehensionIf>> cifCollector =
-                    new List<List<ComprehensionIf>>();
+                var cfCollector = new List<ComprehensionFor>();
+                var cifCollector = new List<List<ComprehensionIf>>();
                 List<ComprehensionIf> cif = null;
                 for (int i = 0; i < iters.Length; i++) {
                     if (iters[i] is ComprehensionFor) {
                         ComprehensionFor cf = (ComprehensionFor)iters[i];
                         cfCollector.Add(cf);
-                        cif = new Generic.List<ComprehensionIf>();
+                        cif = new List<ComprehensionIf>();
                         cifCollector.Add(cif);
                     } else {
                         ComprehensionIf ci = (ComprehensionIf)iters[i];
@@ -477,8 +475,6 @@ namespace IronPython.Modules
                     comps.Add(new comprehension(cfCollector[i], cifCollector[i].ToArray()));
                 return comps;
             }
-
-
 
             internal static AST Convert(PyOperator op) {
                 // We treat operator classes as singletons here to keep overhead down

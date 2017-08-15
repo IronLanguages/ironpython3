@@ -71,21 +71,10 @@ namespace IronPython.Modules {
 
             // altzone, timezone are offsets from UTC in seconds, so they always fit in the
             // -13*3600 to 13*3600 range and are safe to cast to ints
-            DaylightTime dayTime = TimeZone.CurrentTimeZone.GetDaylightChanges(DateTime.Now.Year);
-            daylight = (dayTime.Start == dayTime.End && dayTime.Start == DateTime.MinValue && dayTime.Delta.Ticks == 0) ? 0 : 1;
-
-            tzname = PythonTuple.MakeTuple(TimeZone.CurrentTimeZone.StandardName, TimeZone.CurrentTimeZone.DaylightName);
-            altzone = (int)-TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now).TotalSeconds;
-            timezone = altzone;
-            if (daylight != 0) {
-                // GetUtcOffset includes adjustments for timezones.  If we're in daylight saving time then
-                // we need to adjust timezone so it is the correct time.  Otherwise we need to adjust altzone
-                if (TimeZone.CurrentTimeZone.IsDaylightSavingTime(DateTime.Now)) {
-                    timezone += (int)dayTime.Delta.TotalSeconds;
-                } else {
-                    altzone -= (int)dayTime.Delta.TotalSeconds;
-                }
-            }
+            daylight = TimeZoneInfo.Local.SupportsDaylightSavingTime ? 1 : 0;
+            tzname = PythonTuple.MakeTuple(TimeZoneInfo.Local.StandardName, TimeZoneInfo.Local.DaylightName);
+            timezone = (int)-TimeZoneInfo.Local.BaseUtcOffset.TotalSeconds;
+            altzone = (int)-TimeZoneInfo.Local.GetUtcOffset(DateTime.Now).TotalSeconds;
         }
 
         internal static long TimestampToTicks(double seconds) {
@@ -325,18 +314,16 @@ namespace IronPython.Modules {
         }
 
         private static DateTime RemoveDst(DateTime dt, bool always) {
-            DaylightTime dayTime = TimeZone.CurrentTimeZone.GetDaylightChanges(dt.Year);
-            if (always || (dt > dayTime.Start && dt < dayTime.End)) {
-                dt -= dayTime.Delta;
+            if (always || TimeZoneInfo.Local.IsDaylightSavingTime(dt)) {
+                dt = dt - (TimeZoneInfo.Local.GetUtcOffset(dt) - TimeZoneInfo.Local.BaseUtcOffset);
             }
 
             return dt;
         }
 
         private static DateTime AddDst(DateTime dt) {
-            DaylightTime dayTime = TimeZone.CurrentTimeZone.GetDaylightChanges(dt.Year);
-            if (dt > dayTime.Start && dt < dayTime.End) {
-                dt += dayTime.Delta;
+            if (TimeZoneInfo.Local.IsDaylightSavingTime(dt)) {
+                dt = dt + (TimeZoneInfo.Local.GetUtcOffset(dt) - TimeZoneInfo.Local.BaseUtcOffset);
             }
 
             return dt;

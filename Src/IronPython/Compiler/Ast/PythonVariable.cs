@@ -28,7 +28,6 @@ namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
     internal class PythonVariable {
-        // variables used during the flow analysis to determine required initialization & checks
 
         public PythonVariable(string name, VariableKind kind, ScopeStatement/*!*/ scope) {
             Assert.NotNull(scope);

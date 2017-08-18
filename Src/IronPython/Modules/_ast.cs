@@ -679,8 +679,7 @@ namespace IronPython.Modules
             }
             
             internal static ComprehensionIterator[] RevertComprehensions(PythonList comprehensions) {
-                List<ComprehensionIterator> comprehensionIterators =
-                    new List<ComprehensionIterator>();
+                var comprehensionIterators = new List<ComprehensionIterator>();
                 foreach (comprehension comp in comprehensions) {
                     ComprehensionFor cf = new ComprehensionFor(expr.Revert(comp.target), expr.Revert(comp.iter));
                     comprehensionIterators.Add(cf);

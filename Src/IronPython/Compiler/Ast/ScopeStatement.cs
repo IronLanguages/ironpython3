@@ -34,7 +34,6 @@ namespace IronPython.Compiler.Ast {
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public abstract class ScopeStatement : Statement {
-        // due to "exec" or call to dir, locals, eval, vars...
 
         private bool _forceCompile;                 // true if this scope should always be compiled
 

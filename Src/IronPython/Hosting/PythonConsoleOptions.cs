@@ -33,7 +33,7 @@ namespace IronPython.Hosting {
         /// </summary>
         public bool SkipFirstSourceLine { get; set; }
 
-        public bool BasicConsole { get; set; } = false;
+        public bool BasicConsole { get; set; }
     }
 }
 #endif

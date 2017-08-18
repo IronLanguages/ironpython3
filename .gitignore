@@ -1,5 +1,7 @@
 *_name_S*
 
+.vs/
+
 # Output directories
 obj/
 bin/

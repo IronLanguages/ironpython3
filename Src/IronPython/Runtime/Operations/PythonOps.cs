@@ -3334,7 +3334,11 @@ namespace IronPython.Runtime.Operations {
         /// Provides access to AppDomain.DefineDynamicAssembly which cannot be called from a DynamicMethod
         /// </summary>
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access) {
+#if FEATURE_ASSEMBLYBUILDER_DEFINEDYNAMICASSEMBLY
+            return AssemblyBuilder.DefineDynamicAssembly(name, access);
+#else
             return AppDomain.CurrentDomain.DefineDynamicAssembly(name, access);
+#endif
         }
 
         /// <summary>

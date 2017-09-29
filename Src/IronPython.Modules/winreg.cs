@@ -391,11 +391,7 @@ namespace IronPython.Modules {
                 if ((sam & KEY_SET_VALUE) == KEY_SET_VALUE ||
                     (sam & KEY_CREATE_SUB_KEY) == KEY_CREATE_SUB_KEY) {
                         if (res != 0) {
-#if NETSTANDARD
-                            newKey = nativeRootKey.OpenSubKey(subKeyName, (RegistryRights)res);
-#else
                             newKey = nativeRootKey.OpenSubKey(subKeyName, RegistryKeyPermissionCheck.Default, (RegistryRights)res);
-#endif
                         } else {
                             newKey = nativeRootKey.OpenSubKey(subKeyName, true);
                         }
@@ -403,11 +399,7 @@ namespace IronPython.Modules {
                            (sam & KEY_ENUMERATE_SUB_KEYS) == KEY_ENUMERATE_SUB_KEYS ||
                            (sam & KEY_NOTIFY) == KEY_NOTIFY) {
                                if (res != 0) {
-#if NETSTANDARD
-                                   newKey = nativeRootKey.OpenSubKey(subKeyName, (RegistryRights)res);
-#else
                                    newKey = nativeRootKey.OpenSubKey(subKeyName, RegistryKeyPermissionCheck.ReadSubTree, (RegistryRights)res);
-#endif
                                } else {
                                    newKey = nativeRootKey.OpenSubKey(subKeyName, false);
                                }
@@ -525,22 +517,14 @@ namespace IronPython.Modules {
             if (string.IsNullOrEmpty(computerName))
                 computerName = string.Empty;
 
-#if NETSTANDARD
-            if (computerName != string.Empty) {
-                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError);
-            }
-#endif
-
             RegistryKey newKey = null;
             try {
                 if (computerName == string.Empty) {
                     newKey = RegistryKey.OpenBaseKey(MapSystemKey(key), RegistryView.Default);
                 }
-#if !NETSTANDARD
                 else {
                     newKey = RegistryKey.OpenRemoteBaseKey(MapSystemKey(key), computerName);
                 }
-#endif
             }
             catch (IOException ioe) {
                 throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, PythonExceptions._OSError.ERROR_BAD_NETPATH, ioe.Message, null, PythonExceptions._OSError.ERROR_BAD_NETPATH);

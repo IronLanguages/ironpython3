@@ -35,7 +35,7 @@ namespace NUnitLite.Tests
         /// <param name="args"></param>
         public static int Main(string[] args)
         {
-            return new AutoRun().Execute(args);
+            return new AutoRun(typeof(Program).Assembly).Execute(args);
         }
     }
 }

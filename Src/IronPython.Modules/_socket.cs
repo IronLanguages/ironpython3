@@ -66,24 +66,9 @@ namespace IronPython.Modules {
             return context.EnsureModuleException("socketerror", PythonExceptions.OSError, dict, "error", "socket");
         }
 
-#if NETSTANDARD
-        private static ConditionalWeakTable<Socket, object> fakeHandles = new ConditionalWeakTable<Socket, object>();
-        private static long maxHandle = 0;
-#endif
 
         private static IntPtr GetHandle(this Socket socket) {
-#if NETSTANDARD
-            object handle;
-            lock (fakeHandles) {
-                if (!fakeHandles.TryGetValue(socket, out handle)) {
-                    handle = (IntPtr)maxHandle++;
-                    fakeHandles.Add(socket, handle);
-                }
-            }
-            return (IntPtr)handle;
-#else
             return socket.Handle;
-#endif
         }
 
         public const string __doc__ = "Implementation module for socket operations.\n\n"
@@ -201,7 +186,7 @@ namespace IronPython.Modules {
                 }
             }
 
-#if !NETSTANDARD
+#if !NETCOREAPP2_0
             private IAsyncResult _acceptResult;
 #endif
             [Documentation("accept() -> (conn, address)\n\n"
@@ -214,7 +199,7 @@ namespace IronPython.Modules {
                 socket wrappedRemoteSocket;
                 Socket realRemoteSocket;
                 try {
-#if NETSTANDARD
+#if NETCOREAPP2_0
                     // TODO: support timeout != 0
                     realRemoteSocket = _socket.Accept();
 #else
@@ -283,10 +268,10 @@ namespace IronPython.Modules {
                 if (_socket != null) {
                     lock (_handleToSocket) {
                         WeakReference weakref;
-                        if (_handleToSocket.TryGetValue(_socket.GetHandle(), out weakref)) {
+                        if (_handleToSocket.TryGetValue(_socket.Handle, out weakref)) {
                             Socket target = (weakref.Target as Socket);
                             if (target == _socket || target == null) {
-                                _handleToSocket.Remove(_socket.GetHandle());
+                                _handleToSocket.Remove(_socket.Handle);
                             }
                         }
                     }
@@ -1310,32 +1295,11 @@ namespace IronPython.Modules {
         }
 
         private static IPHostEntry GetHostEntry(string host) {
-#if NETSTANDARD
-            try {
-                return Dns.GetHostEntryAsync(host).Result;
-            }
-            catch (AggregateException ae) {
-                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ae.InnerException).Throw();
-                throw;
-            }
-#else
             return Dns.GetHostEntry(host);
-#endif
         }
 
         private static IPAddress[] GetHostAddresses(string host) {
-#if NETSTANDARD
-            try {
-                return Dns.GetHostAddressesAsync(host).Result;
-            }
-            catch (AggregateException ae)
-            {
-                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ae.InnerException).Throw();
-                throw;
-            }
-#else
             return Dns.GetHostAddresses(host);
-#endif
         }
 
         [Documentation("getfqdn([hostname_or_ip]) -> hostname\n\n"
@@ -1527,11 +1491,7 @@ namespace IronPython.Modules {
 
             IPHostEntry hostEntry = null;
             try {
-#if NETSTANDARD
-                hostEntry = Dns.GetHostEntryAsync(addrs[0]).Result;
-#else
                 hostEntry = Dns.GetHostEntry(addrs[0]);
-#endif
             } catch (SocketException e) {
                 throw PythonExceptions.CreateThrowable(gaierror(context), (int)e.SocketErrorCode, e.Message);
             }
@@ -2645,11 +2605,6 @@ namespace IronPython.Modules {
 
             private void ValidateCertificate(X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) {
                 chain = new X509Chain();
-#if NETSTANDARD
-                // missing the X509Certificate2.ctor(X509Certificate) in .NET Core 1.0
-                chain.ChainPolicy.ExtraStore.AddRange(_certCollection);
-                chain.Build((X509Certificate2)certificate);
-#else
                 X509Certificate2Collection certificates = new X509Certificate2Collection();
                 foreach (object cert in _certCollection) {
                     if (cert is X509Certificate2) {
@@ -2661,7 +2616,7 @@ namespace IronPython.Modules {
                 }
                 chain.ChainPolicy.ExtraStore.AddRange(certificates);
                 chain.Build(new X509Certificate2(certificate));
-#endif
+
                 if (chain.ChainStatus.Length > 0) {
                     foreach (var elem in chain.ChainStatus) {
                         if (elem.Status == X509ChainStatusFlags.UntrustedRoot) {
@@ -2702,7 +2657,7 @@ namespace IronPython.Modules {
 
                 try {
                     if (_serverSide) {
-#if NETSTANDARD
+#if NETCOREAPP2_0
                         _sslStream.AuthenticateAsServerAsync(_cert, _certsMode == PythonSsl.CERT_REQUIRED, SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false).Wait();
 #else
                         _sslStream.AuthenticateAsServer(_cert, _certsMode == PythonSsl.CERT_REQUIRED, SslProtocols.Default, false);
@@ -2714,7 +2669,7 @@ namespace IronPython.Modules {
                         if (_cert != null) {
                             collection.Add(_cert);
                         }
-#if NETSTANDARD
+#if NETCOREAPP2_0
                         _sslStream.AuthenticateAsClientAsync(_socket._hostName, collection, SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false).Wait();
 #else
                         _sslStream.AuthenticateAsClient(_socket._hostName, collection, SslProtocols.Default, false);
@@ -2972,11 +2927,7 @@ Read up to len bytes from the SSL socket.")]
         static extern Int32 WSACleanup();
 
         private static T PtrToStructure<T>(IntPtr result) {
-#if NETSTANDARD
-            return Marshal.PtrToStructure<T>(result);
-#else
             return (T)Marshal.PtrToStructure(result, typeof(T));
-#endif
         }
 
         public static string GetServiceByPortWindows(ushort port, string protocol) {

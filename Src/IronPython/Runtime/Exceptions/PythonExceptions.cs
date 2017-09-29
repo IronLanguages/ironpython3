@@ -1017,11 +1017,8 @@ for k, v in toError.items():
                 pyExcep = new BaseException(TypeError);
             } else if (clrException is Win32Exception) {
                 Win32Exception win32 = (Win32Exception)clrException;
-#if NETSTANDARD
-                int errorCode = win32.HResult;
-#else
                 int errorCode = win32.ErrorCode;
-#endif
+
                 pyExcep = new _OSError();
                 if ((errorCode & 0x80070000) == 0x80070000) {
                     errorCode &= 0xffff;

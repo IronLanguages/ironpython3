@@ -84,15 +84,6 @@ namespace IronPython.Modules {
             }
         }
 
-#if NETSTANDARD
-        public static Sha256Object sha224(object data) {
-            throw new NotImplementedException();
-        }
-
-        public static Sha256Object sha224() {
-            throw new NotImplementedException();
-        }
-#else
         public static Sha224Object sha224(object data) {
             return new Sha224Object(data);
         }
@@ -119,7 +110,8 @@ namespace IronPython.Modules {
 
         [PythonHidden]
         public sealed class Sha224Object : HashBase<SHA224> {
-            internal Sha224Object() : base("SHA224", BLOCK_SIZE, 28) { }
+            internal Sha224Object() : base("SHA224", BLOCK_SIZE, 28) {
+            }
 
             internal Sha224Object(object initialData) : this() {
                 update(initialData);
@@ -140,6 +132,5 @@ namespace IronPython.Modules {
                 return res;
             }
         }
-#endif
     }
 }

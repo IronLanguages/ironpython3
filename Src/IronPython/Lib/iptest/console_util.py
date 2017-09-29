@@ -20,10 +20,11 @@ Its purpose is to enable testing behaviour of the top-level console,
 when that differs from behaviour while importing a module and executing
 its statements.
 """
-from .test_env import is_netstandard, is_posix
-if is_netstandard:
+from .test_env import is_netcoreapp, is_posix
+if is_netcoreapp:
     import clr
     clr.AddReference("System.Diagnostics.Process")
+    clr.AddReference("System.Threading.Thread")
 from System.Diagnostics import Process, ProcessStartInfo
 from System.IO import StreamReader, StreamWriter
 from System.Threading import Thread

@@ -325,13 +325,7 @@ namespace IronPython.Modules {
             } catch {
 
             } finally {
-                if (store != null) {
-#if NETCOREAPP2_0
-                    store.Dispose();
-#else
-                    store.Close();
-#endif
-                }
+                store?.Close();
             }
             return new List();
         }
@@ -494,7 +488,6 @@ namespace IronPython.Modules {
             }
 
             if (cert != null) {
-#if !NETCOREAPP2_0
                 if (key != null) {
                     try {
                         cert.PrivateKey = key;
@@ -502,7 +495,7 @@ namespace IronPython.Modules {
                         throw ErrorDecoding(context, filename, "cert and private key are incompatible", e);
                     }
                 }
-#endif
+
                 return cert;
             }
             throw ErrorDecoding(context, filename, "certificate not found");

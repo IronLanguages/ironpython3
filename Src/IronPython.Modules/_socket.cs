@@ -67,10 +67,6 @@ namespace IronPython.Modules {
         }
 
 
-        private static IntPtr GetHandle(this Socket socket) {
-            return socket.Handle;
-        }
-
         public const string __doc__ = "Implementation module for socket operations.\n\n"
             + "This module is a loose wrapper around the .NET System.Net.Sockets API, so you\n"
             + "may find the corresponding MSDN documentation helpful in decoding error\n"
@@ -328,7 +324,7 @@ namespace IronPython.Modules {
                 )]
             public Int64 fileno() {
                 try {
-                    return _socket.GetHandle().ToInt64();
+                    return _socket.Handle.ToInt64();
                 } catch (Exception e) {
                     throw MakeException(_context, e);
                 }
@@ -1127,7 +1123,7 @@ namespace IronPython.Modules {
                 }
 
                 lock (_handleToSocket) {
-                    _handleToSocket[socket.GetHandle()] = new WeakReference(socket);
+                    _handleToSocket[socket.Handle] = new WeakReference(socket);
                 }
             }
 
@@ -1294,14 +1290,6 @@ namespace IronPython.Modules {
             return (PythonType)context.LanguageContext.GetModuleState("socketgaierror");
         }
 
-        private static IPHostEntry GetHostEntry(string host) {
-            return Dns.GetHostEntry(host);
-        }
-
-        private static IPAddress[] GetHostAddresses(string host) {
-            return Dns.GetHostAddresses(host);
-        }
-
         [Documentation("getfqdn([hostname_or_ip]) -> hostname\n\n"
             + "Return the fully-qualified domain name for the specified hostname or IP\n"
             + "address. An unspecified or empty name is interpreted as the local host. If the\n"
@@ -1320,7 +1308,7 @@ namespace IronPython.Modules {
                 return host;
             }
             try {
-                IPHostEntry hostEntry = GetHostEntry(host);
+                IPHostEntry hostEntry = Dns.GetHostEntry(host);
                 if (hostEntry.HostName.Contains(".")) {
                     return hostEntry.HostName;
                 } else {
@@ -1378,7 +1366,7 @@ namespace IronPython.Modules {
             } else {
                 IPHostEntry hostEntry;
                 try {
-                    hostEntry = GetHostEntry(host);
+                    hostEntry = Dns.GetHostEntry(host);
                 } catch (SocketException e) {
                     throw PythonExceptions.CreateThrowable(gaierror(context), (int)e.SocketErrorCode, "no IPv4 addresses associated with host");
                 }
@@ -1413,8 +1401,8 @@ namespace IronPython.Modules {
             IPAddress[] ips = null;
             IPHostEntry hostEntry = null;
             try {
-                ips = GetHostAddresses(host);
-                hostEntry = GetHostEntry(host);
+                ips = Dns.GetHostAddresses(host);
+                hostEntry = Dns.GetHostEntry(host);
             }
             catch (Exception e) {
                 throw MakeException(context, e);
@@ -2121,7 +2109,7 @@ namespace IronPython.Modules {
                     }
                     // Incorrect family will raise exception below
                 } else {
-                    IPHostEntry hostEntry = GetHostEntry(host);
+                    IPHostEntry hostEntry = Dns.GetHostEntry(host);
                     List<IPAddress> addrs = new List<IPAddress>();
                     foreach (IPAddress ip in hostEntry.AddressList) {
                         if (family == AddressFamily.Unspecified || family == ip.AddressFamily) {
@@ -2657,11 +2645,7 @@ namespace IronPython.Modules {
 
                 try {
                     if (_serverSide) {
-#if NETCOREAPP2_0
-                        _sslStream.AuthenticateAsServerAsync(_cert, _certsMode == PythonSsl.CERT_REQUIRED, SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false).Wait();
-#else
                         _sslStream.AuthenticateAsServer(_cert, _certsMode == PythonSsl.CERT_REQUIRED, SslProtocols.Default, false);
-#endif
                     } else {
 
                         var collection = new X509CertificateCollection();

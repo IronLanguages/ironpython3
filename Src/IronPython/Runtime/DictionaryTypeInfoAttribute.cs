@@ -12,23 +12,13 @@ namespace IronPython {
     /// </summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.ReturnValue, AllowMultiple=false)]
     public sealed class DictionaryTypeInfoAttribute : Attribute {
-        private readonly Type _keyType, _valueType;
-
         public DictionaryTypeInfoAttribute(Type keyType, Type valueType) {
-            _keyType = keyType;
-            _valueType = valueType;
+            KeyType = keyType;
+            ValueType = valueType;
         }
 
-        public Type KeyType {
-            get{
-                return _keyType;
-            }
-        }
+        public Type KeyType { get; }
 
-        public Type ValueType {
-            get{
-                return _valueType;
-            }
-        }
+        public Type ValueType { get; }
     }
 }

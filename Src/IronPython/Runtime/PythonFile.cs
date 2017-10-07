@@ -1038,8 +1038,6 @@ namespace IronPython.Runtime {
     [DontMapIEnumerableToContains]
     public class PythonFile : IDisposable, ICodeFormattable, IEnumerator<string>, IEnumerator, IWeakReferenceable {
         internal Stream _stream;
-        private string _mode;
-        private string _name, _encoding;
         private PythonFileMode _fileMode;
 
         private PythonStreamReader _reader;
@@ -1048,9 +1046,6 @@ namespace IronPython.Runtime {
         private Nullable<long> _reseekPosition;
         private WeakRefTracker _weakref;
         private string _enumValue;
-        internal readonly PythonContext/*!*/ _context;
-
-        private bool _softspace;
 
         internal bool IsOutput {
             get {
@@ -1059,7 +1054,7 @@ namespace IronPython.Runtime {
         }
 
         internal PythonFile(PythonContext/*!*/ context) {
-            _context = context;
+            Context = context;
         }
 
         public PythonFile(CodeContext/*!*/ context)
@@ -1312,7 +1307,7 @@ namespace IronPython.Runtime {
         /// </summary>
         internal bool SetMode(CodeContext context, bool text) {
             lock (this) {
-                var mode = MapFileMode(_mode);
+                var mode = MapFileMode(this.mode);
                 if (text) {
                     if (mode == PythonFileMode.Binary) {
                         _fileMode = PythonFileMode.UniversalNewline;
@@ -1324,7 +1319,7 @@ namespace IronPython.Runtime {
                 }
 
                 Encoding enc;
-                if (!StringOps.TryGetEncoding(_encoding, out enc)) {
+                if (!StringOps.TryGetEncoding(encoding, out enc)) {
                     enc = context.LanguageContext.DefaultEncoding;
                 }
                 InitializeReaderAndWriter(_stream, enc);
@@ -1341,19 +1336,19 @@ namespace IronPython.Runtime {
             Assert.NotNull(stream, encoding, mode);
 
             _stream = stream;
-            _mode = mode;
+            this.mode = mode;
             _isOpen = true;
             _fileMode = MapFileMode(mode);
-            _encoding = StringOps.GetEncodingName(encoding);
+            this.encoding = StringOps.GetEncodingName(encoding);
 
             InitializeReaderAndWriter(stream, encoding);
 
             // only possible if the user provides us w/ the stream directly
             FileStream fs = stream as FileStream;
             if (fs != null) {
-                _name = fs.Name;
+                name = fs.Name;
             } else {
-                _name = "nul";
+                name = "nul";
             }
         }
 
@@ -1379,10 +1374,10 @@ namespace IronPython.Runtime {
 #if FEATURE_PROCESS
         internal void InitializePipe(Stream stream, string mode, Encoding encoding) {
             _stream = stream;
-            _name = "<pipe>";
-            _mode = mode;
+            name = "<pipe>";
+            this.mode = mode;
             _fileMode = PythonFileMode.Binary;
-            _encoding = StringOps.GetEncodingName(encoding);
+            this.encoding = StringOps.GetEncodingName(encoding);
             _isOpen = true;
             InitializeReaderAndWriter(stream, encoding);
         }
@@ -1390,7 +1385,7 @@ namespace IronPython.Runtime {
 
         internal void InternalInitialize(Stream stream, Encoding encoding, string name, string mode) {
             InternalInitialize(stream, encoding, mode);
-            _name = name;
+            this.name = name;
         }
 
         #endregion
@@ -1462,9 +1457,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        internal PythonContext Context {
-            get { return _context; }
-        }
+        internal PythonContext Context { get; }
 
         void IDisposable.Dispose() {
             Dispose(true);
@@ -1488,7 +1481,7 @@ namespace IronPython.Runtime {
 
                 _stream.Close();
 
-                PythonFileManager myManager = _context.RawFileManager;
+                PythonFileManager myManager = Context.RawFileManager;
                 if (myManager != null) {
                     myManager.Remove(this);
                     myManager.Remove(_stream);
@@ -1542,29 +1535,17 @@ namespace IronPython.Runtime {
 
         public int fileno() {
             ThrowIfClosed();
-            return _context.FileManager.GetOrAssignIdForFile(this);
+            return Context.FileManager.GetOrAssignIdForFile(this);
         }
 
         [Documentation("gets the mode of the file")]
-        public string mode {
-            get {
-                return _mode;
-            }
-        }
+        public string mode { get; private set; }
 
         [Documentation("gets the name of the file")]
-        public string name {
-            get {
-                return _name;
-            }
-        }
+        public string name { get; private set; }
 
         [Documentation("gets the encoding used when reading/writing text")]
-        public string encoding {
-            get {
-                return _encoding;
-            }
-        }
+        public string encoding { get; private set; }
 
         public string read() {
             return read(-1);
@@ -1615,7 +1596,7 @@ namespace IronPython.Runtime {
         }
 
         public void seek(long offset, int whence) {
-            if (_mode == "a") {
+            if (mode == "a") {
                 // nop when seeking on streams opened for append.
                 return;
             }
@@ -1623,7 +1604,7 @@ namespace IronPython.Runtime {
             ThrowIfClosed();
 
             if (!_stream.CanSeek) {
-                throw PythonOps.IOError("Can not seek on file " + _name);
+                throw PythonOps.IOError("Can not seek on file " + name);
             }
 
             lock (this) {
@@ -1642,14 +1623,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public bool softspace {
-            get {
-                return _softspace;
-            }
-            set {
-                _softspace = value;
-            }
-        }
+        public bool softspace { get; set; }
 
         public object tell() {
             long l = GetCurrentPosition();
@@ -1838,7 +1812,7 @@ namespace IronPython.Runtime {
         }
 
         private void SavePositionPreSeek() {
-            if (_mode == "a+") {
+            if (mode == "a+") {
                 _reseekPosition = _stream.Position;
             }
         }
@@ -1847,7 +1821,7 @@ namespace IronPython.Runtime {
         private PythonStreamReader/*!*/ GetReader() {
             ThrowIfClosed();
             if (_reader == null) {
-                throw PythonOps.IOError("Can not read from " + _name);
+                throw PythonOps.IOError("Can not read from " + name);
             }
             return _reader;
         }
@@ -1857,7 +1831,7 @@ namespace IronPython.Runtime {
             ThrowIfClosed();
 
             if (_writer == null) {
-                throw PythonOps.IOError("Can not write to " + _name);
+                throw PythonOps.IOError("Can not write to " + name);
             }
 
             lock (this) {
@@ -1902,8 +1876,8 @@ namespace IronPython.Runtime {
         public virtual string/*!*/ __repr__(CodeContext/*!*/ context) {
             return string.Format("<{0} file '{1}', mode '{2}' at 0x{3:X8}>",
                 _isOpen ? "open" : "closed",
-                _name ?? "<uninitialized file>",
-                _mode ?? "<uninitialized file>",
+                name ?? "<uninitialized file>",
+                mode ?? "<uninitialized file>",
                 this.GetHashCode()
                 );
         }

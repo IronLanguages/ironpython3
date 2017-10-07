@@ -12,20 +12,18 @@ namespace IronPython.Runtime.Types {
 
         private readonly PythonOperationKind _operator;
         private readonly string _name;
-        private readonly string _altName;
-        private readonly Type _altExpectedType;
 
         private OperatorMapping(PythonOperationKind op, string name, string altName) {
             _operator = op;
             _name = name;
-            _altName = altName;
+            AlternateName = altName;
         }
 
         private OperatorMapping(PythonOperationKind op, string name, string altName, Type alternateExpectedType) {
             _operator = op;
             _name = name;
-            _altName = altName;
-            _altExpectedType = alternateExpectedType;
+            AlternateName = altName;
+            AlternateExpectedType = alternateExpectedType;
         }
 
         /// <summary>
@@ -63,24 +61,17 @@ namespace IronPython.Runtime.Types {
         }
 
         /// <summary>
-        /// The secondary method name associated with the method.  This method name is
+        /// Gets the secondary method name associated with the method. This method name is
         /// usually a standard .NET method name with pascal casing (e.g. Add).
         /// </summary>
-        public string AlternateName {
-            get { return _altName; }
-        }
+        public string AlternateName { get; }
 
         /// <summary>
-        /// The return type that must match for the alternate operator to be valid.
-        /// 
+        /// Gets the return type that must match for the alternate operator to be valid.
         /// This is available alternate operators don't have special names and therefore
         /// could be confused for a normal method which isn't fulfilling the contract.
         /// </summary>
-        public Type AlternateExpectedType {
-            get {
-                return _altExpectedType;
-            }
-        }
+        public Type AlternateExpectedType { get; }
 
         private static OperatorMapping[] MakeOperatorTable() {
             List<OperatorMapping> res = new List<OperatorMapping>();

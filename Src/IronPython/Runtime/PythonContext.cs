@@ -66,7 +66,6 @@ namespace IronPython.Runtime
         private readonly PythonOptions/*!*/ _options;
         private readonly PythonModule/*!*/ _systemState;
         private readonly Dictionary<string, Type>/*!*/ _builtinModulesDict;
-        private readonly PythonOverloadResolverFactory _sharedOverloadResolverFactory;
         private readonly PythonBinder _binder;
 #if FEATURE_ASSEMBLY_RESOLVE && FEATURE_FILESYSTEM
         private readonly AssemblyResolveHolder _resolveHolder;
@@ -141,7 +140,6 @@ namespace IronPython.Runtime
         private ClrModule.ReferencesList _referencesList;
         private FloatFormat _floatFormat, _doubleFormat;
         private CultureInfo _collateCulture, _ctypeCulture, _timeCulture, _monetaryCulture, _numericCulture;
-        private CodeContext _defaultContext, _defaultClsContext;
         private readonly TopNamespaceTracker _topNamespace;
         private readonly IEqualityComparer<object> _equalityComparer;
         private readonly IEqualityComparer _equalityComparerNonGeneric;
@@ -224,7 +222,7 @@ namespace IronPython.Runtime
 
             PythonDictionary defaultScope = new PythonDictionary();
             ModuleContext modContext = new ModuleContext(defaultScope, this);
-            _defaultContext = modContext.GlobalContext;
+            SharedContext = modContext.GlobalContext;
 
             ModuleDictionaryStorage sysStorage = new ModuleDictionaryStorage(typeof(SysModule));
             PythonDictionary sysDict = new PythonDictionary(sysStorage);
@@ -232,15 +230,15 @@ namespace IronPython.Runtime
             _systemState.__dict__["__name__"] = "sys";
             _systemState.__dict__["__package__"] = null;
 
-            PythonBinder binder = new PythonBinder(this, _defaultContext);
-            _sharedOverloadResolverFactory = new PythonOverloadResolverFactory(binder, Expression.Constant(_defaultContext));
+            PythonBinder binder = new PythonBinder(this, SharedContext);
+            SharedOverloadResolverFactory = new PythonOverloadResolverFactory(binder, Expression.Constant(SharedContext));
             _binder = binder;
 
             CodeContext defaultClsContext = DefaultContext.CreateDefaultCLSContext(this);
-            _defaultClsContext = defaultClsContext;
+            SharedClsContext = defaultClsContext;
 
             if (DefaultContext._default == null) {
-                DefaultContext.InitializeDefaults(_defaultContext, defaultClsContext);
+                DefaultContext.InitializeDefaults(SharedContext, defaultClsContext);
             }
 
             InitializeBuiltins();
@@ -403,11 +401,11 @@ namespace IronPython.Runtime
             }
 
             bool IEqualityComparer.Equals(object x, object y) {
-                return PythonOps.EqualRetBool(Context._defaultContext, x, y);
+                return PythonOps.EqualRetBool(Context.SharedContext, x, y);
             }
 
             bool IEqualityComparer<object>.Equals(object x, object y) {
-                return PythonOps.EqualRetBool(Context._defaultContext, x, y);
+                return PythonOps.EqualRetBool(Context.SharedContext, x, y);
             }
 
             int IEqualityComparer.GetHashCode(object obj) {
@@ -1972,7 +1970,7 @@ namespace IronPython.Runtime
         }
 
         public override string/*!*/ FormatObject(DynamicOperations/*!*/ operations, object obj) {
-            return PythonOps.Repr(_defaultContext, obj) ?? "None";
+            return PythonOps.Repr(SharedContext, obj) ?? "None";
         }
 
         internal object GetSystemStateValue(string name) {
@@ -3082,32 +3080,20 @@ namespace IronPython.Runtime
         /// context can be used for performing general operations which usually
         /// require a CodeContext.
         /// </summary>
-        internal CodeContext SharedContext {
-            get {
-                return _defaultContext;
-            }
-        }
+        internal CodeContext SharedContext { get; }
 
         /// <summary>
         /// Returns an overload resolver for the current PythonContext.  The overload
         /// resolver will flow the shared context through as it's CodeContext.
         /// </summary>
-        internal PythonOverloadResolverFactory SharedOverloadResolverFactory {
-            get {
-                return _sharedOverloadResolverFactory;
-            }
-        }
+        internal PythonOverloadResolverFactory SharedOverloadResolverFactory { get; }
 
         /// <summary>
         /// Returns a shared code context for the current PythonContext.  This shared
         /// context can be used for doing lookups which need to occur as if they
         /// happened in a module which has done "import clr".
         /// </summary>
-        internal CodeContext SharedClsContext {
-            get {
-                return _defaultClsContext;
-            }
-        }
+        internal CodeContext SharedClsContext { get; }
 
         internal ClrModule.ReferencesList ReferencedAssemblies {
             get {
@@ -3976,14 +3962,14 @@ namespace IronPython.Runtime
         }
 
         public static Expression/*!*/ GetCodeContext(DynamicMetaObjectBinder/*!*/ action) {
-            return Microsoft.Scripting.Ast.Utils.Constant(PythonContext.GetPythonContext(action)._defaultContext);
+            return Microsoft.Scripting.Ast.Utils.Constant(PythonContext.GetPythonContext(action).SharedContext);
         }
 
         public static DynamicMetaObject/*!*/ GetCodeContextMO(DynamicMetaObjectBinder/*!*/ action) {
             return new DynamicMetaObject(
-                Microsoft.Scripting.Ast.Utils.Constant(PythonContext.GetPythonContext(action)._defaultContext),
+                Microsoft.Scripting.Ast.Utils.Constant(PythonContext.GetPythonContext(action).SharedContext),
                 BindingRestrictions.Empty,
-                PythonContext.GetPythonContext(action)._defaultContext
+                PythonContext.GetPythonContext(action).SharedContext
             );
         }
 

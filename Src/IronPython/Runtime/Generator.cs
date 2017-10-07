@@ -36,12 +36,7 @@ namespace IronPython.Runtime {
         private readonly MutableTuple _data;                        // the closure data we need to pass into each iteration.  Item000 is the index, Item001 is the current value
         private readonly MutableTuple<int, object> _dataTuple;      // the tuple which has our current index and value
         private GeneratorFlags _flags;                              // Flags capturing various state for the generator
-        /// <summary>
-        /// True iff the thread is currently inside the generator (ie, invoking the _next delegate).
-        /// This can be used to enforce that a generator does not call back into itself. 
-        /// Pep255 says that a generator should throw a ValueError if called reentrantly.
-        /// </summary>
-        private bool _active;
+
         private GeneratorFinalizer _finalizer;                      // finalizer object
 
         /// <summary>
@@ -559,14 +554,12 @@ namespace IronPython.Runtime {
             }
         }
 
-        private bool Active {
-            get {
-                return _active;
-            }
-            set {
-                _active = value;
-            }
-        }
+        /// <summary>
+        /// True if the thread is currently inside the generator (ie, invoking the _next delegate).
+        /// This can be used to enforce that a generator does not call back into itself. 
+        /// Pep255 says that a generator should throw a ValueError if called reentrantly.
+        /// </summary>
+        private bool Active { get; set; }
 
         private bool GetNext() {
             _next(_data);

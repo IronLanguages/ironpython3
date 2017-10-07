@@ -33,26 +33,16 @@ namespace IronPython.Compiler {
     /// </summary>
     internal class ReducableDynamicExpression : Expression, ILightExceptionAwareExpression {
         private readonly Expression/*!*/ _reduction;
-        private readonly DynamicMetaObjectBinder/*!*/ _binder;
-        private readonly IList<Expression/*!*/> _args;
 
         public ReducableDynamicExpression(Expression/*!*/ reduction, DynamicMetaObjectBinder/*!*/ binder, IList<Expression/*!*/>/*!*/ args) {
             _reduction = reduction;
-            _binder = binder;
-            _args = args;
+            Binder = binder;
+            Args = args;
         }
 
-        public DynamicMetaObjectBinder/*!*/ Binder {
-            get {
-                return _binder;
-            }
-        }
+        public DynamicMetaObjectBinder/*!*/ Binder { get; }
 
-        public IList<Expression/*!*/>/*!*/ Args {
-            get {
-                return _args;
-            }
-        }
+        public IList<Expression/*!*/>/*!*/ Args { get; }
 
         public override bool CanReduce {
             get {
@@ -82,7 +72,7 @@ namespace IronPython.Compiler {
                     return DynamicExpression.Dynamic(
                         lightBinder,
                         Type,
-                        _args);
+                        Args);
                 }
             }
             return this;

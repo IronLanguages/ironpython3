@@ -11,18 +11,12 @@ namespace IronPython.Runtime {
     /// time the most appropriate method to dispatch to.
     /// </summary>
     public class Index {
-        private readonly object _value;
-
         public Index(object/*!*/ value) {
             ContractUtils.RequiresNotNull(value, "value");
 
-            _value = value;
+            Value = value;
         }
 
-        internal object/*!*/ Value {
-            get {
-                return _value;
-            }
-        }
+        internal object/*!*/ Value { get; }
     }
 }

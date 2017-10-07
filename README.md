@@ -1,12 +1,37 @@
-# IronPython 3
+IronPython 3
+==============
+[![Windows Build Status](https://ci.appveyor.com/api/projects/status/2g9hw68byv5ny14y?svg=true)](https://ci.appveyor.com/project/AlexEarl/ironpython3)
+[![Linux/OSX Build Status](https://travis-ci.org/IronLanguages/ironpython3.svg?branch=master)](https://travis-ci.org/IronLanguages/ironpython3)
+[![Release](https://img.shields.io/github/release/IronLanguages/ironpython3.svg)](https://github.com/IronLanguages/ironpython3/releases/latest)
+[![Gitter chat](https://badges.gitter.im/IronLanguages/ironpython.svg)](https://gitter.im/IronLanguages/ironpython)
+[![StackExchange](https://img.shields.io/stackexchange/stackoverflow/t/ironpython.svg)](http://stackoverflow.com/questions/tagged/ironpython)
+
 [Official Website](http://ironpython.net)
 
-IronPython is an open-source implementation of the Python programming language which
-is tightly integrated with the .NET Framework. IronPython can use the .NET Framework
-and Python libraries, and other .NET languages can use Python code just as easily.
+IronPython is an open-source implementation of the Python programming language which is tightly integrated with the .NET Framework. IronPython can use the .NET Framework and Python libraries, and other .NET languages can use Python code just as easily.
 
-IronPython 3 targets Python 3, including the re-organized standard library, Unicode
-strings, and all of the other new features.
+Comparison of IronPython vs. C# for 'Hello World'
+
+c#:
+
+```cs
+using System;
+class Hello
+{
+    static void Main() 
+    {
+        Console.WriteLine("Hello World");
+    }
+}
+```
+
+IronPython:
+
+```py
+print("Hello World")
+```
+
+IronPython 3 targets Python 3, including the re-organized standard library, Unicode strings, and all of the other new features.
 
 ## Installation
 Builds of IronPython 3 are not yet provided.
@@ -26,12 +51,7 @@ Since the main development is on Windows, Mono bugs may inadvertantly be introdu
 - please report them!
 
 ## Supported Platforms
-IronPython 3 currently builds for .NET 3.5 SP1, .NET 4.0, and .NET 4.5. The main
-platform will be .NET 4.5, but .NET 4.0, 3.5, and Silverlight 5 will still be supported
-for embedding.
-
-Support for Android, Windows 8 Store Apps (Metro), Window Phone 8, and iOS are also
-planned (in roughly that order).
+IronPython 3 targets .NET 4.5 and .NET Core 2.0.
 
 ## Custom DLR
 If you need to make changes to the DLR, you can point IronPython at your local DLR using

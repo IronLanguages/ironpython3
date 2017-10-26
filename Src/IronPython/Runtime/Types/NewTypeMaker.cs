@@ -1397,11 +1397,7 @@ namespace IronPython.Runtime.Types {
             return new ILGen(builder.GetILGenerator());
         }
 
-#if WIN8 // TODO: what is ReservedMask?
-        private const MethodAttributes MethodAttributesToEraseInOveride = MethodAttributes.Abstract | (MethodAttributes)0xD000;
-#else
         private const MethodAttributes MethodAttributesToEraseInOveride = MethodAttributes.Abstract | MethodAttributes.ReservedMask;
-#endif
 
         private ILGen DefineMethodOverride(MethodAttributes extra, Type type, string name, out MethodInfo decl, out MethodBuilder impl) {
             decl = type.GetMethod(name);

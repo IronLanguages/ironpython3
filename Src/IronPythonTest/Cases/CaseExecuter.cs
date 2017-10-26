@@ -14,7 +14,19 @@ using IronPython.Runtime.Operations;
 
 namespace IronPythonTest.Cases {
     class CaseExecuter {
-        private static readonly string Executable = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location), "ipy.exe");
+        private static string Executable {
+            get {
+#if NETCOREAPP2_0
+                if (Environment.OSVersion.Platform == PlatformID.Unix) {
+                    return Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location), "ipy64");
+                }
+                return Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location), "ipy64.bat");
+#else
+                return Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location), "ipy.exe");
+#endif
+            }
+        }
+
         private static readonly string IRONPYTHONPATH = GetIronPythonPath();
 
         private ScriptEngine defaultEngine;
@@ -128,7 +140,7 @@ namespace IronPythonTest.Cases {
                 testcase.Text, testcase.Path, SourceCodeKind.File);
 
             return GetResult(engine, source, testcase.Options.WorkingDirectory);
-        }        
+        }
 
         private int GetProcessTest(TestInfo testcase) {
             int exitCode = -1;
@@ -141,14 +153,20 @@ namespace IronPythonTest.Cases {
             };
 
             using (Process proc = new Process()) {
+#if NETCOREAPP2_0
+                proc.StartInfo.FileName = "cmd";
+                proc.StartInfo.Arguments = $"/c {Executable} {ReplaceVariables(testcase.Options.Arguments, argReplacements)}";
+#else
                 proc.StartInfo.FileName = Executable;
                 proc.StartInfo.Arguments = ReplaceVariables(testcase.Options.Arguments, argReplacements);
+#endif
                 if (!string.IsNullOrEmpty(IRONPYTHONPATH)) {
                     proc.StartInfo.EnvironmentVariables["IRONPYTHONPATH"] = IRONPYTHONPATH;
                 }
 
                 if (!string.IsNullOrEmpty(testcase.Options.WorkingDirectory)) {
-                    proc.StartInfo.WorkingDirectory = ReplaceVariables(testcase.Options.WorkingDirectory, wdReplacements);
+                    proc.StartInfo.WorkingDirectory =
+                        ReplaceVariables(testcase.Options.WorkingDirectory, wdReplacements);
                 }
                 proc.StartInfo.UseShellExecute = false;
                 proc.Start();

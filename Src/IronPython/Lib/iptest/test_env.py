@@ -24,7 +24,7 @@ is_ironpython =  is_cli
 is_cpython    =  not is_ironpython
 is_posix      =  sys.platform == 'posix'
 is_osx        =  sys.platform == 'darwin'
-is_netstandard = False
+is_netcoreapp = False
 is_mono = False
 
 if is_ironpython:
@@ -32,8 +32,8 @@ if is_ironpython:
     #environment later
     import System
     import clr
-    is_netstandard = clr.IsNetStandard
-    if is_netstandard:
+    is_netcoreapp = clr.IsNetCoreApp
+    if is_netcoreapp:
         clr.AddReference("Microsoft.Scripting")
         is_posix = System.FakeEnvironment.OSVersion.Platform == System.PlatformID.Unix
     else:

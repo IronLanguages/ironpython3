@@ -51,11 +51,6 @@ namespace Microsoft.Scripting.Generation {
             }
         }
 
-#if WIN8
-        public override IEnumerable<CustomAttributeData> CustomAttributes {
-            get { return new CustomAttributeData[0]; }
-        }
-#else
         public override object[] GetCustomAttributes(bool inherit) {
             return ArrayUtils.EmptyObjects;
         }
@@ -63,6 +58,5 @@ namespace Microsoft.Scripting.Generation {
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) {
             return ArrayUtils.EmptyObjects;
         }
-#endif
     }
 }

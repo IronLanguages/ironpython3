@@ -24,10 +24,17 @@ using System.Dynamic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Security;
+
+#if FEATURE_REMOTING
 using System.Security.Policy;
+#endif
+
 using System.Text;
 using System.Threading;
+
+#if FEATURE_WPF
 using System.Windows.Markup;
+#endif
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
@@ -42,7 +49,9 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
+#if FEATURE_WPF
 using DependencyObject = System.Windows.DependencyObject;
+#endif
 
 [assembly: ExtensionType(typeof(IronPythonTest.IFooable), typeof(IronPythonTest.FooableExtensions))]
 namespace IronPythonTest {
@@ -80,6 +89,7 @@ namespace IronPythonTest {
     public delegate int RefIntDelegate(ref int arg);
     public delegate T GenericDelegate<T, U, V>(U arg1, V arg2);
 
+#if FEATURE_WPF
     [ContentProperty("Content")]
     public class XamlTestObject : DependencyObject {
         public event IntIntDelegate Event;
@@ -123,6 +133,7 @@ namespace IronPythonTest {
             set;
         }
     }
+#endif
 
     public class ClsPart {
         public int Field;
@@ -170,7 +181,10 @@ namespace IronPythonTest {
         }
     }
 
-    public class EngineTest : MarshalByRefObject
+    public class EngineTest
+#if FEATURE_REMOTING
+        : MarshalByRefObject
+#endif
     {
         private readonly ScriptEngine _pe;
         private readonly ScriptRuntime _env;
@@ -212,6 +226,7 @@ namespace IronPythonTest {
             return null;
         }
 
+#if FEATURE_REMOTING
         public void ScenarioHostingHelpers() {
             AppDomain remote = AppDomain.CreateDomain("foo");
             Dictionary<string, object> options = new Dictionary<string,object>();
@@ -316,6 +331,7 @@ namespace IronPythonTest {
             } catch (ImportException) {
             }
         }
+#endif
 
         public class ScopeDynamicObject : DynamicObject {
             internal readonly Dictionary<string, object> _members = new Dictionary<string, object>();
@@ -760,7 +776,6 @@ class K(object):
         private void TestTarget(object sender, EventArgs args) {
         }
 
-#if !SILVERLIGHT
         public void ScenarioDocumentation() {
             ScriptScope scope = _pe.CreateScope();
             ScriptSource src = _pe.CreateScriptSourceFromString(@"
@@ -979,7 +994,6 @@ i = int
 
             doc.GetMembers(scope.GetVariable("enc"));
         }
-#endif
 
         private void ContainsMemberName(ICollection<MemberDoc> members, string name, MemberKind kind) {
             foreach (var member in members) {
@@ -1413,7 +1427,7 @@ range = range
 
             // get on .NET member should fallback
 
-            if (!ClrModule.IsMono) {
+            if (!ClrModule.IsMono && !ClrModule.IsNetCoreApp) {
                 // property
                 site = CallSite<Func<CallSite, object, object>>.Create(new MyGetMemberBinder("AllowDrop"));
                 AreEqual(site.Target(site, (object)scope.GetVariable("controlinst")), "FallbackGetMember");
@@ -2212,9 +2226,8 @@ instOC = TestOC()
             AreEqual(1, _pe.CreateScriptSourceFromString("a").Execute<int>(scope));
             AreEqual(-1, _pe.CreateScriptSourceFromString("b").Execute<int>(scope));
         }
-#if !SILVERLIGHT
-        // AddToPath
 
+        // AddToPath
         public void ScenarioAddToPath() { // runs first to avoid path-order issues            
             //pe.InitializeModules(ipc_path, ipc_path + "\\ipy.exe", pe.VersionString);
             string tempFile1 = Path.GetTempFileName();
@@ -2239,8 +2252,8 @@ instOC = TestOC()
         }
 
         // Options.DebugMode
-#endif
 
+#if FEATURE_REMOTING
         public void ScenarioPartialTrust() {
             // basic check of running a host in partial trust
             
@@ -2354,6 +2367,7 @@ if id(a) == id(b):
                     throw new Exception("Debugging is enabled even though Options.DebugMode is not specified");
             }
         }
+#endif
 
         // Compile and Run
         public void ScenarioCompileAndRun() {

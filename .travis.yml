@@ -16,7 +16,9 @@ mono:
 sudo: required
 dist: trusty
 
-dotnet: 1.0.3
+osx_image: xcode9.1
+
+dotnet: 2.0.0
 
 script:
   - dotnet restore IronPython.sln --packages ./packages

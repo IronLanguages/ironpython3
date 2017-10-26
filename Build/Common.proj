@@ -71,7 +71,7 @@
   </PropertyGroup>
 
   <!-- References -->
-  <Import Project="$(BuildSysDir)\$(ReferencedPlatform).props" />
+  <Import Project="$(BuildSysDir)\$(TargetFramework).props" Condition="'$(TargetFramework)' != ''" />
   
   <PropertyGroup>
     <BaseOutputPath>$(RootDir)\bin\$(Configuration)</BaseOutputPath>

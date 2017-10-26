@@ -1806,7 +1806,6 @@ namespace IronPython.Runtime
             if (ironPythonModules != null) {
                 LoadBuiltins(builtinTable, ironPythonModules, false);
 
-#if !WIN8
                 if (Environment.OSVersion.Platform == PlatformID.Unix) {
                     // we make our nt package show up as a posix package
                     // on unix platforms.  Because we build on top of the 
@@ -1817,7 +1816,6 @@ namespace IronPython.Runtime
                     builtinTable["posix"] = builtinTable["nt"];
                     builtinTable.Remove("nt");
                 }
-#endif
             }
 
             return builtinTable;

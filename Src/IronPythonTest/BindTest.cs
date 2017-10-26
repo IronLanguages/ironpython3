@@ -138,11 +138,9 @@ namespace IronPythonTest {
                 case "char": return 'a';
                 case "object": return new object();
                 case "null": return null;
-#if !SILVERLIGHT
                 case "com":
                     Type t = Type.GetTypeFromProgID("JScript");
                     return Activator.CreateInstance(t);
-#endif
             }
             throw new NotImplementedException("unknown type");
         }
@@ -383,7 +381,6 @@ namespace IronPythonTest {
             return dict;
         }
 
-#if !SILVERLIGHT
         public object ArrayList(System.Collections.ArrayList list) {
             return list;
         }
@@ -391,7 +388,6 @@ namespace IronPythonTest {
         public object HashtableTest(Hashtable dict) {
             return dict;
         }
-#endif
     }
 
     public class MixedDispatch {
@@ -550,11 +546,7 @@ namespace IronPythonTest {
         public double c;
         public decimal d;
         public string e;
-#if !SILVERLIGHT
         public Hashtable f;
-#else
-        public Dictionary<object, object> f;
-#endif
     }
 
     public class MissingValueTest {

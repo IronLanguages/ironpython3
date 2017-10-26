@@ -30,7 +30,7 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-#if FEATURE_PROCESS
+#if FEATURE_PIPES
 using System.IO.Pipes;
 #endif
 
@@ -767,7 +767,7 @@ namespace IronPython.Runtime {
             if (fs != null) {
 #if CLR4
                 fs.Flush(true);
-#elif FEATURE_NATIVE
+#elif FEATURE_PIPES
                 if (!NativeMethods.FlushFileBuffers(fs.SafeFileHandle)) {
                     throw new IOException();
                 }
@@ -1071,7 +1071,7 @@ namespace IronPython.Runtime {
             return res;
         }
 
-#if FEATURE_PROCESS
+#if FEATURE_PIPES
         internal static PythonFile[] CreatePipe(CodeContext/*!*/ context) {
             var pythonContext = context.LanguageContext;
             var encoding = pythonContext.DefaultEncoding;
@@ -1397,6 +1397,7 @@ namespace IronPython.Runtime {
                 handle = ((FileStream)stream).SafeFileHandle.DangerousGetHandle().ToPython();
                 return true;
             }
+#if FEATURE_PIPES
             if (stream is PipeStream) {
                 handle = ((PipeStream)stream).SafePipeHandle.DangerousGetHandle().ToPython();
                 return true;
@@ -1407,7 +1408,7 @@ namespace IronPython.Runtime {
                 return true;
             }
 #endif
-
+#endif
             // if all else fails try reflection
             var sfh = stream.GetType().GetField("_handle", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(stream);
             if (sfh is SafeFileHandle) {

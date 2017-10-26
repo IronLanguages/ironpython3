@@ -380,11 +380,7 @@ static int getLastErrorMsg(int nBuf, ref string zBuf){
     //                       (LPWSTR) &zTempWide,
     //                       0,
     //                       0);
-#if SQLITE_SILVERLIGHT || SQLITE_WINRT
-      zBuf = "Unknown error";
-#else
-      zBuf = Marshal.GetLastWin32Error().ToString();//new Win32Exception( Marshal.GetLastWin32Error() ).Message;
-#endif
+        zBuf = Marshal.GetLastWin32Error().ToString();//new Win32Exception( Marshal.GetLastWin32Error() ).Message;
 
     //if( dwLen > 0 ){
     //  /* allocate a buffer and convert to UTF8 */
@@ -443,14 +439,10 @@ static int getLastErrorMsg(int nBuf, ref string zBuf){
 //#define winLogError(a,b,c)     winLogErrorAtLine(a,b,c,__LINE__)
 static int winLogError( int a, string b, string c )
 {
-#if !SQLITE_WINRT && !SILVERLIGHT
   StackTrace st = new StackTrace( new StackFrame( true ) );
   StackFrame sf = st.GetFrame( 0 );
   
   return winLogErrorAtLine( a, b, c, sf.GetFileLineNumber() );
-#else
-  return winLogErrorAtLine( a, b, c, 0 );
-#endif
 }
 
 static int winLogErrorAtLine(
@@ -887,11 +879,7 @@ return FALSE;
       Debug.Assert( id != null );
       Debug.Assert( pFile.pShm == null );
 #if SQLITE_DEBUG
-#if WINDOWS_PHONE || SQLITE_SILVERLIGHT
-      OSTRACE( "CLOSE %d\n", pFile.fs.GetHashCode());
-#else
       OSTRACE( "CLOSE %d (%s)\n", pFile.fs.GetHashCode(), pFile.fs.Name );
-#endif
 #endif
       do
       {
@@ -1274,15 +1262,10 @@ return SQLITE_OK;
       //  res = pFile.fs.Lock( SHARED_FIRST + pFile.sharedLockByte, 0, 1, 0);
 #endif
       //}
-      if ( res == 0 )
-      {
-#if SQLITE_SILVERLIGHT || SQLITE_WINRT
-          pFile.lastErrno = 1;
-#else
-        pFile.lastErrno = (u32)Marshal.GetLastWin32Error();
-#endif
-      }
-      /* No need to log a failure to lock */
+        if (res == 0) {
+            pFile.lastErrno = (u32)Marshal.GetLastWin32Error();
+        }
+        /* No need to log a failure to lock */
       return res;
     }
 
@@ -1311,16 +1294,13 @@ return SQLITE_OK;
         Debugger.Break(); //    res = UnlockFile(pFile.h, SHARED_FIRST + pFilE.sharedLockByte, 0, 1, 0);
       }
 #endif
-      if ( res == 0 )
-      {
-#if SQLITE_SILVERLIGHT || SQLITE_WINRT
-          pFile.lastErrno = 1;
-#else
-        pFile.lastErrno = (u32)Marshal.GetLastWin32Error();
-#endif
-      winLogError(SQLITE_IOERR_UNLOCK, "unlockReadLock", pFile.zPath);
-      }
-      return res;
+        if (res == 0) {
+            pFile.lastErrno = (u32)Marshal.GetLastWin32Error();
+
+            winLogError(SQLITE_IOERR_UNLOCK, "unlockReadLock", pFile.zPath);
+        }
+
+        return res;
     }
 
     /*
@@ -1570,11 +1550,7 @@ error = 1;
       {
         rc = 1;
 #if SQLITE_DEBUG
-#if WINDOWS_PHONE || SQLITE_SILVERLIGHT
-        OSTRACE( "TEST WR-LOCK %d %d (local)\n", pFile.fs.GetHashCode(), rc );
-#else
         OSTRACE( "TEST WR-LOCK %s %d (local)\n", pFile.fs.Name, rc );
-#endif
 #endif
       }
       else
@@ -2524,8 +2500,6 @@ shmpage_out:
       //  zBuf[j] = 0;
 #if SQLITE_WINRT
       zBuf.Append( Path.Combine(ApplicationData.Current.LocalFolder.Path, SQLITE_TEMP_FILE_PREFIX + zRandom.ToString()) );
-#elif SQLITE_SILVERLIGHT
-      zBuf.Append(Path.Combine(sqlite3_temp_directory, SQLITE_TEMP_FILE_PREFIX + zRandom.ToString()));
 #else
       zBuf.Append( Path.GetTempPath() + SQLITE_TEMP_FILE_PREFIX + zRandom.ToString() );
 #endif
@@ -2931,8 +2905,6 @@ pFile.zDeleteOnClose = zConverted;
             if(!HelperMethods.FileExists(zFilename))
 #elif WINDOWS_PHONE
            if ( !System.IO.IsolatedStorage.IsolatedStorageFile.GetUserStoreForApplication().FileExists( zFilename ) )
-#elif SQLITE_SILVERLIGHT
-            if (!IsolatedStorageFile.GetUserStoreForApplication().FileExists(zFilename))
 #else
           if ( !File.Exists( zFilename ) )
 #endif
@@ -3006,11 +2978,8 @@ pFile.zDeleteOnClose = zConverted;
       if ( rc == SQLITE_OK )
         return rc;
 
-#if SQLITE_SILVERLIGHT || SQLITE_WINRT
-      error = (int)ERROR_NOT_SUPPORTED;
-#else
       error = Marshal.GetLastWin32Error();
-#endif
+
       return ( ( rc == INVALID_FILE_ATTRIBUTES )
         && ( error == ERROR_FILE_NOT_FOUND ) ) ? SQLITE_OK :
       winLogError(SQLITE_IOERR_DELETE, "winDelete", zFilename);
@@ -3736,9 +3705,7 @@ Debug.Assert(winSysInfo.dwAllocationGranularity > 0);
 #endif
         public virtual void LockFile( sqlite3_file pFile, long offset, long length )
         {
-#if !(SQLITE_SILVERLIGHT || WINDOWS_MOBILE || SQLITE_WINRT)
-        pFile.fs.Lock( offset, length );
-#endif
+            pFile.fs.Lock( offset, length );
         }
 
       public virtual int SharedLockFile( sqlite3_file pFile, long offset, long length )
@@ -3791,17 +3758,12 @@ Debug.Assert(winSysInfo.dwAllocationGranularity > 0);
   }
   internal static class HelperMethods
   {
-    public static bool IsRunningMediumTrust()
-    {
-      // placeholder method
-      // this is where it needs to check if it's running in an ASP.Net MediumTrust or lower environment
-        // in order to pick the appropriate locking strategy
-#if SQLITE_SILVERLIGHT || SQLITE_WINRT
-        return true;
-#else
-      return false;
-#endif
-    }
+      public static bool IsRunningMediumTrust() {
+          // placeholder method
+          // this is where it needs to check if it's running in an ASP.Net MediumTrust or lower environment
+          // in order to pick the appropriate locking strategy
+          return false;
+      }
 
 #if SQLITE_WINRT
     public static bool FileExists(string path)

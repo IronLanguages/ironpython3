@@ -17,7 +17,7 @@
 
 import os
 import sys
-from .test_env import is_cli, is_posix, is_netstandard, is_osx
+from .test_env import is_cli, is_posix, is_netcoreapp, is_osx
 
 class ProcessUtil(object):
     def has_csc(self):
@@ -62,7 +62,7 @@ class ProcessUtil(object):
     def run_tool(self, cmd, args=""):
         import clr
         import System
-        if is_netstandard:
+        if is_netcoreapp:
             clr.AddReference("System.Diagnostics.Process")
         process = System.Diagnostics.Process()
         process.StartInfo.FileName = cmd
@@ -83,7 +83,7 @@ class ProcessUtil(object):
     def get_clr_dir(self):
         import clr
         import System
-        if is_netstandard:
+        if is_netcoreapp:
             clr.AddReference("System.Runtime.Extensions")
             return System.IO.Path.Combine(System.Environment.GetEnvironmentVariable("windir"), r"Microsoft.NET\Framework\v4.0.30319")
         return System.IO.Path.GetDirectoryName(System.Type.GetType('System.Int32').Assembly.Location)

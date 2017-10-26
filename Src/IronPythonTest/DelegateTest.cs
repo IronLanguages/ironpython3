@@ -56,11 +56,7 @@ namespace IronPythonTest {
         }
 
         public static void InvokeUntypedDelegate(Delegate d, params object[] args) {
-#if SILVERLIGHT
-            IronPython.Runtime.Operations.PythonCalls.Call(d, args);
-#else
             d.DynamicInvoke(args);
-#endif
         }
 
         public static void FireStatic(object sender, EventArgs e) {

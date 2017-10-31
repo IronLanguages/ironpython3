@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$(ProjectDir)..\..\Build\Common.proj" />
   <PropertyGroup>
-    <TargetFrameworks Condition="'$(TargetFrameworks)' == ''">net45</TargetFrameworks>
+    <TargetFrameworks>net45</TargetFrameworks>
     <PlatformTarget>anycpu</PlatformTarget>
     <ProjectGuid>{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}</ProjectGuid>
     <OutputType>Exe</OutputType>
@@ -10,14 +10,17 @@
     <AssemblyName>ipyc</AssemblyName>
     <StartupObject>IronPythonCompiler.Program</StartupObject>
     <BaseAddress>885063680</BaseAddress>
-    <CodeAnalysisRuleSet>$(AssemblyName).ruleset</CodeAnalysisRuleSet>
     <DocumentationFile>$(OutputPath)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\IronPython\IronPython.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="IKVM.Reflection">
+    <StageItem Include="$(TargetDir)\IKVM.Reflection.dll" />
+    <StageItem Include="$(RootDIr)\Util\References\IKVM\IKVM.Reflection.License.txt"/>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="IKVM.Reflection" CopyLocal="true">
       <HintPath>..\..\Util\References\IKVM\IKVM.Reflection.dll</HintPath>
     </Reference>
     <Reference Include="System.Windows.Forms" />

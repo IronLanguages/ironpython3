@@ -18,7 +18,7 @@ How to re-define a property in Python.
 
 import unittest
 
-from iptest import IronPythonTestCase, is_netstandard, is_mono, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_mono, run_test, skipUnlessIronPython
 
 @skipUnlessIronPython()
 class PropertyOverrideTest(IronPythonTestCase):
@@ -83,10 +83,7 @@ class PropertyOverrideTest(IronPythonTestCase):
         x = C()
         p = IProperty11.StrProperty
         p.__set__(x, 'abc')     # no-op equivalent?
-        if is_netstandard: # TODO: revert this once System.SystemException is added to netstandard (https://github.com/IronLanguages/main/issues/1399)
-            self.assertRaises(Exception, lambda: p.SetValue(x, 'def'))  # ?
-        else:
-            self.assertRaises(SystemError, lambda: p.SetValue(x, 'def'))  # ?
+        self.assertRaises(SystemError, lambda: p.SetValue(x, 'def'))  # ?
         self.assertRaises(AttributeError, lambda: x.field)  # make sure x.field not set yet
         
         x.field = 'python'

@@ -19,7 +19,7 @@ import os
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netstandard, is_mono, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_mono, run_test, skipUnlessIronPython
 
 if is_cli:
     import clr
@@ -27,8 +27,8 @@ else:
     class clr(object):
         IsDebug=False
 
-@unittest.skipIf(is_mono, 'mono doe not add a debuggable attribute')
-@unittest.skipIf(is_netstandard, 'no assembly saving in netstandard')
+@unittest.skipIf(is_mono, 'mono does not add a debuggable attribute')
+@unittest.skipIf(is_netcoreapp, 'no assembly saving')
 @skipUnlessIronPython()
 @unittest.skipUnless(clr.IsDebug, 'Need debug mode assemblies')
 class PEVerifyTest(IronPythonTestCase):

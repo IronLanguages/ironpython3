@@ -18,13 +18,11 @@ Operations on property.
 #------------------------------------------------------------------------------
 import unittest
 
-from iptest import IronPythonTestCase, is_netstandard, run_test
+from iptest import IronPythonTestCase, run_test
 
 # from Merlin.Testing import *
 # from Merlin.Testing.Property import *  #Merlin 315120 - please do not remove/modify this line
 # from Merlin.Testing.TypeSample import *
-
-if is_netstandard: SystemError = Exception # TODO: revert this once System.SystemException is added to netstandard (https://github.com/IronLanguages/main/issues/1399)
 
 class PropertyTest(IronPythonTestCase):
     def setUp(self):

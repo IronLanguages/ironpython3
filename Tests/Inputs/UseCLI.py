@@ -14,11 +14,20 @@
 #####################################################################################
 
 import clr
-clr.AddReference('System.Windows.Forms')
-from System.Windows.Forms import Form, Control
+import os
+import sys
 
-from iptest.assert_util import *
-load_iron_python_test()
+from iptest import IronPythonTestCase, is_netcoreapp
 
+ip_test = os.path.join(sys.prefix, 'IronPythonTest.dll')
+if not is_netcoreapp:
+    clr.AddReference("System.Core")
+    clr.AddReference('System.Windows.Forms')
+    from System.Windows.Forms import Form, Control
+
+clr.AddReference("Microsoft.Scripting")
+clr.AddReference("Microsoft.Dynamic")
+clr.AddReference("IronPython")
+clr.AddReferenceToFileAndPath(ip_test)
 
 from IronPythonTest import NestedClass

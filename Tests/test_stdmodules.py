@@ -23,7 +23,7 @@ import os
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_netstandard, is_cpython, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cpython, is_posix, run_test, skipUnlessIronPython
 
 class StdModulesTest(IronPythonTestCase):
 
@@ -175,7 +175,6 @@ class StdModulesTest(IronPythonTestCase):
                     (sys.executable))
         self.assertEqual(ec, 0)
 
-    @unittest.skipIf(is_netstandard, "figure out why this doesn't work")
     @skipUnlessIronPython()
     def test_cp13401(self):
         import System
@@ -228,7 +227,7 @@ class StdModulesTest(IronPythonTestCase):
         self.assertEqual(loc, (None,None))
 
         self.assertTrue(locale.setlocale(locale.LC_ALL, '') != None)
-        if not (is_netstandard and is_posix): # TODO: figure this out
+        if not is_posix: # TODO: figure this out
             self.assertTrue(locale.getlocale() != None)
 
     def test_cp17819(self):
@@ -256,7 +255,6 @@ class StdModulesTest(IronPythonTestCase):
                 os.listdir(os.getcwd()))
         self.assertRaises(WindowsError, os.listdir, "")
 
-    @unittest.skipIf(is_netstandard, 'netstandard missing FEATURE_SORTKEY')
     def test_cp34188(self):
         import locale
         locale.setlocale(locale.LC_COLLATE,"de_CH")

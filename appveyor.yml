@@ -14,13 +14,6 @@
 # you can use {branch} name in version format too
 # version: 1.0.{build}-{branch}
 
-# branches to build
-#branches:
-  # whitelist
-  # Setting this prevents PRs from being auto-built
-  #only:
-   # - master
-
 # Do not build on tags (GitHub and BitBucket)
 skip_tags: true
 
@@ -54,7 +47,7 @@ nuget:
 configuration: Release
 
 install:
-- ps: (New-Object Net.WebClient).DownloadFile('https://dist.nuget.org/win-x86-commandline/v4.3.0/nuget.exe', 'C:\Tools\NuGet\NuGet.exe')
+  - ps: (New-Object Net.WebClient).DownloadFile('https://dist.nuget.org/win-x86-commandline/v4.3.0/nuget.exe', 'C:\Tools\NuGet\NuGet.exe')
 
 # scripts to run before build
 before_build:
@@ -67,33 +60,34 @@ before_package:
 
 # scripts to run after build
 after_build:
+  - make.cmd package-release
 
 # to run your custom scripts instead of automatic MSBuild
 build_script:
-  - .\make.cmd
-
-# to disable automatic builds
-#build: off
+  - make.cmd
 
 # to run your custom scripts instead of automatic tests
 test_script:
-  - .\make.cmd ngen
-  - .\make.cmd test-all
+  - make.cmd ngen
+  - make.cmd test-all
 
 #---------------------------------#
 #      artifacts configuration    #
 #---------------------------------#
 
-#artifacts:
+artifacts:
+  - path: Package/Release/Packages/**/*.zip
+    name: Zip Package
+    type: Zip
 
-#  # pushing a single file
-#  - path: test.zip
+  - path: Package/Release/Packages/**/*.nupkg
+    name: NuGet Package
+    type: NuGetPackage
 
-#  # pushing entire folder as a zip archive
-#  - path: logs
+  - path: build-*.binlog
+    name: Binary Build Log
+    type: File
 
-#  # pushing all *.nupkg files in build directory recursively
-#  - path: '**\*.nupkg'
 
 #---------------------------------#
 #     deployment configuration    #

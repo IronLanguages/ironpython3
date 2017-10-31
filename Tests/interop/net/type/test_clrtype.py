@@ -43,7 +43,7 @@ import os
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_netstandard, is_posix, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
 
 if is_posix:
     import posix as _os
@@ -203,8 +203,7 @@ class ClrTypeTest(IronPythonTestCase):
         self.assertTrue(hasattr(type, "__clrtype__"))
         
         #Make sure the documentation is useful
-        if not is_netstandard: # TODO: figure out why this doesn't work
-            self.assertTrue("Gets the .NET type which is" in type.__clrtype__.__doc__, type.__clrtype__.__doc__)
+        self.assertTrue("Gets the .NET type which is" in type.__clrtype__.__doc__, type.__clrtype__.__doc__)
         
         self.assertEqual(type.__clrtype__(type),  type)
         self.assertEqual(type.__clrtype__(float), float)
@@ -271,7 +270,8 @@ class ClrTypeTest(IronPythonTestCase):
         global called
         import clr
         import System
-        if is_netstandard:
+        if is_netcoreapp:
+            clr.AddReference("System.Collections")
             clr.AddReference("System.Data.Common")
         else:
             clr.AddReference("System.Data")
@@ -284,6 +284,7 @@ class ClrTypeTest(IronPythonTestCase):
                     System.Int64,
                     System.Double,
                     System.Data.CommandType,
+                    System.Data.Common.DataAdapter,
                     System.Boolean,
                     System.Char,
                     System.Decimal,
@@ -293,9 +294,6 @@ class ClrTypeTest(IronPythonTestCase):
                     System.Collections.BitArray,
                     System.Collections.Generic.List[System.Char],
                     ]
-
-        if not is_netstandard: # no System.Data.Common.DataAdapter in netstandard
-            types.append(System.Data.Common.DataAdapter)
 
         for x in types:
             called = False
@@ -399,10 +397,9 @@ class ClrTypeTest(IronPythonTestCase):
         clr.AddReference("Microsoft.Scripting")
         from Microsoft.Scripting.Generation import Snippets
         
-        if is_netstandard:
-            clr.AddReference("System.Xml.XmlSerializer")
-        else:
-            clr.AddReference("System.Xml")
+        if is_netcoreapp:
+            clr.AddReference("System.Private.Xml")
+        clr.AddReference("System.Xml")
         from System.Xml.Serialization import XmlRootAttribute
         
         xmlroot_clrtype = clr.GetClrType(XmlRootAttribute)

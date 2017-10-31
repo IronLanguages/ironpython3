@@ -15,7 +15,7 @@
 # Word Interop tests for IronPython
 
 from iptest.assert_util import skiptest
-skiptest("win32", "silverlight", "cli64", "posix")
+skiptest("win32", "cli64", "posix")
 from iptest.cominterop_util import *
 from iptest.file_util import file_exists, delete_files
 import nt

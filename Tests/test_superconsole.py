@@ -19,7 +19,7 @@ import sys
 import time
 import unittest
 
-from iptest import IronPythonTestCase, is_netstandard, run_test, retryOnFailure, skipUnlessIronPython
+from iptest import IronPythonTestCase, run_test, retryOnFailure, skipUnlessIronPython
 
 def getTestOutput():
     '''
@@ -56,9 +56,6 @@ class SuperConsoleTest(IronPythonTestCase):
         super(SuperConsoleTest, self).setUp()
         
         import clr
-        if is_netstandard:
-            clr.AddReference("System.Diagnostics.Process")
-            clr.AddReference("System.IO.FileSystem")
 
         #if this is a debug build and the assemblies are being saved...peverify is run.
         #for the test to pass, Maui assemblies must be in the AssembliesDir

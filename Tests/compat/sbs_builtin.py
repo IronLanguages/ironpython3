@@ -53,6 +53,12 @@ class test_builtin(object):
     def test_xrange(self):
         ''' test xrange with corner cases'''
         import sys
+        import os
+
+        if os.name == 'posix':
+            print 'Skipping the xrange test on posix https://github.com/IronLanguages/main/issues/1607'
+            return
+
         maxint = sys.maxsize
         numbers = [1, 2, maxint/2, maxint-1, maxint, maxint+1, maxint+2]
         choices = [0]

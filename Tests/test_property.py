@@ -17,7 +17,7 @@ import os
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netstandard, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, run_test, skipUnlessIronPython
 
 class PropertyTest(IronPythonTestCase):
     def setUp(self):
@@ -27,9 +27,6 @@ class PropertyTest(IronPythonTestCase):
         self.array_list_options = []
         if is_cli:
             self.array_list_options.append(System.Collections.Generic.List[int])
-            if is_netstandard:
-                import clr
-                clr.AddReference("System.Collections.NonGeneric")
             self.array_list_options.append(System.Collections.ArrayList)
 
     def test_stdin(self):

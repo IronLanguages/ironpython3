@@ -52,17 +52,13 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
 
-  <!-- Normally BuildFlavour and ReferencedPlatform are set by the build system,
+  <!-- Normally BuildFlavour is set by the build system,
        but they are not when building in Visual Studio (because Build.proj is not
        used). Fill then in here based on the selected configuration. -->
   <PropertyGroup Condition=" '$(BuildFlavour)' == '' ">
     <BuildFlavour>Debug</BuildFlavour>
-    <BuildFlavour Condition="'$(Configuration)' == 'FxCop'">Release</BuildFlavour>
     <BuildFlavour Condition="'$(Configuration)' == 'Release'">Release</BuildFlavour>
-  </PropertyGroup>
 
-  <PropertyGroup Condition="'$(ReferencedPlatform)' == ''">
-    <ReferencedPlatform>net45</ReferencedPlatform>
   </PropertyGroup>
 
   <PropertyGroup>

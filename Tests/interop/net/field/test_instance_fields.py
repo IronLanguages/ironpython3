@@ -264,9 +264,9 @@ class InstanceFieldsTest(IronPythonTestCase):
             def f2(): t.InstanceCharField.__set__(v, "abc")
             def f3(): t.InstanceEnumField.__set__(v, EnumInt32.B)
 
-            self.assertRaisesRegex(TypeError, "expected Int16, got str",  f1)
-            self.assertRaisesRegex(TypeError, "expected string of length 1 when converting to char, got 'abc'", f2)
-            self.assertRaisesRegex(TypeError, "expected EnumInt64, got EnumInt32",  f3)
+            self.assertRaisesRegexp(TypeError, "expected Int16, got str",  f1)
+            self.assertRaisesRegexp(TypeError, "expected string of length 1 when converting to char, got 'abc'", f2)
+            self.assertRaisesRegexp(TypeError, "expected EnumInt64, got EnumInt32",  f3)
 
     def _test_set_by_descriptor(self, o, vf, t):
         import clr
@@ -345,7 +345,7 @@ class InstanceFieldsTest(IronPythonTestCase):
         
         funcs = [ eval("f%s" % i) for i in range(1, 25) ]
         for f in funcs:
-            self.assertRaisesRegex(AttributeError, "cannot delete attribute", f)  
+            self.assertRaisesRegexp(AttributeError, "cannot delete attribute", f)  
 
     def _test_delete_by_instance(self, current_type):
         o = current_type()
@@ -377,7 +377,7 @@ class InstanceFieldsTest(IronPythonTestCase):
         
         funcs = [ eval("f%s" % i) for i in range(1, 25) ]
         for f in funcs:
-            self.assertRaisesRegex(AttributeError, "cannot delete attribute", f) 
+            self.assertRaisesRegexp(AttributeError, "cannot delete attribute", f) 
 
     def _test_delete_by_descriptor(self, current_type):
         for x in [
@@ -407,7 +407,7 @@ class InstanceFieldsTest(IronPythonTestCase):
             'SimpleInterface',
         ]:
             for o in [None, current_type, current_type()]:
-                self.assertRaisesRegex(AttributeError, "cannot delete attribute", lambda: current_type.__dict__['Instance%sField' % x].__delete__(o))
+                self.assertRaisesRegexp(AttributeError, "cannot delete attribute", lambda: current_type.__dict__['Instance%sField' % x].__delete__(o))
 
     def test_types(self):
         import clr

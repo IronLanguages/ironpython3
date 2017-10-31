@@ -1,14 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$(ProjectDir)..\..\Build\Common.proj" />
   <PropertyGroup>
-    <TargetFrameworks Condition="'$(TargetFrameworks)' == ''">net45</TargetFrameworks>
+    <TargetFrameworks>net45</TargetFrameworks>
     <PlatformTarget>x86</PlatformTarget>
+    <Prefer32Bit>true</Prefer32Bit>
     <ProjectGuid>{81DA19C7-4FEC-47E7-981B-D9310D549F95}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>IronPythonWindow</RootNamespace>
-    <AssemblyName>ipyw</AssemblyName>
-    <ApplicationIcon>ipy.ico</ApplicationIcon>
+    <AssemblyName>ipyw32</AssemblyName>
+    <ApplicationIcon>ipyw.ico</ApplicationIcon>
     <CodeAnalysisRuleSet>IronPythonWindow.ruleset</CodeAnalysisRuleSet>
     <DocumentationFile>$(OutputPath)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
   </PropertyGroup>
@@ -17,10 +18,6 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Windows.Forms" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\App.Debug.config" Link="App.Debug.config" />
-    <None Include="..\App.Release.config" Link="App.Release.config" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\AssemblyVersion.cs" Link="Properties\AssemblyVersion.cs" />
@@ -35,5 +32,5 @@
     <Compile Include="Properties\BuildInfo.Generated.cs" />
   </ItemGroup>
   <Import Project="$(AfterTargetFiles)" />
-  <Target Name="AfterBuildEnds" AfterTargets="AfterBuild" DependsOnTargets="$(AfterTargets)" />
+  <Target Name="AfterBuildEnd" AfterTargets="AfterBuild" DependsOnTargets="$(AfterTargets)" />
 </Project>

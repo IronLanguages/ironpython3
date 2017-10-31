@@ -15,10 +15,13 @@
 
 import unittest
 
-from iptest import is_netstandard, run_test, skipUnlessIronPython
+from iptest import is_netcoreapp, run_test, skipUnlessIronPython
 from time   import sleep
 from thread import start_new_thread
 
+if is_netcoreapp:
+    import clr
+    clr.AddReference("System.ComponentModel.TypeConverter")
 
 COUNT = 0
 TIMER_HELPER_FINISHED = False
@@ -36,7 +39,6 @@ def disposed_helper(a, b):
     global DISPOSED_CALLED
     DISPOSED_CALLED = True
 
-@unittest.skipIf(is_netstandard, 'no System.Timers in netstandard')
 @skipUnlessIronPython()
 class SystemTimersTest(unittest.TestCase):
 

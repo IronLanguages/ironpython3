@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <metadata xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <id>IronPython.StdLib</id>
+    <title>IronPython Standard Library</title>
+    <version>3.0.0</version>
+    <authors>IronPython Contributors,Python Contributors</authors>
+    <owners>IronPython Community</owners>
+    <projectUrl>http://ironpython.net</projectUrl>
+    <licenseUrl>http://docs.python.org/license.html</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>The Python Standard Library, for use with IronPython.</description>
+    <summary>The Python Standard Library, for use with IronPython.</summary>
+    <language>en-US</language>
+    <tags>ironpython python dynamic dlr standard library</tags>
+    <dependencies>
+      <dependency id="IronPython" version="3.0.0" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="Lib\**" target="content\Lib" />
+  </files>
+</package>

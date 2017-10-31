@@ -6,8 +6,8 @@
 obj/
 bin/
 /bin/
-/Stage
-/Package
+/Package/Release/
+/Package/Debug/
 
 # Temporary VS files
 *.suo

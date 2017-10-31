@@ -1,0 +1,144 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildThisFileDirectory)..\..\Build\Common.proj" />
+  <Import Project="$(BeforeTargetFiles)" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProductVersion>3.5</ProductVersion>
+    <ProjectGuid>{49c7ae2b-d9d1-4b32-9d11-474f1be86658}</ProjectGuid>
+    <SchemaVersion>2.0</SchemaVersion>
+    <OutputName>IronPython-$(DisplayVersion)</OutputName>
+    <OutputType>Package</OutputType>
+    <DefineSolutionProperties>false</DefineSolutionProperties>
+    <SuppressPdbOutput>true</SuppressPdbOutput>
+    <SuppressSpecificWarnings>5151</SuppressSpecificWarnings>
+    
+    <WixToolPath Condition=" '$(WixToolPath)' == '' ">$(MSBuildProjectDirectory)\..\..\Util\Wix\</WixToolPath>
+    <WixTargetsPath>$(WixToolPath)Wix.targets</WixTargetsPath>
+    <WixTasksPath>$(WixToolPath)wixtasks.dll</WixTasksPath>
+    
+    <BaseInputPaths Condition=" '$(BaseInputPaths)' == '' ">$(MSBuildProjectDirectory)\..\..\Stage\$(Configuration)\IronPython-$(DisplayVersion)</BaseInputPaths>
+    <BuildDir Condition=" '$(BuildDir)' == '' ">$(MSBuildProjectDirectory)\..\..\bin\$(Configuration)</BuildDir>
+        
+    <MsiVersion Condition=" '$(MsiVersion)' == '' ">$(MajorVersion).$(MinorVersion).$(MicroVersion).$(AssemblyFileRevision)</MsiVersion>
+    <SetMsiAssemblyNameFileVersion>True</SetMsiAssemblyNameFileVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <WixConstant Include="ProductVersion">
+      <Value>$(MsiVersion)</Value>
+    </WixConstant>
+    <WixConstant Include="ProductVersionText">
+      <Value>$(DisplayVersion)</Value>
+    </WixConstant>
+    <WixConstant Include="ReleaseSeries">
+      <Value>$(MajorVersion).$(MinorVersion)</Value>
+    </WixConstant>
+    
+    <WixConstant Include="BuildDir">
+      <Value>$(BuildDir)</Value>
+    </WixConstant>
+    
+    <!-- These are needed by HarvestDirectory, one for each directory. -->
+    <WixConstant Include="DocDir">
+      <Value>Doc</Value>
+    </WixConstant>
+    <WixConstant Include="StdLibDir">
+      <Value>Lib</Value>
+    </WixConstant>
+    <WixConstant Include="PlatformsNet40Dir">
+      <Value>Platforms\Net40</Value>
+    </WixConstant>
+    <WixConstant Include="PlatformsNet45Dir">
+      <Value>Platforms\Net45</Value>
+    </WixConstant>
+    <WixConstant Include="ToolsDir">
+      <Value>Tools</Value>
+    </WixConstant>
+    <WixConstant Include="TutorialDir">
+      <Value>Tutorial</Value>
+    </WixConstant>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <CommonWixConstants>@(WixConstant->'%(Identity)=%(Value)')</CommonWixConstants>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <OutputPath Condition=" '$(OutputPath)' == '' ">bin\$(Configuration)\</OutputPath>
+    <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
+    <DefineConstants>Debug;$(CommonWixConstants)</DefineConstants>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <OutputPath Condition=" '$(OutputPath)' == '' ">bin\$(Configuration)\</OutputPath>
+    <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
+    <DefineConstants>$(CommonWixConstants)</DefineConstants>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <Compile Include="Dlr.wxs" />
+    <Compile Include="IronPython.wxs" />
+    <Compile Include="Product.wxs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Version.wxi" />
+  </ItemGroup>
+  <ItemGroup>
+    <WixExtension Include="WixUIExtension">
+      <HintPath>$(WixExtDir)\WixUIExtension.dll</HintPath>
+      <Name>WixUIExtension</Name>
+    </WixExtension>
+    <WixExtension Include="WixNetFxExtension">
+      <HintPath>$(WixExtDir)\WixNetFxExtension.dll</HintPath>
+      <Name>WixNetFxExtension</Name>
+    </WixExtension>
+  </ItemGroup>
+  <ItemGroup>
+    <HarvestDirectory Include="$(BaseInputPaths)\Doc">
+      <DirectoryRefId>INSTALLDIR</DirectoryRefId>
+      <ComponentGroupName>IronPythonDocs</ComponentGroupName>
+      <PreprocessorVariable>var.DocDir</PreprocessorVariable>
+    </HarvestDirectory>
+
+    <HarvestDirectory Include="$(BaseInputPaths)\Lib">
+      <DirectoryRefId>INSTALLDIR</DirectoryRefId>
+      <ComponentGroupName>IronPythonStdLib</ComponentGroupName>
+      <PreprocessorVariable>var.StdLibDir</PreprocessorVariable>
+    </HarvestDirectory>
+    
+    <HarvestDirectory Include="$(BaseInputPaths)\Platforms\Net40">
+      <DirectoryRefId>IronPythonPlatformsDir</DirectoryRefId>
+      <ComponentGroupName>IronPythonPlatformsNet40</ComponentGroupName>
+      <PreprocessorVariable>var.PlatformsNet40Dir</PreprocessorVariable>
+    </HarvestDirectory>
+    
+    <HarvestDirectory Include="$(BaseInputPaths)\Platforms\Net45">
+      <DirectoryRefId>IronPythonPlatformsDir</DirectoryRefId>
+      <ComponentGroupName>IronPythonPlatformsNet45</ComponentGroupName>
+      <PreprocessorVariable>var.PlatformsNet45Dir</PreprocessorVariable>
+    </HarvestDirectory>
+
+    <HarvestDirectory Include="$(BaseInputPaths)\Tools">
+      <DirectoryRefId>INSTALLDIR</DirectoryRefId>
+      <ComponentGroupName>IronPythonTools</ComponentGroupName>
+      <PreprocessorVariable>var.ToolsDir</PreprocessorVariable>
+    </HarvestDirectory>
+
+    <HarvestDirectory Include="$(BaseInputPaths)\Tutorial">
+      <DirectoryRefId>INSTALLDIR</DirectoryRefId>
+      <ComponentGroupName>IronPythonTutorial</ComponentGroupName>
+      <PreprocessorVariable>var.TutorialDir</PreprocessorVariable>
+    </HarvestDirectory>
+  </ItemGroup>
+  <Import Project="$(WixTargetsPath)" />
+  <!--
+  To modify your build process, add your task inside one of the targets below and uncomment it.
+  Other similar extension points exist, see Wix.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

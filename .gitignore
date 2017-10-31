@@ -63,3 +63,5 @@ __pycache__/
 Src/StdLib/Lib/shelftemp*
 Src/StdLib/Lib/@test*
 Tests/clrusetest*
+build-*.binlog
+abc.txt

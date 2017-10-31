@@ -32,7 +32,7 @@ if is_cli:
     g3 = o.M3
     
     #for peverify runs
-    if clr.IsNetStandard:
+    if clr.IsNetCoreApp:
         clr.AddReference("System.IO.FileSystem")
     from System.IO import Path, File, Directory
     if File.Exists(Path.Combine(Path.GetTempPath(), "sbs_library.dll")):

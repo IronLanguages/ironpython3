@@ -59,8 +59,8 @@ before_build:
 before_package:
 
 # scripts to run after build
-after_build:
-  - make.cmd package-release
+#after_build:
+#  - make.cmd package-release
 
 # to run your custom scripts instead of automatic MSBuild
 build_script:

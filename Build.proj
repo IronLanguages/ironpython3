@@ -112,7 +112,7 @@
     <ItemGroup>
       <StdLibFiles Include="$(StageDir)\Lib\**\*.*" />
     </ItemGroup>
-    <Zip ZipLevel="9" Files="@(StdLibFiles)" ZipFileName="$(PackageDir)\IronPython.StdLib.$(PackageVersion).zip" WorkingDirectory="$(StageDir)"/>
+    <Zip ZipLevel="9" Files="@(StdLibFiles)" ZipFileName="$(PackageDir)\IronPython.StdLib.$(PackageVersion).zip" WorkingDirectory="$(StageDir)\Lib"/>
   </Target>
 
   <Target Name="_RemoveDocFiles" DependsOnTargets="_PlatformStage">

@@ -25,29 +25,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="Lib\**\*.*"
-             Exclude="$(ExcludedPackages)">
-       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <Content Include="$(StdLibPath)\**\*.*" Exclude="$(ExcludedPackages)" />
+
   </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+  <Import Project="$(BeforeTargetFiles)" />
 
-  <Import Project="$(MSBuildBinPath)\Microsoft.Common.targets" />
-
-  <Target Name="_CopyToOutput">
-    <Copy SourceFiles="@(Content)"
-          DestinationFiles="@(Content->'$(LibOutputDir)\%(RecursiveDir)%(Filename)%(Extension)')"
-          SkipUnchangedFiles="true"
-          UseHardlinksIfPossible="true" />
+  <Target Name="Stage">
+    <CopyStdLib SourceFiles="@(Content)" Destination="$(OutputPath)\Lib" BasePath="$(StdLibPath)" />
   </Target>
-  
-  <Target Name="Build" DependsOnTargets="_CopyToOutput" />
-  
-  <Target Name="Clean">
-    <RemoveDir Directories="$(LibOutputDir)" />
-  </Target>
-  
-  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
 
-  <Target Name="Stage" DependsOnTargets="Build" />
 </Project>
 

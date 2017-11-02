@@ -15,7 +15,7 @@
 
 # COM Interop tests for IronPython
 from iptest.assert_util import skiptest
-skiptest("win32", "silverlight", "cli64")
+skiptest("win32", "cli64")
 from iptest.cominterop_util import *
 from System import *
 from System.Runtime.InteropServices import COMException, DispatchWrapper, UnknownWrapper, CurrencyWrapper

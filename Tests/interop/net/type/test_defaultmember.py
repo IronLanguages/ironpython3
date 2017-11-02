@@ -18,7 +18,7 @@ Covers VB default indexer.
 
 import unittest
 
-from iptest import IronPythonTestCase, is_mono, is_netstandard, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_mono, is_netcoreapp, run_test, skipUnlessIronPython
 
 @unittest.skipIf(is_mono, 'https://github.com/IronLanguages/main/issues/1438')
 @skipUnlessIronPython()
@@ -110,10 +110,11 @@ class DefaultMemberTest(IronPythonTestCase):
         # try other types
         x = ClassWithDefaultMemberCtor(1)
 
-    @unittest.skipIf(is_netstandard, 'TODO')
     def test_cp_19510(self):
         """Test indexing on .NET classes with default members"""
         import clr
+        if is_netcoreapp:
+            clr.AddReference("System.Private.Xml")
         clr.AddReference("System.Xml")
         import System.Xml
         

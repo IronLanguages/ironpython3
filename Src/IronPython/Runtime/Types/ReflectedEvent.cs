@@ -181,7 +181,9 @@ namespace IronPython.Runtime.Types {
                     add = CompilerHelpers.TryGetCallableMethod(_instance.GetType(), add);
                 }
 
-                if (CompilerHelpers.IsVisible(add) || context.LanguageContext.DomainManager.Configuration.PrivateBinding) {
+                if (CompilerHelpers.IsVisible(add)
+                    || (add.IsProtected() /*todo: validate current context is in family*/ )
+                    || context.LanguageContext.DomainManager.Configuration.PrivateBinding) {
                     _event.Tracker.AddHandler(_instance, func, context.LanguageContext.DelegateCreator);
                 } else {
                     throw new TypeErrorException("Cannot add handler to a private event.");
@@ -205,10 +207,12 @@ namespace IronPython.Runtime.Types {
                 }
 
                 MethodInfo remove = _event.Tracker.GetCallableRemoveMethod();
-                if (CompilerHelpers.IsVisible(remove) || context.LanguageContext.DomainManager.Configuration.PrivateBinding) {
+                if (CompilerHelpers.IsVisible(remove)
+                    || (remove.IsProtected() /*todo: validate current context is in family*/ )
+                    || context.LanguageContext.DomainManager.Configuration.PrivateBinding) {
                     _event.Tracker.RemoveHandler(_instance, func, context.LanguageContext.EqualityComparer);
                 } else {
-                    throw new TypeErrorException("Cannot add handler to a private event.");
+                    throw new TypeErrorException("Cannot remove handler from a private event.");
                 }
                 return this;
             }

@@ -129,7 +129,7 @@ def retryOnFailure(f, times=MAX_FAILURE_RETRY, *args, **kwargs):
     return t
 
 def _find_root():
-    test_dirs = ['Src', 'Build', 'Tests', 'Util']
+    test_dirs = ['Src', 'Build', 'Package', 'Tests', 'Util']
     root = os.getcwd()
     test = all([os.path.exists(os.path.join(root, x)) for x in test_dirs])
     while not test:
@@ -146,10 +146,8 @@ def _add_reference_to_dlr_core():
     if is_cli:
         clr.AddReference("System.Core")
 
-if is_netcoreapp:
-    _iron_python_test_dll = os.path.join(sys.prefix, 'IronPythonTest.dll')
-else:
-    _iron_python_test_dll = os.path.join(sys.prefix, 'IronPythonTest.exe')
+_iron_python_test_dll = os.path.join(sys.prefix, 'IronPythonTest.dll')
+
 def load_ironpython_test(*args):
     _add_reference_to_dlr_core()
     clr.AddReference("Microsoft.Scripting")

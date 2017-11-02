@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?> 
+<Include Id="VersionNumberInclude"> 
+  <?define ProductShortName = "IronPython" ?>
+  <?define Manufacturer = "IronPython Team" ?>
+</Include> 

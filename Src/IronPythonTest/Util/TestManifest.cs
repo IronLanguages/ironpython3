@@ -105,5 +105,11 @@ namespace IronPythonTest.Util {
                 return this.manifest.GetValue(this.testName, "WorkingDirectory", string.Empty);
             }
         }
+
+        public bool Redirect {
+            get {
+                return this.manifest.GetBool(this.testName, "Redirect", false);
+            }
+        }
     }
 }

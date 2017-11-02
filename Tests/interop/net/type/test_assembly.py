@@ -15,9 +15,9 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_mono, is_netstandard, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_mono, is_netcoreapp, run_test, skipUnlessIronPython
 
-@unittest.skipIf(is_netstandard, 'TODO')
+@unittest.skipIf(is_netcoreapp, 'TODO')
 @skipUnlessIronPython()
 class AssemlbyTest(IronPythonTestCase):
     

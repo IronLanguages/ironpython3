@@ -52,18 +52,3 @@ Since the main development is on Windows, Mono bugs may inadvertantly be introdu
 
 ## Supported Platforms
 IronPython 3 targets .NET 4.5 and .NET Core 2.0.
-
-## Custom DLR
-If you need to make changes to the DLR, you can point IronPython at your local DLR using
-`set-dlr-source`:
-
-    set-dlr-source ..\dlr
-
-(Windows)
-
-    ./set-dlr-source.sh ../dlr
-
-(Unix)
-
-After making DLR changes, commit them, update the version, and release an updated NuGet.
-Then, update the `DlrVersion` property in `CurrentVersion.props`.

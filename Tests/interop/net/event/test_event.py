@@ -18,7 +18,7 @@ Operations on event type.
 
 import unittest
 
-from iptest import IronPythonTestCase, is_netstandard, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, run_test, skipUnlessIronPython
 
 @skipUnlessIronPython()
 class EventTest(IronPythonTestCase):
@@ -122,10 +122,7 @@ class EventTest(IronPythonTestCase):
                     x.OnAction += negate
                     
                     Flag.Set(0)
-                    if is_netstandard: # no System.ApplicationException in netstandard
-                        self.assertRaises(Exception, lambda: x.CallInside(14))
-                    else:
-                        self.assertRaises(StandardError, lambda: x.CallInside(14))
+                    self.assertRaises(StandardError, lambda: x.CallInside(14))
                     Flag.Check(1)  # this also verified double was added/thus called first
                     
                     

@@ -13,7 +13,7 @@
 #
 #####################################################################################
 
-import exceptions
+#import exceptions
 import sys
 import unittest
 
@@ -67,7 +67,7 @@ class Python25Test(unittest.TestCase):
                         p = p + 1
         try:
             k = foo()
-            while(k.next()):pass
+            while(next(k)):pass
         except StopIteration: self.assertEqual(globals()["m"],427056988)
         else:self.fail("Expected StopIteration but found None")
 
@@ -179,7 +179,7 @@ class Python25Test(unittest.TestCase):
         try:
             with PropagateException() as PE:
                 del PE
-                print PE
+                print(PE)
         except NameError:pass
         else: self.fail("Expected NameError but found None")
 
@@ -187,7 +187,7 @@ class Python25Test(unittest.TestCase):
             with PropagateException() as PE:
                 PE.var1 = 100
                 del PE
-                print PE
+                print(PE)
         except AttributeError:pass
         else: self.fail("Expected AttributeError but found None")
 
@@ -243,7 +243,7 @@ class Python25Test(unittest.TestCase):
                         if not is_cli: #https://github.com/IronLanguages/main/issues/844
                             self.assertEqual(sys.exc_info()[0], Myerr1)
                         else:
-                            self.assertEqual(sys.exc_info()[0], exceptions.ZeroDivisionError)
+                            self.assertEqual(sys.exc_info()[0], ZeroDivisionError)
                         globals()["gblvar"] += 6
                         class ClassInFinally:
                             def __enter__(self):
@@ -279,9 +279,9 @@ class Python25Test(unittest.TestCase):
 
 
     def test_thread_lock(self):
-        import thread
+        import _thread
 
-        temp_lock = thread.allocate_lock()
+        temp_lock = _thread.allocate_lock()
         self.assertTrue(hasattr(temp_lock, "__enter__"))
         self.assertTrue(hasattr(temp_lock, "__exit__"))
         self.assertTrue(not temp_lock.locked())
@@ -289,11 +289,11 @@ class Python25Test(unittest.TestCase):
             self.assertTrue(temp_lock.locked())
         self.assertTrue(not temp_lock.locked())
         
-        with thread.allocate_lock(): pass
+        with _thread.allocate_lock(): pass
 
 
-    def test_with_file(self):
-        with file('abc.txt', 'w'):
+    def test_with_open(self):
+        with open('abc.txt', 'w'):
             pass
 
     def test_try_catch_finally(self):
@@ -479,7 +479,7 @@ class Python25Test(unittest.TestCase):
                                                 k = TestUnifiedTry(a,b,c,d,e,f,g,h,i)
                                                 while(True):
                                                     try:
-                                                        k.next()
+                                                        next(k)
                                                     except MyErr4: setvar();break
                                                     except StopIteration: setvar();break
 
@@ -538,28 +538,28 @@ class Python25Test(unittest.TestCase):
             TestTargets(r)
         self.assertEqual(globals()["gblvar"],403)
     
-def test_yield_in_finally(self):
-    """test yield in finally"""
-    globals()["gblvar"] = 1
-    def setvar() : globals()["gblvar"] += 1
-    def test_yield_finally():
-        setvar()
-        try: setvar();1/0
-        except:setvar()
-        else: setvar()
-        finally:
-            setvar();yield 100
-            setvar();yield 100
+    def test_yield_in_finally(self):
+        """test yield in finally"""
+        globals()["gblvar"] = 1
+        def setvar() : globals()["gblvar"] += 1
+        def test_yield_finally():
             setvar()
-        setvar()
-    
-    try:
-        k = test_yield_finally()
-        while(1):
-            k.next()
-    except StopIteration: pass
-    
-    self.assertEqual(globals()["gblvar"],8)
+            try: setvar();1/0
+            except:setvar()
+            else: setvar()
+            finally:
+                setvar();yield 100
+                setvar();yield 100
+                setvar()
+            setvar()
+
+        try:
+            k = test_yield_finally()
+            while(1):
+                next(k)
+        except StopIteration: pass
+
+        self.assertEqual(globals()["gblvar"],8)
 
 
     def test_string_partition(self):
@@ -574,8 +574,8 @@ def test_yield_in_finally(self):
         self.assertEqual('\00\ff\67\56\d8\89\33\09\99\ee\20\00\56\78\45\77\e9'.partition('\00\56\78'), ('\00\ff\67\56\d8\89\33\09\99\ee\20','\00\56\78','\45\77\e9'))
         self.assertEqual('\00\ff\67\56\d8\89\33\09\99\ee\20\00\56\78\45\77\e9'.partition('\78\45\77\e9'), ('\00\ff\67\56\d8\89\33\09\99\ee\20\00\56','\78\45\77\e9',''))
         self.assertEqual('\ff\67\56\d8\89\33\09\99\ee\20\00\56\78\45\77\e9'.partition('\ff\67\56\d8\89\33\09\99'), ('','\ff\67\56\d8\89\33\09\99','\ee\20\00\56\78\45\77\e9'))
-        self.assertEqual(u'\ff\67\56\d8\89\33\09\99some random 8-bit text here \ee\20\00\56\78\45\77\e9'.partition('random'), (u'\ff\67\56\d8\89\33\09\99some ','random',' 8-bit text here \ee\20\00\56\78\45\77\e9'))
-        self.assertEqual(u'\ff\67\56\d8\89\33\09\99some random 8-bit text here \ee\20\00\56\78\45\77\e9'.partition(u'\33\09\99some r'), (u'\ff\67\56\d8\89','\33\09\99some r','andom 8-bit text here \ee\20\00\56\78\45\77\e9'))
+        self.assertEqual('\ff\67\56\d8\89\33\09\99some random 8-bit text here \ee\20\00\56\78\45\77\e9'.partition('random'), ('\ff\67\56\d8\89\33\09\99some ','random',' 8-bit text here \ee\20\00\56\78\45\77\e9'))
+        self.assertEqual('\ff\67\56\d8\89\33\09\99some random 8-bit text here \ee\20\00\56\78\45\77\e9'.partition('\33\09\99some r'), ('\ff\67\56\d8\89','\33\09\99some r','andom 8-bit text here \ee\20\00\56\78\45\77\e9'))
         self.assertRaises(ValueError,'sometextheretocauseanexeption'.partition,'')
         self.assertRaises(ValueError,''.partition,'')
         self.assertRaises(TypeError,'some\90text\ffhere\78to\88causeanexeption'.partition,None)
@@ -611,8 +611,8 @@ def test_yield_in_finally(self):
         self.assertEqual('\00\ff\67\56\d8\89\33\09\99\ee\20\00\56\78\00\56\78\45\77\e9'.rpartition('\00\56\78'), ('\00\ff\67\56\d8\89\33\09\99\ee\20\00\56\78','\00\56\78','\45\77\e9'))
         self.assertEqual('\00\ff\67\56\d8\89\33\09\99\ee\20\00\56\78\45\77\e9\78\45\77\e9'.rpartition('\78\45\77\e9'), ('\00\ff\67\56\d8\89\33\09\99\ee\20\00\56\78\45\77\e9','\78\45\77\e9',''))
         self.assertEqual('\ff\67\56\d8\89\33\09\99\ee\20\00\56\78\45\77\e9'.rpartition('\ff\67\56\d8\89\33\09\99'), ('','\ff\67\56\d8\89\33\09\99','\ee\20\00\56\78\45\77\e9'))
-        self.assertEqual(u'\ff\67\56\d8\89\33\09\99some random 8-bit text here \ee\20\00\56\78\45\77\e9'.rpartition('random'), (u'\ff\67\56\d8\89\33\09\99some ','random',' 8-bit text here \ee\20\00\56\78\45\77\e9'))
-        self.assertEqual(u'\ff\67\56\d8\89\33\09\99some random 8-bit text here \ee\20\00\56\78\45\77\e9'.rpartition(u'\33\09\99some r'), (u'\ff\67\56\d8\89','\33\09\99some r','andom 8-bit text here \ee\20\00\56\78\45\77\e9'))
+        self.assertEqual('\ff\67\56\d8\89\33\09\99some random 8-bit text here \ee\20\00\56\78\45\77\e9'.rpartition('random'), ('\ff\67\56\d8\89\33\09\99some ','random',' 8-bit text here \ee\20\00\56\78\45\77\e9'))
+        self.assertEqual('\ff\67\56\d8\89\33\09\99some random 8-bit text here \ee\20\00\56\78\45\77\e9'.rpartition('\33\09\99some r'), ('\ff\67\56\d8\89','\33\09\99some r','andom 8-bit text here \ee\20\00\56\78\45\77\e9'))
         self.assertRaises(ValueError,'sometextheretocauseanexeption'.rpartition,'')
         self.assertRaises(ValueError,''.rpartition,'')
         self.assertRaises(TypeError,'some\90text\ffhere\78to\88causeanexeption'.rpartition,None)
@@ -1029,7 +1029,7 @@ def test_yield_in_finally(self):
         self.assertEqual(any(mylist()),True)
 
         class raiser:
-            def __nonzero__(self):
+            def __bool__(self):
                 raise RuntimeError
 
         self.assertEqual(any([None,False,0,1,raiser()]),True) # True before the raiser()
@@ -1067,7 +1067,7 @@ def test_yield_in_finally(self):
         self.assertEqual(all(mylist()),False)
         
         class raiser:
-            def __nonzero__(self):
+            def __bool__(self):
                 raise RuntimeError
 
         self.assertEqual(all([None,False,0,1,raiser()]),False) # array With raiser() after false
@@ -1124,8 +1124,8 @@ def test_yield_in_finally(self):
         #apply Method on non callable class
         class B:pass
         try: max((B(),"hi"),key=len)
-        except AttributeError:pass
-        else: self.fail("Expected AttributeError, but found None")
+        except TypeError:pass
+        else: self.fail("Expected TypeError, but found None")
 
 
     def test_min_with_kwarg(self):
@@ -1175,8 +1175,8 @@ def test_yield_in_finally(self):
         #apply Method on non callable class
         class B:pass
         try: min((B(),"hi"),key=len)
-        except AttributeError:pass
-        else: self.fail("Expected AttributeError, but found None")
+        except TypeError:pass
+        else: self.fail("Expected TypeError, but found None")
 
     def test_missing(self):
         # dict base class should not have __missing__
@@ -1249,7 +1249,7 @@ with J():
     with J():
         yield 100
 ""","","exec")
-        except SyntaxError,e: pass
+        except SyntaxError as e: pass
 
 
     def test_importwarning(self):
@@ -1257,19 +1257,11 @@ with J():
         exc_list.append(ImportWarning())
         exc_list.append(ImportWarning("some message"))
 
-        import exceptions
-        exc_list.append(exceptions.ImportWarning())
-        exc_list.append(exceptions.ImportWarning("some message"))
-        
         for exc in exc_list:
             try:
                 raise exc
-            except exceptions.ImportWarning, e:
+            except ImportWarning as e:
                 pass
-
-    def test_overflowwarning(self):
-        self.assertRaises(AttributeError, lambda: exceptions.OverflowWarning)
-
 
     def test_cp5609(self):
         from os import remove

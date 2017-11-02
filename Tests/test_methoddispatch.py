@@ -16,7 +16,7 @@
 import os
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_mono, is_netstandard, is_posix, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
 
 @skipUnlessIronPython()
 class MethodDispatchTest(IronPythonTestCase):
@@ -146,7 +146,7 @@ class MethodDispatchTest(IronPythonTestCase):
 
     def test_system_drawing(self):
         import clr
-        if is_netstandard:
+        if is_netcoreapp:
             clr.AddReference("System.Drawing.Primitives")
         else:
             clr.AddReference("System.Drawing")
@@ -1109,7 +1109,7 @@ class MethodDispatchTest(IronPythonTestCase):
         self.assertEqual(type(BindTest.ReturnTest('char')), System.Char)
         self.assertEqual(type(BindTest.ReturnTest('null')), type(None))
         self.assertEqual(type(BindTest.ReturnTest('object')), object)
-        if not is_posix:
+        if not is_posix and not is_netcoreapp:
             self.assertTrue(repr(BindTest.ReturnTest("com")).startswith('<System.__ComObject'))
 
     def test_multicall_generator(self):
@@ -1404,7 +1404,8 @@ class MethodDispatchTest(IronPythonTestCase):
 
     def test_security_crypto(self):
         import System
-        if is_netstandard:
+        if is_netcoreapp:
+            import clr
             clr.AddReference("System.Security.Cryptography.Algorithms")
             self.assertTrue(issubclass(type(System.Security.Cryptography.MD5.Create()),
                     System.Security.Cryptography.MD5))
@@ -1423,7 +1424,7 @@ class MethodDispatchTest(IronPythonTestCase):
 
     def test_max_args(self):
         """verify the correct number of max args are reported, this may need to be updated if file ever takes more args"""
-        self.assertRaisesRegex(TypeError, '.*takes at most 4 arguments.*', file, 2, 3, 4, 5, 6, 7, 8, 9)
+        self.assertRaisesRegexp(TypeError, '.*takes at most 4 arguments.*', file, 2, 3, 4, 5, 6, 7, 8, 9)
 
 
     def test_enumerator_conversions(self):

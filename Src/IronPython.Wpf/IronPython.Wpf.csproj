@@ -1,16 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$(ProjectDir)..\..\Build\Common.proj" />
   <PropertyGroup>
-    <TargetFrameworks Condition="'$(TargetFrameworks)' == ''">net45</TargetFrameworks>
+    <TargetFrameworks>net45</TargetFrameworks>
     <PlatformTarget>anycpu</PlatformTarget>
     <ProjectGuid>{65E997B7-E99B-4C83-B29E-9951429BB293}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <OutputPath>$(OutputPath)\$(TargetFramework)\DLLs</OutputPath>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>IronPython.Wpf</RootNamespace>
     <AssemblyName>IronPython.Wpf</AssemblyName>
-    <DocumentationFile>$(OutputPath)\$(AssemblyName).xml</DocumentationFile>
+    <DocumentationFile>$(OutputPath)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
     <BaseAddress>885063680</BaseAddress>
     <StoreInDLLs>true</StoreInDLLs>
   </PropertyGroup>

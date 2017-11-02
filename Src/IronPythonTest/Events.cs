@@ -82,5 +82,20 @@ namespace IronPythonTest {
         public static void AddSetMarkerDelegateToStaticTest() {
             StaticTest += new EventTestDelegate(StaticSetMarker);
         }
+
+        public void FireProtectedTest() {
+            if (OnProtectedEvent != null) OnProtectedEvent(this, EventArgs.Empty);
+            if (ExplicitProtectedEvent != null) ExplicitProtectedEvent(this, EventArgs.Empty);
+        }
+
+        protected event EventHandler OnProtectedEvent;
+
+        private EventHandler ExplicitProtectedEvent;
+
+        public event EventHandler OnExplicitProtectedEvent {
+            add { ExplicitProtectedEvent += value; }
+            remove { ExplicitProtectedEvent -= value; }
+        }
+
     }
 }

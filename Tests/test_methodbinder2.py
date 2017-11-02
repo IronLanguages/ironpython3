@@ -19,7 +19,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netstandard, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, run_test, skipUnlessIronPython
 from iptest.type_util import array_int, array_byte, array_object, myint, mystr, types
 
 class PT_int_old:
@@ -337,7 +337,6 @@ class MethodBinder2Test(IronPythonTestCase):
             ]:
             self._try_arg(target, arg, mapping, funcTypeError, funcOverflowError)
 
-    @unittest.skipIf(is_netstandard, "figure out why this doesn't work")
     def test_arg_Enum(self):
         from IronPythonTest.BinderTest import COverloads_Enum, E1, E2
         target = COverloads_Enum()

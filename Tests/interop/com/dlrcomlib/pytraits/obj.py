@@ -18,7 +18,6 @@ of Python object.
 '''
 #------------------------------------------------------------------------------
 from iptest.assert_util import skiptest
-skiptest("silverlight")
 from iptest.cominterop_util import *
 
 #------------------------------------------------------------------------------

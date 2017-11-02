@@ -18,7 +18,7 @@ import re
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_posix, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
 
 if is_cli:
     import clr
@@ -48,6 +48,7 @@ class IronPythonVariableContext(object):
         Environment.SetEnvironmentVariable(self._variable, self._oldval)
 
 
+@unittest.skipIf(is_netcoreapp, "TODO: figure out")
 @unittest.skipIf(is_posix, 'Relies on batchfiles')
 @skipUnlessIronPython()
 class StdConsoleTest(IronPythonTestCase):

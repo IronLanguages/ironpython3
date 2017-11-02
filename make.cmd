@@ -1,6 +1,24 @@
 @echo off
 setlocal
-set PATH=%PATH%;%ProgramFiles(x86)%\MSBuild\14.0\Bin\;%WINDIR%\Microsoft.NET\Framework\v4.0.30319
+
+set _VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+if exist %_VSWHERE% (
+  for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -requires Microsoft.Component.MSBuild -property installationPath`) do (
+    set _VSINSTPATH=%%i
+  )
+)
+if not exist "%_VSINSTPATH%" (
+   echo Error: Visual Studio 2017 15.2 or later is required.
+   exit /b 1
+)
+
+if exist "%_VSINSTPATH%\MSBuild\15.0\Bin\MSBuild.exe" (
+  set "PATH=%PATH%;%_VSINSTPATH%\MSBuild\15.0\Bin\"
+)
+
+set FRAMEWORKS=net45
+
+set CONSOLERUNNER="..\..\..\packages\nunit.consolerunner\3.7.0\tools\nunit3-console.exe"
 
 :getopts
 if "%1"=="" (goto :default) else (goto :%1)
@@ -9,10 +27,18 @@ goto :exit
 :default
 goto :release
 
+:dotnet
+goto :dotnet-release
+
 :debug
 set _target=Build
 set _flavour=Debug
 goto :main
+
+:dotnet-debug
+set _target=Build
+set _flavour=Debug
+goto :dotnet-main
 
 :clean-debug
 set _target=Clean
@@ -28,6 +54,11 @@ goto :main
 set _target=Build
 set _flavour=Release
 goto :main
+
+:dotnet-release
+set _target=Build
+set _flavour=Release
+goto :dotnet-main
 
 :clean-release
 set _target=Clean
@@ -61,51 +92,67 @@ echo No target 'test'. Try 'test-smoke', 'test-ironpython', 'test-cpython', or '
 goto :exit
 
 :test-smoke
-pushd bin\Release
-net45\IronPythonTest.exe --labels=All --where:Category==StandardCPython --result:smoke-net45-release-result.xml
-popd
+for %%f in ("%FRAMEWORKS:,=" "%") do (
+  pushd bin\Release\%%f
+  %CONSOLERUNNER% --labels=All --where:"Category==StandardCPython" --result:smoke-%%f-release-result.xml IronPythonTest.dll
+  popd
+)
 goto :exit
 
 :test-smoke-debug
-pushd bin\Debug
-net45\IronPythonTest.exe --labels=All --where:Category==StandardCPython --result:smoke-net45-debug-result.xml
-popd
+for %%f in ("%FRAMEWORKS:,=" "%") do (
+  pushd bin\Debug\%%f
+  %CONSOLERUNNER% --labels=All --where:"Category==StandardCPython" --result:smoke-%%f-debug-result.xml IronPythonTest.dll
+  popd
+)
 goto :exit
 
 :test-ironpython
-pushd bin\Release
-net45\IronPythonTest.exe --labels=All --where:Category==IronPython --result:ironpython-net45-release-result.xml
-popd
+for %%f in ("%FRAMEWORKS:,=" "%") do (
+  pushd bin\Release\%%f
+  %CONSOLERUNNER% --labels=All --where:"Category==IronPython" --result:ironpython-%%f-release-result.xml IronPythonTest.dll
+  popd
+)
 goto :exit
 
 :test-ironpython-debug
-pushd bin\Release
-net45\IronPythonTest.exe --labels=All --where:Category==IronPython --result:ironpython-net45-debug-result.xml
-popd
+for %%f in ("%FRAMEWORKS:,=" "%") do (
+  pushd bin\Debug\%%f
+  %CONSOLERUNNER% --labels=All --where:"Category==IronPython" --result:ironpython-%%f-debug-result.xml IronPythonTest.dll
+  popd
+)
 goto :exit
 
 :test-cpython
-pushd bin\Release
-net45\IronPythonTest.exe --labels=All --where:"Category==StandardCPython || Category==AllCPython" --result:cpython-net45-release-result.xml
-popd
+for %%f in ("%FRAMEWORKS:,=" "%") do (
+  pushd bin\Release\%%f
+  %CONSOLERUNNER% --labels=All --where:"Category==StandardCPython || Category==AllCPython" --result:cpython-%%f-release-result.xml IronPythonTest.dll
+  popd
+)
 goto :exit
 
 :test-cpython-debug
-pushd bin\Debug
-net45\IronPythonTest.exe --labels=All --where:"Category==StandardCPython || Category==AllCPython" --result:cpython-net45-debug-result.xml
-popd
+for %%f in ("%FRAMEWORKS:,=" "%") do (
+  pushd bin\Debug\%%f
+  %CONSOLERUNNER% --labels=All --where:"Category==StandardCPython || Category==AllCPython" --result:cpython-%%f-debug-result.xml IronPythonTest.dll
+  popd
+)
 goto :exit
 
 :test-all
-pushd bin\Release
-net45\IronPythonTest.exe --labels=All --result:all-net45-release-result.xml
-popd
+for %%f in ("%FRAMEWORKS:,=" "%") do (
+  pushd bin\Release\%%f
+  %CONSOLERUNNER% --labels=All --result:all-%%f-release-result.xml IronPythonTest.dll
+  popd
+)
 goto :exit
 
 :test-all-debug
-pushd bin\Debug
-net45\IronPythonTest.exe --labels=All --result:all-net45-debug-result.xml
-popd
+for %%f in ("%FRAMEWORKS:,=" "%") do (
+  pushd bin\Debug\%%f
+  %CONSOLERUNNER% --labels=All --result:all-%%f-debug-result.xml IronPythonTest.dll
+  popd
+)
 goto :exit
 
 :test-custom
@@ -113,6 +160,21 @@ pushd bin\Release
 shift
 net45\IronPythonTest.exe --labels=All --result:custom-result.xml %1 %2 %3 %4 %5 %6 %7 %8 %9
 popd
+goto :exit
+
+:test-netcore-ironpython
+FOR /F "delims=" %%F IN ("bin\Release\netcoreapp2.0") DO SET "BinDir=%%~fF"
+dotnet test .\Src\IronPythonTest\IronPythonTest.csproj --framework netcoreapp2.0 -o %BinDir% --configuration Release --no-build --filter "TestCategory=IronPython"
+goto :exit
+
+:test-netcore-cpython
+FOR /F "delims=" %%F IN ("bin\Release\netcoreapp2.0") DO SET "BinDir=%%~fF"
+dotnet test .\Src\IronPythonTest\IronPythonTest.csproj --framework netcoreapp2.0 -o %BinDir% --configuration Release --no-build --filter "TestCategory=StandardCPython | TestCategory=AllCPython"
+goto :exit
+
+:test-netcore-all
+FOR /F "delims=" %%F IN ("bin\Release\netcoreapp2.0") DO SET "BinDir=%%~fF"
+dotnet test .\Src\IronPythonTest\IronPythonTest.csproj --framework netcoreapp2.0 -o %BinDir% --configuration Release --no-build
 goto :exit
 
 :restore
@@ -130,11 +192,7 @@ goto :main
 goto :exit
 
 :main
-msbuild Build.proj /t:%_target% /p:BuildFlavour=%_flavour% /verbosity:minimal /nologo /p:Platform="Any CPU"
-if "%_target%" == "Build" (
-    echo "Copying %_flavour% test dlls"
-    xcopy /y /q Src\DLR\bin\%_flavour%\net45\rowantest.*.dll bin\%_flavour%\net45\
-)
+msbuild Build.proj /t:%_target% /p:BuildFlavour=%_flavour% /verbosity:minimal /nologo /p:Platform="Any CPU" /bl:build-%_flavour%.binlog
 goto :exit
 
 :exit

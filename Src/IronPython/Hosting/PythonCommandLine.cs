@@ -258,6 +258,16 @@ namespace IronPython.Hosting {
             if (entryAssembly != null) {
                 executable = entryAssembly.Location;
                 prefix = Path.GetDirectoryName(executable);
+#if NETCOREAPP2_0
+                if (Path.GetExtension(executable) == ".dll") {
+                    var name = Path.GetFileNameWithoutExtension(executable);
+                    var runner = Path.Combine(prefix, name + ".bat");
+                    if (Environment.OSVersion.Platform == PlatformID.Unix) {
+                        runner = Path.Combine(prefix, name + ".sh");
+                    }
+                    if (File.Exists(runner)) executable = runner;
+                }
+#endif
             }
 
             // Make sure there an IronPython Lib directory, and if not keep looking up
@@ -277,8 +287,8 @@ namespace IronPython.Hosting {
         private void InitializeExtensionDLLs() {
             string dir = Path.Combine(PythonContext.InitialPrefix, "DLLs");
             if (Directory.Exists(dir)) {
-                foreach (string file in Directory.GetFiles(dir)) {
-                    if (file.ToLower().EndsWith(".dll")) {
+                foreach (string file in Directory.EnumerateFiles(dir, "*.dll")) {
+                    if(file.ToLower().EndsWith(".dll")) {
                         try {
                             ClrModule.AddReference(PythonContext.SharedContext, new FileInfo(file).Name);
                         } catch {
@@ -494,7 +504,7 @@ namespace IronPython.Hosting {
             PythonModule module = PythonContext.CompileModule(
                 "", // there is no file, it will be set to <module>
                 "__main__",
-                PythonContext.CreateSnippet(command, SourceCodeKind.File),
+                PythonContext.CreateSnippet(command, "-c", SourceCodeKind.File),
                 modOpt,
                 out compiledCode);
             PythonContext.PublishModule("__main__", module);

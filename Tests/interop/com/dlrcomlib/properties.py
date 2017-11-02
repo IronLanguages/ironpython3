@@ -15,7 +15,6 @@
 
 # COM Interop tests for IronPython
 from iptest.assert_util import skiptest
-skiptest("silverlight")
 from System import DateTime
 from clr import StrongBox
 from iptest.cominterop_util import *

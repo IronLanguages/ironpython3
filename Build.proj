@@ -3,7 +3,6 @@
 
   <PropertyGroup>
     <BuildFlavour Condition=" '$(BuildFlavour)' == '' ">Debug</BuildFlavour>
-    <MainPlatform Condition=" '$(MainPlatform)' == '' ">net45</MainPlatform>
     <MainBuildPrefix Condition=" '$(MainBuildPrefix)' == '' "></MainBuildPrefix>
     <Mono Condition="'$(OS)' != 'Windows_NT'">true</Mono>
 
@@ -13,13 +12,16 @@
     <ReferenceDir>$(RootDir)\Util\References</ReferenceDir>
     <BinDir>$(RootDir)\bin</BinDir>
     <BuildSysDir>$(RootDir)\Build</BuildSysDir>
+    <MSBuildCommunityTasksPath>$(RootDir)\Util\MSBuildCommunityTasks</MSBuildCommunityTasksPath>
+    <TargetFrameworks Condition="'$(TargetFrameworks)' == ''">net45;netcoreapp2.0</TargetFrameworks>
   </PropertyGroup>
     
   <Import Project="$(BuildSysDir)\Versioning.targets" />
+  <Import Project="$(MSBuildCommunityTasksPath)\MSBuild.Community.Tasks.Targets" />
   
   <PropertyGroup>
-    <StageDir>$(RootDir)\Stage\$(BuildFlavour)\IronPython-$(PackageVersion)</StageDir>
-    <PackageDir>$(RootDir)\Package\$(BuildFlavour)\IronPython-$(PackageVersion)</PackageDir>
+    <StageDir>$(RootDir)\Package\$(BuildFlavour)\Stage\IronPython-$(PackageVersion)</StageDir>
+    <PackageDir>$(RootDir)\Package\$(BuildFlavour)\Packages\IronPython-$(PackageVersion)</PackageDir>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -31,111 +33,69 @@
       StageDir=$(StageDir);
       BuildSysDir=$(BuildSysDir);
       Mono=$(Mono);
-      MainPlatform=$(MainPlatform)
     </BuildProperties>
   </PropertyGroup>
   
   <PropertyGroup>
     <NuGet>$(UtilDir)\NuGet\nuget.exe</NuGet>
     <NuGet Condition=" '$(Mono)' != '' ">mono $(NuGet)</NuGet>
-    
-    <NuGetConfig>$(RootDir)\NuGet.config</NuGetConfig>
-
-    <Zip Condition="'$(OS)' == 'Windows_NT'">$(UtilDir)\Misc\zip.exe</Zip>
-    <Zip Condition="'$(OS)' != 'Windows_NT'">zip</Zip>
   </PropertyGroup>
-
-  <ItemGroup>
-  <ReferencedPlatform Include="net45">
-      <BuildPrefix></BuildPrefix>
-    </ReferencedPlatform>
-  </ItemGroup>
 
   <ItemGroup>
     <MainStageFiles Include="$(RootDir)\README.md" />
     <MainStageFiles Include="$(RootDir)\LICENSE" />
   </ItemGroup>
 
-  <Target Name="_EnsureNuGetConfig"
-          Condition=" !Exists('$(NuGetConfig)') ">
-    <Touch Files="$(NuGetConfig)" AlwaysCreate="true" />
+  <Target Name="RestoreReferences">
+    <MSBuild Projects="$(Solution)" Targets="Restore" />
   </Target>
-  
-  <Target Name="_MakeReferenceDir"
-          Condition=" !Exists('$(ReferenceDir)') ">
-    <MakeDir Directories="$(ReferenceDir)"  />
-  </Target>
-  
-  <Target Name="RestoreReferences"
-            DependsOnTargets="_EnsureNuGetConfig;_MakeReferenceDir"
-            Inputs="$(RootDir)\packages.config;$(RootDir)\NuGet.config"
-            Outputs="$(ReferenceDir)\updated">
-    <Exec Command="$(NuGet) restore packages.config -PackagesDirectory &quot;$(ReferenceDir)&quot; -ConfigFile &quot;$(NuGetConfig)&quot;" WorkingDirectory="$(RootDir)" />
-    <Touch Files="$(ReferenceDir)\updated" AlwaysCreate="true" />
-  </Target>
-  
+
   <Target Name="Build" DependsOnTargets="RestoreReferences">
     <MSBuild 
       Projects="$(Solution)" 
       Targets="Build"
-      Properties="$(BuildProperties);ReferencedPlatform=%(ReferencedPlatform.Identity);Configuration=%(ReferencedPlatform.BuildPrefix)$(BuildFlavour)" />
+      Properties="$(BuildProperties);Configuration=$(BuildFlavour)" />
   </Target>
 
   <Target Name="Rebuild" DependsOnTargets="RestoreReferences">
     <MSBuild 
       Projects="$(Solution)" 
       Targets="Rebuild" 
-      Properties="$(BuildProperties);ReferencedPlatform=%(ReferencedPlatform.Identity);Configuration=%(ReferencedPlatform.BuildPrefix)$(BuildFlavour)" />
+      Properties="$(BuildProperties);Configuration=$(BuildFlavour)" />
   </Target>
 
   <Target Name="Clean">
     <MSBuild 
       Projects="$(Solution)" 
       Targets="Clean" 
-      Properties="$(BuildProperties);ReferencedPlatform=%(ReferencedPlatform.Identity);Configuration=%(ReferencedPlatform.BuildPrefix)$(BuildFlavour)" />
+      Properties="$(BuildProperties);Configuration=$(BuildFlavour)" />
   </Target>
 
   <Target Name="_MakeStageDir">
     <MakeDir Directories="$(StageDir)" Condition="!Exists('$(StageDir)')" />
   </Target>
 
+  <Target Name="_MakePackageDir">
+    <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')"/>
+  </Target>
+
   <Target Name="_PlatformStage" DependsOnTargets="RestoreReferences;_MakeStageDir">
     <MSBuild 
       Projects="$(Solution)" 
       Targets="Build" 
-      Properties="$(BuildProperties);ReferencedPlatform=%(ReferencedPlatform.Identity);Configuration=%(ReferencedPlatform.BuildPrefix)$(BuildFlavour);Staging=true" />
-  </Target>
-
-  <Target Name="_CopyDlrPlatformReferences" DependsOnTargets="_PlatformStage">
-    <ItemGroup>
-      <DlrPlatformReferenceFiles
-          Include="$(BinDir)\%(ReferencedPlatform.BuildPrefix)$(BuildFlavour)\Microsoft.Scripting.*"
-          Exclude="$(BinDir)\%(ReferencedPlatform.BuildPrefix)$(BuildFlavour)\*.pdb">
-          <PlatformDestination>%(ReferencedPlatform.Identity)</PlatformDestination>
-      </DlrPlatformReferenceFiles>
-      <DlrPlatformReferenceFiles
-          Include="$(BinDir)\%(ReferencedPlatform.BuildPrefix)$(BuildFlavour)\Microsoft.Dynamic.*"
-          Exclude="$(BinDir)\%(ReferencedPlatform.BuildPrefix)$(BuildFlavour)\*.pdb">
-          <PlatformDestination>%(ReferencedPlatform.Identity)</PlatformDestination>
-      </DlrPlatformReferenceFiles>
-    </ItemGroup>
-    <Copy SourceFiles="@(DlrPlatformReferenceFiles)"
-          DestinationFiles="@(DlrPlatformReferenceFiles->'$(StageDir)\Platforms\%(PlatformDestination)\%(Filename)%(Extension)')" />
+      Properties="$(BuildProperties);Configuration=$(BuildFlavour);Staging=true" />
   </Target>
 
   <Target Name="_CopyDlrMainReferences" DependsOnTargets="_MakeStageDir">
     <ItemGroup>
       <DlrMainReferenceFiles
-          Include="$(BinDir)\$(MainBuildPrefix)$(BuildFlavour)\Microsoft.Scripting.Core.dll"
-          Condition=" Exists('$(BinDir)\$(MainPlatform)$(BuildFlavour)\Microsoft.Scripting.Core.dll')" />
+          Include="$(BinDir)\$(BuildFlavour)\*\Microsoft.Scripting.dll" />
       <DlrMainReferenceFiles
-          Include="$(BinDir)\$(MainBuildPrefix)$(BuildFlavour)\Microsoft.Scripting.dll" />
-      <DlrMainReferenceFiles
-          Include="$(BinDir)\$(MainBuildPrefix)$(BuildFlavour)\Microsoft.Dynamic.dll" />
+          Include="$(BinDir)\$(BuildFlavour)\*\Microsoft.Dynamic.dll" />
     </ItemGroup>
-    
+
     <Copy SourceFiles="@(DlrMainReferenceFiles)"
-          DestinationFolder="$(StageDir)" />
+          DestinationFolder="$(StageDir)\%(RecursiveDir)" />
   </Target>
 
   <Target Name="_CopyMainStageFiles" DependsOnTargets="_MakeStageDir">
@@ -149,13 +109,16 @@
   </Target>
 
   <Target Name="_ZipStdLib" DependsOnTargets="_CopyStdLib">
-    <Exec Command="$(Zip) -9 -r &quot;$(StageDir)\..\IronPython.StdLib-$(PackageVersion).zip&quot; &quot;Lib&quot;" WorkingDirectory="$(StageDir)" />
+    <ItemGroup>
+      <StdLibFiles Include="$(StageDir)\Lib\**\*.*" />
+    </ItemGroup>
+    <Zip ZipLevel="9" Files="@(StdLibFiles)" ZipFileName="$(PackageDir)\IronPython.StdLib.$(PackageVersion).zip" WorkingDirectory="$(StageDir)\Lib"/>
   </Target>
 
   <Target Name="_RemoveDocFiles" DependsOnTargets="_PlatformStage">
     <ItemGroup>
-      <UnneededDocXMLFiles Include="$(StageDir)\*.xml" />
-      <UnneededDocXMLFiles Include="$(StageDir)\DLLs\*.xml" />
+      <UnneededDocXMLFiles Include="$(StageDir)\**\*.xml" />
+      <UnneededDocXMLFiles Include="$(StageDir)\**\DLLs\*.xml" />
     </ItemGroup>
     <Delete Files="@(UnneededDocXMLFiles)" />
   </Target>
@@ -163,8 +126,8 @@
   <PropertyGroup>
     <StageDependsOn>
       _MakeStageDir;
+      _MakePackageDir;
       _PlatformStage;
-      _CopyDlrPlatformReferences;
       _CopyDlrMainReferences;
       _CopyMainStageFiles;
       _CopyStdLib;
@@ -174,8 +137,8 @@
   </PropertyGroup>
 
   <Target Name="Stage" DependsOnTargets="$(StageDependsOn)" />
-  
-  <Target Name="Package" DependsOnTargets="ZipPackage;NuGetPackage" />
+
+  <Target Name="Package" DependsOnTargets="MsiPackage;ZipPackage;NuGetPackage;DebPackage" />
 
   <Target Name="MakePackageDir">
     <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')" />
@@ -183,28 +146,43 @@
 
   <ItemGroup>
     <Package Include="IronPython">
-      <NuSpecDir>$(RootDir)</NuSpecDir>
+      <NuSpecDir>$(RootDir)\Package\nuget</NuSpecDir>
     </Package>
     <Package Include="IronPython.StdLib">
-      <NuSpecDir>$(RootDir)</NuSpecDir>
+      <NuSpecDir>$(RootDir)\Package\nuget</NuSpecDir>
     </Package>
   </ItemGroup>
 
   <PropertyGroup>
-    <NuSpecInputs>@(Package->'%(Package.NuSpecDir)\%(Package.Identity).nuspec')</NuSpecInputs>
-    <NuPkgOutputs>@(Package->'$(PackageDir)\%(Package.Identity).$(PackageVersion).nupkg')</NuPkgOutputs>
+    <NuSpecInputs>@(Package->'%(NuSpecDir)\%(Identity).nuspec')</NuSpecInputs>
+    <NuPkgOutputs>@(Package->'$(PackageDir)\%(Identity).$(PackageVersion).nupkg')</NuPkgOutputs>
   </PropertyGroup>
 
   <Target Name="NuGetPackage" DependsOnTargets="Stage;MakePackageDir"
-          Inputs="$(NuSpecInputs);@(StageOutputs)"
+          Inputs="$(NuSpecInputs)"
           Outputs="$(NuPkgOutputs)">
-    <Exec Command="$(NuGet) pack &quot;%(Package.NuSpecDir)\%(Package.Identity).nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot; -Version $(PackageVersion)" />
+    <ItemGroup>
+      <DLLsFiles Include="**\DLLs\IronPython.*.dll" />
+    </ItemGroup>
+
+    <!-- Copy the files from DLLs into the main directory for nuget packaging -->
+    <Copy SourceFiles="@(DLLsFiles)" CopiedFiles="@(CopiedFiles)" DestinationFolder="$([System.IO.Path]::GetFullPath('%(DLLsFiles.RecursiveDir)\..'))">
+      <Output TaskParameter="CopiedFiles" ItemName="TempCopied" />
+    </Copy>
+    <Exec Command="$(NuGet) pack &quot;%(NuSpecDir)\%(Package.Identity).nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot; -Version $(PackageVersion)" />
+    <!-- Delete the copied files -->
+    <Delete Files="@(TempCopied)" />
   </Target>
 
   <Target Name="ZipPackage" DependsOnTargets="Stage;MakePackageDir"
-          Inputs="@(StageOutputs)"
-          Outputs="$(PackageDir)\dlr-$(PackageVersion).zip">
-    <Exec Command="$(Zip) -9 -r &quot;$(PackageDir)\IronPython-$(PackageVersion).zip&quot; &quot;IronPython-$(PackageVersion)&quot;" WorkingDirectory="$(StageDir)\.." />
+          Outputs="$(PackageDir)\IronPython.$(PackageVersion).zip">
+    <ItemGroup>
+      <ZipFiles Include="$(StageDir)\**\*.*" Exclude="$(StageDir)\**\IronPythonTest.*" />
+    </ItemGroup>
+    <Zip ZipLevel="9" Files="@(ZipFiles)" ZipFileName="$(PackageDir)\IronPython.$(PackageVersion).zip" WorkingDirectory="$(StageDir)" />
   </Target>
-</Project>
 
+  <Target Name="DebPackage" Condition="'$(OS)' == 'Unix' " DependsOnTargets="Stage;MakePackageDir" />
+  
+  <Target Name="MsiPackage" Condition="'$(OS)' != 'Unix' " DependsOnTargets="Stage;MakePackageDir" />
+</Project>

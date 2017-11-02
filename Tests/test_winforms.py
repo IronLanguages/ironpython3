@@ -17,7 +17,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netstandard, is_posix, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
 
 class AgeQualifier(object):
     def __get__(self, instance, ctx):
@@ -49,7 +49,7 @@ if is_cli:
         AgeDescription = AgeQualifier()
 
 
-@unittest.skipIf(is_posix or is_netstandard, 'little or no System.Windows.Forms support')
+@unittest.skipIf(is_posix or is_netcoreapp, 'little or no System.Windows.Forms support')
 @skipUnlessIronPython()
 class WinformsTest(IronPythonTestCase):
     def setUp(self):

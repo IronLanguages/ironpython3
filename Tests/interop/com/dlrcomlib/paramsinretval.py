@@ -15,7 +15,6 @@
 
 # COM Interop tests for IronPython
 from iptest.assert_util import skiptest
-skiptest("silverlight")
 from iptest.cominterop_util import *
 from clr import StrongBox
 from System.Runtime.InteropServices import ErrorWrapper

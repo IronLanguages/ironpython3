@@ -104,9 +104,9 @@ def get_enums():
 
     if is_cli:     
         import clr
+        import os
         import sys
-        from iptest.file_util import path_combine
-        clr.AddReferenceToFileAndPath(path_combine(sys.exec_prefix, "IronPythonTest.dll"))
+        clr.AddReferenceToFileAndPath(os.path.join(sys.exec_prefix, "IronPythonTest.dll"))
         from IronPythonTest import DaysByte, DaysInt, DaysLong, DaysSByte, DaysShort, DaysUInt, DaysULong, DaysUShort
         list_enum_byte      = [DaysByte.None]
         list_enum_sbyte     = [DaysSByte.Mon]

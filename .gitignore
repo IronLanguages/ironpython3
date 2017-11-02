@@ -6,8 +6,8 @@
 obj/
 bin/
 /bin/
-/Stage
-/Package
+/Package/Release/
+/Package/Debug/
 
 # Temporary VS files
 *.suo
@@ -63,3 +63,5 @@ __pycache__/
 Src/StdLib/Lib/shelftemp*
 Src/StdLib/Lib/@test*
 Tests/clrusetest*
+build-*.binlog
+abc.txt

@@ -13,8 +13,6 @@
 #
 #####################################################################################
 
-from iptest.assert_util import *
-
-Assert(__name__ in  ["__main__", "test_execfile"], __name__)
+self.assertTrue(__name__ in  ["__main__", "test_execfile"], __name__)
 
 class C: pass

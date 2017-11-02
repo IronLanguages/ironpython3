@@ -16,7 +16,6 @@
 ## BE PLATFORM NETURAL
 import os
 import sys
-from .test_env import is_netcoreapp
 
 colon = ':'
 separator = os.sep

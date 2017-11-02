@@ -20,7 +20,7 @@ import System
 sys.path.append(sys.exec_prefix)
 clr.AddReference("Microsoft.Scripting")
 clr.AddReference("Microsoft.Dynamic")
-if clr.IsNetStandard:
+if clr.IsNetCoreApp:
     clr.AddReference("System.IO.FileSystem")
     clr.AddReference("System.Runtime.Extensions")
 else:

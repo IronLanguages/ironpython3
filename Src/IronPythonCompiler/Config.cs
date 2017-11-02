@@ -3,11 +3,12 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using IKVM.Reflection;
 using IKVM.Reflection.Emit;
 using System.Resources;
 using System.Reflection;
-
+using Microsoft.Scripting.Runtime;
 
 namespace IronPythonCompiler {
     public class Config {
@@ -24,7 +25,8 @@ namespace IronPythonCompiler {
             Output = string.Empty;
             Win32Icon = string.Empty;
             Version = string.Empty;
-            ErrorMessageFormat = "Error occured: {0}";
+            ErrorMessageFormat = "Error occurred: {0}";
+            PythonOptions = new Dictionary<string, object>();
         }
 
         public string ErrorMessageFormat {
@@ -73,6 +75,11 @@ namespace IronPythonCompiler {
         }
 
         public List<string> Files {
+            get;
+            private set;
+        }
+
+        public IDictionary<string, object> PythonOptions {
             get;
             private set;
         }
@@ -139,10 +146,10 @@ namespace IronPythonCompiler {
                             break;
                     }
                 } else if (arg.StartsWith("/win32icon:")) {
-                    Win32Icon = arg.Substring(11).Trim('"'); 
+                    Win32Icon = arg.Substring(11).Trim('"');
                 } else if (arg.StartsWith("/version:")) {
                     Version = arg.Substring(9).Trim('"');
-                } else if(arg.StartsWith("/errfmt:")) {
+                } else if (arg.StartsWith("/errfmt:")) {
                     ErrorMessageFormat = arg.Substring(8);
                 } else if (arg.StartsWith("/embed")) {
                     Embed = true;
@@ -152,6 +159,52 @@ namespace IronPythonCompiler {
                     UseMta = true;
                 } else if (Array.IndexOf(helpStrings, arg) >= 0) {
                     ConsoleOps.Usage(true);
+                } else if(arg.StartsWith("/py:")) {
+                    // if you add a parameter that takes a different type then 
+                    // ScriptingRuntimeHelpers.True/False or int
+                    // you need ot also modify Program.cs for standalone generation.
+                    string[] pyargs = arg.Substring(4).Trim('"').Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    switch(pyargs[0]) {
+                        case "-X:Frames":
+                            PythonOptions["Frames"] = ScriptingRuntimeHelpers.True;
+                            break;
+                        case "-X:FullFrames":
+                            PythonOptions["Frames"] = PythonOptions["FullFrames"] = ScriptingRuntimeHelpers.True;
+                            break;
+                        case "-X:Tracing":
+                            PythonOptions["Tracing"] = ScriptingRuntimeHelpers.True;
+                            break;
+                        case "-X:GCStress":
+                            int gcStress;
+                            if (!int.TryParse(pyargs[1], out gcStress) || (gcStress < 0 || gcStress > GC.MaxGeneration)) {
+                                ConsoleOps.Error(true, "The argument for the {0} option must be between 0 and {1}.", pyargs[1], GC.MaxGeneration);
+                            }
+
+                            PythonOptions["GCStress"] = gcStress;
+                            break;
+
+                        case "-X:MaxRecursion":
+                            // we need about 6 frames for starting up, so 10 is a nice round number.
+                            int limit;
+                            if (!int.TryParse(pyargs[1], out limit) || limit < 10) {
+                                ConsoleOps.Error(true, "The argument for the {0} option must be an integer >= 10.", pyargs[1]);
+                            }
+
+                            PythonOptions["RecursionLimit"] = limit;
+                            break;
+
+                        case "-X:EnableProfiler":
+                            PythonOptions["EnableProfiler"] = ScriptingRuntimeHelpers.True;
+                            break;
+
+                        case "-X:LightweightScopes":
+                            PythonOptions["LightweightScopes"] = ScriptingRuntimeHelpers.True;
+                            break;
+
+                        case "-X:Debug":
+                            PythonOptions["Debug"] = ScriptingRuntimeHelpers.True;
+                            break;
+                    }
                 } else {
                     if (arg.StartsWith("@")) {
                         var respFile = Path.GetFullPath(arg.Substring(1));
@@ -219,6 +272,13 @@ namespace IronPythonCompiler {
                     res.AppendLine("\tMTA");
                 } else {
                     res.AppendLine("\tSTA");
+                }
+            }
+
+            if (PythonOptions.Count > 0) {
+                res.AppendFormat("\nIronPython Context Options:\n");
+                foreach(var option in PythonOptions) {
+                    res.AppendFormat("\t{0} = {1}\n", option.Key, option.Value);
                 }
             }
 

@@ -2,13 +2,11 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <MajorVersion>3</MajorVersion>
-    <MinorVersion>0</MinorVersion>
+    <MinorVersion>4</MinorVersion>
     <MicroVersion>0</MicroVersion>
     <ReleaseLevel>alpha</ReleaseLevel>
     <ReleaseSerial>0</ReleaseSerial>
 
     <AssemblyRevision>0</AssemblyRevision>
-    
-    <DlrVersion>1.2.0-alpha1</DlrVersion>
   </PropertyGroup>
 </Project>

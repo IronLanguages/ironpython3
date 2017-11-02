@@ -1,16 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$(ProjectDir)..\..\Build\Common.proj" />
   <PropertyGroup>
-    <TargetFrameworks Condition="'$(TargetFrameworks)' == ''">net45</TargetFrameworks>
-    <PlatformTarget>x86</PlatformTarget>
+    <TargetFrameworks>net45</TargetFrameworks>
+    <PlatformTarget>anycpu</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
     <ProjectGuid>{7F6F9AB3-9943-4316-BD4C-A10F580BC75C}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>IronPythonWindow</RootNamespace>
-    <AssemblyName>ipyw64</AssemblyName>
-    <ApplicationIcon>..\IronPythonWindow\ipy.ico</ApplicationIcon>
+    <AssemblyName>ipyw</AssemblyName>
+    <ApplicationIcon>..\IronPythonWindow\ipyw.ico</ApplicationIcon>
     <CodeAnalysisRuleSet>IronPythonWindowAny.ruleset</CodeAnalysisRuleSet>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\IronPython\IronPython.csproj" />
@@ -22,10 +22,6 @@
     <Compile Include="..\AssemblyVersion.cs" Link="Properties\AssemblyVersion.cs" />
     <Compile Include="..\IronPythonWindow\Properties\AssemblyInfo.cs" Link="Properties\AssemblyInfo.cs" />
     <Compile Include="..\IronPythonWindow\IronPythonWindow.cs" Link="IronPythonWindow.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\App.Debug.config" Link="App.Debug.config" />
-    <None Include="..\App.Release.config" Link="App.Release.config" />
   </ItemGroup>
   <Import Project="$(BeforeTargetFiles)" />
   <Target Name="BeforeBuildStarts" BeforeTargets="BeforeBuild" DependsOnTargets="$(BeforeTargets);GenerateCurrentVersion" />

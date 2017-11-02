@@ -26,7 +26,6 @@ P2:
 '''
 
 from iptest.assert_util import skiptest
-skiptest("silverlight")
 from iptest.cominterop_util import *
 
 if is_cli:

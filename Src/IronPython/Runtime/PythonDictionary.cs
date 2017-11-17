@@ -30,7 +30,7 @@ using IronPython.Runtime.Types;
 namespace IronPython.Runtime {
 
     [PythonType("dict"), Serializable, DebuggerTypeProxy(typeof(DebugProxy)), DebuggerDisplay("Count = {Count}")]
-    public class PythonDictionary : IDictionary<object, object>, IDictionary, 
+    public class PythonDictionary : IDictionary<object, object>, IDictionary,
         ICodeFormattable, IStructuralEquatable {
         internal DictionaryStorage _storage;
 
@@ -53,7 +53,7 @@ namespace IronPython.Runtime {
 
         internal PythonDictionary(IDictionary dict) {
             var storage = new CommonDictionaryStorage();
-            
+
             foreach (DictionaryEntry de in dict) {
                 storage.AddNoLock(de.Key, de.Value);
             }
@@ -80,7 +80,7 @@ namespace IronPython.Runtime {
         private static PythonDictionary MakeDictFromIAC(CodeContext context, PythonDictionary iac) {
             return new PythonDictionary(new ObjectAttributesAdapter(context, iac));
         }
-        
+
         internal static PythonDictionary MakeSymbolDictionary() {
             return new PythonDictionary(new StringDictionaryStorage());
         }
@@ -162,7 +162,7 @@ namespace IronPython.Runtime {
 
             return false;
         }
-        
+
         internal bool TryGetValueNoMissing(object key, out object value) {
             return _storage.TryGetValue(key, out value);
         }
@@ -328,6 +328,13 @@ namespace IronPython.Runtime {
             _storage.Clear(ref _storage);
         }
 
+#if !IPY3
+        [Python3Warning("dict.has_key() not supported in 3.x; use the in operator")]
+        public bool has_key(object key) {
+            return DictionaryOps.has_key(this, key);
+        }
+#endif
+
         public object pop(object key) {
             return DictionaryOps.pop(this, key);
         }
@@ -348,6 +355,14 @@ namespace IronPython.Runtime {
             return DictionaryOps.setdefault(this, key, defaultValue);
         }
 
+#if IPY3
+        public DictionaryItemView items() => new DictionaryItemView(this);
+
+        public DictionaryKeyView keys() => new DictionaryKeyView(this);
+
+        public DictionaryValueView values() => new DictionaryValueView(this);
+
+#else
         public virtual List keys() {
             List res = new List();
             foreach (KeyValuePair<object, object> kvp in _storage.GetItems()) {
@@ -372,29 +387,18 @@ namespace IronPython.Runtime {
             return res;
         }
 
-        public IEnumerator iteritems() {
-            return new DictionaryItemEnumerator(_storage);
-        }
+        public IEnumerator iteritems() => new DictionaryItemEnumerator(_storage);
 
-        public IEnumerator iterkeys() {
-            return new DictionaryKeyEnumerator(_storage);
-        }
+        public IEnumerator iterkeys() => new DictionaryKeyEnumerator(_storage);
 
-        public IEnumerator itervalues() {
-            return new DictionaryValueEnumerator(_storage);
-        }
+        public IEnumerator itervalues() => new DictionaryValueEnumerator(_storage);
 
-        public IEnumerable viewitems() {
-            return new DictionaryItemView(this);
-        }
+        public IEnumerable viewitems() => new DictionaryItemView(this);
 
-        public IEnumerable viewkeys() {
-            return new DictionaryKeyView(this);
-        }
+        public IEnumerable viewkeys() => new DictionaryKeyView(this);
 
-        public IEnumerable viewvalues() {
-            return new DictionaryValueView(this);
-        }
+        public IEnumerable viewvalues() => new DictionaryValueView(this);
+#endif
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public void update() {
@@ -467,7 +471,11 @@ namespace IronPython.Runtime {
 
         [ClassMethod]
         public static object fromkeys(CodeContext context, PythonType cls, object seq, object value) {
+#if IPY3
             Range xr = seq as Range;
+#else
+            XRange xr = seq as XRange;
+#endif
             if (xr != null) {
                 int n = xr.__len__();
                 object ret = context.LanguageContext.CallSplat(cls);
@@ -519,6 +527,7 @@ namespace IronPython.Runtime {
             );
         }
 
+#if !IPY3
         [return: MaybeNotImplemented]
         public object __cmp__(CodeContext context, object other) {
             IDictionary<object, object> oth = other as IDictionary<object, object>;
@@ -555,11 +564,12 @@ namespace IronPython.Runtime {
                 CompareUtil.Pop(this, other);
             }
         }
+#endif
 
         // these are present in CPython but always return NotImplemented.
         [return: MaybeNotImplemented]
         [Python3Warning("dict inequality comparisons not supported in 3.x")]
-        public static NotImplementedType operator > (PythonDictionary self, PythonDictionary other) {
+        public static NotImplementedType operator >(PythonDictionary self, PythonDictionary other) {
             return PythonOps.NotImplemented;
         }
 
@@ -626,9 +636,7 @@ namespace IronPython.Runtime {
             }
             // we cannot call Compare here and compare against zero because Python defines
             // value equality even if the keys/values are unordered.
-            List myKeys = keys();
-
-            foreach (object o in myKeys) {
+            foreach (object o in keys()) {
                 object res;
                 if (!oth.TryGetValue(o, out res)) return false;
 
@@ -647,9 +655,7 @@ namespace IronPython.Runtime {
         }
 
         private bool ValueEqualsPythonDict(PythonDictionary pd, IEqualityComparer comparer) {
-            List myKeys = keys();
-
-            foreach (object o in myKeys) {
+            foreach (object o in keys()) {
                 object res;
                 if (!pd.TryGetValueNoMissing(o, out res)) return false;
 
@@ -742,7 +748,7 @@ namespace IronPython.Runtime {
         }
 
         ICollection IDictionary.Keys {
-            get { return this.keys(); }
+            get { return keys(); }
         }
 
         ICollection IDictionary.Values {
@@ -900,22 +906,16 @@ namespace IronPython.Runtime {
     ///   innerEnum.MoveNext() will throw InvalidOperation even if the values get changed,
     ///   which is supported in python
     /// </summary>
+#if IPY3
     [PythonType("dict_keyiterator")]
-    public sealed class DictionaryKeyEnumerator : IEnumerator, IEnumerator<object> {
+#else
+    [PythonType("dictionary-keyiterator")]
+#endif
+    public sealed class DictionaryKeyEnumerator : IEnumerator<object> {
         private readonly int _size;
         private readonly DictionaryStorage _dict;
         private readonly IEnumerator<object> _keys;
         private int _pos;
-
-        #region Pickling
-
-        public object __reduce__(CodeContext context) {
-            object iter;
-            context.TryLookupBuiltin("iter", out iter);
-            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(List.FromArrayNoCopy(_dict.GetKeys().Skip(_pos + 1).ToArray())));
-        }
-
-        #endregion
 
         internal DictionaryKeyEnumerator(DictionaryStorage dict) {
             _dict = dict;
@@ -942,24 +942,27 @@ namespace IronPython.Runtime {
             _pos = -1;
         }
 
-        object IEnumerator.Current {
-            get {
-                return _keys.Current;
-            }
-        }
+        object IEnumerator<object>.Current => _keys.Current;
 
-        object IEnumerator<object>.Current {
-            get {
-                return _keys.Current;
-            }
-        }
+        object IEnumerator.Current => _keys.Current;
 
-        void IDisposable.Dispose() {
-        }
+        void IDisposable.Dispose() { }
 
-        public int __length_hint__() {
-            return _size - _pos - 1;
+        public object __iter__() => this;
+
+        public int __length_hint__() => _size - _pos - 1;
+
+        #region Pickling
+
+#if IPY3
+        public object __reduce__(CodeContext context) {
+            object iter;
+            context.TryLookupBuiltin("iter", out iter);
+            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(List.FromArrayNoCopy(_dict.GetKeys().Skip(_pos + 1).ToArray())));
         }
+#endif
+
+        #endregion
     }
 
     /// <summary>
@@ -968,8 +971,12 @@ namespace IronPython.Runtime {
     ///   innerEnum.MoveNext() will throw InvalidOperation even if the values get changed,
     ///   which is supported in python
     /// </summary>
+#if IPY3
+    [PythonType("dict_valueiterator")]
+#else
     [PythonType("dictionary-valueiterator")]
-    public sealed class DictionaryValueEnumerator : IEnumerator, IEnumerator<object> {
+#endif
+    public sealed class DictionaryValueEnumerator : IEnumerator<object> {
         private readonly int _size;
         DictionaryStorage _dict;
         private readonly object[] _values;
@@ -986,7 +993,7 @@ namespace IronPython.Runtime {
             _pos = -1;
         }
 
-        public bool MoveNext() {
+        bool IEnumerator.MoveNext() {
             if (_size != _dict.Count) {
                 _pos = _size - 1; // make the length 0
                 throw PythonOps.RuntimeError("dictionary changed size during iteration");
@@ -999,26 +1006,31 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void Reset() {
+        void IEnumerator.Reset() {
             _pos = -1;
         }
 
-        public object Current {
-            get {
-                return _values[_pos];
-            }
-        }
+        object IEnumerator<object>.Current => _values[_pos];
 
-        public void Dispose() {
-        }
+        object IEnumerator.Current => _values[_pos];
 
-        public object __iter__() {
-            return this;
-        }
+        void IDisposable.Dispose() { }
 
-        public int __len__() {
-            return _size - _pos - 1;
+        public object __iter__() => this;
+
+        public int __len__() => _size - _pos - 1;
+
+        #region Pickling
+
+#if IPY3
+        public object __reduce__(CodeContext context) {
+            object iter;
+            context.TryLookupBuiltin("iter", out iter);
+            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(List.FromArrayNoCopy(_dict.GetItems().Skip(_pos + 1).Select(x => x.Value).ToArray())));
         }
+#endif
+
+        #endregion
     }
 
     /// <summary>
@@ -1027,8 +1039,12 @@ namespace IronPython.Runtime {
     ///   innerEnum.MoveNext() will throw InvalidOperation even if the values get changed,
     ///   which is supported in python
     /// </summary>
+#if IPY3
+    [PythonType("dict_itemiterator")]
+#else
     [PythonType("dictionary-itemiterator")]
-    public sealed class DictionaryItemEnumerator : IEnumerator, IEnumerator<object> {
+#endif
+    public sealed class DictionaryItemEnumerator : IEnumerator<object> {
         private readonly int _size;
         private readonly DictionaryStorage _dict;
         private readonly List<object> _keys;
@@ -1036,7 +1052,7 @@ namespace IronPython.Runtime {
         private int _pos;
 
         internal DictionaryItemEnumerator(DictionaryStorage dict) {
-            _dict = dict;            
+            _dict = dict;
             _keys = new List<object>(dict.Count);
             _values = new List<object>(dict.Count);
             foreach (KeyValuePair<object, object> kvp in dict.GetItems()) {
@@ -1047,7 +1063,7 @@ namespace IronPython.Runtime {
             _pos = -1;
         }
 
-        public bool MoveNext() {
+        bool IEnumerator.MoveNext() {
             if (_size != _dict.Count) {
                 _pos = _size - 1; // make the length 0
                 throw PythonOps.RuntimeError("dictionary changed size during iteration");
@@ -1060,30 +1076,35 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void Reset() {
+        void IEnumerator.Reset() {
             _pos = -1;
         }
 
-        public object Current {
-            get {
-                return PythonOps.MakeTuple(_keys[_pos], _values[_pos]);
-            }
-        }
+        object IEnumerator<object>.Current => PythonOps.MakeTuple(_keys[_pos], _values[_pos]);
 
-        public void Dispose() {
-        }
+        object IEnumerator.Current => PythonOps.MakeTuple(_keys[_pos], _values[_pos]);
 
-        public object __iter__() {
-            return this;
-        }
+        void IDisposable.Dispose() { }
 
-        public int __len__() {
-            return _size - _pos - 1;
+        public object __iter__() => this;
+
+        public int __len__() => _size - _pos - 1;
+
+        #region Pickling
+
+#if IPY3
+        public object __reduce__(CodeContext context) {
+            object iter;
+            context.TryLookupBuiltin("iter", out iter);
+            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(List.FromArrayNoCopy(_dict.GetItems().Skip(_pos + 1).Select(x => x.Value).ToArray())));
         }
+#endif
+
+        #endregion
     }
 
     [PythonType("dict_values")]
-    public sealed class DictionaryValueView : IEnumerable, IEnumerable<object>, ICodeFormattable {
+    public sealed class DictionaryValueView : ICollection<object>, ICollection, ICodeFormattable {
         private readonly PythonDictionary _dict;
 
         internal DictionaryValueView(PythonDictionary/*!*/ dict) {
@@ -1092,18 +1113,55 @@ namespace IronPython.Runtime {
             _dict = dict;
         }
 
-        [PythonHidden]
-        public IEnumerator GetEnumerator() {
-            return _dict.itervalues();
+        IEnumerator<object> IEnumerable<object>.GetEnumerator() => new DictionaryValueEnumerator(_dict._storage);
+
+        IEnumerator IEnumerable.GetEnumerator() => new DictionaryValueEnumerator(_dict._storage);
+
+        #region ICollection<object> Members
+
+        void ICollection<object>.Add(object item) => throw new NotSupportedException("Collection is read-only");
+
+        void ICollection<object>.Clear() => throw new NotSupportedException("Collection is read-only");
+
+        bool ICollection<object>.Contains(object item) => _dict.__contains__(item);
+
+        void ICollection<object>.CopyTo(object[] array, int arrayIndex) {
+            int i = arrayIndex;
+            foreach (object item in this) {
+                array[i++] = item;
+                if (i >= array.Length) {
+                    break;
+                }
+            }
         }
 
-        IEnumerator<object> IEnumerable<object>.GetEnumerator() {
-            return new DictionaryValueEnumerator(_dict._storage);
+        int ICollection<object>.Count => _dict.Count;
+
+        bool ICollection<object>.IsReadOnly => true;
+
+        bool ICollection<object>.Remove(object item) => throw new NotSupportedException("Collection is read-only");
+
+        #endregion
+
+        #region ICollection Members
+
+        int ICollection.Count => _dict.Count;
+
+        object ICollection.SyncRoot => this;
+
+        bool ICollection.IsSynchronized => false;
+
+        void ICollection.CopyTo(Array array, int index) {
+            int i = index;
+            foreach (object item in this) {
+                array.SetValue(item, i++);
+                if (i >= array.Length) {
+                    break;
+                }
+            }
         }
 
-        public int __len__() {
-            return _dict.Count;
-        }
+        #endregion
 
         #region ICodeFormattable Members
 
@@ -1114,7 +1172,12 @@ namespace IronPython.Runtime {
             foreach (object value in this) {
                 res.Append(comma);
                 comma = ", ";
-                res.Append(PythonOps.Repr(context, value));
+                try {
+                    PythonOps.FunctionPushFrame(context.LanguageContext);
+                    res.Append(PythonOps.Repr(context, value));
+                } finally {
+                    PythonOps.FunctionPopFrame();
+                }
             }
             res.Append("])");
 
@@ -1122,10 +1185,17 @@ namespace IronPython.Runtime {
         }
 
         #endregion
+
+        #region Pickling
+
+        // TODO: this is not technically correct, it should be throwing in ObjectOps.ReduceProtocol2
+        public object __reduce__(CodeContext context) => throw PythonOps.TypeError($"can't pickle dict_values objects");
+
+        #endregion
     }
 
     [PythonType("dict_keys")]
-    public sealed class DictionaryKeyView : ICollection<object>, ICodeFormattable {
+    public sealed class DictionaryKeyView : ICollection<object>, ICollection, ICodeFormattable {
         internal readonly PythonDictionary _dict;
 
         internal DictionaryKeyView(PythonDictionary/*!*/ dict) {
@@ -1135,31 +1205,19 @@ namespace IronPython.Runtime {
         }
 
         [PythonHidden]
-        public IEnumerator GetEnumerator() {
-            return _dict.iterkeys();
-        }
+        public IEnumerator<object> GetEnumerator() => new DictionaryKeyEnumerator(_dict._storage);
 
-        IEnumerator<object> IEnumerable<object>.GetEnumerator() {
-            return new DictionaryKeyEnumerator(_dict._storage);
-        }
+        IEnumerator IEnumerable.GetEnumerator() => new DictionaryKeyEnumerator(_dict._storage);
 
         #region ICollection<object> Members
 
-        void ICollection<object>.Add(object key) {
-            throw new NotSupportedException("Collection is read-only");
-        }
+        void ICollection<object>.Add(object key) => throw new NotSupportedException("Collection is read-only");
 
-        void ICollection<object>.Clear() {
-            throw new NotSupportedException("Collection is read-only");
-        }
+        void ICollection<object>.Clear() => throw new NotSupportedException("Collection is read-only");
 
-        [PythonHidden]
-        public bool Contains(object key) {
-            return _dict.__contains__(key);
-        }
+        bool ICollection<object>.Contains(object key) => _dict.__contains__(key);
 
-        [PythonHidden]
-        public void CopyTo(object[] array, int arrayIndex) {
+        void ICollection<object>.CopyTo(object[] array, int arrayIndex) {
             int i = arrayIndex;
             foreach (object item in this) {
                 array[i++] = item;
@@ -1169,18 +1227,30 @@ namespace IronPython.Runtime {
             }
         }
 
-        public int Count {
-            [PythonHidden]
-            get { return _dict.Count; }
-        }
+        int ICollection<object>.Count => _dict.Count;
 
-        public bool IsReadOnly {
-            [PythonHidden]
-            get { return true; }
-        }
+        bool ICollection<object>.IsReadOnly => true;
 
-        bool ICollection<object>.Remove(object item) {
-            throw new NotSupportedException("Collection is read-only");
+        bool ICollection<object>.Remove(object item) => throw new NotSupportedException("Collection is read-only");
+
+        #endregion
+
+        #region ICollection Members
+
+        int ICollection.Count => _dict.Count;
+
+        object ICollection.SyncRoot => this;
+
+        bool ICollection.IsSynchronized => false;
+
+        void ICollection.CopyTo(Array array, int index) {
+            int i = index;
+            foreach (object item in this) {
+                array.SetValue(item, i++);
+                if (i >= array.Length) {
+                    break;
+                }
+            }
         }
 
         #endregion
@@ -1475,6 +1545,22 @@ namespace IronPython.Runtime {
 
         #endregion
 
+        #region Pickling
+
+        // TODO: this is not technically correct, it should be throwing in ObjectOps.ReduceProtocol2
+        public object __reduce__(CodeContext context) => throw PythonOps.TypeError($"can't pickle dict_keys objects");
+
+        #endregion
+
+#if IPY3
+        public bool isdisjoint(IEnumerable other) {
+            return SetStorage.Intersection(
+                SetStorage.GetItemsWorker(GetEnumerator()),
+                SetStorage.GetItems(other)
+            ).Count == 0;
+        }
+#endif
+
         public override int GetHashCode() {
             return base.GetHashCode();
         }
@@ -1491,37 +1577,25 @@ namespace IronPython.Runtime {
         }
 
         [PythonHidden]
-        public IEnumerator GetEnumerator() {
-            return _dict.iteritems();
-        }
+        public IEnumerator<object> GetEnumerator() => new DictionaryItemEnumerator(_dict._storage);
 
-        IEnumerator<object> IEnumerable<object>.GetEnumerator() {
-            return new DictionaryItemEnumerator(_dict._storage);
-        }
+        IEnumerator IEnumerable.GetEnumerator() => new DictionaryItemEnumerator(_dict._storage);
 
         #region ICollection<object> Members
 
-        void ICollection<object>.Add(object item) {
-            throw new NotSupportedException("Collection is read-only");
-        }
+        void ICollection<object>.Add(object item) => throw new NotSupportedException("Collection is read-only");
 
-        void ICollection<object>.Clear() {
-            throw new NotSupportedException("Collection is read-only");
-        }
+        void ICollection<object>.Clear() => throw new NotSupportedException("Collection is read-only");
 
-        [PythonHidden]
-        public bool Contains(object item) {
-            PythonTuple tuple = item as PythonTuple;
-            object value;
-            if (tuple == null || tuple.Count != 2 || !_dict.TryGetValue(tuple[0], out value)) {
-                return false;
+        bool ICollection<object>.Contains(object item) {
+            if (item is PythonTuple tuple && tuple.Count == 2 && _dict.TryGetValue(tuple[0], out object value)) {
+                return PythonOps.EqualRetBool(tuple[1], value);
             }
 
-            return PythonOps.EqualRetBool(tuple[1], value);
+            return false;
         }
 
-        [PythonHidden]
-        public void CopyTo(object[] array, int arrayIndex) {
+        void ICollection<object>.CopyTo(object[] array, int arrayIndex) {
             int i = arrayIndex;
             foreach (object item in this) {
                 array[i++] = item;
@@ -1531,19 +1605,11 @@ namespace IronPython.Runtime {
             }
         }
 
-        public int Count {
-            [PythonHidden]
-            get { return _dict.Count; }
-        }
+        int ICollection<object>.Count => _dict.Count;
 
-        public bool IsReadOnly {
-            [PythonHidden]
-            get { return true; }
-        }
+        bool ICollection<object>.IsReadOnly =>  true;
 
-        bool ICollection<object>.Remove(object item) {
-            throw new NotSupportedException("Collection is read-only");
-        }
+        bool ICollection<object>.Remove(object item) => throw new NotSupportedException("Collection is read-only");
 
         #endregion
 
@@ -1828,7 +1894,12 @@ namespace IronPython.Runtime {
             foreach (object item in this) {
                 res.Append(comma);
                 comma = ", ";
-                res.Append(PythonOps.Repr(context, item));
+                try {
+                    PythonOps.FunctionPushFrame(context.LanguageContext);
+                    res.Append(PythonOps.Repr(context, item));
+                } finally {
+                    PythonOps.FunctionPopFrame();
+                }
             }
             res.Append("])");
 
@@ -1836,7 +1907,23 @@ namespace IronPython.Runtime {
         }
 
         #endregion
-        
+
+        #region Pickling
+
+        // TODO: this is not technically correct, it should be throwing in ObjectOps.ReduceProtocol2
+        public object __reduce__(CodeContext context) => throw PythonOps.TypeError($"can't pickle dict_items objects");
+
+        #endregion
+
+#if IPY3
+        public bool isdisjoint(IEnumerable other) {
+            return SetStorage.Intersection(
+                SetStorage.GetItemsWorker(GetEnumerator()),
+                SetStorage.GetItems(other)
+            ).Count == 0;
+        }
+#endif
+
         public override int GetHashCode() {
             return base.GetHashCode();
         }

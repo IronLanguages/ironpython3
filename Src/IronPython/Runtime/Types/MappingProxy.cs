@@ -25,7 +25,7 @@ using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Types {
     [PythonType("mappingproxy")]
-    public class MappingProxy : IDictionary, IEnumerable, IDictionary<object, object> {
+    public class MappingProxy : IDictionary<object, object>, IDictionary {
         internal PythonDictionary Dictionary { get; }
 
         internal MappingProxy(CodeContext context, PythonType/*!*/ dt) {
@@ -69,24 +69,12 @@ namespace IronPython.Runtime.Types {
             return Dictionary.values();
         }
 
-        public List items(CodeContext context) {
+        public object items(CodeContext context) {
             return Dictionary.items();
         }
 
         public PythonDictionary copy(CodeContext/*!*/ context) {
             return new PythonDictionary(context, this);
-        }
-
-        public IEnumerator iteritems(CodeContext/*!*/ context) {
-            return new DictionaryItemEnumerator(Dictionary._storage);
-        }
-
-        public IEnumerator iterkeys(CodeContext/*!*/ context) {
-            return new DictionaryKeyEnumerator(Dictionary._storage);
-        }
-
-        public IEnumerator itervalues(CodeContext/*!*/ context) {
-            return new DictionaryValueEnumerator(Dictionary._storage);
         }
 
         #endregion
@@ -126,8 +114,8 @@ namespace IronPython.Runtime.Types {
 
         #region IEnumerable Members
 
-        System.Collections.IEnumerator IEnumerable.GetEnumerator() {
-            return DictionaryOps.iterkeys(Dictionary);
+        IEnumerator IEnumerable.GetEnumerator() {
+            return Dictionary.keys().GetEnumerator();
         }
 
         #endregion
@@ -145,7 +133,7 @@ namespace IronPython.Runtime.Types {
         }
 
         IDictionaryEnumerator IDictionary.GetEnumerator() {
-            return new PythonDictionary.DictEnumerator(Dictionary.GetEnumerator());
+            return ((IDictionary)Dictionary).GetEnumerator();
         }
 
         bool IDictionary.IsFixedSize {

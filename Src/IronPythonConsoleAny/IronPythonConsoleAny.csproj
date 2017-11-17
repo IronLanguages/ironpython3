@@ -15,6 +15,9 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\IronPython\IronPython.csproj" />
+    <ProjectReference Include="..\IronPython.Modules\IronPython.Modules.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\IronPythonConsole\Properties\AssemblyInfo.cs" Link="Properties\AssemblyInfo.cs" />
@@ -22,7 +25,7 @@
     <Compile Include="..\IronPythonConsole\Console.cs" Link="Console.cs" />
   </ItemGroup>
   <Import Project="$(BeforeTargetFiles)" />
-  <Target Name="BeforeBuildStarts" BeforeTargets="BeforeBuild" DependsOnTargets="$(BeforeTargets);GenerateCurrentVersion"/>
+  <Target Name="BeforeBuildStarts" BeforeTargets="BeforeBuild" DependsOnTargets="$(BeforeTargets);GenerateCurrentVersion" />
   <ItemGroup>
     <!-- if the file does not exist it's not picked up automatically -->
     <Compile Remove="Properties\CurrentVersion.Generated.cs" />

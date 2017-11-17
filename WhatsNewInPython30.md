@@ -4,8 +4,8 @@ https://docs.python.org/3/whatsnew/3.0.html
 
 Views And Iterators Instead Of Lists
 =======================
-- [ ] dict methods dict.keys(), dict.items() and dict.values() return "views" instead of lists. For example, this no longer works: k = d.keys(); k.sort(). Use k = sorted(d) instead (this works in Python 2.5 too and is just as efficient).
-- [ ] Also, the dict.iterkeys(), dict.iteritems() and dict.itervalues() methods are no longer supported.
+- [x] dict methods dict.keys(), dict.items() and dict.values() return "views" instead of lists. For example, this no longer works: k = d.keys(); k.sort(). Use k = sorted(d) instead (this works in Python 2.5 too and is just as efficient).
+- [x] Also, the dict.iterkeys(), dict.iteritems() and dict.itervalues() methods are no longer supported.
 - [x] map() and filter() return iterators. If you really need a list, a quick fix is e.g. list(map(...)), but a better fix is often to use a list comprehension (especially when the original code uses lambda), or rewriting the code so it doesn't need a list at all. Particularly tricky is map() invoked for the side effects of the function; the correct transformation is to use a regular for loop (since creating a list would just be wasteful).
 - [x] zip() now returns an iterator.
 

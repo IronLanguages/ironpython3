@@ -702,11 +702,9 @@ namespace IronPython.Runtime.Operations {
                 return false;
             }
             for (int i = 0; i < size0; i++) {
-                if (data0[i] != null) {
-                    if (!EqualRetBool(data0[i], data1[i])) {
-                        return false;
-                    }
-                } else if (data1[i] != null) {
+                var d0 = data0[i];
+                var d1 = data1[i];
+                if (!ReferenceEquals(d0, d1) && !EqualRetBool(d0, d1)) {
                     return false;
                 }
             }
@@ -718,11 +716,9 @@ namespace IronPython.Runtime.Operations {
                 return false;
             }
             for (int i = 0; i < size0; i++) {
-                if (data0[i] != null) {
-                    if (!comparer.Equals(data0[i], data1[i])) {
-                        return false;
-                    }
-                } else if (data1[i] != null) {
+                var d0 = data0[i];
+                var d1 = data1[i];
+                if (!ReferenceEquals(d0, d1) && !comparer.Equals(d0, d1)) {
                     return false;
                 }
             }
@@ -3134,7 +3130,8 @@ namespace IronPython.Runtime.Operations {
             }
             
             while (ie.MoveNext()) {
-                if (PythonOps.EqualRetBool(context, ie.Current, value)) {
+                var current = ie.Current;
+                if (ReferenceEquals(current, value) || PythonOps.EqualRetBool(context, current, value)) {
                     return true;
                 }
             }

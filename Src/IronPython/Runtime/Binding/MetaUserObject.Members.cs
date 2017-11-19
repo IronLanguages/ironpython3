@@ -376,7 +376,7 @@ namespace IronPython.Runtime.Binding {
                 if (slot != null) {
                     _bindingInfo.Body.FinishCondition(
                         Ast.Call(
-                            typeof(PythonOps).GetMethod("GetUserSlotValue"),
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.GetUserSlotValue)),
                             Ast.Constant(PythonContext.GetPythonContext(_bindingInfo.Action).SharedContext),
                             Ast.Convert(AstUtils.WeakConstant(slot), typeof(PythonTypeUserDescriptorSlot)),
                             _target.Expression,
@@ -419,7 +419,7 @@ namespace IronPython.Runtime.Binding {
                                         _bindingInfo.Self
                                     )
                                 ),
-                                _binder.Throw(Ast.Call(typeof(PythonOps).GetMethod("UnreadableProperty")), typeof(object))
+                                _binder.Throw(Ast.Call(typeof(PythonOps).GetMethod(nameof(PythonOps.UnreadableProperty))), typeof(object))
                             )
                         )
                     );
@@ -782,7 +782,7 @@ namespace IronPython.Runtime.Binding {
         private static Expression/*!*/ MakeTypeError(DynamicMetaObjectBinder binder, string/*!*/ name, PythonType/*!*/ type) {
             return binder.Throw(
                 Ast.Call(
-                    typeof(PythonOps).GetMethod("AttributeErrorForMissingAttribute", new Type[] { typeof(string), typeof(string) }),
+                    typeof(PythonOps).GetMethod(nameof(PythonOps.AttributeErrorForMissingAttribute), new Type[] { typeof(string), typeof(string) }),
                     AstUtils.Constant(type.Name),
                     AstUtils.Constant(name)
                 ),
@@ -1198,7 +1198,7 @@ namespace IronPython.Runtime.Binding {
                                     typeof(object)
                                 )
                             ),
-                            info.Action.Throw(Ast.Call(typeof(PythonOps).GetMethod("UnsetableProperty")), typeof(object))
+                            info.Action.Throw(Ast.Call(typeof(PythonOps).GetMethod(nameof(PythonOps.UnsetableProperty))), typeof(object))
                         )
                     )
                 );
@@ -1212,7 +1212,7 @@ namespace IronPython.Runtime.Binding {
                 Ast.Block(
                     Ast.Assign(tmp, info.Args[1].Expression),
                     Ast.Call(
-                        typeof(PythonOps).GetMethod("SlotTrySetValue"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.SlotTrySetValue)),
                         AstUtils.Constant(context),
                         AstUtils.Convert(AstUtils.WeakConstant(dts), typeof(PythonTypeSlot)),
                         AstUtils.Convert(info.Args[0].Expression, typeof(object)),
@@ -1329,7 +1329,7 @@ namespace IronPython.Runtime.Binding {
                                 tmpDeleter,
                                 info.Args[0].Expression
                             ),
-                            info.Action.Throw(Ast.Call(typeof(PythonOps).GetMethod("UndeletableProperty")), typeof(object))
+                            info.Action.Throw(Ast.Call(typeof(PythonOps).GetMethod(nameof(PythonOps.UndeletableProperty))), typeof(object))
                         )
                     )
                 );
@@ -1338,7 +1338,7 @@ namespace IronPython.Runtime.Binding {
 
             info.Body.AddCondition(
                 Ast.Call(
-                    typeof(PythonOps).GetMethod("SlotTryDeleteValue"),
+                    typeof(PythonOps).GetMethod(nameof(PythonOps.SlotTryDeleteValue)),
                     AstUtils.Constant(PythonContext.GetPythonContext(info.Action).SharedContext),
                     AstUtils.Convert(AstUtils.WeakConstant(dts), typeof(PythonTypeSlot)),
                     AstUtils.Convert(info.Args[0].Expression, typeof(object)),

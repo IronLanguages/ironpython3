@@ -871,7 +871,7 @@ namespace IronPython.Runtime.Binding {
 
         public Expression CreateExpression() {
             return Ast.Call(
-                typeof(PythonOps).GetMethod("MakeBinaryOperationAction"),
+                typeof(PythonOps).GetMethod(nameof(PythonOps.MakeBinaryOperationAction)),
                 BindingHelpers.CreateBinderStateExpression(),
                 AstUtils.Constant(Operation)
             );

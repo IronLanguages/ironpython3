@@ -62,7 +62,7 @@ namespace IronPython.Runtime.Binding {
 
         public Expression/*!*/ CreateExpression() {
             return Ast.Call(
-                typeof(PythonOps).GetMethod("MakeDeleteSliceBinder"),
+                typeof(PythonOps).GetMethod(nameof(PythonOps.MakeDeleteSliceBinder)),
                 BindingHelpers.CreateBinderStateExpression()
             );
         }

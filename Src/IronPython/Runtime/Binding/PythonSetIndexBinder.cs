@@ -99,7 +99,7 @@ namespace IronPython.Runtime.Binding {
 
         public Expression/*!*/ CreateExpression() {
             return Ast.Call(
-                typeof(PythonOps).GetMethod("MakeSetIndexAction"),
+                typeof(PythonOps).GetMethod(nameof(PythonOps.MakeSetIndexAction)),
                 BindingHelpers.CreateBinderStateExpression(),
                 AstUtils.Constant(CallInfo.ArgumentCount)
             );

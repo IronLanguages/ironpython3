@@ -362,7 +362,7 @@ namespace IronPython.Runtime.Binding {
                 return MakeDefaultNew(
                     binder,
                     Ast.Call(
-                        typeof(PythonOps).GetMethod("PythonTypeGetMember"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.PythonTypeGetMember)),
                         CodeContext,
                         AstUtils.Convert(Arguments.Self.Expression, typeof(PythonType)),
                         AstUtils.Constant(null),
@@ -526,7 +526,7 @@ namespace IronPython.Runtime.Binding {
 
             public override DynamicMetaObject/*!*/ MakeInitCall(PythonBinder/*!*/ binder, DynamicMetaObject/*!*/ createExpr) {
                 Expression init = Ast.Call(
-                    typeof(PythonOps).GetMethod("GetInitSlotMember"),
+                    typeof(PythonOps).GetMethod(nameof(PythonOps.GetInitSlotMember)),
                     CodeContext,
                     Ast.Convert(Arguments.Self.Expression, typeof(PythonType)),
                     Ast.Convert(AstUtils.WeakConstant(_slot), typeof(PythonTypeSlot)),
@@ -734,7 +734,7 @@ namespace IronPython.Runtime.Binding {
             return new ValidationInfo(
                 Ast.Equal(
                     Ast.Call(
-                        typeof(PythonOps).GetMethod("GetTypeVersion"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.GetTypeVersion)),
                         Ast.Convert(Expression, typeof(PythonType))
                     ),
                     AstUtils.Constant(version)

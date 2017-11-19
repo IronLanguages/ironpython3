@@ -185,7 +185,7 @@ namespace IronPython.Runtime.Binding {
 
         public Expression/*!*/ CreateExpression() {
             return Ast.Call(
-                typeof(PythonOps).GetMethod("MakeGetIndexAction"),
+                typeof(PythonOps).GetMethod(nameof(PythonOps.MakeGetIndexAction)),
                 BindingHelpers.CreateBinderStateExpression(),
                 AstUtils.Constant(CallInfo.ArgumentCount)
             );

@@ -47,7 +47,6 @@
     <Features>$(Features);FEATURE_SYNC_SOCKETS</Features>
     <Features>$(Features);FEATURE_THREAD</Features>
     <Features>$(Features);FEATURE_TYPE_EQUIVALENCE</Features>
-    <Features>$(Features);FEATURE_TYPE_INFO</Features>
     <Features>$(Features);FEATURE_TYPECONVERTER</Features>
     <Features>$(Features);FEATURE_VARIANCE</Features>
     <Features>$(Features);FEATURE_WARNING_EXCEPTION</Features>

@@ -162,9 +162,9 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static bool IsRuntimeAssembly(Assembly assembly) {
-            if (assembly == typeof(PythonOps).GetTypeInfo().Assembly || // IronPython.dll
-                assembly == typeof(Microsoft.Scripting.Interpreter.LightCompiler).GetTypeInfo().Assembly || // Microsoft.Scripting.dll
-                assembly == typeof(DynamicMetaObject).GetTypeInfo().Assembly) {  // Microsoft.Scripting.Core.dll
+            if (assembly == typeof(PythonOps).Assembly || // IronPython.dll
+                assembly == typeof(Microsoft.Scripting.Interpreter.LightCompiler).Assembly || // Microsoft.Scripting.dll
+                assembly == typeof(DynamicMetaObject).Assembly) {  // Microsoft.Scripting.Core.dll
                 return true;
             }
 
@@ -886,7 +886,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static Type GetFinalSystemType(Type type) {
-            while (typeof(IPythonObject).IsAssignableFrom(type) && !type.GetTypeInfo().IsDefined(typeof(DynamicBaseTypeAttribute), false)) {
+            while (typeof(IPythonObject).IsAssignableFrom(type) && !type.IsDefined(typeof(DynamicBaseTypeAttribute), false)) {
                 type = type.GetBaseType();
             }
             return type;

@@ -635,7 +635,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         [SpecialName, PropertyMethod, WrapperDescriptor, PythonHidden]
         public static string Get__clr_assembly__(PythonType self) {
-            return self.UnderlyingSystemType.Namespace + " in " + self.UnderlyingSystemType.GetTypeInfo().Assembly.FullName;
+            return self.UnderlyingSystemType.Namespace + " in " + self.UnderlyingSystemType.Assembly.FullName;
         }
 
         [SpecialName, PropertyMethod, WrapperDescriptor]
@@ -677,7 +677,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             string name = Name;
 
             if (IsSystemType) {
-                if (PythonTypeOps.IsRuntimeAssembly(UnderlyingSystemType.GetTypeInfo().Assembly) || IsPythonType) {
+                if (PythonTypeOps.IsRuntimeAssembly(UnderlyingSystemType.Assembly) || IsPythonType) {
                     object module = Get__module__(context, this);
                     if (!module.Equals("builtins")) {
                         return string.Format("<class '{0}.{1}'>", module, Name);
@@ -2316,7 +2316,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                     baseType = _underlyingSystemType.GetBaseType();
                 }
 
-                while (baseType.GetTypeInfo().IsDefined(typeof(PythonHiddenBaseClassAttribute), false)) {
+                while (baseType.IsDefined(typeof(PythonHiddenBaseClassAttribute), false)) {
                     baseType = baseType.GetBaseType();
                 }
 
@@ -2327,7 +2327,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                     Type newType;
                     if (TryReplaceExtensibleWithBase(curType, out newType)) {
                         mro.Add(DynamicHelpers.GetPythonTypeFromType(newType));
-                    } else if(!curType.GetTypeInfo().IsDefined(typeof(PythonHiddenBaseClassAttribute), false)) {
+                    } else if(!curType.IsDefined(typeof(PythonHiddenBaseClassAttribute), false)) {
                         mro.Add(DynamicHelpers.GetPythonTypeFromType(curType));
                     }
                     curType = curType.GetBaseType();

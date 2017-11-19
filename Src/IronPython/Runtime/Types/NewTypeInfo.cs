@@ -86,7 +86,7 @@ namespace IronPython.Runtime.Types {
                 // then we better be in some esoteric __slots__ situation
                 if (!baseCLIType.IsSubclassOf(curTypeToExtend)) {
                     if (baseCLIType != typeof(object) && baseCLIType != curTypeToExtend &&
-                        (!baseCLIType.GetTypeInfo().IsDefined(typeof(DynamicBaseTypeAttribute), false) && !curTypeToExtend.IsSubclassOf(baseCLIType))) {
+                        (!baseCLIType.IsDefined(typeof(DynamicBaseTypeAttribute), false) && !curTypeToExtend.IsSubclassOf(baseCLIType))) {
                         throw PythonOps.TypeError(
                             typeName + ": can only extend one CLI or builtin type, not both {0} (for {1}) and {2} (for {3})",
                             baseCLIType.FullName,

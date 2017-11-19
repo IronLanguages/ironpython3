@@ -386,7 +386,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override bool IncludeExtensionMember(MemberInfo member) {
-            return !member.DeclaringType.GetTypeInfo().IsDefined(typeof(PythonHiddenBaseClassAttribute), false);
+            return !member.DeclaringType.IsDefined(typeof(PythonHiddenBaseClassAttribute), false);
         }
 
         public override IList<Type> GetExtensionTypes(Type t) {
@@ -795,7 +795,7 @@ namespace IronPython.Runtime.Binding {
                 return extInfo.PythonName;
             }
 
-            var attr = t.GetTypeInfo().GetCustomAttributes<PythonTypeAttribute>(false).FirstOrDefault();
+            var attr = t.GetCustomAttributes<PythonTypeAttribute>(false).FirstOrDefault();
             if (attr != null && attr.Name != null) {
                 return attr.Name;
             }
@@ -812,7 +812,7 @@ namespace IronPython.Runtime.Binding {
         public static bool IsPythonType(Type/*!*/ t) {
             Debug.Assert(t != null);
 
-            return _sysTypes.ContainsKey(t) || t.GetTypeInfo().IsDefined(typeof(PythonTypeAttribute), false);
+            return _sysTypes.ContainsKey(t) || t.IsDefined(typeof(PythonTypeAttribute), false);
         }
 
         /// <summary>

@@ -143,7 +143,6 @@ class BytesIOTest(unittest.TestCase):
     def test__BytesIO_writelines(self):
         print("TODO")
 
-
     def test_coverage(self):
         '''
         Test case holes discovered by code coverage runs. Test cases below need to

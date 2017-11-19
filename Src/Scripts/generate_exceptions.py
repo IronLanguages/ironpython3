@@ -27,13 +27,12 @@ pythonExcs = ['ImportError', 'RuntimeError', 'UnicodeTranslateError', 'PendingDe
               'BlockingIOError', 'NotADirectoryError']
 
 class ExceptionInfo(object):
-    def __init__(self, name, clrException, args, fields, subclasses, silverlightSupported = True, baseMapping = None):
+    def __init__(self, name, clrException, args, fields, subclasses, baseMapping = None):
         self.name = name
         self.clrException = clrException
         self.args = args
         self.fields = fields
         self.subclasses = subclasses
-        self.silverlightSupported = silverlightSupported
         self.parent = None
         self.baseMapping = baseMapping
         for child in subclasses:

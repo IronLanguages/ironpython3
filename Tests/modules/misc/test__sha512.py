@@ -22,7 +22,6 @@ import unittest
 
 from iptest import is_cli, run_test
 
-
 class _Sha512Test(unittest.TestCase):
     def test_sanity(self):
         self.assertTrue("__doc__" in dir(_sha512))

@@ -121,7 +121,6 @@ def test__2_unregistered_nopia():
     password = IronPythonTest.ScriptPW.CreatePassword()
     AreEqual('System.__ComObject', password.ToString())
 
-
 #------------------------------------------------------------------------------
 if not file_exists(scriptpw_path):
     print("Cannot test scriptpw.dll when it doesn't exist.")

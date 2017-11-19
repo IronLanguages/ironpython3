@@ -82,7 +82,6 @@ def c():
         x = System.Exception("first", e)
     return x
 
-
 #Rowan Work Item 312902
 @skip("multiple_execute")
 def test_formatexception():
@@ -105,7 +104,6 @@ def test_formatexception():
         pass
 
 #Rowan Work Item 31290
-
 def test_formatexception_showclrexceptions():
     import Microsoft.Scripting
     from IronPython.Hosting import Python
@@ -140,7 +138,6 @@ def test_formatexception_exceptiondetail():
     exc_string = pe.GetService[Microsoft.Scripting.Hosting.ExceptionOperations]().FormatException(c())
     Assert(exc_string.endswith("Exception: first[NEWLINE]".replace("[NEWLINE]", System.Environment.NewLine)))
 
-
 def test_engine_access_from_within():
     import clr
     from Microsoft.Scripting.Hosting import ScriptEngine
@@ -153,7 +150,6 @@ def test_import_clr():
     eng = Python.CreateEngine()
     mod = Python.ImportModule(eng, 'clr')
     Assert('ToString' not in eng.Operations.GetMemberNames(42))
-
 
 def test_cp6703():
     import clr

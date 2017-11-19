@@ -74,7 +74,6 @@ class _WeakrefTest(IronPythonTestCase):
 
         keep_alive(a)
 
-
     def test_type_call(self):
         def get_dead_weakref():
             class C: pass

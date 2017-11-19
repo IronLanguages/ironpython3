@@ -24,7 +24,6 @@ from io import StringIO
 
 from iptest import IronPythonTestCase, is_cli, path_modifier, run_test
 
-
 # We test IronPython's cPickle bytecode output against CPython's pickle.py
 # output, since pickle.py's output (specifically its memoization behavior) is
 # more predictable than cPickle's. (CPython's cPickle relies on reference counts

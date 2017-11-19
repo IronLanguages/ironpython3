@@ -445,5 +445,4 @@ class FileIOTest(unittest.TestCase):
                 except:
                     pass
 
-
 run_test(__name__)

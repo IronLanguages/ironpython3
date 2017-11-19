@@ -22,7 +22,6 @@ class CP35300_Derived(EnvironmentError):
     def __init__(self, *args, **kwargs):
         pass
 
-
 class ExceptionTest(IronPythonTestCase):
     def setUp(self):
         super(ExceptionTest, self).setUp()
@@ -397,7 +396,6 @@ finally:
         sys.exc_info()[0] = None
 
         self.assertEqual(str(Exception()), '')
-
 
         @skipUnlessIronPython()
         def test_array(self):

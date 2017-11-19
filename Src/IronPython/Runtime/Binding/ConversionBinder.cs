@@ -657,7 +657,7 @@ namespace IronPython.Runtime.Binding {
                     res = new DynamicMetaObject(
                         this.Throw(
                             Ast.Call(
-                                typeof(PythonOps).GetMethod("TypeError"),
+                                typeof(PythonOps).GetMethod(nameof(PythonOps.TypeError)),
                                 AstUtils.Constant("expected string of length 1 when converting to char, got '{0}'"),
                                 Ast.NewArrayInit(typeof(object), self.Expression)
                             ),

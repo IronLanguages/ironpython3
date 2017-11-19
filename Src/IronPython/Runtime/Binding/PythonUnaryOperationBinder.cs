@@ -272,7 +272,7 @@ namespace IronPython.Runtime.Binding {
 
         public Expression CreateExpression() {
             return Ast.Call(
-                typeof(PythonOps).GetMethod("MakeUnaryOperationAction"),
+                typeof(PythonOps).GetMethod(nameof(PythonOps.MakeUnaryOperationAction)),
                 BindingHelpers.CreateBinderStateExpression(),
                 AstUtils.Constant(Operation)
             );

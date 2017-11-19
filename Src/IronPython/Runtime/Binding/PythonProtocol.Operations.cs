@@ -980,7 +980,7 @@ namespace IronPython.Runtime.Binding {
             bodyBuilder.AddCondition(
                 Ast.AndAlso(
                     Ast.Call(
-                        typeof(PythonOps).GetMethod("SlotTryGetValue"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.SlotTryGetValue)),
                         AstUtils.Constant(state.SharedContext),
                         AstUtils.Convert(Utils.WeakConstant(slotTarget), typeof(PythonTypeSlot)),
                         AstUtils.Convert(self, typeof(object)),
@@ -1505,7 +1505,7 @@ namespace IronPython.Runtime.Binding {
                         arguments[0],
                         new DynamicMetaObject(
                             Ast.Call(
-                                typeof(PythonOps).GetMethod("MakeTuple"),
+                                typeof(PythonOps).GetMethod(nameof(PythonOps.MakeTuple)),
                                 Ast.NewArrayInit(typeof(object), tupleArgs)
                             ),
                             restrictions
@@ -1525,7 +1525,7 @@ namespace IronPython.Runtime.Binding {
                         arguments[0],
                         new DynamicMetaObject(
                             Ast.Call(
-                                typeof(PythonOps).GetMethod("MakeTuple"),
+                                typeof(PythonOps).GetMethod(nameof(PythonOps.MakeTuple)),
                                 Ast.NewArrayInit(typeof(object), tupleArgs)
                             ),
                             BindingRestrictions.Combine(ArrayUtils.RemoveFirst(arguments))
@@ -2099,7 +2099,7 @@ namespace IronPython.Runtime.Binding {
                 return new DynamicMetaObject(
                     action.Throw(
                         Ast.Call(
-                            typeof(PythonOps).GetMethod("TypeErrorForBinaryOp"),
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.TypeErrorForBinaryOp)),
                             AstUtils.Constant(Symbols.OperatorToSymbol(NormalizeOperator(op))),
                             AstUtils.Convert(args[0].Expression, typeof(object)),
                             AstUtils.Convert(args[1].Expression, typeof(object))

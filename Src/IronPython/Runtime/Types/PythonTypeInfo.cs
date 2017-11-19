@@ -108,9 +108,9 @@ namespace IronPython.Runtime.Types {
         }
 
         public static class _PythonOps {
-            public static readonly MethodInfo/*!*/ SlotTryGetBoundValue = typeof(PythonOps).GetMethod("SlotTryGetBoundValue");
-            public static readonly MethodInfo/*!*/ GetTypeVersion = typeof(PythonOps).GetMethod("GetTypeVersion");
-            public static readonly MethodInfo/*!*/ CheckTypeVersion = typeof(PythonOps).GetMethod("CheckTypeVersion");
+            public static readonly MethodInfo/*!*/ SlotTryGetBoundValue = typeof(PythonOps).GetMethod(nameof(PythonOps.SlotTryGetBoundValue));
+            public static readonly MethodInfo/*!*/ GetTypeVersion = typeof(PythonOps).GetMethod(nameof(PythonOps.GetTypeVersion));
+            public static readonly MethodInfo/*!*/ CheckTypeVersion = typeof(PythonOps).GetMethod(nameof(PythonOps.CheckTypeVersion));
         }
 
         public static class _OperationFailed {

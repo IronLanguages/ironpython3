@@ -271,7 +271,7 @@ namespace IronPython.Runtime {
                         new[] { tmp },
                         Expression.Condition(
                             Expression.Call(
-                                typeof(PythonOps).GetMethod("ModuleTryGetMember"),
+                                typeof(PythonOps).GetMethod(nameof(PythonOps.ModuleTryGetMember)),
                                 PythonContext.GetCodeContext(binder),
                                 Utils.Convert(Expression, typeof(PythonModule)),
                                 Expression.Constant(name),

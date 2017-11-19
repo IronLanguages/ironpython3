@@ -976,7 +976,7 @@ namespace IronPython.Runtime.Binding {
 
                 _info.Body.AddCondition(
                     Ast.Call(
-                        typeof(PythonOps).GetMethod("SlotTryGetValue"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.SlotTryGetValue)),
                         AstUtils.Constant(PythonContext.GetPythonContext(_info.Action).SharedContext),
                         AstUtils.Convert(AstUtils.WeakConstant(dts), typeof(PythonTypeSlot)),
                         AstUtils.Convert(_info.Args[0].Expression, typeof(object)),

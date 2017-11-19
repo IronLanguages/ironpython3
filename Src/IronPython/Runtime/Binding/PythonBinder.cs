@@ -181,7 +181,7 @@ namespace IronPython.Runtime.Binding {
             return ErrorInfo.FromValueNoError(
                 Expression.Block(
                     Expression.Call(
-                        typeof(PythonOps).GetMethod("Warn"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.Warn)),
                         Expression.Constant(_context.SharedContext),
                         Expression.Constant(PythonExceptions.RuntimeWarning),
                         Expression.Constant(ReflectedField.UpdateValueTypeFieldWarning),
@@ -661,14 +661,14 @@ namespace IronPython.Runtime.Binding {
                     );
                 case TrackerTypes.Event:
                     return Ast.Call(
-                        typeof(PythonOps).GetMethod("MakeBoundEvent"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.MakeBoundEvent)),
                         AstUtils.Constant(PythonTypeOps.GetReflectedEvent((EventTracker)boundMemberTracker.BoundTo)),
                         boundMemberTracker.Instance.Expression,
                         AstUtils.Constant(boundMemberTracker.DeclaringType)
                     );
                 case TrackerTypes.MethodGroup:
                     return Ast.Call(
-                        typeof(PythonOps).GetMethod("MakeBoundBuiltinFunction"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.MakeBoundBuiltinFunction)),
                         AstUtils.Constant(GetBuiltinFunction((MethodGroup)boundTo)),
                         AstUtils.Convert(
                             boundMemberTracker.Instance.Expression,

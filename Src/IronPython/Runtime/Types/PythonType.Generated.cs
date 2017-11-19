@@ -698,7 +698,7 @@ namespace IronPython.Runtime.Types {
                 res = Expression.Block(
                     res,
                     Expression.Call(
-                        typeof(PythonOps).GetMethod("InitializeForFinalization"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.InitializeForFinalization)),
                         codeContext.Expression,
                         AstUtils.Convert(target.Expression, typeof(object))
                     )

@@ -54,7 +54,7 @@ namespace IronPython.Runtime.Types {
         protected override DynamicMetaObject GetBoundValue(OverloadResolverFactory factory, ActionBinder binder, Type instanceType, DynamicMetaObject instance) {
             return new DynamicMetaObject(
                 Ast.Call(
-                    typeof(PythonOps).GetMethod("SlotGetValue"),
+                    typeof(PythonOps).GetMethod(nameof(PythonOps.SlotGetValue)),
                     ((PythonOverloadResolverFactory)factory)._codeContext,
                     AstUtils.Constant(GetSlot(), typeof(PythonTypeSlot)),
                     AstUtils.Convert(

@@ -63,7 +63,7 @@ namespace IronPython.Compiler.Ast {
             if (Items.Count == 0) {
                 return Ast.Field(
                     null,
-                    typeof(PythonOps).GetField("EmptyTuple")
+                    typeof(PythonOps).GetField(nameof(PythonOps.EmptyTuple))
                 );
             }
 

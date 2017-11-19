@@ -1454,10 +1454,10 @@ namespace IronPython.Runtime.Types {
                     cctor.Emit(OpCodes.Ldstr, genericArgs[i].Name);
                     cctor.Emit(OpCodes.Stobj, typeof(string));
                 }
-                cctor.EmitCall(typeof(PythonOps).GetMethod("MakeComplexCallAction"));
+                cctor.EmitCall(typeof(PythonOps).GetMethod(nameof(PythonOps.MakeComplexCallAction)));
             } else {
                 cctor.EmitInt(nargs);
-                cctor.EmitCall(typeof(PythonOps).GetMethod("MakeSimpleCallAction"));
+                cctor.EmitCall(typeof(PythonOps).GetMethod(nameof(PythonOps.MakeSimpleCallAction)));
             }
 
             // Create the dynamic site

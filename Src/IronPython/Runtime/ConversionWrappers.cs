@@ -19,9 +19,9 @@ using System.Collections.Generic;
 namespace IronPython.Runtime {
 
     public class ListGenericWrapper<T> : IList<T> {
-        private IList<object> _value;
+        private readonly IList<object> _value;
 
-        public ListGenericWrapper(IList<object> value) { this._value = value; }
+        public ListGenericWrapper(IList<object> value) { _value = value; }
 
         #region IList<T> Members
 
@@ -38,12 +38,8 @@ namespace IronPython.Runtime {
         }
 
         public T this[int index] {
-            get {
-                return (T)_value[index];
-            }
-            set {
-                this._value[index] = value;
-            }
+            get => (T)_value[index];
+            set => _value[index] = value;
         }
 
         #endregion
@@ -101,7 +97,7 @@ namespace IronPython.Runtime {
 
 
     public class DictionaryGenericWrapper<K, V> : IDictionary<K, V> {
-        private IDictionary<object, object> self;
+        private readonly IDictionary<object, object> self;
 
         public DictionaryGenericWrapper(IDictionary<object, object> self) {
             this.self = self;
@@ -216,7 +212,8 @@ namespace IronPython.Runtime {
     }
 
     public class IEnumeratorOfTWrapper<T> : IEnumerator<T> {
-        IEnumerator enumerable;
+        readonly IEnumerator enumerable;
+ 
         public IEnumeratorOfTWrapper(IEnumerator enumerable) {
             this.enumerable = enumerable;
         }

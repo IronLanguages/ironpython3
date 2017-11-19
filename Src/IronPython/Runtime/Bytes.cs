@@ -1013,7 +1013,7 @@ namespace IronPython.Runtime {
             if (end != null) {
                 return new[] { (BigInteger)end - start };
             }
-            return new[] { (BigInteger)this._bytes.Length - start };
+            return new[] { (BigInteger)_bytes.Length - start };
         }
 
         PythonTuple IBufferProtocol.Strides {

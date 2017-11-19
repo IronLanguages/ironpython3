@@ -24,7 +24,7 @@ namespace IronPython.Runtime {
         internal readonly BuiltinFunction _func;
 
         internal ClassMethodDescriptor(BuiltinFunction func) {
-            this._func = func;
+            _func = func;
         }
 
         internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {

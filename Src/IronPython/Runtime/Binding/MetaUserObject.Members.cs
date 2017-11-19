@@ -558,7 +558,7 @@ namespace IronPython.Runtime.Binding {
 
             protected override void MakeSlotAccess(PythonTypeSlot foundSlot, bool systemTypeResolution) {
                 if (systemTypeResolution) {
-                    if (!_binder.Context.Binder.TryResolveSlot(_context, this.Value.PythonType, this.Value.PythonType, _binder.Name, out foundSlot)) {
+                    if (!_binder.Context.Binder.TryResolveSlot(_context, Value.PythonType, Value.PythonType, _binder.Name, out foundSlot)) {
                         Debug.Assert(false);
                     }
 
@@ -1512,7 +1512,7 @@ namespace IronPython.Runtime.Binding {
                 );
             }
 
-            return action.FallbackDeleteMember(this.Restrict(this.GetLimitType()));
+            return action.FallbackDeleteMember(Restrict(this.GetLimitType()));
         }
 
         #endregion

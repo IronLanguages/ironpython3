@@ -42,8 +42,8 @@ namespace IronPython.Runtime.Types {
         public ReflectedField(FieldInfo/*!*/ info, NameType nameType) {
             Debug.Assert(info != null);
 
-            this._nameType = nameType;
-            this._info = info;
+            _nameType = nameType;
+            _info = info;
         }
 
         public ReflectedField(FieldInfo/*!*/ info)

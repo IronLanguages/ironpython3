@@ -8,6 +8,8 @@ indent_size = 4
 [*.cs]
 csharp_new_line_before_open_brace = none
 csharp_new_line_before_else = false
+csharp_new_line_before_catch = false
+csharp_new_line_before_finally = false
 
 # disable default VS2017 naming rule
 dotnet_naming_rule.methods_and_properties_must_be_pascal_case.severity = none

@@ -33,7 +33,7 @@ namespace IronPython.Runtime.Operations {
     public static class ObjectOps {
         /// <summary> Types for which the pickle module has built-in support (from PEP 307 case 2)  </summary>
         [MultiRuntimeAware]
-        private static Dictionary<PythonType, object> _nativelyPickleableTypes;
+        private static HashSet<PythonType> _nativelyPickleableTypes;
 
         /// <summary>
         /// __class__, a custom slot so that it works for both objects and types.
@@ -272,25 +272,25 @@ namespace IronPython.Runtime.Operations {
 
         // This is a dynamically-initialized property rather than a statically-initialized field
         // to avoid a bootstrapping dependency loop
-        private static Dictionary<PythonType, object> NativelyPickleableTypes {
+        private static HashSet<PythonType> NativelyPickleableTypes {
             get {
                 if (_nativelyPickleableTypes == null) {
-                    Dictionary<PythonType, object> typeDict = new Dictionary<PythonType, object>();
-                    typeDict.Add(TypeCache.Null, null);
-                    typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(bool)), null);
-                    typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(int)), null);
-                    typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(double)), null);
-                    typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(Complex)), null);
-                    typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(string)), null);
-                    typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(PythonTuple)), null);
-                    typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(List)), null);
-                    typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(PythonDictionary)), null);
-                    typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(PythonFunction)), null);
-                    typeDict.Add(DynamicHelpers.GetPythonTypeFromType(typeof(BuiltinFunction)), null);
+                    var hashSet = new HashSet<PythonType>();
+                    hashSet.Add(TypeCache.Null);
+                    hashSet.Add(TypeCache.Boolean);
+                    hashSet.Add(TypeCache.Int32);
+                    hashSet.Add(TypeCache.Double);
+                    hashSet.Add(TypeCache.Complex);
+                    hashSet.Add(TypeCache.String);
+                    hashSet.Add(TypeCache.PythonTuple);
+                    hashSet.Add(TypeCache.List);
+                    hashSet.Add(TypeCache.Dict);
+                    hashSet.Add(TypeCache.Function);
+                    hashSet.Add(TypeCache.BuiltinFunction);
 
                     // type dict needs to be ensured to be fully initialized before assigning back
                     Thread.MemoryBarrier();
-                    _nativelyPickleableTypes = typeDict;
+                    _nativelyPickleableTypes = hashSet;
                 }
                 return _nativelyPickleableTypes;
             }
@@ -372,7 +372,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         private static void ThrowIfNativelyPickable(PythonType type) {
-            if (NativelyPickleableTypes.ContainsKey(type)) {
+            if (NativelyPickleableTypes.Contains(type)) {
                 throw PythonOps.TypeError("can't pickle {0} objects", type.Name);
             }
         }
@@ -444,12 +444,16 @@ namespace IronPython.Runtime.Operations {
 
             dictIterator = null;
             if (self is PythonDictionary) {
-                dictIterator = PythonOps.Invoke(context, self, "iteritems", ArrayUtils.EmptyObjects);
+#if IPY3
+                dictIterator = Modules.Builtin.iter(context, PythonOps.Invoke(context, self, nameof(PythonDictionary.items)));
+#else
+                dictIterator = PythonOps.Invoke(context, self, nameof(PythonDictionary.iteritems));
+#endif
             }
 
             return PythonTuple.MakeTuple(func, PythonTuple.MakeTuple(funcArgs), state, listIterator, dictIterator);
         }
 
-        #endregion        
+        #endregion
     }
 }

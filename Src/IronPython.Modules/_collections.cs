@@ -982,13 +982,17 @@ namespace IronPython.Modules {
                 return String.Format("defaultdict({0}, {1})", PythonOps.Repr(context, default_factory), base.__repr__(context));
             }
 
-            public PythonTuple __reduce__() {
+            public PythonTuple __reduce__(CodeContext context) {
                 return PythonTuple.MakeTuple(
                     DynamicHelpers.GetPythonType(this),
                     PythonTuple.MakeTuple(default_factory),
                     null,
                     null,
+#if IPY3
+                    Builtin.iter(context, PythonOps.Invoke(context, this, nameof(PythonDictionary.items)))
+#else
                     iteritems()
+#endif
                 );
             }
         }

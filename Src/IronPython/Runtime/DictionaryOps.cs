@@ -71,23 +71,22 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static object get(PythonDictionary self, object key) {
-            return get(self, key, null);
-        }
-
-        public static object get(PythonDictionary self, object key, object defaultValue) {
+        public static object get(PythonDictionary self, object key, object defaultValue = null) {
             object ret;
             if (self.TryGetValueNoMissing(key, out ret)) return ret;
             return defaultValue;
         }
 
-        public static List items(IDictionary<object, object> self) {
+        private static List ToList(IDictionary<object, object> self) {
             List ret = PythonOps.MakeEmptyList(self.Count);
             foreach (KeyValuePair<object, object> kv in self) {
                 ret.AddNoLock(PythonTuple.MakeTuple(kv.Key, kv.Value));
             }
             return ret;
         }
+
+#if !IPY3
+        public static List items(IDictionary<object, object> self) => ToList();
 
         public static IEnumerator iteritems(IDictionary<object, object> self) {
             return ((IEnumerable)items(self)).GetEnumerator();
@@ -100,6 +99,7 @@ namespace IronPython.Runtime {
         public static List keys(IDictionary<object, object> self) {
             return PythonOps.MakeListFromSequence(self.Keys);
         }
+#endif
 
         public static object pop(PythonDictionary self, object key) {
             //??? perf won't match expected Python perf
@@ -146,9 +146,7 @@ namespace IronPython.Runtime {
         }
 
         public static void update(CodeContext/*!*/ context, PythonDictionary/*!*/ self, object other) {
-            PythonDictionary pyDict;
-
-            if ((pyDict = other as PythonDictionary) != null) {
+            if (other is PythonDictionary pyDict) {
                 pyDict._storage.CopyTo(ref self._storage);
             } else {
                 SlowUpdate(context, self, other);
@@ -157,11 +155,9 @@ namespace IronPython.Runtime {
 
         private static void SlowUpdate(CodeContext/*!*/ context, PythonDictionary/*!*/ self, object other) {
             object keysFunc;
-            MappingProxy proxy;
-            IDictionary dict;
-            if ((proxy = other as MappingProxy) != null) {
+            if (other is MappingProxy proxy) {
                 update(context, self, proxy.Dictionary);
-            } else if ((dict = other as IDictionary) != null) {
+            } else if (other is IDictionary dict) {
                 IDictionaryEnumerator e = dict.GetEnumerator();
                 while (e.MoveNext()) {
                     self._storage.Add(ref self._storage, e.Key, e.Value);
@@ -241,19 +237,20 @@ namespace IronPython.Runtime {
             }
             return false;
         }
-       
+
         internal static int CompareTo(CodeContext/*!*/ context, IDictionary<object, object> left, IDictionary<object, object> right) {
             int lcnt = left.Count;
             int rcnt = right.Count;
 
             if (lcnt != rcnt) return lcnt > rcnt ? 1 : -1;
 
-            List ritems = DictionaryOps.items(right);
+
+            List ritems = ToList(right);
             return CompareToWorker(context, left, ritems);
         }
 
         internal static int CompareToWorker(CodeContext/*!*/ context, IDictionary<object, object> left, List ritems) {
-            List litems = DictionaryOps.items(left);
+            List litems = ToList(left);
 
             litems.sort(context);
             ritems.sort(context);

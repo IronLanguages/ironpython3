@@ -79,8 +79,9 @@ namespace IronPython.Runtime.Types {
         }
 
         private bool EventInfosDiffer(BoundEvent et) {
+            
             // if they're the same object they're the same...
-            if (et.Event.Info == this.Info) {
+            if (et.Event.Info == Info) {
                 return false;
             }
 
@@ -99,11 +100,7 @@ namespace IronPython.Runtime.Types {
             throw ReadOnlyException(DynamicHelpers.GetPythonTypeFromType(Info.DeclaringType));
         }
 
-        internal override bool IsAlwaysVisible {
-            get {
-                return !_clsOnly;
-            }
-        }
+        internal override bool IsAlwaysVisible => !_clsOnly;
 
         #endregion
 

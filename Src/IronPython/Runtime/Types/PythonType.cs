@@ -535,10 +535,11 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                     long otherId = IdDispenser.GetId(other);
                     if (thisId > otherId) {
                         return 1;
-                    } else {
-                        return -1;
-                    }
+                    } 
+
+                    return -1;
                 }
+
                 return res;
             }
             return 0;
@@ -547,7 +548,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         // Do not override == and != because it causes lots of spurious warnings
         // TODO Replace those warnings with .ReferenceEquals calls & overload ==/!=
         public bool __eq__([NotNull]PythonType other) {
-            return this.__cmp__(other) == 0;
+            return __cmp__(other) == 0;
         }
 
         public bool __ne__([NotNull]PythonType other) {
@@ -2655,11 +2656,11 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             public bool SetWeakRef(WeakRefTracker value) {
                 if(type.IsSystemType) {
-                    return this.context.SetSystemPythonTypeWeakRef(type, value);
-                } else {
-                    IWeakReferenceable weakref = (IWeakReferenceable)type;
-                    return weakref.SetWeakRef(value);
+                    return context.SetSystemPythonTypeWeakRef(type, value);
                 }
+                
+                IWeakReferenceable weakref = (IWeakReferenceable)type;
+                return weakref.SetWeakRef(value);
             }
         }
 
@@ -3447,7 +3448,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 return false;
             }
 
-            return this.Equals(cachedKey);
+            return Equals(cachedKey);
         }
 
         public override int GetHashCode() {

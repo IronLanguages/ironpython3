@@ -156,7 +156,7 @@ namespace IronPython.Runtime.Binding {
                     return _baseMetaObject.BindInvoke(ib, args);
                 }
 
-                return ib.FallbackInvoke(this.Restrict(this.GetLimitType()), args);
+                return ib.FallbackInvoke(Restrict(this.GetLimitType()), args);
             }
 
             PythonInvokeBinder pib = action as PythonInvokeBinder;
@@ -211,7 +211,7 @@ namespace IronPython.Runtime.Binding {
                             this
                         );
                     case TypeCode.String:
-                        if (!typeof(Extensible<string>).IsAssignableFrom(this.LimitType)) {
+                        if (!typeof(Extensible<string>).IsAssignableFrom(LimitType)) {
                             return MakeConvertRuleForCall(conversion, type, this, "__str__", "ConvertToString");
                         }
                         break;

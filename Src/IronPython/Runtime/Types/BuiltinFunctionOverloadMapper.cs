@@ -26,20 +26,16 @@ namespace IronPython.Runtime.Types {
 
     // Used to map signatures to specific targets on the embedded reflected method.
     public class BuiltinFunctionOverloadMapper : ICodeFormattable {
-        private BuiltinFunction _function;
-        private object _instance;
+        private readonly BuiltinFunction _function;
+        private readonly object _instance;
         private PythonTuple _allOverloads;  // overloads are stored here and may be bound to an instance
 
         public BuiltinFunctionOverloadMapper(BuiltinFunction builtinFunction, object instance) {
-            this._function = builtinFunction;
-            this._instance = instance;
+            _function = builtinFunction;
+            _instance = instance;
         }
 
-        public object this[params Type[] types] {
-            get {
-                return GetOverload(types, Targets);
-            }
-        }
+        public object this[params Type[] types] => GetOverload(types, Targets);
 
         protected object GetOverload(Type[] sig, IList<MethodBase> targets) {
             return GetOverload(sig, targets, true);
@@ -73,11 +69,13 @@ namespace IronPython.Runtime.Types {
 
             if (_instance != null) {
                 return bf.BindToInstance(_instance);
-            } else if (wrapCtors) {
-                return GetTargetFunction(bf);
-            } else {
-                return bf;
             }
+
+            if (wrapCtors) {
+                return GetTargetFunction(bf);
+            } 
+
+            return bf;
         }
 
         /// <summary>

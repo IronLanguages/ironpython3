@@ -14,16 +14,16 @@
  * ***************************************************************************/
 
 using System;
-using Microsoft.Scripting.Runtime;
+
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime.Types {
     [PythonType("getset_descriptor")]
     public sealed class PythonTypeWeakRefSlot : PythonTypeSlot, ICodeFormattable {
-        PythonType _type;
+        readonly PythonType _type;
 
         public PythonTypeWeakRefSlot(PythonType parent) {
-            this._type = parent;
+            _type = parent;
         }
 
         internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
@@ -60,7 +60,7 @@ namespace IronPython.Runtime.Types {
         }
        
         public override string ToString() {
-            return String.Format("<attribute '__weakref__' of '{0}' objects>", _type.Name);
+            return $"<attribute '__weakref__' of '{_type.Name}' objects>";
         }
 
         public void __set__(CodeContext context, object instance, object value) {

@@ -2330,7 +2330,7 @@ namespace IronPython.Runtime.Operations {
             public PythonEncoderFallbackBuffer(string encoding, string str, object callable) {
                 _function = callable;
                 _strData = str;
-                this._encoding = encoding;
+                _encoding = encoding;
             }
 
             public override bool Fallback(char charUnknown, int index) {
@@ -2418,9 +2418,9 @@ namespace IronPython.Runtime.Operations {
             private int _bufferIndex;
 
             public PythonDecoderFallbackBuffer(string encoding, string str, object callable) {
-                this._encoding = encoding;
-                this._strData = str;
-                this._function = callable;
+                _encoding = encoding;
+                _strData = str;
+                _function = callable;
             }
 
             public override int Remaining {
@@ -2492,10 +2492,10 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        class PythonDecoderFallback : DecoderFallback {
-            private object function;
-            private string str;
-            private string enc;
+        private class PythonDecoderFallback : DecoderFallback {
+            private readonly object function;
+            private readonly string str;
+            private readonly string enc;
 
             public PythonDecoderFallback(string encoding, string data, object callable) {
                 function = callable;

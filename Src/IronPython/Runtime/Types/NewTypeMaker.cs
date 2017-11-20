@@ -210,7 +210,7 @@ namespace IronPython.Runtime.Types {
             Assert.NotNull(asm);
 
             Type t = asm.GetType(_constructorTypeName);
-            if (t == null || !t.GetTypeInfo().IsDefined(typeof(PythonCachedTypeInfoAttribute), false)) {
+            if (t == null || !t.IsDefined(typeof(PythonCachedTypeInfoAttribute), false)) {
                 return;
             }
 
@@ -594,7 +594,7 @@ namespace IronPython.Runtime.Types {
                 if (mapping.TargetMethods[0].IsPrivate) {
                     // explicitly implemented IDynamicMetaObjectProvider, we cannot override it.
 
-                    if (_baseType.GetTypeInfo().IsDefined(typeof(DynamicBaseTypeAttribute), true)) {
+                    if (_baseType.IsDefined(typeof(DynamicBaseTypeAttribute), true)) {
                         // but it's been implemented by IronPython so it's going to return a MetaUserObject
                         return;
                     }

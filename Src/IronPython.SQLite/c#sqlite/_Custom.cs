@@ -362,7 +362,7 @@ static UInt32 va_arg( object[] ap, UInt32 sysType )
 {
 #if SQLITE_WINRT
   Type t = ap[vaNEXT].GetType();
-  if ( t.GetTypeInfo().IsClass )
+  if ( t.IsClass )
 #else
   if ( ap[vaNEXT].GetType().IsClass )
 #endif
@@ -379,7 +379,7 @@ static UInt64 va_arg( object[] ap, UInt64 sysType )
 {
 #if SQLITE_WINRT
   Type t = ap[vaNEXT].GetType();
-  if (t.GetTypeInfo().IsClass)
+  if (t.IsClass)
 #else
   if ( ap[vaNEXT].GetType().IsClass )
 #endif

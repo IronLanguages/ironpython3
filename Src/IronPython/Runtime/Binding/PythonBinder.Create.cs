@@ -36,7 +36,7 @@ namespace IronPython.Runtime.Binding {
 
             if (t != null) {
 
-                if (typeof(Delegate).GetTypeInfo().IsAssignableFrom(t.GetTypeInfo()) && args.Length == 1) {
+                if (typeof(Delegate).IsAssignableFrom(t.GetTypeInfo()) && args.Length == 1) {
                     // PythonOps.GetDelegate(CodeContext context, object callable, Type t);
                     return new DynamicMetaObject(
                         Ast.Call(

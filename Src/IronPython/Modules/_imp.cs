@@ -171,7 +171,7 @@ namespace IronPython.Modules {
             if (name == null) throw PythonOps.TypeError("is_builtin() argument 1 must be string, not None");
             Type ty;
             if (context.LanguageContext.BuiltinModules.TryGetValue(name, out ty)) {
-                if (ty.GetTypeInfo().Assembly == typeof(PythonContext).GetTypeInfo().Assembly) {
+                if (ty.Assembly == typeof(PythonContext).Assembly) {
                     // supposedly these can't be re-initialized and return -1 to
                     // indicate that here, but CPython does allow passing them
                     // to init_builtin.

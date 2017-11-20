@@ -106,7 +106,7 @@ namespace IronPython.Runtime.Types {
 
             if (namePrefix != null) name = namePrefix + name;
 
-            if (mi.DeclaringType.GetTypeInfo().IsDefined(typeof(PythonTypeAttribute), false) ||
+            if (mi.DeclaringType.IsDefined(typeof(PythonTypeAttribute), false) ||
                 !mi.DeclaringType.IsAssignableFrom(dt.UnderlyingSystemType)) {
                 // extension types are all python names
                 res |= NameType.Python;

@@ -138,10 +138,7 @@ namespace IronPython.Runtime {
         public override bool Equals(object obj) {
             Method other = obj as Method;
             if (other == null) return false;
-
-            return
-                (ReferenceEquals(_inst, other._inst) || PythonOps.EqualRetBool(_inst, other._inst)) &&
-                PythonOps.EqualRetBool(_func, other._func);
+            return PythonOps.IsOrEqualsRetBool(_inst, other._inst) && PythonOps.EqualRetBool(_func, other._func);
         }
 
         public override int GetHashCode() {

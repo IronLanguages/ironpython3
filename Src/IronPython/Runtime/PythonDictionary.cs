@@ -189,8 +189,7 @@ namespace IronPython.Runtime {
         [PythonHidden]
         public bool Contains(KeyValuePair<object, object> item) {
             object result;
-            return _storage.TryGetValue(item.Key, out result) &&
-                (ReferenceEquals(result, item.Value) || PythonOps.EqualRetBool(result, item.Value));
+            return _storage.TryGetValue(item.Key, out result) && PythonOps.IsOrEqualsRetBool(result, item.Value);
         }
 
         [PythonHidden]
@@ -644,7 +643,7 @@ namespace IronPython.Runtime {
                 try {
                     var val = this[o];
                     if (comparer == null) {
-                        if (!ReferenceEquals(res, val) && !PythonOps.EqualRetBool(res, val)) return false;
+                        if (!PythonOps.IsOrEqualsRetBool(res, val)) return false;
                     } else {
                         if (!ReferenceEquals(res, val) && !comparer.Equals(res, val)) return false;
                     }
@@ -664,7 +663,7 @@ namespace IronPython.Runtime {
                 try {
                     var val = this[o];
                     if (comparer == null) {
-                        if (!ReferenceEquals(res, val) && !PythonOps.EqualRetBool(res, val)) return false;
+                        if (!PythonOps.IsOrEqualsRetBool(res, val)) return false;
                     } else {
                         if (!ReferenceEquals(res, val) && !comparer.Equals(res, val)) return false;
                     }
@@ -1127,7 +1126,7 @@ namespace IronPython.Runtime {
 
         bool ICollection<object>.Contains(object item) {
             foreach (var val in this) {
-                if (ReferenceEquals(val, item) || PythonOps.EqualRetBool(val, item))
+                if (PythonOps.IsOrEqualsRetBool(val, item))
                     return true;
             }
             return false;
@@ -1597,8 +1596,7 @@ namespace IronPython.Runtime {
 
         bool ICollection<object>.Contains(object item) {
             if (item is PythonTuple tuple && tuple.Count == 2 && _dict.TryGetValue(tuple[0], out object value)) {
-                var val = tuple[1];
-                return ReferenceEquals(val, value) || PythonOps.EqualRetBool(val, value);
+                return PythonOps.IsOrEqualsRetBool(tuple[1], value);
             }
             return false;
         }

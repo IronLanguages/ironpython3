@@ -268,8 +268,7 @@ namespace IronPython.Modules {
                     int found = -1;
                     int startVersion = _version;
                     WalkDeque((int index) => {
-                        var data = _data[index];
-                        if (ReferenceEquals(data, value) || PythonOps.EqualRetBool(data, value)) {
+                        if (PythonOps.IsOrEqualsRetBool(_data[index], value)) {
                             found = index;
                             return false;
                         }
@@ -824,7 +823,7 @@ namespace IronPython.Modules {
                         var ourData = _data[ourIndex];
                         var otherData = otherDeque._data[otherIndex];
                         if (comparer == null) {
-                            result = ReferenceEquals(ourData, otherData) || PythonOps.EqualRetBool(ourData, otherData);
+                            result = PythonOps.IsOrEqualsRetBool(ourData, otherData);
                         } else {
                             result = ReferenceEquals(ourData, otherData) || comparer.Equals(ourData, otherData);
                         }

@@ -543,6 +543,10 @@ namespace IronPython.Runtime.Operations {
             return DynamicHelpers.GetPythonType(x).EqualRetBool(x, y);
         }
 
+        internal static bool IsOrEqualsRetBool(object x, object y) => ReferenceEquals(x, y) || EqualRetBool(x, y);
+
+        internal static bool IsOrEqualsRetBool(CodeContext/*!*/ context, object x, object y) => ReferenceEquals(x, y) || EqualRetBool(context, x, y);
+
         public static int Compare(object x, object y) {
             return Compare(DefaultContext.Default, x, y);
         }
@@ -702,9 +706,7 @@ namespace IronPython.Runtime.Operations {
                 return false;
             }
             for (int i = 0; i < size0; i++) {
-                var d0 = data0[i];
-                var d1 = data1[i];
-                if (!ReferenceEquals(d0, d1) && !EqualRetBool(d0, d1)) {
+                if (!IsOrEqualsRetBool(data0[i], data1[i])) {
                     return false;
                 }
             }
@@ -3130,8 +3132,7 @@ namespace IronPython.Runtime.Operations {
             }
             
             while (ie.MoveNext()) {
-                var current = ie.Current;
-                if (ReferenceEquals(current, value) || PythonOps.EqualRetBool(context, current, value)) {
+                if (IsOrEqualsRetBool(context, ie.Current, value)) {
                     return true;
                 }
             }

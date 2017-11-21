@@ -766,8 +766,8 @@ namespace IronPython.Runtime.Operations {
         /// Implements __contains__ for types implementing IEnumerable of T.
         /// </summary>
         public static bool ContainsGenericMethod<T>(CodeContext/*!*/ context, IEnumerable<T> enumerable, T value) {
-            foreach(T item in enumerable) {
-                if (ReferenceEquals(item, value) || PythonOps.EqualRetBool(context, item, value)) {
+            foreach (T item in enumerable) {
+                if (PythonOps.IsOrEqualsRetBool(context, item, value)) {
                     return true;
                 }
             }
@@ -781,7 +781,7 @@ namespace IronPython.Runtime.Operations {
         public static bool ContainsMethod(CodeContext/*!*/ context, IEnumerable enumerable, object value) {
             IEnumerator ie = enumerable.GetEnumerator();
             while (ie.MoveNext()) {
-                if (ReferenceEquals(ie.Current, value) || PythonOps.EqualRetBool(context, ie.Current, value)) {
+                if (PythonOps.IsOrEqualsRetBool(context, ie.Current, value)) {
                     return true;
                 }
             }
@@ -794,7 +794,7 @@ namespace IronPython.Runtime.Operations {
         /// </summary>
         public static bool ContainsGenericMethodIEnumerator<T>(CodeContext/*!*/ context, IEnumerator<T> enumerator, T value) {
             while (enumerator.MoveNext()) {
-                if (ReferenceEquals(enumerator.Current, value) || PythonOps.EqualRetBool(context, enumerator.Current, value)) {
+                if (PythonOps.IsOrEqualsRetBool(context, enumerator.Current, value)) {
                     return true;
                 }
             }
@@ -807,7 +807,7 @@ namespace IronPython.Runtime.Operations {
         /// </summary>
         public static bool ContainsMethodIEnumerator(CodeContext/*!*/ context, IEnumerator enumerator, object value) {
             while (enumerator.MoveNext()) {
-                if (ReferenceEquals(enumerator.Current, value) || PythonOps.EqualRetBool(context, enumerator.Current, value)) {
+                if (PythonOps.IsOrEqualsRetBool(context, enumerator.Current, value)) {
                     return true;
                 }
             }

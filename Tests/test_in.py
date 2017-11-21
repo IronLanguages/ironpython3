@@ -15,7 +15,7 @@
 
 import unittest
 
-from iptest import run_test, is_cli
+from iptest import is_cli, run_test
 
 if is_cli:
     import clr

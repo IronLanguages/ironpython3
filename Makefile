@@ -24,25 +24,25 @@ update-submodules:
 	@git submodule update --init
 
 test-ironpython:
-	cd bin/Release/net45 && mono $(CONSOLERUNNER) --labels=All --where:Category==IronPython --result:ironpython-net45-release-result.xml IronPythonTest.dll
+	cd bin/Release/net45 && mono $(CONSOLERUNNER) --params "FRAMEWORK=net45" --labels=All --where:Category==IronPython --result:ironpython-net45-release-result.xml IronPythonTest.dll
 
 test-ironpython-debug:
-	cd bin/Debug/net45 && mono $(CONSOLERUNNER) --labels=All --where:Category==IronPython --result:ironpython-net45-debug-result.xml IronPythonTest.dll
+	cd bin/Debug/net45 && mono $(CONSOLERUNNER) --params "FRAMEWORK=net45" --labels=All --where:Category==IronPython --result:ironpython-net45-debug-result.xml IronPythonTest.dll
 
 test-cpython:
-	cd bin/Release/net45 && mono $(CONSOLERUNNER) --labels=All --where:"Category==StandardCPython || Category==AllCPython" --result:cpython-net45-release-result.xml IronPythonTest.dll
+	cd bin/Release/net45 && mono $(CONSOLERUNNER) --params "FRAMEWORK=net45" --labels=All --where:"Category==StandardCPython || Category==AllCPython" --result:cpython-net45-release-result.xml IronPythonTest.dll
 
 test-cpython-debug:
-	cd bin/Debug/net45 && mono $(CONSOLERUNNER) --labels=All --where:"Category==StandardCPython || Category==AllCPython" --result:cpython-net45-debug-result.xml IronPythonTest.dll
+	cd bin/Debug/net45 && mono $(CONSOLERUNNER) --params "FRAMEWORK=net45" --labels=All --where:"Category==StandardCPython || Category==AllCPython" --result:cpython-net45-debug-result.xml IronPythonTest.dll
 
 test-smoke:
-	cd bin/Release/net45 && mono $(CONSOLERUNNER) --labels=All --where:Category==StandardCPython --result=smoke-net45-release-result.xml IronPythonTest.dll
+	cd bin/Release/net45 && mono $(CONSOLERUNNER) --params "FRAMEWORK=net45" --labels=All --where:Category==StandardCPython --result=smoke-net45-release-result.xml IronPythonTest.dll
 
 test-smoke-debug:
-	cd bin/Debug/net45 && mono $(CONSOLERUNNER) --labels=All --where:Category==StandardCPython --result=smoke-net45-debug-result.xml IronPythonTest.dll
+	cd bin/Debug/net45 && mono $(CONSOLERUNNER) --params "FRAMEWORK=net45" --labels=All --where:Category==StandardCPython --result=smoke-net45-debug-result.xml IronPythonTest.dll
 
 test-all:
-	cd bin/Release/net45 && mono $(CONSOLERUNNER) --labels=All --result=all-net45-release-result.xml IronPythonTest.dll
+	cd bin/Release/net45 && mono $(CONSOLERUNNER) --params "FRAMEWORK=net45" --labels=All --result=all-net45-release-result.xml IronPythonTest.dll
 
 test-all-debug:
-	cd bin/Debug/net45 && mono $(CONSOLERUNNER) --labels=All --result=all-net45-debug-result.xml IronPythonTest.dll
+	cd bin/Debug/net45 && mono $(CONSOLERUNNER) --params "FRAMEWORK=net45" --labels=All --result=all-net45-debug-result.xml IronPythonTest.dll

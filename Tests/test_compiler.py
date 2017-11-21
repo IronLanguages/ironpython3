@@ -15,9 +15,10 @@
 
 import os
 import unittest
-from iptest import IronPythonTestCase, is_cli, is_netstandard, run_test
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp, run_test, skipUnlessIronPython
 
-@unittest.skipIf(not is_cli or is_netstandard, 'IronPython specific case, compiler not supported on netstandard')
+@unittest.skipIf(is_netcoreapp, 'no clr.CompileModules')
+@skipUnlessIronPython()
 class CompilerTest(IronPythonTestCase):
     
     def compileCode(self, name, *codeArr):

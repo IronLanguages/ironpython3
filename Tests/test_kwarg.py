@@ -15,7 +15,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_netstandard, is_posix, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
 
 #############################################################
 # Helper functions for verifying the calls.  On each call
@@ -536,7 +536,7 @@ class KwargTest(unittest.TestCase):
         """verify named propertys work"""
         property(fget=ObjectSubClass,doc="prop")
 
-    @unittest.skipIf(is_netstandard or is_posix, 'no System.Windows.Forms in netstandard or posix')
+    @unittest.skipIf(is_netcoreapp or is_posix, 'no System.Windows.Forms')
     @skipUnlessIronPython()
     def test_builtintypes(self):
         """verify we can call built in types w/ named args & have the args set properties."""

@@ -1324,6 +1324,7 @@ X = 3.14
         # can't access private fields
         self.assertRaises(AttributeError, lambda : test_new_module._value)
 
-from iptest.file_util import delete_all_f
 run_test(__name__)
-delete_all_f(__name__, remove_folders=True)
+if __name__ == '__main__':
+    from iptest.file_util import delete_all_f
+    delete_all_f(__name__, remove_folders=True)

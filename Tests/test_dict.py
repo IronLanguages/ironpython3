@@ -23,10 +23,7 @@ import os
 import unittest
 import sys
 
-from iptest import IronPythonTestCase, is_cli, is_netstandard, path_modifier, run_test, source_root
-
-if is_netstandard: # TODO: revert this once System.SystemException is added to netstandard (https://github.com/IronLanguages/main/issues/1399)
-    SystemError = System.InvalidOperationException
+from iptest import IronPythonTestCase, is_cli, path_modifier, run_test, source_root
 
 class DictTest(IronPythonTestCase):
     def test_sanity(self):

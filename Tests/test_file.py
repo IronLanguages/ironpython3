@@ -20,7 +20,7 @@ import _thread
 
 CP16623_LOCK = _thread.allocate_lock()
 
-from iptest import IronPythonTestCase, is_cli, is_cpython, is_netstandard, is_posix, run_test
+from iptest import IronPythonTestCase, is_cli, is_cpython, is_posix, run_test
 
 class FileTest(IronPythonTestCase):
 
@@ -504,11 +504,6 @@ class FileTest(IronPythonTestCase):
     @unittest.skipUnless(is_cli, 'IronPython specific test')
     def test_net_stream(self):
         import System
-        if is_netstandard:
-            import clr
-            clr.AddReference("System.IO.FileSystem")
-            clr.AddReference("System.IO.FileSystem.Primitives")
-
         fs = System.IO.FileStream(self.temp_file, System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.ReadWrite)
         with file(fs, "wb") as f:
             f.write('hello\rworld\ngoodbye\r\n')

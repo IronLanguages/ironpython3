@@ -16,7 +16,7 @@
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netstandard, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, run_test, skipUnlessIronPython
 from iptest.type_util import *
 from functools import reduce
 
@@ -197,7 +197,6 @@ class InheritanceTest(IronPythonTestCase):
             
         self.assertEqual(D11().VirtualMethod(1), 10)
 
-    @unittest.skipIf(is_netstandard, 'no System.MarshalByRefObject in netstandard')
     @skipUnlessIronPython()
     def test_mbr_inheritance(self):
         import System

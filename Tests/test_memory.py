@@ -18,7 +18,7 @@ import unittest
 
 from time import clock
 
-from iptest import is_cli, is_cli64, is_mono, run_test, skipUnlessIronPython
+from iptest import is_cli, is_cli64, is_mono, retryOnFailure, run_test, skipUnlessIronPython
 
 def evalLoop(code, N):
     for i in range(N):
@@ -99,6 +99,7 @@ class MemoryTest(unittest.TestCase):
         if is_cli64:
             self.expectedMem = int(self.expectedMem*1.25)
 
+    @retryOnFailure
     def test_t_list(self):
         for code in t_list:
             baseMem = evalTest(code, 10)

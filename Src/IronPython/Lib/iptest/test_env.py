@@ -72,12 +72,10 @@ else:
     import os
     newline = os.linesep
 
-
 #--Build flavor of Python being tested
 is_debug = False
 if is_cli:
     is_debug = sys.exec_prefix.lower().endswith("debug")
-
 
 #--Are we using peverify to check that all IL generated is valid?
 is_peverify_run = False

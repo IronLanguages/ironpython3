@@ -86,8 +86,7 @@ class ExceptionInfo(object):
         else:
             return 'new PythonExceptions.%s(PythonExceptions.%s)' % (self.ConcreteParent.ClrType, self.name)
 
-
-    # format is name, args, (fields, ...), (subclasses, ...)
+# format is name, args, (fields, ...), (subclasses, ...)
 exceptionHierarchy = ExceptionInfo('BaseException', 'IronPython.Runtime.Exceptions.PythonException', None, None, (
             ExceptionInfo('SystemExit', 'IronPython.Runtime.Exceptions.SystemExitException', None, ('code',), ()),
             ExceptionInfo('KeyboardInterrupt', 'Microsoft.Scripting.KeyboardInterruptException', None, (), ()),
@@ -200,7 +199,7 @@ def get_type(name):
     if name.startswith('Microsoft.Scripting'):   
         res = ms.GetType(name)
         return res if res is not None else md.GetType(name)
-    
+
     if name.startswith('System.ComponentModel'): return sysdll.GetType(name)
     
     return System.Type.GetType(name)

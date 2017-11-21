@@ -16,7 +16,7 @@
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netstandard, is_mono, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_mono, run_test, skipUnlessIronPython
 
 @skipUnlessIronPython()
 class ClrLoad2Test(IronPythonTestCase):
@@ -28,7 +28,7 @@ class ClrLoad2Test(IronPythonTestCase):
 
         import UseCLI
 
-        if not is_netstandard and not is_mono: # no System.Windows.Forms in netstandard
+        if not is_netcoreapp and not is_mono: # no System.Windows.Forms in netstandard
             UseCLI.Form().Controls.Add(UseCLI.Control())
 
         nc = UseCLI.NestedClass()

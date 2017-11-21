@@ -14,13 +14,8 @@
 #####################################################################################
 
 import sys
-if sys.platform=="win32":
-    import os
-    newline = os.linesep    
-else:
-    newline = System.Environment.NewLine
-    
-    
+import os
+newline = os.linesep
 
 pats = [0L, 1L, 42L, 0x7fffffffL, 0x80000000L, 0xabcdef01L, 0xffffffffL]
 nums = []

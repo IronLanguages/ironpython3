@@ -108,7 +108,13 @@ namespace IronPythonTest.Util {
 
         public bool Redirect {
             get {
-                return this.manifest.GetBool(this.testName, "Redirect", false);
+                return this.manifest.GetBool(this.testName, "Redirect", true);
+            }
+        }
+
+        public int Timeout {
+            get {
+                return this.manifest.GetInt(this.testName, "Timeout", -1);
             }
         }
     }

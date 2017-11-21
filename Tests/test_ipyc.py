@@ -431,7 +431,7 @@ def test_cached_types():
     # basic sanity test that we can compile...
     clr.CompileSubclassTypes('test', (object, ))
     clr.CompileSubclassTypes('test', object)
-    clr.CompileSubclassTypes('test', object, str, int, int, float, complex)
+    clr.CompileSubclassTypes('test', object, str, int, float, complex)
     clr.CompileSubclassTypes('test', (object, IComparable[()]))
     clr.CompileSubclassTypes('test', (object, IComparable[()]), (str, IComparable[()]))
     

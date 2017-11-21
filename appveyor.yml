@@ -60,16 +60,16 @@ before_package:
 
 # scripts to run after build
 after_build:
-  - make.cmd package-release
+  - ps: .\make.ps1 package
 
 # to run your custom scripts instead of automatic MSBuild
 build_script:
-  - make.cmd
+  - ps: .\make.ps1
 
 # to run your custom scripts instead of automatic tests
 test_script:
-  - make.cmd ngen
-  - make.cmd test-all
+  - ps: .\make.ps1 ngen
+  - ps: .\make.ps1 test-all
 
 #---------------------------------#
 #      artifacts configuration    #
@@ -89,43 +89,16 @@ artifacts:
     type: File
 
 
-#---------------------------------#
-#     deployment configuration    #
-#---------------------------------#
-
-# providers: Local, FTP, WebDeploy, AzureCS, AzureBlob, S3, NuGet, Environment
-# provider names are case-sensitive!
-#deploy:
-
-#    # Deploying to NuGet feed
-#  - provider: NuGet
-#    server: https://my.nuget.server/feed
-#    api_key:
-#      secure: FYWX6NfjZIVw==
-#    skip_symbols: false
-#    symbol_server: https://your.symbol.server/feed
-#    artifact: MyPackage.nupkg
-
-#    # Deploy to GitHub Releases
-#  - provider: GitHub
-#    artifact: /.*\.nupkg/           # upload all NuGet packages to release assets
-#    draft: false
-#    prerelease: false
-#    on:
-#      branch: master                # release from master branch only
-#      appveyor_repo_tag: true       # deploy on tag push only
-
-#        global handlers          #
-#---------------------------------#
-
 on_failure:
   - ps: Write-Host "Uploading test results"
-  - ps: $wc = New-Object 'System.Net.WebClient'; foreach($file in (Get-ChildItem -Include *-result.xml -Recurse)) { $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", $file) }
+  - ps: $wc = New-Object 'System.Net.WebClient'; foreach($file in (Get-ChildItem -Include '*-result.xml' -Recurse)) { $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", $file) }
+  - ps: $wc = New-Object 'System.Net.WebClient'; foreach($file in (Get-ChildItem -Include '*.trx' -Recurse)) { $wc.UploadFile("https://ci.appveyor.com/api/testresults/mstest/$($env:APPVEYOR_JOB_ID)", $file) }
   - ps: Write-Host "Done uploading test results"
   
 on_success:
   - ps: Write-Host "Uploading test results"
-  - ps: $wc = New-Object 'System.Net.WebClient'; foreach($file in (Get-ChildItem -Include *-result.xml -Recurse)) { $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", $file) }
+  - ps: $wc = New-Object 'System.Net.WebClient'; foreach($file in (Get-ChildItem -Include '*-result.xml' -Recurse)) { $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", $file) }
+  - ps: $wc = New-Object 'System.Net.WebClient'; foreach($file in (Get-ChildItem -Include '*.trx' -Recurse)) { $wc.UploadFile("https://ci.appveyor.com/api/testresults/mstest/$($env:APPVEYOR_JOB_ID)", $file) }
   - ps: Write-Host "Done uploading test results"
 
 
@@ -140,13 +113,11 @@ notifications:
     to:
       - developers+int+211+854770831703316759@ironpython.groups.io
     subject: 'IronPython3 Build {{status}}'
-    #message: "{{message}}, {{commitId}}, ..."    # optional
     on_build_status_changed: true
 
   # Gitter
   - provider: Webhook
     url: https://webhooks.gitter.im/e/b21a2ccce686293e02f7 
-    #headers: ? message payload? how to differentiate projects?
     on_build_success: true
     on_build_failure: true
     on_build_status_changed: true

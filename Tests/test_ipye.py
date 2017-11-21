@@ -21,9 +21,8 @@ from iptest.assert_util import *
 skiptest("win32")
 import sys
 
-if not is_silverlight:
-    remove_ironpython_dlls(testpath.public_testdir)
-    load_iron_python_dll()
+remove_ironpython_dlls(testpath.public_testdir)
+load_iron_python_dll()
 
 # setup Scenario tests in module from EngineTest.cs
 # this enables us to see the individual tests that pass / fail
@@ -85,7 +84,7 @@ def c():
 
 
 #Rowan Work Item 312902
-@skip("silverlight", "multiple_execute")
+@skip("multiple_execute")
 def test_formatexception():
     try:
         import Microsoft.Scripting
@@ -106,7 +105,7 @@ def test_formatexception():
         pass
 
 #Rowan Work Item 31290
-@skip("silverlight")
+
 def test_formatexception_showclrexceptions():
     import Microsoft.Scripting
     from IronPython.Hosting import Python
@@ -122,7 +121,7 @@ def test_formatexception_showclrexceptions():
     AreEqual(exc_string.count(" line "), 4)
     Assert(exc_string.endswith("CLR Exception: [NEWLINE]    Exception[NEWLINE]: [NEWLINE]first[NEWLINE]    Exception[NEWLINE]: [NEWLINE]second[NEWLINE]    Exception[NEWLINE]: [NEWLINE]Exception of type 'System.Exception' was thrown.[NEWLINE]".replace("[NEWLINE]", System.Environment.NewLine)))
 
-@skip("silverlight", "multiple_execute") #CodePlex 20636 - multi-execute
+@skip("multiple_execute") #CodePlex 20636 - multi-execute
 def test_formatexception_exceptiondetail():
     import Microsoft.Scripting
     from IronPython.Hosting import Python
@@ -141,7 +140,7 @@ def test_formatexception_exceptiondetail():
     exc_string = pe.GetService[Microsoft.Scripting.Hosting.ExceptionOperations]().FormatException(c())
     Assert(exc_string.endswith("Exception: first[NEWLINE]".replace("[NEWLINE]", System.Environment.NewLine)))
 
-@skip("silverlight")
+
 def test_engine_access_from_within():
     import clr
     from Microsoft.Scripting.Hosting import ScriptEngine
@@ -155,7 +154,7 @@ def test_import_clr():
     mod = Python.ImportModule(eng, 'clr')
     Assert('ToString' not in eng.Operations.GetMemberNames(42))
 
-@skip("silverlight")
+
 def test_cp6703():
     import clr
     clr.AddReference("IronPython")

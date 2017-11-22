@@ -58,7 +58,7 @@ namespace IronPython.Runtime {
             if (_id == ExtensionMethodSet.OutOfIds) {
                 extCheck = BindingRestrictions.GetInstanceRestriction(
                     Expression.Call(
-                        typeof(PythonOps).GetMethod("GetExtensionMethodSet"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.GetExtensionMethodSet)),
                         codeContext
                     ),
                     this
@@ -66,7 +66,7 @@ namespace IronPython.Runtime {
             } else {
                 extCheck = BindingRestrictions.GetExpressionRestriction(
                     Expression.Call(
-                        typeof(PythonOps).GetMethod("IsExtensionSet"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.IsExtensionSet)),
                         codeContext,
                         Expression.Constant(_id)
                     )

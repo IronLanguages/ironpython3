@@ -187,7 +187,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType AttributeError {
             get {
                 if (AttributeErrorStorage == null) {
-                    Interlocked.CompareExchange(ref AttributeErrorStorage, CreateSubType(Exception, nameof(PythonOps.AttributeError), (msg, innerException) => new AttributeErrorException(msg, innerException)), null);
+                    Interlocked.CompareExchange(ref AttributeErrorStorage, CreateSubType(Exception, "AttributeError", (msg, innerException) => new AttributeErrorException(msg, innerException)), null);
                 }
                 return AttributeErrorStorage;
             }
@@ -198,7 +198,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType BufferError {
             get {
                 if (BufferErrorStorage == null) {
-                    Interlocked.CompareExchange(ref BufferErrorStorage, CreateSubType(Exception, nameof(PythonOps.BufferError), (msg, innerException) => new BufferException(msg, innerException)), null);
+                    Interlocked.CompareExchange(ref BufferErrorStorage, CreateSubType(Exception, "BufferError", (msg, innerException) => new BufferException(msg, innerException)), null);
                 }
                 return BufferErrorStorage;
             }
@@ -548,13 +548,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType TypeError {
             get {
                 if (TypeErrorStorage == null) {
-                    Interlocked.CompareExchange(
-                        ref TypeErrorStorage,
-                        CreateSubType(
-                            Exception,
-                            nameof(PythonOps.TypeError),
-                            (msg, innerException) => new TypeErrorException(msg, innerException)),
-                        null);
+                    Interlocked.CompareExchange(ref TypeErrorStorage, CreateSubType(Exception, "TypeError", (msg, innerException) => new TypeErrorException(msg, innerException)), null);
                 }
                 return TypeErrorStorage;
             }
@@ -565,13 +559,7 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType ValueError {
             get {
                 if (ValueErrorStorage == null) {
-                    Interlocked.CompareExchange(
-                        ref ValueErrorStorage,
-                        CreateSubType(
-                            Exception,
-                            nameof(PythonOps.ValueError),
-                            (msg, innerException) => new ValueErrorException(msg, innerException)),
-                        null);
+                    Interlocked.CompareExchange(ref ValueErrorStorage, CreateSubType(Exception, "ValueError", (msg, innerException) => new ValueErrorException(msg, innerException)), null);
                 }
                 return ValueErrorStorage;
             }

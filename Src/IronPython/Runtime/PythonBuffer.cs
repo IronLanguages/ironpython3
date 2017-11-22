@@ -252,7 +252,7 @@ namespace IronPython.Runtime {
             DynamicMetaObject IComConvertible.GetComMetaObject() {
                 return new DynamicMetaObject(
                     Expression.Call(
-                        typeof(PythonOps).GetMethod("ConvertBufferToByteArray"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.ConvertBufferToByteArray)),
                         Utils.Convert(
                             Expression,
                             typeof(PythonBuffer)

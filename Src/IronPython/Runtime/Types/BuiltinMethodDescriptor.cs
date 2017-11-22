@@ -59,7 +59,7 @@ namespace IronPython.Runtime.Types {
             if (instance != null) {
                 builder.FinishCondition(
                     Ast.Call(
-                        typeof(PythonOps).GetMethod("MakeBoundBuiltinFunction"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.MakeBoundBuiltinFunction)),
                         AstUtils.Constant(_template),
                         instance.Expression
                     )

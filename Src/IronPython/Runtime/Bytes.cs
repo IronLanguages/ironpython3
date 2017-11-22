@@ -962,7 +962,7 @@ namespace IronPython.Runtime {
 
         Expression IExpressionSerializable.CreateExpression() {
             return Expression.Call(
-                typeof(PythonOps).GetMethod("MakeBytes"),
+                typeof(PythonOps).GetMethod(nameof(PythonOps.MakeBytes)),
                 Expression.NewArrayInit(
                     typeof(byte),
                     ArrayUtils.ConvertAll(_bytes, (b) => Expression.Constant(b))

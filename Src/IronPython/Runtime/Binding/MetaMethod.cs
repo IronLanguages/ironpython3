@@ -102,7 +102,7 @@ namespace IronPython.Runtime.Binding {
                     // this is an error, we pass null which will throw the normal error
                     call = new DynamicMetaObject(
                         Ast.Call(
-                            typeof(PythonOps).GetMethod("MethodCheckSelf"),
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.MethodCheckSelf)),
                             PythonContext.GetCodeContext(callAction),
                             self.Expression,
                             AstUtils.Constant(null)
@@ -287,7 +287,7 @@ namespace IronPython.Runtime.Binding {
 
         private static Expression/*!*/ CheckSelf(DynamicMetaObjectBinder/*!*/ binder, Expression/*!*/ method, Expression/*!*/ inst) {
             return Ast.Call(
-                typeof(PythonOps).GetMethod("MethodCheckSelf"),
+                typeof(PythonOps).GetMethod(nameof(PythonOps.MethodCheckSelf)),
                 PythonContext.GetCodeContext(binder),
                 method,
                 AstUtils.Convert(inst, typeof(object))

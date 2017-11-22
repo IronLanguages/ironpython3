@@ -75,7 +75,7 @@ namespace IronPython.Runtime.Types {
             return new DynamicMetaObject(
                 Expression.Condition(
                     Ast.Call(
-                        typeof(PythonOps).GetMethod("SlotTrySetValue"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.SlotTrySetValue)),
                         ((PythonOverloadResolverFactory)factory)._codeContext,
                         AstUtils.Constant(GetSlot(), typeof(PythonTypeSlot)),
                         AstUtils.Convert(
@@ -90,7 +90,7 @@ namespace IronPython.Runtime.Types {
                         errorSuggestion.Expression :
                         Expression.Throw(
                             Expression.Call(
-                                typeof(PythonOps).GetMethod("AttributeErrorForMissingAttribute", new Type[] { typeof(object), typeof(string) }),
+                                typeof(PythonOps).GetMethod(nameof(PythonOps.AttributeErrorForMissingAttribute), new Type[] { typeof(object), typeof(string) }),
                                 instance.Expression,
                                 Expression.Constant(Name)
                             ),

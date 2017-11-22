@@ -100,7 +100,7 @@ namespace IronPython.Runtime {
             return index(obj, Converter.ConvertToIndex(start), _data.Length);
         }
 
-        public int index(object obj, int start=0) {
+        public int index(object obj, int start = 0) {
             return index(obj, start, _data.Length);
         }
 
@@ -113,7 +113,7 @@ namespace IronPython.Runtime {
             end = PythonOps.FixSliceIndex(end, _data.Length);
 
             for (int i = start; i < end; i++) {
-                if (PythonOps.EqualRetBool(obj, _data[i])) {
+                if (PythonOps.IsOrEqualsRetBool(obj, _data[i])) {
                     return i;
                 }
             }
@@ -124,7 +124,7 @@ namespace IronPython.Runtime {
         public int count(object obj) {
             int cnt = 0;
             foreach (object elem in _data) {
-                if (PythonOps.EqualRetBool(obj, elem)) {
+                if (PythonOps.IsOrEqualsRetBool(obj, elem)) {
                     cnt++;
                 }
             }
@@ -341,7 +341,7 @@ namespace IronPython.Runtime {
         [PythonHidden]
         public int IndexOf(object item) {
             for (int i = 0; i < Count; i++) {
-                if (PythonOps.EqualRetBool(this[i], item)) return i;
+                if (PythonOps.IsOrEqualsRetBool(this[i], item)) return i;
             }
             return -1;
         }
@@ -378,7 +378,7 @@ namespace IronPython.Runtime {
         [PythonHidden]
         public bool Contains(object item) {
             for (int i = 0; i < _data.Length; i++) {
-                if (PythonOps.EqualRetBool(_data[i], item)) {
+                if (PythonOps.IsOrEqualsRetBool(_data[i], item)) {
                     return true;
                 }
             }

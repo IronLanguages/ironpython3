@@ -250,14 +250,16 @@ namespace IronPython.Runtime.Binding {
                 // just a call to __contains__
                 res = sf.Target;
             } else {
+                var types1 = types[1];
                 RestrictTypes(types);
 
                 sf = SlotOrFunction.GetSlotOrFunction(state, "__iter__", types[0]);
                 if (sf.Success) {
+                    types[1] = types1; // restore types[1] value to prevent reboxing
                     // iterate using __iter__
                     res = new DynamicMetaObject(
                         Ast.Call(
-                            typeof(PythonOps).GetMethod("ContainsFromEnumerable"),
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.ContainsFromEnumerable)),
                             AstUtils.Constant(state.SharedContext),
                             sf.Target.Expression,
                             AstUtils.Convert(types[1].Expression, typeof(object))

@@ -1231,12 +1231,12 @@ namespace IronPython.Runtime.Types {
                 }
             }
 
-            if (intf.Contains(type) && !hasObjectContains) {
+            if (intf.Contains(ienum) && !hasObjectContains) {
                 if (containsMembers == null) {
                     containsMembers = new List<MemberTracker>();
                 }
 
-                containsMembers.Add(MethodTracker.FromMemberInfo(typeof(InstanceOps).GetMethod("ContainsMethod" + name), typeof(IEnumerable)));
+                containsMembers.Add(MethodTracker.FromMemberInfo(typeof(InstanceOps).GetMethod("ContainsMethod" + name), ienum));
             }
         }
 

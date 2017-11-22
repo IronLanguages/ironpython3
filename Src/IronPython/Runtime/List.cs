@@ -362,7 +362,7 @@ namespace IronPython.Runtime {
                     // release the lock while we may call user code...
                     MonitorUtils.Exit(this, ref lockTaken);
                     try {
-                        if (PythonOps.EqualRetBool(thisIndex, value))
+                        if (PythonOps.IsOrEqualsRetBool(thisIndex, value))
                             return true;
                     } finally {
                         MonitorUtils.Enter(this, ref lockTaken);
@@ -717,7 +717,7 @@ namespace IronPython.Runtime {
 
         internal void AddNoLockNoDups(object item) {
             for (int i = 0; i < _size; i++) {
-                if (PythonOps.EqualRetBool(_data[i], item)) {
+                if (PythonOps.IsOrEqualsRetBool(_data[i], item)) {
                     return;
                 }
             }
@@ -747,7 +747,7 @@ namespace IronPython.Runtime {
 
                     MonitorUtils.Exit(this, ref lockTaken);
                     try {
-                        if (PythonOps.EqualRetBool(val, item)) cnt++;
+                        if (PythonOps.IsOrEqualsRetBool(val, item)) cnt++;
                     } finally {
                         MonitorUtils.Enter(this, ref lockTaken);
                     }
@@ -791,11 +791,7 @@ namespace IronPython.Runtime {
             while (i.MoveNext()) append(i.Current);
         }
 
-        public int index(object item) {
-            return index(item, 0, _size);
-        }
-
-        public int index(object item, int start) {
+        public int index(object item, int start = 0) {
             return index(item, start, _size);
         }
 
@@ -819,7 +815,7 @@ namespace IronPython.Runtime {
             stop = PythonOps.FixSliceIndex(stop, locSize);
 
             for (int i = start; i < Math.Min(stop, Math.Min(locSize, _size)); i++) {
-                if (PythonOps.EqualRetBool(locData[i], item)) return i;
+                if (PythonOps.IsOrEqualsRetBool(locData[i], item)) return i;
             }
 
             throw PythonOps.ValueError("list.index(item): item not in list");
@@ -1204,7 +1200,7 @@ namespace IronPython.Runtime {
             }
 
             for (int i = 0; i < Math.Min(locSize, _size); i++) {
-                if (PythonOps.EqualRetBool(locData[i], value)) return i;
+                if (PythonOps.IsOrEqualsRetBool(locData[i], value)) return i;
             }
             return -1;
         }
@@ -1310,9 +1306,9 @@ namespace IronPython.Runtime {
         bool IStructuralEquatable.Equals(object other, IEqualityComparer comparer) {
             if (Object.ReferenceEquals(this, other)) return true;
 
-            List l = other as List;
-            if (l == null || l.Count != Count) return false;
-            return Equals(l, comparer);
+            if (other is List l && l.Count == Count)
+                return Equals(l, comparer);
+            return false;
         }
 
         #endregion

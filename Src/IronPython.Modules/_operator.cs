@@ -244,7 +244,7 @@ namespace IronPython.Modules {
             System.Collections.IEnumerator e = PythonOps.GetEnumerator(a);
             int count = 0;
             while (e.MoveNext()) {
-                if (PythonOps.EqualRetBool(context, e.Current, b)) {
+                if (PythonOps.IsOrEqualsRetBool(context, e.Current, b)) {
                     count++;
                 }
             }
@@ -263,7 +263,7 @@ namespace IronPython.Modules {
             System.Collections.IEnumerator e = PythonOps.GetEnumerator(a);
             int index = 0;
             while (e.MoveNext()) {
-                if (PythonOps.EqualRetBool(context, e.Current, b)) {
+                if (PythonOps.IsOrEqualsRetBool(context, e.Current, b)) {
                     return index;
                 }
                 index++;

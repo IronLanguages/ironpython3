@@ -189,8 +189,7 @@ namespace IronPython.Runtime {
         [PythonHidden]
         public bool Contains(KeyValuePair<object, object> item) {
             object result;
-            return _storage.TryGetValue(item.Key, out result) &&
-                PythonOps.EqualRetBool(result, item.Value);
+            return _storage.TryGetValue(item.Key, out result) && PythonOps.IsOrEqualsRetBool(result, item.Value);
         }
 
         [PythonHidden]
@@ -642,10 +641,11 @@ namespace IronPython.Runtime {
 
                 CompareUtil.Push(res);
                 try {
+                    var val = this[o];
                     if (comparer == null) {
-                        if (!PythonOps.EqualRetBool(res, this[o])) return false;
+                        if (!PythonOps.IsOrEqualsRetBool(res, val)) return false;
                     } else {
-                        if (!comparer.Equals(res, this[o])) return false;
+                        if (!ReferenceEquals(res, val) && !comparer.Equals(res, val)) return false;
                     }
                 } finally {
                     CompareUtil.Pop(res);
@@ -661,10 +661,11 @@ namespace IronPython.Runtime {
 
                 CompareUtil.Push(res);
                 try {
+                    var val = this[o];
                     if (comparer == null) {
-                        if (!PythonOps.EqualRetBool(res, this[o])) return false;
+                        if (!PythonOps.IsOrEqualsRetBool(res, val)) return false;
                     } else {
-                        if (!comparer.Equals(res, this[o])) return false;
+                        if (!ReferenceEquals(res, val) && !comparer.Equals(res, val)) return false;
                     }
                 } finally {
                     CompareUtil.Pop(res);
@@ -1123,7 +1124,13 @@ namespace IronPython.Runtime {
 
         void ICollection<object>.Clear() => throw new NotSupportedException("Collection is read-only");
 
-        bool ICollection<object>.Contains(object item) => _dict.__contains__(item);
+        bool ICollection<object>.Contains(object item) {
+            foreach (var val in this) {
+                if (PythonOps.IsOrEqualsRetBool(val, item))
+                    return true;
+            }
+            return false;
+        }
 
         void ICollection<object>.CopyTo(object[] array, int arrayIndex) {
             int i = arrayIndex;
@@ -1589,9 +1596,8 @@ namespace IronPython.Runtime {
 
         bool ICollection<object>.Contains(object item) {
             if (item is PythonTuple tuple && tuple.Count == 2 && _dict.TryGetValue(tuple[0], out object value)) {
-                return PythonOps.EqualRetBool(tuple[1], value);
+                return PythonOps.IsOrEqualsRetBool(tuple[1], value);
             }
-
             return false;
         }
 

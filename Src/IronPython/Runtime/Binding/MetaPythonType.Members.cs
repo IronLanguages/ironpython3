@@ -150,7 +150,7 @@ namespace IronPython.Runtime.Binding {
 
                 return new ValidationInfo(
                     Ast.Call(
-                        typeof(PythonOps).GetMethod("CheckTypeVersion"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.CheckTypeVersion)),
                         self,
                         AstUtils.Constant(version)
                     )
@@ -705,7 +705,7 @@ namespace IronPython.Runtime.Binding {
                                     AstUtils.Constant(state.SharedContext),
                                     Ast.Block(
                                         Ast.Call(
-                                            typeof(PythonOps).GetMethod("SlotTryGetValue"),
+                                            typeof(PythonOps).GetMethod(nameof(PythonOps.SlotTryGetValue)),
                                             AstUtils.Constant(state.SharedContext),
                                             AstUtils.Convert(AstUtils.WeakConstant(pts), typeof(PythonTypeSlot)),
                                             AstUtils.Convert(Expression, typeof(object)),

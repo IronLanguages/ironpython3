@@ -391,7 +391,7 @@ namespace IronPython.Modules {
                             res,
                             Expression,
                             Expression.Call(
-                                typeof(PythonOps).GetMethod("MakeTuple"),
+                                typeof(PythonOps).GetMethod(nameof(PythonOps.MakeTuple)),
                                 Expression.NewArrayInit(
                                     typeof(object),
                                     ArrayUtils.ConvertAll(args, x => Utils.Convert(x.Expression, typeof(object)))
@@ -406,7 +406,7 @@ namespace IronPython.Modules {
                     return new DynamicMetaObject(
                         binder.Throw(
                             Expression.Call(
-                                typeof(PythonOps).GetMethod("TypeError"),
+                                typeof(PythonOps).GetMethod(nameof(PythonOps.TypeError)),
                                 Expression.Constant(String.Format("this function takes {0} arguments ({1} given)", expected, got)),
                                 Expression.NewArrayInit(typeof(object))                                    
                             ),
@@ -420,7 +420,7 @@ namespace IronPython.Modules {
                     return new DynamicMetaObject(
                         binder.Throw(
                             Expression.Call(
-                                typeof(PythonOps).GetMethod("ValueError"),
+                                typeof(PythonOps).GetMethod(nameof(PythonOps.ValueError)),
                                 Expression.Constant("native com method call without 'this' parameter"),
                                 Expression.NewArrayInit(typeof(object))
                             ),

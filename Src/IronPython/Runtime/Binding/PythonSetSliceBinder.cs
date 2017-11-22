@@ -63,7 +63,7 @@ namespace IronPython.Runtime.Binding {
 
         public Expression/*!*/ CreateExpression() {
             return Ast.Call(
-                typeof(PythonOps).GetMethod("MakeSetSliceBinder"),
+                typeof(PythonOps).GetMethod(nameof(PythonOps.MakeSetSliceBinder)),
                 BindingHelpers.CreateBinderStateExpression()
             );
         }

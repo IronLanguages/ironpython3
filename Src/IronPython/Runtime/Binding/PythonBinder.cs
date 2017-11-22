@@ -181,7 +181,7 @@ namespace IronPython.Runtime.Binding {
             return ErrorInfo.FromValueNoError(
                 Expression.Block(
                     Expression.Call(
-                        typeof(PythonOps).GetMethod("Warn"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.Warn)),
                         Expression.Constant(_context.SharedContext),
                         Expression.Constant(PythonExceptions.RuntimeWarning),
                         Expression.Constant(ReflectedField.UpdateValueTypeFieldWarning),
@@ -214,7 +214,7 @@ namespace IronPython.Runtime.Binding {
         public override ErrorInfo MakeConversionError(Type toType, Expression value) {
             return ErrorInfo.FromException(
                 Ast.Call(
-                    typeof(PythonOps).GetMethod("TypeErrorForTypeMismatch"),
+                    typeof(PythonOps).GetMethod(nameof(PythonOps.TypeErrorForTypeMismatch)),
                     AstUtils.Constant(DynamicHelpers.GetPythonTypeFromType(toType).Name),
                     AstUtils.Convert(value, typeof(object))
                )
@@ -242,7 +242,7 @@ namespace IronPython.Runtime.Binding {
             if (isAssignment) {
                 return ErrorInfo.FromException(
                     Ast.Call(
-                        typeof(PythonOps).GetMethod("StaticAssignmentFromInstanceError"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.StaticAssignmentFromInstanceError)),
                         AstUtils.Constant(tracker),
                         AstUtils.Constant(isAssignment)
                     )
@@ -285,7 +285,7 @@ namespace IronPython.Runtime.Binding {
             return ErrorInfo.FromValueNoError(
                Ast.Block(
                    Ast.Call(
-                       typeof(PythonOps).GetMethod("SlotTrySetValue"),
+                       typeof(PythonOps).GetMethod(nameof(PythonOps.SlotTrySetValue)),
                        ((PythonOverloadResolverFactory)factory)._codeContext,
                        AstUtils.Constant(PythonTypeOps.GetReflectedEvent(ev)),
                        eventObject != null ? AstUtils.Convert(eventObject.Expression, typeof(object)) : AstUtils.Constant(null),
@@ -460,7 +460,7 @@ namespace IronPython.Runtime.Binding {
                     return new DynamicMetaObject(ReturnPropertyTracker((PropertyTracker)memberTracker, privateBinding), BindingRestrictions.Empty);;
                 case TrackerTypes.Event:
                     return new DynamicMetaObject(Ast.Call(
-                        typeof(PythonOps).GetMethod("MakeBoundEvent"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.MakeBoundEvent)),
                         AstUtils.Constant(PythonTypeOps.GetReflectedEvent((EventTracker)memberTracker)),
                         AstUtils.Constant(null),
                         AstUtils.Constant(type)
@@ -661,14 +661,14 @@ namespace IronPython.Runtime.Binding {
                     );
                 case TrackerTypes.Event:
                     return Ast.Call(
-                        typeof(PythonOps).GetMethod("MakeBoundEvent"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.MakeBoundEvent)),
                         AstUtils.Constant(PythonTypeOps.GetReflectedEvent((EventTracker)boundMemberTracker.BoundTo)),
                         boundMemberTracker.Instance.Expression,
                         AstUtils.Constant(boundMemberTracker.DeclaringType)
                     );
                 case TrackerTypes.MethodGroup:
                     return Ast.Call(
-                        typeof(PythonOps).GetMethod("MakeBoundBuiltinFunction"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.MakeBoundBuiltinFunction)),
                         AstUtils.Constant(GetBuiltinFunction((MethodGroup)boundTo)),
                         AstUtils.Convert(
                             boundMemberTracker.Instance.Expression,

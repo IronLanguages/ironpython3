@@ -45,7 +45,7 @@ namespace IronPython.Compiler.Ast {
                 Ast.Assign(
                     PythonAst._globalArray,
                     Ast.Call(
-                        typeof(PythonOps).GetMethod("GetGlobalArrayFromContext"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.GetGlobalArrayFromContext)),
                         PythonAst._globalContext
                     )
                 )
@@ -61,8 +61,8 @@ namespace IronPython.Compiler.Ast {
                         PythonAst._globalArray,
                         Ast.Call(
                             null,
-                            typeof(PythonOps).GetMethod("GetGlobalArrayFromContext"),
-                            IronPython.Compiler.Ast.PythonAst._globalContext
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.GetGlobalArrayFromContext)),
+                            PythonAst._globalContext
                         )
                     ),
                     AstUtils.Convert(instance.ReduceWorker(), typeof(object))

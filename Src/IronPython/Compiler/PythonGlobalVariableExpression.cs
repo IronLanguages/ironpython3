@@ -342,7 +342,7 @@ namespace IronPython.Compiler {
 
         public Expression/*!*/ RawValue() {
             return Expression.Call(
-                typeof(PythonOps).GetMethod(_isLocal ? "RawGetLocal" : "RawGetGlobal"),
+                typeof(PythonOps).GetMethod(_isLocal ? nameof(PythonOps.RawGetLocal) : nameof(PythonOps.RawGetGlobal)),
                 _codeContextExpr,
                 Utils.Constant(_name)
             );
@@ -358,7 +358,7 @@ namespace IronPython.Compiler {
 
         public Expression/*!*/ Assign(Expression/*!*/ value) {
             return Expression.Call(
-                typeof(PythonOps).GetMethod(_isLocal ? "SetLocal" : "SetGlobal"),
+                typeof(PythonOps).GetMethod(_isLocal ? nameof(PythonOps.SetLocal) : nameof(PythonOps.SetGlobal)),
                 _codeContextExpr,
                 Utils.Constant(_name),
                 value
@@ -389,7 +389,7 @@ namespace IronPython.Compiler {
 
         public Expression/*!*/ Delete() {
             return Expression.Call(
-                typeof(PythonOps).GetMethod(_isLocal ? "DeleteLocal" : "DeleteGlobal"),
+                typeof(PythonOps).GetMethod(_isLocal ? nameof(PythonOps.DeleteLocal) : nameof(PythonOps.DeleteGlobal)),
                 _codeContextExpr,
                 Utils.Constant(_name)
             );

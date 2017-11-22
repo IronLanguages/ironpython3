@@ -980,7 +980,7 @@ namespace IronPython.Runtime {
 
         Expression IExpressionSerializable.CreateExpression() {
             return Expression.Call(
-                typeof(PythonOps).GetMethod("MakeFunctionCode"),
+                typeof(PythonOps).GetMethod(nameof(PythonOps.MakeFunctionCode)),
                 Compiler.Ast.PythonAst._globalContext,
                 Expression.Constant(_lambda.Name),
                 Expression.Constant(_initialDoc, typeof(string)),

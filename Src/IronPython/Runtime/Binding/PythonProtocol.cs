@@ -111,7 +111,7 @@ namespace IronPython.Runtime.Binding {
                 Ast.IfThen(Ast.LessThan(res, Ast.Constant(0)),
                     Ast.Throw(
                         Ast.Call(
-                            typeof(PythonOps).GetMethod("ValueError"),
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.ValueError)),
                             Ast.Constant("__len__() should return >= 0"),
                             Ast.NewArrayInit(typeof(object))
                         )
@@ -185,7 +185,7 @@ namespace IronPython.Runtime.Binding {
 
                 body = Ast.TryFinally(
                     Ast.Block(
-                        Ast.Call(typeof(PythonOps).GetMethod("FunctionPushFrame"), Ast.Constant(pyContext)),                        
+                        Ast.Call(typeof(PythonOps).GetMethod(nameof(PythonOps.FunctionPushFrame)), Ast.Constant(pyContext)),                        
                         body
                     ),
                     Ast.Call(typeof(PythonOps).GetMethod("FunctionPopFrame"))

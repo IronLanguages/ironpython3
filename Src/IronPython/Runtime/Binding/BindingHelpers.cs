@@ -71,7 +71,7 @@ namespace IronPython.Runtime.Binding {
                 return new DynamicMetaObject(
                     Ast.Condition(
                         Ast.Call(
-                            typeof(PythonOps).GetMethod("IsClsVisible"),
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.IsClsVisible)),
                             codeContext.Expression
                         ),
                         AstUtils.Convert(res.Expression, typeof(object)),
@@ -305,7 +305,7 @@ namespace IronPython.Runtime.Binding {
 #endif
             if (fi == null) {
                 return Ast.Call(
-                    typeof(PythonOps).GetMethod("CheckTypeVersion"),
+                    typeof(PythonOps).GetMethod(nameof(PythonOps.CheckTypeVersion)),
                     AstUtils.Convert(tested, typeof(object)),
                     AstUtils.Constant(version)
                 );
@@ -313,7 +313,7 @@ namespace IronPython.Runtime.Binding {
 
             Debug.Assert(tested.Type != typeof(object));
             return Ast.Call(
-                typeof(PythonOps).GetMethod("CheckSpecificTypeVersion"),
+                typeof(PythonOps).GetMethod(nameof(PythonOps.CheckSpecificTypeVersion)),
                 Ast.Field(
                     tested,
                     fi
@@ -332,10 +332,10 @@ namespace IronPython.Runtime.Binding {
                 Ast.Block(
                     new [] { tmp },
                     AstUtils.Try(
-                        Ast.Call(typeof(PythonOps).GetMethod("FunctionPushFrame"), Ast.Constant(pyContext)),
+                        Ast.Call(typeof(PythonOps).GetMethod(nameof(PythonOps.FunctionPushFrame)), Ast.Constant(pyContext)),
                         Ast.Assign(tmp, expr)
                     ).Finally(
-                        Ast.Call(typeof(PythonOps).GetMethod("FunctionPopFrame"))
+                        Ast.Call(typeof(PythonOps).GetMethod(nameof(PythonOps.FunctionPopFrame)))
                     ),
                     tmp
                 );
@@ -370,7 +370,7 @@ namespace IronPython.Runtime.Binding {
 
             return Ast.Throw(
                 Ast.Call(
-                    typeof(PythonOps).GetMethod("TypeErrorForProtectedMember"),
+                    typeof(PythonOps).GetMethod(nameof(PythonOps.TypeErrorForProtectedMember)),
                     AstUtils.Constant(type),
                     AstUtils.Constant(name)
                 ),
@@ -382,7 +382,7 @@ namespace IronPython.Runtime.Binding {
             return new DynamicMetaObject(
                 Ast.Throw(
                     Ast.Call(
-                        typeof(PythonOps).GetMethod("TypeErrorForGenericMethod"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.TypeErrorForGenericMethod)),
                         AstUtils.Constant(type),
                         AstUtils.Constant(name)
                     ),

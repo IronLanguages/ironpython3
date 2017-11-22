@@ -130,7 +130,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         protected override Expression GetByRefArrayExpression(Expression argumentArrayExpression) {
-            return Expression.Call(typeof(PythonOps).GetMethod("MakeTuple"), argumentArrayExpression);
+            return Expression.Call(typeof(PythonOps).GetMethod(nameof(PythonOps.MakeTuple)), argumentArrayExpression);
         }
 
         protected override bool AllowMemberInitialization(OverloadInfo method) {

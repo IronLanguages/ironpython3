@@ -969,12 +969,12 @@ namespace IronPython.Runtime.Binding {
             private static Expression/*!*/ MakeParamsTuple(List<Expression> extraArgs) {
                 if (extraArgs != null) {
                     return AstUtils.ComplexCallHelper(
-                        typeof(PythonOps).GetMethod("MakeTuple"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.MakeTuple)),
                         extraArgs.ToArray()
                     );
                 }
                 return Ast.Call(
-                    typeof(PythonOps).GetMethod("MakeTuple"),
+                    typeof(PythonOps).GetMethod(nameof(PythonOps.MakeTuple)),
                     Ast.NewArrayInit(typeof(object[]))
                 );
             }

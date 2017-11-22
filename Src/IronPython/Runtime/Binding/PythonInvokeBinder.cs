@@ -239,7 +239,7 @@ namespace IronPython.Runtime.Binding {
 
                         restrictions = restrictions.Merge(BindingRestrictionsHelpers.GetRuntimeTypeRestriction(args[i].Expression, args[i].GetLimitType()));
                         splatKwArgTest = Expression.Call(
-                            typeof(PythonOps).GetMethod("CheckDictionaryMembers"),
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.CheckDictionaryMembers)),
                             AstUtils.Convert(args[i].Expression, typeof(PythonDictionary)),
                             AstUtils.Constant(argNames.ToArray())
                         );
@@ -301,7 +301,7 @@ namespace IronPython.Runtime.Binding {
 
         public virtual Expression CreateExpression() {
             return Expression.Call(
-                typeof(PythonOps).GetMethod("MakeInvokeAction"),
+                typeof(PythonOps).GetMethod(nameof(PythonOps.MakeInvokeAction)),
                 BindingHelpers.CreateBinderStateExpression(),
                 Signature.CreateExpression()
             );

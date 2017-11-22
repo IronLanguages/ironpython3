@@ -56,7 +56,7 @@ namespace IronPython.Runtime.Binding {
         public Expression CreateExpression() {
             
             return Expression.Call(
-                typeof(PythonOps).GetMethod("MakeComboAction"),
+                typeof(PythonOps).GetMethod(nameof(PythonOps.MakeComboAction)),
                 BindingHelpers.CreateBinderStateExpression(),
                 ((IExpressionSerializable)_opBinder).CreateExpression(),
                 _convBinder.CreateExpression()

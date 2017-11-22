@@ -478,7 +478,7 @@ namespace IronPython.Runtime.Types {
             }
 
             // initialize all slots to Uninitialized.instance
-            MethodInfo init = typeof(PythonOps).GetMethod("InitializeUserTypeSlots");
+            MethodInfo init = typeof(PythonOps).GetMethod(nameof(PythonOps.InitializeUserTypeSlots));
 
             il.EmitLoadArg(0);
             
@@ -1194,7 +1194,7 @@ namespace IronPython.Runtime.Types {
         private static void EmitConvertFromObject(ILGen il, Type toType) {
             if (toType == typeof(object)) return;
             if (toType.IsGenericParameter) {
-                il.EmitCall(typeof(PythonOps).GetMethod("ConvertFromObject").MakeGenericMethod(toType));
+                il.EmitCall(typeof(PythonOps).GetMethod(nameof(PythonOps.ConvertFromObject)).MakeGenericMethod(toType));
                 return;
             }
 
@@ -1454,10 +1454,10 @@ namespace IronPython.Runtime.Types {
                     cctor.Emit(OpCodes.Ldstr, genericArgs[i].Name);
                     cctor.Emit(OpCodes.Stobj, typeof(string));
                 }
-                cctor.EmitCall(typeof(PythonOps).GetMethod("MakeComplexCallAction"));
+                cctor.EmitCall(typeof(PythonOps).GetMethod(nameof(PythonOps.MakeComplexCallAction)));
             } else {
                 cctor.EmitInt(nargs);
-                cctor.EmitCall(typeof(PythonOps).GetMethod("MakeSimpleCallAction"));
+                cctor.EmitCall(typeof(PythonOps).GetMethod(nameof(PythonOps.MakeSimpleCallAction)));
             }
 
             // Create the dynamic site

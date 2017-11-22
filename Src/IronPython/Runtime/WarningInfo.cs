@@ -45,7 +45,7 @@ namespace IronPython.Runtime.Binding {
 
         public DynamicMetaObject/*!*/ AddWarning(Expression/*!*/ codeContext, DynamicMetaObject/*!*/ result) {
             Expression warn = Expression.Call(
-                typeof(PythonOps).GetMethod("Warn"),
+                typeof(PythonOps).GetMethod(nameof(PythonOps.Warn)),
                 codeContext,
                 AstUtils.Constant(_type),
                 AstUtils.Constant(_message),

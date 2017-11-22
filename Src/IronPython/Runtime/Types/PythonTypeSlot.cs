@@ -84,7 +84,7 @@ namespace IronPython.Runtime.Types {
         internal virtual void MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, DynamicMetaObject instance, DynamicMetaObject/*!*/ owner, ConditionalBuilder/*!*/ builder) {
             ParameterExpression tmp = Ast.Variable(typeof(object), "slotTmp");
             Expression call = Ast.Call(
-                 typeof(PythonOps).GetMethod("SlotTryGetValue"),
+                 typeof(PythonOps).GetMethod(nameof(PythonOps.SlotTryGetValue)),
                  codeContext,
                  AstUtils.Convert(AstUtils.WeakConstant(this), typeof(PythonTypeSlot)),
                  instance != null ? instance.Expression : AstUtils.Constant(null),

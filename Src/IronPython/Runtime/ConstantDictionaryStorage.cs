@@ -116,7 +116,7 @@ namespace IronPython.Runtime {
             }
 
             return MSAst.Expression.Call(
-                typeof(PythonOps).GetMethod("MakeConstantDictStorage"),
+                typeof(PythonOps).GetMethod(nameof(PythonOps.MakeConstantDictStorage)),
                 MSAst.Expression.NewArrayInit(
                     typeof(object),
                     items

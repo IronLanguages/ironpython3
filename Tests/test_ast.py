@@ -1,5 +1,5 @@
 import sys, itertools, unittest
-from test import test_support
+from test import support
 from io import StringIO
 
 import ast
@@ -1278,9 +1278,9 @@ class ASTHelpers_Test(unittest.TestCase):
         self.assertEqual(ast.literal_eval('+1L'), 1)
 
 def test_main():
-    with test_support.check_py3k_warnings(("backquote not supported",
+    with support.check_py3k_warnings(("backquote not supported",
                                              SyntaxWarning)):
-        test_support.run_unittest(AST_Tests, ASTHelpers_Test)
+        support.run_unittest(AST_Tests, ASTHelpers_Test)
 
 def main():
     if __name__ != '__main__':

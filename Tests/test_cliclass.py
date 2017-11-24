@@ -1964,7 +1964,7 @@ from iptest import IronPythonTestCase
                     f.write(test_case)
                     f.write('''
 
-test_support.run_unittest(TheTestCase)''')
+support.run_unittest(TheTestCase)''')
 
                 import temp_module
                 del sys.modules['temp_module']

@@ -1,0 +1,1 @@
+from ImportTestDir.pkg_m.mod_b import value_b

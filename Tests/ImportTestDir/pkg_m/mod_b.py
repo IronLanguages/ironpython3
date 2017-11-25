@@ -1,1 +1,0 @@
-value_b = "ImportTestDir.pkg_m.mod_b.value_b"

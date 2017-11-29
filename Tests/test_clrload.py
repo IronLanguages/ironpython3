@@ -17,10 +17,10 @@ import os
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netstandard, is_mono, is_osx, is_posix, run_test
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_mono, is_osx, is_posix, run_test, skipUnlessIronPython
 from shutil import copyfile
 
-@unittest.skipUnless(is_cli, 'IronPython specific test case')
+@skipUnlessIronPython()
 class ClrLoadTest(IronPythonTestCase):
 
     def setUp(self):
@@ -49,32 +49,22 @@ class ClrLoadTest(IronPythonTestCase):
             clr.AddReferenceToFile,
             clr.AddReferenceToFileAndPath,
             clr.AddReferenceByName,
+            clr.AddReferenceByPartialName,
             clr.LoadAssemblyFromFileWithPath,
             clr.LoadAssemblyFromFile,
             clr.LoadAssemblyByName,
+            clr.LoadAssemblyByPartialName,
             ]:
             self.assertRaises(TypeError, method, None)
-
-        if not is_netstandard:
-            for method in [
-                    clr.AddReferenceByPartialName,
-                    clr.LoadAssemblyByPartialName,
-                ]:
-                self.assertRaises(TypeError, method, None)
 
         for method in [
             clr.AddReference,
             clr.AddReferenceToFile,
             clr.AddReferenceToFileAndPath,
             clr.AddReferenceByName,
+            clr.AddReferenceByPartialName,
             ]:
             self.assertRaises(TypeError, method, None, None)
-
-        if not is_netstandard:
-            for method in [
-                clr.AddReferenceByPartialName,
-                ]:
-                self.assertRaises(TypeError, method, None, None)
 
         import System
         self.assertRaises(ValueError, clr.LoadAssemblyFromFile, System.IO.Path.DirectorySeparatorChar)
@@ -100,11 +90,10 @@ class ClrLoadTest(IronPythonTestCase):
         temp = ',' + os.linesep
         self.assertEqual(s, '(' + temp.join(map((lambda x:'<'+x.ToString()+'>'), refs)) + ')' + os.linesep)
 
+    @unittest.skipIf(is_netcoreapp, "no GAC")
     def test_gac(self):
         import clr
         import System
-        if is_netstandard:
-            clr.AddReference("System.Diagnostics.Process")
         def get_gac():
                 process = System.Diagnostics.Process()
                 if is_osx:
@@ -146,7 +135,6 @@ class ClrLoadTest(IronPythonTestCase):
         self.assertEqual(a.HelloWorld(), 'Hello World')
 
     #TODO:@skip("multiple_execute")
-    @unittest.skipIf(is_netstandard, "code doesn't compile in netstandard?")
     def test_addreferencetofileandpath_conflict(self):
         """verify AddReferenceToFileAndPath picks up the path specified, not some arbitrary assembly somewhere in your path already"""
         code1 = """
@@ -185,7 +173,6 @@ class ClrLoadTest(IronPythonTestCase):
         self.assertEqual(CollisionTest.Result(), "Test1")
 
     #TODO:@skip("multiple_execute")
-    @unittest.skipIf(is_netstandard, "code doesn't compile in netstandard?")
     def test_addreferencetofile_verification(self):
         import clr
         tmp = self.temporary_dir
@@ -249,7 +236,8 @@ class ClrLoadTest(IronPythonTestCase):
         copyfile(test1_dll, test1_dll_along_with_ipy)
 
     #TODO: @skip("multiple_execute")
-    @unittest.skipIf(is_netstandard or is_mono, "code doesn't compile in netstandard?, mono may have a bug here...need to investigate https://github.com/IronLanguages/main/issues/1595")
+    @unittest.skipIf(is_mono, "mono may have a bug here...need to investigate https://github.com/IronLanguages/main/issues/1595")
+    @unittest.skipIf(is_netcoreapp, "TODO: figure out")
     def test_assembly_resolve_isolation(self):
         import clr, os
         clr.AddReference("IronPython")
@@ -358,11 +346,7 @@ result = Test()
         # add reference directly to assembly
         clr.AddReference(''.GetType().Assembly)
         # add reference via partial name
-        if is_netstandard:
-            clr.AddReference('System.Xml.XmlDocument')
-        else:
-            clr.AddReference('System.Xml')
-
+        clr.AddReference('System.Xml')
         # add a reference via a fully qualified name
         clr.AddReference(''.GetType().Assembly.FullName)
 
@@ -379,7 +363,6 @@ result = Test()
         return clr.LoadAssemblyFromFile(name)
 
     #TODO: @skip("multiple_execute")
-    @unittest.skipIf(is_netstandard, "code doesn't compile in netstandard?")
     def test_classname_same_as_ns(self):
         import clr
         sys.path.append(sys.exec_prefix)
@@ -417,7 +400,7 @@ result = Test()
         self.assertRaises(AttributeError, f)
 
     #TODO:@skip("multiple_execute")
-    @unittest.skipIf(is_netstandard, "code doesn't compile in netstandard?")
+    @unittest.skipIf(is_netcoreapp, "TODO: figure out")
     def test_namespaceimport(self):
         import clr
         tmp = self.temporary_dir
@@ -426,6 +409,7 @@ result = Test()
             
         code1 = "namespace TestNamespace { public class Test1 {} }"
         code2 = "namespace TestNamespace { public class Test2 {} }"
+
         test1_cs, test1_dll = os.path.join(tmp, 'testns1.cs'), os.path.join(tmp, 'testns1.dll')
         test2_cs, test2_dll = os.path.join(tmp, 'testns2.cs'), os.path.join(tmp, 'testns2.dll')
             
@@ -434,7 +418,6 @@ result = Test()
         
         self.assertEqual(self.run_csc("/nologo /target:library /out:"+ test1_dll + ' ' + test1_cs), 0)
         self.assertEqual(self.run_csc("/nologo /target:library /out:"+ test2_dll + ' ' + test2_cs), 0)
-
         
         clr.AddReference('testns1')
         import TestNamespace
@@ -448,13 +431,11 @@ result = Test()
         self.assertRaises(TypeError, clr.AddReference, None)
         self.assertRaises(TypeError, clr.AddReferenceToFile, None)
         self.assertRaises(TypeError, clr.AddReferenceByName, None)
-        if not is_netstandard:
-            self.assertRaises(TypeError, clr.AddReferenceByPartialName, None)
+        self.assertRaises(TypeError, clr.AddReferenceByPartialName, None)
         self.assertRaises(ValueError, clr.AddReference)
         self.assertRaises(ValueError, clr.AddReferenceToFile)
         self.assertRaises(ValueError, clr.AddReferenceByName)
-        if not is_netstandard:
-            self.assertRaises(ValueError, clr.AddReferenceByPartialName)
+        self.assertRaises(ValueError, clr.AddReferenceByPartialName)
 
     #TODO: @skip("multiple_execute")
     def test_load_count(self):
@@ -463,7 +444,7 @@ result = Test()
         # need to be updated
         import clr, System
         before = repr(System)
-        if is_netstandard:
+        if is_netcoreapp:
             clr.AddReference('System.Drawing.Primitives')
         else:
             clr.AddReference('System.Drawing')

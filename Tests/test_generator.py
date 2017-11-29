@@ -16,7 +16,7 @@
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netstandard, run_test
+from iptest import IronPythonTestCase, is_cli, run_test
 
 def ifilter(iterable):
     def predicate(x):
@@ -368,7 +368,6 @@ def fetest(%s):
         lstate(2)
         lstate(4)
         lstate(8)
-        if is_netstandard: return # PlatformNotSupportedException for bigger values
         lstate(16)
         lstate(32)
         lstate(64)

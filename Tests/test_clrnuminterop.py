@@ -47,7 +47,7 @@ clr_float_types = [ "System.Single",
 clr_types = clr_integer_types + clr_float_types
 
 
-py_integer_types = ["int", "long"]
+py_integer_types = ["int"]
 py_float_types   = ["float"]
 
 #TODO - special case complex???
@@ -56,20 +56,20 @@ py_types = py_integer_types + py_float_types
 bug_operands = []
 unsupported_operands = [
                          #System.Decimal +: System.Single, System.Double, long, float
-                         "System.Decimal+long",
-                         "long+System.Decimal",
+                         "System.Decimal+int",
+                         "int+System.Decimal",
                          
                          #System.Decimal -: System.Single, System.Double, long, float
-                         "System.Decimal-long",
-                         "long-System.Decimal",
+                         "System.Decimal-int",
+                         "int-System.Decimal",
                          
                          #System.Decimal *: System.Single, System.Double, long, float
-                         "System.Decimal*long",
-                         "long*System.Decimal",
+                         "System.Decimal*int",
+                         "int*System.Decimal",
                          
                          #System.Decimal /:System.Single, System.Double, long, float
-                         "System.Decimal/long",
-                         "long/System.Decimal",
+                         "System.Decimal/int",
+                         "int/System.Decimal",
                          
                          #System.Decimal //:System.Byte System.SByte
                          "System.Decimal//System.Byte",

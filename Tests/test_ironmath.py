@@ -19,7 +19,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netstandard, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, run_test, skipUnlessIronPython
 
 @skipUnlessIronPython()
 class IronMathTest(IronPythonTestCase):
@@ -243,8 +243,7 @@ class IronMathTest(IronPythonTestCase):
         self.assertRaises(ArgumentException, System_Scripting_Math.CreateBigInteger, 0, (1, 2, 3))
         self.assertRaises(ArgumentNullException, System_Scripting_Math.CreateBigInteger, 0, None)
 
-        if not is_netstandard: # TODO: figure out why this doesn't work
-            self.assertEqual(BigInteger(1).CompareTo(None), 1)
+        self.assertEqual(BigInteger(1).CompareTo(None), 1)
         self.assertEqual(BigInteger(1).CompareTo(True), 0)
 
 run_test(__name__)

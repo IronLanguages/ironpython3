@@ -19,7 +19,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_posix, run_test
+from iptest import IronPythonTestCase, is_cli, is_posix, run_test
 
 if is_cli:
     import System

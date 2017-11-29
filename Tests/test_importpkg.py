@@ -18,7 +18,7 @@ import sys
 import toimport
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_mono, is_netstandard, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, run_test, skipUnlessIronPython
 import imp
 
 def get_local_filename(base):
@@ -476,7 +476,7 @@ import pkg_d.mod_d
         self.assertEqual(dir(test).count('del'), 0)     # assigned to, deleted, never used
 
 
-    @unittest.skipIf(is_mono or is_netstandard, 'No System.Windows.Forms support')
+    @unittest.skipIf(is_mono or is_netcoreapp, 'No System.Windows.Forms support')
     @skipUnlessIronPython()
     def test_importwinform(self):
         import clr

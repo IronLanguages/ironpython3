@@ -14,9 +14,9 @@
 #####################################################################################
 
 import unittest
-from iptest import is_netstandard, is_cli, run_test
+from iptest import skipUnlessIronPython, is_netcoreapp, is_cli, run_test
 
-@unittest.skipUnless(is_cli, 'IronPython specific test case')
+@skipUnlessIronPython()
 class ClrExceptionTest(unittest.TestCase):
 
     def clr_to_py_positive(self, clrExcep, pyExcep, excepMsg = None, msg = "CLR exception not mapped to specified Python exception"):
@@ -45,9 +45,10 @@ class ClrExceptionTest(unittest.TestCase):
             self.fail(msg)
 
     def test_mappings(self):
-        if is_netstandard:
+        if is_netcoreapp:
             import clr
             clr.AddReference("Microsoft.Win32.Primitives")
+            clr.AddReference("System.ComponentModel.TypeConverter")
 
         import System
         import System.IO
@@ -97,14 +98,8 @@ class ClrExceptionTest(unittest.TestCase):
         self.clr_to_py_positive(System.Text.EncoderFallbackException, UnicodeEncodeError)
         self.py_to_clr_positive_with_args(UnicodeEncodeError, System.Text.EncoderFallbackException, ('abc','abc',3,4,'abc'))
 
-        if is_netstandard: # no FEATURE_WARNING_EXCEPTION
-            clr.AddReference("IronPython")
-            import IronPython
-            self.clr_to_py_positive(IronPython.Runtime.Exceptions.WarningException, Warning, msg = "IronPython.Runtime.Exceptions.WarningException -> Warning")
-            self.py_to_clr_positive(Warning, IronPython.Runtime.Exceptions.WarningException, msg = "Warning -> IronPython.Runtime.Exceptions.WarningException")
-        else:
-            self.clr_to_py_positive(System.ComponentModel.WarningException, Warning, msg = "System.ComponentModel.WarningException -> Warning")
-            self.py_to_clr_positive(Warning, System.ComponentModel.WarningException, msg = "Warning -> System.ComponentModel.WarningException")
+        self.clr_to_py_positive(System.ComponentModel.WarningException, Warning, msg = "System.ComponentModel.WarningException -> Warning")
+        self.py_to_clr_positive(Warning, System.ComponentModel.WarningException, msg = "Warning -> System.ComponentModel.WarningException")
 
         self.clr_to_py_positive(System.OutOfMemoryException, MemoryError, msg = "System.OutOfMemoryException -> MemoryError")
         self.py_to_clr_positive(MemoryError, System.OutOfMemoryException, msg = "MemoryError -> System.OutOfMemoryException")

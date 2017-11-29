@@ -36,7 +36,7 @@ of this coverage through our .NET interop inheritance tests.
 #--PRE-CLR IMPORT TESTS--------------------------------------------------------
 if hasattr(type, "__clrtype__"):
     exc_msg = "type.__clrtype__ should not exist until the 'clr/System' module has been imported"
-    print exc_msg
+    print(exc_msg)
     raise Exception(exc_msg)
 
 import os

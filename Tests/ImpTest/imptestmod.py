@@ -1,0 +1,1 @@
+value = 'imp test module'

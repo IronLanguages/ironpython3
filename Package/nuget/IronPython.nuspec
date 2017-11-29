@@ -3,7 +3,7 @@
   <metadata xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <id>IronPython</id>
     <title>IronPython</title>
-    <version>3.0.0</version>
+    <version>3.4.0</version>
     <authors>IronPython Contributors,Microsoft</authors>
     <owners>IronPython Community</owners>
     <projectUrl>http://ironpython.net</projectUrl>

@@ -42,9 +42,15 @@ namespace IronPythonTest.Cases {
 
         public IEnumerator GetEnumerator() {
             foreach (var testcase in GetTests()) {
+                var name = testcase.Name;
+                var framework = TestContext.Parameters["FRAMEWORK"];
+                if(!string.IsNullOrWhiteSpace(framework)) {
+                    name = $"{framework}.{testcase.Name}";
+                }
+                
                 var result = new TestCaseData(testcase)
                     .SetCategory(category)
-                    .SetName(testcase.Name)
+                    .SetName(name)
                     .Returns(0);
 
                 if (testcase.Options.Ignore) {

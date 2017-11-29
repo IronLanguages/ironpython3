@@ -15,13 +15,13 @@
 
 import sys
 import unittest
-from iptest import IronPythonTestCase, is_cli, is_netstandard, is_mono, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_mono, run_test, skipUnlessIronPython
 
 if is_cli:
     import clr
     import System
 
-skipUnlessIronPython
+@skipUnlessIronPython()
 class CliClassTestCase(IronPythonTestCase):
 
     def setUp(self):
@@ -317,7 +317,7 @@ class CliClassTestCase(IronPythonTestCase):
 
     def test_type_descs(self):
         from IronPythonTest import TypeDescTests
-        if is_netstandard:
+        if is_netcoreapp:
             clr.AddReference("System.ComponentModel.Primitives")
 
         test = TypeDescTests()
@@ -485,7 +485,7 @@ class CliClassTestCase(IronPythonTestCase):
 
     def test_repr(self):
         from IronPythonTest import UnaryClass, BaseClass, BaseClassStaticConstructor
-        if is_netstandard:
+        if is_netcoreapp:
             clr.AddReference('System.Drawing.Primitives')
         else:
             clr.AddReference('System.Drawing')
@@ -907,7 +907,7 @@ End Class""")
 
 
     def test_property_get_set(self):
-        if is_netstandard:
+        if is_netcoreapp:
             clr.AddReference("System.Drawing.Primitives")
         else:
             clr.AddReference("System.Drawing")
@@ -939,8 +939,7 @@ End Class""")
         self.assertEqual(System.DateTime.__new__.__name__, '__new__')
         self.assertTrue(System.DateTime.__new__.__doc__.find('__new__(cls: type, year: int, month: int, day: int)') != -1)
                     
-        if not is_netstandard: # no System.AssemblyLoadEventArgs in netstandard
-            self.assertTrue(System.AssemblyLoadEventArgs.__new__.__doc__.find('__new__(cls: type, loadedAssembly: Assembly)') != -1)
+        self.assertTrue(System.AssemblyLoadEventArgs.__new__.__doc__.find('__new__(cls: type, loadedAssembly: Assembly)') != -1)
 
     def test_class_property(self):
         """__class__ should work on standard .NET types and should return the type object associated with that class"""
@@ -959,9 +958,8 @@ End Class""")
         self.assertRaises(AttributeError, System.Version, 1, 0, Build=100)  
         self.assertRaises(AttributeError, ClassWithLiteral, Literal=3)
 
- # no FileSystemWatcher in Silverlight
     def test_kw_construction_types(self):
-        if is_netstandard:
+        if is_netcoreapp:
             clr.AddReference("System.IO.FileSystem.Watcher")
 
         for val in [True, False]:
@@ -973,10 +971,11 @@ End Class""")
         site whose return type is bool so it's important this works for various ways we can
         generate the body of the site, and use the site both w/ the initial & generated targets"""
         from IronPythonTest import NestedClass
-        if is_netstandard:
+        if is_netcoreapp:
             clr.AddReference("System.Runtime")
+            clr.AddReference("System.Threading.Thread")
         else:
-            clr.AddReference('System') # ensure test passes in ipt
+            clr.AddReference('System') # ensure test passes in ipy
         
         # instance property
         x = System.Uri('http://foo')
@@ -1027,7 +1026,7 @@ End Class""")
     
     
     def test_generic_getitem(self):
-        if is_netstandard:
+        if is_netcoreapp:
             clr.AddReference("System.Collections")
 
         # calling __getitem__ is the same as indexing
@@ -1043,7 +1042,7 @@ End Class""")
         self.assertEqual(type.__getitem__(System.Collections.Generic.List, int), System.Collections.Generic.List[int])
     
 
-    @unittest.skipIf(is_netstandard, 'no System.Windows.Forms in netstandard')
+    @unittest.skipIf(is_netcoreapp, 'no System.Windows.Forms')
     def test_multiple_inheritance(self):
         """multiple inheritance from two types in the same hierarchy should work, this is similar to class foo(int, object)"""
         clr.AddReference("System.Windows.Forms")
@@ -1092,6 +1091,7 @@ End Class""")
         self.assertRaisesPartialMessage(TypeError, 'System.Single', f)
         self.assertRaisesPartialMessage(TypeError, 'System.Version', g)
 
+    @unittest.skipIf(is_netcoreapp, "TODO: figure out")
     def test_disposable(self):
         """classes implementing IDisposable should automatically support the with statement"""
         from IronPythonTest import DisposableTest
@@ -1122,12 +1122,8 @@ End Class""")
 
     def test_dbnull(self):
         """DBNull should not be true"""
-        if is_netstandard:
-            clr.AddReference("System.Data.Common")
-        
         if System.DBNull.Value:
             self.fail('System.DBNull.Value should not be true')
-
 
     def test_special_repr(self):
         import System
@@ -1181,13 +1177,10 @@ End Class""")
         self.assertTrue(hasattr(oneConflict, "B"))
     
     def test_interface_isinstance(self):
-        if is_netstandard:
-            clr.AddReference("System.Collections.NonGeneric")
-
         l = System.Collections.ArrayList()
         self.assertEqual(isinstance(l, System.Collections.IList), True)
 
-    @unittest.skipIf(is_netstandard, 'no ClrModule.Serialize/Deserialize in netstandard')
+    @unittest.skipIf(is_netcoreapp, 'TODO: figure out')
     def test_serialization(self):
         """
         TODO:
@@ -1318,7 +1311,7 @@ End Class""")
         #    self.assertEqual(temp_except.Message, "another message")
 
     def test_generic_method_error(self):
-        if is_netstandard:
+        if is_netcoreapp:
             clr.AddReference("System.Linq.Queryable")
         else:
             clr.AddReference('System.Core')
@@ -1433,8 +1426,9 @@ if not hasattr(A, 'Rank'):
     def test_a_override_patching(self):
         from IronPythonTest import TestHelpers
 
-        if is_netstandard:
+        if is_netcoreapp:
             clr.AddReference("System.Dynamic.Runtime")
+            clr.AddReference("System.Linq.Expressions")
         else:
             clr.AddReference("System.Core")
 
@@ -1469,9 +1463,10 @@ if not hasattr(A, 'Rank'):
         # make sure you can do dir on everything in System which 
         # includes special types like ArgIterator and Func
         for attr in dir(System):
+            if is_netcoreapp and attr in ["ArgIterator", "ReadOnlySpan"]: continue # TODO: https://github.com/IronLanguages/dlr/issues/74
             dir(getattr(System, attr))
 
-        if is_netstandard:
+        if is_netcoreapp:
             clr.AddReference("System.Collections")
 
         for x in [System.Collections.Generic.SortedList,
@@ -1719,7 +1714,7 @@ if not hasattr(A, 'Rank'):
         self.assertEqual(hasattr('System', 'does_not_exist'), False)
         self.assertEqual(hasattr(type, '__all__'), False)
 
-    @unittest.skipIf(is_netstandard or is_mono, 'No WPF available')
+    @unittest.skipIf(is_netcoreapp or is_mono, 'No WPF available')
     def test_xaml_support(self):
         from IronPythonTest import XamlTestObject, InnerXamlTextObject
         text = """<custom:XamlTestObject 
@@ -1796,9 +1791,10 @@ if not hasattr(A, 'Rank'):
         finally:
             os.unlink('test.xaml')
 
+    @unittest.skipIf(is_netcoreapp, "TODO: figure out")
     def test_extension_methods(self):
         import clr, imp, os
-        if is_netstandard:
+        if is_netcoreapp:
             clr.AddReference('System.Linq')
         else:
             clr.AddReference('System.Core')
@@ -1968,7 +1964,7 @@ from iptest import IronPythonTestCase
                     f.write(test_case)
                     f.write('''
 
-test_support.run_unittest(TheTestCase)''')
+support.run_unittest(TheTestCase)''')
 
                 import temp_module
                 del sys.modules['temp_module']

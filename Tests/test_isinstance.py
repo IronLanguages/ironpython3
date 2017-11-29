@@ -17,7 +17,7 @@ import os
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netstandard, path_modifier, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, path_modifier, run_test, skipUnlessIronPython
 import imp
 
 class IsInstanceTest(IronPythonTestCase):
@@ -53,10 +53,6 @@ class IsInstanceTest(IronPythonTestCase):
 
         if is_cli:
             import System
-            if is_netstandard:
-                import clr
-                clr.AddReference("System.IO.FileSystem")
-                clr.AddReference("System.IO.FileSystem.Primitives")
             fs = System.IO.FileStream("testfile.tmp", System.IO.FileMode.Open, System.IO.FileAccess.Read)
             f = open(fs)
             verify_file(f)
@@ -754,8 +750,7 @@ class IsInstanceTest(IronPythonTestCase):
         self.assertEqual(clr.GetClrType(str), ''.GetType())
         # and ensure we're not just auto-converting back on both of them
         self.assertEqual(clr.GetClrType(str), str)
-        if not is_netstandard: # TODO: figure out why this doesn't work
-            self.assertEqual(clr.GetClrType(str) != str, False)
+        self.assertEqual(clr.GetClrType(str) != str, False)
         
         # as well as GetPythonType
         import System

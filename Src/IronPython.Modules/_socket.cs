@@ -182,9 +182,8 @@ namespace IronPython.Modules {
                 }
             }
 
-#if !NETCOREAPP2_0
             private IAsyncResult _acceptResult;
-#endif
+
             [Documentation("accept() -> (conn, address)\n\n"
                 + "Accept a connection. The socket must be bound and listening before calling\n"
                 + "accept(). conn is a new socket object connected to the remote host, and\n"
@@ -195,10 +194,6 @@ namespace IronPython.Modules {
                 socket wrappedRemoteSocket;
                 Socket realRemoteSocket;
                 try {
-#if NETCOREAPP2_0
-                    // TODO: support timeout != 0
-                    realRemoteSocket = _socket.Accept();
-#else
                     if (_acceptResult != null && _acceptResult.IsCompleted) {
                         // previous async result has completed
                         realRemoteSocket = _socket.EndAccept(_acceptResult);
@@ -221,7 +216,6 @@ namespace IronPython.Modules {
                             realRemoteSocket = _socket.Accept();
                         }
                     }
-#endif
                 } catch (Exception e) {
                     throw MakeException(_context, e);
                 }
@@ -2643,9 +2637,11 @@ namespace IronPython.Modules {
 
                 EnsureSslStream(true);
 
+                var enabledSslProtocols = GetProtocolType(_protocol);
+
                 try {
                     if (_serverSide) {
-                        _sslStream.AuthenticateAsServer(_cert, _certsMode == PythonSsl.CERT_REQUIRED, SslProtocols.Default, false);
+                        _sslStream.AuthenticateAsServer(_cert, _certsMode == PythonSsl.CERT_REQUIRED, enabledSslProtocols, false);
                     } else {
 
                         var collection = new X509CertificateCollection();
@@ -2653,11 +2649,7 @@ namespace IronPython.Modules {
                         if (_cert != null) {
                             collection.Add(_cert);
                         }
-#if NETCOREAPP2_0
-                        _sslStream.AuthenticateAsClientAsync(_socket._hostName, collection, SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false).Wait();
-#else
-                        _sslStream.AuthenticateAsClient(_socket._hostName, collection, SslProtocols.Default, false);
-#endif
+                        _sslStream.AuthenticateAsClient(_socket._hostName, collection, enabledSslProtocols, false);
                     }
                 } catch (AuthenticationException e) {
                     ((IDisposable)_socket._socket).Dispose();
@@ -2676,11 +2668,13 @@ namespace IronPython.Modules {
 
             /* supported communication based upon what the client & server specify
              * as per the CPython docs:
-             * client / server SSLv2 SSLv3 SSLv23 TLSv1 
-                         SSLv2 yes      no   yes*    no 
-                         SSLv3 yes     yes   yes     no 
-                        SSLv23 yes      no   yes     no 
-                         TLSv1 no       no   yes    yes 
+             * client / server SSLv2 SSLv3 SSLv23 TLSv1 TLSv1.1 TLSv1.2
+                         SSLv2   yes    no    yes    no      no      no
+                         SSLv3    no   yes    yes    no      no      no
+                        SSLv23    no   yes    yes   yes     yes     yes
+                         TLSv1    no    no    yes   yes      no      no
+                       TLSv1.1    no    no    yes    no     yes      no
+                       TLSv1.2    no    no    yes    no      no     yes
              */
 
             private static SslProtocols GetProtocolType(int type) {
@@ -2825,9 +2819,10 @@ Read up to len bytes from the SSL socket.")]
                 return String.Empty;
             }
 
-            [Documentation("write(s) -> bytes_sent\n\n"
-                + "Writes the string s through the SSL connection."
-                )]
+            [Documentation(@"write(s) -> len
+
+Writes the string s into the SSL object.  Returns the number
+of bytes written.")]
             public int write(CodeContext/*!*/ context, string data) {
                 EnsureSslStream(true);
 

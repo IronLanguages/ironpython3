@@ -1661,6 +1661,7 @@ namespace IronPython.Runtime.Operations {
             // if we have a valid code page try and get a reasonable name.  The
             // web names / mail displays match tend to CPython's terse names
             if (encoding.CodePage != 0) {
+#if !NETCOREAPP2_0
                 if (encoding.IsBrowserDisplay) {
                     name = encoding.WebName;
                 }
@@ -1668,6 +1669,7 @@ namespace IronPython.Runtime.Operations {
                 if (name == null && encoding.IsMailNewsDisplay) {
                     name = encoding.HeaderName;
                 }
+#endif
 
                 // otherwise use a code page number which also matches CPython               
                 if (name == null) {
@@ -1680,7 +1682,7 @@ namespace IronPython.Runtime.Operations {
                 name = encoding.EncodingName;
             }
 #else
-            // Silverlight only has web names
+            // only has web names
             string name = encoding.WebName;
 #endif
 

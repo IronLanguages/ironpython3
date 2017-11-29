@@ -26,7 +26,6 @@ namespace IronPythonTest.Cases {
 #endif
             }
         }
-
         private static readonly string IRONPYTHONPATH = GetIronPythonPath();
 
         private ScriptEngine defaultEngine;
@@ -170,19 +169,38 @@ namespace IronPythonTest.Cases {
                 proc.StartInfo.UseShellExecute = false;
                 proc.StartInfo.RedirectStandardError = proc.StartInfo.RedirectStandardOutput = testcase.Options.Redirect;
                 proc.Start();
-                var output = string.Empty;
-                if(testcase.Options.Redirect) {
-                    output = proc.StandardError.ReadToEnd();
+
+                if (testcase.Options.Redirect) {
+                    AsyncStreamReader(proc.StandardOutput, data => Console.Write(data));
+                    AsyncStreamReader(proc.StandardError, data => Console.Error.Write(data));
                 }
-                proc.WaitForExit();
+
+                if (!proc.WaitForExit(testcase.Options.Timeout)) {
+                    proc.Kill();
+                    Console.Error.Write($"Timed out after {testcase.Options.Timeout / 1000.0} seconds.");
+                }
                 exitCode = proc.ExitCode;
-                if(testcase.Options.Redirect && exitCode != 0) {
-                    Console.Error.WriteLine($"Error running {proc.StartInfo.FileName} {proc.StartInfo.Arguments}: ");
-                    Console.Error.WriteLine(output);
-                    Console.Error.WriteLine();
-                }
             }
             return exitCode;
+
+            void AsyncStreamReader(StreamReader reader, Action<string> handler) {
+                byte[] buffer = new byte[4096];
+                BeginReadAsync();
+
+                void BeginReadAsync() {
+                    reader.BaseStream.BeginRead(buffer, 0, buffer.Length, new AsyncCallback(ReadCallback), null);
+                }
+
+                void ReadCallback(IAsyncResult asyncResult) {
+                    var bytesRead = reader.BaseStream.EndRead(asyncResult);
+
+                    if (bytesRead > 0) {
+                        var data = reader.CurrentEncoding.GetString(buffer, 0, bytesRead);
+                        handler?.Invoke(data);
+                        BeginReadAsync();
+                    }
+                }
+            }
         }
 
         private int GetScopeTest(TestInfo testcase) {

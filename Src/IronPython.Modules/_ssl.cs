@@ -382,6 +382,7 @@ namespace IronPython.Modules {
         private static string ToPythonDateFormat(string date) {
             return DateTime.Parse(date).ToUniversalTime().ToString("MMM d HH:mm:ss yyyy") + " GMT";
         }
+
         private static string SerialNumberToPython(X509Certificate cert) {
             var res = cert.GetSerialNumberString();
             for (int i = 0; i < res.Length; i++) {
@@ -662,13 +663,14 @@ namespace IronPython.Modules {
 
         public const uint OP_ALL = 0x80000BFF;
         public const uint OP_DONT_INSERT_EMPTY_FRAGMENTS = 0x00000800;
-        public const int OP_NO_SSLv2 = 0x00000000;
+        public const int OP_NO_SSLv2 = 0x01000000;
         public const int OP_NO_SSLv3 = 0x02000000;
         public const int OP_NO_TLSv1 = 0x04000000;
         public const int OP_NO_TLSv1_1 = 0x10000000;
         public const int OP_NO_TLSv1_2 = 0x08000000;
 
-        internal const int OP_NO_ALL = OP_NO_SSLv2 | OP_NO_SSLv3 | OP_NO_TLSv1 | OP_NO_TLSv1_1 | OP_NO_TLSv1_2;
+        internal const int OP_NO_COMPRESSION = 0x20000;
+        internal const int OP_NO_ALL = OP_NO_SSLv2 | OP_NO_SSLv3 | OP_NO_TLSv1 | OP_NO_TLSv1_1 | OP_NO_TLSv1_2 | OP_NO_COMPRESSION;
 
         public const int SSL_ERROR_SSL = 1;
         public const int SSL_ERROR_WANT_READ = 2;

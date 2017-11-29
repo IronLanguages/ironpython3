@@ -19,13 +19,13 @@
 """
 
 from time import clock
-import sys, nt
-sys.path.append([nt.environ[x] for x in nt.environ.keys() if x.lower() == "dlr_root"][0] + "\\Languages\\IronPython\\External\\parrotbench")
+import sys, os
+sys.path.append(os.path.join([os.environ[x] for x in list(os.environ.keys()) if x.lower() == "dlr_root"][0], "Languages", "IronPython", "External", "parrotbench"))
 if sys.platform=="cli":
     import System
     is_cli64 = System.IntPtr.Size == 8
     if is_cli64:
-        print "CodePlex 18518"
+        print("CodePlex 18518")
         sys.exit(0)
 
 def test_main(type="short"):
@@ -40,7 +40,7 @@ def test_main(type="short"):
         import b4
         import b5
         import b6
-        print 'import time = %.2f' % (clock()-t0)
+        print('import time = %.2f' % (clock()-t0))
     
         tests = [b0,b1,b2,b3,b4,b5,b6]
         N = { "short" : 1, "full" : 1, "medium" : 2, "long" : 4 }[type]
@@ -54,12 +54,12 @@ def test_main(type="short"):
                 test.main()
                 tm = (clock()-ts0)
                 results.setdefault(test, []).append(tm)
-                print '%.2f sec running %s' % ( tm, test.__name__)
+                print('%.2f sec running %s' % ( tm, test.__name__))
     
         for test in tests:
-            print '%s = %f -- %r' % (test.__name__, sum(results[test])/N, results[test])
+            print('%s = %f -- %r' % (test.__name__, sum(results[test])/N, results[test]))
     
-        print 'all done in %.2f sec' % (clock()-t0)
+        print('all done in %.2f sec' % (clock()-t0))
     finally:
         sys.setrecursionlimit(oldRecursionDepth)
 

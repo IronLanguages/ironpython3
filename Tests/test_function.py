@@ -15,7 +15,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_mono, is_netstandard, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, run_test, skipUnlessIronPython
 from types import FunctionType
 
 global init
@@ -286,9 +286,6 @@ class FunctionTest(IronPythonTestCase):
             # Test Hashtable and Dictionary on desktop, and just Dictionary in Silverlight
             # (Hashtable is not available)
             htlist = [System.Collections.Generic.Dictionary[System.Object, System.Object]()]
-            if is_netstandard:
-                import clr
-                clr.AddReference("System.Collections.NonGeneric")
             htlist += [System.Collections.Hashtable()]
 
             for ht in htlist:
@@ -750,7 +747,7 @@ class FunctionTest(IronPythonTestCase):
             for case in cases:
                 runTest(case)
 
-    @unittest.skipIf(is_netstandard or is_mono, 'missing System.Windows.Forms support')
+    @unittest.skipIf(is_netcoreapp or is_mono, 'missing System.Windows.Forms support')
     @skipUnlessIronPython()
     def test_call_base_init(self):
         """verify we can call the base init directly"""
@@ -817,7 +814,7 @@ class FunctionTest(IronPythonTestCase):
             exec 'def f(' + ','.join(['a' + str(i) for i in range(size)]) + '): return ' + ','.join(['a' + str(i) for i in range(size)])
             # w/ defaults
             exec 'def g(' + ','.join(['a' + str(i) + '=' + str(i) for i in range(size)]) + '): return ' + ','.join(['a' + str(i) for i in range(size)])
-            if (size <= 255 or is_cli) and not is_netstandard or size <= 13: # PlatformNotSupportedException when > 13
+            if size <= 255 or is_cli:
                 # CPython allows function definitions > 255, but not calls w/ > 255 params.
                 exec 'a = f(' + ', '.join([str(x) for x in xrange(size)]) + ')'
                 self.assertEqual(a, tuple(xrange(size)))

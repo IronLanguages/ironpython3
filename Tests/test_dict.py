@@ -23,10 +23,7 @@ import os
 import unittest
 import sys
 
-from iptest import IronPythonTestCase, is_cli, is_netstandard, path_modifier, run_test, source_root
-
-if is_netstandard: # TODO: revert this once System.SystemException is added to netstandard (https://github.com/IronLanguages/main/issues/1399)
-    SystemError = System.InvalidOperationException
+from iptest import IronPythonTestCase, is_cli, path_modifier, run_test, source_root
 
 class DictTest(IronPythonTestCase):
     def test_sanity(self):
@@ -322,7 +319,7 @@ class DictTest(IronPythonTestCase):
                     if key == 'abc':
                         return 'def'
                     return super(self, dictType).__getitem__(key)
-        except TypeError, ex:
+        except TypeError as ex:
             if not newStyle:
                 self.assertTrue(ex.message.find('cannot derive from sealed or value types') != -1, ex.message)
             else:
@@ -330,11 +327,11 @@ class DictTest(IronPythonTestCase):
         else:
             try:
                 nd = newDict()
-            except TypeError, e:
+            except TypeError as e:
                 if sys.platform == 'cli':
                     import clr
                     if clr.GetClrType(dictType).ToString() == 'IronPython.Runtime.Types.NamespaceDictionary':
-                        Fail("Error! Threw TypeError when creating newDict deriving from NamespaceDictionary")
+                        self.fail("Error! Threw TypeError when creating newDict deriving from NamespaceDictionary")
             else:
                 self.assertEqual(eval('abc', {}, nd), 'def')
         
@@ -821,7 +818,7 @@ class DictTest(IronPythonTestCase):
             def __getitem__(self, key):
                 try:
                     return dict.__getitem__(self, key)
-                except KeyError, e:
+                except KeyError as e:
                     return 'abc'
         
         locs = Locals()
@@ -836,17 +833,17 @@ class DictTest(IronPythonTestCase):
         for key in ['abc', 1, c(), d(), 1.0, 1L]:
             try:
                 {}[key]
-            except KeyError, e:
+            except KeyError as e:
                 self.assertEqual(e.args[0], key)
             
             try:
                 del {}[key]
-            except KeyError, e:
+            except KeyError as e:
                 self.assertEqual(e.args[0], key)
                 
             try:
                 set([]).remove(key)
-            except KeyError, e:
+            except KeyError as e:
                 self.assertEqual(e.args[0], key)
 
     def test_contains(self):
@@ -938,7 +935,7 @@ class DictTest(IronPythonTestCase):
         for start_dict, dict_param, kw_params, expected in test_cases:
             try:
                 start_dict.update(*dict_param, **kw_params)
-            except Exception, e:
+            except Exception as e:
                 print "ERROR:", start_dict, ".update(*", dict_param, ", **", kw_params, ") failed!"
                 raise e
             
@@ -1032,7 +1029,7 @@ class DictTest(IronPythonTestCase):
                             set()]:
             try:
                 x[bad_stuff] = 1
-                Fail(str(bad_stuff) + " is unhashable")
+                self.fail(str(bad_stuff) + " is unhashable")
             except TypeError:
                 self.assertEqual(x, {})
         
@@ -1073,17 +1070,17 @@ class DictTest(IronPythonTestCase):
                             set()]:
             try:
                 dummy = bad_stuff in empty
-                Fail(str(bad_stuff) + " is unhashable")
+                self.fail(str(bad_stuff) + " is unhashable")
             except TypeError:
                 pass
             try:
                 dummy = bad_stuff in emptied
-                Fail(str(bad_stuff) + " is unhashable")
+                self.fail(str(bad_stuff) + " is unhashable")
             except TypeError:
                 pass
             try:
                 dummy = bad_stuff in not_empty
-                Fail(str(bad_stuff) + " is unhashable")
+                self.fail(str(bad_stuff) + " is unhashable")
             except TypeError:
                 pass
 

@@ -338,7 +338,6 @@ class ListTest(IronPythonTestCase):
         #negative cases
         neg_cases = [   ([],    None),
                         ([],    1),
-                        ([],    1),
                         ([],    3.14),
                         ([],    object),
                         ([],    object()),

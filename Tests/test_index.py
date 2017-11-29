@@ -16,7 +16,7 @@
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netstandard, run_test
+from iptest import IronPythonTestCase, is_cli, run_test, skipUnlessIronPython
 
 class IndexTest(IronPythonTestCase):
 
@@ -25,7 +25,7 @@ class IndexTest(IronPythonTestCase):
         self.load_iron_python_test()
 
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
+    @skipUnlessIronPython()
     def test_string(self):
         import clr
         import System
@@ -36,13 +36,11 @@ class IndexTest(IronPythonTestCase):
         self.assertTrue(x[0] == "Hello")
         self.assertTrue(x[1] == "Python")
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
+    @skipUnlessIronPython()
     def test_hashtable(self):
         import clr
         import System
         hashtables = [System.Collections.Generic.Dictionary[object, object]()]    
-        if is_netstandard:
-            clr.AddReference("System.Collections.NonGeneric")
         hashtables.append(System.Collections.Hashtable())
 
         for x in hashtables:
@@ -68,7 +66,7 @@ class IndexTest(IronPythonTestCase):
             x[(1,2)] = "Tuple key in hashtable"
             self.assertTrue(x[1,2,] == "Tuple key in hashtable")
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
+    @skipUnlessIronPython()
     def test_multidim_array(self):
         import clr
         import System
@@ -85,7 +83,7 @@ class IndexTest(IronPythonTestCase):
                 for k in range(2):
                     self.assertTrue(md[i,j,k] == i+j+k)
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
+    @skipUnlessIronPython()
     def test_array(self):
         import clr
         import System
@@ -108,7 +106,7 @@ class IndexTest(IronPythonTestCase):
         del d[None]
         self.assertEqual(d, {})
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
+    @skipUnlessIronPython()
     def test_custom_indexable(self):
         from IronPythonTest import Indexable
         i = Indexable()
@@ -128,7 +126,7 @@ class IndexTest(IronPythonTestCase):
                 i[a,b] = complicated
                 self.assertTrue(i[a,b] == complicated)
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
+    @skipUnlessIronPython()
     def test_property_access(self):
         from IronPythonTest import PropertyAccessClass
         x = PropertyAccessClass()
@@ -141,7 +139,7 @@ class IndexTest(IronPythonTestCase):
                     x[i, j, k] = i + j + k
                     self.assertTrue(x[i, j, k] == i + j + k)
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
+    @skipUnlessIronPython()
     def test_multiple_indexes(self):
         from IronPythonTest import MultipleIndexes
         x = MultipleIndexes()
@@ -211,7 +209,7 @@ class IndexTest(IronPythonTestCase):
         
         verify_values(x, get_value, get_tuple_value)
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
+    @skipUnlessIronPython()
     def test_indexable_list(self):
         from IronPythonTest import IndexableList
         a = IndexableList()
@@ -221,7 +219,7 @@ class IndexTest(IronPythonTestCase):
         for i in range(5):
             self.assertEqual(a[str(i)], i)
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
+    @skipUnlessIronPython()
     def test_generic_function(self):
         from IronPythonTest import GenMeth
         # all should succeed at indexing
@@ -233,7 +231,7 @@ class IndexTest(IronPythonTestCase):
     def test_getorsetitem_override(self):
         class old_base: pass
 
-        for base in [object, list, dict, int, str, tuple, float, int, complex, old_base]:
+        for base in [object, list, dict, int, str, tuple, float, complex, old_base]:
             class foo(base):
                 def __getitem__(self, index):
                     return index
@@ -425,7 +423,7 @@ class IndexTest(IronPythonTestCase):
             from System.Collections.Generic import List
             List[int]
         
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
+    @skipUnlessIronPython()
     def test_csharp_enumeration(self):
         from IronPythonTest import CSharpEnumerable
         a = CSharpEnumerable()

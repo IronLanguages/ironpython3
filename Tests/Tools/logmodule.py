@@ -31,7 +31,7 @@ class C(object):
 class OC: pass
 def f(): pass
 
-knownTypes = [object, bytes, bool, int, str, list, tuple, dict, float, complex, int, type(f), type(C().f), type(OC), type(list.append), type([].append), type(None), type(object.__new__), 
+knownTypes = [object, bytes, bool, int, str, list, tuple, dict, float, complex, type(f), type(C().f), type(OC), type(list.append), type([].append), type(None), type(object.__new__), 
               type(type.__dict__), type(Exception.args), type(complex.imag), type(type.__call__), type(type.__call__.__call__), type(datetime.datetime.max), type(datetime.date.max), type(datetime.time.max), 
               type(datetime.timedelta.max), type(staticmethod.__new__), str, type(_weakref.ProxyType.__add__), C.__weakref__.__class__, file, str]
 

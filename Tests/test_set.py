@@ -331,4 +331,26 @@ class SetTest(IronPythonTestCase):
         s.add(17)
         self.assertEqual(tuple(s), (17,))
 
+    def test_ipy2_gh239(self):
+        """https://github.com/IronLanguages/ironpython2/issues/239"""
+        s = set(range(5))
+        s.remove(0)
+        s.remove(1)
+        s.remove(2)
+        s.add(5)
+        s.add(6)
+        s.add(7)
+        s.add(0)
+        self.assertEqual(s, set([0, 3, 4, 5, 6, 7]))
+
+        s = set(range(5))
+        s.remove(0)
+        s.remove(1)
+        s.remove(2)
+        s.add(5)
+        s.add(6)
+        s.add(7)
+        s.add(8)
+        self.assertEqual(s, set([3, 4, 5, 6, 7, 8]))
+
 run_test(__name__)

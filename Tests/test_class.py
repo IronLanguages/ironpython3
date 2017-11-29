@@ -1900,7 +1900,6 @@ class ClassTest(IronPythonTestCase):
             del x
         
         testit()
-        #collect not defined for silverlight
         gc.collect()
         self.assertEqual(Counter.c, 0)
 

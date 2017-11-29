@@ -345,7 +345,6 @@ TEST APPROACH
   Studio IDE.
   
 - INTEGRATION TESTING
-  * Silverlight support of debugging?
   * breaking into .NET code from pdb
   * breaking into COM from pdb
   * breaking into IronRuby from pdb

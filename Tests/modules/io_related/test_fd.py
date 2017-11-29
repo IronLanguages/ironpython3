@@ -228,5 +228,4 @@ class FdTest(IronPythonTestCase):
         for i in range(1, 3):
             os.unlink(test_filename + str(i))
 
-
 run_test(__name__)

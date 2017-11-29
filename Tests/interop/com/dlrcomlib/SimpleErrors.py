@@ -136,7 +136,6 @@ cor_mapper = {
                 com_obj.genNTEFail : COMException,
                 }
 
-
 def test_cor_exceptions():
     for meth in list(cor_mapper.keys()):
         AssertError(cor_mapper[meth], meth)

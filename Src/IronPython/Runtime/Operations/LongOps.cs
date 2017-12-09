@@ -385,8 +385,8 @@ namespace IronPython.Runtime.Operations {
 
         [SpecialName]
         public static PythonTuple DivMod(BigInteger x, BigInteger y) {
-            BigInteger div, mod;
-            div = DivMod(x, y, out mod);
+            BigInteger mod;
+            BigInteger div = DivMod(x, y, out mod);
             return PythonTuple.MakeTuple(div, mod);
         }
 

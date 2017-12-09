@@ -1330,8 +1330,7 @@ namespace IronPython.Compiler {
         //   return ParseLambdaHelperEnd(f, expr);
         private FunctionDefinition ParseLambdaHelperStart(string name) {
             var start = GetStart();
-            Parameter[] parameters;
-            parameters = ParseParameterList(TokenKind.Colon, allowAnnotations: false);
+            Parameter[] parameters = ParseParameterList(TokenKind.Colon, allowAnnotations: false);
             var mid = GetEnd();
 
             FunctionDefinition func = new FunctionDefinition(name, parameters ?? new Parameter[0]); // new Parameter[0] for error handling of incomplete lambda

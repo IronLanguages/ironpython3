@@ -907,10 +907,9 @@ namespace IronPython.Runtime {
 
         private static object LoadFromDisk(CodeContext context, string name, string fullName, string str) {
             // default behavior
-            PythonModule module;
             string pathname = context.LanguageContext.DomainManager.Platform.CombinePaths(str, name);
 
-            module = LoadPackageFromSource(context, fullName, pathname);
+            PythonModule module = LoadPackageFromSource(context, fullName, pathname);
             if (module != null) {
                 return module;
             }

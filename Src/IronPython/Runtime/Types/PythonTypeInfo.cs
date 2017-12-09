@@ -1591,14 +1591,13 @@ namespace IronPython.Runtime.Types {
             foreach (Type t in binder.GetContributingTypes(fromType)) {
                 foreach (string castName in GetCastNames(fromType, toTypes[0])) {
                     foreach (MemberInfo member in t.GetMember(castName)) {
-                        MethodInfo method;
                         ParameterInfo[] methodParams;
 
                         // Necessary conditions
                         if (member.MemberType != MemberTypes.Method) {
                             continue;
                         }
-                        method = (MethodInfo)member;
+                        MethodInfo method = (MethodInfo)member;
                         if (!toTypes.Contains(method.ReturnType) ||
                             (methodParams = method.GetParameters()).Length != 1) {
                             continue;

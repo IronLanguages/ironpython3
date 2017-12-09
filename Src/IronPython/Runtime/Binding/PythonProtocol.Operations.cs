@@ -1130,17 +1130,16 @@ namespace IronPython.Runtime.Binding {
 
             // collect all the comparison methods, most likely we won't need them all.
             DynamicMetaObject[] rTypes = new DynamicMetaObject[] { types[1], types[0] };
-            SlotOrFunction cfunc, rcfunc, eqfunc, reqfunc, ltfunc, gtfunc, rltfunc, rgtfunc;
-
+            
             PythonContext state = PythonContext.GetPythonContext(operation);
-            cfunc = SlotOrFunction.GetSlotOrFunction(state, "__cmp__", types);
-            rcfunc = SlotOrFunction.GetSlotOrFunction(state, "__cmp__", rTypes);
-            eqfunc = SlotOrFunction.GetSlotOrFunction(state, "__eq__", types);
-            reqfunc = SlotOrFunction.GetSlotOrFunction(state, "__eq__", rTypes);
-            ltfunc = SlotOrFunction.GetSlotOrFunction(state, "__lt__", types);
-            gtfunc = SlotOrFunction.GetSlotOrFunction(state, "__gt__", types);
-            rltfunc = SlotOrFunction.GetSlotOrFunction(state, "__lt__", rTypes);
-            rgtfunc = SlotOrFunction.GetSlotOrFunction(state, "__gt__", rTypes);
+            SlotOrFunction cfunc = SlotOrFunction.GetSlotOrFunction(state, "__cmp__", types);
+            SlotOrFunction rcfunc = SlotOrFunction.GetSlotOrFunction(state, "__cmp__", rTypes);
+            SlotOrFunction eqfunc = SlotOrFunction.GetSlotOrFunction(state, "__eq__", types);
+            SlotOrFunction reqfunc = SlotOrFunction.GetSlotOrFunction(state, "__eq__", rTypes);
+            SlotOrFunction ltfunc = SlotOrFunction.GetSlotOrFunction(state, "__lt__", types);
+            SlotOrFunction gtfunc = SlotOrFunction.GetSlotOrFunction(state, "__gt__", types);
+            SlotOrFunction rltfunc = SlotOrFunction.GetSlotOrFunction(state, "__lt__", rTypes);
+            SlotOrFunction rgtfunc = SlotOrFunction.GetSlotOrFunction(state, "__gt__", rTypes);
 
             // inspect forward and reverse versions so we can pick one or both.
             SlotOrFunction cTarget, rcTarget, eqTarget, reqTarget, ltTarget, rgtTarget, gtTarget, rltTarget;

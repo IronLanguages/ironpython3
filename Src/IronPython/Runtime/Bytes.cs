@@ -684,9 +684,7 @@ namespace IronPython.Runtime {
                 throw PythonOps.TypeError("expected bytes, got None");
             }
             
-            List<byte> bytes;
-
-            bytes = new List<byte>(self._bytes);
+            var bytes = new List<byte>(self._bytes);
             bytes.AddRange(other._bytes);
 
             return new Bytes(bytes);
@@ -694,9 +692,7 @@ namespace IronPython.Runtime {
 
 
         public static ByteArray/*!*/ operator +(Bytes/*!*/ self, ByteArray/*!*/ other) {
-            List<byte> bytes;
-
-            bytes = new List<byte>(self._bytes);
+            var bytes = new List<byte>(self._bytes);
             lock (other) {
                 bytes.AddRange(other);
             }

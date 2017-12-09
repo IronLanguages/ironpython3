@@ -833,8 +833,7 @@ namespace IronPython.Runtime.Types {
                     methodAttrs |= MethodAttributes.Static;
                 }
 
-                MethodBuilder method;
-                method = _tg.DefineMethod(FieldGetterPrefix + fi.Name, methodAttrs, fi.FieldType, ReflectionUtils.EmptyTypes);
+                MethodBuilder method = _tg.DefineMethod(FieldGetterPrefix + fi.Name, methodAttrs, fi.FieldType, ReflectionUtils.EmptyTypes);
                 ILGen il = new ILGen(method.GetILGenerator());
                 if (!fi.IsStatic) {
                     il.EmitLoadArg(0);

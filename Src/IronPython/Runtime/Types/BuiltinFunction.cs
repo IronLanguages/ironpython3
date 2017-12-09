@@ -487,9 +487,9 @@ namespace IronPython.Runtime.Types {
                     dynamicArgs[index + 1] = new DynamicMetaObject(
                         Expression.Call(
                             typeof(PythonOps).GetMethod(nameof(PythonOps.UserMappingToPythonDictionary)),
-                           codeContext,
-                           args[index].Expression,
-                           AstUtils.Constant(name)
+                            codeContext,
+                            args[index].Expression,
+                            AstUtils.Constant(name)
                         ),
                         BindingRestrictionsHelpers.GetRuntimeTypeRestriction(dict.Expression, dict.GetLimitType()),
                         PythonOps.UserMappingToPythonDictionary(PythonContext.GetPythonContext(call).SharedContext, dict.Value, name)
@@ -528,7 +528,7 @@ namespace IronPython.Runtime.Types {
                     dynamicArgs[index + 1] = new DynamicMetaObject(
                         Expression.Call(
                             typeof(PythonOps).GetMethod(nameof(PythonOps.MakeTupleFromSequence)),
-                           Expression.Convert(args[index].Expression, typeof(object))
+                            Expression.Convert(args[index].Expression, typeof(object))
                         ),
                         BindingRestrictions.Empty
                     );

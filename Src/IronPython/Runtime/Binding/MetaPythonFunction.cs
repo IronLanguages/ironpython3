@@ -761,24 +761,24 @@ namespace IronPython.Runtime.Binding {
                     // we can pull the default directly
                     return Ast.Call(
                         typeof(PythonOps).GetMethod(nameof(PythonOps.FunctionGetDefaultValue)),
-                      AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),
-                      AstUtils.Constant(dfltIndex)
-                  );
-                } else {
-                    // we might have a conflict, check the default last.
-                    if (_userProvidedParams != null) {
-                        EnsureParams();
-                    }
-                    _extractedDefault = true;
-                    return Ast.Call(
-                        typeof(PythonOps).GetMethod(nameof(PythonOps.GetFunctionParameterValue)),
                         AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),
-                        AstUtils.Constant(dfltIndex),
-                        AstUtils.Constant(_func.Value.ArgNames[index], typeof(string)),
-                        VariableOrNull(_params, typeof(List)),
-                        VariableOrNull(_dict, typeof(PythonDictionary))
+                        AstUtils.Constant(dfltIndex)
                     );
                 }
+
+                // We might have a conflict, check the default last.
+                if (_userProvidedParams != null) {
+                    EnsureParams();
+                }
+                _extractedDefault = true;
+                return Ast.Call(
+                    typeof(PythonOps).GetMethod(nameof(PythonOps.GetFunctionParameterValue)),
+                    AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),
+                    AstUtils.Constant(dfltIndex),
+                    AstUtils.Constant(_func.Value.ArgNames[index], typeof(string)),
+                    VariableOrNull(_params, typeof(List)),
+                    VariableOrNull(_dict, typeof(PythonDictionary))
+                );
             }
 
             /// <summary>

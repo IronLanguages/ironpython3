@@ -64,18 +64,19 @@ function Test([String] $target, [String] $configuration, [String[]] $frameworks)
     foreach ($framework in $frameworks) {
         $origTarget = $target
         $testname = "";
+        $filtername = $target
         if(!$_FRAMEWORKS[$framework]["filters"].ContainsKey($target)) {
             Write-Warning "No tests available for '$target' trying to run single test '$framework.$target'"
             $testname = "$framework.$target"
-            $target = "single"
+            $filtername = "single"
         }
 
-        $filter = $_FRAMEWORKS[$framework]["filters"][$target]
+        $filter = $_FRAMEWORKS[$framework]["filters"][$filtername]
 
         $replacements = @{
             "__FRAMEWORK__" = $framework;
             "__CONFIGURATION__" = $configuration;
-            "__FILTERNAME__" = $target;
+            "__FILTERNAME__" = $filtername;
             "__FILTER__" = $filter;
             "__BASEDIR__" = $_BASEDIR;
             "__TESTNAME__" = $testname;

@@ -30,8 +30,8 @@ namespace IronPython.Runtime {
         private int _index;
 
         protected ReversedEnumerator(int length, object getitem) {
-            this._index = this._savedIndex = length;
-            this._getItemMethod = getitem;
+            _index = _savedIndex = length;
+            _getItemMethod = getitem;
         }
 
         public static object __new__(CodeContext context, PythonType type, [NotNull]IReversible o) {

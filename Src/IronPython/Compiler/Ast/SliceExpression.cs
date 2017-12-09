@@ -24,39 +24,28 @@ namespace IronPython.Compiler.Ast {
         private readonly Expression _sliceStart;
         private readonly Expression _sliceStop;
         private readonly Expression _sliceStep;
-        private readonly bool _stepProvided;
 
         public SliceExpression(Expression start, Expression stop, Expression step, bool stepProvided) {
             _sliceStart = start;
             _sliceStop = stop;
             _sliceStep = step;
-            _stepProvided = stepProvided;
+            StepProvided = stepProvided;
         }
 
-        public Expression SliceStart {
-            get { return _sliceStart; }
-        }
+        public Expression SliceStart => _sliceStart;
 
-        public Expression SliceStop {
-            get { return _sliceStop; }
-        }
+        public Expression SliceStop => _sliceStop;
 
-        public Expression SliceStep {
-            get { return _sliceStep; }
-        }
+        public Expression SliceStep => _sliceStep;
 
         /// <summary>
         /// True if the user provided a step parameter (either providing an explicit parameter
         /// or providing an empty step parameter) false if only start and stop were provided.
         /// </summary>
-        public bool StepProvided {
-            get {
-                return _stepProvided;
-            }
-        }
+        public bool StepProvided { get; }
 
         public override MSAst.Expression Reduce() {
-            return Ast.Call(
+            return Call(
                 AstMethods.MakeSlice,                                    // method
                 TransformOrConstantNull(_sliceStart, typeof(object)),    // parameters
                 TransformOrConstantNull(_sliceStop, typeof(object)),

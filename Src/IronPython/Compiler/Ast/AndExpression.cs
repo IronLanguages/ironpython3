@@ -52,13 +52,13 @@ namespace IronPython.Compiler.Ast {
             Type t = Type;
             MSAst.ParameterExpression tmp = Ast.Variable(t, "__all__");
 
-            return Ast.Block(
+            return Block(
                 new [] { tmp },
-                Ast.Condition(
+                Condition(
                     GlobalParent.Convert(
                         typeof(bool),
                         ConversionResultKind.ExplicitCast,
-                        Ast.Assign(
+                        Assign(
                             tmp,
                             AstUtils.Convert(
                                 left,

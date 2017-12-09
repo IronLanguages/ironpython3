@@ -397,17 +397,17 @@ namespace IronPython.Modules {
 
     class CharInfo {
         internal CharInfo(string[] info) {
-            this.Name = info[PropertyIndex.Name].ToUpperInvariant();
-            this.General_Category = info[PropertyIndex.General_Category];
-            this.Canonical_Combining_Class = int.Parse(info[PropertyIndex.Canonical_Combining_Class]);
-            this.Bidi_Class = info[PropertyIndex.Bidi_Class];
-            this.Decomposition_Type = info[PropertyIndex.Decomposition_Type];
+            Name = info[PropertyIndex.Name].ToUpperInvariant();
+            General_Category = info[PropertyIndex.General_Category];
+            Canonical_Combining_Class = int.Parse(info[PropertyIndex.Canonical_Combining_Class]);
+            Bidi_Class = info[PropertyIndex.Bidi_Class];
+            Decomposition_Type = info[PropertyIndex.Decomposition_Type];
 
             string nvdes = info[PropertyIndex.Numeric_Value_Decimal];
-            this.Numeric_Value_Decimal = nvdes != "" ? (int?)int.Parse(nvdes) : null;
+            Numeric_Value_Decimal = nvdes != "" ? (int?)int.Parse(nvdes) : null;
 
             string nvdis = info[PropertyIndex.Numeric_Value_Digit];
-            this.Numeric_Value_Digit = nvdis != "" ? (int?)int.Parse(nvdis) : null;
+            Numeric_Value_Digit = nvdis != "" ? (int?)int.Parse(nvdis) : null;
 
             string nvns = info[PropertyIndex.Numeric_Value_Numeric];
             if (nvns != "") {
@@ -418,13 +418,13 @@ namespace IronPython.Modules {
                     num /= den;
                 }
 
-                this.Numeric_Value_Numeric = num;
+                Numeric_Value_Numeric = num;
             } else {
-                this.Numeric_Value_Numeric = null;
+                Numeric_Value_Numeric = null;
             }
 
-            this.Bidi_Mirrored = info[PropertyIndex.Bidi_Mirrored] == "Y" ? 1 : 0;
-            this.East_Asian_Width = info[PropertyIndex.East_Asian_Width];
+            Bidi_Mirrored = info[PropertyIndex.Bidi_Mirrored] == "Y" ? 1 : 0;
+            East_Asian_Width = info[PropertyIndex.East_Asian_Width];
         }
 
         internal readonly string Name;

@@ -41,13 +41,13 @@ namespace IronPython.Compiler.Ast {
         private ScopeStatement _parent;
         private IndexSpan _span;
 
-        internal static readonly MSAst.BlockExpression EmptyBlock = Ast.Block(AstUtils.Empty());
+        internal static readonly BlockExpression EmptyBlock = Ast.Block(AstUtils.Empty());
         internal static readonly MSAst.Expression[] EmptyExpression = new MSAst.Expression[0];
 
-        internal static MSAst.ParameterExpression FunctionStackVariable = Ast.Variable(typeof(List<FunctionStack>), "$funcStack");
-        internal static readonly MSAst.LabelTarget GeneratorLabel = Ast.Label(typeof(object), "$generatorLabel");
-        private static MSAst.ParameterExpression _lineNumberUpdated = Ast.Variable(typeof(bool), "$lineUpdated");
-        private static readonly MSAst.ParameterExpression _lineNoVar = Ast.Parameter(typeof(int), "$lineNo");
+        internal static ParameterExpression FunctionStackVariable = Ast.Variable(typeof(List<FunctionStack>), "$funcStack");
+        internal static readonly LabelTarget GeneratorLabel = Ast.Label(typeof(object), "$generatorLabel");
+        private static ParameterExpression _lineNumberUpdated = Ast.Variable(typeof(bool), "$lineUpdated");
+        private static readonly ParameterExpression _lineNoVar = Ast.Parameter(typeof(int), "$lineNo");
 
         protected Node() {
         }

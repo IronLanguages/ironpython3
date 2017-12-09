@@ -232,7 +232,7 @@ namespace IronPython.Runtime {
         internal PythonEnumerator(object iter) {
             Debug.Assert(!(iter is PythonGenerator));
 
-            this._baseObject = iter;
+            _baseObject = iter;
         }
 
 

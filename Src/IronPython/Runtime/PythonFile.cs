@@ -1161,7 +1161,7 @@ namespace IronPython.Runtime {
                 if (seekEnd) stream.Seek(0, SeekOrigin.End);
 
                 __init__(stream, context.LanguageContext.DefaultEncoding, name, mode);
-                this._isOpen = true;
+                _isOpen = true;
             } catch (UnauthorizedAccessException e) {
                 throw ToIoException(context, name, e);
             }
@@ -1879,7 +1879,7 @@ namespace IronPython.Runtime {
                 _isOpen ? "open" : "closed",
                 name ?? "<uninitialized file>",
                 mode ?? "<uninitialized file>",
-                this.GetHashCode()
+                GetHashCode()
                 );
         }
 

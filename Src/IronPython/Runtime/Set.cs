@@ -89,7 +89,7 @@ namespace IronPython.Runtime {
 
         private SetCollection Empty {
             get {
-                if (this.GetType() == typeof(SetCollection)) {
+                if (GetType() == typeof(SetCollection)) {
                     return new SetCollection();
                 }
 
@@ -941,7 +941,7 @@ namespace IronPython.Runtime {
 
         private FrozenSetCollection Empty {
             get {
-                if (this.GetType() == typeof(FrozenSetCollection)) {
+                if (GetType() == typeof(FrozenSetCollection)) {
                     return _empty;
                 }
 

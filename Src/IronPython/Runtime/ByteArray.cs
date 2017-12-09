@@ -1867,18 +1867,12 @@ namespace IronPython.Runtime
             {
                 return new[] { (BigInteger)end - start };
             }
-            return new[] { (BigInteger)this._bytes.Count - start };
+            return new[] { (BigInteger)_bytes.Count - start };
         }
 
-        PythonTuple IBufferProtocol.Strides
-        {
-            get { return PythonTuple.MakeTuple(1); }
-        }
+        PythonTuple IBufferProtocol.Strides => PythonTuple.MakeTuple(1);
 
-        object IBufferProtocol.SubOffsets
-        {
-            get { return null; }
-        }
+        object IBufferProtocol.SubOffsets => null;
 
         Bytes IBufferProtocol.ToBytes(int start, int? end)
         {

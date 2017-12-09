@@ -484,7 +484,7 @@ namespace IronPython.Runtime
         }
 
         private int FallbackHasherImpl(object o, ref HashDelegate dlg) {
-            return PythonOps.Hash(this.SharedContext, o);
+            return PythonOps.Hash(SharedContext, o);
         }
 
         private sealed class OptimizedUserHasher {

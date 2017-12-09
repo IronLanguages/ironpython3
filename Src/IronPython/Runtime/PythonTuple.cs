@@ -49,19 +49,19 @@ namespace IronPython.Runtime {
         internal static readonly PythonTuple EMPTY = new PythonTuple();
 
         public PythonTuple(object o) {
-            this._data = MakeItems(o);
+            _data = MakeItems(o);
         }
 
         protected PythonTuple(object[] items) {
-            this._data = items;
+            _data = items;
         }
 
         public PythonTuple() {
-            this._data = ArrayUtils.EmptyObjects;
+            _data = ArrayUtils.EmptyObjects;
         }
 
         internal PythonTuple(PythonTuple other, object o) {
-            this._data = other.Expand(o);
+            _data = other.Expand(o);
         }
 
         #region Python Constructors

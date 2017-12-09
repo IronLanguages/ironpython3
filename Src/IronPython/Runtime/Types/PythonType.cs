@@ -2638,16 +2638,16 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             public WeakRefTracker GetWeakRef() {
                 if(type.IsSystemType) {
-                    return this.context.GetSystemPythonTypeWeakRef(type);
-                } else {
-                    IWeakReferenceable weakref = (IWeakReferenceable)type;
-                    return weakref.GetWeakRef();
+                    return context.GetSystemPythonTypeWeakRef(type);
                 }
+
+                IWeakReferenceable weakref = type;
+                return weakref.GetWeakRef();
             }
 
             public void SetFinalizer(WeakRefTracker value) {
                 if(type.IsSystemType) {
-                    this.context.SetSystemPythonTypeFinalizer(type, value);
+                    context.SetSystemPythonTypeFinalizer(type, value);
                 } else {
                     IWeakReferenceable weakref = (IWeakReferenceable)type;
                     weakref.SetFinalizer(value);

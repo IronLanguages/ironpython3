@@ -170,7 +170,7 @@ namespace IronPython.Runtime.Binding {
             }
 
             PerfTrack.NoteEvent(PerfTrack.Categories.BindingSlow, "GetNoFast " + IsNoThrow + " " + CompilerHelpers.GetType(args[0]));
-            return this.LightBind<T>(args, this.Context.Options.CompilationThreshold);
+            return this.LightBind<T>(args, Context.Options.CompilationThreshold);
         }
 
         class FastErrorGet<TSelfType> : FastGetBase {

@@ -116,13 +116,9 @@ namespace IronPython.Compiler {
             _value = value;
         }
 
-        public object Constant {
-            get { return this._value; }
-        }
+        public object Constant => _value;
 
-        public override object Value {
-            get { return _value; }
-        }
+        public override object Value => _value;
 
         public override String Image {
             get {
@@ -139,17 +135,11 @@ namespace IronPython.Compiler {
             _comment = comment;
         }
 
-        public string Comment {
-            get { return _comment; }
-        }
+        public string Comment => _comment;
 
-        public override string Image {
-            get { return _comment; }
-        }
+        public override string Image => _comment;
 
-        public override object Value {
-            get { return _comment; }
-        }
+        public override object Value => _comment;
     }
 
     public class NameToken : Token {
@@ -160,19 +150,11 @@ namespace IronPython.Compiler {
             _name = name;
         }
 
-        public string Name {
-            get { return this._name; }
-        }
+        public string Name => _name;
 
-        public override object Value {
-            get { return _name; }
-        }
+        public override object Value => _name;
 
-        public override String Image {
-            get {
-                return _name;
-            }
-        }
+        public override String Image => _name;
     }
 
     public class OperatorToken : Token {

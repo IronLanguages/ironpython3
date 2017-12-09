@@ -296,7 +296,7 @@ namespace IronPython.Runtime {
 
 
         public virtual void __delitem__(object key) {
-            if (!this.RemoveDirect(key)) {
+            if (!RemoveDirect(key)) {
                 throw PythonOps.KeyError(key);
             }
         }

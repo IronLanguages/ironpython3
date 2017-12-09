@@ -26,7 +26,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override MSAst.Expression Reduce() {
-            return GlobalParent.AddDebugInfo(MSAst.Expression.Break(_loop.BreakLabel), Span);
+            return GlobalParent.AddDebugInfo(Expression.Break(_loop.BreakLabel), Span);
         }
 
         public override void Walk(PythonWalker walker) {

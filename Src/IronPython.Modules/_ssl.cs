@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -35,7 +36,6 @@ using IronPython.Runtime.Types;
 
 [assembly: PythonModule("_ssl", typeof(IronPython.Modules.PythonSsl))]
 namespace IronPython.Modules {
-    using System.Globalization;
 
     internal class Asn1Object {
 

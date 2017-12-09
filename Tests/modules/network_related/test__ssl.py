@@ -127,8 +127,8 @@ for documentation."""
         Should be essentially the same as _ssl.sslwrap.  It's not though and will
         simply be tested as implemented for the time being.
         
-        ssl(PythonSocket.socket sock, 
-            [DefaultParameterValue(null)] string keyfile, 
+        ssl(PythonSocket.socket sock,
+            [DefaultParameterValue(null)] string keyfile,
             [DefaultParameterValue(null)] string certfile)
         '''
         #--Positive
@@ -265,7 +265,7 @@ for documentation."""
         self.assertTrue(SSL_RESPONSE in response)
         
         #Cleanup
-        ssl_s.shutdown()  
+        ssl_s.shutdown()
         s.close()
         
     def test_parse_cert(self):
@@ -304,7 +304,7 @@ for documentation."""
         try:
             System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo("fr")
             p = real_ssl._test_decode_cert(CERTFILE)
-           self.assertEqual(p['notAfter'], 'Oct  5 23:01:56 2020 GMT')
+            self.assertEqual(p['notAfter'], 'Oct  5 23:01:56 2020 GMT')
             self.assertEqual(p['notBefore'], 'Oct  8 23:01:56 2010 GMT')
         finally:
             System.Threading.Thread.CurrentThread.CurrentCulture = culture

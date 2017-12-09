@@ -1507,7 +1507,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                         try {
                             state.IntVal = checked(state.IntVal + ((int)current));
                         } catch (OverflowException) {
-                            state.BigIntVal = (BigInteger)state.IntVal + (BigInteger)(int)current;
+                            state.BigIntVal = state.IntVal + (int)current;
                             state.CurType = SumVariantType.BigInt;
                         }
                     } else if (current.GetType() == typeof(double)) {

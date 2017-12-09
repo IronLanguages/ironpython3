@@ -153,14 +153,21 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         public static object Power(BigInteger x, int y, object z) {
             if (z is int) {
-                return Power(x, y, (BigInteger)(int)z);
-            } else if (z is long) {
-                return Power(x, y, (BigInteger)(long)z);
-            } else if (z is BigInteger) {
+                return Power(x, y, (int)z);
+            }
+
+            if (z is long) {
+                return Power(x, y, (long)z);
+            }
+
+            if (z is BigInteger) {
                 return Power(x, y, (BigInteger)z);
-            } else if (z == null) {
+            }
+
+            if (z == null) {
                 return Power(x, y);
             }
+
             return NotImplementedType.Value;
         }
 
@@ -469,7 +476,7 @@ namespace IronPython.Runtime.Operations {
         }
         [PropertyMethod, SpecialName]
         public static BigInteger Getdenominator(BigInteger self) {
-            return (BigInteger)1;
+            return 1;
         }
 
         public static int bit_length(BigInteger self) {

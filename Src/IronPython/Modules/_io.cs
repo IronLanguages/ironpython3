@@ -3063,17 +3063,21 @@ namespace IronPython.Modules {
             if (i is BigInteger) {
                 res = (BigInteger)i;
                 return true;
-            } else if (i is int) {
-                res =(BigInteger)(int)i;
+            }
+
+            if (i is int) {
+                res = (int)i;
                 return true;
-            } else if (i is long) {
-                res = (BigInteger)(long)i;
+            }
+
+            if (i is long) {
+                res = (long)i;
                 return true;
             }
 
             Extensible<int> ei = i as Extensible<int>;
             if (ei != null) {
-                res = (BigInteger)ei.Value;
+                res = ei.Value;
                 return true;
             }
 
@@ -3103,9 +3107,9 @@ namespace IronPython.Modules {
 
             if (msg == null) {
                 throw PythonOps.TypeError("integer argument expected, got '{0}'", PythonTypeOps.GetName(i));
-            } else {
-                throw PythonOps.TypeError(msg, args);
             }
+            
+            throw PythonOps.TypeError(msg, args);
         }
 
         private static int GetInt(object i, int defaultValue, string msg, params object[] args) {

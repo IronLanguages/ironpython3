@@ -35,12 +35,10 @@ namespace IronPython.Hosting {
     /// A simple Python command-line should mimic the standard python.exe
     /// </summary>
     public sealed class PythonCommandLine : CommandLine {
-        private PythonContext PythonContext {
-            get { return (PythonContext)Language; }
-        }
-        
-        private new PythonConsoleOptions Options { get { return (PythonConsoleOptions)base.Options; } }
-        
+        private PythonContext PythonContext => Language;
+
+        private new PythonConsoleOptions Options => (PythonConsoleOptions)base.Options;
+
         public PythonCommandLine() {
         }
 

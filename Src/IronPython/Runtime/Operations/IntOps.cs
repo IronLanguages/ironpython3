@@ -309,7 +309,7 @@ namespace IronPython.Runtime.Operations {
                     return result;
                 }
             } catch (OverflowException) {
-                return BigIntegerOps.Power((BigInteger)x, savePower);
+                return BigIntegerOps.Power(x, savePower);
             }
         }
 

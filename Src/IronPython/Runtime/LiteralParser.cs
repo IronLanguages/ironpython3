@@ -326,7 +326,7 @@ namespace IronPython.Runtime {
             for (int i = text.Length - 1; i >= 0; i--) {
                 // avoid the exception here.  Not only is throwing it expensive,
                 // but loading the resources for it is also expensive 
-                long lret = (long)ret + m * CharValue(text[i], b);
+                long lret = ret + m * CharValue(text[i], b);
                 if (Int32.MinValue <= lret && lret <= Int32.MaxValue) {
                     ret = (int)lret;
                 } else {

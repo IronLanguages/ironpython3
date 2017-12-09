@@ -97,11 +97,7 @@ namespace IronPython.Runtime {
             } else if (value is NamespaceTracker) {
                 kind = MemberKind.Namespace;            
             } else if (value is PythonFunction) {
-                if (fromClass) {
-                    kind = MemberKind.Method;
-                } else {
-                    kind = MemberKind.Function;
-                }
+                kind = fromClass ? MemberKind.Method : MemberKind.Function;
             } else if (value is BuiltinMethodDescriptor || value is Method) {
                 kind = MemberKind.Method;
             } else if (value is PythonType) {

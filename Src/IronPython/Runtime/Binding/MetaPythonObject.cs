@@ -103,12 +103,7 @@ namespace IronPython.Runtime.Binding {
             Debug.Assert(arg != null);
 
             PythonContext state = PythonContext.GetPythonContext(action);
-            CodeContext context;
-            if (state != null) {
-                context = state.SharedContext;
-            } else {
-                context = DefaultContext.Default;
-            }
+            CodeContext context = state != null ? state.SharedContext : DefaultContext.Default;
             
             return new DynamicMetaObject(
                 Ast.Convert(

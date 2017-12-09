@@ -1801,12 +1801,9 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             if (self != null) {
                 object dir;
                 if (TryResolveNonObjectSlot(context, self, "__dir__", out dir)) {
-                    CallSite<Func<CallSite, CodeContext, object, object>> dirSite;
-                    if (IsSystemType) {
-                        dirSite = context.LanguageContext.GetSiteCacheForSystemType(UnderlyingSystemType).GetDirSite(context);
-                    } else {
-                        dirSite = _siteCache.GetDirSite(context);
-                    }
+                    CallSite<Func<CallSite, CodeContext, object, object>> dirSite = IsSystemType
+                        ? context.LanguageContext.GetSiteCacheForSystemType(UnderlyingSystemType).GetDirSite(context)
+                        : _siteCache.GetDirSite(context);
 
                     return new List(dirSite.Target(dirSite, context, dir));
                 }

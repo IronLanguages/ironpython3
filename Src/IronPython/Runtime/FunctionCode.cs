@@ -207,13 +207,11 @@ namespace IronPython.Runtime {
                                 enableTracing = context.LanguageContext.EnableTracing;
                             }
 
-                            Delegate target;
-                            if (enableTracing) {
-                                target = ((LambdaExpression)LightExceptions.Rewrite(GetGeneratorOrNormalLambdaTracing(pyCtx).Reduce())).Compile();
-                            } else {
-                                target = ((LambdaExpression)LightExceptions.Rewrite(GetGeneratorOrNormalLambda().Reduce())).Compile();
-
-                            }
+                            Delegate target = enableTracing
+                                ? ((LambdaExpression)LightExceptions.Rewrite(
+                                    GetGeneratorOrNormalLambdaTracing(pyCtx).Reduce())).Compile()
+                                : ((LambdaExpression)LightExceptions.Rewrite(GetGeneratorOrNormalLambda().Reduce()))
+                                .Compile();
 
                             lock (pyCtx._codeUpdateLock) {
                                 if (context.LanguageContext.EnableTracing == enableTracing) {

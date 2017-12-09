@@ -279,11 +279,7 @@ namespace IronPython.Runtime.Binding {
 
             test = splatArgTest;
             if (splatKwArgTest != null) {
-                if (test != null) {
-                    test = Expression.AndAlso(test, splatKwArgTest);
-                } else {
-                    test = splatKwArgTest;
-                }
+                test = test != null ? Expression.AndAlso(test, splatKwArgTest) : splatKwArgTest;
             }
         }
 

@@ -373,11 +373,11 @@ namespace IronPython.Compiler.Ast {
                     _start = value;
                     int index = _offset + _start;
                     Type storageType = GetStorageType(index);
-                    if (storageType != typeof(StorageData)) {
-                        _fieldInfo = storageType.GetField(Name + string.Format("{0:000}", index % StorageData.StaticFields));
-                    } else {
-                        _fieldInfo = typeof(StorageData).GetField(Name + "s");
-                    }
+                    _fieldInfo = storageType != typeof(StorageData)
+                        ? storageType.GetField(
+                            Name +
+                            $"{index % StorageData.StaticFields:000}")
+                        : typeof(StorageData).GetField(Name + "s");
                 }
             }
 

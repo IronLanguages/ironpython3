@@ -122,11 +122,7 @@ namespace IronPython.Runtime.Types {
         internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
             PerfTrack.NoteEvent(PerfTrack.Categories.Fields, this);
             if (instance == null) {
-                if (_info.IsStatic) {
-                    value = _info.GetValue(null);
-                } else {
-                    value = this;
-                }
+                value = _info.IsStatic ? _info.GetValue(null) : this;
             } else {
                 value = _info.GetValue(context.LanguageContext.Binder.Convert(instance, _info.DeclaringType));
             }

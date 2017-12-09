@@ -3611,12 +3611,7 @@ namespace IronPython.Runtime.Operations {
                 return res;
             }
 
-            Exception ex;
-            if (isGlobal) {
-                ex = GlobalNameError(name);
-            } else {
-                ex = NameError(name);
-            }
+            Exception ex = isGlobal ? GlobalNameError(name) : NameError(name);
             if (lightThrow) {
                 return LightExceptions.Throw(ex);
             }

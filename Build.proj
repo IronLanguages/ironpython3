@@ -91,7 +91,11 @@
       <DlrMainReferenceFiles
           Include="$(BinDir)\$(BuildFlavour)\*\Microsoft.Scripting.dll" />
       <DlrMainReferenceFiles
+          Include="$(BinDir)\$(BuildFlavour)\*\Microsoft.Scripting.xml" />
+      <DlrMainReferenceFiles
           Include="$(BinDir)\$(BuildFlavour)\*\Microsoft.Dynamic.dll" />
+      <DlrMainReferenceFiles
+          Include="$(BinDir)\$(BuildFlavour)\*\Microsoft.Dynamic.xml" />
     </ItemGroup>
 
     <Copy SourceFiles="@(DlrMainReferenceFiles)"
@@ -115,14 +119,6 @@
     <Zip ZipLevel="9" Files="@(StdLibFiles)" ZipFileName="$(PackageDir)\IronPython.StdLib.$(PackageVersion).zip" WorkingDirectory="$(StageDir)\Lib"/>
   </Target>
 
-  <Target Name="_RemoveDocFiles" DependsOnTargets="_PlatformStage">
-    <ItemGroup>
-      <UnneededDocXMLFiles Include="$(StageDir)\**\*.xml" />
-      <UnneededDocXMLFiles Include="$(StageDir)\**\DLLs\*.xml" />
-    </ItemGroup>
-    <Delete Files="@(UnneededDocXMLFiles)" />
-  </Target>
-
   <PropertyGroup>
     <StageDependsOn>
       _MakeStageDir;
@@ -131,8 +127,7 @@
       _CopyDlrMainReferences;
       _CopyMainStageFiles;
       _CopyStdLib;
-      _ZipStdLib;
-      _RemoveDocFiles
+      _ZipStdLib
     </StageDependsOn>
   </PropertyGroup>
 
@@ -163,6 +158,7 @@
           Outputs="$(NuPkgOutputs)">
     <ItemGroup>
       <DLLsFiles Include="**\DLLs\IronPython.*.dll" />
+      <DLLsFiles Include="**\DLLs\IronPython.*.xml" />
     </ItemGroup>
 
     <!-- Copy the files from DLLs into the main directory for nuget packaging -->

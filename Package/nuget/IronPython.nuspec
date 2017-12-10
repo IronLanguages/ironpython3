@@ -26,6 +26,7 @@
   </metadata>
   <files>
     <file src="**\*.dll" target="lib" exclude="**\rowantest*.dll;**\IronPythonTest.dll;**\DLLs\*.dll;Lib\*.*;**\Microsoft.*.*;**\IKVM.Reflection.dll;**\ipy.dll;**\System*.dll" />
+    <file src="**\*.xml" target="lib" exclude="**\Microsoft.*.*;**\DLLs\*.xml" />
     <file src="LICENSE;README.md" />
   </files>
 </package>

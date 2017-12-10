@@ -99,7 +99,7 @@ namespace IronPython.Runtime.Binding {
 
         public override DynamicMetaObject/*!*/ BindInvoke(InvokeBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args) {
             Expression context = Ast.Call(
-                typeof(PythonOps).GetMethod("GetPythonTypeContext"),
+                typeof(PythonOps).GetMethod(nameof(PythonOps.GetPythonTypeContext)),
                 Ast.Property(
                     AstUtils.Convert(Expression, typeof(IPythonObject)),
                     "PythonType"
@@ -189,7 +189,7 @@ namespace IronPython.Runtime.Binding {
                             return MakeConvertRuleForCall(conversion, type, this, "__complex__", "ConvertToComplex",
                                 (() => MakeConvertRuleForCall(conversion, type, this, "__float__", "ConvertToFloat",
                                     (() => FallbackConvert(conversion)),
-                                    (x) => Ast.Call(null, typeof(PythonOps).GetMethod("ConvertFloatToComplex"), x))),
+                                    (x) => Ast.Call(null, typeof(PythonOps).GetMethod(nameof(PythonOps.ConvertFloatToComplex)), x))),
                                 (x) => x);
                         } else if (type == typeof(BigInteger)) {
                             return MakeConvertRuleForCall(conversion, type, this, "__long__", "ConvertToLong");
@@ -440,7 +440,7 @@ namespace IronPython.Runtime.Binding {
 
                 return new DynamicMetaObject(
                     Ast.Call(
-                        typeof(PythonOps).GetMethod("UserObjectIsCallable"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.UserObjectIsCallable)),
                         AstUtils.Constant(PythonContext.GetPythonContext(action).SharedContext),
                         self.Expression
                     ),

@@ -61,7 +61,7 @@ namespace IronPython.Runtime.Binding {
                 if (sf.Target.Expression.Type != typeof(bool)) {
                     return new DynamicMetaObject(
                         Ast.Call(
-                            typeof(PythonOps).GetMethod("ThrowingConvertToBool"),
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.ThrowingConvertToBool)),
                             sf.Target.Expression
                         ),
                         sf.Target.Restrictions
@@ -188,7 +188,7 @@ namespace IronPython.Runtime.Binding {
                         Ast.Call(typeof(PythonOps).GetMethod(nameof(PythonOps.FunctionPushFrame)), Ast.Constant(pyContext)),                        
                         body
                     ),
-                    Ast.Call(typeof(PythonOps).GetMethod("FunctionPopFrame"))
+                    Ast.Call(typeof(PythonOps).GetMethod(nameof(PythonOps.FunctionPopFrame)))
                 );
 
                 return BindingHelpers.AddDynamicTestAndDefer(
@@ -229,7 +229,7 @@ namespace IronPython.Runtime.Binding {
 
             return binder.Throw(
                 Ast.Call(
-                    typeof(PythonOps).GetMethod("UncallableError"),
+                    typeof(PythonOps).GetMethod(nameof(PythonOps.UncallableError)),
                     AstUtils.Convert(self.Expression, typeof(object))
                 )
             );

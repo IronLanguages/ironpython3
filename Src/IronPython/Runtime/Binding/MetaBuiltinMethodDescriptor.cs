@@ -71,7 +71,7 @@ namespace IronPython.Runtime.Binding {
                 BindingRestrictions.GetExpressionRestriction(
                     MakeFunctionTest(
                         Ast.Call(
-                            typeof(PythonOps).GetMethod("GetBuiltinMethodDescriptorTemplate"),
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.GetBuiltinMethodDescriptorTemplate)),
                             Ast.Convert(Expression, typeof(BuiltinMethodDescriptor))
                         )
                     )

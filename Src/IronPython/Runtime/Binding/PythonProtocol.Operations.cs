@@ -326,7 +326,7 @@ namespace IronPython.Runtime.Binding {
                         res = new DynamicMetaObject(
                             operation.Throw(
                                 Ast.Call(
-                                    typeof(PythonOps).GetMethod("TypeErrorForNonIterableObject"),
+                                    typeof(PythonOps).GetMethod(nameof(PythonOps.TypeErrorForNonIterableObject)),
                                     AstUtils.Convert(
                                         types[0].Expression,
                                         typeof(object)
@@ -375,7 +375,7 @@ namespace IronPython.Runtime.Binding {
                 res = new DynamicMetaObject(
                     operation.Throw(
                         Expression.Call(
-                            typeof(PythonOps).GetMethod("TypeErrorForUnhashableObject"),
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.TypeErrorForUnhashableObject)),
                             self.Expression
                         ),
                         typeof(int)
@@ -459,7 +459,7 @@ namespace IronPython.Runtime.Binding {
 
                 return new DynamicMetaObject(
                     Expression.Call(
-                        typeof(PythonOps).GetMethod("StringEnumerator"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.StringEnumerator)),
                         self.Expression
                     ),
                     self.Restrictions
@@ -469,7 +469,7 @@ namespace IronPython.Runtime.Binding {
 
                 return new DynamicMetaObject(
                     Expression.Call(
-                        typeof(PythonOps).GetMethod("BytesIntEnumerator"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.BytesIntEnumerator)),
                         self.Expression
                     ),
                     self.Restrictions
@@ -480,7 +480,7 @@ namespace IronPython.Runtime.Binding {
 
                 return new DynamicMetaObject(
                     Expression.Call(
-                        typeof(PythonOps).GetMethod("GetEnumeratorFromEnumerable"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.GetEnumeratorFromEnumerable)),
                         Expression.Convert(
                             self.Expression,
                             typeof(IEnumerable)
@@ -540,7 +540,7 @@ namespace IronPython.Runtime.Binding {
                         ),
                         MakeEnumeratorResult(tmp),
                         Ast.Call(
-                            typeof(PythonOps).GetMethod("ThrowTypeErrorForBadIteration"),
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.ThrowTypeErrorForBadIteration)),
                             PythonContext.GetCodeContext(operation),
                             self.Expression
                         )
@@ -585,7 +585,7 @@ namespace IronPython.Runtime.Binding {
                         notExpr = Ast.Equal(notExpr, AstUtils.Constant(false));
                     } else {
                         notExpr = Ast.Call(
-                            typeof(PythonOps).GetMethod("Not"),
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.Not)),
                             AstUtils.Convert(notExpr, typeof(object))
                         );
                     }
@@ -1012,14 +1012,14 @@ namespace IronPython.Runtime.Binding {
      
         private static MethodCallExpression/*!*/ CoerceTwo(ParameterExpression/*!*/ coerceTuple) {
             return Ast.Call(
-                typeof(PythonOps).GetMethod("GetCoerceResultTwo"),
+                typeof(PythonOps).GetMethod(nameof(PythonOps.GetCoerceResultTwo)),
                 coerceTuple
             );
         }
 
         private static MethodCallExpression/*!*/ CoerceOne(ParameterExpression/*!*/ coerceTuple) {
             return Ast.Call(
-                typeof(PythonOps).GetMethod("GetCoerceResultOne"),
+                typeof(PythonOps).GetMethod(nameof(PythonOps.GetCoerceResultOne)),
                 coerceTuple
             );
         }
@@ -1217,7 +1217,7 @@ namespace IronPython.Runtime.Binding {
 
                     return new DynamicMetaObject(
                         Ast.Call(
-                            typeof(PythonOps).GetMethod("CompareLists"),
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.CompareLists)),
                             types[0].Expression,
                             types[1].Expression
                         ),
@@ -1229,7 +1229,7 @@ namespace IronPython.Runtime.Binding {
 
                     return new DynamicMetaObject(
                         Ast.Call(
-                            typeof(PythonOps).GetMethod("CompareTuples"),
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.CompareTuples)),
                             types[0].Expression,
                             types[1].Expression
                         ),
@@ -1241,7 +1241,7 @@ namespace IronPython.Runtime.Binding {
 
                     return new DynamicMetaObject(
                         Ast.Call(
-                            typeof(PythonOps).GetMethod("CompareFloats"),
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.CompareFloats)),
                             types[0].Expression,
                             types[1].Expression
                         ),
@@ -1326,7 +1326,7 @@ namespace IronPython.Runtime.Binding {
                     op,
                     reverse,
                     Ast.Call(
-                        typeof(PythonOps).GetMethod("CompareToZero"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.CompareToZero)),
                         AstUtils.Convert(expr, typeof(object))
                     )
                 );
@@ -1807,7 +1807,7 @@ namespace IronPython.Runtime.Binding {
 
             return new DynamicMetaObject(
                 Ast.Call(
-                    typeof(PythonOps).GetMethod("MakeSlice"),
+                    typeof(PythonOps).GetMethod(nameof(PythonOps.MakeSlice)),
                     AstUtils.Convert(GetSetParameter(newArgs, 1), typeof(object)),
                     AstUtils.Convert(GetSetParameter(newArgs, 2), typeof(object)),
                     AstUtils.Convert(GetSetParameter(newArgs, 3), typeof(object))
@@ -1826,7 +1826,7 @@ namespace IronPython.Runtime.Binding {
 
             return new DynamicMetaObject(
                 Ast.Call(
-                    typeof(PythonOps).GetMethod("MakeSlice"),
+                    typeof(PythonOps).GetMethod(nameof(PythonOps.MakeSlice)),
                     AstUtils.Convert(GetGetOrDeleteParameter(newArgs, 1), typeof(object)),
                     AstUtils.Convert(GetGetOrDeleteParameter(newArgs, 2), typeof(object)),
                     AstUtils.Convert(GetGetOrDeleteParameter(newArgs, 3), typeof(object))
@@ -2125,7 +2125,7 @@ namespace IronPython.Runtime.Binding {
 
                 Expression error = action.Throw(
                     Ast.Call(
-                        typeof(PythonOps).GetMethod("SimpleTypeError"),   
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.SimpleTypeError)),   
                         Ast.Constant(message)
                     ),
                     typeof(object)

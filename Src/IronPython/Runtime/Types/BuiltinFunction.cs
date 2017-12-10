@@ -306,7 +306,7 @@ namespace IronPython.Runtime.Types {
             Debug.Assert(functionTarget.Type == typeof(BuiltinFunction));
 
             return Ast.Call(
-                typeof(PythonOps).GetMethod("TestBoundBuiltinFunction"),
+                typeof(PythonOps).GetMethod(nameof(PythonOps.TestBoundBuiltinFunction)),
                 functionTarget,
                 AstUtils.Constant(_data, typeof(object))
             );
@@ -486,10 +486,10 @@ namespace IronPython.Runtime.Types {
 
                     dynamicArgs[index + 1] = new DynamicMetaObject(
                         Expression.Call(
-                           typeof(PythonOps).GetMethod("UserMappingToPythonDictionary"),
-                           codeContext,
-                           args[index].Expression,
-                           AstUtils.Constant(name)
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.UserMappingToPythonDictionary)),
+                            codeContext,
+                            args[index].Expression,
+                            AstUtils.Constant(name)
                         ),
                         BindingRestrictionsHelpers.GetRuntimeTypeRestriction(dict.Expression, dict.GetLimitType()),
                         PythonOps.UserMappingToPythonDictionary(PythonContext.GetPythonContext(call).SharedContext, dict.Value, name)
@@ -527,8 +527,8 @@ namespace IronPython.Runtime.Types {
 
                     dynamicArgs[index + 1] = new DynamicMetaObject(
                         Expression.Call(
-                           typeof(PythonOps).GetMethod("MakeTupleFromSequence"),
-                           Expression.Convert(args[index].Expression, typeof(object))
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.MakeTupleFromSequence)),
+                            Expression.Convert(args[index].Expression, typeof(object))
                         ),
                         BindingRestrictions.Empty
                     );

@@ -148,11 +148,7 @@ namespace IronPython.Runtime {
                 return new PythonTuple(_defaults);
             }
             set {
-                if (value == null) {
-                    _defaults = ArrayUtils.EmptyObjects;
-                } else {
-                    _defaults = value.ToArray();
-                }
+                _defaults = value == null ? ArrayUtils.EmptyObjects : value.ToArray();
                 _compat = CalculatedCachedCompat();
             }
         }

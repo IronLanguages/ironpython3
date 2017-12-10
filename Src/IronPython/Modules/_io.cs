@@ -2796,12 +2796,10 @@ namespace IronPython.Modules {
             if (updating) {
                 mode += '+';
             }
-            FileIO fio;
-            if (fname != null) {
-                fio = new FileIO(context, fname, mode, closefd);
-            } else {
-                fio = new FileIO(context, fd, mode, closefd);
-            }
+
+            FileIO fio = fname != null
+                ? new FileIO(context, fname, mode, closefd)
+                : new FileIO(context, fd, mode, closefd);
 
             bool line_buffering = false;
             if (buffering == 1 || buffering < 0 && fio.isatty(context)) {

@@ -99,12 +99,9 @@ namespace IronPython.Compiler.Ast {
                 );
             }
 
-            MSAst.Expression index;
-            if (IsSlice) {
-                index = GlobalParent.SetSlice(GetActionArgumentsForSet(right));
-            } else {
-                index = GlobalParent.SetIndex(GetActionArgumentsForSet(right));
-            }
+            MSAst.Expression index = IsSlice
+                ? GlobalParent.SetSlice(GetActionArgumentsForSet(right))
+                : GlobalParent.SetIndex(GetActionArgumentsForSet(right));
 
             return GlobalParent.AddDebugInfoAndVoid(index, Span);
         }

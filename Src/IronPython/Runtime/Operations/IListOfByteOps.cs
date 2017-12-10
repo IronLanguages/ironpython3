@@ -1176,13 +1176,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         private static int FixStart(IList<byte> bytes, int? start) {
-            int iStart;
-            if (start != null) {
-                iStart = PythonOps.FixSliceIndex(start.Value, bytes.Count);
-            } else {
-                iStart = 0;
-            }
-            return iStart;
+            return start != null ? PythonOps.FixSliceIndex(start.Value, bytes.Count) : 0;
         }
 
         internal static byte ToByte(this string/*!*/ self, string name, int pos) {

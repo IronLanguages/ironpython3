@@ -1309,11 +1309,7 @@ namespace IronPython.Runtime {
             lock (this) {
                 var mode = MapFileMode(this.mode);
                 if (text) {
-                    if (mode == PythonFileMode.Binary) {
-                        _fileMode = PythonFileMode.UniversalNewline;
-                    } else {
-                        _fileMode = mode;
-                    }
+                    _fileMode = mode == PythonFileMode.Binary ? PythonFileMode.UniversalNewline : mode;
                 } else {
                     _fileMode = PythonFileMode.Binary;
                 }

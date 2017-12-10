@@ -526,12 +526,9 @@ namespace IronPython.Runtime.Binding {
             IPythonConvertible pyConv = self as IPythonConvertible;
             PythonConversionBinder convBinder = PythonContext.GetPythonContext(operation).Convert(typeof(IEnumerator), ConversionResultKind.ExplicitTry);
 
-            DynamicMetaObject res;
-            if (pyConv != null) {
-                res = pyConv.BindConvert(convBinder);
-            } else {
-                res = convBinder.Bind(self, new DynamicMetaObject[0]);
-            }
+            DynamicMetaObject res = pyConv != null
+                ? pyConv.BindConvert(convBinder)
+                : convBinder.Bind(self, new DynamicMetaObject[0]);
 
             return new DynamicMetaObject(
                 Expression.Block(

@@ -753,12 +753,10 @@ import Namespace.")]
             #region ICallableWithCodeContext Members
             [SpecialName]
             public object Call(CodeContext context, params object[] args) {
-                object ret;
-                if (_inst != null) {
-                    ret = PythonOps.CallWithContext(context, _func, ArrayUtils.Insert(_inst, args));
-                } else {
-                    ret = PythonOps.CallWithContext(context, _func, args);
-                }
+                object ret = PythonOps.CallWithContext(
+                    context,
+                    _func,
+                    _inst != null ? ArrayUtils.Insert(_inst, args) : args);
                 ValidateReturn(ret);
                 return ret;
             }

@@ -497,11 +497,7 @@ namespace IronPython.Modules {
                 Debug.Assert(size > 0);
 
                 if (_data.Length < size) {
-                    if (size <= DEFAULT_BUF_SIZE) {
-                        size = DEFAULT_BUF_SIZE;
-                    } else {
-                        size = Math.Max(size, _data.Length * 2);
-                    }
+                    size = size <= DEFAULT_BUF_SIZE ? DEFAULT_BUF_SIZE : Math.Max(size, _data.Length * 2);
 
                     byte[] oldBuffer = _data;
                     _data = new byte[size];

@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -32,7 +33,6 @@ using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-
 
 [assembly: PythonModule("_ssl", typeof(IronPython.Modules.PythonSsl))]
 namespace IronPython.Modules {
@@ -334,29 +334,36 @@ namespace IronPython.Modules {
             return (PythonType)context.LanguageContext.GetModuleState("SSLError");
         }
 
-        public static PythonDictionary _test_decode_cert(CodeContext context, string filename, bool complete=false) {
-            var cert = ReadCertificate(context, filename);
-            return CertificateToPython(context, cert, complete);
+        public static PythonDictionary _test_decode_cert(CodeContext context, string path) {
+            var cert = ReadCertificate(context, path);
+            return CertificateToPython(context, cert);
         }
 
-        internal static PythonDictionary CertificateToPython(CodeContext context, X509Certificate cert, bool complete) {
-            return CertificateToPython(context, new X509Certificate2(cert.GetRawCertData()), complete);
+        internal static PythonDictionary CertificateToPython(CodeContext context, X509Certificate cert) {
+            if (cert is X509Certificate2 cert2)
+                return CertificateToPython(context, cert2);
+            return CertificateToPython(context, new X509Certificate2(cert.GetRawCertData()));
         }
 
         internal static PythonDictionary CertificateToPython(CodeContext context, X509Certificate2 cert, bool complete) {
             var dict = new CommonDictionaryStorage();
 
-            dict.AddNoLock("notAfter", ToPythonDateFormat(cert.NotAfter.ToString()));
+            dict.AddNoLock("notAfter", ToPythonDateFormat(cert.NotAfter));
             dict.AddNoLock("subject", IssuerToPython(context, cert.Subject));
-            if (complete) {
-                dict.AddNoLock("notBefore", ToPythonDateFormat(cert.NotBefore.ToString()));
-                dict.AddNoLock("serialNumber", SerialNumberToPython(cert));
-                dict.AddNoLock("version", cert.GetCertHashString());
-                dict.AddNoLock("issuer", IssuerToPython(context, cert.Issuer));
-                AddSubjectAltNames(dict, cert);
-            }
+            dict.AddNoLock("notBefore", ToPythonDateFormat(cert.NotBefore));
+            dict.AddNoLock("serialNumber", SerialNumberToPython(cert));
+            dict.AddNoLock("version", cert.Version);
+            dict.AddNoLock("issuer", IssuerToPython(context, cert.Issuer));
+            AddSubjectAltNames(dict, cert);
 
             return new PythonDictionary(dict);
+
+            string ToPythonDateFormat(DateTime date) {
+                var dateStr = date.ToUniversalTime().ToString("MMM dd HH:mm:ss yyyy", CultureInfo.InvariantCulture) + " GMT";
+                if (dateStr[4] == '0')
+                    dateStr = dateStr.Substring(0, 4) + " " + dateStr.Substring(5); // CPython uses leading space
+                return dateStr;
+            }
         }
 
         private static void AddSubjectAltNames(CommonDictionaryStorage dict, X509Certificate2 cert2) {
@@ -370,7 +377,9 @@ namespace IronPython.Modules {
                 while (null != (line = sr.ReadLine())) {
                     line = line.Trim();
                     var keyValue = line.Split('=');
-                    if (keyValue[0] == "DNS Name" && keyValue.Length == 2) {
+
+                    // Format produces different results based on the locale so we can't check for a specific key
+                    if (keyValue[0].Contains("DNS") && keyValue.Length == 2) {
                         altNames.Add(PythonTuple.MakeTuple("DNS", keyValue[1]));
                     }
                 }
@@ -379,12 +388,8 @@ namespace IronPython.Modules {
             }
         }
 
-        private static string ToPythonDateFormat(string date) {
-            return DateTime.Parse(date).ToUniversalTime().ToString("MMM d HH:mm:ss yyyy") + " GMT";
-        }
-
-        private static string SerialNumberToPython(X509Certificate cert) {
-            var res = cert.GetSerialNumberString();
+        private static string SerialNumberToPython(X509Certificate2 cert) {
+            var res = cert.SerialNumber;
             for (int i = 0; i < res.Length; i++) {
                 if (res[i] != '0') {
                     return res.Substring(i);
@@ -417,6 +422,8 @@ namespace IronPython.Modules {
                     }
                 }
             }
+            if (token.Length > 0)
+                yield return token.ToString().Trim();
         }
 
         private static PythonTuple IssuerToPython(CodeContext context, string issuer) {
@@ -424,10 +431,10 @@ namespace IronPython.Modules {
             foreach (var part in IssuerParts(issuer)) {
                 var field = IssuerFieldToPython(context, part);
                 if (field != null) {
-                    collector.Add(field); 
+                    collector.Add(PythonTuple.MakeTuple(new object[] { field }));
                 }
             }
-            return PythonTuple.MakeTuple(collector.ToArray());
+            return PythonTuple.MakeTuple(collector.ToReverseArray()); // CPython reverses the fields
         }
 
         private static PythonTuple IssuerFieldToPython(CodeContext context, string p) {

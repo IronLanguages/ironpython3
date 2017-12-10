@@ -2754,7 +2754,7 @@ namespace IronPython.Modules {
                         if (binary_form) {
                             return peerCert.GetRawCertData().MakeString();
                         } else if (_validate) {
-                            return PythonSsl.CertificateToPython(_context, peerCert, true);
+                            return PythonSsl.CertificateToPython(_context, peerCert);
                         }
                     }
                 }

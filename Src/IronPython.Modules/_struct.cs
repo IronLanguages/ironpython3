@@ -240,12 +240,13 @@ namespace IronPython.Modules {
             [Documentation("deserializes the string using the structs specified format")]
             public PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [NotNull]string @string) {
                 if (@string.Length != size) {
-                    throw Error(context, String.Format("unpack requires a string argument of length {0}", size));
+                    throw Error(context, $"unpack requires a string argument of length {size}");
                 }
 
                 string data = @string;
                 int curIndex = 0;
-                List<object> res = new List<object>(_encodingCount);
+                var res = new object[_encodingCount];
+                var res_idx = 0;
 
                 for (int i = 0; i < _formats.Length; i++) {
                     Format curFormat = _formats[i];
@@ -264,84 +265,86 @@ namespace IronPython.Modules {
                             break;
                         case FormatType.Bool:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                res.Add(CreateBoolValue(context, ref curIndex, data));
+                                res[res_idx++] = CreateBoolValue(context, ref curIndex, data);
                             }
                             break;
                         case FormatType.Char:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                res.Add(CreateCharValue(context, ref curIndex, data).ToString());
+                                res[res_idx++] = CreateCharValue(context, ref curIndex, data).ToString();
                             }
                             break;
                         case FormatType.SignedChar:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                res.Add((int)(sbyte)CreateCharValue(context, ref curIndex, data));
+                                res[res_idx++] = (int)(sbyte)CreateCharValue(context, ref curIndex, data);
                             }
                             break;
                         case FormatType.UnsignedChar:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                res.Add((int)CreateCharValue(context, ref curIndex, data));
+                                res[res_idx++] = (int)CreateCharValue(context, ref curIndex, data);
                             }
                             break;
                         case FormatType.Short:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                res.Add((int)CreateShortValue(context, ref curIndex, _isLittleEndian, data));
+                                res[res_idx++] = (int)CreateShortValue(context, ref curIndex, _isLittleEndian, data);
                             }
                             break;
                         case FormatType.UnsignedShort:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                res.Add((int)CreateUShortValue(context, ref curIndex, _isLittleEndian, data));
+                                res[res_idx++] = (int)CreateUShortValue(context, ref curIndex, _isLittleEndian, data);
                             }
                             break;
                         case FormatType.Int:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                res.Add(CreateIntValue(context, ref curIndex, _isLittleEndian, data));
+                                res[res_idx++] = CreateIntValue(context, ref curIndex, _isLittleEndian, data);
                             }
                             break;
                         case FormatType.UnsignedInt:
                         case FormatType.UnsignedLong:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                res.Add(BigIntegerOps.__int__((BigInteger)CreateUIntValue(context, ref curIndex, _isLittleEndian, data)));
+                                res[res_idx++] = BigIntegerOps.__int__(CreateUIntValue(context, ref curIndex, _isLittleEndian, data));
                             }
                             break;
                         case FormatType.Pointer:
                             for (int j = 0; j < curFormat.Count; j++) {
                                 if (IntPtr.Size == 4) {
-                                    res.Add(CreateIntValue(context, ref curIndex, _isLittleEndian, data));
+                                    res[res_idx++] = CreateIntValue(context, ref curIndex, _isLittleEndian, data);
                                 } else {
-                                    res.Add(BigIntegerOps.__int__((BigInteger)CreateLongValue(context, ref curIndex, _isLittleEndian, data)));
+                                    res[res_idx++] = BigIntegerOps.__int__(CreateLongValue(context, ref curIndex, _isLittleEndian, data));
                                 }
                             }
                             break;
                         case FormatType.LongLong:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                res.Add(BigIntegerOps.__int__((BigInteger)CreateLongValue(context, ref curIndex, _isLittleEndian, data)));
+                                res[res_idx++] = BigIntegerOps.__int__(CreateLongValue(context, ref curIndex, _isLittleEndian, data));
                             }
                             break;
                         case FormatType.UnsignedLongLong:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                res.Add(BigIntegerOps.__int__((BigInteger)CreateULongValue(context, ref curIndex, _isLittleEndian, data)));
+                                res[res_idx++] = BigIntegerOps.__int__(CreateULongValue(context, ref curIndex, _isLittleEndian, data));
                             }
                             break;
                         case FormatType.Float:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                res.Add((double)CreateFloatValue(context, ref curIndex, _isLittleEndian, data));
+                                res[res_idx++] = CreateFloatValue(context, ref curIndex, _isLittleEndian, data);
                             }
                             break;
                         case FormatType.Double:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                res.Add(CreateDoubleValue(context, ref curIndex, _isLittleEndian, data));
+                                res[res_idx++] = CreateDoubleValue(context, ref curIndex, _isLittleEndian, data);
                             }
                             break;
                         case FormatType.CString:
-                            res.Add(CreateString(context, ref curIndex, curFormat.Count, data));
+                            res[res_idx++] = CreateString(context, ref curIndex, curFormat.Count, data);
                             break;
                         case FormatType.PascalString:
-                            res.Add(CreatePascalString(context, ref curIndex, curFormat.Count - 1, data));
+                            res[res_idx++] = CreatePascalString(context, ref curIndex, curFormat.Count - 1, data);
                             break;
                     }
                 }
 
-                return new PythonTuple(res);
+                System.Diagnostics.Debug.Assert(res_idx == res.Length);
+
+                return PythonTuple.MakeTuple(res);
             }
 
             public PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [BytesConversion][NotNull]IList<byte> buffer) {

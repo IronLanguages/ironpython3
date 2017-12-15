@@ -519,7 +519,7 @@ namespace IronPython.Runtime {
         }
         
         public List/*!*/ split() {
-            return _bytes.SplitInternal((byte[])null, -1, x => new Bytes(x));
+            return _bytes.SplitInternal(null, -1, x => new Bytes(x));
         }
 
         public List/*!*/ split([BytesConversion]IList<byte> sep) {

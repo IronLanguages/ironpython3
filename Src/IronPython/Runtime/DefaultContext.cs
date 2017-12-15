@@ -42,7 +42,7 @@ namespace IronPython.Runtime {
         public static PythonContext DefaultPythonContext {
             get {
                 Debug.Assert(_default != null);
-                return (PythonContext)_default.LanguageContext;
+                return _default.LanguageContext;
             }
         }
 

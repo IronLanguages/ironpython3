@@ -184,12 +184,9 @@ namespace IronPython.Compiler {
 
                 var lambda = (Expression<LookupCompilationDelegate>)pc.DebugContext.TransformLambda((MSAst.LambdaExpression)Ast.GetLambda().Reduce(), debugInfo);
 
-                LookupCompilationDelegate func;
-                if (ShouldInterpret(pc)) {
-                    func = (LookupCompilationDelegate)CompilerHelpers.LightCompile(lambda, pc.Options.CompilationThreshold);
-                } else {
-                    func = (LookupCompilationDelegate)lambda.Compile(pc.EmitDebugSymbols(Ast.CompilerContext.SourceUnit));
-                }
+                LookupCompilationDelegate func = ShouldInterpret(pc)
+                    ? lambda.LightCompile(pc.Options.CompilationThreshold)
+                    : lambda.Compile(pc.EmitDebugSymbols(Ast.CompilerContext.SourceUnit));
 
                 _tracingTarget = func;
                 debugProperties.Code = EnsureFunctionCode(_tracingTarget, true, true);

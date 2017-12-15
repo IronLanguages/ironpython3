@@ -2525,7 +2525,7 @@ namespace IronPython.Runtime.Operations {
 
                 public override bool Fallback(char charUnknown, int index) {
                     _buffer.Add('\\');
-                    int val = (int)charUnknown;
+                    int val = charUnknown;
                     if (val > 0xFF) {
                         _buffer.Add('u');
                         AddCharacter(val >> 8);

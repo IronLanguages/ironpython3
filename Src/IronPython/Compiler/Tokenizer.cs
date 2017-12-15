@@ -810,12 +810,12 @@ namespace IronPython.Compiler {
                     case 'L':
                         MarkTokenEnd();
 
-                        return new ConstantValueToken(useBigInt ? bigInt : (BigInteger)iVal);
+                        return new ConstantValueToken(useBigInt ? bigInt : iVal);
                     default:
                         BufferBack();
                         MarkTokenEnd();
 
-                        return new ConstantValueToken(useBigInt ? (object)bigInt : (object)iVal);
+                        return new ConstantValueToken(useBigInt ? bigInt : (object)iVal);
                 }
             }
         }

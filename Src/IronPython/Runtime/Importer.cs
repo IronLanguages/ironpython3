@@ -459,7 +459,7 @@ namespace IronPython.Runtime {
                 return module;
             }
 
-            string name = module.GetName() as string;
+            string name = module.GetName();
             if (name != null) {
                 List path = null;
                 // find the parent module and get it's __path__ property
@@ -536,7 +536,7 @@ namespace IronPython.Runtime {
             Debug.Assert(module.GetName() is string, "Module is reloadable only if its name is a non-null string");
             Type type;
 
-            string name = (string)module.GetName();
+            string name = module.GetName();
             PythonContext pc = context.LanguageContext;
 
             if (!pc.BuiltinModules.TryGetValue(name, out type)) {

@@ -35,17 +35,17 @@ namespace IronPython.Runtime.Operations {
 
         [SpecialName]
         public static bool BitwiseAnd(bool x, bool y) {
-            return (bool)(x & y);
+            return x & y;
         }
         
         [SpecialName]
         public static bool BitwiseOr(bool x, bool y) {
-            return (bool)(x | y);
+            return x | y;
         }
 
         [SpecialName]
         public static bool ExclusiveOr(bool x, bool y) {
-            return (bool)(x ^ y);
+            return x ^ y;
         }
 
         [SpecialName]

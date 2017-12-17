@@ -767,9 +767,8 @@ namespace IronPython.Modules {
 
             // br.ReadChar() doesn't read 16-bit chars, it reads 8-bit chars.
             private static object ReadBinaryChar(BinaryReader br) {
-                object value;
                 byte byteVal = br.ReadByte();
-                value = (char)((br.ReadByte() << 8) | byteVal);
+                object value = (char)((br.ReadByte() << 8) | byteVal);
                 return value;
             }
 

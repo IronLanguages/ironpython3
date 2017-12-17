@@ -43,9 +43,8 @@ namespace IronPython.Runtime.Operations {
             object real=null,
             object imag=null
            ) {
-            Complex real2, imag2;
-            real2 = imag2 = new Complex();
-
+            var real2 = new Complex();
+            var imag2 = new Complex();
             if (real == null && imag == null && cls == TypeCache.Complex) throw PythonOps.TypeError("argument must be a string or a number");
 
             if (imag != null) {

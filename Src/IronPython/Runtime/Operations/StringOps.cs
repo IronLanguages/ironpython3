@@ -2056,18 +2056,19 @@ namespace IronPython.Runtime.Operations {
         private static List SplitInternal(string self, char[] seps, int maxsplit) {
             if (String.IsNullOrEmpty(self)) {
                 return SplitEmptyString(seps != null);
-            } else {
-                string[] r;
-                //  If the optional second argument sep is absent or None, the words are separated 
-                //  by arbitrary strings of whitespace characters (space, tab, newline, return, formfeed);
-                
-                r = StringUtils.Split(self, seps, (maxsplit < 0) ? Int32.MaxValue : maxsplit + 1, 
-                    (seps == null) ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None);
-
-                List ret = PythonOps.MakeEmptyList(r.Length);
-                foreach (string s in r) ret.AddNoLock(s);
-                return ret;
             }
+        
+            //  If the optional second argument sep is absent or None, the words are separated 
+            //  by arbitrary strings of whitespace characters (space, tab, newline, return, formfeed);
+            string[] r = StringUtils.Split(
+                self,
+                seps,
+                (maxsplit < 0) ? Int32.MaxValue : maxsplit + 1,
+                (seps == null) ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None);
+
+            List ret = PythonOps.MakeEmptyList(r.Length);
+            foreach (string s in r) ret.AddNoLock(s);
+            return ret;
         }
 
         private static List SplitInternal(string self, string separator, int maxsplit) {

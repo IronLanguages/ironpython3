@@ -1150,13 +1150,14 @@ namespace IronPython.Runtime.Operations {
         internal static int Find(this IList<byte>/*!*/ bytes, IList<byte>/*!*/ sub, int? start, int? end) {
             if (sub == null) {
                 throw PythonOps.TypeError("expected byte or byte array, got NoneType");
-            } else if (start > bytes.Count) {
+            }
+
+            if (start > bytes.Count) {
                 return -1;
             }
 
-            int iStart, iEnd;
-            iStart = FixStart(bytes, start);
-            iEnd = FixEnd(bytes, end);
+            int iStart = FixStart(bytes, start);
+            int iEnd = FixEnd(bytes, end);
 
             if (iEnd < iStart) {
                 return -1;

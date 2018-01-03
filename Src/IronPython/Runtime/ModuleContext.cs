@@ -128,7 +128,7 @@ namespace IronPython.Runtime {
                 return (_features & ModuleOptions.ShowClsMethods) != 0;
             }
             set {
-                Debug.Assert(this != this._pyContext.SharedContext.ModuleContext || !value);
+                Debug.Assert(this != _pyContext.SharedContext.ModuleContext || !value);
                 if (value) {
                     _features |= ModuleOptions.ShowClsMethods;
                 } else {

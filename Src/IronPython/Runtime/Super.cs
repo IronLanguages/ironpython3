@@ -47,20 +47,20 @@ namespace IronPython.Runtime {
             if (obj != null) {
                 PythonType dt = obj as PythonType;
                 if (PythonOps.IsInstance(obj, type)) {
-                    this._thisClass = type;
-                    this._self = obj;
-                    this._selfClass = DynamicHelpers.GetPythonType(obj);
+                    _thisClass = type;
+                    _self = obj;
+                    _selfClass = DynamicHelpers.GetPythonType(obj);
                 } else if (dt != null && dt.IsSubclassOf(type)) {
-                    this._thisClass = type;
-                    this._selfClass = obj;
-                    this._self = obj;
+                    _thisClass = type;
+                    _selfClass = obj;
+                    _self = obj;
                 } else {
                     throw PythonOps.TypeError("super(type, obj): obj must be an instance or subtype of type {1}, not {0}", PythonTypeOps.GetName(obj), type.Name);
                 }
             } else {
-                this._thisClass = type;
-                this._self = null;
-                this._selfClass = null;
+                _thisClass = type;
+                _self = null;
+                _selfClass = null;
             }
         }
 

@@ -35,9 +35,9 @@ namespace IronPython.Compiler.Ast {
                 );
             }
 
-            return Ast.Call(
+            return Call(
                 AstMethods.MakeListNoCopy,  // method
-                Ast.NewArrayInit(           // parameters
+                NewArrayInit(           // parameters
                     typeof(object),
                     ToObjectArray(Items)
                 )

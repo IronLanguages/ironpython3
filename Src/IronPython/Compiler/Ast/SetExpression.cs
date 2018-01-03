@@ -32,14 +32,12 @@ namespace IronPython.Compiler.Ast {
             _items = items;
         }
 
-        public IList<Expression> Items {
-            get { return _items; }
-        }
+        public IList<Expression> Items => _items;
 
         public override MSAst.Expression Reduce() {
             return Expression.Call(
                 AstMethods.MakeSet,
-                Ast.NewArrayInit(
+                NewArrayInit(
                     typeof(object),
                     ArrayUtils.ConvertAll(_items, x => AstUtils.Convert(x, typeof(object)))
                 )

@@ -29,9 +29,9 @@ namespace IronPython.Compiler.Ast {
         private readonly Expression _falseExpr;
 
         public ConditionalExpression(Expression testExpression, Expression trueExpression, Expression falseExpression) {
-            this._testExpr = testExpression;
-            this._trueExpr = trueExpression;
-            this._falseExpr = falseExpression;
+            _testExpr = testExpression;
+            _trueExpr = trueExpression;
+            _falseExpr = falseExpression;
         }
 
         public Expression FalseExpression {

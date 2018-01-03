@@ -171,7 +171,7 @@ namespace IronPython.Modules
                         string key = (string)name;
                         object val;
                         try {
-                            val = this.GetType().GetProperty(key).GetValue(this, null);
+                            val = GetType().GetProperty(key).GetValue(this, null);
                             target.Add(key, val);
                         } catch (System.Reflection.TargetInvocationException) {
                             // field not set

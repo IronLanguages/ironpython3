@@ -251,8 +251,8 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             public const int n_unnamed_fields = 0;
 
             public override string __repr__(CodeContext context) {
-                return string.Format("sys.getwindowsversion(major={0}, minor={1}, build={2}, platform={3}, service_pack='{4}')",
-                    this.major, this.minor, this.build, this.platform, this.service_pack);
+                return
+                    $"sys.getwindowsversion(major={major}, minor={minor}, build={build}, platform={platform}, service_pack='{service_pack}')";
             }
         }
 
@@ -689,8 +689,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             public const int n_unnamed_fields = 0;
 
             public override string __repr__(CodeContext context) {
-                return string.Format("sys.long_info(bits_per_digit={0}, sizeof_digit={1})",
-                    this.bits_per_digit, this.sizeof_digit);
+                return $"sys.long_info(bits_per_digit={bits_per_digit}, sizeof_digit={sizeof_digit})";
             }
         }
 

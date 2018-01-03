@@ -399,7 +399,7 @@ namespace IronPython.Runtime {
         [SpecialName]
         public List InPlaceMultiply(int count) {
             lock (this) {
-                int n = this._size;
+                int n = _size;
                 int newCount = checked(n * count);
                 EnsureSize(newCount);
 
@@ -410,7 +410,7 @@ namespace IronPython.Runtime {
                     pos += block;
                     block *= 2;
                 }
-                this._size = newCount;
+                _size = newCount;
             }
             return this;
         }
@@ -482,10 +482,10 @@ namespace IronPython.Runtime {
                         // RHS & ourselves.  We can lock once and avoid repeatedly locking/unlocking
                         // on each assign.
                         lock (this) {
-                            slice.DoSliceAssign(this.SliceAssignNoLock, _size, value);
+                            slice.DoSliceAssign(SliceAssignNoLock, _size, value);
                         }
                     } else {
-                        slice.DoSliceAssign(this.SliceAssign, _size, value);
+                        slice.DoSliceAssign(SliceAssign, _size, value);
                     }
 
                 } else {
@@ -853,11 +853,11 @@ namespace IronPython.Runtime {
         }
 
         public object pop() {
-            if (this._size == 0) throw PythonOps.IndexError("pop off of empty list");
+            if (_size == 0) throw PythonOps.IndexError("pop off of empty list");
 
             lock (this) {
-                this._size -= 1;
-                return _data[this._size];
+                _size -= 1;
+                return _data[_size];
             }
         }
 
@@ -1331,8 +1331,8 @@ namespace IronPython.Runtime {
 
         [PythonHidden]
         public bool Remove(object item) {
-            if (this.__contains__(item)) {
-                this.remove(item);
+            if (__contains__(item)) {
+                remove(item);
                 return true;
             }
             return false;

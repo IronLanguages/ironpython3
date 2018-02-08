@@ -442,35 +442,10 @@ namespace IronPython.Modules {
         }
 
         [PythonType]
-        public class ifilter : IterBase {
+        public class filterfalse : IterBase {
             private readonly CodeContext/*!*/ _context;
 
-            public ifilter(CodeContext/*!*/ context, object predicate, object iterable) {
-                _context = context;
-
-                InnerEnumerator = Yielder(predicate, PythonOps.GetEnumerator(iterable));
-            }
-
-            private IEnumerator<object> Yielder(object predicate, IEnumerator iter) {
-                while (MoveNextHelper(iter)) {
-                    if (ShouldYield(predicate, iter.Current)) {
-                        yield return iter.Current;
-                    }
-                }
-            }
-
-            private bool ShouldYield(object predicate, object current) {
-                if (predicate == null) return PythonOps.IsTrue(current);
-
-                return Converter.ConvertToBoolean(_context.LanguageContext.CallSplat(predicate, current));
-            }
-        }
-
-        [PythonType]
-        public class ifilterfalse : IterBase {
-            private readonly CodeContext/*!*/ _context;
-
-            public ifilterfalse(CodeContext/*!*/ context, object predicate, object iterable) {
+            public filterfalse(CodeContext/*!*/ context, object predicate, object iterable) {
                 _context = context;
                 InnerEnumerator = Yielder(predicate, PythonOps.GetEnumerator(iterable));
             }
@@ -490,62 +465,6 @@ namespace IronPython.Modules {
                     _context.LanguageContext.CallSplat(predicate, current)
                 );
             }
-        }
-
-        [PythonType]
-        public class imap : IEnumerator {
-            private object _function;
-            private IEnumerator[] _iterables;
-            private readonly CodeContext/*!*/ _context;
-
-            public imap(CodeContext/*!*/ context, object function, params object[] iterables) {
-                if (iterables.Length < 1) {
-                    throw PythonOps.TypeError("imap() must have at least two arguments");
-                }
-
-                _function = function;
-                _context = context;                
-                _iterables = new IEnumerator[iterables.Length];
-
-                for (int i = 0; i < iterables.Length; i++) {
-                    _iterables[i] = PythonOps.GetEnumerator(iterables[i]);
-                }
-            }
-
-            #region IEnumerator Members
-
-            object IEnumerator.Current {
-                get {
-                    object[] args = new object[_iterables.Length];
-                    for (int i = 0; i < args.Length; i++) {
-                        args[i] = _iterables[i].Current;
-                    }
-                    if (_function == null) {
-                        return PythonTuple.MakeTuple(args);
-                    } else {
-                        return _context.LanguageContext.CallSplat(_function, args);
-                    }
-                }
-            }
-
-            bool IEnumerator.MoveNext() {
-                for (int i = 0; i < _iterables.Length; i++) {
-                    if (!MoveNextHelper(_iterables[i])) return false;
-                }
-                return true;
-            }
-
-            void IEnumerator.Reset() {
-                for (int i = 0; i < _iterables.Length; i++) {
-                    _iterables[i].Reset();
-                }
-            }
-
-            public object __iter__() {
-                return this;
-            }
-
-            #endregion
         }
 
         [PythonType]
@@ -601,59 +520,12 @@ namespace IronPython.Modules {
         }
 
         [PythonType]
-        public class izip : IEnumerator {
-            private readonly IEnumerator[]/*!*/ _iters;
-            private PythonTuple _current;
-
-            public izip(params object[] iterables) {
-                _iters = new IEnumerator[iterables.Length];
-
-                for (int i = 0; i < iterables.Length; i++) {
-                    _iters[i] = PythonOps.GetEnumerator(iterables[i]);
-                }
-            }
-
-            #region IEnumerator Members
-
-            object IEnumerator.Current {
-                get {
-                    return _current;
-                }
-            }
-
-            bool IEnumerator.MoveNext() {
-                if (_iters.Length == 0) return false;
-
-                object[] current = new object[_iters.Length];
-                for (int i = 0; i < _iters.Length; i++) {
-                    if (!MoveNextHelper(_iters[i])) return false;
-
-                    // values need to be extraced and saved as we move incase
-                    // the user passed the same iterable multiple times.
-                    current[i] = _iters[i].Current;
-                }
-                _current = PythonTuple.MakeTuple(current);
-                return true;
-            }
-
-            void IEnumerator.Reset() {
-                throw new NotImplementedException("The method or operation is not implemented.");
-            }
-
-            public object __iter__() {
-                return this;
-            }
-
-            #endregion
-        }
-
-        [PythonType]
-        public class izip_longest : IEnumerator {
+        public class zip_longest : IEnumerator {
             private readonly IEnumerator[]/*!*/ _iters;
             private readonly object _fill;
             private PythonTuple _current;
 
-            public izip_longest(params object[] iterables) {
+            public zip_longest(params object[] iterables) {
                 _iters = new IEnumerator[iterables.Length];
 
                 for (int i = 0; i < iterables.Length; i++) {
@@ -661,7 +533,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public izip_longest([ParamDictionary]IDictionary<object, object> paramDict, params object[] iterables) {
+            public zip_longest([ParamDictionary]IDictionary<object, object> paramDict, params object[] iterables) {
                 object fill;
 
                 if (paramDict.TryGetValue("fillvalue", out fill)) {

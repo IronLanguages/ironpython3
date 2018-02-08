@@ -1192,8 +1192,9 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             string encoding=null,
             string errors=null,
             string newline=null,
-            bool closefd=true) {
-            return PythonIOModule.open(context, file, mode, buffering, encoding, errors, newline, closefd);
+            bool closefd=true,
+            object opener=null) {
+            return PythonIOModule.open(context, file, mode, buffering, encoding, errors, newline, closefd, opener);
         }
 
         /// <summary>

@@ -2741,7 +2741,8 @@ namespace IronPython.Modules {
             string encoding=null,
             string errors=null,
             string newline=null,
-            bool closefd=true
+            bool closefd=true,
+            object opener=null
         ) {
             int fd = -1;
             string fname = file as string;
@@ -2797,9 +2798,23 @@ namespace IronPython.Modules {
                 mode += '+';
             }
 
-            FileIO fio = fname != null
-                ? new FileIO(context, fname, mode, closefd)
-                : new FileIO(context, fd, mode, closefd);
+            FileIO fio;
+            if (opener != null) {
+                object fdobj = PythonOps.CallWithContext(context, opener, file, mode);
+                if (!(fdobj is int)) {
+                    throw PythonOps.TypeError("expected integer from opener");
+                }
+                
+                fd = (int) fdobj;
+                if (fd < 0) {
+                    throw PythonOps.ValueError("opener returned {0}", fd);
+                }
+                fio = new FileIO(context, fd, mode, closefd);
+            } else {
+                fio = fname != null
+                    ? new FileIO(context, fname, mode, closefd)
+                    : new FileIO(context, fd, mode, closefd);
+            }
 
             bool line_buffering = false;
             if (buffering == 1 || buffering < 0 && fio.isatty(context)) {

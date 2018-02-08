@@ -467,10 +467,10 @@ namespace IronPython.Modules {
         }
 
         [PythonType]
-        public class ifilterfalse : IterBase {
+        public class filterfalse : IterBase {
             private readonly CodeContext/*!*/ _context;
 
-            public ifilterfalse(CodeContext/*!*/ context, object predicate, object iterable) {
+            public filterfalse(CodeContext/*!*/ context, object predicate, object iterable) {
                 _context = context;
                 InnerEnumerator = Yielder(predicate, PythonOps.GetEnumerator(iterable));
             }
@@ -648,12 +648,12 @@ namespace IronPython.Modules {
         }
 
         [PythonType]
-        public class izip_longest : IEnumerator {
+        public class zip_longest : IEnumerator {
             private readonly IEnumerator[]/*!*/ _iters;
             private readonly object _fill;
             private PythonTuple _current;
 
-            public izip_longest(params object[] iterables) {
+            public zip_longest(params object[] iterables) {
                 _iters = new IEnumerator[iterables.Length];
 
                 for (int i = 0; i < iterables.Length; i++) {
@@ -661,7 +661,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public izip_longest([ParamDictionary]IDictionary<object, object> paramDict, params object[] iterables) {
+            public zip_longest([ParamDictionary]IDictionary<object, object> paramDict, params object[] iterables) {
                 object fill;
 
                 if (paramDict.TryGetValue("fillvalue", out fill)) {

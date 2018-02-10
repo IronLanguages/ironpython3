@@ -541,7 +541,10 @@ namespace IronPython.Runtime.Types {
                 // Dynamic assemblies do not support Assembly.Location
             }
 
-            if (location == null) _AssembliesWithoutXmlDoc.Add(assem);
+            if (string.IsNullOrEmpty(location)) {
+                _AssembliesWithoutXmlDoc.Add(assem);
+                return null;
+            }
 
             return location;
         }

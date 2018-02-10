@@ -367,8 +367,8 @@ namespace IronPython.SQLite
                     Sqlite3.sqlite3_result_int64(ctx, (int)result);
                 else if(result is long)
                     Sqlite3.sqlite3_result_int64(ctx, (long)result);
-                else if(result is Microsoft.Scripting.Math.BigInteger)
-                    Sqlite3.sqlite3_result_int64(ctx, ((Microsoft.Scripting.Math.BigInteger)result).ToInt64());
+                else if (result is System.Numerics.BigInteger)
+                    Sqlite3.sqlite3_result_int64(ctx, (long)(System.Numerics.BigInteger)result);
                 else if(result is float)
                     Sqlite3.sqlite3_result_double(ctx, (float)result);
                 else if(result is double)

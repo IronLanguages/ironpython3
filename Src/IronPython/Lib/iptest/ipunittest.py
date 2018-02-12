@@ -327,7 +327,7 @@ class IronPythonTestCase(unittest.TestCase, FileUtil, ProcessUtil):
 
     # environment variables
     def get_environ_variable(self, key):
-        l = [os.environ[x] for x in list(os.environ.keys()) if x.lower() == key.lower()]
+        l = [y for x, y in os.environ.items() if x.lower() == key.lower()]
         if l: return l[0]
         return None
 

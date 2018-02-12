@@ -831,5 +831,32 @@ class FileTest(IronPythonTestCase):
         with open(fileName, "rb") as f:
             self.assertEqual(f.read(), "\xef\xbb\xbf\x42\xc3\x93\x4d\x0d\x0a")
 
+    def test_opener(self):
+        data = "test message\n"
+        with open(self.temp_file, "w", opener=os.open) as f:
+            f.write(data)
+
+        with open(self.temp_file, "r", opener=os.open) as f:
+            self.assertEqual(f.read(), data)
+
+        os.unlink(self.temp_file)
+
+    def test_opener_negative_fd(self):
+        def negative_opener(path, flags):
+            return -1
+
+        self.assertRaises(ValueError, open, "", "r", opener=negative_opener)
+
+    def test_opener_none_fd(self):
+        def none_opener(path, flags):
+            return None
+
+        self.assertRaises(TypeError, open, "", "r", opener=none_opener)
+
+    def test_opener_uncallable(self):
+        uncallable_opener = "uncallable_opener"
+
+        self.assertRaises(TypeError, open, "", "r", opener=uncallable_opener)
+
 
 run_test(__name__)

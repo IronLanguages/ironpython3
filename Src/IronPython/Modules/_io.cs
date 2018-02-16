@@ -41,6 +41,15 @@ namespace IronPython.Modules {
         private static readonly object _blockingIOErrorKey = new object();
         private static readonly object _unsupportedOperationKey = new object();
 
+        private const int O_RDONLY = 0x0000;
+        private const int O_WRONLY = 0x0001;  
+        private const int O_RDWR = 0x0002;  
+        
+        private const int O_APPEND = 0x0008;
+        private const int O_CREAT = 0x0100;
+        private const int O_TRUNC = 0x0200;
+        private const int O_EXCL = 0x0400;
+
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             context.EnsureModuleException(
@@ -2741,7 +2750,8 @@ namespace IronPython.Modules {
             string encoding=null,
             string errors=null,
             string newline=null,
-            bool closefd=true
+            bool closefd=true,
+            object opener=null
         ) {
             int fd = -1;
             string fname = file as string;
@@ -2797,9 +2807,39 @@ namespace IronPython.Modules {
                 mode += '+';
             }
 
-            FileIO fio = fname != null
-                ? new FileIO(context, fname, mode, closefd)
-                : new FileIO(context, fd, mode, closefd);
+            FileIO fio;
+            if (opener != null) {
+                int flags = 0;
+                if (writing) {
+                    flags |= O_CREAT | O_TRUNC;
+                }
+                if (appending) {
+                    flags |= O_APPEND | O_CREAT;
+                }
+
+                if (updating) {
+                    flags |= O_RDWR;
+                } else if (reading) {
+                    flags |= O_RDONLY;
+                } else {
+                    flags |= O_WRONLY;
+                }
+                
+                object fdobj = PythonOps.CallWithContext(context, opener, file, flags);
+                if (!(fdobj is int)) {
+                    throw PythonOps.TypeError("expected integer from opener");
+                }
+                
+                fd = (int) fdobj;
+                if (fd < 0) {
+                    throw PythonOps.ValueError("opener returned {0}", fd);
+                }
+                fio = new FileIO(context, fd, mode, closefd);
+            } else {
+                fio = fname != null
+                    ? new FileIO(context, fname, mode, closefd)
+                    : new FileIO(context, fd, mode, closefd);
+            }
 
             bool line_buffering = false;
             if (buffering == 1 || buffering < 0 && fio.isatty(context)) {

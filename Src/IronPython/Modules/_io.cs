@@ -46,9 +46,9 @@ namespace IronPython.Modules {
         private const int O_RDWR = 0x0002;  
         
         private const int O_APPEND = 0x0008;
-        private const int O_CREAT = 0x0200;
-        private const int O_TRUNC = 0x0400;
-        private const int O_EXCL = 0x0800;
+        private const int O_CREAT = 0x0100;
+        private const int O_TRUNC = 0x0200;
+        private const int O_EXCL = 0x0400;
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {

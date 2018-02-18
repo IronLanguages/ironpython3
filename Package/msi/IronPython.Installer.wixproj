@@ -4,7 +4,7 @@
   <Import Project="$(BeforeTargetFiles)" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
     <ProductVersion>3.5</ProductVersion>
     <ProjectGuid>{49c7ae2b-d9d1-4b32-9d11-474f1be86658}</ProjectGuid>
     <SchemaVersion>2.0</SchemaVersion>
@@ -17,10 +17,10 @@
     <WixToolPath Condition=" '$(WixToolPath)' == '' ">$(MSBuildProjectDirectory)\..\..\Util\Wix\</WixToolPath>
     <WixTargetsPath>$(WixToolPath)Wix.targets</WixTargetsPath>
     <WixTasksPath>$(WixToolPath)wixtasks.dll</WixTasksPath>
-    
-    <BaseInputPaths Condition=" '$(BaseInputPaths)' == '' ">$(MSBuildProjectDirectory)\..\..\Stage\$(Configuration)\IronPython-$(DisplayVersion)</BaseInputPaths>
+
+    <BindInputPaths Condition=" '$(BindInputPaths)' == '' ">$(MSBuildProjectDirectory)\..\..\Package\Stage\$(Configuration)\IronPython-$(DisplayVersion)</BindInputPaths>
     <BuildDir Condition=" '$(BuildDir)' == '' ">$(MSBuildProjectDirectory)\..\..\bin\$(Configuration)</BuildDir>
-        
+
     <MsiVersion Condition=" '$(MsiVersion)' == '' ">$(MajorVersion).$(MinorVersion).$(MicroVersion).$(AssemblyFileRevision)</MsiVersion>
     <SetMsiAssemblyNameFileVersion>True</SetMsiAssemblyNameFileVersion>
   </PropertyGroup>
@@ -34,30 +34,15 @@
     </WixConstant>
     <WixConstant Include="ReleaseSeries">
       <Value>$(MajorVersion).$(MinorVersion)</Value>
-    </WixConstant>
-    
+    </WixConstant>    
     <WixConstant Include="BuildDir">
       <Value>$(BuildDir)</Value>
-    </WixConstant>
-    
-    <!-- These are needed by HarvestDirectory, one for each directory. -->
-    <WixConstant Include="DocDir">
-      <Value>Doc</Value>
-    </WixConstant>
+    </WixConstant>    
     <WixConstant Include="StdLibDir">
-      <Value>Lib</Value>
+      <Value>$(BindInputPaths)\Lib</Value>
     </WixConstant>
-    <WixConstant Include="PlatformsNet40Dir">
-      <Value>Platforms\Net40</Value>
-    </WixConstant>
-    <WixConstant Include="PlatformsNet45Dir">
-      <Value>Platforms\Net45</Value>
-    </WixConstant>
-    <WixConstant Include="ToolsDir">
-      <Value>Tools</Value>
-    </WixConstant>
-    <WixConstant Include="TutorialDir">
-      <Value>Tutorial</Value>
+    <WixConstant Include="PlatformDir">
+      <Value>$(BindInputPaths)\net45</Value>
     </WixConstant>
   </ItemGroup>
 
@@ -96,40 +81,11 @@
     </WixExtension>
   </ItemGroup>
   <ItemGroup>
-    <HarvestDirectory Include="$(BaseInputPaths)\Doc">
-      <DirectoryRefId>INSTALLDIR</DirectoryRefId>
-      <ComponentGroupName>IronPythonDocs</ComponentGroupName>
-      <PreprocessorVariable>var.DocDir</PreprocessorVariable>
-    </HarvestDirectory>
-
-    <HarvestDirectory Include="$(BaseInputPaths)\Lib">
+    <HarvestDirectory Include="$(BindInputPaths)\Lib">
       <DirectoryRefId>INSTALLDIR</DirectoryRefId>
       <ComponentGroupName>IronPythonStdLib</ComponentGroupName>
       <PreprocessorVariable>var.StdLibDir</PreprocessorVariable>
-    </HarvestDirectory>
-    
-    <HarvestDirectory Include="$(BaseInputPaths)\Platforms\Net40">
-      <DirectoryRefId>IronPythonPlatformsDir</DirectoryRefId>
-      <ComponentGroupName>IronPythonPlatformsNet40</ComponentGroupName>
-      <PreprocessorVariable>var.PlatformsNet40Dir</PreprocessorVariable>
-    </HarvestDirectory>
-    
-    <HarvestDirectory Include="$(BaseInputPaths)\Platforms\Net45">
-      <DirectoryRefId>IronPythonPlatformsDir</DirectoryRefId>
-      <ComponentGroupName>IronPythonPlatformsNet45</ComponentGroupName>
-      <PreprocessorVariable>var.PlatformsNet45Dir</PreprocessorVariable>
-    </HarvestDirectory>
-
-    <HarvestDirectory Include="$(BaseInputPaths)\Tools">
-      <DirectoryRefId>INSTALLDIR</DirectoryRefId>
-      <ComponentGroupName>IronPythonTools</ComponentGroupName>
-      <PreprocessorVariable>var.ToolsDir</PreprocessorVariable>
-    </HarvestDirectory>
-
-    <HarvestDirectory Include="$(BaseInputPaths)\Tutorial">
-      <DirectoryRefId>INSTALLDIR</DirectoryRefId>
-      <ComponentGroupName>IronPythonTutorial</ComponentGroupName>
-      <PreprocessorVariable>var.TutorialDir</PreprocessorVariable>
+      <SuppressRegistry>True</SuppressRegistry>
     </HarvestDirectory>
   </ItemGroup>
   <Import Project="$(WixTargetsPath)" />

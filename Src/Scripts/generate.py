@@ -26,10 +26,7 @@ root_dir = get_root_dir()
 
 
 source_directories = [
-    os.path.join(root_dir, "Src", "IronPython"),
-    os.path.join(root_dir, "Src", "IronPython.Modules"),
-    # runtime is gone as part of repo split
-    # root_dir + "\\Runtime",
+    os.path.join(root_dir, "Src")
 ]
 
 exclude_directories = [

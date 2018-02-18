@@ -29,9 +29,18 @@ namespace IronPythonTest.Cases {
 
     class IronPythonCaseGenerator : CommonCaseGenerator<IronPythonCases> {
         protected override IEnumerable<TestInfo> GetTests() {
-            return Directory.EnumerateFiles(Path.Combine(CaseExecuter.FindRoot(), "Tests"), "test_*.py", SearchOption.AllDirectories)
+            return GetFilenames()
                 .Select(file => new TestInfo(Path.GetFullPath(file), this.manifest))
                 .OrderBy(testcase => testcase.Name);
+
+            IEnumerable<string> GetFilenames() {
+                var root = CaseExecuter.FindRoot();
+
+                foreach (var filename in Directory.EnumerateFiles(Path.Combine(root, "Tests"), "test_*.py", SearchOption.AllDirectories))
+                    yield return filename;
+
+                yield return Path.Combine(root, "Src", "Scripts", "test_cgcheck.py");
+            }
         }
     }
 }

@@ -42,7 +42,6 @@ namespace IronPython.Compiler.Ast {
         /// </summary>
         private readonly string _name;
         protected readonly ParameterKind _kind;
-        protected Expression _annotation;
         protected Expression _defaultValue;
 
         private PythonVariable _variable;
@@ -64,10 +63,7 @@ namespace IronPython.Compiler.Ast {
             get { return _name; }
         }
 
-        public Expression Annotation {
-            get { return _annotation; }
-            set { _annotation = value; }
-        }
+        public Expression Annotation { get; set; } = null;
 
         public Expression DefaultValue {
             get { return _defaultValue; }
@@ -119,9 +115,8 @@ namespace IronPython.Compiler.Ast {
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                if (_defaultValue != null) {
-                    _defaultValue.Walk(walker);
-                }
+                _defaultValue?.Walk(walker);
+                Annotation?.Walk(walker);
             }
             walker.PostWalk(this);
         }

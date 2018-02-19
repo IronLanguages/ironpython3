@@ -1155,6 +1155,11 @@ namespace IronPython.Compiler {
                 return ret;
             }
 
+            Expression annotation = null;
+            if(MaybeEat(TokenKind.ReturnAnnotation)) {
+                annotation = ParseExpression();
+            }
+            
             var rStart = GetStart();
             var rEnd = GetEnd();
 
@@ -1167,6 +1172,9 @@ namespace IronPython.Compiler {
 
             ret.Body = body;
             ret.HeaderIndex = rEnd;
+            if (annotation != null) {
+                ret.ReturnAnnotation = annotation;
+            }
 
             if (_sink != null) {
                 _sink.MatchPair(

@@ -667,6 +667,8 @@ namespace IronPython.Compiler.Ast {
                 }
             }
 
+            node.ReturnAnnotation?.Walk(this);
+
             PushScope(node);
 
             foreach (Parameter p in node.Parameters) {

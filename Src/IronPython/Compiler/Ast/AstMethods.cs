@@ -30,6 +30,7 @@ namespace IronPython.Compiler.Ast {
     static class AstMethods {
         public static readonly MethodInfo IsTrue = GetMethod((Func<object, bool>)PythonOps.IsTrue);
         public static readonly MethodInfo RaiseAssertionError = GetMethod((Action<CodeContext, object>)PythonOps.RaiseAssertionError);
+        public static readonly MethodInfo RaiseAssertionErrorNoMessage = GetMethod((Action<CodeContext>)PythonOps.RaiseAssertionError);
         public static readonly MethodInfo Repr = GetMethod((Func<CodeContext, object, string>)PythonOps.Repr);
         public static readonly MethodInfo MakeClass = GetMethod((Func<FunctionCode, Func<CodeContext, CodeContext>, CodeContext, string, object[], string, object>)PythonOps.MakeClass);
         public static readonly MethodInfo UnqualifiedExec = GetMethod((Action<CodeContext, object>)PythonOps.UnqualifiedExec);
@@ -72,8 +73,8 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo UnpackIterable = GetMethod((Func<CodeContext, object, int, int, object>)PythonOps.UnpackIterable);
         public static readonly MethodInfo GetGlobalContext = GetMethod((Func<CodeContext, CodeContext>)PythonOps.GetGlobalContext);
         public static readonly MethodInfo GetParentContextFromFunction = GetMethod((Func<PythonFunction, CodeContext>)PythonOps.GetParentContextFromFunction);
-        public static readonly MethodInfo MakeFunction = GetMethod((Func<CodeContext, FunctionCode, object, object[], object>)PythonOps.MakeFunction);
-        public static readonly MethodInfo MakeFunctionDebug = GetMethod((Func<CodeContext/*!*/, FunctionCode, object, object[], Delegate, object>)PythonOps.MakeFunctionDebug);
+        public static readonly MethodInfo MakeFunction = GetMethod((Func<CodeContext, FunctionCode, object, object[], PythonDictionary, object>)PythonOps.MakeFunction);
+        public static readonly MethodInfo MakeFunctionDebug = GetMethod((Func<CodeContext/*!*/, FunctionCode, object, object[], PythonDictionary, Delegate, object>)PythonOps.MakeFunctionDebug);
         public static readonly MethodInfo MakeClosureCell = GetMethod((Func<ClosureCell>)PythonOps.MakeClosureCell);
         public static readonly MethodInfo MakeClosureCellWithValue = GetMethod((Func<object, ClosureCell>)PythonOps.MakeClosureCellWithValue);
         public static readonly MethodInfo LookupName = GetMethod((Func<CodeContext, string, object>)PythonOps.LookupName);

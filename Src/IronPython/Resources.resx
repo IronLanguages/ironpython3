@@ -112,10 +112,10 @@
     <value>2.0</value>
   </resheader>
   <resheader name="reader">
-    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <resheader name="writer">
-    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="CantFindMember" xml:space="preserve">
     <value>couldn't find member {0}</value>
@@ -164,6 +164,9 @@
   </data>
   <data name="InvalidSyntax" xml:space="preserve">
     <value>invalid syntax</value>
+  </data>
+  <data name="InvalidToken" xml:space="preserve">
+    <value>invalid token</value>
   </data>
   <data name="KeywordCreateUnavailable" xml:space="preserve">
     <value>object ({0}) is not creatable w/ keyword arguments</value>

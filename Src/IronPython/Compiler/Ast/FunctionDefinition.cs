@@ -155,6 +155,26 @@ namespace IronPython.Compiler.Ast {
             internal set { _decorators = value; }
         }
 
+        public Expression ReturnAnnotation {
+            get; internal set;
+        }
+
+        public IDictionary<string, Expression> Annotations {
+            get {
+                var annotations = new Dictionary<string, Expression>();
+                if(ReturnAnnotation != null) {
+                    annotations.Add("return", ReturnAnnotation);
+                }
+
+                foreach(var p in Parameters) {
+                    if(p.Annotation != null) {
+                        annotations.Add(p.Name, p.Annotation);
+                    }
+                }
+                return annotations;
+            }
+        }
+
         internal override bool IsGeneratorMethod {
             get {
                 return IsGenerator;
@@ -356,10 +376,22 @@ namespace IronPython.Compiler.Ast {
         /// Returns an expression which creates the function object.
         /// </summary>
         internal MSAst.Expression MakeFunctionExpression() {
-            List<MSAst.Expression> defaults = new List<MSAst.Expression>(0);
+            var defaults = new List<MSAst.Expression>(0);
+            var parts = new List<MSAst.Expression>();
+
+            if (ReturnAnnotation != null) {
+                parts.Add(Ast.Constant("return", typeof(string)));
+                parts.Add(ReturnAnnotation);
+            }
+
             foreach (var param in _parameters) {
                 if (param.DefaultValue != null) {
                     defaults.Add(AstUtils.Convert(param.DefaultValue, typeof(object)));
+                }
+
+                if(param.Annotation != null) {
+                    parts.Add(Ast.Constant(param.Name, typeof(string)));
+                    parts.Add(param.Annotation);
                 }
             }
 
@@ -381,6 +413,14 @@ namespace IronPython.Compiler.Ast {
                     defaults.Count == 0 ?                                                           // 4. default values
                         AstUtils.Constant(null, typeof(object[])) :
                         (MSAst.Expression)Ast.NewArrayInit(typeof(object), defaults),
+                    parts.Count == 0 ? AstUtils.Constant(null, typeof(PythonDictionary)) :
+                        (MSAst.Expression)Ast.Call(                                                 // 5. annotations
+                            AstMethods.MakeDictFromItems,
+                            Ast.NewArrayInit(
+                                typeof(object),
+                                parts
+                            )
+                        ),
                     IsGenerator ?
                         (MSAst.Expression)new PythonGeneratorExpression(code, GlobalParent.PyContext.Options.CompilationThreshold) :
                         (MSAst.Expression)code
@@ -393,7 +433,15 @@ namespace IronPython.Compiler.Ast {
                     ((IPythonGlobalExpression)GetVariableExpression(_nameVariable)).RawValue(),     // 3. module name
                     defaults.Count == 0 ?                                                           // 4. default values
                         AstUtils.Constant(null, typeof(object[])) :
-                        (MSAst.Expression)Ast.NewArrayInit(typeof(object), defaults)
+                        (MSAst.Expression)Ast.NewArrayInit(typeof(object), defaults),
+                    parts.Count == 0 ? AstUtils.Constant(null, typeof(PythonDictionary)) :
+                        (MSAst.Expression)Ast.Call(                                                 // 5. annotations
+                            AstMethods.MakeDictFromItems,
+                            Ast.NewArrayInit(
+                                typeof(object),
+                                parts
+                            )
+                        )
                 );
             }
 
@@ -444,7 +492,24 @@ namespace IronPython.Compiler.Ast {
                 }
             }
 
-            compiler.Instructions.Emit(new FunctionDefinitionInstruction(globalContext, this, defaultCount, globalName));
+            // emit annotations
+            int annotationCount = 0;
+            if(ReturnAnnotation != null) {
+                compiler.Compile(AstUtils.Convert(ReturnAnnotation, typeof(object)));
+                compiler.Compile(AstUtils.Constant("return", typeof(string)));
+                annotationCount++;
+            }
+
+            for(int i = _parameters.Length - 1; i >= 0; i--) {
+                var param = _parameters[i];
+                if(param.Annotation != null) {
+                    compiler.Compile(AstUtils.Convert(param.Annotation, typeof(object)));
+                    compiler.Compile(AstUtils.Constant(param.Name, typeof(string)));
+                    annotationCount++;
+                }
+            }            
+
+            compiler.Instructions.Emit(new FunctionDefinitionInstruction(globalContext, this, defaultCount, annotationCount, globalName));
         }
 
         private static void CompileAssignment(LightCompiler compiler, MSAst.Expression variable, Action<LightCompiler> compileValue) {
@@ -492,17 +557,24 @@ namespace IronPython.Compiler.Ast {
             private readonly int _defaultCount;
             private readonly CodeContext _context;
             private readonly PythonGlobal _name;
+            private readonly int _annotationCount;
 
-            public FunctionDefinitionInstruction(CodeContext context, FunctionDefinition/*!*/ definition, int defaultCount, PythonGlobal name) {
+            public FunctionDefinitionInstruction(CodeContext context, FunctionDefinition/*!*/ definition, int defaultCount, int annotationCount, PythonGlobal name) {
                 Assert.NotNull(definition);
 
                 _context = context;
                 _defaultCount = defaultCount;
                 _def = definition;
                 _name = name;
+                _annotationCount = annotationCount;
             }
 
             public override int Run(InterpretedFrame frame) {
+                PythonDictionary annotations = new PythonDictionary();
+                for (int i = 0; i < _annotationCount; i++) {
+                    annotations.Add(frame.Pop(), frame.Pop());
+                }
+            
                 object[] defaults;
                 if (_defaultCount > 0) {
                     defaults = new object[_defaultCount];
@@ -522,14 +594,14 @@ namespace IronPython.Compiler.Ast {
 
                 CodeContext context = (CodeContext)frame.Pop();
                 
-                frame.Push(PythonOps.MakeFunction(context, _def.FunctionCode, modName, defaults));
+                frame.Push(PythonOps.MakeFunction(context, _def.FunctionCode, modName, defaults, annotations));
 
                 return +1;
             }
 
             public override int ConsumedStack {
                 get {
-                    return _defaultCount +
+                    return _defaultCount + (_annotationCount * 2) +
                         (_context == null ? 1 : 0) +
                         (_name    == null ? 1 : 0);
                 }
@@ -843,9 +915,8 @@ namespace IronPython.Compiler.Ast {
                         decorator.Walk(walker);
                     }
                 }
-                if (_body != null) {
-                    _body.Walk(walker);
-                }
+                ReturnAnnotation?.Walk(walker);
+                _body?.Walk(walker);
             }
             walker.PostWalk(this);
         }

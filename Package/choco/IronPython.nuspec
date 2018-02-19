@@ -4,7 +4,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>ironpython</id>
-    <version>2.7.8</version>
+    <version>3.4.0</version>
     <packageSourceUrl>https://github.com/IronLanguages/ironpython2/blob/master/Package/choco/IronPython.Choco.nuspec</packageSourceUrl>
     <title>IronPython</title>
     <authors>IronPython Contributors,Microsoft</authors>

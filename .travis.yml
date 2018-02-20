@@ -4,9 +4,6 @@ os:
 
 language: csharp
 
-services:
-  - docker
-
 env:
   - CONFIGURATION=Release
 
@@ -18,16 +15,12 @@ dist: trusty
 
 osx_image: xcode9.1
 
-dotnet: 2.0.0
+dotnet: 2.1.4
 
 script:
-  # remove this workaround when https://bugzilla.xamarin.com/show_bug.cgi?id=60340 is fixed and released
-  - if [[ "$TRAVIS_OS_NAME" != "osx" ]] ; then (cd /usr/lib/mono/msbuild/15.0/bin/Roslyn ; sudo ln -s ../../../../4.5/csc.exe . ; sudo ln -s ../../../../4.5/csc.exe.config . ; sudo ln -s ../../../../4.5/csc.rsp .) ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]] ; then (cd /Library/Frameworks/Mono.framework/Versions/Current/lib/mono/msbuild/15.0/bin/Roslyn/ ; sudo ln -s ../../../../4.5/csc.exe . ; sudo ln -s ../../../../4.5/csc.exe.config . ; sudo ln -s ../../../../4.5/csc.rsp .) ; fi
   - dotnet restore IronPython.sln --packages ./packages
-  - if [[ "$TRAVIS_OS_NAME" != "osx" ]] ; then make ; fi
-  - if [[ "$TRAVIS_OS_NAME" != "osx" ]] ; then docker run -v /home/travis/build/IronLanguages/ironpython3:/home/travis/build/IronLanguages/ironpython3 mono:4.8 /bin/sh -c "apt-get update ; apt-get install make ; cd /home/travis/build/IronLanguages/ironpython3 && make test-all" ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]] ; then make ; fi
+  - make
+  - if [[ "$TRAVIS_OS_NAME" != "osx" ]] ; then make test-all ; fi
 
 notifications:
   email:

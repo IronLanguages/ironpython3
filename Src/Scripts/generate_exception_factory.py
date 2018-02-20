@@ -159,8 +159,6 @@ def gen_expr_factory(cw, source):
 	
 	for ex in exceptions:
 		result = ""
-		if (ex.type == "System.Runtime.InteropServices.COMException"):
-			result += "#if !SILVERLIGHT" + "\n"
 		result += "/// <summary>" + "\n"
 		result += "/// " + ex.type + ' with message like "' + escape_xml(ex.text) + '"\n'
 		result += "/// </summary>" + "\n"
@@ -174,9 +172,6 @@ def gen_expr_factory(cw, source):
 			result += "    return new " + ex.type + "(Strings." + ex.ID + make_args(ex.param_num) + ");" + "\n"
 		result += "}" + "\n"
 
-		if (ex.type == "System.Runtime.InteropServices.COMException"):
-			result += "#endif" + "\n"
-			
 		cw.write(result)
 			
 	cw.exit_block()

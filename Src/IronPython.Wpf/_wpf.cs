@@ -28,7 +28,7 @@ using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using System.Windows.Threading;
 
-[assembly: PythonModule("_wpf", typeof(IronPython.Modules.Wpf))]
+[assembly: PythonModule("_wpf", typeof(IronPython.Modules.Wpf), PythonModuleAttribute.PlatformFamily.Windows)]
 namespace IronPython.Modules {
     /// <summary>
     /// Provides helpers for interacting with Windows Presentation Foundation applications.

@@ -58,7 +58,6 @@
   <PropertyGroup Condition=" '$(BuildFlavour)' == '' ">
     <BuildFlavour>Debug</BuildFlavour>
     <BuildFlavour Condition="'$(Configuration)' == 'Release'">Release</BuildFlavour>
-
   </PropertyGroup>
 
   <PropertyGroup>

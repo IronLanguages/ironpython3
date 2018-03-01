@@ -242,8 +242,8 @@ def gen_recursion_checks(cw):
         cw.write('')
         
         cw.enter_block('public object CallTarget(%s)' % (make_params(nparams, "PythonFunction/*!*/ function"), ))
-        cw.write('PythonOps.FunctionPushFrame((PythonContext)function.Context.LanguageContext);')
         cw.enter_block('try')
+        cw.write('PythonOps.FunctionPushFrame(function.Context.LanguageContext);')
         cw.write('return _target(%s);' % (gen_args_call(nparams, 'function'), ))
         cw.finally_block()
         cw.write('PythonOps.FunctionPopFrame();')

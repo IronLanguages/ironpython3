@@ -63,7 +63,7 @@ namespace IronPython.Compiler.Ast {
             get { return _name; }
         }
 
-        public Expression Annotation { get; set; } = null;
+        public Expression Annotation { get; set; }
 
         public Expression DefaultValue {
             get { return _defaultValue; }

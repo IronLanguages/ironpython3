@@ -1172,9 +1172,7 @@ namespace IronPython.Compiler {
 
             ret.Body = body;
             ret.HeaderIndex = rEnd;
-            if (annotation != null) {
-                ret.ReturnAnnotation = annotation;
-            }
+            ret.ReturnAnnotation = annotation;
 
             if (_sink != null) {
                 _sink.MatchPair(

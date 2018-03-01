@@ -659,6 +659,7 @@ namespace IronPython.Compiler.Ast {
             // process the default arg values in the outer context
             foreach (Parameter p in node.Parameters) {
                 p.DefaultValue?.Walk(this);
+                p.Annotation?.Walk(this);
             }
             // process the decorators in the outer context
             if (node.Decorators != null) {

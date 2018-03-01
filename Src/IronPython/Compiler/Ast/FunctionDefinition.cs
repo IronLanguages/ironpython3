@@ -159,22 +159,6 @@ namespace IronPython.Compiler.Ast {
             get; internal set;
         }
 
-        public IDictionary<string, Expression> Annotations {
-            get {
-                var annotations = new Dictionary<string, Expression>();
-                if(ReturnAnnotation != null) {
-                    annotations.Add("return", ReturnAnnotation);
-                }
-
-                foreach(var p in Parameters) {
-                    if(p.Annotation != null) {
-                        annotations.Add(p.Name, p.Annotation);
-                    }
-                }
-                return annotations;
-            }
-        }
-
         internal override bool IsGeneratorMethod {
             get {
                 return IsGenerator;
@@ -377,11 +361,11 @@ namespace IronPython.Compiler.Ast {
         /// </summary>
         internal MSAst.Expression MakeFunctionExpression() {
             var defaults = new List<MSAst.Expression>(0);
-            var parts = new List<MSAst.Expression>();
+            var annotations = new List<MSAst.Expression>();
 
             if (ReturnAnnotation != null) {
-                parts.Add(Ast.Constant("return", typeof(string)));
-                parts.Add(ReturnAnnotation);
+                annotations.Add(Ast.Constant("return", typeof(string)));
+                annotations.Add(ReturnAnnotation);
             }
 
             foreach (var param in _parameters) {
@@ -390,8 +374,8 @@ namespace IronPython.Compiler.Ast {
                 }
 
                 if(param.Annotation != null) {
-                    parts.Add(Ast.Constant(param.Name, typeof(string)));
-                    parts.Add(param.Annotation);
+                    annotations.Add(Ast.Constant(param.Name, typeof(string)));
+                    annotations.Add(param.Annotation);
                 }
             }
 
@@ -413,12 +397,12 @@ namespace IronPython.Compiler.Ast {
                     defaults.Count == 0 ?                                                           // 4. default values
                         AstUtils.Constant(null, typeof(object[])) :
                         (MSAst.Expression)Ast.NewArrayInit(typeof(object), defaults),
-                    parts.Count == 0 ? AstUtils.Constant(null, typeof(PythonDictionary)) :
+                    annotations.Count == 0 ? AstUtils.Constant(null, typeof(PythonDictionary)) :
                         (MSAst.Expression)Ast.Call(                                                 // 5. annotations
                             AstMethods.MakeDictFromItems,
                             Ast.NewArrayInit(
                                 typeof(object),
-                                parts
+                                annotations
                             )
                         ),
                     IsGenerator ?
@@ -434,12 +418,12 @@ namespace IronPython.Compiler.Ast {
                     defaults.Count == 0 ?                                                           // 4. default values
                         AstUtils.Constant(null, typeof(object[])) :
                         (MSAst.Expression)Ast.NewArrayInit(typeof(object), defaults),
-                    parts.Count == 0 ? AstUtils.Constant(null, typeof(PythonDictionary)) :
+                    annotations.Count == 0 ? AstUtils.Constant(null, typeof(PythonDictionary)) :
                         (MSAst.Expression)Ast.Call(                                                 // 5. annotations
                             AstMethods.MakeDictFromItems,
                             Ast.NewArrayInit(
                                 typeof(object),
-                                parts
+                                annotations
                             )
                         )
                 );
@@ -570,9 +554,12 @@ namespace IronPython.Compiler.Ast {
             }
 
             public override int Run(InterpretedFrame frame) {
-                PythonDictionary annotations = new PythonDictionary();
-                for (int i = 0; i < _annotationCount; i++) {
-                    annotations.Add(frame.Pop(), frame.Pop());
+                PythonDictionary annotations = null;
+                if (_annotationCount > 0) {
+                    annotations = new PythonDictionary();
+                    for (int i = 0; i < _annotationCount; i++) {
+                        annotations.Add(frame.Pop(), frame.Pop());
+                    }
                 }
             
                 object[] defaults;

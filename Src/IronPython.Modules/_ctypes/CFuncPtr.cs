@@ -407,7 +407,7 @@ namespace IronPython.Modules {
                         binder.Throw(
                             Expression.Call(
                                 typeof(PythonOps).GetMethod(nameof(PythonOps.TypeError)),
-                                Expression.Constant(String.Format("this function takes {0} arguments ({1} given)", expected, got)),
+                                Expression.Constant($"this function takes {expected} arguments ({got} given)"),
                                 Expression.NewArrayInit(typeof(object))                                    
                             ),
                             typeof(object)

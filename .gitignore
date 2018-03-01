@@ -65,3 +65,4 @@ Tests/clrusetest*
 build-*.binlog
 abc.txt
 *.trx
+launchSettings.json

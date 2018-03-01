@@ -65,6 +65,10 @@ class ImpTest(IronPythonTestCase):
                     "xxxx"
                     ]
 
+    def tearDown(self):
+        super(ImpTest, self).tearDown()
+        self.clean_directory(self._imptestdir)
+
     def test_imp_new_module(self):
         x = imp.new_module('abc')
         sys.modules['abc'] = x
@@ -122,7 +126,7 @@ else:
             self.assertTrue('Int32' in dir())
 
         self.delete_files(_f_imfp_start)
-        self.clean_directory(os.path.join(self.test_dir, _imfp), remove=True)
+        self.clean_directory(os.path.join(self.test_dir, _imfp))
 
     def test_imp_basic(self):
         magic = imp.get_magic()
@@ -526,7 +530,7 @@ called = 3.14
                     temp_mod = __import__(x)
                     self.assertEqual(temp_mod.called, 3.14)
         finally:
-            self.clean_directory(os.path.join(self.test_dir, "cp7007"), remove=True)
+            self.clean_directory(os.path.join(self.test_dir, "cp7007"))
 
     def test_relative_control(self):
         """test various flavors of relative/absolute import and ensure the right

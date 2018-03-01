@@ -85,7 +85,7 @@ namespace IronPython.Modules {
         public static PythonTuple charmap_decode(CodeContext context, [BytesConversion]string input, string errors, [NotNull]string map) {
             EncodingMap m = new EncodingMap();
             for (int i = 0; i < map.Length; i++) {
-                m.Mapping[(int)map[i]] = (char)i;
+                m.Mapping[i] = map[i];
             }
             return CharmapDecodeWorker(context, input, errors, new EncodingMapEncoding(m, errors), true);
         }

@@ -84,6 +84,10 @@ artifacts:
     name: NuGet Package
     type: NuGetPackage
 
+  - path: Package/Release/Packages/**/*.msi
+    name: MSI Package
+    type: File
+
   - path: build-*.binlog
     name: Binary Build Log
     type: File
@@ -94,7 +98,7 @@ on_failure:
   - ps: $wc = New-Object 'System.Net.WebClient'; foreach($file in (Get-ChildItem -Include '*-result.xml' -Recurse)) { $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", $file) }
   - ps: $wc = New-Object 'System.Net.WebClient'; foreach($file in (Get-ChildItem -Include '*.trx' -Recurse)) { $wc.UploadFile("https://ci.appveyor.com/api/testresults/mstest/$($env:APPVEYOR_JOB_ID)", $file) }
   - ps: Write-Host "Done uploading test results"
-
+  
 on_success:
   - ps: Write-Host "Uploading test results"
   - ps: $wc = New-Object 'System.Net.WebClient'; foreach($file in (Get-ChildItem -Include '*-result.xml' -Recurse)) { $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", $file) }

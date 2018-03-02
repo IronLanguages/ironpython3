@@ -25,14 +25,11 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security;
-
 #if FEATURE_REMOTING
 using System.Security.Policy;
 #endif
-
 using System.Text;
 using System.Threading;
-
 #if FEATURE_WPF
 using System.Windows.Markup;
 #endif
@@ -41,7 +38,6 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Hosting;
 using Microsoft.Scripting.Runtime;
-
 
 using IronPython;
 using IronPython.Hosting;
@@ -281,7 +277,7 @@ namespace IronPythonTest {
 // TODO:
 #pragma warning disable 618 // obsolete API
                 PythonOptions po = (PythonOptions)Microsoft.Scripting.Hosting.Providers.HostingHelpers.CallEngine<object, LanguageOptions>(
-                    scriptEngine, 
+                    scriptEngine,
                     (lc, obj) => lc.Options,
                     null
                 );
@@ -430,7 +426,7 @@ x = 42", scope);
                 Assert.AreEqual(((ScopeDynamicObject5)myScope).__doc__, "hello world");
             }
         }
- 
+
         public void ScenarioCodePlex20472() {
             try {
                 string fileName = Path.Combine(Path.Combine(System.IO.Directory.GetCurrentDirectory(), "encoded_files"), "cp20472.py");
@@ -2259,7 +2255,7 @@ instOC = TestOC()
 
             PermissionSet permSet = SecurityManager.GetStandardSandbox(evidence);
             AppDomain newDomain = AppDomain.CreateDomain("test", evidence, info, permSet, null);
-            
+
             // create runtime in partial trust...
             ScriptRuntime runtime = Python.CreateRuntime(newDomain);
 
@@ -2363,6 +2359,7 @@ if id(a) == id(b):
                     throw new Exception("Debugging is enabled even though Options.DebugMode is not specified");
             }
         }
+
 #endif
 
         // Compile and Run
@@ -2658,7 +2655,7 @@ if r.sum != 110:
             cc.Run(td);
             TestNewDivision(pe, td);  // we've polluted the DefaultModule by executing the code
         }
-#if !SILVERLIGHT
+
         public void ScenarioTrueDivision4() {
             pe.AddToPath(Common.ScriptTestDirectory);
 
@@ -2708,7 +2705,7 @@ if r.sum != 110:
         public void ScenarioSystemStatePrefix() {
             Assert.AreEqual(IronPythonTest.Common.RuntimeDirectory, pe.SystemState.prefix);
         }
-#endif
+
 
         private static void TestOldDivision(ScriptEngine pe, ScriptScope module) {
             pe.Execute(pe.CreateScriptSourceFromString("result = 1/2", module));

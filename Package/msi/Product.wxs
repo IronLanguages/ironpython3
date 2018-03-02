@@ -52,7 +52,7 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
         <Directory Id="IronPythonStartMenu" Name="$(var.ProductShortName) $(var.ReleaseSeries)" />
       </Directory>
 
-      <Directory Id="ProgramFilesFolder">
+      <Directory Id="ProgramFiles64Folder">
         <Directory Id="INSTALLDIR" Name="$(var.ProductShortName) $(var.ReleaseSeries)" />
       </Directory>
 
@@ -61,19 +61,18 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
 
     <DirectoryRef Id="IronPythonStartMenu">
       <Component Id="IronPythonCommonShortcuts">
-        <Shortcut Id="IronPython_Help" Name="IronPython Documentation" Target="[INSTALLDIR]Doc\IronPython.chm" />
-        <Shortcut Id="IronPython_Readme" Name="IronPython Readme" Target="[INSTALLDIR]Readme.html" />
+        <Shortcut Id="IronPython_Readme" Name="IronPython Readme" Target="[INSTALLDIR]README.md" />
         <Shortcut Id="IronPython_Console" Name="IronPython Console" Target="[INSTALLDIR]ipy.exe" />
         
         <RegistryValue Root="HKCU" Key="SOFTWARE\IronPython\$(var.ReleaseSeries)" Name="ipy" Type="integer" Value="1" KeyPath="yes"/>
         <RemoveFolder Id="IronPythonStartMenu" On="uninstall" />
       </Component>
       
-      <Component Id="IronPython64bitShortcuts">
+      <Component Id="IronPython32bitShortcuts">
         <Condition>VersionNT64</Condition>
-        <Shortcut Id="IronPython_Console64" Name="IronPython Console (64-bit)" Target="[INSTALLDIR]ipy64.exe" />
+        <Shortcut Id="IronPython_Console32" Name="IronPython Console (32-bit)" Target="[INSTALLDIR]ipy32.exe" />
         
-        <RegistryValue Root="HKCU" Key="SOFTWARE\IronPython\$(var.ReleaseSeries)" Name="ipy64" Type="integer" Value="1" KeyPath="yes"/>
+        <RegistryValue Root="HKCU" Key="SOFTWARE\IronPython\$(var.ReleaseSeries)" Name="ipy32" Type="integer" Value="1" KeyPath="yes"/>
       </Component>
     </DirectoryRef>
 
@@ -82,36 +81,16 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
       <Feature Id="Feature_Core" Absent="disallow" AllowAdvertise="no" Display="collapse" Level="1" Title="IronPython" Description="IronPython binaries for the Desktop CLR.">
         <ComponentGroupRef Id='Dlr' />
         <ComponentGroupRef Id='IronPython' />
+        <!-- <ComponentGroupRef Id='IronPythonPlatform' /> -->
         <ComponentGroupRef Id='IronPythonStdLib' />
 
         <ComponentRef Id='IronPythonCommonShortcuts'/>
-        <ComponentRef Id='IronPython64bitShortcuts'/>
+        <ComponentRef Id='IronPython32bitShortcuts'/>
 
         <Feature Id='IronPython_Core_Gac' AllowAdvertise='no' Level='1' Title='GAC Assemblies' Description='Install the IronPython assemblies into the GAC.'>
           <ComponentGroupRef Id='DlrGac' />
           <ComponentGroupRef Id='IronPythonGac' />
         </Feature>
-      </Feature>
-
-      <Feature Id='IronPython_Docs' AllowAdvertise='no' Level='1' Title='Documentation' Description='IronPython Documentation'>
-        <ComponentGroupRef Id='IronPythonDocs' />
-      </Feature>
-
-      <Feature Id='IronPython_Platforms' AllowAdvertise='no' Level='1' Title='Platforms' Description='Development libraries for additional platforms.'>
-        <Feature Id='IronPython_Platforms_Net40' AllowAdvertise='no' Level='1' Title='.NET 4' Description='Development assemblies for .NET 4.'>
-          <ComponentGroupRef Id='IronPythonPlatformsNet40'/>
-        </Feature>
-        
-        <Feature Id='IronPython_Platforms_Net45' AllowAdvertise='no' Level='1' Title='.NET 4.5' Description='Development assemblies for .NET 4.5.'>
-          <ComponentGroupRef Id='IronPythonPlatformsNet45'/>
-        </Feature>
-      </Feature>
-      <Feature Id='IronPython_Tools' AllowAdvertise='no' Level='1' Title='Scripts' Description='Some useful scripts that have been written for IronPython.'>
-        <ComponentGroupRef Id='IronPythonTools' />
-      </Feature>
-
-      <Feature Id='IronPython_Tutorial' AllowAdvertise='no' Level='1' Title='Tutorial' Description='IronPython Tutorial'>
-        <ComponentGroupRef Id='IronPythonTutorial' />
       </Feature>
     </Feature>
 
@@ -129,6 +108,8 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
     <!-- User interface -->
     <UIRef Id="WixUI_FeatureTree" />
     <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+    <WixVariable Id="WixUIDialogBmp" Value="ironpython.bmp" />
+    <WixVariable Id="WixUIBannerBmp" Value="banner.bmp" />
 
     <!-- InstallLocation key -->
     <CustomAction Id="SetInstallLocation" Property="ARPINSTALLLOCATION" Value="[INSTALLDIR]" />

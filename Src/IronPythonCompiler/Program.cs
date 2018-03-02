@@ -215,7 +215,6 @@ namespace IronPythonCompiler {
                 new IKVM.Reflection.Type[] { u.Import(typeof(System.Reflection.Assembly)), u.Import(typeof(string)), u.Import(typeof(string[])), u.Import(typeof(bool)), u.Import(typeof(Dictionary<string, object>)) }), 
                 Type.EmptyTypes);
             gen.Emit(OpCodes.Stloc, intVar);
-
             gen.BeginCatchBlock(u.Import(typeof(Exception)));
 
             if (config.Target == PEFileKinds.ConsoleApplication) {

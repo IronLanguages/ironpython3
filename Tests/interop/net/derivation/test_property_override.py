@@ -24,10 +24,7 @@ from iptest import IronPythonTestCase, is_mono, run_test, skipUnlessIronPython
 class PropertyOverrideTest(IronPythonTestCase):
     def setUp(self):
         super(PropertyOverrideTest, self).setUp()
-        if is_mono:
-            self.add_clr_assemblies("baseclasscs", "typesamples")
-        else:
-            self.add_clr_assemblies("baseclasscs", "baseclassvb", "typesamples")
+        self.add_clr_assemblies("baseclasscs", "baseclassvb", "typesamples")
         
     def test_read_write_interface(self):
         from Merlin.Testing.BaseClass import IProperty10
@@ -153,7 +150,6 @@ class PropertyOverrideTest(IronPythonTestCase):
         x[1, 2] = x[3, 4] + "something"
         self.assertEqual(x.field, "-1 2 start-3 4something")
 
-    @unittest.skipIf(is_mono, 'VB compile currently failing https://github.com/IronLanguages/main/issues/1438')
     def test_vbindexer(self):
         from Merlin.Testing.BaseClass import CVbIndexer30, IVbIndexer10, IVbIndexer11, IVbIndexer20, VbCallback
         class C(IVbIndexer10): 

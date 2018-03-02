@@ -57,6 +57,16 @@ $_FRAMEWORKS = @{
 }
 
 function Main([String] $target, [String] $configuration) {
+    if(![System.Linq.Enumerable]::Any([System.IO.Directory]::EnumerateFileSystemEntries([System.IO.Path]::Combine($_BASEDIR, "Src/DLR")))) {
+        if($global:isUnix) {
+            & git submodule update --init
+        } else {
+            Write-Error "Please initialize the DLR submodule (the equivalent of `git submodule update --init` for your Git toolset"
+            $global:Result = -1
+            return
+        }
+    }
+
     msbuild Build.proj /m /t:$target /p:BuildFlavour=$configuration /verbosity:minimal /nologo /p:Platform="Any CPU" /bl:build-$target-$configuration.binlog
 
     # Use the exit code of msbuild as the exit code for this script.

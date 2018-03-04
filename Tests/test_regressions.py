@@ -987,4 +987,30 @@ class C:
 
         self.assertEqual(two().cnt, 3)
 
+    def test_ipy2_gh273(self):
+        """https://github.com/IronLanguages/ironpython2/issues/273"""
+
+        import gc
+
+        class A(object):
+            cnt = 0
+            def __init__(self):
+                A.cnt += 1
+            def __del__(self):
+                A.cnt -= 1
+
+        def test(x): pass
+
+        test(test(test(A()))) # places an instance of A on the interpreter stack
+        gc.collect()
+        self.assertEqual(A.cnt, 0)
+
+        test(test(0)) # doesn't override the instance of A held by the interpreter stack
+        gc.collect()
+        self.assertEqual(A.cnt, 0)
+
+        test(test(test(0))) # overrides the instance of A held by the interpreter stack
+        gc.collect()
+        self.assertEqual(A.cnt, 0)
+
 run_test(__name__)

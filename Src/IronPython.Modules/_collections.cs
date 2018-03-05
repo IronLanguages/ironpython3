@@ -519,7 +519,7 @@ namespace IronPython.Modules {
             }
 
             [PythonType("deque_iterator")]
-            private sealed class DequeIterator : IEnumerable, IEnumerator {
+            public sealed class DequeIterator : IEnumerable, IEnumerator {
                 private readonly deque _deque;
                 private int _curIndex, _moveCnt, _version;
 
@@ -571,6 +571,16 @@ namespace IronPython.Modules {
                 }
 
                 #endregion
+                
+                public int __length_hint__() { 
+                    lock (_deque._lockObj) { 
+                        if (_version != _deque._version) { 
+                            return 0; 
+                        } 
+                    } 
+ 
+                    return _deque._itemCnt - _moveCnt; 
+                } 
             }
 
             #endregion
@@ -582,7 +592,7 @@ namespace IronPython.Modules {
             }
 
             [PythonType]
-            private class deque_reverse_iterator : IEnumerator {
+            public class deque_reverse_iterator : IEnumerator {
                 private readonly deque _deque;
                 private int _curIndex, _moveCnt, _version;
 
@@ -626,6 +636,16 @@ namespace IronPython.Modules {
                 }
 
                 #endregion
+                
+                public int __length_hint__() { 
+                    lock (_deque._lockObj) { 
+                        if (_version != _deque._version) { 
+                            return 0; 
+                        } 
+                    } 
+ 
+                    return _deque._itemCnt - _moveCnt; 
+                } 
             }
 
             #endregion

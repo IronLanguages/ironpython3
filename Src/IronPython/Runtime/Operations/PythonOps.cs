@@ -2982,14 +2982,14 @@ namespace IronPython.Runtime.Operations {
 
         [NoSideEffects]
         public static object MakeFunction(CodeContext/*!*/ context, FunctionCode funcInfo, object modName, object[] defaults, PythonDictionary annotations) {
-            return new PythonFunction(context, funcInfo, modName, defaults, null, annotations);
+            return new PythonFunction(context, funcInfo, modName, defaults, annotations, null);
         }
 
         [NoSideEffects]
         public static object MakeFunctionDebug(CodeContext/*!*/ context, FunctionCode funcInfo, object modName, object[] defaults, PythonDictionary annotations, Delegate target) {
             funcInfo.SetDebugTarget(context.LanguageContext, target);
 
-            return new PythonFunction(context, funcInfo, modName, defaults, null, annotations);
+            return new PythonFunction(context, funcInfo, modName, defaults, annotations, null);
         }
 
         public static CodeContext FunctionGetContext(PythonFunction func) {

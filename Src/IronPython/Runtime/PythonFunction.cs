@@ -108,7 +108,7 @@ namespace IronPython.Runtime {
             _compat = CalculatedCachedCompat();
         }
 
-        internal PythonFunction(CodeContext/*!*/ context, FunctionCode funcInfo, object modName, object[] defaults, MutableTuple closure, PythonDictionary annotations) {
+        internal PythonFunction(CodeContext/*!*/ context, FunctionCode funcInfo, object modName, object[] defaults, PythonDictionary annotations, MutableTuple closure) {
             Assert.NotNull(context, funcInfo);
 
             _context = context;

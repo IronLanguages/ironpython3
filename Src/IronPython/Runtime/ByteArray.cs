@@ -95,6 +95,16 @@ namespace IronPython.Runtime {
         }
 
         public void extend(object seq) {
+            // AddRange will ultimately ensure we have enough space without performing lots
+            // of allocations, so we don't actually want to use the length hint.
+            // However, we need to call __len__ and __length_hint__ and attempt to convert the
+            // result to an int in order to match CPython behavior.
+            object len_obj;
+            if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, seq, "__len__", out len_obj) ||
+                PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, seq, "__length_hint__", out len_obj)) {
+                int len = Converter.ConvertToInt32(len_obj);
+            }
+
             extend(GetBytes(seq));
         }
 

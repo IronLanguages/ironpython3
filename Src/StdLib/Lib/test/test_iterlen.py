@@ -234,6 +234,8 @@ class TestLengthHintExceptions(unittest.TestCase):
         # It's a TypeError if __length_hint__ returns something other than an int or NotImplemented
         self.assertRaises(TypeError, list, StringLengthHint())
         self.assertRaises(TypeError, [].extend, StringLengthHint())
+        b = bytearray(range(10))
+        self.assertRaises(TypeError, b.extend, StringLengthHint())
         
 
 if __name__ == "__main__":

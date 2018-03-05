@@ -209,6 +209,14 @@ class NoneLengthHint(object):
         return NotImplemented
 
 
+class StringLengthHint(object):
+    def __iter__(self):
+        return iter(range(10))
+
+    def __length_hint__(self):
+        return "This isn't a valid length hint"
+
+
 class TestLengthHintExceptions(unittest.TestCase):
 
     def test_issue1242657(self):
@@ -223,7 +231,10 @@ class TestLengthHintExceptions(unittest.TestCase):
     def test_invalid_hint(self):
         # Make sure an invalid result doesn't muck-up the works
         self.assertEqual(list(NoneLengthHint()), list(range(10)))
-
+        # It's a TypeError if __length_hint__ returns something other than an int or NotImplemented
+        self.assertRaises(TypeError, list, StringLengthHint())
+        self.assertRaises(TypeError, [].extend, StringLengthHint())
+        
 
 if __name__ == "__main__":
     unittest.main()

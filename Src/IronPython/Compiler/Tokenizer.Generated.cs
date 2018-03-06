@@ -31,6 +31,9 @@ namespace IronPython.Compiler {
                 case '-':
                     if (NextChar('=')) {
                         return Tokens.SubtractEqualToken;
+                    } 
+                    if (NextChar('>')) {
+                        return Tokens.ReturnAnnotationToken;
                     }
                     return Tokens.SubtractToken;
                 case '*':

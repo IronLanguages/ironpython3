@@ -96,4 +96,5 @@ Package/nuget/**/*.nupkg
 Package/Release/
 build-*.ProjectImports.zip
 *.trx
+launchSettings.json
 *.un~

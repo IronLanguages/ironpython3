@@ -54,10 +54,10 @@ class Symbol:
 
     def __repr__(self):
         return 'Symbol(%s)' % self.symbol
-        
+
     def is_comparison(self):
         return self.symbol in (sym for sym, name, rname,clrName,opposite, bool1, bool2, bool3 in compares)
-        
+
     def is_bitwise(self):
         return self.symbol in ['^', '&', '|', '<<', '>>']
 
@@ -95,7 +95,7 @@ class Operator(Symbol):
         if titleName.endswith('Equals'):
             titleName = titleName[:-1]
         cw.writeline("pyOp[\"__%s__\"] = PythonOperationKind.%s;" % (self.name, titleName))
-        
+
         if self.isCompare(): return
 
         cw.writeline("pyOp[\"__r%s__\"] = PythonOperationKind.Reverse%s;" % (self.name, titleName))
@@ -103,48 +103,48 @@ class Operator(Symbol):
 
     def genOperatorReversal_Forward(self, cw):
         if self.isCompare(): return
-        
+
         cw.writeline("case Operators.%s: return Operators.Reverse%s;" % (self.title_name(), self.title_name()))
-        
-    def genOperatorReversal_Reverse(self, cw):    
+
+    def genOperatorReversal_Reverse(self, cw):
         if self.isCompare(): return
 
         cw.writeline("case Operators.Reverse%s: return Operators.%s;" % (self.title_name(), self.title_name()))
-        
+
     def genOperatorTable_Normal(self, cw):
         cw.writeline("///<summary>Operator for performing %s</summary>" % self.name)
-        cw.writeline("%s," % (self.title_name()))        
-        
+        cw.writeline("%s," % (self.title_name()))
+
     def genOperatorTable_Reverse(self, cw):
         if self.isCompare(): return
-        
+
         cw.writeline("///<summary>Operator for performing reverse %s</summary>" % self.name)
         cw.writeline("Reverse%s," % (self.title_name()))
 
     def genOperatorTable_InPlace(self, cw):
         if self.isCompare(): return
-        
+
         cw.writeline("///<summary>Operator for performing in-place %s</summary>" % self.name)
         cw.writeline("InPlace%s," % (self.title_name()))
-    
+
     def genOperatorTable_NormalString(self, cw):
         cw.writeline("///<summary>Operator for performing %s</summary>" % self.name)
         titleName = self.title_name()
         if titleName.endswith('Equals'):
             titleName = titleName[:-1]
         cw.writeline('public const string %s = "%s";' % (titleName, titleName))
-        
+
     def genOperatorTable_InPlaceString(self, cw):
         if self.isCompare(): return
-        
+
         cw.writeline("///<summary>Operator for performing in-place %s</summary>" % self.name)
         cw.writeline('public const string InPlace%s = "InPlace%s";' % (self.title_name(), self.title_name()))
 
-    def genOperatorToSymbol(self, cw): 
+    def genOperatorToSymbol(self, cw):
         cw.writeline("case Operators.%s: return \"__%s__\";" % (self.title_name(), self.name))
-        
+
         if self.isCompare(): return
-        
+
         cw.writeline("case Operators.Reverse%s: return \"__r%s__\";" % (self.title_name(), self.name))
         cw.writeline("case Operators.InPlace%s: return \"__i%s__\";" % (self.title_name(), self.name))
 
@@ -153,9 +153,9 @@ class Operator(Symbol):
         if titleName.endswith('Equals'):
             titleName = titleName[:-1]
         cw.writeline("case PythonOperationKind.%s: return \"__%s__\";" % (titleName, self.name))
-        
+
         if self.isCompare(): return
-        
+
         cw.writeline("case PythonOperationKind.Reverse%s: return \"__r%s__\";" % (titleName, self.name))
         cw.writeline("case PythonOperationKind.InPlace%s: return \"__i%s__\";" % (titleName, self.name))
 
@@ -164,7 +164,7 @@ class Operator(Symbol):
 
         cw.writeline('[return: MaybeNotImplemented]')
         if self.dotnetOp:
-            cw.enter_block("public static object operator %s([NotNull]OldInstance self, object other)" % self.symbol)            
+            cw.enter_block("public static object operator %s([NotNull]OldInstance self, object other)" % self.symbol)
         else:
             cw.writeline('[SpecialName]')
             cw.enter_block("public static object %s([NotNull]OldInstance self, object other)" % self.title_name())
@@ -175,22 +175,22 @@ class Operator(Symbol):
         cw.writeline("OldInstance otherOc = other as OldInstance;")
         cw.enter_block("if (otherOc != null)")
         cw.writeline('return InvokeOne(otherOc, self, \"__r%s__\");' % self.name)
-        cw.exit_block() # end of otherOc != null        
-        
+        cw.exit_block() # end of otherOc != null
+
         cw.writeline("return NotImplementedType.Value;")
         cw.exit_block() # end method
         cw.writeline()
-        
+
         cw.writeline('[return: MaybeNotImplemented]')
         if self.dotnetOp:
-            cw.enter_block("public static object operator %s(object other, [NotNull]OldInstance self)" % self.symbol)            
+            cw.enter_block("public static object operator %s(object other, [NotNull]OldInstance self)" % self.symbol)
         else:
             cw.writeline('[SpecialName]')
             cw.enter_block("public static object %s(object other, [NotNull]OldInstance self)" % self.title_name())
         cw.writeline("return InvokeOne(self, other, \"__r%s__\");" % self.name)
         cw.exit_block() # end method
         cw.writeline()
-        
+
         cw.writeline('[return: MaybeNotImplemented]')
         cw.writeline('[SpecialName]')
         cw.enter_block("public object InPlace%s(object other)" % self.title_name())
@@ -198,22 +198,22 @@ class Operator(Symbol):
         cw.exit_block() # end method
         cw.writeline()
 
-    def genWeakRefOperatorNames(self, cw):        
+    def genWeakRefOperatorNames(self, cw):
         cw.writeline('[SlotField] public static PythonTypeSlot __%s__ = new SlotWrapper(\"__%s__\", ProxyType);' % (self.name, self.name))
-        
+
         if self.isCompare(): return
 
         cw.writeline('[SlotField] public static PythonTypeSlot __r%s__ = new SlotWrapper(\"__r%s__\", ProxyType);' % (self.name, self.name))
         cw.writeline('[SlotField] public static PythonTypeSlot __i%s__ = new SlotWrapper(\"__i%s__\", ProxyType);' % (self.name, self.name))
 
-    def genWeakRefCallableProxyOperatorNames(self, cw):        
+    def genWeakRefCallableProxyOperatorNames(self, cw):
         cw.writeline('[SlotField] public static PythonTypeSlot __%s__ = new SlotWrapper(\"__%s__\", CallableProxyType);' % (self.name, self.name))
-        
+
         if self.isCompare(): return
 
         cw.writeline('[SlotField] public static PythonTypeSlot __r%s__ = new SlotWrapper(\"__r%s__\", CallableProxyType);' % (self.name, self.name))
         cw.writeline('[SlotField] public static PythonTypeSlot __i%s__ = new SlotWrapper(\"__i%s__\", CallableProxyType);' % (self.name, self.name))
-    
+
     def genConstantFolding(self, cw, type):
         # Exclude bitwise ops on Double and Complex, and exclude comparisons
         # on Complex. Also exclude Complex floordiv and because they need to
@@ -243,12 +243,12 @@ ops = []
 5 term: factor (('*'|'/'|'%'|'//') factor)*
 """
             # op,  pyname,   prec, .NET name, .NET op      op,    pyname,   prec, .NET name,  .NET op overload
-binaries = [('+',  'add',      4, 'Add',         True),   ('-',  'sub',    4, 'Subtract',   True), 
+binaries = [('+',  'add',      4, 'Add',         True),   ('-',  'sub',    4, 'Subtract',   True),
             ('**', 'pow',      6, 'Power',       False),  ('*',  'mul',    5, 'Multiply',   True),
             ('//', 'floordiv', 5, 'FloorDivide', False),
-            ('/',  'truediv',  5, 'TrueDivide',  False),  ('%',  'mod',    5, 'Mod',        True), 
+            ('/',  'truediv',  5, 'TrueDivide',  False),  ('%',  'mod',    5, 'Mod',        True),
             ('<<', 'lshift',   3, 'LeftShift',   False),   ('>>', 'rshift', 3, 'RightShift', False),
-            ('&',  'and',      2, 'BitwiseAnd',  True),   ('|',  'or',     0, 'BitwiseOr',  True), 
+            ('&',  'and',      2, 'BitwiseAnd',  True),   ('|',  'or',     0, 'BitwiseOr',  True),
             ('^',  'xor',      1, 'ExclusiveOr', True)]
 
 def add_binaries(list):
@@ -258,9 +258,9 @@ def add_binaries(list):
 
 add_binaries(binaries)
 
-compares = [('<', 'lt', 'ge', 'LessThan', 'GreaterThan', "false", "true", "false"), 
+compares = [('<', 'lt', 'ge', 'LessThan', 'GreaterThan', "false", "true", "false"),
             ('>', 'gt', 'le', 'GreaterThan', 'LessThan', "false", "false", "true"),
-            ('<=', 'le', 'gt', 'LessThanOrEqual', 'GreaterThanOrEqual', "true", "true", "false"), 
+            ('<=', 'le', 'gt', 'LessThanOrEqual', 'GreaterThanOrEqual', "true", "true", "false"),
             ('>=', 'ge', 'lt', 'GreaterThanOrEqual', 'LessThanOrEqual', "true", "false", "true"),
             ('==', 'eq', 'eq', 'Equals', 'NotEquals', 'a', 'a', 'a'), 
             ('!=', 'ne', 'ne', 'NotEquals', 'Equals', 'a', 'a', 'a')]
@@ -273,14 +273,15 @@ for sym, rsym, name, fullName in groupings:
     ops.append(Grouping(rsym, name, 'r', 'Right' + fullName))
 
 simple = [(',', 'comma'), (':', 'colon'), (';', 'semicolon'),
-        ('=', 'assign'), ('~', 'twiddle'), ('@', 'at'), ('=>', 'rarrow', 'RightArrow')]
+        ('=', 'assign'), ('~', 'twiddle'), ('@', 'at'), ('=>', 'rarrow', 'RightArrow'),
+        ('->', 'ReturnAnnotate')]
 for info in simple:
     if len(info) == 2:
         sym, name = info
         title = None
     else:
         sym, name, title = info
-    
+
     ops.append(Symbol(sym, name, title))
 
 start_symbols = {}
@@ -340,7 +341,7 @@ friendlyOverload = {'elif':"ElseIf"}
 def keywordToFriendly(kw):
     if kw in friendlyOverload:
         return friendlyOverload[kw]
-    
+
     return kw.title()
 
 class unique_checker:
@@ -362,10 +363,10 @@ def tokenkinds_generator(cw):
 
     cw.writeline()
     keyword_list = list(kwlist)
-    
+
     cw.write("FirstKeyword = Keyword%s," % keywordToFriendly(keyword_list[0]));
     cw.write("LastKeyword = Keyword%s," % keywordToFriendly(keyword_list[len(keyword_list) - 1]));
-    
+
     for kw in keyword_list:
         cw.write("Keyword%s = %d," % (keywordToFriendly(kw), i))
         i += 1
@@ -386,14 +387,14 @@ def gen_token_tree(cw, tree, keyword):
     cw.write('ch = NextChar();')
     for i, (k, (v, end)) in enumerate(tree.items()):
         if i == 0:
-            cw.enter_block("if (ch == '%c')" % k)            
+            cw.enter_block("if (ch == '%c')" % k)
         else:
             cw.else_block("if (ch == '%c')" % k)
-            
+
         if end and v:
             cw.enter_block('if (!IsNamePart(Peek()))')
             gen_mark_end(cw, keyword + k)
-        
+
         if not v:
             cw.enter_block('if (!IsNamePart(Peek()))')
             gen_mark_end(cw, keyword + k)
@@ -411,13 +412,13 @@ def gen_token_tree(cw, tree, keyword):
                 else:
                     gen_token_tree(cw, v, keyword + k)
                     break
-                
+
     cw.exit_block()
-    
+
 def keyword_lookup_generator(cw):
     cw.write('int ch;')
     cw.write('BufferBack();')
-    
+
     keyword_list = list(kwlist)
     keyword_list.append('None')
     keyword_list.append('True')
@@ -435,7 +436,7 @@ def keyword_lookup_generator(cw):
             prev = cur
             cur = val[0]
         prev[kw[-1:]] = (cur, True)
-    
+
     gen_token_tree(cw, tree, '')
     return
 
@@ -450,9 +451,7 @@ def tokens_generator(cw):
         else:
             creator = 'new SymbolToken(TokenKind.%s, "%s")' % (
                 op.title_name(), op.symbol)
-        cw.write("private static readonly Token sym%sToken = %s;" %
-                   (op.title_name(), creator))
-                       
+        cw.write("public static Token %sToken { get; } = %s;" % (op.title_name(), creator))
 
     cw.writeline()
     
@@ -497,7 +496,7 @@ ADD_EXTRA_EARLY = """       } else if ((sx = x as string) != null && ((sy = y as
             if (sy != null) return sx + sy;
             return sx + es.Value;"""
 
-ADD_EXTRA = """                
+ADD_EXTRA = """
         ISequence seq = x as ISequence;
         if (seq != null) { return seq.AddSequence(y); }
 """
@@ -506,7 +505,7 @@ INPLACE_ADD_EXTRA = """
         if (x is string && y is string) {
             return ((string)x) + ((string)y);
         }
-    
+
         if (x is ReflectedEvent.EventTarget) {
             return ((ReflectedEvent.EventTarget)x).InPlaceAdd(y);
         }
@@ -531,7 +530,7 @@ def gen_OperatorTable(cw):
     for op in ops:
         if not isinstance(op, Operator): continue
         op.genOperatorTable_Reverse(cw)
-        
+
 def gen_OperatorStringTable(cw):
     for op in ops:
         if not isinstance(op, Operator): continue
@@ -548,7 +547,7 @@ def gen_OperatorToSymbol(cw):
     for op in ops:
         if not isinstance(op, Operator): continue
         op.genOperatorToSymbol(cw)
-        
+
 def gen_StringOperatorToSymbol(cw):
     for op in ops:
         if not isinstance(op, Operator): continue
@@ -577,14 +576,14 @@ def operator_reversal(cw):
 
         op.genOperatorReversal_Forward(cw)
         op.genOperatorReversal_Reverse(cw)
-        
+
 
 def fast_op_ret_bool_chooser(cw):
     for curType in ('int', ):
         cw.enter_block('if (CompilerHelpers.GetType(args[0]) == typeof(%s) && CompilerHelpers.GetType(args[1]) == typeof(%s))' % (curType, curType))
         _else = ''
         for x in (curType, 'object'):
-            for y in (curType, 'object'):                
+            for y in (curType, 'object'):
                 cw.enter_block('%sif (typeof(T) == typeof(Func<CallSite, %s, %s, bool>))' % (_else, x, y))
                 cw.write('res = (T)(object)Get%s%s%sDelegate(opBinder);' % (curType.title(), x.title(), y.title()))
                 cw.exit_block()
@@ -614,25 +613,25 @@ def fast_op_ret_bool(cw):
                 cw.exit_block()
                 cw.write('return null;')
                 cw.exit_block()
-                
+
                 cw.write('')
-                
-                for op in (('==', 'Equal'), ('!=', 'NotEqual'), ('>', 'GreaterThan'), ('<', 'LessThan'), ('>=', 'GreaterThanOrEqual'), ('<=', 'LessThanOrEqual')):                   
+
+                for op in (('==', 'Equal'), ('!=', 'NotEqual'), ('>', 'GreaterThan'), ('<', 'LessThan'), ('>=', 'GreaterThanOrEqual'), ('<=', 'LessThanOrEqual')):
                     cw.enter_block('public bool %s%sRetBool(CallSite site, %s self, %s other)' % (curPascalType, op[1], x, y))
                     if x == 'object':
                         cw.enter_block('if (self != null && self.GetType() == typeof(%s))' % curPyType)
-                        
+
                     if y == 'object':
                         cw.enter_block('if (other != null && other.GetType() == typeof(%s))' % curPyType)
-                        
+
                     cw.write('return (%s)self %s (%s)other;' % (curPyType, op[0], curPyType))
-                    
+
                     if x == 'object':
                         cw.exit_block()
-                        
+
                     if y == 'object':
                         cw.exit_block()
-                    
+
                     if x == 'object' or y == 'object':
                         cw.write('return ((CallSite<Func<CallSite, %s, %s, bool>>)site).Update(site, self, other);' % (x, y))
 
@@ -644,13 +643,13 @@ def gen_constant_folding(cw):
     for cur_type in types:
         cw.enter_block('if (constLeft.Value.GetType() == typeof(%s))' % (cur_type, ))
         cw.enter_block('switch (_op)')
-        for op in ops:           
+        for op in ops:
             gen = getattr(op, 'genConstantFolding', None)
-            if gen is not None:            
+            if gen is not None:
                 gen(cw, cur_type)
         cw.exit_block()
         cw.exit_block()
-    
+
 def main():
     return generate(
         ("Python Keyword Lookup", keyword_lookup_generator),

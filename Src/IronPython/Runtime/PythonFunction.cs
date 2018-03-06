@@ -54,6 +54,7 @@ namespace IronPython.Runtime {
         private FunctionCode _code;                     // the Python function code object.  Not currently used for much by us...        
         private string _name;                           // the name of the method
         private object _doc;                            // the current documentation string
+        private PythonDictionary _annotations;          // annotations for the function
 
         private static int[] _depth_fast = new int[20]; // hi-perf thread static data to avoid hitting a real thread static
         [ThreadStatic] private static int DepthSlow;    // current depth stored in a real thread static with fast depth runs out
@@ -95,6 +96,7 @@ namespace IronPython.Runtime {
             _code = code;
             _name = name;
             _doc = code._initialDoc;
+            
             Closure = null;
 
             var scopeStatement = _code.PythonCode;
@@ -106,7 +108,7 @@ namespace IronPython.Runtime {
             _compat = CalculatedCachedCompat();
         }
 
-        internal PythonFunction(CodeContext/*!*/ context, FunctionCode funcInfo, object modName, object[] defaults, MutableTuple closure) {
+        internal PythonFunction(CodeContext/*!*/ context, FunctionCode funcInfo, object modName, object[] defaults, PythonDictionary annotations, MutableTuple closure) {
             Assert.NotNull(context, funcInfo);
 
             _context = context;
@@ -114,6 +116,7 @@ namespace IronPython.Runtime {
             _code = funcInfo;
             _doc = funcInfo._initialDoc;
             _name = funcInfo.co_name;
+            _annotations = annotations ?? new PythonDictionary();
 
             Debug.Assert(_defaults.Length <= _code.co_argcount);
             if (modName != Uninitialized.Instance) {
@@ -132,6 +135,16 @@ namespace IronPython.Runtime {
             }
             set {
                 throw PythonOps.AttributeError("readonly attribute");
+            }
+        }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public PythonDictionary __annotations__ {
+            get {
+                return _annotations;
+            }
+            set {
+                _annotations = value ?? throw PythonOps.TypeError("__annotations__ must be set to a dict object");
             }
         }
 
@@ -183,10 +196,7 @@ namespace IronPython.Runtime {
         public string __name__ {
             get { return _name; }
             set {
-                if (value == null) {
-                    throw PythonOps.TypeError("__name__ must be set to a string object");
-                }
-                _name = value;
+                _name = value ?? throw PythonOps.TypeError("__name__ must be set to a string object");
             }
         }
 
@@ -194,9 +204,7 @@ namespace IronPython.Runtime {
         public PythonDictionary/*!*/ __dict__ {
             get { return EnsureDict(); }
             set {
-                if (value == null) throw PythonOps.TypeError("__dict__ must be set to a dictionary, not a '{0}'", PythonTypeOps.GetName(value));
-
-                _dict = value;
+                _dict = value ?? throw PythonOps.TypeError("__dict__ must be set to a dictionary, not a '{0}'", PythonTypeOps.GetName(value));
             }
         }
 

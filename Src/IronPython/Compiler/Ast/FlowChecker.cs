@@ -403,10 +403,10 @@ namespace IronPython.Compiler.Ast {
                 // analyze the function definition itself (it is visited while analyzing parent scope):
                 Define(node.Name);
                 foreach (Parameter p in node.Parameters) {
-                    if (p.DefaultValue != null) {
-                        p.DefaultValue.Walk(this);
-                    }
-                } 
+                    p.DefaultValue?.Walk(this);
+                    p.Annotation?.Walk(this);
+                }
+                node.ReturnAnnotation?.Walk(this);
                 return false;
             }
         }

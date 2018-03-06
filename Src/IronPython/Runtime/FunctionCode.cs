@@ -622,7 +622,7 @@ namespace IronPython.Runtime {
                 return optimizedModuleCode(this);
             }
 
-            var func = new PythonFunction(context, this, null, ArrayUtils.EmptyObjects, new MutableTuple<object>());
+            var func = new PythonFunction(context, this, null, ArrayUtils.EmptyObjects, null, new MutableTuple<object>());
             CallSite<Func<CallSite, CodeContext, PythonFunction, object>> site = context.LanguageContext.FunctionCallSite;
             return site.Target(site, context, func);
         }

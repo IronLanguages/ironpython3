@@ -423,9 +423,9 @@ def gen_void_matchcaller_targets(cw):
 
 def main():
     return generate(
-        ("Func Types", gen_func_types),
-        ("Action Types", gen_action_types),
-        ("UpdateAndExecute Methods", gen_update_targets),
+        #("Func Types", gen_func_types),
+        #("Action Types", gen_action_types),
+        #("UpdateAndExecute Methods", gen_update_targets),
         ("Delegate Action Types", gen_delegate_action),
         ("Delegate Func Types", gen_delegate_func),
         ("Maximum Delegate Arity", gen_max_delegate_arity),

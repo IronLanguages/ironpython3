@@ -744,7 +744,14 @@ namespace IronPython.Compiler {
 
                     case 'e':
                     case 'E':
-                        return ReadExponent();
+                        var exp = ReadExponent();
+                        if (exp != null) return exp;
+
+                        BufferBack();
+                        MarkTokenEnd();
+
+                        // TODO: parse in place
+                        return new ConstantValueToken(ParseInteger(GetTokenString(), 10));
 
                     case 'j':
                     case 'J':
@@ -784,6 +791,7 @@ namespace IronPython.Compiler {
             int iVal = 0;
             bool useBigInt = false;
             BigInteger bigInt = BigInteger.Zero;
+            bool first = true;
             while (true) {
                 int ch = NextChar();
                 switch (ch) {
@@ -815,12 +823,21 @@ namespace IronPython.Compiler {
                         BufferBack();
                         MarkTokenEnd();
 
+                        if (first) {
+                            ReportSyntaxError(
+                            new SourceSpan(new SourceLocation(_tokenEndIndex, IndexToLocation(_tokenEndIndex).Line, IndexToLocation(_tokenEndIndex).Column - 1),
+                            BufferTokenEnd),
+                            Resources.InvalidToken, ErrorCodes.SyntaxError);
+                        }
+
                         return new ConstantValueToken(useBigInt ? bigInt : (object)iVal);
                 }
+                first = false;
             }
         }
 
         private Token ReadOctalNumber() {
+            bool first = true;
             while (true) {
                 int ch = NextChar();
 
@@ -846,13 +863,22 @@ namespace IronPython.Compiler {
                         BufferBack();
                         MarkTokenEnd();
 
+                        if (first) {
+                            ReportSyntaxError(
+                            new SourceSpan(new SourceLocation(_tokenEndIndex, IndexToLocation(_tokenEndIndex).Line, IndexToLocation(_tokenEndIndex).Column - 1),
+                            BufferTokenEnd),
+                            Resources.InvalidToken, ErrorCodes.SyntaxError);
+                        }
+
                         // TODO: parse in place
                         return new ConstantValueToken(ParseInteger(GetTokenSubstring(2), 8));
                 }
+                first = false;
             }
         }
 
         private Token ReadHexNumber() {
+            bool first = true;
             while (true) {
                 int ch = NextChar();
 
@@ -892,9 +918,17 @@ namespace IronPython.Compiler {
                         BufferBack();
                         MarkTokenEnd();
 
+                        if (first) {
+                            ReportSyntaxError(
+                            new SourceSpan(new SourceLocation(_tokenEndIndex, IndexToLocation(_tokenEndIndex).Line, IndexToLocation(_tokenEndIndex).Column - 1),
+                            BufferTokenEnd),
+                            Resources.InvalidToken, ErrorCodes.SyntaxError);
+                        }
+
                         // TODO: parse in place
                         return new ConstantValueToken(ParseInteger(GetTokenSubstring(2), 16));
                 }
+                first = false;
             }
         }
 
@@ -917,7 +951,14 @@ namespace IronPython.Compiler {
 
                     case 'e':
                     case 'E':
-                        return ReadExponent();
+                        var exp = ReadExponent();
+                        if (exp != null) return exp;
+
+                        BufferBack();
+                        MarkTokenEnd();
+
+                        // TODO: parse in place
+                        return new ConstantValueToken(ParseFloat(GetTokenString()));
 
                     case 'j':
                     case 'J':
@@ -937,6 +978,7 @@ namespace IronPython.Compiler {
         }
 
         private Token ReadExponent() {
+            var idx = CurrentIndex;
             int ch = NextChar();
 
             if (ch == '-' || ch == '+') {
@@ -965,8 +1007,11 @@ namespace IronPython.Compiler {
                         // TODO: parse in place
                         return new ConstantValueToken(LiteralParser.ParseImaginary(GetTokenString()));
 
-                    default:
+                    default:                        
                         BufferBack();
+                        if (idx == CurrentIndex) {
+                            return null;
+                        }
                         MarkTokenEnd();
 
                         // TODO: parse in place

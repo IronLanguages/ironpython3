@@ -1013,4 +1013,26 @@ class C:
         gc.collect()
         self.assertEqual(A.cnt, 0)
 
+    def test_ipy2_gh292(self):
+        """https://github.com/IronLanguages/ironpython2/issues/292"""
+
+        # binary
+        self.assertRaises(SyntaxError, eval, "0b")
+        self.assertRaises(SyntaxError, eval, "0B")
+        self.assertEqual(0b10110, 0x16)
+        self.assertEqual(0B1111, 15)
+
+        # hex
+        self.assertRaises(SyntaxError, eval, "0x")
+        self.assertRaises(SyntaxError, eval, "0X")
+        self.assertEqual(0x1000, 4096)
+        self.assertEqual(0X123, 0o443)
+
+        # octal
+        self.assertRaises(SyntaxError, eval, "0o")
+        self.assertRaises(SyntaxError, eval, "0O")
+        self.assertEqual(0o777, 0x1ff)
+        self.assertEqual(0O125, 85)
+
+
 run_test(__name__)

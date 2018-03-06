@@ -68,14 +68,12 @@ function Main([String] $target, [String] $configuration) {
     }
 
     msbuild Build.proj /m /t:$target /p:BuildFlavour=$configuration /verbosity:minimal /nologo /p:Platform="Any CPU" /bl:build-$target-$configuration.binlog
-
-    # Use the exit code of msbuild as the exit code for this script.
-    $global:Result = $lastExitCode
+    # use the exit code of msbuild as the exit code for this script
+    $global:Result = $LastExitCode
 }
 
 function Test([String] $target, [String] $configuration, [String[]] $frameworks) {
     foreach ($framework in $frameworks) {
-        $origTarget = $target
         $testname = "";
         $filtername = $target
         if(!$_FRAMEWORKS[$framework]["filters"].ContainsKey($target)) {
@@ -123,8 +121,6 @@ function Test([String] $target, [String] $configuration, [String[]] $frameworks)
         if($LastExitCode -ne 0) {
             $global:Result = $LastExitCode
         }
-
-        $target = $origTarget
     }
 }
 

@@ -93,14 +93,14 @@ namespace IronPython.Modules
         }
 
         private static mod ConvertToAST(PythonAst pythonAst, string kind) {
-            ContractUtils.RequiresNotNull(pythonAst, "pythonAst");
-            ContractUtils.RequiresNotNull(kind, "kind");
+            ContractUtils.RequiresNotNull(pythonAst, nameof(pythonAst));
+            ContractUtils.RequiresNotNull(kind, nameof(kind));
             return ConvertToAST((SuiteStatement)pythonAst.Body, kind);
         }
 
         private static mod ConvertToAST(SuiteStatement suite, string kind) {
-            ContractUtils.RequiresNotNull(suite, "suite");
-            ContractUtils.RequiresNotNull(kind, "kind");
+            ContractUtils.RequiresNotNull(suite, nameof(suite));
+            ContractUtils.RequiresNotNull(kind, nameof(kind));
             switch (kind) {
                 case "exec":
                     return new Module(suite);

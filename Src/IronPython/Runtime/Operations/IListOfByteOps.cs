@@ -351,7 +351,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static List<byte>/*!*/[]/*!*/ SplitOnWhiteSpace(this IList<byte>/*!*/ str, int maxComponents) {
-            ContractUtils.RequiresNotNull(str, "str");
+            ContractUtils.RequiresNotNull(str, nameof(str));
             
 
             List<List<byte>> result = new List<List<byte>>(maxComponents == Int32.MaxValue ? 1 : maxComponents + 1);

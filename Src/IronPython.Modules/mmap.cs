@@ -364,7 +364,7 @@ namespace IronPython.Modules {
             }
 
             private object FindWorker(string/*!*/ s, long start, long end) {
-                ContractUtils.RequiresNotNull(s, "s");
+                ContractUtils.RequiresNotNull(s, nameof(s));
 
                 start = PythonOps.FixSliceIndex(start, _view.Capacity);
                 end = PythonOps.FixSliceIndex(end, _view.Capacity);
@@ -634,7 +634,7 @@ namespace IronPython.Modules {
             }
 
             private object RFindWorker(string/*!*/ s, long start, long end) {
-                ContractUtils.RequiresNotNull(s, "s");
+                ContractUtils.RequiresNotNull(s, nameof(s));
 
                 start = PythonOps.FixSliceIndex(start, _view.Capacity);
                 end = PythonOps.FixSliceIndex(end, _view.Capacity);

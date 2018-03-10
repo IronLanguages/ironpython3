@@ -56,7 +56,7 @@ namespace IronPython.Hosting {
         /// the local domain but all code will run in the remote domain.
         /// </summary>
         public static ScriptRuntime/*!*/ CreateRuntime(AppDomain/*!*/ domain) {
-            ContractUtils.RequiresNotNull(domain, "domain");
+            ContractUtils.RequiresNotNull(domain, nameof(domain));
 
             return ScriptRuntime.CreateRemote(domain, CreateRuntimeSetup(null));
         }
@@ -67,7 +67,7 @@ namespace IronPython.Hosting {
         /// be manipulated from the local domain but all code will run in the remote domain.
         /// </summary>
         public static ScriptRuntime/*!*/ CreateRuntime(AppDomain/*!*/ domain, IDictionary<string, object> options) {
-            ContractUtils.RequiresNotNull(domain, "domain");
+            ContractUtils.RequiresNotNull(domain, nameof(domain));
 
             return ScriptRuntime.CreateRemote(domain, CreateRuntimeSetup(options));
         }
@@ -131,7 +131,7 @@ namespace IronPython.Hosting {
         /// Gets a ScriptScope which is the Python sys module for the provided ScriptRuntime.
         /// </summary>
         public static ScriptScope/*!*/ GetSysModule(this ScriptRuntime/*!*/ runtime) {
-            ContractUtils.RequiresNotNull(runtime, "runtime");
+            ContractUtils.RequiresNotNull(runtime, nameof(runtime));
 
             return GetSysModule(GetEngine(runtime));
         }
@@ -140,7 +140,7 @@ namespace IronPython.Hosting {
         /// Gets a ScriptScope which is the Python sys module for the provided ScriptEngine.
         /// </summary>
         public static ScriptScope/*!*/ GetSysModule(this ScriptEngine/*!*/ engine) {
-            ContractUtils.RequiresNotNull(engine, "engine");
+            ContractUtils.RequiresNotNull(engine, nameof(engine));
 
             return GetPythonService(engine).GetSystemState();
         }
@@ -149,7 +149,7 @@ namespace IronPython.Hosting {
         /// Gets a ScriptScope which is the Python __builtin__ module for the provided ScriptRuntime.
         /// </summary>
         public static ScriptScope/*!*/ GetBuiltinModule(this ScriptRuntime/*!*/ runtime) {
-            ContractUtils.RequiresNotNull(runtime, "runtime");
+            ContractUtils.RequiresNotNull(runtime, nameof(runtime));
 
             return GetBuiltinModule(GetEngine(runtime));
         }
@@ -158,7 +158,7 @@ namespace IronPython.Hosting {
         /// Gets a ScriptScope which is the Python __builtin__ module for the provided ScriptEngine.
         /// </summary>
         public static ScriptScope/*!*/ GetBuiltinModule(this ScriptEngine/*!*/ engine) {
-            ContractUtils.RequiresNotNull(engine, "engine");
+            ContractUtils.RequiresNotNull(engine, nameof(engine));
 
             return GetPythonService(engine).GetBuiltins();
         }
@@ -167,7 +167,7 @@ namespace IronPython.Hosting {
         /// Gets a ScriptScope which is the Python clr module for the provided ScriptRuntime.
         /// </summary>
         public static ScriptScope/*!*/ GetClrModule(this ScriptRuntime/*!*/ runtime) {
-            ContractUtils.RequiresNotNull(runtime, "runtime");
+            ContractUtils.RequiresNotNull(runtime, nameof(runtime));
 
             return GetClrModule(GetEngine(runtime));
         }
@@ -176,7 +176,7 @@ namespace IronPython.Hosting {
         /// Gets a ScriptScope which is the Python clr module for the provided ScriptEngine.
         /// </summary>
         public static ScriptScope/*!*/ GetClrModule(this ScriptEngine/*!*/ engine) {
-            ContractUtils.RequiresNotNull(engine, "engine");
+            ContractUtils.RequiresNotNull(engine, nameof(engine));
 
             return GetPythonService(engine).GetClr();
         }
@@ -186,8 +186,8 @@ namespace IronPython.Hosting {
         /// module does not exist an exception is raised.
         /// </summary>
         public static ScriptScope/*!*/ ImportModule(this ScriptRuntime/*!*/ runtime, string/*!*/ moduleName) {
-            ContractUtils.RequiresNotNull(runtime, "runtime");
-            ContractUtils.RequiresNotNull(moduleName, "moduleName");
+            ContractUtils.RequiresNotNull(runtime, nameof(runtime));
+            ContractUtils.RequiresNotNull(moduleName, nameof(moduleName));
 
             return ImportModule(GetEngine(runtime), moduleName);
         }
@@ -197,8 +197,8 @@ namespace IronPython.Hosting {
         /// module does not exist an exception is raised.
         /// </summary>
         public static ScriptScope/*!*/ ImportModule(this ScriptEngine/*!*/ engine, string/*!*/ moduleName) {
-            ContractUtils.RequiresNotNull(engine, "engine");
-            ContractUtils.RequiresNotNull(moduleName, "moduleName");
+            ContractUtils.RequiresNotNull(engine, nameof(engine));
+            ContractUtils.RequiresNotNull(moduleName, nameof(moduleName));
 
             return GetPythonService(engine).ImportModule(engine, moduleName);
         }
@@ -210,8 +210,8 @@ namespace IronPython.Hosting {
         /// <param name="scope"></param>
         /// <param name="moduleName"></param>
         public static void ImportModule (this ScriptScope/*!*/ scope, string/*!*/ moduleName) {
-            ContractUtils.RequiresNotNull (scope, "scope");
-            ContractUtils.RequiresNotNull (moduleName, "moduleName");
+            ContractUtils.RequiresNotNull (scope, nameof(scope));
+            ContractUtils.RequiresNotNull (moduleName, nameof(moduleName));
 
             scope.SetVariable (moduleName, scope.Engine.ImportModule (moduleName));
         }
@@ -220,10 +220,10 @@ namespace IronPython.Hosting {
         /// Sets sys.exec_prefix, sys.executable and sys.version and adds the prefix to sys.path
         /// </summary>
         public static void SetHostVariables(this ScriptRuntime/*!*/ runtime, string/*!*/ prefix, string/*!*/ executable, string/*!*/ version) {
-            ContractUtils.RequiresNotNull(runtime, "runtime");
-            ContractUtils.RequiresNotNull(prefix, "prefix");
-            ContractUtils.RequiresNotNull(executable, "executable");
-            ContractUtils.RequiresNotNull(version, "version");
+            ContractUtils.RequiresNotNull(runtime, nameof(runtime));
+            ContractUtils.RequiresNotNull(prefix, nameof(prefix));
+            ContractUtils.RequiresNotNull(executable, nameof(executable));
+            ContractUtils.RequiresNotNull(version, nameof(version));
 
             GetPythonContext(GetEngine(runtime)).SetHostVariables(prefix, executable, version);
         }
@@ -232,10 +232,10 @@ namespace IronPython.Hosting {
         /// Sets sys.exec_prefix, sys.executable and sys.version and adds the prefix to sys.path
         /// </summary>
         public static void SetHostVariables(this ScriptEngine/*!*/ engine, string/*!*/ prefix, string/*!*/ executable, string/*!*/ version) {
-            ContractUtils.RequiresNotNull(engine, "engine");
-            ContractUtils.RequiresNotNull(prefix, "prefix");
-            ContractUtils.RequiresNotNull(executable, "executable");
-            ContractUtils.RequiresNotNull(version, "version");
+            ContractUtils.RequiresNotNull(engine, nameof(engine));
+            ContractUtils.RequiresNotNull(prefix, nameof(prefix));
+            ContractUtils.RequiresNotNull(executable, nameof(executable));
+            ContractUtils.RequiresNotNull(version, nameof(version));
 
             GetPythonContext(engine).SetHostVariables(prefix, executable, version);
         }

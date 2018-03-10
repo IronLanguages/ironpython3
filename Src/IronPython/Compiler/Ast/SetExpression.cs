@@ -27,7 +27,7 @@ namespace IronPython.Compiler.Ast {
         private readonly Expression[] _items;
 
         public SetExpression(params Expression[] items) {
-            ContractUtils.RequiresNotNull(items, "items");
+            ContractUtils.RequiresNotNull(items, nameof(items));
 
             _items = items;
         }

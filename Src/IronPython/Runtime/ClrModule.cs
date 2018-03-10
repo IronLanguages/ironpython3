@@ -142,7 +142,7 @@ import Namespace.")]
         public static void AddReferenceByPartialName(CodeContext/*!*/ context, params string[] names) {
             if (names == null) throw new TypeErrorException("Expected string, got NoneType");
             if (names.Length == 0) throw new ValueErrorException("Expected at least one name, got none");
-            ContractUtils.RequiresNotNull(context, "context");
+            ContractUtils.RequiresNotNull(context, nameof(context));
 
             foreach (string name in names) {
                 AddReferenceByPartialName(context, name);
@@ -175,9 +175,9 @@ the assembly object.")]
         public static Assembly/*!*/ LoadAssemblyFromFile(CodeContext/*!*/ context, string/*!*/ file) {
             if (file == null) throw new TypeErrorException("Expected string, got NoneType");
             if (file.Length == 0) throw new ValueErrorException("assembly name must not be empty string");
-            ContractUtils.RequiresNotNull(context, "context");
+            ContractUtils.RequiresNotNull(context, nameof(context));
 
-            if (file.IndexOf(System.IO.Path.DirectorySeparatorChar) != -1) {
+            if (file.IndexOf(Path.DirectorySeparatorChar) != -1) {
                 throw new ValueErrorException("filenames must not contain full paths, first add the path to sys.path");
             }
 
@@ -217,7 +217,7 @@ the assembly object.")]
         /// Attempts to load the specified module searching all languages in the loaded ScriptRuntime.
         /// </summary>
         public static object Use(CodeContext/*!*/ context, string/*!*/ name) {
-            ContractUtils.RequiresNotNull(context, "context");
+            ContractUtils.RequiresNotNull(context, nameof(context));
 
             if (name == null) {
                 throw new TypeErrorException("Use: arg 1 must be a string");
@@ -834,8 +834,8 @@ import Namespace.")]
         /// reloaded using the clr.AddReference API.
         /// </summary>
         public static void CompileModules(CodeContext/*!*/ context, string/*!*/ assemblyName, [ParamDictionary]IDictionary<string, object> kwArgs, params string/*!*/[]/*!*/ filenames) {
-            ContractUtils.RequiresNotNull(assemblyName, "assemblyName");
-            ContractUtils.RequiresNotNullItems(filenames, "filenames");
+            ContractUtils.RequiresNotNull(assemblyName, nameof(assemblyName));
+            ContractUtils.RequiresNotNullItems(filenames, nameof(filenames));
 
             PythonContext pc = context.LanguageContext;
 

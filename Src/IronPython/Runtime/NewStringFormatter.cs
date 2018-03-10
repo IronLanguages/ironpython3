@@ -50,10 +50,10 @@ namespace IronPython.Runtime {
         /// Runs the formatting operation on the given format and keyword arguments
         /// </summary>
         public static string/*!*/ FormatString(PythonContext/*!*/ context, string/*!*/ format, PythonTuple/*!*/ args, IDictionary<object, object>/*!*/ kwArgs) {
-            ContractUtils.RequiresNotNull(context, "context");
-            ContractUtils.RequiresNotNull(format, "format");
-            ContractUtils.RequiresNotNull(args, "args");
-            ContractUtils.RequiresNotNull(kwArgs, "kwArgs");
+            ContractUtils.RequiresNotNull(context, nameof(context));
+            ContractUtils.RequiresNotNull(format, nameof(format));
+            ContractUtils.RequiresNotNull(args, nameof(args));
+            ContractUtils.RequiresNotNull(kwArgs, nameof(kwArgs));
 
             return Formatter.FormatString(context, format, args, kwArgs);
         }

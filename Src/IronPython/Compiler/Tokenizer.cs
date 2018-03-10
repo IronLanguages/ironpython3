@@ -74,8 +74,8 @@ namespace IronPython.Compiler {
         }
 
         public Tokenizer(ErrorSink errorSink, PythonCompilerOptions options) {
-            ContractUtils.RequiresNotNull(errorSink, "errorSink");
-            ContractUtils.RequiresNotNull(options, "options");
+            ContractUtils.RequiresNotNull(errorSink, nameof(errorSink));
+            ContractUtils.RequiresNotNull(options, nameof(options));
 
             _errors = errorSink;
             _verbatim = options.Verbatim;
@@ -177,7 +177,7 @@ namespace IronPython.Compiler {
         }
 
         public void Initialize(object state, TextReader reader, SourceUnit sourceUnit, SourceLocation initialLocation, int bufferCapacity, PythonCompilerOptions compilerOptions) {
-            ContractUtils.RequiresNotNull(reader, "reader");
+            ContractUtils.RequiresNotNull(reader, nameof(reader));
 
             if (state != null) {
                 if (!(state is State)) throw new ValueErrorException("bad state provided");

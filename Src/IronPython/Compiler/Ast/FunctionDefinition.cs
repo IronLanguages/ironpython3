@@ -71,7 +71,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         public FunctionDefinition(string name, Parameter[] parameters, Statement body, bool isAsync=false) {
-            ContractUtils.RequiresNotNullItems(parameters, "parameters");
+            ContractUtils.RequiresNotNullItems(parameters, nameof(parameters));
 
             if (name == null) {
                 _name = "<lambda$" + Interlocked.Increment(ref _lambdaId) + ">";

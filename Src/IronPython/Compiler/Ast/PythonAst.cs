@@ -68,7 +68,7 @@ namespace IronPython.Compiler.Ast {
         internal static readonly ReadOnlyCollection<MSAst.ParameterExpression> _arrayFuncParams = new ReadOnlyCollectionBuilder<MSAst.ParameterExpression>(new[] { _globalContext, _functionCode }).ToReadOnlyCollection();
 
         public PythonAst(Statement body, bool isModule, ModuleOptions languageFeatures, bool printExpressions) {
-            ContractUtils.RequiresNotNull(body, "body");
+            ContractUtils.RequiresNotNull(body, nameof(body));
 
             _body = body;
             _isModule = isModule;
@@ -79,7 +79,7 @@ namespace IronPython.Compiler.Ast {
         public PythonAst(Statement body, bool isModule, ModuleOptions languageFeatures, bool printExpressions, CompilerContext context, int[] lineLocations) :
             this(isModule, languageFeatures, printExpressions, context) {
 
-            ContractUtils.RequiresNotNull(body, "body");
+            ContractUtils.RequiresNotNull(body, nameof(body));
 
             _body = body;
             
@@ -146,7 +146,7 @@ namespace IronPython.Compiler.Ast {
         /// <param name="body">The body of code</param>
         /// <param name="languageFeatures">The language features which were set during parsing.</param>
         public void ParsingFinished(int[] lineLocations, Statement body, ModuleOptions languageFeatures) {
-            ContractUtils.RequiresNotNull(body, "body");
+            ContractUtils.RequiresNotNull(body, nameof(body));
 
             if (_body != null) {
                 throw new InvalidOperationException("cannot set body twice");

@@ -118,7 +118,7 @@ namespace IronPython.Runtime.Exceptions {
             #region Public API Surface
 
             public BaseException(PythonType/*!*/ type) {
-                ContractUtils.RequiresNotNull(type, "type");
+                ContractUtils.RequiresNotNull(type, nameof(type));
 
                 _type = type;
             }

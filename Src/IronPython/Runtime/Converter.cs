@@ -509,8 +509,8 @@ namespace IronPython.Runtime {
         #endregion
 
         public static bool CanConvertFrom(Type fromType, Type toType, NarrowingLevel allowNarrowing) {
-            ContractUtils.RequiresNotNull(fromType, "fromType");
-            ContractUtils.RequiresNotNull(toType, "toType");
+            ContractUtils.RequiresNotNull(fromType, nameof(fromType));
+            ContractUtils.RequiresNotNull(toType, nameof(toType));
 
             if (toType == fromType) return true;
             if (toType.IsAssignableFrom(fromType)) return true;

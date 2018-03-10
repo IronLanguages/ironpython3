@@ -24,7 +24,7 @@ namespace IronPython.Runtime {
         private readonly string/*!*/ _message;
         
         public Python3WarningAttribute(string/*!*/ message) {
-            ContractUtils.RequiresNotNull(message, "message");
+            ContractUtils.RequiresNotNull(message, nameof(message));
 
             _message = message;
         }

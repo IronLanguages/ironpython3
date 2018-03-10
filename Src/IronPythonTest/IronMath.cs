@@ -19,7 +19,7 @@ using Microsoft.Scripting.Utils;
 namespace IronPythonTest {
     public static class System_Scripting_Math {
         public static BigInteger CreateBigInteger(int sign, params uint[] data) {
-            ContractUtils.RequiresNotNull(data, "data");
+            ContractUtils.RequiresNotNull(data, nameof(data));
             ContractUtils.Requires(sign >= -1 && sign <= +1, "sign");
             int length = data.Length - 1;
             while (length >= 0 && data[length] == 0) length--;

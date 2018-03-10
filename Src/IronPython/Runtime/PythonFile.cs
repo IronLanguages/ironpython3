@@ -1234,7 +1234,7 @@ namespace IronPython.Runtime {
         }
 
         public void __init__(CodeContext/*!*/ context, [NotNull]Stream/*!*/ stream) {
-            ContractUtils.RequiresNotNull(stream, "stream");
+            ContractUtils.RequiresNotNull(stream, nameof(stream));
 
             string mode;
             if (stream.CanRead && stream.CanWrite) mode = "w+";
@@ -1253,8 +1253,8 @@ namespace IronPython.Runtime {
         }
 
         public void __init__([NotNull]Stream/*!*/ stream, [NotNull]Encoding/*!*/ encoding, string name, string mode) {
-            ContractUtils.RequiresNotNull(stream, "stream");
-            ContractUtils.RequiresNotNull(encoding, "encoding");
+            ContractUtils.RequiresNotNull(stream, nameof(stream));
+            ContractUtils.RequiresNotNull(encoding, nameof(encoding));
 
             InternalInitialize(stream, encoding, name, mode);
         }

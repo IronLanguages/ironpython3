@@ -3396,8 +3396,8 @@ namespace IronPython.Runtime.Operations {
 
 
         public static int InitializeModuleEx(Assembly/*!*/ precompiled, string/*!*/ main, string[] references, bool ignoreEnvVars, Dictionary<string, object> options) {
-            ContractUtils.RequiresNotNull(precompiled, "precompiled");
-            ContractUtils.RequiresNotNull(main, "main");
+            ContractUtils.RequiresNotNull(precompiled, nameof(precompiled));
+            ContractUtils.RequiresNotNull(main, nameof(main));
 
             if(options == null) {
                 options = new Dictionary<string, object>();

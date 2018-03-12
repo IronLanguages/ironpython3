@@ -14,10 +14,13 @@
     <language>en-US</language>
     <tags>ironpython python dynamic dlr standard library</tags>
     <dependencies>
-      <dependency id="IronPython" version="[3.4.0]" />
+      <dependency id="IronPython3" version="[3.4.0]" />
     </dependencies>
+    <contentFiles>
+      <files include="**\*" buildAction="None" copyToOutput="true" />
+    </contentFiles>
   </metadata>
   <files>
-    <file src="Lib\**" target="content\Lib" />
+    <file src="Lib\**" target="contentFiles\any\any\Lib" />
   </files>
 </package>

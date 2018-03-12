@@ -18,9 +18,8 @@ Named indexer
 
 import unittest
 
-from iptest import IronPythonTestCase, is_mono, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, run_test, skipUnlessIronPython
 
-@unittest.skipIf(is_mono, 'https://github.com/IronLanguages/main/issues/1438')
 @skipUnlessIronPython()
 class IndexerVbTest(IronPythonTestCase):
     def setUp(self):

@@ -35,7 +35,7 @@ class ImportPkgTest(IronPythonTestCase):
 
     def tearDown(self):
         super(ImportPkgTest, self).tearDown()
-        self.clean_directory(self._testdir, remove=True)
+        self.clean_directory(self._testdir)
 
     def test_import_error(self):
         try:

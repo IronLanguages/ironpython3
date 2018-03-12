@@ -868,7 +868,7 @@ FROM_MOD_IN_SUBMOD = mod.KMod()
                 import os
                 try:
                     os.unlink(pickle_file)
-                    self.clean_directory(os.path.join(self.test_dir, _testdir), remove=True)
+                    self.clean_directory(os.path.join(self.test_dir, _testdir))
                 except:
                     pass
 

@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Threading;
 
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
@@ -26,6 +27,7 @@ using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
+
     /// <summary>
     /// single finalizable instance used to track and deliver all the 
     /// callbacks for a single object that has been weakly referenced by
@@ -74,6 +76,7 @@ namespace IronPython.Runtime {
         }
 
         private readonly long _targetId;
+        private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
         private readonly List<CallbackInfo> _callbacks = new List<CallbackInfo>(1);
 
         public WeakRefTracker(IWeakReferenceable target) {
@@ -91,67 +94,103 @@ namespace IronPython.Runtime {
         }
 
         public void ChainCallback(object callback, object weakRef) {
-            _callbacks.Add(new CallbackInfo(callback, weakRef));
+            _lock.EnterWriteLock();
+            try {
+                _callbacks.Add(new CallbackInfo(callback, weakRef));
+            } finally {
+                _lock.ExitWriteLock();
+            }
         }
 
         public int HandlerCount {
             get {
-                return _callbacks.Count;
+                _lock.EnterReadLock();
+                try {
+                    return _callbacks.Count;
+                } finally {
+                    _lock.ExitReadLock();
+                }
             }
         }
 
         public void RemoveHandlerAt(int index) {
-            _callbacks.RemoveAt(index);
-        }
-
-        public void RemoveHandler(object o) {
-            for (int i = 0; i < HandlerCount; i++) {
-                if (GetWeakRef(i) == o) {
-                    RemoveHandlerAt(i);
-                    break;
-                }
+            _lock.EnterWriteLock();
+            try {
+                _callbacks.RemoveAt(index);
+            } finally {
+                _lock.ExitWriteLock();
             }
         }
 
+        public void RemoveHandler(object o) {
+            _lock.EnterWriteLock();
+            try {
+                for (int i = 0; i < _callbacks.Count; i++) {
+                    if (_callbacks[i].WeakRef == o) {
+                        _callbacks.RemoveAt(i);
+                        break;
+                    }
+                }
+            } finally {
+                _lock.ExitWriteLock();
+            }
+
+        }
+
         public object GetHandlerCallback(int index) {
-            return _callbacks[index].Callback;
+            _lock.EnterReadLock();
+            try {
+                return _callbacks[index].Callback;
+            } finally {
+                _lock.ExitReadLock();
+            }
         }
 
         public object GetWeakRef(int index) {
-            return _callbacks[index].WeakRef;
+            _lock.EnterReadLock();
+            try {
+                return _callbacks[index].WeakRef;
+            } finally {
+                _lock.ExitReadLock();
+            }
         }
 
         ~WeakRefTracker() {
-            // callbacks are delivered last registered to first registered.
-            for (int i = _callbacks.Count - 1; i >= 0; i--) {
+            _lock.EnterWriteLock();
+            try {
+                // callbacks are delivered last registered to first registered.
+                for (int i = _callbacks.Count - 1; i >= 0; i--) {
 
-                CallbackInfo ci = _callbacks[i];
-                try {
-                    if (ci.Callback != null) {
-                        // a little ugly - we only run callbacks that aren't a part
-                        // of cyclic trash.  but classes use a single field for
-                        // finalization & GC - and that's always cyclic, so we need to special case it.
-                        InstanceFinalizer fin = ci.Callback as InstanceFinalizer;
-                        if (fin != null) {
-                            // Going through PythonCalls / Rules requires the types be public.
-                            // Explicit check so that we can keep InstanceFinalizer internal.
-                            fin.CallDirect(DefaultContext.Default);
-                                
-                        } else {
-                            // Non-instance finalizer goes through normal call mechanism.
-                            object weakRef = ci.WeakRef;
-                            if (weakRef != null)
-                                PythonCalls.Call(ci.Callback, weakRef);
+                    CallbackInfo ci = _callbacks[i];
+                    try {
+                        if (ci.Callback != null) {
+                            // a little ugly - we only run callbacks that aren't a part
+                            // of cyclic trash.  but classes use a single field for
+                            // finalization & GC - and that's always cyclic, so we need to special case it.
+                            InstanceFinalizer fin = ci.Callback as InstanceFinalizer;
+                            if (fin != null) {
+                                // Going through PythonCalls / Rules requires the types be public.
+                                // Explicit check so that we can keep InstanceFinalizer internal.
+                                fin.CallDirect(DefaultContext.Default);
+
+                            } else {
+                                // Non-instance finalizer goes through normal call mechanism.
+                                object weakRef = ci.WeakRef;
+                                if (weakRef != null)
+                                    PythonCalls.Call(ci.Callback, weakRef);
+                            }
                         }
+                    } catch (Exception) {
+                        // TODO (from Python docs):
+                        // Exceptions raised by the callback will be noted on the standard error output, 
+                        // but cannot be propagated; they are handled in exactly the same way as exceptions 
+                        // raised from an object’s __del__() method.
                     }
-                } catch (Exception) {
-                    // TODO (from Python docs):
-                    // Exceptions raised by the callback will be noted on the standard error output,
-                    // but cannot be propagated; they are handled in exactly the same way as exceptions
-                    // raised from an object's __del__() method.
-                }
 
-                ci.Free();
+                    ci.Free();
+                }
+            } finally {
+                _lock.ExitWriteLock();
             }
         }
     }

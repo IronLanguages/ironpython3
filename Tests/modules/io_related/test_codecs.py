@@ -84,7 +84,7 @@ class CodecTest(IronPythonTestCase):
             self.assertEqual(length, 2)
         
         l = []
-        for i in xrange(256):
+        for i in range(256):
             l.append(chr(i))
             
         value, length = codecs.escape_encode(''.join(l))
@@ -100,9 +100,9 @@ class CodecTest(IronPythonTestCase):
             TODO: test that these are actually used.
             '''
             #Sanity
-            def garbage_error0(): print "garbage_error0"
-            def garbage_error1(param1): print "garbage_error1:", param1
-            def garbage_error2(param1, param2): print "garbage_error2:", param1, "; ", param2
+            def garbage_error0(): print("garbage_error0")
+            def garbage_error1(param1): print("garbage_error1:", param1)
+            def garbage_error2(param1, param2): print("garbage_error2:", param1, "; ", param2)
             
             codecs.register_error("garbage0", garbage_error0)
             codecs.register_error("garbage1", garbage_error1)
@@ -112,21 +112,23 @@ class CodecTest(IronPythonTestCase):
     def test_utf_16_ex_decode(self):
         #sanity
         new_str, size, zero = codecs.utf_16_ex_decode("abc")
-        self.assertEqual(new_str, u'\u6261')
+        self.assertEqual(new_str, '\u6261')
         self.assertEqual(size, 2)
         self.assertEqual(zero, 0)
     
     def test_charmap_decode(self):
         #Sanity
         new_str, size = codecs.charmap_decode("abc")
-        self.assertEqual(new_str, u'abc')
+        self.assertEqual(new_str, 'abc')
         self.assertEqual(size, 3)
-        self.assertEqual(codecs.charmap_decode("a", 'strict', {ord('a') : u'a'})[0], u'a')
-        self.assertEqual(codecs.charmap_decode("a", "replace", {})[0], u'\ufffd')
-        self.assertEqual(codecs.charmap_decode("a", "replace", {ord('a'): None})[0], u'\ufffd')
+        self.assertEqual(codecs.charmap_decode("a", 'strict', {ord('a') : 'a'})[0], 'a')
+        self.assertEqual(codecs.charmap_decode("a", "replace", {})[0], '\ufffd')
+        self.assertEqual(codecs.charmap_decode("a", "replace", {ord('a'): None})[0], '\ufffd')
         
-        self.assertEqual(codecs.charmap_decode(""),
-                (u'', 0))
+        self.assertEqual(codecs.charmap_decode(""), ('', 0))
+
+        # using a string mapping
+        self.assertEqual(codecs.charmap_decode('\x02\x01\x00', 'strict', "abc"), ('cba', 3))
 
         #Negative
         self.assertRaises(UnicodeDecodeError, codecs.charmap_decode, "a", "strict", {})
@@ -139,7 +141,7 @@ class CodecTest(IronPythonTestCase):
     def test_decode(self):
         #sanity
         new_str = codecs.decode("abc")
-        self.assertEqual(new_str, u'abc')
+        self.assertEqual(new_str, 'abc')
         
     def test_encode(self):
         #sanity
@@ -149,7 +151,7 @@ class CodecTest(IronPythonTestCase):
     def test_raw_unicode_escape_decode(self):
         #sanity
         new_str, size = codecs.raw_unicode_escape_decode("abc")
-        self.assertEqual(new_str, u'abc')
+        self.assertEqual(new_str, 'abc')
         self.assertEqual(size, 3)
 
     def test_raw_unicode_escape_encode(self):
@@ -161,7 +163,7 @@ class CodecTest(IronPythonTestCase):
     def test_utf_7_decode(self):
         #sanity
         new_str, size = codecs.utf_7_decode("abc")
-        self.assertEqual(new_str, u'abc')
+        self.assertEqual(new_str, 'abc')
         self.assertEqual(size, 3)
 
     def test_utf_7_encode(self):
@@ -173,7 +175,7 @@ class CodecTest(IronPythonTestCase):
     def test_ascii_decode(self):
         #sanity
         new_str, size = codecs.ascii_decode("abc")
-        self.assertEqual(new_str, u'abc')
+        self.assertEqual(new_str, 'abc')
         self.assertEqual(size, 3)
 
     def test_ascii_encode(self):
@@ -185,7 +187,7 @@ class CodecTest(IronPythonTestCase):
     def test_latin_1_decode(self):
         #sanity
         new_str, size = codecs.latin_1_decode("abc")
-        self.assertEqual(new_str, u'abc')
+        self.assertEqual(new_str, 'abc')
         self.assertEqual(size, 3)
 
     def test_latin_1_encode(self):
@@ -235,20 +237,20 @@ class CodecTest(IronPythonTestCase):
         self.assertRaises(TypeError, codecs.unicode_internal_encode)
         self.assertRaises(TypeError, codecs.unicode_internal_encode, 'abc', 'def', 'qrt')
         if is_cli: #http://ironpython.codeplex.com/workitem/27899
-            self.assertEqual(codecs.unicode_internal_encode(u'abc'), ('a\x00b\x00c\x00', 6))
+            self.assertEqual(codecs.unicode_internal_encode('abc'), ('a\x00b\x00c\x00', 6))
         else:
-            self.assertEqual(codecs.unicode_internal_encode(u'abc'), ('a\x00b\x00c\x00', 3))
+            self.assertEqual(codecs.unicode_internal_encode('abc'), ('a\x00b\x00c\x00', 3))
 
     def test_unicode_internal_decode(self):
         # takes one or two parameters, not zero or three
         self.assertRaises(TypeError, codecs.unicode_internal_decode)
         self.assertRaises(TypeError, codecs.unicode_internal_decode, 'abc', 'def', 'qrt')
-        self.assertEqual(codecs.unicode_internal_decode('ab'), (u'\u6261', 2))
+        self.assertEqual(codecs.unicode_internal_decode('ab'), ('\u6261', 2))
 
     def test_utf_16_be_decode(self):
         #sanity
         new_str, size = codecs.utf_16_be_decode("abc")
-        self.assertEqual(new_str, u'\u6162')
+        self.assertEqual(new_str, '\u6162')
         self.assertEqual(size, 2)
 
     def test_utf_16_be_encode(self):
@@ -260,14 +262,14 @@ class CodecTest(IronPythonTestCase):
     def test_utf_16_decode(self):
         #sanity
         new_str, size = codecs.utf_16_decode("abc")
-        self.assertEqual(new_str, u'\u6261')
+        self.assertEqual(new_str, '\u6261')
         self.assertEqual(size, 2)
 
 
     def test_utf_16_le_decode(self):
         #sanity
         new_str, size = codecs.utf_16_le_decode("abc")
-        self.assertEqual(new_str, u'\u6261')
+        self.assertEqual(new_str, '\u6261')
         self.assertEqual(size, 2)
 
     def test_utf_16_le_encode(self):
@@ -284,17 +286,17 @@ class CodecTest(IronPythonTestCase):
     def test_utf_8_decode(self):
         #sanity
         new_str, size = codecs.utf_8_decode("abc")
-        self.assertEqual(new_str, u'abc')
+        self.assertEqual(new_str, 'abc')
         self.assertEqual(size, 3)
 
 
     def test_cp34951(self):
         def internal_cp34951(sample1):
-            self.assertEqual(codecs.utf_8_decode(sample1), (u'12\u20ac\x0a', 6))
+            self.assertEqual(codecs.utf_8_decode(sample1), ('12\u20ac\x0a', 6))
             sample1 = sample1[:-1] # 12<euro>
-            self.assertEqual(codecs.utf_8_decode(sample1), (u'12\u20ac', 5))
+            self.assertEqual(codecs.utf_8_decode(sample1), ('12\u20ac', 5))
             sample1 = sample1[:-1] # 12<uncomplete euro>
-            self.assertEqual(codecs.utf_8_decode(sample1), (u'12', 2))
+            self.assertEqual(codecs.utf_8_decode(sample1), ('12', 2))
 
             sample1 = sample1 + 'x7f' # makes it invalid
             try:
@@ -328,7 +330,7 @@ class CodecTest(IronPythonTestCase):
                 ('', 0))
 
         charmap = dict([ (ord(c), c.upper()) for c in "abcdefgh"])
-        self.assertEqual(codecs.charmap_encode(u"abc", "strict", charmap),
+        self.assertEqual(codecs.charmap_encode("abc", "strict", charmap),
                 ('ABC', 3))
 
                     
@@ -340,8 +342,8 @@ class CodecTest(IronPythonTestCase):
     def test_mbcs_decode(self):
         for mode in ['strict', 'replace', 'ignore', 'badmodethatdoesnotexist']:
             self.assertEqual(codecs.mbcs_decode('foo', mode), ('foo', 3))
-            cpyres = u'\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\x7f\u20ac\x81\u201a\u0192\u201e\u2026\u2020\u2021\u02c6\u2030\u0160\u2039\u0152\x8d\u017d\x8f\x90\u2018\u2019\u201c\u201d\u2022\u2013\u2014\u02dc\u2122\u0161\u203a\u0153\x9d\u017e\u0178\xa0\xa1\xa2\xa3\xa4\xa5\xa6\xa7\xa8\xa9\xaa\xab\xac\xad\xae\xaf\xb0\xb1\xb2\xb3\xb4\xb5\xb6\xb7\xb8\xb9\xba\xbb\xbc\xbd\xbe\xbf\xc0\xc1\xc2\xc3\xc4\xc5\xc6\xc7\xc8\xc9\xca\xcb\xcc\xcd\xce\xcf\xd0\xd1\xd2\xd3\xd4\xd5\xd6\xd7\xd8\xd9\xda\xdb\xdc\xdd\xde\xdf\xe0\xe1\xe2\xe3\xe4\xe5\xe6\xe7\xe8\xe9\xea\xeb\xec\xed\xee\xef\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff'
-            allchars = ''.join([chr(i) for i in xrange(256)])
+            cpyres = '\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\x7f\u20ac\x81\u201a\u0192\u201e\u2026\u2020\u2021\u02c6\u2030\u0160\u2039\u0152\x8d\u017d\x8f\x90\u2018\u2019\u201c\u201d\u2022\u2013\u2014\u02dc\u2122\u0161\u203a\u0153\x9d\u017e\u0178\xa0\xa1\xa2\xa3\xa4\xa5\xa6\xa7\xa8\xa9\xaa\xab\xac\xad\xae\xaf\xb0\xb1\xb2\xb3\xb4\xb5\xb6\xb7\xb8\xb9\xba\xbb\xbc\xbd\xbe\xbf\xc0\xc1\xc2\xc3\xc4\xc5\xc6\xc7\xc8\xc9\xca\xcb\xcc\xcd\xce\xcf\xd0\xd1\xd2\xd3\xd4\xd5\xd6\xd7\xd8\xd9\xda\xdb\xdc\xdd\xde\xdf\xe0\xe1\xe2\xe3\xe4\xe5\xe6\xe7\xe8\xe9\xea\xeb\xec\xed\xee\xef\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff'
+            allchars = ''.join([chr(i) for i in range(256)])
             self.assertEqual(codecs.mbcs_decode(allchars, mode)[0], cpyres)
             
             # round tripping
@@ -352,13 +354,13 @@ class CodecTest(IronPythonTestCase):
     def test_mbcs_encode(self):
         for mode in ['strict', 'replace', 'ignore', 'badmodethatdoesnotexist']:
             self.assertEqual(codecs.mbcs_encode('foo', mode), ('foo', 3))
-            uall = u''.join([unichr(i) for i in xrange(256)])
+            uall = ''.join([chr(i) for i in range(256)])
             cpyres = '\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\x7f?\x81???????????\x8d?\x8f\x90????????????\x9d??\xa0\xa1\xa2\xa3\xa4\xa5\xa6\xa7\xa8\xa9\xaa\xab\xac\xad\xae\xaf\xb0\xb1\xb2\xb3\xb4\xb5\xb6\xb7\xb8\xb9\xba\xbb\xbc\xbd\xbe\xbf\xc0\xc1\xc2\xc3\xc4\xc5\xc6\xc7\xc8\xc9\xca\xcb\xcc\xcd\xce\xcf\xd0\xd1\xd2\xd3\xd4\xd5\xd6\xd7\xd8\xd9\xda\xdb\xdc\xdd\xde\xdf\xe0\xe1\xe2\xe3\xe4\xe5\xe6\xe7\xe8\xe9\xea\xeb\xec\xed\xee\xef\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff'
             ipyres = codecs.mbcs_encode(uall, mode)[0]
             self.assertEqual(cpyres, ipyres)
             
             # all weird unicode characters that are supported
-            chrs = u'\u20ac\u201a\u0192\u201e\u2026\u2020\u2021\u02c6\u2030\u0160\u2039\u0152\u017d\u2018\u2019\u201c\u201d\u2022\u2013\u2014\u02dc\u2122\u0161\u203a\u0153\u017e\u0178'
+            chrs = '\u20ac\u201a\u0192\u201e\u2026\u2020\u2021\u02c6\u2030\u0160\u2039\u0152\u017d\u2018\u2019\u201c\u201d\u2022\u2013\u2014\u02dc\u2122\u0161\u203a\u0153\u017e\u0178'
             self.assertEqual(codecs.mbcs_encode(chrs, mode), ('\x80\x82\x83\x84\x85\x86\x87\x88\x89\x8a\x8b\x8c\x8e\x91\x92\x93\x94\x95\x96\x97\x98\x99\x9a\x9b\x9c\x9e\x9f', 27))
 
     @skipUnlessIronPython()
@@ -379,7 +381,7 @@ class CodecTest(IronPythonTestCase):
         self.assertEqual('abc'.encode('utf-16-be'), '\x00a\x00b\x00c')
         for unicode_escape in ['unicode-escape', 'unicode escape']:
             self.assertEqual('abc'.encode('unicode-escape'), 'abc')
-            self.assertEqual('abc\u1234'.encode('unicode-escape'), 'abc\\\\u1234')
+            self.assertEqual('abc\\u1234'.encode('unicode-escape'), 'abc\\\\u1234')
 
     def test_file_encodings(self):
         '''
@@ -398,7 +400,7 @@ class CodecTest(IronPythonTestCase):
             #positive cases
             for coding in ip_supported_encodings:
                 if coding.lower().replace(" ", "-")=="utf-16-be":
-                    print "https://github.com/IronLanguages/ironpython2/issues/3"
+                    print("https://github.com/IronLanguages/ironpython2/issues/3")
                     continue
                 temp_mod_name = "test_encoding_" + coding.replace("-", "_").replace(" ", "_")
                 f = open(os.path.join(self.temporary_dir, "tmp_encodings", temp_mod_name + ".py"), "w")
@@ -442,7 +444,7 @@ class CodecTest(IronPythonTestCase):
         if not is_cli:
             self.assertEqual(t_out_lines[0], "\xb5ble\n")
         else:
-            print "CodePlex 11334"
+            print("CodePlex 11334")
             self.assertEqual(t_out_lines[0], "\xe6ble\n")
         self.assertEqual(len(t_out_lines), 1)
 
@@ -489,7 +491,7 @@ class CodecTest(IronPythonTestCase):
             l.append(encoding)
         
         codecs.register(my_func)
-        allchars = ''.join([chr(i) for i in xrange(1, 256)])
+        allchars = ''.join([chr(i) for i in range(1, 256)])
         try:
             codecs.lookup(allchars)
             AssertUnreachable()
@@ -497,7 +499,7 @@ class CodecTest(IronPythonTestCase):
             pass
             
         lowerchars = allchars.lower().replace(' ', '-')
-        for i in xrange(1, 255):
+        for i in range(1, 255):
             if l[0][i] != lowerchars[i]:
                 self.assertTrue(False, 'bad chars at index %d: %r %r' % (i, l[0][i], lowerchars[i]))
                 
@@ -536,22 +538,22 @@ class CodecTest(IronPythonTestCase):
             temp = _codecs.lookup(encoding)
 
     def test_charmap_build(self):
-        decodemap = ''.join([unichr(i).upper() if chr(i).islower() else unichr(i).lower() for i in xrange(256)])
+        decodemap = ''.join([chr(i).upper() if chr(i).islower() else chr(i).lower() for i in range(256)])
         encodemap = codecs.charmap_build(decodemap)
-        self.assertEqual(codecs.charmap_decode(u'Hello World', 'strict', decodemap), ('hELLO wORLD', 11))
-        self.assertEqual(codecs.charmap_encode(u'Hello World', 'strict', encodemap), ('hELLO wORLD', 11))
+        self.assertEqual(codecs.charmap_decode('Hello World', 'strict', decodemap), ('hELLO wORLD', 11))
+        self.assertEqual(codecs.charmap_encode('Hello World', 'strict', encodemap), ('hELLO wORLD', 11))
 
     def test_gh16(self):
         """https://github.com/IronLanguages/ironpython2/issues/16"""
         # test with a standard error handler
-        res = u"\xac\u1234\u20ac\u8000".encode("rot_13", "backslashreplace")
+        res = "\xac\u1234\u20ac\u8000".encode("rot_13", "backslashreplace")
         self.assertEqual(res, "\xac\\h1234\\h20np\\h8000")
 
         # test with a custom error handler
         def handler(ex):
-            return (u"", ex.end)
+            return ("", ex.end)
         codecs.register_error("test_unicode_error", handler)
-        res = u"\xac\u1234\u20ac\u8000".encode("rot_13", "test_unicode_error")
+        res = "\xac\u1234\u20ac\u8000".encode("rot_13", "test_unicode_error")
         self.assertEqual(res, "\xac")
-    
+
 run_test(__name__)

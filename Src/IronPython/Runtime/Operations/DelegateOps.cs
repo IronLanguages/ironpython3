@@ -41,8 +41,8 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static Delegate/*!*/ InPlaceAdd(Delegate/*!*/ self, Delegate/*!*/ other) {
-            ContractUtils.RequiresNotNull(self, "self");
-            ContractUtils.RequiresNotNull(other, "other");
+            ContractUtils.RequiresNotNull(self, nameof(self));
+            ContractUtils.RequiresNotNull(other, nameof(other));
 
             return Delegate.Combine(self, other);            
         }

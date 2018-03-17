@@ -910,9 +910,9 @@ namespace IronPython.Runtime
         }
 
         public override SourceCodeReader/*!*/ GetSourceReader(Stream/*!*/ stream, Encoding/*!*/ defaultEncoding, string path) {
-            ContractUtils.RequiresNotNull(stream, "stream");
-            ContractUtils.RequiresNotNull(defaultEncoding, "defaultEncoding");
-            ContractUtils.Requires(stream.CanSeek && stream.CanRead, "stream", "The stream must support seeking and reading");
+            ContractUtils.RequiresNotNull(stream, nameof(stream));
+            ContractUtils.RequiresNotNull(defaultEncoding, nameof(defaultEncoding));
+            ContractUtils.Requires(stream.CanSeek && stream.CanRead, nameof(stream), "The stream must support seeking and reading");
 
             // Python 3 uses UTF-8 as default
             Encoding encoding = Encoding.UTF8;
@@ -1204,8 +1204,8 @@ namespace IronPython.Runtime
         }
 
         public void PublishModule(string/*!*/ name, PythonModule/*!*/ module) {
-            ContractUtils.RequiresNotNull(name, "name");
-            ContractUtils.RequiresNotNull(module, "module");
+            ContractUtils.RequiresNotNull(name, nameof(name));
+            ContractUtils.RequiresNotNull(module, nameof(module));
             SystemStateModules[name] = module;
         }
 
@@ -1405,7 +1405,7 @@ namespace IronPython.Runtime
 #region Stack Traces and Exceptions
 
         public override string FormatException(Exception exception) {
-            ContractUtils.RequiresNotNull(exception, "exception");
+            ContractUtils.RequiresNotNull(exception, nameof(exception));
 
             SyntaxErrorException syntax_error = exception as SyntaxErrorException;
             if (syntax_error != null) {
@@ -1838,7 +1838,7 @@ namespace IronPython.Runtime
         }
 
         public static string GetIronPythonAssembly(string/*!*/ baseName) {
-            ContractUtils.RequiresNotNull(baseName, "baseName");
+            ContractUtils.RequiresNotNull(baseName, nameof(baseName));
             string fullName = typeof(PythonContext).Assembly.FullName;
             int firstComma = fullName.IndexOf(',');
             return firstComma > 0 ? baseName + fullName.Substring(firstComma) : baseName;

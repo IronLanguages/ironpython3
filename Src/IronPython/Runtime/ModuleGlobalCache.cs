@@ -77,7 +77,7 @@ namespace IronPython.Runtime {
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers")]
         public void Changed(object sender, ModuleChangeEventArgs e) {
-            ContractUtils.RequiresNotNull(e, "e");
+            ContractUtils.RequiresNotNull(e, nameof(e));
 
             switch (e.ChangeType) {
                 case ModuleChangeType.Delete: Value = Uninitialized.Instance; break;

@@ -41,7 +41,7 @@ namespace IronPython.Runtime.Exceptions {
         [SecurityCritical]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2140:TransparentMethodsMustNotReferenceCriticalCodeFxCopRule")]
         public override void GetObjectData(SerializationInfo info, StreamingContext context) {
-            ContractUtils.RequiresNotNull(info, "info");
+            ContractUtils.RequiresNotNull(info, nameof(info));
 
             base.GetObjectData(info, context);
         }

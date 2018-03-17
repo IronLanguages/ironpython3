@@ -84,7 +84,7 @@ namespace IronPython.Modules {
 
             [Documentation("initializes or re-initializes the compiled struct object with a new format")]
             public void __init__(CodeContext/*!*/ context, [NotNull]string/*!*/ fmt) {
-                ContractUtils.RequiresNotNull(fmt, "fmt");
+                ContractUtils.RequiresNotNull(fmt, nameof(fmt));
 
                 _formatString = fmt;
 

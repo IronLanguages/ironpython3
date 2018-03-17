@@ -51,7 +51,7 @@ namespace IronPython.Runtime.Binding {
         private static readonly Dictionary<Type/*!*/, ExtensionTypeInfo/*!*/>/*!*/ _sysTypes = MakeSystemTypes();
 
         public PythonBinder(PythonContext/*!*/ pythonContext, CodeContext context) {
-            ContractUtils.RequiresNotNull(pythonContext, "pythonContext");
+            ContractUtils.RequiresNotNull(pythonContext, nameof(pythonContext));
 
             _dlrExtensionTypes = MakeExtensionTypes();
             _context = pythonContext;           

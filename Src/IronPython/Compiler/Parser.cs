@@ -67,9 +67,9 @@ namespace IronPython.Compiler {
         #region Construction
 
         private Parser(CompilerContext context, Tokenizer tokenizer, ErrorSink errorSink, ParserSink parserSink, ModuleOptions languageFeatures) {
-            ContractUtils.RequiresNotNull(tokenizer, "tokenizer");
-            ContractUtils.RequiresNotNull(errorSink, "errorSink");
-            ContractUtils.RequiresNotNull(parserSink, "parserSink");
+            ContractUtils.RequiresNotNull(tokenizer, nameof(tokenizer));
+            ContractUtils.RequiresNotNull(errorSink, nameof(errorSink));
+            ContractUtils.RequiresNotNull(parserSink, nameof(parserSink));
 
             tokenizer.ErrorSink = new TokenizerErrorSink(this);
 
@@ -93,8 +93,8 @@ namespace IronPython.Compiler {
         }
 
         private static Parser CreateParserWorker(CompilerContext context, PythonOptions options, bool verbatim) {
-            ContractUtils.RequiresNotNull(context, "context");
-            ContractUtils.RequiresNotNull(options, "options");
+            ContractUtils.RequiresNotNull(context, nameof(context));
+            ContractUtils.RequiresNotNull(options, nameof(options));
 
             PythonCompilerOptions compilerOptions = context.Options as PythonCompilerOptions;
             if (options == null) {
@@ -249,7 +249,7 @@ namespace IronPython.Compiler {
         /// indentation level of the next line should be
         /// </summary>
         public static int GetNextAutoIndentSize(string text, int autoIndentTabWidth) {
-            ContractUtils.RequiresNotNull(text, "text");
+            ContractUtils.RequiresNotNull(text, nameof(text));
 
             Debug.Assert(text[text.Length - 1] == '\n');
             string[] lines = text.Split(newLineChar);
@@ -276,7 +276,7 @@ namespace IronPython.Compiler {
                 return _errors;
             }
             set {
-                ContractUtils.RequiresNotNull(value, "value");
+                ContractUtils.RequiresNotNull(value, nameof(value));
                 _errors = value;
             }
         }
@@ -299,7 +299,7 @@ namespace IronPython.Compiler {
         }
 
         public void Reset(SourceUnit sourceUnit, ModuleOptions languageFeatures) {
-            ContractUtils.RequiresNotNull(sourceUnit, "sourceUnit");
+            ContractUtils.RequiresNotNull(sourceUnit, nameof(sourceUnit));
 
             _sourceUnit = sourceUnit;
             _languageFeatures = languageFeatures;

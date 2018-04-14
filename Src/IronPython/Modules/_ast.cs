@@ -1962,7 +1962,7 @@ namespace IronPython.Modules
                     moduleNames[i] = new ModuleName(alias.name.Split(MODULE_NAME_SPLITTER));
                     asNames[i] = alias.asname;
                 }
-                return new ImportStatement(moduleNames, asNames, false);  // TODO: not so sure about the relative/absolute argument here
+                return new ImportStatement(moduleNames, asNames);
             }
 
             public PythonList names { get; set; }
@@ -1996,17 +1996,15 @@ namespace IronPython.Modules
 
             internal override Statement Revert() {
                 ModuleName root = null;
-                bool absolute = false; // TODO: absolute import appears in ModuleOptions, not sure how it should work together
                 if (module != null)
                     if (module[0] == '.') // relative module
                         root = new RelativeModuleName(module.Split(MODULE_NAME_SPLITTER), level);
                     else {
                         root = new ModuleName(module.Split(MODULE_NAME_SPLITTER));
-                        absolute = true;
                     }
 
                 if (names.Count == 1 && ((alias)names[0]).name == "*")
-                    return new FromImportStatement(root, (string[])FromImportStatement.Star, null, false, absolute);
+                    return new FromImportStatement(root, (string[])FromImportStatement.Star, null, false);
 
                 String[] newNames = new String[names.Count];
                 String[] asNames = new String[names.Count];
@@ -2015,7 +2013,7 @@ namespace IronPython.Modules
                     newNames[i] = alias.name;
                     asNames[i] = alias.asname;
                 }
-                return new FromImportStatement(root, newNames, asNames, false, absolute);
+                return new FromImportStatement(root, newNames, asNames, false);
             }
 
             public string module { get; set; }

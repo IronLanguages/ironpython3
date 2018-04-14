@@ -30,7 +30,6 @@ namespace IronPython.Compiler.Ast {
         private readonly string[] _names;
         private readonly string[] _asNames;
         private readonly bool _fromFuture;
-        private readonly bool _forceAbsolute;
 
         private PythonVariable[] _variables;
 
@@ -59,12 +58,11 @@ namespace IronPython.Compiler.Ast {
             set { _variables = value; }
         }
 
-        public FromImportStatement(ModuleName root, string[] names, string[] asNames, bool fromFuture, bool forceAbsolute) {
+        public FromImportStatement(ModuleName root, string[] names, string[] asNames, bool fromFuture) {
             _root = root;
             _names = names;
             _asNames = asNames;
             _fromFuture = fromFuture;
-            _forceAbsolute = forceAbsolute;
         }
 
         public override MSAst.Expression Reduce() {
@@ -139,11 +137,7 @@ namespace IronPython.Compiler.Ast {
                 return rmn.DotCount;
             }
 
-            if (_forceAbsolute) {
-                return 0;
-            }
-
-            return -1;
+            return 0;
         }
 
         public override void Walk(PythonWalker walker) {

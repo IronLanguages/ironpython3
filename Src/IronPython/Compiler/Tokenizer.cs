@@ -44,7 +44,7 @@ namespace IronPython.Compiler {
         private SourceUnit _sourceUnit;
         private ErrorSink _errors;
         private Severity _indentationInconsistencySeverity;
-        private bool _endContinues, _unicodeLiterals;
+        private bool _endContinues;
         private List<int> _newLineLocations;
         private SourceLocation _initialLocation;
         private TextReader _reader;
@@ -81,7 +81,6 @@ namespace IronPython.Compiler {
             _verbatim = options.Verbatim;
             _state = new State(null);
             _dontImplyDedent = options.DontImplyDedent;
-            _unicodeLiterals = options.UnicodeLiterals;
             _names = new Dictionary<object, NameToken>(128, new TokenEqualityComparer(this));
         }
 
@@ -307,15 +306,6 @@ namespace IronPython.Compiler {
             }
             tokenString = GetTokenString();
             return true;
-        }
-
-        internal bool UnicodeLiterals {
-            get {
-                return _unicodeLiterals;
-            }
-            set {
-                _unicodeLiterals = value;
-            }
         }
 
         public Token GetNextToken() {

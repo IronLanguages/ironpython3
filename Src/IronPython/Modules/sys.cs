@@ -777,7 +777,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             try {
                 PythonModule zipimport = Importer.ImportModule(
                     context.SharedClsContext, context.SharedClsContext.GlobalDict,
-                    "zipimport", false, -1) as PythonModule;
+                    "zipimport", false, 0) as PythonModule;
                 if (zipimport != null) {
                     object zipimporter = PythonOps.GetBoundAttr(
                         context.SharedClsContext, zipimport, "zipimporter");

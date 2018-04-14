@@ -73,7 +73,7 @@ Removed Syntax
 - [x] Integer literals no longer support a trailing l or L.
 - [x] ~~String literals no longer support a leading u or U.~~ (Readded in Python 3.3)
 - [ ] The from module import * syntax is only allowed at the module level, no longer inside functions.
-- [ ] The only acceptable syntax for relative imports is from .[module] import name. All import forms not starting with . are interpreted as absolute imports. (PEP 0328)
+- [x] The only acceptable syntax for relative imports is from .[module] import name. All import forms not starting with . are interpreted as absolute imports. (PEP 0328)
 - [x] Classic classes are gone.
 
 Library Changes

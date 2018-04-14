@@ -335,24 +335,6 @@ namespace IronPython.Compiler.Ast {
 
         #region Public API
 
-        /// <summary>
-        /// True if the with statement is enabled in this AST.
-        /// </summary>
-        public bool AllowWithStatement {
-            get {
-                return (_languageFeatures & ModuleOptions.WithStatement) != 0;
-            }
-        }
-
-        /// <summary>
-        /// True if absolute imports are enabled
-        /// </summary>
-        public bool AbsoluteImports {
-            get {
-                return (_languageFeatures & ModuleOptions.AbsoluteImports) != 0;
-            }
-        }
-
         public Statement Body {
             get { return _body; }
         }

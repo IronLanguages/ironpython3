@@ -28,14 +28,12 @@ namespace IronPython.Compiler.Ast {
     public class ImportStatement : Statement {
         private readonly ModuleName[] _names;
         private readonly string[] _asNames;
-        private readonly bool _forceAbsolute;
 
         private PythonVariable[] _variables;
 
-        public ImportStatement(ModuleName[] names, string[] asNames, bool forceAbsolute) {
+        public ImportStatement(ModuleName[] names, string[] asNames) {
             _names = names;
             _asNames = asNames;
-            _forceAbsolute = forceAbsolute;
         }
 
         internal PythonVariable[] Variables {
@@ -63,9 +61,9 @@ namespace IronPython.Compiler.Ast {
                             LightExceptions.CheckAndThrow(
                                 Expression.Call(
                                     _asNames[i] == null ? AstMethods.ImportTop : AstMethods.ImportBottom,
-                                    Parent.LocalContext,                                     // 1st arg - code context
-                                    AstUtils.Constant(_names[i].MakeString()),                   // 2nd arg - module name
-                                    AstUtils.Constant(_forceAbsolute ? 0 : -1)                   // 3rd arg - absolute or relative imports
+                                    Parent.LocalContext,                                    // 1st arg - code context
+                                    AstUtils.Constant(_names[i].MakeString()),              // 2nd arg - module name
+                                    AstUtils.Constant(0)                                    // 3rd arg - absolute imports
                                 )
                             )
                         ),

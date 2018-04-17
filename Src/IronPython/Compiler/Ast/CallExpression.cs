@@ -375,13 +375,7 @@ namespace IronPython.Compiler.Ast {
 
         #endregion
 
-        internal override string CheckAssign() {
-            return "can't assign to function call";
-        }
-
-        internal override string CheckDelete() {
-            return "can't delete function call";
-        }
+        public override string NodeName => "function call";
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {

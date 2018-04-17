@@ -70,7 +70,7 @@ namespace IronPython {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to default value must be specified here.
+        ///   Looks up a localized string similar to non-default argument follows default argument.
         /// </summary>
         internal static string DefaultRequired {
             get {
@@ -88,7 +88,7 @@ namespace IronPython {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to duplicate keyword argument.
+        ///   Looks up a localized string similar to keyword argument repeated.
         /// </summary>
         internal static string DuplicateKeywordArg {
             get {

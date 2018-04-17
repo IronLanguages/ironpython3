@@ -54,7 +54,7 @@ namespace IronPython.Compiler.Ast {
 
         internal override string CheckDelete() {
             if (Items.Count == 0)
-                return "can't delete ()";
+                return "can't delete ()"; //  TODO: remove this when we get to 3.6
             return base.CheckDelete();
         }
 

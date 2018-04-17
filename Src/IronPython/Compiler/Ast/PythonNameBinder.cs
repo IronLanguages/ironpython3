@@ -457,12 +457,6 @@ namespace IronPython.Compiler.Ast {
             node.Parent = _currentScope;
             return base.Walk(node);
         }
-
-        // NonlocalStatement
-        public override bool Walk(NonlocalStatement node) {
-            node.Parent = _currentScope;
-            return base.Walk(node);
-        }
         // OrExpression
         public override bool Walk(OrExpression node) {
             node.Parent = _currentScope;
@@ -698,32 +692,24 @@ namespace IronPython.Compiler.Ast {
             foreach (string n in node.Names) {
                 PythonVariable conflict;
                 // Check current scope for conflicting variable
-                bool assignedGlobal = false;
                 if (_currentScope.TryGetVariable(n, out conflict)) {
                     // conflict?
                     switch (conflict.Kind) {
                         case VariableKind.Global:
                         case VariableKind.Local:
-                            assignedGlobal = true;
-                            ReportSyntaxWarning($"name '{n}' is assigned to before global declaration", node);
+                            ReportSyntaxError($"name '{n}' is assigned to before global declaration", node);
                             break;
-                        
+
                         case VariableKind.Parameter:
-                            ReportSyntaxError($"name '{n}' is local and global", node);
+                            ReportSyntaxError($"name '{n}' is parameter and global", node);
                             break;
                     }
                 }
 
-                // Check for the name being referenced previously. If it has been, issue warning.
-                if (_currentScope.IsReferenced(n) && !assignedGlobal) {
-                    ReportSyntaxWarning(
-                        String.Format(
-                        System.Globalization.CultureInfo.InvariantCulture,
-                        "name '{0}' is used prior to global declaration",
-                        n),
-                    node);
+                // Check for the name being referenced previously
+                if (_currentScope.IsReferenced(n)) {
+                    ReportSyntaxError($"name '{n}' is used prior to global declaration", node);
                 }
-
 
                 // Create the variable in the global context and mark it as global
                 PythonVariable variable = _globalScope.EnsureGlobalVariable(n);
@@ -740,6 +726,42 @@ namespace IronPython.Compiler.Ast {
         public override bool Walk(NameExpression node) {
             node.Parent = _currentScope;
             node.Reference = Reference(node.Name);
+            return true;
+        }
+
+
+        // NonlocalStatement
+        public override bool Walk(NonlocalStatement node) {
+            node.Parent = _currentScope;
+
+            if (_currentScope == _globalScope)
+                ReportSyntaxError($"nonlocal declaration not allowed at module level", node);
+
+            foreach (string n in node.Names) {
+                PythonVariable conflict;
+                // Check current scope for conflicting variable
+                if (_currentScope.TryGetVariable(n, out conflict)) {
+                    // conflict?
+                    switch (conflict.Kind) {
+                        case VariableKind.Global:
+                            ReportSyntaxError($"name '{n}' is nonlocal and global", node);
+                            break;
+                        case VariableKind.Local:
+                            ReportSyntaxError($"name '{n}' is assigned to before nonlocal declaration", node);
+                            break;
+                        case VariableKind.Parameter:
+                            ReportSyntaxError($"name '{n}' is parameter and nonlocal", node);
+                            break;
+                    }
+                }
+
+                // Check for the name being referenced previously
+                if (_currentScope.IsReferenced(n)) {
+                    ReportSyntaxError($"name '{n}' is used prior to nonlocal declaration", node);
+                }
+
+                // TODO: do we need to do other stuff here?
+            }
             return true;
         }
 

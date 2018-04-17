@@ -161,7 +161,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override string CheckAugmentedAssign() {
-            return "illegal expression for augmented assignment";
+            return CheckAssign() ?? "illegal expression for augmented assignment";
         }
 
         private static bool IsComplexAssignment(Expression expr) {

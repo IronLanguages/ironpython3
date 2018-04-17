@@ -73,7 +73,7 @@ namespace IronPython.Compiler.Ast {
                 return "can't assign to keyword";
             }
 
-            return "can't assign to literal";
+            return base.CheckAssign();
         }
 
         public override void Walk(PythonWalker walker) {
@@ -82,11 +82,7 @@ namespace IronPython.Compiler.Ast {
             walker.PostWalk(this);
         }
 
-        public override string NodeName {
-            get {
-                return "literal";
-            }
-        }
+        public override string NodeName => "literal";
 
         internal override bool CanThrow {
             get {

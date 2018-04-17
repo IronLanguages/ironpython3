@@ -281,8 +281,8 @@ class IronPythonTestCase(unittest.TestCase, FileUtil, ProcessUtil):
         for x in range(a.Length):
             self.assertEqual(a[x], b[x])
 
-    def assertUnreachable(msg=None):
-        if msg: self.fail("Unreachable code reached: "+m)
+    def assertUnreachable(self, msg=None):
+        if msg: self.fail("Unreachable code reached: " + msg)
         else: self.fail("Unreachable code reached")
 
     def assertWarns(self, warning, callable, *args, **kwds):

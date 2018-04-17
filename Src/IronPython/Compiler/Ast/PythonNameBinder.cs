@@ -223,7 +223,6 @@ namespace IronPython.Compiler.Ast {
         internal void ReportSyntaxError(string message, Node node) {
             // TODO: Change the error code (-1)
             _context.Errors.Add(_context.SourceUnit, message, node.Span, -1, Severity.FatalError);
-            throw PythonOps.SyntaxError(message, _context.SourceUnit, node.Span, -1);
         }
 
         #region AstBinder Overrides
@@ -622,7 +621,13 @@ namespace IronPython.Compiler.Ast {
             node.Parent = _currentScope;
             _currentScope.ContainsExceptionHandling = true;
 
-            node.Variable?.Walk(_define);
+            if (node.Variable != null) {
+                var assignError = node.Variable.CheckAssign();
+                if (assignError != null) {
+                    ReportSyntaxError(assignError, node);
+                }
+                node.Variable.Walk(_define);
+            }
             return true;
         }
 
@@ -700,23 +705,11 @@ namespace IronPython.Compiler.Ast {
                         case VariableKind.Global:
                         case VariableKind.Local:
                             assignedGlobal = true;
-                            ReportSyntaxWarning(
-                                String.Format(
-                                    System.Globalization.CultureInfo.InvariantCulture,
-                                    "name '{0}' is assigned to before global declaration",
-                                    n
-                                ),
-                                node
-                            );
+                            ReportSyntaxWarning($"name '{n}' is assigned to before global declaration", node);
                             break;
                         
                         case VariableKind.Parameter:
-                            ReportSyntaxError(
-                                String.Format(
-                                    System.Globalization.CultureInfo.InvariantCulture,
-                                    "Name '{0}' is a function parameter and declared global",
-                                    n),
-                                node);
+                            ReportSyntaxError($"name '{n}' is local and global", node);
                             break;
                     }
                 }

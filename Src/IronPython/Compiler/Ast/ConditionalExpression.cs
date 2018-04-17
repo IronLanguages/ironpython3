@@ -46,6 +46,8 @@ namespace IronPython.Compiler.Ast {
             get { return _trueExpr; }
         }
 
+        public override string NodeName => "conditional expression";
+
         public override MSAst.Expression Reduce() {
             MSAst.Expression ifTrue = AstUtils.Convert(_trueExpr, typeof(object));
             MSAst.Expression ifFalse = AstUtils.Convert(_falseExpr, typeof(object));

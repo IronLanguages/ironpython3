@@ -237,9 +237,7 @@ namespace IronPython.Compiler.Ast {
 
         #endregion
 
-        internal override string CheckAssign() {
-            return "can't assign to operator";
-        }
+        public override string NodeName => IsComparison() ? "comparison" : "operator";
 
         private MSAst.Expression MakeBinaryOperation(PythonOperator op, MSAst.Expression left, MSAst.Expression right, SourceSpan span) {
             if (op == PythonOperator.NotIn) {

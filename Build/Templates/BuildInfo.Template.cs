@@ -7,11 +7,4 @@ internal static class BuildInfo {{
 #else
         false;
 #endif
-
-    internal const bool IsCLR4 =
-#if CLR4
-        true;
-#else
-        false;
-#endif
 }}

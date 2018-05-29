@@ -3,9 +3,7 @@
   <PropertyGroup>
     <WpfReferences Condition="'$(WpfReferences)' == ''">$(SolutionDir)..\Util\References\WPF\4.0</WpfReferences>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <PlatformSymbols>CLR4;CLR45</PlatformSymbols>
     <IsFullFramework>true</IsFullFramework>
-    <FeatureCoreDlr>true</FeatureCoreDlr>
   </PropertyGroup>
 
   <PropertyGroup>

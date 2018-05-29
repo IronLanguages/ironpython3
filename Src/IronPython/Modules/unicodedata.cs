@@ -148,168 +148,144 @@ namespace IronPython.Modules {
                 return char.ConvertFromUtf32(nameLookup[name]);
             }
 
-            public string name(char unichr, string @default = null) {
-                try {
-                    return GetInfo(unichr).Name;
-                } catch (KeyNotFoundException) {
-                    if (@default != null)
-                        return @default;
-                    else
-                        throw;
+            public string name(char unichr, string @default) {
+                if (TryGetInfo(unichr, out CharInfo info)) {
+                    return info.Name;
                 }
+                return @default;
+            }
+
+            public string name(char unichr) {
+                if (TryGetInfo(unichr, out CharInfo info)) {
+                    return info.Name;
+                }
+                throw PythonOps.ValueError("no such name");
             }
 
             public int @decimal(char unichr, int @default) {
-                try {
-                    int? d = GetInfo(unichr).Numeric_Value_Decimal;
+                if (TryGetInfo(unichr, out CharInfo info)) {
+                    var d = info.Numeric_Value_Decimal;
                     if (d.HasValue) {
                         return d.Value;
-                    } else {
-                        return @default;
                     }
-                } catch (KeyNotFoundException) {
-                    return @default;
                 }
+                return @default;
             }
 
             public int @decimal(char unichr) {
-                try {
-                    int? d = GetInfo(unichr).Numeric_Value_Decimal;
+                if (TryGetInfo(unichr, out CharInfo info)) {
+                    var d = info.Numeric_Value_Decimal;
                     if (d.HasValue) {
                         return d.Value;
-                    } else {
-                        throw PythonOps.ValueError("not a decimal");
                     }
-                } catch (KeyNotFoundException) {
-                    throw PythonOps.ValueError("not a decimal");
                 }
+                throw PythonOps.ValueError("not a decimal");
             }
 
             public object @decimal(char unichr, object @default) {
-                try {
-                    int? d = GetInfo(unichr).Numeric_Value_Decimal;
+                if (TryGetInfo(unichr, out CharInfo info)) {
+                    var d = info.Numeric_Value_Decimal;
                     if (d.HasValue) {
                         return d.Value;
-                    } else {
-                        return @default;
                     }
-                } catch (KeyNotFoundException) {
-                    return @default;
                 }
+                return @default;
             }
 
             public int digit(char unichr, int @default) {
-                try {
-                    int? d = GetInfo(unichr).Numeric_Value_Digit;
+                if (TryGetInfo(unichr, out CharInfo info)) {
+                    var d = info.Numeric_Value_Digit;
                     if (d.HasValue) {
                         return d.Value;
-                    } else {
-                        return @default;
                     }
-                } catch (KeyNotFoundException) {
-                    return @default;
                 }
+                return @default;
             }
 
             public object digit(char unichr, object @default) {
-                try {
-                    int? d = GetInfo(unichr).Numeric_Value_Digit;
+                if (TryGetInfo(unichr, out CharInfo info)) {
+                    var d = info.Numeric_Value_Digit;
                     if (d.HasValue) {
                         return d.Value;
-                    } else {
-                        return @default;
                     }
-                } catch (KeyNotFoundException) {
-                    return @default;
                 }
+                return @default;
             }
 
             public int digit(char unichr) {
-                try {
-                    int? d = GetInfo(unichr).Numeric_Value_Digit;
+                if (TryGetInfo(unichr, out CharInfo info)) {
+                    var d = info.Numeric_Value_Digit;
                     if (d.HasValue) {
                         return d.Value;
-                    } else {
-                        throw PythonOps.ValueError("not a digit");
                     }
-                } catch (KeyNotFoundException) {
-                    throw PythonOps.ValueError("not a digit");
                 }
+                throw PythonOps.ValueError("not a digit");
             }
 
             public double numeric(char unichr, double @default) {
-                try {
-                    double? d = GetInfo(unichr).Numeric_Value_Numeric;
+                if (TryGetInfo(unichr, out CharInfo info)) {
+                    var d = info.Numeric_Value_Numeric;
                     if (d.HasValue) {
                         return d.Value;
-                    } else {
-                        return @default;
                     }
-                } catch (KeyNotFoundException) {
-                    return @default;
                 }
+                return @default;
             }
 
             public double numeric(char unichr) {
-                try {
-                    double? d = GetInfo(unichr).Numeric_Value_Numeric;
+                if (TryGetInfo(unichr, out CharInfo info)) {
+                    var d = info.Numeric_Value_Numeric;
                     if (d.HasValue) {
                         return d.Value;
-                    } else {
-                        throw PythonOps.ValueError("not a numeric character");
                     }
-                } catch (KeyNotFoundException) {
-                    throw PythonOps.ValueError("not a numeric character");
                 }
+                throw PythonOps.ValueError("not a numeric character");
             }
 
             public object numeric(char unichr, object @default) {
-                try {
-                    double? d = GetInfo(unichr).Numeric_Value_Numeric;
+                if (TryGetInfo(unichr, out CharInfo info)) {
+                    var d = info.Numeric_Value_Numeric;
                     if (d.HasValue) {
                         return d.Value;
-                    } else {
-                        return @default;
                     }
-                } catch (KeyNotFoundException) {
-                    return @default;
                 }
+                return @default;
             }
 
             public string category(char unichr) {
-                if (!database.ContainsKey(unichr))
-                    return OtherNotAssigned;
-                return GetInfo(unichr).General_Category;
+                if (TryGetInfo(unichr, out CharInfo info))
+                    return info.General_Category;
+                return OtherNotAssigned;
             }
 
             public string bidirectional(char unichr) {
-                if (!database.ContainsKey(unichr))
-                    return string.Empty;
-                return GetInfo(unichr).Bidi_Class;
+                if (TryGetInfo(unichr, out CharInfo info))
+                    return info.Bidi_Class;
+                return string.Empty;
             }
 
             public int combining(char unichr) {
-                if (!database.ContainsKey(unichr))
-                    return 0;
-                return GetInfo(unichr).Canonical_Combining_Class;
+                if (TryGetInfo(unichr, out CharInfo info))
+                    return info.Canonical_Combining_Class;
+                return 0;
             }
 
             public string east_asian_width(char unichr) {
-                if (!database.ContainsKey(unichr))
-                    return string.Empty;
-                return GetInfo(unichr).East_Asian_Width;
+                if (TryGetInfo(unichr, out CharInfo info))
+                    return info.East_Asian_Width;
+                return string.Empty;
             }
 
             public int mirrored(char unichr) {
-                if (!database.ContainsKey(unichr))
-                    return 0;
-                return GetInfo(unichr).Bidi_Mirrored;
+                if (TryGetInfo(unichr, out CharInfo info))
+                    return info.Bidi_Mirrored;
+                return 0;
             }
 
             public string decomposition(char unichr) {
-                if (!database.ContainsKey(unichr))
-                    return string.Empty;
-                return GetInfo(unichr).Decomposition_Type;
+                if (TryGetInfo(unichr, out CharInfo info))
+                    return info.Decomposition_Type;
+                return string.Empty;
             }
 
             public string normalize(string form, string unistr) {
@@ -370,8 +346,15 @@ namespace IronPython.Modules {
                 nameLookup = database.Where(c => !c.Value.Name.StartsWith("<")).ToDictionary(c => c.Value.Name, c => c.Key);
             }
 
-            private CharInfo GetInfo(char unichr) {
-                return database[(int)unichr];
+            private bool TryGetInfo(char unichr, out CharInfo charInfo) {
+                if (database.TryGetValue(unichr, out charInfo)) return true;
+                foreach (var range in ranges) {
+                    if (range.First <= unichr && unichr <= range.Last) {
+                        charInfo = range;
+                        return true;
+                    }
+                }
+                return false;
             }
 
             private void EnsureLoaded() {

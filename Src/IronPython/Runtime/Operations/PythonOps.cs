@@ -1110,10 +1110,12 @@ namespace IronPython.Runtime.Operations {
             return PythonCalls.Call(context, PythonOps.GetBoundAttr(context, target, name), args);
         }
 
+#if FEATURE_LCG
         public static Delegate CreateDynamicDelegate(DynamicMethod meth, Type delegateType, object target) {
             // Always close delegate around its own instance of the frame
             return meth.CreateDelegate(delegateType, target);
         }
+#endif
 
         public static double CheckMath(double v) {
             if (double.IsInfinity(v)) {

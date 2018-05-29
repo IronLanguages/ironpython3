@@ -131,7 +131,7 @@ switch -wildcard ($target) {
     "clean-debug"   { Main "Clean" "Debug" }
     "stage-debug"   { Main "Stage" "Debug" }
     "package-debug" { Main "Package" "Debug" }
-    "test-debug-*"  { Test $target.Substring(10) "Debug" $frameworks }
+    "test-debug-*"  { Test $target.Substring(11) "Debug" $frameworks; break }
     
     # release targets
     "restore"       { Main "RestoreReferences" "Release" }
@@ -139,7 +139,7 @@ switch -wildcard ($target) {
     "clean"         { Main "Clean" "Release" }
     "stage"         { Main "Stage" "Release" }
     "package"       { Main "Package" "Release" }
-    "test-*"        { Test $target.Substring(5) "Release" $frameworks }
+    "test-*"        { Test $target.Substring(5) "Release" $frameworks; break }
 
     # utility targets
     "ngen"          {

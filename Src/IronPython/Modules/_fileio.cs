@@ -318,7 +318,6 @@ namespace IronPython.Modules {
             }
 
             private bool isRedirected() {
-#if CLR45
                 if (_consoleStreamType == ConsoleStreamType.Output) {
                     return Console.IsOutputRedirected;
                 }
@@ -327,18 +326,6 @@ namespace IronPython.Modules {
                 }
                 Debug.Assert(_consoleStreamType == ConsoleStreamType.ErrorOutput);
                 return Console.IsErrorRedirected;
-#elif FEATURE_NATIVE
-                if (_consoleStreamType == ConsoleStreamType.Output) {
-                    return StreamRedirectionInfo.IsOutputRedirected;
-                }
-                if (_consoleStreamType == ConsoleStreamType.Input) {
-                    return StreamRedirectionInfo.IsInputRedirected;
-                }
-                Debug.Assert(_consoleStreamType == ConsoleStreamType.ErrorOutput);
-                return StreamRedirectionInfo.IsErrorRedirected;
-#else
-                return false;
-#endif
             }
 
             [Documentation("String giving the file mode")]

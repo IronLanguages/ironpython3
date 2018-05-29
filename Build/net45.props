@@ -3,65 +3,57 @@
   <PropertyGroup>
     <WpfReferences Condition="'$(WpfReferences)' == ''">$(SolutionDir)..\Util\References\WPF\4.0</WpfReferences>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <PlatformSymbols>CLR4;CLR45</PlatformSymbols>
     <IsFullFramework>true</IsFullFramework>
-    <FeatureCoreDlr>true</FeatureCoreDlr>
   </PropertyGroup>
 
   <PropertyGroup>
-    <Features>$(Features);FEATURE_NATIVE</Features>
-    <Features>$(Features);FEATURE_XMLDOC</Features>
-    <Features>$(Features);FEATURE_EXCEPTION_STATE</Features>
-    <Features>$(Features);FEATURE_VARIANCE</Features>
-    <Features>$(Features);FEATURE_SYNC_SOCKETS</Features>
+    <Features>$(Features);FEATURE_APARTMENTSTATE</Features>
+    <Features>$(Features);FEATURE_APPLICATIONEXCEPTION</Features>
+    <Features>$(Features);FEATURE_ASSEMBLY_CODEBASE</Features>
+    <Features>$(Features);FEATURE_ASSEMBLY_LOCATION</Features>
     <Features>$(Features);FEATURE_ASSEMBLY_RESOLVE</Features>
+    <Features>$(Features);FEATURE_ASSEMBLYBUILDER_DEFINEDYNAMICASSEMBLY</Features>
+    <Features>$(Features);FEATURE_BASIC_CONSOLE</Features>
+    <Features>$(Features);FEATURE_CODEDOM</Features>
+    <Features>$(Features);FEATURE_COM</Features>
+    <Features>$(Features);FEATURE_CONFIGURATION</Features>
     <Features>$(Features);FEATURE_CUSTOM_TYPE_DESCRIPTOR</Features>
-    <Features>$(Features);FEATURE_ENCODING</Features>
     <Features>$(Features);FEATURE_DBNULL</Features>
+    <Features>$(Features);FEATURE_DRIVENOTFOUNDEXCEPTION</Features>
+    <Features>$(Features);FEATURE_DYNAMIC_EXPRESSION_VISITOR</Features>
+    <Features>$(Features);FEATURE_ENCODING</Features>
+    <Features>$(Features);FEATURE_EXCEPTION_STATE</Features>
     <Features>$(Features);FEATURE_FILESYSTEM</Features>
-    <Features>$(Features);FEATURE_THREAD</Features>
+    <Features>$(Features);FEATURE_FULL_CONSOLE</Features>
+    <Features>$(Features);FEATURE_FULL_CRYPTO</Features>
+    <Features>$(Features);FEATURE_FULL_NET</Features>
+    <Features>$(Features);FEATURE_ICLONEABLE</Features>
+    <Features>$(Features);FEATURE_LCG</Features>
+    <Features>$(Features);FEATURE_LOADWITHPARTIALNAME</Features>
+    <Features>$(Features);FEATURE_METADATA_READER</Features>
+    <Features>$(Features);FEATURE_MMAP</Features>
+    <Features>$(Features);FEATURE_NATIVE</Features>
+    <Features>$(Features);FEATURE_OS_SERVICEPACK</Features>
+    <Features>$(Features);FEATURE_PDBEMIT</Features>
+    <Features>$(Features);FEATURE_PIPES</Features>
     <Features>$(Features);FEATURE_PROCESS</Features>
+    <Features>$(Features);FEATURE_REFEMIT</Features>
+    <Features>$(Features);FEATURE_REGISTRY</Features>
+    <Features>$(Features);FEATURE_REMOTING</Features>
+    <Features>$(Features);FEATURE_SECURITY_RULES</Features>
+    <Features>$(Features);FEATURE_SERIALIZATION</Features>
+    <Features>$(Features);FEATURE_SORTKEY</Features>
     <Features>$(Features);FEATURE_STACK_TRACE</Features>
+    <Features>$(Features);FEATURE_SYNC_SOCKETS</Features>
+    <Features>$(Features);FEATURE_THREAD</Features>
     <Features>$(Features);FEATURE_TYPE_EQUIVALENCE</Features>
     <Features>$(Features);FEATURE_TYPECONVERTER</Features>
-    <Features>$(Features);FEATURE_PDBEMIT</Features>
-    <Features>$(Features);FEATURE_METADATA_READER</Features>
-    <Features>$(Features);FEATURE_COM</Features>
+    <Features>$(Features);FEATURE_WARNING_EXCEPTION</Features>
+    <Features>$(Features);FEATURE_WIN32EXCEPTION</Features>
+    <Features>$(Features);FEATURE_XMLDOC</Features>
     <Features Condition=" '$(OS)' != 'Unix' ">$(Features);FEATURE_WPF</Features>
     <Features Condition=" '$(OS)' != 'Unix' ">$(Features);FEATURE_WINDOWS</Features>
     <Features Condition=" '$(OS)' == 'Unix' ">$(Features);FEATURE_UNIX</Features>
-    <Features>$(Features);FEATURE_FULL_CONSOLE</Features>
-    <Features>$(Features);FEATURE_BASIC_CONSOLE</Features>
-    <Features>$(Features);FEATURE_SERIALIZATION</Features>
-    <Features>$(Features);FEATURE_REMOTING</Features>
-    <Features>$(Features);FEATURE_CONFIGURATION</Features>
-    <Features>$(Features);FEATURE_REFEMIT</Features>
-    <Features>$(Features);FEATURE_LCG</Features>
-    <Features>$(Features);FEATURE_CODEDOM</Features>
-    <Features>$(Features);FEATURE_WARNING_EXCEPTION</Features>
-    <Features>$(Features);FEATURE_SECURITY_RULES</Features>
-    <Features>$(Features);FEATURE_WIN32EXCEPTION</Features>
-    <Features>$(Features);FEATURE_REGISTRY</Features>
-    <Features>$(Features);FEATURE_ASSEMBLY_LOCATION</Features>
-    <Features>$(Features);FEATURE_OS_SERVICEPACK</Features>
-    <Features>$(Features);FEATURE_APPLICATIONEXCEPTION</Features>
-    <Features>$(Features);FEATURE_APARTMENTSTATE</Features>
-    <Features>$(Features);FEATURE_LOADWITHPARTIALNAME</Features>
-    <Features>$(Features);FEATURE_DRIVENOTFOUNDEXCEPTION</Features>
-    <Features>$(Features);FEATURE_ASSEMBLY_CODEBASE</Features>
-    <Features>$(Features);FEATURE_MMAP</Features>
-    <Features>$(Features);FEATURE_FULL_NET</Features>
-    <Features>$(Features);FEATURE_FULL_CRYPTO</Features>
-    <Features>$(Features);FEATURE_ICLONEABLE</Features>
-    <Features>$(Features);FEATURE_ANSICP</Features>
-    <Features>$(Features);FEATURE_ASYNC</Features>
-    <Features>$(Features);FEATURE_DYNAMIC_EXPRESSION_VISITOR</Features>
-    <Features>$(Features);FEATURE_ASSEMBLYBUILDER_DEFINEDYNAMICASSEMBLY</Features>
-    <Features>$(Features);FEATURE_READONLY_DICTIONARY</Features>
-    <Features>$(Features);FEATURE_SORTKEY</Features>
-    <Features>$(Features);FEATURE_READONLY_COLLECTION_INTERFACE</Features>
-    <Features>$(Features);FEATURE_ARGITERATOR</Features>
-    <Features>$(Features);FEATURE_PIPES</Features>
   </PropertyGroup>
 
   <ItemGroup>

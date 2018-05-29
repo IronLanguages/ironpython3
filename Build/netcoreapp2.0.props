@@ -1,20 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <PlatformSymbols>CLR4;CLR45</PlatformSymbols>
     <IsFullFramework>false</IsFullFramework>
-    <FeatureCoreDlr>true</FeatureCoreDlr>
   </PropertyGroup>
 
   <PropertyGroup>
-    <Features>$(Features);FEATURE_ANSICP</Features>
     <Features>$(Features);FEATURE_APARTMENTSTATE</Features>
     <Features>$(Features);FEATURE_APPLICATIONEXCEPTION</Features>
     <Features>$(Features);FEATURE_ASSEMBLY_CODEBASE</Features>
     <Features>$(Features);FEATURE_ASSEMBLY_LOCATION</Features>
     <Features>$(Features);FEATURE_ASSEMBLY_RESOLVE</Features>
     <Features>$(Features);FEATURE_ASSEMBLYBUILDER_DEFINEDYNAMICASSEMBLY</Features>
-    <Features>$(Features);FEATURE_ASYNC</Features>
     <Features>$(Features);FEATURE_BASIC_CONSOLE</Features>
     <Features>$(Features);FEATURE_CODEDOM</Features>
     <Features>$(Features);FEATURE_CONFIGURATION</Features>
@@ -36,8 +32,6 @@
     <Features>$(Features);FEATURE_OS_SERVICEPACK</Features>
     <Features>$(Features);FEATURE_PIPES</Features>
     <Features>$(Features);FEATURE_PROCESS</Features>
-    <Features>$(Features);FEATURE_READONLY_COLLECTION_INTERFACE</Features>
-    <Features>$(Features);FEATURE_READONLY_DICTIONARY</Features>
     <Features>$(Features);FEATURE_REFEMIT</Features>
     <Features>$(Features);FEATURE_REGISTRY</Features>
     <Features>$(Features);FEATURE_SECURITY_RULES</Features>
@@ -48,7 +42,6 @@
     <Features>$(Features);FEATURE_THREAD</Features>
     <Features>$(Features);FEATURE_TYPE_EQUIVALENCE</Features>
     <Features>$(Features);FEATURE_TYPECONVERTER</Features>
-    <Features>$(Features);FEATURE_VARIANCE</Features>
     <Features>$(Features);FEATURE_WARNING_EXCEPTION</Features>
     <Features>$(Features);FEATURE_WIN32EXCEPTION</Features>
     <Features>$(Features);FEATURE_XMLDOC</Features>

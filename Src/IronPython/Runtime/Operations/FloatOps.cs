@@ -777,8 +777,9 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-
         public static string __format__(CodeContext/*!*/ context, double self, [NotNull]string/*!*/ formatSpec) {
+            if (formatSpec == string.Empty) return __str__(context, self);
+
             StringFormatSpec spec = StringFormatSpec.FromString(formatSpec);
             string digits;
 

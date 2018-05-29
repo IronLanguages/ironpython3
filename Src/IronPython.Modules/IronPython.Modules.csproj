@@ -12,10 +12,13 @@
     <CodeAnalysisRuleSet>$(AssemblyName).ruleset</CodeAnalysisRuleSet>
     <DocumentationFile>$(OutputPath)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
   </PropertyGroup>
-  <ItemGroup Condition="'$(Mono)' == 'true'">
-    <Reference Include="Mono.Posix, Version=4.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756">
+  <ItemGroup Condition=" '$(IsFullFramework)' == 'true' ">
+    <Reference Condition="'$(Mono)' == 'true'" Include="Mono.Posix">
       <SpecificVersion>False</SpecificVersion>
     </Reference>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' AND '$(OS)' != 'Windows_NT' ">
+    <PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\IronPython\IronPython.csproj" />

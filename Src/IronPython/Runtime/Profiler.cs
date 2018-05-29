@@ -332,7 +332,12 @@ namespace IronPython.Runtime {
         /// Wraps a call to a MethodInfo with profiling capture for that MethodInfo
         /// </summary>
         internal MSAst.Expression AddProfiling(MSAst.Expression/*!*/ body, MethodBase/*!*/ method) {
-            if ((method is DynamicMethod) || IgnoreMethod(method)) {
+#if FEATURE_LCG
+            if (method is DynamicMethod) {
+                return body;
+            }
+#endif
+            if (IgnoreMethod(method)) {
                 return body;
             }
             int profileIndex = GetProfilerIndex(method);

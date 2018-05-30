@@ -21,8 +21,8 @@ script:
   - dotnet restore IronPython.sln --packages ./packages
   - if [[ "$TRAVIS_OS_NAME" != "osx" ]] ; then wget https://github.com/PowerShell/PowerShell/releases/download/v6.0.2/powershell_6.0.2-1.ubuntu.14.04_amd64.deb ; fi
   - if [[ "$TRAVIS_OS_NAME" != "osx" ]] ; then sudo dpkg -i powershell_6.0.2-1.ubuntu.14.04_amd64.deb ; fi
-  - if [[ "$TRAVIS_OS_NAME" != "osx" ]] ; then ./make.ps1 ; fi
-  - if [[ "$TRAVIS_OS_NAME" != "osx" ]] ; then ./make.ps1 test-all ; fi
+  - if [[ "$TRAVIS_OS_NAME" != "osx" ]] ; then pwsh ./make.ps1 ; fi
+  - if [[ "$TRAVIS_OS_NAME" != "osx" ]] ; then pwsh ./make.ps1 test-all ; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]] ; make ; fi
   
 

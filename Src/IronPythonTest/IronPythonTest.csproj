@@ -25,6 +25,7 @@
     <PackageReference Include="Mono.Cecil" Version="0.10.0-beta6" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Cases\CTypesCPythonCasesManifest.ini" />
     <EmbeddedResource Include="Cases\IronPythonCasesManifest.ini" />
     <EmbeddedResource Include="Cases\AllCPythonCasesManifest.ini" />
     <EmbeddedResource Include="Cases\StandardCPythonCasesManifest.ini" />

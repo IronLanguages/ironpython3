@@ -15,6 +15,7 @@
     <Features>$(Features);FEATURE_CODEDOM</Features>
     <Features>$(Features);FEATURE_CONFIGURATION</Features>
     <Features>$(Features);FEATURE_CUSTOM_TYPE_DESCRIPTOR</Features>
+    <Features>$(Features);FEATURE_CTYPES</Features>
     <Features>$(Features);FEATURE_DBNULL</Features>
     <Features>$(Features);FEATURE_DRIVENOTFOUNDEXCEPTION</Features>
     <Features>$(Features);FEATURE_DYNAMIC_EXPRESSION_VISITOR</Features>

@@ -18,15 +18,15 @@ namespace IronPythonTest.Cases {
 
         [OneTimeSetUp]
         public void FixtureSetUp() {
-            this.executor = new CaseExecuter();
+            executor = new CaseExecuter();
         }
 
         [Test, TestCaseSource(typeof(StandardCPythonCaseGenerator))]
         public int StandardCPythonTests(TestInfo testcase) {
             try {
-                return this.executor.RunTest(testcase);
+                return executor.RunTest(testcase);
             } catch (Exception e) {
-                Assert.Fail(this.executor.FormatException(e));
+                Assert.Fail(executor.FormatException(e));
                 return -1;
             }
         }
@@ -38,16 +38,37 @@ namespace IronPythonTest.Cases {
 
         [OneTimeSetUp]
         public void FixtureSetUp() {
-            this.executor = new CaseExecuter();
+            executor = new CaseExecuter();
         }
 
         [Test, TestCaseSource(typeof(AllCPythonCaseGenerator))]
         public int AllCPythonTests(TestInfo testcase) {
             try {
-                Console.Error.WriteLine(testcase.Name); // write to the error stream so it appears before the test is run
-                return this.executor.RunTest(testcase);
+                TestContext.Progress.WriteLine(testcase.Name); // should be printed immediately
+                return executor.RunTest(testcase);
             } catch (Exception e) {
-                Assert.Fail(this.executor.FormatException(e));
+                Assert.Fail(executor.FormatException(e));
+                return -1;
+            }
+        }
+    }
+
+    [TestFixture(Category = "CTypesCPython")]
+    class CTypesCPythonCases {
+        private CaseExecuter executor;
+
+        [OneTimeSetUp]
+        public void FixtureSetUp() {
+            executor = new CaseExecuter();
+        }
+
+        [Test, TestCaseSource(typeof(CTypesCPythonCaseGenerator))]
+        public int CTypesCPythonTests(TestInfo testcase) {
+            try {
+                TestContext.Progress.WriteLine(testcase.Name); // should be printed immediately
+                return executor.RunTest(testcase);
+            } catch (Exception e) {
+                Assert.Fail(executor.FormatException(e));
                 return -1;
             }
         }
@@ -78,6 +99,15 @@ namespace IronPythonTest.Cases {
             string stdlib = Path.Combine(CaseExecuter.FindRoot(), "Src", "StdLib", "Lib", "test");
             return Directory.GetFiles(stdlib, "test_*.py", SearchOption.AllDirectories)
                 .Where(file => !StandardCPythonCaseGenerator.STDTESTS.Contains(Path.GetFileNameWithoutExtension(file)))
+                .Select(file => new TestInfo(Path.GetFullPath(file), this.manifest))
+                .OrderBy(testcase => testcase.Name);
+        }
+    }
+
+    class CTypesCPythonCaseGenerator : CommonCaseGenerator<CTypesCPythonCases> {
+        protected override IEnumerable<TestInfo> GetTests() {
+            string stdlib = Path.Combine(CaseExecuter.FindRoot(), "Src", "StdLib", "Lib", "ctypes", "test");
+            return Directory.GetFiles(stdlib, "test_*.py", SearchOption.AllDirectories)
                 .Select(file => new TestInfo(Path.GetFullPath(file), this.manifest))
                 .OrderBy(testcase => testcase.Name);
         }

@@ -12,7 +12,8 @@
  *
  *
  * ***************************************************************************/
-#if FEATURE_NATIVE
+
+#if FEATURE_CTYPES
 
 using System.Linq.Expressions;
 using System.Numerics;
@@ -54,7 +55,7 @@ namespace IronPython.Modules {
             
             private static int _curId = 0;
             internal static object _noResType = new object();
-            // __bool__ 
+            // __bool__
 
             /// <summary>
             /// Creates a new CFuncPtr object from a tuple.  The 1st element of the
@@ -66,7 +67,7 @@ namespace IronPython.Modules {
                 if (args == null) {
                     throw PythonOps.TypeError("expected sequence, got None");
                 } else if (args.Count != 2) {
-                    throw PythonOps.TypeError("argument 1 must be a sequence of length 2, not {0}", args.Count);
+                    throw PythonOps.TypeError($"argument 1 must be a sequence of length 2, not {args.Count}");
                 }
 
                 object nameOrOrdinal = args[0];
@@ -93,7 +94,7 @@ namespace IronPython.Modules {
                     }
 
                     if (tmpAddr == IntPtr.Zero) {
-                        throw PythonOps.AttributeError("function {0} is not defined", args[0]);
+                        throw PythonOps.AttributeError($"function {args[0]} is not defined");
                     }
                 }
 
@@ -121,10 +122,8 @@ namespace IronPython.Modules {
                     PythonType resType = myType._restype;
                     if (resType != null) {
                         if (!(resType is INativeType) || resType is PointerType) {
-                            throw PythonOps.TypeError("invalid result type {0} for callback function", ((PythonType)resType).Name);
+                            throw PythonOps.TypeError($"invalid result type {resType.Name} for callback function");
                         }
-
-                        
                     }
                 }
                 _id = Interlocked.Increment(ref _curId);
@@ -252,6 +251,12 @@ namespace IronPython.Modules {
             internal CallingConvention CallingConvention {
                 get {
                     return ((CFuncPtrType)DynamicHelpers.GetPythonType(this)).CallingConvention;
+                }
+            }
+
+            internal int Flags {
+                get {
+                    return ((CFuncPtrType)DynamicHelpers.GetPythonType(this))._flags;
                 }
             }
 
@@ -407,7 +412,7 @@ namespace IronPython.Modules {
                         binder.Throw(
                             Expression.Call(
                                 typeof(PythonOps).GetMethod(nameof(PythonOps.TypeError)),
-                                Expression.Constant($"this function takes {expected} arguments ({got} given)"),
+                                Expression.Constant(String.Format("this function takes {0} arguments ({1} given)", expected, got)),
                                 Expression.NewArrayInit(typeof(object))                                    
                             ),
                             typeof(object)
@@ -522,26 +527,22 @@ namespace IronPython.Modules {
 
                 private ArgumentMarshaller/*!*/ GetMarshaller(Expression/*!*/ expr, object value, int index, object nativeType) {
                     if (nativeType != null) {
-                        INativeType nt = nativeType as INativeType;
-                        if (nt != null) {
+                        if (nativeType is INativeType nt) {
                             return new CDataMarshaller(expr, CompilerHelpers.GetType(value), nt);
                         }
 
                         return new FromParamMarshaller(expr);
                     }
 
-                    CData data = value as CData;
-                    if (data != null) {
+                    if (value is CData data) {
                         return new CDataMarshaller(expr, CompilerHelpers.GetType(value), data.NativeType);
                     }
 
-                    NativeArgument arg = value as NativeArgument;
-                    if (arg != null) {
+                    if (value is NativeArgument arg) {
                         return new NativeArgumentMarshaller(expr);
                     }
 
-                    object val;
-                    if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out val)) {
+                    if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object val)) {
                         throw new NotImplementedException("_as_parameter");
                         //return new UserDefinedMarshaller(GetMarshaller(..., value, index));                    
                     }
@@ -669,8 +670,17 @@ namespace IronPython.Modules {
 #endif
                 }
 
+                private static SignatureHelper GetMethodSigHelper(CallingConvention convention, Type calliRetType) {
+#if NETCOREAPP2_0 || NETCOREAPP2_1
+                    var helper = typeof(SignatureHelper).GetMethod("GetMethodSigHelper", BindingFlags.Public | BindingFlags.Static, null, new Type[] { typeof(CallingConvention), typeof(Type) }, null);
+                    return (SignatureHelper)helper.Invoke(null, new object[] { convention, calliRetType });
+#else
+                    return SignatureHelper.GetMethodSigHelper(convention, calliRetType);
+#endif
+                }
+
                 private static SignatureHelper GetCalliSignature(CallingConvention convention, ArgumentMarshaller/*!*/[] sig, Type calliRetType) {
-                    SignatureHelper signature = SignatureHelper.GetMethodSigHelper(convention, calliRetType);
+                    SignatureHelper signature = GetMethodSigHelper(convention, calliRetType);
                     
                     foreach (ArgumentMarshaller argMarshaller in sig) {
                         signature.AddArgument(argMarshaller.NativeType);

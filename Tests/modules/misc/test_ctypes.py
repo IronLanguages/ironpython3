@@ -15,13 +15,11 @@
 
 import unittest
 
-from iptest import is_netcoreapp, is_posix, run_test
+from iptest import is_posix, run_test
 
-if not is_netcoreapp:
-    import ctypes
-    import ctypes.wintypes
+import ctypes
+import ctypes.wintypes
 
-@unittest.skipIf(is_netcoreapp, 'ctypes is not implemented')
 class CtypesTest(unittest.TestCase):
 
     def test_cp34892(self):

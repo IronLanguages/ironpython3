@@ -9,8 +9,7 @@ namespace IronPythonTest.Util {
         IniParser manifest;
 
         public TestManifest(Type parent) {
-            var file = parent.Assembly.GetManifestResourceStream(
-                string.Format("IronPythonTest.Cases.{0}Manifest.ini", parent.Name));
+            var file = parent.Assembly.GetManifestResourceStream($"IronPythonTest.Cases.{parent.Name}Manifest.ini");
 
             this.manifest = new IniParser(file);
         }

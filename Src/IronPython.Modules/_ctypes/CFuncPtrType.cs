@@ -12,11 +12,13 @@
  *
  *
  * ***************************************************************************/
-#if FEATURE_NATIVE
+
+#if FEATURE_CTYPES
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Numerics;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -30,8 +32,6 @@ using Microsoft.Scripting.Utils;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-
-using System.Numerics;
 
 namespace IronPython.Modules {
     /// <summary>
@@ -55,19 +55,16 @@ namespace IronPython.Modules {
             public CFuncPtrType(CodeContext/*!*/ context, string name, PythonTuple bases, PythonDictionary members)
                 : base(context, name, bases, members) {
 
-                object flags;
-                if (!members.TryGetValue("_flags_", out flags) || !(flags is int)) {
+                if (!members.TryGetValue("_flags_", out object flags) || !(flags is int)) {
                     throw PythonOps.TypeError("class must define _flags_ which must be an integer");
                 }
                 _flags = (int)flags;
 
-                object restype;
-                if (members.TryGetValue("_restype_", out restype) && (restype is PythonType)) {
+                if (members.TryGetValue("_restype_", out object restype) && (restype is PythonType)) {
                     _restype = (PythonType)restype;
                 }
 
-                object argtypes;
-                if (members.TryGetValue("_argtypes_", out argtypes) && (argtypes is PythonTuple)) {
+                if (members.TryGetValue("_argtypes_", out object argtypes) && (argtypes is PythonTuple)) {
                     PythonTuple pt = argtypes as PythonTuple;
                     _argtypes = new INativeType[pt.Count];
                     for (int i = 0; i < pt.Count; i++) {

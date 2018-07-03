@@ -121,7 +121,7 @@ namespace IronPython.Runtime.Operations {
             }
             return res;
         }
-        
+
         internal static byte GetByteStringOk(object o) {
             string s;
             Extensible<string> es;
@@ -187,6 +187,8 @@ namespace IronPython.Runtime.Operations {
                 return ((double)(float)o).ToByteChecked();
             } else if (Converter.TryConvertToIndex(o, out i)) {
                 return i.ToByteChecked();
+            } else if (o is string str && str.Length == 1) {
+                return ((int)str[0]).ToByteChecked();
             } else {
                 throw PythonOps.TypeError("an integer or string of size 1 is required");
             }

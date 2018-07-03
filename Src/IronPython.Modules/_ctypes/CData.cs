@@ -13,12 +13,11 @@
  *
  * ***************************************************************************/
 
-#if FEATURE_NATIVE
-
-using System.Numerics;
+#if FEATURE_CTYPES
 
 using System;
 using System.Diagnostics;
+using System.Numerics;
 using System.Threading;
 
 using IronPython.Runtime;

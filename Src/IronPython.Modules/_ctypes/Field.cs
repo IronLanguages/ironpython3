@@ -13,18 +13,17 @@
  *
  * ***************************************************************************/
 
-#if FEATURE_NATIVE
+#if FEATURE_CTYPES
 
 using System;
 using System.Diagnostics;
+using System.Numerics;
 
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-
-using System.Numerics;
 
 namespace IronPython.Modules {
     /// <summary>
@@ -54,7 +53,10 @@ namespace IronPython.Modules {
                 _index = index;
                 _fieldName = fieldName;
 
-                if (bits != null) {
+                // if the number of bits is the full type width, we don't
+                // need to do any masking anywhere, we may want to revisit this
+                // if the __repr__ is an issue
+                if (bits != null && bits.Value != (_fieldType.Size * 8)) {
                     _bits = bits.Value;
                     _bitsOffset = bitOffset.Value;
                 }

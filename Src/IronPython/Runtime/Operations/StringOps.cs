@@ -2101,7 +2101,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static bool endswith(string self, [BytesConversion]string suffix) {
-            return self.EndsWith(suffix);
+            return self.EndsWith(suffix, StringComparison.Ordinal);
         }
 
         //  Indexing is 0-based. Need to deal with negative indices
@@ -2120,7 +2120,7 @@ namespace IronPython.Runtime.Operations {
                 start += len;
                 if (start < 0) start = 0;
             }
-            return self.Substring(start).EndsWith(suffix);
+            return self.Substring(start).EndsWith(suffix, StringComparison.Ordinal);
         }
 
         //  With optional start, test beginning at that position (the char at that index is
@@ -2134,18 +2134,18 @@ namespace IronPython.Runtime.Operations {
                 start += len;
                 if (start < 0) start = 0;
             }
-            if (end >= len) return self.Substring(start).EndsWith(suffix);
+            if (end >= len) return self.Substring(start).EndsWith(suffix, StringComparison.Ordinal);
             else if (end < 0) {
                 end += len;
                 if (end < 0) return false;
             }
             if (end < start) return false;
-            return self.Substring(start, end - start).EndsWith(suffix);
+            return self.Substring(start, end - start).EndsWith(suffix, StringComparison.Ordinal);
         }
 
         private static bool endswith(string self, PythonTuple suffix) {
             foreach (object obj in suffix) {
-                if (self.EndsWith(GetString(obj))) {
+                if (self.EndsWith(GetString(obj), StringComparison.Ordinal)) {
                     return true;
                 }
             }
@@ -2171,7 +2171,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static bool startswith(string self, [BytesConversion]string prefix) {
-            return self.StartsWith(prefix);
+            return self.StartsWith(prefix, StringComparison.Ordinal);
         }
 
         public static bool startswith(string self, [BytesConversion]string prefix, int start) {
@@ -2181,7 +2181,7 @@ namespace IronPython.Runtime.Operations {
                 start += len;
                 if (start < 0) start = 0;
             }
-            return self.Substring(start).StartsWith(prefix);
+            return self.Substring(start).StartsWith(prefix, StringComparison.Ordinal);
         }
 
         public static bool startswith(string self, [BytesConversion]string prefix, int start, int end) {
@@ -2192,18 +2192,18 @@ namespace IronPython.Runtime.Operations {
                 start += len;
                 if (start < 0) start = 0;
             }
-            if (end >= len) return self.Substring(start).StartsWith(prefix);
+            if (end >= len) return self.Substring(start).StartsWith(prefix, StringComparison.Ordinal);
             else if (end < 0) {
                 end += len;
                 if (end < 0) return false;
             }
             if (end < start) return false;
-            return self.Substring(start, end - start).StartsWith(prefix);
+            return self.Substring(start, end - start).StartsWith(prefix, StringComparison.Ordinal);
         }
 
         private static bool startswith(string self, PythonTuple prefix) {
             foreach (object obj in prefix) {
-                if (self.StartsWith(GetString(obj))) {
+                if (self.StartsWith(GetString(obj), StringComparison.Ordinal)) {
                     return true;
                 }
             }
@@ -2698,6 +2698,5 @@ namespace IronPython.Runtime.Operations {
         public static string/*!*/ __repr__(string/*!*/ self) {
             return StringOps.Quote(self);
         }
-
     }
 }

@@ -35,6 +35,10 @@ print("Hello World")
 
 IronPython 3 targets Python 3, including the re-organized standard library, Unicode strings, and all of the other new features.
 
+## Code of Conduct
+This project has adopted the code of conduct defined by the Contributor Covenant to clarify expected behavior in our community.
+For more information see the [.NET Foundation Code of Conduct](https://dotnetfoundation.org/code-of-conduct).
+
 ## Installation
 Builds of IronPython 3 are not yet provided.
 
@@ -53,4 +57,4 @@ Since the main development is on Windows, Mono bugs may inadvertantly be introdu
 - please report them!
 
 ## Supported Platforms
-IronPython 3 targets .NET 4.5 and .NET Core 2.0.
+IronPython 3 targets .NET 4.5 and .NET Core 2.0/2.1.

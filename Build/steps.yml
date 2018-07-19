@@ -1,0 +1,84 @@
+parameters:
+  os: ''
+  preBuildSteps: []
+
+steps:
+  - powershell: |
+     # Write your powershell commands here.
+
+     $xml = [xml] (Get-Content CurrentVersion.props)
+     $major = $xml.Project.PropertyGroup.MajorVersion
+     $minor = $xml.Project.PropertyGroup.MinorVersion
+     $micro = $xml.Project.PropertyGroup.MicroVersion
+     $serial = $xml.Project.PropertyGroup.ReleaseSerial
+     $level = $xml.Project.PropertyGroup.ReleaseLevel
+
+     if($level -eq 'final') {
+         $PackageVersion = "$major.$minor.$micro"
+     } elseif($level -ne 'final' -or $serial -ne '0') {
+         $PackageVersion = "$major.$minor.$micro-$level$serial"
+     }
+
+     # store the package version to an environment variable
+     Write-Host ("##vso[task.setvariable variable=PackageVersion;isSecret=false;isOutput=true;]$PackageVersion")
+    displayName: Grab Package Version
+
+  # Install mono when running on Linux
+  - ${{ if eq(parameters.os, 'Linux') }}:
+    - task: ms-devlabs.utilitytasks.task-Shellpp.Shell++@0
+      displayName: Install Mono
+      inputs:
+        type: InlineScript
+        script: |
+
+          echo "Installing Mono"
+          sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+          sudo apt install apt-transport-https
+          echo "deb https://download.mono-project.com/repo/ubuntu stable-xenial main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
+          sudo apt update
+          sudo apt-get -yq install mono-devel
+
+  - powershell: ./make.ps1
+    displayName: Build
+
+  - powershell: ./make.ps1 test-all
+    displayName: Test
+    
+    # 32-bit tests on Windows only
+  - ${{ if eq(parameters.os, 'Windows') }}:
+    - powershell: ./make.ps1 -platform x86 test-all
+      displayName: Test 32-bit
+    
+  - task: PublishTestResults@2
+    displayName: Publish Test Results
+    inputs:
+      testRunner: VSTest
+      testResultsFiles: '**/*.trx'
+      mergeTestResults: true
+      testRunTitle: ${{ parameters.os }}
+
+  - powershell: ./make.ps1 package
+    displayName: Package
+
+  - task: CopyFiles@2
+    displayName: Copy Artifact Files
+    inputs:
+      SourceFolder: '$(Build.Repository.LocalPath)/Package/Release/Packages'
+      Contents: |
+       **/*.nupkg
+       **/*.zip
+      TargetFolder: '$(Build.ArtifactStagingDirectory)'
+    condition: and(succeededOrFailed(), eq(variables['system.pullrequest.isfork'], false))
+
+  - task: CopyFiles@2
+    displayName: Copy Build Logs
+    inputs:
+      Contents: '*.binlog'
+      TargetFolder: '$(Build.ArtifactStagingDirectory)'
+    condition: and(succeededOrFailed(), eq(variables['system.pullrequest.isfork'], false))
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Artifacts
+    inputs:
+      ArtifactName: ${{ format('{0} Artifacts', parameters.os) }}
+    condition: and(succeededOrFailed(), eq(variables['system.pullrequest.isfork'], false))

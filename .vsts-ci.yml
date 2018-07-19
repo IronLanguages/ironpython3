@@ -1,0 +1,21 @@
+phases:
+- phase: Windows
+  queue: Hosted VS2017
+  steps:
+  - template: Build/steps.yml
+    parameters:
+      os: 'Windows'
+
+- phase: Linux
+  queue: Hosted Linux Preview
+  steps:
+  - template: Build/steps.yml
+    parameters:
+      os: 'Linux'
+
+- phase: macOS
+  queue: Hosted macOS Preview
+  steps:
+  - template: Build/steps.yml
+    parameters:
+      os: 'macOS'

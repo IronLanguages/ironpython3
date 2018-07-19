@@ -1,6 +1,7 @@
 phases:
 - phase: Windows
   queue: Hosted VS2017
+    timeoutInMinutes: 120
   steps:
   - template: Build/steps.yml
     parameters:
@@ -8,6 +9,7 @@ phases:
 
 - phase: Linux
   queue: Hosted Linux Preview
+    timeoutInMinutes: 120
   steps:
   - template: Build/steps.yml
     parameters:
@@ -15,6 +17,7 @@ phases:
 
 - phase: macOS
   queue: Hosted macOS Preview
+    timeoutInMinutes: 120
   steps:
   - template: Build/steps.yml
     parameters:

@@ -27,7 +27,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		IronPython.nuspec = IronPython.nuspec
 		IronPython.StdLib.nuspec = IronPython.StdLib.nuspec
 		LICENSE = LICENSE
-		make.cmd = make.cmd
 		Makefile = Makefile
 		NuGet.config = NuGet.config
 		README = README

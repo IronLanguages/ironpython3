@@ -398,23 +398,25 @@ namespace IronPython.Modules {
             return stat(path);
         }
 
-#if FEATURE_WINDOWS
-        public static void symlink(CodeContext context, string source, string link_name) {
-            // TODO: implement me!
-            throw new NotImplementedException();
-        }
-#elif FEATURE_UNIX && FEATURE_NATIVE
-        public static void symlink(CodeContext context, string source, string link_name) {
+#if FEATURE_NATIVE
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        public static void symlink(string source, string link_name) {
             int result = Mono.Unix.Native.Syscall.symlink(source, link_name);
             if (result != 0) {
                 throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 0, source, link_name);
             }
         }
 
-        public static PythonTuple uname(CodeContext context) {
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        public static PythonTuple uname() {
             Mono.Unix.Native.Utsname info;
             Mono.Unix.Native.Syscall.uname(out info);
             return PythonTuple.MakeTuple(info.sysname, info.nodename, info.release, info.version, info.machine);
+        }
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        public static uint geteuid() {
+            return Mono.Unix.Native.Syscall.geteuid();
         }
 #endif
 
@@ -834,7 +836,7 @@ namespace IronPython.Modules {
 
         [PythonType, DontMapIEnumerableToIter]
         public class stat_result : IList, IList<object> {
-            private readonly object _mode, _size, _atime, _mtime, _ctime, _st_atime, _st_mtime, _st_ctime, _ino, _dev, _nlink, _uid, _gid;
+            private readonly object _mode, _atime, _mtime, _ctime, _dev, _nlink;
 
             public const int n_fields = 13;
             public const int n_sequence_fields = 10;
@@ -844,17 +846,30 @@ namespace IronPython.Modules {
                 _mode = mode;
             }
 
-            internal stat_result(int mode, BigInteger size, BigInteger st_atime, BigInteger st_mtime, BigInteger st_ctime) {
-                _mode = mode;
-                _size = size;
-                _st_atime = _atime = TryShrinkToInt(st_atime);
-                _st_mtime = _mtime = TryShrinkToInt(st_mtime);
-                _st_ctime = _ctime = TryShrinkToInt(st_ctime);
-
-                _ino = _dev = _nlink = _uid = _gid = ScriptingRuntimeHelpers.Int32ToObject(0);                
+            internal stat_result(Mono.Unix.Native.Stat stat, int? mode = null) {
+                _mode = mode ?? (int)stat.st_mode;
+                st_ino = stat.st_ino;
+                _dev = stat.st_dev;
+                _nlink = stat.st_nlink;
+                st_uid = stat.st_uid;
+                st_gid = stat.st_gid;
+                st_size = stat.st_size;
+                st_atime = _atime = stat.st_atime;
+                st_mtime = _mtime = stat.st_mtime;
+                st_ctime = _ctime = stat.st_ctime;
             }
 
-            public stat_result(CodeContext/*!*/ context, IList statResult, PythonDictionary dict=null) {
+            internal stat_result(int mode, BigInteger size, BigInteger st_atime, BigInteger st_mtime, BigInteger st_ctime) {
+                _mode = mode;
+                st_size = size;
+                this.st_atime = _atime = TryShrinkToInt(st_atime);
+                this.st_mtime = _mtime = TryShrinkToInt(st_mtime);
+                this.st_ctime = _ctime = TryShrinkToInt(st_ctime);
+
+                st_ino = _dev = _nlink = st_uid = st_gid = ScriptingRuntimeHelpers.Int32ToObject(0);
+            }
+
+            public stat_result(CodeContext/*!*/ context, IList statResult, [DefaultParameterValue(null)]PythonDictionary dict) {
                 // dict is allowed by CPython's stat_result, but doesn't seem to do anything, so we ignore it here.
 
                 if (statResult.Count < 10) {
@@ -862,39 +877,39 @@ namespace IronPython.Modules {
                 }
 
                 _mode = statResult[0];
-                _ino = statResult[1];
+                st_ino = statResult[1];
                 _dev = statResult[2];
                 _nlink = statResult[3];
-                _uid = statResult[4];
-                _gid = statResult[5];
-                _size = statResult[6];
+                st_uid = statResult[4];
+                st_gid = statResult[5];
+                st_size = statResult[6];
                 _atime = statResult[7];
                 _mtime = statResult[8];
                 _ctime = statResult[9];
 
                 object dictTime;
                 if (statResult.Count >= 11) {
-                    _st_atime = TryShrinkToInt(statResult[10]);
+                    st_atime = TryShrinkToInt(statResult[10]);
                 } else if (TryGetDictValue(dict, "st_atime", out dictTime)) {
-                    _st_atime = dictTime;
+                    st_atime = dictTime;
                 } else {
-                    _st_atime = TryShrinkToInt(_atime);
+                    st_atime = TryShrinkToInt(_atime);
                 }
 
                 if (statResult.Count >= 12) {
-                    _st_mtime = TryShrinkToInt(statResult[11]);
+                    st_mtime = TryShrinkToInt(statResult[11]);
                 } else if (TryGetDictValue(dict, "st_mtime", out dictTime)) {
-                    _st_mtime = dictTime;
-                } else { 
-                    _st_mtime = TryShrinkToInt(_mtime);
+                    st_mtime = dictTime;
+                } else {
+                    st_mtime = TryShrinkToInt(_mtime);
                 }
 
                 if (statResult.Count >= 13) {
-                    _st_ctime = TryShrinkToInt(statResult[12]);
+                    st_ctime = TryShrinkToInt(statResult[12]);
                 } else if (TryGetDictValue(dict, "st_ctime", out dictTime)) {
-                    _st_ctime = dictTime;
-                } else { 
-                    _st_ctime = TryShrinkToInt(_ctime);
+                    st_ctime = dictTime;
+                } else {
+                    st_ctime = TryShrinkToInt(_ctime);
                 }
             }
 
@@ -912,70 +927,29 @@ namespace IronPython.Modules {
                 if (!(value is BigInteger)) {
                     return value;
                 }
-                
+
                 return BigIntegerOps.__int__((BigInteger)value);
             }
 
-            public object st_atime {
-                get {
-                    return _st_atime;
-                }
-            }
+            public object st_atime { get; }
 
-            public object st_ctime {
-                get {
-                    return _st_ctime;
-                }
-            }
+            public object st_ctime { get; }
 
+            public object st_mtime { get; }
 
-            public object st_mtime {
-                get {
-                    return _st_mtime;
-                }
-            }
+            public object st_dev => TryShrinkToInt(_dev);
 
-            public object st_dev {
-                get {
-                    return TryShrinkToInt(_dev);
-                }
-            }
+            public object st_gid { get; }
 
-            public object st_gid {
-                get {
-                    return _gid;
-                }
-            }
+            public object st_ino { get; }
 
-            public object st_ino {
-                get {
-                    return _ino;
-                }
-            }
+            public object st_mode => TryShrinkToInt(_mode);
 
-            public object st_mode {
-                get {
-                    return TryShrinkToInt(_mode);
-                }
-            }
+            public object st_nlink => TryShrinkToInt(_nlink);
 
-            public object st_nlink {
-                get {
-                    return TryShrinkToInt(_nlink);
-                }
-            }
+            public object st_size { get; }
 
-            public object st_size {
-                get {
-                    return _size;
-                }
-            }
-
-            public object st_uid {
-                get {
-                    return _uid;
-                }
-            }
+            public object st_uid { get; }
 
             public static PythonTuple operator +(stat_result stat, object tuple) {
                 PythonTuple tupleObj = tuple as PythonTuple;
@@ -1075,6 +1049,10 @@ namespace IronPython.Modules {
                 get {
                     return MakeTuple()[slice];
                 }
+            }
+
+            public object __getslice__(int start, int stop) {
+                return MakeTuple().__getslice__(start, stop);
             }
 
             public int __len__() {
@@ -1278,8 +1256,6 @@ namespace IronPython.Modules {
                 return LightExceptions.Throw(PythonOps.TypeError("expected string, got NoneType"));
             }
 
-            stat_result sr;
-
             try {
                 FileInfo fi = new FileInfo(path);
                 int mode = 0;
@@ -1295,25 +1271,38 @@ namespace IronPython.Modules {
                         mode |= S_IEXEC;
                     }
                 } else {
-                    return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, "file does not exist: " + path, null, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND));
+                    return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._WindowsError.ERROR_PATH_NOT_FOUND, "file does not exist: " + path));
                 }
 
-                long st_atime = (long)PythonTime.TicksToTimestamp(fi.LastAccessTime.ToUniversalTime().Ticks);
-                long st_ctime = (long)PythonTime.TicksToTimestamp(fi.CreationTime.ToUniversalTime().Ticks);
-                long st_mtime = (long)PythonTime.TicksToTimestamp(fi.LastWriteTime.ToUniversalTime().Ticks);
                 mode |= S_IREAD;
                 if ((fi.Attributes & FileAttributes.ReadOnly) == 0) {
                     mode |= S_IWRITE;
                 }
 
-                sr = new stat_result(mode, size, st_atime, st_mtime, st_ctime);
+                if (Environment.OSVersion.Platform == PlatformID.Unix) {
+                    var stat = statUnix(mode);
+                    if (stat != null) return stat;
+                }
+
+                long st_atime = (long)PythonTime.TicksToTimestamp(fi.LastAccessTime.ToUniversalTime().Ticks);
+                long st_ctime = (long)PythonTime.TicksToTimestamp(fi.CreationTime.ToUniversalTime().Ticks);
+                long st_mtime = (long)PythonTime.TicksToTimestamp(fi.LastWriteTime.ToUniversalTime().Ticks);
+
+                return new stat_result(mode, size, st_atime, st_mtime, st_ctime);
             } catch (ArgumentException) {
-                return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_INVALID_NAME, "The path is invalid: " + path, null, PythonExceptions._OSError.ERROR_INVALID_NAME));
+                return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._WindowsError.ERROR_INVALID_NAME, "The path is invalid: " + path));
             } catch (Exception e) {
                 return LightExceptions.Throw(ToPythonException(e, path));
             }
 
-            return sr;
+            // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Posix assembly on Windows.
+            stat_result statUnix(int mode) {
+                if (Mono.Unix.Native.Syscall.stat(path, out Mono.Unix.Native.Stat buf) == 0) {
+                    // TODO: get rid of the mode override
+                    return new stat_result(buf, mode);
+                }
+                return null;
+            }
         }
 
         public static string strerror(int code) {

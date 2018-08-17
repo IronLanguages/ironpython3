@@ -55,9 +55,6 @@ using System.Security;
 //   (*) Delay Signing is an advanced option - see the Microsoft .NET Framework
 //       documentation for more information on this.
 //
-#if FEATURE_WINDOWS
-[assembly: AssemblyKeyName("")]
-#endif
 [assembly: SecurityTransparent]
 [assembly: CLSCompliant(false)]
 [assembly: ComVisible(false)]

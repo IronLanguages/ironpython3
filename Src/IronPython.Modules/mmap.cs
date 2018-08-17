@@ -1,23 +1,11 @@
-﻿/* ****************************************************************************
- *
- * Copyright (c) Microsoft Corporation. 
- *
- * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
- * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Apache License, Version 2.0, please send an email to 
- * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Apache License, Version 2.0.
- *
- * You must not remove this notice, or any other, from this software.
- *
- *
- * ***************************************************************************/
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information.
 
 #if FEATURE_MMAP
 
 using System;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.IO.MemoryMappedFiles;
@@ -47,15 +35,19 @@ namespace IronPython.Modules {
         private const int SEEK_CUR = 1;
         private const int SEEK_END = 2;
 
-#if FEATURE_UNIX
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         public const int MAP_SHARED = 1;
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         public const int MAP_PRIVATE = 2;
 
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         public const int PROT_NONE = 0;
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         public const int PROT_READ = 1;
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         public const int PROT_WRITE = 2;
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         public const int PROT_EXEC = 4;
-#endif
 
         public static readonly int ALLOCATIONGRANULARITY = GetAllocationGranularity();
         public static readonly int PAGESIZE = System.Environment.SystemPageSize;
@@ -89,10 +81,16 @@ namespace IronPython.Modules {
         }
 
         private static Exception WindowsError(int code) {
-            return PythonExceptions.CreateThrowable(PythonExceptions.OSError, code, FormatError(code), null, code);
+            return PythonExceptions.CreateThrowable(PythonExceptions.OSError, code, FormatError(code));
         }
 
-        [PythonType]
+        [PythonType("mmap"), PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        public class MmapUnix : mmap {
+            public MmapUnix(CodeContext/*!*/ context, int fileno, long length, string tagname = null, int access = ACCESS_WRITE, long offset = 0, int flags = MAP_SHARED, int prot = PROT_WRITE | PROT_READ)
+                : base(context, fileno, length, tagname, access, offset) { }
+        }
+
+        [PythonType("mmap"), PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public class mmap {
             private MemoryMappedFile _file;
             private MemoryMappedViewAccessor _view;
@@ -105,19 +103,8 @@ namespace IronPython.Modules {
 
             private volatile bool _isClosed;
             private int _refCount = 1;
-            
-            public mmap(
-                CodeContext/*!*/ context,
-                int fileno,
-                long length,
-                string tagname=null,
-                int access=ACCESS_WRITE,
-                long offset=0L
-#if FEATURE_UNIX
-                ,int flags=MAP_SHARED,
-                int prot=PROT_WRITE|PROT_READ
-#endif
-            ) {
+
+            public mmap(CodeContext/*!*/ context, int fileno, long length, string tagname = null, int access = ACCESS_WRITE, long offset = 0) {
                 switch (access) {
                     case ACCESS_READ:
                         _fileAccess = MemoryMappedFileAccess.Read;
@@ -377,11 +364,11 @@ namespace IronPython.Modules {
                 if (s.Length > findLength) {
                     return -1;
                 }
-                
+
                 int index = -1;
                 int bufferLength = Math.Max(s.Length, PAGESIZE);
                 CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
-                
+
                 if (findLength <= bufferLength * 2) {
                     // In this case, the search area is not significantly larger than s, so we only need to
                     // allocate a single string to search through.
@@ -397,7 +384,7 @@ namespace IronPython.Modules {
                     // reading the same parts of the stream twice.
                     byte[] buffer0 = new byte[bufferLength];
                     byte[] buffer1 = new byte[bufferLength];
-                    
+
                     _view.ReadArray(start, buffer0, 0, bufferLength);
                     int bytesRead = _view.ReadArray(start + bufferLength, buffer1, 0, bufferLength);
 
@@ -458,7 +445,7 @@ namespace IronPython.Modules {
 
                     if (count <= PAGESIZE) {
                         byte[] buffer = new byte[count];
-                        
+
                         MoveWorker(buffer, src, dest, (int)count);
                     } else if (src < dest) {
                         byte[] buffer = new byte[PAGESIZE];
@@ -544,7 +531,7 @@ namespace IronPython.Modules {
                     StringBuilder res = new StringBuilder();
 
                     long pos = Position;
-                    
+
                     char cur = '\0';
                     while (cur != '\n' && pos < _view.Capacity) {
                         cur = (char)_view.ReadByte(pos);
@@ -679,7 +666,7 @@ namespace IronPython.Modules {
 
                     _view.ReadArray(start, buffer0, 0, bufferLength);
                     int bytesRead = _view.ReadArray(start + bufferLength, buffer1, 0, remainder);
-                    
+
                     while (findLength >= 0) {
                         string findString = GetString(buffer0, buffer1, bytesRead);
                         index = c.LastIndexOf(findString, s, CompareOptions.Ordinal);
@@ -701,7 +688,7 @@ namespace IronPython.Modules {
                 return index == -1 ? -1 : ReturnLong(index + start);
             }
 
-            public void seek(long pos, int whence=SEEK_SET) {
+            public void seek(long pos, int whence = SEEK_SET) {
                 using (new MmapLocker(this)) {
                     switch (whence) {
                         case SEEK_SET:
@@ -768,7 +755,7 @@ namespace IronPython.Modules {
                 }
             }
 
-#region Private implementation details
+            #region Private implementation details
 
             private long Position {
                 get {
@@ -840,8 +827,8 @@ namespace IronPython.Modules {
 
             #endregion
 
-#region Synchronization
-            
+            #region Synchronization
+
             private void EnsureOpen() {
                 if (_isClosed) {
                     throw PythonOps.ValueError("mmap closed or invalid");
@@ -857,7 +844,7 @@ namespace IronPython.Modules {
                     _mmap.EnsureOpen();
                 }
 
-#region IDisposable Members
+                #region IDisposable Members
 
                 public void Dispose() {
                     _mmap.CloseWorker();
@@ -869,7 +856,7 @@ namespace IronPython.Modules {
             #endregion
         }
 
-#region P/Invoke for allocation granularity
+        #region P/Invoke for allocation granularity
 
         [StructLayout(LayoutKind.Sequential)]
         private struct SYSTEM_INFO {
@@ -885,7 +872,7 @@ namespace IronPython.Modules {
             internal short wProcessorRevision;
         }
 
-        [DllImport("kernel32", SetLastError=true)]
+        [DllImport("kernel32", SetLastError = true)]
         private static extern void GetSystemInfo(ref SYSTEM_INFO lpSystemInfo);
 
         private static int GetAllocationGranularity() {
@@ -904,6 +891,7 @@ namespace IronPython.Modules {
         }
 
         #endregion
+
         private static MemoryMappedFile CreateFromFile(System.IO.FileStream fileStream, string mapName, long capacity, System.IO.MemoryMappedFiles.MemoryMappedFileAccess access, System.IO.HandleInheritability inheritability, bool leaveOpen) {
 #if NET45
             return MemoryMappedFile.CreateFromFile(fileStream, mapName, capacity, access, null, inheritability, leaveOpen);

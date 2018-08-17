@@ -18,7 +18,7 @@ Test cases try to access a .NET type.
 
 import unittest
 
-from iptest import IronPythonTestCase, skipUnlessIronPython, is_netcoreapp, is_mono, run_test
+from iptest import IronPythonTestCase, skipUnlessIronPython, is_netcoreapp, is_netcoreapp20, is_mono, run_test
 
 keywords = ['pass', 'import', 'def', 'exec', 'except']
 bultin_funcs = ['abs', 'type', 'file']
@@ -202,8 +202,11 @@ class ReachTypeTest(IronPythonTestCase):
     #@skip("multiple_execute")
     def test_type_forward2(self):
         self.add_clr_assemblies("typeforwarder2")
-        from NSwForwardee2 import *      
-        self.assertTrue('Foo_SPECIAL' not in dir())      # !!!
+        from NSwForwardee2 import *
+        if is_netcoreapp and not is_netcoreapp20:
+            self.assertTrue('Foo_SPECIAL' in dir())
+        else:
+            self.assertTrue('Foo_SPECIAL' not in dir())      # !!!
         self.assertTrue('Bar_SPECIAL' in dir())
         
         import NSwForwardee2

@@ -250,9 +250,10 @@ namespace IronPython.Modules {
             return PythonOps.LookupEncodingError(context, name);
         }
 
-#if FEATURE_ENCODING && FEATURE_WINDOWS
+#if FEATURE_ENCODING
         #region MBCS Functions
 
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static PythonTuple mbcs_decode(CodeContext/*!*/ context, string input, string errors="strict", bool ignored=false) {
             return PythonTuple.MakeTuple(
                 StringOps.decode(context, input, Encoding.Default, errors),
@@ -260,6 +261,7 @@ namespace IronPython.Modules {
             );
         }
 
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static PythonTuple mbcs_encode(CodeContext/*!*/ context, string input, string errors="strict") {
             return PythonTuple.MakeTuple(
                 StringOps.encode(context, input, Encoding.Default, errors),

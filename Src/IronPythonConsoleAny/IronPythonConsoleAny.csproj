@@ -1,29 +1,47 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="$(ProjectDir)..\..\Build\Common.proj" />
+
   <PropertyGroup>
-    <TargetFrameworks>net45;netcoreapp2.0</TargetFrameworks>
-    <PlatformTarget>anycpu</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
-    <ProjectGuid>{F1D861C5-D9D5-4CDA-968B-8275F5D9F6D2}</ProjectGuid>
+    <TargetFrameworks>net45;netcoreapp2.0;netcoreapp2.1</TargetFrameworks>
     <OutputType>Exe</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>IronPythonConsole</RootNamespace>
     <AssemblyName>ipy</AssemblyName>
     <ApplicationIcon>..\IronPythonConsole\ipy.ico</ApplicationIcon>
     <CodeAnalysisRuleSet>IronPythonConsoleAny.ruleset</CodeAnalysisRuleSet>
-    <CopyLocalLockFileAssemblies Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">true</CopyLocalLockFileAssemblies>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\IronPython\IronPython.csproj" />
     <ProjectReference Include="..\IronPython.Modules\IronPython.Modules.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>
+
   <ItemGroup>
     <Compile Include="..\IronPythonConsole\Properties\AssemblyInfo.cs" Link="Properties\AssemblyInfo.cs" />
     <Compile Include="..\AssemblyVersion.cs" Link="Properties\AssemblyVersion.cs" />
     <Compile Include="..\IronPythonConsole\Console.cs" Link="Console.cs" />
   </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' OR '$(TargetFramework)' == 'netcoreapp2.1' ">
+    <Content Include="ipy.bat">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ipy.sh">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' OR '$(TargetFramework)' == 'netcoreapp2.1' ">
+    <StageItem Include="ipy.bat" />
+    <StageItem Include="ipy.sh" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' OR '$(TargetFramework)' == 'netcoreapp2.1' ">
+    <LateStageItem Include="$(TargetDir)\%2A%2A\%2A.runtimeconfig.json" />
+    <LateStageitem Include="$(TargetDir)\%2A%2A\System.%2A.dll" />
+  </ItemGroup>
+
   <Import Project="$(BeforeTargetFiles)" />
   <Target Name="BeforeBuildStarts" BeforeTargets="BeforeBuild" DependsOnTargets="$(BeforeTargets);GenerateCurrentVersion" />
   <ItemGroup>
@@ -33,22 +51,7 @@
     <Compile Remove="Properties\BuildInfo.Generated.cs" />
     <Compile Include="Properties\BuildInfo.Generated.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
-    <StageItem Include="ipy.bat" />
-    <StageItem Include="ipy.sh" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
-    <Content Include="ipy.bat">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ipy.sh">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
-    <LateStageItem Include="$(TargetDir)\%2A%2A\%2A.runtimeconfig.json" />
-    <LateStageitem Include="$(TargetDir)\%2A%2A\System.%2A.dll" />
-  </ItemGroup>
   <Import Project="$(AfterTargetFiles)" />
   <Target Name="AfterBuildEnds" AfterTargets="AfterBuild" DependsOnTargets="$(AfterTargets)" />
+
 </Project>

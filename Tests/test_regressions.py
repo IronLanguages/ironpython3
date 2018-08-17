@@ -1,17 +1,7 @@
-#####################################################################################
-#
-#  Copyright (c) Microsoft Corporation. All rights reserved.
-#
-# This source code is subject to terms and conditions of the Apache License, Version 2.0. A
-# copy of the license can be found in the License.html file at the root of this distribution. If
-# you cannot locate the  Apache License, Version 2.0, please send an email to
-# ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound
-# by the terms of the Apache License, Version 2.0.
-#
-# You must not remove this notice, or any other, from this software.
-#
-#
-#####################################################################################
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the Apache 2.0 License.
+# See the LICENSE file in the project root for more information.
+
 
 """
 This module consists of regression tests for CodePlex and Dev10 IronPython bugs
@@ -33,7 +23,7 @@ from iptest import IronPythonTestCase, is_netcoreapp, is_cli, is_posix, run_test
 
 class RegressionTest(IronPythonTestCase):
 
-    @unittest.skipIf(is_netcoreapp, 'no System.AppDomain')
+    @unittest.skipIf(is_netcoreapp, 'no System.AppDomain.DoCallBack')
     @skipUnlessIronPython()
     def test_cp18345(self):
         import System
@@ -77,6 +67,32 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
 
         os.unlink(test_file_name)
         os.unlink(test_log_name)
+
+    def test_cp17274(self):
+        class KOld:
+            def __init__(self):
+                self.__doc__ = "KOld doc"
+
+        class KNew(object):
+            def __init__(self):
+                self.__doc__ = "KNew doc"
+
+        class KNewDerived(KNew, KOld):
+            def method(self):
+                self.__doc__ = "KNewDerived doc"
+
+        class KNewDerivedSpecial(int):
+            def __init__(self):
+                self.__doc__ = "KNewDerivedSpecial doc"
+
+        self.assertEqual(KOld().__doc__, "KOld doc")
+        self.assertEqual(KNew().__doc__, "KNew doc")
+        k = KNewDerived()
+        self.assertEqual(k.__doc__, "KNew doc")
+        k.method()
+        self.assertEqual(k.__doc__, "KNewDerived doc")
+        self.assertEqual(KNewDerivedSpecial().__doc__, "KNewDerivedSpecial doc")
+
 
     @skipUnlessIronPython()
     def test_cp16831(self):
@@ -417,6 +433,7 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
         self.assertEqual(errno.errorcode[2],
                 "ENOENT")
 
+    @unittest.skipIf(is_netcoreapp, 'https://github.com/IronLanguages/ironpython2/issues/349')
     @unittest.skipIf(is_posix, 'Test does not work on Mono')
     def test_cp24692(self):
         import errno, os, stat
@@ -426,7 +443,7 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
             os.chmod(dir_name, stat.S_IREAD)
             try:
                 os.rmdir(dir_name)
-            except WindowsError, e:
+            except WindowsError as e:
                 pass
             self.assertEqual(e.errno, errno.EACCES)
         finally:
@@ -505,7 +522,7 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
         self.assertRaisesRegexp(TypeError, "f\(\) got multiple values for keyword argument 'a'",
                             lambda: f(1, a=3))
 
-    @unittest.skipIf(is_netcoreapp, 'no System.Drawing.Pen')
+    @unittest.skipIf(is_netcoreapp, 'requires System.Drawing.Common dependency')
     @skipUnlessIronPython()
     def test_cp24802(self):
         import clr
@@ -892,7 +909,7 @@ class C:
             help(gh1435.someMethod4)
         self.assertTrue('\n'.join(trapper.messages), expected)
 
-    @unittest.skipIf(is_netcoreapp, 'TODO: figure out')
+    @unittest.skipIf(is_netcoreapp, 'https://github.com/IronLanguages/ironpython2/issues/373')
     def test_gh278(self):
         import _random
         r = _random.Random()
@@ -1125,5 +1142,116 @@ class C:
                 self.assertEqual(f.read(), "hyv")
         finally:
             os.remove(path)
+
+    @skipUnlessIronPython()
+    def test_ipy2_gh39(self):
+        """https://github.com/IronLanguages/ironpython2/issues/39"""
+
+        from System.Collections.Generic import List
+
+        rng = range(10000)
+        lst = List[object](rng)
+        it = iter(lst)
+
+        # Loop compilation occurs after 100 iterations, however it occurs in parallel.
+        # Use a number >> 100 so that we actually hit the compiled code.
+        for i in rng:
+            self.assertEqual(i, next(it))
+
+    @skipUnlessIronPython()
+    def test_ipy2_gh25(self):
+        """https://github.com/IronLanguages/ironpython2/issues/25"""
+
+        # this is not available on Linux systems
+        if is_posix:
+            self.assertRaises(AttributeError, lambda: os.startfile('/bin/bash'))
+        else:
+            self.assertTrue(hasattr(os, 'startfile'))
+
+    def test_ipy2_gh437(self):
+        """https://github.com/IronLanguages/ironpython2/issues/437"""
+        import weakref
+        class SomeWeakReferenceableObject(object): pass
+
+        o = SomeWeakReferenceableObject()
+        x = [weakref.ref(o) for i in range(10)]
+        self.assertEqual(weakref.getweakrefcount(o), 1)
+        
+    def test_gh370(self):
+        """https://github.com/IronLanguages/ironpython2/issues/370"""
+        from xml.etree import ElementTree as ET
+        from StringIO import StringIO
+        x = ET.iterparse(StringIO('<root/>'))
+        y = x.next()
+        self.assertTrue(y[0] == 'end' and y[1].tag == 'root')
+
+    def test_gh463(self):
+        """https://github.com/IronLanguages/ironpython2/issues/463"""
+        import plistlib
+        x = '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>A</key><string>B</string></dict></plist>'
+        self.assertEquals(plistlib.readPlistFromString(x), {'A': 'B'})
+
+    def test_gh483(self):
+        """https://github.com/IronLanguages/ironpython2/issues/463"""
+        import ast
+        tree = ast.parse("print('hello world')")
+        c = compile(tree, filename="<ast>", mode="exec")
+        self.assertEqual(c.co_filename, "<ast>")
+
+    def test_gh34(self):
+        """https://github.com/IronLanguages/ironpython2/issues/34"""
+        from collections import OrderedDict
+        
+        class Example(OrderedDict):
+            def __eq__(self, other):
+                return True
+
+        e = Example()
+        o = OrderedDict(a=1)
+        
+        self.assertTrue(e == o, 'e != o')
+        self.assertTrue(o == e, 'o != e')
+        
+        class test(str):
+            def __eq__(self,other):
+                return True
+
+        self.assertTrue("a" == test("b"), 'strings are not equal')
+
+    def test_traceback_stack(self):
+        import sys
+        import traceback
+
+        def C():
+            raise Exception
+
+        def B():
+            C()
+
+        def A():
+            try:
+                B()
+            except:
+                return sys.exc_info()[2]
+
+        lineno = C.func_code.co_firstlineno
+        tb = A()
+
+        a = traceback.extract_tb(tb)
+        b = traceback.extract_stack(tb.tb_frame, 1)
+        self.assertEqual(a, [(__file__, 8+lineno, 'A', 'B()'), (__file__, 4+lineno, 'B', 'C()'), (__file__, 1+lineno, 'C', 'raise Exception')])
+        self.assertEqual([x[2] for x in b], ['A']) # only check that we're in the proper function, the rest does not work properly
+
+        tb = tb.tb_next
+        a = traceback.extract_tb(tb)
+        b = traceback.extract_stack(tb.tb_frame, 2)
+        self.assertEqual(a, [(__file__, 4+lineno, 'B', 'C()'), (__file__, 1+lineno, 'C', 'raise Exception')])
+        self.assertEqual([x[2] for x in b], ['A', 'B']) # only check that we're in the proper function, the rest does not work properly
+
+        tb = tb.tb_next
+        a = traceback.extract_tb(tb)
+        b = traceback.extract_stack(tb.tb_frame, 3)
+        self.assertEqual(a, [(__file__, 1+lineno, 'C', 'raise Exception')])
+        self.assertEqual([x[2] for x in b], ['A', 'B', 'C']) # only check that we're in the proper function, the rest does not work properly
 
 run_test(__name__)

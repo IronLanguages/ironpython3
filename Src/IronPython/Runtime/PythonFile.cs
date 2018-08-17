@@ -1069,18 +1069,22 @@ namespace IronPython.Runtime {
 
             var inPipeFile = new PythonFile(context);
             var outPipeFile = new PythonFile(context);
-#if FEATURE_WINDOWS
-            var inPipe = new AnonymousPipeServerStream(PipeDirection.In);
-            inPipeFile.InitializePipe(inPipe, "r", encoding);
-
-            var outPipe = new AnonymousPipeClientStream(PipeDirection.Out, inPipe.ClientSafePipeHandle);
-            outPipeFile.InitializePipe(outPipe, "w", encoding);
-#else
-            Mono.Unix.UnixPipes pipes = Mono.Unix.UnixPipes.CreatePipes();
-            inPipeFile.InitializePipe(pipes.Reading, "r", encoding);
-            outPipeFile.InitializePipe(pipes.Writing, "w", encoding);
-#endif
+            if (Environment.OSVersion.Platform == PlatformID.Unix) {
+                InitializePipesUnix();
+            } else {
+                var inPipe = new AnonymousPipeServerStream(PipeDirection.In);
+                inPipeFile.InitializePipe(inPipe, "r", encoding);
+                var outPipe = new AnonymousPipeClientStream(PipeDirection.Out, inPipe.ClientSafePipeHandle);
+                outPipeFile.InitializePipe(outPipe, "w", encoding);
+            }
             return new [] {inPipeFile, outPipeFile};
+
+            // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Posix assembly on Windows.
+            void InitializePipesUnix() {
+                Mono.Unix.UnixPipes pipes = Mono.Unix.UnixPipes.CreatePipes();
+                inPipeFile.InitializePipe(pipes.Reading, "r", encoding);
+                outPipeFile.InitializePipe(pipes.Writing, "w", encoding);
+            }
         }
 
         [PythonHidden]
@@ -1389,13 +1393,12 @@ namespace IronPython.Runtime {
                 handle = ((PipeStream)stream).SafePipeHandle.DangerousGetHandle().ToPython();
                 return true;
             }
-#if FEATURE_UNIX
-            if (stream is Mono.Unix.UnixStream) {
-                handle = ((Mono.Unix.UnixStream)stream).Handle;
-                return true;
+            if (Environment.OSVersion.Platform == PlatformID.Unix) {
+                handle = GetFileHandleUnix();
+                if (handle != null) return true;
             }
 #endif
-#endif
+
             // if all else fails try reflection
             var sfh = stream.GetType().GetField("_handle", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(stream);
             if (sfh is SafeFileHandle) {
@@ -1405,6 +1408,14 @@ namespace IronPython.Runtime {
 
             handle = null;
             return false;
+
+            // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Posix assembly on Windows.
+            object GetFileHandleUnix() {
+                if (stream is Mono.Unix.UnixStream) {
+                    return ((Mono.Unix.UnixStream)stream).Handle;
+                }
+                return null;
+            }
         }
 
         // Enumeration of each stream mode.

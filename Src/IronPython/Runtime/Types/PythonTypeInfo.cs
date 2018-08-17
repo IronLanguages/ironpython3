@@ -1016,7 +1016,7 @@ namespace IronPython.Runtime.Types {
 
                         MethodTracker method = (MethodTracker)mt;
                         if ((method.Method.Attributes & MethodAttributes.NewSlot) != 0 ||
-                            method.Method.IsDefined(typeof(PythonHiddenAttribute), false)) {
+                            PythonHiddenAttribute.IsHidden(method.Method)) {
                             continue;
                         }
 

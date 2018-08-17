@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <WpfReferences Condition="'$(WpfReferences)' == ''">$(SolutionDir)..\Util\References\WPF\4.0</WpfReferences>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <IsFullFramework>true</IsFullFramework>
   </PropertyGroup>
@@ -17,8 +16,8 @@
     <Features>$(Features);FEATURE_CODEDOM</Features>
     <Features>$(Features);FEATURE_COM</Features>
     <Features>$(Features);FEATURE_CONFIGURATION</Features>
-    <Features>$(Features);FEATURE_CUSTOM_TYPE_DESCRIPTOR</Features>
     <Features>$(Features);FEATURE_CTYPES</Features>
+    <Features>$(Features);FEATURE_CUSTOM_TYPE_DESCRIPTOR</Features>
     <Features>$(Features);FEATURE_DBNULL</Features>
     <Features>$(Features);FEATURE_DRIVENOTFOUNDEXCEPTION</Features>
     <Features>$(Features);FEATURE_DYNAMIC_EXPRESSION_VISITOR</Features>
@@ -51,10 +50,8 @@
     <Features>$(Features);FEATURE_TYPECONVERTER</Features>
     <Features>$(Features);FEATURE_WARNING_EXCEPTION</Features>
     <Features>$(Features);FEATURE_WIN32EXCEPTION</Features>
+    <Features Condition=" '$(Mono)' != 'true' ">$(Features);FEATURE_WPF</Features>
     <Features>$(Features);FEATURE_XMLDOC</Features>
-    <Features Condition=" '$(OS)' != 'Unix' ">$(Features);FEATURE_WPF</Features>
-    <Features Condition=" '$(OS)' != 'Unix' ">$(Features);FEATURE_WINDOWS</Features>
-    <Features Condition=" '$(OS)' == 'Unix' ">$(Features);FEATURE_UNIX</Features>
   </PropertyGroup>
 
   <ItemGroup>

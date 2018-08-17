@@ -13,7 +13,7 @@
  *
  * ***********************************************************************/
 
-#if FEATURE_NATIVE
+#if FEATURE_NATIVE || NETCOREAPP2_0 || NETCOREAPP2_1
 
 using System;
 using System.ComponentModel;
@@ -28,7 +28,7 @@ using Microsoft.Scripting.Runtime;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
-[assembly: PythonModule("msvcrt", typeof(IronPython.Modules.PythonMsvcrt), PythonModuleAttribute.PlatformFamily.Windows)]
+[assembly: PythonModule("msvcrt", typeof(IronPython.Modules.PythonMsvcrt), PlatformsAttribute.PlatformFamily.Windows)]
 namespace IronPython.Modules {
     [PythonType("msvcrt")]
     public class PythonMsvcrt {

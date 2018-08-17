@@ -129,11 +129,10 @@ class NtTest(IronPythonTestCase):
         
         self.assertEqual(type(nt.environ), type({}))
     
-        
     # startfile
     def test_startfile(self):
         self.assertRaises(OSError, nt.startfile, "not_exist_file.txt")
-        self.assertRaises(WindowsError, nt.startfile, 'test_nt.py', 'bad')
+        self.assertRaises(WindowsError, nt.startfile, __file__, 'bad')
 
     # chdir tests
     def test_chdir(self):

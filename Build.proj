@@ -17,8 +17,8 @@
     <ChocolateyVersion>0.10.8</ChocolateyVersion>
   </PropertyGroup>
     
-  <Import Project="$(BuildSysDir)\Versioning.targets" />
   <Import Project="$(MSBuildCommunityTasksPath)\MSBuild.Community.Tasks.Targets" />
+  <Import Project="$(BuildSysDir)\Versioning.targets" />
   
   <PropertyGroup>
     <StageDir>$(RootDir)Package\$(BuildFlavour)\Stage\IronPython-$(PackageVersion)</StageDir>

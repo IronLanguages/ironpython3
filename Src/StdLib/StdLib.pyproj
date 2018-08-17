@@ -32,7 +32,7 @@
   <Import Project="$(BeforeTargetFiles)" />
 
   <Target Name="Stage">
-    <CopyStdLib SourceFiles="@(Content)" Destination="$(OutputPath)\Lib" BasePath="$(StdLibPath)" />
+    <Copy SourceFiles="@(Content)" DestinationFolder="$(OutputPath)\%(RelativeDir)" />
   </Target>
 
 </Project>

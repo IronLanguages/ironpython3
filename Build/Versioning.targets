@@ -2,10 +2,13 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <CurrentVersionFile>$(RootDir)\CurrentVersion.props</CurrentVersionFile>
+    <MSBuildCommunityTasksPath Condition="'$(MSBuildCommunityTasksPath)' == ''">$(RootDir)Util\MSBuildCommunityTasks</MSBuildCommunityTasksPath>
+    <BuildSysDir Condition="'$(BuildSysDir)' == ''">$(RootDir)Build</BuildSysDir>
   </PropertyGroup>
 
   <!-- Do not re-import this if already imported. -->
   <Import Project="$(CurrentVersionFile)" Condition="'$(MajorVersion)' == ''" />
+  <Import Project="$(MSBuildCommunityTasksPath)\MSBuild.Community.Tasks.Targets" Condition="'$(MSBuildCommunityTasksLib)' == ''" />
 
   <PropertyGroup>
     <ShortReleaseLevel Condition="'$(ReleaseLevel)' == 'alpha'">a</ShortReleaseLevel>
@@ -26,28 +29,65 @@
     <AssemblyFileRevision Condition="'$(ReleaseLevel)' == 'final'">1000</AssemblyFileRevision>
   </PropertyGroup>
 
-  <Import Project="$(BuildSysDir)\Bootstrap.targets" />
-
   <ItemGroup>
     <BuildInfoTemplate Include="$(BuildSysDir)\Templates\BuildInfo.Template.cs" />
     <CurrentVersionTemplate Include="$(BuildSysDir)\Templates\CurrentVersion.Template.cs" />
+    <Tokens Include="CurrentDate">
+      <ReplacementValue>$([System.DateTime]::Now.ToString('yyyy-MM-dd hh:mm:ss'))</ReplacementValue>
+    </Tokens>
   </ItemGroup>
 
   <Target Name="GenerateCurrentVersion"
-          DependsOnTargets="Bootstrap"
           Inputs="$(CurrentVersionFile);@(CurrentVersionTemplate);$(MSBuildThisFileFullPath)"
           Outputs="Properties\CurrentVersion.Generated.cs">
-    <FormatTemplate TemplateFile="@(CurrentVersionTemplate)"
-                    OutputFile="Properties\CurrentVersion.Generated.cs"
-                    Parameters="$(MajorVersion);$(MinorVersion);$(MicroVersion);$(ReleaseLevel);$(ReleaseSerial);$(ShortReleaseLevel);$(DisplayVersion);$(AssemblyRevision);$(AssemblyFileRevision)" />
+    <ItemGroup>
+      <Tokens Include="MajorVersion">
+        <ReplacementValue>$(MajorVersion)</ReplacementValue>
+      </Tokens>
+      <Tokens Include="MinorVersion">
+        <ReplacementValue>$(MinorVersion)</ReplacementValue>
+      </Tokens>
+      <Tokens Include="MicroVersion">
+        <ReplacementValue>$(MicroVersion)</ReplacementValue>
+      </Tokens>
+      <Tokens Include="ReleaseLevel">
+        <ReplacementValue>$(ReleaseLevel)</ReplacementValue>
+      </Tokens>
+      <Tokens Include="ReleaseSerial">
+        <ReplacementValue>$(ReleaseSerial)</ReplacementValue>
+      </Tokens>
+      <Tokens Include="ShortReleaseLevel">
+        <ReplacementValue>$(ShortReleaseLevel)</ReplacementValue>
+      </Tokens>
+      <Tokens Include="DisplayVersion">
+        <ReplacementValue>$(DisplayVersion)</ReplacementValue>
+      </Tokens>
+      <Tokens Include="AssemblyRevision">
+        <ReplacementValue>$(AssemblyRevision)</ReplacementValue>
+      </Tokens>
+      <Tokens Include="AssemblyFileRevision">
+        <ReplacementValue>$(AssemblyFileRevision)</ReplacementValue>
+      </Tokens>
+    </ItemGroup>
+    <PropertyGroup>
+      <OutputDirectory>$(MSBuildProjectDirectory)\Properties</OutputDirectory>
+    </PropertyGroup>
+    <MakeDir Directories="$(OutputDirectory)" Condition="!Exists('$(OutputDirectory)')" />
+    <TemplateFile Template="@(CurrentVersionTemplate)" OutputFilename="$(OutputDirectory)\CurrentVersion.Generated.cs" Tokens="@(Tokens)"/>
   </Target>
 
   <Target Name="GenerateBuildInfo"
-          DependsOnTargets="Bootstrap"
           Inputs="$(CurrentVersionFile);@(BuildInfoTemplate);$(MSBuildThisFileFullPath)"
           Outputs="Properties\BuildInfo.Generated.cs">
-    <FormatTemplate TemplateFile="@(BuildInfoTemplate)"
-                    OutputFile="Properties\BuildInfo.Generated.cs"
-                    Parameters="$(Configuration)" />
+    <ItemGroup>
+      <Tokens Include="Configuration">
+        <ReplacementValue>$(Configuration)</ReplacementValue>
+      </Tokens>
+    </ItemGroup>
+    <PropertyGroup>
+      <OutputDirectory>$(MSBuildProjectDirectory)\Properties</OutputDirectory>
+    </PropertyGroup>
+    <MakeDir Directories="$(OutputDirectory)" Condition="!Exists('$(OutputDirectory)')" />
+    <TemplateFile Template="@(BuildInfoTemplate)" OutputFilename="$(OutputDirectory)\BuildInfo.Generated.cs" Tokens="@(Tokens)"/>
   </Target>
 </Project>

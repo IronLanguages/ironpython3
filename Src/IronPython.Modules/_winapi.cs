@@ -30,7 +30,7 @@ using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 
-[assembly: PythonModule("_winapi", typeof(IronPython.Modules.PythonWinApi), PlatformsAttributeAttribute.PlatformFamily.Windows)]
+[assembly: PythonModule("_winapi", typeof(IronPython.Modules.PythonWinApi), PlatformsAttribute.PlatformFamily.Windows)]
 namespace IronPython.Modules {
     public static class PythonWinApi {
         public const string __doc__ = "_subprocess Module";

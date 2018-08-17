@@ -743,7 +743,7 @@ namespace IronPython.Runtime.Operations {
                 MethodInfo setter = FilterProtectedGetterOrSetter(pt.GetSetMethod(true), privateBinding);
 
                 if ((getter != null && PythonHiddenAttribute.IsHidden(getter, true)) ||
-                    setter != null && PythonHiddenAttribute.IsHidden(setter, true))) {
+                    (setter != null && PythonHiddenAttribute.IsHidden(setter, true))) {
                     nt = NameType.Property;
                 }                
 

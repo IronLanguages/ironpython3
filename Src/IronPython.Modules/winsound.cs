@@ -17,7 +17,7 @@ using Microsoft.Scripting.Utils;
 
 
 #if FEATURE_NATIVE
-[assembly: PythonModule("winsound", typeof(IronPython.Modules.PythonWinsoundModule), PlatformsAttributeAttribute.PlatformFamily.Windows)]
+[assembly: PythonModule("winsound", typeof(IronPython.Modules.PythonWinsoundModule), PlatformsAttribute.PlatformFamily.Windows)]
 namespace IronPython.Modules {
     public static class PythonWinsoundModule {
         public static readonly string __doc__ = @"PlaySound(sound, flags) - play a sound

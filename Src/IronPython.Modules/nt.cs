@@ -1051,10 +1051,6 @@ namespace IronPython.Modules {
                 }
             }
 
-            public object __getslice__(int start, int stop) {
-                return MakeTuple().__getslice__(start, stop);
-            }
-
             public int __len__() {
                 return MakeTuple().__len__();
             }
@@ -1271,7 +1267,7 @@ namespace IronPython.Modules {
                         mode |= S_IEXEC;
                     }
                 } else {
-                    return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._WindowsError.ERROR_PATH_NOT_FOUND, "file does not exist: " + path));
+                    return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, "file does not exist: " + path));
                 }
 
                 mode |= S_IREAD;
@@ -1290,7 +1286,7 @@ namespace IronPython.Modules {
 
                 return new stat_result(mode, size, st_atime, st_mtime, st_ctime);
             } catch (ArgumentException) {
-                return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._WindowsError.ERROR_INVALID_NAME, "The path is invalid: " + path));
+                return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_INVALID_NAME, "The path is invalid: " + path));
             } catch (Exception e) {
                 return LightExceptions.Throw(ToPythonException(e, path));
             }

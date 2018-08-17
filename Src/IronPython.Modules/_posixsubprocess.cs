@@ -13,7 +13,7 @@ using IronPython.Runtime.Operations;
 
 using System.Numerics;
 
-[assembly: PythonModule("_posixsubprocess", typeof(IronPython.Modules.PosixSubprocess), PythonModuleAttribute.PlatformFamily.Unix)]
+[assembly: PythonModule("_posixsubprocess", typeof(IronPython.Modules.PosixSubprocess), PlatformsAttributeAttribute.PlatformFamily.Unix)]
 namespace IronPython.Modules {
     public class PosixSubprocess {
         public const string __doc__ = "A POSIX helper for the subprocess module.";

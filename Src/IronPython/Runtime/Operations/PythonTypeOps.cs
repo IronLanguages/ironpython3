@@ -632,7 +632,7 @@ namespace IronPython.Runtime.Operations {
                 foreach (MethodInfo mi in methods) {
                     if (PythonBinder.IsExtendedType(mi.DeclaringType) ||
                         PythonBinder.IsExtendedType(mi.GetBaseDefinition().DeclaringType) ||
-                        mi.IsDefined(typeof(PythonHiddenAttribute), false)) {
+                        PythonHiddenAttribute.IsHidden(mi)) {
                         alwaysVisible = false;
                         break;
                     }
@@ -666,7 +666,7 @@ namespace IronPython.Runtime.Operations {
 
             NameType nt = NameType.Field;
             if (!PythonBinder.IsExtendedType(info.DeclaringType) && 
-                !info.IsDefined(typeof(PythonHiddenAttribute), false)) {
+                !PythonHiddenAttribute.IsHidden(info)) {
                 nt |= NameType.PythonField;
             }
 
@@ -742,8 +742,8 @@ namespace IronPython.Runtime.Operations {
                 MethodInfo getter = FilterProtectedGetterOrSetter(pt.GetGetMethod(true), privateBinding);
                 MethodInfo setter = FilterProtectedGetterOrSetter(pt.GetSetMethod(true), privateBinding);
 
-                if ((getter != null && getter.IsDefined(typeof(PythonHiddenAttribute), true)) ||
-                    setter != null && setter.IsDefined(typeof(PythonHiddenAttribute), true)) {
+                if ((getter != null && PythonHiddenAttribute.IsHidden(getter, true)) ||
+                    setter != null && PythonHiddenAttribute.IsHidden(setter, true))) {
                     nt = NameType.Property;
                 }                
 
@@ -753,7 +753,7 @@ namespace IronPython.Runtime.Operations {
                     Debug.Assert(rpt != null);
 
                     if (PythonBinder.IsExtendedType(pt.DeclaringType) ||
-                        rpt.Property.IsDefined(typeof(PythonHiddenAttribute), true)) {
+                        PythonHiddenAttribute.IsHidden(rpt.Property, true)) {
                         nt = NameType.Property;
                     }
 

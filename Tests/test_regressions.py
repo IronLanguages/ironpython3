@@ -1127,6 +1127,21 @@ class C:
             os.remove(path)
 
     @skipUnlessIronPython()
+    def test_ipy2_gh39(self):
+        """https://github.com/IronLanguages/ironpython2/issues/39"""
+
+        from System.Collections.Generic import List
+
+        rng = range(10000)
+        lst = List[object](rng)
+        it = iter(lst)
+
+        # Loop compilation occurs after 100 iterations, however it occurs in parallel.
+        # Use a number >> 100 so that we actually hit the compiled code.
+        for i in rng:
+            self.assertEqual(i, next(it))
+
+    @skipUnlessIronPython()
     def test_ipy2_gh25(self):
         """https://github.com/IronLanguages/ironpython2/issues/25"""
 

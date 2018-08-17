@@ -87,6 +87,10 @@ namespace IronPython.Runtime.Binding {
             }
 
             if (toType.IsAssignableFrom(exprType)) {
+                // remove the unboxing expression if we're going be boxing again
+                if (exprType.IsValueType && !toType.IsValueType && expr.NodeType == ExpressionType.Unbox) {
+                    return ((UnaryExpression)expr).Operand;
+                }
                 return expr;
             }
             

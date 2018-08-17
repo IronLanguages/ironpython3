@@ -284,6 +284,10 @@ namespace IronPython.Modules {
             return context.LanguageContext.DomainManager.Platform.CurrentDirectory;
         }
 
+#if NETCOREAPP2_0 || NETCOREAPP2_1
+        private static readonly char[] invalidPathChars = new char[] { '\"', '<', '>' };
+#endif
+
         public static string _getfullpathname(CodeContext/*!*/ context, [NotNull]string/*!*/ dir) {
             PlatformAdaptationLayer pal = context.LanguageContext.DomainManager.Platform;
 
@@ -321,7 +325,15 @@ namespace IronPython.Modules {
                     newdir = newdir.Replace(c, Char.MaxValue);
                 }
 
+#if NETCOREAPP2_0 || NETCOREAPP2_1
+                foreach (char c in invalidPathChars) {
+                    newdir = newdir.Replace(c, Char.MaxValue);
+                }
+#endif
+
                 foreach (char c in Path.GetInvalidFileNameChars()) {
+                    // don't replace the volume or directory separators
+                    if (c == Path.VolumeSeparatorChar || c == Path.DirectorySeparatorChar) continue;
                     newdir = newdir.Replace(c, Char.MaxValue);
                 }
 

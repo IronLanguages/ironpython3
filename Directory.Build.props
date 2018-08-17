@@ -1,15 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 
-  Settings imported by all *.csproj files. 
--->
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project>
   <PropertyGroup>
     <!-- These are normally set by Build.proj, except when building from VS. -->
-    <RootDir Condition=" '$(RootDir)' == '' ">$(MSBuildThisFileDirectory)..</RootDir>
-    <BuildSysDir Condition=" '$(BuildSysDir)' == '' ">$(RootDir)\Build</BuildSysDir>
-    <ReferenceDir Condition=" '$(ReferenceDir)' == '' ">$(RootDir)\Util\References</ReferenceDir>
+    <RootDir Condition=" '$(RootDir)' == '' ">$(MSBuildThisFileDirectory)</RootDir>
+    <BuildSysDir Condition=" '$(BuildSysDir)' == '' ">$(RootDir)Build</BuildSysDir>
+    <ReferenceDir Condition=" '$(ReferenceDir)' == '' ">$(RootDir)Util\References</ReferenceDir>
 
-    <Mono Condition=" '$(Mono)' == '' and '$(OS)' != 'Windows_NT'">true</Mono>
+    <Mono Condition=" '$(Mono)' == '' AND '$(OS)' != 'Windows_NT' ">true</Mono>
     
     <!-- The following two lines prevent csc.rsp and Microsoft.NETFramework.props from adding
          additional assembly references. -->
@@ -18,11 +15,11 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   
-  <Import Project="$(RootDir)\CurrentVersion.props" />
+  <Import Project="$(RootDir)CurrentVersion.props" />
 
   <!-- Signing -->
   <PropertyGroup>
-    <PublicKey>$(MSBuildThisFileDirectory)\Key.snk</PublicKey>
+    <PublicKey>$(BuildSysDir)\Key.snk</PublicKey>
   </PropertyGroup>
 
   <PropertyGroup Condition="Exists('$(PublicKey)') and '$(AssemblyOriginatorKeyFile)'==''">
@@ -60,16 +57,11 @@
     <BuildFlavour Condition="'$(Configuration)' == 'Release'">Release</BuildFlavour>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <CSharpTargets Condition="'$(CSharpTargets)' == ''">$(MSBuildBinPath)\Microsoft.CSharp.targets</CSharpTargets>
-    <WpfReferences>$(RootDir)\Util\References\WPF\4.0</WpfReferences>
-  </PropertyGroup>
-
   <!-- References -->
   <Import Project="$(BuildSysDir)\$(TargetFramework).props" Condition="'$(TargetFramework)' != ''" />
   
   <PropertyGroup>
-    <BaseOutputPath>$(RootDir)\bin\$(Configuration)</BaseOutputPath>
+    <BaseOutputPath>$(RootDir)bin\$(Configuration)</BaseOutputPath>
     <OutputPath>$(BaseOutputPath)</OutputPath>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsNotAsErrors>618;429;219;1717;162;414</WarningsNotAsErrors>
@@ -77,7 +69,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
     <RunCodeAnalysis Condition="'$(Configuration)' == 'FxCop'">true</RunCodeAnalysis>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <!-- Release -->
@@ -86,7 +80,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
-    <DefineConstants>$(Features);$(SignedSym);IPY3;TRACE</DefineConstants>
+    <DefineConstants>$(Features);$(SignedSym);TRACE</DefineConstants>
   </PropertyGroup>
 
   <!-- Debug -->
@@ -96,6 +90,6 @@
     <Optimize>false</Optimize>
     <!-- TODO: Python & zlib.net need some work -->
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
-    <DefineConstants>$(Features);$(SignedSym);IPY3;DEBUG;TRACE</DefineConstants>
+    <DefineConstants>$(Features);$(SignedSym);DEBUG;TRACE</DefineConstants>
   </PropertyGroup>
 </Project>

@@ -7,12 +7,12 @@
     <Mono Condition="'$(OS)' != 'Windows_NT'">true</Mono>
 
     <RootDir>$(MSBuildThisFileDirectory)</RootDir>
-    <Solution>$(RootDir)\IronPython.sln</Solution>
-    <UtilDir>$(RootDir)\Util</UtilDir>
-    <ReferenceDir>$(RootDir)\Util\References</ReferenceDir>
-    <BinDir>$(RootDir)\bin</BinDir>
-    <BuildSysDir>$(RootDir)\Build</BuildSysDir>
-    <MSBuildCommunityTasksPath>$(RootDir)\Util\MSBuildCommunityTasks</MSBuildCommunityTasksPath>
+    <Solution>$(RootDir)IronPython.sln</Solution>
+    <UtilDir>$(RootDir)Util</UtilDir>
+    <ReferenceDir>$(RootDir)Util\References</ReferenceDir>
+    <BinDir>$(RootDir)bin</BinDir>
+    <BuildSysDir>$(RootDir)Build</BuildSysDir>
+    <MSBuildCommunityTasksPath>$(RootDir)Util\MSBuildCommunityTasks</MSBuildCommunityTasksPath>
     <TargetFrameworks Condition="'$(TargetFrameworks)' == ''">net45;netcoreapp2.0</TargetFrameworks>
     <ChocolateyVersion>0.10.8</ChocolateyVersion>
   </PropertyGroup>
@@ -43,8 +43,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <MainStageFiles Include="$(RootDir)\README.md" />
-    <MainStageFiles Include="$(RootDir)\LICENSE" />
+    <MainStageFiles Include="$(RootDir)README.md" />
+    <MainStageFiles Include="$(RootDir)LICENSE" />
   </ItemGroup>
 
   <Target Name="RestoreReferences">

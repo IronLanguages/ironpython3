@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <CurrentVersionFile>$(RootDir)\CurrentVersion.props</CurrentVersionFile>
+    <CurrentVersionFile>$(RootDir)CurrentVersion.props</CurrentVersionFile>
     <MSBuildCommunityTasksPath Condition="'$(MSBuildCommunityTasksPath)' == ''">$(RootDir)Util\MSBuildCommunityTasks</MSBuildCommunityTasksPath>
     <BuildSysDir Condition="'$(BuildSysDir)' == ''">$(RootDir)Build</BuildSysDir>
   </PropertyGroup>

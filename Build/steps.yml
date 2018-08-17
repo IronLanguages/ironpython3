@@ -1,6 +1,5 @@
 parameters:
   os: ''
-  preBuildSteps: []
 
 steps:
   - powershell: |
@@ -36,23 +35,76 @@ steps:
           sudo apt install apt-transport-https
           echo "deb https://download.mono-project.com/repo/ubuntu stable-xenial main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
           sudo apt update
-          sudo apt-get -yq install mono-devel
+          sudo apt-get -yq install mono-complete mono-vbnc dos2unix fakeroot
+          # workaround for issue with vbc.rsp file
+          sudo sed -ie 's/System.XML/System.Xml/g' /usr/lib/mono/4.5/vbc.rsp
+          
+          # Dump some info about the tools
+          mono --version
+          msbuild /version
+          dotnet --info
+          df -Th
 
   - powershell: ./make.ps1
     displayName: Build
     
+  - powershell: ./make.ps1 test-all
+    displayName: Test
+    
+    # 32-bit tests on Windows only
+  - ${{ if eq(parameters.os, 'Windows') }}:
+    - powershell: ./make.ps1 -platform x86 test-all
+      displayName: Test 32-bit
+      
+  - task: PublishTestResults@2
+    displayName: Publish Test Results
+    inputs:
+      testRunner: VSTest
+      testResultsFiles: '**/*.trx'
+      mergeTestResults: true
+      testRunTitle: ${{ parameters.os }}
+    condition: succeededOrFailed()
+
   - powershell: ./make.ps1 package
     displayName: Package
+    condition: succeededOrFailed()
 
   - task: CopyFiles@2
-    displayName: Copy Artifact Files
+    displayName: Copy NuGet and Zip Packages
     inputs:
       SourceFolder: '$(Build.Repository.LocalPath)/Package/Release/Packages'
       Contents: |
-       **/*.nupkg
-       **/*.zip
+        **/*.nupkg
+        **/*.zip
       TargetFolder: '$(Build.ArtifactStagingDirectory)'
     condition: and(succeededOrFailed(), eq(variables['system.pullrequest.isfork'], false))
+      
+  - ${{ if eq(parameters.os, 'Windows') }}:
+    - task: CopyFiles@2
+      displayName: Copy MSI Installer
+      inputs:
+        SourceFolder: '$(Build.Repository.LocalPath)/Package/Release/Packages'
+        Contents: '**/*.msi'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)'
+      condition: and(succeededOrFailed(), eq(variables['system.pullrequest.isfork'], false))
+
+  - ${{ if eq(parameters.os, 'Linux') }}:
+    - task: CopyFiles@2
+      displayName: Copy Deb Installer
+      inputs:
+        SourceFolder: '$(Build.Repository.LocalPath)/Package/Release/Packages'
+        Contents: '**/*.deb'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)'
+      condition: and(succeededOrFailed(), eq(variables['system.pullrequest.isfork'], false))
+
+  - ${{ if eq(parameters.os, 'macOS') }}:
+    - task: CopyFiles@2
+      displayName: Copy Pkg Installer
+      inputs:
+        SourceFolder: '$(Build.Repository.LocalPath)/Package/Release/Packages'
+        Contents: '**/*.pkg'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)'
+      condition: and(succeededOrFailed(), eq(variables['system.pullrequest.isfork'], false))
 
   - task: CopyFiles@2
     displayName: Copy Build Logs
@@ -66,21 +118,5 @@ steps:
     inputs:
       ArtifactName: ${{ format('{0} Artifacts', parameters.os) }}
     condition: and(succeededOrFailed(), eq(variables['system.pullrequest.isfork'], false))
-
-  - powershell: ./make.ps1 test-all
-    displayName: Test
-    
-    # 32-bit tests on Windows only
-  - ${{ if eq(parameters.os, 'Windows') }}:
-    - powershell: ./make.ps1 -platform x86 test-all
-      displayName: Test 32-bit
-    
-  - task: PublishTestResults@2
-    displayName: Publish Test Results
-    inputs:
-      testRunner: VSTest
-      testResultsFiles: '**/*.trx'
-      mergeTestResults: true
-      testRunTitle: ${{ parameters.os }}
 
   

@@ -536,7 +536,7 @@ class KwargTest(unittest.TestCase):
         """verify named propertys work"""
         property(fget=ObjectSubClass,doc="prop")
 
-    @unittest.skipIf(is_netcoreapp or is_posix, 'no System.Windows.Forms')
+    @unittest.skipIf(is_posix or is_netcoreapp, 'no System.Windows.Forms')
     @skipUnlessIronPython()
     def test_builtintypes(self):
         """verify we can call built in types w/ named args & have the args set properties."""

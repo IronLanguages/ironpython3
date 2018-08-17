@@ -43,7 +43,7 @@ import os
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_netcoreapp, is_netcoreapp20, is_posix, run_test, skipUnlessIronPython
 
 if is_posix:
     import posix as _os
@@ -397,7 +397,7 @@ class ClrTypeTest(IronPythonTestCase):
         clr.AddReference("Microsoft.Scripting")
         from Microsoft.Scripting.Generation import Snippets
         
-        if is_netcoreapp:
+        if is_netcoreapp20:
             clr.AddReference("System.Private.Xml")
         clr.AddReference("System.Xml")
         from System.Xml.Serialization import XmlRootAttribute

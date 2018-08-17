@@ -36,6 +36,7 @@ CurrentVersion.Generated.cs
 
 TestResult.xml
 Solutions/TestResults/
+/Src/IronPythonTest/runsettings*.xml
 
 # TODO - testing scripts should not create these files
 Src/StdLib/Lib/@test_*
@@ -104,4 +105,3 @@ launchSettings.json
 *.o
 /Src/ctypes_test/*.pyd
 /Src/ctypes_test/*.pyd
-/Src/IronPythonTest/runsettings.xml

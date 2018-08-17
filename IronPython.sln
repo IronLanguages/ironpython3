@@ -48,6 +48,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{17737ACB
 		Build\After.targets = Build\After.targets
 		Build\net45.props = Build\net45.props
 		Build\netcoreapp2.0.props = Build\netcoreapp2.0.props
+		Build\netcoreapp2.1.props = Build\netcoreapp2.1.props
 		Build\Versioning.targets = Build\Versioning.targets
 	EndProjectSection
 EndProject

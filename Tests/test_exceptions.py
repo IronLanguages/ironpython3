@@ -742,7 +742,7 @@ finally:
         self.assertEqual(test_outer_for_with_finally(state, True), 42)
         self.assertEqual(state.finallyCalled, True)
 
-    @unittest.skipIf(is_netcoreapp, 'no System.AppDomain')
+    @unittest.skipIf(is_netcoreapp, 'no System.AppDomain.CreateInstanceFromAndUnwrap')
     def test_serializable_clionly(self):
         import clr
         import System

@@ -1,21 +1,10 @@
-#####################################################################################
-#
-#  Copyright (c) Microsoft Corporation. All rights reserved.
-#
-# This source code is subject to terms and conditions of the Apache License, Version 2.0. A
-# copy of the license can be found in the License.html file at the root of this distribution. If
-# you cannot locate the  Apache License, Version 2.0, please send an email to
-# ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound
-# by the terms of the Apache License, Version 2.0.
-#
-# You must not remove this notice, or any other, from this software.
-#
-#
-#####################################################################################
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the Apache 2.0 License.
+# See the LICENSE file in the project root for more information.
 
 import unittest
 
-from iptest import IronPythonTestCase, run_test, skipUnlessIronPython, is_cli, is_netcoreapp
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_netcoreapp20, is_posix, run_test, skipUnlessIronPython
 
 myfuncCalled = False
 passedarg = None
@@ -324,11 +313,12 @@ class DelegateTest(IronPythonTestCase):
         try:
             pts = ParameterizedThreadStart(foo.baz)
             pts("Hello")
-            AssertUnreachable()
+            self.assertUnreachable()
         except TypeError: pass
 
 # SuperDelegate Tests
 
+    @unittest.skipIf(is_netcoreapp20 and is_posix, "bug with .NET Core 2.0")
     def test_basic(self):
         import IronPythonTest
         class TestCounter:

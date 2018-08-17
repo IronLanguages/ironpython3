@@ -15,7 +15,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
 from types import FunctionType
 
 global init
@@ -746,7 +746,7 @@ class FunctionTest(IronPythonTestCase):
             for case in cases:
                 runTest(case)
 
-    @unittest.skipIf(is_netcoreapp or is_mono, 'missing System.Windows.Forms support')
+    @unittest.skipIf(is_posix or is_netcoreapp, 'missing System.Windows.Forms support')
     @skipUnlessIronPython()
     def test_call_base_init(self):
         """verify we can call the base init directly"""

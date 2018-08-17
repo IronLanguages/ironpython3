@@ -25,6 +25,8 @@ is_cpython    =  not is_ironpython
 is_posix      =  sys.platform == 'posix'
 is_osx        =  sys.platform == 'darwin'
 is_netcoreapp =  False
+is_netcoreapp20 = False
+is_netcoreapp21 = False
 is_mono = False
 
 if is_ironpython:
@@ -33,6 +35,8 @@ if is_ironpython:
     import System
     import clr
     is_netcoreapp = clr.IsNetCoreApp
+    is_netcoreapp20 = clr.TargetFramework == ".NETCoreApp,Version=v2.0"
+    is_netcoreapp21 = clr.TargetFramework == ".NETCoreApp,Version=v2.1"
     if is_netcoreapp: clr.AddReference("System.Runtime.Extensions")
     is_posix = sys.platform == 'posix' or System.Environment.OSVersion.Platform == System.PlatformID.Unix
     is_osx = os.path.exists('/System/Library/CoreServices/SystemVersion.plist')
@@ -75,11 +79,11 @@ else:
 #--Build flavor of Python being tested
 is_debug = False
 if is_cli:
-    is_debug = sys.exec_prefix.lower().endswith("debug")
+    is_debug = clr.IsDebug
 
 #--Are we using peverify to check that all IL generated is valid?
 is_peverify_run = False
-if is_cli:    
+if is_cli:
     is_peverify_run = is_debug and "-X:SaveAssemblies" in System.Environment.CommandLine    
 
 #--We only run certain time consuming test cases in the stress lab

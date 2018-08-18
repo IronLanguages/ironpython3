@@ -1053,13 +1053,24 @@ namespace IronPython.Runtime.Binding {
             SlotOrFunction.GetCombinedTargets(cmp, rcmp, out cmp, out rcmp);
 
             bool shouldWarn = false;
-            WarningInfo info = null;
+            
+            // if the left operand is an instance of a built-in type or a new-style class, and the right operand is an instance of a proper subclass of that type or class
+            // and overrides the base's __rop__() method, the right operand's __rop__() method is tried before the left operand's __op__() method.
+            PythonType xPythonType = MetaPythonObject.GetPythonType(xType);
+            PythonType yPythonType = MetaPythonObject.GetPythonType(yType);
+            bool opReverse = false;
+            if ((rop != null) && xPythonType.IsSystemType && (yPythonType != xPythonType) && BindingHelpers.IsSubclassOf(yType, xType)) {
+                SlotOrFunction tmp = rop;
+                rop = fop;
+                fop = tmp;
+                opReverse = true;
+            }
 
             // first try __op__ or __rop__ and return the value
-            shouldWarn = fop.ShouldWarn(state, out info);
-            if (MakeOneCompareGeneric(fop, false, types, MakeCompareReturn, bodyBuilder, typeof(object))) {
+            shouldWarn = fop.ShouldWarn(state, out WarningInfo info);
+            if (MakeOneCompareGeneric(fop, opReverse, types, MakeCompareReturn, bodyBuilder, typeof(object))) {
                 shouldWarn = shouldWarn || rop.ShouldWarn(state, out info);
-                if (MakeOneCompareGeneric(rop, true, types, MakeCompareReturn, bodyBuilder, typeof(object))) {
+                if (MakeOneCompareGeneric(rop, !opReverse, types, MakeCompareReturn, bodyBuilder, typeof(object))) {
 
                     // then try __cmp__ or __rcmp__ and compare the resulting int appropriaetly
                     shouldWarn = shouldWarn || cmp.ShouldWarn(state, out info);

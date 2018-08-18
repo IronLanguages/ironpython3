@@ -84,12 +84,13 @@ namespace IronPython.Modules
         }
 
         internal static AST BuildAst(CodeContext context, SourceUnit sourceUnit, PythonCompilerOptions opts, string mode) {
-            Parser parser = Parser.CreateParser(
+            using (Parser parser = Parser.CreateParser(
                 new CompilerContext(sourceUnit, opts, ThrowingErrorSink.Default),
-                (PythonOptions)context.LanguageContext.Options);
+                (PythonOptions)context.LanguageContext.Options)) {
 
-            PythonAst ast = parser.ParseFile(true);
-            return ConvertToAST(ast, mode);
+                PythonAst ast = parser.ParseFile(true);
+                return ConvertToAST(ast, mode);
+            }
         }
 
         private static mod ConvertToAST(PythonAst pythonAst, string kind) {
@@ -116,20 +117,12 @@ namespace IronPython.Modules
         [PythonType]
         public abstract class AST
         {
-            private PythonTuple __fields = new PythonTuple();   // Genshi assumes _fields in not None
-            private PythonTuple __attributes = new PythonTuple();   // Genshi assumes _fields in not None
             protected int? _lineno; // both lineno and col_offset are expected to be int, in cpython anything is accepted
             protected int? _col_offset;
 
-            public PythonTuple _fields {
-                get { return __fields; }
-                protected set { __fields = value; }
-            }
+            public PythonTuple _fields { get; protected set; } = new PythonTuple();
 
-            public PythonTuple _attributes {
-                get { return __attributes; }
-                protected set { __attributes = value; }
-            }
+            public PythonTuple _attributes { get; protected set; } = new PythonTuple();
 
             public int lineno {
                 get { 
@@ -148,8 +141,8 @@ namespace IronPython.Modules
             }
 
             public void __setstate__(PythonDictionary state) {
-                restoreProperties(__attributes, state);
-                restoreProperties(__fields, state);
+                restoreProperties(_attributes, state);
+                restoreProperties(_fields, state);
             }
 
             internal void restoreProperties(IEnumerable<object> names, IDictionary source) {
@@ -171,7 +164,7 @@ namespace IronPython.Modules
                         string key = (string)name;
                         object val;
                         try {
-                            val = GetType().GetProperty(key).GetValue(this, null);
+                            val = this.GetType().GetProperty(key).GetValue(this, null);
                             target.Add(key, val);
                         } catch (System.Reflection.TargetInvocationException) {
                             // field not set
@@ -182,8 +175,8 @@ namespace IronPython.Modules
 
             internal PythonDictionary getstate() {
                 PythonDictionary d = new PythonDictionary(10);
-                storeProperties(__fields, d);
-                storeProperties(__attributes, d);
+                storeProperties(_fields, d);
+                storeProperties(_attributes, d);
                 return d;
             }
 
@@ -1444,7 +1437,6 @@ namespace IronPython.Modules
             public PythonList generators { get; set; }
         }
 
-
         [PythonType]
         public class Div : @operator
         {
@@ -1500,7 +1492,6 @@ namespace IronPython.Modules
 
             public PythonList body { get; set; }
         }
-
 
         [PythonType]
         public class Expr : stmt
@@ -1793,22 +1784,20 @@ namespace IronPython.Modules
         [PythonType]
         public class Global : stmt
         {
-            private PythonList _names;
-
             public Global() {
                 _fields = new PythonTuple(new[] { "names", });
             }
 
             public Global(PythonList names, [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
-                _names = names;
+                this.names = names;
                 _lineno = lineno;
                 _col_offset = col_offset;
             }
 
             internal Global(GlobalStatement stmt)
                 : this() {
-                _names = new PythonList(stmt.Names);
+                names = new PythonList(stmt.Names);
             }
 
             internal override Statement Revert() {
@@ -1818,10 +1807,7 @@ namespace IronPython.Modules
                 return new GlobalStatement(newNames);
             }
 
-            public PythonList names {
-                get { return _names; }
-                set { _names = value; }
-            }
+            public PythonList names { get; set; }
         }
 
         [PythonType]
@@ -2315,7 +2301,6 @@ namespace IronPython.Modules
             public string id { get; set; }
         }
 
-
         [PythonType]
         public class NameConstant : expr
         {
@@ -2584,7 +2569,6 @@ namespace IronPython.Modules
             public Slice() {
                 _fields = new PythonTuple(new[] { "lower", "upper", "step" });
             }
-
 
             public Slice([Optional]expr lower, [Optional]expr upper, [Optional]expr step)
                 // default interpretation of missing step is [:]
@@ -3044,15 +3028,13 @@ namespace IronPython.Modules
         [PythonType]
         public class Yield : expr
         {
-            private expr _value; // Optional
-
             public Yield() {
                 _fields = new PythonTuple(new[] { "value", });
             }
 
             public Yield([Optional]expr value, [Optional]int? lineno, [Optional]int? col_offset) 
                 : this() {
-                _value = value;
+                this.value = value;
                 _lineno = lineno;
                 _col_offset = col_offset;
             }
@@ -3060,7 +3042,7 @@ namespace IronPython.Modules
             internal Yield(YieldExpression expr)
                 : this() {
                 // expr.Expression is never null
-                _value = Convert(expr.Expression);
+                value = Convert(expr.Expression);
             }
 
             internal override AstExpression Revert() {
@@ -3068,10 +3050,7 @@ namespace IronPython.Modules
                 return new YieldExpression(expr.Revert(value));
             }
 
-            public expr value {
-                get { return _value; }
-                set { _value = value; }
-            }
+            public expr value { get; set; }
         }
     }
 }

@@ -214,7 +214,7 @@ namespace IronPython.Runtime {
         private static MemberInfo[] NonHiddenMembers(MemberInfo[] members) {
             List<MemberInfo> res = new List<MemberInfo>(members.Length);
             foreach (MemberInfo t in members) {
-                if (t.IsDefined(typeof(PythonHiddenAttribute), false)) {
+                if (PythonHiddenAttribute.IsHidden(t)) {
                     continue;
                 }
 

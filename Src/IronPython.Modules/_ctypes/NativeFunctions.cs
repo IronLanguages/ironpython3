@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if FEATURE_NATIVE
+#if FEATURE_CTYPES
 
 using System;
 using System.Runtime.ConstrainedExecution;
@@ -37,11 +37,14 @@ namespace IronPython.Modules {
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool FreeLibrary(IntPtr hModule);
 
-        [DllImport("kernel32.dll")]
+        [DllImport("kernel32.dll", SetLastError=true)]
         private static extern IntPtr LoadLibrary(string lpFileName);
 
-        [DllImport("kernel32.dll", SetLastError = true)]
+        [DllImport("kernel32.dll")]
         public static extern void SetLastError(int errorCode);
+
+        [DllImport("kernel32.dll")]
+        public static extern int GetLastError();
 
         [DllImport("kernel32.dll")]
         private static extern IntPtr GetProcAddress(IntPtr module, string lpFileName);
@@ -64,7 +67,7 @@ namespace IronPython.Modules {
         public static IntPtr LoadDLL(string filename, int flags) {
             if (Environment.OSVersion.Platform == PlatformID.Unix ||
                 Environment.OSVersion.Platform == PlatformID.MacOSX) {
-                if (flags == 0)
+                if(flags == 0)
                     flags = RTLD_NOW;
                 return dlopen(filename, flags);
             }

@@ -208,7 +208,7 @@ namespace IronPython.Runtime.Binding {
                 (MemberInfo)typeof(T).GetProperty(name) ??
                 typeof(T).GetField(name);
 
-            if (member != null && !member.IsDefined(typeof(PythonHiddenAttribute), false)) {
+            if (member != null && !PythonHiddenAttribute.IsHidden(member)) {
                 return false;
             }
 

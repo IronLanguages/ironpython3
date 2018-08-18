@@ -4,7 +4,9 @@ Param(
     [Parameter(Position=1)]
     [String] $target = "release",
     [String] $configuration = "Release",
-    [String[]] $frameworks=@('net45','netcoreapp2.0')
+    [String[]] $frameworks=@('net45','netcoreapp2.1'),
+    [String] $platform = "x64",
+    [switch] $runIgnored
 )
 
 [int] $global:Result = 0
@@ -23,42 +25,37 @@ if(!$global:isUnix) {
         Exit 1
     }
 
+    if(-not [System.IO.Directory]::Exists($_VSINSTPATH)) {
+        Write-Error "Could not determine installation path to Visual Studio"
+        Exit 1
+    }
+
     if([System.IO.File]::Exists([System.IO.Path]::Combine($_VSINSTPATH, 'MSBuild\15.0\Bin\MSBuild.exe'))) {
         $env:PATH = [String]::Join(';', $env:PATH, [System.IO.Path]::Combine($_VSINSTPATH, 'MSBuild\15.0\Bin'))
     }
 }
 
-# Details for running tests on the various frameworks
-$_FRAMEWORKS = @{
-    "net45" = @{
-        "runner" = "dotnet";
-        "args" = @('test', '__BASEDIR__/Src/IronPythonTest/IronPythonTest.csproj', '-f', '__FRAMEWORK__', '-o', '__BASEDIR__/bin/__CONFIGURATION__/__FRAMEWORK__', '-c', '__CONFIGURATION__', '--no-build', '-l', "trx;LogFileName=__FILTERNAME__-__FRAMEWORK__-__CONFIGURATION__-result.trx", '-s', 'runsettings.__FRAMEWORK__');
-        "filterArg" = '--filter="__FILTER__"';
-        "filters" = @{
-            "all" = "";
-            "smoke" = "TestCategory=StandardCPython";
-            "cpython" = "TestCategory=StandardCPython | TestCategory=AllCPython";
-            "ironpython" = "TestCategory=IronPython";
-            "single" = "Name=__TESTNAME__";
-        }
-    };
-    "netcoreapp2.0" = @{
-        "runner" = "dotnet";
-        "args" = @('test', '__BASEDIR__/Src/IronPythonTest/IronPythonTest.csproj', '-f', '__FRAMEWORK__', '-o', '__BASEDIR__/bin/__CONFIGURATION__/__FRAMEWORK__', '-c', '__CONFIGURATION__', '--no-build', '-l', "trx;LogFileName=__FILTERNAME__-__FRAMEWORK__-__CONFIGURATION__-result.trx", '-s', 'runsettings.__FRAMEWORK__');
-        "filterArg" = '--filter="__FILTER__"';
-        "filters" = @{
-            "all" = "";
-            "smoke" = "TestCategory=StandardCPython";
-            "cpython" = "TestCategory=StandardCPython | TestCategory=AllCPython";
-            "ironpython" = "TestCategory=IronPython";
-            "single" = "Name=__TESTNAME__";
-        }
+$_defaultFrameworkSettings = @{
+    "runner" = "dotnet";
+    "args" = @('test', '__BASEDIR__/Src/IronPythonTest/IronPythonTest.csproj', '-f', '__FRAMEWORK__', '-o', '__BASEDIR__/bin/__CONFIGURATION__/__FRAMEWORK__', '-c', '__CONFIGURATION__', '--no-build', '-l', "trx;LogFileName=__FILTERNAME__-__FRAMEWORK__-__CONFIGURATION__-result.trx", '-s', '__RUNSETTINGS__');
+    "filterArg" = '--filter="__FILTER__"';
+    "filters" = @{
+        "all" = "";
+        "smoke" = "TestCategory=StandardCPython";
+        "cpython" = "TestCategory=StandardCPython | TestCategory=AllCPython";
+        "ironpython" = "TestCategory=IronPython";
+        "ctypes" = "TestCategory=CTypesCPython";
+        "single" = "Name=__TESTNAME__";
     }
 }
 
+# Overrides for the default framework settings
+$_FRAMEWORKS = @{}
+
 function Main([String] $target, [String] $configuration) {
+    # verify that the DLR submodule has been initialized
     if(![System.Linq.Enumerable]::Any([System.IO.Directory]::EnumerateFileSystemEntries([System.IO.Path]::Combine($_BASEDIR, "Src/DLR")))) {
-        if($global:isUnix) {
+        if(Get-Command git -ErrorAction SilentlyContinue) {
             & git submodule update --init
         } else {
             Write-Error "Please initialize the DLR submodule (the equivalent of `git submodule update --init` for your Git toolset"
@@ -72,17 +69,71 @@ function Main([String] $target, [String] $configuration) {
     $global:Result = $LastExitCode
 }
 
-function Test([String] $target, [String] $configuration, [String[]] $frameworks) {
+function GenerateRunSettings([String] $framework, [String] $platform, [String] $configuration, [bool] $runIgnored) {
+    [System.Xml.XmlDocument]$doc = New-Object System.Xml.XmlDocument
+
+#   <RunSettings>
+#     <TestRunParameters>
+#       <Parameter name="FRAMEWORK" value="net45" />
+#     </TestRunParameters>
+#   </RunSettings>
+
+    $dec = $doc.CreateXmlDeclaration("1.0","UTF-8",$null)
+    $doc.AppendChild($dec) | Out-Null
+
+    $runSettings = $doc.CreateElement("RunSettings")
+
+    $runConfiguration = $doc.CreateElement("RunConfiguration")
+    $runSettings.AppendChild($runConfiguration) | Out-Null
+    $targetPlatform = $doc.CreateElement("TargetPlatform")
+    $targetPlatform.InnerText = $platform
+    $runConfiguration.AppendChild($targetPlatform) | Out-Null
+
+    $testRunParameters = $doc.CreateElement("TestRunParameters")
+    $runSettings.AppendChild($testRunParameters) | Out-Null
+
+    $parameter = $doc.CreateElement("Parameter")
+    $parameter.SetAttribute("name", "FRAMEWORK")
+    $parameter.SetAttribute("value", $framework)
+    $testRunParameters.AppendChild($parameter) | Out-Null
+
+    $parameter = $doc.CreateElement("Parameter")
+    $parameter.SetAttribute("name", "CONFIGURATION")
+    $parameter.SetAttribute("value", $configuration)
+    $testRunParameters.AppendChild($parameter) | Out-Null
+
+    if($runIgnored) {
+        $parameter = $doc.CreateElement("Parameter")
+        $parameter.SetAttribute("name", "RUN_IGNORED")
+        $parameter.SetAttribute("value", "true")
+        $testRunParameters.AppendChild($parameter) | Out-Null
+    }
+
+    $doc.AppendChild($runSettings) | Out-Null
+
+    $fileName = [System.IO.Path]::Combine($_BASEDIR, "Src", "IronPythonTest", "runsettings.$framework.xml")
+    $doc.Save($fileName)
+    return $fileName
+}
+
+function Test([String] $target, [String] $configuration, [String[]] $frameworks, [String] $platform) {
     foreach ($framework in $frameworks) {
         $testname = "";
         $filtername = $target
-        if(!$_FRAMEWORKS[$framework]["filters"].ContainsKey($target)) {
+
+        # generate the runsettings file for the settings
+        $runSettings = GenerateRunSettings $framework $platform $configuration $runIgnored
+
+        $frameworkSettings = $_FRAMEWORKS[$framework]
+        if ($frameworkSettings -eq $null) { $frameworkSettings = $_defaultFrameworkSettings }
+
+        if(!$frameworkSettings["filters"].ContainsKey($target)) {
             Write-Warning "No tests available for '$target' trying to run single test '$framework.$target'"
             $testname = "$framework.$target"
             $filtername = "single"
         }
 
-        $filter = $_FRAMEWORKS[$framework]["filters"][$filtername]
+        $filter = $frameworkSettings["filters"][$filtername]
 
         $replacements = @{
             "__FRAMEWORK__" = $framework;
@@ -91,12 +142,12 @@ function Test([String] $target, [String] $configuration, [String[]] $frameworks)
             "__FILTER__" = $filter;
             "__BASEDIR__" = $_BASEDIR;
             "__TESTNAME__" = $testname;
+            "__RUNSETTINGS__" = $runSettings;
         };
 
-        $runner = $_FRAMEWORKS[$framework]["runner"]
+        $runner = $frameworkSettings["runner"]
         # make a copy of the args array
-        $_TempCliXMLString = [System.Management.Automation.PSSerializer]::Serialize($_FRAMEWORKS[$framework]["args"], [int32]::MaxValue)
-        [Object[]] $args = [System.Management.Automation.PSSerializer]::Deserialize($_TempCliXMLString)
+        [Object[]] $args = @() + $frameworkSettings["args"]
         # replace the placeholders with actual values
         for([int] $i = 0; $i -lt $args.Length; $i++) {
             foreach($r in $replacements.Keys) {
@@ -105,7 +156,7 @@ function Test([String] $target, [String] $configuration, [String[]] $frameworks)
         }
 
         if($filter.Length -gt 0) {
-            $tmp = $_FRAMEWORKS[$framework]["filterArg"].Replace('__FILTER__', $replacements['__FILTER__'])
+            $tmp = $frameworkSettings["filterArg"].Replace('__FILTER__', $replacements['__FILTER__'])
             foreach($r in $replacements.Keys) {
                 $tmp = $tmp.Replace($r, $replacements[$r])
             }
@@ -131,7 +182,7 @@ switch -wildcard ($target) {
     "clean-debug"   { Main "Clean" "Debug" }
     "stage-debug"   { Main "Stage" "Debug" }
     "package-debug" { Main "Package" "Debug" }
-    "test-debug-*"  { Test $target.Substring(10) "Debug" $frameworks }
+    "test-debug-*"  { Test $target.Substring(11) "Debug" $frameworks $platform; break }
     
     # release targets
     "restore"       { Main "RestoreReferences" "Release" }
@@ -139,7 +190,7 @@ switch -wildcard ($target) {
     "clean"         { Main "Clean" "Release" }
     "stage"         { Main "Stage" "Release" }
     "package"       { Main "Package" "Release" }
-    "test-*"        { Test $target.Substring(5) "Release" $frameworks }
+    "test-*"        { Test $target.Substring(5) "Release" $frameworks $platform; break }
 
     # utility targets
     "ngen"          {

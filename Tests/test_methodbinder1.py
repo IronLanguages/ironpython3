@@ -19,7 +19,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp20, run_test, skipUnlessIronPython
 from iptest.type_util import *
 
 myint1,     myint2      = myint(20),    myint(-20)
@@ -784,7 +784,6 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt
         result = nt.Method(None)
         self.assertEqual(result, None)
 
-    @unittest.skipIf(is_netcoreapp, 'no System.Configuration')
     def test_xequals_call_for_optimization(self):
         """
         Testing specifically for System.Configuration.ConfigurationManager
@@ -794,6 +793,8 @@ IListInt Array IEnumerableInt IEnumeratorInt NullableInt
         """
 
         import clr
+        if is_netcoreapp20:
+            clr.AddReference("System.Configuration.ConfigurationManager")
         clr.AddReference("System.Configuration");
         from System.Configuration import ConfigurationManager
         c = ConfigurationManager.ConnectionStrings

@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if FEATURE_NATIVE
+#if FEATURE_CTYPES
 
 using System;
 using System.Runtime.CompilerServices;
@@ -130,27 +130,50 @@ namespace IronPython.Modules {
             EnsureObjects()[key] = value;
         }
 
+        private short Swap(short val) {
+            return (short)((((ushort)val & 0xFF00) >> 8) | (((ushort)val & 0x00FF) << 8));
+        }
+
+        private int Swap(int val) {
+            // swap adjacent 16-bit blocks
+            val = (int)(((uint)val >> 16) | ((uint)val << 16));
+            // swap adjacent 8-bit blocks
+            return (int)((((uint)val & 0xFF00FF00) >> 8) | (((uint)val & 0x00FF00FF) << 8));
+        }
+
+        private long Swap(long val) {
+            // swap adjacent 32-bit blocks
+            val = (long)(((ulong)val >> 32) | ((ulong)val << 32));
+            // swap adjacent 16-bit blocks
+            val = (long)((((ulong)val & 0xFFFF0000FFFF0000) >> 16) | (((ulong)val & 0x0000FFFF0000FFFF) << 16));
+            // swap adjacent 8-bit blocks
+            return (long)((((ulong)val & 0xFF00FF00FF00FF00) >> 8) | (((ulong)val & 0x00FF00FF00FF00FF) << 8));
+        }
+
         public byte ReadByte(int offset) {
             byte res = Marshal.ReadByte(_data, offset);
             GC.KeepAlive(this);
             return res;
         }
 
-        public short ReadInt16(int offset) {
+        public short ReadInt16(int offset, bool swap=false) {
             short res = Marshal.ReadInt16(_data, offset);
             GC.KeepAlive(this);
+            if(swap) res = Swap(res);
             return res;
         }
 
-        public int ReadInt32(int offset) {
+        public int ReadInt32(int offset, bool swap=false) {
             int res = Marshal.ReadInt32(_data, offset);
             GC.KeepAlive(this);
+            if(swap) res = Swap(res);
             return res;
         }
 
-        public long ReadInt64(int offset) {
+        public long ReadInt64(int offset, bool swap=false) {
             long res = Marshal.ReadInt64(_data, offset);
             GC.KeepAlive(this);
+            if(swap) res = Swap(res);
             return res;
         }
 
@@ -225,18 +248,18 @@ namespace IronPython.Modules {
             GC.KeepAlive(this);
         }
 
-        public void WriteInt16(int offset, short value) {
-            Marshal.WriteInt16(_data, offset, value);
+        public void WriteInt16(int offset, short value, bool swap=false) {
+            Marshal.WriteInt16(_data, offset, swap ? Swap(value) : value);
             GC.KeepAlive(this);
         }
 
-        public void WriteInt32(int offset, int value) {
-            Marshal.WriteInt32(_data, offset, value);
+        public void WriteInt32(int offset, int value, bool swap=false) {
+            Marshal.WriteInt32(_data, offset, swap ? Swap(value) : value);
             GC.KeepAlive(this);
         }
 
-        public void WriteInt64(int offset, long value) {
-            Marshal.WriteInt64(_data, offset, value);
+        public void WriteInt64(int offset, long value, bool swap=false) {
+            Marshal.WriteInt64(_data, offset, swap ? Swap(value) : value);
             GC.KeepAlive(this);
         }
 

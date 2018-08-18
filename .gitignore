@@ -36,6 +36,7 @@ CurrentVersion.Generated.cs
 
 TestResult.xml
 Solutions/TestResults/
+/Src/IronPythonTest/runsettings*.xml
 
 # TODO - testing scripts should not create these files
 Src/StdLib/Lib/@test_*
@@ -98,3 +99,9 @@ build-*.ProjectImports.zip
 *.trx
 launchSettings.json
 *.un~
+/Src/ctypes_test/Win32/
+/Src/ctypes_test/x64/
+*.user
+*.o
+/Src/ctypes_test/*.pyd
+/Src/ctypes_test/*.pyd

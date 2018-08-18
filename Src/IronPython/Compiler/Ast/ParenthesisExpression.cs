@@ -48,6 +48,10 @@ namespace IronPython.Compiler.Ast {
             return _expression.CheckAssign();
         }
 
+        internal override string CheckAugmentedAssign() {
+            return _expression.CheckAugmentedAssign();
+        }
+
         internal override string CheckDelete() {
             return _expression.CheckDelete();
         }

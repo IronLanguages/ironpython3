@@ -12,7 +12,8 @@
  *
  *
  * ***************************************************************************/
-#if FEATURE_NATIVE
+
+#if FEATURE_CTYPES
 
 using System;
 using System.Collections.Generic;

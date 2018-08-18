@@ -21,9 +21,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPythonWindowAny", "Src\
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3A14D070-628F-44EF-92DD-47C8BE5C33CD}"
 	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
 		.gitignore = .gitignore
 		Build.proj = Build.proj
 		CurrentVersion.props = CurrentVersion.props
+		Directory.Build.props = Directory.Build.props
 		IronPython.nuspec = IronPython.nuspec
 		IronPython.StdLib.nuspec = IronPython.StdLib.nuspec
 		LICENSE = LICENSE
@@ -31,11 +33,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Makefile = Makefile
 		NuGet.config = NuGet.config
 		README = README
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CustomTasks", "CustomTasks", "{2BA7ADB8-E6B4-4C3E-95A0-A65C98919FE2}"
-	ProjectSection(SolutionItems) = preProject
-		Build\CustomTasks\CustomTasks.cs = Build\CustomTasks\CustomTasks.cs
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Templates", "Templates", "{CE9DF8A7-CEE3-44CB-8C17-E0E3004A8755}"
@@ -49,10 +46,9 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{17737ACB-40C6-41A6-83DA-3203A4DCEC19}"
 	ProjectSection(SolutionItems) = preProject
 		Build\After.targets = Build\After.targets
-		Build\Bootstrap.targets = Build\Bootstrap.targets
-		Build\Common.proj = Build\Common.proj
 		Build\net45.props = Build\net45.props
 		Build\netcoreapp2.0.props = Build\netcoreapp2.0.props
+		Build\netcoreapp2.1.props = Build\netcoreapp2.1.props
 		Build\Versioning.targets = Build\Versioning.targets
 	EndProjectSection
 EndProject
@@ -137,7 +133,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{2BA7ADB8-E6B4-4C3E-95A0-A65C98919FE2} = {17737ACB-40C6-41A6-83DA-3203A4DCEC19}
 		{CE9DF8A7-CEE3-44CB-8C17-E0E3004A8755} = {17737ACB-40C6-41A6-83DA-3203A4DCEC19}
 		{17737ACB-40C6-41A6-83DA-3203A4DCEC19} = {3A14D070-628F-44EF-92DD-47C8BE5C33CD}
 		{EB66B766-6354-4208-A3D4-AACBDCB5C3B3} = {AC38EFB1-820D-4E90-BF40-BEF3AC825542}

@@ -256,7 +256,7 @@ namespace IronPython.Hosting {
             if (entryAssembly != null) {
                 executable = entryAssembly.Location;
                 prefix = Path.GetDirectoryName(executable);
-#if NETCOREAPP2_0
+#if NETCOREAPP2_0 || NETCOREAPP2_1
                 if (Path.GetExtension(executable) == ".dll") {
                     var name = Path.GetFileNameWithoutExtension(executable);
                     var runner = Path.Combine(prefix, name + ".bat");
@@ -485,7 +485,7 @@ namespace IronPython.Hosting {
                 try {
                     return RunCommandWorker(command);
                 } catch (Exception e) {
-                    Console.Write(Language.FormatException(e), Style.Error);
+                    Console.WriteLine(Language.FormatException(e), Style.Error);
                     return 1;
                 }
             } 
@@ -527,7 +527,7 @@ namespace IronPython.Hosting {
                 try {
                     result = RunFileWorker(fileName);
                 } catch (Exception e) {
-                    Console.Write(Language.FormatException(e), Style.Error);
+                    Console.WriteLine(Language.FormatException(e), Style.Error);
                 }
             } else {
                 result = RunFileWorker(fileName);

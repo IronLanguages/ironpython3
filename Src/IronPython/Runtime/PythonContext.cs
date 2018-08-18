@@ -628,6 +628,14 @@ namespace IronPython.Runtime
             ));
         }
 
+        public PythonType EnsureModuleException(object key, PythonType baseType, Type underlyingType, PythonDictionary dict, string name, string module, string documentation, Func<string, Exception, Exception> exceptionMaker) {
+            return (PythonType)(dict[name] = GetOrCreateModuleState(
+                key,
+                () => PythonExceptions.CreateSubType(this, baseType, underlyingType, name, module, documentation, exceptionMaker)
+            ));
+        }
+
+
         public PythonType EnsureModuleException(object key, PythonType[] baseTypes, Type underlyingType, PythonDictionary dict, string name, string module) {
             return (PythonType)(dict[name] = GetOrCreateModuleState(
                 key,
@@ -1444,28 +1452,24 @@ namespace IronPython.Runtime
 
         internal static string FormatPythonSyntaxError(SyntaxErrorException e) {
             string sourceLine = GetSourceLine(e);
-
-            if (e.GetData(_syntaxErrorNoCaret) == null) {
-                return String.Format(
-                    "  File \"{1}\", line {2}{0}" +
-                    "    {3}{0}" +
-                    "    {4}^{0}" +
-                    "{5}: {6}",
-                    Environment.NewLine,
-                    e.GetSymbolDocumentName(),
-                    e.Line > 0 ? e.Line.ToString() : "?",
-                    (sourceLine != null) ? sourceLine.TrimEnd('\n').Replace('\t', ' ') : null,
-                    new String(' ', e.Column != 0 ? e.Column - 1 : 0),
-                    GetPythonExceptionClassName(PythonExceptions.ToPython(e)), e.Message);
+            var indent = 0;
+            if (sourceLine != null) {
+                indent = sourceLine.Length;
+                sourceLine = sourceLine.TrimStart();
+                indent -= sourceLine.Length;
+                sourceLine = sourceLine.TrimEnd();
             }
+            var symbolDocumentName = e.GetSymbolDocumentName();
 
-            return String.Format(
-                    "  File \"{1}\", line {2}{0}" +
-                    "{3}: {4}",
-                    Environment.NewLine,
-                    e.GetSymbolDocumentName(),
-                    new String(' ', e.Column != 0 ? e.Column - 1 : 0),
-                    GetPythonExceptionClassName(PythonExceptions.ToPython(e)), e.Message);
+            var showCaret = e.GetData(_syntaxErrorNoCaret) == null;
+            var showSourceLine = sourceLine != null && (showCaret || symbolDocumentName != "<stdin>");
+
+            var builder = new StringBuilder();
+            builder.AppendLine($"  File \"{symbolDocumentName}\", line {(e.Line > 0 ? e.Line.ToString() : " ? ")}");
+            if (showSourceLine) builder.AppendLine("    " + sourceLine);
+            if (showCaret) builder.AppendLine("    " + new String(' ', Math.Max(e.Column - 1 - indent, 0)) + "^");
+            builder.Append($"{GetPythonExceptionClassName(PythonExceptions.ToPython(e))}: {e.Message}");
+            return builder.ToString();
         }
 
         internal static string GetSourceLine(SyntaxErrorException e) {

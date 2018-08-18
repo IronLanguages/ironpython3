@@ -297,45 +297,8 @@ namespace IronPython.Compiler.Ast {
         }
 
         private void Verify(PythonNameBinder binder) {
-            if (ContainsImportStar && IsClosure) {
-                binder.ReportSyntaxError(
-                    String.Format(
-                        System.Globalization.CultureInfo.InvariantCulture,
-                        "import * is not allowed in function '{0}' because it is a nested function",
-                        Name),
-                    this);
-            }
-            if (ContainsImportStar && Parent is FunctionDefinition) {
-                binder.ReportSyntaxError(
-                    String.Format(
-                        System.Globalization.CultureInfo.InvariantCulture,
-                        "import * is not allowed in function '{0}' because it is a nested function",
-                        Name),
-                    this);
-            }
-            if (ContainsImportStar && ContainsNestedFreeVariables) {
-                binder.ReportSyntaxError(
-                    String.Format(
-                        System.Globalization.CultureInfo.InvariantCulture,
-                        "import * is not allowed in function '{0}' because it contains a nested function with free variables",
-                        Name),
-                    this);
-            }
-            if (ContainsUnqualifiedExec && ContainsNestedFreeVariables) {
-                binder.ReportSyntaxError(
-                    String.Format(
-                        System.Globalization.CultureInfo.InvariantCulture,
-                        "unqualified exec is not allowed in function '{0}' because it contains a nested function with free variables",
-                        Name),
-                    this);
-            }
-            if (ContainsUnqualifiedExec && IsClosure) {
-                binder.ReportSyntaxError(
-                    String.Format(
-                        System.Globalization.CultureInfo.InvariantCulture,
-                        "unqualified exec is not allowed in function '{0}' because it is a nested function",
-                        Name),
-                    this);
+            if (ContainsImportStar) {
+                binder.ReportSyntaxError("import * only allowed at module level", this);
             }
         }
 

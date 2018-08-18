@@ -1661,7 +1661,7 @@ namespace IronPython.Runtime.Operations {
             // if we have a valid code page try and get a reasonable name.  The
             // web names / mail displays match tend to CPython's terse names
             if (encoding.CodePage != 0) {
-#if !NETCOREAPP2_0
+#if !NETCOREAPP2_0 && !NETCOREAPP2_1
                 if (encoding.IsBrowserDisplay) {
                     name = encoding.WebName;
                 }
@@ -1874,47 +1874,59 @@ namespace IronPython.Runtime.Operations {
 
             private static Dictionary<string, EncodingInfoWrapper> MakeCodecsDict() {
                 Dictionary<string, EncodingInfoWrapper> d = new Dictionary<string, EncodingInfoWrapper>();
+#if NETCOREAPP2_0 || NETCOREAPP2_1
+                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                // TODO: add more encodings
+                d["cp1252"] = d["windows-1252"] = new EncodingInfoWrapper(Encoding.GetEncoding(1252));
+                d["iso8859_15"] = d["iso_8859_15"] = d["latin9"] = d["l9"] = new EncodingInfoWrapper(Encoding.GetEncoding(28605));
+#endif
                 EncodingInfo[] encs = Encoding.GetEncodings();
-                for (int i = 0; i < encs.Length; i++) {
-                    string normalizedName = NormalizeEncodingName(encs[i].Name);
 
-                    // setup well-known mappings, for everything
-                    // else we'll store as lower case w/ _                
+                foreach (EncodingInfo enc in encs) {
+                    string normalizedName = NormalizeEncodingName(enc.Name);
+
+                    // setup well-known mappings, for everything else we'll store as lower case w/ _
+                    // for the common types cp* are not actual Python aliases, but GetEncodingName may return them
                     switch (normalizedName) {
                         case "us_ascii":
-                            d["cp" + encs[i].CodePage.ToString()] = d[normalizedName] = d["us"] = d["ascii"] = d["646"] = d["us_ascii"] = new AsciiEncodingInfoWrapper();
+                            d["cp" + enc.CodePage.ToString()] = d["us_ascii"] = d["us"] = d["ascii"] = d["646"] = new AsciiEncodingInfoWrapper();
                             continue;
                         case "iso_8859_1":
-                            d["8859"] = d["latin_1"] = d["latin1"] = d["iso 8859_1"] = d["iso8859_1"] = d["cp819"] = d["819"] = d["latin"] = d["l1"] = encs[i];
+                            d["8859"] = d["latin_1"] = d["latin1"] = d["iso 8859_1"] = d["iso8859_1"] = d["cp819"] = d["819"] = d["latin"] = d["l1"] = enc;
                             break;
                         case "utf_7":
-                            d["u7"] = d["unicode-1-1-utf-7"] = encs[i];
+                            d["cp" + enc.CodePage.ToString()] = d["utf_7"] = d["u7"] = d["unicode-1-1-utf-7"] = enc;
                             break;
                         case "utf_8":
-                            d["utf_8_sig"] = encs[i];
-                            d["utf_8"] = d["utf8"] = d["u8"] = new EncodingInfoWrapper(encs[i], new byte[0]);
+                            d["cp" + enc.CodePage.ToString()] = d["utf_8"] = d["utf8"] = d["u8"] = new EncodingInfoWrapper(enc, new byte[0]);
+                            d["utf_8_sig"] = enc;
                             continue;
                         case "utf_16":
-                            d["utf_16_le"] = d["utf_16le"] = new EncodingInfoWrapper(encs[i], new byte[0]);
-                            d["utf16"] = new EncodingInfoWrapper(encs[i], encs[i].GetEncoding().GetPreamble());
-                            break;
-                        case "unicodefffe": // big endian unicode                    
-                            // strip off the pre-amble, CPython doesn't include it.
-                            d["utf_16_be"] = d["utf_16be"] = new EncodingInfoWrapper(encs[i], new byte[0]);
-                            break;
+                            d["utf_16le"] = d["utf_16_le"] = new EncodingInfoWrapper(enc, new byte[0]);
+                            d["cp" + enc.CodePage.ToString()] = d["utf_16"] = d["utf16"] = d["u16"] = enc;
+                            continue;
+                        case "utf_16be":
+                            d["cp" + enc.CodePage.ToString()] = d["utf_16be"] = d["utf_16_be"] = new EncodingInfoWrapper(enc, new byte[0]);
+                            continue;
+                        case "utf_32":
+                            d["utf_32le"] = d["utf_32_le"] = new EncodingInfoWrapper(enc, new byte[0]);
+                            d["cp" + enc.CodePage.ToString()] = d["utf_32"] = d["utf32"] = d["u32"] = enc;
+                            continue;
+                        case "utf_32be":
+                            d["cp" + enc.CodePage.ToString()] = d["utf_32be"] = d["utf_32_be"] = new EncodingInfoWrapper(enc, new byte[0]);
+                            continue;
                     }
 
                     // publish under normalized name (all lower cases, -s replaced with _s)
-                    d[normalizedName] = encs[i];
-                    // publish under Windows code page as well...                
-                    d["windows-" + encs[i].GetEncoding().WindowsCodePage.ToString()] = encs[i];
+                    d[normalizedName] = enc;
+                    // publish under Windows code page as well...
+                    d["windows-" + enc.GetEncoding().WindowsCodePage.ToString()] = enc;
                     // publish under code page number as well...
-                    d["cp" + encs[i].CodePage.ToString()] = d[encs[i].CodePage.ToString()] = encs[i];
+                    d["cp" + enc.CodePage.ToString()] = d[enc.CodePage.ToString()] = enc;
                 }
 
                 d["raw_unicode_escape"] = new EncodingInfoWrapper(new UnicodeEscapeEncoding(true));
                 d["unicode_escape"] = new EncodingInfoWrapper(new UnicodeEscapeEncoding(false));
-
 
 #if DEBUG
                 // all codecs should be stored in lowercase because we only look up from lowercase strings
@@ -2101,7 +2113,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static bool endswith(string self, [BytesConversion]string suffix) {
-            return self.EndsWith(suffix);
+            return self.EndsWith(suffix, StringComparison.Ordinal);
         }
 
         //  Indexing is 0-based. Need to deal with negative indices
@@ -2120,7 +2132,7 @@ namespace IronPython.Runtime.Operations {
                 start += len;
                 if (start < 0) start = 0;
             }
-            return self.Substring(start).EndsWith(suffix);
+            return self.Substring(start).EndsWith(suffix, StringComparison.Ordinal);
         }
 
         //  With optional start, test beginning at that position (the char at that index is
@@ -2134,18 +2146,18 @@ namespace IronPython.Runtime.Operations {
                 start += len;
                 if (start < 0) start = 0;
             }
-            if (end >= len) return self.Substring(start).EndsWith(suffix);
+            if (end >= len) return self.Substring(start).EndsWith(suffix, StringComparison.Ordinal);
             else if (end < 0) {
                 end += len;
                 if (end < 0) return false;
             }
             if (end < start) return false;
-            return self.Substring(start, end - start).EndsWith(suffix);
+            return self.Substring(start, end - start).EndsWith(suffix, StringComparison.Ordinal);
         }
 
         private static bool endswith(string self, PythonTuple suffix) {
             foreach (object obj in suffix) {
-                if (self.EndsWith(GetString(obj))) {
+                if (self.EndsWith(GetString(obj), StringComparison.Ordinal)) {
                     return true;
                 }
             }
@@ -2171,7 +2183,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static bool startswith(string self, [BytesConversion]string prefix) {
-            return self.StartsWith(prefix);
+            return self.StartsWith(prefix, StringComparison.Ordinal);
         }
 
         public static bool startswith(string self, [BytesConversion]string prefix, int start) {
@@ -2181,7 +2193,7 @@ namespace IronPython.Runtime.Operations {
                 start += len;
                 if (start < 0) start = 0;
             }
-            return self.Substring(start).StartsWith(prefix);
+            return self.Substring(start).StartsWith(prefix, StringComparison.Ordinal);
         }
 
         public static bool startswith(string self, [BytesConversion]string prefix, int start, int end) {
@@ -2192,18 +2204,18 @@ namespace IronPython.Runtime.Operations {
                 start += len;
                 if (start < 0) start = 0;
             }
-            if (end >= len) return self.Substring(start).StartsWith(prefix);
+            if (end >= len) return self.Substring(start).StartsWith(prefix, StringComparison.Ordinal);
             else if (end < 0) {
                 end += len;
                 if (end < 0) return false;
             }
             if (end < start) return false;
-            return self.Substring(start, end - start).StartsWith(prefix);
+            return self.Substring(start, end - start).StartsWith(prefix, StringComparison.Ordinal);
         }
 
         private static bool startswith(string self, PythonTuple prefix) {
             foreach (object obj in prefix) {
-                if (self.StartsWith(GetString(obj))) {
+                if (self.StartsWith(GetString(obj), StringComparison.Ordinal)) {
                     return true;
                 }
             }
@@ -2698,6 +2710,5 @@ namespace IronPython.Runtime.Operations {
         public static string/*!*/ __repr__(string/*!*/ self) {
             return StringOps.Quote(self);
         }
-
     }
 }

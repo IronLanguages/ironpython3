@@ -12,7 +12,8 @@
  *
  *
  * ***************************************************************************/
-#if FEATURE_NATIVE
+
+#if FEATURE_CTYPES
 
 using System;
 
@@ -22,6 +23,6 @@ namespace IronPython.Modules {
             return new IntPtr(checked(self.ToInt64() + offset));
         }
     }
-
 }
+
 #endif

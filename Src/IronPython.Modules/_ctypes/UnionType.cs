@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if FEATURE_NATIVE
+#if FEATURE_CTYPES
 
 using System;
 using System.Collections;
@@ -86,7 +86,17 @@ namespace IronPython.Modules {
                 return MakeArrayType(type, count);
             }
 
-#region INativeType Members
+            public object from_buffer(CodeContext/*!*/ context, ArrayModule.array array, int offset = 0) {
+                ValidateArraySizes(array, offset, ((INativeType)this).Size);
+
+                _Union res = (_Union)CreateInstance(context);
+                IntPtr addr = array.GetArrayAddress();
+                res._memHolder = new MemoryHolder(addr.Add(offset), ((INativeType)this).Size);
+                res._memHolder.AddObject("ffffffff", array);
+                return res;
+            }
+
+            #region INativeType Members
 
             int INativeType.Size {
                 get {
@@ -191,7 +201,7 @@ namespace IronPython.Modules {
                     }
 
                     StructType.CheckAnonymousFields(allFields, anonFields);
-                    
+
                     _fields = allFields.ToArray();
                     _size = PythonStruct.Align(size, alignment);
                     _alignment = alignment;

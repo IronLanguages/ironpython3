@@ -121,13 +121,13 @@
     <value>couldn't find member {0}</value>
   </data>
   <data name="DefaultRequired" xml:space="preserve">
-    <value>default value must be specified here</value>
+    <value>non-default argument follows default argument</value>
   </data>
   <data name="DuplicateArgumentInFuncDef" xml:space="preserve">
     <value>duplicate argument '{0}' in function definition</value>
   </data>
   <data name="DuplicateKeywordArg" xml:space="preserve">
-    <value>duplicate keyword argument</value>
+    <value>keyword argument repeated</value>
   </data>
   <data name="EofInString" xml:space="preserve">
     <value>&lt;eof&gt; while reading string</value>

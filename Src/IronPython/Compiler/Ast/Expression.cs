@@ -46,13 +46,7 @@ namespace IronPython.Compiler.Ast {
             return "can't assign to " + NodeName;
         }
 
-        internal virtual string CheckAugmentedAssign() {
-            if (CheckAssign() != null) {
-                return "illegal expression for augmented assignment";
-            }
-
-            return null;
-        }
+        internal virtual string CheckAugmentedAssign() => CheckAssign();
 
         internal virtual string CheckDelete() {
             return "can't delete " + NodeName;

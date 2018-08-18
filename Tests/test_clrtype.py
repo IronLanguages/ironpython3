@@ -15,12 +15,12 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_mono, is_netcoreapp, run_test
+from iptest import IronPythonTestCase, is_netcoreapp, is_netcoreapp20, is_posix, run_test
 
 import clr
 import clrtype
 
-if is_netcoreapp:
+if is_netcoreapp20:
     clr.AddReference("System.Private.Xml")
 clr.AddReference("System.Xml")
 
@@ -94,7 +94,7 @@ class Product(IProduct):
     def calc_total(self, discount=0.0):
         return (self.cost - discount) * self.quantity
 
-if not is_netcoreapp and not is_mono:
+if not is_netcoreapp and not is_posix:
     class NativeMethods(object):
         # Note that you could also the "ctypes" modules instead of pinvoke declarations
         __metaclass__ = clrtype.ClrClass
@@ -102,7 +102,7 @@ if not is_netcoreapp and not is_mono:
         from System.Runtime.InteropServices import DllImportAttribute, PreserveSigAttribute
         DllImport = clrtype.attribute(DllImportAttribute)
         PreserveSig = clrtype.attribute(PreserveSigAttribute)
-        
+
         @staticmethod
         @DllImport("user32.dll")
         @PreserveSig()
@@ -122,7 +122,8 @@ class ClrTypeTest(IronPythonTestCase):
         super(ClrTypeTest, self).setUp()
         self.p = Product("Widget", 10.0, 42)
 
-    @unittest.skipIf(is_netcoreapp or is_mono, 'No DefinePInvokeMethod (is_netcoreapp) and Windows specific P/Invoke (is_mono)')
+    @unittest.skipIf(is_netcoreapp, 'No DefinePInvokeMethod')
+    @unittest.skipIf(is_posix, 'Windows specific P/Invoke')
     def test_pinvoke_method(self):
         self.assertTrue(NativeMethods.IsCharAlpha('A'))
         # Call statically-typed method from another .NET language (simulated using Reflection)

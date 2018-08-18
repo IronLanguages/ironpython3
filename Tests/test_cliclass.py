@@ -15,7 +15,7 @@
 
 import sys
 import unittest
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_mono, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_debug, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
 
 if is_cli:
     import clr
@@ -814,6 +814,7 @@ End Class""")
             a.MyRaise()
             self.assertEqual(UseEvent.Called, False)
 
+    @unittest.skipIf(is_debug, "assertion failure")
     def test_dynamic_assembly_ref(self):
         # verify we can add a reference to a dynamic assembly, and
         # then create an instance of that type
@@ -1180,7 +1181,6 @@ End Class""")
         l = System.Collections.ArrayList()
         self.assertEqual(isinstance(l, System.Collections.IList), True)
 
-    @unittest.skipIf(is_netcoreapp, 'TODO: figure out')
     def test_serialization(self):
         """
         TODO:
@@ -1419,7 +1419,6 @@ if not hasattr(A, 'Rank'):
         self.assertTrue('IndexOf' not in clr.Dir('abc'))
         self.assertTrue('IndexOf' in clr.DirClr('abc'))
 
-    #@unittest.skipIf(is_mono, 'mono ')
     def test_array_contains(self):
         self.assertRaises(KeyError, lambda : System.Array[str].__dict__['__contains__'])
 
@@ -1714,7 +1713,7 @@ if not hasattr(A, 'Rank'):
         self.assertEqual(hasattr('System', 'does_not_exist'), False)
         self.assertEqual(hasattr(type, '__all__'), False)
 
-    @unittest.skipIf(is_netcoreapp or is_mono, 'No WPF available')
+    @unittest.skipIf(is_netcoreapp or is_posix, 'No WPF available')
     def test_xaml_support(self):
         from IronPythonTest import XamlTestObject, InnerXamlTextObject
         text = """<custom:XamlTestObject 

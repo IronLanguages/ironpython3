@@ -1,28 +1,28 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="$(ProjectDir)..\..\Build\Common.proj" />
+
   <PropertyGroup>
     <TargetFrameworks>net45</TargetFrameworks>
-    <PlatformTarget>anycpu</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
-    <ProjectGuid>{7F6F9AB3-9943-4316-BD4C-A10F580BC75C}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>IronPythonWindow</RootNamespace>
     <AssemblyName>ipyw</AssemblyName>
     <ApplicationIcon>..\IronPythonWindow\ipyw.ico</ApplicationIcon>
     <CodeAnalysisRuleSet>IronPythonWindowAny.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\IronPython\IronPython.csproj" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
+
   <ItemGroup>
     <Compile Include="..\AssemblyVersion.cs" Link="Properties\AssemblyVersion.cs" />
     <Compile Include="..\IronPythonWindow\Properties\AssemblyInfo.cs" Link="Properties\AssemblyInfo.cs" />
     <Compile Include="..\IronPythonWindow\IronPythonWindow.cs" Link="IronPythonWindow.cs" />
   </ItemGroup>
+
   <Import Project="$(BeforeTargetFiles)" />
   <Target Name="BeforeBuildStarts" BeforeTargets="BeforeBuild" DependsOnTargets="$(BeforeTargets);GenerateCurrentVersion" />
   <ItemGroup>
@@ -34,4 +34,5 @@
   </ItemGroup>
   <Import Project="$(AfterTargetFiles)" />
   <Target Name="AfterBuildEnds" AfterTargets="AfterBuild" DependsOnTargets="$(AfterTargets)" />
+
 </Project>

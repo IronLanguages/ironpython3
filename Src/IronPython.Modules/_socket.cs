@@ -2411,42 +2411,6 @@ namespace IronPython.Modules {
             private readonly CodeContext _context;
             private readonly RemoteCertificateValidationCallback _callback;
             private Exception _validationFailure;
-            private static readonly bool _supportsTls12;
-            private static readonly SslProtocols _SslProtocol_Tls12;
-            private static readonly SslProtocols _SslProtocol_Tls11;
-
-            static ssl()
-            {
-                // If .Net 4.5 or 4.6 are installed, try and detect
-                // the availability of Tls11/Tls12 dynamically:
-                SslProtocols result = SslProtocols.None;
-                bool succeeded = false;
-                try {
-                    result = (SslProtocols)Enum.Parse(typeof(SslProtocols), "Tls12");
-                    succeeded = true;
-                }
-                catch (ArgumentException) {
-                    // This is thrown for invalid enumeration values:
-                    // This is ok on .Net 2.0 or .Net 4.0 without .Net 4.5/4.6 installed.
-                }
-                _supportsTls12 = succeeded;
-                if (_supportsTls12)
-                {
-                    _SslProtocol_Tls12 = result;
-                    try {
-                        _SslProtocol_Tls11 = (SslProtocols)Enum.Parse(typeof(SslProtocols), "Tls11");
-                    }
-                    catch (ArgumentException) {
-                        // This is thrown for invalid enumeration values by Enum.Parse.
-                        throw new InvalidOperationException("Tls12 exists in SslProtocols but not Tls11? Very unexpected!");
-                    }
-                }
-                else
-                {
-                    _SslProtocol_Tls11 = SslProtocols.None;
-                    _SslProtocol_Tls12 = SslProtocols.None;
-                }
-            }
 
             public ssl(CodeContext context, PythonSocket.socket sock, string keyfile=null, string certfile=null, X509Certificate2Collection certs=null) {
                 _context = context;
@@ -2689,23 +2653,17 @@ namespace IronPython.Modules {
                         result = SslProtocols.Ssl3;
                         break;
                     case PythonSsl.PROTOCOL_SSLv23:
-                        result = SslProtocols.Ssl2 | SslProtocols.Ssl3 | SslProtocols.Tls | _SslProtocol_Tls11 | _SslProtocol_Tls12;
+                        result = SslProtocols.Ssl2 | SslProtocols.Ssl3 | SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
                         break;
 #pragma warning restore CS0618 // Type or member is obsolete
                     case PythonSsl.PROTOCOL_TLSv1:
                         result = SslProtocols.Tls;
                         break;
                     case PythonSsl.PROTOCOL_TLSv1_1:
-                        if (!_supportsTls12) {
-                            throw new InvalidOperationException("bad ssl protocol type: " + type);
-                        }
-                        result = _SslProtocol_Tls11;
+                        result = SslProtocols.Tls11;
                         break;
                     case PythonSsl.PROTOCOL_TLSv1_2:
-                        if (!_supportsTls12) {
-                            throw new InvalidOperationException("bad ssl protocol type: " + type);
-                        }
-                        result = _SslProtocol_Tls12;
+                        result = SslProtocols.Tls12;
                         break;
                     default:
                         throw new InvalidOperationException("bad ssl protocol type: " + type);
@@ -2716,11 +2674,8 @@ namespace IronPython.Modules {
                 result &= (type & PythonSsl.OP_NO_SSLv2) != 0 ? ~SslProtocols.Ssl2 : ~SslProtocols.None;
 #pragma warning restore CS0618 // Type or member is obsolete
                 result &= (type & PythonSsl.OP_NO_TLSv1) != 0 ? ~SslProtocols.Tls : ~SslProtocols.None;
-                if (_supportsTls12)
-                {
-                    result &= (type & PythonSsl.OP_NO_TLSv1_1) != 0 ? ~_SslProtocol_Tls11 : ~SslProtocols.None;
-                    result &= (type & PythonSsl.OP_NO_TLSv1_2) != 0 ? ~_SslProtocol_Tls12 : ~SslProtocols.None;
-                }
+                result &= (type & PythonSsl.OP_NO_TLSv1_1) != 0 ? ~SslProtocols.Tls11 : ~SslProtocols.None;
+                result &= (type & PythonSsl.OP_NO_TLSv1_2) != 0 ? ~SslProtocols.Tls12 : ~SslProtocols.None;
                 return result;
             }
 
@@ -2983,7 +2938,5 @@ of bytes written.")]
 
     }
 }
-
-
 
 #endif

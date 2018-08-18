@@ -214,7 +214,7 @@ namespace IronPython.Runtime.Types {
 
             // check if this operator is only availble after importing CLR (e.g. __getitem__ on functions)
             foreach (MethodInfo mi in methods) {
-                if (!mi.IsDefined(typeof(PythonHiddenAttribute), false)) {
+                if (!PythonHiddenAttribute.IsHidden(mi)) {
                     ft |= FunctionType.AlwaysVisible;
                     break;
                 }

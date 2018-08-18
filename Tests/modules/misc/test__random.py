@@ -17,7 +17,7 @@ import _random
 import unittest
 from iptest import is_netcoreapp, run_test
 
-@unittest.skipIf(is_netcoreapp, "TODO: figure out")
+@unittest.skipIf(is_netcoreapp, "https://github.com/IronLanguages/ironpython2/issues/373")
 class _RandomTest(unittest.TestCase):
     def test_getrandbits(self):
 

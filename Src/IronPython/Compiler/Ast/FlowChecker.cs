@@ -138,6 +138,18 @@ namespace IronPython.Compiler.Ast {
             _fc.Delete(node.Name);
             return false;
         }
+
+        public override bool Walk(ParenthesisExpression node) {
+            return true;
+        }
+
+        public override bool Walk(TupleExpression node) {
+            return true;
+        }
+
+        public override bool Walk(ListExpression node) {
+            return true;
+        }
     }
 
     class FlowChecker : PythonWalker {

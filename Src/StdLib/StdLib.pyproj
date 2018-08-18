@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="15.0">
-  <Import Project="$(ProjectDir)..\..\Build\Common.proj" />
+<Project DefaultTargets="Build" Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{89993698-F0CA-411C-82B3-21F1A9705B77}</ProjectGuid>
@@ -10,17 +9,16 @@
     <AssemblyName>PyStdLib</AssemblyName>
     <Name>PyStdLib</Name>
     <RootNamespace>PyStdLib</RootNamespace>
-    <StdLibPath>$(RootDir)\Src\StdLib\Lib</StdLibPath>
+    <StdLibPath>Lib</StdLibPath>
   </PropertyGroup>
 
   <PropertyGroup>
-    <LibOutputDir>$(OutputPath)\Lib</LibOutputDir>
     <ExcludedPackages>
-      Lib\idlelib\**\*.*;
-      Lib\tkinter\**\*.*;
-      Lib\test\**\*.*;
-      Lib\*\test\**\*.*;
-      Lib\*\tests\**\*.*
+      $(StdLibPath)\idlelib\**\*.*;
+      $(StdLibPath)\tkinter\**\*.*;
+      $(StdLibPath)\test\**\*.*;
+      $(StdLibPath)\*\test\**\*.*;
+      $(StdLibPath)\*\tests\**\*.*
     </ExcludedPackages>
   </PropertyGroup>
 
@@ -32,7 +30,7 @@
   <Import Project="$(BeforeTargetFiles)" />
 
   <Target Name="Stage">
-    <CopyStdLib SourceFiles="@(Content)" Destination="$(OutputPath)\Lib" BasePath="$(StdLibPath)" />
+    <Copy SourceFiles="@(Content)" DestinationFolder="$(OutputPath)\%(RelativeDir)" />
   </Target>
 
 </Project>

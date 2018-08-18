@@ -6,6 +6,8 @@ IronPython 3
 [![Gitter chat](https://badges.gitter.im/IronLanguages/ironpython.svg)](https://gitter.im/IronLanguages/ironpython)
 [![StackExchange](https://img.shields.io/stackexchange/stackoverflow/t/ironpython.svg)](http://stackoverflow.com/questions/tagged/ironpython)
 
+**IronPython3 is NOT ready for use yet. There is still much that needs to be done to support Python 3.x. We are working on it, albeit slowly. We welcome all those who would like to help!**
+
 [Official Website](http://ironpython.net)
 
 IronPython is an open-source implementation of the Python programming language which is tightly integrated with the .NET Framework. IronPython can use the .NET Framework and Python libraries, and other .NET languages can use Python code just as easily.
@@ -33,6 +35,10 @@ print("Hello World")
 
 IronPython 3 targets Python 3, including the re-organized standard library, Unicode strings, and all of the other new features.
 
+## Code of Conduct
+This project has adopted the code of conduct defined by the Contributor Covenant to clarify expected behavior in our community.
+For more information see the [.NET Foundation Code of Conduct](https://dotnetfoundation.org/code-of-conduct).
+
 ## Installation
 Builds of IronPython 3 are not yet provided.
 
@@ -51,4 +57,4 @@ Since the main development is on Windows, Mono bugs may inadvertantly be introdu
 - please report them!
 
 ## Supported Platforms
-IronPython 3 targets .NET 4.5 and .NET Core 2.0.
+IronPython 3 targets .NET 4.5 and .NET Core 2.0/2.1.

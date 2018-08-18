@@ -575,6 +575,7 @@ namespace IronPython.Runtime.Types {
                     xml = Path.Combine(baseDir, baseFile);
                     if (!File.Exists(xml)) {
 
+#if !NETCOREAPP2_0 && !NETCOREAPP2_1
                         // On .NET 4.0 documentation is in the reference assembly location
                         // for 64-bit processes, we need to look in Program Files (x86)
                         xml = Path.Combine(
@@ -585,7 +586,8 @@ namespace IronPython.Runtime.Types {
                             baseFile
                         );
 
-                        if (!File.Exists(xml)) 
+                        if (!File.Exists(xml))
+#endif
                         {
                             _AssembliesWithoutXmlDoc.Add(asm);
                             return null;

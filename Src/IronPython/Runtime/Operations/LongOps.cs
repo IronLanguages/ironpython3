@@ -564,11 +564,10 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static int __hash__(BigInteger self) {
-#if CLR4 // TODO: we might need our own hash code implementation. This avoids assertion failure.
+            // TODO: we might need our own hash code implementation. This avoids assertion failure.
             if (self == -2147483648) {
                 return -2147483648;
             }
-#endif
 
             // check if it's in the Int64 or UInt64 range, and use the built-in hashcode for that instead
             // this ensures that objects added to dictionaries as (U)Int64 can be looked up with Python longs

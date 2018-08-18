@@ -55,17 +55,7 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        internal override string CheckAssign() {
-            return "can't assign to generator expression";
-        }
-
-        internal override string CheckAugmentedAssign() {
-            return CheckAssign();
-        }
-
-        internal override string CheckDelete() {
-            return "can't delete generator expression";
-        }
+        public override string NodeName => "generator expression";
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {

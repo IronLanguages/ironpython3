@@ -98,7 +98,6 @@ class DynamicRegressionTest(IronPythonTestCase):
         self.assertEqual(DR.cp24117(xrange),    "IronPython.Runtime.Types.PythonType")
         self.assertEqual(DR.cp24117(xrange(3)), "IronPython.Runtime.XRange")
 
-    @unittest.skipIf(is_netcoreapp, "TODO: figure out")
     def test_cp24118(self):
         import IronPythonTest.DynamicRegressions as DR
         #TODO: once 26089 gets fixed the following needs actual verification.  That is,

@@ -13,10 +13,11 @@
  *
  * ***************************************************************************/
 
-#if FEATURE_NATIVE
+#if FEATURE_CTYPES
 
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Reflection.Emit;
 
 using Microsoft.Scripting;
@@ -25,8 +26,6 @@ using Microsoft.Scripting.Runtime;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-
-using System.Numerics;
 
 namespace IronPython.Modules {
     /// <summary>

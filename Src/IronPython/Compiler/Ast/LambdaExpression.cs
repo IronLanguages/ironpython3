@@ -33,6 +33,8 @@ namespace IronPython.Compiler.Ast {
             return _function.MakeFunctionExpression();
         }
 
+        public override string NodeName => "lambda";
+
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
                 _function?.Walk(walker);

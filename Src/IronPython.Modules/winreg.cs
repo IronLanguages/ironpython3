@@ -33,7 +33,7 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-[assembly: PythonModule("winreg", typeof(IronPython.Modules.PythonWinReg), PythonModuleAttribute.PlatformFamily.Windows)]
+[assembly: PythonModule("winreg", typeof(IronPython.Modules.PythonWinReg), PlatformsAttribute.PlatformFamily.Windows)]
 namespace IronPython.Modules {
     public static class PythonWinReg {
         public const string __doc__ = "Provides access to the Windows registry.";

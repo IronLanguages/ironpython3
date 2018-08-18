@@ -34,7 +34,6 @@ namespace IronPython.Compiler.Ast {
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public abstract class ScopeStatement : Statement {
-
         private bool _forceCompile;                 // true if this scope should always be compiled
 
         private FunctionCode _funcCode;             // the function code object created for this scope
@@ -51,11 +50,20 @@ namespace IronPython.Compiler.Ast {
         internal static MSAst.ParameterExpression LocalCodeContextVariable = Ast.Parameter(typeof(CodeContext), "$localContext");
         private static MSAst.ParameterExpression _catchException = Ast.Parameter(typeof(Exception), "$updException");
         internal const string NameForExec = "module: <exec>";
-        
+
+        /// <summary>
+        /// from module import *
+        /// </summary>
         internal bool ContainsImportStar { get; set; }
 
+        /// <summary>
+        /// True if this block contains a try/with statement.
+        /// </summary>
         internal bool ContainsExceptionHandling { get; set; }
 
+        /// <summary>
+        /// exec "code"
+        /// </summary>
         internal bool ContainsUnqualifiedExec { get; set; }
 
         internal virtual bool IsGeneratorMethod {
@@ -119,6 +127,9 @@ namespace IronPython.Compiler.Ast {
         /// </summary>
         internal virtual bool HasLateBoundVariableSets { get; set; }
 
+        /// <summary>
+        /// mapping of string to variables
+        /// </summary>
         internal Dictionary<string, PythonVariable> Variables { get; private set; }
 
         internal virtual bool IsGlobal {
@@ -187,7 +198,7 @@ namespace IronPython.Compiler.Ast {
                 _freeVars = new List<PythonVariable>();
             }
 
-            if(!_freeVars.Contains(variable)) {
+            if (!_freeVars.Contains(variable)) {
                 _freeVars.Add(variable);
             }
         }
@@ -197,7 +208,6 @@ namespace IronPython.Compiler.Ast {
                 if (_forceCompile) {
                     return false;
                 }
-
                 if (GlobalParent.CompilationMode == CompilationMode.Lookup) {
                     return true;
                 }
@@ -330,8 +340,7 @@ namespace IronPython.Compiler.Ast {
         internal virtual void Bind(PythonNameBinder binder) {
             if (_references != null) {
                 foreach (var reference in _references.Values) {
-                    PythonVariable variable;
-                    reference.PythonVariable = variable = BindReference(binder, reference);
+                    reference.PythonVariable = BindReference(binder, reference);
                 }
             }
         }
@@ -342,7 +351,7 @@ namespace IronPython.Compiler.Ast {
                 parent = parent.Parent;
             }
 
-            if(parent != null) {
+            if (parent != null) {
                 return (T)parent;
             }
 
@@ -351,14 +360,14 @@ namespace IronPython.Compiler.Ast {
 
         internal virtual void FinishBind(PythonNameBinder binder) {
             List<ClosureInfo> closureVariables = null;
-            
+
             if (FreeVariables != null && FreeVariables.Count > 0) {
                 LocalParentTuple = Ast.Parameter(Parent.GetClosureTupleType(), "$tuple");
 
                 foreach (var variable in _freeVars) {
-                    var parentClosure = Parent._closureVariables;                    
+                    var parentClosure = Parent._closureVariables;
                     Debug.Assert(parentClosure != null);
-                    
+
                     for (int i = 0; i < parentClosure.Length; i++) {
                         if (parentClosure[i].Variable == variable) {
                             _variableMapping[variable] = new ClosureExpression(variable, Ast.Property(LocalParentTuple, String.Format("Item{0:D3}", i)), null);
@@ -366,7 +375,7 @@ namespace IronPython.Compiler.Ast {
                         }
                     }
                     Debug.Assert(_variableMapping.ContainsKey(variable));
-                    
+
                     if (closureVariables == null) {
                         closureVariables = new List<ClosureInfo>();
                     }
@@ -573,7 +582,7 @@ namespace IronPython.Compiler.Ast {
                     )
                 );
             }
-            
+
             return body;
         }
 
@@ -672,8 +681,7 @@ namespace IronPython.Compiler.Ast {
         internal void CreateVariables(ReadOnlyCollectionBuilder<MSAst.ParameterExpression> locals, List<MSAst.Expression> init) {
             if (Variables != null) {
                 foreach (PythonVariable variable in Variables.Values) {
-                    if(variable.Kind != VariableKind.Global) {
-                        
+                    if (variable.Kind != VariableKind.Global) {
                         ClosureExpression closure = GetVariableExpression(variable) as ClosureExpression;
                         if (closure != null) {
                             init.Add(closure.Create());

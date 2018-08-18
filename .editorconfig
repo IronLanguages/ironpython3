@@ -2,6 +2,8 @@
 root = true
 
 [*]
+insert_final_newline = true
+trim_trailing_whitespace = true
 indent_style = space
 indent_size = 4
 
@@ -15,10 +17,18 @@ csharp_new_line_before_catch = false
 csharp_new_line_before_finally = false
 csharp_space_after_keywords_in_control_flow_statements = true
 
+# use language keywords instead of BCL types
+dotnet_style_predefined_type_for_locals_parameters_members = true:suggestion
+dotnet_style_predefined_type_for_member_access = true:suggestion
+
 # disable default VS2017 naming rule
 dotnet_naming_rule.methods_and_properties_must_be_pascal_case.severity = none
 dotnet_naming_rule.methods_and_properties_must_be_pascal_case.symbols  = method_and_property_symbols
 dotnet_naming_rule.methods_and_properties_must_be_pascal_case.style    = pascal_case_style
-dotnet_naming_symbols.method_and_property_symbols.applicable_kinds           = method;property
+dotnet_naming_symbols.method_and_property_symbols.applicable_kinds           = method, property
 dotnet_naming_symbols.method_and_property_symbols.applicable_accessibilities = *
 dotnet_naming_style.pascal_case_style.capitalization = pascal_case
+
+# enforce some code styles
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
+csharp_preferred_modifier_order = public, private, protected, internal, static, extern, new, virtual, abstract, sealed, override, readonly, unsafe, volatile, async:warning

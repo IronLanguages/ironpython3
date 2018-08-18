@@ -228,7 +228,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 if (astOnly) {
                     return source;
                 } else {
-                    PythonAst ast = _ast.ConvertToPythonAst(context, (_ast.AST) source);
+                    PythonAst ast = _ast.ConvertToPythonAst(context, (_ast.AST)source, filename);
                     ast.Bind();
                     ScriptCode code = ast.ToScriptCode();
                     return ((RunnableScriptCode)code).GetFunctionCode(true);

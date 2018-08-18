@@ -16,14 +16,13 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Dynamic;
+using System.Linq;
 using System.Threading;
 
 using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
@@ -35,10 +34,10 @@ namespace IronPython.Runtime {
     /// is held in objects that implement IWeakReferenceable.
     /// </summary>
     public class WeakRefTracker {
-        struct CallbackInfo {
-            readonly object _callback;
-            readonly WeakHandle _longRef;
-            readonly WeakHandle _shortRef;
+        private readonly struct CallbackInfo {
+            private readonly object _callback;
+            private readonly WeakHandle _longRef;
+            private readonly WeakHandle _shortRef;
             
             public CallbackInfo(object callback, object weakRef) {
                 _callback = callback;
@@ -135,6 +134,15 @@ namespace IronPython.Runtime {
                 _lock.ExitWriteLock();
             }
 
+        }
+
+        internal bool Contains(object callback, object weakref) {
+            _lock.EnterReadLock();
+            try {
+                return _callbacks.Any(o => o.Callback == callback && o.WeakRef == weakref);
+            } finally {
+                _lock.ExitReadLock();
+            }
         }
 
         public object GetHandlerCallback(int index) {

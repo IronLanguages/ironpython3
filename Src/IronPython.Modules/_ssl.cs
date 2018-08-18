@@ -208,7 +208,7 @@ namespace IronPython.Modules {
             }
 
             public object _wrap_socket(CodeContext context, [DefaultParameterValue(null)] PythonSocket.socket sock, [DefaultParameterValue(false)] bool server_side, [DefaultParameterValue(null)] string server_hostname, [DefaultParameterValue(null)] object ssl_sock) {
-                return new PythonSocket.ssl(context, sock, server_side, null, _cafile, verify_mode, protocol | options, null, _cert_store);
+                return new PythonSocket.ssl(context, sock, server_side, null, _cafile, verify_mode, protocol | options, null, _cert_store) { _serverHostName = server_hostname };
             }
         }
 
@@ -703,7 +703,7 @@ namespace IronPython.Modules {
         public const int VERIFY_X509_STRICT = 0x20; // from openssl/x509_vfy.h
         public const int VERIFY_X509_TRUSTED_FIRST = 0x8000; // from openssl/x509_vfy.h
 
-        public const bool HAS_SNI = false;
+        public const bool HAS_SNI = true;
         public const bool HAS_ECDH = true;
         public const bool HAS_NPN = false;
         public const bool HAS_ALPN = false;

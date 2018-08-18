@@ -60,10 +60,10 @@ namespace IronPython.Modules
             }
         }
 
-        internal static PythonAst ConvertToPythonAst(CodeContext codeContext, AST source ) {
+        internal static PythonAst ConvertToPythonAst(CodeContext codeContext, AST source, string filename) {
             Statement stmt;
             PythonCompilerOptions options = new PythonCompilerOptions(ModuleOptions.ExecOrEvalCode);
-            SourceUnit unit = new SourceUnit(codeContext.LanguageContext, NullTextContentProvider.Null, "", SourceCodeKind.AutoDetect);
+            SourceUnit unit = new SourceUnit(codeContext.LanguageContext, NullTextContentProvider.Null, filename, SourceCodeKind.AutoDetect);
             CompilerContext compilerContext = new CompilerContext(unit, options, ErrorSink.Default);
             bool printExpression = false;
 

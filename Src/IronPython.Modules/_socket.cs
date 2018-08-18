@@ -2411,6 +2411,7 @@ namespace IronPython.Modules {
             private readonly CodeContext _context;
             private readonly RemoteCertificateValidationCallback _callback;
             private Exception _validationFailure;
+            internal string _serverHostName;
 
             public ssl(CodeContext context, PythonSocket.socket sock, string keyfile=null, string certfile=null, X509Certificate2Collection certs=null) {
                 _context = context;
@@ -2613,7 +2614,7 @@ namespace IronPython.Modules {
                         if (_cert != null) {
                             collection.Add(_cert);
                         }
-                        _sslStream.AuthenticateAsClient(_socket._hostName, collection, enabledSslProtocols, false);
+                        _sslStream.AuthenticateAsClient(_serverHostName ?? _socket._hostName, collection, enabledSslProtocols, false);
                     }
                 } catch (AuthenticationException e) {
                     ((IDisposable)_socket._socket).Dispose();

@@ -2198,35 +2198,57 @@ namespace IronPython.Runtime.Operations {
                 return tb;
             }
 
-            IList<DynamicStackFrame> frames = ((IList<DynamicStackFrame>)e.GetFrameList()) ?? new DynamicStackFrame[0];
-            return CreateTraceBack(e, frames, frames.Count);
+            var frames = ((IList<DynamicStackFrame>)e.GetFrameList()) ?? new DynamicStackFrame[0];
+            var stacks = GetFunctionStackNoCreate();
+            return CreateTraceBack(e, frames, stacks, frames.Count);
         }
 
-        internal static TraceBack CreateTraceBack(Exception e, IList<DynamicStackFrame> frames, int frameCount) {
-            TraceBack tb  = null;
-            for (int i = 0; i < frameCount; i++) {
-                DynamicStackFrame frame = frames[i];
+        internal static TraceBack CreateTraceBack(Exception e, IList<DynamicStackFrame> frames, IList<FunctionStack> stacks, int frameCount) {
+            TraceBackFrame lastTraceBackFrame = null;
+            if (stacks != null) {
+                foreach (var stack in stacks) {
+                    TraceBackFrame tbf = stack.Frame;
 
-                string name = frame.GetMethodName();
-                if (name.IndexOf('#') > 0) {
-                    // dynamic method, strip the trailing id...
-                    name = name.Substring(0, name.IndexOf('#'));
+                    if (tbf == null) {
+                        tbf = new TraceBackFrame(
+                            stack.Context,
+                            stack.Context.GlobalDict,
+                            stack.Context.Dict,
+                            stack.Code,
+                            lastTraceBackFrame
+                        );
+                    }
+
+                    lastTraceBackFrame = tbf;
                 }
+            }
 
-                PythonDynamicStackFrame pyFrame = frame as PythonDynamicStackFrame;
-                if (pyFrame != null && pyFrame.CodeContext != null) {
+            // extend the stack
+            var first = true;
+            foreach (var frame in frames.Take(frameCount).Reverse()) {
+                if (frame is PythonDynamicStackFrame pyFrame && pyFrame.CodeContext != null) {
+                    if (first && lastTraceBackFrame?.f_code == pyFrame.Code) continue;
+                    first = false;
+
                     CodeContext context = pyFrame.CodeContext;
-                    FunctionCode code = pyFrame.Code;
-
                     TraceBackFrame tbf = new TraceBackFrame(
                         context,
                         context.GlobalDict,
                         context.Dict,
-                        code,
-                        tb != null ? tb.tb_frame : null);
+                        pyFrame.Code,
+                        lastTraceBackFrame);
 
-                    tb = new TraceBack(tb, tbf);
+                    lastTraceBackFrame = tbf;
+                }
+            }
+
+            TraceBack tb = null;
+            foreach (var frame in frames.Take(frameCount)) {
+                if (frame is PythonDynamicStackFrame pyFrame && pyFrame.CodeContext != null) {
+                    tb = new TraceBack(tb, lastTraceBackFrame);
                     tb.SetLine(frame.GetFileLineNumber());
+
+                    lastTraceBackFrame = lastTraceBackFrame?.f_back;
                 }
             }
 

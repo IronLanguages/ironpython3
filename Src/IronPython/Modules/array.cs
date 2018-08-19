@@ -32,7 +32,7 @@ namespace IronPython.Modules {
         public class array : IPythonArray, IEnumerable, IWeakReferenceable, ICollection, ICodeFormattable, IList<object>, IStructuralEquatable
         {
             private ArrayData _data;
-            private char _typeCode;
+            private readonly char _typeCode;
             private WeakRefTracker _tracker;
 
             public array([BytesConversion]string type, [Optional]object initializer) {
@@ -653,6 +653,13 @@ namespace IronPython.Modules {
             }
 
             internal byte[] ToByteArray() {
+                if (_data is ArrayData<byte> data) {
+                    Debug.Assert(_typeCode == 'B');
+                    var res = new byte[data.Length];
+                    Array.Copy(data.Data, res, data.Length);
+                    return res;
+                }
+
                 return ToStream().ToArray();
             }
 
@@ -662,6 +669,15 @@ namespace IronPython.Modules {
 
             internal void FromStream(Stream ms) {
                 BinaryReader br = new BinaryReader(ms);
+
+                if (_data is ArrayData<byte> data) {
+                    Debug.Assert(_typeCode == 'B');
+                    var length = (int)ms.Length;
+                    data.EnsureSize(data.Length + length);
+                    Array.Copy(br.ReadBytes(length), 0, data.Data, data.Length, length);
+                    data.Length += length;
+                    return;
+                }
 
                 for (int i = 0; i < ms.Length / itemsize; i++) {
                     object value;
@@ -861,7 +877,11 @@ namespace IronPython.Modules {
 
                 public void EnsureSize(int size) {
                     if (_data.Length < size) {
-                        Array.Resize(ref _data, _data.Length * 2);
+                        var length = _data.Length;
+                        while (length < size) {
+                            length *= 2;
+                        }
+                        Array.Resize(ref _data, length);
                         if (_dataHandle != null) {
                             _dataHandle.Value.Free();
                             _dataHandle = null;

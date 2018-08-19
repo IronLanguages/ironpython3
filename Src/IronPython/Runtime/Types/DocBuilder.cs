@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
+
 #if FEATURE_XMLDOC
 using System.Xml;
 using System.Xml.XPath;
@@ -555,6 +556,8 @@ namespace IronPython.Runtime.Types {
             string baseFile = Path.GetFileNameWithoutExtension(location) + ".xml";
             string xml = Path.Combine(Path.Combine(baseDir, ci.Name), baseFile);
 
+            bool isRef = false;
+
             if (!File.Exists(xml)) {
                 int hyphen = ci.Name.IndexOf('-');
                 if (hyphen != -1) {
@@ -563,7 +566,6 @@ namespace IronPython.Runtime.Types {
                 if (!File.Exists(xml)) {
                     xml = Path.Combine(baseDir, baseFile);
                     if (!File.Exists(xml)) {
-
 #if !NETCOREAPP2_0 && !NETCOREAPP2_1
                         // On .NET 4.0 documentation is in the reference assembly location
                         // for 64-bit processes, we need to look in Program Files (x86)
@@ -574,6 +576,7 @@ namespace IronPython.Runtime.Types {
                             ),
                             baseFile
                         );
+                        isRef = true;
 
                         if (!File.Exists(xml))
 #endif
@@ -592,6 +595,17 @@ namespace IronPython.Runtime.Types {
                     xpd = _CachedDoc;
                 } else {
                     xpd = new XPathDocument(xml);
+                    if (isRef) {
+                        // attempt to redirect if required
+                        var node = xpd.CreateNavigator().SelectSingleNode("/doc/@redirect");
+                        if (node != null) {
+                            var redirect = node.Value;
+                            redirect = redirect.Replace("%PROGRAMFILESDIR%", Environment.GetFolderPath(Environment.Is64BitProcess ? Environment.SpecialFolder.ProgramFilesX86 : Environment.SpecialFolder.ProgramFiles) + Path.DirectorySeparatorChar);
+                            if (File.Exists(redirect)) {
+                                xpd = new XPathDocument(redirect);
+                            }
+                        }
+                    }
                 }
 
                 _CachedDoc = xpd;

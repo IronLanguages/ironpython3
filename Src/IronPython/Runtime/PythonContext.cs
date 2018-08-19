@@ -316,7 +316,7 @@ namespace IronPython.Runtime
             _mainThreadFunctionStack = PythonOps.GetFunctionStack();
         }
 
-        void ManagerAssemblyLoaded(object sender, AssemblyLoadedEventArgs e) {
+        private void ManagerAssemblyLoaded(object sender, AssemblyLoadedEventArgs e) {
             _topNamespace.LoadAssembly(e.Assembly);
         }
 
@@ -1315,7 +1315,7 @@ namespace IronPython.Runtime
             AppDomain.CurrentDomain.AssemblyResolve += _resolveHolder.AssemblyResolveEvent;
         }
 
-        class AssemblyResolveHolder {
+        private class AssemblyResolveHolder {
             private readonly WeakReference _context;
 
             public AssemblyResolveHolder(PythonContext context) {
@@ -2522,7 +2522,7 @@ namespace IronPython.Runtime
             }
         }
 
-        class AttrKey : IEquatable<AttrKey> {
+        private class AttrKey : IEquatable<AttrKey> {
             private Type _type;
             private string _name;
 
@@ -3909,7 +3909,7 @@ namespace IronPython.Runtime
             }
         }
 
-        class OperationRetTypeKey<T> : IEquatable<OperationRetTypeKey<T>> {
+        private class OperationRetTypeKey<T> : IEquatable<OperationRetTypeKey<T>> {
             public readonly Type ReturnType;
             public readonly T Operation;
 
@@ -4202,7 +4202,7 @@ namespace IronPython.Runtime
     /// List of unary operators which we have sites for to enable fast dispatch that
     /// doesn't collide with other operators.
     /// </summary>
-    enum UnaryOperators {
+    internal enum UnaryOperators {
         Repr,
         Length,
         Hash,
@@ -4211,7 +4211,7 @@ namespace IronPython.Runtime
         Maximum
     }
 
-    enum TernaryOperators {
+    internal enum TernaryOperators {
         SetDescriptor,
         GetDescriptor,
 

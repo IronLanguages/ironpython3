@@ -63,12 +63,24 @@ class StructTest(unittest.TestCase):
     def test_pack_into(self):
         # test string format string
         result = array.array('b', [0, 0])
-        struct.pack_into('>H', result, 0, 0xABCD )
+        struct.pack_into('>H', result, 0, 0xABCD)
         self.assertSequenceEqual(result, array.array('b', b"\xAB\xCD"))
 
         # test bytes format string
         result = array.array('b', [0, 0])
-        struct.pack_into(b'>H', result, 0, 0xABCD )
+        struct.pack_into(b'>H', result, 0, 0xABCD)
         self.assertSequenceEqual(result, array.array('b', b"\xAB\xCD"))
+
+        # test bytearray
+        result = bytearray(b'\x00\x00')
+        struct.pack_into('>H', result, 0, 0xABCD)
+        self.assertSequenceEqual(result, bytearray(b"\xAB\xCD"))
+
+    def test_ipy2_gh407(self):
+        """https://github.com/IronLanguages/ironpython2/issues/407"""
+
+        self.assertRaisesRegexp(struct.error, '^unpack requires', struct.unpack, "H", b"a")
+        struct.unpack("H", b"aa")
+        self.assertRaisesRegexp(struct.error, '^unpack requires', struct.unpack, "H", b"aaa")
 
 run_test(__name__)

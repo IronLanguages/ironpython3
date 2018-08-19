@@ -902,6 +902,9 @@ namespace IronPython.Runtime
         }
 
         public override ScriptCode/*!*/ LoadCompiledCode(Delegate/*!*/ method, string path, string customData) {
+            // allow loading cross-platform (https://github.com/IronLanguages/ironpython2/issues/476)
+            if (Path.DirectorySeparatorChar != '\\') path = path.Replace('\\', Path.DirectorySeparatorChar);
+            if (Path.DirectorySeparatorChar != '/') path = path.Replace('/', Path.DirectorySeparatorChar);
             SourceUnit su = new SourceUnit(this, NullTextContentProvider.Null, path, SourceCodeKind.File);
             return new OnDiskScriptCode((LookupCompilationDelegate)method, su, customData);
         }

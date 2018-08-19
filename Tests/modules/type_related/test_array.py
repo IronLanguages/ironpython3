@@ -40,7 +40,7 @@ class ArrayTest(unittest.TestCase):
         x = array.array('i', [1,2,3])
         y = x.__copy__()
         self.assertTrue(id(x) != id(y), "copy should copy")
-        
+
         y = x.__deepcopy__(x)
         self.assertTrue(id(x) != id(y), "copy should copy")
 
@@ -144,14 +144,14 @@ class ArrayTest(unittest.TestCase):
                     (2**16)-2, (2**16)-1, (2**16), (2**16)+1, (2**16)+2,
                     (2**32)-2, (2**32)-1,
                     ]:
-                    
+
             temp_array1 = array.array('I', [x])
             self.assertEqual(temp_array1[0], x)
-            
+
             temp_array1 = array.array('I', [x, x])
             self.assertEqual(temp_array1[0], x)
             self.assertEqual(temp_array1[1], x)
-            
+
         for x in [  (2**32), (2**32)+1, (2**32)+2 ]:
             self.assertRaises(OverflowError, array.array, 'I', [x])
 
@@ -170,7 +170,7 @@ class ArrayTest(unittest.TestCase):
         a = array.array('B', [0]) * 2
         self.assertEqual(2, len(a))
         self.assertEqual("array('B', [0, 0])", str(a))
-        
+
         #--b
         self.assertEqual(array.array('b', 'foo'), array.array('b', [102, 111, 111]))
 
@@ -236,7 +236,7 @@ class ArrayTest(unittest.TestCase):
         TODO
         '''
         pass
-        
+
     def test_array___rmul__(self):
         '''
         TODO
@@ -328,10 +328,13 @@ class ArrayTest(unittest.TestCase):
         pass
 
     def test_array_fromunicode(self):
-        '''
-        TODO
-        '''
-        pass
+        # TODO: add more tests
+        a = array.array('u')
+        a.fromunicode(u"a"*20)
+        self.assertEqual(len(a), 20)
+        a.fromunicode(u"b"*100)
+        self.assertEqual(len(a), 120)
+        self.assertEqual(a.tolist(), [u"a"]*20 + [u"b"]*100)
 
     def test_array_index(self):
         '''
@@ -446,8 +449,8 @@ class ArrayTest(unittest.TestCase):
         a2 = array.array('b', 'a')
         a2[:-1] = a2
         self.assertEqual(str(a2), "array('b', [97, 97])")
-        a2[:-(2**64)-1] = a2 
-        self.assertEqual(str(a2), "array('b', [97, 97, 97, 97])")  
+        a2[:-(2**64)-1] = a2
+        self.assertEqual(str(a2), "array('b', [97, 97, 97, 97])")
 
 
     def test_cp9350(self):
@@ -458,7 +461,7 @@ class ArrayTest(unittest.TestCase):
         for i in [2, 2L]:
             a = array.array('B', [0]) * i
             self.assertEqual(a, array.array('B', [0, 0]))
-        
+
         for i in [2**8, long(2**8)]:
             a = array.array('B', [1]) * i
             self.assertEqual(a, array.array('B', [1]*2**8))
@@ -486,40 +489,40 @@ class ArrayTest(unittest.TestCase):
         '''
         #--Postive
         a = array.array('b', 'a')
-        for i in [  0L, 1L, 2L, 3L, 32766L, 32767L, 32768L, 65534L, 65535L, 65536L, 
+        for i in [  0L, 1L, 2L, 3L, 32766L, 32767L, 32768L, 65534L, 65535L, 65536L,
                     456720545L, #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24314
                     ]:
             self.assertEqual(i,
                     len(i*a))
             self.assertEqual(i, len(a*i))
-        
+
         #--Negative
         self.assertRaises(OverflowError, lambda: 4567206470L*a)
         self.assertRaises(OverflowError, lambda: a*4567206470L)
         if not is_mono: # these do not fail on Mono
             self.assertRaises(MemoryError,   lambda: 2147483646L*a)
             self.assertRaises(MemoryError,   lambda: a*2147483646L)
-        
+
         #--Positive
         a = array.array('b', 'abc')
         del a[:]
         self.assertEqual(a, array.array('b', ''))
-        
+
         a = array.array('b', 'abc')
         del a[0:]
         self.assertEqual(a, array.array('b', ''))
-        
+
         a = array.array('b', 'abc')
         del a[1:1]
         self.assertEqual(a, array.array('b', 'abc'))
-        
+
         a = array.array('b', 'abc')
         del a[1:4]
         self.assertEqual(a, array.array('b', 'a'))
-        
+
         a = array.array('b', 'abc')
         del a[0:1]
         self.assertEqual(a, array.array('b', 'bc'))
-    
-    
+
+
 run_test(__name__)

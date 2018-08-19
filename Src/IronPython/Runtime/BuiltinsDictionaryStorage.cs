@@ -10,7 +10,7 @@ using Microsoft.Scripting.Runtime;
 using IronPython.Modules;
 
 namespace IronPython.Runtime {
-    class BuiltinsDictionaryStorage : ModuleDictionaryStorage {
+    internal class BuiltinsDictionaryStorage : ModuleDictionaryStorage {
         private readonly EventHandler<ModuleChangeEventArgs/*!*/>/*!*/ _change;
         private object _import;
 

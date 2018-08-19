@@ -17,8 +17,7 @@ namespace IronPython.Runtime {
         private Dictionary<string, OnDiskScriptCode> _codes = new Dictionary<string, OnDiskScriptCode>();
 
         internal void AddScriptCode(ScriptCode code) {
-            OnDiskScriptCode onDiskCode = code as OnDiskScriptCode;
-            if (onDiskCode != null) {
+            if (code is OnDiskScriptCode onDiskCode) {
                 if (onDiskCode.ModuleName == "__main__") {
                     _codes["__main__"] = onDiskCode;
                 } else {
@@ -33,8 +32,7 @@ namespace IronPython.Runtime {
         }
 
         public ModuleLoader find_module(CodeContext/*!*/ context, string fullname, List path) {
-            OnDiskScriptCode sc;
-            if (_codes.TryGetValue(fullname, out sc)) {
+            if (_codes.TryGetValue(fullname, out OnDiskScriptCode sc)) {
                 int sep = fullname.LastIndexOf('.');
                 string name = fullname;
                 string parentName = null;

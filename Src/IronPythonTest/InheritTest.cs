@@ -61,7 +61,7 @@ namespace IronPythonTest {
     }
 
     public class BaseClassStaticConstructor {
-        static int value;
+        private static int value;
         static BaseClassStaticConstructor() {
             value = 10;
         }
@@ -316,7 +316,7 @@ namespace IronPythonTest {
 
 
     public abstract class Overriding {
-        string protVal = "Overriding.Protected";
+        private string protVal = "Overriding.Protected";
 
         public virtual object __cmp__(object other) {
             return "Overriding.__cmp__(object)";
@@ -659,7 +659,7 @@ namespace IronPythonTest {
     }
 
     public class UseCReturnTypes {
-        CReturnTypes type;
+        private CReturnTypes type;
         public UseCReturnTypes(CReturnTypes type) { this.type = type; }
 
         public void Use_void() { type.M_void(); }
@@ -713,7 +713,7 @@ namespace IronPythonTest {
     }
 
     public class UseIReturnTypes {
-        IReturnTypes type;
+        private IReturnTypes type;
         public UseIReturnTypes(IReturnTypes type) { this.type = type; }
 
         public void Use_void() { type.M_void(); }
@@ -764,7 +764,7 @@ namespace IronPythonTest {
     }
 
     public class UseAReturnTypes {
-        AReturnTypes type;
+        private AReturnTypes type;
         public UseAReturnTypes(AReturnTypes type) { this.type = type; }
 
         public void Use_void() { type.M_void(); }

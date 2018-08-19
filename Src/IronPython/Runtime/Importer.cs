@@ -137,33 +137,19 @@ namespace IronPython.Runtime {
         }
 
         private static object ImportModuleFrom(CodeContext/*!*/ context, object from, string[] parts, int current) {
-            PythonModule scope = from as PythonModule;
-            if (scope != null) {
-                object path;
-                List listPath;
-                string stringPath;
-                if (scope.__dict__._storage.TryGetPath(out path)) {
-                    if ((listPath = path as List) != null) {
+            if (from is PythonModule scope) {
+                if (scope.__dict__._storage.TryGetPath(out object path) || DynamicHelpers.GetPythonType(scope).TryGetMember(context, scope, "__path__", out path)) {
+                    if (path is List listPath) {
                         return ImportNestedModule(context, scope, parts, current, listPath);
-                    } else if((stringPath = path as string) != null) {
-                        return ImportNestedModule(context, scope, parts, current, List.FromArrayNoCopy(stringPath));
                     }
-                } else {
-                    PythonType t = DynamicHelpers.GetPythonType(scope);
-                    if (t.TryGetMember(context, scope, "__path__", out path)) {
-                        if((listPath = path as List) != null) {
-                            return ImportNestedModule(context, scope, parts, current, listPath);
-                        } else if((stringPath = path as string) != null) {
-                            return ImportNestedModule(context, scope, parts, current, List.FromArrayNoCopy(stringPath));
-                        }
+                    if (path is string stringPath) {
+                        return ImportNestedModule(context, scope, parts, current, List.FromArrayNoCopy(stringPath));
                     }
                 }
             }
 
-            NamespaceTracker ns = from as NamespaceTracker;
-            if (ns != null) {
-                object val;
-                if (ns.TryGetValue(parts[current], out val)) {
+            if (from is NamespaceTracker ns) {
+                if (ns.TryGetValue(parts[current], out object val)) {
                     return MemberTrackerToPython(context, val);
                 }
             }
@@ -556,8 +542,7 @@ namespace IronPython.Runtime {
         /// searching sys.path but after searching built-in modules.
         /// </summary>
         private static bool TryLoadMetaPathModule(CodeContext/*!*/ context, string fullName, List path, out object ret) {
-            List metaPath = context.LanguageContext.GetSystemStateValue("meta_path") as List;
-            if (metaPath != null) {
+            if (context.LanguageContext.GetSystemStateValue("meta_path") is List metaPath) {
                 foreach (object importer in (IEnumerable)metaPath) {
                     if (FindAndLoadModuleFromImporter(context, importer, fullName, path, out ret)) {
                         return true;

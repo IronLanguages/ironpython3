@@ -349,7 +349,7 @@ namespace IronPython.Runtime.Exceptions {
                     if (!_tracebackSet && _traceback == null) {
                         var clrException = GetClrException();
                         var frames = clrException.GetFrameList();
-                        __traceback__ = PythonOps.CreateTraceBack(clrException, frames, frames.Count);
+                        __traceback__ = PythonOps.CreateTraceBack(clrException, frames, null, frames.Count);
                     }
                     return _traceback;
                 }

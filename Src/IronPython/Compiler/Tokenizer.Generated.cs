@@ -20,7 +20,7 @@ namespace IronPython.Compiler {
                 case '-':
                     if (NextChar('=')) {
                         return Tokens.SubtractEqualToken;
-                    } 
+                    }
                     if (NextChar('>')) {
                         return Tokens.ReturnAnnotationToken;
                     }

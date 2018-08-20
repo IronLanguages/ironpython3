@@ -49,11 +49,7 @@ def gen_tuple(cw, size, prevSize):
     cw.exit_block()
     cw.exit_block()
 
-    cw.enter_block('public override int Capacity')
-    cw.enter_block('get')
-    cw.write('return %d;' % size)
-    cw.exit_block()
-    cw.exit_block()
+    cw.write('public override int Capacity => %d;' % size)
 
     cw.exit_block()
 

@@ -183,9 +183,8 @@ variantTypes = [
         getStatements=[
                 "if (_typeUnion._unionTypes._bstr != IntPtr.Zero) {",
                 "    return Marshal.PtrToStringBSTR(_typeUnion._unionTypes._bstr);",
-                "} else {",
-                "    return null;",
-                "}"
+                "}",
+                "return null;"
         ],
         setStatements=[
                 "if (value != null) {",
@@ -199,9 +198,8 @@ variantTypes = [
         getStatements=[
                 "if (_typeUnion._unionTypes._dispatch != IntPtr.Zero) {",
                 "    return Marshal.GetObjectForIUnknown(_typeUnion._unionTypes._unknown);",
-                "} else {",
-                "    return null;",
-                "}"
+                "}",
+                "return null;"
         ],
         setStatements=[
                 "if (value != null) {",
@@ -215,9 +213,8 @@ variantTypes = [
         getStatements=[
                 "if (_typeUnion._unionTypes._dispatch != IntPtr.Zero) {",
                 "    return Marshal.GetObjectForIUnknown(_typeUnion._unionTypes._dispatch);",
-                "} else {",
-                "    return null;",
-                "}"
+                "}",
+                "return null;"
         ],
         setStatements=[
                 "if (value != null) {",
@@ -275,7 +272,7 @@ def gen_ManagedToComPrimitiveTypes(cw):
     type_map = {}
     for variantType in variantTypes:
         # take them in order, first one wins ... handles ERROR and INT32 conflict
-        if variantType.isPrimitiveType and not type_map.has_key(variantType.managedType):
+        if variantType.isPrimitiveType and variantType.managedType not in type_map:
             type_map[variantType.managedType] = variantType.variantType
 
     for managedType, variantType in managed_types_to_variant_types_add:
@@ -286,7 +283,7 @@ def gen_ManagedToComPrimitiveTypes(cw):
         return t and System.Type.GetTypeCode(t) not in [System.TypeCode.Empty, System.TypeCode.Object]
 
     system_types = filter(is_system_type, type_map.keys())
-    system_types = sorted(system_types, cmp, lambda name: int(System.Type.GetTypeCode(getattr(System, name))))
+    system_types = sorted(system_types, key=lambda name: int(System.Type.GetTypeCode(getattr(System, name))))
     other_types = sorted(set(type_map.keys()).difference(set(system_types)))
 
     # switch from sytem types

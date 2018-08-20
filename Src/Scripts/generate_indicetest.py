@@ -4,7 +4,7 @@
 
 boundaries = (None, -7,-2,0,1,6,10)
 steps = (-5,-3,-1,1,5,20)
-lengths = (-100,-15,-3,0,1,5,10,100)
+lengths = (0,1,5,10,100)
 
 global counter
 global tests
@@ -17,21 +17,10 @@ file = None
 one_test="t"
 group_test=['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q']
 
-file = open("Tests\\IndiceTest.py", "w")
-file.write("""#####################################################################################
-#
-#  Copyright (c) Microsoft Corporation. All rights reserved.
-#
-# This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
-# copy of the license can be found in the License.html file at the root of this distribution. If 
-# you cannot locate the  Apache License, Version 2.0, please send an email to 
-# ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
-# by the terms of the Apache License, Version 2.0.
-#
-# You must not remove this notice, or any other, from this software.
-#
-#
-#####################################################################################
+file = open("IndiceTest.py", "w")
+file.write("""# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the Apache 2.0 License.
+# See the LICENSE file in the project root for more information.
 
 from Util.Debug import *
 
@@ -68,5 +57,5 @@ file.write("\n\nmain()\n\n")
 
 file.close()
 
-print tests
-print counter
+print(tests)
+print(counter)

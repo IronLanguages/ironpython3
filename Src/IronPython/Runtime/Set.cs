@@ -538,7 +538,7 @@ namespace IronPython.Runtime {
         }
 
         public SetCollection difference(SetCollection set) {
-            if (ReferenceEquals(set, this)) {
+            if (object.ReferenceEquals(set, this)) {
                 return Empty;
             }
 
@@ -568,24 +568,24 @@ namespace IronPython.Runtime {
 
             SetStorage res = _items;
             foreach (object set in sets) {
-                if (ReferenceEquals(set, this)) {
+                if (object.ReferenceEquals(set, this)) {
                     return Empty;
                 }
 
                 SetStorage items = SetStorage.GetItems(set);
-                if (ReferenceEquals(res, _items)) {
+                if (object.ReferenceEquals(res, _items)) {
                     res = SetStorage.Difference(_items, items);
                 } else {
                     res.DifferenceUpdate(items);
                 }
             }
 
-            Debug.Assert(!ReferenceEquals(res, _items));
+            Debug.Assert(!object.ReferenceEquals(res, _items));
             return Make(res);
         }
 
         public SetCollection symmetric_difference(SetCollection set) {
-            if (ReferenceEquals(set, this)) {
+            if (object.ReferenceEquals(set, this)) {
                 return Empty;
             }
 
@@ -1185,7 +1185,7 @@ namespace IronPython.Runtime {
                     y = items;
                     SetStorage.SortBySize(ref x, ref y);
 
-                    if (ReferenceEquals(x, _items)) {
+                    if (object.ReferenceEquals(x, _items)) {
                         x = x.Clone();
                     }
                 }
@@ -1193,7 +1193,7 @@ namespace IronPython.Runtime {
                 res = x;
             }
 
-            Debug.Assert(!ReferenceEquals(res, _items));
+            Debug.Assert(!object.ReferenceEquals(res, _items));
             return Make(res);
         }
 
@@ -1202,7 +1202,7 @@ namespace IronPython.Runtime {
         }
 
         public FrozenSetCollection difference(FrozenSetCollection set) {
-            if (ReferenceEquals(set, this)) {
+            if (object.ReferenceEquals(set, this)) {
                 return Empty;
             }
 
@@ -1237,7 +1237,7 @@ namespace IronPython.Runtime {
                 }
 
                 SetStorage items = SetStorage.GetItems(set);
-                if (ReferenceEquals(res, _items)) {
+                if (object.ReferenceEquals(res, _items)) {
                     res = SetStorage.Difference(_items, items);
                 } else {
                     res.DifferenceUpdate(items);
@@ -1249,7 +1249,7 @@ namespace IronPython.Runtime {
         }
 
         public FrozenSetCollection symmetric_difference(FrozenSetCollection set) {
-            if (ReferenceEquals(set, this)) {
+            if (object.ReferenceEquals(set, this)) {
                 return Empty;
             }
 

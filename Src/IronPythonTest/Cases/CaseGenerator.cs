@@ -98,6 +98,7 @@ namespace IronPythonTest.Cases {
                 { "$(IS_NETCOREAPP)", IronPython.Runtime.ClrModule.IsNetCoreApp.ToString() },
                 { "$(IS_MONO)", IronPython.Runtime.ClrModule.IsMono.ToString() },
                 { "$(IS_DEBUG)", IronPython.Runtime.ClrModule.IsDebug.ToString() },
+                { "$(IS_MACOS)", IronPython.Runtime.ClrModule.IsMacOS.ToString() },
 
                 // operators
                 { "==", "=" },

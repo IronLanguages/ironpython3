@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
 
@@ -63,6 +64,16 @@ namespace IronPython.Runtime {
                     _isMono = Type.GetType("Mono.Runtime") != null ? 1 : 0;
                 }
                 return _isMono == 1;
+            }
+        }
+
+        private static int _isMacOS = -1;
+        public static bool IsMacOS {
+            get {
+                if (_isMacOS == -1) {
+                    _isMacOS = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 1 : 0;
+                }
+                return _isMacOS == 1;
             }
         }
 

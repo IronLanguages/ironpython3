@@ -16,15 +16,16 @@ namespace IronPython.Runtime {
         private readonly int _start;
         private readonly int? _end;
 
-        public MemoryView(IBufferProtocol @object) {
-            _buffer = @object;
+        public MemoryView(IBufferProtocol obj) {
+            _buffer = obj;
         }
 
-        private MemoryView(IBufferProtocol @object, int start, int? end) {
-            _buffer = @object;
+        private MemoryView(IBufferProtocol obj, int start, int? end) : this(obj) {
             _start = start;
             _end = end;
         }
+
+        public MemoryView(MemoryView obj) : this(obj._buffer, obj._start, obj._end) { }
 
         public int __len__() {
             if (_end != null) {

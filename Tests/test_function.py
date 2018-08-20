@@ -644,13 +644,13 @@ class FunctionTest(IronPythonTestCase):
         # invalid super cases
         try:
             x = super(B, 'abc')
-            AssertUnreachable()
+            self.assertUnreachable()
         except TypeError:
             pass
             
         try:
             super(B,A)
-            AssertUnreachable()
+            self.assertUnreachable()
         except TypeError:
             pass
             
@@ -939,7 +939,7 @@ class FunctionTest(IronPythonTestCase):
         for assignment_val in [None, 1, "a string"]:
             try:
                 f.func_closure = assignment_val
-                AssertUnreachable("func_closure is a read-only attribute of functions")
+                self.assertUnreachable("func_closure is a read-only attribute of functions")
             except TypeError, e:
                 pass
 
@@ -948,12 +948,12 @@ class FunctionTest(IronPythonTestCase):
         
         try:
             f(*(1, ))
-            AssertUnreachable()
+            self.assertUnreachable()
         except TypeError: pass
             
         try:
             f(**{'abc':'def'})
-            AssertUnreachable()
+            self.assertUnreachable()
         except TypeError: pass
 
 

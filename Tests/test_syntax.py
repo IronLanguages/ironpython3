@@ -627,7 +627,7 @@ class HasASyntaxException:
             #print repr(input), flags
             try:
                 code3 = compile(input, "dummy", "single", flags, 1)
-                AssertUnreachable()
+                self.assertUnreachable()
             except SyntaxError as err:
                 self.assertEqual(err.args, res)
 
@@ -637,7 +637,7 @@ class HasASyntaxException:
             def f():
                 x = 3
                     y = 5""")
-            AssertUnreachable()
+            self.assertUnreachable()
         except IndentationError as e:
             self.assertEqual(e.lineno, 2)
 

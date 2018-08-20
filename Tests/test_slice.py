@@ -2940,13 +2940,13 @@ class SliceTest(unittest.TestCase):
         # need __len__ to be defined for negative indexing
         try:
             OldStyle()[:-1],
-            AssertUnreachable()
+            self.assertUnreachable()
         except AttributeError:
             pass
         
         try:
             OldStyle()[-1:],
-            AssertUnreachable()
+            self.assertUnreachable()
         except AttributeError:
             pass
             
@@ -2957,7 +2957,7 @@ class SliceTest(unittest.TestCase):
                     ]:
             try:
                 OldStyle()[x:y],
-                AssertUnreachable()
+                self.assertUnreachable()
             except AttributeError:
                 pass
         
@@ -3021,13 +3021,13 @@ class SliceTest(unittest.TestCase):
         # need __len__ to be defined for negative indexing
         try:
             OldStyle()[:-1] = 123
-            AssertUnreachable()
+            self.assertUnreachable()
         except AttributeError:
             pass
         
         try:
             OldStyle()[-1:] = 123
-            AssertUnreachable()
+            self.assertUnreachable()
         except AttributeError:
             pass
         
@@ -3095,13 +3095,13 @@ class SliceTest(unittest.TestCase):
         # need __len__ to be defined for negative indexing
         try:
             OldStyle()[:-1] = 123
-            AssertUnreachable()
+            self.assertUnreachable()
         except AttributeError:
             pass
         
         try:
             OldStyle()[-1:] = 123
-            AssertUnreachable()
+            self.assertUnreachable()
         except AttributeError:
             pass
         

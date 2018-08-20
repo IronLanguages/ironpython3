@@ -842,7 +842,7 @@ finally:
             
         try:
             raise MyException('abc')
-            AssertUnreachable()
+            self.assertUnreachable()
         except Exception as e:
             self.assertEqual(e, 42)
 

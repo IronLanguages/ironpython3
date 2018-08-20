@@ -188,7 +188,7 @@ class _StructTest(IronPythonTestCase):
         a = _struct.Struct('c')
         try:
             a.__init__('bad')
-            AssertUnreachable()
+            self.assertUnreachable()
         except _struct.error as e: 
             pass
         

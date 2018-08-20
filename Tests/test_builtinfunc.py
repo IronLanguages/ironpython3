@@ -459,22 +459,22 @@ class BuiltinsTest2(IronPythonTestCase):
 
         try:
             eval('1+')
-            AssertUnreachable()
+            self.assertUnreachable()
         except Exception as exp:
             pass
         else:
-            AssertUnreachable()
+            self.assertUnreachable()
 
         # gh1636 - don't use self.assertRaises since it hides the error
         zzz = 1
         try:
             eval("zzz", {})
-            AssertUnreachable()
+            self.assertUnreachable()
         except NameError:
             pass
         try:
             eval("zzz", {}, None)
-            AssertUnreachable()
+            self.assertUnreachable()
         except NameError:
             pass
 

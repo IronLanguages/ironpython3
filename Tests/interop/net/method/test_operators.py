@@ -28,22 +28,22 @@ class OperatorsTest(IronPythonTestCase):
         z = AllOpsClass(-6)
         
         #if x: pass
-        #else: AssertUnreachable()
+        #else: self.assertUnreachable()
         #
         #Flag.Check(100)
         #
-        #if z: AssertUnreachable()
+        #if z: self.assertUnreachable()
         #else: pass
         #
         #Flag.Check(100)
         #
-        #if not x: AssertUnreachable()
+        #if not x: self.assertUnreachable()
         #else: pass
         #
         #Flag.Check(100)
         #
         #if not z: pass
-        #else: AssertUnreachable()
+        #else: self.assertUnreachable()
         #
         #Flag.Check(100)
         

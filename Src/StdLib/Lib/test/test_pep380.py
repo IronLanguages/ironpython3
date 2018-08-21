@@ -11,7 +11,6 @@ import unittest
 import io
 import sys
 import inspect
-import parser
 
 from test.support import captured_stderr, disable_gc, gc_collect
 
@@ -140,6 +139,7 @@ class TestPEP380Operation(unittest.TestCase):
             "Finishing g1",
         ])
 
+    @unittest.skipIf(sys.implementation.name == "ironpython", "https://github.com/IronLanguages/ironpython3/issues/260")
     def test_delegation_of_send(self):
         """
         Test delegation of send()
@@ -374,7 +374,7 @@ class TestPEP380Operation(unittest.TestCase):
             return [42]
         self.assertEqual(list(g1()), ["g2"])
 
-
+    @unittest.skipIf(sys.implementation.name == "ironpython", "https://github.com/IronLanguages/ironpython3/issues/260")
     def test_generator_return_value(self):
         """
         Test generator return value
@@ -529,6 +529,7 @@ class TestPEP380Operation(unittest.TestCase):
             "finishing g",
         ])
 
+    @unittest.skipIf(sys.implementation.name == "ironpython", "TODO: figure out")
     def test_broken_getattr_handling(self):
         """
         Test subiterator with a broken getattr implementation
@@ -657,6 +658,7 @@ class TestPEP380Operation(unittest.TestCase):
             "Finishing g1",
         ])
 
+    @unittest.skipIf(sys.implementation.name == "ironpython", "https://github.com/IronLanguages/ironpython3/issues/260")
     def test_next_and_return_with_value(self):
         """
         Test next and return with value
@@ -689,6 +691,7 @@ class TestPEP380Operation(unittest.TestCase):
             "f caught StopIteration(42,)",
         ])
 
+    @unittest.skipIf(sys.implementation.name == "ironpython", "https://github.com/IronLanguages/ironpython3/issues/260")
     def test_send_and_return_with_value(self):
         """
         Test send and return with value
@@ -724,6 +727,7 @@ class TestPEP380Operation(unittest.TestCase):
             "f caught StopIteration(42,)",
         ])
 
+    @unittest.skipIf(sys.implementation.name == "ironpython", "TODO: figure out")
     def test_catching_exception_from_subgen_and_returning(self):
         """
         Test catching an exception thrown into a
@@ -940,6 +944,7 @@ class TestPEP380Operation(unittest.TestCase):
         for stack in spam(eggs(gen())):
             self.assertTrue('spam' in stack and 'eggs' in stack)
 
+    @unittest.skipIf(sys.implementation.name == "ironpython", "nonlocal not working properly")
     def test_custom_iterator_return(self):
         # See issue #15568
         class MyIter:
@@ -993,6 +998,7 @@ class TestPEP380Operation(unittest.TestCase):
             del inner_gen
             gc_collect()
 
+    @unittest.skipIf(sys.implementation.name == "ironpython", "nonlocal not working properly")
     def test_send_tuple_with_custom_generator(self):
         # See issue #21209.
         class MyGen:

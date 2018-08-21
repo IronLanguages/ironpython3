@@ -5,9 +5,9 @@
 import re
 import unittest
 
-from iptest import is_cli, run_test
+from iptest import IronPythonTestCase, is_cli, run_test
 
-class ReTest(unittest.TestCase):
+class ReTest(IronPythonTestCase):
 
     def test_none(self):
         for x in 'compile search match split findall finditer'.split():
@@ -812,5 +812,11 @@ class ReTest(unittest.TestCase):
     def test_issue1370(self):
         self.assertEqual(re.compile("\Z").match("\n"), None)
         self.assertEqual(re.compile("\Z").match("").group(0), "")
+
+    def test_gh21(self):
+        """https://github.com/IronLanguages/ironpython2/issues/21"""
+        self.assertRaisesMessage(re.error, "redefinition of group name 'hoge' as group 2; was group 1", re.compile, r'(?P<hoge>\w+):(?P<hoge>\w+)')
+        self.assertRaisesMessage(re.error, "redefinition of group name 'hoge' as group 3; was group 2", re.compile, r'(abc)(?P<hoge>\w+):(?P<hoge>\w+)')
+        self.assertRaisesMessage(re.error, "redefinition of group name 'hoge' as group 4; was group 2", re.compile, r'(abc)(?P<hoge>\w+):(abc)(?P<hoge>\w+)')
 
 run_test(__name__)

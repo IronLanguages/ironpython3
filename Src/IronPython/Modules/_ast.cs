@@ -31,7 +31,6 @@ using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-using PyOperator = IronPython.Compiler.PythonOperator;
 using PythonList = IronPython.Runtime.List;
 using System.Runtime.InteropServices;
 using AstExpression = IronPython.Compiler.Ast.Expression;
@@ -46,7 +45,7 @@ namespace IronPython.Modules
 
         private class ThrowingErrorSink : ErrorSink
         {
-            public new static readonly ThrowingErrorSink/*!*/ Default = new ThrowingErrorSink();
+            public static new readonly ThrowingErrorSink/*!*/ Default = new ThrowingErrorSink();
 
             private ThrowingErrorSink() {
             }
@@ -467,64 +466,64 @@ namespace IronPython.Modules
                 return comps;
             }
 
-            internal static AST Convert(PyOperator op) {
+            internal static AST Convert(PythonOperator op) {
                 // We treat operator classes as singletons here to keep overhead down
                 // But we cannot fully make them singletons if we wish to keep compatibility wity CPython
                 switch (op) {
-                    case PyOperator.Add:
+                    case PythonOperator.Add:
                         return Add.Instance;
-                    case PyOperator.BitwiseAnd:
+                    case PythonOperator.BitwiseAnd:
                         return BitAnd.Instance;
-                    case PyOperator.BitwiseOr:
+                    case PythonOperator.BitwiseOr:
                         return BitOr.Instance;
-                    case PyOperator.TrueDivide:
+                    case PythonOperator.TrueDivide:
                         return Div.Instance;
-                    case PyOperator.Equal:
+                    case PythonOperator.Equal:
                         return Eq.Instance;
-                    case PyOperator.FloorDivide:
+                    case PythonOperator.FloorDivide:
                         return FloorDiv.Instance;
-                    case PyOperator.GreaterThan:
+                    case PythonOperator.GreaterThan:
                         return Gt.Instance;
-                    case PyOperator.GreaterThanOrEqual:
+                    case PythonOperator.GreaterThanOrEqual:
                         return GtE.Instance;
-                    case PyOperator.In:
+                    case PythonOperator.In:
                         return In.Instance;
-                    case PyOperator.Invert:
+                    case PythonOperator.Invert:
                         return Invert.Instance;
-                    case PyOperator.Is:
+                    case PythonOperator.Is:
                         return Is.Instance;
-                    case PyOperator.IsNot:
+                    case PythonOperator.IsNot:
                         return IsNot.Instance;
-                    case PyOperator.LeftShift:
+                    case PythonOperator.LeftShift:
                         return LShift.Instance;
-                    case PyOperator.LessThan:
+                    case PythonOperator.LessThan:
                         return Lt.Instance;
-                    case PyOperator.LessThanOrEqual:
+                    case PythonOperator.LessThanOrEqual:
                         return LtE.Instance;
-                    case PyOperator.Mod:
+                    case PythonOperator.Mod:
                         return Mod.Instance;
-                    case PyOperator.Multiply:
+                    case PythonOperator.Multiply:
                         return Mult.Instance;
-                    case PyOperator.Negate:
+                    case PythonOperator.Negate:
                         return USub.Instance;
-                    case PyOperator.Not:
+                    case PythonOperator.Not:
                         return Not.Instance;
-                    case PyOperator.NotEqual:
+                    case PythonOperator.NotEqual:
                         return NotEq.Instance;
-                    case PyOperator.NotIn:
+                    case PythonOperator.NotIn:
                         return NotIn.Instance;
-                    case PyOperator.Pos:
+                    case PythonOperator.Pos:
                         return UAdd.Instance;
-                    case PyOperator.Power:
+                    case PythonOperator.Power:
                         return Pow.Instance;
-                    case PyOperator.RightShift:
+                    case PythonOperator.RightShift:
                         return RShift.Instance;
-                    case PyOperator.Subtract:
+                    case PythonOperator.Subtract:
                         return Sub.Instance;
-                    case PyOperator.Xor:
+                    case PythonOperator.Xor:
                         return BitXor.Instance;
                     default:
-                        throw new ArgumentException("Unexpected PyOperator: " + op, "op");
+                        throw new ArgumentException("Unexpected PythonOperator: " + op, "op");
                 }
             }
         }
@@ -622,30 +621,7 @@ namespace IronPython.Modules
         [PythonType]
         public abstract class cmpop : AST
         {
-            internal PythonOperator Revert() {
-                if (this == Eq.Instance)
-                    return PyOperator.Equal;
-                if (this == Gt.Instance)
-                    return PyOperator.GreaterThan;
-                if (this == GtE.Instance)
-                    return PyOperator.GreaterThanOrEqual;
-                if (this == In.Instance)
-                    return PyOperator.In;
-                if (this == Is.Instance)
-                    return PyOperator.Is;
-                if (this == IsNot.Instance)
-                    return PyOperator.IsNot;
-                if (this == Lt.Instance)
-                    return PyOperator.LessThan;
-                if (this == LtE.Instance)
-                    return PyOperator.LessThanOrEqual;
-                if (this == NotEq.Instance)
-                    return PythonOperator.NotEqual;
-                if (this == NotIn.Instance)
-                    return PythonOperator.NotIn;
-                throw PythonOps.TypeError("Unexpected compare operator: {0}", GetType());
-            }
-
+            internal abstract PythonOperator Revert();
         }
 
         [PythonType]
@@ -770,34 +746,7 @@ namespace IronPython.Modules
         [PythonType]
         public abstract class @operator : AST 
         {
-            internal PythonOperator Revert() {
-                if (this == Add.Instance)
-                    return PythonOperator.Add;
-                if (this == BitAnd.Instance)
-                    return PyOperator.BitwiseAnd;
-                if (this == BitOr.Instance)
-                    return PyOperator.BitwiseOr;
-                if (this == Div.Instance)
-                    return PyOperator.TrueDivide;
-                if (this == FloorDiv.Instance)
-                    return PyOperator.FloorDivide;
-                if (this == LShift.Instance)
-                    return PyOperator.LeftShift;
-                if (this == Mod.Instance)
-                    return PythonOperator.Mod;
-                if (this == Mult.Instance)
-                    return PythonOperator.Multiply;
-                if (this == Pow.Instance)
-                    return PythonOperator.Power;
-                if (this == RShift.Instance)
-                    return PyOperator.RightShift;
-                if (this == Sub.Instance)
-                    return PythonOperator.Subtract;
-                if (this == BitXor.Instance)
-                    return PythonOperator.Xor;
-                throw PythonOps.TypeError("Unexpected unary operator: {0}", GetType());
-            }
-
+            internal abstract PythonOperator Revert();
         }
 
         [PythonType]
@@ -829,29 +778,20 @@ namespace IronPython.Modules
         [PythonType]
         public abstract class unaryop : AST
         {
-            internal PyOperator Revert() {
-                if (this == Invert.Instance)
-                    return PyOperator.Invert;
-                if (this == USub.Instance)
-                    return PythonOperator.Negate;
-                if (this == Not.Instance)
-                    return PythonOperator.Not;
-                if (this == UAdd.Instance)
-                    return PythonOperator.Pos;
-                throw PythonOps.TypeError("Unexpected unary operator: {0}", GetType());
-            }
+            internal abstract PythonOperator Revert();
         }
 
         [PythonType]
         public class Add : @operator
         {
-            internal static Add Instance = new Add();
+            internal static readonly Add Instance = new Add();
+            internal override PythonOperator Revert() => PythonOperator.Add;
         }
 
         [PythonType]
         public class And : boolop
         {
-            internal static And Instance = new And();
+            internal static readonly And Instance = new And();
         }
 
         [PythonType]
@@ -1041,19 +981,22 @@ namespace IronPython.Modules
         [PythonType]
         public class BitAnd : @operator
         {
-            internal static BitAnd Instance = new BitAnd();
+            internal static readonly BitAnd Instance = new BitAnd();
+            internal override PythonOperator Revert() => PythonOperator.BitwiseAnd;
         }
 
         [PythonType]
         public class BitOr : @operator
         {
-            internal static BitOr Instance = new BitOr();
+            internal static readonly BitOr Instance = new BitOr();
+            internal override PythonOperator Revert() => PythonOperator.BitwiseOr;
         }
 
         [PythonType]
         public class BitXor : @operator
         {
-            internal static BitXor Instance = new BitXor();
+            internal static readonly BitXor Instance = new BitXor();
+            internal override PythonOperator Revert() => PythonOperator.Xor;
         }
 
         [PythonType]
@@ -1084,14 +1027,14 @@ namespace IronPython.Modules
             }
 
             internal override AstExpression Revert() {
-                if (op == And.Instance) {
+                if (op == And.Instance || op is And) {
                     AndExpression ae = new AndExpression(
                         expr.Revert(values[0]),
                         expr.Revert(values[1]));
                     return ae;
                 }
 
-                if (op == Or.Instance) {
+                if (op == Or.Instance || op is Or) {
                     OrExpression oe = new OrExpression(
                         expr.Revert(values[0]),
                         expr.Revert(values[1]));
@@ -1108,7 +1051,7 @@ namespace IronPython.Modules
         [PythonType]
         public class Break : stmt
         {
-            internal static Break Instance = new Break();
+            internal static readonly Break Instance = new Break();
 
             internal Break()
                 : this(null, null) { }
@@ -1311,7 +1254,7 @@ namespace IronPython.Modules
         [PythonType]
         public class Continue : stmt
         {
-            internal static Continue Instance = new Continue();
+            internal static readonly Continue Instance = new Continue();
 
             internal Continue()
                 : this(null, null) { }
@@ -1329,7 +1272,7 @@ namespace IronPython.Modules
         [PythonType]
         public class Del : expr_context
         {
-            internal static Del Instance = new Del();
+            internal static readonly Del Instance = new Del();
         }
 
         [PythonType]
@@ -1440,19 +1383,21 @@ namespace IronPython.Modules
         [PythonType]
         public class Div : @operator
         {
-            internal static Div Instance = new Div();
+            internal static readonly Div Instance = new Div();
+            internal override PythonOperator Revert() => PythonOperator.TrueDivide;
         }
 
         [PythonType]
         public class Ellipsis : slice
         {
-            internal static Ellipsis Instance = new Ellipsis();
+            internal static readonly Ellipsis Instance = new Ellipsis();
         }
 
         [PythonType]
         public class Eq : cmpop
         {
-            internal static Eq Instance = new Eq();
+            internal static readonly Eq Instance = new Eq();
+            internal override PythonOperator Revert() => PythonOperator.Equal;
         }
 
         [PythonType]
@@ -1568,7 +1513,8 @@ namespace IronPython.Modules
         [PythonType]
         public class FloorDiv : @operator
         {
-            internal static FloorDiv Instance = new FloorDiv();
+            internal static readonly FloorDiv Instance = new FloorDiv();
+            internal override PythonOperator Revert() => PythonOperator.FloorDivide;
         }
 
         [PythonType]
@@ -1813,13 +1759,15 @@ namespace IronPython.Modules
         [PythonType]
         public class Gt : cmpop
         {
-            internal static Gt Instance = new Gt();
+            internal static readonly Gt Instance = new Gt();
+            internal override PythonOperator Revert() => PythonOperator.GreaterThan;
         }
 
         [PythonType]
         public class GtE : cmpop
         {
-            internal static GtE Instance = new GtE();
+            internal static readonly GtE Instance = new GtE();
+            internal override PythonOperator Revert() => PythonOperator.GreaterThanOrEqual;
         }
 
         [PythonType]
@@ -2014,7 +1962,8 @@ namespace IronPython.Modules
         [PythonType]
         public class In : cmpop
         {
-            internal static In Instance = new In();
+            internal static readonly In Instance = new In();
+            internal override PythonOperator Revert() => PythonOperator.In;
         }
 
         [PythonType]
@@ -2059,19 +2008,22 @@ namespace IronPython.Modules
         [PythonType]
         public class Invert : unaryop
         {
-            internal static Invert Instance = new Invert();
+            internal static readonly Invert Instance = new Invert();
+            internal override PythonOperator Revert() => PythonOperator.Invert;
         }
 
         [PythonType]
         public class Is : cmpop
         {
-            internal static Is Instance = new Is();
+            internal static readonly Is Instance = new Is();
+            internal override PythonOperator Revert() => PythonOperator.Is;
         }
 
         [PythonType]
         public class IsNot : cmpop
         {
-            internal static IsNot Instance = new IsNot();
+            internal static readonly IsNot Instance = new IsNot();
+            internal override PythonOperator Revert() => PythonOperator.IsNot;
         }
 
         [PythonType]
@@ -2209,31 +2161,35 @@ namespace IronPython.Modules
         [PythonType]
         public class Load : expr_context
         {
-            internal static Load Instance = new Load();
+            internal static readonly Load Instance = new Load();
         }
 
         [PythonType]
         public class Lt : cmpop
         {
-            internal static Lt Instance = new Lt();
+            internal static readonly Lt Instance = new Lt();
+            internal override PythonOperator Revert() => PythonOperator.LessThan;
         }
 
         [PythonType]
         public class LtE : cmpop
         {
-            internal static LtE Instance = new LtE();
+            internal static readonly LtE Instance = new LtE();
+            internal override PythonOperator Revert() => PythonOperator.LessThanOrEqual;
         }
 
         [PythonType]
         public class LShift : @operator
         {
-            internal static LShift Instance = new LShift();
+            internal static readonly LShift Instance = new LShift();
+            internal override PythonOperator Revert() => PythonOperator.LeftShift;
         }
 
         [PythonType]
         public class Mod : @operator
         {
-            internal static Mod Instance = new Mod();
+            internal static readonly Mod Instance = new Mod();
+            internal override PythonOperator Revert() => PythonOperator.Mod;
         }
 
         [PythonType]
@@ -2263,7 +2219,8 @@ namespace IronPython.Modules
         [PythonType]
         public class Mult : @operator
         {
-            internal static Mult Instance = new Mult();
+            internal static readonly Mult Instance = new Mult();
+            internal override PythonOperator Revert() => PythonOperator.Multiply;
         }
 
         [PythonType]
@@ -2330,19 +2287,22 @@ namespace IronPython.Modules
         [PythonType]
         public class Not : unaryop
         {
-            internal static Not Instance = new Not();
+            internal static readonly Not Instance = new Not();
+            internal override PythonOperator Revert() => PythonOperator.Not;
         }
 
         [PythonType]
         public class NotEq : cmpop
         {
-            internal static NotEq Instance = new NotEq();
+            internal static readonly NotEq Instance = new NotEq();
+            internal override PythonOperator Revert() => PythonOperator.NotEqual;
         }
 
         [PythonType]
         public class NotIn : cmpop
         {
-            internal static NotIn Instance = new NotIn();
+            internal static readonly NotIn Instance = new NotIn();
+            internal override PythonOperator Revert() => PythonOperator.NotIn;
         }
 
         [PythonType]
@@ -2372,19 +2332,19 @@ namespace IronPython.Modules
         [PythonType]
         public class Or : boolop
         {
-            internal static Or Instance = new Or();
+            internal static readonly Or Instance = new Or();
         }
 
         [PythonType]
         public class Param : expr_context
         {
-            internal static Param Instance = new Param();
+            internal static readonly Param Instance = new Param();
         }
 
         [PythonType]
         public class Pass : stmt
         {
-            internal static Pass Instance = new Pass();
+            internal static readonly Pass Instance = new Pass();
 
             internal Pass()
                 : this(null, null) { }
@@ -2402,7 +2362,8 @@ namespace IronPython.Modules
         [PythonType]
         public class Pow : @operator
         {
-            internal static Pow Instance = new Pow();
+            internal static readonly Pow Instance = new Pow();
+            internal override PythonOperator Revert() => PythonOperator.Power;
         }
 
         [PythonType]
@@ -2496,7 +2457,8 @@ namespace IronPython.Modules
         [PythonType]
         public class RShift : @operator
         {
-            internal static RShift Instance = new RShift();
+            internal static readonly RShift Instance = new RShift();
+            internal override PythonOperator Revert() => PythonOperator.RightShift;
         }
 
         [PythonType]
@@ -2630,7 +2592,7 @@ namespace IronPython.Modules
         [PythonType]
         public class Store : expr_context
         {
-            internal static Store Instance = new Store();
+            internal static readonly Store Instance = new Store();
         }
 
         [PythonType]
@@ -2660,7 +2622,8 @@ namespace IronPython.Modules
         [PythonType]
         public class Sub : @operator
         {
-            internal static Sub Instance = new Sub();
+            internal static readonly Sub Instance = new Sub();
+            internal override PythonOperator Revert() => PythonOperator.Subtract;
         }
 
         [PythonType]
@@ -2804,11 +2767,11 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "body", "finalbody" });
             }
 
-            public TryFinally(PythonList body, PythonList finalBody, 
+            public TryFinally(PythonList body, PythonList finalbody, 
                 [Optional]int? lineno, [Optional]int? col_offset)
                 : this() {
                 this.body = body;
-                finalbody = finalbody;
+                this.finalbody = finalbody;
                 _lineno = lineno;
                 _col_offset = col_offset;
             }
@@ -2940,13 +2903,15 @@ namespace IronPython.Modules
         [PythonType]
         public class UAdd : unaryop
         {
-            internal static UAdd Instance = new UAdd();
+            internal static readonly UAdd Instance = new UAdd();
+            internal override PythonOperator Revert() => PythonOperator.Pos;
         }
 
         [PythonType]
         public class USub : unaryop
         {
-            internal static USub Instance = new USub();
+            internal static readonly USub Instance = new USub();
+            internal override PythonOperator Revert() => PythonOperator.Negate;
         }
 
         [PythonType]

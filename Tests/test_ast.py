@@ -814,6 +814,17 @@ for v in fNone():
     def test_compile_argument_error(self):
         self.assertRaises( TypeError, ast.parse, ['1+1'], "<unknown>", mode="eval")
 
+    def test_compile_manual(self):
+        # check that expressions which are built manually compile
+        for test in eval_tests:
+            a = ast.parse(test, "<unknown>", mode="eval")
+            b = ast.fix_missing_locations(eval(ast.dump(a, annotate_fields=False), vars(ast)))
+            compile(b, "<unknown>", mode="eval")
+        for test in exec_tests:
+            a = ast.parse(test, "<unknown>", mode="exec")
+            b = ast.fix_missing_locations(eval(ast.dump(a, annotate_fields=False), vars(ast)))
+            compile(b, "<unknown>", mode="exec")
+
     def test_snippets(self):
         # Things which diverted from cpython:
         # - col_offset of list comprehension in ironpython uses opening bracket, cpython points to first expr
@@ -1374,4 +1385,5 @@ eval_results = [
 ('Expression', ('DictComp', (1, 0), ('Name', (1, 1), 'k', ('Load',)), ('Name', (1, 3), 'v', ('Load',)), [('comprehension', ('Tuple', (1, 9), [('Name', (1, 9), 'k', ('Store',)), ('Name', (1, 11), 'v', ('Store',))], ('Store',)), ('Name', (1, 16), 'li', ('Load',)), [])])),
 ('Expression', ('SetComp', (1, 0), ('Name', (1, 1), 'e', ('Load',)), [('comprehension', ('Name', (1, 7), 'e', ('Store',)), ('Name', (1, 12), 'li', ('Load',)), [])])),
 ]
+
 main()

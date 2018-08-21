@@ -832,7 +832,7 @@ class IsInstanceTest(IronPythonTestCase):
         
         try:
             class E(C,D): pass
-            AssertUnreachable()
+            self.assertUnreachable()
         except TypeError:
             pass
         
@@ -843,7 +843,7 @@ class IsInstanceTest(IronPythonTestCase):
     def test_bad_addition(self):
         try:
             2.0 + "2.0"
-            AssertUnreachable()
+            self.assertUnreachable()
         except TypeError: pass
 
     def test_class_property(self):

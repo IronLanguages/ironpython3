@@ -483,7 +483,7 @@ class CodecTest(IronPythonTestCase):
         allchars = ''.join([chr(i) for i in range(1, 256)])
         try:
             codecs.lookup(allchars)
-            AssertUnreachable()
+            self.assertUnreachable()
         except LookupError:
             pass
             

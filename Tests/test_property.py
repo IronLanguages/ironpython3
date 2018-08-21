@@ -222,7 +222,7 @@ class PropertyTest(IronPythonTestCase):
         property in the class dictionary"""
         class x(object):
             def set(self, value):
-                AssertUnreachable()
+                self.assertUnreachable()
             prop = property(lambda x:42, set)
         
         x.prop = 42

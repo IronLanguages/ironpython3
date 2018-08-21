@@ -6,7 +6,7 @@ using NUnit.Framework;
 
 
 namespace IronPythonTest.Cases {
-    [TestFixture(Category="IronPython")]
+    [TestFixture(Category = "IronPython")]
     public class IronPythonCases {
         private CaseExecuter executor;
 
@@ -18,7 +18,7 @@ namespace IronPythonTest.Cases {
         [Test, TestCaseSource(typeof(IronPythonCaseGenerator))]
         public int IronPythonTests(TestInfo testcase) {
             try {
-                Console.Error.WriteLine(testcase.Name); // write to the error stream so it appears before the test is run
+                TestContext.Progress.WriteLine(testcase.Name);
                 return this.executor.RunTest(testcase);
             } catch (Exception e) {
                 Assert.Fail(this.executor.FormatException(e));
@@ -29,13 +29,13 @@ namespace IronPythonTest.Cases {
 
     class IronPythonCaseGenerator : CommonCaseGenerator<IronPythonCases> {
         protected override IEnumerable<TestInfo> GetTests() {
+            var root = CaseExecuter.FindRoot();
+
             return GetFilenames()
-                .Select(file => new TestInfo(Path.GetFullPath(file), this.manifest))
+                .Select(file => new TestInfo(Path.GetFullPath(file), category, "Tests", this.manifest))
                 .OrderBy(testcase => testcase.Name);
 
             IEnumerable<string> GetFilenames() {
-                var root = CaseExecuter.FindRoot();
-
                 foreach (var filename in Directory.EnumerateFiles(Path.Combine(root, "Tests"), "test_*.py", SearchOption.AllDirectories))
                     yield return filename;
 

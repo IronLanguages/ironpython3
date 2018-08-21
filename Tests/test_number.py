@@ -244,7 +244,7 @@ class NumberTest(IronPythonTestCase):
         self.assertEqual(None == False, False)
         self.assertEqual(None == True, False)
         
-        if None: AssertUnreachable("none shouldn't be true")
+        if None: self.assertUnreachable("none shouldn't be true")
         
         a = None
         if a: self.assertEqual(False, True)

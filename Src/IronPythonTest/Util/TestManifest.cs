@@ -10,7 +10,6 @@ namespace IronPythonTest.Util {
 
         public TestManifest(Type parent) {
             var file = parent.Assembly.GetManifestResourceStream($"IronPythonTest.Cases.{parent.Name}Manifest.ini");
-
             this.manifest = new IniParser(file);
         }
 
@@ -75,9 +74,9 @@ namespace IronPythonTest.Util {
             }
         }
 
-        public string Condition {
+        public string RunCondition {
             get {
-                return this.manifest.GetValue(this.testName, "Condition", string.Empty);
+                return this.manifest.GetValue(this.testName, "RunCondition", string.Empty);
             }
         }
 
@@ -114,6 +113,12 @@ namespace IronPythonTest.Util {
         public int Timeout {
             get {
                 return this.manifest.GetInt(this.testName, "Timeout", -1);
+            }
+        }
+
+        public int RetryCount {
+            get {
+                return this.manifest.GetInt(this.testName, "RetryCount", 0);
             }
         }
     }

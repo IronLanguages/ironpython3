@@ -251,7 +251,7 @@ compares = [('<', 'lt', 'ge', 'LessThan', 'GreaterThan', "false", "true", "false
             ('>', 'gt', 'le', 'GreaterThan', 'LessThan', "false", "false", "true"),
             ('<=', 'le', 'gt', 'LessThanOrEqual', 'GreaterThanOrEqual', "true", "true", "false"),
             ('>=', 'ge', 'lt', 'GreaterThanOrEqual', 'LessThanOrEqual', "true", "false", "true"),
-            ('==', 'eq', 'eq', 'Equals', 'NotEquals', 'a', 'a', 'a'), 
+            ('==', 'eq', 'eq', 'Equals', 'NotEquals', 'a', 'a', 'a'),
             ('!=', 'ne', 'ne', 'NotEquals', 'Equals', 'a', 'a', 'a')]
 for sym, name, rname,clrName,opposite, bool1, bool2, bool3 in compares:
     ops.append(Operator(sym, name, rname,clrName, opposite=opposite, bool1=bool1, bool2=bool2, bool3=bool3))
@@ -263,7 +263,7 @@ for sym, rsym, name, fullName in groupings:
 
 simple = [(',', 'comma'), (':', 'colon'), (';', 'semicolon'),
         ('=', 'assign'), ('~', 'twiddle'), ('@', 'at'), ('=>', 'rarrow', 'RightArrow'),
-        ('->', 'ReturnAnnotate')]
+        ('->', 'rannotation', 'ReturnAnnotation')]
 for info in simple:
     if len(info) == 2:
         sym, name = info
@@ -413,7 +413,7 @@ def keyword_lookup_generator(cw):
     keyword_list.append('True')
     keyword_list.append('False')
     keyword_list.sort()
-    
+
     tree = collections.OrderedDict()
     for kw in keyword_list:
         prev = cur = tree
@@ -421,7 +421,7 @@ def keyword_lookup_generator(cw):
             val = cur.get(letter)
             if val is None:
                 val = cur[letter] = (collections.OrderedDict(), False)
-                
+
             prev = cur
             cur = val[0]
         prev[kw[-1:]] = (cur, True)
@@ -443,34 +443,14 @@ def tokens_generator(cw):
         cw.write("public static Token %sToken { get; } = %s;" % (op.title_name(), creator))
 
     cw.writeline()
-    
-    uc = unique_checker()
-    for op in ops:
-        if not uc.unique(op): continue
 
-        cw.enter_block("public static Token %sToken" % op.title_name())
-        cw.write("get { return sym%sToken; }" % op.title_name())
-        cw.exit_block()
-        cw.write("")
-    
     keyword_list = list(kwlist)
     keyword_list.sort()
 
     for kw in keyword_list:
         creator = 'new SymbolToken(TokenKind.Keyword%s, "%s")' % (
             keywordToFriendly(kw), kw)
-        cw.write("private static readonly Token kw%sToken = %s;" %
-               (keywordToFriendly(kw), creator))
-
-    cw.write("")
-    cw.write("")
-    for kw in keyword_list:
-        cw.enter_block("public static Token Keyword%sToken" % keywordToFriendly(kw))
-        cw.write("get { return kw%sToken; }" % keywordToFriendly(kw))
-        cw.exit_block()
-        cw.write("")
-
-    cw.write("")
+        cw.write("public static Token Keyword%sToken { get; } = %s;" % (keywordToFriendly(kw), creator))
 
 UBINOP = """
 public static object %(name)s(object x, object y) {

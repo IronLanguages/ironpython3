@@ -1348,7 +1348,7 @@ namespace IronPython.Runtime {
         }
 
         public static bool operator !=(DictionaryKeyView x, DictionaryKeyView y) {
-            if (ReferenceEquals(x._dict, y._dict)) {
+            if (object.ReferenceEquals(x._dict, y._dict)) {
                 return false;
             }
             SetStorage xs = SetStorage.GetItemsWorker(x.GetEnumerator());
@@ -1438,7 +1438,7 @@ namespace IronPython.Runtime {
         }
 
         public static bool operator <=(DictionaryKeyView x, DictionaryItemView y) {
-            if (ReferenceEquals(x._dict, y._dict)) {
+            if (object.ReferenceEquals(x._dict, y._dict)) {
                 return false;
             }
             SetStorage xs = SetStorage.GetItemsWorker(x.GetEnumerator());
@@ -1696,7 +1696,7 @@ namespace IronPython.Runtime {
         }
 
         public static bool operator ==(DictionaryItemView x, DictionaryItemView y) {
-            if (ReferenceEquals(x._dict, y._dict)) {
+            if (object.ReferenceEquals(x._dict, y._dict)) {
                 return true;
             }
             SetStorage xs = SetStorage.GetItemsWorker(x.GetEnumerator());
@@ -1741,7 +1741,7 @@ namespace IronPython.Runtime {
         }
 
         public static bool operator <=(DictionaryItemView x, DictionaryItemView y) {
-            if (ReferenceEquals(x._dict, y._dict)) {
+            if (object.ReferenceEquals(x._dict, y._dict)) {
                 return true;
             }
             SetStorage xs = SetStorage.GetItemsWorker(x.GetEnumerator());

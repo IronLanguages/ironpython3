@@ -10,17 +10,17 @@ MAX_HELPERS = 10
 TYPE_CODE_TYPES = ['Int16', 'Int32', 'Int64', 'Boolean', 'Char', 'Byte', 'Decimal', 'DateTime', 'Double', 'Single', 'UInt16', 'UInt32', 'UInt64', 'String', 'SByte']
 
 def get_args(i):
-    return ['arg' + str(x) for x in xrange(i)]
+    return ['arg' + str(x) for x in range(i)]
 
 def get_arr_args(i):
-    return ['args[' + str(x) + ']' for x in xrange(i)]
+    return ['args[' + str(x) + ']' for x in range(i)]
 
 def get_object_args(i):
-    return ['object arg' + str(x) for x in xrange(i)]
+    return ['object arg' + str(x) for x in range(i)]
 
 def get_type_names(i):
     if i == 1: return ['T0']
-    return ['T' + str(x) for x in xrange(i)]    
+    return ['T' + str(x) for x in range(i)]    
 
 def get_func_type_names(i):
     return get_type_names(i - 1) + ['TRet']
@@ -40,7 +40,7 @@ def gen_invoke_instance(cw):
     cw.enter_block('public virtual object InvokeInstance(object instance, params object[] args)')
     cw.enter_block('switch(args.Length)')
     
-    for i in xrange(MAX_HELPERS-1):
+    for i in range(MAX_HELPERS-1):
         cw.write('case %d: return Invoke(%s);' % (i, ', '.join(['instance'] + get_arr_args(i))))
     
     cw.write('default: throw new InvalidOperationException();')
@@ -52,7 +52,7 @@ def gen_invoke(cw):
     cw.enter_block('public virtual object Invoke(params object[] args)')
     cw.enter_block('switch(args.Length)')
     
-    for i in xrange(MAX_HELPERS):
+    for i in range(MAX_HELPERS):
         cw.write('case %d: return Invoke(%s);' % (i, ', '.join(get_arr_args(i))))
     
     cw.write('default: throw new InvalidOperationException();')
@@ -61,7 +61,7 @@ def gen_invoke(cw):
     cw.write('')
     
 def gen_invoke_base_methods(cw):
-    for i in xrange(MAX_HELPERS):
+    for i in range(MAX_HELPERS):
         cw.write('public virtual object Invoke(%s) { throw new InvalidOperationException(); }' % (', '.join(get_object_args(i)), ))
     cw.write('')
 
@@ -80,7 +80,7 @@ def gen_fast_creation(cw):
     cw.write('/// One relaxation is that for return types which are non-primitive types')
     cw.write('/// we can fallback to object due to relaxed delegates.')
     cw.write('/// </summary>')
-    for i in xrange(MAX_ARGS):        
+    for i in range(MAX_ARGS):        
         cw.enter_block('private static CallInstruction FastCreate%s(MethodInfo target, ParameterInfo[] pi)' % get_type_params(i))
         
         cw.write('Type t = TryGetParameterOrReturnType(target, pi, %d);' % (i, ))
@@ -131,7 +131,7 @@ def get_get_helper_type(cw):
     cw.enter_block('if (info.ReturnType == typeof(void))')
     cw.enter_block('switch (arrTypes.Length)')
     
-    for i in xrange(MAX_HELPERS):
+    for i in range(MAX_HELPERS):
         if i == 0:
             cw.write('case %d: t = typeof(ActionCallInstruction); break;' % (i, ))
         else:
@@ -143,7 +143,7 @@ def get_get_helper_type(cw):
     cw.else_block()
     cw.enter_block('switch (arrTypes.Length)')
     
-    for i in xrange(1, MAX_HELPERS+1):
+    for i in range(1, MAX_HELPERS+1):
         cw.write('case %d: t = typeof(FuncCallInstruction<%s>).MakeGenericType(arrTypes); break;' % (i, ','*(i-1)) )
     cw.write('default: throw new InvalidOperationException();')
         
@@ -155,7 +155,7 @@ def get_get_helper_type(cw):
 
 def get_explicit_caching(cw): 
     for delegate, type_params_maker, s in [('Func', get_func_type_params, 1), ('Action', get_type_params, 0)]:
-        for i in xrange(MAX_HELPERS):
+        for i in range(MAX_HELPERS):
             type_params = type_params_maker(s + i)
             cw.enter_block('public static MethodInfo Cache%s%s(%s%s method)' % (delegate, type_params, delegate, type_params))
             cw.write('var info = method.GetMethodInfo();')
@@ -191,7 +191,7 @@ def gen_action_call_instruction(cw, i):
     cw.write('private readonly Action%s _target;' % type_params)
     
     # properties
-    cw.write('public override MethodInfo Info { get { return _target.GetMethod(); } }')
+    cw.write('public override MethodInfo Info { get { return _target.GetMethodInfo(); } }')
     cw.write('public override int ArgumentCount { get { return %d; } }' % (i))
     cw.write('')
     
@@ -259,7 +259,7 @@ def gen_interpreted_run(cw, n, isFunc):
     cw.enter_block('public override int Run(InterpretedFrame frame)')
     
     args = ''
-    for i in xrange(0, n):
+    for i in range(0, n):
         if i > 0: args += ', '
         args += '(T%d)frame.Data[frame.StackIndex - %d]' % (i, n - i)
     
@@ -277,17 +277,17 @@ def gen_interpreted_run(cw, n, isFunc):
     cw.exit_block()
 
 def gen_action_call_instructions(cw):
-    for i in xrange(MAX_HELPERS):
+    for i in range(MAX_HELPERS):
         gen_action_call_instruction(cw, i)
 
 def gen_func_call_instructions(cw):
-    for i in xrange(1, MAX_HELPERS+1):
+    for i in range(1, MAX_HELPERS+1):
         gen_func_call_instruction(cw, i)
         
 def gen_slow_caller(cw):
     cw.enter_block('internal sealed partial class MethodInfoCallInstruction : CallInstruction')
      
-    for i in xrange(MAX_ARGS):
+    for i in range(MAX_ARGS):
         cw.enter_block('public override object Invoke(%s)' % (', '.join(get_object_args(i)), ))
         cw.write('return InvokeWorker(%s);' % (', '.join(get_args(i)), ))
         cw.exit_block()

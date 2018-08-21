@@ -12,17 +12,17 @@ MAX_HELPERS = 7
 TYPE_CODE_TYPES = ['Int16', 'Int32', 'Int64', 'Boolean', 'Char', 'Byte', 'Decimal', 'DateTime', 'Double', 'Single', 'UInt16', 'UInt32', 'UInt64', 'String', 'SByte']
 
 def get_args(i):
-    return ['arg' + str(x) for x in xrange(i)]
+    return ['arg' + str(x) for x in range(i)]
 
 def get_arr_args(i):
-    return ['args[' + str(x) + ']' for x in xrange(i)]
+    return ['args[' + str(x) + ']' for x in range(i)]
 
 def get_object_args(i):
-    return ['object arg' + str(x) for x in xrange(i)]
+    return ['object arg' + str(x) for x in range(i)]
 
 def get_type_names(i):
     if i == 1: return ['T0']
-    return ['T' + str(x) for x in xrange(i)]    
+    return ['T' + str(x) for x in range(i)]    
 
 def get_invoke_type_names(i):
     return get_type_names(i - 1) + ['TRet']
@@ -71,7 +71,7 @@ def gen_interpreted_run(cw, n):
     cw.enter_block('public override int Run(InterpretedFrame frame)')
     
     args = '_site'
-    for i in xrange(0, n):
+    for i in range(0, n):
         args += ', (T%d)frame.Data[frame.StackIndex - %d]' % (i, n - i)
     
     cw.write('frame.Data[frame.StackIndex - %d] = _site.Target(%s);' % (n, args))\
@@ -84,23 +84,23 @@ def gen_interpreted_run(cw, n):
     cw.exit_block()
     
 def gen_types(cw):
-    for i in xrange(MAX_TYPES):
+    for i in range(MAX_TYPES):
         cw.write('case %d: genericType = typeof(DynamicInstruction<%s>); break;' %
                   (i+1, ''.join([',']*i)))
                   
 def gen_untyped(cw):
-    for i in xrange(MAX_TYPES):
+    for i in range(MAX_TYPES):
         cw.write('case %d: return DynamicInstruction<%s>.Factory(binder);' % 
                   (i, ', '.join(['object']*(i+1))))
     
 def gen_instructions(cw):
-    for i in xrange(MAX_TYPES):
+    for i in range(MAX_TYPES):
         gen_instruction(cw, i)
     
 
 def gen_run_method(cw, n, is_void):
-    type_params = ['T%d' % i for i in xrange(n)]
-    param_names = ['T%d arg%d' % (i,i) for i in xrange(n)] 
+    type_params = ['T%d' % i for i in range(n)]
+    param_names = ['T%d arg%d' % (i,i) for i in range(n)] 
     if is_void:
         ret_type = 'void'
         name_extra = 'Void'
@@ -117,7 +117,7 @@ def gen_run_method(cw, n, is_void):
                                                 ','.join(param_names)))
         
     cw.enter_block('if (_compiled != null || TryGetCompiled())')
-    args = ', '.join(['arg%d' % i for i in xrange(n)])
+    args = ', '.join(['arg%d' % i for i in range(n)])
     if is_void:
         cw.write('((Action%s)_compiled)(%s);' % (types, args))
         cw.write('return;')
@@ -126,7 +126,7 @@ def gen_run_method(cw, n, is_void):
     cw.exit_block()
     cw.write('')
     cw.write('var frame = MakeFrame();')
-    for i in xrange(n):
+    for i in range(n):
         cw.write('frame.Data[%d] = arg%d;' % (i,i))
     
     cw.write('var current = frame.Enter();')
@@ -139,7 +139,7 @@ def gen_run_method(cw, n, is_void):
     cw.write('')
     
 def gen_run_maker(cw, n, is_void):
-    type_params = ['T%d' % i for i in xrange(n)]
+    type_params = ['T%d' % i for i in range(n)]
     
     if is_void:
         name_extra = 'Void'
@@ -158,7 +158,7 @@ def gen_run_maker(cw, n, is_void):
 
 def gen_run_methods(cw):
     cw.write('internal const int MaxParameters = %d;' % MAX_TYPES)
-    for i in xrange(MAX_TYPES):
+    for i in range(MAX_TYPES):
         gen_run_method(cw, i, False)
         gen_run_method(cw, i, True)
         gen_run_maker(cw, i, False)
@@ -166,7 +166,7 @@ def gen_run_methods(cw):
         
 
 def gen_instructionlist_factory(cw):
-    for i in xrange(1, MAX_TYPES):
+    for i in range(1, MAX_TYPES):
         gen_args = ', '.join(get_type_names(i))
         cw.enter_block('public void EmitDynamic<%s, TRet>(CallSiteBinder binder)' % gen_args)
         cw.write('Emit(DynamicInstruction<%s, TRet>.Factory(binder));' % gen_args)

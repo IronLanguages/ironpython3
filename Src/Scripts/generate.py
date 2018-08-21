@@ -91,15 +91,15 @@ class CodeWriter:
         else:
             self.writeline("} else {")
         self.indent()
-        
+
     def case_block(self, text=None, **kw):
         self.enter_block(text, **kw)
         self.indent()
-        
+
     def case_label(self, text=None, **kw):
         self.write(text, **kw)
         self.indent()
-        
+
     def exit_case_block(self):
         self.exit_block()
         self.dedent()
@@ -144,7 +144,7 @@ class CodeGenerator:
     def do_generate(self):
         if not self.generators:
             raise Exception("didn't find a match for %s" % self.replacer.name)
-            
+
         result = []
         for g in self.generators:
             result.append(g.generate())
@@ -157,7 +157,7 @@ class CodeGenerator:
             filename = os.path.join(dirname, file)
             if os.path.isdir(filename):
                 self.do_dir(filename)
-            elif filename.endswith(".cs"):
+            elif filename.endswith(".cs") and not file == "StandardTestStrings.cs": # TODO: fix encoding of StandardTestStrings.cs
                 self.do_file(filename)
 
     def doit(self):
@@ -180,13 +180,13 @@ class BlockReplacer:
         #if m is None: return None
         #indent = m.group(1)
         #return indent
-        
+
         startIndex = text.find(self.start)
         if startIndex != -1:
             origStart = startIndex
             # go to the beginning of the line on which self.start appears
             startIndex = text.rfind('\n', 0, startIndex) + 1
-            
+
             # Some simple parsing logic that allows us to use regions within
             # our generated code
             if self.end == '#endregion':
@@ -217,25 +217,25 @@ class BlockReplacer:
                         break
             else:
                 endIndex = text.find(self.end, startIndex)
-                
+
             if endIndex != -1:
                 indent = text[startIndex:origStart]
                 return (indent, startIndex, endIndex+len(self.end))
-        
+
         return None
-    
+
     def replace(self, cw, text, indent):
         code = cw.lines
         code.insert(0, self.start)
         code.append(self.end)
-        
+
         def should_indent(line):
             if not line: return False
             if line.startswith("#region"): return True
             if line.startswith("#endregion"): return True
             if line.startswith("#"): return False
             return True
-        
+
        #code_text = '\n' + indent
         code_text = indent[0]
         delim = False
@@ -246,10 +246,10 @@ class BlockReplacer:
                     code_text += indent[0]
             code_text += line
             delim = True
-        
+
         #return self.block_pat.sub(code_text, text)
         #indicies = self.match(text)
-        
+
         res = text[0:indent[1]] + code_text + text[indent[2]:len(text)]
         return res
 
@@ -259,34 +259,33 @@ def save_file(name, text):
     f.close()
 
 def texts_are_equivalent(texta, textb):
-    """Compares two program texts by removing all identation and 
+    """Compares two program texts by removing all identation and
     blank lines first."""
-    
+
     def normalized_lines(text):
         for l in text.splitlines():
             l = l.strip()
             if l:
                 yield l
-                
+
     texta = "\n".join(normalized_lines(texta))
     textb = "\n".join(normalized_lines(textb))
     return texta == textb
-    
+
 class FileGenerator:
     def __init__(self, filename, generator, replacer):
         self.filename = filename
         self.generator = generator
         self.replacer = replacer
 
-        thefile = open(filename)
-        self.text = thefile.read()
-        thefile.close()
+        with open(filename) as thefile:
+            self.text = thefile.read()
         self.indent = self.replacer.match(self.text)
         self.has_match = self.indent is not None
 
     def collect_info(self):
         pass
-       
+
     def generate(self):
         print("generate", end=' ')
         if sys.argv.count('checkonly') > 0:

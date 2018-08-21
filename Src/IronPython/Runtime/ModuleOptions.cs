@@ -24,14 +24,6 @@ namespace IronPython.Runtime {
         /// </summary>
         Initialize = 0x0008,
         /// <summary>
-        /// Enable usage of the with statement
-        /// </summary>
-        WithStatement = 0x0010,
-        /// <summary>
-        /// Enable absolute imports
-        /// </summary>
-        AbsoluteImports = 0x0020,
-        /// <summary>
         /// Indiciates that __builtins__ should not be set in the module
         /// </summary>
         NoBuiltins = 0x0040,
@@ -55,10 +47,6 @@ namespace IronPython.Runtime {
         /// </summary>
         Interpret = 0x1000,
         /// <summary>
-        /// String Literals should be parsed as Unicode strings
-        /// </summary>
-        UnicodeLiterals = 0x2000,
-        /// <summary>
         /// Include comments in the parse tree
         /// </summary>
         Verbatim = 0x4000,
@@ -67,5 +55,4 @@ namespace IronPython.Runtime {
         /// </summary>
         LightThrow = 0x8000
     }
-
 }

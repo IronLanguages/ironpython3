@@ -55,26 +55,6 @@ namespace IronPython.Compiler {
             }
         }
 
-        public bool AllowWithStatement {
-            get {
-                return (_module & ModuleOptions.WithStatement) != 0;
-            }
-            set {
-                if (value) _module |= ModuleOptions.WithStatement;
-                else _module &= ~ModuleOptions.WithStatement;
-            }
-        }
-
-        public bool AbsoluteImports {
-            get {
-                return (_module & ModuleOptions.AbsoluteImports) != 0;
-            }
-            set {
-                if (value) _module |= ModuleOptions.AbsoluteImports;
-                else _module &= ~ModuleOptions.AbsoluteImports;
-            }
-        }
-
         public bool Verbatim {
             get {
                 return (_module & ModuleOptions.Verbatim) != 0;
@@ -82,16 +62,6 @@ namespace IronPython.Compiler {
             set {
                 if (value) _module |= ModuleOptions.Verbatim;
                 else _module &= ~ModuleOptions.Verbatim;
-            }
-        }
-
-        public bool UnicodeLiterals {
-            get {
-                return (_module & ModuleOptions.UnicodeLiterals) != 0;
-            }
-            set {
-                if (value) _module |= ModuleOptions.UnicodeLiterals;
-                else _module &= ~ModuleOptions.UnicodeLiterals;
             }
         }
 

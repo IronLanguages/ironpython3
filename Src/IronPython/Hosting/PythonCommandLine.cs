@@ -290,7 +290,7 @@ namespace IronPython.Hosting {
                 return;
 
             try {
-                Importer.ImportModule(PythonContext.SharedContext, null, "site", false, -1);
+                Importer.ImportModule(PythonContext.SharedContext, null, "site", false, 0);
             } catch (Exception e) {
                 Console.Write(Language.FormatException(e), Style.Error);
             }

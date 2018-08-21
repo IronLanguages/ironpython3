@@ -61,15 +61,9 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        [Documentation("__import__(name) -> module\n\nImport a module.")]
-        [LightThrowing]
-        public static object __import__(CodeContext/*!*/ context, string name) {
-            return __import__(context, name, null, null, null, -1);
-        }
-
         [Documentation("__import__(name, globals, locals, fromlist, level) -> module\n\nImport a module.")]
         [LightThrowing]
-        public static object __import__(CodeContext/*!*/ context, string name, object globals=null, object locals=null, object fromlist=null, int level=-1) {
+        public static object __import__(CodeContext/*!*/ context, string name, object globals=null, object locals=null, object fromlist=null, int level=0) {
             if (fromlist is string || fromlist is Extensible<string>) {
                 fromlist = new List<object> { fromlist };
             }
@@ -1717,16 +1711,16 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             
             ModuleOptions langFeat = ModuleOptions.None;
             if ((cflags & CompileFlags.CO_FUTURE_WITH_STATEMENT) != 0) {
-                langFeat |= ModuleOptions.WithStatement;
+                // Ignored in Python 2.7
             }
             if ((cflags & CompileFlags.CO_FUTURE_ABSOLUTE_IMPORT) != 0) {
-                langFeat |= ModuleOptions.AbsoluteImports;
+                // Ignored in Python 3
             }
             if ((cflags & CompileFlags.CO_FUTURE_PRINT_FUNCTION) != 0) {
                 // Ignored in Python 3
             }
             if ((cflags & CompileFlags.CO_FUTURE_UNICODE_LITERALS) != 0) {
-                langFeat |= ModuleOptions.UnicodeLiterals;
+                // Ignored in Python 3
             }
             pco.Module |= langFeat;
 

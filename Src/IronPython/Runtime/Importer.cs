@@ -36,6 +36,8 @@ namespace IronPython.Runtime {
         /// a module and returns the module.
         /// </summary>
         public static object Import(CodeContext/*!*/ context, string fullName, PythonTuple from, int level) {
+            if (level < 0) throw new ArgumentException("level must be >= 0", nameof(level));
+
             return LightExceptions.CheckAndThrow(ImportLightThrow(context, fullName, from, level));
         }
 
@@ -45,39 +47,21 @@ namespace IronPython.Runtime {
         /// </summary>
         [LightThrowing]
         internal static object ImportLightThrow(CodeContext/*!*/ context, string fullName, PythonTuple from, int level) {
+            Debug.Assert(level >= 0);
+
             PythonContext pc = context.LanguageContext;
 
-            if (level == -1) {
-                // no specific level provided, call the 4 param version so legacy code continues to work
-                var site = pc.OldImportSite;
-                return site.Target(
-                    site,
-                    context,
-                    FindImportFunction(context),
-                    fullName,
-                    Builtin.globals(context),
-                    context.Dict,
-                    from
-                );
-            } else {
-
-                // relative import or absolute import, in other words:
-                //
-                // from . import xyz
-                // or 
-                // from __future__ import absolute_import
-                var site = pc.ImportSite;
-                return site.Target(
-                    site,
-                    context,
-                    FindImportFunction(context),
-                    fullName,
-                    Builtin.globals(context),
-                    context.Dict,
-                    from,
-                    level
-                );
-            }
+            var site = pc.ImportSite;
+            return site.Target(
+                site,
+                context,
+                FindImportFunction(context),
+                fullName,
+                Builtin.globals(context),
+                context.Dict,
+                from,
+                level
+            );
         }
 
         /// <summary>
@@ -161,11 +145,12 @@ namespace IronPython.Runtime {
         /// Called by the __builtin__.__import__ functions (general importing) and ScriptEngine (for site.py)
         /// 
         /// level indiciates whether to perform absolute or relative imports.
-        ///     -1 indicates both should be performed
         ///     0 indicates only absolute imports should be performed
         ///     Positive numbers indicate the # of parent directories to search relative to the calling module
         /// </summary>        
         public static object ImportModule(CodeContext/*!*/ context, object globals, string/*!*/ modName, bool bottom, int level) {
+            if (level < 0) throw PythonOps.ValueError("level must be >= 0");
+
             if (modName.IndexOf(Path.DirectorySeparatorChar) != -1) {
                 throw PythonOps.ImportError("Import by filename is not supported.", modName);
             }
@@ -205,7 +190,7 @@ namespace IronPython.Runtime {
             }
             string finalName = null;
 
-            if (level != 0) {
+            if (level > 0) {
                 // try a relative import
 
                 // if importing a.b.c, import "a" first and then import b.c from a
@@ -237,7 +222,7 @@ namespace IronPython.Runtime {
                 }
             }
 
-            if (level <= 0) {
+            if (level == 0) {
                 // try an absolute import
                 if (newmod == null) {
                     object parentPkg;
@@ -308,7 +293,7 @@ namespace IronPython.Runtime {
         /// <param name="package">the global __package__ value</param>
         /// <returns></returns>
         private static bool TryGetNameAndPath(CodeContext/*!*/ context, object globals, string name, int level, string package, out string full, out List path, out PythonModule parentMod) {
-            Debug.Assert(level != 0);   // shouldn't be here for absolute imports
+            Debug.Assert(level > 0);   // shouldn't be here for absolute imports
 
             // Unless we can find enough information to perform relative import,
             // we are going to import the module whose name we got
@@ -338,14 +323,7 @@ namespace IronPython.Runtime {
                 if (pyGlobals._storage.TryGetPath(out attribute) && (path = attribute as List) != null) {
                     // found __path__, importing nested module. The actual name of the nested module
                     // is the name of the mod plus the name of the imported module
-                    if (level == -1) {
-                        // absolute import of some module
-                        full = modName + "." + name;
-                        object parentModule;
-                        if (context.LanguageContext.SystemStateModules.TryGetValue(modName, out parentModule)) {
-                            parentMod = parentModule as PythonModule;
-                        }
-                    } else if (String.IsNullOrEmpty(name)) {
+                    if (String.IsNullOrEmpty(name)) {
                         // relative import of ancestor
                         full = (StringOps.rsplit(modName, ".", level - 1)[0] as string);
                     } else {
@@ -407,9 +385,10 @@ namespace IronPython.Runtime {
         }
 
         private static string GetParentPackageName(int level, string[] names) {
+            Debug.Assert(level >= 0);
+
             StringBuilder parentName = new StringBuilder(names[0]);
 
-            if (level < 0) level = 1;
             for (int i = 1; i < names.Length - level; i++) {
                 parentName.Append('.');
                 parentName.Append(names[i]);

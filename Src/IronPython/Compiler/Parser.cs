@@ -762,7 +762,7 @@ namespace IronPython.Compiler {
             ModuleName[] names = l.ToArray();
             var asNames = las.ToArray();
 
-            ImportStatement ret = new ImportStatement(names, asNames, AbsoluteImports);
+            ImportStatement ret = new ImportStatement(names, asNames);
             ret.SetLoc(_globalParent, start, GetEnd());
             return ret;
         }
@@ -860,14 +860,13 @@ namespace IronPython.Compiler {
                     if (name == "division") {
                         // Ignored in Python 3
                     } else if (name == "with_statement") {
-                        _languageFeatures |= ModuleOptions.WithStatement;
+                        // Ignored in Python 2.7
                     } else if (name == "absolute_import") {
-                        _languageFeatures |= ModuleOptions.AbsoluteImports;
+                        // Ignored in Python 3
                     } else if (name == "print_function") {
                         // Ignored in Python 3
                     } else if (name == "unicode_literals") {
-                        _tokenizer.UnicodeLiterals = true;
-                        _languageFeatures |= ModuleOptions.UnicodeLiterals;
+                        // Ignored in Python 3
                     } else if (name == "nested_scopes") {
                     } else if (name == "generators") {
                     } else {
@@ -888,7 +887,7 @@ namespace IronPython.Compiler {
                 Eat(TokenKind.RightParenthesis);
             }
 
-            FromImportStatement ret = new FromImportStatement(dname, (string[])names, asNames, fromFuture, AbsoluteImports);
+            FromImportStatement ret = new FromImportStatement(dname, (string[])names, asNames, fromFuture);
             ret.SetLoc(_globalParent, start, GetEnd());
             return ret;
         }
@@ -3277,10 +3276,6 @@ namespace IronPython.Compiler {
                 new SourceSpan(_tokenizer.CurrentPosition, _tokenizer.CurrentPosition),
                 _sourceUnit.Path
             );
-        }
-
-        private bool AbsoluteImports {
-            get { return (_languageFeatures & ModuleOptions.AbsoluteImports) == ModuleOptions.AbsoluteImports; }
         }
 
         private void StartParsing() {

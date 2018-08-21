@@ -99,7 +99,6 @@ namespace IronPython.Runtime
         private CallSite<Func<CallSite, CodeContext, object, object[], IDictionary<object, object>, object>> _callDictSite;
         private CallSite<Func<CallSite, CodeContext, object, object, object, object>> _callDictSiteLooselyTyped;
         private CallSite<Func<CallSite, CodeContext, object, string, PythonDictionary, PythonDictionary, PythonTuple, int, object>> _importSite;
-        private CallSite<Func<CallSite, CodeContext, object, string, PythonDictionary, PythonDictionary, PythonTuple, object>> _oldImportSite;
         private CallSite<Func<CallSite, object, bool>> _isCallableSite;
         private CallSite<Func<CallSite, object, IList<string>>> _getSignaturesSite;
         private CallSite<Func<CallSite, object, object, object>> _addSite, _divModSite, _rdivModSite;
@@ -1230,7 +1229,7 @@ namespace IronPython.Runtime
             object warnings = null;
             try {
                 if (!_importWarningThrows) {
-                    warnings = Importer.ImportModule(SharedContext, new PythonDictionary(), "warnings", false, -1);
+                    warnings = Importer.ImportModule(SharedContext, new PythonDictionary(), "warnings", false, 0);
                 }
             } catch {
                 // don't repeatedly import after it fails
@@ -1242,7 +1241,7 @@ namespace IronPython.Runtime
         public void EnsureEncodings() {
             if (!_importedEncodings) {
                 try {
-                    Importer.ImportModule(SharedContext, new PythonDictionary(), "encodings", false, -1);
+                    Importer.ImportModule(SharedContext, new PythonDictionary(), "encodings", false, 0);
                 } catch (ImportException) {
                 }
                 _importedEncodings = true;
@@ -2900,24 +2899,6 @@ namespace IronPython.Runtime
                 }
 
                 return _importSite;
-            }
-        }
-
-        internal CallSite<Func<CallSite, CodeContext, object, string, PythonDictionary, PythonDictionary, PythonTuple, object>> OldImportSite {
-            get {
-                if (_oldImportSite == null) {
-                    Interlocked.CompareExchange(
-                        ref _oldImportSite,
-                        CallSite<Func<CallSite, CodeContext, object, string, PythonDictionary, PythonDictionary, PythonTuple, object>>.Create(
-                            Invoke(
-                                new CallSignature(4)
-                            ).GetLightExceptionBinder()
-                        ),
-                        null
-                    );
-                }
-
-                return _oldImportSite;
             }
         }
 

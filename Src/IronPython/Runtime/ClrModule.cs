@@ -850,7 +850,7 @@ import Namespace.")]
             List<SavableScriptCode> code = new List<SavableScriptCode>();
             foreach (string filename in filenames) {
                 if (!pc.DomainManager.Platform.FileExists(filename)) {
-                    throw PythonOps.IOError("Couldn't find file for compilation: {0}", filename);
+                    throw PythonOps.IOError($"Couldn't find file for compilation: {filename}");
                 }
 
                 ScriptCode sc;
@@ -870,11 +870,10 @@ import Namespace.")]
                 } else {
                     modName = Path.GetFileNameWithoutExtension(filename);
                 }
-                
+
                 // see if we have a parent package, if so incorporate it into
                 // our name
-                string parentPackage;
-                if (packageMap.TryGetValue(dname, out parentPackage)) {
+                if (packageMap.TryGetValue(dname, out string parentPackage)) {
                     modName = parentPackage + "." + modName;
                 }
 
@@ -895,20 +894,18 @@ import Namespace.")]
                 code.Add((SavableScriptCode)sc);
             }
 
-            object mainModule;
-            if (kwArgs != null && kwArgs.TryGetValue("mainModule", out mainModule)) {
-                string strModule = mainModule as string;
-                if (strModule != null) {
+            if (kwArgs != null && kwArgs.TryGetValue("mainModule", out object mainModule)) {
+                if (mainModule is string strModule) {
                     if (!pc.DomainManager.Platform.FileExists(strModule)) {
                         throw PythonOps.IOError("Couldn't find main file for compilation: {0}", strModule);
                     }
-                    
+
                     SourceUnit su = pc.CreateFileUnit(strModule, pc.DefaultEncoding, SourceCodeKind.File);
                     code.Add((SavableScriptCode)context.LanguageContext.GetScriptCode(su, "__main__", ModuleOptions.Initialize, Compiler.CompilationMode.ToDisk));
                 }
             }
 
-            SavableScriptCode.SaveToAssembly(assemblyName, code.ToArray());
+            SavableScriptCode.SaveToAssembly(assemblyName, kwArgs, code.ToArray());
         }
 #endif
 

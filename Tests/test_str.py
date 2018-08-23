@@ -18,7 +18,7 @@ import os
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_mono, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, run_test, skipUnlessIronPython
 
 class StrTest(IronPythonTestCase):
  
@@ -207,8 +207,6 @@ class StrTest(IronPythonTestCase):
                     ('iso-8859-15', u"a\xac\u1234\u20ac\u8000", "a\xac\\u1234\xa4\\u8000") ]
         
         for test in tests:
-            # undo this when mono bug https://bugzilla.xamarin.com/show_bug.cgi?id=53296 is fixed
-            if is_mono and test[0] in ['latin-1', 'iso-8859-15']: continue
             self.assertEqual(test[1].encode(test[0], 'backslashreplace'), test[2])
 
 
@@ -218,8 +216,6 @@ class StrTest(IronPythonTestCase):
                     ('latin-1',    u"a\xac\u1234\u20ac\u8000", "a\xac&#4660;&#8364;&#32768;"),
                     ('iso-8859-15', u"a\xac\u1234\u20ac\u8000", "a\xac&#4660;\xa4&#32768;") ]
         for test in tests:
-            # undo this when mono bug https://bugzilla.xamarin.com/show_bug.cgi?id=53296 is fixed
-            if is_mono and test[0] in ['latin-1', 'iso-8859-15']: continue
             self.assertEqual(test[1].encode(test[0], 'xmlcharrefreplace'), test[2])
 
     def test_encode_decode(self):

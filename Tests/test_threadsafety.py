@@ -6,7 +6,7 @@
 
 import unittest
 
-from iptest import is_mono, run_test, skipUnlessIronPython, is_netcoreapp
+from iptest import is_netcoreapp, run_test, skipUnlessIronPython
 
 if is_netcoreapp:
     import clr
@@ -16,7 +16,6 @@ if is_netcoreapp:
 class ThreadSafetyTest(unittest.TestCase):
 
     #TODO: @skip("multiple_execute")
-    @unittest.skipIf(is_mono, 'this causes an exception on mono, need to file a bug see https://github.com/IronLanguages/main/issues/1619')
     def test_all(self):
         from System.Threading import ManualResetEvent, Thread, ThreadStart
         class MyOC:

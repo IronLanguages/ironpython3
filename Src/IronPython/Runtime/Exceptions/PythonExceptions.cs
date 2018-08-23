@@ -804,22 +804,27 @@ for k, v in toError.items():
         public partial class _UnicodeDecodeError : BaseException {
             [PythonHidden]
             protected internal override void InitializeFromClr(System.Exception/*!*/ exception) {
-                DecoderFallbackException ex = exception as DecoderFallbackException;
-                if (ex != null) {
+                if (exception is DecoderFallbackException ex) {
                     StringBuilder sb = new StringBuilder();
                     if (ex.BytesUnknown != null) {
                         for (int i = 0; i < ex.BytesUnknown.Length; i++) {
                             sb.Append((char)ex.BytesUnknown[i]);
                         }
                     }
-                    __init__("unknown", sb.ToString(), ex.Index, ex.Index + 1, "");
+                    __init__(ex.Data.Contains("encoding") ? ex.Data["encoding"] : "unknown", sb.ToString(), ex.Index, ex.Index + sb.Length, ex.Message);
                 } else {
                     base.InitializeFromClr(exception);
                 }
             }
 
             public override string ToString() {
-                return reason.ToString();
+                if (_object is string s) {
+                    if (s.Length == 1) {
+                        return $"'{_encoding}' codec can't decode byte 0x{(byte)s[0]:x2} in position {_start}: {_reason}";
+                    }
+                    return $"'{_encoding}' codec can't decode bytes in position {_start}-{_end}: {_reason}";
+                }
+                return _reason.ToString();
             }
         }
 

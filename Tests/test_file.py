@@ -9,7 +9,7 @@ import _thread
 
 CP16623_LOCK = _thread.allocate_lock()
 
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp21, is_cpython, is_posix, run_test
+from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp21, is_cpython, is_posix, run_test
 
 class FileTest(IronPythonTestCase):
 
@@ -409,7 +409,7 @@ class FileTest(IronPythonTestCase):
 
 
     ## coverage: a sequence of file operation
-    @unittest.skipIf(is_posix, 'file sequence specific to windows')
+    @unittest.skipIf(is_posix, 'file sequence specific to windows (because of newlines)')
     def test_coverage(self):
         with open(self.temp_file, 'w') as f:
             self.assertTrue(str(f).startswith("<open file '%s', mode 'w'" % self.temp_file))
@@ -504,6 +504,7 @@ class FileTest(IronPythonTestCase):
             self.assertEqual(f.read(), 'hello\nworld\ngoodbye\n')
 
     @unittest.skipUnless(is_cli, 'IronPython specific test')
+    @unittest.skipIf(is_mono, 'Mono has a different GC setup, so we can not rely on the Collect to work the same')
     def test_file_manager(self):
         def return_fd1():
             f = open(self.temp_file, 'w')

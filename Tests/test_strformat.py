@@ -5,7 +5,7 @@
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_cpython, is_mono, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_cpython, run_test, skipUnlessIronPython
 
 allChars = ''
 for y in [chr(x) for x in xrange(256) if chr(x) != '[' and chr(x) != '.']:
@@ -875,7 +875,6 @@ class StrFormatTest(IronPythonTestCase):
         for error, value, errorFmt, errorMsg in errors:
             self.assertRaisesPartialMessage(error, errorMsg, value.__format__, errorFmt)
 
-    @unittest.skipIf(is_mono, "mono doesn't support some of the formatting specifiers https://github.com/IronLanguages/main/issues/1598")
     def test_long___format__(self):
         tests = [ 
                 (0L,    '+',        '+0'),
@@ -1151,7 +1150,6 @@ class StrFormatTest(IronPythonTestCase):
             self.assertEqual(100000L.__format__('n'), '100000')
             self.assertEqual(100000000L.__format__('n'), '100000000')
 
-    @unittest.skipIf(is_mono, "mono doesn't support some of the formatting specifiers https://github.com/IronLanguages/main/issues/1598")
     def test_long___format___errors(self):
         errors = [
                     (ValueError, 2L, '6.1', "Precision not allowed in integer format specifier"),

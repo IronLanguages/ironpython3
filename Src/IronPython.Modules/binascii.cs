@@ -367,6 +367,15 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             return Bytes.Make(res);
         }
 
+        public static Bytes hexlify(ByteArray data) {
+            byte[] res = new byte[data.Count * 2];
+            for (int i = 0; i < data.Count; i++) {
+                res[i * 2] = ToHex(data._bytes[i] >> 4);
+                res[(i * 2) + 1] = ToHex(data._bytes[i] & 0x0F);
+            }
+            return Bytes.Make(res);
+        }
+
         private static byte ToHex(int p) {
             if (p >= 10) {
                 return (byte)('a' + p - 10);
@@ -379,9 +388,9 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             return hexlify(data.ToString());
         }
 
-        public static object a2b_hex(CodeContext/*!*/ context, string data) {
+        public static object a2b_hex(CodeContext/*!*/ context, [BytesConversion]string data) {
             if (data == null) throw PythonOps.TypeError("expected string, got NoneType");
-            if ((data.Length & 0x01) != 0) throw Error(context, "string must be even lengthed");
+            if ((data.Length & 0x01) != 0) throw PythonOps.TypeError("Odd-length string");
             StringBuilder res = new StringBuilder(data.Length / 2);
 
             for (int i = 0; i < data.Length; i += 2) {
@@ -397,7 +406,7 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             return res.ToString();
         }
 
-        public static object unhexlify(CodeContext/*!*/ context, string hexstr) {
+        public static object unhexlify(CodeContext/*!*/ context, [BytesConversion]string hexstr) {
             return a2b_hex(context, hexstr);
         }
 

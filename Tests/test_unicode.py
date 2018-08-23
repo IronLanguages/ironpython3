@@ -54,7 +54,7 @@ class UnicodeTest(unittest.TestCase):
         self.assertEqual(unicode('\\', 'raw_unicode_escape'), u'\\')
 
 
-    @unittest.skipIf(is_mono, 'throws an exception within Mono, needs debug see https://github.com/IronLanguages/main/issues/1617')
+    @unittest.skipIf(is_mono, 'throws an exception within Mono, needs debug see https://github.com/IronLanguages/ironpython2/issues/49')
     def test_unicode_error(self):
         from iptest.misc_util import ip_supported_encodings
         from _codecs import register_error

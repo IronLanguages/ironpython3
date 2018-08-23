@@ -72,7 +72,7 @@ class ReTest(IronPythonTestCase):
         self.assertEqual(re.split("(abc){1}", "abcxyz"), ['', 'abc', 'xyz'])
         #maxsplit
         self.assertEqual(re.split("(abc){1}", "abc", 0), ['', 'abc', ''])
-        for i in xrange(3):
+        for i in range(3):
             self.assertEqual(re.split("(abc){1}", "abc", maxsplit=i), ['', 'abc', ''])
             self.assertEqual(re.split("(abc){1}", "", maxsplit=i), [''])
             self.assertEqual(re.split("(abc){1}", "abcxyz", maxsplit=i), ['', 'abc', 'xyz'])

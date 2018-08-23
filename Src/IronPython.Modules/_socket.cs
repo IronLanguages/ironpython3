@@ -720,6 +720,10 @@ namespace IronPython.Modules {
                 }
             }
 
+            public int send(MemoryView data, int flags = 0) {
+                return send(data.tobytes(), flags);
+            }
+
             [Documentation("sendall(string[, flags]) -> None\n\n"
                 + "Send data to the remote socket. The socket must be connected to a remote\n"
                 + "socket (by calling either connect() or accept().\n"
@@ -792,6 +796,10 @@ namespace IronPython.Modules {
                 sendallWorker(data.byteCache, flags);
             }
 
+            public void sendall(MemoryView data, int flags = 0) {
+                sendallWorker(data.tobytes().GetUnsafeByteArray(), flags);
+            }
+
             private void sendallWorker(byte[] buffer, int flags) {
                 try {
                     int bytesTotal = buffer.Length;
@@ -858,6 +866,10 @@ namespace IronPython.Modules {
                 }
             }
 
+            public int sendto(MemoryView data, int flags, PythonTuple address) {
+                return sendto(data.tobytes(), flags, address);
+            }
+
             [Documentation("")]
             public int sendto(string data, PythonTuple address) {
                 return sendto(data, 0, address);
@@ -865,6 +877,10 @@ namespace IronPython.Modules {
 
             [Documentation("")]
             public int sendto(Bytes data, PythonTuple address) {
+                return sendto(data, 0, address);
+            }
+
+            public int sendto(MemoryView data, PythonTuple address) {
                 return sendto(data, 0, address);
             }
 

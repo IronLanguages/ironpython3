@@ -5,6 +5,7 @@
     <BuildFlavour Condition=" '$(BuildFlavour)' == '' ">Debug</BuildFlavour>
     <MainBuildPrefix Condition=" '$(MainBuildPrefix)' == '' "></MainBuildPrefix>
     <Mono Condition="'$(OS)' != 'Windows_NT'">true</Mono>
+    <MacOS Condition="'$(OS)' == 'Unix' AND Exists('/Applications') AND Exists('/Library') AND Exists('/System') AND Exists('/Volumes')">true</MacOS>
 
     <RootDir>$(MSBuildThisFileDirectory)</RootDir>
     <Solution>$(RootDir)IronPython.sln</Solution>
@@ -14,11 +15,12 @@
     <BuildSysDir>$(RootDir)Build</BuildSysDir>
     <MSBuildCommunityTasksPath>$(RootDir)Util\MSBuildCommunityTasks</MSBuildCommunityTasksPath>
     <TargetFrameworks Condition="'$(TargetFrameworks)' == ''">net45;netcoreapp2.0;netcoreapp2.1</TargetFrameworks>
-    <ChocolateyVersion>0.10.8</ChocolateyVersion>
   </PropertyGroup>
-    
+
+
   <Import Project="$(MSBuildCommunityTasksPath)\MSBuild.Community.Tasks.Targets" />
   <Import Project="$(BuildSysDir)\Versioning.targets" />
+  
   
   <PropertyGroup>
     <StageDir>$(RootDir)Package\$(BuildFlavour)\Stage\IronPython-$(PackageVersion)</StageDir>
@@ -134,68 +136,8 @@
 
   <Target Name="Stage" DependsOnTargets="$(StageDependsOn)" />
 
-  <Target Name="Package" DependsOnTargets="MsiPackage;ZipPackage;NuGetPackage;ChocoPackage;DebPackage" />
+  <!-- This looks like an empty target, but the targets files use it as an AfterTargets -->
+  <Target Name="Package" DependsOnTargets="Stage" />
 
-  <Target Name="MakePackageDir">
-    <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')" />
-  </Target>
-
-  <ItemGroup>
-    <Package Include="IronPython">
-      <NuSpecDir>$(RootDir)\Package\nuget</NuSpecDir>
-    </Package>
-    <Package Include="IronPython.StdLib">
-      <NuSpecDir>$(RootDir)\Package\nuget</NuSpecDir>
-    </Package>
-  </ItemGroup>
-
-  <PropertyGroup>
-    <NuSpecInputs>@(Package->'%(NuSpecDir)\%(Identity).nuspec')</NuSpecInputs>
-    <NuPkgOutputs>@(Package->'$(PackageDir)\%(Identity).$(PackageVersion).nupkg')</NuPkgOutputs>
-  </PropertyGroup>
-
-  <Target Name="NuGetPackage" DependsOnTargets="Stage;MakePackageDir"
-          Inputs="$(NuSpecInputs)"
-          Outputs="$(NuPkgOutputs)">
-    <ItemGroup>
-      <DLLsFiles Include="**\DLLs\IronPython.*.dll" />
-      <DLLsFiles Include="**\DLLs\IronPython.*.xml" />
-    </ItemGroup>
-
-    <!-- Copy the files from DLLs into the main directory for nuget packaging -->
-    <Copy SourceFiles="@(DLLsFiles)" CopiedFiles="@(CopiedFiles)" DestinationFolder="$([System.IO.Path]::GetFullPath('%(DLLsFiles.RecursiveDir)\..'))">
-      <Output TaskParameter="CopiedFiles" ItemName="TempCopied" />
-    </Copy>
-    <Exec Command="$(NuGet) pack &quot;%(NuSpecDir)\%(Package.Identity).nuspec&quot; -BasePath &quot;$(StageDir)&quot; -OutputDirectory &quot;$(PackageDir)&quot; -Version $(PackageVersion)" />
-    <!-- Delete the copied files -->
-    <Delete Files="@(TempCopied)" />
-  </Target>
-
-  <Target Name="ChocoPackage" Condition="'$(OS)' != 'Unix' " DependsOnTargets="Stage;MakePackageDir"
-          Outputs="$(PackageDir)\ironpython.chocolatey.$(PackageVersion).nupkg">
-    <Exec Command="$(NuGet) install chocolatey -Version $(ChocolateyVersion) -OutputDirectory &quot;$(RootDir)\packages&quot; -Source https://api.nuget.org/v3/index.json" />
-    <Exec Command="$(RootDir)packages\chocolatey.$(ChocolateyVersion)\tools\chocolateyInstall\choco.exe pack &quot;$(RootDir)\Package\choco\IronPython.nuspec&quot; --outputdirectory &quot;$(StageDir)&quot; --version $(PackageVersion) STAGEDIR=&quot;$(StageDir)&quot;" />
-    <Move SourceFiles="$(StageDir)\ironpython3.$(PackageVersion).nupkg" DestinationFiles="$(PackageDir)\ironpython3.chocolatey.$(PackageVersion).nupkg" />
-  </Target>
-
-  <Target Name="ZipPackage" DependsOnTargets="Stage;MakePackageDir"
-          Outputs="$(PackageDir)\IronPython.$(PackageVersion).zip">
-    <ItemGroup>
-      <ZipFiles Include="$(StageDir)\**\*.*" Exclude="$(StageDir)\**\IronPythonTest.*" />
-    </ItemGroup>
-    <Zip ZipLevel="9" Files="@(ZipFiles)" ZipFileName="$(PackageDir)\IronPython.$(PackageVersion).zip" WorkingDirectory="$(StageDir)" />
-  </Target>
-
-  <Target Name="DebPackage" Condition="'$(OS)' == 'Unix' " DependsOnTargets="Stage;MakePackageDir" />
-  
-  <Target Name="MsiPackage" Condition="'$(OS)' != 'Unix' " DependsOnTargets="Stage;MakePackageDir">
-    <ItemGroup>
-      <CleanupFiles Include="$(StageDir)\net45\IronPythonTest.dll"/>
-    </ItemGroup>
-    <Delete Files="@(CleanupFiles)" />
-    <MSBuild
-        Projects="$(RootDir)\Package\msi\IronPython.Installer.wixproj"
-        Properties="BindInputPaths=$(StageDir);OutputPath=$(PackageDir);Configuration=$(BuildFlavour);Platform=x64"
-    />
-  </Target>
+  <Import Project="$(RootDir)\Package\**\*.Packaging.targets" />
 </Project>

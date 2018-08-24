@@ -7,22 +7,15 @@ using System.Dynamic;
 using Microsoft.Scripting;
 
 namespace IronPython.Compiler {
-    internal struct TokenWithSpan {
-        private readonly Token _token;
-        private readonly IndexSpan _span;
-
+    internal readonly struct TokenWithSpan {
         public TokenWithSpan(Token token, IndexSpan span) {
-            _token = token;
-            _span = span;
+            Token = token;
+            Span = span;
         }
 
-        public IndexSpan Span {
-            get { return _span; }
-        }
+        public IndexSpan Span { get; }
 
-        public Token Token {
-            get { return _token; }
-        }
+        public Token Token { get; }
 
     }
 

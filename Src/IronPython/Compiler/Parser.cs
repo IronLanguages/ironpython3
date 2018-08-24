@@ -591,9 +591,11 @@ namespace IronPython.Compiler {
             // 3) multiple expression, in which case it's wrapped in a tuple.
             Expression yieldResult;
 
+            bool isYieldFrom = false;
             if (MaybeEat(TokenKind.KeywordFrom)) {
                 yieldResult = ParseExpression();
 				yieldResult.SetLoc(_globalParent, start, GetEnd());
+                isYieldFrom = true;
             } else {
                 bool trailingComma;
                 List<Expression> l = ParseExpressionList(out trailingComma);
@@ -610,11 +612,10 @@ namespace IronPython.Compiler {
                     yieldResult = l[0];
                 }
             }
-            Expression yieldExpression = new YieldExpression(yieldResult);
+            Expression yieldExpression = new YieldExpression(yieldResult, isYieldFrom);
 
             yieldExpression.SetLoc(_globalParent, start, GetEnd());
             return yieldExpression;
-
         }
 
         private Statement FinishAssignments(Expression right) {
@@ -1647,6 +1648,7 @@ namespace IronPython.Compiler {
                 if (MaybeEat(TokenKind.KeywordAs)) {
                     string name = ReadName();
                     target = new NameExpression(FixName(name));
+                    target.SetLoc(_globalParent, GetStart(), GetEnd());
                 }
             }
             var mid = GetEnd();

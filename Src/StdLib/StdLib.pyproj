@@ -26,7 +26,6 @@
     <Content Include="$(StdLibPath)\**\*.*" Exclude="$(ExcludedPackages)" />
 
   </ItemGroup>
-  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Import Project="$(BeforeTargetFiles)" />
 
   <Target Name="Stage">

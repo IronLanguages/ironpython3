@@ -1,20 +1,21 @@
 IronPython 3
 ==============
-[![Windows Build Status](https://ci.appveyor.com/api/projects/status/2g9hw68byv5ny14y?svg=true)](https://ci.appveyor.com/project/AlexEarl/ironpython3)
-[![Linux/OSX Build Status](https://travis-ci.org/IronLanguages/ironpython3.svg?branch=master)](https://travis-ci.org/IronLanguages/ironpython3)
-[![Release](https://img.shields.io/github/release/IronLanguages/ironpython3.svg)](https://github.com/IronLanguages/ironpython3/releases/latest)
-[![Gitter chat](https://badges.gitter.im/IronLanguages/ironpython.svg)](https://gitter.im/IronLanguages/ironpython)
-[![StackExchange](https://img.shields.io/stackexchange/stackoverflow/t/ironpython.svg)](http://stackoverflow.com/questions/tagged/ironpython)
-
 **IronPython3 is NOT ready for use yet. There is still much that needs to be done to support Python 3.x. We are working on it, albeit slowly. We welcome all those who would like to help!**
 
 [Official Website](http://ironpython.net)
 
 IronPython is an open-source implementation of the Python programming language which is tightly integrated with the .NET Framework. IronPython can use the .NET Framework and Python libraries, and other .NET languages can use Python code just as easily.
 
+| **What?** | **Where?** |
+| --------: | :------------: |
+| **Windows/Linux/macOS Builds** | [![Build status](https://dotnetfoundation.visualstudio.com/IronLanguages/_apis/build/status/ironpython3)](https://dotnetfoundation.visualstudio.com/IronLanguages/_build/latest?definitionId=43) |
+| **Downloads** | No releases |
+| **Help** | [![Gitter chat](https://badges.gitter.im/IronLanguages/ironpython.svg)](https://gitter.im/IronLanguages/ironpython) [![StackExchange](https://img.shields.io/stackexchange/stackoverflow/t/ironpython.svg)](http://stackoverflow.com/questions/tagged/ironpython) |
+
+
 Comparison of IronPython vs. C# for 'Hello World'
 
-c#:
+C#:
 
 ```cs
 using System;

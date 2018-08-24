@@ -705,7 +705,7 @@ namespace IronPython.Compiler.Ast {
                 variable.Kind = VariableKind.Global;
 
                 if (conflict == null) {
-                    // no previously definied variables, add it to the current scope
+                    // no previously defined variables, add it to the current scope
                     _currentScope.AddGlobalVariable(variable);
                 }
             }

@@ -1,18 +1,10 @@
-/* ****************************************************************************
- *
- * Copyright (c) Jeff Hardy 2010. 
- * Copyright (c) Dan Eloff 2008-2009. 
- *
- * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
- * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Apache License, Version 2.0, please send an email to 
- * ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Apache License, Version 2.0.
- *
- * You must not remove this notice, or any other, from this software.
- *
- *
- * ***************************************************************************/
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information.
+//
+// Copyright (c) Jeff Hardy 2010.
+// Copyright (c) Dan Eloff 2008-2009.
+//
 
 using System;
 using System.Collections;
@@ -359,8 +351,8 @@ namespace IronPython.Modules
                     ast = new GeneratorExp((GeneratorExpression)expr);
                 else if (expr is MemberExpression)
                     ast = new Attribute((MemberExpression)expr, ctx);
-                else if (expr is YieldExpression)
-                    ast = new Yield((YieldExpression)expr);
+                else if (expr is YieldExpression yieldExpression)
+                    ast = yieldExpression.IsYieldFrom ? (expr)new YieldFrom(yieldExpression) : new Yield(yieldExpression);
                 else if (expr is ConditionalExpression)
                     ast = new IfExp((ConditionalExpression)expr);
                 else if (expr is IndexExpression)
@@ -535,7 +527,7 @@ namespace IronPython.Modules
                 _fields = new PythonTuple(new[] { "name", "asname" });
             }
 
-            internal alias(string name, [Optional]string asname)
+            public alias(string name, [Optional]string asname)
                 : this() {
                 this.name = name;
                 this.asname = asname;
@@ -2052,7 +2044,7 @@ namespace IronPython.Modules
                     // _body = ((Expr)statement).value;
                     // but, AST comes with trees containing twice YieldExpression.
                     // For: 
-                    //   lamba x: (yield x) 
+                    //   lambda x: (yield x)
                     // it comes back with:
                     //
                     //IronPython.Compiler.Ast.LambdaExpression
@@ -3013,6 +3005,33 @@ namespace IronPython.Modules
             internal override AstExpression Revert() {
                 _containsYield = true;
                 return new YieldExpression(expr.Revert(value));
+            }
+
+            public expr value { get; set; }
+        }
+
+        [PythonType]
+        public class YieldFrom : expr {
+            public YieldFrom() {
+                _fields = new PythonTuple(new[] { "value", });
+            }
+
+            public YieldFrom([Optional]expr value, [Optional]int? lineno, [Optional]int? col_offset)
+                : this() {
+                this.value = value;
+                _lineno = lineno;
+                _col_offset = col_offset;
+            }
+
+            internal YieldFrom(YieldExpression expr)
+                : this() {
+                // expr.Expression is never null
+                value = Convert(expr.Expression);
+            }
+
+            internal override AstExpression Revert() {
+                _containsYield = true;
+                return new YieldExpression(expr.Revert(value), true);
             }
 
             public expr value { get; set; }

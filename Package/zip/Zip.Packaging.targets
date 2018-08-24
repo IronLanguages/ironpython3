@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+ <Target Name="ZipPackage" AfterTargets="Package" Outputs="$(PackageDir)\IronPython.$(PackageVersion).zip">
+    <ItemGroup>
+      <ZipFiles Include="$(StageDir)\**\*.*" Exclude="$(StageDir)\**\IronPythonTest.*" />
+    </ItemGroup>
+    <Zip ZipLevel="9" Files="@(ZipFiles)" ZipFileName="$(PackageDir)\IronPython.$(PackageVersion).zip" WorkingDirectory="$(StageDir)" />
+  </Target>
+</Project>

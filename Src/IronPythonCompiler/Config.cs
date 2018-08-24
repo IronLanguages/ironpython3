@@ -17,16 +17,21 @@ namespace IronPythonCompiler {
             Embed = false;
             Files = new List<string>();
             Platform = IKVM.Reflection.PortableExecutableKinds.ILOnly;
-            Machine = IKVM.Reflection.ImageFileMachine.I386;
+            Machine = IKVM.Reflection.ImageFileMachine.AMD64;
             Standalone = false;
             Target = PEFileKinds.Dll;
             UseMta = false;
             MainName = Main = string.Empty;
             Output = string.Empty;
+            OutputPath = string.Empty;
             Win32Icon = string.Empty;
-            Version = string.Empty;
+            FileVersion = string.Empty;
+            ProductName = string.Empty;
+            Copyright = string.Empty;
+            ProductVersion = string.Empty;
             ErrorMessageFormat = "Error occurred: {0}";
             PythonOptions = new Dictionary<string, object>();
+            DLLs = new List<string>();
         }
 
         public string ErrorMessageFormat {
@@ -34,7 +39,7 @@ namespace IronPythonCompiler {
             private set;
         }
 
-        public string Version {
+        public string FileVersion {
             get;
             private set;
         }
@@ -44,7 +49,27 @@ namespace IronPythonCompiler {
             private set;
         }
 
+        public string ProductName {
+            get;
+            private set;
+        }
+
+        public string Copyright {
+            get;
+            private set;
+        }
+
+        public string ProductVersion {
+            get;
+            private set;
+        }
+
         public string Output {
+            get;
+            private set;
+        }
+
+        public string OutputPath {
             get;
             private set;
         }
@@ -75,6 +100,11 @@ namespace IronPythonCompiler {
         }
 
         public List<string> Files {
+            get;
+            private set;
+        }
+
+        public List<string> DLLs {
             get;
             private set;
         }
@@ -142,13 +172,19 @@ namespace IronPythonCompiler {
                             break;
                         default:
                             Platform = IKVM.Reflection.PortableExecutableKinds.ILOnly;
-                            Machine = IKVM.Reflection.ImageFileMachine.I386;
+                            Machine = IKVM.Reflection.ImageFileMachine.AMD64;
                             break;
                     }
                 } else if (arg.StartsWith("/win32icon:")) {
                     Win32Icon = arg.Substring(11).Trim('"');
-                } else if (arg.StartsWith("/version:")) {
-                    Version = arg.Substring(9).Trim('"');
+                } else if (arg.StartsWith("/fileversion:")) {
+                    FileVersion = arg.Substring(13).Trim('"');
+                } else if (arg.StartsWith("/productversion:")) {
+                    ProductVersion = arg.Substring(16).Trim('"');
+                } else if (arg.StartsWith("/productname:")) {
+                    ProductName = arg.Substring(13).Trim('"');
+                } else if (arg.StartsWith("/copyright:")) {
+                    Copyright = arg.Substring(11).Trim('"');
                 } else if (arg.StartsWith("/errfmt:")) {
                     ErrorMessageFormat = arg.Substring(8);
                 } else if (arg.StartsWith("/embed")) {
@@ -157,14 +193,22 @@ namespace IronPythonCompiler {
                     Standalone = true;
                 } else if (arg.StartsWith("/mta")) {
                     UseMta = true;
+                } else if (arg.StartsWith("/recurse:")) {
+                    string pattern = arg.Substring(9);
+                    if (string.IsNullOrWhiteSpace(pattern)) {
+                        ConsoleOps.Error(true, "Missing pattern for /recurse option");
+                    }
+                    foreach (var f in Directory.EnumerateFiles(Environment.CurrentDirectory, pattern)) {
+                        Files.Add(Path.GetFullPath(f));
+                    }
                 } else if (Array.IndexOf(helpStrings, arg) >= 0) {
                     ConsoleOps.Usage(true);
-                } else if(arg.StartsWith("/py:")) {
+                } else if (arg.StartsWith("/py:")) {
                     // if you add a parameter that takes a different type then 
                     // ScriptingRuntimeHelpers.True/False or int
                     // you need ot also modify Program.cs for standalone generation.
                     string[] pyargs = arg.Substring(4).Trim('"').Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                    switch(pyargs[0]) {
+                    switch (pyargs[0]) {
                         case "-X:Frames":
                             PythonOptions["Frames"] = ScriptingRuntimeHelpers.True;
                             break;
@@ -177,7 +221,7 @@ namespace IronPythonCompiler {
                         case "-X:GCStress":
                             int gcStress;
                             if (!int.TryParse(pyargs[1], out gcStress) || (gcStress < 0 || gcStress > GC.MaxGeneration)) {
-                                ConsoleOps.Error(true, "The argument for the {0} option must be between 0 and {1}.", pyargs[1], GC.MaxGeneration);
+                                ConsoleOps.Error(true, $"The argument for the {pyargs[1]} option must be between 0 and {GC.MaxGeneration}.");
                             }
 
                             PythonOptions["GCStress"] = gcStress;
@@ -187,7 +231,7 @@ namespace IronPythonCompiler {
                             // we need about 6 frames for starting up, so 10 is a nice round number.
                             int limit;
                             if (!int.TryParse(pyargs[1], out limit) || limit < 10) {
-                                ConsoleOps.Error(true, "The argument for the {0} option must be an integer >= 10.", pyargs[1]);
+                                ConsoleOps.Error(true, $"The argument for the {pyargs[1]} option must be an integer >= 10.");
                             }
 
                             PythonOptions["RecursionLimit"] = limit;
@@ -216,18 +260,26 @@ namespace IronPythonCompiler {
                             respFiles.Add(respFile);
                             ParseArgs(File.ReadAllLines(respFile), respFiles);
                         } else {
-                            ConsoleOps.Warning("Already parsed response file '{0}'", arg.Substring(1));
+                            ConsoleOps.Warning($"Already parsed response file '{arg.Substring(1)}'");
                         }
                     } else {
-                        Files.Add(arg);
+                        if (arg.ToLower().EndsWith(".dll")) {
+                            DLLs.Add(arg);
+                        } else {
+                            Files.Add(arg);
+                        }
                     }
                 }
             }
         }
 
         public bool Validate() {
-            if (Files.Count == 1 && string.IsNullOrEmpty(MainName)) {
+            if (Files.Count == 1 && string.IsNullOrWhiteSpace(MainName)) {
                 MainName = Files[0];
+            }
+
+            if (Files.Count == 0 && !string.IsNullOrWhiteSpace(MainName)) {
+                Files.Add(MainName);
             }
 
             if (Files == null || Files.Count == 0 || string.IsNullOrEmpty(MainName)) {
@@ -240,17 +292,24 @@ namespace IronPythonCompiler {
                 return false;
             }
 
-            if (string.IsNullOrEmpty(Output) && !string.IsNullOrEmpty(MainName)) {
-                Output = Path.GetFileNameWithoutExtension(MainName);
-            } else if (string.IsNullOrEmpty(Output) && Files != null && Files.Count > 0) {
-                Output = Path.GetFileNameWithoutExtension(Files[0]);
+            if (DLLs.Count > 0 && !Standalone) {
+                ConsoleOps.Error("DLLs can only be used in standalone mode");
+                return false;
             }
 
-            if (!string.IsNullOrEmpty(Win32Icon) && Target == PEFileKinds.Dll) {
+            if (string.IsNullOrWhiteSpace(Output) && !string.IsNullOrWhiteSpace(MainName)) {
+                Output = Path.GetFileNameWithoutExtension(MainName);
+                OutputPath = Path.GetDirectoryName(MainName);
+            } else if (string.IsNullOrWhiteSpace(Output) && Files != null && Files.Count > 0) {
+                Output = Path.GetFileNameWithoutExtension(Files[0]);
+                OutputPath = Path.GetDirectoryName(Files[0]);
+            }
+
+            if (!string.IsNullOrWhiteSpace(Win32Icon) && Target == PEFileKinds.Dll) {
                 ConsoleOps.Error("DLLs may not have a win32icon");
                 return false;
-            } else if (!string.IsNullOrEmpty(Win32Icon) && !File.Exists(Win32Icon)) {
-                ConsoleOps.Error("win32icon '{0}' does not exist", Win32Icon);
+            } else if (!string.IsNullOrWhiteSpace(Win32Icon) && !File.Exists(Win32Icon)) {
+                ConsoleOps.Error($"win32icon '{Win32Icon}' does not exist");
                 return false;
             }
 
@@ -260,12 +319,13 @@ namespace IronPythonCompiler {
         public override string ToString() {
             StringBuilder res = new StringBuilder("Input Files:\n");
             foreach (var file in Files) {
-                res.AppendFormat("\t{0}\n", file);
+                res.AppendLine($"\t{file}");
             }
 
-            res.AppendFormat("Output:\n\t{0}\n", Output);
-            res.AppendFormat("Target:\n\t{0}\n", Target);
-            res.AppendFormat("Platform:\n\t{0}\n", Machine);
+            res.AppendLine($"Output:\n\t{Output}");
+            res.AppendLine($"OutputPath:\n\t{OutputPath}");
+            res.AppendLine($"Target:\n\t{Target}");
+            res.AppendLine($"Platform:\n\t{Machine}");
             if (Target == PEFileKinds.WindowApplication) {
                 res.AppendLine("Threading:");
                 if (UseMta) {
@@ -276,9 +336,9 @@ namespace IronPythonCompiler {
             }
 
             if (PythonOptions.Count > 0) {
-                res.AppendFormat("\nIronPython Context Options:\n");
-                foreach(var option in PythonOptions) {
-                    res.AppendFormat("\t{0} = {1}\n", option.Key, option.Value);
+                res.AppendLine("\nIronPython Context Options:");
+                foreach (var option in PythonOptions) {
+                    res.AppendLine($"\t{option.Key} = {option.Value}");
                 }
             }
 

@@ -23,5 +23,6 @@
     <file src="$STAGEDIR$\net45\DLLs\**" target="DLLs" exclude="**\*.xml" />
     <file src="$STAGEDIR$\Lib\**" target="Lib" />
     <file src="$STAGEDIR$\LICENSE;$STAGEDIR$\README.md" />
+    <file src="tools\*" target="tools" />
   </files>
 </package>

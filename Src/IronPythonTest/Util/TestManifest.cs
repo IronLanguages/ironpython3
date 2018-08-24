@@ -112,7 +112,7 @@ namespace IronPythonTest.Util {
 
         public int Timeout {
             get {
-                return this.manifest.GetInt(this.testName, "Timeout", -1);
+                return this.manifest.GetInt(this.testName, "Timeout", System.Threading.Timeout.Infinite);
             }
         }
 

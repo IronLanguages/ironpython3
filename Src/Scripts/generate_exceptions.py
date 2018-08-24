@@ -23,7 +23,7 @@ import builtins
 pythonExcs = ['ImportError', 'RuntimeError', 'UnicodeTranslateError', 'PendingDeprecationWarning',
               'LookupError', 'OSError', 'DeprecationWarning', 'UnicodeError', 'FloatingPointError', 'ReferenceError',
               'FutureWarning', 'AssertionError', 'RuntimeWarning', 'ImportWarning', 'UserWarning', 'SyntaxWarning', 
-              'UnicodeWarning', 'StopIteration', 'BytesWarning', 'BufferError', 'ResourceWarning', 'FileExistsError',
+              'UnicodeWarning', 'BytesWarning', 'BufferError', 'ResourceWarning', 'FileExistsError',
               'BlockingIOError', 'NotADirectoryError']
 
 class ExceptionInfo(object):

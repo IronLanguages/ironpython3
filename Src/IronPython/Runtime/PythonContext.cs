@@ -14,6 +14,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -25,6 +26,7 @@ using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
+using IronPython;
 using IronPython.Compiler;
 using IronPython.Hosting;
 using IronPython.Modules;
@@ -274,6 +276,25 @@ namespace IronPython.Runtime
                     string devStdLib = Path.Combine(entry, @"../../../Src/StdLib/Lib");
                     if (Directory.Exists(devStdLib))
                         path.append(devStdLib);
+#else
+                    if(RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                        var dirs = new string[] { "lib", "DLLs" };
+                        var version = IronPython.CurrentVersion.ReleaseLevel == "final" ? $"{IronPython.CurrentVersion.Major}.{IronPython.CurrentVersion.Minor}.{IronPython.CurrentVersion.Micro}" : $"{IronPython.CurrentVersion.Major}.{IronPython.CurrentVersion.Minor}.{IronPython.CurrentVersion.Micro}-{IronPython.CurrentVersion.ReleaseLevel}{IronPython.CurrentVersion.ReleaseSerial}";
+                        foreach(var dir in dirs) {
+                            var p = $"/Library/Frameworks/IronPython.framework/Versions/{version}/{dir}";
+                            if(Directory.Exists(p)) {
+                                path.append(p);
+                            }
+                        }
+                    } else if(RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
+                        var version = $"{IronPython.CurrentVersion.Major}.{IronPython.CurrentVersion.Minor}";
+                        var dirs = new string[] { $"/usr/lib/ironpython{version}", $"/usr/share/ironpython{version}/DLLs" };
+                        foreach(var dir in dirs) {
+                            if(Directory.Exists(dir)) {
+                                path.append(dir);
+                            }
+                        }
+                    }
 #endif
                 }
             } catch (SecurityException) {

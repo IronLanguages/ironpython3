@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <Target Name="MsiPackage" Condition="'$(OS)' != 'Unix' " AfterTargets="Package">
+    <ItemGroup>
+      <CleanupFiles Include="$(StageDir)\net45\IronPythonTest.dll"/>
+    </ItemGroup>
+    <PropertyGroup>
+      <WixVersion>3.11.1</WixVersion>
+    </PropertyGroup>
+    <Delete Files="@(CleanupFiles)" />
+    <Exec Command="$(NuGet) install wix -Version $(WixVersion) -OutputDirectory &quot;$(RootDir)packages&quot; -Source https://api.nuget.org/v3/index.json" />
+    <MSBuild
+        Projects="$(RootDir)Package\msi\IronPython.Installer.wixproj"
+        Properties="BindInputPaths=$(StageDir);OutputPath=$(PackageDir);Configuration=$(BuildFlavour);Platform=x64"
+    />
+  </Target>
+</Project>

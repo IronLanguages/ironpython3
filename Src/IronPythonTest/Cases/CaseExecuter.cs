@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using IronPython.Hosting;
 using IronPython.Runtime;
@@ -164,7 +166,7 @@ namespace IronPythonTest.Cases {
             var source = engine.CreateScriptSourceFromString(
                 testcase.Text, testcase.Path, SourceCodeKind.File);
 
-            return GetResult(engine, source, testcase.Path, testcase.Options.WorkingDirectory);
+            return GetResult(testcase, engine, source, testcase.Path, testcase.Options.WorkingDirectory);
         }
 
         private int GetProcessTest(TestInfo testcase) {
@@ -202,7 +204,7 @@ namespace IronPythonTest.Cases {
 
                 if (!proc.WaitForExit(testcase.Options.Timeout)) {
                     proc.Kill();
-                    Console.Error.Write($"Timed out after {testcase.Options.Timeout / 1000.0} seconds.");
+                    NUnit.Framework.TestContext.Error.WriteLine($"{testcase.Name} timed out after {testcase.Options.Timeout / 1000.0} seconds.");
                 }
                 exitCode = proc.ExitCode;
             }
@@ -232,10 +234,10 @@ namespace IronPythonTest.Cases {
             var source = this.defaultEngine.CreateScriptSourceFromString(
                 testcase.Text, testcase.Path, SourceCodeKind.File);
 
-            return GetResult(this.defaultEngine, source, testcase.Path, testcase.Options.WorkingDirectory);
+            return GetResult(testcase, this.defaultEngine, source, testcase.Path, testcase.Options.WorkingDirectory);
         }
 
-        private int GetResult(ScriptEngine engine, ScriptSource source, string testPath, string workingDir) {
+        private int GetResult(TestInfo testcase, ScriptEngine engine, ScriptSource source, string testPath, string workingDir) {
             int res = 0;
             var path = Environment.GetEnvironmentVariable("IRONPYTHONPATH");
             if (string.IsNullOrEmpty(path)) {
@@ -255,12 +257,27 @@ namespace IronPythonTest.Cases {
                 var scope = engine.CreateScope();
                 engine.GetSysModule().SetVariable("argv", List.FromArrayNoCopy(new object[] { source.Path }));
                 var compiledCode = source.Compile(new IronPython.Compiler.PythonCompilerOptions() { ModuleName = "__main__" });
+                
+                var thread = new Thread(() => {
+                    try {
+                        res = engine.Operations.ConvertTo<int>(compiledCode.Execute(scope) ?? 0);
+                    } catch (SystemExitException ex) {
+                        res = ex.GetExitCode(out object otherCode);
+                    } catch (ThreadAbortException) {
+                        Thread.ResetAbort();
+                    }
+                }) {
+                    IsBackground = true
+                };
 
-                try {
-                    res = engine.Operations.ConvertTo<int>(compiledCode.Execute(scope) ?? 0);
-                } catch (SystemExitException ex) {
-                    object otherCode;
-                    res = ex.GetExitCode(out otherCode);
+                thread.Start();
+
+                if (!thread.Join(testcase.Options.Timeout)) {
+                    if(!ClrModule.IsNetCoreApp) {
+                        thread.Abort();
+                    }
+                    NUnit.Framework.TestContext.Error.WriteLine($"{testcase.Name} timed out after {testcase.Options.Timeout / 1000.0} seconds.");
+                    res = -1;
                 }
             } finally {
                 Environment.CurrentDirectory = cwd;

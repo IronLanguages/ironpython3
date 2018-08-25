@@ -15,10 +15,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPythonTest", "Src\IronP
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPythonWindow", "Src\IronPythonWindow\IronPythonWindow.csproj", "{81DA19C7-4FEC-47E7-981B-D9310D549F95}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPythonConsoleAny", "Src\IronPythonConsoleAny\IronPythonConsoleAny.csproj", "{F1D861C5-D9D5-4CDA-968B-8275F5D9F6D2}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPythonWindowAny", "Src\IronPythonWindowAny\IronPythonWindowAny.csproj", "{7F6F9AB3-9943-4316-BD4C-A10F580BC75C}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3A14D070-628F-44EF-92DD-47C8BE5C33CD}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
@@ -96,14 +92,6 @@ Global
 		{81DA19C7-4FEC-47E7-981B-D9310D549F95}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{81DA19C7-4FEC-47E7-981B-D9310D549F95}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{81DA19C7-4FEC-47E7-981B-D9310D549F95}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F1D861C5-D9D5-4CDA-968B-8275F5D9F6D2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F1D861C5-D9D5-4CDA-968B-8275F5D9F6D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F1D861C5-D9D5-4CDA-968B-8275F5D9F6D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F1D861C5-D9D5-4CDA-968B-8275F5D9F6D2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7F6F9AB3-9943-4316-BD4C-A10F580BC75C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7F6F9AB3-9943-4316-BD4C-A10F580BC75C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7F6F9AB3-9943-4316-BD4C-A10F580BC75C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7F6F9AB3-9943-4316-BD4C-A10F580BC75C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.Release|Any CPU.ActiveCfg = Release|Any CPU

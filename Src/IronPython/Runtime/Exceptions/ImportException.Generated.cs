@@ -39,7 +39,7 @@ namespace IronPython.Runtime.Exceptions {
         object IPythonAwareException.PythonException {
             get { 
                 if (_pyExceptionObject == null) {
-                    var newEx = new PythonExceptions.BaseException(PythonExceptions.ImportError);
+                    var newEx = new PythonExceptions._ImportError();
                     newEx.InitializeFromClr(this);
                     _pyExceptionObject = newEx;
                 }

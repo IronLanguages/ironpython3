@@ -335,10 +335,34 @@ namespace IronPython.Runtime.Exceptions {
         public static PythonType ImportError {
             get {
                 if (ImportErrorStorage == null) {
-                    Interlocked.CompareExchange(ref ImportErrorStorage, CreateSubType(Exception, "ImportError", (msg, innerException) => new ImportException(msg, innerException)), null);
+                    Interlocked.CompareExchange(ref ImportErrorStorage, CreateSubType(Exception, typeof(_ImportError), (msg, innerException) => new ImportException(msg, innerException)), null);
                 }
                 return ImportErrorStorage;
             }
+        }
+
+        [PythonType("ImportError"), PythonHidden, DynamicBaseType, Serializable]
+        public partial class _ImportError : BaseException {
+            private object _name;
+            private object _path;
+
+            public _ImportError() : base(ImportError) { }
+            public _ImportError(PythonType type) : base(type) { }
+
+            public new static object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
+                return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
+            }
+
+            public object name {
+                get { return _name; }
+                set { _name = value; }
+            }
+
+            public object path {
+                get { return _path; }
+                set { _path = value; }
+            }
+
         }
 
         [MultiRuntimeAware]
@@ -925,7 +949,7 @@ namespace IronPython.Runtime.Exceptions {
             if (clrException is BufferException) return new PythonExceptions.BaseException(PythonExceptions.BufferError);
             if (clrException is FloatingPointException) return new PythonExceptions.BaseException(PythonExceptions.FloatingPointError);
             if (clrException is GeneratorExitException) return new PythonExceptions.BaseException(PythonExceptions.GeneratorExit);
-            if (clrException is ImportException) return new PythonExceptions.BaseException(PythonExceptions.ImportError);
+            if (clrException is ImportException) return new PythonExceptions._ImportError();
             if (clrException is KeyboardInterruptException) return new PythonExceptions.BaseException(PythonExceptions.KeyboardInterrupt);
             if (clrException is LookupException) return new PythonExceptions.BaseException(PythonExceptions.LookupError);
             if (clrException is OSException) return new PythonExceptions._OSError();

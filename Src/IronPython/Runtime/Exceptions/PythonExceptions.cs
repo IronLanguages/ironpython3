@@ -801,6 +801,25 @@ for k, v in toError.items():
             }
         }
 
+        public partial class _ImportError {
+            public void __init__([ParamDictionary]IDictionary<string, object> kwargs, params object[] args) {
+                base.__init__(args);
+
+                foreach (var pair in kwargs) {
+                    switch (pair.Key) {
+                        case "name":
+                            name = pair.Value;
+                            break;
+                        case "path":
+                            path = pair.Value;
+                            break;
+                        default:
+                            throw PythonOps.TypeError($"'{pair.Key}' is an invalid keyword argument for this function");
+                    }
+                }
+            }
+        }
+
         public partial class _UnicodeDecodeError : BaseException {
             [PythonHidden]
             protected internal override void InitializeFromClr(System.Exception/*!*/ exception) {

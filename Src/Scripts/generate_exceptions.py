@@ -110,7 +110,7 @@ exceptionHierarchy = ExceptionInfo('BaseException', 'IronPython.Runtime.Exceptio
                     ),
                 ),
                 ExceptionInfo('EOFError', 'System.IO.EndOfStreamException', None, (), ()),
-                ExceptionInfo('ImportError', 'IronPython.Runtime.Exceptions.ImportException', None, (), ()),
+                ExceptionInfo('ImportError', 'IronPython.Runtime.Exceptions.ImportException', None, ('name', 'path'), ()),
                 ExceptionInfo('LookupError', 'IronPython.Runtime.Exceptions.LookupException', None, (), (
                     ExceptionInfo('IndexError', 'System.IndexOutOfRangeException', None, (), ()),
                     ExceptionInfo('KeyError', 'System.Collections.Generic.KeyNotFoundException', None, (), ()),

@@ -27,7 +27,14 @@ namespace IronPythonTest.Cases {
                 TestContext.Progress.WriteLine(testcase.Name); // should be printed immediately
                 return executor.RunTest(testcase);
             } catch (Exception e) {
-                Assert.Fail(executor.FormatException(e));
+                if(e is AggregateException ae) {
+                    ae.Handle((x) => {
+                       Assert.Fail(executor.FormatException(x));
+                       return true; 
+                    });
+                } else {
+                    Assert.Fail(executor.FormatException(e));
+                }
                 return -1;
             }
         }
@@ -48,7 +55,14 @@ namespace IronPythonTest.Cases {
                 TestContext.Progress.WriteLine(testcase.Name); // should be printed immediately
                 return executor.RunTest(testcase);
             } catch (Exception e) {
-                Assert.Fail(executor.FormatException(e));
+                if(e is AggregateException ae) {
+                    ae.Handle((x) => {
+                       Assert.Fail(executor.FormatException(x));
+                       return true; 
+                    });
+                } else {
+                    Assert.Fail(executor.FormatException(e));
+                }
                 return -1;
             }
         }
@@ -69,7 +83,14 @@ namespace IronPythonTest.Cases {
                 TestContext.Progress.WriteLine(testcase.Name); // should be printed immediately
                 return executor.RunTest(testcase);
             } catch (Exception e) {
-                Assert.Fail(executor.FormatException(e));
+                if(e is AggregateException ae) {
+                    ae.Handle((x) => {
+                       Assert.Fail(executor.FormatException(x));
+                       return true; 
+                    });
+                } else {
+                    Assert.Fail(executor.FormatException(e));
+                }
                 return -1;
             }
         }

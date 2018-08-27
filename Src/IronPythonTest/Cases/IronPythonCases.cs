@@ -21,7 +21,14 @@ namespace IronPythonTest.Cases {
                 TestContext.Progress.WriteLine(testcase.Name);
                 return this.executor.RunTest(testcase);
             } catch (Exception e) {
-                Assert.Fail(this.executor.FormatException(e));
+                if(e is AggregateException ae) {
+                    ae.Handle((x) => {
+                       Assert.Fail(executor.FormatException(x));
+                       return true; 
+                    });
+                } else {
+                    Assert.Fail(this.executor.FormatException(e));
+                }
                 return -1;
             }
         }

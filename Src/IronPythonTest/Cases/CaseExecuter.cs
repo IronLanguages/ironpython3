@@ -258,24 +258,15 @@ namespace IronPythonTest.Cases {
                 engine.GetSysModule().SetVariable("argv", List.FromArrayNoCopy(new object[] { source.Path }));
                 var compiledCode = source.Compile(new IronPython.Compiler.PythonCompilerOptions() { ModuleName = "__main__" });
                 
-                var thread = new Thread(() => {
+                var task = Task<int>.Run(() => {
                     try {
-                        res = engine.Operations.ConvertTo<int>(compiledCode.Execute(scope) ?? 0);
+                        return engine.Operations.ConvertTo<int>(compiledCode.Execute(scope) ?? 0);
                     } catch (SystemExitException ex) {
-                        res = ex.GetExitCode(out object otherCode);
-                    } catch (ThreadAbortException) {
-                        Thread.ResetAbort();
+                        return ex.GetExitCode(out object otherCode);
                     }
-                }) {
-                    IsBackground = true
-                };
-
-                thread.Start();
-
-                if (!thread.Join(testcase.Options.Timeout)) {
-                    if(!ClrModule.IsNetCoreApp) {
-                        thread.Abort();
-                    }
+                });
+                
+                if (!task.Wait(testcase.Options.Timeout)) {
                     NUnit.Framework.TestContext.Error.WriteLine($"{testcase.Name} timed out after {testcase.Options.Timeout / 1000.0} seconds.");
                     res = -1;
                 }

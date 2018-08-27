@@ -94,6 +94,7 @@ namespace IronPython.Runtime {
             _localCount = scope.Variables == null ? 0 : scope.Variables.Count;
             co_argcount = scope.ArgCount;
             co_kwonlyargcount = scope.KwOnlyArgCount;
+
             if (tracing.HasValue) {
                 if (tracing.Value) {
                     _tracingDelegate = initialDelegate;
@@ -420,14 +421,6 @@ namespace IronPython.Runtime {
         public int co_argcount { get; }
 
         public int co_kwonlyargcount { get; }
-
-        private int CalculateArgumentCount() {
-            int argCnt = _lambda.ArgCount;
-            FunctionAttributes flags = Flags;
-            if ((flags & FunctionAttributes.ArgumentList) != 0) argCnt--;
-            if ((flags & FunctionAttributes.KeywordDictionary) != 0) argCnt--;
-            return argCnt;
-        }
 
         /// <summary>
         /// Returns a list of variable names which are accessed from nested functions.

@@ -117,25 +117,16 @@ namespace IronPython.Compiler.Ast {
 
         internal override int ArgCount {
             get {
-                int argCount = 0;
-                for (argCount = 0; argCount < _parameters.Length; argCount++) {
-                    Parameter p = _parameters[argCount];
-                    if (p.IsDictionary || p.IsList || p.Kind == ParameterKind.KeywordOnly) break;
-                }
-                return argCount;
+                // TODO: properly implement this
+                int argCnt = _parameters.Length;
+                FunctionAttributes flags = Flags;
+                if ((flags & FunctionAttributes.ArgumentList) != 0) argCnt--;
+                if ((flags & FunctionAttributes.KeywordDictionary) != 0) argCnt--;
+                return argCnt;
             }
         }
 
-        internal override int KwOnlyArgCount {
-            get {
-                int kwOnlyArgCount = 0;
-                for (int i = ArgCount; i < _parameters.Length; i++, kwOnlyArgCount++) {
-                    Parameter p = _parameters[i];
-                    if (p.IsDictionary || p.IsList) break;
-                }
-                return kwOnlyArgCount;
-            }
-        }
+        internal override int KwOnlyArgCount => 0; // TODO: properly implement this
 
         public Statement Body {
             get { return _body; }

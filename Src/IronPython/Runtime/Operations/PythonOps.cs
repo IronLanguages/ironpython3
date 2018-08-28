@@ -2987,22 +2987,22 @@ namespace IronPython.Runtime.Operations {
             return ((Func<PythonFunction, object, object>)func.__code__.Target)(func, input);
         }
 
-        public static FunctionCode MakeFunctionCode(CodeContext/*!*/ context, string name, string documentation, string[] argNames, FunctionAttributes flags, int startIndex, int endIndex, string path, Delegate code, string[] freeVars, string[] names, string[] cellVars, string[] varNames, int localCount) {
-            Compiler.Ast.SerializedScopeStatement scope = new Compiler.Ast.SerializedScopeStatement(name, argNames, flags, startIndex, endIndex, path, freeVars, names, cellVars, varNames);
+        public static FunctionCode MakeFunctionCode(CodeContext/*!*/ context, string name, string documentation, string[] parameterNames, int argCount, FunctionAttributes flags, int startIndex, int endIndex, string path, Delegate code, string[] freeVars, string[] names, string[] cellVars, string[] varNames, int localCount) {
+            Compiler.Ast.SerializedScopeStatement scope = new Compiler.Ast.SerializedScopeStatement(name, parameterNames, argCount, flags, startIndex, endIndex, path, freeVars, names, cellVars, varNames);
 
             return new FunctionCode(context.LanguageContext, code, scope, documentation, localCount);
         }
 
         [NoSideEffects]
-        public static object MakeFunction(CodeContext/*!*/ context, FunctionCode funcInfo, object modName, object[] defaults, PythonDictionary annotations) {
-            return new PythonFunction(context, funcInfo, modName, defaults, annotations, null);
+        public static object MakeFunction(CodeContext/*!*/ context, FunctionCode funcInfo, object modName, object[] defaults, PythonDictionary kwdefaults, PythonDictionary annotations) {
+            return new PythonFunction(context, funcInfo, modName, defaults, kwdefaults, annotations, null);
         }
 
         [NoSideEffects]
-        public static object MakeFunctionDebug(CodeContext/*!*/ context, FunctionCode funcInfo, object modName, object[] defaults, PythonDictionary annotations, Delegate target) {
+        public static object MakeFunctionDebug(CodeContext/*!*/ context, FunctionCode funcInfo, object modName, object[] defaults, PythonDictionary kwdefaults, PythonDictionary annotations, Delegate target) {
             funcInfo.SetDebugTarget(context.LanguageContext, target);
 
-            return new PythonFunction(context, funcInfo, modName, defaults, annotations, null);
+            return new PythonFunction(context, funcInfo, modName, defaults, kwdefaults, annotations, null);
         }
 
         public static CodeContext FunctionGetContext(PythonFunction func) {

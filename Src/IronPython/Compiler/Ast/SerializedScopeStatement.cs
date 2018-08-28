@@ -21,13 +21,21 @@ namespace IronPython.Compiler.Ast {
         private readonly string _filename;
         private readonly FunctionAttributes _flags;
         private readonly string[] _parameterNames;
+        private readonly int _argCount;
+        private readonly int _kwOnlyArgCount;
 
-        internal SerializedScopeStatement(string name, string[] argNames, FunctionAttributes flags, int startIndex, int endIndex, string path, string[] freeVars, string[] names, string[] cellVars, string[] varNames) {
+        internal SerializedScopeStatement(string name, string[] parameterNames, int argCount, FunctionAttributes flags, int startIndex, int endIndex, string path, string[] freeVars, string[] names, string[] cellVars, string[] varNames) {
             _name = name;
             _filename = path;
             _flags = flags;
             SetLoc(null, startIndex, endIndex);
-            _parameterNames = argNames;
+            _parameterNames = parameterNames;
+
+            _argCount = argCount;
+            _kwOnlyArgCount = parameterNames.Length - argCount;
+            if (flags.HasFlag(FunctionAttributes.ArgumentList)) _kwOnlyArgCount--;
+            if (flags.HasFlag(FunctionAttributes.KeywordDictionary)) _kwOnlyArgCount--;
+
             if (freeVars != null) {
                 foreach (string freeVar in freeVars) {
                     AddFreeVariable(new PythonVariable(freeVar, VariableKind.Local, this), false);
@@ -90,10 +98,8 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        internal override int ArgCount {
-            get {
-                return _parameterNames.Length;
-            }
-        }
+        internal override int ArgCount => _argCount;
+
+        internal override int KwOnlyArgCount => _kwOnlyArgCount;
     }
 }

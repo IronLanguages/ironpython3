@@ -143,6 +143,12 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
+        internal virtual int KwOnlyArgCount {
+            get {
+                return 0;
+            }
+        }
+
         internal virtual FunctionAttributes Flags {
             get {
                 return FunctionAttributes.None;

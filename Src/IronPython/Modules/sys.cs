@@ -9,12 +9,14 @@ using System.IO;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
+using IronPython;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
@@ -30,6 +32,32 @@ namespace IronPython.Modules {
         public static readonly string byteorder = BitConverter.IsLittleEndian ? "little" : "big";
         // builtin_module_names is set by PythonContext and updated on reload
         public const string copyright = "Copyright (c) IronPython Team";
+        
+        [PythonHidden]
+        private class Platform : ExtensibleString {
+            private static readonly ExtensibleString _cli = new ExtensibleString("cli");
+            public Platform(string name) : base(name) {
+
+            }
+
+            public override object __eq__(object other) {
+                return this.Equals(other) || _cli.Equals(other);
+            }
+            
+            public override object __ne__(object other) {
+                return !this.Equals(other) && !_cli.Equals(other);
+            }
+        }
+        
+        static SysModule() {
+            if(RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
+                platform = new Platform("posix");
+            } else if(RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                platform = new Platform("darwin");
+            } else {
+                platform = new Platform("win32");
+            }
+        }
 
         private static string GetPrefix() {
             string prefix;
@@ -254,7 +282,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
 
         // path is set by PythonContext and only on the initial load
 
-        public const string platform = "cli";
+        public static object platform;
 
         public static readonly string prefix = GetPrefix();
 

@@ -7,30 +7,10 @@ using NUnit.Framework;
 
 namespace IronPythonTest.Cases {
     [TestFixture(Category = "IronPython")]
-    public class IronPythonCases {
-        private CaseExecuter executor;
-
-        [OneTimeSetUp]
-        public void FixtureSetUp() {
-            this.executor = new CaseExecuter();
-        }
-
+    public class IronPythonCases : CommonCases {        
         [Test, TestCaseSource(typeof(IronPythonCaseGenerator))]
-        public int IronPythonTests(TestInfo testcase) {
-            try {
-                TestContext.Progress.WriteLine(testcase.Name);
-                return this.executor.RunTest(testcase);
-            } catch (Exception e) {
-                if(e is AggregateException ae) {
-                    ae.Handle((x) => {
-                       Assert.Fail(executor.FormatException(x));
-                       return true; 
-                    });
-                } else {
-                    Assert.Fail(this.executor.FormatException(e));
-                }
-                return -1;
-            }
+        public override int Test(TestInfo testcase) {
+            return TestImpl(testcase);
         }
     }
 

@@ -42,10 +42,10 @@ namespace IronPython.Runtime.Operations {
             return StringOps.Quote(Value);
         }
 
-        #endregion        
+        #endregion
 
         [return: MaybeNotImplemented]
-        public object __eq__(object other) {
+        public virtual object __eq__(object other) {
             if (other is string || other is ExtensibleString || other is Bytes) {
                 return ScriptingRuntimeHelpers.BooleanToObject(EqualsWorker(other));
             }
@@ -54,7 +54,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [return: MaybeNotImplemented]
-        public object __ne__(object other) {
+        public virtual object __ne__(object other) {
             if (other is string || other is ExtensibleString || other is Bytes) {
                 return ScriptingRuntimeHelpers.BooleanToObject(!EqualsWorker(other));
             }

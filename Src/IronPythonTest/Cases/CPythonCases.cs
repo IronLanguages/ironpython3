@@ -13,86 +13,26 @@ using NUnit.Framework.Api;
 
 namespace IronPythonTest.Cases {
     [TestFixture(Category = "StandardCPython")]
-    class StandardCPythonCases {
-        private CaseExecuter executor;
-
-        [OneTimeSetUp]
-        public void FixtureSetUp() {
-            executor = new CaseExecuter();
-        }
-
+    public class StandardCPythonCases : CommonCases {
         [Test, TestCaseSource(typeof(StandardCPythonCaseGenerator))]
-        public int StandardCPythonTests(TestInfo testcase) {
-            try {
-                TestContext.Progress.WriteLine(testcase.Name); // should be printed immediately
-                return executor.RunTest(testcase);
-            } catch (Exception e) {
-                if(e is AggregateException ae) {
-                    ae.Handle((x) => {
-                       Assert.Fail(executor.FormatException(x));
-                       return true; 
-                    });
-                } else {
-                    Assert.Fail(executor.FormatException(e));
-                }
-                return -1;
-            }
+        public override int Test(TestInfo testcase) {
+            return TestImpl(testcase);
         }
     }
 
     [TestFixture(Category = "AllCPython")]
-    class AllCPythonCases {
-        private CaseExecuter executor;
-
-        [OneTimeSetUp]
-        public void FixtureSetUp() {
-            executor = new CaseExecuter();
-        }
-
+    public class AllCPythonCases : CommonCases {
         [Test, TestCaseSource(typeof(AllCPythonCaseGenerator))]
-        public int AllCPythonTests(TestInfo testcase) {
-            try {
-                TestContext.Progress.WriteLine(testcase.Name); // should be printed immediately
-                return executor.RunTest(testcase);
-            } catch (Exception e) {
-                if(e is AggregateException ae) {
-                    ae.Handle((x) => {
-                       Assert.Fail(executor.FormatException(x));
-                       return true; 
-                    });
-                } else {
-                    Assert.Fail(executor.FormatException(e));
-                }
-                return -1;
-            }
+        public override int Test(TestInfo testcase) {
+            return TestImpl(testcase);
         }
     }
 
     [TestFixture(Category = "CTypesCPython")]
-    class CTypesCPythonCases {
-        private CaseExecuter executor;
-
-        [OneTimeSetUp]
-        public void FixtureSetUp() {
-            executor = new CaseExecuter();
-        }
-
+    public class CTypesCPythonCases : CommonCases {
         [Test, TestCaseSource(typeof(CTypesCPythonCaseGenerator))]
-        public int CTypesCPythonTests(TestInfo testcase) {
-            try {
-                TestContext.Progress.WriteLine(testcase.Name); // should be printed immediately
-                return executor.RunTest(testcase);
-            } catch (Exception e) {
-                if(e is AggregateException ae) {
-                    ae.Handle((x) => {
-                       Assert.Fail(executor.FormatException(x));
-                       return true; 
-                    });
-                } else {
-                    Assert.Fail(executor.FormatException(e));
-                }
-                return -1;
-            }
+        public override int Test(TestInfo testcase) {
+            return TestImpl(testcase);
         }
     }
 

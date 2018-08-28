@@ -20,6 +20,7 @@ namespace IronPython.Compiler.Ast {
         Normal,
         List,
         Dictionary,
+        KeywordOnly,
     };
 
     /// <summary>

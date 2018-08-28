@@ -50,25 +50,12 @@ namespace IronPython.Runtime {
         [MultiRuntimeAware]
         private static int _CurrentId = 1;              // The current ID for functions which are called in complex ways.
 
-
-        public PythonFunction(CodeContext context, FunctionCode code, PythonDictionary globals)
-            : this(context, code, globals, code.PythonCode.Name, null, null) {
-        }
-
-        public PythonFunction(CodeContext context, FunctionCode code, PythonDictionary globals, string name)
-            : this(context, code, globals, name, null, null) {
-        }
-
-        public PythonFunction(CodeContext context, FunctionCode code, PythonDictionary globals, string name, PythonTuple defaults)
-            : this(context, code, globals, name, defaults, null) {
-        }
-
         /// <summary>
         /// Python ctor - maps to function.__new__
         /// 
         /// y = func(x.__code__, globals(), 'foo', None, (a, ))
         /// </summary>
-        public PythonFunction(CodeContext context, FunctionCode code, PythonDictionary globals, string name, PythonTuple defaults, PythonTuple closure) {
+        public PythonFunction(CodeContext context, FunctionCode code, PythonDictionary globals, string name = null, PythonTuple defaults = null, PythonTuple closure = null) {
             if (closure != null && closure.__len__() != 0) {
                 throw new NotImplementedException("non empty closure argument is not supported");
             }
@@ -83,7 +70,7 @@ namespace IronPython.Runtime {
 
             _defaults = defaults == null ? ArrayUtils.EmptyObjects : defaults.ToArray();
             _code = code;
-            _name = name;
+            _name = name ?? code.PythonCode.Name;
             _doc = code._initialDoc;
             
             Closure = null;
@@ -97,7 +84,7 @@ namespace IronPython.Runtime {
             _compat = CalculatedCachedCompat();
         }
 
-        internal PythonFunction(CodeContext/*!*/ context, FunctionCode funcInfo, object modName, object[] defaults, PythonDictionary annotations, MutableTuple closure) {
+        internal PythonFunction(CodeContext/*!*/ context, FunctionCode funcInfo, object modName, object[] defaults, PythonDictionary kwdefaults, PythonDictionary annotations, MutableTuple closure) {
             Assert.NotNull(context, funcInfo);
 
             _context = context;
@@ -105,6 +92,7 @@ namespace IronPython.Runtime {
             _code = funcInfo;
             _doc = funcInfo._initialDoc;
             _name = funcInfo.co_name;
+            __kwdefaults__ = kwdefaults;
             _annotations = annotations ?? new PythonDictionary();
 
             Debug.Assert(_defaults.Length <= _code.co_argcount);

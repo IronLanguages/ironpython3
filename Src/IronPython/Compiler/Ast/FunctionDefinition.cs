@@ -55,11 +55,11 @@ namespace IronPython.Compiler.Ast {
         private static readonly MSAst.Expression _parentContext = new GetParentContextFromFunctionExpression();
         internal static readonly MSAst.LabelTarget _returnLabel = MSAst.Expression.Label(typeof(object), "return");
 
-        public FunctionDefinition(string name, Parameter[] parameters, bool isAsync=false)
-            : this(name, parameters, (Statement)null, isAsync) {            
+        public FunctionDefinition(string name, Parameter[] parameters, bool isAsync = false)
+            : this(name, parameters, (Statement)null, isAsync) {
         }
 
-        public FunctionDefinition(string name, Parameter[] parameters, Statement body, bool isAsync=false) {
+        public FunctionDefinition(string name, Parameter[] parameters, Statement body, bool isAsync = false) {
             ContractUtils.RequiresNotNullItems(parameters, nameof(parameters));
 
             if (name == null) {
@@ -80,7 +80,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         [Obsolete("sourceUnit is now ignored.  FunctionDefinitions should belong to a PythonAst which has a SourceUnit")]
-        public FunctionDefinition(string name, Parameter[] parameters, Statement body, SourceUnit sourceUnit)             
+        public FunctionDefinition(string name, Parameter[] parameters, Statement body, SourceUnit sourceUnit)
             : this(name, parameters, body) {
         }
 
@@ -117,9 +117,16 @@ namespace IronPython.Compiler.Ast {
 
         internal override int ArgCount {
             get {
-                return _parameters.Length;
+                // TODO: properly implement this
+                int argCnt = _parameters.Length;
+                FunctionAttributes flags = Flags;
+                if ((flags & FunctionAttributes.ArgumentList) != 0) argCnt--;
+                if ((flags & FunctionAttributes.KeywordDictionary) != 0) argCnt--;
+                return argCnt;
             }
         }
+
+        internal override int KwOnlyArgCount => 0; // TODO: properly implement this
 
         public Statement Body {
             get { return _body; }
@@ -312,7 +319,8 @@ namespace IronPython.Compiler.Ast {
         /// Returns an expression which creates the function object.
         /// </summary>
         internal MSAst.Expression MakeFunctionExpression() {
-            var defaults = new List<MSAst.Expression>(0);
+            var defaults = new List<MSAst.Expression>();
+            var kwdefaults = new List<MSAst.Expression>();
             var annotations = new List<MSAst.Expression>();
 
             if (ReturnAnnotation != null) {
@@ -321,11 +329,16 @@ namespace IronPython.Compiler.Ast {
             }
 
             foreach (var param in _parameters) {
-                if (param.DefaultValue != null) {
+                if (param.Kind == ParameterKind.Normal && param.DefaultValue != null) {
                     defaults.Add(AstUtils.Convert(param.DefaultValue, typeof(object)));
                 }
 
-                if(param.Annotation != null) {
+                if (param.Kind == ParameterKind.KeywordOnly && param.DefaultValue != null) {
+                    kwdefaults.Add(Ast.Constant(param.Name, typeof(string)));
+                    kwdefaults.Add(param.DefaultValue);
+                }
+
+                if (param.Annotation != null) {
                     annotations.Add(Ast.Constant(param.Name, typeof(string)));
                     annotations.Add(param.Annotation);
                 }
@@ -349,8 +362,16 @@ namespace IronPython.Compiler.Ast {
                     defaults.Count == 0 ?                                                           // 4. default values
                         AstUtils.Constant(null, typeof(object[])) :
                         (MSAst.Expression)Ast.NewArrayInit(typeof(object), defaults),
+                    kwdefaults.Count == 0 ? AstUtils.Constant(null, typeof(PythonDictionary)) :
+                        (MSAst.Expression)Ast.Call(                                                 // 5. kwdefaults
+                            AstMethods.MakeDictFromItems,
+                            Ast.NewArrayInit(
+                                typeof(object),
+                                kwdefaults
+                            )
+                        ),
                     annotations.Count == 0 ? AstUtils.Constant(null, typeof(PythonDictionary)) :
-                        (MSAst.Expression)Ast.Call(                                                 // 5. annotations
+                        (MSAst.Expression)Ast.Call(                                                 // 6. annotations
                             AstMethods.MakeDictFromItems,
                             Ast.NewArrayInit(
                                 typeof(object),
@@ -370,8 +391,16 @@ namespace IronPython.Compiler.Ast {
                     defaults.Count == 0 ?                                                           // 4. default values
                         AstUtils.Constant(null, typeof(object[])) :
                         (MSAst.Expression)Ast.NewArrayInit(typeof(object), defaults),
+                    kwdefaults.Count == 0 ? AstUtils.Constant(null, typeof(PythonDictionary)) :
+                        (MSAst.Expression)Ast.Call(                                                 // 5. kwdefaults
+                            AstMethods.MakeDictFromItems,
+                            Ast.NewArrayInit(
+                                typeof(object),
+                                kwdefaults
+                            )
+                        ),
                     annotations.Count == 0 ? AstUtils.Constant(null, typeof(PythonDictionary)) :
-                        (MSAst.Expression)Ast.Call(                                                 // 5. annotations
+                        (MSAst.Expression)Ast.Call(                                                 // 6. annotations
                             AstMethods.MakeDictFromItems,
                             Ast.NewArrayInit(
                                 typeof(object),
@@ -421,31 +450,41 @@ namespace IronPython.Compiler.Ast {
             int defaultCount = 0;
             for (int i = _parameters.Length - 1; i >= 0; i--) {
                 var param = _parameters[i];
-
-                if (param.DefaultValue != null) {
+                if (param.Kind == ParameterKind.Normal && param.DefaultValue != null) {
                     compiler.Compile(AstUtils.Convert(param.DefaultValue, typeof(object)));
+                    defaultCount++;
+                }
+            }
+
+            // emit kwdefaults
+            int kwdefaultCount = 0;
+            for (int i = _parameters.Length - 1; i >= 0; i--) {
+                var param = _parameters[i];
+                if (param.Kind == ParameterKind.KeywordOnly && param.DefaultValue != null) {
+                    compiler.Compile(AstUtils.Convert(param.DefaultValue, typeof(object)));
+                    compiler.Compile(AstUtils.Constant(param.Name, typeof(string)));
                     defaultCount++;
                 }
             }
 
             // emit annotations
             int annotationCount = 0;
-            if(ReturnAnnotation != null) {
+            if (ReturnAnnotation != null) {
                 compiler.Compile(AstUtils.Convert(ReturnAnnotation, typeof(object)));
                 compiler.Compile(AstUtils.Constant("return", typeof(string)));
                 annotationCount++;
             }
 
-            for(int i = _parameters.Length - 1; i >= 0; i--) {
+            for (int i = _parameters.Length - 1; i >= 0; i--) {
                 var param = _parameters[i];
-                if(param.Annotation != null) {
+                if (param.Annotation != null) {
                     compiler.Compile(AstUtils.Convert(param.Annotation, typeof(object)));
                     compiler.Compile(AstUtils.Constant(param.Name, typeof(string)));
                     annotationCount++;
                 }
-            }            
+            }
 
-            compiler.Instructions.Emit(new FunctionDefinitionInstruction(globalContext, this, defaultCount, annotationCount, globalName));
+            compiler.Instructions.Emit(new FunctionDefinitionInstruction(globalContext, this, defaultCount, kwdefaultCount, annotationCount, globalName));
         }
 
         private static void CompileAssignment(LightCompiler compiler, MSAst.Expression variable, Action<LightCompiler> compileValue) {
@@ -493,15 +532,17 @@ namespace IronPython.Compiler.Ast {
             private readonly int _defaultCount;
             private readonly CodeContext _context;
             private readonly PythonGlobal _name;
+            private readonly int _kwdefaultCount;
             private readonly int _annotationCount;
 
-            public FunctionDefinitionInstruction(CodeContext context, FunctionDefinition/*!*/ definition, int defaultCount, int annotationCount, PythonGlobal name) {
+            public FunctionDefinitionInstruction(CodeContext context, FunctionDefinition/*!*/ definition, int defaultCount, int kwdefaultCount, int annotationCount, PythonGlobal name) {
                 Assert.NotNull(definition);
 
                 _context = context;
                 _defaultCount = defaultCount;
                 _def = definition;
                 _name = name;
+                _kwdefaultCount = kwdefaultCount;
                 _annotationCount = annotationCount;
             }
 
@@ -513,7 +554,15 @@ namespace IronPython.Compiler.Ast {
                         annotations.Add(frame.Pop(), frame.Pop());
                     }
                 }
-            
+
+                PythonDictionary kwdefaults = null;
+                if (_kwdefaultCount > 0) {
+                    kwdefaults = new PythonDictionary();
+                    for (int i = 0; i < _kwdefaultCount; i++) {
+                        kwdefaults.Add(frame.Pop(), frame.Pop());
+                    }
+                }
+
                 object[] defaults;
                 if (_defaultCount > 0) {
                     defaults = new object[_defaultCount];
@@ -532,8 +581,8 @@ namespace IronPython.Compiler.Ast {
                 }
 
                 CodeContext context = (CodeContext)frame.Pop();
-                
-                frame.Push(PythonOps.MakeFunction(context, _def.FunctionCode, modName, defaults, annotations));
+
+                frame.Push(PythonOps.MakeFunction(context, _def.FunctionCode, modName, defaults, kwdefaults, annotations));
 
                 return +1;
             }

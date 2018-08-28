@@ -38,7 +38,6 @@ namespace IronPython.Runtime {
         private Compiler.Ast.ScopeStatement _lambda;                // the original DLR lambda that contains the code
         internal readonly string _initialDoc;                       // the initial doc string
         private readonly int _localCount;                           // the number of local variables in the code
-        private readonly int _argCount;                             // cached locally because it's used during calls w/ defaults
         private bool _compilingLight;                               // true if we're compiling for light exceptions
         private int _exceptionCount;
 
@@ -66,7 +65,8 @@ namespace IronPython.Runtime {
         internal FunctionCode(PythonContext context, Delegate code, Compiler.Ast.ScopeStatement scope, string documentation, int localCount) {
             _normalDelegate = code;
             _lambda = scope;
-            _argCount = CalculateArgumentCount();
+            co_argcount = scope.ArgCount;
+            co_kwonlyargcount = scope.KwOnlyArgCount;
             _initialDoc = documentation;
 
             // need to take this lock to ensure sys.settrace/sys.setprofile is not actively changing
@@ -92,7 +92,9 @@ namespace IronPython.Runtime {
             Target = LightThrowTarget = initialDelegate;
             _initialDoc = documentation;
             _localCount = scope.Variables == null ? 0 : scope.Variables.Count;
-            _argCount = CalculateArgumentCount();
+            co_argcount = scope.ArgCount;
+            co_kwonlyargcount = scope.KwOnlyArgCount;
+
             if (tracing.HasValue) {
                 if (tracing.Value) {
                     _tracingDelegate = initialDelegate;
@@ -416,19 +418,9 @@ namespace IronPython.Runtime {
             }
         }
 
-        public int co_argcount {
-            get {
-                return _argCount;
-            }
-        }
+        public int co_argcount { get; }
 
-        private int CalculateArgumentCount() {
-            int argCnt = _lambda.ArgCount;
-            FunctionAttributes flags = Flags;
-            if ((flags & FunctionAttributes.ArgumentList) != 0) argCnt--;
-            if ((flags & FunctionAttributes.KeywordDictionary) != 0) argCnt--;
-            return argCnt;
-        }
+        public int co_kwonlyargcount { get; }
 
         /// <summary>
         /// Returns a list of variable names which are accessed from nested functions.
@@ -611,7 +603,7 @@ namespace IronPython.Runtime {
                 return optimizedModuleCode(this);
             }
 
-            var func = new PythonFunction(context, this, null, ArrayUtils.EmptyObjects, null, new MutableTuple<object>());
+            var func = new PythonFunction(context, this, null, ArrayUtils.EmptyObjects, null, null, new MutableTuple<object>());
             CallSite<Func<CallSite, CodeContext, PythonFunction, object>> site = context.LanguageContext.FunctionCallSite;
             return site.Target(site, context, func);
         }
@@ -658,15 +650,6 @@ namespace IronPython.Runtime {
         public override int GetHashCode() {
             // overridden because CPython defines this on code objects
             return base.GetHashCode();
-        }
-
-        public int __cmp__(CodeContext/*!*/ context, [NotNull]FunctionCode/*!*/  other) {
-            if (other == this) {
-                return 0;
-            }
-
-            long lres = IdDispenser.GetId(this) - IdDispenser.GetId(other);
-            return lres > 0 ? 1 : -1;
         }
 
         // these are present in CPython but always return NotImplemented.
@@ -975,6 +958,7 @@ namespace IronPython.Runtime {
                     typeof(string),
                     ArrayUtils.ConvertAll(_lambda.ParameterNames, (x) => Expression.Constant(x))
                 ),
+                Expression.Constant(_lambda.ArgCount),
                 Expression.Constant(Flags),
                 Expression.Constant(_lambda.IndexSpan.Start),
                 Expression.Constant(_lambda.IndexSpan.End),

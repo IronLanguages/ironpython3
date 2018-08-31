@@ -56,7 +56,7 @@ git pull
 
 The DLR (Dynamic Language Runtime) is a submodule of the ironpython3 repository, you need to initialize after cloning the repository.
 ```
-git submodule update --init`
+git submodule update --init
 ```
 
 For more information there is an excellent tutorial on [getting started with git](http://kylecordes.com/2008/04/30/git-windows-go/)

@@ -463,7 +463,7 @@ namespace IronPython.Runtime.Binding {
                 case TrackerTypes.MethodGroup:
                     return new DynamicMetaObject(ReturnMethodGroup((MethodGroup)memberTracker), BindingRestrictions.Empty); ;
                 case TrackerTypes.Constructor:
-                    MethodBase[] ctors = CompilerHelpers.GetConstructors(type, privateBinding, true);
+                    MethodBase[] ctors = PythonTypeOps.GetConstructors(type, privateBinding, true);
                     object val;
                     if (PythonTypeOps.IsDefaultNew(ctors)) {
                         if (IsPythonType(type)) {

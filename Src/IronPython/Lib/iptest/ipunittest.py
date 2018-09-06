@@ -133,7 +133,9 @@ def _find_root():
     root = os.getcwd()
     test = all([os.path.exists(os.path.join(root, x)) for x in test_dirs])
     while not test:
+        last_root = root
         root = os.path.dirname(root)
+        if root == last_root: raise Exception("Root not found")
         test = all([os.path.exists(os.path.join(root, x)) for x in test_dirs])
     return root
 

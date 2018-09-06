@@ -198,8 +198,8 @@ namespace IronPythonTest.Cases {
                 proc.Start();
 
                 if (testcase.Options.Redirect) {
-                    AsyncStreamReader(proc.StandardOutput, data => Console.Write(data));
-                    AsyncStreamReader(proc.StandardError, data => Console.Error.Write(data));
+                    AsyncStreamReader(proc.StandardOutput, data => NUnit.Framework.TestContext.Out.Write(data));
+                    AsyncStreamReader(proc.StandardError, data => NUnit.Framework.TestContext.Error.Write(data));
                 }
 
                 if (!proc.WaitForExit(testcase.Options.Timeout)) {

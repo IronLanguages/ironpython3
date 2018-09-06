@@ -94,7 +94,7 @@ namespace IronPython.Runtime.Binding {
         private DynamicMetaObject/*!*/ MakeStandardDotNetTypeCall(DynamicMetaObjectBinder/*!*/ call, Expression/*!*/ codeContext, DynamicMetaObject/*!*/[]/*!*/ args) {
             CallSignature signature = BindingHelpers.GetCallSignature(call);
             PythonContext state = PythonContext.GetPythonContext(call);
-            MethodBase[] ctors = CompilerHelpers.GetConstructors(Value.UnderlyingSystemType, state.Binder.PrivateBinding);
+            MethodBase[] ctors = PythonTypeOps.GetConstructors(Value.UnderlyingSystemType, state.Binder.PrivateBinding);
 
             if (ctors.Length > 0) {
                 return state.Binder.CallMethod(

@@ -104,6 +104,8 @@ def bootstrap(*, root=None, upgrade=False, user=False,
 
         # Construct the arguments to be passed to the pip command
         args = ["install", "--no-index", "--find-links", tmpdir]
+        if sys.platform == "cli":
+            args += ["--no-compile"]
         if root:
             args += ["--root", root]
         if upgrade:

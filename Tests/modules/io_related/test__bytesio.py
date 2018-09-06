@@ -111,8 +111,26 @@ class BytesIOTest(unittest.TestCase):
     def test__BytesIO_readlines(self):
         print("TODO")
 
-    def test__BytesIO_seek(self):
-        print("TODO")
+    ddef test__BytesIO_seek(self):
+        x = BytesIO()
+         # these should all succeed
+        x.seek(0)
+        x.seek(0L)
+        x.seek(0, 0)
+        x.seek(0L, 0)
+        x.seek(0, 0L)
+        x.seek(0L, 0L)
+         # these should all fail
+        self.assertRaises(TypeError, x.seek, 0, 0.0)
+        self.assertRaises(TypeError, x.seek, 0L, 0.0)
+        self.assertRaises(ValueError, x.seek, 0, 1000)
+        self.assertRaises(ValueError, x.seek, 0L, 1000)
+        self.assertRaises(OverflowError, x.seek, 0, sys.maxsize+1)
+        self.assertRaises(OverflowError, x.seek, 0L, sys.maxsize+1)
+        self.assertRaises(TypeError, x.seek, 0.0)
+        self.assertRaises(TypeError, x.seek, 0.0, 0)
+        self.assertRaises(OverflowError, x.seek, sys.maxsize+1)
+        self.assertRaises(OverflowError, x.seek, sys.maxsize+1, 0)
 
     def test__BytesIO_seekable(self):
         print("TODO")
@@ -139,7 +157,7 @@ class BytesIOTest(unittest.TestCase):
         '''
         #--BytesIO.readinto(array.array(...))
         import array
-        
+
         readinto_cases = [
                             [('c',),
                             [[],[],[],[],[],[],[],[],[],[]],
@@ -290,7 +308,7 @@ class BytesIOTest(unittest.TestCase):
 
         for a_params, a_expected, b_expected in readinto_cases:
             b_list = bytesio_helper()
-            
+
             for i in range(len(b_list)):
                 a = array.array(*a_params)
                 b = b_list[i]

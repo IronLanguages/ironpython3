@@ -45,7 +45,7 @@ namespace IronPython.Runtime.Binding {
                         signature,
                         contextExpression
                     ),
-                    CompilerHelpers.GetConstructors(t, PrivateBinding),
+                    PythonTypeOps.GetConstructors(t, PrivateBinding),
                     target.Restrictions.Merge(BindingRestrictions.GetInstanceRestriction(target.Expression, target.Value))
                 );
             }

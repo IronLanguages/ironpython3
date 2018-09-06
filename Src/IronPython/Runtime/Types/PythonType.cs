@@ -611,6 +611,22 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
         }
 
+        public object this[string member] {
+            get {
+                if (!UnderlyingSystemType.IsEnum) {
+                    throw PythonOps.TypeError("'type' object is not subscriptable");
+                }
+                if (member == null) {
+                    throw PythonOps.KeyError(member);
+                }
+                try {
+                    return Enum.Parse(UnderlyingSystemType, member);
+                } catch (ArgumentException) {
+                    throw PythonOps.KeyError(member);
+                }
+            }
+        }
+
         [SpecialName, PropertyMethod, WrapperDescriptor]
         public static object Get__module__(CodeContext/*!*/ context, PythonType self) {
             PythonTypeSlot pts;

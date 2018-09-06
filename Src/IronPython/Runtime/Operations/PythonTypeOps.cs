@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Dynamic;
+using System.Linq;
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Types;
 using Microsoft.Scripting;
@@ -270,7 +271,7 @@ namespace IronPython.Runtime.Operations {
                     return new PythonTypeUserDescriptorSlot(DynamicHelpers.GetPythonTypeFromType(type.Type), true);
                 
                 case TrackerTypes.Constructor:
-                    return GetConstructor(group[0].DeclaringType, privateBinding);
+                    return GetConstructorFunction(group[0].DeclaringType, privateBinding);
                 
                 case TrackerTypes.Custom:
                     return ((PythonCustomTracker)group[0]).GetSlot();
@@ -308,11 +309,35 @@ namespace IronPython.Runtime.Operations {
             return group;
         }
 
-        private static BuiltinFunction GetConstructor(Type t, bool privateBinding) {
+        private static BuiltinFunction GetConstructorFunction(Type t, bool privateBinding) {
             BuiltinFunction ctorFunc = InstanceOps.NonDefaultNewInst;
-            MethodBase[] ctors = CompilerHelpers.GetConstructors(t, privateBinding, true);
+            MethodBase[] ctors = GetConstructors(t, privateBinding, true);
 
             return GetConstructor(t, ctorFunc, ctors);
+        }
+        
+        internal static MethodBase[] GetConstructors(Type t, bool privateBinding, bool includeProtected = false) {
+            MethodBase[] ctors = CompilerHelpers.GetConstructors(t, privateBinding, includeProtected);
+            if (t.IsEnum()) {
+                var enumCtor = typeof(PythonTypeOps).GetDeclaredMethods(nameof(CreateEnum)).Single().MakeGenericMethod(t);
+                ctors = ctors.Concat(new[] { enumCtor }).ToArray();
+            }
+            return ctors;
+        }
+         // support for EnumType(number)
+        private static T CreateEnum<T>(object value) {
+            if (value == null) {
+                throw PythonOps.ValueError(
+                    $"None is not a valid {PythonOps.ToString(typeof(T))}"
+                );
+            }
+            try {
+                return (T)Enum.ToObject(typeof(T), value);
+            } catch (ArgumentException) {
+                throw PythonOps.ValueError(
+                    $"{PythonOps.ToString(value)} is not a valid {PythonOps.ToString(typeof(T))}"
+                );
+            }
         }
 
         internal static bool IsDefaultNew(MethodBase[] targets) {

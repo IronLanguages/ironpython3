@@ -338,6 +338,11 @@ namespace IronPython.Modules {
                             case XmlNodeType.Text:
                                 BufferText(xmlReader.Value);
                                 break;
+                            case XmlNodeType.SignificantWhitespace:
+                            case XmlNodeType.Whitespace:
+                                if (xmlReader.Depth > 0)
+                                    BufferText(xmlReader.Value);
+                                break;
                             case XmlNodeType.ProcessingInstruction:
                                 handleProcessingInstruction();
                                 break;
@@ -386,14 +391,15 @@ namespace IronPython.Modules {
                 }
 
                 while (xmlReader.MoveToNextAttribute()) {
-                    if (xmlReader.Prefix == "xmlns") {
-                        var prefix = xmlReader.LocalName;
+                    if (namespace_separator != null
+                        && (xmlReader.Prefix == "xmlns" || xmlReader.Prefix == string.Empty && xmlReader.LocalName == "xmlns")) {
+                        var prefix = xmlReader.Prefix == string.Empty ? string.Empty : xmlReader.LocalName;
                         var uri = xmlReader.Value;
                         ns_stack.Push(prefix);
                         var startNamespaceDeclHandler = StartNamespaceDeclHandler;
                         if (startNamespaceDeclHandler != null) {
                             FlushBuffer();
-                            startNamespaceDeclHandler(prefix, uri);
+                            startNamespaceDeclHandler(prefix == string.Empty ? null : prefix, uri);
                         }
                         continue;
                     }
@@ -434,7 +440,7 @@ namespace IronPython.Modules {
                     var endNamespaceDeclHandler = EndNamespaceDeclHandler;
                     if (endNamespaceDeclHandler != null) {
                         FlushBuffer();
-                        endNamespaceDeclHandler(prefix);
+                        endNamespaceDeclHandler(prefix == string.Empty ? null : prefix);
                     }
                 }
             }

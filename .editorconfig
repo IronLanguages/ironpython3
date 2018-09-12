@@ -30,5 +30,5 @@ dotnet_naming_symbols.method_and_property_symbols.applicable_accessibilities = *
 dotnet_naming_style.pascal_case_style.capitalization = pascal_case
 
 # enforce some code styles
-dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
-csharp_preferred_modifier_order = public, private, protected, internal, static, extern, new, virtual, abstract, sealed, override, readonly, unsafe, volatile, async:warning
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:suggestion
+csharp_preferred_modifier_order = public, private, protected, internal, static, extern, new, virtual, abstract, sealed, override, readonly, unsafe, volatile, async:suggestion

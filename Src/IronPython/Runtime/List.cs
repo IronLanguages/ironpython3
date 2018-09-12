@@ -91,16 +91,13 @@ namespace IronPython.Runtime {
         }
 
         public void __init__(CodeContext context, object sequence) {
-            int len = INITIAL_SIZE; 
+            int len;
             try {
-                object len_obj;
-                if (PythonTypeOps.TryInvokeUnaryOperator(context, sequence, "__len__", out len_obj) ||
-                    PythonTypeOps.TryInvokeUnaryOperator(context, sequence, "__length_hint__", out len_obj)) {
-                    if (!(len_obj is NotImplementedType)) {
-                        len = context.LanguageContext.ConvertToInt32(len_obj);
-                    }
+                if (!PythonOps.TryInvokeLengthHint(context, sequence, out len)) {
+                    len = INITIAL_SIZE;
                 }
             } catch (MissingMemberException) {
+                len = INITIAL_SIZE;
             }
              
             _data = new object[len]; 
@@ -173,13 +170,10 @@ namespace IronPython.Runtime {
                 }
                 _size = i;
             } else {
-                int len = INITIAL_SIZE; 
-                object len_obj; 
-                if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, sequence, "__len__", out len_obj) || 
-                    PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, sequence, "__length_hint__", out len_obj)) {  
-                    len = Converter.ConvertToInt32(len_obj); 
-                } 
-                     
+                if (!PythonOps.TryInvokeLengthHint(DefaultContext.Default, sequence, out int len)) {
+                    len = INITIAL_SIZE;
+                }
+
                 _data = new object[len]; 
                 extend_no_length_check(sequence); 
             }
@@ -764,15 +758,10 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void extend(object seq) {            
-            object len_obj; 
-            if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, seq, "__len__", out len_obj) || 
-                PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, seq, "__length_hint__", out len_obj)) {
-                if (!(len_obj is NotImplementedType)) {
-                    int len = Converter.ConvertToInt32(len_obj);
-                    EnsureSize(len);
-                }
-            } 
+        public void extend(object seq) {
+            if (PythonOps.TryInvokeLengthHint(DefaultContext.Default, seq, out int len)) {
+                EnsureSize(len);
+            }
              
             extend_no_length_check(seq); 
         } 

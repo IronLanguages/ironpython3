@@ -571,16 +571,16 @@ namespace IronPython.Modules {
                 }
 
                 #endregion
-                
-                public int __length_hint__() { 
-                    lock (_deque._lockObj) { 
-                        if (_version != _deque._version) { 
-                            return 0; 
-                        } 
-                    } 
- 
-                    return _deque._itemCnt - _moveCnt; 
-                } 
+
+                public int __length_hint__() {
+                    lock (_deque._lockObj) {
+                        if (_version != _deque._version) {
+                            return 0;
+                        }
+                    }
+
+                    return _deque._itemCnt - _moveCnt;
+                }
             }
 
             #endregion
@@ -636,16 +636,16 @@ namespace IronPython.Modules {
                 }
 
                 #endregion
-                
-                public int __length_hint__() { 
-                    lock (_deque._lockObj) { 
-                        if (_version != _deque._version) { 
-                            return 0; 
-                        } 
-                    } 
- 
-                    return _deque._itemCnt - _moveCnt; 
-                } 
+
+                public int __length_hint__() {
+                    lock (_deque._lockObj) {
+                        if (_version != _deque._version) {
+                            return 0;
+                        }
+                    }
+
+                    return _deque._itemCnt - _moveCnt;
+                }
             }
 
             #endregion

@@ -99,10 +99,10 @@ namespace IronPython.Runtime {
             } catch (MissingMemberException) {
                 len = INITIAL_SIZE;
             }
-             
-            _data = new object[len]; 
-            _size = 0; 
-            extend_no_length_check(sequence); 
+
+            _data = new object[len];
+            _size = 0;
+            extend_no_length_check(sequence);
         }
 
         public static object __new__(CodeContext/*!*/ context, PythonType cls) {
@@ -174,8 +174,8 @@ namespace IronPython.Runtime {
                     len = INITIAL_SIZE;
                 }
 
-                _data = new object[len]; 
-                extend_no_length_check(sequence); 
+                _data = new object[len];
+                extend_no_length_check(sequence);
             }
         }
 
@@ -762,12 +762,12 @@ namespace IronPython.Runtime {
             if (PythonOps.TryInvokeLengthHint(DefaultContext.Default, seq, out int len)) {
                 EnsureSize(len);
             }
-             
-            extend_no_length_check(seq); 
-        } 
- 
-        [PythonHidden] 
-        private void extend_no_length_check(object seq) { 
+
+            extend_no_length_check(seq);
+        }
+
+        [PythonHidden]
+        private void extend_no_length_check(object seq) {
             IEnumerator i = PythonOps.GetEnumerator(seq);
             if (seq == (object)this) {
                 List other = new List(i);

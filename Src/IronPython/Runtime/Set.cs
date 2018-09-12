@@ -1527,35 +1527,35 @@ namespace IronPython.Runtime {
         }
 
         #endregion
-        
-        public int __length_hint__() { 
-            if (_items.Version != _version || _index == _maxIndex) { 
-                return 0; 
-            } 
- 
-            int index = _index; 
-            int count = 0; 
- 
-            index++; 
-            if (index < 0) { 
-                if (_items._hasNull) { 
-                    count++; 
-                } else { 
-                    index++; 
-                } 
-            } 
- 
-            if (_maxIndex > 0) { 
-                SetStorage.Bucket[] buckets = _items._buckets; 
-                for (; index < buckets.Length; index++) { 
-                    object item = buckets[index].Item; 
-                    if (item != null && item != SetStorage.Removed) { 
-                        count++; 
-                    } 
-                } 
-            } 
- 
-            return count; 
-        } 
+
+        public int __length_hint__() {
+            if (_items.Version != _version || _index == _maxIndex) {
+                return 0;
+            }
+
+            int index = _index;
+            int count = 0;
+
+            index++;
+            if (index < 0) {
+                if (_items._hasNull) {
+                    count++;
+                } else {
+                    index++;
+                }
+            }
+
+            if (_maxIndex > 0) {
+                SetStorage.Bucket[] buckets = _items._buckets;
+                for (; index < buckets.Length; index++) {
+                    object item = buckets[index].Item;
+                    if (item != null && item != SetStorage.Removed) {
+                        count++;
+                    }
+                }
+            }
+
+            return count;
+        }
     }
 }

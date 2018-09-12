@@ -665,9 +665,9 @@ namespace IronPython.Runtime {
         }
 
         #endregion
-        
-        public int __length_hint__() { 
-            return _tuple.__len__() - _curIndex - 1; 
-        } 
+
+        public int __length_hint__() {
+            return _tuple.__len__() - _curIndex - 1;
+        }
     }
 }

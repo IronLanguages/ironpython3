@@ -8,7 +8,7 @@ import sys, os
 #------------------------------------------------------------------------------
 
 #--IronPython or something else?
-is_cli =         sys.platform == 'cli'
+is_cli =         sys.implementation.name == 'ironpython'
 is_ironpython =  is_cli
 is_cpython    =  not is_ironpython
 is_posix      =  sys.platform == 'posix'

@@ -11,7 +11,7 @@ import sys
 from interop.com.compat.hw import hw_progid, hw_retval
 from iptest.cominterop_util import *
 
-if sys.platform=="cli":
+if sys.implementation.name == "ironpython":
     from System import Type, Activator
     type = Type.GetTypeFromProgID(hw_progid)
     com_obj = Activator.CreateInstance(type)

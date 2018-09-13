@@ -3,7 +3,7 @@
 # See the LICENSE file in the project root for more information.
 
 import sys
-is_cli = sys.platform == "cli"
+is_cli = sys.implementation.name == "ironpython"
 
 list_int        = [-2, 0, 2, 5]
 list_float      = [-10.5, 0.0, 2.0, 2.1, 2.9, 50.001]

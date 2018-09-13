@@ -9,12 +9,14 @@ using System.IO;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
+using IronPython;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
@@ -30,7 +32,7 @@ namespace IronPython.Modules {
         public static readonly string byteorder = BitConverter.IsLittleEndian ? "little" : "big";
         // builtin_module_names is set by PythonContext and updated on reload
         public const string copyright = "Copyright (c) IronPython Team";
-
+        
         private static string GetPrefix() {
             string prefix;
 #if FEATURE_ASSEMBLY_LOCATION
@@ -253,8 +255,6 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
         // modules is set by PythonContext and only on the initial load
 
         // path is set by PythonContext and only on the initial load
-
-        public const string platform = "cli";
 
         public static readonly string prefix = GetPrefix();
 
@@ -751,6 +751,14 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             dict["stdin"] = dict["__stdin__"];
             dict["stdout"] = dict["__stdout__"];
             dict["stderr"] = dict["__stderr__"];
+            
+            if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                dict["platform"] = "win32";
+            } else if(RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
+                dict["platform"] = "posix";
+            } else {
+                dict["platform"] = "darwin";
+            }
 
             // !!! These fields do need to be reset on "reload(sys)". However, the initial value is specified by the 
             // engine elsewhere. For now, we initialize them just once to some default value

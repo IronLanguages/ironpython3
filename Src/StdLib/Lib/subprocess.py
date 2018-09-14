@@ -346,7 +346,7 @@ Popen(["/bin/mycmd", "myarg"], env={"PATH": "/usr/bin"})
 
 import os
 import sys
-mswindows = (sys.platform == "win32") or (sys.platform == "cli" and os.name == "nt")
+mswindows = sys.platform == "win32"
 
 import io
 import time

@@ -17,7 +17,7 @@ def run_ipython(test):
 
 def get_sbs_tests():
     not_run_tests = [ ]
-    if sys.platform == "cli":
+    if sys.implementation.name == "ironpython":
         import System
         if System.IntPtr.Size == 8:
             not_run_tests = ["sbs_exceptions.py"]	
@@ -50,7 +50,7 @@ def run_sbs_test(l):
             print('Test %s failed' % exception[0])
             print(exception[1])
             traceback.print_tb(exception[2][2])
-            if sys.platform == "cli":
+            if sys.implementation.name == "ironpython":
                 import System
                 if '-X:ExceptionDetail' in System.Environment.GetCommandLineArgs():
                     print('CLR Exception: ', end=' ')
@@ -77,7 +77,7 @@ def run(type="long", tests = "full", compare=True):
 if __name__ == "__main__":
     args = sys.argv
     
-    bCompare = sys.platform == "cli"
+    bCompare = sys.implementation.name == "ironpython"
     if len(args) == 1 :
         run(compare = bCompare)
     else:

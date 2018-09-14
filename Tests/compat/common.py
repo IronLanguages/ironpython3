@@ -7,7 +7,7 @@ import sys
 import time
 import rulediff
 
-is_cli = (sys.platform == "cli")
+is_cli = (sys.implementation.name == "ironpython")
 
 result_pass = 0
 result_fail = 1
@@ -29,7 +29,7 @@ def get_environ_variable(key):
 
 def get_all_paths():
     #We're in the new world
-    if sys.platform == "cli":
+    if sys.implementation.name == "ironpython":
         ipython_executable = sys.executable
         compat_test_path   = os.path.join(get_environ_variable('DLR_ROOT'), "Languages", "IronPython", "Tests", "compat")
         if os.name=="posix":
@@ -88,7 +88,7 @@ def _common_transform(x):
         return 0.0
     return x
 
-if sys.platform == 'cli':
+if sys.implementation.name == "ironpython":
     from System import Byte, Int64
     def transform(x):
         x = _common_transform(x)

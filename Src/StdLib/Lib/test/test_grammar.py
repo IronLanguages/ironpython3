@@ -153,7 +153,7 @@ class GrammarTests(unittest.TestCase):
         # testlist ENDMARKER
         x = eval('1, 0 or 1')
 
-    @unittest.skipIf(sys.platform=='cli', 'Need to debug this')
+    @unittest.skipIf(sys.implementation.name=='ironpython', 'Need to debug this')
     def test_funcdef(self):
         ### [decorators] 'def' NAME parameters ['->' test] ':' suite
         ### decorator: '@' dotted_name [ '(' [arglist] ')' ] NEWLINE
@@ -395,7 +395,7 @@ class GrammarTests(unittest.TestCase):
 
     # Check the heuristic for print & exec covers significant cases
     # As well as placing some limits on false positives
-    @unittest.skipIf(sys.platform=='cli', 'https://github.com/IronLanguages/ironpython3/issues/374')
+    @unittest.skipIf(sys.implementation.name=='ironpython', 'https://github.com/IronLanguages/ironpython3/issues/374')
     def test_former_statements_refer_to_builtins(self):
         keywords = "print", "exec"
         # Cases where we want the custom error

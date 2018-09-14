@@ -10,7 +10,7 @@
 from time import clock
 import sys, os
 sys.path.append(os.path.join([os.environ[x] for x in list(os.environ.keys()) if x.lower() == "dlr_root"][0], "Languages", "IronPython", "External", "parrotbench"))
-if sys.platform=="cli":
+if sys.implementation.name=="ironpython":
     import System
     is_cli64 = System.IntPtr.Size == 8
     if is_cli64:

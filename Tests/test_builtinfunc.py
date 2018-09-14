@@ -29,7 +29,7 @@ class BuiltinsTest1(unittest.TestCase):
     def test_00_no_clr_import(self):
         self.cp946()
 
-    @unittest.skipUnless(sys.platform=='cli', 'IronPython specific test')
+    @unittest.skipUnless(sys.implementation.name=='ironpython', 'IronPython specific test')
     def test_01_with_clr_import(self):
         import clr
         self.cp946()

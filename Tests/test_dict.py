@@ -317,7 +317,7 @@ class DictTest(IronPythonTestCase):
             try:
                 nd = newDict()
             except TypeError as e:
-                if sys.platform == 'cli':
+                if sys.implementation.name == "ironpython":
                     import clr
                     if clr.GetClrType(dictType).ToString() == 'IronPython.Runtime.Types.NamespaceDictionary':
                         self.fail("Error! Threw TypeError when creating newDict deriving from NamespaceDictionary")

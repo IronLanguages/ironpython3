@@ -32,7 +32,7 @@ namespace IronPython.Modules {
         public static readonly string byteorder = BitConverter.IsLittleEndian ? "little" : "big";
         // builtin_module_names is set by PythonContext and updated on reload
         public const string copyright = "Copyright (c) IronPython Team";
-        
+
         private static string GetPrefix() {
             string prefix;
 #if FEATURE_ASSEMBLY_LOCATION

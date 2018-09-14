@@ -756,8 +756,10 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
                 dict["platform"] = "win32";
             } else if(RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
                 dict["platform"] = "posix";
-            } else {
+            } else if(RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
                 dict["platform"] = "darwin";
+            } else {
+                dict["platform"] = "cli";
             }
 
             // !!! These fields do need to be reset on "reload(sys)". However, the initial value is specified by the 

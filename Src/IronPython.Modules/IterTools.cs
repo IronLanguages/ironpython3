@@ -85,6 +85,46 @@ namespace IronPython.Modules {
         }
 
         [PythonType]
+        public class accumulate : IterBase {
+            public accumulate(CodeContext/*!*/ context, object iterable) {
+                InnerEnumerator = Accumulator(context, PythonOps.GetEnumerator(iterable));
+            }
+
+            public accumulate(CodeContext/*!*/ context, object iterable, object func) {
+                InnerEnumerator = Accumulator(context, PythonOps.GetEnumerator(iterable), func);
+            }
+
+            private IEnumerator<object> Accumulator(CodeContext/*!*/ context, IEnumerator iterable) {
+                if (!MoveNextHelper(iterable)) {
+                    yield break;
+                }
+
+                object total = iterable.Current;
+                yield return total;
+
+                PythonContext pc = context.LanguageContext;
+                while (MoveNextHelper(iterable)) {
+                    total = pc.Add(total, iterable.Current);
+                    yield return total;
+                }
+            }
+
+            private IEnumerator<object> Accumulator(CodeContext/*!*/ context, IEnumerator iterable, object function) {
+                if (!MoveNextHelper(iterable)) {
+                    yield break;
+                }
+
+                object total = iterable.Current;
+                yield return total;
+
+                while (MoveNextHelper(iterable)) {
+                    total = PythonCalls.Call(function, total, iterable.Current);
+                    yield return total;
+                }
+            }
+        }
+
+        [PythonType]
         public class chain : IterBase {
             private chain() { }
 

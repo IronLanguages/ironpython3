@@ -612,7 +612,7 @@ namespace IronPython.Runtime {
     /// <summary>
     /// public class to get optimized
     /// </summary>
-    [PythonType("tupleiterator")]
+    [PythonType("tuple_iterator")]
     public sealed class TupleEnumerator : IEnumerable, IEnumerator, IEnumerator<object> {
         private int _curIndex;
         private PythonTuple _tuple;
@@ -665,5 +665,9 @@ namespace IronPython.Runtime {
         }
 
         #endregion
+
+        public int __length_hint__() {
+            return _tuple.__len__() - _curIndex - 1;
+        }
     }
 }

@@ -376,7 +376,7 @@ namespace IronPython.Runtime {
         #endregion
     }
 
-    [PythonType("rangeiterator")]
+    [PythonType("range_iterator")]
     public sealed class RangeIterator : IEnumerable, IEnumerator<int> {
         private readonly Range _range;
         private int _value;
@@ -430,5 +430,9 @@ namespace IronPython.Runtime {
         }
 
         #endregion
+
+        public int __length_hint__() {
+            return _range.__len__() - _position;
+        }
     }
 }

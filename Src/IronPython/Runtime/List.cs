@@ -91,23 +91,18 @@ namespace IronPython.Runtime {
         }
 
         public void __init__(CodeContext context, object sequence) {
+            int len;
             try {
-                object len;
-                if (PythonTypeOps.TryInvokeUnaryOperator(context, sequence, "__len__", out len)) {
-                    int ilen = context.LanguageContext.ConvertToInt32(len);
-                    _data = new object[ilen];
-                    _size = 0;
-                    extend(sequence);
-                } else {
-                    _data = new object[INITIAL_SIZE];
-                    _size = 0;
-                    extend(sequence);
+                if (!PythonOps.TryInvokeLengthHint(context, sequence, out len)) {
+                    len = INITIAL_SIZE;
                 }
             } catch (MissingMemberException) {
-                _data = new object[INITIAL_SIZE];
-                _size = 0;
-                extend(sequence);
+                len = INITIAL_SIZE;
             }
+
+            _data = new object[len];
+            _size = 0;
+            extend_no_length_check(sequence);
         }
 
         public static object __new__(CodeContext/*!*/ context, PythonType cls) {
@@ -166,7 +161,6 @@ namespace IronPython.Runtime {
 
         internal List(object sequence) {
             ICollection items = sequence as ICollection;
-            object len;
 
             if (items != null) {
                 _data = new object[items.Count];
@@ -175,16 +169,13 @@ namespace IronPython.Runtime {
                     _data[i++] = item;
                 }
                 _size = i;
-            } else if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default,
-                sequence,
-                "__len__",
-                out len)) { 
-                int ilen = Converter.ConvertToInt32(len);
-                _data = new object[ilen];
-                extend(sequence);
             } else {
-                _data = new object[INITIAL_SIZE];
-                extend(sequence);
+                if (!PythonOps.TryInvokeLengthHint(DefaultContext.Default, sequence, out int len)) {
+                    len = INITIAL_SIZE;
+                }
+
+                _data = new object[len];
+                extend_no_length_check(sequence);
             }
         }
 
@@ -768,6 +759,15 @@ namespace IronPython.Runtime {
         }
 
         public void extend(object seq) {
+            if (PythonOps.TryInvokeLengthHint(DefaultContext.Default, seq, out int len)) {
+                EnsureSize(len);
+            }
+
+            extend_no_length_check(seq);
+        }
+
+        [PythonHidden]
+        private void extend_no_length_check(object seq) {
             IEnumerator i = PythonOps.GetEnumerator(seq);
             if (seq == (object)this) {
                 List other = new List(i);

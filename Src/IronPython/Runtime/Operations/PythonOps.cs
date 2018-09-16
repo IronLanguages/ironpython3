@@ -833,6 +833,19 @@ namespace IronPython.Runtime.Operations {
             return res;
         }
 
+        internal static bool TryInvokeLengthHint(CodeContext context, object sequence, out int hint) {
+            object len_obj;
+            if (PythonTypeOps.TryInvokeUnaryOperator(context, sequence, "__len__", out len_obj) ||
+                PythonTypeOps.TryInvokeUnaryOperator(context, sequence, "__length_hint__", out len_obj)) {
+                if (!(len_obj is NotImplementedType)) {
+                    hint = Converter.ConvertToInt32(len_obj);
+                    return true;
+                }
+            }
+            hint = 0;
+            return false;
+        }
+
         public static object CallWithContext(CodeContext/*!*/ context, object func, params object[] args) {
             return PythonCalls.Call(context, func, args);
         }

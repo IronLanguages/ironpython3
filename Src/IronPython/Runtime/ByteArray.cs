@@ -95,6 +95,12 @@ namespace IronPython.Runtime {
         }
 
         public void extend(object seq) {
+            // We don't make use of the length hint when extending the byte array.
+            // However, in order to match CPython behavior with invalid length hints we
+            // we need to go through the motions and get the length hint and attempt
+            // to convert it to an int.
+            PythonOps.TryInvokeLengthHint(DefaultContext.Default, seq, out int len);
+
             extend(GetBytes(seq));
         }
 

@@ -2706,10 +2706,22 @@ namespace IronPython.Modules {
                     }
                 }
 
-                object chunkObj = _bufferTyped != null ?
-                    _bufferTyped.read(context, _CHUNK_SIZE) :
-                    PythonOps.Invoke(context, _buffer, "read", _CHUNK_SIZE);
-                Bytes chunk = chunkObj != null ? GetBytes(chunkObj, "read()") : Bytes.Empty;
+                object chunkObj;
+                string callName;
+                if (_bufferTyped != null) {
+                    chunkObj = _bufferTyped.read1(context, _CHUNK_SIZE);
+                    callName = "read1()";
+                } else {
+                    if (PythonOps.TryGetBoundAttr(_buffer, "read1", out object read1)) {
+                        chunkObj = PythonCalls.Call(context, read1, _CHUNK_SIZE);
+                        callName = "read1()";
+                    } else {
+                        chunkObj = PythonOps.Invoke(context, _buffer, "read", _CHUNK_SIZE);
+                        callName = "read()";
+                    }
+                }
+
+                Bytes chunk = chunkObj != null ? GetBytes(chunkObj, callName) : Bytes.Empty;
                 bool eof = chunkObj == null || chunk.Count == 0;
 
                 string decoded;

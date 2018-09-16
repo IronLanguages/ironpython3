@@ -1108,6 +1108,10 @@ namespace IronPython.Runtime {
             return true;
         }
 
+        public List copy() {
+            return new List(this);
+        }
+
         #region IList Members
 
         bool IList.IsReadOnly {

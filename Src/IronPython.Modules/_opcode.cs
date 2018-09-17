@@ -18,10 +18,8 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 [assembly: PythonModule("_opcode", typeof(IronPython.Modules.PythonOpcode))]
-namespace IronPython.Modules
-{
-    public static class PythonOpcode
-    {
+namespace IronPython.Modules {
+    public static class PythonOpcode {
 
         /* Instruction opcodes for compiled code */
         private const int POP_TOP = 1;

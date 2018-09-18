@@ -362,6 +362,12 @@ namespace IronPython.Modules {
             return IsNaN(num);
         }
 
+        public static bool isfinite(object x) {
+            Complex num = GetComplexNum(x);
+
+            return IsFinite(num);
+        }
+
         #region Helpers
 
         private static bool IsInfinity(Complex num) {
@@ -370,6 +376,12 @@ namespace IronPython.Modules {
 
         private static bool IsNaN(Complex num) {
             return double.IsNaN(num.Real) || double.IsNaN(num.Imaginary());
+        }
+
+        private static bool IsFinite(Complex num) {
+            // double.IsFinite is not available in .NET Framework 4.5 and was added to .NET Core in 2.1
+            return !double.IsInfinity(num.Real) && !double.IsNaN(num.Real)
+                && !double.IsInfinity(num.Imaginary) && !double.IsNaN(num.Imaginary);
         }
 
         private static double GetAngle(Complex num) {

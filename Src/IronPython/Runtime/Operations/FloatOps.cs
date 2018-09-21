@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
 using System.Text;
@@ -498,23 +499,48 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static int __hash__(double d) {
-            // Python allows equality between floats, ints, and big ints.
-            if ((d % 1) == 0) {
-                // This double represents an integer, so it must hash like an integer.
-                if (Int32.MinValue <= d && d <= Int32.MaxValue) {
-                    return ((int)d).GetHashCode();
-                }
-                // Big integer
-                BigInteger b = (BigInteger)d;
-                return BigIntegerOps.__hash__(b);
-            }
             // Special values
-            if (double.IsInfinity(d)) {
-                return d > 0 ? 314159 : -271828;
-            } else if (double.IsNaN(d)) {
-                return 0;
+            if (double.IsPositiveInfinity(d)) return 314159;
+            if (double.IsNegativeInfinity(d)) return -314159;
+            if (double.IsNaN(d)) return 0;
+            if (d == 0) return 0;
+
+            // it's an integer!
+            if (d == Math.Truncate(d)) {
+                // Use this constant since long.MaxValue doesn't cast precisely to a double
+                const double maxValue = (ulong)long.MaxValue + 1;
+                if (long.MinValue <= d && d < maxValue) {
+                    return Int64Ops.__hash__((long)d);
+                }
+                return BigIntegerOps.__hash__((BigInteger)d);
             }
-            return d.GetHashCode();
+
+            DecomposeDouble(d, out int sign, out int exponent, out long mantissa);
+
+            // make sure the mantissa is not even
+            while ((mantissa & 1) == 0) {
+                mantissa >>= 1;
+                exponent++;
+            }
+            Debug.Assert(exponent <= 0);
+
+            var exp = exponent % 31;
+            var invmod = exp == 0 ? 1 : (1 << (31 + exp));
+            return unchecked((int)(sign * (((mantissa % int.MaxValue) * invmod) % int.MaxValue)));
+
+            void DecomposeDouble(in double x, out int Sign, out int Exponent, out long Mantissa) {
+                Debug.Assert(x != 0 && !double.IsInfinity(x) && !double.IsNaN(x));
+
+                var RawBits = (ulong)BitConverter.DoubleToInt64Bits(x);
+                var RawSign = (int)(RawBits >> 63);
+                var RawExponent = (int)(RawBits >> 52) & 0x7FF;
+                var RawMantissa = (long)(RawBits & 0x000FFFFFFFFFFFFF);
+                var IsDenormal = RawExponent == 0 && RawMantissa != 0;
+                // assumes not infinity, not zero and not NaN
+                Sign = 1 - RawSign * 2;
+                Mantissa = IsDenormal ? RawMantissa : RawMantissa | 0x0010000000000000;
+                Exponent = IsDenormal ? -1074 : RawExponent - 1075;
+            }
         }
 
         #endregion
@@ -1142,7 +1168,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static int __hash__(float x) {
-            return DoubleOps.__hash__(((double)x));
+            return DoubleOps.__hash__((double)x);
         }
 
         public static double __float__(float x) {

@@ -5,7 +5,7 @@
 # types derived from built-in types
 
 class myint(int): pass
-class mylong(long): pass
+class mylong(int): pass
 class myfloat(float): pass
 class mycomplex(complex): pass
 

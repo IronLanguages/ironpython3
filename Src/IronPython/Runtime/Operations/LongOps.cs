@@ -553,34 +553,21 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static int __hash__(BigInteger self) {
-            // TODO: we might need our own hash code implementation. This avoids assertion failure.
-            if (self == -2147483648) {
-                return -2147483648;
-            }
-
             // check if it's in the Int64 or UInt64 range, and use the built-in hashcode for that instead
             // this ensures that objects added to dictionaries as (U)Int64 can be looked up with Python longs
-            Int64 i64;
-            if (self.AsInt64(out i64)) {
+            if (self.AsInt64(out long i64)) {
                 return Int64Ops.__hash__(i64);
-            } else {
-                UInt64 u64;
-                if (self.AsUInt64(out u64)) {
-                    return UInt64Ops.__hash__(u64);
-                }
+            } else if (self.AsUInt64(out ulong u64)) {
+                return UInt64Ops.__hash__(u64);
             }
 
-            // Call the DLR's BigInteger hash function, which will return an int32 representation of
-            // b if b is within the int32 range. We use that as an optimization for hashing, and 
-            // assert the assumption below.
-            int hash = self.GetHashCode();
-#if DEBUG
-            int i;
-            if (self.AsInt32(out i)) {
-                Debug.Assert(i == hash, String.Format("hash({0}) == {1}", i, hash));
+            if (self.IsNegative()) {
+                self = -self;
+                var h = unchecked(-(int)((self >= int.MaxValue) ? (self % int.MaxValue) : self));
+                if (h == -1) return -2;
+                return h;
             }
-#endif
-            return hash;
+            return unchecked((int)((self >= int.MaxValue) ? (self % int.MaxValue) : self));
         }
 
         public static string __repr__([NotNull]BigInteger/*!*/ self) {

@@ -469,7 +469,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static int hash(CodeContext/*!*/ context, int o) {
-            return o;
+            return Int32Ops.__hash__(o);
         }
 
         public static int hash(CodeContext/*!*/ context, [NotNull]string o) {

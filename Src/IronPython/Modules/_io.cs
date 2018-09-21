@@ -2933,7 +2933,7 @@ namespace IronPython.Modules {
                     output = PythonOps.CallWithKeywordArgs(
                         context,
                         PythonOps.GetBoundAttr(context, _decoder, "decode"),
-                        new object[] { input, true },
+                        new object[] { input, final },
                         new string[] { "final" }
                     );
                 }

@@ -1723,9 +1723,9 @@ namespace IronPython.Runtime {
             }
 
             if (locking) {
-                write(array.tostring());
+                write(array.tobytes());
             } else {
-                WriteNoLock(array.tostring());
+                WriteNoLock(array.tobytes());
             }
         }
 

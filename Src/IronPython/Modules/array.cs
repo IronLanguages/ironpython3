@@ -16,6 +16,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
+using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
@@ -201,19 +202,19 @@ namespace IronPython.Modules {
 
                 string str = iterable as string;
                 if (str != null && _typeCode != 'u') {
-                    fromstring(str);
+                    frombytes(str);
                     return;
                 }
 
                 Bytes bytes = iterable as Bytes;
                 if (bytes != null) {
-                    fromstring(bytes);
+                    frombytes(bytes);
                     return;
                 }
 
                 PythonBuffer buf = iterable as PythonBuffer;
                 if (buf != null) {
-                    fromstring(buf);
+                    frombytes(buf);
                     return;
                 }
 
@@ -244,16 +245,16 @@ namespace IronPython.Modules {
                 string bytes = f.read(bytesNeeded);
                 if (bytes.Length < bytesNeeded) throw PythonOps.EofError("file not large enough");
 
-                fromstring(bytes);
+                frombytes(bytes);
             }
 
-            public void fromstring([NotNull]Bytes b) {
+            public void frombytes([NotNull]Bytes b) {
                 if ((b.Count % itemsize) != 0) throw PythonOps.ValueError("string length not a multiple of itemsize");
                 
                 FromStream(new MemoryStream(b._bytes, false));
             }
 
-            public void fromstring([NotNull]string s) {
+            public void frombytes([NotNull]string s) {
                 if ((s.Length % itemsize) != 0) throw PythonOps.ValueError("string length not a multiple of itemsize");
                 byte[] bytes = new byte[s.Length];
                 for (int i = 0; i < bytes.Length; i++) {
@@ -264,10 +265,29 @@ namespace IronPython.Modules {
                 FromStream(ms);
             }
 
-            public void fromstring([NotNull]PythonBuffer buf) {
+            public void frombytes([NotNull]PythonBuffer buf) {
                 if ((buf.Size % itemsize) != 0) throw PythonOps.ValueError("string length not a multiple of itemsize");
 
                 FromStream(new MemoryStream(buf.byteCache, false));
+            }
+
+            public void fromstring([NotNull]Bytes b) {
+                warnFromStringDeprecated();
+                frombytes(b);
+            }
+
+            public void fromstring([NotNull]string s) {
+                warnFromStringDeprecated();
+                frombytes(s);
+            }
+
+            public void fromstring([NotNull]PythonBuffer buf) {
+                warnFromStringDeprecated();
+                frombytes(buf);
+            }
+
+            private void warnFromStringDeprecated() {
+                PythonOps.Warn(DefaultContext.Default, PythonExceptions.DeprecationWarning, "fromstring() is deprecated. Use frombytes() instead.");
             }
 
             public void fromunicode(CodeContext/*!*/ context, string s) {
@@ -577,7 +597,7 @@ namespace IronPython.Modules {
             }
 
             public void tofile(PythonFile f) {
-                f.write(tostring());
+                f.write(tobytes());
             }
 
             public List tolist() {
@@ -588,7 +608,7 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            public string tostring() {
+            public string tobytes() {
                 Stream s = ToStream();
                 byte[] bytes = new byte[s.Length];
                 s.Read(bytes, 0, (int)s.Length);
@@ -598,6 +618,11 @@ namespace IronPython.Modules {
                     res.Append((char)bytes[i]);
                 }
                 return res.ToString();
+            }
+
+            public string tostring() {
+                PythonOps.Warn(DefaultContext.Default, PythonExceptions.DeprecationWarning, "tostring() is deprecated. Use tobytes() instead.");
+                return tobytes();
             }
 
             public string tounicode(CodeContext/*!*/ context) {

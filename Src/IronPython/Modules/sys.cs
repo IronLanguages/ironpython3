@@ -706,7 +706,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             2,                  // FLT_RADIX
             1);                 // FLT_ROUNDS
 
-        [PythonType("sys.float_info"), PythonHidden]
+        [PythonType("float_info"), PythonHidden]
         public class floatinfo : PythonTuple {
             internal floatinfo(double max, int max_exp, int max_10_exp,
                                double min, int min_exp, int min_10_exp,
@@ -754,6 +754,42 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             }
         }
 
+        public static hashinfo hash_info = new hashinfo(width: 32, modulus: int.MaxValue, inf: 314159, nan: 0, imag: 1000003, algorithm: "dotnet", hash_bits: 0, seed_bits:0, cutoff: 0);
+
+        [PythonType("hash_info"), PythonHidden]
+        public class hashinfo : PythonTuple {
+            internal hashinfo(int width, int modulus, int inf, int nan, int imag, string algorithm, int hash_bits, int seed_bits, int cutoff)
+                : base(new object[] { width, modulus, inf, nan, imag, algorithm, hash_bits, seed_bits, cutoff }) {
+
+                this.width = width;
+                this.modulus = modulus;
+                this.inf = inf;
+                this.nan = nan;
+                this.imag = imag;
+                this.algorithm = algorithm;
+                this.hash_bits = hash_bits;
+                this.seed_bits = seed_bits;
+                this.cutoff = cutoff;
+            }
+
+            public readonly int width;
+            public readonly int modulus;
+            public readonly int inf;
+            public readonly int nan;
+            public readonly int imag;
+            public readonly string algorithm;
+            public readonly int hash_bits;
+            public readonly int seed_bits;
+            public readonly int cutoff;
+
+            public const int n_fields = 11;
+            public const int n_sequence_fields = 11;
+            public const int n_unnamed_fields = 0;
+
+            public override string __repr__(CodeContext context) {
+                return $"sys.hash_info(width={width}, modulus={modulus}, inf={inf}, nan={nan}, imag={imag}, algorithm='{algorithm}', hash_bits={hash_bits}, seed_bits={seed_bits}, cutoff={cutoff})";
+            }
+        }
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {

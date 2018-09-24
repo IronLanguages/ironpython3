@@ -2,7 +2,6 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
-
 # Test that hash and equality operations cooperate for numbers.
 #  cmp(x,y)==0 --> hash(x) == hash(y).
 #
@@ -10,25 +9,25 @@
 
 import unittest
 
-from iptest import run_test, skipUnlessIronPython
+from iptest import is_32, is_cli, run_test, skipUnlessIronPython
 
 class NumberHashTest(unittest.TestCase):
 
     def check(self,x,y):
         """Check the hash invariant for equal objects."""
-        self.assertTrue(cmp(x,y)==0)
+        self.assertEqual(x, y)
         self.assertTrue(hash(x) == hash(y))
 
     def test_integer(self):
         i = 123456
-        self.check(i, long(i))
+        self.check(i, int(i))
         self.check(i, float(i))
         self.check(i, complex(i,0))
 
     def test_float_long(self):
         """bug 315746"""
         f=float(1.23e300)
-        l=long(f)
+        l=int(f)
         self.check(f,l)
 
     def test_complex_float(self):
@@ -51,7 +50,7 @@ class NumberHashTest(unittest.TestCase):
 
     def test_bigint_hash_quality(self):
         """Ensure that we have a decent hash function that doesn't just map everything to zero - bug 320659"""
-        l1=long(1.23e300)
+        l1=int(1.23e300)
         h1 = hash(l1)
         self.assertTrue(h1 != 0)
         l2 = l1 + 1
@@ -59,34 +58,52 @@ class NumberHashTest(unittest.TestCase):
         h2 = hash(l2)
         self.assertTrue(h1 != h2)
 
-
     def test_userhash_result(self):
         class x(object):
-            def __hash__(self): return 1L
-        
-        self.assertEqual(hash(x()), 1)
+            def __init__(self, hash):
+                self.__hash = hash
+            def __hash__(self):
+                return self.__hash
 
-        class x(object):
-            def __hash__(self): return 1<<33L
-        
-        #if not is_net40: #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=25894
-        self.assertEqual(hash(x()), 2)
+        self.assertEqual(hash(x(1)), 1)
+        if is_cli or is_32:
+            self.assertEqual(hash(x(1<<32)), 2)
+        else:
+            self.assertEqual(hash(x(1<<63)), 4)
 
     @skipUnlessIronPython()
     def test_cli_number_hash(self):
         from iptest.type_util import clr_numbers
-        
-        for name, value in clr_numbers.iteritems():
-            if name.find('Single') != -1:
+
+        for name, value in clr_numbers.items():
+            if "Decimal" in name: continue # https://github.com/IronLanguages/ironpython2/issues/527
+            self.assertEqual(value, int(value))
+            self.assertEqual(hash(value), hash(int(value)))
+            if value == float(value):
                 self.assertEqual(hash(value), hash(float(value)))
-            else:
-                self.assertEqual(hash(value), hash(long(value)))
+            if value == -1:
+                self.assertEqual(hash(value), -2)
 
-
+    @unittest.skipIf(is_cli, "https://github.com/IronLanguages/ironpython2/issues/528")
     def test_bigint_hash_subclass(self):
-        class x(long):
+        class x(int):
             def __hash__(self): return 42
-            
+
         self.assertEqual(hash(x()), 42)
+
+    @skipUnlessIronPython()
+    def test_hash_info(self):
+        import sys
+        self.assertEqual(sys.hash_info[:5], (32, 2147483647, 314159, 0, 1000003))
+
+    @skipUnlessIronPython()
+    def test_edge_cases(self):
+        # these are dependany on sys.hash_info.modulo = 2147483647
+        self.assertEqual(hash(2147483647), 0) # int.MaxValue
+        self.assertEqual(hash(-2147483648), -2) # int.MinValue
+        self.assertEqual(hash(-2147483647), 0) # int.MinValue+1
+        self.assertEqual(hash(9223372036854775807), 1) # long.MaxValue
+        self.assertEqual(hash(-9223372036854775808), -2) # long.MinValue
+        self.assertEqual(hash(-9223372036854775807), -2) # long.MinValue+1
 
 run_test(__name__)

@@ -92,6 +92,7 @@ namespace IronPython.Runtime.Operations {
             return x;
         }
         public static int __hash__(SByte x) {
+            if (x == -1) return -2;
             return unchecked((int)x);
         }
         public static int __index__(SByte x) {
@@ -635,6 +636,7 @@ namespace IronPython.Runtime.Operations {
             return x;
         }
         public static int __hash__(Int16 x) {
+            if (x == -1) return -2;
             return unchecked((int)x);
         }
         public static int __index__(Int16 x) {
@@ -1151,6 +1153,9 @@ namespace IronPython.Runtime.Operations {
             return x;
         }
         public static int __hash__(Int32 x) {
+            // for perf we use an if for the 3 int values with abs(x) >= int.MaxValue
+            if (x == -1 || x == int.MinValue) return -2;
+            if (x == int.MaxValue || x == int.MinValue + 1) return 0;
             return unchecked((int)x);
         }
         public static int __index__(Int32 x) {
@@ -1160,26 +1165,26 @@ namespace IronPython.Runtime.Operations {
         // Binary Operations - Arithmetic
         [SpecialName]
         public static object Add(Int32 x, Int32 y) {
-            long result = (long) x + y;
+            long result = (long)x + y;
             if (Int32.MinValue <= result && result <= Int32.MaxValue) {
                 return Microsoft.Scripting.Runtime.ScriptingRuntimeHelpers.Int32ToObject((Int32)(result));
-            } 
+            }
             return BigIntegerOps.Add((BigInteger)x, (BigInteger)y);
         }
         [SpecialName]
         public static object Subtract(Int32 x, Int32 y) {
-            long result = (long) x - y;
+            long result = (long)x - y;
             if (Int32.MinValue <= result && result <= Int32.MaxValue) {
                 return Microsoft.Scripting.Runtime.ScriptingRuntimeHelpers.Int32ToObject((Int32)(result));
-            } 
+            }
             return BigIntegerOps.Subtract((BigInteger)x, (BigInteger)y);
         }
         [SpecialName]
         public static object Multiply(Int32 x, Int32 y) {
-            long result = (long) x * y;
+            long result = (long)x * y;
             if (Int32.MinValue <= result && result <= Int32.MaxValue) {
                 return Microsoft.Scripting.Runtime.ScriptingRuntimeHelpers.Int32ToObject((Int32)(result));
-            } 
+            }
             return BigIntegerOps.Multiply((BigInteger)x, (BigInteger)y);
         }
         [SpecialName]
@@ -1361,10 +1366,10 @@ namespace IronPython.Runtime.Operations {
             return x;
         }
         public static int __hash__(UInt32 x) {
-            return unchecked((int)x);
+            return unchecked((int)((x >= int.MaxValue) ? (x % int.MaxValue) : x));
         }
-        public static int __index__(UInt32 x) {
-            return unchecked((int)x);
+        public static BigInteger __index__(UInt32 x) {
+            return unchecked((BigInteger)x);
         }
 
         // Binary Operations - Arithmetic
@@ -1677,17 +1682,15 @@ namespace IronPython.Runtime.Operations {
             return x;
         }
         public static int __hash__(Int64 x) {
-            Int64 tmp = x;
-            if (tmp < 0) {
-                tmp *= -1;
-            }
-            int total = unchecked((int) (((uint)tmp) + (uint)(tmp >> 32)));
             if (x < 0) {
-                return unchecked(-total);
+                if (x == long.MinValue) return -2;
+                x = -x;
+                var h = unchecked(-(int)((x >= int.MaxValue) ? (x % int.MaxValue) : x));
+                if (h == -1) return -2;
+                return h;
             }
-            return total;
+            return unchecked((int)((x >= int.MaxValue) ? (x % int.MaxValue) : x));
         }
-
         public static BigInteger __index__(Int64 x) {
             return unchecked((BigInteger)x);
         }
@@ -1915,13 +1918,8 @@ namespace IronPython.Runtime.Operations {
             return x;
         }
         public static int __hash__(UInt64 x) {
-            int total = unchecked((int) (((uint)x) + (uint)(x >> 32)));
-            if (x < 0) {
-                return unchecked(-total);
-            }
-            return total;
+            return unchecked((int)((x >= int.MaxValue) ? (x % int.MaxValue) : x));
         }
-
         public static BigInteger __index__(UInt64 x) {
             return unchecked((BigInteger)x);
         }

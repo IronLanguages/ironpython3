@@ -78,9 +78,9 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static int __hash__(decimal x) {
-            return ((BigInteger)x).GetHashCode();   
+            // TODO: This should be made consistent with Python number hashing
+            return ((BigInteger)x).GetHashCode();
         }
-
 
         public static string __format__(CodeContext/*!*/ context, decimal self, [NotNull]string/*!*/ formatSpec) {
             StringFormatSpec spec = StringFormatSpec.FromString(formatSpec);

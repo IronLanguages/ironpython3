@@ -64,7 +64,7 @@ class NumberHashTest(unittest.TestCase):
                 self.__hash = hash
             def __hash__(self):
                 return self.__hash
-        
+
         self.assertEqual(hash(x(1)), 1)
         if is_cli or is_32:
             self.assertEqual(hash(x(1<<32)), 2)
@@ -74,19 +74,36 @@ class NumberHashTest(unittest.TestCase):
     @skipUnlessIronPython()
     def test_cli_number_hash(self):
         from iptest.type_util import clr_numbers
-        
+
         for name, value in clr_numbers.items():
             if "Decimal" in name: continue # https://github.com/IronLanguages/ironpython2/issues/527
-            if "Single" in name:
+            self.assertEqual(value, int(value))
+            self.assertEqual(hash(value), hash(int(value)))
+            if value == float(value):
                 self.assertEqual(hash(value), hash(float(value)))
-            else:
-                self.assertEqual(hash(value), hash(int(value)))
+            if value == -1:
+                self.assertEqual(hash(value), -2)
 
     @unittest.skipIf(is_cli, "https://github.com/IronLanguages/ironpython2/issues/528")
     def test_bigint_hash_subclass(self):
         class x(int):
             def __hash__(self): return 42
-            
+
         self.assertEqual(hash(x()), 42)
+
+    @skipUnlessIronPython()
+    def test_hash_info(self):
+        import sys
+        self.assertEqual(sys.hash_info[:5], (32, 2147483647, 314159, 0, 1000003))
+
+    @skipUnlessIronPython()
+    def test_edge_cases(self):
+        # these are dependany on sys.hash_info.modulo = 2147483647
+        self.assertEqual(hash(2147483647), 0) # int.MaxValue
+        self.assertEqual(hash(-2147483648), -2) # int.MinValue
+        self.assertEqual(hash(-2147483647), 0) # int.MinValue+1
+        self.assertEqual(hash(9223372036854775807), 1) # long.MaxValue
+        self.assertEqual(hash(-9223372036854775808), -2) # long.MinValue
+        self.assertEqual(hash(-9223372036854775807), -2) # long.MinValue+1
 
 run_test(__name__)

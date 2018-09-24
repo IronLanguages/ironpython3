@@ -34,7 +34,7 @@ def test_main(level='full'):
 		# TODO: uncomment when we have whole Core sources in Snap/test
 		# 'generate_exception_factory',
 	]
-    if sys.platform != "cli":
+    if sys.implementation.name != "ironpython":
         generators.remove('generate_alltypes')
         generators.remove('generate_exceptions')
         generators.remove('generate_walker')

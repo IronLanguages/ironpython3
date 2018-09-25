@@ -159,7 +159,7 @@ namespace IronPython.Runtime {
         private object GetSelectedRange() {
             IPythonArray arr = _object as IPythonArray;
             if (arr != null) {
-                return arr.tostring();
+                return arr.tobytes();
             }
 
             ByteArray bytearr = _object as ByteArray;
@@ -363,7 +363,7 @@ namespace IronPython.Runtime {
     /// A marker interface so we can recognize and access sequence members on our array objects.
     /// </summary>
     internal interface IPythonArray : IList<object> {
-        string tostring();
+        string tobytes();
     }
 
     public interface IPythonBufferable {

@@ -332,10 +332,8 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
         #region Special types
 
         [PythonHidden, PythonType("flags"), DontMapIEnumerableToIter]
-        public sealed class SysFlags : IList<object> {
-            private const string _className = "sys.flags"; 
-            
-            internal SysFlags() { }
+        public sealed class SysFlags : PythonTuple {
+            internal SysFlags() : base(new object[n_fields] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }) { }
 
             private const int INDEX_DEBUG = 0;
             private const int INDEX_PY3K_WARNING = 1;
@@ -350,316 +348,102 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             private const int INDEX_VERBOSE = 10;
             private const int INDEX_UNICODE = 11;
             private const int INDEX_BYTES_WARNING = 12;
+            private const int INDEX_QUIET = 13;
 
-            public const int n_fields = 13;
-            public const int n_sequence_fields = 13;
+            public const int n_fields = 14;
+            public const int n_sequence_fields = 14;
             public const int n_unnamed_fields = 0;
 
-            private static readonly string[] _keys = new string[] {
-                "debug", "py3k_warning", "inspect",
-                "interactive", "optimize", "dont_write_bytecode", "no_user_site", "no_site",
-                "ignore_environment", "tabcheck", "verbose", "unicode", "bytes_warning"
-            };
-            private object[] _values = new object[n_fields] {
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-            };
-
-            private PythonTuple __tuple = null;
-            private PythonTuple _tuple {
-                get {
-                    _Refresh();
-                    return __tuple;
-                }
-            }
-
-            private string __string = null;
-            private string _string {
-                get {
-                    _Refresh();
-                    return __string;
-                }
-            }
-            public override string ToString() {
-                return _string;
-            }
             public string __repr__() {
-                return _string;
+                var fields = new string[n_fields] {
+                    $"{nameof(debug)}={debug}",
+                    $"{nameof(py3k_warning)}={py3k_warning}",
+                    $"{nameof(inspect)}={inspect}",
+                    $"{nameof(interactive)}={interactive}",
+                    $"{nameof(optimize)}={optimize}",
+                    $"{nameof(dont_write_bytecode)}={dont_write_bytecode}",
+                    $"{nameof(no_user_site)}={no_user_site}",
+                    $"{nameof(no_site)}={no_site}",
+                    $"{nameof(ignore_environment)}={ignore_environment}",
+                    $"{nameof(tabcheck)}={tabcheck}",
+                    $"{nameof(verbose)}={verbose}",
+                    $"{nameof(unicode)}={unicode}",
+                    $"{nameof(bytes_warning)}={bytes_warning}",
+                    $"{nameof(quiet)}={quiet}",
+                };
+                return $"sys.flags({string.Join(", ", fields)})";
             }
-
-            private bool _modified = true;
-            private void _Refresh() {
-                if (_modified) {
-                    __tuple = PythonTuple.MakeTuple(_values);
-
-                    StringBuilder sb = new StringBuilder("sys.flags(");
-                    for (int i = 0; i < n_fields; i++) {
-                        if (_keys[i] == null) {
-                            sb.Append(_values[i]);
-                        } else {
-                            sb.AppendFormat("{0}={1}", _keys[i], _values[i]);
-                        }
-                        if (i < n_fields - 1) {
-                            sb.Append(", ");
-                        } else {
-                            sb.Append(')');
-                        }
-                    }
-                    __string = sb.ToString();
-
-                    _modified = false;
-                }
-            }
-
-            private int _GetVal(int index) {
-                return (int)_values[index];
-            }
-            private void _SetVal(int index, int value) {
-                if ((int)_values[index] != value) {
-                    _modified = true;
-                    _values[index] = value;
-                }
-            }
-
-            #region ICollection<object> Members
-
-            void ICollection<object>.Add(object item) {
-                throw new InvalidOperationException(_className + " is readonly");
-            }
-
-            void ICollection<object>.Clear() {
-                throw new InvalidOperationException(_className + " is readonly");
-            }
-
-            [PythonHidden]
-            public bool Contains(object item) {
-                return _tuple.Contains(item);
-            }
-
-            [PythonHidden]
-            public void CopyTo(object[] array, int arrayIndex) {
-                _tuple.CopyTo(array, arrayIndex);
-            }
-
-            public int Count {
-                [PythonHidden]
-                get {
-                    return n_fields;
-                }
-            }
-
-            bool ICollection<object>.IsReadOnly {
-                get { return true; }
-            }
-
-            bool ICollection<object>.Remove(object item) {
-                throw new InvalidOperationException(_className + " is readonly");
-            }
-
-            #endregion
-
-            #region IEnumerable Members
-
-            [PythonHidden]
-            public IEnumerator GetEnumerator() {
-                return _tuple.GetEnumerator();
-            }
-
-            #endregion
-
-            #region IEnumerable<object> Members
-
-            IEnumerator<object> IEnumerable<object>.GetEnumerator() {
-                return ((IEnumerable<object>)_tuple).GetEnumerator();
-            }
-
-            #endregion
-
-            #region ISequence Members
-
-            public int __len__() {
-                return n_fields;
-            }
-
-            public object this[int i] {
-                get {
-                    return _tuple[i];
-                }
-            }
-
-            public object this[BigInteger i] {
-                get {
-                    return this[(int)i];
-                }
-            }
-
-            public object this[Slice s] {
-                get {
-                    return _tuple[s];
-                }
-            }
-
-            public object this[object o] {
-                get {
-                    return this[Converter.ConvertToIndex(o)];
-                }
-            }
-
-            #endregion
-
-            #region IList<object> Members
-
-            [PythonHidden]
-            public int IndexOf(object item) {
-                return _tuple.IndexOf(item);
-            }
-
-            void IList<object>.Insert(int index, object item) {
-                throw new InvalidOperationException(_className + " is readonly");
-            }
-
-            void IList<object>.RemoveAt(int index) {
-                throw new InvalidOperationException(_className + " is readonly");
-            }
-
-            object IList<object>.this[int index] {
-                get {
-                    return _tuple[index];
-                }
-                set {
-                    throw new InvalidOperationException(_className + " is readonly");
-                }
-            }
-
-            #endregion
-
-            #region binary ops
-
-            public static PythonTuple operator +([NotNull]SysFlags f, [NotNull]PythonTuple t) {
-                return f._tuple + t;
-            }
-
-            public static PythonTuple operator *([NotNull]SysFlags f, int n) {
-                return f._tuple * n;
-            }
-
-            public static PythonTuple operator *(int n, [NotNull]SysFlags f) {
-                return f._tuple * n;
-            }
-
-            public static object operator *([NotNull]SysFlags f, [NotNull]Index n) {
-                return f._tuple * n;
-            }
-
-            public static object operator *([NotNull]Index n, [NotNull]SysFlags f) {
-                return f._tuple * n;
-            }
-
-            public static object operator *([NotNull]SysFlags f, object n) {
-                return f._tuple * n;
-            }
-
-            public static object operator *(object n, [NotNull]SysFlags f) {
-                return f._tuple * n;
-            }
-
-            #endregion
-
-            # region comparison and hashing methods
-
-            public static bool operator >(SysFlags f, PythonTuple t) {
-                return f._tuple > t;
-            }
-
-            public static bool operator <(SysFlags f, PythonTuple t) {
-                return f._tuple < t;
-            }
-
-            public static bool operator >=(SysFlags f, PythonTuple t) {
-                return f._tuple >= t;
-            }
-
-            public static bool operator <=(SysFlags f, PythonTuple t) {
-                return f._tuple <= t;
-            }
-
-            public override bool Equals(object obj) {
-                if (obj is SysFlags) {
-                    return _tuple.Equals(((SysFlags)obj)._tuple);
-                }
-                return _tuple.Equals(obj);
-            }
-
-            public override int GetHashCode() {
-                return _tuple.GetHashCode();
-            }
-
-            # endregion
 
             #region sys.flags API
 
             public int debug {
-                get { return _GetVal(INDEX_DEBUG); }
-                internal set { _SetVal(INDEX_DEBUG, value); }
+                get { return (int)_data[INDEX_DEBUG]; }
+                internal set { _data[INDEX_DEBUG] = value; }
             }
 
             public int py3k_warning {
-                get { return _GetVal(INDEX_PY3K_WARNING); }
-                internal set { _SetVal(INDEX_PY3K_WARNING, value); }
+                get { return (int)_data[INDEX_PY3K_WARNING]; }
+                internal set { _data[INDEX_PY3K_WARNING] = value; }
             }
 
             public int inspect {
-                get { return _GetVal(INDEX_INSPECT); }
-                internal set { _SetVal(INDEX_INSPECT, value); }
+                get { return (int)_data[INDEX_INSPECT]; }
+                internal set { _data[INDEX_INSPECT] = value; }
             }
 
             public int interactive {
-                get { return _GetVal(INDEX_INTERACTIVE); }
-                internal set { _SetVal(INDEX_INTERACTIVE, value); }
+                get { return (int)_data[INDEX_INTERACTIVE]; }
+                internal set { _data[INDEX_INTERACTIVE] = value; }
             }
 
             public int optimize {
-                get { return _GetVal(INDEX_OPTIMIZE); }
-                internal set { _SetVal(INDEX_OPTIMIZE, value); }
+                get { return (int)_data[INDEX_OPTIMIZE]; }
+                internal set { _data[INDEX_OPTIMIZE] = value; }
             }
 
             public int dont_write_bytecode {
-                get { return _GetVal(INDEX_DONT_WRITE_BYTECODE); }
-                internal set { _SetVal(INDEX_DONT_WRITE_BYTECODE, value); }
+                get { return (int)_data[INDEX_DONT_WRITE_BYTECODE]; }
+                internal set { _data[INDEX_DONT_WRITE_BYTECODE] = value; }
             }
 
             public int no_user_site {
-                get { return _GetVal(INDEX_NO_USER_SITE); }
-                internal set { _SetVal(INDEX_NO_USER_SITE, value); }
+                get { return (int)_data[INDEX_NO_USER_SITE]; }
+                internal set { _data[INDEX_NO_USER_SITE] = value; }
             }
 
             public int no_site {
-                get { return _GetVal(INDEX_NO_SITE); }
-                internal set { _SetVal(INDEX_NO_SITE, value); }
+                get { return (int)_data[INDEX_NO_SITE]; }
+                internal set { _data[INDEX_NO_SITE] = value; }
             }
 
             public int ignore_environment {
-                get { return _GetVal(INDEX_IGNORE_ENVIRONMENT); }
-                internal set { _SetVal(INDEX_IGNORE_ENVIRONMENT, value); }
+                get { return (int)_data[INDEX_IGNORE_ENVIRONMENT]; }
+                internal set { _data[INDEX_IGNORE_ENVIRONMENT] = value; }
             }
 
             public int tabcheck {
-                get { return _GetVal(INDEX_TABCHECK); }
-                internal set { _SetVal(INDEX_TABCHECK, value); }
+                get { return (int)_data[INDEX_TABCHECK]; }
+                internal set { _data[INDEX_TABCHECK] = value; }
             }
 
             public int verbose {
-                get { return _GetVal(INDEX_VERBOSE); }
-                internal set { _SetVal(INDEX_VERBOSE, value); }
+                get { return (int)_data[INDEX_VERBOSE]; }
+                internal set { _data[INDEX_VERBOSE] = value; }
             }
 
             public int unicode {
-                get { return _GetVal(INDEX_UNICODE); }
-                internal set { _SetVal(INDEX_UNICODE, value); }
+                get { return (int)_data[INDEX_UNICODE]; }
+                internal set { _data[INDEX_UNICODE] = value; }
             }
 
             public int bytes_warning {
-                get { return _GetVal(INDEX_BYTES_WARNING); }
-                internal set { _SetVal(INDEX_BYTES_WARNING, value); }
+                get { return (int)_data[INDEX_BYTES_WARNING]; }
+                internal set { _data[INDEX_BYTES_WARNING] = value; }
+            }
+
+            public int quiet {
+                get { return (int)_data[INDEX_QUIET]; }
+                internal set { _data[INDEX_QUIET] = value; }
             }
 
             #endregion
@@ -670,7 +454,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
         // These values are based on the .NET 2 BigInteger in Microsoft.Scripting.Math
         public static longinfo long_info = new longinfo(32, 4);
 
-        [PythonType("sys.long_info"), PythonHidden]
+        [PythonType("long_info"), PythonHidden]
         public class longinfo : PythonTuple {
             internal longinfo(int bits_per_digit, int sizeof_digit)
                 : base(new object[] {bits_per_digit, sizeof_digit}) {

@@ -31,11 +31,7 @@ namespace IronPython.Hosting {
         public PythonCommandLine() {
         }
 
-        protected override string/*!*/ Logo {
-            get {
-                return GetLogoDisplay();
-            }
-        }
+        protected override string Logo => PythonContext.PythonOptions.Quiet ? null : GetLogoDisplay();
 
         /// <summary>
         /// Returns the display look for IronPython.  

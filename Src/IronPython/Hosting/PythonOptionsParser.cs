@@ -111,6 +111,10 @@ namespace IronPython.Hosting {
                     LanguageSetup.Options["WarnPy3k"] = ScriptingRuntimeHelpers.True;
                     break;
 
+                case "-q":
+                    LanguageSetup.Options["Quiet"] = ScriptingRuntimeHelpers.True;
+                    break;
+
                 case "-":
                     PushArgBack();
                     LanguageSetup.Options["Arguments"] = PopRemainingArgs();
@@ -247,6 +251,7 @@ namespace IronPython.Hosting {
                 { "-tt",                    "Issue errors for inconsistent tab usage" },
                 { "-W arg",                 "Warning control (arg is action:message:category:module:lineno) also IRONPYTHONWARNINGS=arg" },
                 { "-3",                     "Warn about Python 3.x incompatibilities" },
+                { "-q",                     "don't print version and copyright messages on interactive startup" },
 
                 { "-X:NoFrames",            "Disable sys._getframe support, can improve execution speed" },
                 { "-X:Frames",              "Enable basic sys._getframe support" },

@@ -354,7 +354,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             public const int n_sequence_fields = 14;
             public const int n_unnamed_fields = 0;
 
-            public string __repr__() {
+            public override string __repr__(CodeContext context) {
                 var fields = new string[n_fields] {
                     $"{nameof(debug)}={debug}",
                     $"{nameof(py3k_warning)}={py3k_warning}",

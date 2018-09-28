@@ -28,9 +28,7 @@ namespace IronPython.Runtime.Binding {
     using Ast = Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    static partial class PythonProtocol {
-        private const string DisallowCoerce = "DisallowCoerce";
-
+    internal static partial class PythonProtocol {
         public static DynamicMetaObject/*!*/ Operation(BinaryOperationBinder/*!*/ operation, DynamicMetaObject target, DynamicMetaObject arg, DynamicMetaObject errorSuggestion) {
             PerfTrack.NoteEvent(PerfTrack.Categories.Binding, "Fallback BinaryOperator " + target.LimitType.FullName + " " + operation.Operation + " " + arg.LimitType.FullName);
             PerfTrack.NoteEvent(PerfTrack.Categories.BindingTarget, operation.Operation.ToString());
@@ -170,7 +168,7 @@ namespace IronPython.Runtime.Binding {
             DynamicMetaObject res;
 
             Type deferType = typeof(object);
-            switch (NormalizeOperator(operation.Operation)) {
+            switch (operation.Operation) {
                 case PythonOperationKind.Documentation:
                     res = BindingHelpers.AddPythonBoxing(MakeDocumentationOperation(operation, args));
                     break;
@@ -512,10 +510,9 @@ namespace IronPython.Runtime.Binding {
             }
 
             ParameterExpression tmp = Ast.Parameter(typeof(IEnumerator), "enum");
-            IPythonConvertible pyConv = self as IPythonConvertible;
             PythonConversionBinder convBinder = PythonContext.GetPythonContext(operation).Convert(typeof(IEnumerator), ConversionResultKind.ExplicitTry);
 
-            DynamicMetaObject res = pyConv != null
+            DynamicMetaObject res = self is IPythonConvertible pyConv
                 ? pyConv.BindConvert(convBinder)
                 : convBinder.Bind(self, new DynamicMetaObject[0]);
 
@@ -647,8 +644,7 @@ namespace IronPython.Runtime.Binding {
                     res.Append(" ");
                 }
 
-                MethodInfo mi = mb as MethodInfo;
-                if (mi != null) {
+                if (mb is MethodInfo mi) {
                     string name;
                     NameConverter.TryGetName(DynamicHelpers.GetPythonTypeFromType(mb.DeclaringType), mi, out name);
                     res.Append(name);
@@ -729,7 +725,6 @@ namespace IronPython.Runtime.Binding {
         }
 
         private static void GetOperatorMethods(DynamicMetaObject/*!*/[]/*!*/ types, PythonOperationKind oper, PythonContext state, out SlotOrFunction fbinder, out SlotOrFunction rbinder, out PythonTypeSlot fSlot, out PythonTypeSlot rSlot) {
-            oper = NormalizeOperator(oper);
             oper &= ~PythonOperationKind.InPlace;
 
             string op, rop;
@@ -806,7 +801,7 @@ namespace IronPython.Runtime.Binding {
         private static bool IsSequence(DynamicMetaObject/*!*/ metaObject) {
             if (typeof(List).IsAssignableFrom(metaObject.GetLimitType()) ||
                 typeof(PythonTuple).IsAssignableFrom(metaObject.GetLimitType()) ||
-                typeof(String).IsAssignableFrom(metaObject.GetLimitType())) {
+                typeof(string).IsAssignableFrom(metaObject.GetLimitType())) {
                 return true;
             }
             return false;
@@ -834,8 +829,6 @@ namespace IronPython.Runtime.Binding {
             if (!SlotOrFunction.GetCombinedTargets(fCand, rCand, out fTarget, out rTarget) &&
                 fSlot == null &&
                 rSlot == null &&
-                !ShouldCoerce(state, op, types[0], types[1], false) &&
-                !ShouldCoerce(state, op, types[1], types[0], false) &&
                 bodyBuilder.NoConditions) {
                 return MakeRuleForNoMatch(operation, op, errorSuggestion, types);
             }
@@ -998,30 +991,12 @@ namespace IronPython.Runtime.Binding {
             bodyBuilder.AddVariable(tmp);
         }
 
-     
-        private static MethodCallExpression/*!*/ CoerceTwo(ParameterExpression/*!*/ coerceTuple) {
-            return Ast.Call(
-                typeof(PythonOps).GetMethod(nameof(PythonOps.GetCoerceResultTwo)),
-                coerceTuple
-            );
-        }
-
-        private static MethodCallExpression/*!*/ CoerceOne(ParameterExpression/*!*/ coerceTuple) {
-            return Ast.Call(
-                typeof(PythonOps).GetMethod(nameof(PythonOps.GetCoerceResultOne)),
-                coerceTuple
-            );
-        }
-
-
         #endregion
 
         #region Comparison Operations
 
-        private static DynamicMetaObject/*!*/ MakeComparisonOperation(DynamicMetaObject/*!*/[]/*!*/ types, DynamicMetaObjectBinder/*!*/ operation, PythonOperationKind opString, DynamicMetaObject errorSuggestion) {
+        private static DynamicMetaObject/*!*/ MakeComparisonOperation(DynamicMetaObject/*!*/[]/*!*/ types, DynamicMetaObjectBinder/*!*/ operation, PythonOperationKind op, DynamicMetaObject errorSuggestion) {
             RestrictTypes(types);
-
-            PythonOperationKind op = NormalizeOperator(opString);
 
             PythonContext state = PythonContext.GetPythonContext(operation);
             Debug.Assert(types.Length == 2);
@@ -1360,9 +1335,8 @@ namespace IronPython.Runtime.Binding {
             PythonContext state = PythonContext.GetPythonContext(operation);
             BuiltinFunction itemFunc = null;
             PythonTypeSlot itemSlot = null;
-            int mandatoryArgs;
 
-            GetIndexOperators(op, out item, out mandatoryArgs);
+            GetIndexOperators(op, out item, out _);
 
             if (!BindingHelpers.TryGetStaticFunction(state, item, indexedType, out itemFunc)) {
                 MetaPythonObject.GetPythonType(indexedType).TryResolveSlot(state.SharedContext, item, out itemSlot);
@@ -1398,10 +1372,9 @@ namespace IronPython.Runtime.Binding {
             DynamicMetaObject[] newTypes = (DynamicMetaObject[])types.Clone();
             newTypes[0] = indexedType;
 
-            PythonTypeSlot dummySlot;
             if (op != PythonIndexType.GetItem &&
                 op != PythonIndexType.GetSlice &&
-                DynamicHelpers.GetPythonType(indexedType.Value).TryResolveSlot(state.SharedContext, "__getitem__", out dummySlot)) {
+                DynamicHelpers.GetPythonType(indexedType.Value).TryResolveSlot(state.SharedContext, "__getitem__", out _)) {
                 // object supports indexing but not setting/deletion
                 if (op == PythonIndexType.SetItem || op == PythonIndexType.SetSlice) {
                     return TypeError(operation, "'{0}' object does not support item assignment", newTypes);
@@ -1450,7 +1423,7 @@ namespace IronPython.Runtime.Binding {
         /// 
         /// The Callable objects get handed off to ItemBuilder's which then call them with the appropriate arguments.
         /// </summary>
-        abstract class Callable {
+        private abstract class Callable {
             private readonly PythonContext/*!*/ _binder;
             private readonly PythonIndexType _op;
 
@@ -1554,7 +1527,7 @@ namespace IronPython.Runtime.Binding {
         /// Subclass of Callable for a built-in function.  This calls a .NET method performing
         /// the appropriate bindings.
         /// </summary>
-        class BuiltinCallable : Callable {
+        private class BuiltinCallable : Callable {
             private readonly BuiltinFunction/*!*/ _bf;
 
             public BuiltinCallable(PythonContext/*!*/ binder, PythonIndexType op, BuiltinFunction/*!*/ func)
@@ -1602,8 +1575,7 @@ namespace IronPython.Runtime.Binding {
                         );
                     }
 
-                    WarningInfo info;
-                    if (BindingWarnings.ShouldWarn(Binder.Context, target.Overload, out info)) {
+                    if (BindingWarnings.ShouldWarn(Binder.Context, target.Overload, out WarningInfo info)) {
                         res = info.AddWarning(Ast.Constant(PythonContext.SharedContext), res);
                     }
                 } else if (customFailure == null || (res = customFailure()) == null) {
@@ -1618,7 +1590,7 @@ namespace IronPython.Runtime.Binding {
         /// Callable to a user-defined callable object.  This could be a Python function,
         /// a class defining __call__, etc...
         /// </summary>
-        class SlotCallable : Callable {
+        private class SlotCallable : Callable {
             private PythonTypeSlot _slot;
 
             public SlotCallable(PythonContext/*!*/ binder, PythonIndexType op, PythonTypeSlot slot)
@@ -1674,7 +1646,7 @@ namespace IronPython.Runtime.Binding {
         /// <summary>
         /// Base class for building a __*item__ call.
         /// </summary>
-        abstract class IndexBuilder {
+        private abstract class IndexBuilder {
             private readonly Callable/*!*/ _callable;
             private readonly DynamicMetaObject/*!*/[]/*!*/ _types;
 
@@ -1697,7 +1669,7 @@ namespace IronPython.Runtime.Binding {
         /// <summary>
         /// Derived IndexBuilder for calling __*item__ methods.
         /// </summary>
-        class ItemBuilder : IndexBuilder {
+        private class ItemBuilder : IndexBuilder {
             public ItemBuilder(DynamicMetaObject/*!*/[]/*!*/ types, Callable/*!*/ callable)
                 : base(types, callable) {
             }
@@ -1705,8 +1677,7 @@ namespace IronPython.Runtime.Binding {
             public override DynamicMetaObject/*!*/ MakeRule(DynamicMetaObjectBinder/*!*/ metaBinder, PythonContext/*!*/ binder, DynamicMetaObject/*!*/[]/*!*/ args) {
                 DynamicMetaObject[] tupleArgs = Callable.GetTupleArguments(args);
                 return Callable.CompleteRuleTarget(metaBinder, tupleArgs, delegate() {
-                    PythonTypeSlot indexSlot;
-                    if (args[1].GetLimitType() != typeof(Slice) && GetTypeAt(1).TryResolveSlot(binder.SharedContext, "__index__", out indexSlot)) {
+                    if (args[1].GetLimitType() != typeof(Slice) && GetTypeAt(1).TryResolveSlot(binder.SharedContext, "__index__", out _)) {
                         args[1] = new DynamicMetaObject(
                             DynamicExpression.Dynamic(
                                 binder.Convert(
@@ -1757,9 +1728,8 @@ namespace IronPython.Runtime.Binding {
                 !PythonOps.IsNumericType(obj.GetLimitType())) {
 
                 PythonType curType = MetaPythonObject.GetPythonType(obj);
-                PythonTypeSlot dummy;
 
-                if (!curType.TryResolveSlot(state.SharedContext, "__index__", out dummy)) {
+                if (!curType.TryResolveSlot(state.SharedContext, "__index__", out _)) {
                     numeric = false;
                 }
             }
@@ -1854,86 +1824,11 @@ namespace IronPython.Runtime.Binding {
 
         #region Helpers
 
-        /// <summary>
-        /// Checks if a coercion check should be performed.  We perform coercion under the following
-        /// situations:
-        ///     1. Old instances performing a binary operator (excluding rich comparisons)
-        ///     2. User-defined new instances calling __cmp__ but only if we wouldn't dispatch to a built-in __coerce__ on the parent type
-        ///     
-        /// This matches the behavior of CPython.
-        /// </summary>
-        /// <returns></returns>
-        private static bool ShouldCoerce(PythonContext/*!*/ state, PythonOperationKind operation, DynamicMetaObject/*!*/ x, DynamicMetaObject/*!*/ y, bool isCompare) {
-            if ((operation & PythonOperationKind.DisableCoerce) != 0) {
-                return false;
-            }
-
-            PythonType xType = MetaPythonObject.GetPythonType(x), yType = MetaPythonObject.GetPythonType(y);
-
-            if (isCompare && !xType.IsSystemType && yType.IsSystemType) {
-                if (yType == TypeCache.Int32 ||
-                    yType == TypeCache.BigInteger ||
-                    yType == TypeCache.Double ||
-                    yType == TypeCache.Complex) {
-
-                    // only coerce new style types that define __coerce__ and
-                    // only when comparing against built-in types which
-                    // define __coerce__
-                    PythonTypeSlot pts;
-                    if (xType.TryResolveSlot(state.SharedContext, "__coerce__", out pts)) {
-                        // don't call __coerce__ if it's declared on the base type
-                        BuiltinMethodDescriptor bmd = pts as BuiltinMethodDescriptor;
-                        if (bmd == null) return true;
-
-                        if (bmd.__name__ != "__coerce__" &&
-                            bmd.DeclaringType != typeof(int) &&
-                            bmd.DeclaringType != typeof(BigInteger) &&
-                            bmd.DeclaringType != typeof(double) &&
-                            bmd.DeclaringType != typeof(Complex)) {
-                            return true;
-                        }
-
-                        foreach (PythonType pt in xType.ResolutionOrder) {
-                            if (pt.UnderlyingSystemType == bmd.DeclaringType) {
-                                // inherited __coerce__
-                                return false;
-                            }
-                        }
-
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        public static PythonOperationKind DirectOperation(PythonOperationKind op) {
-            if ((op & PythonOperationKind.InPlace) == 0) {
-                throw new InvalidOperationException();
-            }
-
-            return op & ~PythonOperationKind.InPlace;
-        }
-
-        private static PythonOperationKind NormalizeOperator(PythonOperationKind op) {
-            if ((op & PythonOperationKind.DisableCoerce) != 0) {
-                op = op & ~PythonOperationKind.DisableCoerce;
-            }
-            return op;
-        }
-
-        private static bool IsComparisonOperator(PythonOperationKind op) {
+        private static bool IsComparison(PythonOperationKind op) {
             return (op & PythonOperationKind.Comparison) != 0;
         }
 
-        private static bool IsComparison(PythonOperationKind op) {
-            return IsComparisonOperator(NormalizeOperator(op));
-        }
-
         private static Expression/*!*/ GetCompareNode(PythonOperationKind op, bool reverse, Expression expr) {
-            op = NormalizeOperator(op);
-
             switch (reverse ? OperatorToReverseOperator(op) : op) {
                 case PythonOperationKind.Equal: return Ast.Equal(expr, AstUtils.Constant(0));
                 case PythonOperationKind.NotEqual: return Ast.NotEqual(expr, AstUtils.Constant(0));
@@ -1961,8 +1856,6 @@ namespace IronPython.Runtime.Binding {
             }
         }
         private static Expression/*!*/ GetCompareExpression(PythonOperationKind op, bool reverse, Expression/*!*/ value) {
-            op = NormalizeOperator(op);
-
             Debug.Assert(value.Type == typeof(int));
 
             Expression zero = AstUtils.Constant(0);
@@ -1981,17 +1874,15 @@ namespace IronPython.Runtime.Binding {
         }
 
         private static MethodInfo/*!*/ GetComparisonFallbackMethod(PythonOperationKind op) {
-            op = NormalizeOperator(op);
-
             string name;
             switch (op) {
-                case PythonOperationKind.Equal: name = "CompareTypesEqual"; break;
-                case PythonOperationKind.NotEqual: name = "CompareTypesNotEqual"; break;
-                case PythonOperationKind.GreaterThan: name = "CompareTypesGreaterThan"; break;
-                case PythonOperationKind.LessThan: name = "CompareTypesLessThan"; break;
-                case PythonOperationKind.GreaterThanOrEqual: name = "CompareTypesGreaterThanOrEqual"; break;
-                case PythonOperationKind.LessThanOrEqual: name = "CompareTypesLessThanOrEqual"; break;
-                case PythonOperationKind.Compare: name = "CompareTypes"; break;
+                case PythonOperationKind.Equal: name = nameof(PythonOps.CompareTypesEqual); break;
+                case PythonOperationKind.NotEqual: name = nameof(PythonOps.CompareTypesNotEqual); break;
+                case PythonOperationKind.GreaterThan: name = nameof(PythonOps.CompareTypesGreaterThan); break;
+                case PythonOperationKind.LessThan: name = nameof(PythonOps.CompareTypesLessThan); break;
+                case PythonOperationKind.GreaterThanOrEqual: name = nameof(PythonOps.CompareTypesGreaterThanOrEqual); break;
+                case PythonOperationKind.LessThanOrEqual: name = nameof(PythonOps.CompareTypesLessThanOrEqual); break;
+                case PythonOperationKind.Compare: name = nameof(PythonOps.CompareTypes); break;
                 default: throw new InvalidOperationException();
             }
             return typeof(PythonOps).GetMethod(name);
@@ -2042,8 +1933,6 @@ namespace IronPython.Runtime.Binding {
         }
 
         private static string/*!*/ GetOperatorDisplay(PythonOperationKind op) {
-            op = NormalizeOperator(op);
-
             switch (op) {
                 case PythonOperationKind.Add: return "+";
                 case PythonOperationKind.Subtract: return "-";
@@ -2098,7 +1987,7 @@ namespace IronPython.Runtime.Binding {
                     action.Throw(
                         Ast.Call(
                             typeof(PythonOps).GetMethod(nameof(PythonOps.TypeErrorForBinaryOp)),
-                            AstUtils.Constant(Symbols.OperatorToSymbol(NormalizeOperator(op))),
+                            AstUtils.Constant(Symbols.OperatorToSymbol(op)),
                             AstUtils.Convert(args[0].Expression, typeof(object)),
                             AstUtils.Convert(args[1].Expression, typeof(object))
                         ),
@@ -2120,7 +2009,7 @@ namespace IronPython.Runtime.Binding {
         /// </summary>
         public static DynamicMetaObject/*!*/ TypeError(DynamicMetaObjectBinder/*!*/ action, string message, params DynamicMetaObject[] types) {
             if (action is IPythonSite) {
-                message = String.Format(message, ArrayUtils.ConvertAll(types, x => MetaPythonObject.GetPythonType(x).Name));
+                message = string.Format(message, ArrayUtils.ConvertAll(types, x => MetaPythonObject.GetPythonType(x).Name));
 
                 Expression error = action.Throw(
                     Ast.Call(

@@ -447,17 +447,6 @@ namespace IronPython.Runtime.Operations {
         }
         #endregion
 
-        public static PythonTuple __coerce__(CodeContext context, double x, object o) {
-            // called via builtin.coerce()
-            double d = (double)__new__(context, TypeCache.Double, o);
-
-            if (Double.IsInfinity(d)) {
-                throw PythonOps.OverflowError("number too big");
-            }
-
-            return PythonTuple.MakeTuple(x, d);
-        }
-
         #region Unary operators
 
         public static object __int__(double d) {

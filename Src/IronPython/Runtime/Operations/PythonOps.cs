@@ -3104,24 +3104,6 @@ namespace IronPython.Runtime.Operations {
             );
         }
 
-        public static PythonTuple ValidateCoerceResult(object coerceResult) {
-            if (coerceResult == null || coerceResult == NotImplementedType.Value) {
-                return null;
-            }
-
-            PythonTuple pt = coerceResult as PythonTuple;
-            if (pt == null) throw PythonOps.TypeError("coercion should return None, NotImplemented, or 2-tuple, got {0}", PythonTypeOps.GetName(coerceResult));
-            return pt;
-        }
-
-        public static object GetCoerceResultOne(PythonTuple coerceResult) {
-            return coerceResult._data[0];
-        }
-
-        public static object GetCoerceResultTwo(PythonTuple coerceResult) {
-            return coerceResult._data[1];
-        }
-
         public static object MethodCheckSelf(CodeContext/*!*/ context, Method method, object self) {
             return method.CheckSelf(context, self);
         }

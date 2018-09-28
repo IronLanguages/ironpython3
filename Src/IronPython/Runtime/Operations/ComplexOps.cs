@@ -204,19 +204,6 @@ namespace IronPython.Runtime.Operations {
 
         #endregion
 
-        public static object __coerce__(Complex x, object y) {
-            Complex right;
-            if (Converter.TryConvertToComplex(y, out right)) {
-                if (double.IsInfinity(right.Real) && (y is BigInteger || y is Extensible<BigInteger>)) {
-                    throw new OverflowException("long int too large to convert to float");
-                }
-
-                return PythonTuple.MakeTuple(x, right);
-            }
-
-            return NotImplementedType.Value;
-        }
-
         public static string __str__(CodeContext/*!*/ context, Complex x) {
             if (x.Real != 0) {
                 if (x.Imaginary() < 0 || DoubleOps.IsNegativeZero(x.Imaginary())) {

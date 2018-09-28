@@ -80,7 +80,7 @@ Library Changes
 ==========
 - [x] \_winreg renamed to winreg
 - [x] copy\_reg renamed to copyreg
-- [ ] Cleanup of the sys module: removed sys.exitfunc(), sys.exc\_clear(), sys.exc\_type, sys.exc\_value, sys.exc\_traceback.
+- [x] Cleanup of the sys module: removed sys.exitfunc(), sys.exc\_clear(), sys.exc\_type, sys.exc\_value, sys.exc\_traceback.
 - [ ] Cleanup of the array.array type: the read() and write() methods are gone; use fromfile() and tofile() instead. Also, the 'c' typecode for array is gone - use either 'b' for bytes or 'u' for Unicode characters.
 - [x] Cleanup of the operator module: removed sequenceIncludes() and isCallable().
 - [ ] Cleanup of the thread module: acquire\_lock() and release\_lock() are gone; use acquire() and release() instead.

@@ -825,6 +825,7 @@ namespace IronPython.Runtime
             flags.verbose = _options.Verbose ? 1 : 0;
             flags.unicode = 1;
             flags.bytes_warning = _options.BytesWarning ? 1 : 0;
+            flags.quiet = _options.Quiet ? 1 : 0;
         }
 
         internal bool ShouldInterpret(PythonCompilerOptions options, SourceUnit source) {

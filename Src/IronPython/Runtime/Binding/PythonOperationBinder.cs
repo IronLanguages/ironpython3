@@ -243,7 +243,7 @@ namespace IronPython.Runtime.Binding {
         /// </summary>
         public override Type ReturnType {
             get {
-                switch (Operation & (~PythonOperationKind.DisableCoerce)) {
+                switch (Operation) {
                     case PythonOperationKind.Compare: return typeof(int);
                     case PythonOperationKind.IsCallable: return typeof(bool);
                     case PythonOperationKind.Hash: return typeof(int);

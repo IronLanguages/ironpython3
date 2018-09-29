@@ -195,7 +195,6 @@ namespace IronPython.Runtime.Binding {
         ///<summary>Operator for performing reverse divmod</summary>
         ReverseDivMod = DivMod | Reversed,
 
-        DisableCoerce = 0x40000000,
         InPlace       = 0x20000000,
         Reversed      = 0x10000000,
         Comparison    = 0x08000000,

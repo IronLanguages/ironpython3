@@ -374,14 +374,6 @@ namespace IronPython.Runtime.Operations {
             return Math.Abs(self);
         }
 
-        public static object __coerce__(CodeContext context, int x, object o) {
-            // called via builtin.coerce()
-            if (o is int) {
-                return PythonTuple.MakeTuple(ScriptingRuntimeHelpers.Int32ToObject(x), o);
-            }
-            return NotImplementedType.Value;
-        }
-
         public static string __format__(CodeContext/*!*/ context, int self, [NotNull]string/*!*/ formatSpec) {
             StringFormatSpec spec = StringFormatSpec.FromString(formatSpec);
 

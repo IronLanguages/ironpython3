@@ -574,15 +574,6 @@ namespace IronPython.Runtime.Operations {
             return self.ToString();
         }
 
-        public static object __coerce__(CodeContext context, BigInteger self, object o) {
-            // called via builtin.coerce()
-            BigInteger val;
-            if (Converter.TryConvertToBigInteger(o, out val)) {
-                return PythonTuple.MakeTuple(self, val);
-            }
-            return NotImplementedType.Value;
-        }
-
         #region Backwards compatibility with BigIntegerV2
 
         [PythonHidden]

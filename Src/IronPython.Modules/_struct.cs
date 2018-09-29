@@ -31,11 +31,6 @@ namespace IronPython.Modules {
         #region Public API
 
         public const string __doc__ = null;
-        public const string __version__ = "0.2";
-
-        public const int _PY_STRUCT_FLOAT_COERCE = 0;
-        public const int _PY_STRUCT_OVERFLOW_MASKING = 0;
-        public const int _PY_STRUCT_RANGE_CHECKING = 0;
 
         [PythonType, Documentation("Represents a compiled struct pattern")]
         public class Struct : IWeakReferenceable {

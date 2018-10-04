@@ -188,35 +188,31 @@ namespace IronPython.Runtime {
                     if (!IsOnDiskCode) {
                         ThreadPool.QueueUserWorkItem(x => {
                             // on mono if the runtime is shutting down, this can throw an InvalidOperationException
-#if FEATURE_UNIX
                             try {
-#endif
-                            var pyCtx = context.LanguageContext;
+                                var pyCtx = context.LanguageContext;
 
-                            bool enableTracing;
-                            lock (pyCtx._codeUpdateLock) {
-                                enableTracing = context.LanguageContext.EnableTracing;
-                            }
-
-                            Delegate target = enableTracing
-                                ? ((LambdaExpression)LightExceptions.Rewrite(
-                                    GetGeneratorOrNormalLambdaTracing(pyCtx).Reduce())).Compile()
-                                : ((LambdaExpression)LightExceptions.Rewrite(GetGeneratorOrNormalLambda().Reduce()))
-                                .Compile();
-
-                            lock (pyCtx._codeUpdateLock) {
-                                if (context.LanguageContext.EnableTracing == enableTracing) {
-                                    LightThrowTarget = target;
+                                bool enableTracing;
+                                lock (pyCtx._codeUpdateLock) {
+                                    enableTracing = context.LanguageContext.EnableTracing;
                                 }
-                            }
-#if FEATURE_UNIX
+
+                                Delegate target = enableTracing
+                                    ? ((LambdaExpression)LightExceptions.Rewrite(
+                                        GetGeneratorOrNormalLambdaTracing(pyCtx).Reduce())).Compile()
+                                    : ((LambdaExpression)LightExceptions.Rewrite(GetGeneratorOrNormalLambda().Reduce()))
+                                    .Compile();
+
+                                lock (pyCtx._codeUpdateLock) {
+                                    if (context.LanguageContext.EnableTracing == enableTracing) {
+                                        LightThrowTarget = target;
+                                    }
+                                }
                             } catch (InvalidOperationException ex) {
                                 // The InvalidOperationException is thrown with an empty message
                                 if (!string.IsNullOrEmpty(ex.Message)) {
                                     throw ex;
                                 }
                             }
-#endif
                         });
                     }
                 }

@@ -20,19 +20,20 @@ namespace IronPythonTest.Util {
         public string GetValue(string sectionName, string key, string @default) {
             sectionName = string.IsNullOrEmpty(sectionName) ? "DEFAULT" : sectionName;
 
-            Section section;
-            if (!this.options.TryGetValue(sectionName, out section)) {
-                section = this.options["DEFAULT"];
-            }
-
             string value;
-            if (!section.TryGetValue(key, out value)) {
-                if (!this.options["DEFAULT"].TryGetValue(key, out value)) {
-                    return @default;
+            while ((sectionName = GetParentSection(sectionName, out Section section)) != null) {
+                if (section.TryGetValue(key, out value)) {
+                    return value;
                 }
             }
 
-            return value;
+            return options["DEFAULT"].TryGetValue(key, out value) ? value : @default;
+        }
+
+        private string GetParentSection(string sectionName, out Section section) {
+            var idx = sectionName.LastIndexOf('.');
+            var newSectionName = idx == -1 ? null : sectionName.Substring(0, idx);
+            return options.TryGetValue(sectionName, out section) || newSectionName == null ? newSectionName : GetParentSection(newSectionName, out section);
         }
 
         public bool GetBool(string sectionName, string key) {

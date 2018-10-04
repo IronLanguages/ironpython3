@@ -289,21 +289,26 @@ namespace IronPython.Modules {
             public override bool isatty(CodeContext/*!*/ context) {
                 _checkClosed();
 
-#if FEATURE_UNIX
-                if (_isConsole) {
-                    if (_consoleStreamType == ConsoleStreamType.Input) {
-                        return Mono.Unix.Native.Syscall.isatty(0);
-                    }
-                    if (_consoleStreamType == ConsoleStreamType.Output) {
-                        return Mono.Unix.Native.Syscall.isatty(1);
-                    }
-                    Debug.Assert(_consoleStreamType == ConsoleStreamType.ErrorOutput);
-                    return Mono.Unix.Native.Syscall.isatty(2);
+                if (Environment.OSVersion.Platform == PlatformID.Unix) {
+                    return isattyUnix();
                 }
-                return false;
-#else
+
                 return _isConsole && !isRedirected();
-#endif
+
+                // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Posix assembly on Windows.
+                bool isattyUnix() {
+                    if (_isConsole) {
+                        if (_consoleStreamType == ConsoleStreamType.Input) {
+                            return Mono.Unix.Native.Syscall.isatty(0);
+                        }
+                        if (_consoleStreamType == ConsoleStreamType.Output) {
+                            return Mono.Unix.Native.Syscall.isatty(1);
+                        }
+                        Debug.Assert(_consoleStreamType == ConsoleStreamType.ErrorOutput);
+                        return Mono.Unix.Native.Syscall.isatty(2);
+                    }
+                    return false;
+                }
             }
 
             private bool isRedirected() {

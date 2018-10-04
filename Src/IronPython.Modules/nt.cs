@@ -398,7 +398,8 @@ namespace IronPython.Modules {
 
         [PythonType("uname_result"), PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         public class uname_result : PythonTuple {
-            public uname_result(string sysname, string nodename, string release, string version, string machine) : base(new object[] { sysname, nodename, release, version, machine }) {
+            public uname_result(string sysname, string nodename, string release, string version, string machine) :
+                base(new object[] { sysname, nodename, release, version, machine }) {
                 
             }
 
@@ -410,7 +411,11 @@ namespace IronPython.Modules {
 
             public string version => (string)this[3];
 
-            public string machine => (string)this[4];                        
+            public string machine => (string)this[4];
+
+            public override string ToString() {
+                return $"posix.uname_result(sysname='{sysname}', nodename='{nodename}', release='{release}', version='{version}', machine='{machine}')";
+            }
         }
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]

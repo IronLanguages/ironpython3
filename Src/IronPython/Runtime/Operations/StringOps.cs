@@ -1725,10 +1725,102 @@ namespace IronPython.Runtime.Operations {
 
 #if FEATURE_ENCODING
         private static DecoderFallback ReplacementFallback = new DecoderReplacementFallback("\ufffd");
+        
+        private class SurrogateEscapeDecoderFallback : DecoderFallback {
+            private class SurrogateEscapeDecoderFallbackBuffer : DecoderFallbackBuffer {
+                private SurrogateEscapeDecoderFallback _fallback;
+                private int _count = -1;
+                private int _index = -1;
+                private char[] _output = new char[4];
+
+                public SurrogateEscapeDecoderFallbackBuffer(SurrogateEscapeDecoderFallback fallback) {
+                    _fallback = fallback;
+                }
+
+                public override bool Fallback(byte[] bytesUnknown, int index) {
+                    if (_count > 1) {
+                        ThrowLastBytesRecursive(bytesUnknown);
+                    }
+
+                    _count = 0;
+                    while (_count < 4 && _count < bytesUnknown.Length) {
+                        if (bytesUnknown[_count] < 128) {
+                            break;
+                        }
+
+                        _output[_count] = (char)(0xdc00 + (char)bytesUnknown[_count]);
+                        _count++;
+                    }
+
+                    if (_count == 0) {
+                        return false;
+                    }
+
+                    _index = -1;
+
+                    return true;
+                }
+
+                public override char GetNextChar() {
+                    _count--;
+                    _index++;
+
+                    if (_count < 0) {
+                        return '\0';
+                    }
+
+                    return _output[_index];
+                }
+
+                public override bool MovePrevious() {
+                    // Back up one, only if we just processed the last character (or earlier)
+                    if (_count >= -1 && _index >= 0) {
+                        _index--;
+                        _count++;
+                        return true;
+                    }
+
+                    return false;
+                }
+
+                // How many characters left to output?
+                public override int Remaining => _count < 0 ? 0 : _count;
+
+                // Clear the buffer
+                public override void Reset() {
+                    _count = -1;
+                    _index = -1;
+                }
+
+                internal void ThrowLastBytesRecursive(byte[] bytesUnknown) {
+                    // Create a string representation of our bytes.
+                    StringBuilder strBytes = new StringBuilder(bytesUnknown.Length * 3);
+                    int i;
+                    for (i = 0; i < bytesUnknown.Length && i < 20; i++) {
+                        if (strBytes.Length > 0)
+                            strBytes.Append(' ');
+                        strBytes.AppendFormat(CultureInfo.InvariantCulture, "\\x{0:X2}", bytesUnknown[i]);
+                    }
+                    // In case the string's really long
+                    if (i == 20)
+                        strBytes.Append(" ...");
+
+                    // Throw it, using our complete bytes
+                    throw new ArgumentException($"Recursive fallback not allowed for bytes {strBytes.ToString()}.", nameof(bytesUnknown));
+                }
+            }
+
+            public override DecoderFallbackBuffer CreateFallbackBuffer() {
+                return new SurrogateEscapeDecoderFallbackBuffer(this);
+            }
+            
+            public override int MaxCharCount => 1;
+        }
+        
+        
 #endif
 
         internal static string DoDecode(CodeContext context, string s, string errors, string encoding, Encoding e) => DoDecode(context, s, errors, encoding, e, true, out _);
-
 
         internal static string DoDecode(CodeContext context, string s, string errors, string encoding, Encoding e, bool final, out int numBytes) {
             byte[] bytes = s.MakeByteArray();
@@ -1744,6 +1836,7 @@ namespace IronPython.Runtime.Operations {
                 case "backslashreplace":
                 case "xmlcharrefreplace":
                 case "strict": e.DecoderFallback = final ? DecoderFallback.ExceptionFallback : new ExceptionFallBack(numBytes, e is UTF8Encoding); break;
+                case "surrogateescape": e.DecoderFallback = new SurrogateEscapeDecoderFallback(); break;
                 case "replace": e.DecoderFallback = ReplacementFallback; break;
                 case "ignore":
                     e.DecoderFallback = new PythonDecoderFallback(encoding,
@@ -1797,7 +1890,7 @@ namespace IronPython.Runtime.Operations {
             if (encoding == null) {
                 e = encodingType as Encoding;
                 if (e == null) {
-                    throw PythonOps.TypeError("encode() expected string, got '{0}'", DynamicHelpers.GetPythonType(encodingType).Name);
+                    throw PythonOps.TypeError($"encode() expected string, got '{DynamicHelpers.GetPythonType(encodingType).Name}'");
                 }
             }
 
@@ -1821,8 +1914,66 @@ namespace IronPython.Runtime.Operations {
                 return PythonOps.MakeBytes(UserDecodeOrEncode(codecTuple[0], s, errors));
             }
 
-            throw PythonOps.LookupError("unknown encoding: {0}", encoding);
+            throw PythonOps.LookupError($"unknown encoding: {encoding}");
         }
+        
+#if FEATURE_ENCODING
+        private class SurrogateEscapeEncoderFallback : EncoderFallback {
+            private class SurrogateEscapeEncoderFallbackBuffer : EncoderFallbackBuffer {
+                private SurrogateEscapeEncoderFallback _fallback;
+                private int _count = -1;
+                private int _size;
+                private char _value;
+
+                public SurrogateEscapeEncoderFallbackBuffer(SurrogateEscapeEncoderFallback fallback) {
+                    _fallback = fallback;
+                }
+
+                public override bool Fallback(char charUnknown, int index) {
+                    if (charUnknown < 0xdc80 || charUnknown > 0xdcff) {
+                        return false;
+                    }
+
+                    _count = _size = 1;
+                    _value = (char)(charUnknown - 0xdc00);
+
+                    return true;
+                }
+
+                public override bool Fallback(char charUnknownHigh, char charUnknownLow, int index) {
+                    return false;
+                }
+
+                public override char GetNextChar() {
+                    _count--;
+
+                    if (_count < 0) {
+                        return '\0';
+                    }
+
+                    return _value;
+                }
+
+                public override bool MovePrevious() {
+                    if (_count >= 0) {
+                        _count++;
+                    }
+
+                    return (_count >= 0) && (_count <= _size);
+                }
+
+                public override int Remaining => _count > 0 ? _count : 0;
+            }
+
+            public override EncoderFallbackBuffer CreateFallbackBuffer() {
+                return new SurrogateEscapeEncoderFallbackBuffer(this);
+            }
+            
+            public override int MaxCharCount => 1;
+        }
+        
+        
+#endif
 
         internal static Bytes DoEncode(CodeContext context, string s, string errors, string encoding, Encoding e) {
 #if FEATURE_ENCODING
@@ -1835,6 +1986,7 @@ namespace IronPython.Runtime.Operations {
                 case "replace": e.EncoderFallback = EncoderFallback.ReplacementFallback; break;
                 case "backslashreplace": e.EncoderFallback = new BackslashEncoderReplaceFallback(); break;
                 case "xmlcharrefreplace": e.EncoderFallback = new XmlCharRefEncoderReplaceFallback(); break;
+                case "surrogateescape": e.EncoderFallback = new SurrogateEscapeEncoderFallback(); break;
                 case "ignore":
                     e.EncoderFallback = new PythonEncoderFallback(encoding,
                         s,

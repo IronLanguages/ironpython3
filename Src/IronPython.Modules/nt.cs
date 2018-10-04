@@ -41,7 +41,7 @@ namespace IronPython.Modules {
         [SpecialName]
         public static void PerformModuleReload(PythonContext context, PythonDictionary dict) {
             var have_functions = new List();
-            if(Environment.OSVersion.Platform == PlatformID.Win32NT) {
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
                 have_functions.Add("MS_WINDOWS");
             }
 
@@ -84,13 +84,13 @@ namespace IronPython.Modules {
                     return false;
                 }
                 return true;
-            } catch(ArgumentException) {
-            } catch(PathTooLongException) {
-            } catch(NotSupportedException) {
-            } catch(FileNotFoundException) {
-            } catch(DirectoryNotFoundException) {
-            } catch(IOException) {
-            } catch(UnauthorizedAccessException) {
+            } catch (ArgumentException) {
+            } catch (PathTooLongException) {
+            } catch (NotSupportedException) {
+            } catch (FileNotFoundException) {
+            } catch (DirectoryNotFoundException) {
+            } catch (IOException) {
+            } catch (UnauthorizedAccessException) {
             }
             return false;
 #else
@@ -187,7 +187,7 @@ namespace IronPython.Modules {
                 throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
             }
 
-            if (! pythonContext.FileManager.ValidateFdRange(fd2)) {
+            if (!pythonContext.FileManager.ValidateFdRange(fd2)) {
                 throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
             }
 
@@ -215,7 +215,7 @@ namespace IronPython.Modules {
         }
 
 
-        
+
 #if FEATURE_PROCESS
         /// <summary>
         /// single instance of environment dictionary is shared between multiple runtimes because the environment
@@ -232,12 +232,12 @@ namespace IronPython.Modules {
         }
 
         public static object fdopen(CodeContext/*!*/ context, int fd,
-            string mode="r",
-            int buffering=-1,
-            string encoding=null,
-            string errors=null,
-            string newline=null,
-            bool closefd=true) {
+            string mode = "r",
+            int buffering = -1,
+            string encoding = null,
+            string errors = null,
+            string newline = null,
+            bool closefd = true) {
             return Builtin.open(context, fd, mode, buffering, encoding, errors, newline, closefd);
         }
 
@@ -287,9 +287,9 @@ namespace IronPython.Modules {
                 // Char.Maxvalue, get the full path, and then replace the Char.Maxvalue's back w/ 
                 // their original value.
                 string newdir = dir;
-                
+
                 if (IsWindows()) {
-                    if (newdir.Length >= 2 && newdir[1] == ':' && 
+                    if (newdir.Length >= 2 && newdir[1] == ':' &&
                         (newdir[0] < 'a' || newdir[0] > 'z') && (newdir[0] < 'A' || newdir[0] > 'Z')) {
                         // invalid drive, .NET will reject this
                         if (newdir.Length == 2) {
@@ -457,7 +457,7 @@ namespace IronPython.Modules {
                 } else {
                     fs = new FileStream(filename, fileMode, access, FileShare.ReadWrite, DefaultBufferSize, options);
                 }
-                
+
                 string mode2;
                 if (fs.CanRead && fs.CanWrite) mode2 = "w+";
                 else if (fs.CanWrite) mode2 = "w";
@@ -736,7 +736,7 @@ namespace IronPython.Modules {
                     // on NT are guaranteed to have the low 2 bits not set and users
                     // could use these for their own purposes.  We therefore match that
                     // behavior here.
-                    _processCount += 4; 
+                    _processCount += 4;
                     id = _processCount;
                 }
 
@@ -810,7 +810,7 @@ namespace IronPython.Modules {
 
 #if FEATURE_PROCESS
         [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
-        public static void startfile(string filename, string operation="open") {
+        public static void startfile(string filename, string operation = "open") {
             System.Diagnostics.Process process = new System.Diagnostics.Process();
             process.StartInfo.FileName = filename;
             process.StartInfo.UseShellExecute = true;
@@ -1291,7 +1291,7 @@ namespace IronPython.Modules {
         }
 
         public static string strerror(int code) {
-            switch(code) {
+            switch (code) {
                 case 0: return "No error";
                 case PythonErrorNumber.E2BIG: return "Arg list too long";
                 case PythonErrorNumber.EACCES: return "Permission denied";
@@ -1549,31 +1549,39 @@ are defined in the signal module.")]
         public const int TMP_MAX = 32767;
 
 
-#if FEATURE_UNIX
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         public const int WNOHANG = 1;
 
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         public const int WUNTRACED = 2;
 
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         public const int WCONTINUED = 8;
 
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         public const int WSTOPPED = 2;
 
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         public const int WEXITED = 4;
 
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         public const int WNOWAIT = 0x1000000;
 
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         public const int P_ALL = 0;
 
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         public const int P_PID = 1;
 
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         public const int P_PGID = 2;
 
 
         [Documentation(@"WCOREDUMP(status) -> bool
 
-Return True if the process returning 'status' was dumped to a core file.")]
-        public static bool WCOREDUMP(int status)
-        {
+Return True if the process returning 'status' was dumped to a core file."),
+            PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        public static bool WCOREDUMP(int status) {
             //#define WCOREDUMP(s) ((s) & 0x80)
             return (status & 0x80) != 0;
         }
@@ -1581,44 +1589,44 @@ Return True if the process returning 'status' was dumped to a core file.")]
         [Documentation(@"WIFCONTINUED(status) -> bool
 
 Return True if the process returning 'status' was continued from a
-job control stop.")]
-        public static bool WIFCONTINUED(int status)
-        {
+job control stop."),
+            PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        public static bool WIFCONTINUED(int status) {
             //#define WIFCONTINUED(s) ((s) == 0xffff)
             return status == 0xffff;
         }
 
         [Documentation(@"WIFSTOPPED(status) -> bool
 
-Return True if the process returning 'status' was stopped.")]
-        public static bool WIFSTOPPED(int status)
-        {
+Return True if the process returning 'status' was stopped."),
+            PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        public static bool WIFSTOPPED(int status) {
             //#define WIFSTOPPED(s) (((s) & 0xff) == 0x7f)
             return (status & 0xff) == 0x7f;
         }
 
         [Documentation(@"WIFSIGNALED(status) -> bool
 
-Return True if the process returning 'status' was terminated by a signal.")]
-        public static bool WIFSIGNALED(int status)
-        {
+Return True if the process returning 'status' was terminated by a signal."),
+            PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        public static bool WIFSIGNALED(int status) {
             return ((byte)((status & 0x7f) >> 1)) > 0;
         }
 
         [Documentation(@"WIFEXITED(status) -> bool
 
 Return true if the process returning 'status' exited using the exit()
-system call.")]
-        public static bool WIFEXITED(int status)
-        {
+system call."),
+            PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        public static bool WIFEXITED(int status) {
             return WTERMSIG(status) == 0;
         }
 
         [Documentation(@"WEXITSTATUS(status) -> integer
 
-Return the process return code from 'status'.")]
-        public static int WEXITSTATUS(int status)
-        {
+Return the process return code from 'status'."),
+            PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        public static int WEXITSTATUS(int status) {
             // #define WEXITSTATUS(s) (((s) & 0xff00) >> 8)
             return (status & 0xff00) >> 8;
         }
@@ -1626,9 +1634,9 @@ Return the process return code from 'status'.")]
         [Documentation(@"WTERMSIG(status) -> integer
 
 Return the signal that terminated the process that provided the 'status'
-value.")]
-        public static int WTERMSIG(int status)
-        {
+value."),
+            PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        public static int WTERMSIG(int status) {
             //#define WTERMSIG(s) ((s) & 0x7f)
             return (status & 0x7f);
         }
@@ -1636,13 +1644,12 @@ value.")]
         [Documentation(@"WSTOPSIG(status) -> integer
 
 Return the signal that stopped the process that provided
-the 'status' value.")]
-        public static int WSTOPSIG(int status)
-        {
+the 'status' value."),
+            PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        public static int WSTOPSIG(int status) {
             // #define WSTOPSIG(s) WEXITSTATUS(s)
             return WEXITSTATUS(status);
         }
-#endif
 
         #endregion
 
@@ -1662,7 +1669,7 @@ the 'status' value.")]
                 // rethrow reasonable exceptions
                 return ExceptionHelpers.UpdateForRethrow(e);
             }
-            
+
             int error = Marshal.GetLastWin32Error();
 
             string message = e.Message;
@@ -1719,7 +1726,7 @@ the 'status' value.")]
         private static string GetFormattedException(Exception e, int hr) {
             return "[Errno " + hr.ToString() + "] " + e.Message;
         }
-        
+
         // Win32 error codes
 
         private const int S_IWRITE = 0x80 + 0x10 + 0x02; // owner / group / world
@@ -1746,9 +1753,9 @@ the 'status' value.")]
 
                 return FileMode.Open;
             }
-            if ((flags & O_CREAT) != 0) return FileMode.Create;            
+            if ((flags & O_CREAT) != 0) return FileMode.Create;
             if ((flags & O_TRUNC) != 0) return FileMode.Truncate;
-            
+
             return FileMode.Open;
         }
 
@@ -1764,7 +1771,7 @@ the 'status' value.")]
         private class POpenFile : PythonFile {
             private Process _process;
 
-            internal POpenFile(CodeContext/*!*/ context, string command, Process process, Stream stream, string mode) 
+            internal POpenFile(CodeContext/*!*/ context, string command, Process process, Stream stream, string mode)
                 : base(context.LanguageContext) {
                 __init__(stream, context.LanguageContext.DefaultEncoding, command, mode);
                 this._process = process;
@@ -1863,7 +1870,7 @@ the 'status' value.")]
             return true;
         }
 #endif
-        
+
         private static Exception DirectoryExists() {
             return PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_ALREADY_EXISTS, "directory already exists", null, PythonExceptions._OSError.ERROR_ALREADY_EXISTS);
         }
@@ -1871,4 +1878,3 @@ the 'status' value.")]
         #endregion
     }
 }
- 

@@ -1254,4 +1254,10 @@ class C:
         self.assertEqual(a, [(__file__, 1+lineno, 'C', 'raise Exception')])
         self.assertEqual([x[2] for x in b], ['A', 'B', 'C']) # only check that we're in the proper function, the rest does not work properly
 
+    def test_ipy3_gh412(self):
+        def test(a, *args, b=None, **kwargs):
+            return (a, args, b, kwargs)
+
+        self.assertEqual(test(1, 2, 3, b=4, c=5, d=6), (1, (2, 3), 4, {'c': 5, 'd': 6}))
+
 run_test(__name__)

@@ -2072,8 +2072,8 @@ class _empty:
 
 
 class _ParameterKind(int):
-    def __new__(self, val, name):
-        obj = int.__new__(self, val)
+    def __new__(self, *args, name):
+        obj = int.__new__(self, *args)
         obj._name = name
         return obj
 

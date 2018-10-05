@@ -1728,20 +1728,15 @@ namespace IronPython.Runtime.Operations {
         
         private class SurrogateEscapeDecoderFallback : DecoderFallback {
             private class SurrogateEscapeDecoderFallbackBuffer : DecoderFallbackBuffer {
-                private SurrogateEscapeDecoderFallback _fallback;
                 private int _count = -1;
                 private int _index = -1;
                 private char[] _output = new char[4];
 
                 public SurrogateEscapeDecoderFallbackBuffer(SurrogateEscapeDecoderFallback fallback) {
-                    _fallback = fallback;
+
                 }
 
                 public override bool Fallback(byte[] bytesUnknown, int index) {
-                    if (_count > 1) {
-                        ThrowLastBytesRecursive(bytesUnknown);
-                    }
-
                     _count = 0;
                     while (_count < 4 && _count < bytesUnknown.Length) {
                         if (bytesUnknown[_count] < 128) {
@@ -1766,7 +1761,7 @@ namespace IronPython.Runtime.Operations {
                     _index++;
 
                     if (_count < 0) {
-                        return '\0';
+                        return char.MinValue;
                     }
 
                     return _output[_index];
@@ -1790,23 +1785,6 @@ namespace IronPython.Runtime.Operations {
                 public override void Reset() {
                     _count = -1;
                     _index = -1;
-                }
-
-                internal void ThrowLastBytesRecursive(byte[] bytesUnknown) {
-                    // Create a string representation of our bytes.
-                    StringBuilder strBytes = new StringBuilder(bytesUnknown.Length * 3);
-                    int i;
-                    for (i = 0; i < bytesUnknown.Length && i < 20; i++) {
-                        if (strBytes.Length > 0)
-                            strBytes.Append(' ');
-                        strBytes.AppendFormat(CultureInfo.InvariantCulture, "\\x{0:X2}", bytesUnknown[i]);
-                    }
-                    // In case the string's really long
-                    if (i == 20)
-                        strBytes.Append(" ...");
-
-                    // Throw it, using our complete bytes
-                    throw new ArgumentException($"Recursive fallback not allowed for bytes {strBytes.ToString()}.", nameof(bytesUnknown));
                 }
             }
 
@@ -1920,13 +1898,12 @@ namespace IronPython.Runtime.Operations {
 #if FEATURE_ENCODING
         private class SurrogateEscapeEncoderFallback : EncoderFallback {
             private class SurrogateEscapeEncoderFallbackBuffer : EncoderFallbackBuffer {
-                private SurrogateEscapeEncoderFallback _fallback;
                 private int _count = -1;
                 private int _size;
                 private char _value;
 
                 public SurrogateEscapeEncoderFallbackBuffer(SurrogateEscapeEncoderFallback fallback) {
-                    _fallback = fallback;
+                    
                 }
 
                 public override bool Fallback(char charUnknown, int index) {
@@ -1948,7 +1925,7 @@ namespace IronPython.Runtime.Operations {
                     _count--;
 
                     if (_count < 0) {
-                        return '\0';
+                        return char.MinValue;
                     }
 
                     return _value;

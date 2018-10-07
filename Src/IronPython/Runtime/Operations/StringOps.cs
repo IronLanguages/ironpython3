@@ -1743,6 +1743,7 @@ namespace IronPython.Runtime.Operations {
             switch (errors) {
                 case "backslashreplace":
                 case "xmlcharrefreplace":
+                case "surrogateescape":
                 case "strict": e.DecoderFallback = final ? DecoderFallback.ExceptionFallback : new ExceptionFallBack(numBytes, e is UTF8Encoding); break;
                 case "replace": e.DecoderFallback = ReplacementFallback; break;
                 case "ignore":
@@ -1835,6 +1836,7 @@ namespace IronPython.Runtime.Operations {
                 case "replace": e.EncoderFallback = EncoderFallback.ReplacementFallback; break;
                 case "backslashreplace": e.EncoderFallback = new BackslashEncoderReplaceFallback(); break;
                 case "xmlcharrefreplace": e.EncoderFallback = new XmlCharRefEncoderReplaceFallback(); break;
+                case "surrogateescape": e.EncoderFallback = new SurrogateEscapeEncoderReplaceFallback(); break;
                 case "ignore":
                     e.EncoderFallback = new PythonEncoderFallback(encoding,
                         s,
@@ -2633,6 +2635,54 @@ namespace IronPython.Runtime.Operations {
 
             public override EncoderFallbackBuffer CreateFallbackBuffer() {
                 return new XmlCharRefEncoderReplaceFallbackBuffer();
+            }
+
+            public override int MaxCharCount {
+                get { throw new NotImplementedException(); }
+            }
+        }
+
+        class SurrogateEscapeEncoderReplaceFallback : EncoderFallback {
+            class SurrogateEscapeEncoderReplaceFallbackBuffer : EncoderFallbackBuffer {
+                private List<char> _buffer = new List<char>();
+                private int _index;
+
+                public override bool Fallback(char charUnknownHigh, char charUnknownLow, int index) {
+                    return false;
+                }
+
+                public override bool Fallback(char charUnknown, int index) {
+                    // Map bytes in range 0x80-0xff to range U+DC80 - U+DCFF
+                    int val = (int)charUnknown;
+                    if (val < 0x80 || val > 0xff){
+                        return false;
+                    }
+
+                    _buffer.Add((char)(0xdc80 + val - 0x80));
+                    return true;
+                }
+
+                public override char GetNextChar() {
+                    if (_index == _buffer.Count) return Char.MinValue;
+
+                    return _buffer[_index++];
+                }
+
+                public override bool MovePrevious() {
+                    if (_index > 0) {
+                        _index--;
+                        return true;
+                    }
+                    return false;
+                }
+
+                public override int Remaining {
+                    get { return _buffer.Count - _index; }
+                }
+            }
+
+            public override EncoderFallbackBuffer CreateFallbackBuffer() {
+                return new SurrogateEscapeEncoderReplaceFallbackBuffer();
             }
 
             public override int MaxCharCount {

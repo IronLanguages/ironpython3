@@ -538,17 +538,40 @@ namespace IronPython.Modules
             public string asname { get; set; }
         }
 
+        [PythonType("arg")]
+        public class ArgType : AST
+        {
+            public ArgType() {
+                _fields = new PythonTuple(new[] { "arg", "annotation" });
+            }
+
+            public ArgType(string arg, object annotation) : this() {
+                this.arg = arg;
+                this.annotation = annotation;
+            }
+
+            internal ArgType(Parameter parameter) {
+                arg = parameter.Name;
+                annotation = Convert(parameter.Annotation);
+            }
+
+            public string arg { get; set; }
+            public object annotation { get; set; }
+        }
+
         [PythonType]
         public class arguments : AST
         {
             public arguments() {
-                _fields = new PythonTuple(new[] { "args", "vararg", "kwarg", "defaults" });
+                _fields = new PythonTuple(new[] { "args", "vararg", "kwonlyargs", "kw_defaults", "kwarg", "defaults" });
             }
 
-            public arguments(PythonList args, [Optional]string vararg, [Optional]string kwarg, PythonList defaults)
-                :this() {
+            public arguments(PythonList args, [Optional]string vararg, [Optional]PythonList kwonlyargs, [Optional]PythonList kw_defaults, [Optional]string kwarg, PythonList defaults)
+                : this() {
                 this.args = args;
                 this.vararg = vararg;
+                this.kwonlyargs = kwonlyargs;
+                this.kw_defaults = kw_defaults;
                 this.kwarg = kwarg;
                 this.defaults = defaults;
             }
@@ -558,35 +581,48 @@ namespace IronPython.Modules
                 args = PythonOps.MakeEmptyList(parameters.Count);
                 defaults = PythonOps.MakeEmptyList(parameters.Count);
                 foreach (Parameter param in parameters) {
-                    if (param.IsList)
-                        vararg = param.Name;
-                    else if (param.IsDictionary)
-                        kwarg = param.Name;
-                    else {
-                        args.Add(new Name(param));
-                        if (param.DefaultValue != null)
-                            defaults.Add(Convert(param.DefaultValue));
+                    switch (param.Kind) {
+                        case ParameterKind.List:
+                            vararg = param.Name;
+                            break;
+                        case ParameterKind.Dictionary:
+                            kwarg = param.Name;
+                            break;
+                        case ParameterKind.KeywordOnly:
+                            kwonlyargs.Add(new ArgType(param));
+                            kw_defaults.Add(param.DefaultValue == null ? null : Convert(param.DefaultValue));
+                            break;
+                        default:
+                            args.Add(new ArgType(param));
+                            if (param.DefaultValue != null)
+                                defaults.Add(Convert(param.DefaultValue));
+                            break;
                     }
                 }
             }
 
-
-            internal arguments(Parameter[] parameters)
-                : this(parameters as IList<Parameter>) {
-            }
-
             internal Parameter[] Revert() {
-                List<Parameter> parameters = new List<Parameter>();
+                var parameters = new List<Parameter>();
+                for (var i = kwonlyargs.Count - 1; i >= 0; i--) {
+                    var kwonlyarg = (ArgType)kwonlyargs[i];
+                    var param = new Parameter(kwonlyarg.arg, ParameterKind.KeywordOnly) {
+                        Annotation = expr.Revert(kwonlyarg.annotation),
+                        DefaultValue = expr.Revert(kw_defaults[i])
+                    };
+                }
                 int argIdx = args.Count - 1;
                 for (int defIdx = defaults.Count - 1; defIdx >= 0; defIdx--, argIdx--) {
-                    Name name = (Name)args[argIdx];
-                    Parameter p = new Parameter(name.id);
-                    p.DefaultValue = expr.Revert(defaults[defIdx]);
-                    parameters.Add(p);
+                    var arg = (ArgType)args[argIdx];
+                    parameters.Add(new Parameter(arg.arg) {
+                        Annotation = expr.Revert(arg.annotation),
+                        DefaultValue = expr.Revert(defaults[defIdx])
+                    });
                 }
                 while (argIdx >= 0) {
-                    Name name = (Name)args[argIdx--];
-                    parameters.Add(new Parameter(name.id));
+                    var arg = (ArgType)args[argIdx--];
+                    parameters.Add(new Parameter(arg.arg) {
+                        Annotation = expr.Revert(arg.annotation)
+                    });
                 }
                 parameters.Reverse();
                 if (vararg != null)
@@ -599,6 +635,10 @@ namespace IronPython.Modules
             public PythonList args { get; set; }
 
             public string vararg { get; set; }
+
+            public PythonList kwonlyargs { get; set; }
+
+            public PythonList kw_defaults { get; set; }
 
             public string kwarg { get; set; }
 

@@ -2598,6 +2598,14 @@ namespace IronPython.Runtime.Operations {
             return function.Defaults[index];
         }
 
+        public static object GetFunctionKeywordOnlyParameterValue(PythonFunction function, string name, PythonDictionary dict) {
+            if (dict != null && dict.TryRemoveValue(name, out object val)) {
+                return val;
+            }
+
+            return function.__kwdefaults__[name];
+        }
+
         public static void CheckParamsZero(PythonFunction function, List extraArgs) {
             if (extraArgs.__len__() != 0) {
                 throw function.BadArgumentError(extraArgs.__len__() + function.NormalArgumentCount);
@@ -3024,6 +3032,11 @@ namespace IronPython.Runtime.Operations {
 
         public static object FunctionGetDefaultValue(PythonFunction func, int index) {
             return func.Defaults[index];
+        }
+
+        public static object FunctionGetKeywordOnlyDefaultValue(PythonFunction func, string name) {
+            func.__kwdefaults__.TryGetValue(name, out object res);
+            return res;
         }
 
         public static int FunctionGetCompatibility(PythonFunction func) {
@@ -3624,7 +3637,7 @@ namespace IronPython.Runtime.Operations {
                 return res;
             }
 
-            Exception ex = isGlobal ? GlobalNameError(name) : NameError(name);
+            var ex = NameError(name);
             if (lightThrow) {
                 return LightExceptions.Throw(ex);
             }

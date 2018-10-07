@@ -339,7 +339,7 @@ namespace IronPython.Compiler {
 
         public override Expression/*!*/ Reduce() {
             return Expression.Call(
-                typeof(PythonOps).GetMethod(_isLocal ? "GetLocal" : "GetGlobal"),
+                typeof(PythonOps).GetMethod(_isLocal ? nameof(PythonOps.GetLocal) : nameof(PythonOps.GetGlobal)),
                 _codeContextExpr,
                 Utils.Constant(_name)
             );

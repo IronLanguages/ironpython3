@@ -315,7 +315,7 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
             return item[0] in [0, 1]
 
         self.assertEqual(filter(f, enumerate(['a', 'b'])), [(0, 'a'), (1, 'b')])
-        self.assertEqual(filter(lambda j, _: j in [0, 1], enumerate([10.0, 27.0])),
+        self.assertEqual(filter(lambda x: x[0] in [0, 1], enumerate([10.0, 27.0])),
                 [(0, 10.0), (1, 27.0)])
 
     def test_invalid_args_cp20616(self):

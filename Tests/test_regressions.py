@@ -2,7 +2,6 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
-
 """
 This module consists of regression tests for CodePlex and Dev10 IronPython bugs
 added primarily by IP developers that need to be folded into other test modules
@@ -267,7 +266,7 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
                                     excinfo1.tb_frame.f_lineno))
                     excinfo1 = excinfo1.tb_next
                 raise
-        except Exception, e:
+        except Exception as e:
             excinfo2 = sys.exc_info()[2]
             exc2_list = []
             while excinfo2:
@@ -316,9 +315,8 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
             return item[0] in [0, 1]
 
         self.assertEqual(filter(f, enumerate(['a', 'b'])), [(0, 'a'), (1, 'b')])
-        self.assertEqual(filter( lambda (j, _): j in [0, 1], enumerate([10.0, 27.0])),
+        self.assertEqual(filter(lambda j, _: j in [0, 1], enumerate([10.0, 27.0])),
                 [(0, 10.0), (1, 27.0)])
-
 
     def test_invalid_args_cp20616(self):
         test_cases = {
@@ -491,7 +489,7 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
                 return 3
 
         c = C()
-        print bool(c)
+        print(bool(c))
         self.assertEqual(not c, False)
 
     @skipUnlessIronPython()
@@ -542,7 +540,7 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
             class C:
                 field=7
                 def G(self):
-                    print a
+                    print(a)
                     b = 4
                     return deepcopy(locals().keys())
 
@@ -558,7 +556,7 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
         def f():
             a = 10
             def g1():
-                print a
+                print(a)
                 return deepcopy(locals().keys())
             def g2():
                 return deepcopy(locals().keys())
@@ -573,15 +571,15 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
         code = code1 = code2 = None
         try:
             code = compile(source, "dummy", "single", flags, 1)
-        except SyntaxError, err:
+        except SyntaxError as err:
             pass
         try:
             code1 = compile(source + "\n", "dummy", "single", flags, 1)
-        except SyntaxError, err1:
+        except SyntaxError as err1:
             pass
         try:
             code2 = compile(source + "\n\n", "dummy", "single", flags, 1)
-        except SyntaxError, err2:
+        except SyntaxError as err2:
             pass
         if not code:
             retVal.append(type(err1))
@@ -607,7 +605,7 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
                 "<field# Field on ClassWithDefaultField>")
         try:
             ClassWithDefaultField.Field = 20
-        except ValueError, e:
+        except ValueError as e:
             self.assertEqual(e.message,
                     "assignment to instance field w/o instance")
         self.assertEqual(ClassWithDefaultField().Field, 10)
@@ -683,7 +681,7 @@ class C:
     def test_cp23914(self):
         class C(object):
             def __init__(self,x,y,z):
-                print x,y,z
+                print(x,y,z)
 
         m = type.__call__
 
@@ -691,8 +689,8 @@ class C:
             try:
                 l = m(C,1,2,3)
                 l = m(C,z=3,y=2,x=1)
-            except Exception, e:
-                print e.message
+            except Exception as e:
+                print(e.message)
 
         self.assertEqual(trapper.messages[0:2], ['1 2 3', '1 2 3'])
 
@@ -718,7 +716,7 @@ class C:
             sys.path.append(os.path.join(self.test_dir, "encoded_files"))
             import cp20472 #no encoding specified and has non-ascii characters
             raise Exception("Line above should had thrown!")
-        except SyntaxError, e:
+        except SyntaxError as e:
             self.assertTrue(e.msg.startswith("Non-ASCII character '\\xcf' in file"))
             if is_cli:
                 self.assertTrue(e.msg.endswith("on line 1, but no encoding declared; see http://www.python.org/peps/pep-0263.html for details"))
@@ -752,22 +750,22 @@ class C:
 
             class Real(Base, float):
                 def __new__(cls, *args, **kwargs):
-                    print 'real new'
+                    print('real new')
                     result = Stub.__new__(cls, *args, **kwargs)
                     return result
                 def __init__(self, *args, **kwargs):
-                    print 'real init'
+                    print('real init')
                 def __del__(self):
-                    print 'real del'
+                    print('real del')
 
             class Stub(Real):
                 def __new__(cls, *args, **kwargs):
-                    print 'stub new'
+                    print('stub new')
                     return float.__new__(Stub, args[0])
                 def __init__(self, *args, **kwargs):
-                    print 'stub init'
+                    print('stub init')
                 def __del__(self):
-                    print "this should never happen; it's just here to ensure I get registered for GC"
+                    print("this should never happen; it's just here to ensure I get registered for GC")
 
             def ConstructReal(x):
                 f = Real(x)
@@ -978,10 +976,10 @@ class C:
     def test_ipy3_gh219(self):
         """https://github.com/IronLanguages/ironpython3/pull/219"""
         with self.assertRaises(SyntaxError):
-            exec '["a"] = [1]'
+            exec('["a"] = [1]')
 
         with self.assertRaises(SyntaxError):
-            exec '[a + 1] = [1]'
+            exec('[a + 1] = [1]')
 
     def test_ipy3_gh215(self):
         """https://github.com/IronLanguages/ironpython3/pull/215"""

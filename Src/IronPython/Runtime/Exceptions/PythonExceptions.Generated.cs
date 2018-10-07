@@ -206,12 +206,6 @@ namespace IronPython.Runtime.Exceptions {
 
         [PythonType("OSError"), PythonHidden, DynamicBaseType, Serializable]
         public partial class _OSError : BaseException {
-            private object _errno;
-            private object _strerror;
-            private object _filename;
-            private object _winerror;
-            private object _filename2;
-
             public _OSError() : base(OSError) { }
             public _OSError(PythonType type) : base(type) { }
 
@@ -219,31 +213,15 @@ namespace IronPython.Runtime.Exceptions {
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
 
-            public object errno {
-                get { return _errno; }
-                set { _errno = value; }
-            }
+            public object errno { get; set; }
 
-            public object strerror {
-                get { return _strerror; }
-                set { _strerror = value; }
-            }
+            public object strerror { get; set; }
 
-            public object filename {
-                get { return _filename; }
-                set { _filename = value; }
-            }
+            public object filename { get; set; }
 
-            public object winerror {
-                get { return _winerror; }
-                set { _winerror = value; }
-            }
+            public object winerror { get; set; }
 
-            public object filename2 {
-                get { return _filename2; }
-                set { _filename2 = value; }
-            }
-
+            public object filename2 { get; set; }
         }
 
         [MultiRuntimeAware]

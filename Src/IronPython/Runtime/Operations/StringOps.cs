@@ -167,7 +167,7 @@ namespace IronPython.Runtime.Operations {
             }
             if (x is string) {
                 // check ascii
-                return CheckAsciiString(context, (string)x);
+                return x;
             }
 
             // we don't invoke PythonOps.StringRepr here because we want to return the 
@@ -217,7 +217,7 @@ namespace IronPython.Runtime.Operations {
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull]string @object) {
             if (cls == TypeCache.String) {
-                return CheckAsciiString(context, @object);
+                return @object;
             } else {
                 return cls.CreateInstance(context, @object);
             }
@@ -235,7 +235,7 @@ namespace IronPython.Runtime.Operations {
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, PythonType cls, char @object) {
             if (cls == TypeCache.String) {
-                return CheckAsciiString(context, ScriptingRuntimeHelpers.CharToString(@object));
+                return ScriptingRuntimeHelpers.CharToString(@object);
             } else {
                 return cls.CreateInstance(context, __new__(context, TypeCache.String, @object));
             }

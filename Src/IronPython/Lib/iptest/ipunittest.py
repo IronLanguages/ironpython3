@@ -73,7 +73,7 @@ class stderr_trapper(object):
         return self
     def __exit__(self, *args):
         self.stderr.flush()
-        self.stderr.reset()
+        self.stderr.seek(0)
         self.messages = self.stderr.readlines()
         self.messages = [x.rstrip() for x in self.messages]
         self.stderr.close()
@@ -87,7 +87,7 @@ class stdout_trapper(object):
         return self
     def __exit__(self, *args):
         self.stdout.flush()
-        self.stdout.reset()
+        self.stdout.seek(0)
         self.messages = self.stdout.readlines()
         self.messages = [x.rstrip() for x in self.messages]
         self.stdout.close()

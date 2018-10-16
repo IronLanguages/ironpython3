@@ -14,7 +14,6 @@ is_cpython    =  not is_ironpython
 is_posix      =  sys.platform == 'posix'
 is_osx        =  sys.platform == 'darwin'
 is_netcoreapp =  False
-is_netcoreapp20 = False
 is_netcoreapp21 = False
 is_mono = False
 
@@ -24,7 +23,6 @@ if is_ironpython:
     import System
     import clr
     is_netcoreapp = clr.IsNetCoreApp
-    is_netcoreapp20 = clr.TargetFramework == ".NETCoreApp,Version=v2.0"
     is_netcoreapp21 = clr.TargetFramework == ".NETCoreApp,Version=v2.1"
     if is_netcoreapp: clr.AddReference("System.Runtime.Extensions")
     is_posix = sys.platform == 'posix' or System.Environment.OSVersion.Platform == System.PlatformID.Unix

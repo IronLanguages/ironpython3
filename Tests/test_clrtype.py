@@ -4,13 +4,11 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_netcoreapp, is_netcoreapp20, is_posix, run_test
+from iptest import IronPythonTestCase, is_netcoreapp, is_posix, run_test
 
 import clr
 import clrtype
 
-if is_netcoreapp20:
-    clr.AddReference("System.Private.Xml")
 clr.AddReference("System.Xml")
 
 import System

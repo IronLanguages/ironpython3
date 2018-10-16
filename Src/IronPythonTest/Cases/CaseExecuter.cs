@@ -18,7 +18,7 @@ namespace IronPythonTest.Cases {
     class CaseExecuter {
         private static string Executable {
             get {
-#if NETCOREAPP2_0 || NETCOREAPP2_1
+#if NETCOREAPP2_1
                 if (Environment.OSVersion.Platform == PlatformID.Unix) {
                     return Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "ipy.sh");
                 }

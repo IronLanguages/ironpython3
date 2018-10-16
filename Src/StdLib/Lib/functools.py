@@ -683,7 +683,7 @@ def singledispatch(func):
     """
     registry = {}
     dispatch_cache = WeakKeyDictionary()
-    cache_token = None
+    cache_token = [None]
 
     def dispatch(cls):
         """generic_func.dispatch(cls) -> <function implementation>
@@ -693,11 +693,11 @@ def singledispatch(func):
 
         """
         nonlocal cache_token
-        if cache_token is not None:
+        if cache_token[0] is not None:
             current_token = get_cache_token()
-            if cache_token != current_token:
+            if cache_token[0] != current_token:
                 dispatch_cache.clear()
-                cache_token = current_token
+                cache_token[0] = current_token
         try:
             impl = dispatch_cache[cls]
         except KeyError:
@@ -718,8 +718,8 @@ def singledispatch(func):
         if func is None:
             return lambda f: register(cls, f)
         registry[cls] = func
-        if cache_token is None and hasattr(cls, '__abstractmethods__'):
-            cache_token = get_cache_token()
+        if cache_token[0] is None and hasattr(cls, '__abstractmethods__'):
+            cache_token[0] = get_cache_token()
         dispatch_cache.clear()
         return func
 

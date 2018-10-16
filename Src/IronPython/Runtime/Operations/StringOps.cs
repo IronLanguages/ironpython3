@@ -1650,7 +1650,7 @@ namespace IronPython.Runtime.Operations {
             // if we have a valid code page try and get a reasonable name.  The
             // web names / mail displays match tend to CPython's terse names
             if (encoding.CodePage != 0) {
-#if !NETCOREAPP2_0 && !NETCOREAPP2_1
+#if !NETCOREAPP2_1
                 if (encoding.IsBrowserDisplay) {
                     name = encoding.WebName;
                 }
@@ -1875,7 +1875,7 @@ namespace IronPython.Runtime.Operations {
 
             private static Dictionary<string, EncodingInfoWrapper> MakeCodecsDict() {
                 Dictionary<string, EncodingInfoWrapper> d = new Dictionary<string, EncodingInfoWrapper>();
-#if NETCOREAPP2_0 || NETCOREAPP2_1
+#if NETCOREAPP2_1
                 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
                 // TODO: add more encodings
                 d["cp1252"] = d["windows-1252"] = new EncodingInfoWrapper(Encoding.GetEncoding(1252));

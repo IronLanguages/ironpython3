@@ -497,7 +497,7 @@ namespace IronPython.Modules {
                         if (_dynamicModule == null) {
                             var attributes = new[] { 
                                 new CustomAttributeBuilder(typeof(UnverifiableCodeAttribute).GetConstructor(ReflectionUtils.EmptyTypes), new object[0]),
-#if !NETCOREAPP2_0 && !NETCOREAPP2_1
+#if !NETCOREAPP2_1
                                 //PermissionSet(SecurityAction.Demand, Unrestricted = true)
                                 new CustomAttributeBuilder(typeof(PermissionSetAttribute).GetConstructor(new Type[] { typeof(SecurityAction) }), 
                                     new object[]{ SecurityAction.Demand },
@@ -508,7 +508,7 @@ namespace IronPython.Modules {
                             };
 
                             string name = typeof(CTypes).Namespace + ".DynamicAssembly";
-#if NETCOREAPP2_0 || NETCOREAPP2_1
+#if NETCOREAPP2_1
                             var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(name), AssemblyBuilderAccess.Run, attributes);
 #else
                             var assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(name), AssemblyBuilderAccess.Run, attributes);

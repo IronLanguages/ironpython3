@@ -4,7 +4,7 @@
 
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_netcoreapp20, is_posix, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
 
 myfuncCalled = False
 passedarg = None
@@ -318,7 +318,6 @@ class DelegateTest(IronPythonTestCase):
 
 # SuperDelegate Tests
 
-    @unittest.skipIf(is_netcoreapp20 and is_posix, "bug with .NET Core 2.0")
     def test_basic(self):
         import IronPythonTest
         class TestCounter:

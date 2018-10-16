@@ -320,6 +320,116 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         [MultiRuntimeAware]
+        private static PythonType InterruptedErrorStorage;
+        public static PythonType InterruptedError {
+            get {
+                if (InterruptedErrorStorage == null) {
+                    Interlocked.CompareExchange(ref InterruptedErrorStorage, CreateSubType(OSError, "InterruptedError", (msg, innerException) => new InterruptedException(msg, innerException)), null);
+                }
+                return InterruptedErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
+        private static PythonType ChildProcessErrorStorage;
+        public static PythonType ChildProcessError {
+            get {
+                if (ChildProcessErrorStorage == null) {
+                    Interlocked.CompareExchange(ref ChildProcessErrorStorage, CreateSubType(OSError, "ChildProcessError", (msg, innerException) => new ChildProcessException(msg, innerException)), null);
+                }
+                return ChildProcessErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
+        private static PythonType IsADirectoryErrorStorage;
+        public static PythonType IsADirectoryError {
+            get {
+                if (IsADirectoryErrorStorage == null) {
+                    Interlocked.CompareExchange(ref IsADirectoryErrorStorage, CreateSubType(OSError, "IsADirectoryError", (msg, innerException) => new IsADirectoryException(msg, innerException)), null);
+                }
+                return IsADirectoryErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
+        private static PythonType ProcessLookupErrorStorage;
+        public static PythonType ProcessLookupError {
+            get {
+                if (ProcessLookupErrorStorage == null) {
+                    Interlocked.CompareExchange(ref ProcessLookupErrorStorage, CreateSubType(OSError, "ProcessLookupError", (msg, innerException) => new ProcessLookupException(msg, innerException)), null);
+                }
+                return ProcessLookupErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
+        private static PythonType TimeoutErrorStorage;
+        public static PythonType TimeoutError {
+            get {
+                if (TimeoutErrorStorage == null) {
+                    Interlocked.CompareExchange(ref TimeoutErrorStorage, CreateSubType(OSError, "TimeoutError", (msg, innerException) => new TimeoutException(msg, innerException)), null);
+                }
+                return TimeoutErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
+        private static PythonType ConnectionErrorStorage;
+        public static PythonType ConnectionError {
+            get {
+                if (ConnectionErrorStorage == null) {
+                    Interlocked.CompareExchange(ref ConnectionErrorStorage, CreateSubType(OSError, "ConnectionError", (msg, innerException) => new ConnectionException(msg, innerException)), null);
+                }
+                return ConnectionErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
+        private static PythonType BrokenPipeErrorStorage;
+        public static PythonType BrokenPipeError {
+            get {
+                if (BrokenPipeErrorStorage == null) {
+                    Interlocked.CompareExchange(ref BrokenPipeErrorStorage, CreateSubType(ConnectionError, "BrokenPipeError", (msg, innerException) => new BrokenPipeException(msg, innerException)), null);
+                }
+                return BrokenPipeErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
+        private static PythonType ConnectionAbortedErrorStorage;
+        public static PythonType ConnectionAbortedError {
+            get {
+                if (ConnectionAbortedErrorStorage == null) {
+                    Interlocked.CompareExchange(ref ConnectionAbortedErrorStorage, CreateSubType(ConnectionError, "ConnectionAbortedError", (msg, innerException) => new ConnectionAbortedException(msg, innerException)), null);
+                }
+                return ConnectionAbortedErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
+        private static PythonType ConnectionRefusedErrorStorage;
+        public static PythonType ConnectionRefusedError {
+            get {
+                if (ConnectionRefusedErrorStorage == null) {
+                    Interlocked.CompareExchange(ref ConnectionRefusedErrorStorage, CreateSubType(ConnectionError, "ConnectionRefusedError", (msg, innerException) => new ConnectionRefusedException(msg, innerException)), null);
+                }
+                return ConnectionRefusedErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
+        private static PythonType ConnectionResetErrorStorage;
+        public static PythonType ConnectionResetError {
+            get {
+                if (ConnectionResetErrorStorage == null) {
+                    Interlocked.CompareExchange(ref ConnectionResetErrorStorage, CreateSubType(ConnectionError, "ConnectionResetError", (msg, innerException) => new ConnectionResetException(msg, innerException)), null);
+                }
+                return ConnectionResetErrorStorage;
+            }
+        }
+
+        [MultiRuntimeAware]
         private static PythonType EOFErrorStorage;
         public static PythonType EOFError {
             get {
@@ -912,7 +1022,11 @@ namespace IronPython.Runtime.Exceptions {
         // generated by function: gen_topython_helper from: generate_exceptions.py
 
         private static BaseException/*!*/ ToPythonHelper(System.Exception clrException) {
+            if (clrException is BrokenPipeException) return new PythonExceptions._OSError(PythonExceptions.BrokenPipeError);
             if (clrException is BytesWarningException) return new PythonExceptions.BaseException(PythonExceptions.BytesWarning);
+            if (clrException is ConnectionAbortedException) return new PythonExceptions._OSError(PythonExceptions.ConnectionAbortedError);
+            if (clrException is ConnectionRefusedException) return new PythonExceptions._OSError(PythonExceptions.ConnectionRefusedError);
+            if (clrException is ConnectionResetException) return new PythonExceptions._OSError(PythonExceptions.ConnectionResetError);
             if (clrException is DecoderFallbackException) return new PythonExceptions._UnicodeDecodeError();
             if (clrException is DeprecationWarningException) return new PythonExceptions.BaseException(PythonExceptions.DeprecationWarning);
             if (clrException is DivideByZeroException) return new PythonExceptions.BaseException(PythonExceptions.ZeroDivisionError);
@@ -933,13 +1047,19 @@ namespace IronPython.Runtime.Exceptions {
             if (clrException is ArgumentException) return new PythonExceptions.BaseException(PythonExceptions.ValueError);
             if (clrException is ArithmeticException) return new PythonExceptions.BaseException(PythonExceptions.ArithmeticError);
             if (clrException is BlockingIOException) return new PythonExceptions._BlockingIOError();
+            if (clrException is ChildProcessException) return new PythonExceptions._OSError(PythonExceptions.ChildProcessError);
+            if (clrException is ConnectionException) return new PythonExceptions._OSError(PythonExceptions.ConnectionError);
             if (clrException is FileExistsException) return new PythonExceptions._OSError(PythonExceptions.FileExistsError);
             if (clrException is IndentationException) return new PythonExceptions._SyntaxError(PythonExceptions.IndentationError);
             if (clrException is IndexOutOfRangeException) return new PythonExceptions.BaseException(PythonExceptions.IndexError);
+            if (clrException is InterruptedException) return new PythonExceptions._OSError(PythonExceptions.InterruptedError);
+            if (clrException is IsADirectoryException) return new PythonExceptions._OSError(PythonExceptions.IsADirectoryError);
             if (clrException is KeyNotFoundException) return new PythonExceptions.BaseException(PythonExceptions.KeyError);
             if (clrException is NotADirectoryException) return new PythonExceptions._OSError(PythonExceptions.NotADirectoryError);
             if (clrException is NotImplementedException) return new PythonExceptions.BaseException(PythonExceptions.NotImplementedError);
             if (clrException is OutOfMemoryException) return new PythonExceptions.BaseException(PythonExceptions.MemoryError);
+            if (clrException is ProcessLookupException) return new PythonExceptions._OSError(PythonExceptions.ProcessLookupError);
+            if (clrException is TimeoutException) return new PythonExceptions._OSError(PythonExceptions.TimeoutError);
             if (clrException is UnauthorizedAccessException) return new PythonExceptions._OSError(PythonExceptions.PermissionError);
             if (clrException is UnboundLocalException) return new PythonExceptions.BaseException(PythonExceptions.UnboundLocalError);
             if (clrException is UnicodeTranslateException) return new PythonExceptions._UnicodeTranslateError();

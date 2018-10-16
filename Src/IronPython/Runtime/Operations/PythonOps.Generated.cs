@@ -111,6 +111,46 @@ namespace IronPython.Runtime.Operations {
             return new NotADirectoryException(string.Format(format, args));
         }
 
+        public static Exception InterruptedError(string format, params object[] args) {
+            return new InterruptedException(string.Format(format, args));
+        }
+
+        public static Exception ChildProcessError(string format, params object[] args) {
+            return new ChildProcessException(string.Format(format, args));
+        }
+
+        public static Exception IsADirectoryError(string format, params object[] args) {
+            return new IsADirectoryException(string.Format(format, args));
+        }
+
+        public static Exception ProcessLookupError(string format, params object[] args) {
+            return new ProcessLookupException(string.Format(format, args));
+        }
+
+        public static Exception ConnectionError(string format, params object[] args) {
+            return new ConnectionException(string.Format(format, args));
+        }
+
+        public static Exception TimeoutError(string format, params object[] args) {
+            return new TimeoutException(string.Format(format, args));
+        }
+
+        public static Exception ConnectionAbortedError(string format, params object[] args) {
+            return new ConnectionAbortedException(string.Format(format, args));
+        }
+
+        public static Exception BrokenPipeError(string format, params object[] args) {
+            return new BrokenPipeException(string.Format(format, args));
+        }
+
+        public static Exception ConnectionRefusedError(string format, params object[] args) {
+            return new ConnectionRefusedException(string.Format(format, args));
+        }
+
+        public static Exception ConnectionResetError(string format, params object[] args) {
+            return new ConnectionResetException(string.Format(format, args));
+        }
+
         // *** END GENERATED CODE ***
 
         #endregion

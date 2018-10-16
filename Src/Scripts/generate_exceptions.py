@@ -24,7 +24,9 @@ pythonExcs = ['ImportError', 'RuntimeError', 'UnicodeTranslateError', 'PendingDe
               'LookupError', 'OSError', 'DeprecationWarning', 'UnicodeError', 'FloatingPointError', 'ReferenceError',
               'FutureWarning', 'AssertionError', 'RuntimeWarning', 'ImportWarning', 'UserWarning', 'SyntaxWarning', 
               'UnicodeWarning', 'StopIteration', 'BytesWarning', 'BufferError', 'ResourceWarning', 'FileExistsError',
-              'BlockingIOError', 'NotADirectoryError']
+              'BlockingIOError', 'NotADirectoryError', 'InterruptedError', 'ChildProcessError', 'IsADirectoryError',
+              'ProcessLookupError', 'ConnectionError', 'TimeoutError', 'ConnectionAbortedError', 'BrokenPipeError',
+              'ConnectionRefusedError', 'ConnectionResetError']
 
 class ExceptionInfo(object):
     def __init__(self, name, clrException, args, fields, subclasses, baseMapping = None):
@@ -107,6 +109,17 @@ exceptionHierarchy = ExceptionInfo('BaseException', 'IronPython.Runtime.Exceptio
                     ExceptionInfo('FileNotFoundError', 'System.IO.FileNotFoundException', None, (), ()),
                     ExceptionInfo('PermissionError', 'System.UnauthorizedAccessException', None, (), ()),
                     ExceptionInfo('NotADirectoryError', 'IronPython.Runtime.Exceptions.NotADirectoryException', None, (), ()),
+                    ExceptionInfo('InterruptedError', 'IronPython.Runtime.Exceptions.InterruptedException', None, (), ()),
+                    ExceptionInfo('ChildProcessError', 'IronPython.Runtime.Exceptions.ChildProcessException', None, (), ()),
+                    ExceptionInfo('IsADirectoryError', 'IronPython.Runtime.Exceptions.IsADirectoryException', None, (), ()),
+                    ExceptionInfo('ProcessLookupError', 'IronPython.Runtime.Exceptions.ProcessLookupException', None, (), ()),
+                    ExceptionInfo('TimeoutError', 'IronPython.Runtime.Exceptions.TimeoutException', None, (), ()),
+                    ExceptionInfo('ConnectionError', 'IronPython.Runtime.Exceptions.ConnectionException', None, (), (
+                          ExceptionInfo('BrokenPipeError', 'IronPython.Runtime.Exceptions.BrokenPipeException', None, (), ()),
+                          ExceptionInfo('ConnectionAbortedError', 'IronPython.Runtime.Exceptions.ConnectionAbortedException', None, (), ()),
+                          ExceptionInfo('ConnectionRefusedError', 'IronPython.Runtime.Exceptions.ConnectionRefusedException', None, (), ()),
+                          ExceptionInfo('ConnectionResetError', 'IronPython.Runtime.Exceptions.ConnectionResetException', None, (), ()),
+                         )),
                     ),
                 ),
                 ExceptionInfo('EOFError', 'System.IO.EndOfStreamException', None, (), ()),

@@ -2148,8 +2148,7 @@ namespace IronPython.Runtime.Operations {
             // This is necessary to be able to catch python's KeyboardInterrupt exceptions.
             // CLR restrictions require that this must be called from within a catch block.  This gets
             // called even if we aren't going to handle the exception - we'll just reset the abort 
-            ThreadAbortException tae = clrException as ThreadAbortException;
-            if (tae != null && tae.ExceptionState is KeyboardInterruptException) {
+            if (clrException is ThreadAbortException tae && tae.ExceptionState is KeyboardInterruptException) {
                 Thread.ResetAbort();
             }
 #endif

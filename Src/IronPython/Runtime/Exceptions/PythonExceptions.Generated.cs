@@ -38,8 +38,6 @@ namespace IronPython.Runtime.Exceptions {
 
         [PythonType("SystemExit"), PythonHidden, DynamicBaseType, Serializable]
         public partial class _SystemExit : BaseException {
-            private object _code;
-
             public _SystemExit() : base(SystemExit) { }
             public _SystemExit(PythonType type) : base(type) { }
 
@@ -47,10 +45,7 @@ namespace IronPython.Runtime.Exceptions {
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
 
-            public object code {
-                get { return _code; }
-                set { _code = value; }
-            }
+            public object code { get; set; }
 
         }
 
@@ -100,8 +95,6 @@ namespace IronPython.Runtime.Exceptions {
 
         [PythonType("StopIteration"), PythonHidden, DynamicBaseType, Serializable]
         public partial class _StopIteration : BaseException {
-            private object _value;
-
             public _StopIteration() : base(StopIteration) { }
             public _StopIteration(PythonType type) : base(type) { }
 
@@ -109,10 +102,7 @@ namespace IronPython.Runtime.Exceptions {
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
 
-            public object value {
-                get { return _value; }
-                set { _value = value; }
-            }
+            public object value { get; set; }
 
         }
 
@@ -222,6 +212,7 @@ namespace IronPython.Runtime.Exceptions {
             public object winerror { get; set; }
 
             public object filename2 { get; set; }
+
         }
 
         [MultiRuntimeAware]
@@ -237,8 +228,6 @@ namespace IronPython.Runtime.Exceptions {
 
         [PythonType("BlockingIOError"), PythonHidden, DynamicBaseType, Serializable]
         public partial class _BlockingIOError : _OSError {
-            private object _characters_written;
-
             public _BlockingIOError() : base(BlockingIOError) { }
             public _BlockingIOError(PythonType type) : base(type) { }
 
@@ -246,10 +235,7 @@ namespace IronPython.Runtime.Exceptions {
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
 
-            public object characters_written {
-                get { return _characters_written; }
-                set { _characters_written = value; }
-            }
+            public object characters_written { get; set; }
 
         }
 
@@ -321,9 +307,6 @@ namespace IronPython.Runtime.Exceptions {
 
         [PythonType("ImportError"), PythonHidden, DynamicBaseType, Serializable]
         public partial class _ImportError : BaseException {
-            private object _name;
-            private object _path;
-
             public _ImportError() : base(ImportError) { }
             public _ImportError(PythonType type) : base(type) { }
 
@@ -331,15 +314,9 @@ namespace IronPython.Runtime.Exceptions {
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
 
-            public object name {
-                get { return _name; }
-                set { _name = value; }
-            }
+            public object name { get; set; }
 
-            public object path {
-                get { return _path; }
-                set { _path = value; }
-            }
+            public object path { get; set; }
 
         }
 
@@ -455,13 +432,6 @@ namespace IronPython.Runtime.Exceptions {
 
         [PythonType("SyntaxError"), PythonHidden, DynamicBaseType, Serializable]
         public partial class _SyntaxError : BaseException {
-            private object _text;
-            private object _print_file_and_line;
-            private object _filename;
-            private object _lineno;
-            private object _offset;
-            private object _msg;
-
             public _SyntaxError() : base(SyntaxError) { }
             public _SyntaxError(PythonType type) : base(type) { }
 
@@ -469,35 +439,17 @@ namespace IronPython.Runtime.Exceptions {
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
 
-            public object text {
-                get { return _text; }
-                set { _text = value; }
-            }
+            public object text { get; set; }
 
-            public object print_file_and_line {
-                get { return _print_file_and_line; }
-                set { _print_file_and_line = value; }
-            }
+            public object print_file_and_line { get; set; }
 
-            public object filename {
-                get { return _filename; }
-                set { _filename = value; }
-            }
+            public object filename { get; set; }
 
-            public object lineno {
-                get { return _lineno; }
-                set { _lineno = value; }
-            }
+            public object lineno { get; set; }
 
-            public object offset {
-                get { return _offset; }
-                set { _offset = value; }
-            }
+            public object offset { get; set; }
 
-            public object msg {
-                get { return _msg; }
-                set { _msg = value; }
-            }
+            public object msg { get; set; }
 
         }
 
@@ -580,12 +532,6 @@ namespace IronPython.Runtime.Exceptions {
 
         [PythonType("UnicodeDecodeError"), PythonHidden, DynamicBaseType, Serializable]
         public partial class _UnicodeDecodeError : BaseException {
-            private object _start;
-            private object _reason;
-            private object _object;
-            private object _end;
-            private object _encoding;
-
             public _UnicodeDecodeError() : base(UnicodeDecodeError) { }
             public _UnicodeDecodeError(PythonType type) : base(type) { }
 
@@ -594,11 +540,11 @@ namespace IronPython.Runtime.Exceptions {
             }
 
             public void __init__(object encoding, object @object, object start, object end, object reason) {
-                _encoding = encoding;
-                _object = @object;
-                _start = start;
-                _end = end;
-                _reason = reason;
+                this.encoding = encoding;
+                this.@object = @object;
+                this.start = start;
+                this.end = end;
+                this.reason = reason;
                 args = PythonTuple.MakeTuple(encoding, @object, start, end, reason);
             }
 
@@ -609,30 +555,15 @@ namespace IronPython.Runtime.Exceptions {
                 __init__(encoding, @object, start, end, reason);
             }
 
-            public object start {
-                get { return _start; }
-                set { _start = value; }
-            }
+            public object start { get; set; }
 
-            public object reason {
-                get { return _reason; }
-                set { _reason = value; }
-            }
+            public object reason { get; set; }
 
-            public object @object {
-                get { return _object; }
-                set { _object = value; }
-            }
+            public object @object { get; set; }
 
-            public object end {
-                get { return _end; }
-                set { _end = value; }
-            }
+            public object end { get; set; }
 
-            public object encoding {
-                get { return _encoding; }
-                set { _encoding = value; }
-            }
+            public object encoding { get; set; }
 
         }
 
@@ -649,12 +580,6 @@ namespace IronPython.Runtime.Exceptions {
 
         [PythonType("UnicodeEncodeError"), PythonHidden, DynamicBaseType, Serializable]
         public partial class _UnicodeEncodeError : BaseException {
-            private object _start;
-            private object _reason;
-            private object _object;
-            private object _end;
-            private object _encoding;
-
             public _UnicodeEncodeError() : base(UnicodeEncodeError) { }
             public _UnicodeEncodeError(PythonType type) : base(type) { }
 
@@ -663,11 +588,11 @@ namespace IronPython.Runtime.Exceptions {
             }
 
             public void __init__(object encoding, object @object, object start, object end, object reason) {
-                _encoding = encoding;
-                _object = @object;
-                _start = start;
-                _end = end;
-                _reason = reason;
+                this.encoding = encoding;
+                this.@object = @object;
+                this.start = start;
+                this.end = end;
+                this.reason = reason;
                 args = PythonTuple.MakeTuple(encoding, @object, start, end, reason);
             }
 
@@ -678,30 +603,15 @@ namespace IronPython.Runtime.Exceptions {
                 __init__(encoding, @object, start, end, reason);
             }
 
-            public object start {
-                get { return _start; }
-                set { _start = value; }
-            }
+            public object start { get; set; }
 
-            public object reason {
-                get { return _reason; }
-                set { _reason = value; }
-            }
+            public object reason { get; set; }
 
-            public object @object {
-                get { return _object; }
-                set { _object = value; }
-            }
+            public object @object { get; set; }
 
-            public object end {
-                get { return _end; }
-                set { _end = value; }
-            }
+            public object end { get; set; }
 
-            public object encoding {
-                get { return _encoding; }
-                set { _encoding = value; }
-            }
+            public object encoding { get; set; }
 
         }
 
@@ -718,12 +628,6 @@ namespace IronPython.Runtime.Exceptions {
 
         [PythonType("UnicodeTranslateError"), PythonHidden, DynamicBaseType, Serializable]
         public partial class _UnicodeTranslateError : BaseException {
-            private object _start;
-            private object _reason;
-            private object _object;
-            private object _end;
-            private object _encoding;
-
             public _UnicodeTranslateError() : base(UnicodeTranslateError) { }
             public _UnicodeTranslateError(PythonType type) : base(type) { }
 
@@ -731,30 +635,15 @@ namespace IronPython.Runtime.Exceptions {
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
 
-            public object start {
-                get { return _start; }
-                set { _start = value; }
-            }
+            public object start { get; set; }
 
-            public object reason {
-                get { return _reason; }
-                set { _reason = value; }
-            }
+            public object reason { get; set; }
 
-            public object @object {
-                get { return _object; }
-                set { _object = value; }
-            }
+            public object @object { get; set; }
 
-            public object end {
-                get { return _end; }
-                set { _end = value; }
-            }
+            public object end { get; set; }
 
-            public object encoding {
-                get { return _encoding; }
-                set { _encoding = value; }
-            }
+            public object encoding { get; set; }
 
         }
 

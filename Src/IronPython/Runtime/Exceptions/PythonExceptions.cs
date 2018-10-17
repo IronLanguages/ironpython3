@@ -839,13 +839,13 @@ for k, v in toError.items():
             }
 
             public override string ToString() {
-                if (_object is string s) {
+                if (@object is string s) {
                     if (s.Length == 1) {
-                        return $"'{_encoding}' codec can't decode byte 0x{(byte)s[0]:x2} in position {_start}: {_reason}";
+                        return $"'{encoding}' codec can't decode byte 0x{(byte)s[0]:x2} in position {start}: {reason}";
                     }
-                    return $"'{_encoding}' codec can't decode bytes in position {_start}-{_end}: {_reason}";
+                    return $"'{encoding}' codec can't decode bytes in position {start}-{end}: {reason}";
                 }
-                return _reason.ToString();
+                return reason.ToString();
             }
         }
 
@@ -883,7 +883,7 @@ for k, v in toError.items():
                         base.__init__(args);
                         break;
                     case 3:
-                        _characters_written = PythonOps.NonThrowingConvertToInt(args[2]) ?? "an integer is required";
+                        characters_written = PythonOps.NonThrowingConvertToInt(args[2]) ?? "an integer is required";
                         base.__init__(args[0], args[1]);
                         break;
                     default:
@@ -996,8 +996,7 @@ for k, v in toError.items():
                 }
 
 #if FEATURE_EXCEPTION_STATE
-                ThreadAbortException ta;
-                if ((ta = clrException as ThreadAbortException) != null) {
+                if (clrException is ThreadAbortException ta) {
                     // transform TA w/ our reason into a KeyboardInterrupt exception.
                     KeyboardInterruptException reason = ta.ExceptionState as KeyboardInterruptException;
                     if (reason != null) {

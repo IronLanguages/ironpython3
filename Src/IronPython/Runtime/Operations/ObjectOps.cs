@@ -427,7 +427,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             object listIterator = null;
-            if (self is List) {
+            if (self is PythonList) {
                 listIterator = PythonOps.GetEnumerator(self);
             }
 

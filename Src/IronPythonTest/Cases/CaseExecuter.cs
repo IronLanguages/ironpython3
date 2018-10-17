@@ -254,7 +254,7 @@ namespace IronPythonTest.Cases {
 
             try {
                 var scope = engine.CreateScope();
-                engine.GetSysModule().SetVariable("argv", List.FromArrayNoCopy(new object[] { source.Path }));
+                engine.GetSysModule().SetVariable("argv", PythonList.FromArrayNoCopy(new object[] { source.Path }));
                 var compiledCode = source.Compile(new IronPython.Compiler.PythonCompilerOptions() { ModuleName = "__main__" });
 
                 var task = Task<int>.Run(() => {

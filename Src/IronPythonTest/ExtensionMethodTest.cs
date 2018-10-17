@@ -12,7 +12,7 @@ using System.Collections;
 namespace IronPythonTest.ExtensionMethodTest {
     namespace LinqCollision {
         public static class WhereTest {
-            public static int Where(this List list, PythonFunction function) {
+            public static int Where(this PythonList list, PythonFunction function) {
                 return 42;
             }
         }

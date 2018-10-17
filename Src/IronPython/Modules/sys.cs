@@ -593,13 +593,13 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
 
             // !!! These fields do need to be reset on "reload(sys)". However, the initial value is specified by the 
             // engine elsewhere. For now, we initialize them just once to some default value
-            dict["warnoptions"] = new List(0);
+            dict["warnoptions"] = new PythonList(0);
 
             PublishBuiltinModuleNames(context, dict);
             context.SetHostVariables(dict);
 
-            dict["meta_path"] = new List(0);
-            dict["path_hooks"] = new List(0);
+            dict["meta_path"] = new PythonList(0);
+            dict["path_hooks"] = new PythonList(0);
 
             // add zipimport to the path hooks for importing from zip files.
             try {
@@ -609,8 +609,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
                 if (zipimport != null) {
                     object zipimporter = PythonOps.GetBoundAttr(
                         context.SharedClsContext, zipimport, "zipimporter");
-                    List path_hooks = dict["path_hooks"] as List;
-                    if (path_hooks != null && zipimporter != null) {
+                    if (dict["path_hooks"] is PythonList path_hooks && zipimporter != null) {
                         path_hooks.Add(zipimporter);
                     }
                 }

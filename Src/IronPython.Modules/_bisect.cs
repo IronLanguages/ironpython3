@@ -28,7 +28,7 @@ common approach.
 
         #region Private Implementation Details
 
-        private static int InternalBisectLeft(CodeContext/*!*/ context, List list, object item, int lo, int hi) {
+        private static int InternalBisectLeft(CodeContext/*!*/ context, PythonList list, object item, int lo, int hi) {
             int mid;
             object litem;
 
@@ -74,7 +74,7 @@ common approach.
             return lo;
         }
 
-        private static int InternalBisectRight(CodeContext/*!*/ context, List list, object item, int lo, int hi) {
+        private static int InternalBisectRight(CodeContext/*!*/ context, PythonList list, object item, int lo, int hi) {
             object litem;
             int mid;
 
@@ -130,7 +130,7 @@ common approach.
             return typeof(object);
         }
 
-        private static Type GetComparisonType(List a) {
+        private static Type GetComparisonType(PythonList a) {
             if (a.Count > 0) {
                 // use the 1st index to determine the type - we're assuming lists are
                 // homogeneous
@@ -155,8 +155,7 @@ Optional args lo (default 0) and hi (default len(a)) bound the
 slice of a to be searched.
 ")]
         public static object bisect_right(CodeContext/*!*/ context, object a, object x, int lo=0, int hi=-1) {
-            List l = a as List;
-            if (l != null && l.GetType() == typeof(List)) {
+            if (a is PythonList l && l.GetType() == typeof(PythonList)) {
                 return InternalBisectRight(context, l, x, lo, hi);
             }
 
@@ -173,8 +172,7 @@ Optional args lo (default 0) and hi (default len(a)) bound the
 slice of a to be searched.
 ")]
         public static void insort_right(CodeContext/*!*/ context, object a, object x, int lo=0, int hi=-1) {
-            List l = a as List;
-            if (l != null && l.GetType() == typeof(List)) {
+            if (a is PythonList l && l.GetType() == typeof(PythonList)) {
                 l.Insert(InternalBisectRight(context, l, x, lo, hi), x);
                 return;
             }
@@ -194,8 +192,7 @@ Optional args lo (default 0) and hi (default len(a)) bound the
 slice of a to be searched.
 ")]
         public static object bisect_left(CodeContext/*!*/ context, object a, object x, int lo=0, int hi=-1) {
-            List l = a as List;
-            if (l != null && l.GetType() == typeof(List)) {
+            if (a is PythonList l && l.GetType() == typeof(PythonList)) {
                 return InternalBisectLeft(context, l, x, lo, hi);
             }
 
@@ -212,8 +209,7 @@ Optional args lo (default 0) and hi (default len(a)) bound the
 slice of a to be searched.
 ")]
         public static void insort_left(CodeContext/*!*/ context, object a, object x, int lo=0,  int hi=-1) {
-            List l = a as List;
-            if (l != null && l.GetType() == typeof(List)) {
+            if (a is PythonList l && l.GetType() == typeof(PythonList)) {
                 l.Insert(InternalBisectLeft(context, l, x, lo, hi), x);
                 return;
             }

@@ -19,7 +19,7 @@ namespace IronPython.Modules {
     public static class xxsubtype {
         public const string __doc__ = "Provides samples on how to subtype built-in types from .NET.";
         [PythonType]
-        public class spamlist : List {
+        public class spamlist : PythonList {
             public spamlist()
                 : base() {
             }

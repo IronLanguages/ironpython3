@@ -65,7 +65,7 @@ namespace IronPython.Runtime.Binding {
                         if (typeof(T) == typeof(Func<CallSite, object, bool>)) {
                             return (T)(object)new Func<CallSite, object, bool>(BoolIsFalse);
                         }
-                    } else if (args[0].GetType() == typeof(List)) {
+                    } else if (args[0].GetType() == typeof(PythonList)) {
                         if (typeof(T) == typeof(Func<CallSite, object, bool>)) {
                             return (T)(object)new Func<CallSite, object, bool>(ListIsFalse);
                         }
@@ -92,7 +92,7 @@ namespace IronPython.Runtime.Binding {
                         if (typeof(T) == typeof(Func<CallSite, object, object>)) {
                             return (T)(object)new Func<CallSite, object, object>(BoolNot);
                         }
-                    } else if (args[0].GetType() == typeof(List)) {
+                    } else if (args[0].GetType() == typeof(PythonList)) {
                         if (typeof(T) == typeof(Func<CallSite, object, object>)) {
                             return (T)(object)new Func<CallSite, object, object>(ListNot);
                         }
@@ -132,8 +132,8 @@ namespace IronPython.Runtime.Binding {
         }
 
         private bool ListIsFalse(CallSite site, object value) {
-            if (value != null && value.GetType() == typeof(List)) {
-                return ((List)value).Count == 0;
+            if (value != null && value.GetType() == typeof(PythonList)) {
+                return ((PythonList)value).Count == 0;
             } else if (value == null) {
                 // improve perf of sites just polymorphic on list & None
                 return true;
@@ -196,8 +196,8 @@ namespace IronPython.Runtime.Binding {
         }
 
         private object ListNot(CallSite site, object value) {
-            if (value != null && value.GetType() == typeof(List)) {
-                return ((List)value).Count == 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
+            if (value != null && value.GetType() == typeof(PythonList)) {
+                return ((PythonList)value).Count == 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
             } else if (value == null) {
                 // improve perf of sites just polymorphic on list & None
                 return true;

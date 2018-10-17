@@ -103,9 +103,9 @@ namespace IronPython.Modules {
         }
 
 
-        public static List garbage {
+        public static PythonList garbage {
             get {
-                return new List();
+                return new PythonList();
             }
         }
 

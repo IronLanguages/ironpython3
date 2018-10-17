@@ -39,9 +39,9 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static List GetMemberNames(CodeContext/*!*/ context, Assembly self) {
+        public static PythonList GetMemberNames(CodeContext/*!*/ context, Assembly self) {
             Debug.Assert(self != null);
-            List ret = DynamicHelpers.GetPythonTypeFromType(self.GetType()).GetMemberNames(context);
+            PythonList ret = DynamicHelpers.GetPythonTypeFromType(self.GetType()).GetMemberNames(context);
 
             foreach (object o in GetReflectedAssembly(context, self).Keys) {
                 if (o is string) {

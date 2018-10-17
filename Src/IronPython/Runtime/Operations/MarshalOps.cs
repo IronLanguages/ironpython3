@@ -81,7 +81,7 @@ namespace IronPython.Runtime.Operations {
                     else if (o is float) WriteFloat ((float)o);
                     else if (o is double) WriteFloat ((double)o);
                     else if (o is long) WriteLong ((long)o);
-                    else if (o.GetType () == typeof (List)) WriteList (o);
+                    else if (o.GetType () == typeof (PythonList)) WriteList (o);
                     else if (o.GetType () == typeof (PythonDictionary)) WriteDict (o);
                     else if (o.GetType () == typeof (PythonTuple)) WriteTuple (o);
                     else if (o.GetType () == typeof (SetCollection)) WriteSet (o);
@@ -234,7 +234,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             private void WriteList (object o) {
-                List l = o as List;
+                PythonList l = o as PythonList;
                 _bytes.Add ((byte)'[');
                 WriteInt32 (l.__len__ ());
                 for (int i = 0; i < l.__len__ (); i++) {
@@ -368,7 +368,7 @@ namespace IronPython.Runtime.Operations {
                         newStack.StackCount = -1;
                         break;
                     case StackType.List:
-                        newStack.StackObj = new List ();
+                        newStack.StackObj = new PythonList ();
                         newStack.StackCount = ReadInt32 ();
                         break;
                     case StackType.Tuple:
@@ -417,7 +417,7 @@ namespace IronPython.Runtime.Operations {
                         }
                         break;
                     case StackType.List:
-                        List ol = curStack.StackObj as List;
+                        PythonList ol = curStack.StackObj as PythonList;
                         ol.AddNoLock (res);
                         curStack.StackCount--;
                         if (curStack.StackCount == 0) {

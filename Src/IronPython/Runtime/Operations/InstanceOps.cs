@@ -221,8 +221,8 @@ namespace IronPython.Runtime.Operations {
         /// <summary>
         /// __dir__(self) -> Returns the list of members defined on a foreign IDynamicMetaObjectProvider.
         /// </summary>
-        public static List DynamicDir(CodeContext/*!*/ context, IDynamicMetaObjectProvider self) {
-            List res = new List(self.GetMetaObject(Expression.Parameter(typeof(object))).GetDynamicMemberNames());
+        public static PythonList DynamicDir(CodeContext/*!*/ context, IDynamicMetaObjectProvider self) {
+            PythonList res = new PythonList(self.GetMetaObject(Expression.Parameter(typeof(object))).GetDynamicMemberNames());
             
             // add in the non-dynamic members from the dynamic objects base class.
             Type t = self.GetType();
@@ -689,12 +689,12 @@ namespace IronPython.Runtime.Operations {
         }
 
         [PropertyMethod, StaticExtensionMethod]
-        public static List/*!*/ Get__all__<T>(CodeContext/*!*/ context) {
+        public static PythonList/*!*/ Get__all__<T>(CodeContext/*!*/ context) {
             Debug.Assert(typeof(T).IsSealed() && typeof(T).IsAbstract(), "__all__ should only be produced for static members"); 
 
             PythonType pt = DynamicHelpers.GetPythonTypeFromType(typeof(T));
 
-            List names = new List();
+            PythonList names = new PythonList();
             foreach (string name in pt.GetMemberNames(context)) {
                 object res;
                 if (IsStaticTypeMemberInAll(context, pt, name, out res)) {

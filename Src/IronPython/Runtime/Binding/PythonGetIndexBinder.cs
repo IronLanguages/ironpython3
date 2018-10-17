@@ -39,13 +39,13 @@ namespace IronPython.Runtime.Binding {
 
         public override T BindDelegate<T>(CallSite<T> site, object[] args) {
             if (CompilerHelpers.GetType(args[1]) == typeof(int)) {
-                if (CompilerHelpers.GetType(args[0]) == typeof(List)) {
+                if (CompilerHelpers.GetType(args[0]) == typeof(PythonList)) {
                     if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
                         return (T)(object)new Func<CallSite, object, object, object>(ListIndex);
                     } else if (typeof(T) == typeof(Func<CallSite, object, int, object>)) {
                         return (T)(object)new Func<CallSite, object, int, object>(ListIndex);
-                    } else if (typeof(T) == typeof(Func<CallSite, List, object, object>)) {
-                        return (T)(object)new Func<CallSite, List, object, object>(ListIndex);
+                    } else if (typeof(T) == typeof(Func<CallSite, PythonList, object, object>)) {
+                        return (T)(object)new Func<CallSite, PythonList, object, object>(ListIndex);
                     }
                 } else if (CompilerHelpers.GetType(args[0]) == typeof(PythonTuple)) {
                     if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
@@ -69,19 +69,18 @@ namespace IronPython.Runtime.Binding {
             return base.BindDelegate<T>(site, args);
         }
 
-        private object ListIndex(CallSite site, List target, object index) {
+        private object ListIndex(CallSite site, PythonList target, object index) {
             if (target != null && index != null && index.GetType() == typeof(int)) {
                 return target[(int)index];
             }
 
-            return ((CallSite<Func<CallSite, List, object, object>>)site).Update(site, target, index);
+            return ((CallSite<Func<CallSite, PythonList, object, object>>)site).Update(site, target, index);
         }
 
         private object ListIndex(CallSite site, object target, object index) {
             // using as is ok here because [] is virtual and will call the user method if
             // we have a user defined subclass of list.
-            List lst = target as List;
-            if (lst != null && index != null && index.GetType() == typeof(int)) {
+            if (target is PythonList lst && index != null && index.GetType() == typeof(int)) {
                 return lst[(int)index];
             }
 
@@ -89,8 +88,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         private object ListIndex(CallSite site, object target, int index) {
-            List lst = target as List;
-            if (lst != null) {
+            if (target is PythonList lst) {
                 return lst[index];
             }
 

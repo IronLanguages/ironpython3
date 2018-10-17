@@ -140,7 +140,7 @@ namespace IronPython.Runtime.Types {
 
         public static PythonType List {
             get {
-                if (list == null) list = DynamicHelpers.GetPythonTypeFromType(typeof(List));
+                if (list == null) list = DynamicHelpers.GetPythonTypeFromType(typeof(PythonList));
                 return list;
             }
         }

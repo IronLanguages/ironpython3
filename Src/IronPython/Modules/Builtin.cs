@@ -281,16 +281,16 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods")]
-        public static List dir(CodeContext/*!*/ context) {
-            List res = PythonOps.MakeListFromSequence(context.Dict.Keys);
+        public static PythonList dir(CodeContext/*!*/ context) {
+            PythonList res = PythonOps.MakeListFromSequence(context.Dict.Keys);
 
             res.sort(context);
             return res;
         }
 
-        public static List dir(CodeContext/*!*/ context, object o) {
+        public static PythonList dir(CodeContext/*!*/ context, object o) {
             IList<object> ret = PythonOps.GetAttrNames(context, o);
-            List lret = new List(ret);
+            PythonList lret = new PythonList(ret);
             lret.sort(context);
             return lret;
         }
@@ -539,7 +539,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 // then call help on them.
                 foreach (object module in context.LanguageContext.SystemStateModules.Values) {
                     IList<object> attrs = PythonOps.GetAttrNames(context, module);
-                    List candidates = new List();
+                    PythonList candidates = new PythonList();
                     foreach (string s in attrs) {
                         if (s == strVal) {
                             object modVal;
@@ -589,7 +589,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                     doc.AppendLine();
                 }
 
-                List names = type.GetMemberNames(context);
+                PythonList names = type.GetMemberNames(context);
                 names.sort(context);
 
                 foreach (string name in names) {
@@ -793,7 +793,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return str.__len__();
         }
 
-        public static int len([NotNull]List/*!*/ list) {
+        public static int len([NotNull]PythonList/*!*/ list) {
             return list.__len__();
         }
 
@@ -821,7 +821,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         public static PythonType list {
             get {
-                return DynamicHelpers.GetPythonTypeFromType(typeof(List));
+                return DynamicHelpers.GetPythonTypeFromType(typeof(PythonList));
             }
         }
 
@@ -1408,13 +1408,13 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        public static List sorted(CodeContext/*!*/ context,
+        public static PythonList sorted(CodeContext/*!*/ context,
             object iterable=null,
             object key=null,
             bool reverse=false) {
 
             IEnumerator iter = PythonOps.GetEnumerator(iterable);
-            List l = PythonOps.MakeEmptyList(10);
+            PythonList l = PythonOps.MakeEmptyList(10);
             while (iter.MoveNext()) {
                 l.AddNoLock(iter.Current);
             }
@@ -1432,7 +1432,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return sum(context, sequence, 0);
         }
 
-        public static object sum(CodeContext/*!*/ context, [NotNull]List sequence) {
+        public static object sum(CodeContext/*!*/ context, [NotNull]PythonList sequence) {
             return sum(context, sequence, 0);
         }
 
@@ -1455,7 +1455,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return sumState.CurrentValue;
         }
 
-        public static object sum(CodeContext/*!*/ context, [NotNull]List sequence, object start) {
+        public static object sum(CodeContext/*!*/ context, [NotNull]PythonList sequence, object start) {
             if (start is string) {
                 throw PythonOps.TypeError("Cannot sum strings, use '{0}'.join(seq)", start);
             }

@@ -278,7 +278,7 @@ namespace IronPython.Runtime.Binding {
                     res = (T)(object)new Func<CallSite, object, bool>(NullToBoolConversion);
                 } else if (target.GetType() == typeof(object)) {
                     res = (T)(object)new Func<CallSite, object, bool>(ObjectToBoolConversion);
-                } else if (target.GetType() == typeof(List)) {
+                } else if (target.GetType() == typeof(PythonList)) {
                     res = (T)(object)new Func<CallSite, object, bool>(ListToBoolConversion);
                 } else if (target.GetType() == typeof(PythonTuple)) {
                     res = (T)(object)new Func<CallSite, object, bool>(TupleToBoolConversion);
@@ -425,8 +425,8 @@ namespace IronPython.Runtime.Binding {
         public bool ListToBoolConversion(CallSite site, object value) {
             if (value == null) {
                 return false;
-            } else if (value.GetType() == typeof(List)) {
-                return ((List)value).Count != 0;
+            } else if (value.GetType() == typeof(PythonList)) {
+                return ((PythonList)value).Count != 0;
             }
 
             return ((CallSite<Func<CallSite, object, bool>>)site).Update(site, value);

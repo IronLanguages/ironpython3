@@ -80,9 +80,9 @@ namespace IronPython.SQLite
                 }
             }
 
-            public List keys()
+            public PythonList keys()
             {
-                List list = new List();
+                PythonList list = new PythonList();
 
                 for(int i = 0; i < data.Count; ++i)
                 {

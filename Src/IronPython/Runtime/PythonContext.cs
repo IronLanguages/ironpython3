@@ -236,12 +236,12 @@ namespace IronPython.Runtime
 
             // sys.argv always includes at least one empty string.
             SetSystemStateValue("argv", (_options.Arguments.Count == 0) ?
-                new List(new object[] { String.Empty }) :
-                new List(_options.Arguments)
+                new PythonList(new object[] { String.Empty }) :
+                new PythonList(_options.Arguments)
             );
 
             if (_options.WarningFilters.Count > 0) {
-                _systemState.__dict__["warnoptions"] = new List(_options.WarningFilters);
+                _systemState.__dict__["warnoptions"] = new PythonList(_options.WarningFilters);
             }
 
             if (_options.Frames) {
@@ -257,7 +257,7 @@ namespace IronPython.Runtime
                 EnsureDebugContext();
             }
 
-            List path = new List(_options.SearchPaths);
+            PythonList path = new PythonList(_options.SearchPaths);
 #if FEATURE_ASSEMBLY_RESOLVE && FEATURE_FILESYSTEM
             _resolveHolder = new AssemblyResolveHolder(this);
             try {
@@ -687,10 +687,10 @@ namespace IronPython.Runtime
             }
         }
 
-        internal bool TryGetSystemPath(out List path) {
+        internal bool TryGetSystemPath(out PythonList path) {
             object val;
             if (SystemState.__dict__.TryGetValue("path", out val)) {
-                path = val as List;
+                path = val as PythonList;
             } else {
                 path = null;
             }
@@ -779,13 +779,13 @@ namespace IronPython.Runtime
         /// </summary>
         private void InitializeSystemState() {
             // These fields do not get reset on "reload(sys)", we populate them once on startup
-            SetSystemStateValue("argv", List.FromArrayNoCopy(new object[] { String.Empty }));
+            SetSystemStateValue("argv", PythonList.FromArrayNoCopy(new object[] { String.Empty }));
             SetSystemStateValue("modules", _modulesDict);
             InitializeSysFlags();
 
             _modulesDict["sys"] = _systemState;
 
-            SetSystemStateValue("path", new List(3));
+            SetSystemStateValue("path", new PythonList(3));
 
             SetStandardIO();
 
@@ -1284,12 +1284,10 @@ namespace IronPython.Runtime
 
         internal Assembly LoadAssemblyFromFile(string file) {
             // check all files in the path...
-            List path;
-            if (TryGetSystemPath(out path)) {
+            if (TryGetSystemPath(out PythonList path)) {
                 IEnumerator ie = PythonOps.GetEnumerator(path);
                 while (ie.MoveNext()) {
-                    string str;
-                    if (TryConvertToString(ie.Current, out str)) {
+                    if (TryConvertToString(ie.Current, out string str)) {
                         string fullName = Path.Combine(str, file);
                         Assembly res;
 
@@ -1370,12 +1368,10 @@ namespace IronPython.Runtime
 
         public override ICollection<string> GetSearchPaths() {
             List<string> result = new List<string>();
-            List paths;
-            if (TryGetSystemPath(out paths)) {
+            if (TryGetSystemPath(out PythonList paths)) {
                 IEnumerator ie = PythonOps.GetEnumerator(paths);
                 while (ie.MoveNext()) {
-                    string str;
-                    if (TryConvertToString(ie.Current, out str)) {
+                    if (TryConvertToString(ie.Current, out string str)) {
                         result.Add(str);
                     }
                 }
@@ -1384,7 +1380,7 @@ namespace IronPython.Runtime
         }
 
         public override void SetSearchPaths(ICollection<string> paths) {
-            SetSystemStateValue("path", new List(paths));
+            SetSystemStateValue("path", new PythonList(paths));
         }
 
         public override void Shutdown() {
@@ -1714,22 +1710,19 @@ namespace IronPython.Runtime
         }
 
         internal void InsertIntoPath(int index, string directory) {
-            List path;
-            if (TryGetSystemPath(out path)) {
+            if (TryGetSystemPath(out PythonList path)) {
                 path.insert(index, directory);
             }
         }
 
         internal void AddToPath(string directory) {
-            List path;
-            if (TryGetSystemPath(out path)) {
+            if (TryGetSystemPath(out PythonList path)) {
                 path.append(directory);
             }
         }
 
         internal void AddToPath(string directory, int index) {
-            List path;
-            if (TryGetSystemPath(out path)) {
+            if (TryGetSystemPath(out PythonList path)) {
                 path.insert(index, directory);
             }
         }
@@ -3056,11 +3049,10 @@ namespace IronPython.Runtime
         internal CompiledLoader GetCompiledLoader() {
             if (_compiledLoader == null) {
                 if (Interlocked.CompareExchange(ref _compiledLoader, new CompiledLoader(), null) == null) {
-                    object path;
-                    List lstPath;
+                    PythonList lstPath;
 
-                    if (!SystemState.__dict__.TryGetValue("meta_path", out path) || ((lstPath = path as List) == null)) {
-                        SystemState.__dict__["meta_path"] = lstPath = new List();
+                    if (!SystemState.__dict__.TryGetValue("meta_path", out object path) || ((lstPath = path as PythonList) == null)) {
+                        SystemState.__dict__["meta_path"] = lstPath = new PythonList();
                     }
 
                     lstPath.append(_compiledLoader);

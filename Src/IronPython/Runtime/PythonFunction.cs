@@ -404,7 +404,7 @@ namespace IronPython.Runtime {
         }
 
         IList<object> IPythonMembersList.GetMemberNames(CodeContext/*!*/ context) {
-            List list;
+            PythonList list;
             if (_dict == null) {
                 list = PythonOps.MakeList();
             } else {

@@ -43,17 +43,17 @@ namespace IronPython.Modules {
             }
         }
 
-        public static List extension_suffixes() {
+        public static PythonList extension_suffixes() {
             // TODO: support extensions?
-            return new List();
+            return new PythonList();
         }
 
         public static string get_magic() {
             return "";
         }
 
-        public static List get_suffixes() {
-            return List.FromArrayNoCopy(PythonOps.MakeTuple(".py", "U", PythonSource));
+        public static PythonList get_suffixes() {
+            return PythonList.FromArrayNoCopy(PythonOps.MakeTuple(".py", "U", PythonSource));
         }
 
         public static PythonTuple find_module(CodeContext/*!*/ context, string/*!*/ name) {
@@ -61,7 +61,7 @@ namespace IronPython.Modules {
             return FindBuiltinOrSysPath(context, name);
         }
 
-        public static PythonTuple find_module(CodeContext/*!*/ context, string/*!*/ name, List path) {
+        public static PythonTuple find_module(CodeContext/*!*/ context, string/*!*/ name, PythonList path) {
             if (name == null) throw PythonOps.TypeError("find_module() argument 1 must be string, not None");
 
             if (path == null) {
@@ -265,14 +265,14 @@ namespace IronPython.Modules {
         #region Implementation
 
         private static PythonTuple FindBuiltinOrSysPath(CodeContext/*!*/ context, string/*!*/ name) {
-            List sysPath;
+            PythonList sysPath;
             if (!context.LanguageContext.TryGetSystemPath(out sysPath)) {
                 throw PythonOps.ImportError("sys.path must be a list of directory names");
             }
             return FindModuleBuiltinOrPath(context, name, sysPath);
         }
 
-        private static PythonTuple FindModulePath(CodeContext/*!*/ context, string name, List path) {
+        private static PythonTuple FindModulePath(CodeContext/*!*/ context, string name, PythonList path) {
             Debug.Assert(path != null);
 
             if (name == null) {
@@ -301,7 +301,7 @@ namespace IronPython.Modules {
             throw PythonOps.ImportError("No module named {0}", name);
         }
 
-        private static PythonTuple FindModuleBuiltinOrPath(CodeContext/*!*/ context, string name, List path) {
+        private static PythonTuple FindModuleBuiltinOrPath(CodeContext/*!*/ context, string name, PythonList path) {
             if (name.Equals("sys")) return BuiltinModuleTuple(name);
             if (name.Equals("clr")) {
                 context.ShowCls = true;

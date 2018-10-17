@@ -517,7 +517,7 @@ import Namespace.")]
 
             // update our path w/ the path of this file...
             string path = System.IO.Path.GetDirectoryName(Path.GetFullPath(file));
-            List list;
+            PythonList list;
 
             PythonContext pc = context.LanguageContext;
             if (!pc.TryGetSystemPath(out list)) {
@@ -802,9 +802,9 @@ import Namespace.")]
         /// <summary>
         /// returns the result of dir(o) as-if "import clr" has not been performed.
         /// </summary>
-        public static List Dir(object o) {
+        public static PythonList Dir(object o) {
             IList<object> ret = PythonOps.GetAttrNames(DefaultContext.Default, o);
-            List lret = new List(ret);
+            PythonList lret = new PythonList(ret);
             lret.sort(DefaultContext.Default);
             return lret;
         }
@@ -812,9 +812,9 @@ import Namespace.")]
         /// <summary>
         /// Returns the result of dir(o) as-if "import clr" has been performed.
         /// </summary>
-        public static List DirClr(object o) {
+        public static PythonList DirClr(object o) {
             IList<object> ret = PythonOps.GetAttrNames(DefaultContext.DefaultCLS, o);
-            List lret = new List(ret);
+            PythonList lret = new PythonList(ret);
             lret.sort(DefaultContext.DefaultCLS);
             return lret;
         }

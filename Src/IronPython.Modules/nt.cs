@@ -40,7 +40,7 @@ namespace IronPython.Modules {
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext context, PythonDictionary dict) {
-            var have_functions = new List();
+            var have_functions = new PythonList();
             if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
                 have_functions.Add("MS_WINDOWS");
             }
@@ -357,12 +357,12 @@ namespace IronPython.Modules {
         }
 #endif
 
-        public static List listdir(CodeContext/*!*/ context, [NotNull]string path) {
+        public static PythonList listdir(CodeContext/*!*/ context, [NotNull]string path) {
             if (path == String.Empty) {
                 throw PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, "The system cannot find the path specified: ''", null, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND);
             }
 
-            List ret = PythonOps.MakeList();
+            PythonList ret = PythonOps.MakeList();
             try {
                 addBase(context.LanguageContext.DomainManager.Platform.GetFileSystemEntries(path, "*"), ret);
                 return ret;
@@ -1760,7 +1760,7 @@ the 'status' value."),
         public const int W_OK = 2;
         public const int R_OK = 4;
 
-        private static void addBase(string[] files, List ret) {
+        private static void addBase(string[] files, PythonList ret) {
             foreach (string file in files) {
                 ret.AddNoLock(Path.GetFileName(file));
             }

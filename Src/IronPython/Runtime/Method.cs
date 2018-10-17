@@ -193,7 +193,7 @@ namespace IronPython.Runtime {
         }
 
         IList<object> IPythonMembersList.GetMemberNames(CodeContext/*!*/ context) {
-            List ret = TypeCache.Method.GetMemberNames(context);
+            PythonList ret = TypeCache.Method.GetMemberNames(context);
 
             ret.AddNoLockNoDups("__module__");
 

@@ -74,7 +74,7 @@ namespace IronPython.Modules {
                         if (elemType != null && (elemType._type == SimpleTypeKind.WChar || elemType._type == SimpleTypeKind.Char)) {
                             return String.Empty;
                         }
-                        return new List();
+                        return new PythonList();
                     }
 
                     int n = (int)(step > 0 ? (0L + stop - start + step - 1) / step : (0L + stop - start + step + 1) / step);
@@ -95,7 +95,7 @@ namespace IronPython.Modules {
                             ret[ri++] = this[index];
                         }
 
-                        return new List(ret);
+                        return new PythonList(ret);
                     }
                 }
                 set {

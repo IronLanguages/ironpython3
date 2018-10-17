@@ -138,8 +138,8 @@ namespace IronPython.Runtime {
                     res[i] = ScriptingRuntimeHelpers.CharToString(s[i]);
                 }
                 return res;
-            } else if (o is List) {
-                return ((List)o).GetObjectArray();
+            } else if (o is PythonList) {
+                return ((PythonList)o).GetObjectArray();
             } else if ((arr = o as object[])!=null) {
                 return ArrayOps.CopyArray(arr, arr.Length);
             } else {

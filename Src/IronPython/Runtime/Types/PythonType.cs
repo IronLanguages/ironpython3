@@ -717,8 +717,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             SetCustomMember(context, name, value);
         }
 
-        public List __subclasses__(CodeContext/*!*/ context) {
-            List ret = new List();
+        public PythonList __subclasses__(CodeContext/*!*/ context) {
+            PythonList ret = new PythonList();
             IList<WeakReference> subtypes = SubTypes;
 
             if (subtypes != null) {
@@ -738,8 +738,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return ret;
         }
 
-        public virtual List mro() {
-            return new List(Get__mro__(this));
+        public virtual PythonList mro() {
+            return new PythonList(Get__mro__(this));
         }
 
         /// <summary>
@@ -1763,7 +1763,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// Returns a list of all slot names for the type and any subtypes.
         /// </summary>
         /// <param name="context">The context that is doing the inquiry of InvariantContext.Instance.</param>
-        internal List GetMemberNames(CodeContext context) {
+        internal PythonList GetMemberNames(CodeContext context) {
             return GetMemberNames(context, null);
         }
 
@@ -1772,14 +1772,14 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// </summary>
         /// <param name="context">The context that is doing the inquiry of InvariantContext.Instance.</param>
         /// <param name="self">the instance to get instance members from, or null.</param>
-        internal List GetMemberNames(CodeContext context, object self) {
-            List res = TryGetCustomDir(context, self);
+        internal PythonList GetMemberNames(CodeContext context, object self) {
+            PythonList res = TryGetCustomDir(context, self);
             if (res != null) {
                 return res;
             }
 
             Dictionary<string, string> keys = new Dictionary<string, string>();
-            res = new List();
+            res = new PythonList();
 
             for (int i = 0; i < _resolutionOrder.Count; i++) {
                 PythonType dt = _resolutionOrder[i];
@@ -1802,7 +1802,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return AddInstanceMembers(self, keys, res);
         }
 
-        private List TryGetCustomDir(CodeContext context, object self) {
+        private PythonList TryGetCustomDir(CodeContext context, object self) {
             if (self != null) {
                 object dir;
                 if (TryResolveNonObjectSlot(context, self, "__dir__", out dir)) {
@@ -1810,7 +1810,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                         ? context.LanguageContext.GetSiteCacheForSystemType(UnderlyingSystemType).GetDirSite(context)
                         : _siteCache.GetDirSite(context);
 
-                    return new List(dirSite.Target(dirSite, context, dir));
+                    return new PythonList(dirSite.Target(dirSite, context, dir));
                 }
             }
 
@@ -1820,7 +1820,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// <summary>
         /// Adds members from a user defined type.
         /// </summary>
-        private static void AddUserTypeMembers(CodeContext context, Dictionary<string, string> keys, PythonType dt, List res) {
+        private static void AddUserTypeMembers(CodeContext context, Dictionary<string, string> keys, PythonType dt, PythonList res) {
             foreach (KeyValuePair<string, PythonTypeSlot> kvp in dt._dict) {
                 if (keys.ContainsKey(kvp.Key)) continue;
 
@@ -1828,7 +1828,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
         }
 
-        private static void AddOneMember(Dictionary<string, string> keys, List res, object name) {
+        private static void AddOneMember(Dictionary<string, string> keys, PythonList res, object name) {
             string strKey = name as string;
             if (strKey != null) {
                 keys[strKey] = strKey;
@@ -1840,7 +1840,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// <summary>
         /// Adds members from a user defined type instance
         /// </summary>
-        private static List AddInstanceMembers(object self, Dictionary<string, string> keys, List res) {
+        private static PythonList AddInstanceMembers(object self, Dictionary<string, string> keys, PythonList res) {
             IPythonObject dyno = self as IPythonObject;
             if (dyno != null) {
                 PythonDictionary dict = dyno.Dict;
@@ -2711,8 +2711,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                     return (T)(object)MakeFastSet<int>(context, name);
                 } else if (setType == typeof(Func<CallSite, object, double, object>)) {
                     return (T)(object)MakeFastSet<double>(context, name);
-                } else if (setType == typeof(Func<CallSite, object, List, object>)) {
-                    return (T)(object)MakeFastSet<List>(context, name);
+                } else if (setType == typeof(Func<CallSite, object, PythonList, object>)) {
+                    return (T)(object)MakeFastSet<PythonList>(context, name);
                 } else if (setType == typeof(Func<CallSite, object, PythonTuple, object>)) {
                     return (T)(object)MakeFastSet<PythonTuple>(context, name);
                 } else if (setType == typeof(Func<CallSite, object, PythonDictionary, object>)) {

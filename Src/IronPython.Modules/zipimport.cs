@@ -238,7 +238,7 @@ module, or raises ZipImportError if it wasn't found.")]
                         _prefix.Length > 0 ? _prefix : string.Empty,
                         subname);
 
-                    List pkgpath = PythonOps.MakeList(fullpath);
+                    PythonList pkgpath = PythonOps.MakeList(fullpath);
                     dict.Add("__path__", pkgpath);
                 }
 

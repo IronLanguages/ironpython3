@@ -351,24 +351,24 @@ namespace IronPython.Runtime {
         public DictionaryValueView values() => new DictionaryValueView(this);
 
 #else
-        public virtual List keys() {
-            List res = new List();
+        public virtual PythonList keys() {
+            PythonList res = new PythonList();
             foreach (KeyValuePair<object, object> kvp in _storage.GetItems()) {
                 res.append(kvp.Key);
             }
             return res;
         }
 
-        public virtual List values() {
-            List res = new List();
+        public virtual PythonList values() {
+            PythonList res = new PythonList();
             foreach (KeyValuePair<object, object> kvp in _storage.GetItems()) {
                 res.append(kvp.Value);
             }
             return res;
         }
 
-        public virtual List items() {
-            List res = new List();
+        public virtual PythonList items() {
+            PythonList res = new PythonList();
             foreach (KeyValuePair<object, object> kvp in _storage.GetItems()) {
                 res.append(PythonTuple.MakeTuple(kvp.Key, kvp.Value));
             }
@@ -533,7 +533,7 @@ namespace IronPython.Runtime {
 
                 if (lcnt != rcnt) return lcnt > rcnt ? 1 : -1;
 
-                return DictionaryOps.CompareToWorker(context, this, new List(PythonOps.CallWithContext(context, iteritems)));
+                return DictionaryOps.CompareToWorker(context, this, new PythonList(PythonOps.CallWithContext(context, iteritems)));
             }
 
             CompareUtil.Push(this, oth);
@@ -684,7 +684,7 @@ namespace IronPython.Runtime {
 
             public DictionaryEntry Entry {
                 get {
-                    // List<T> enumerator doesn't throw, so we need to.
+                    // PythonList<T> enumerator doesn't throw, so we need to.
                     if (!_moved) throw new InvalidOperationException();
 
                     return new DictionaryEntry(_enumerator.Current.Key, _enumerator.Current.Value);
@@ -948,7 +948,7 @@ namespace IronPython.Runtime {
         public object __reduce__(CodeContext context) {
             object iter;
             context.TryLookupBuiltin("iter", out iter);
-            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(List.FromArrayNoCopy(_dict.GetKeys().Skip(_pos + 1).ToArray())));
+            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(PythonList.FromArrayNoCopy(_dict.GetKeys().Skip(_pos + 1).ToArray())));
         }
 #endif
 
@@ -1016,7 +1016,7 @@ namespace IronPython.Runtime {
         public object __reduce__(CodeContext context) {
             object iter;
             context.TryLookupBuiltin("iter", out iter);
-            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(List.FromArrayNoCopy(_dict.GetItems().Skip(_pos + 1).Select(x => x.Value).ToArray())));
+            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(PythonList.FromArrayNoCopy(_dict.GetItems().Skip(_pos + 1).Select(x => x.Value).ToArray())));
         }
 #endif
 
@@ -1086,7 +1086,7 @@ namespace IronPython.Runtime {
         public object __reduce__(CodeContext context) {
             object iter;
             context.TryLookupBuiltin("iter", out iter);
-            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(List.FromArrayNoCopy(_dict.GetItems().Skip(_pos + 1).Select(x => x.Value).ToArray())));
+            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(PythonList.FromArrayNoCopy(_dict.GetItems().Skip(_pos + 1).Select(x => x.Value).ToArray())));
         }
 #endif
 

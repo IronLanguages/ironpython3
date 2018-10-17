@@ -257,12 +257,12 @@ namespace IronPython.Modules {
             return obj.ToTuple();
         }
 
-        public static List enum_certificates(string store_name) {
+        public static PythonList enum_certificates(string store_name) {
             X509Store store = null;
             try {
                 store = new X509Store(store_name, StoreLocation.LocalMachine);
                 store.Open(OpenFlags.ReadOnly);
-                var result = new List();
+                var result = new PythonList();
 
                 foreach (var cert in store.Certificates) {
                     string format = cert.GetFormat();
@@ -298,15 +298,15 @@ namespace IronPython.Modules {
             } finally {
                 store?.Close();
             }
-            return new List();
+            return new PythonList();
         }
 
-        public static List enum_crls(string store_name) {
+        public static PythonList enum_crls(string store_name) {
             X509Store store = null;
             try {
                 store = new X509Store(store_name, StoreLocation.LocalMachine);
                 store.Open(OpenFlags.ReadOnly);
-                var result = new List();
+                var result = new PythonList();
 
                 foreach (var cert in store.Certificates) {
                     string format = cert.GetFormat();
@@ -316,7 +316,7 @@ namespace IronPython.Modules {
             } finally {
                 store?.Close();
             }
-            return new List();
+            return new PythonList();
         }
 
         internal static PythonType SSLError(CodeContext/*!*/ context) {

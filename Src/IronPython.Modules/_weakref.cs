@@ -33,7 +33,7 @@ namespace IronPython.Modules {
             return @ref.GetWeakRefCount(context.LanguageContext, @object);
         }
 
-        public static List getweakrefs(CodeContext context, object @object) {
+        public static PythonList getweakrefs(CodeContext context, object @object) {
             return @ref.GetWeakRefs(context.LanguageContext, @object);
         }
 
@@ -142,8 +142,8 @@ namespace IronPython.Modules {
                 return 0;
             }
 
-            internal static List GetWeakRefs(PythonContext context, object o) {
-                List l = new List();
+            internal static PythonList GetWeakRefs(PythonContext context, object o) {
+                PythonList l = new PythonList();
                 IWeakReferenceable iwr;
                 if (context.TryConvertToWeakReferenceable(o, out iwr)) {
                     WeakRefTracker wrt = iwr.GetWeakRef();
@@ -426,7 +426,7 @@ namespace IronPython.Modules {
                 object o;
                 if (!TryGetObject(out o)) {
                     // if we've been disconnected return an empty list
-                    return new List();
+                    return new PythonList();
                 }
 
                 return PythonOps.GetAttrNames(context, o);
@@ -685,7 +685,7 @@ namespace IronPython.Modules {
                 object o;
                 if (!TryGetObject(out o)) {
                     // if we've been disconnected return an empty list
-                    return new List();
+                    return new PythonList();
                 }
 
                 return PythonOps.GetAttrNames(context, o);

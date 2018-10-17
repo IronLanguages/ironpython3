@@ -43,6 +43,6 @@ namespace IronPython.Runtime {
 
         Bytes ToBytes(int start, int? end);
 
-        List ToList(int start, int? end);
+        PythonList ToList(int start, int? end);
     }
 }

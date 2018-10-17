@@ -214,18 +214,17 @@ namespace IronPython.Hosting {
         }
 
         private void InitializeEnvironmentVariables() {
-            if(!Options.IgnoreEnvironmentVariables) {
+            if (!Options.IgnoreEnvironmentVariables) {
                 string warnings = Environment.GetEnvironmentVariable("IRONPYTHONWARNINGS");
                 object o = PythonContext.GetSystemStateValue("warnoptions");
                 if (o == null) {
-                    o = new List();
+                    o = new PythonList();
                     PythonContext.SetSystemStateValue("warnoptions", o);
                 }
 
-                List warnoptions = o as List;
-                if (warnoptions != null && !string.IsNullOrEmpty(warnings)) {
+                if (o is PythonList warnoptions && !string.IsNullOrEmpty(warnings)) {
                     string[] warns = warnings.Split(',');
-                    foreach(string warn in warns) {
+                    foreach (string warn in warns) {
                         warnoptions.Add(warn);
                     }
                 }

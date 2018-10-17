@@ -192,14 +192,14 @@ namespace IronPython.Modules {
                 return readline(context, GetInt(limit, -1));
             }
 
-            public virtual List readlines() {
+            public virtual PythonList readlines() {
                 return readlines(null);
             }
 
-            public virtual List readlines(object hint=null) {
+            public virtual PythonList readlines(object hint=null) {
                 int size = GetInt(hint, -1);
 
-                List res = new List();
+                PythonList res = new PythonList();
                 if (size <= 0) {
                     foreach (object line in this) {
                         res.AddNoLock(line);

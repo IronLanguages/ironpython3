@@ -102,7 +102,7 @@ namespace IronPython.Modules {
             return text;
         }
 
-        public static List findall(CodeContext/*!*/ context, object pattern, string @string, int flags = 0) {
+        public static PythonList findall(CodeContext/*!*/ context, object pattern, string @string, int flags = 0) {
             RE_Pattern pat = GetPattern(context, ValidatePattern(pattern), flags);
             ValidateString(@string, "string");
 
@@ -110,7 +110,7 @@ namespace IronPython.Modules {
             return FixFindAllMatch(pat, mc, null);
         }
 
-        public static List findall(CodeContext context, object pattern, IList<byte> @string, int flags = 0) {
+        public static PythonList findall(CodeContext context, object pattern, IList<byte> @string, int flags = 0) {
             RE_Pattern pat = GetPattern(context, ValidatePattern(pattern), flags);
             ValidateString(@string, "string");
 
@@ -126,7 +126,7 @@ namespace IronPython.Modules {
             return maker;
         }
 
-        private static List FixFindAllMatch(RE_Pattern pat, MatchCollection mc, Func<string, object> maker) {
+        private static PythonList FixFindAllMatch(RE_Pattern pat, MatchCollection mc, Func<string, object> maker) {
             object[] matches = new object[mc.Count];
             int numgrps = pat._re.GetGroupNumbers().Length;
             for (int i = 0; i < mc.Count; i++) {
@@ -162,7 +162,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            return List.FromArrayNoCopy(matches);
+            return PythonList.FromArrayNoCopy(matches);
         }
 
         public static object finditer(CodeContext/*!*/ context, object pattern, object @string, int flags = 0) {
@@ -181,7 +181,7 @@ namespace IronPython.Modules {
         }
 
         [return: SequenceTypeInfo(typeof(string))]
-        public static List split(CodeContext/*!*/ context, object pattern, object @string, int maxsplit = 0, int flags = 0) {
+        public static PythonList split(CodeContext/*!*/ context, object pattern, object @string, int maxsplit = 0, int flags = 0) {
             return GetPattern(context, ValidatePattern(pattern), flags).split(ValidateString(@string, "string"), maxsplit);
         }
 
@@ -320,8 +320,8 @@ namespace IronPython.Modules {
             }
 
             [return: SequenceTypeInfo(typeof(string))]
-            public List split(object @string, int maxsplit = 0) {
-                List result = new List();
+            public PythonList split(object @string, int maxsplit = 0) {
+                PythonList result = new PythonList();
                 // fast path for negative maxSplit ( == "make no splits")
                 if (maxsplit < 0) {
                     result.AddNoLock(ValidateString(@string, "string"));

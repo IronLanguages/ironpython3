@@ -33,7 +33,7 @@ namespace IronPython.Modules {
             object[] res = new object[n];
             if (!(iterable is TeeIterator)) {
                 IEnumerator iter = PythonOps.GetEnumerator(iterable);
-                List dataList = new List();
+                PythonList dataList = new PythonList();
 
                 for (int i = 0; i < n; i++) {
                     res[i] = new TeeIterator(iter, dataList);
@@ -366,7 +366,7 @@ namespace IronPython.Modules {
             }
 
             private IEnumerator<object> Yielder(IEnumerator iter) {
-                List result = new List();
+                PythonList result = new PythonList();
                 while (MoveNextHelper(iter)) {
                     result.AddNoLock(iter.Current);
                     yield return iter.Current;
@@ -624,7 +624,7 @@ namespace IronPython.Modules {
         [PythonType]
         public class product : IterBase {
             public product(params object[] iterables) {
-                InnerEnumerator = Yielder(ArrayUtils.ConvertAll(iterables, x => new List(PythonOps.GetEnumerator(x))));
+                InnerEnumerator = Yielder(ArrayUtils.ConvertAll(iterables, x => new PythonList(PythonOps.GetEnumerator(x))));
             }
 
             public product([ParamDictionary]IDictionary<object, object> paramDict, params object[] iterables) {
@@ -645,16 +645,16 @@ namespace IronPython.Modules {
                     throw UnexpectedKeywordArgument(paramDict);
                 }
 
-                List[] finalIterables = new List[iterables.Length * iRepeat];
+                PythonList[] finalIterables = new PythonList[iterables.Length * iRepeat];
                 for (int i = 0; i < iRepeat; i++) {
                     for (int j = 0; j < iterables.Length; j++) {
-                        finalIterables[i * iterables.Length + j] = new List(iterables[j]);
+                        finalIterables[i * iterables.Length + j] = new PythonList(iterables[j]);
                     }
                 }
                 InnerEnumerator = Yielder(finalIterables);
             }
 
-            private IEnumerator<object> Yielder(List[] iterables) {
+            private IEnumerator<object> Yielder(PythonList[] iterables) {
                 if (iterables.Length > 0) {
                     IEnumerator[] enums = new IEnumerator[iterables.Length];
                     enums[0] = iterables[0].GetEnumerator();
@@ -688,10 +688,10 @@ namespace IronPython.Modules {
 
         [PythonType]
         public class combinations : IterBase {
-            private readonly List _data;
+            private readonly PythonList _data;
 
             public combinations(object iterable, object r) {
-                _data = new List(iterable);
+                _data = new PythonList(iterable);
 
                 InnerEnumerator = Yielder(GetR(r, _data));
             }
@@ -745,10 +745,10 @@ namespace IronPython.Modules {
 
         [PythonType]
         public class combinations_with_replacement : IterBase {
-            private readonly List _data;
+            private readonly PythonList _data;
 
             public combinations_with_replacement(object iterable, object r) {
-                _data = new List(iterable);
+                _data = new PythonList(iterable);
 
                 InnerEnumerator = Yielder(GetR(r, _data));
             }
@@ -801,16 +801,16 @@ namespace IronPython.Modules {
 
         [PythonType]
         public class permutations : IterBase {
-            private readonly List _data;
+            private readonly PythonList _data;
 
             public permutations(object iterable) {
-                _data = new List(iterable);
+                _data = new PythonList(iterable);
 
                 InnerEnumerator = Yielder(_data.Count);
             }
 
             public permutations(object iterable, object r) {
-                _data = new List(iterable);
+                _data = new PythonList(iterable);
                 
                 InnerEnumerator = Yielder(GetR(r, _data));
             }
@@ -861,7 +861,7 @@ namespace IronPython.Modules {
             }
         }
 
-        private static int GetR(object r, List data) {
+        private static int GetR(object r, PythonList data) {
             int ri;
             if (r != null) {
                 ri = Converter.ConvertToInt32(r);
@@ -972,7 +972,7 @@ namespace IronPython.Modules {
                             objargs[i] = args[i];
                         }
                     } else {
-                        List argsList = new List(PythonOps.GetEnumerator(iter.Current));
+                        PythonList argsList = new PythonList(PythonOps.GetEnumerator(iter.Current));
                         objargs = ArrayUtils.ToArray(argsList);
                     }
 
@@ -1007,7 +1007,7 @@ namespace IronPython.Modules {
         [PythonHidden]
         public class TeeIterator : IEnumerator, IWeakReferenceable {
             internal IEnumerator _iter;
-            internal List _data;
+            internal PythonList _data;
             private int _curIndex = -1;
             private WeakRefTracker _weakRef;
 
@@ -1018,11 +1018,11 @@ namespace IronPython.Modules {
                     this._data = other._data;
                 } else {
                     this._iter = PythonOps.GetEnumerator(iterable);
-                    _data = new List();
+                    _data = new PythonList();
                 }
             }
 
-            public TeeIterator(IEnumerator iter, List dataList) {
+            public TeeIterator(IEnumerator iter, PythonList dataList) {
                 this._iter = iter;
                 this._data = dataList;
             }

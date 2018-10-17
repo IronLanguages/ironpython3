@@ -417,7 +417,7 @@ namespace IronPython.Modules {
 
                     return PythonTuple.MakeTuple(
                         DynamicHelpers.GetPythonType(this),
-                        PythonTuple.MakeTuple(List.FromArrayNoCopy(items)),
+                        PythonTuple.MakeTuple(PythonList.FromArrayNoCopy(items)),
                         null
                     );
                 }

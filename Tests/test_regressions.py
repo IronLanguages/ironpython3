@@ -48,10 +48,11 @@ class RegressionTest(IronPythonTestCase):
 
         test_file = '''
 output = []
-for i in xrange(0, 100):
+for i in range(0, 100):
     output.append(str(i) + "\\n")
 
-file(r"%s", "w").writelines(output)''' % (test_log_name)
+with open(r"%s", "w") as f:
+    f.writelines(output)''' % (test_log_name)
 
         self.write_to_file(test_file_name, test_file)
 
@@ -101,26 +102,26 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
         temp = IronPythonTest.NullableTest()
 
         temp.BProperty = True
-        for i in xrange(2):
+        for i in range(2):
             if not temp.BProperty:
                 Fail("Nullable Boolean was set to True")
-        for i in xrange(2):
+        for i in range(2):
             if not temp.BProperty==True:
                 Fail("Nullable Boolean was set to True")
 
         temp.BProperty = False
-        for i in xrange(2):
+        for i in range(2):
             if temp.BProperty:
                 Fail("Nullable Boolean was set to False")
-        for i in xrange(2):
+        for i in range(2):
             if not temp.BProperty==False:
                 Fail("Nullable Boolean was set to False")
 
         temp.BProperty = None
-        for i in xrange(2):
+        for i in range(2):
             if temp.BProperty:
                 Fail("Nullable Boolean was set to None")
-        for i in xrange(2):
+        for i in range(2):
             if not temp.BProperty==None:
                 Fail("Nullable Boolean was set to None")
 
@@ -136,7 +137,7 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
         }
 
         import re
-        for data, groups in tests.iteritems():
+        for data, groups in tests.items():
             regex = re.compile(data)
             message = "'%s' should have %d groups, not %d" % (data, groups, regex.groups)
             self.assertTrue(regex.groups == groups, message)
@@ -280,8 +281,8 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
 
     @unittest.skipIf(is_posix, 'No _winreg on posix')
     def test_winreg_error_cp17050(self):
-        import _winreg
-        self.assertEqual(_winreg.error, WindowsError)
+        import winreg
+        self.assertEqual(winreg.error, WindowsError)
 
     @skipUnlessIronPython()
     def test_indexing_value_types_cp20370(self):
@@ -300,8 +301,8 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
 
         x = {}
         x[p] = p
-        self.assertEqual(id(list(x.iterkeys())[0]), id(p))
-        self.assertEqual(id(list(x.itervalues())[0]), id(p))
+        self.assertEqual(id(list(x.keys())[0]), id(p))
+        self.assertEqual(id(list(x.values())[0]), id(p))
 
         self.load_iron_python_test()
 
@@ -314,8 +315,8 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
         def f(item):
             return item[0] in [0, 1]
 
-        self.assertEqual(filter(f, enumerate(['a', 'b'])), [(0, 'a'), (1, 'b')])
-        self.assertEqual(filter(lambda x: x[0] in [0, 1], enumerate([10.0, 27.0])),
+        self.assertEqual(list(filter(f, enumerate(['a', 'b']))), [(0, 'a'), (1, 'b')])
+        self.assertEqual(list(filter(lambda x: x[0] in [0, 1], enumerate([10.0, 27.0]))),
                 [(0, 10.0), (1, 27.0)])
 
     def test_invalid_args_cp20616(self):
@@ -393,7 +394,6 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
         self.assertEqual(MyFloat, 3.14)
         self.assertEqual(int(MyFloat), 3)
 
-
     @skipUnlessIronPython()
     def test_type_delegate_conversion(self):
         import clr
@@ -402,7 +402,6 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
         class x(object): pass
         ctor = Func[object](x)
         self.assertEqual(type(ctor()), x)
-
 
     def test_module_alias_cp19656(self):
         old_path = [x for x in sys.path]
@@ -442,8 +441,9 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
             try:
                 os.rmdir(dir_name)
             except WindowsError as e:
-                pass
-            self.assertEqual(e.errno, errno.EACCES)
+                self.assertEqual(e.errno, errno.EACCES)
+            else:
+                self.fail()
         finally:
             os.chmod(dir_name, stat.S_IWRITE)
             os.rmdir(dir_name)
@@ -474,14 +474,13 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
     def test_help_dir_cp11833(self):
         import System
         self.assertTrue(dir(System).count('Action') == 1)
-        from cStringIO import StringIO
+        from io import StringIO
         oldstdout, sys.stdout = sys.stdout, StringIO()
         try:
             help(System.Action)
         finally:
             sys.stdout = oldstdout
         self.assertTrue(dir(System).count('Action') == 1)
-
 
     def test_not___len___cp_24129(self):
         class C(object):
@@ -508,8 +507,7 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
         class C(A, B):
             pass
 
-        self.assertEqual(dir(A),
-                ['__doc__', '__module__', 'a'])
+        self.assertTrue('a' in dir(A))
         self.assertTrue('b' in dir(B))
         self.assertTrue('a' in dir(C) and 'b' in dir(C))
 
@@ -542,7 +540,7 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
                 def G(self):
                     print(a)
                     b = 4
-                    return deepcopy(locals().keys())
+                    return deepcopy(list(locals().keys()))
 
             c = C()
             return c.G()
@@ -557,13 +555,12 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
             a = 10
             def g1():
                 print(a)
-                return deepcopy(locals().keys())
+                return deepcopy(set(locals().keys()))
             def g2():
-                return deepcopy(locals().keys())
+                return deepcopy(set(locals().keys()))
             return (g1(), g2())
 
-        self.assertEqual(f(), (['a', 'deepcopy'], ['deepcopy']))
-
+        self.assertEqual(f(), ({'a', 'deepcopy'}, {'deepcopy'}))
 
     def cp22692_helper(self, source, flags):
         retVal = []
@@ -571,16 +568,16 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
         code = code1 = code2 = None
         try:
             code = compile(source, "dummy", "single", flags, 1)
-        except SyntaxError as err:
-            pass
+        except SyntaxError as e:
+            err = e
         try:
             code1 = compile(source + "\n", "dummy", "single", flags, 1)
-        except SyntaxError as err1:
-            pass
+        except SyntaxError as e:
+            err1 = e
         try:
             code2 = compile(source + "\n\n", "dummy", "single", flags, 1)
-        except SyntaxError as err2:
-            pass
+        except SyntaxError as e:
+            err2 = e
         if not code:
             retVal.append(type(err1))
             retVal.append(type(err2))
@@ -606,7 +603,7 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
         try:
             ClassWithDefaultField.Field = 20
         except ValueError as e:
-            self.assertEqual(e.message,
+            self.assertEqual(e.args[0],
                     "assignment to instance field w/o instance")
         self.assertEqual(ClassWithDefaultField().Field, 10)
 
@@ -618,11 +615,11 @@ file(r"%s", "w").writelines(output)''' % (test_log_name)
 
         try:
             cp20174_init = os.path.join(cp20174_path, "__init__.py")
-            self.write_to_file(cp20174_init, "import a")
+            self.write_to_file(cp20174_init, "from . import a")
 
             cp20174_a = os.path.join(cp20174_path,  "a.py")
             self.write_to_file(cp20174_a, """
-from property import x
+from .property import x
 class C:
     def _get_x(self): return x
     x = property(_get_x)
@@ -635,9 +632,7 @@ class C:
             self.assertEqual(cp20174.property.x, 1)
 
         finally:
-            for x in os.listdir(cp20174_path):
-                os.unlink(os.path.join(cp20174_path, x))
-            os.rmdir(cp20174_path)
+            self.clean_directory(cp20174_path, remove=True)
             sys.path = old_path
 
     @skipUnlessIronPython()
@@ -669,7 +664,7 @@ class C:
         vi32d = Delegate.VoidInt32Delegate(cwtm.MVoidInt32)
         ar = vi32d.BeginInvoke(32, None, None)
         is_complete = False
-        for i in xrange(100):
+        for i in range(100):
             sleep(1)
             if ar.IsCompleted:
                 is_complete = True
@@ -690,7 +685,7 @@ class C:
                 l = m(C,1,2,3)
                 l = m(C,z=3,y=2,x=1)
             except Exception as e:
-                print(e.message)
+                print(e.args[0])
 
         self.assertEqual(trapper.messages[0:2], ['1 2 3', '1 2 3'])
 
@@ -705,9 +700,10 @@ class C:
             return (l1, l2)
 
         t1, t2 = f()
-        self.assertEqual(t1.keys(), ['x', 'g'])
+        self.assertEqual(set(t1.keys()), {'x', 'g'})
         self.assertEqual(t2, {})
 
+    @unittest.skip("TODO: import cp20472 is not failing, figure out if the original issue is still relevant")
     def test_cp24169(self):
         import os, sys
 
@@ -715,7 +711,7 @@ class C:
         try:
             sys.path.append(os.path.join(self.test_dir, "encoded_files"))
             import cp20472 #no encoding specified and has non-ascii characters
-            raise Exception("Line above should had thrown!")
+            self.fail("Line above should had thrown!")
         except SyntaxError as e:
             self.assertTrue(e.msg.startswith("Non-ASCII character '\\xcf' in file"))
             if is_cli:
@@ -739,7 +735,7 @@ class C:
 
         dc = DictClass()
         k = K(dc)
-        for i in xrange(200):
+        for i in range(200):
             temp = k.test(20)
 
 
@@ -916,11 +912,6 @@ class C:
         self.assertIsNot(s1, s2)
         self.assertEqual(s1, s2)
 
-        r.jumpahead(100)
-        s3 = r.getstate()
-        self.assertIsNot(s3, s1)
-        self.assertNotEqual(s3, s1)
-
     def test_gh1549(self):
         import hashlib
         m = hashlib.md5()
@@ -1005,7 +996,16 @@ class C:
             super(two, self).__init__()
             self.cnt += 1
 
-        self.assertEqual(two().cnt, 3)
+        if is_cli:
+            try:
+                self.assertEqual(two().cnt, 3)
+            except SystemError:
+                # https://github.com/IronLanguages/ironpython3/issues/451
+                pass
+            else:
+                self.fail("delete the try/except when https://github.com/IronLanguages/ironpython3/issues/451 is fixed")
+        else:
+            self.assertEqual(two().cnt, 3)
 
     def test_ipy2_gh292(self):
         """https://github.com/IronLanguages/ironpython2/issues/292"""
@@ -1178,16 +1178,17 @@ class C:
     def test_gh370(self):
         """https://github.com/IronLanguages/ironpython2/issues/370"""
         from xml.etree import ElementTree as ET
-        from StringIO import StringIO
+        from io import StringIO
         x = ET.iterparse(StringIO('<root/>'))
-        y = x.next()
+        y = next(x)
         self.assertTrue(y[0] == 'end' and y[1].tag == 'root')
 
+    @unittest.skipIf(is_cli, "TODO")
     def test_gh463(self):
         """https://github.com/IronLanguages/ironpython2/issues/463"""
         import plistlib
-        x = '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>A</key><string>B</string></dict></plist>'
-        self.assertEquals(plistlib.readPlistFromString(x), {'A': 'B'})
+        x = b'<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>A</key><string>B</string></dict></plist>'
+        self.assertEquals(plistlib.readPlistFromBytes(x), {'A': 'B'})
 
     def test_gh483(self):
         """https://github.com/IronLanguages/ironpython2/issues/463"""
@@ -1199,7 +1200,7 @@ class C:
     def test_gh34(self):
         """https://github.com/IronLanguages/ironpython2/issues/34"""
         from collections import OrderedDict
-        
+
         class Example(OrderedDict):
             def __eq__(self, other):
                 return True
@@ -1232,7 +1233,7 @@ class C:
             except:
                 return sys.exc_info()[2]
 
-        lineno = C.func_code.co_firstlineno
+        lineno = C.__code__.co_firstlineno
         tb = A()
 
         a = traceback.extract_tb(tb)

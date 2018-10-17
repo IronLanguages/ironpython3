@@ -1278,7 +1278,7 @@ namespace IronPython.Modules {
                         mode |= S_IEXEC;
                     }
                 } else {
-                    return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, "file does not exist: " + path));
+                    return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, "file does not exist: " + path, null, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND));
                 }
 
                 mode |= S_IREAD;
@@ -1297,7 +1297,7 @@ namespace IronPython.Modules {
 
                 return new stat_result(mode, size, st_atime, st_mtime, st_ctime);
             } catch (ArgumentException) {
-                return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_INVALID_NAME, "The path is invalid: " + path));
+                return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_INVALID_NAME, "The path is invalid: " + path, null, PythonExceptions._OSError.ERROR_INVALID_NAME));
             } catch (Exception e) {
                 return LightExceptions.Throw(ToPythonException(e, path));
             }
@@ -1361,11 +1361,7 @@ namespace IronPython.Modules {
             }
         }
 
-        private static PythonType WindowsError {
-            get {
-                return PythonExceptions.OSError;
-            }
-        }
+        private static PythonType WindowsError => PythonExceptions.OSError;
 
 #if FEATURE_PROCESS
         [Documentation("system(command) -> int\nExecute the command (a string) in a subshell.")]
@@ -1698,14 +1694,12 @@ the 'status' value."),
             int errorCode = 0;
 
             bool isWindowsError = false;
-            Win32Exception winExcep = e as Win32Exception;
-            if (winExcep != null) {
+            if (e is Win32Exception winExcep) {
                 errorCode = winExcep.NativeErrorCode;
                 message = GetFormattedException(e, errorCode);
                 isWindowsError = true;
             } else {
-                UnauthorizedAccessException unauth = e as UnauthorizedAccessException;
-                if (unauth != null) {
+                if (e is UnauthorizedAccessException unauth) {
                     isWindowsError = true;
                     errorCode = PythonExceptions._OSError.ERROR_ACCESS_DENIED;
                     if (filename != null) {
@@ -1715,15 +1709,14 @@ the 'status' value."),
                     }
                 }
 
-                IOException ioe = e as IOException;
-                if (ioe != null) {
+                if (e is IOException ioe) {
                     switch (error) {
                         case PythonExceptions._OSError.ERROR_DIR_NOT_EMPTY:
-                            throw PythonExceptions.CreateThrowable(WindowsError, error, "The directory is not empty");
+                            throw PythonExceptions.CreateThrowable(WindowsError, error, "The directory is not empty", null, error);
                         case PythonExceptions._OSError.ERROR_ACCESS_DENIED:
-                            throw PythonExceptions.CreateThrowable(WindowsError, error, "Access is denied");
+                            throw PythonExceptions.CreateThrowable(WindowsError, error, "Access is denied", null, error);
                         case PythonExceptions._OSError.ERROR_SHARING_VIOLATION:
-                            throw PythonExceptions.CreateThrowable(WindowsError, error, "The process cannot access the file because it is being used by another process");
+                            throw PythonExceptions.CreateThrowable(WindowsError, error, "The process cannot access the file because it is being used by another process", null, error);
                     }
                 }
 
@@ -1739,7 +1732,7 @@ the 'status' value."),
             }
 
             if (isWindowsError) {
-                return PythonExceptions.CreateThrowable(WindowsError, errorCode, message);
+                return PythonExceptions.CreateThrowable(WindowsError, errorCode, message, null, errorCode);
             }
 
             return PythonExceptions.CreateThrowable(PythonExceptions.OSError, errorCode, message);

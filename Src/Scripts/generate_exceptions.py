@@ -361,12 +361,6 @@ def gen_one_new_exception(cw, exception, parent):
         else:
             cw.enter_block('public partial class _%s : %s' % (exception.name, exception.ConcreteParent.name))
                 
-        for field in exception.fields:
-            cw.writeline('private object _%s;' % field)
-        
-        if exception.fields:
-            cw.writeline('')
-
         cw.writeline('public _%s() : base(%s) { }' % (exception.name, exception.name))
         cw.writeline('public _%s(PythonType type) : base(type) { }' % (exception.name, ))
         cw.writeline('')
@@ -380,7 +374,7 @@ def gen_one_new_exception(cw, exception, parent):
             argstr = ', '.join(['object ' + fix_object(x) for x in exception.args])             
             cw.enter_block('public void __init__(%s)' % (argstr))
             for arg in exception.args:
-                cw.writeline('_%s = %s;' % (arg, fix_object(arg)))
+                cw.writeline('this.%s = %s;' % (fix_object(arg), fix_object(arg)))
             cw.writeline('args = PythonTuple.MakeTuple(' + ', '.join([fix_object(x) for x in exception.args]) + ');')
             cw.exit_block()
             cw.writeline('')
@@ -393,10 +387,7 @@ def gen_one_new_exception(cw, exception, parent):
             cw.writeline('')
         
         for field in exception.fields:
-            cw.enter_block('public object %s' % fix_object(field))
-            cw.writeline('get { return _%s; }' % field)
-            cw.writeline('set { _%s = value; }' % field)
-            cw.exit_block()
+            cw.writeline('public object %s { get; set; }' % fix_object(field))
             cw.writeline('')
         
         cw.exit_block()

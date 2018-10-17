@@ -18,6 +18,8 @@ using System.Text;
 using System.Xml;
 
 [assembly: PythonModule("pyexpat", typeof(IronPython.Modules.PythonExpat))]
+[assembly: PythonModule("pyexpat.errors", typeof(IronPython.Modules.PythonExpat.PyExpatErrors))]
+[assembly: PythonModule("pyexpat.model", typeof(IronPython.Modules.PythonExpat.PyExpatModel))]
 namespace IronPython.Modules {
     public static class PythonExpat {
         public const int XML_PARAM_ENTITY_PARSING_NEVER = 0;
@@ -173,6 +175,37 @@ namespace IronPython.Modules {
             }
         }
 
+        [PythonHidden]
+        public static class PyExpatModel {
+            private enum XmlContentType {
+                XML_CTYPE_EMPTY = 1,
+                XML_CTYPE_ANY,
+                XML_CTYPE_MIXED,
+                XML_CTYPE_NAME,
+                XML_CTYPE_CHOICE,
+                XML_CTYPE_SEQ
+            };
+
+            public const int XML_CTYPE_EMPTY = (int)XmlContentType.XML_CTYPE_EMPTY;
+            public const int XML_CTYPE_ANY = (int)XmlContentType.XML_CTYPE_ANY;
+            public const int XML_CTYPE_MIXED = (int)XmlContentType.XML_CTYPE_MIXED;
+            public const int XML_CTYPE_NAME = (int)XmlContentType.XML_CTYPE_NAME;
+            public const int XML_CTYPE_CHOICE = (int)XmlContentType.XML_CTYPE_CHOICE;
+            public const int XML_CTYPE_SEQ = (int)XmlContentType.XML_CTYPE_SEQ;
+
+            private enum XmlContentQuant {
+                XML_CQUANT_NONE,
+                XML_CQUANT_OPT,
+                XML_CQUANT_REP,
+                XML_CQUANT_PLUS
+            };
+
+            public const int XML_CQUANT_NONE = (int)XmlContentQuant.XML_CQUANT_NONE;
+            public const int XML_CQUANT_OPT = (int)XmlContentQuant.XML_CQUANT_OPT;
+            public const int XML_CQUANT_REP = (int)XmlContentQuant.XML_CQUANT_REP;
+            public const int XML_CQUANT_PLUS = (int)XmlContentQuant.XML_CQUANT_PLUS;
+        }
+
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             var exception = context.EnsureModuleException("pyexpaterror", dict, "ExpatError", "xml.parsers.expat");
@@ -180,7 +213,8 @@ namespace IronPython.Modules {
             dict["ExpatError"] = exception;
 
             context.GetOrCreateModuleState(_errorsKey, () => {
-                dict.Add("errors", new PyExpatErrors());
+                dict.Add("errors", context.GetBuiltinModule("pyexpat.errors"));
+                dict.Add("model", context.GetBuiltinModule("pyexpat.model"));
                 return dict;
             });
         }
@@ -235,14 +269,9 @@ namespace IronPython.Modules {
             return new xmlparser(encoding, namespace_separator, intern);
         }
 
-        public static object XMLParserType {
-            get {
-                return typeof(xmlparser);
-            }
-        }
+        public static object XMLParserType { get; } = DynamicHelpers.GetPythonTypeFromType(typeof(xmlparser));
 
-
-        [PythonType]
+        [PythonType, PythonHidden]
         public class xmlparser {
             private readonly StringBuilder text_buffer = new StringBuilder();
             private int _buffer_size = 8192;

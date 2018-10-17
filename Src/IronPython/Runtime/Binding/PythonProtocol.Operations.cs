@@ -1023,7 +1023,7 @@ namespace IronPython.Runtime.Binding {
             PythonType xPythonType = MetaPythonObject.GetPythonType(xType);
             PythonType yPythonType = MetaPythonObject.GetPythonType(yType);
             bool opReverse = false;
-            if ((rop != null) && xPythonType.IsSystemType && (yPythonType != xPythonType) && BindingHelpers.IsSubclassOf(yType, xType)) {
+            if ((rop != null) && (yPythonType != xPythonType) && BindingHelpers.IsSubclassOf(yType, xType)) {
                 SlotOrFunction tmp = rop;
                 rop = fop;
                 fop = tmp;

@@ -106,7 +106,7 @@ namespace IronPython.Runtime {
         }
 
         public static object __new__(CodeContext/*!*/ context, PythonType cls) {
-            if (cls == TypeCache.List) {
+            if (cls == TypeCache.PythonList) {
                 return new PythonList();
             }
 
@@ -160,9 +160,7 @@ namespace IronPython.Runtime {
 #endif
 
         internal PythonList(object sequence) {
-            ICollection items = sequence as ICollection;
-
-            if (items != null) {
+            if (sequence is ICollection items) {
                 _data = new object[items.Count];
                 int i = 0;
                 foreach (object item in items) {
@@ -904,7 +902,7 @@ namespace IronPython.Runtime {
             return typeof(object);
         }
 
-        internal void DoSort(CodeContext/*!*/ context, IComparer cmp, object key, bool reverse, int index, int count) {
+        private void DoSort(CodeContext/*!*/ context, IComparer cmp, object key, bool reverse, int index, int count) {
             lock (this) {
                 object[] sortData = _data;
                 int sortSize = _size;
@@ -919,12 +917,12 @@ namespace IronPython.Runtime {
                         for (int i = 0; i < sortSize; i++) {
                             Debug.Assert(_data.Length == 0);
                             keys[i] = PythonCalls.Call(context, key, sortData[i]);
-                            if (_data.Length != 0) throw PythonOps.ValueError("list mutated while determing keys");
+                            if (_data.Length != 0) throw PythonOps.ValueError("list mutated while determining keys");
                         }
 
                         sortData = ListMergeSort(sortData, keys, cmp, index, count, reverse);
                     } else {
-                        sortData = ListMergeSort(sortData, cmp, index, count, reverse);
+                        sortData = ListMergeSort(sortData, null, cmp, index, count, reverse);
                     }
                 } finally {
                     // restore the list to it's old data & size (which is now supported appropriately)
@@ -935,10 +933,6 @@ namespace IronPython.Runtime {
             }
         }
 
-        internal object[] ListMergeSort(object[] sortData, IComparer cmp, int index, int count, bool reverse) {
-            return ListMergeSort(sortData, null, cmp, index, count, reverse);
-        }
-
         internal object[] ListMergeSort(object[] sortData, object[] keys, IComparer cmp, int index, int count, bool reverse) {
             if (count - index < 2) return sortData;  // 1 or less items, we're sorted, quit now...
 
@@ -947,7 +941,7 @@ namespace IronPython.Runtime {
 
             int len = count - index;
             // prepare the two lists.
-            int[] lists = new int[len + 2];    //0 and count + 1 are auxillary fields
+            int[] lists = new int[len + 2];    //0 and count + 1 are auxiliary fields
 
             lists[0] = 1;
             lists[len + 1] = 2;

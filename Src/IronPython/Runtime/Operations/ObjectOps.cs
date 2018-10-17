@@ -272,7 +272,7 @@ namespace IronPython.Runtime.Operations {
                     hashSet.Add(TypeCache.Complex);
                     hashSet.Add(TypeCache.String);
                     hashSet.Add(TypeCache.PythonTuple);
-                    hashSet.Add(TypeCache.List);
+                    hashSet.Add(TypeCache.PythonList);
                     hashSet.Add(TypeCache.Dict);
                     hashSet.Add(TypeCache.Function);
                     hashSet.Add(TypeCache.BuiltinFunction);

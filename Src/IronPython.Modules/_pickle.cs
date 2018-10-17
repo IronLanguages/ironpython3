@@ -774,7 +774,7 @@ namespace IronPython.Modules {
             }
 
             private static void SaveList(PicklerObject/*!*/ pickler, CodeContext/*!*/ context, object obj) {
-                Debug.Assert(DynamicHelpers.GetPythonType(obj).Equals(TypeCache.List), "arg must be list");
+                Debug.Assert(DynamicHelpers.GetPythonType(obj).Equals(TypeCache.PythonList), "arg must be list");
                 Debug.Assert(!pickler.MemoContains(obj));
 
                 int index = pickler.MemoizeNew(obj);

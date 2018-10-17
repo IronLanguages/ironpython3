@@ -66,6 +66,36 @@ namespace IronPython.Modules {
         public static PythonType NotADirectoryError {
             get { return PythonExceptions.NotADirectoryError; }
         }
+        public static PythonType InterruptedError {
+            get { return PythonExceptions.InterruptedError; }
+        }
+        public static PythonType ChildProcessError {
+            get { return PythonExceptions.ChildProcessError; }
+        }
+        public static PythonType IsADirectoryError {
+            get { return PythonExceptions.IsADirectoryError; }
+        }
+        public static PythonType ProcessLookupError {
+            get { return PythonExceptions.ProcessLookupError; }
+        }
+        public static PythonType TimeoutError {
+            get { return PythonExceptions.TimeoutError; }
+        }
+        public static PythonType ConnectionError {
+            get { return PythonExceptions.ConnectionError; }
+        }
+        public static PythonType BrokenPipeError {
+            get { return PythonExceptions.BrokenPipeError; }
+        }
+        public static PythonType ConnectionAbortedError {
+            get { return PythonExceptions.ConnectionAbortedError; }
+        }
+        public static PythonType ConnectionRefusedError {
+            get { return PythonExceptions.ConnectionRefusedError; }
+        }
+        public static PythonType ConnectionResetError {
+            get { return PythonExceptions.ConnectionResetError; }
+        }
         public static PythonType EOFError {
             get { return PythonExceptions.EOFError; }
         }

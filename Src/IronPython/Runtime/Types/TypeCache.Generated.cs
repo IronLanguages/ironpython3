@@ -30,7 +30,7 @@ namespace IronPython.Runtime.Types {
         private static PythonType str;
         private static PythonType pythontuple;
         private static PythonType weakreference;
-        private static PythonType list;
+        private static PythonType pythonlist;
         private static PythonType pythonfile;
         private static PythonType pythonmodule;
         private static PythonType method;
@@ -138,10 +138,10 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        public static PythonType List {
+        public static PythonType PythonList {
             get {
-                if (list == null) list = DynamicHelpers.GetPythonTypeFromType(typeof(List));
-                return list;
+                if (pythonlist == null) pythonlist = DynamicHelpers.GetPythonTypeFromType(typeof(PythonList));
+                return pythonlist;
             }
         }
 

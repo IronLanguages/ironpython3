@@ -261,13 +261,13 @@ Note: Return value differs from CPython - it is not a string.")]
                 conv["n_sign_posn"] = Monetary.NumberFormat.CurrencyNegativePattern;
             }
 
-            private static List GroupsToList(int[] groups) {
+            private static PythonList GroupsToList(int[] groups) {
                 // .NET: values from 0-9, if the last digit is zero, remaining digits
                 // go ungrouped, otherwise they're grouped based upon the last value.
 
                 // locale: ends in CHAR_MAX if no further grouping is performed, ends in
                 // zero if the last group size is repeatedly used.
-                List res = new List(groups);
+                PythonList res = new PythonList(groups);
                 if (groups.Length > 0 && groups[groups.Length - 1] == 0) {
                     // replace zero w/ CHAR_MAX, no further grouping is performed
                     res[res.__len__() - 1] = CHAR_MAX;

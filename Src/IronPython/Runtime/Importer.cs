@@ -71,63 +71,55 @@ namespace IronPython.Runtime {
         /// result.
         /// </summary>
         public static object ImportFrom(CodeContext/*!*/ context, object from, string name) {
-                PythonModule scope = from as PythonModule;
-                PythonType pt;
-                NamespaceTracker nt;
-                if (scope != null) {
-                    object ret;
-                    if (scope.GetType() == typeof(PythonModule)) {
-                        if (scope.__dict__.TryGetValue(name, out ret)) {
-                            return ret;
-                        }
-                    } else {
-                        // subclass of module, it could have overridden __getattr__ or __getattribute__
-                        if (PythonOps.TryGetBoundAttr(context, scope, name, out ret)) {
-                            return ret;
-                        }
-                    }
-
-                    object path;
-                    List listPath;
-                    string stringPath;
-                    if (scope.__dict__._storage.TryGetPath(out path)) {
-                        if ((listPath = path as List) != null) {
-                            return ImportNestedModule(context, scope, new[] { name }, 0, listPath);
-                        } else if((stringPath = path as string) != null) {
-                            return ImportNestedModule(context, scope, new[] { name }, 0, List.FromArrayNoCopy(stringPath));
-                        }
-                    }
-                } else if ((pt = from as PythonType) != null) {
-                    PythonTypeSlot pts;
-                    object res;
-                    if (pt.TryResolveSlot(context, name, out pts) &&
-                        pts.TryGetValue(context, null, pt, out res)) {
-                        return res;
-                    }
-                } else if ((nt = from as NamespaceTracker) != null) {
-                    object res = NamespaceTrackerOps.GetCustomMember(context, nt, name);
-                    if (res != OperationFailed.Value) {
-                        return res;
+            if (from is PythonModule scope) {
+                object ret;
+                if (scope.GetType() == typeof(PythonModule)) {
+                    if (scope.__dict__.TryGetValue(name, out ret)) {
+                        return ret;
                     }
                 } else {
-                    // This is too lax, for example it allows from module.class import member
-                    object ret;
-                    if (PythonOps.TryGetBoundAttr(context, from, name, out ret)) {
+                    // subclass of module, it could have overridden __getattr__ or __getattribute__
+                    if (PythonOps.TryGetBoundAttr(context, scope, name, out ret)) {
                         return ret;
                     }
                 }
-            
+
+                if (scope.__dict__._storage.TryGetPath(out object path)) {
+                    if (path is PythonList listPath) {
+                        return ImportNestedModule(context, scope, new[] { name }, 0, listPath);
+                    }
+                    if (path is string stringPath) {
+                        return ImportNestedModule(context, scope, new[] { name }, 0, PythonList.FromArrayNoCopy(stringPath));
+                    }
+                }
+            } else if (from is PythonType pt) {
+                if (pt.TryResolveSlot(context, name, out PythonTypeSlot pts) &&
+                    pts.TryGetValue(context, null, pt, out object res)) {
+                    return res;
+                }
+            } else if (from is NamespaceTracker nt) {
+                object res = NamespaceTrackerOps.GetCustomMember(context, nt, name);
+                if (res != OperationFailed.Value) {
+                    return res;
+                }
+            } else {
+                // This is too lax, for example it allows from module.class import member
+                if (PythonOps.TryGetBoundAttr(context, from, name, out object ret)) {
+                    return ret;
+                }
+            }
+
             throw PythonOps.ImportError("Cannot import name {0}", name);
         }
 
         private static object ImportModuleFrom(CodeContext/*!*/ context, object from, string[] parts, int current) {
             if (from is PythonModule scope) {
                 if (scope.__dict__._storage.TryGetPath(out object path) || DynamicHelpers.GetPythonType(scope).TryGetMember(context, scope, "__path__", out path)) {
-                    if (path is List listPath) {
+                    if (path is PythonList listPath) {
                         return ImportNestedModule(context, scope, parts, current, listPath);
                     }
                     if (path is string stringPath) {
-                        return ImportNestedModule(context, scope, parts, current, List.FromArrayNoCopy(stringPath));
+                        return ImportNestedModule(context, scope, parts, current, PythonList.FromArrayNoCopy(stringPath));
                     }
                 }
             }
@@ -194,9 +186,9 @@ namespace IronPython.Runtime {
                 // try a relative import
 
                 // if importing a.b.c, import "a" first and then import b.c from a
-                string name;    // name of the module we are to import in relation to the current module
+                string name; // name of the module we are to import in relation to the current module
                 PythonModule parentModule;
-                List path;      // path to search
+                PythonList path; // path to search
                 if (TryGetNameAndPath(context, globals, firstName, level, package, out name, out path, out parentModule)) {
                     finalName = name;
                     // import relative
@@ -292,7 +284,7 @@ namespace IronPython.Runtime {
         /// <param name="parentMod">the parent module</param>
         /// <param name="package">the global __package__ value</param>
         /// <returns></returns>
-        private static bool TryGetNameAndPath(CodeContext/*!*/ context, object globals, string name, int level, string package, out string full, out List path, out PythonModule parentMod) {
+        private static bool TryGetNameAndPath(CodeContext/*!*/ context, object globals, string name, int level, string package, out string full, out PythonList path, out PythonModule parentMod) {
             Debug.Assert(level > 0);   // shouldn't be here for absolute imports
 
             // Unless we can find enough information to perform relative import,
@@ -320,7 +312,7 @@ namespace IronPython.Runtime {
             if (package == null) {
                 // If the module has __path__ (and __path__ is list), nested module is being imported
                 // otherwise, importing sibling to the importing module
-                if (pyGlobals._storage.TryGetPath(out attribute) && (path = attribute as List) != null) {
+                if (pyGlobals._storage.TryGetPath(out attribute) && (path = attribute as PythonList) != null) {
                     // found __path__, importing nested module. The actual name of the nested module
                     // is the name of the mod plus the name of the imported module
                     if (String.IsNullOrEmpty(name)) {
@@ -415,7 +407,7 @@ namespace IronPython.Runtime {
 
             string name = module.GetName();
             if (name != null) {
-                List path = null;
+                PythonList path = null;
                 // find the parent module and get it's __path__ property
                 int dotIndex = name.LastIndexOf('.');
                 if (dotIndex != -1) {
@@ -428,7 +420,7 @@ namespace IronPython.Runtime {
                     return module;
                 }
 
-                List sysPath;
+                PythonList sysPath;
                 if (context.LanguageContext.TryGetSystemPath(out sysPath)) {
                     object ret = ImportFromPathHook(context, name, name, sysPath, null);
                     if (ret != null) {
@@ -465,8 +457,8 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Given the parent module name looks up the __path__ property.
         /// </summary>
-        private static List GetParentPathAndModule(CodeContext/*!*/ context, string/*!*/ parentModuleName, out PythonModule parentModule) {
-            List path = null;
+        private static PythonList GetParentPathAndModule(CodeContext/*!*/ context, string/*!*/ parentModuleName, out PythonModule parentModule) {
+            PythonList path = null;
             object parentModuleObj;
             parentModule = null;
 
@@ -478,7 +470,7 @@ namespace IronPython.Runtime {
                     object objPath;
                     // get its path as a List if it's there
                     if (parentModule.__dict__._storage.TryGetPath(out objPath)) {
-                        path = objPath as List;
+                        path = objPath as PythonList;
                     }
                 }
             }
@@ -506,7 +498,7 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Trys to get an existing module and if that fails fall backs to searching 
         /// </summary>
-        private static bool TryGetExistingOrMetaPathModule(CodeContext/*!*/ context, string fullName, List path, out object ret) {
+        private static bool TryGetExistingOrMetaPathModule(CodeContext/*!*/ context, string fullName, PythonList path, out object ret) {
             if (TryGetExistingModule(context, fullName, out ret)) {
                 return true;
             }
@@ -520,8 +512,8 @@ namespace IronPython.Runtime {
         /// The meta_path provides a list of importer objects which can be used to load modules before
         /// searching sys.path but after searching built-in modules.
         /// </summary>
-        private static bool TryLoadMetaPathModule(CodeContext/*!*/ context, string fullName, List path, out object ret) {
-            if (context.LanguageContext.GetSystemStateValue("meta_path") is List metaPath) {
+        private static bool TryLoadMetaPathModule(CodeContext/*!*/ context, string fullName, PythonList path, out object ret) {
+            if (context.LanguageContext.GetSystemStateValue("meta_path") is PythonList metaPath) {
                 foreach (object importer in (IEnumerable)metaPath) {
                     if (FindAndLoadModuleFromImporter(context, importer, fullName, path, out ret)) {
                         return true;
@@ -538,7 +530,7 @@ namespace IronPython.Runtime {
         /// 
         /// First the find_module(fullName, path) is invoked to get a loader, then load_module(fullName) is invoked
         /// </summary>
-        private static bool FindAndLoadModuleFromImporter(CodeContext/*!*/ context, object importer, string fullName, List path, out object ret) {
+        private static bool FindAndLoadModuleFromImporter(CodeContext/*!*/ context, object importer, string fullName, PythonList path, out object ret) {
             object find_module = PythonOps.GetBoundAttr(context, importer, "find_module");
 
             PythonContext pycontext = context.LanguageContext;
@@ -588,7 +580,7 @@ namespace IronPython.Runtime {
             ret = ImportBuiltin(context, name);
             if (ret != null) return ret;
 
-            List path;
+            PythonList path;
             if (context.LanguageContext.TryGetSystemPath(out path)) {
                 ret = ImportFromPath(context, name, name, path);
                 if (ret != null) return ret;
@@ -630,7 +622,7 @@ namespace IronPython.Runtime {
         }
 
         private static object ImportNestedModule(CodeContext/*!*/ context, PythonModule/*!*/ module,
-            string[] parts, int current, List/*!*/ path) {
+            string[] parts, int current, PythonList/*!*/ path) {
             object ret;
             string name = parts[current];
             string fullName = CreateFullName(module.GetName() as string, name);
@@ -742,7 +734,7 @@ namespace IronPython.Runtime {
         }
 
         internal static SourceUnit TryFindSourceFile(PythonContext/*!*/ context, string/*!*/ name) {
-            List paths;
+            PythonList paths;
             if (!context.TryGetSystemPath(out paths)) {
                 return null;
             }
@@ -800,11 +792,11 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        private static object ImportFromPath(CodeContext/*!*/ context, string/*!*/ name, string/*!*/ fullName, List/*!*/ path) {
+        private static object ImportFromPath(CodeContext/*!*/ context, string/*!*/ name, string/*!*/ fullName, PythonList/*!*/ path) {
             return ImportFromPathHook(context, name, fullName, path, LoadFromDisk);
         }
 
-        private static object ImportFromPathHook(CodeContext/*!*/ context, string/*!*/ name, string/*!*/ fullName, List/*!*/ path, Func<CodeContext, string, string, string, object> defaultLoader) {
+        private static object ImportFromPathHook(CodeContext/*!*/ context, string/*!*/ name, string/*!*/ fullName, PythonList/*!*/ path, Func<CodeContext, string, string, string, object> defaultLoader) {
             Assert.NotNull(context, name, fullName, path);
 
             IDictionary<object, object> importCache = context.LanguageContext.GetSystemStateValue("path_importer_cache") as IDictionary<object, object>;
@@ -852,7 +844,7 @@ namespace IronPython.Runtime {
                 return false;
             }
             // for consistency with cpython, insert zip as a first entry into sys.path
-            var syspath = context.LanguageContext.GetSystemStateValue("path") as List;
+            var syspath = context.LanguageContext.GetSystemStateValue("path") as PythonList;
             syspath?.Insert(0, path);
             object dummy;
             return FindAndLoadModuleFromImporter(context, importer, "__main__", null, out dummy);
@@ -880,7 +872,7 @@ namespace IronPython.Runtime {
         /// handles this path.
         /// </summary>
         private static object FindImporterForPath(CodeContext/*!*/ context, string dirname) {
-            List pathHooks = context.LanguageContext.GetSystemStateValue("path_hooks") as List;
+            PythonList pathHooks = context.LanguageContext.GetSystemStateValue("path_hooks") as PythonList;
 
             foreach (object hook in (IEnumerable)pathHooks) {
                 try {

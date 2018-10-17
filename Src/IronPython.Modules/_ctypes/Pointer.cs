@@ -97,7 +97,7 @@ namespace IronPython.Modules {
                         if (elemType != null && (elemType._type == SimpleTypeKind.WChar || elemType._type == SimpleTypeKind.Char)) {
                             return String.Empty;
                         }
-                        return new List();
+                        return new PythonList();
                     }
 
                     MemoryHolder address = _memHolder.ReadMemoryHolder(0);
@@ -113,7 +113,7 @@ namespace IronPython.Modules {
 
                         return res.ToString();
                     } else {
-                        List res = new List((stop - start) / step);
+                        PythonList res = new PythonList((stop - start) / step);
                         for (int i = start; stop > start ? i < stop : i > stop; i += step) {
                             res.AddNoLock(
                                 type.GetValue(address, this, checked(type.Size * i), false)

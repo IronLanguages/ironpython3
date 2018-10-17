@@ -799,7 +799,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         private static bool IsSequence(DynamicMetaObject/*!*/ metaObject) {
-            if (typeof(List).IsAssignableFrom(metaObject.GetLimitType()) ||
+            if (typeof(PythonList).IsAssignableFrom(metaObject.GetLimitType()) ||
                 typeof(PythonTuple).IsAssignableFrom(metaObject.GetLimitType()) ||
                 typeof(string).IsAssignableFrom(metaObject.GetLimitType())) {
                 return true;
@@ -1185,9 +1185,9 @@ namespace IronPython.Runtime.Binding {
         private static DynamicMetaObject FastPathCompare(DynamicMetaObject/*!*/[] types) {
             if (types[0].GetLimitType() == types[1].GetLimitType()) {
                 // fast paths for comparing some types which don't define __cmp__
-                if (types[0].GetLimitType() == typeof(List)) {
-                    types[0] = types[0].Restrict(typeof(List));
-                    types[1] = types[1].Restrict(typeof(List));
+                if (types[0].GetLimitType() == typeof(PythonList)) {
+                    types[0] = types[0].Restrict(typeof(PythonList));
+                    types[1] = types[1].Restrict(typeof(PythonList));
 
                     return new DynamicMetaObject(
                         Ast.Call(

@@ -788,7 +788,7 @@ namespace IronPython.Runtime.Operations {
             return ret.ToString();
         }
 
-        public static string join(this string/*!*/ self, [NotNull]List/*!*/ sequence) {
+        public static string join(this string/*!*/ self, [NotNull]PythonList/*!*/ sequence) {
             if (sequence.__len__() == 0) return String.Empty;
 
             lock (sequence) {
@@ -997,26 +997,26 @@ namespace IronPython.Runtime.Operations {
         }
 
         //  when no maxsplit arg is given then just use split
-        public static List rsplit(this string self) {
+        public static PythonList rsplit(this string self) {
             return SplitInternal(self, (char[])null, -1);
         }
 
-        public static List rsplit(this string self, [BytesConversion]string sep) {
+        public static PythonList rsplit(this string self, [BytesConversion]string sep) {
             return rsplit(self, sep, -1);
         }
 
-        public static List rsplit(this string self, [BytesConversion]string sep, int maxsplit) {
+        public static PythonList rsplit(this string self, [BytesConversion]string sep, int maxsplit) {
             //  rsplit works like split but needs to split from the right;
             //  reverse the original string (and the sep), split, reverse 
             //  the split list and finally reverse each element of the list
             string reversed = Reverse(self);
             if (sep != null) sep = Reverse(sep);
-            List temp = null, ret = null;
+            PythonList temp = null, ret = null;
             temp = split(reversed, sep, maxsplit);
             temp.reverse();
             int resultlen = temp.__len__();
             if (resultlen != 0) {
-                ret = new List(resultlen);
+                ret = new PythonList(resultlen);
                 foreach (string s in temp)
                     ret.AddNoLock(Reverse(s));
             } else {
@@ -1034,19 +1034,19 @@ namespace IronPython.Runtime.Operations {
             return self.TrimEnd(chars.ToCharArray());
         }
 
-        public static List split(this string self) {
+        public static PythonList split(this string self) {
             return SplitInternal(self, (char[])null, -1);
         }
 
-        public static List split(this string self, [BytesConversion]string sep) {
+        public static PythonList split(this string self, [BytesConversion]string sep) {
             return split(self, sep, -1);
         }
 
-        public static List split(this string self, [BytesConversion]string sep, int maxsplit) {
+        public static PythonList split(this string self, [BytesConversion]string sep, int maxsplit) {
             if (sep == null) {
                 if (maxsplit == 0) {
                     // Corner case for CPython compatibility
-                    List result = PythonOps.MakeEmptyList(1);
+                    PythonList result = PythonOps.MakeEmptyList(1);
                     result.AddNoLock(self.TrimStart());
                     return result;
                         
@@ -1064,12 +1064,12 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        public static List splitlines(this string self) {
+        public static PythonList splitlines(this string self) {
             return splitlines(self, false);
         }
 
-        public static List splitlines(this string self, bool keepends) {
-            List ret = new List();
+        public static PythonList splitlines(this string self, bool keepends) {
+            PythonList ret = new PythonList();
             int i, linestart;
             for (i = 0, linestart = 0; i < self.Length; i++) {
                 if (self[i] == '\n' || self[i] == '\r' || self[i] == '\x2028') {
@@ -2058,15 +2058,15 @@ namespace IronPython.Runtime.Operations {
 #endif
         }
 
-        private static List SplitEmptyString(bool separators) {
-            List ret = PythonOps.MakeEmptyList(1);
+        private static PythonList SplitEmptyString(bool separators) {
+            PythonList ret = PythonOps.MakeEmptyList(1);
             if (separators) {
                 ret.AddNoLock(String.Empty);
             }
             return ret;
         }
 
-        private static List SplitInternal(string self, char[] seps, int maxsplit) {
+        private static PythonList SplitInternal(string self, char[] seps, int maxsplit) {
             if (String.IsNullOrEmpty(self)) {
                 return SplitEmptyString(seps != null);
             }
@@ -2079,18 +2079,18 @@ namespace IronPython.Runtime.Operations {
                 (maxsplit < 0) ? Int32.MaxValue : maxsplit + 1,
                 (seps == null) ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None);
 
-            List ret = PythonOps.MakeEmptyList(r.Length);
+            PythonList ret = PythonOps.MakeEmptyList(r.Length);
             foreach (string s in r) ret.AddNoLock(s);
             return ret;
         }
 
-        private static List SplitInternal(string self, string separator, int maxsplit) {
+        private static PythonList SplitInternal(string self, string separator, int maxsplit) {
             if (String.IsNullOrEmpty(self)) {
                 return SplitEmptyString(separator != null);
             } else {
                 string[] r = StringUtils.Split(self, separator, (maxsplit < 0) ? Int32.MaxValue : maxsplit + 1, StringSplitOptions.None);
 
-                List ret = PythonOps.MakeEmptyList(r.Length);
+                PythonList ret = PythonOps.MakeEmptyList(r.Length);
                 foreach (string s in r) ret.AddNoLock(s);
                 return ret;
             }

@@ -874,7 +874,7 @@ namespace IronPython.Runtime.Operations {
                 return CallWithContext(context, func, nargs);
             }
 
-            List allArgs = PythonOps.MakeEmptyList(args.Length + 10);
+            PythonList allArgs = PythonOps.MakeEmptyList(args.Length + 10);
             allArgs.AddRange(args);
             IEnumerator e = PythonOps.GetEnumerator(argsTuple);
             while (e.MoveNext()) allArgs.AddNoLock(e.Current);
@@ -937,7 +937,7 @@ namespace IronPython.Runtime.Operations {
                 return PythonCalls.Call(func, nargs);
             }
 
-            List allArgs = PythonOps.MakeEmptyList(args.Length + 10);
+            PythonList allArgs = PythonOps.MakeEmptyList(args.Length + 10);
             allArgs.AddRange(args);
             IEnumerator e = PythonOps.GetEnumerator(argsTuple);
             while (e.MoveNext()) allArgs.AddNoLock(e.Current);
@@ -1018,7 +1018,7 @@ namespace IronPython.Runtime.Operations {
 
             IMembersList memList = o as IMembersList;
             if (memList != null) {
-                return new List(memList.GetMemberNames());
+                return new PythonList(memList.GetMemberNames());
             }
 
             IPythonObject po = o as IPythonObject;
@@ -1026,7 +1026,7 @@ namespace IronPython.Runtime.Operations {
                 return po.PythonType.GetMemberNames(context, o);
             }
 
-            List res = DynamicHelpers.GetPythonType(o).GetMemberNames(context, o);
+            PythonList res = DynamicHelpers.GetPythonType(o).GetMemberNames(context, o);
 
 #if FEATURE_COM
 
@@ -1431,15 +1431,15 @@ namespace IronPython.Runtime.Operations {
         /// Python runtime helper to create instance of Python List object.
         /// </summary>
         /// <returns>New instance of List</returns>
-        public static List MakeList() {
-            return new List();
+        public static PythonList MakeList() {
+            return new PythonList();
         }
 
         /// <summary>
         /// Python runtime helper to create a populated instance of Python List object.
         /// </summary>
-        public static List MakeList(params object[] items) {
-            return new List(items);
+        public static PythonList MakeList(params object[] items) {
+            return new PythonList(items);
         }
 
         /// <summary>
@@ -1447,8 +1447,8 @@ namespace IronPython.Runtime.Operations {
         /// copying the array contents.
         /// </summary>
         [NoSideEffects]
-        public static List MakeListNoCopy(params object[] items) {
-            return List.FromArrayNoCopy(items);
+        public static PythonList MakeListNoCopy(params object[] items) {
+            return PythonList.FromArrayNoCopy(items);
         }
 
         /// <summary>
@@ -1456,8 +1456,8 @@ namespace IronPython.Runtime.Operations {
         /// 
         /// List is populated by arbitrary user defined object.
         /// </summary>
-        public static List MakeListFromSequence(object sequence) {
-            return new List(sequence);
+        public static PythonList MakeListFromSequence(object sequence) {
+            return new PythonList(sequence);
         }
 
         /// <summary>
@@ -1466,13 +1466,13 @@ namespace IronPython.Runtime.Operations {
         /// List has the initial provided capacity.
         /// </summary>
         [NoSideEffects]
-        public static List MakeEmptyList(int capacity) {
-            return new List(capacity);
+        public static PythonList MakeEmptyList(int capacity) {
+            return new PythonList(capacity);
         }
 
         [NoSideEffects]
-        public static List MakeEmptyListFromCode() {
-            return List.FromArrayNoCopy(ArrayUtils.EmptyObjects);
+        public static PythonList MakeEmptyListFromCode() {
+            return PythonList.FromArrayNoCopy(ArrayUtils.EmptyObjects);
         }
 
         /// <summary>
@@ -1548,9 +1548,9 @@ namespace IronPython.Runtime.Operations {
 
         [LightThrowing]
         public static object GetEnumeratorValuesNoComplexSets(CodeContext/*!*/ context, object e, int expected, int argcntafter) {
-            if (e != null && e.GetType() == typeof(List)) {
+            if (e != null && e.GetType() == typeof(PythonList)) {
                 // fast path for lists, avoid enumerating & copying the list.
-                return GetEnumeratorValuesFromList((List)e, expected, argcntafter);
+                return GetEnumeratorValuesFromList((PythonList)e, expected, argcntafter);
             }
 
             return GetEnumeratorValues(context, e, expected, argcntafter);
@@ -1573,7 +1573,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [LightThrowing]
-        private static object GetEnumeratorValuesFromList(List list, int expected, int argcntafter) {
+        private static object GetEnumeratorValuesFromList(PythonList list, int expected, int argcntafter) {
             if (argcntafter == -1) {
                 if (list._size == expected) {
                     return list._data;
@@ -1595,7 +1595,7 @@ namespace IronPython.Runtime.Operations {
 
             Debug.Assert(enumeratorValues is object[]);
 
-            var list = new List((object[])enumeratorValues);
+            var list = new PythonList((object[])enumeratorValues);
 
             if (list._size < expected + argcntafter) return LightExceptions.Throw(PythonOps.ValueErrorForUnpackMismatch(expected, argcntafter, list._size));
 
@@ -1937,7 +1937,7 @@ namespace IronPython.Runtime.Operations {
 
             // TODO: use ContentProvider?
             if ((pf = code as PythonFile) != null) {
-                List lines = pf.readlines();
+                PythonList lines = pf.readlines();
 
                 StringBuilder fullCode = new StringBuilder();
                 for (int i = 0; i < lines.__len__(); i++) {
@@ -2499,8 +2499,8 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        public static List CopyAndVerifyParamsList(PythonFunction function, object list) {
-            return new List(list);
+        public static PythonList CopyAndVerifyParamsList(PythonFunction function, object list) {
+            return new PythonList(list);
         }
 
         public static PythonTuple GetOrCopyParamsTuple(PythonFunction function, object input) {
@@ -2513,7 +2513,7 @@ namespace IronPython.Runtime.Operations {
             return PythonTuple.Make(input);
         }
 
-        public static object ExtractParamsArgument(PythonFunction function, int argCnt, List list) {
+        public static object ExtractParamsArgument(PythonFunction function, int argCnt, PythonList list) {
             if (list.__len__() != 0) {
                 return list.pop(0);
             }
@@ -2521,7 +2521,7 @@ namespace IronPython.Runtime.Operations {
             throw function.BadArgumentError(argCnt);
         }
 
-        public static void AddParamsArguments(List list, params object[] args) {
+        public static void AddParamsArguments(PythonList list, params object[] args) {
             for (int i = 0; i < args.Length; i++) {
                 list.insert(i, args[i]);
             }
@@ -2530,7 +2530,7 @@ namespace IronPython.Runtime.Operations {
         /// <summary>
         /// Extracts an argument from either the dictionary or params
         /// </summary>
-        public static object ExtractAnyArgument(PythonFunction function, string name, int argCnt, List list, IDictionary dict) {
+        public static object ExtractAnyArgument(PythonFunction function, string name, int argCnt, PythonList list, IDictionary dict) {
             object val;
             if (dict.Contains(name)) {
                 if (list.__len__() != 0) {
@@ -2576,7 +2576,7 @@ namespace IronPython.Runtime.Operations {
             return new TypeErrorException(message);
         }
         
-        public static object GetParamsValueOrDefault(PythonFunction function, int index, List extraArgs) {
+        public static object GetParamsValueOrDefault(PythonFunction function, int index, PythonList extraArgs) {
             if (extraArgs.__len__() > 0) {
                 return extraArgs.pop(0);
             }
@@ -2584,7 +2584,7 @@ namespace IronPython.Runtime.Operations {
             return function.Defaults[index];
         }
 
-        public static object GetFunctionParameterValue(PythonFunction function, int index, string name, List extraArgs, PythonDictionary dict) {
+        public static object GetFunctionParameterValue(PythonFunction function, int index, string name, PythonList extraArgs, PythonDictionary dict) {
             if (extraArgs != null && extraArgs.__len__() > 0) {
                 return extraArgs.pop(0);
             }
@@ -2605,7 +2605,7 @@ namespace IronPython.Runtime.Operations {
             return function.__kwdefaults__[name];
         }
 
-        public static void CheckParamsZero(PythonFunction function, List extraArgs) {
+        public static void CheckParamsZero(PythonFunction function, PythonList extraArgs) {
             if (extraArgs.__len__() != 0) {
                 throw function.BadArgumentError(extraArgs.__len__() + function.NormalArgumentCount);
             }
@@ -3218,7 +3218,7 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        public static void ListAddForComprehension(List l, object o) {
+        public static void ListAddForComprehension(PythonList l, object o) {
             l.AddNoLock(o);
         }
 
@@ -3471,7 +3471,7 @@ namespace IronPython.Runtime.Operations {
             return context.LanguageContext.DelegateCreator.GetDelegate(target, type);
         }
 
-        public static int CompareLists(List self, List other) {
+        public static int CompareLists(PythonList self, PythonList other) {
             return self.CompareTo(other);
         }
 

@@ -411,10 +411,10 @@ namespace IronPython.Modules {
                 var name = qname();
                 ns_stack.Push(null);
 
-                List attributeList = null;
+                PythonList attributeList = null;
                 PythonDictionary attributeDict = null;
                 if (ordered_attributes) {
-                    attributeList = new List();
+                    attributeList = new PythonList();
                 } else {
                     attributeDict = new PythonDictionary();
                 }

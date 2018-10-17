@@ -53,7 +53,7 @@ or via the object attributes as named in the above tuple.
 ")]
         public class struct_group : PythonTuple {
 
-            internal struct_group(string gr_name, string gr_passwd, int gr_gid, List gr_mem) :
+            internal struct_group(string gr_name, string gr_passwd, int gr_gid, PythonList gr_mem) :
                 base(new object[] { gr_name, gr_passwd, gr_gid, gr_mem }) {
             }
 
@@ -67,7 +67,7 @@ or via the object attributes as named in the above tuple.
             public int gr_gid => (int)_data[2];
 
             [Documentation("group members")]
-            public List gr_mem => (List)_data[3];
+            public PythonList gr_mem => (PythonList)_data[3];
 
             public override string/*!*/ __repr__(CodeContext/*!*/ context) {
                 return $"grp.struct_group(gr_name='{gr_name}', gr_passwd='{gr_passwd}', gr_gid={gr_gid}, gr_mem={gr_mem.__repr__(context)})";
@@ -76,7 +76,7 @@ or via the object attributes as named in the above tuple.
 
         private static struct_group Make(IntPtr pwd) {
             group g = (group)Marshal.PtrToStructure(pwd, typeof(group));
-            return new struct_group(g.gr_name, g.gr_passwd, g.gr_gid, new List(MarshalStringArray(g.gr_mem)));
+            return new struct_group(g.gr_name, g.gr_passwd, g.gr_gid, new PythonList(MarshalStringArray(g.gr_mem)));
         }
 
         private static IEnumerable<string> MarshalStringArray(IntPtr arrayPtr)
@@ -112,8 +112,8 @@ or via the object attributes as named in the above tuple.
             return Make(grp);
         }
 
-        public static List getgrall() {
-            var res = new List();
+        public static PythonList getgrall() {
+            var res = new PythonList();
             setgrent();
             IntPtr val = getgrent();
             while(val != IntPtr.Zero) {

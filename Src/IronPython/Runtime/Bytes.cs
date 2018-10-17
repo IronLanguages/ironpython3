@@ -35,7 +35,7 @@ namespace IronPython.Runtime {
             _bytes = ArrayUtils.ToArray(bytes);
         }
 
-        public Bytes([NotNull]List bytes) {
+        public Bytes([NotNull]PythonList bytes) {
             _bytes = ByteOps.GetBytes(bytes, ByteOps.GetByteListOk).ToArray();
         }
 
@@ -91,7 +91,7 @@ namespace IronPython.Runtime {
 
         // necessary to avoid bad conversion of List -> IList<Byte>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
-        public ByteArray/*!*/ center(int width, List fillchar) {
+        public ByteArray/*!*/ center(int width, PythonList fillchar) {
             throw PythonOps.TypeError("center() argument 2 must be byte, not list");
         }
 
@@ -109,17 +109,17 @@ namespace IronPython.Runtime {
 
         // overloads to avoid automatic generic conversion
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
-        public int count(List/*!*/ sub) {
+        public int count(PythonList/*!*/ sub) {
             throw PythonOps.TypeError("expected bytes or bytearray, got list");
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
-        public int count(List/*!*/ sub, int start) {
+        public int count(PythonList/*!*/ sub, int start) {
             throw PythonOps.TypeError("expected bytes or bytearray, got list");
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
-        public int count(List/*!*/ ssub, int start, int end) {
+        public int count(PythonList/*!*/ ssub, int start, int end) {
             throw PythonOps.TypeError("expected bytes or bytearray, got list");
         }
 
@@ -141,17 +141,17 @@ namespace IronPython.Runtime {
 
         // overloads to avoid automatic generic conversion
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
-        public bool endswith(List/*!*/ suffix) {
+        public bool endswith(PythonList/*!*/ suffix) {
             throw PythonOps.TypeError("expected bytes or bytearray, got list");
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
-        public bool endswith(List/*!*/ suffix, int start) {
+        public bool endswith(PythonList/*!*/ suffix, int start) {
             throw PythonOps.TypeError("expected bytes or bytearray, got list");
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
-        public bool endswith(List/*!*/ suffix, int start, int end) {
+        public bool endswith(PythonList/*!*/ suffix, int start, int end) {
             throw PythonOps.TypeError("expected bytes or bytearray, got list");
         }
 
@@ -275,7 +275,7 @@ namespace IronPython.Runtime {
             return new Bytes(ret);
         }
 
-        public Bytes join([NotNull]List/*!*/ sequence) {
+        public Bytes join([NotNull]PythonList/*!*/ sequence) {
             if (sequence.__len__() == 0) {
                 return new Bytes();
             } else if (sequence.__len__() == 1) {
@@ -476,15 +476,15 @@ namespace IronPython.Runtime {
             return new PythonTuple(obj);
         }
 
-        public List/*!*/ rsplit() {
+        public PythonList/*!*/ rsplit() {
             return _bytes.SplitInternal((byte[])null, -1, x => new Bytes(x));
         }
 
-        public List/*!*/ rsplit([BytesConversion]IList<byte> sep) {
+        public PythonList/*!*/ rsplit([BytesConversion]IList<byte> sep) {
             return rsplit(sep, -1);
         }
 
-        public List/*!*/ rsplit([BytesConversion]IList<byte> sep, int maxsplit) {
+        public PythonList/*!*/ rsplit([BytesConversion]IList<byte> sep, int maxsplit) {
             return _bytes.RightSplit(sep, maxsplit, x => new Bytes(new List<byte>(x)));
         }
 
@@ -507,23 +507,23 @@ namespace IronPython.Runtime {
             }
         }
         
-        public List/*!*/ split() {
+        public PythonList/*!*/ split() {
             return _bytes.SplitInternal(null, -1, x => new Bytes(x));
         }
 
-        public List/*!*/ split([BytesConversion]IList<byte> sep) {
+        public PythonList/*!*/ split([BytesConversion]IList<byte> sep) {
             return split(sep, -1);
         }
 
-        public List/*!*/ split([BytesConversion]IList<byte> sep, int maxsplit) {
+        public PythonList/*!*/ split([BytesConversion]IList<byte> sep, int maxsplit) {
             return _bytes.Split(sep, maxsplit, x => new Bytes(x));
         }
 
-        public List/*!*/ splitlines() {
+        public PythonList/*!*/ splitlines() {
             return splitlines(false);
         }
 
-        public List/*!*/ splitlines(bool keepends) {
+        public PythonList/*!*/ splitlines(bool keepends) {
             return _bytes.SplitLines(keepends, x => new Bytes(x));
         }
 
@@ -1017,13 +1017,13 @@ namespace IronPython.Runtime {
             return this[new Slice(start, end)];
         }
 
-        List IBufferProtocol.ToList(int start, int? end) {
+        PythonList IBufferProtocol.ToList(int start, int? end) {
             List<byte> res = _bytes.Slice(new Slice(start, end));
             if (res == null) {
-                return new List();
+                return new PythonList();
             }
 
-            return new List(res.ToArray());
+            return new PythonList(res.ToArray());
         }
 
         #endregion

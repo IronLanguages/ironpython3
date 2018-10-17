@@ -31,7 +31,7 @@ namespace IronPython.Modules {
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
-            List defaultFilters = new List();
+            PythonList defaultFilters = new PythonList();
             if (!context.PythonOptions.WarnPython30) {
                 defaultFilters.AddNoLock(PythonTuple.MakeTuple("ignore", null, PythonExceptions.DeprecationWarning, null, 0));
             }
@@ -51,7 +51,7 @@ namespace IronPython.Modules {
 
         public static void warn(CodeContext context, object message, PythonType category=null, int stacklevel=1) {
             PythonContext pContext = context.LanguageContext;
-            List argv = pContext.GetSystemStateValue("argv") as List;
+            PythonList argv = pContext.GetSystemStateValue("argv") as PythonList;
 
             if (PythonOps.IsInstance(message, PythonExceptions.Warning)) {
                 category = DynamicHelpers.GetPythonType(message);
@@ -140,9 +140,9 @@ namespace IronPython.Modules {
             PythonTuple last_filter = null;
             bool loop_break = false;
 
-            List filters = (List)fields[_keyFilters];
+            PythonList filters = (PythonList)fields[_keyFilters];
             if (warnings != null) {
-                filters = PythonOps.GetBoundAttr(context, warnings, "filters") as List;
+                filters = PythonOps.GetBoundAttr(context, warnings, "filters") as PythonList;
                 if(filters == null) {
                     throw PythonOps.ValueError("_warnings.filters must be a list");
                 }

@@ -72,7 +72,7 @@ namespace IronPython.Runtime {
             return _buffer.ToBytes(_start, _end);
         }
 
-        public List tolist() {
+        public PythonList tolist() {
             return _buffer.ToList(_start, _end);
         }
 

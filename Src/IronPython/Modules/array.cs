@@ -105,7 +105,7 @@ namespace IronPython.Modules {
                 if (value <= 0) {
                     _data.Clear();
                 } else {
-                    List myData = tolist();
+                    PythonList myData = tolist();
 
                     for (int i = 0; i < (value - 1); i++) {
                         extend(myData);
@@ -579,8 +579,8 @@ namespace IronPython.Modules {
                 f.write(tostring());
             }
 
-            public List tolist() {
-                List res = new List();
+            public PythonList tolist() {
+                PythonList res = new PythonList();
                 for (int i = 0; i < _data.Length; i++) {
                     res.AddNoLock(this[i]);
                 }

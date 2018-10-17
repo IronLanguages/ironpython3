@@ -286,7 +286,7 @@ namespace IronPython.Modules {
 
             switch (valueKind) {
                 case REG_MULTI_SZ:
-                    List list = new List();
+                    PythonList list = new PythonList();
                     int curIndex = 0;
                     while (curIndex < length) {
                         for (int dataIndex = curIndex; dataIndex < length; dataIndex += 2) {
@@ -470,9 +470,9 @@ namespace IronPython.Modules {
             }
 
             if (regKind == RegistryValueKind.MultiString) {
-                int size = ((List)value)._size;
+                int size = ((PythonList)value)._size;
                 string[] strArray = new string[size];
-                Array.Copy(((List)value)._data, strArray, size);
+                Array.Copy(((PythonList)value)._data, strArray, size);
                 rootKey.GetKey().SetValue(valueName, strArray, regKind);
             } else if (regKind == RegistryValueKind.Binary) {
                 byte[] byteArr = null;

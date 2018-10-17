@@ -148,8 +148,8 @@ namespace IronPython.Modules {
                 return new Bytes(((IPythonBufferable)this).GetBytes(start, this.NativeType.Size));
             }
 
-            List IBufferProtocol.ToList(int start, int? end) {
-                return new List(((IBufferProtocol)this).ToBytes(start, end));
+            PythonList IBufferProtocol.ToList(int start, int? end) {
+                return new PythonList(((IBufferProtocol)this).ToBytes(start, end));
             }
 
             #endregion

@@ -428,7 +428,7 @@ namespace IronPython.Runtime {
             return new ByteArray(ret);
         }
 
-        public ByteArray/*!*/ join([NotNull]List/*!*/ sequence) {
+        public ByteArray/*!*/ join([NotNull]PythonList/*!*/ sequence) {
             if (sequence.__len__() == 0) {
                 return new ByteArray();
             }
@@ -525,7 +525,7 @@ namespace IronPython.Runtime {
             return new PythonTuple(obj);
         }
 
-        public PythonTuple/*!*/ partition([NotNull]List/*!*/ sep) {
+        public PythonTuple/*!*/ partition([NotNull]PythonList/*!*/ sep) {
             return partition(GetBytes(sep));
         }
 
@@ -633,21 +633,21 @@ namespace IronPython.Runtime {
             }
         }
 
-        public PythonTuple/*!*/ rpartition([NotNull]List/*!*/ sep) {
+        public PythonTuple/*!*/ rpartition([NotNull]PythonList/*!*/ sep) {
             return rpartition(GetBytes(sep));
         }
 
-        public List/*!*/ rsplit() {
+        public PythonList/*!*/ rsplit() {
             lock (this) {
                 return _bytes.SplitInternal((byte[])null, -1, x => new ByteArray(x));
             }
         }
 
-        public List/*!*/ rsplit([BytesConversionNoString]IList<byte>/*!*/ sep) {
+        public PythonList/*!*/ rsplit([BytesConversionNoString]IList<byte>/*!*/ sep) {
             return rsplit(sep, -1);
         }
 
-        public List/*!*/ rsplit([BytesConversionNoString]IList<byte>/*!*/ sep, int maxsplit) {
+        public PythonList/*!*/ rsplit([BytesConversionNoString]IList<byte>/*!*/ sep, int maxsplit) {
             return _bytes.RightSplit(sep, maxsplit, x => new ByteArray(new List<byte>(x)));
         }
 
@@ -673,27 +673,27 @@ namespace IronPython.Runtime {
             }
         }
 
-        public List/*!*/ split() {
+        public PythonList/*!*/ split() {
             lock (this) {
                 return _bytes.SplitInternal((byte[])null, -1, x => new ByteArray(x));
             }
         }
 
-        public List/*!*/ split([BytesConversionNoString]IList<byte> sep) {
+        public PythonList/*!*/ split([BytesConversionNoString]IList<byte> sep) {
             return split(sep, -1);
         }
 
-        public List/*!*/ split([BytesConversionNoString]IList<byte> sep, int maxsplit) {
+        public PythonList/*!*/ split([BytesConversionNoString]IList<byte> sep, int maxsplit) {
             lock (this) {
                 return _bytes.Split(sep, maxsplit, x => new ByteArray(x));
             }
         }
 
-        public List/*!*/ splitlines() {
+        public PythonList/*!*/ splitlines() {
             return splitlines(false);
         }
 
-        public List/*!*/ splitlines(bool keepends) {
+        public PythonList/*!*/ splitlines(bool keepends) {
             lock (this) {
                 return _bytes.SplitLines(keepends, x => new ByteArray(x));
             }
@@ -1500,13 +1500,13 @@ namespace IronPython.Runtime {
             return new Bytes((ByteArray)this[new Slice(start, end)]);
         }
 
-        List IBufferProtocol.ToList(int start, int? end) {
+        PythonList IBufferProtocol.ToList(int start, int? end) {
             List<byte> res = _bytes.Slice(new Slice(start, end));
             if (res == null) {
-                return new List();
+                return new PythonList();
             }
 
-            return new List(res.ToArray());
+            return new PythonList(res.ToArray());
         }
 
         #endregion

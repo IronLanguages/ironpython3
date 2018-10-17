@@ -229,11 +229,11 @@ namespace IronPython.Modules {
                 + "The optional size argument, if given, is an approximate bound on the\n"
                 + "total number of bytes in the lines returned."
                 )]
-            public override List readlines(object hint=null) {
+            public override PythonList readlines(object hint=null) {
                 _checkClosed();
                 int size = GetInt(hint, -1);
 
-                List lines = new List();
+                PythonList lines = new PythonList();
                 for (Bytes line = readline(-1); line.Count > 0; line = readline(-1)) {
                     lines.append(line); 
                     if (size > 0) {

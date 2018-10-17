@@ -122,7 +122,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         private T BindMultiplyDifferentTypes<T>(CallSite<T> site, object[] args) where T : class {
-            if (CompilerHelpers.GetType(args[0]) == typeof(List) &&
+            if (CompilerHelpers.GetType(args[0]) == typeof(PythonList) &&
                 CompilerHelpers.GetType(args[1]) == typeof(int)) {
                 if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
                     return (T)(object)new Func<CallSite, object, object, object>(ListIntMultiply);
@@ -259,7 +259,7 @@ namespace IronPython.Runtime.Binding {
                 } else if (typeof(T) == typeof(Func<CallSite, string, object, object>)) {
                     return (T)(object)new Func<CallSite, string, object, object>(StringAdd);
                 }
-            } else if (t == typeof(List)) {
+            } else if (t == typeof(PythonList)) {
                 if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
                     if (Operation == ExpressionType.Add) {
                         return (T)(object)new Func<CallSite, object, object, object>(ListAdd);
@@ -429,9 +429,9 @@ namespace IronPython.Runtime.Binding {
         }
 
         private object ListIntMultiply(CallSite site, object self, object other) {
-            if (self != null && self.GetType() == typeof(List) &&
+            if (self != null && self.GetType() == typeof(PythonList) &&
                 other != null && other.GetType() == typeof(int)) {
-                return ((List)self) * (int)other;
+                return ((PythonList)self) * (int)other;
             }
 
             return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, self, other);
@@ -556,18 +556,18 @@ namespace IronPython.Runtime.Binding {
         }
 
         private object ListAdd(CallSite site, object self, object other) {
-            if (self != null && self.GetType() == typeof(List) &&
-                other != null && other.GetType() == typeof(List)) {
-                return (List)self + (List)other;
+            if (self != null && self.GetType() == typeof(PythonList) &&
+                other != null && other.GetType() == typeof(PythonList)) {
+                return (PythonList)self + (PythonList)other;
             }
 
             return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, self, other);
         }
 
         private object ListAddAssign(CallSite site, object self, object other) {
-            if (self != null && self.GetType() == typeof(List) &&
-                other != null && other.GetType() == typeof(List)) {
-                return ((List)self).InPlaceAdd(other);
+            if (self != null && self.GetType() == typeof(PythonList) &&
+                other != null && other.GetType() == typeof(PythonList)) {
+                return ((PythonList)self).InPlaceAdd(other);
             }
 
             return ((CallSite<Func<CallSite, object, object, object>>)site).Update(site, self, other);

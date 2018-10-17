@@ -33,10 +33,10 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo SaveCurrentException = GetMethod((Func<Exception>)PythonOps.SaveCurrentException);
         public static readonly MethodInfo RestoreCurrentException = GetMethod((Action<Exception>)PythonOps.RestoreCurrentException);
         public static readonly MethodInfo MakeGeneratorExpression = GetMethod((Func<object, object, object>)PythonOps.MakeGeneratorExpression);
-        public static readonly MethodInfo ListAddForComprehension = GetMethod((Action<List, object>)PythonOps.ListAddForComprehension);
+        public static readonly MethodInfo ListAddForComprehension = GetMethod((Action<PythonList, object>)PythonOps.ListAddForComprehension);
         public static readonly MethodInfo SetAddForComprehension = GetMethod((Action<SetCollection, object>)PythonOps.SetAddForComprehension);
         public static readonly MethodInfo DictAddForComprehension = GetMethod((Action<PythonDictionary, object, object>)PythonOps.DictAddForComprehension);
-        public static readonly MethodInfo MakeEmptyListFromCode = GetMethod((Func<List>)PythonOps.MakeEmptyListFromCode);
+        public static readonly MethodInfo MakeEmptyListFromCode = GetMethod((Func<PythonList>)PythonOps.MakeEmptyListFromCode);
         public static readonly MethodInfo CheckUninitialized = GetMethod((Func<object, string, object>)PythonOps.CheckUninitialized);
         public static readonly MethodInfo PrintNewlineWithDest = GetMethod((Action<CodeContext, object>)PythonOps.PrintNewlineWithDest);
         public static readonly MethodInfo PrintNewline = GetMethod((Action<CodeContext>)PythonOps.PrintNewline);
@@ -55,8 +55,8 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo Is = GetMethod((Func<object, object, object>)PythonOps.Is);
         public static readonly MethodInfo ImportTop = GetMethod((Func<CodeContext, string, int, object>)PythonOps.ImportTop);
         public static readonly MethodInfo ImportBottom = GetMethod((Func<CodeContext, string, int, object>)PythonOps.ImportBottom);
-        public static readonly MethodInfo MakeList = GetMethod((Func<List>)PythonOps.MakeList);
-        public static readonly MethodInfo MakeListNoCopy = GetMethod((Func<object[], List>)PythonOps.MakeListNoCopy);
+        public static readonly MethodInfo MakeList = GetMethod((Func<PythonList>)PythonOps.MakeList);
+        public static readonly MethodInfo MakeListNoCopy = GetMethod((Func<object[], PythonList>)PythonOps.MakeListNoCopy);
         public static readonly MethodInfo GetEnumeratorValues = GetMethod((Func<CodeContext, object, int, int, object>)PythonOps.GetEnumeratorValues);
         public static readonly MethodInfo GetEnumeratorValuesNoComplexSets = GetMethod((Func<CodeContext, object, int, int, object>)PythonOps.GetEnumeratorValuesNoComplexSets);
         public static readonly MethodInfo UnpackIterable = GetMethod((Func<CodeContext, object, int, int, object>)PythonOps.UnpackIterable);

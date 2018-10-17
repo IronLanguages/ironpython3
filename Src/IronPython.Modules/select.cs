@@ -47,7 +47,7 @@ namespace IronPython.Modules {
             + "files or other objects."
             )]
         public static PythonTuple select(CodeContext/*!*/ context, object iwtd, object owtd, object ewtd, object timeout=null) {
-            List readerList, writerList, errorList;
+            PythonList readerList, writerList, errorList;
             Dictionary<Socket, object> readerOriginals, writerOriginals, errorOriginals;
             ProcessSocketSequence(context, iwtd, out readerList, out readerOriginals);
             ProcessSocketSequence(context, owtd, out writerList, out writerOriginals);
@@ -100,9 +100,9 @@ namespace IronPython.Modules {
         /// passing to select either file descriptor numbers or an object with a fileno() method.
         /// We try to be faithful to what was originally requested when we return.
         /// </summary>
-        private static void ProcessSocketSequence(CodeContext context, object sequence, out List socketList, out Dictionary<Socket, object> socketToOriginal) {
+        private static void ProcessSocketSequence(CodeContext context, object sequence, out PythonList socketList, out Dictionary<Socket, object> socketToOriginal) {
             socketToOriginal = new Dictionary<Socket, object>();
-            socketList = new List();
+            socketList = new PythonList();
 
             IEnumerator cursor = PythonOps.GetEnumerator(sequence);
             while (cursor.MoveNext()) {

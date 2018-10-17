@@ -137,7 +137,7 @@ namespace IronPython.Runtime {
             // get enumerable data into a list, and then
             // do the slice.
             IEnumerator enumerator = PythonOps.GetEnumerator(value);
-            List sliceData = new List();
+            PythonList sliceData = new PythonList();
             while (enumerator.MoveNext()) sliceData.AddNoLock(enumerator.Current);
 
             DoSliceAssign(assign, start, stop, step, sliceData);

@@ -146,8 +146,8 @@ namespace IronPython.Runtime.Binding {
                 T res = null;
                 if (selfType == typeof(object)) {
                     res = (T)(object)MakeGetMemberTarget<object>(Name, args[0], context);
-                } else if (selfType == typeof(List)) {
-                    res = (T)(object)MakeGetMemberTarget<List>(Name, args[0], context);
+                } else if (selfType == typeof(PythonList)) {
+                    res = (T)(object)MakeGetMemberTarget<PythonList>(Name, args[0], context);
                 } else if (selfType == typeof(string)) {
                     res = (T)(object)MakeGetMemberTarget<string>(Name, args[0], context);
                 }

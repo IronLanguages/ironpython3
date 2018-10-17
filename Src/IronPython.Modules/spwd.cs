@@ -105,8 +105,8 @@ or via the object attributes as named in the above tuple.")]
         }
 
         [Documentation("Return a list of all available shadow password database entries, in arbitrary order.")]
-        public static List getspall() {
-            var res = new List();
+        public static PythonList getspall() {
+            var res = new PythonList();
             setspent();
             IntPtr val = getspent();
             while(val != IntPtr.Zero) {

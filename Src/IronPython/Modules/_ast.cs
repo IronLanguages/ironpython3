@@ -22,8 +22,6 @@ using IronPython.Compiler.Ast;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-
-using PythonList = IronPython.Runtime.List;
 using System.Runtime.InteropServices;
 using AstExpression = IronPython.Compiler.Ast.Expression;
 

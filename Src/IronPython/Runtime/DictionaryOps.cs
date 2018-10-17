@@ -66,8 +66,8 @@ namespace IronPython.Runtime {
             return defaultValue;
         }
 
-        private static List ToList(IDictionary<object, object> self) {
-            List ret = PythonOps.MakeEmptyList(self.Count);
+        private static PythonList ToList(IDictionary<object, object> self) {
+            PythonList ret = PythonOps.MakeEmptyList(self.Count);
             foreach (KeyValuePair<object, object> kv in self) {
                 ret.AddNoLock(PythonTuple.MakeTuple(kv.Key, kv.Value));
             }
@@ -75,7 +75,7 @@ namespace IronPython.Runtime {
         }
 
 #if !IPY3
-        public static List items(IDictionary<object, object> self) => ToList();
+        public static PythonList items(IDictionary<object, object> self) => ToList();
 
         public static IEnumerator iteritems(IDictionary<object, object> self) {
             return ((IEnumerable)items(self)).GetEnumerator();
@@ -85,7 +85,7 @@ namespace IronPython.Runtime {
             return ((IEnumerable)keys(self)).GetEnumerator();
         }
 
-        public static List keys(IDictionary<object, object> self) {
+        public static PythonList keys(IDictionary<object, object> self) {
             return PythonOps.MakeListFromSequence(self.Keys);
         }
 #endif
@@ -234,12 +234,12 @@ namespace IronPython.Runtime {
             if (lcnt != rcnt) return lcnt > rcnt ? 1 : -1;
 
 
-            List ritems = ToList(right);
+            PythonList ritems = ToList(right);
             return CompareToWorker(context, left, ritems);
         }
 
-        internal static int CompareToWorker(CodeContext/*!*/ context, IDictionary<object, object> left, List ritems) {
-            List litems = ToList(left);
+        internal static int CompareToWorker(CodeContext/*!*/ context, IDictionary<object, object> left, PythonList ritems) {
+            PythonList litems = ToList(left);
 
             litems.sort(context);
             ritems.sort(context);

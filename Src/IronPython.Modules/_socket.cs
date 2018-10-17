@@ -1210,7 +1210,7 @@ namespace IronPython.Modules {
         }
 
         [Documentation("")]
-        public static List getaddrinfo(
+        public static PythonList getaddrinfo(
             CodeContext/*!*/ context,
             string host,
             object port,
@@ -1270,7 +1270,7 @@ namespace IronPython.Modules {
 
             IPAddress[] ips = HostToAddresses(context, host, addressFamily);
 
-            List results = new List();
+            PythonList results = new PythonList();
 
             foreach (IPAddress ip in ips) {
                 results.append(PythonTuple.MakeTuple(
@@ -1350,8 +1350,8 @@ namespace IronPython.Modules {
             )]
         public static PythonTuple gethostbyname_ex(CodeContext/*!*/ context, string host) {
             string hostname;
-            List aliases;
-            List ips = PythonOps.MakeList();
+            PythonList aliases;
+            PythonList ips = PythonOps.MakeList();
 
             IPAddress addr;
             if (IPAddress.TryParse(host, out addr)) {
@@ -1407,7 +1407,7 @@ namespace IronPython.Modules {
                 throw MakeException(context, e);
             }
 
-            List ipStrings = PythonOps.MakeList();
+            PythonList ipStrings = PythonOps.MakeList();
             foreach (IPAddress ip in ips) {
                 ipStrings.append(ip.ToString());
             }

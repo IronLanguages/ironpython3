@@ -80,7 +80,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         protected override MSAst.ParameterExpression MakeParameter() {
-            return Ast.Parameter(typeof(List), "list_comprehension_list");
+            return Ast.Parameter(typeof(PythonList), "list_comprehension_list");
         }
 
         protected override MethodInfo Factory() {

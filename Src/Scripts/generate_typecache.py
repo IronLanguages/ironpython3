@@ -46,7 +46,7 @@ data = [
     TypeData('String', 'str'),
     TypeData('PythonTuple'),
     TypeData('WeakReference'),
-    TypeData('List'),
+    TypeData('PythonList'),
     TypeData('PythonFile'),
     TypeData('PythonModule', entryName='Module'),
     TypeData('Method'),

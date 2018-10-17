@@ -490,7 +490,7 @@ namespace IronPython.SQLite
             [Documentation("Fetches several rows from the resultset.")]
             public object fetchmany(CodeContext context, int size)
             {
-                List result = new List();
+                PythonList result = new PythonList();
                 object item = fetchone(context);
                 for(int i = 0; i < size && item != null; ++i, item = fetchone(context))
                     result.Add(item);
@@ -501,7 +501,7 @@ namespace IronPython.SQLite
             [Documentation("Fetches all rows from the resultset.")]
             public object fetchall(CodeContext context)
             {
-                List result = new List();
+                PythonList result = new PythonList();
                 object item = fetchone(context);
                 while(item != null)
                 {
@@ -581,7 +581,7 @@ namespace IronPython.SQLite
 
             public IEnumerator GetEnumerator()
             {
-                List results = new List();
+                PythonList results = new PythonList();
                 try
                 {
                     while(true)

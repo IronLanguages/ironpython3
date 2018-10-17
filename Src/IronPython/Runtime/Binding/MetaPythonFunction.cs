@@ -788,7 +788,7 @@ namespace IronPython.Runtime.Binding {
                     AstUtils.Convert(GetFunctionParam(), typeof(PythonFunction)),
                     AstUtils.Constant(dfltIndex),
                     AstUtils.Constant(_func.Value.ArgNames[index], typeof(string)),
-                    VariableOrNull(_params, typeof(List)),
+                    VariableOrNull(_params, typeof(PythonList)),
                     VariableOrNull(_dict, typeof(PythonDictionary))
                 );
             }
@@ -928,7 +928,7 @@ namespace IronPython.Runtime.Binding {
             private void MakeParamsCopy(Expression/*!*/ userList) {
                 Debug.Assert(_params == null);
 
-                _temps.Add(_params = Ast.Variable(typeof(List), "$list"));
+                _temps.Add(_params = Ast.Variable(typeof(PythonList), "$list"));
                 _temps.Add(_paramsLen = Ast.Variable(typeof(int), "$paramsLen"));
 
                 EnsureInit();
@@ -947,7 +947,7 @@ namespace IronPython.Runtime.Binding {
                 _init.Add(
                     Ast.Assign(_paramsLen,
                         Ast.Add(
-                            Ast.Call(_params, typeof(List).GetMethod("__len__")),
+                            Ast.Call(_params, typeof(PythonList).GetMethod(nameof(PythonList.__len__))),
                             AstUtils.Constant(Signature.GetProvidedPositionalArgumentCount())
                         )
                     )

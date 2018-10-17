@@ -145,8 +145,8 @@ or via the object attributes as named in the above tuple.")]
         }
 
         [Documentation("Return a list of all available password database entries, in arbitrary order.")]
-        public static List getpwall() {
-            var res = new List();
+        public static PythonList getpwall() {
+            var res = new PythonList();
             setpwent();
             IntPtr val = getpwent();
             while(val != IntPtr.Zero) {

@@ -153,9 +153,9 @@ dialect = csv.register_dialect(name, dialect)")]
 
         [Documentation(@"Return a list of all know dialect names
     names = csv.list_dialects()")]
-        public static List list_dialects(CodeContext/*!*/ context)
+        public static PythonList list_dialects(CodeContext/*!*/ context)
         {
-            return new List(GetDialects(context).Keys);
+            return new PythonList(GetDialects(context).Keys);
         }
 
         [Documentation(@"csv_reader = reader(iterable [, dialect='excel']
@@ -651,7 +651,7 @@ in CSV format.")]
             {
                 private CodeContext _context;
                 private Reader _reader;
-                private List _fields = new List();
+                private PythonList _fields = new PythonList();
                 private bool _is_numeric_field;
                 private State _state = State.StartRecord;
                 private StringBuilder _field = new StringBuilder();
@@ -680,7 +680,7 @@ in CSV format.")]
 
                 public object Current
                 {
-                    get { return new List(_fields); }
+                    get { return new PythonList(_fields); }
                 }
 
                 public bool MoveNext()

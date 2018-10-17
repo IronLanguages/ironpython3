@@ -391,8 +391,8 @@ namespace IronPython.Runtime.Operations {
                     self,
                     value,
                     setBinder).MakeSet();
-            } else if (setType == typeof(Func<CallSite, object, List, object>)) {
-                return (FastBindResult<T>)(object)new Binding.MetaUserObject.FastSetBinderHelper<List>(
+            } else if (setType == typeof(Func<CallSite, object, PythonList, object>)) {
+                return (FastBindResult<T>)(object)new Binding.MetaUserObject.FastSetBinderHelper<PythonList>(
                     codeContext,
                     self,
                     value,

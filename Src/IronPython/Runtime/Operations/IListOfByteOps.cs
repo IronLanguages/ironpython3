@@ -470,7 +470,7 @@ namespace IronPython.Runtime.Operations {
             return bytes.LastIndexOf(sub, iEnd, iEnd - iStart);
         }
 
-        internal static List/*!*/ RightSplit(this IList<byte>/*!*/ bytes, IList<byte>/*!*/ sep, int maxsplit, Func<IList<byte>/*!*/, IList<byte>>/*!*/ ctor) {
+        internal static PythonList/*!*/ RightSplit(this IList<byte>/*!*/ bytes, IList<byte>/*!*/ sep, int maxsplit, Func<IList<byte>/*!*/, IList<byte>>/*!*/ ctor) {
             //  rsplit works like split but needs to split from the right;
             //  reverse the original string (and the sep), split, reverse 
             //  the split list and finally reverse each element of the list
@@ -479,12 +479,12 @@ namespace IronPython.Runtime.Operations {
                 sep = sep.ReverseBytes();
             }
 
-            List temp = null, ret = null;
+            PythonList temp = null, ret = null;
             temp = ctor(reversed).Split(sep, maxsplit, x => ctor(x));
             temp.reverse();
             int resultlen = temp.__len__();
             if (resultlen != 0) {
-                ret = new List(resultlen);
+                ret = new PythonList(resultlen);
                 foreach (IList<byte> s in temp)
                     ret.AddNoLock(ctor(s.ReverseBytes()));
             } else {
@@ -749,8 +749,8 @@ namespace IronPython.Runtime.Operations {
             return res;
         }
 
-        internal static List/*!*/ SplitLines(this IList<byte>/*!*/ bytes, bool keepends, Func<List<byte>/*!*/, object>/*!*/ ctor) {
-            List ret = new List();
+        internal static PythonList/*!*/ SplitLines(this IList<byte>/*!*/ bytes, bool keepends, Func<List<byte>/*!*/, object>/*!*/ ctor) {
+            PythonList ret = new PythonList();
             int i, linestart;
             for (i = 0, linestart = 0; i < bytes.Count; i++) {
                 if (bytes[i] == '\n' || bytes[i] == '\r') {
@@ -816,13 +816,13 @@ namespace IronPython.Runtime.Operations {
             return res;
         }
         
-        internal static List/*!*/ Split(this IList<byte>/*!*/ bytes, IList<byte> sep, int maxsplit, Func<List<byte>/*!*/, object>/*!*/ ctor) {
+        internal static PythonList/*!*/ Split(this IList<byte>/*!*/ bytes, IList<byte> sep, int maxsplit, Func<List<byte>/*!*/, object>/*!*/ ctor) {
             Debug.Assert(ctor != null);
 
             if (sep == null) {
                 if (maxsplit == 0) {
                     // Corner case for CPython compatibility
-                    List result = PythonOps.MakeEmptyList(1);
+                    PythonList result = PythonOps.MakeEmptyList(1);
                     result.AddNoLock(ctor(bytes.LeftStrip() ?? bytes as List<byte> ?? new List<byte>(bytes)));
                     return result;
                 }
@@ -839,7 +839,7 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        internal static List/*!*/ SplitInternal(IList<byte>/*!*/ bytes, byte[] seps, int maxsplit, Func<List<byte>/*!*/, object>/*!*/ ctor) {
+        internal static PythonList/*!*/ SplitInternal(IList<byte>/*!*/ bytes, byte[] seps, int maxsplit, Func<List<byte>/*!*/, object>/*!*/ ctor) {
             Debug.Assert(ctor != null);
 
             if (bytes.Count == 0) {
@@ -852,7 +852,7 @@ namespace IronPython.Runtime.Operations {
                 r = bytes.Split(seps, (maxsplit < 0) ? Int32.MaxValue : maxsplit + 1,
                     GetStringSplitOptions(seps));
 
-                List ret = PythonOps.MakeEmptyList(r.Length);
+                PythonList ret = PythonOps.MakeEmptyList(r.Length);
                 foreach (List<byte> s in r) {
                     ret.AddNoLock(ctor(s));
                 }
@@ -864,7 +864,7 @@ namespace IronPython.Runtime.Operations {
             return (seps == null) ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None;
         }
 
-        internal static List/*!*/ SplitInternal(this IList<byte>/*!*/ bytes, IList<byte>/*!*/ separator, int maxsplit, Func<List<byte>/*!*/, object>/*!*/ ctor) {
+        internal static PythonList/*!*/ SplitInternal(this IList<byte>/*!*/ bytes, IList<byte>/*!*/ separator, int maxsplit, Func<List<byte>/*!*/, object>/*!*/ ctor) {
             Debug.Assert(ctor != null);
 
             if (bytes.Count == 0) {
@@ -873,17 +873,17 @@ namespace IronPython.Runtime.Operations {
 
             List<byte>[] r = bytes.Split(separator, (maxsplit < 0) ? Int32.MaxValue : maxsplit + 1, GetStringSplitOptions(separator));
 
-            List ret = PythonOps.MakeEmptyList(r.Length);
+            PythonList ret = PythonOps.MakeEmptyList(r.Length);
             foreach (List<byte> s in r) {
                 ret.AddNoLock(ctor(s));
             }
             return ret;
         }
 
-        private static List/*!*/ SplitEmptyString(bool separators, Func<List<byte>/*!*/, object>/*!*/ ctor) {
+        private static PythonList/*!*/ SplitEmptyString(bool separators, Func<List<byte>/*!*/, object>/*!*/ ctor) {
             Debug.Assert(ctor != null);
 
-            List ret = PythonOps.MakeEmptyList(1);
+            PythonList ret = PythonOps.MakeEmptyList(1);
             if (separators) {
                 ret.AddNoLock(ctor(new List<byte>(0)));
             }

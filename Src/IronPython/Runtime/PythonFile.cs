@@ -1556,8 +1556,8 @@ namespace IronPython.Runtime {
             return GetReader().ReadLine(size);
         }
 
-        public List readlines() {
-            List ret = new List();
+        public PythonList readlines() {
+            PythonList ret = new PythonList();
             string line;
             for (; ; ) {
                 line = readline();
@@ -1567,8 +1567,8 @@ namespace IronPython.Runtime {
             return ret;
         }
 
-        public List readlines(int sizehint) {
-            List ret = new List();
+        public PythonList readlines(int sizehint) {
+            PythonList ret = new PythonList();
             for (; ; ) {
                 string line = readline();
                 if (String.IsNullOrEmpty(line)) break;

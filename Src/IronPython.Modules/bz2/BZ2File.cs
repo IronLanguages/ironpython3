@@ -125,12 +125,12 @@ Call readline() repeatedly and return a list of lines read.
 The optional size argument, if given, is an approximate bound on the
 total number of bytes in the lines returned.
 ")]
-            public new List readlines() {
+            public new PythonList readlines() {
                 if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");
                 return base.readlines();
             }
 
-            public new List readlines(int sizehint) {
+            public new PythonList readlines(int sizehint) {
                 if (this.closed) throw PythonOps.ValueError("I/O operation on closed file");
                 return base.readlines(sizehint);
             }

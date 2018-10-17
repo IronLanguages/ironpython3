@@ -377,8 +377,8 @@ namespace IronPython.Runtime {
             }
         }
 
-        public List/*!*/ GetItems() {
-            List res = new List(Count);
+        public PythonList/*!*/ GetItems() {
+            PythonList res = new PythonList(Count);
 
             if (_hasNull) {
                 res.AddNoLock(null);
@@ -1391,7 +1391,7 @@ namespace IronPython.Runtime {
 
             _buckets = null;
 
-            var items = (List)info.GetValue("buckets", typeof(List));
+            var items = (PythonList)info.GetValue("buckets", typeof(PythonList));
             foreach (object item in items) {
                 AddNoLock(item);
             }

@@ -61,9 +61,9 @@ namespace IronPython.Runtime.Binding {
                     }
                     break;
                 case PythonOperationKind.GetEnumeratorForIteration:
-                    if (CompilerHelpers.GetType(args[0]) == typeof(List)) {
-                        if (typeof(T) == typeof(Func<CallSite, List, KeyValuePair<IEnumerator, IDisposable>>)) {
-                            return (T)(object)new Func<CallSite, List, KeyValuePair<IEnumerator, IDisposable>>(GetListEnumerator);
+                    if (CompilerHelpers.GetType(args[0]) == typeof(PythonList)) {
+                        if (typeof(T) == typeof(Func<CallSite, PythonList, KeyValuePair<IEnumerator, IDisposable>>)) {
+                            return (T)(object)new Func<CallSite, PythonList, KeyValuePair<IEnumerator, IDisposable>>(GetListEnumerator);
                         }
                         return (T)(object)new Func<CallSite, object, KeyValuePair<IEnumerator, IDisposable>>(GetListEnumerator);
                     } else if (CompilerHelpers.GetType(args[0]) == typeof(PythonTuple)) {
@@ -75,12 +75,12 @@ namespace IronPython.Runtime.Binding {
                     }
                     break;
                 case PythonOperationKind.Contains:
-                    if (CompilerHelpers.GetType(args[1]) == typeof(List)) {
+                    if (CompilerHelpers.GetType(args[1]) == typeof(PythonList)) {
                         Type tType = typeof(T);
                         if (tType == typeof(Func<CallSite, object, object, bool>)) {
                             return (T)(object)new Func<CallSite, object, object, bool>(ListContains<object>);
-                        } else if (tType == typeof(Func<CallSite, object, List, bool>)) {
-                            return (T)(object)new Func<CallSite, object, List, bool>(ListContains);
+                        } else if (tType == typeof(Func<CallSite, object, PythonList, bool>)) {
+                            return (T)(object)new Func<CallSite, object, PythonList, bool>(ListContains);
                         } else if (tType == typeof(Func<CallSite, int, object, bool>)) {
                             return (T)(object)new Func<CallSite, int, object, bool>(ListContains<int>);
                         } else if (tType == typeof(Func<CallSite, string, object, bool>)) {
@@ -127,13 +127,13 @@ namespace IronPython.Runtime.Binding {
             return base.BindDelegate<T>(site, args);
         }
 
-        private KeyValuePair<IEnumerator, IDisposable> GetListEnumerator(CallSite site, List value) {
+        private KeyValuePair<IEnumerator, IDisposable> GetListEnumerator(CallSite site, PythonList value) {
             return new KeyValuePair<IEnumerator,IDisposable>(new ListIterator(value), null);
         }
 
         private KeyValuePair<IEnumerator, IDisposable> GetListEnumerator(CallSite site, object value) {
-            if (value != null && value.GetType() == typeof(List)) {
-                return new KeyValuePair<IEnumerator,IDisposable>(new ListIterator((List)value), null);
+            if (value != null && value.GetType() == typeof(PythonList)) {
+                return new KeyValuePair<IEnumerator,IDisposable>(new ListIterator((PythonList)value), null);
             }
 
             return ((CallSite<Func<CallSite, object, KeyValuePair<IEnumerator, IDisposable>>>)site).Update(site, value);
@@ -151,13 +151,13 @@ namespace IronPython.Runtime.Binding {
             return ((CallSite<Func<CallSite, object, KeyValuePair<IEnumerator, IDisposable>>>)site).Update(site, value);
         }
 
-        private bool ListContains(CallSite site, object other, List value) {
+        private bool ListContains(CallSite site, object other, PythonList value) {
             return value.ContainsWorker(other);
         }
 
         private bool ListContains<TOther>(CallSite site, TOther other, object value) {
-            if (value != null && value.GetType() == typeof(List)) {
-                return ((List)value).ContainsWorker(other);
+            if (value != null && value.GetType() == typeof(PythonList)) {
+                return ((PythonList)value).ContainsWorker(other);
             }
 
             return ((CallSite<Func<CallSite, TOther, object, bool>>)site).Update(site, other, value);

@@ -66,7 +66,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override bool CanConvertFrom(Type fromType, DynamicMetaObject fromArg, ParameterWrapper toParameter, NarrowingLevel level) {
-            if ((fromType == typeof(List) || fromType.IsSubclassOf(typeof(List)))) {
+            if ((fromType == typeof(PythonList) || fromType.IsSubclassOf(typeof(PythonList)))) {
                 if (toParameter.Type.IsGenericType() &&
                     toParameter.Type.GetGenericTypeDefinition() == typeof(IList<>) &&
                     (toParameter.ParameterInfo.IsDefined(typeof(BytesConversionAttribute), false) ||

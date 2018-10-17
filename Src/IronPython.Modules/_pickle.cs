@@ -404,7 +404,7 @@ namespace IronPython.Modules {
                 _dispatchTable = new Dictionary<Type, PickleFunction>();
                 _dispatchTable[typeof(PythonDictionary)] = SaveDict;
                 _dispatchTable[typeof(PythonTuple)] = SaveTuple;
-                _dispatchTable[typeof(List)] = SaveList;
+                _dispatchTable[typeof(PythonList)] = SaveList;
                 _dispatchTable[typeof(PythonFunction)] = SaveGlobal;
                 _dispatchTable[typeof(BuiltinFunction)] = SaveGlobal;
                 _dispatchTable[typeof(PythonType)] = SaveGlobal;
@@ -774,7 +774,7 @@ namespace IronPython.Modules {
             }
 
             private static void SaveList(PicklerObject/*!*/ pickler, CodeContext/*!*/ context, object obj) {
-                Debug.Assert(DynamicHelpers.GetPythonType(obj).Equals(TypeCache.List), "arg must be list");
+                Debug.Assert(DynamicHelpers.GetPythonType(obj).Equals(TypeCache.PythonList), "arg must be list");
                 Debug.Assert(!pickler.MemoContains(obj));
 
                 int index = pickler.MemoizeNew(obj);
@@ -1886,8 +1886,8 @@ namespace IronPython.Modules {
             private void LoadAppend(CodeContext/*!*/ context) {
                 object item = PopStack();
                 object seq = PeekStack();
-                if (seq is List) {
-                    ((List)seq).append(item);
+                if (seq is PythonList) {
+                    ((PythonList)seq).append(item);
                 } else {
                     PythonCalls.Call(context, PythonOps.GetBoundAttr(context, seq, "append"), item);
                 }
@@ -1895,7 +1895,7 @@ namespace IronPython.Modules {
 
             private void LoadAppends(CodeContext/*!*/ context) {
                 int markIndex = GetMarkIndex(context);
-                List seq = (List)_stack[markIndex - 1];
+                PythonList seq = (PythonList)_stack[markIndex - 1];
                 for (int i = markIndex + 1; i < _stack.Count; i++) {
                     seq.AddNoLock(_stack[i]);
                 }
@@ -2075,7 +2075,7 @@ namespace IronPython.Modules {
 
             private void LoadList(CodeContext/*!*/ context) {
                 int markIndex = GetMarkIndex(context);
-                List list = List.FromArrayNoCopy(StackGetSliceAsArray(markIndex + 1));
+                PythonList list = PythonList.FromArrayNoCopy(StackGetSliceAsArray(markIndex + 1));
                 PopMark(markIndex);
                 _stack.Add(list);
             }

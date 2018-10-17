@@ -3836,6 +3836,10 @@ namespace IronPython.Runtime.Operations {
             return OSError(format, args);
         }
 
+        public static Exception TimeoutError(string format, params object[] args) {
+            return new TimeoutException(string.Format(format, args));
+        }
+
         public static Exception SystemExit() {
             return new SystemExitException();
         }

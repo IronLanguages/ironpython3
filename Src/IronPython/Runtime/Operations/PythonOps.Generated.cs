@@ -131,10 +131,6 @@ namespace IronPython.Runtime.Operations {
             return new ConnectionException(string.Format(format, args));
         }
 
-        public static Exception TimeoutError(string format, params object[] args) {
-            return new TimeoutException(string.Format(format, args));
-        }
-
         public static Exception ConnectionAbortedError(string format, params object[] args) {
             return new ConnectionAbortedException(string.Format(format, args));
         }

@@ -25,7 +25,7 @@ pythonExcs = ['ImportError', 'RuntimeError', 'UnicodeTranslateError', 'PendingDe
               'FutureWarning', 'AssertionError', 'RuntimeWarning', 'ImportWarning', 'UserWarning', 'SyntaxWarning', 
               'UnicodeWarning', 'StopIteration', 'BytesWarning', 'BufferError', 'ResourceWarning', 'FileExistsError',
               'BlockingIOError', 'NotADirectoryError', 'InterruptedError', 'ChildProcessError', 'IsADirectoryError',
-              'ProcessLookupError', 'ConnectionError', 'TimeoutError', 'ConnectionAbortedError', 'BrokenPipeError',
+              'ProcessLookupError', 'ConnectionError', 'ConnectionAbortedError', 'BrokenPipeError',
               'ConnectionRefusedError', 'ConnectionResetError']
 
 class ExceptionInfo(object):
@@ -113,7 +113,7 @@ exceptionHierarchy = ExceptionInfo('BaseException', 'IronPython.Runtime.Exceptio
                     ExceptionInfo('ChildProcessError', 'IronPython.Runtime.Exceptions.ChildProcessException', None, (), ()),
                     ExceptionInfo('IsADirectoryError', 'IronPython.Runtime.Exceptions.IsADirectoryException', None, (), ()),
                     ExceptionInfo('ProcessLookupError', 'IronPython.Runtime.Exceptions.ProcessLookupException', None, (), ()),
-                    ExceptionInfo('TimeoutError', 'IronPython.Runtime.Exceptions.TimeoutException', None, (), ()),
+                    ExceptionInfo('TimeoutError', 'System.TimeoutException', None, (), ()),
                     ExceptionInfo('ConnectionError', 'IronPython.Runtime.Exceptions.ConnectionException', None, (), (
                           ExceptionInfo('BrokenPipeError', 'IronPython.Runtime.Exceptions.BrokenPipeException', None, (), ()),
                           ExceptionInfo('ConnectionAbortedError', 'IronPython.Runtime.Exceptions.ConnectionAbortedException', None, (), ()),

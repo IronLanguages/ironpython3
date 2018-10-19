@@ -48,19 +48,19 @@ class TupleTest(IronPythonTestCase):
         self.assertEqual(2 * (1,2,3), (1,2,3,1,2,3))
 
         class mylong(long): pass
-        self.assertEqual((1,2) * mylong(2L), (1, 2, 1, 2))
-        self.assertEqual((3, 4).__mul__(mylong(2L)), (3, 4, 3, 4))
-        self.assertEqual((5, 6).__rmul__(mylong(2L)), (5, 6, 5, 6))
-        self.assertEqual(mylong(2L) * (7,8) , (7, 8, 7, 8))
+        self.assertEqual((1,2) * mylong(2), (1, 2, 1, 2))
+        self.assertEqual((3, 4).__mul__(mylong(2)), (3, 4, 3, 4))
+        self.assertEqual((5, 6).__rmul__(mylong(2)), (5, 6, 5, 6))
+        self.assertEqual(mylong(2) * (7,8) , (7, 8, 7, 8))
         
         class mylong2(long):
             def __rmul__(self, other):
                 return 42
                 
-        self.assertEqual((1,2) * mylong2(2l), 42) # this one uses __rmul__
-        #TODO self.assertEqual((3, 4).__mul__(mylong2(2L)), (3, 4, 3, 4))
-        self.assertEqual((5, 6).__rmul__(mylong2(2L)), (5, 6, 5, 6))
-        self.assertEqual(mylong2(2L) * (7,8) , (7, 8, 7, 8))
+        self.assertEqual((1,2) * mylong2(2), 42) # this one uses __rmul__
+        self.assertEqual((3, 4).__mul__(mylong2(2)), (3, 4, 3, 4))
+        self.assertEqual((5, 6).__rmul__(mylong2(2)), (5, 6, 5, 6))
+        self.assertEqual(mylong2(2) * (7,8) , (7, 8, 7, 8))
 
     def test_tuple_custom_hash(self):
         class myhashable(object):
@@ -111,8 +111,8 @@ class TupleTest(IronPythonTestCase):
         try:
             a, b = None
             self.assertUnreachable()
-        except TypeError, e:
-                self.assertEqual(e.message, "'NoneType' object is not iterable")
+        except TypeError as e:
+            self.assertEqual(e.args[0], "'NoneType' object is not iterable")
 
     def test_sort(self):
         # very simple test for sorting lists of tuples
@@ -175,7 +175,7 @@ class TupleTest(IronPythonTestCase):
 
 
     def test_wacky_contains(self):
-        for retval in [None, 0, [], (), 0.0, 0L, {}]:
+        for retval in [None, 0, [], (), 0.0, long(0), {}]:
             class x(tuple):
                 def  __contains__(self, other):
                     return retval

@@ -1874,9 +1874,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                         continue;
                     }
 
-                    PythonTypeUserDescriptorSlot dts = item.Value as PythonTypeUserDescriptorSlot;
-                    object val = dts == null ? item.Value : dts.Value;
-                    dict[item.Key] = val;
+                    dict[item.Key] = item.Value is PythonTypeUserDescriptorSlot dts ? dts.Value : item.Value;
                 }
             }
             return dict;

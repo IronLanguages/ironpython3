@@ -1254,9 +1254,18 @@ class C:
         self.assertEqual([x[2] for x in b], ['A', 'B', 'C']) # only check that we're in the proper function, the rest does not work properly
 
     def test_ipy3_gh412(self):
+        """https://github.com/IronLanguages/ironpython3/issues/412"""
         def test(a, *args, b=None, **kwargs):
             return (a, args, b, kwargs)
 
         self.assertEqual(test(1, 2, 3, b=4, c=5, d=6), (1, (2, 3), 4, {'c': 5, 'd': 6}))
+
+    def test_ipy3_gh458(self):
+        """https://github.com/IronLanguages/ironpython3/issues/458"""
+        class C(object): pass
+
+        d = C.__dict__
+        C.abc = 1
+        self.assertTrue("abc" in d)
 
 run_test(__name__)

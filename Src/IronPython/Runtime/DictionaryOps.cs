@@ -143,15 +143,14 @@ namespace IronPython.Runtime {
         }
 
         private static void SlowUpdate(CodeContext/*!*/ context, PythonDictionary/*!*/ self, object other) {
-            object keysFunc;
             if (other is MappingProxy proxy) {
-                update(context, self, proxy.Dictionary);
+                update(context, self, proxy.GetDictionary(context));
             } else if (other is IDictionary dict) {
                 IDictionaryEnumerator e = dict.GetEnumerator();
                 while (e.MoveNext()) {
                     self._storage.Add(ref self._storage, e.Key, e.Value);
                 }
-            } else if (PythonOps.TryGetBoundAttr(other, "keys", out keysFunc)) {
+            } else if (PythonOps.TryGetBoundAttr(other, "keys", out object keysFunc)) {
                 // user defined dictionary
                 IEnumerator i = PythonOps.GetEnumerator(PythonCalls.Call(context, keysFunc));
                 while (i.MoveNext()) {

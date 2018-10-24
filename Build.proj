@@ -2,7 +2,7 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
 
   <PropertyGroup>
-    <BuildFlavour Condition=" '$(BuildFlavour)' == '' ">Debug</BuildFlavour>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <MainBuildPrefix Condition=" '$(MainBuildPrefix)' == '' "></MainBuildPrefix>
     <Mono Condition="'$(OS)' != 'Windows_NT'">true</Mono>
     <MacOS Condition="'$(OS)' == 'Unix' AND Exists('/Applications') AND Exists('/Library') AND Exists('/System') AND Exists('/Volumes')">true</MacOS>
@@ -23,15 +23,15 @@
   
   
   <PropertyGroup>
-    <StageDir>$(RootDir)Package\$(BuildFlavour)\Stage\IronPython-$(PackageVersion)</StageDir>
-    <PackageDir>$(RootDir)Package\$(BuildFlavour)\Packages\IronPython-$(PackageVersion)</PackageDir>
+    <StageDir>$(RootDir)Package\$(Configuration)\Stage\IronPython-$(PackageVersion)</StageDir>
+    <PackageDir>$(RootDir)Package\$(Configuration)\Packages\IronPython-$(PackageVersion)</PackageDir>
   </PropertyGroup>
 
   <PropertyGroup>
     <BuildProperties>
       RootDir=$(RootDir);
       Solution=$(Solution);
-      BuildFlavour=$(BuildFlavour);
+      Configuration=$(Configuration);
       BinDir=$(BinDir);
       StageDir=$(StageDir);
       BuildSysDir=$(BuildSysDir);
@@ -57,21 +57,21 @@
     <MSBuild 
       Projects="$(Solution)" 
       Targets="Build"
-      Properties="$(BuildProperties);Configuration=$(BuildFlavour)" />
+      Properties="$(BuildProperties);Configuration=$(Configuration)" />
   </Target>
 
   <Target Name="Rebuild" DependsOnTargets="RestoreReferences">
     <MSBuild 
       Projects="$(Solution)" 
       Targets="Rebuild" 
-      Properties="$(BuildProperties);Configuration=$(BuildFlavour)" />
+      Properties="$(BuildProperties);Configuration=$(Configuration)" />
   </Target>
 
   <Target Name="Clean">
     <MSBuild 
       Projects="$(Solution)" 
       Targets="Clean" 
-      Properties="$(BuildProperties);Configuration=$(BuildFlavour)" />
+      Properties="$(BuildProperties);Configuration=$(Configuration)" />
   </Target>
 
   <Target Name="_MakeStageDir">
@@ -86,19 +86,19 @@
     <MSBuild 
       Projects="$(Solution)" 
       Targets="Build" 
-      Properties="$(BuildProperties);Configuration=$(BuildFlavour);Staging=true" />
+      Properties="$(BuildProperties);Configuration=$(Configuration);Staging=true" />
   </Target>
 
   <Target Name="_CopyDlrMainReferences" DependsOnTargets="_MakeStageDir">
     <ItemGroup>
       <DlrMainReferenceFiles
-          Include="$(BinDir)\$(BuildFlavour)\*\Microsoft.Scripting.dll" />
+          Include="$(BinDir)\$(Configuration)\*\Microsoft.Scripting.dll" />
       <DlrMainReferenceFiles
-          Include="$(BinDir)\$(BuildFlavour)\*\Microsoft.Scripting.xml" />
+          Include="$(BinDir)\$(Configuration)\*\Microsoft.Scripting.xml" />
       <DlrMainReferenceFiles
-          Include="$(BinDir)\$(BuildFlavour)\*\Microsoft.Dynamic.dll" />
+          Include="$(BinDir)\$(Configuration)\*\Microsoft.Dynamic.dll" />
       <DlrMainReferenceFiles
-          Include="$(BinDir)\$(BuildFlavour)\*\Microsoft.Dynamic.xml" />
+          Include="$(BinDir)\$(Configuration)\*\Microsoft.Dynamic.xml" />
     </ItemGroup>
 
     <Copy SourceFiles="@(DlrMainReferenceFiles)"

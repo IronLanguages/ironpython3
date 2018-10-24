@@ -11,7 +11,7 @@
     <Exec Command="$(NuGet) install wix -Version $(WixVersion) -OutputDirectory &quot;$(RootDir)packages&quot; -Source https://api.nuget.org/v3/index.json" />
     <MSBuild
         Projects="$(RootDir)Package\msi\IronPython.Installer.wixproj"
-        Properties="BindInputPaths=$(StageDir);OutputPath=$(PackageDir);Configuration=$(BuildFlavour);Platform=x64"
+        Properties="BindInputPaths=$(StageDir);OutputPath=$(PackageDir);Configuration=$(Configuration);Platform=x64"
     />
   </Target>
 </Project>

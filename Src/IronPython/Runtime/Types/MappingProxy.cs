@@ -6,106 +6,88 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Runtime.InteropServices;
-using IronPython.Runtime.Operations;
+
 using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime.Types {
     [PythonType("mappingproxy")]
     public class MappingProxy : IDictionary<object, object>, IDictionary {
-        internal PythonDictionary Dictionary { get; }
+        internal PythonDictionary GetDictionary(CodeContext context) => dictionary ?? type.GetMemberDictionary(context, false);
+
+        private readonly PythonDictionary dictionary;
+        private readonly PythonType type;
 
         internal MappingProxy(CodeContext context, PythonType/*!*/ dt) {
             Debug.Assert(dt != null);
-            Dictionary = dt.GetMemberDictionary(context, false);
+            type = dt;
         }
 
         public MappingProxy([NotNull]PythonDictionary dict) {
-            Dictionary = dict;
+            dictionary = dict;
         }
 
         #region Python Public API Surface
 
-        public int __len__(CodeContext context) {
-            return Dictionary.Count;
-        }
+        public int __len__(CodeContext context) => GetDictionary(context).Count;
 
-        public bool __contains__(CodeContext/*!*/ context, object value) {
-            object dummy;
-            return Dictionary.TryGetValue(value, out dummy);
-        }
+        public bool __contains__(CodeContext/*!*/ context, object value) => GetDictionary(context).TryGetValue(value, out _);
 
-        public string/*!*/ __str__(CodeContext/*!*/ context) {
-            return DictionaryOps.__repr__(context, this);
-        }
+        public string/*!*/ __str__(CodeContext/*!*/ context) => DictionaryOps.__repr__(context, this);
 
         public object get(CodeContext/*!*/ context, [NotNull]object k, object d=null) {
             object res;
-            if (!Dictionary.TryGetValue(k, out res)) {
+            if (!GetDictionary(context).TryGetValue(k, out res)) {
                 res = d;
             }
 
             return res;
         }
 
-        public object keys(CodeContext context) {
-            return Dictionary.keys();
-        }
+        public object keys(CodeContext context) => GetDictionary(context).keys();
 
-        public object values(CodeContext context) {
-            return Dictionary.values();
-        }
+        public object values(CodeContext context) => GetDictionary(context).values();
 
-        public object items(CodeContext context) {
-            return Dictionary.items();
-        }
+        public object items(CodeContext context) => GetDictionary(context).items();
 
-        public PythonDictionary copy(CodeContext/*!*/ context) {
-            return new PythonDictionary(context, this);
-        }
+        public PythonDictionary copy(CodeContext/*!*/ context) => new PythonDictionary(context, this);
 
-        #endregion
+        public const object __hash__ = null;
 
-        #region Object overrides
+        public object __eq__(CodeContext/*!*/ context, object other) {
+            if (other is MappingProxy proxy) {
+                if (type == null) {
+                    return __eq__(context, proxy.GetDictionary(context));
+                }
 
-        public override bool Equals(object obj) {
-            if (obj is MappingProxy)
-                return ((IStructuralEquatable)Dictionary).Equals(((MappingProxy)obj).Dictionary, DefaultContext.DefaultPythonContext.EqualityComparerNonGeneric);
+                return type == proxy.type;
+            }
 
-            return ((IStructuralEquatable)Dictionary).Equals(obj as PythonDictionary, DefaultContext.DefaultPythonContext.EqualityComparerNonGeneric);
-        }
+            if (other is PythonDictionary) {
+                return ((IStructuralEquatable)GetDictionary(context)).Equals(other, DefaultContext.DefaultPythonContext.EqualityComparerNonGeneric);
+            }
 
-        public override int GetHashCode() {
-            return ~Dictionary.GetHashCode();
+            return false;
         }
 
         #endregion
 
         #region IDictionary Members
-      
+
         public object this[object key] {
-            get {
-                return Dictionary[key];
-            }
+            get => GetDictionary(DefaultContext.Default)[key];
             [PythonHidden]
-            set {
-                throw PythonOps.TypeError("'mappingproxy' object does not support item assignment");
-            }
+            set => throw PythonOps.TypeError("'mappingproxy' object does not support item assignment");
         }
 
-        bool IDictionary.Contains(object key) {
-            return __contains__(DefaultContext.Default, key);
-        }
+        bool IDictionary.Contains(object key) => __contains__(DefaultContext.Default, key);
 
         #endregion              
 
         #region IEnumerable Members
 
-        IEnumerator IEnumerable.GetEnumerator() {
-            return Dictionary.keys().GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetDictionary(DefaultContext.Default).keys().GetEnumerator();
 
         #endregion
 
@@ -117,27 +99,18 @@ namespace IronPython.Runtime.Types {
         }
 
         [PythonHidden]
-        public void Clear() {
-            throw new InvalidOperationException("mappingproxy is read-only");
-        }
+        public void Clear() => throw new InvalidOperationException("mappingproxy is read-only");
 
-        IDictionaryEnumerator IDictionary.GetEnumerator() {
-            return ((IDictionary)Dictionary).GetEnumerator();
-        }
+        IDictionaryEnumerator IDictionary.GetEnumerator() => ((IDictionary)GetDictionary(DefaultContext.Default)).GetEnumerator();
 
-        bool IDictionary.IsFixedSize {
-            get { return true; }
-        }
+        bool IDictionary.IsFixedSize => true;
 
-        bool IDictionary.IsReadOnly {
-            get { return true; }
-        }
+        bool IDictionary.IsReadOnly => true;
 
         ICollection IDictionary.Keys {
             get {
-                ICollection<object> res = Dictionary.Keys;
-                ICollection coll = res as ICollection;
-                if (coll != null) {
+                ICollection<object> res = GetDictionary(DefaultContext.Default).Keys;
+                if (res is ICollection coll) {
                     return coll;
                 }
 
@@ -145,14 +118,12 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        void IDictionary.Remove(object key) {
-            throw new InvalidOperationException("mappingproxy is read-only");
-        }
+        void IDictionary.Remove(object key) => throw new InvalidOperationException("mappingproxy is read-only");
 
         ICollection IDictionary.Values {
             get {
-                List<object> res = new List<object>();
-                foreach (KeyValuePair<object, object> kvp in Dictionary) {
+                var res = new List<object>();
+                foreach (KeyValuePair<object, object> kvp in GetDictionary(DefaultContext.Default)) {
                     res.Add(kvp.Value);
                 }
                 return res;
@@ -169,45 +140,25 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        int ICollection.Count {
-            get { return __len__(DefaultContext.Default); }
-        }
+        int ICollection.Count => __len__(DefaultContext.Default);
 
-        bool ICollection.IsSynchronized {
-            get { return false; }
-        }
+        bool ICollection.IsSynchronized => false;
 
-        object ICollection.SyncRoot {
-            get { return this; }
-        }
+        object ICollection.SyncRoot => this;
 
         #endregion
 
         #region IDictionary<object,object> Members
 
-        bool IDictionary<object, object>.ContainsKey(object key) {
-            return __contains__(DefaultContext.Default, key);
-        }
+        bool IDictionary<object, object>.ContainsKey(object key) => __contains__(DefaultContext.Default, key);
 
-        ICollection<object> IDictionary<object, object>.Keys {
-            get {
-                return Dictionary.Keys;
-            }
-        }
+        ICollection<object> IDictionary<object, object>.Keys => GetDictionary(DefaultContext.Default).Keys;
 
-        bool IDictionary<object, object>.Remove(object key) {
-            throw new InvalidOperationException("mappingproxy is read-only");
-        }
+        bool IDictionary<object, object>.Remove(object key) => throw new InvalidOperationException("mappingproxy is read-only");
 
-        bool IDictionary<object, object>.TryGetValue(object key, out object value) {
-            return Dictionary.TryGetValue(key, out value);
-        }
+        bool IDictionary<object, object>.TryGetValue(object key, out object value) => GetDictionary(DefaultContext.Default).TryGetValue(key, out value);
 
-        ICollection<object> IDictionary<object, object>.Values {
-            get {
-                return Dictionary.Values;
-            }
-        }
+        ICollection<object> IDictionary<object, object>.Values => GetDictionary(DefaultContext.Default).Values;
 
         #endregion
 
@@ -217,9 +168,7 @@ namespace IronPython.Runtime.Types {
             this[item.Key] = item.Value;
         }
 
-        bool ICollection<KeyValuePair<object, object>>.Contains(KeyValuePair<object, object> item) {
-            return __contains__(DefaultContext.Default, item.Key);
-        }
+        bool ICollection<KeyValuePair<object, object>>.Contains(KeyValuePair<object, object> item) => __contains__(DefaultContext.Default, item.Key);
 
         void ICollection<KeyValuePair<object, object>>.CopyTo(KeyValuePair<object, object>[] array, int arrayIndex) {
             foreach (KeyValuePair<object, object> de in (IEnumerable<KeyValuePair<object, object>>)this) {
@@ -227,25 +176,17 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        int ICollection<KeyValuePair<object, object>>.Count {
-            get { return __len__(DefaultContext.Default); }
-        }
+        int ICollection<KeyValuePair<object, object>>.Count => __len__(DefaultContext.Default);
 
-        bool ICollection<KeyValuePair<object, object>>.IsReadOnly {
-            get { return true; }
-        }
+        bool ICollection<KeyValuePair<object, object>>.IsReadOnly => true;
 
-        bool ICollection<KeyValuePair<object, object>>.Remove(KeyValuePair<object, object> item) {
-            return ((IDictionary<object, object>)this).Remove(item.Key);
-        }
+        bool ICollection<KeyValuePair<object, object>>.Remove(KeyValuePair<object, object> item) => ((IDictionary<object, object>)this).Remove(item.Key);
 
         #endregion
 
         #region IEnumerable<KeyValuePair<object,object>> Members
 
-        IEnumerator<KeyValuePair<object, object>> IEnumerable<KeyValuePair<object, object>>.GetEnumerator() {
-            return Dictionary.GetEnumerator();
-        }
+        IEnumerator<KeyValuePair<object, object>> IEnumerable<KeyValuePair<object, object>>.GetEnumerator() => GetDictionary(DefaultContext.Default).GetEnumerator();
 
         #endregion
     }

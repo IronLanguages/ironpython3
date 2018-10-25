@@ -1268,4 +1268,14 @@ class C:
         C.abc = 1
         self.assertTrue("abc" in d)
 
+    def test_ipy3_gh463(self):
+        """https://github.com/IronLanguages/ironpython3/issues/463"""
+        x = iter(range(4))
+        self.assertEqual(list(zip(x, x)), [(0, 1), (2, 3)])
+
+        x = iter(range(5))
+        self.assertEqual(list(zip(x, x)), [(0, 1), (2, 3)])
+        with self.assertRaises(StopIteration):
+            next(x)
+
 run_test(__name__)

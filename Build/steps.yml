@@ -67,15 +67,13 @@ steps:
   - ${{ if eq(parameters.os, 'Linux') }}:
     - powershell: ./make.ps1 test-all
       displayName: Test
-      inputs:
-        ignoreLASTEXITCODE: true
+      ignoreLASTEXITCODE: true
   
   # Don't let test failures on macOS fail the build
   - ${{ if eq(parameters.os, 'macOS') }}:        
     - powershell: ./make.ps1 test-all
       displayName: Test
-      inputs:
-        ignoreLASTEXITCODE: true
+      ignoreLASTEXITCODE: true
      
   - task: PublishTestResults@2
     displayName: Publish Test Results

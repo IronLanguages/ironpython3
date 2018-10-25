@@ -1672,8 +1672,21 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
 
             public bool MoveNext() {
-                if (enumerators.Length > 0 && enumerators.All(x => x.MoveNext())) {
-                    current = PythonOps.MakeTuple(enumerators.Select(x => x.Current).ToArray());
+                if (enumerators.Length > 0 && enumerators[0].MoveNext()) {
+                    var res = new object[enumerators.Length];
+                    res[0] = enumerators[0].Current;
+
+                    for (var i = 1; i < enumerators.Length; i++) {
+                        var enumerator = enumerators[i];
+                        if (!enumerator.MoveNext()) {
+                            current = null;
+                            return false;
+                        }
+
+                        res[i] = enumerator.Current;
+                    }
+
+                    current = PythonTuple.MakeTuple(res);
                     return true;
                 }
                 current = null;

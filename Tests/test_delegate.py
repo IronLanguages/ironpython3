@@ -722,7 +722,7 @@ class DelegateTest(IronPythonTestCase):
             # ensure as long as the objects are still alive the event
             # handler remains alive
             import gc
-            for i in xrange(10):
+            for i in range(10):
                 gc.collect()
 
             a.CallInstance()
@@ -734,7 +734,7 @@ class DelegateTest(IronPythonTestCase):
 
         # now all references are dead, the function should be collectible
         import gc
-        for i in xrange(10):
+        for i in range(10):
             gc.collect()
 
         self.assertTrue(not hasattr(func_ref, "abc"))

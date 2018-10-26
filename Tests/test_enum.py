@@ -9,12 +9,12 @@ class Enum34Test(IronPythonTestCase):
     def setUp(self):
         super(Enum34Test, self).setUp()
         self.load_iron_python_test()
-    
+
     @skipUnlessIronPython()
     def test_constructor(self):
         """check that enum could be constructed from numeric values"""
         from IronPythonTest import DaysInt, DaysShort, DaysLong, DaysSByte, DaysByte, DaysUShort, DaysUInt, DaysULong
-        
+
         enum_types = [DaysInt, DaysShort, DaysLong, DaysSByte, DaysByte, DaysUShort, DaysUInt, DaysULong]
         # days go from 0x01 to 0x40
         # we add 0x80 as a check for undefined enum member
@@ -25,15 +25,15 @@ class Enum34Test(IronPythonTestCase):
             for value in enum_values:
                 day = EnumType(value)
                 self.assertEqual(int(day), value)
-                
+
             self.assertTrue(EnumType.Mon < EnumType.Tue)
-            
-            self.assertEqual(EnumType(), EnumType.None)
-            self.assertEqual(EnumType(0), EnumType.None)
+
+            self.assertEqual(EnumType(), EnumType['None'])
+            self.assertEqual(EnumType(0), EnumType['None'])
             self.assertEqual(EnumType(1), EnumType.Mon)
             self.assertEqual(EnumType(6), EnumType.Tue | EnumType.Wed)
             self.assertEqual(EnumType(96), EnumType.Weekend)
-            
+
             for value in invalid_values:
                 self.assertRaises(ValueError, EnumType, value)
 
@@ -41,15 +41,14 @@ class Enum34Test(IronPythonTestCase):
     def test_from_str(self):
         """check that enum could be constructed from str names"""
         from IronPythonTest import DaysInt, DaysShort, DaysLong, DaysSByte, DaysByte, DaysUShort, DaysUInt, DaysULong
-        
+
         enum_types = [DaysInt, DaysShort, DaysLong, DaysSByte, DaysByte, DaysUShort, DaysUInt, DaysULong]
 
         for EnumType in enum_types:
-
-            self.assertEqual(EnumType['None'], EnumType.None)
+            self.assertEqual(EnumType['None'], getattr(EnumType, "None")) # EnumType.None is not valid syntax in py3
             self.assertEqual(EnumType['Mon'], EnumType.Mon)
             self.assertEqual(EnumType['Weekend'], EnumType.Weekend)
-            
+
             self.assertRaises(SystemError, lambda: EnumType[DaysInt])
             self.assertRaises(TypeError, lambda: EnumType[None])
             self.assertRaises(TypeError, lambda: EnumType[self])

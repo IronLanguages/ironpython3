@@ -21,15 +21,15 @@ class TryCatchFinallyTest(unittest.TestCase):
 
     def test_syntax(self):
         """test try-catch-finally syntax"""
-        
+
         #missing except,else
         try:
             setvar()
-        
+
             # missing else, finally
             try:1 / 0
             except ZeroDivisionError: setvar()
-        
+
             # missing else
             try:
                 setvar()
@@ -41,7 +41,7 @@ class TryCatchFinallyTest(unittest.TestCase):
         finally:
             setvar()
         self.assertEqual(globals()["gblvar"],7)
-    
+
     def test_unified_try_tests(self):
         def test_unified_try(myraise1,myraise2,myraise3,myraise4,myraise5,myraise6,myraise7,myraise8,myraise9):
             try:
@@ -168,8 +168,8 @@ class TryCatchFinallyTest(unittest.TestCase):
                 #and accordingly adjust the final expected result value
                 #yield 1; setvar()
                 #yield 2; setvar()
-        
-        
+
+
         myraise1 = ["raiseInTry","outerTry","Unhandled","None"]
         myraise2 = ["raiseInExcept", "raiseInElse","Unhandled","None"]
         myraise3 = ["raiseInFinally","Unhandled","None"]
@@ -179,7 +179,7 @@ class TryCatchFinallyTest(unittest.TestCase):
         myraise7 = ["raiseInTry","Unhandled","None"]
         myraise8 = ["Unhandled","None"]
         myraise9 = ["Unhandled","None"]
-        
+
         def fun():
             for a in myraise1:
                 for b in myraise2:
@@ -193,14 +193,14 @@ class TryCatchFinallyTest(unittest.TestCase):
                                                 k = test_unified_try(a,b,c,d,e,f,g,h,i)
                                                 while(True):
                                                     try:
-                                                        k.next()
+                                                        next(k)
                                                     except MyErr4: setvar();break
                                                     except StopIteration: setvar();break
-        
-        
+
+
         fun()
         self.assertEqual(globals()["gblvar"],141985)
-    
+
     def test_try_catch_finally_on_targets(self):
         """test try-catch-finally on targets"""
         globals()["gblvar"]  = 1
@@ -244,11 +244,11 @@ class TryCatchFinallyTest(unittest.TestCase):
                             setvar()
             setvar()
             return
-        
+
         ret = ["try","except","else","finally"]
         for r in ret:
             test_targets(r)
-        self.assertEqual(globals()["gblvar"],403)        
+        self.assertEqual(globals()["gblvar"],403)
 
     def test_yield_in_finally(self):
         #test yield in finally
@@ -267,9 +267,9 @@ class TryCatchFinallyTest(unittest.TestCase):
         try:
             k = test_yield_finally()
             while(1):
-                k.next()
+                next(k)
         except StopIteration: pass
-        
+
         self.assertEqual(globals()["gblvar"],8)
 
 run_test(__name__)

@@ -1,24 +1,12 @@
-# -*- coding: utf-8 -*-
-#####################################################################################
-#
-#  Copyright (c) IronPython Contributors
-#
-# This source code is subject to terms and conditions of the Apache License, Version 2.0. A
-# copy of the license can be found in the License.html file at the root of this distribution. If
-# you cannot locate the  Apache License, Version 2.0, please send an email to
-# ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound
-# by the terms of the Apache License, Version 2.0.
-#
-# You must not remove this notice, or any other, from this software.
-#
-#
-#####################################################################################
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the Apache 2.0 License.
+# See the LICENSE file in the project root for more information.
 
 import unittest
 import datetime
 import time
 
-from iptest import is_cli, run_test
+from iptest import run_test, skipUnlessIronPython
 
 class TestDatetime(unittest.TestCase):
 
@@ -108,26 +96,26 @@ class TestDatetime(unittest.TestCase):
 
     def test_datime_replace(self):
         # cp35075
-        dt = datetime.datetime.now().replace(microsecond=1000L)
+        dt = datetime.datetime.now().replace(microsecond=long(1000))
         self.assertEqual(dt.time().microsecond, 1000)
-        self.assertRaises(ValueError, datetime.datetime.now().replace, microsecond=10000000L)
-        self.assertRaises(OverflowError, datetime.datetime.now().replace, microsecond=1000000000000L)
+        self.assertRaises(ValueError, datetime.datetime.now().replace, microsecond=long(10000000))
+        self.assertRaises(OverflowError, datetime.datetime.now().replace, microsecond=long(1000000000000))
         self.assertRaises(TypeError, datetime.datetime.now().replace, microsecond=1000.1)
 
     def test_time_replace(self):
         # cp35075
-        t = datetime.time().replace(microsecond=1000L)
+        t = datetime.time().replace(microsecond=long(1000))
         self.assertEqual(t.microsecond, 1000)
-        self.assertRaises(ValueError, datetime.time().replace, microsecond=10000000L)
-        self.assertRaises(OverflowError, datetime.time().replace, microsecond=1000000000000L)
+        self.assertRaises(ValueError, datetime.time().replace, microsecond=long(10000000))
+        self.assertRaises(OverflowError, datetime.time().replace, microsecond=long(1000000000000))
         self.assertRaises(TypeError, datetime.time().replace, microsecond=1000.1)
 
     def test_time_replace(self):
         # cp35075
-        d = datetime.date.today().replace(year=1000L)
+        d = datetime.date.today().replace(year=long(1000))
         self.assertEqual(d.year, 1000)
-        self.assertRaises(ValueError, datetime.date.today().replace, year=10000000L)
-        self.assertRaises(OverflowError, datetime.date.today().replace, year=1000000000000L)
+        self.assertRaises(ValueError, datetime.date.today().replace, year=long(10000000))
+        self.assertRaises(OverflowError, datetime.date.today().replace, year=long(1000000000000))
         self.assertRaises(TypeError, datetime.date.today().replace, year=1000.1)
 
     def test_fromtimestamp(self):
@@ -137,7 +125,7 @@ class TestDatetime(unittest.TestCase):
         ts = 5399410716.777882
         self.assertEqual(datetime.datetime.fromtimestamp(ts).microsecond, 777882)
 
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
+    @skipUnlessIronPython()
     def test_System_DateTime_conversion(self):
         import clr
         from System import DateTime
@@ -148,7 +136,7 @@ class TestDatetime(unittest.TestCase):
         expected = DateTime(2015, 4, 25, 8, 39, 54)
         self.assertEqual(expected, result)
     
-    @unittest.skipUnless(is_cli, 'IronPython specific test')
+    @skipUnlessIronPython()
     def test_System_DateTime_binding(self):
         import clr
         from System import DateTime, TimeSpan

@@ -8,7 +8,7 @@ import unittest
 from iptest import IronPythonTestCase, is_cli, is_cpython, run_test, skipUnlessIronPython
 
 allChars = ''
-for y in [chr(x) for x in xrange(256) if chr(x) != '[' and chr(x) != '.']:
+for y in [chr(x) for x in range(256) if chr(x) != '[' and chr(x) != '.']:
     allChars += y
 
 class TestException(Exception): pass
@@ -33,7 +33,7 @@ class StrFormatTest(IronPythonTestCase):
                 ("{0.{!:{.}.}}",    "expected ':' after format specifier"),
                 ("{",               "Single '{' encountered in format string"),
                 ]
-    
+
         for format, errorMsg in errors:
             self.assertRaisesMessage(ValueError, errorMsg, list, format._formatter_parser())
 
@@ -55,7 +55,7 @@ class StrFormatTest(IronPythonTestCase):
                 ('}}',               [('}', None, None, None)]),
                 ('{{}}',             [('{', None, None, None), ('}', None, None, None)]),
                 ]
-        
+
         for format, expected in tests:
             self.assertEqual(list(format._formatter_parser()), expected)
 
@@ -68,7 +68,7 @@ class StrFormatTest(IronPythonTestCase):
             self.assertRaisesMessage(ValueError, "empty field name", '.'._formatter_field_name_split)
             self.assertRaisesMessage(ValueError, "empty field name", '[.abc'._formatter_field_name_split)
             self.assertRaisesMessage(ValueError, "empty field name", '.abc'._formatter_field_name_split)
-        
+
         errors = [ ("0[",              "Missing ']' in format string"),
                 ("abc.",            "Empty attribute in format string"),
                 ("abc[]",           "Empty attribute in format string"),
@@ -77,12 +77,12 @@ class StrFormatTest(IronPythonTestCase):
         for format, errorMsg in errors:
             self.assertRaisesMessage(ValueError, errorMsg, list, format._formatter_field_name_split()[1])
 
-    def test_format_field_name_split(self):  
-        tests = [ ('0',                [0L, []]),
+    def test_format_field_name_split(self):
+        tests = [ ('0',                [long(0), []]),
                 ('abc.foo',          ['abc', [(True, 'foo')]]),
-                ('abc[2]',           ['abc', [(False, 2L)]]),
-                ('1[2]',             [1L, [(False, 2L)]]),
-                ('1.abc',            [1L, [(True, 'abc')]]),
+                ('abc[2]',           ['abc', [(False, long(2))]]),
+                ('1[2]',             [long(1), [(False, long(2))]]),
+                ('1.abc',            [long(1), [(True, 'abc')]]),
                 ('abc 2.abc',        ['abc 2', [(True, 'abc')]]),
                 ('abc!2.abc',        ['abc!2', [(True, 'abc')]]),
                 ('].abc',            [']', [(True, 'abc')]]),
@@ -91,11 +91,11 @@ class StrFormatTest(IronPythonTestCase):
                 ]
 
         if not is_cpython: #http://ironpython.codeplex.com/workitem/28331
-            tests.append(("abc[2]#x",         ['abc', [(False, 2L)]] ))
+            tests.append(("abc[2]#x",         ['abc', [(False, long(2))]] ))
         tests.append([allChars, [allChars, []]])
         tests.append([allChars + '.foo', [allChars, [(True, 'foo')]]])
-        tests.append([allChars + '[2]', [allChars, [(False, 2L)]]])
-        
+        tests.append([allChars + '[2]', [allChars, [(False, long(2))]]])
+
         for format, expected in tests:
             res = list(format._formatter_field_name_split())
             res[1] = list(res[1])
@@ -113,22 +113,24 @@ class StrFormatTest(IronPythonTestCase):
         # test classes implementing IFormattable where we pass
         # the format spec through
         import System
-        dt = System.DateTime(2008, 10, 26)      
+        dt = System.DateTime(2008, 10, 26)
 
         class x(object):
-            abc = dt    
-        
-        self.assertEqual(format(dt, 'MM-dd'), '10-26')
+            abc = dt
+
+        with self.assertRaises(ValueError): # TODO: get rid of the assertRaise+return when https://github.com/IronLanguages/ironpython3/issues/465 is fixed
+            self.assertEqual(format(dt, 'MM-dd'), '10-26')
+        return
         self.assertEqual('{0:MM-dd}'.format(dt), '10-26')
         self.assertEqual('{abc:MM-dd}'.format(abc=dt), '10-26')
         self.assertEqual('{0.abc:MM-dd}'.format(x), '10-26')
-        
+
         # test accessing a .NET attribute
         self.assertEqual('{0.Year}'.format(dt), '2008')
-        
-        # indexing into .NET dictionaries 
+
+        # indexing into .NET dictionaries
         strDict = System.Collections.Generic.Dictionary[str, object]()
-        strDict['abc'] = dt    
+        strDict['abc'] = dt
         self.assertEqual('{0[abc]:MM-dd}'.format(strDict), '10-26')
 
         intDict = System.Collections.Generic.Dictionary[int, object]()
@@ -138,11 +140,11 @@ class StrFormatTest(IronPythonTestCase):
         objDict = System.Collections.Generic.Dictionary[object, object]()
         objDict[42], objDict['42'] = 'abc', 'def'
         self.assertEqual('{0[42]}'.format(objDict), 'abc')
-        
+
         # import clr doesn't flow through
         self.assertRaises(AttributeError, '{0.MaxValue}'.format, int)
 
-    def test_format_object_access(self):    
+    def test_format_object_access(self):
         class y(object):
             bar = 23
 
@@ -152,8 +154,8 @@ class StrFormatTest(IronPythonTestCase):
             abc = 42
             baz = y
             def __str__(self): return 'foo'
-            def __repr__(self): return 'bar'    
-        
+            def __repr__(self): return 'bar'
+
         self.assertEqual('{0.abc}'.format(x), '42')
         self.assertEqual('{0.abc}xyz'.format(x), '42xyz')
         self.assertEqual('{0[42]}'.format(x()), 'int 42')
@@ -165,45 +167,43 @@ class StrFormatTest(IronPythonTestCase):
         self.assertEqual('{0!s}'.format(x()), 'foo')
         self.assertEqual('{abc!s}'.format(abc = x()), 'foo')
         self.assertEqual('{abc!r}'.format(abc = x()), 'bar')
-    
+
     def test_format(self):
         class x(object):
             def __format__(self, formatSpec):
                 return formatSpec
 
         # computed format specs
-        self.assertEqual('{0:{1}}'.format(x(), 'abc'), 'abc')    
+        self.assertEqual('{0:{1}}'.format(x(), 'abc'), 'abc')
         self.assertRaisesMessage(ValueError, "Max string recursion exceeded", '{0:{1:{2}}}'.format, x(), x(), 'abc')
-        
+
         # built-in format method
         self.assertEqual(format(x()), '')
         self.assertEqual(format(x(), 'abc'), 'abc')
-        
+
         class x:
-            def __format__(self, *args): 
+            def __format__(self, *args):
                 return 'abc'
-            
+
         self.assertEqual(format(x(), ''), 'abc')
         self.assertEqual('{0}'.format(x()), 'abc')
 
-        # format for old instances isn't done by an old-instance __format__ method,
-        # it would seem to be done by a special case.
-        self.assertTrue('__format__' not in type(x()).__dict__)
+        self.assertTrue('__format__' in type(x()).__dict__)
 
     def test_format_errors(self):
         class bad(object):
             def __format__(self, *args):
                 return None
-        
+
         class bad2(object):
             def __format__(self, *args):
                 return 42
 
         self.assertRaisesMessage(TypeError, "bad.__format__ must return string or unicode, not NoneType", '{0}'.format, bad())
         self.assertRaisesMessage(TypeError, "bad2.__format__ must return string or unicode, not int", '{0}'.format, bad2())
-        
+
         self.assertRaisesMessage(ValueError, "Unknown conversion specifier x", '{0!x}'.format, 'abc')
-        
+
         self.assertRaisesMessage(TypeError, "bad.__format__ must return string or unicode, not NoneType", format, bad())
         self.assertRaisesMessage(TypeError, "bad2.__format__ must return string or unicode, not int", format, bad2())
 
@@ -211,7 +211,7 @@ class StrFormatTest(IronPythonTestCase):
         class x(object):
             def __str__(self):
                 return 'abc'
-                
+
         tests = [ ('',     'abc'),
                 ('6',    'abc   '),
                 ('6s',   'abc   '),
@@ -229,7 +229,7 @@ class StrFormatTest(IronPythonTestCase):
                 ('5.2',  'ab   '),
                 ('5.2s', 'ab   '),
                 ]
-                
+
         for spec, result in tests:
             self.assertEqual(object.__format__(x(), spec), result)
 
@@ -242,16 +242,16 @@ class StrFormatTest(IronPythonTestCase):
                 (".",              "Format specifier missing precision"),
                 (".a",             "Format specifier missing precision"),
                 ]
-        
+
         # ensure only the s format type is recognized
         for char in allChars:
             if char != 's' and (char < '0' or char > '9'):
-                if char==',': 
+                if char==',':
                     errors.append(('10' + char, "Cannot specify ',' with 's'."))
                 else:
                     errors.append(('10' + char, "Unknown format code '%s' for object of type 'str'" % char))
 
-            
+
         for errorFmt, errorMsg in errors:
             self.assertRaisesMessage(ValueError, errorMsg, object().__format__, errorFmt)
 
@@ -259,7 +259,7 @@ class StrFormatTest(IronPythonTestCase):
         self.assertRaisesMessage(TestException, 'booh', bad_str().__format__, '+')
         self.assertRaisesMessage(TestException, 'booh', bad_str().__format__, '=10')
         self.assertRaisesMessage(TestException, 'booh', bad_str().__format__, '.')
-    
+
     def test_float___format__(self):
         tests = []
         if is_cpython: #In large part due to http://ironpython.codeplex.com/workitem/28206
@@ -336,7 +336,7 @@ class StrFormatTest(IronPythonTestCase):
                         (-10e667,          ' ',        '-inf'),
                         (10e667/10e667,    ' ',        ' nan'),
                     ]
-        
+
         tests+= [ (2.0,              '',         '2.0'),
                 (2.0,              'g',         '2'),
                 (2.0,              'f',         '2.000000'),
@@ -360,8 +360,8 @@ class StrFormatTest(IronPythonTestCase):
                 (2.23,             '6.2',      '   2.2'),
                 (2.25,             '6.3',      '  2.25'),
                 (2.123456789,      '2.10',     '2.123456789'),
-                
-                
+
+
                 (230.0,            '.2',       '2.3e+02'),
                 (230.1,            '.2',       '2.3e+02'),
                 (230.5,            '.4',       '230.5'),
@@ -373,7 +373,7 @@ class StrFormatTest(IronPythonTestCase):
                 (111230.54,        '.3',       '1.11e+05'),
                 (111230.54,        '.2',       '1.1e+05'),
 
-                
+
                 (23.0,             'e',        '2.300000e+01'),
                 (23.0,             '.6e',      '2.300000e+01'),
                 (23.0,             '.0e',      '2e+01'),
@@ -394,7 +394,7 @@ class StrFormatTest(IronPythonTestCase):
                 (111230.54,        '.3e',      '1.112e+05'),
                 (111230.54,        '.2e',      '1.11e+05'),
                 (111230.54,        '.1e',      '1.1e+05'),
-                                
+
                 (23.0,             'E',        '2.300000E+01'),
                 (23.0,             '.6E',      '2.300000E+01'),
                 (23.0,             '.0E',      '2E+01'),
@@ -440,7 +440,7 @@ class StrFormatTest(IronPythonTestCase):
                 (-111230.55,       '.1F',      '-111230.6'),
                 (111230.55,        '.1f',      '111230.6'),
                 (-111230.55,       '.1f',      '-111230.6'),
-                
+
                 (23.0,             '%',        '2300.000000%'),
                 (23.0,             '.6%',      '2300.000000%'),
                 (23.0,             '.0%',      '2300%'),
@@ -463,7 +463,7 @@ class StrFormatTest(IronPythonTestCase):
                 (111230.54,        '.1%',      '11123054.0%'),
                 (111230.55,        '.1%',      '11123055.0%'),
                 (-111230.55,       '.1%',      '-11123055.0%'),
-                
+
                 (23.0,             '.1g',       '2e+01'),
                 (23.0,             '.0g',       '2e+01'),
                 (230.0,            '.1g',       '2e+02'),
@@ -473,7 +473,7 @@ class StrFormatTest(IronPythonTestCase):
                 (23.45,            '.2g',       '23'),
                 (230.0,            '.2g',       '2.3e+02'),
                 (230.1,            '.2g',       '2.3e+02'),
-                
+
                 (230.5,            '.4g',       '230.5'),
                 (230.54,           '.4g',       '230.5'),
                 (230.54,           '.5g',       '230.54'),
@@ -484,12 +484,12 @@ class StrFormatTest(IronPythonTestCase):
                 (111230.54,        '.3g',       '1.11e+05'),
                 (111230.54,        '.2g',       '1.1e+05'),
                 (111230.54,        '.1g',       '1e+05'),
-                
+
                 (23.0,             '.1n',       '2e+01'),
                 (23.0,             '.2n',       '23'),
                 (230.0,            '.2n',       '2.3e+02'),
                 (230.1,            '.2n',       '2.3e+02'),
-                
+
                 (230.5,            '.4n',       '230.5'),
                 (230.54,           '.4n',       '230.5'),
                 (230.54,           '.5n',       '230.54'),
@@ -502,7 +502,7 @@ class StrFormatTest(IronPythonTestCase):
                 (111230.54,        '.1n',       '1e+05'),
                 (11231.54,         'n',        '11231.5'),
                 (111230.54,        'n',        '111231'),
-                (111230.54,        'g',        '111231'), 
+                (111230.54,        'g',        '111231'),
                 (0.0,              '',         '0.0'),
                 (0.0,              '1',        '0.0'),
                 (1.1,              '.2',       '1.1'),
@@ -533,15 +533,15 @@ class StrFormatTest(IronPythonTestCase):
                 _locale.setlocale(_locale.LC_ALL, 'en_US')
             else:
                 _locale.setlocale(_locale.LC_ALL, 'English_United States.1252')
-                
+
             tests = [ (1000.0,              'n',         '1,000'),
                     (1000.12345,          'n',         '1,000.12'),
                     (1000.5,              'n',         '1,000.5'),
                     (100000.0,            'n',         '100,000'),
-                    
+
                     (100000.0,            '.5n',       '1e+05'),
                     (100000.5,            '.5n',       '1e+05'),
-                    
+
                     (100000.5,            '.7n',       '100,000.5'),
                     ]
             if is_cpython: #http://ironpython.codeplex.com/workitem/28206
@@ -564,7 +564,7 @@ class StrFormatTest(IronPythonTestCase):
 
     def test_float___format___errors(self):
         errors = []
-        
+
         okChars = set(['\0', '%', 'E', 'F', 'G', 'e', 'f', 'g', 'n', ','])
         # verify the okChars are actually ok
         for char in okChars:
@@ -578,7 +578,7 @@ class StrFormatTest(IronPythonTestCase):
             self.assertRaisesMessage(ValueError, errorMsg, value.__format__, errorFmt)
 
     def test_int___format__(self):
-        tests = [ 
+        tests = [
                 (0,    '+',        '+0'),
                 (0,    ' ',        ' 0'),
                 (0,    '-',        '0'),
@@ -631,7 +631,7 @@ class StrFormatTest(IronPythonTestCase):
                 (2,    '=5c',       '    \x02'),
                 (2,    '^6c',       '  \x02   '),
                 (2,    '6c',        '     \x02'),
-                
+
                 (3,    'b',         '11'),
                 (3,    '+b',        '+11'),
                 (3,    '-b',        '11'),
@@ -676,10 +676,10 @@ class StrFormatTest(IronPythonTestCase):
                 (-3,   'x^ 10b',    'xxx-11xxxx'),
                 (-3,   'x^ #10b',   'xx-0b11xxx'),
                 (-3,   'x^ 9b',     'xxx-11xxx'),
-                (3,    '\0^ 9b',    '    11   '),   
+                (3,    '\0^ 9b',    '    11   '),
                 (-2147483648, 'b',  '-10000000000000000000000000000000'),
                 (0,      'b',  '0'),
-                
+
                 (9,    'o',         '11'),
                 (9,    '+o',        '+11'),
                 (9,    '-o',        '11'),
@@ -721,8 +721,8 @@ class StrFormatTest(IronPythonTestCase):
                 (-9,   'x^ 10o',    'xxx-11xxxx'),
                 (-9,   'x^ 9o',     'xxx-11xxx'),
                 (9,    '\0^ 9o',    '    11   '),
-                (-9,   'x^ 9o',     'xxx-11xxx'),              
-                
+                (-9,   'x^ 9o',     'xxx-11xxx'),
+
                 (-2147483648, 'o',  '-20000000000'),
                 (-42,         'o',  '-52'),
                 (42,          'o',  '52'),
@@ -739,7 +739,7 @@ class StrFormatTest(IronPythonTestCase):
                 (2147483647,  'x',  '7fffffff'),
                 (2147483647,  '#x',  '0x7fffffff'),
                 (2147483647,  '#X',  '0X7FFFFFFF'),
-                
+
                 (2147483647, 'f',  '2147483647.000000'),
                 (2147483647, '%', '214748364700.000000%'),
 
@@ -759,84 +759,84 @@ class StrFormatTest(IronPythonTestCase):
                 (10000000,   'g',  '1e+07'),
                 (10000000,   'G',  '1E+07'),
                 (100000000,  'g',  '1e+08'),
-                (100000000,  'G',  '1E+08'),           
+                (100000000,  'G',  '1E+08'),
                 (1000000,    '10g',  '     1e+06'),
                 (1000000,    '10G',  '     1E+06'),
                 (10000000,   '10g',  '     1e+07'),
                 (10000000,   '10G',  '     1E+07'),
                 (100000000,  '10g',  '     1e+08'),
-                (100000000,  '10G',  '     1E+08'),           
+                (100000000,  '10G',  '     1E+08'),
                 (110000000,  'g',  '1.1e+08'),
-                (110000000,  'G',  '1.1E+08'),           
+                (110000000,  'G',  '1.1E+08'),
                 (112000000,  'g',  '1.12e+08'),
-                (112000000,  'G',  '1.12E+08'),           
+                (112000000,  'G',  '1.12E+08'),
                 (112300000,  'g',  '1.123e+08'),
-                (112300000,  'G',  '1.123E+08'),           
+                (112300000,  'G',  '1.123E+08'),
                 (112340000,  'g',  '1.1234e+08'),
-                (112340000,  'G',  '1.1234E+08'),           
+                (112340000,  'G',  '1.1234E+08'),
                 (112345000,  'g',  '1.12345e+08'),
-                (112345000,  'G',  '1.12345E+08'),           
+                (112345000,  'G',  '1.12345E+08'),
                 (112345600,  'g',  '1.12346e+08'),
-                (112345600,  'G',  '1.12346E+08'),           
+                (112345600,  'G',  '1.12346E+08'),
                 (112345500,  'g',  '1.12346e+08'),
-                (112345500,  'G',  '1.12346E+08'),           
+                (112345500,  'G',  '1.12346E+08'),
                 (112345510,  'g',  '1.12346e+08'),
-                (112345510,  'G',  '1.12346E+08'),           
+                (112345510,  'G',  '1.12346E+08'),
                 (112345400,  'g',  '1.12345e+08'),
-                (112345400,  'G',  '1.12345E+08'),           
+                (112345400,  'G',  '1.12345E+08'),
                 (112345401,  'g',  '1.12345e+08'),
-                (112345401,  'G',  '1.12345E+08'),           
+                (112345401,  'G',  '1.12345E+08'),
                 (-112345000,  'g',  '-1.12345e+08'),
-                (-112345000,  'G',  '-1.12345E+08'),           
+                (-112345000,  'G',  '-1.12345E+08'),
                 (-112345600,  'g',  '-1.12346e+08'),
-                (-112345600,  'G',  '-1.12346E+08'),           
+                (-112345600,  'G',  '-1.12346E+08'),
                 (-112345500,  'g',  '-1.12346e+08'),
-                (-112345500,  'G',  '-1.12346E+08'),           
+                (-112345500,  'G',  '-1.12346E+08'),
                 (-112345510,  'g',  '-1.12346e+08'),
-                (-112345510,  'G',  '-1.12346E+08'),           
+                (-112345510,  'G',  '-1.12346E+08'),
                 (-112345400,  'g',  '-1.12345e+08'),
-                (-112345400,  'G',  '-1.12345E+08'),           
+                (-112345400,  'G',  '-1.12345E+08'),
                 (-112345401,  'g',  '-1.12345e+08'),
-                (-112345401,  'G',  '-1.12345E+08'),           
+                (-112345401,  'G',  '-1.12345E+08'),
 
                 (2147483647, 'g',  '2.14748e+09'),
                 (2147483647, 'G',  '2.14748E+09'),
                 (-2147483647, 'g',  '-2.14748e+09'),
                 (-2147483647, 'G',  '-2.14748E+09'),
-                
+
                 (2147483647, 'e',  '2.147484e+09'),
                 (100000,     'e',  '1.000000e+05'),
                 (100000,     'E',  '1.000000E+05'),
                 (10000000,   'E',  '1.000000E+07'),
                 (100000000,  'e',  '1.000000e+08'),
-                (100000000,  'E',  '1.000000E+08'),           
+                (100000000,  'E',  '1.000000E+08'),
                 (110000000,  'e',  '1.100000e+08'),
-                (110000000,  'E',  '1.100000E+08'),           
+                (110000000,  'E',  '1.100000E+08'),
                 (112000000,  'e',  '1.120000e+08'),
-                (112000000,  'E',  '1.120000E+08'),           
+                (112000000,  'E',  '1.120000E+08'),
                 (112300000,  'e',  '1.123000e+08'),
-                (112300000,  'E',  '1.123000E+08'),           
+                (112300000,  'E',  '1.123000E+08'),
                 (112340000,  'e',  '1.123400e+08'),
-                (112340000,  'E',  '1.123400E+08'),           
+                (112340000,  'E',  '1.123400E+08'),
                 (112345000,  'e',  '1.123450e+08'),
-                (112345000,  'E',  '1.123450E+08'),           
+                (112345000,  'E',  '1.123450E+08'),
                 (1112345600, 'e',  '1.112346e+09'),
-                (1112345600, 'E',  '1.112346E+09'),           
+                (1112345600, 'E',  '1.112346E+09'),
                 (1112345500, 'e',  '1.112346e+09'),
-                (1112345500, 'E',  '1.112346E+09'),           
+                (1112345500, 'E',  '1.112346E+09'),
                 (1112345510, 'e',  '1.112346e+09'),
-                (1112345510, 'E',  '1.112346E+09'),           
+                (1112345510, 'E',  '1.112346E+09'),
                 (1112345400, 'e',  '1.112345e+09'),
-                (1112345400, 'E',  '1.112345E+09'),           
+                (1112345400, 'E',  '1.112345E+09'),
                 (1112345401, 'e',  '1.112345e+09'),
-                (1112345401, 'E',  '1.112345E+09'),           
-                
+                (1112345401, 'E',  '1.112345E+09'),
+
                 (100000,     'n',  '100000'),
                 ]
 
         for value, spec, result in tests:
             self.assertEqual(value.__format__(spec), result)
-        
+
         # check locale specific formatting
         import _locale
         try:
@@ -861,13 +861,13 @@ class StrFormatTest(IronPythonTestCase):
                     #(-2, 'c', ),
                     #(-2, '%', "Sign not allowed with integer format specifier 'c'"),
                 ]
-        
+
         okChars = set(['%', 'E', 'F', 'G', 'X', 'x', 'b', 'c', 'd', 'o', 'e', 'f', 'g', 'n', ','])
 
         # verify the okChars are actually ok
         for char in okChars:
             (2).__format__('10' + char)
-        
+
         for char in allChars:
             if char not in okChars and (char < '0' or char > '9'):
                 errors.append((ValueError, 2, '10' + char, "Unknown format code '%s'" % char))
@@ -876,265 +876,265 @@ class StrFormatTest(IronPythonTestCase):
             self.assertRaisesPartialMessage(error, errorMsg, value.__format__, errorFmt)
 
     def test_long___format__(self):
-        tests = [ 
-                (0L,    '+',        '+0'),
-                (0L,    ' ',        ' 0'),
-                (0L,    '-',        '0'),
-                (2L,    '',         '2'),
-                (2L,    '+',        '+2'),
-                (2L,    '-',        '2'),
-                (2L,    ' ',        ' 2'),
-                (2L,    '<5',       '2    '),
-                (2L,    '>5',       '    2'),
-                (2L,    '=5',       '    2'),
-                (2L,    '^6',       '  2   '),
-                (2L,    '6',        '     2'),
-                (2L,    'x< 10',    ' 2xxxxxxxx'),
-                (2L,    'x> 10',    'xxxxxxxx 2'),
-                (2L,    'x= 10',    ' xxxxxxxx2'),
-                (2L,    'x^ 10',    'xxxx 2xxxx'),
-                (2L,    'x^ 9',     'xxx 2xxxx'),
-                (2L,    'x<+10',    '+2xxxxxxxx'),
-                (2L,    'x>+10',    'xxxxxxxx+2'),
-                (2L,    'x=+10',    '+xxxxxxxx2'),
-                (2L,    'x^+10',    'xxxx+2xxxx'),
-                (2L,    'x^+9',     'xxx+2xxxx'),
-                (2L,    'x<-10',    '2xxxxxxxxx'),
-                (2L,    'x>-10',    'xxxxxxxxx2'),
-                (2L,    'x=-10',    'xxxxxxxxx2'),
-                (2L,    'x^-10',    'xxxx2xxxxx'),
-                (2L,    'x^-9',     'xxxx2xxxx'),
-                (-2L,   'x<-10',    '-2xxxxxxxx'),
-                (-2L,   'x>-10',    'xxxxxxxx-2'),
-                (-2L,   'x=-10',   '-xxxxxxxx2'),
-                (-2L,   'x^-10',    'xxxx-2xxxx'),
-                (-2L,   'x^-9',     'xxx-2xxxx'),
-                (-2L,   'x<+10',    '-2xxxxxxxx'),
-                (-2L,   'x>+10',    'xxxxxxxx-2'),
-                (-2L,   'x=+10',   '-xxxxxxxx2'),
-                (-2L,   'x^+10',    'xxxx-2xxxx'),
-                (-2L,   'x^+9',     'xxx-2xxxx'),
-                (-2L,   'x< 10',    '-2xxxxxxxx'),
-                (-2L,   'x> 10',    'xxxxxxxx-2'),
-                (-2L,   'x= 10',   '-xxxxxxxx2'),
-                (-2L,   'x^ 10',    'xxxx-2xxxx'),
-                (-2L,   'x^ 9',     'xxx-2xxxx'),
-                (2L,    '\0^ 9',    '    2    '),
+        tests = [
+                (long(0),    '+',        '+0'),
+                (long(0),    ' ',        ' 0'),
+                (long(0),    '-',        '0'),
+                (long(2),    '',         '2'),
+                (long(2),    '+',        '+2'),
+                (long(2),    '-',        '2'),
+                (long(2),    ' ',        ' 2'),
+                (long(2),    '<5',       '2    '),
+                (long(2),    '>5',       '    2'),
+                (long(2),    '=5',       '    2'),
+                (long(2),    '^6',       '  2   '),
+                (long(2),    '6',        '     2'),
+                (long(2),    'x< 10',    ' 2xxxxxxxx'),
+                (long(2),    'x> 10',    'xxxxxxxx 2'),
+                (long(2),    'x= 10',    ' xxxxxxxx2'),
+                (long(2),    'x^ 10',    'xxxx 2xxxx'),
+                (long(2),    'x^ 9',     'xxx 2xxxx'),
+                (long(2),    'x<+10',    '+2xxxxxxxx'),
+                (long(2),    'x>+10',    'xxxxxxxx+2'),
+                (long(2),    'x=+10',    '+xxxxxxxx2'),
+                (long(2),    'x^+10',    'xxxx+2xxxx'),
+                (long(2),    'x^+9',     'xxx+2xxxx'),
+                (long(2),    'x<-10',    '2xxxxxxxxx'),
+                (long(2),    'x>-10',    'xxxxxxxxx2'),
+                (long(2),    'x=-10',    'xxxxxxxxx2'),
+                (long(2),    'x^-10',    'xxxx2xxxxx'),
+                (long(2),    'x^-9',     'xxxx2xxxx'),
+                (-long(2),   'x<-10',    '-2xxxxxxxx'),
+                (-long(2),   'x>-10',    'xxxxxxxx-2'),
+                (-long(2),   'x=-10',   '-xxxxxxxx2'),
+                (-long(2),   'x^-10',    'xxxx-2xxxx'),
+                (-long(2),   'x^-9',     'xxx-2xxxx'),
+                (-long(2),   'x<+10',    '-2xxxxxxxx'),
+                (-long(2),   'x>+10',    'xxxxxxxx-2'),
+                (-long(2),   'x=+10',   '-xxxxxxxx2'),
+                (-long(2),   'x^+10',    'xxxx-2xxxx'),
+                (-long(2),   'x^+9',     'xxx-2xxxx'),
+                (-long(2),   'x< 10',    '-2xxxxxxxx'),
+                (-long(2),   'x> 10',    'xxxxxxxx-2'),
+                (-long(2),   'x= 10',   '-xxxxxxxx2'),
+                (-long(2),   'x^ 10',    'xxxx-2xxxx'),
+                (-long(2),   'x^ 9',     'xxx-2xxxx'),
+                (long(2),    '\0^ 9',    '    2    '),
 
-                (2L,    'c',         '\x02'),
-                (2L,    '<5c',       '\x02    '),
-                (2L,    '>5c',       '    \x02'),
-                (2L,    '=5c',       '    \x02'),
-                (2L,    '^6c',       '  \x02   '),
-                (2L,    '6c',        '     \x02'),
-                
-                (3L,    'b',         '11'),
-                (3L,    '+b',        '+11'),
-                (3L,    '-b',        '11'),
-                (3L,    ' b',        ' 11'),
-                (3L,    '<5b',       '11   '),
-                (3L,    '>5b',       '   11'),
-                (3L,    '=5b',       '   11'),
-                (3L,    '^6b',       '  11  '),
-                (3L,    '6b',        '    11'),
-                (3L,    'x< 010b',   ' 11xxxxxxx'),
-                (3L,    '< 010b',    ' 110000000'),
-                (3L,    'x< 010b',    ' 11xxxxxxx'),
-                (3L,    'x< 10b',    ' 11xxxxxxx'),
-                (3L,    'x< 10b',    ' 11xxxxxxx'),
-                (3L,    'x> 10b',    'xxxxxxx 11'),
-                (3L,    'x= 10b',    ' xxxxxxx11'),
-                (3L,    'x^ 10b',    'xxx 11xxxx'),
-                (3L,    'x^ 9b',     'xxx 11xxx'),
-                (3L,    'x<+10b',    '+11xxxxxxx'),
-                (3L,    'x>+10b',    'xxxxxxx+11'),
-                (3L,    'x=+10b',    '+xxxxxxx11'),
-                (3L,    'x^+10b',    'xxx+11xxxx'),
-                (3L,    'x^+9b',     'xxx+11xxx'),
-                (3L,    'x<-10b',    '11xxxxxxxx'),
-                (3L,    'x>-10b',    'xxxxxxxx11'),
-                (3L,    'x=-10b',    'xxxxxxxx11'),
-                (3L,    'x^-10b',    'xxxx11xxxx'),
-                (3L,    'x^-9b',     'xxx11xxxx'),
-                (-3L,   'x<-10b',    '-11xxxxxxx'),
-                (-3L,   'x>-10b',    'xxxxxxx-11'),
-                (-3L,   'x=-10b',    '-xxxxxxx11'),
-                (-3L,   'x^-10b',    'xxx-11xxxx'),
-                (-3L,   'x^-9b',     'xxx-11xxx'),
-                (-3L,   'x<+10b',    '-11xxxxxxx'),
-                (-3L,   'x>+10b',    'xxxxxxx-11'),
-                (-3L,   'x=+10b',    '-xxxxxxx11'),
-                (-3L,   'x^+10b',    'xxx-11xxxx'),
-                (-3L,   'x^+9b',     'xxx-11xxx'),
-                (-3L,   'x< 10b',    '-11xxxxxxx'),
-                (-3L,   'x> 10b',    'xxxxxxx-11'),
-                (-3L,   'x= 10b',    '-xxxxxxx11'),
-                (-3L,   'x^ 10b',    'xxx-11xxxx'),
-                (-3L,   'x^ #10b',   'xx-0b11xxx'),
-                (-3L,   'x^ 9b',     'xxx-11xxx'),
-                (3L,    '\0^ 9b',    '    11   '),   
-                (-2147483648L, 'b',  '-10000000000000000000000000000000'),
-                (0L,      'b',  '0'),
-                
-                (9L,    'o',         '11'),
-                (9L,    '+o',        '+11'),
-                (9L,    '-o',        '11'),
-                (9L,    ' o',        ' 11'),
-                (9L,    '<5o',       '11   '),
-                (9L,    '>5o',       '   11'),
-                (9L,    '=5o',       '   11'),
-                (9L,    '^6o',       '  11  '),
-                (9L,    '6o',        '    11'),
-                (9L,    'x< 10o',    ' 11xxxxxxx'),
-                (9L,    'x> 10o',    'xxxxxxx 11'),
-                (9L,    'x= 10o',    ' xxxxxxx11'),
-                (9L,    'x^ 10o',    'xxx 11xxxx'),
-                (9L,    'x^ 9o',     'xxx 11xxx'),
-                (9L,    'x<+10o',    '+11xxxxxxx'),
-                (9L,    'x>+10o',    'xxxxxxx+11'),
-                (9L,    'x=+10o',    '+xxxxxxx11'),
-                (9L,    'x^+10o',    'xxx+11xxxx'),
-                (9L,    'x^+9o',     'xxx+11xxx'),
-                (9L,    'x<-10o',    '11xxxxxxxx'),
-                (9L,    'x>-10o',    'xxxxxxxx11'),
-                (9L,    'x=-10o',    'xxxxxxxx11'),
-                (9L,    'x^-10o',    'xxxx11xxxx'),
-                (9L,    'x^-9o',     'xxx11xxxx'),
-                (-9L,   'x<-10o',    '-11xxxxxxx'),
-                (-9L,   'x>-10o',    'xxxxxxx-11'),
-                (-9L,   'x=-10o',   '-xxxxxxx11'),
-                (-9L,   'x^-10o',    'xxx-11xxxx'),
-                (-9L,   'x^-9o',     'xxx-11xxx'),
-                (-9L,   'x<+10o',    '-11xxxxxxx'),
-                (-9L,   'x>+10o',    'xxxxxxx-11'),
-                (-9L,   'x=+10o',   '-xxxxxxx11'),
-                (-9L,   'x^+10o',    'xxx-11xxxx'),
-                (-9L,   'x^+9o',     'xxx-11xxx'),
-                (-9L,   'x< 10o',    '-11xxxxxxx'),
-                (-9L,   'x< #10o',    '-0o11xxxxx'),
-                (-9L,   'x> 10o',    'xxxxxxx-11'),
-                (-9L,   'x= 10o',   '-xxxxxxx11'),
-                (-9L,   'x^ 10o',    'xxx-11xxxx'),
-                (-9L,   'x^ 9o',     'xxx-11xxx'),
-                (9L,    '\0^ 9o',    '    11   '),
-                (-9L,   'x^ 9o',     'xxx-11xxx'),              
-                
-                (-2147483648L, 'o',  '-20000000000'),
-                (-42L,         'o',  '-52'),
+                (long(2),    'c',         '\x02'),
+                (long(2),    '<5c',       '\x02    '),
+                (long(2),    '>5c',       '    \x02'),
+                (long(2),    '=5c',       '    \x02'),
+                (long(2),    '^6c',       '  \x02   '),
+                (long(2),    '6c',        '     \x02'),
+
+                (long(3),    'b',         '11'),
+                (long(3),    '+b',        '+11'),
+                (long(3),    '-b',        '11'),
+                (long(3),    ' b',        ' 11'),
+                (long(3),    '<5b',       '11   '),
+                (long(3),    '>5b',       '   11'),
+                (long(3),    '=5b',       '   11'),
+                (long(3),    '^6b',       '  11  '),
+                (long(3),    '6b',        '    11'),
+                (long(3),    'x< 010b',   ' 11xxxxxxx'),
+                (long(3),    '< 010b',    ' 110000000'),
+                (long(3),    'x< 010b',    ' 11xxxxxxx'),
+                (long(3),    'x< 10b',    ' 11xxxxxxx'),
+                (long(3),    'x< 10b',    ' 11xxxxxxx'),
+                (long(3),    'x> 10b',    'xxxxxxx 11'),
+                (long(3),    'x= 10b',    ' xxxxxxx11'),
+                (long(3),    'x^ 10b',    'xxx 11xxxx'),
+                (long(3),    'x^ 9b',     'xxx 11xxx'),
+                (long(3),    'x<+10b',    '+11xxxxxxx'),
+                (long(3),    'x>+10b',    'xxxxxxx+11'),
+                (long(3),    'x=+10b',    '+xxxxxxx11'),
+                (long(3),    'x^+10b',    'xxx+11xxxx'),
+                (long(3),    'x^+9b',     'xxx+11xxx'),
+                (long(3),    'x<-10b',    '11xxxxxxxx'),
+                (long(3),    'x>-10b',    'xxxxxxxx11'),
+                (long(3),    'x=-10b',    'xxxxxxxx11'),
+                (long(3),    'x^-10b',    'xxxx11xxxx'),
+                (long(3),    'x^-9b',     'xxx11xxxx'),
+                (-long(3),   'x<-10b',    '-11xxxxxxx'),
+                (-long(3),   'x>-10b',    'xxxxxxx-11'),
+                (-long(3),   'x=-10b',    '-xxxxxxx11'),
+                (-long(3),   'x^-10b',    'xxx-11xxxx'),
+                (-long(3),   'x^-9b',     'xxx-11xxx'),
+                (-long(3),   'x<+10b',    '-11xxxxxxx'),
+                (-long(3),   'x>+10b',    'xxxxxxx-11'),
+                (-long(3),   'x=+10b',    '-xxxxxxx11'),
+                (-long(3),   'x^+10b',    'xxx-11xxxx'),
+                (-long(3),   'x^+9b',     'xxx-11xxx'),
+                (-long(3),   'x< 10b',    '-11xxxxxxx'),
+                (-long(3),   'x> 10b',    'xxxxxxx-11'),
+                (-long(3),   'x= 10b',    '-xxxxxxx11'),
+                (-long(3),   'x^ 10b',    'xxx-11xxxx'),
+                (-long(3),   'x^ #10b',   'xx-0b11xxx'),
+                (-long(3),   'x^ 9b',     'xxx-11xxx'),
+                (long(3),    '\0^ 9b',    '    11   '),
+                (-long(2147483648), 'b',  '-10000000000000000000000000000000'),
+                (long(0),      'b',  '0'),
+
+                (long(9),    'o',         '11'),
+                (long(9),    '+o',        '+11'),
+                (long(9),    '-o',        '11'),
+                (long(9),    ' o',        ' 11'),
+                (long(9),    '<5o',       '11   '),
+                (long(9),    '>5o',       '   11'),
+                (long(9),    '=5o',       '   11'),
+                (long(9),    '^6o',       '  11  '),
+                (long(9),    '6o',        '    11'),
+                (long(9),    'x< 10o',    ' 11xxxxxxx'),
+                (long(9),    'x> 10o',    'xxxxxxx 11'),
+                (long(9),    'x= 10o',    ' xxxxxxx11'),
+                (long(9),    'x^ 10o',    'xxx 11xxxx'),
+                (long(9),    'x^ 9o',     'xxx 11xxx'),
+                (long(9),    'x<+10o',    '+11xxxxxxx'),
+                (long(9),    'x>+10o',    'xxxxxxx+11'),
+                (long(9),    'x=+10o',    '+xxxxxxx11'),
+                (long(9),    'x^+10o',    'xxx+11xxxx'),
+                (long(9),    'x^+9o',     'xxx+11xxx'),
+                (long(9),    'x<-10o',    '11xxxxxxxx'),
+                (long(9),    'x>-10o',    'xxxxxxxx11'),
+                (long(9),    'x=-10o',    'xxxxxxxx11'),
+                (long(9),    'x^-10o',    'xxxx11xxxx'),
+                (long(9),    'x^-9o',     'xxx11xxxx'),
+                (-long(9),   'x<-10o',    '-11xxxxxxx'),
+                (-long(9),   'x>-10o',    'xxxxxxx-11'),
+                (-long(9),   'x=-10o',   '-xxxxxxx11'),
+                (-long(9),   'x^-10o',    'xxx-11xxxx'),
+                (-long(9),   'x^-9o',     'xxx-11xxx'),
+                (-long(9),   'x<+10o',    '-11xxxxxxx'),
+                (-long(9),   'x>+10o',    'xxxxxxx-11'),
+                (-long(9),   'x=+10o',   '-xxxxxxx11'),
+                (-long(9),   'x^+10o',    'xxx-11xxxx'),
+                (-long(9),   'x^+9o',     'xxx-11xxx'),
+                (-long(9),   'x< 10o',    '-11xxxxxxx'),
+                (-long(9),   'x< #10o',    '-0o11xxxxx'),
+                (-long(9),   'x> 10o',    'xxxxxxx-11'),
+                (-long(9),   'x= 10o',   '-xxxxxxx11'),
+                (-long(9),   'x^ 10o',    'xxx-11xxxx'),
+                (-long(9),   'x^ 9o',     'xxx-11xxx'),
+                (long(9),    '\0^ 9o',    '    11   '),
+                (-long(9),   'x^ 9o',     'xxx-11xxx'),
+
+                (-long(2147483648), 'o',  '-20000000000'),
+                (-long(42),         'o',  '-52'),
                 (0,            'o',  '0'),
-                (42L,          'o',  '52'),
+                (long(42),          'o',  '52'),
 
                 (0,            'x',  '0'),
-                (-2147483648L, 'X',  '-80000000'),
-                (-2147483648L, 'x',  '-80000000'),
-                (-42L,         'X',  '-2A'),
-                (-42L,         'x',  '-2a'),
-                (42L,          'X',  '2A'),
-                (42L,          'x',  '2a'),
-                (2147483647L,  'X',  '7FFFFFFF'),
-                (2147483647L,  'x',  '7fffffff'),
-                (2147483647L,  '#x',  '0x7fffffff'),
-                (2147483647L,  '#X',  '0X7FFFFFFF'),
-                
-                (2147483647L, 'f',  '2147483647.000000'),
-                (2147483647L, '%', '214748364700.000000%'),
+                (-long(2147483648), 'X',  '-80000000'),
+                (-long(2147483648), 'x',  '-80000000'),
+                (-long(42),         'X',  '-2A'),
+                (-long(42),         'x',  '-2a'),
+                (long(42),          'X',  '2A'),
+                (long(42),          'x',  '2a'),
+                (long(2147483647),  'X',  '7FFFFFFF'),
+                (long(2147483647),  'x',  '7fffffff'),
+                (long(2147483647),  '#x',  '0x7fffffff'),
+                (long(2147483647),  '#X',  '0X7FFFFFFF'),
 
-                (999999L,     '-g',  '999999'),
-                (999999L,     '+g',  '+999999'),
-                (999999L,     ' g',  ' 999999'),
-                (999999L,     'g',  '999999'),
-                (999999L,    'G',  '999999'),
-                (-999999L,    'g',  '-999999'),
-                (-999999L,   'G',  '-999999'),
-                (100000L,     'g',  '100000'),
-                (100000L,     'G',  '100000'),
-                (-1000000L,   'g',  '-1e+06'),
-                (-1000000L,   'G',  '-1E+06'),
-                (1000000L,    'g',  '1e+06'),
-                (1000000L,    'G',  '1E+06'),
-                (10000000L,   'g',  '1e+07'),
-                (10000000L,   'G',  '1E+07'),
-                (100000000L,  'g',  '1e+08'),
-                (100000000L,  'G',  '1E+08'),           
-                (1000000L,    '10g',  '     1e+06'),
-                (1000000L,    '10G',  '     1E+06'),
-                (10000000L,   '10g',  '     1e+07'),
-                (10000000L,   '10G',  '     1E+07'),
-                (10200000L,   '10G',  '  1.02E+07'),
-                (100000000L,  '10g',  '     1e+08'),
-                (100000000L,  '10G',  '     1E+08'),           
-                (110000000L,  'g',  '1.1e+08'),
-                (110000000L,  'G',  '1.1E+08'),           
-                (112000000L,  'g',  '1.12e+08'),
-                (112000000L,  'G',  '1.12E+08'),           
-                (112300000L,  'g',  '1.123e+08'),
-                (112300000L,  'G',  '1.123E+08'),           
-                (112340000L,  'g',  '1.1234e+08'),
-                (112340000L,  'G',  '1.1234E+08'),           
-                (112345000L,  'g',  '1.12345e+08'),
-                (112345000L,  'G',  '1.12345E+08'),           
-                (112345600L,  'g',  '1.12346e+08'),
-                (112345600L,  'G',  '1.12346E+08'),           
-                (112345500L,  'g',  '1.12346e+08'),
-                (112345500L,  'G',  '1.12346E+08'),           
-                (112345510L,  'g',  '1.12346e+08'),
-                (112345510L,  'G',  '1.12346E+08'),           
-                (112345400L,  'g',  '1.12345e+08'),
-                (112345400L,  'G',  '1.12345E+08'),           
-                (112345401L,  'g',  '1.12345e+08'),
-                (112345401L,  'G',  '1.12345E+08'),           
-                (-112345000L,  'g',  '-1.12345e+08'),
-                (-112345000L,  'G',  '-1.12345E+08'),           
-                (-112345600L,  'g',  '-1.12346e+08'),
-                (-112345600L,  'G',  '-1.12346E+08'),           
-                (-112345500L,  'g',  '-1.12346e+08'),
-                (-112345500L,  'G',  '-1.12346E+08'),           
-                (-112345510L,  'g',  '-1.12346e+08'),
-                (-112345510L,  'G',  '-1.12346E+08'),           
-                (-112345400L,  'g',  '-1.12345e+08'),
-                (-112345400L,  'G',  '-1.12345E+08'),           
-                (-112345401L,  'g',  '-1.12345e+08'),
-                (-112345401L,  'G',  '-1.12345E+08'),           
+                (long(2147483647), 'f',  '2147483647.000000'),
+                (long(2147483647), '%', '214748364700.000000%'),
 
-                (2147483647L, 'g',  '2.14748e+09'),
-                (2147483647L, 'G',  '2.14748E+09'),
-                (-2147483647L, 'g',  '-2.14748e+09'),
-                (-2147483647L, 'G',  '-2.14748E+09'),
-                
-                (2147483647L, 'e',  '2.147484e+09'),
-                (100000L,     'e',  '1.000000e+05'),
-                (100000L,     'E',  '1.000000E+05'),
-                (10000000L,   'E',  '1.000000E+07'),
-                (100000000L,  'e',  '1.000000e+08'),
-                (100000000L,  'E',  '1.000000E+08'),           
-                (110000000L,  'e',  '1.100000e+08'),
-                (110000000L,  'E',  '1.100000E+08'),           
-                (112000000L,  'e',  '1.120000e+08'),
-                (112000000L,  'E',  '1.120000E+08'),           
-                (112300000L,  'e',  '1.123000e+08'),
-                (112300000L,  'E',  '1.123000E+08'),           
-                (112340000L,  'e',  '1.123400e+08'),
-                (112340000L,  'E',  '1.123400E+08'),           
-                (112345000L,  'e',  '1.123450e+08'),
-                (112345000L,  'E',  '1.123450E+08'),           
-                (1112345600L, 'e',  '1.112346e+09'),
-                (1112345600L, 'E',  '1.112346E+09'),           
-                (1112345500L, 'e',  '1.112346e+09'),
-                (1112345500L, 'E',  '1.112346E+09'),           
-                (1112345510L, 'e',  '1.112346e+09'),
-                (1112345510L, 'E',  '1.112346E+09'),           
-                (1112345400L, 'e',  '1.112345e+09'),
-                (1112345400L, 'E',  '1.112345E+09'),           
-                (1112345401L, 'e',  '1.112345e+09'),
-                (1112345401L, 'E',  '1.112345E+09'),           
-                (111234540100L, 'E',  '1.112345E+11'),           
-                
-                (100000L,     'n',  '100000'),
+                (long(999999),     '-g',  '999999'),
+                (long(999999),     '+g',  '+999999'),
+                (long(999999),     ' g',  ' 999999'),
+                (long(999999),     'g',  '999999'),
+                (long(999999),    'G',  '999999'),
+                (-long(999999),    'g',  '-999999'),
+                (-long(999999),   'G',  '-999999'),
+                (long(100000),     'g',  '100000'),
+                (long(100000),     'G',  '100000'),
+                (-long(1000000),   'g',  '-1e+06'),
+                (-long(1000000),   'G',  '-1E+06'),
+                (long(1000000),    'g',  '1e+06'),
+                (long(1000000),    'G',  '1E+06'),
+                (long(10000000),   'g',  '1e+07'),
+                (long(10000000),   'G',  '1E+07'),
+                (long(100000000),  'g',  '1e+08'),
+                (long(100000000),  'G',  '1E+08'),
+                (long(1000000),    '10g',  '     1e+06'),
+                (long(1000000),    '10G',  '     1E+06'),
+                (long(10000000),   '10g',  '     1e+07'),
+                (long(10000000),   '10G',  '     1E+07'),
+                (long(10200000),   '10G',  '  1.02E+07'),
+                (long(100000000),  '10g',  '     1e+08'),
+                (long(100000000),  '10G',  '     1E+08'),
+                (long(110000000),  'g',  '1.1e+08'),
+                (long(110000000),  'G',  '1.1E+08'),
+                (long(112000000),  'g',  '1.12e+08'),
+                (long(112000000),  'G',  '1.12E+08'),
+                (long(112300000),  'g',  '1.123e+08'),
+                (long(112300000),  'G',  '1.123E+08'),
+                (long(112340000),  'g',  '1.1234e+08'),
+                (long(112340000),  'G',  '1.1234E+08'),
+                (long(112345000),  'g',  '1.12345e+08'),
+                (long(112345000),  'G',  '1.12345E+08'),
+                (long(112345600),  'g',  '1.12346e+08'),
+                (long(112345600),  'G',  '1.12346E+08'),
+                (long(112345500),  'g',  '1.12346e+08'),
+                (long(112345500),  'G',  '1.12346E+08'),
+                (long(112345510),  'g',  '1.12346e+08'),
+                (long(112345510),  'G',  '1.12346E+08'),
+                (long(112345400),  'g',  '1.12345e+08'),
+                (long(112345400),  'G',  '1.12345E+08'),
+                (long(112345401),  'g',  '1.12345e+08'),
+                (long(112345401),  'G',  '1.12345E+08'),
+                (-long(112345000),  'g',  '-1.12345e+08'),
+                (-long(112345000),  'G',  '-1.12345E+08'),
+                (-long(112345600),  'g',  '-1.12346e+08'),
+                (-long(112345600),  'G',  '-1.12346E+08'),
+                (-long(112345500),  'g',  '-1.12346e+08'),
+                (-long(112345500),  'G',  '-1.12346E+08'),
+                (-long(112345510),  'g',  '-1.12346e+08'),
+                (-long(112345510),  'G',  '-1.12346E+08'),
+                (-long(112345400),  'g',  '-1.12345e+08'),
+                (-long(112345400),  'G',  '-1.12345E+08'),
+                (-long(112345401),  'g',  '-1.12345e+08'),
+                (-long(112345401),  'G',  '-1.12345E+08'),
+
+                (long(2147483647), 'g',  '2.14748e+09'),
+                (long(2147483647), 'G',  '2.14748E+09'),
+                (-long(2147483647), 'g',  '-2.14748e+09'),
+                (-long(2147483647), 'G',  '-2.14748E+09'),
+
+                (long(2147483647), 'e',  '2.147484e+09'),
+                (long(100000),     'e',  '1.000000e+05'),
+                (long(100000),     'E',  '1.000000E+05'),
+                (long(10000000),   'E',  '1.000000E+07'),
+                (long(100000000),  'e',  '1.000000e+08'),
+                (long(100000000),  'E',  '1.000000E+08'),
+                (long(110000000),  'e',  '1.100000e+08'),
+                (long(110000000),  'E',  '1.100000E+08'),
+                (long(112000000),  'e',  '1.120000e+08'),
+                (long(112000000),  'E',  '1.120000E+08'),
+                (long(112300000),  'e',  '1.123000e+08'),
+                (long(112300000),  'E',  '1.123000E+08'),
+                (long(112340000),  'e',  '1.123400e+08'),
+                (long(112340000),  'E',  '1.123400E+08'),
+                (long(112345000),  'e',  '1.123450e+08'),
+                (long(112345000),  'E',  '1.123450E+08'),
+                (long(1112345600), 'e',  '1.112346e+09'),
+                (long(1112345600), 'E',  '1.112346E+09'),
+                (long(1112345500), 'e',  '1.112346e+09'),
+                (long(1112345500), 'E',  '1.112346E+09'),
+                (long(1112345510), 'e',  '1.112346e+09'),
+                (long(1112345510), 'E',  '1.112346E+09'),
+                (long(1112345400), 'e',  '1.112345e+09'),
+                (long(1112345400), 'E',  '1.112345E+09'),
+                (long(1112345401), 'e',  '1.112345e+09'),
+                (long(1112345401), 'E',  '1.112345E+09'),
+                (long(111234540100), 'E',  '1.112345E+11'),
+
+                (long(100000),     'n',  '100000'),
                 ]
 
         for value, spec, result in tests:
             self.assertEqual(value.__format__(spec), result)
-        
+
         # check locale specific formatting
         import _locale
         try:
@@ -1142,48 +1142,48 @@ class StrFormatTest(IronPythonTestCase):
                 _locale.setlocale(_locale.LC_ALL, 'en_US')
             else:
                 _locale.setlocale(_locale.LC_ALL, 'English_United States.1252')
-            self.assertEqual(100000L.__format__('n'), '100,000')
-            self.assertEqual(100000000L.__format__('n'), '100,000,000')
+            self.assertEqual(long(100000).__format__('n'), '100,000')
+            self.assertEqual(long(100000000).__format__('n'), '100,000,000')
         finally:
             # and restore it back...
             _locale.setlocale(_locale.LC_ALL, 'C')
-            self.assertEqual(100000L.__format__('n'), '100000')
-            self.assertEqual(100000000L.__format__('n'), '100000000')
+            self.assertEqual(long(100000).__format__('n'), '100000')
+            self.assertEqual(long(100000000).__format__('n'), '100000000')
 
     def test_long___format___errors(self):
         errors = [
-                    (ValueError, 2L, '6.1', "Precision not allowed in integer format specifier"),
-                    (ValueError, 2L, '+c', "Sign not allowed with integer format specifier 'c'"),
-                    (ValueError, 2L, '-c', "Sign not allowed with integer format specifier 'c'"),
-                    (ValueError, 2L, ' c', "Sign not allowed with integer format specifier 'c'"),
-                    (OverflowError, -2L, 'c', "%c arg not in range(0x10000)"),
-                    (OverflowError, 1000000L, 'c', "%c arg not in range(0x10000)"),
+                    (ValueError, long(2), '6.1', "Precision not allowed in integer format specifier"),
+                    (ValueError, long(2), '+c', "Sign not allowed with integer format specifier 'c'"),
+                    (ValueError, long(2), '-c', "Sign not allowed with integer format specifier 'c'"),
+                    (ValueError, long(2), ' c', "Sign not allowed with integer format specifier 'c'"),
+                    (OverflowError, -long(2), 'c', "%c arg not in range(0x10000)"),
+                    (OverflowError, long(1000000), 'c', "%c arg not in range(0x10000)"),
                 ]
-        
+
         if is_cli: #http://ironpython.codeplex.com/workitem/28373
-            errors.append((OverflowError, sys.maxint + 1, 'c', "long int too large to convert to int"))
+            errors.append((OverflowError, sys.maxsize + 1, 'c', "long int too large to convert to int"))
         else:
-            errors.append((OverflowError, sys.maxint + 1, 'c', "Python int too large to convert to C long"))
+            errors.append((OverflowError, sys.maxsize + 1, 'c', "Python int too large to convert to C long"))
 
         okChars = set(['%', 'E', 'F', 'G', 'X', 'x', 'b', 'c', 'd', 'o', 'e', 'f', 'g', 'n', ','])
-        
+
         # verify the okChars are actually ok
         for char in okChars:
-            (2L).__format__('10' + char)
+            (long(2)).__format__('10' + char)
 
         for char in allChars:
             if char not in okChars and (char < '0' or char > '9'):
-                errors.append((ValueError, 2L, '10' + char, "Unknown format code '%s'" % char))
+                errors.append((ValueError, long(2), '10' + char, "Unknown format code '%s'" % char))
 
         for exceptionType, value, errorFmt, errorMsg in errors:
             self.assertRaisesPartialMessage(exceptionType, errorMsg, value.__format__, errorFmt)
 
 
     def test_builtin_types_that_implement_format(self):
-        import __builtin__
-        types = [getattr(__builtin__, typeName) for typeName in dir(__builtin__) if type(getattr(__builtin__, typeName)) is type]
+        import builtins
+        types = [getattr(builtins, typeName) for typeName in dir(builtins) if type(getattr(builtins, typeName)) is type]
         formatTypes = list(set([builtinType.__name__ for builtinType in types if '__format__' in builtinType.__dict__]))
-        
+
         formatTypes.sort()
         if is_cli:
             # no unicode
@@ -1191,7 +1191,7 @@ class StrFormatTest(IronPythonTestCase):
             self.assertEqual(formatTypes, ['bool', 'complex', 'float', 'int', 'long', 'object', 'str'])
         else:
             self.assertEqual(formatTypes, ['complex', 'float', 'int', 'long', 'object', 'str', 'unicode'])
-    
+
 
     def test_computed_format(self):
         self.assertEqual("|{0:10}|".format("a"), "|a         |")

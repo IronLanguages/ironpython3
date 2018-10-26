@@ -4,11 +4,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting;
 
 using IronPython.Runtime;
+using IronPython.Runtime.Operations;
 
 using MSAst = System.Linq.Expressions;
 
@@ -16,7 +19,6 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
-    using System.Runtime.CompilerServices;
 
     public abstract class ComprehensionIterator : Node {
         internal abstract MSAst.Expression Transform(MSAst.Expression body);
@@ -280,7 +282,7 @@ namespace IronPython.Compiler.Ast {
     /// </summary>
     class ComprehensionScope : ScopeStatement {
         private readonly Expression _comprehension;
-        internal static readonly MSAst.ParameterExpression _compContext = Ast.Parameter(typeof(CodeContext), "$compContext");
+        private static readonly MSAst.ParameterExpression _compContext = Ast.Parameter(typeof(CodeContext), "$compContext");
 
         public ComprehensionScope(Expression comprehension) {
             _comprehension = comprehension;
@@ -293,6 +295,11 @@ namespace IronPython.Compiler.Ast {
                 return false;
             }
             return _comprehension.Parent.ExposesLocalVariable(variable);
+        }
+
+        internal override MSAst.Expression/*!*/ GetParentClosureTuple() {
+            Debug.Assert(NeedsLocalContext);
+            return MSAst.Expression.Call(null, typeof(PythonOps).GetMethod(nameof(PythonOps.GetClosureTupleFromContext)), _comprehension.Parent.LocalContext);
         }
 
         internal override PythonVariable BindReference(PythonNameBinder binder, PythonReference reference) {
@@ -353,10 +360,9 @@ namespace IronPython.Compiler.Ast {
             if (localContext != null) {
                 var createLocal = CreateLocalContext(_comprehension.Parent.LocalContext);
                 body.Add(Ast.Assign(_compContext, createLocal));
-                body.Add(expression);
-            } else {
-                body.Add(expression);
             }
+
+            body.Add(expression);
 
             return Expression.Block(
                 locals, 

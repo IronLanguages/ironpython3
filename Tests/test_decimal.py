@@ -1,3 +1,6 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the Apache 2.0 License.
+# See the LICENSE file in the project root for more information.
 
 import unittest
 from decimal import *
@@ -25,6 +28,5 @@ class DecimalTest(unittest.TestCase):
         d = System.Decimal.Parse('4000000000.40000000')
         self.assertEqual('{}'.format(d), '4000000000.40000000')
         self.assertEqual('{:e}'.format(d), '4.000000000400e+09')
-
 
 run_test(__name__)

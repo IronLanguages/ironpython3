@@ -2,7 +2,6 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
-import exceptions
 import sys
 import unittest
 
@@ -24,28 +23,28 @@ class WithTest(unittest.TestCase):
     def test_raise(self):
         events = []
         expectedEvents = [
-        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)', 
-        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)', 
-        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)', 
-        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)', 
-        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)', 
-        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)', 
-        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)', 
-        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)', 
-        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)', 
-        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)', 
         'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)',
-        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)', 
-        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)', 
-        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 
-        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)', 
-        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)', 
-        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)', 
-        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)', 
-        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)', 
-        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)', 
+        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)',
+        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)',
+        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)',
+        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)',
+        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)',
+        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)',
+        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)',
+        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)',
+        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)',
+        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)',
+        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)',
+        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)',
+        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)',
+        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)',
+        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)',
+        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)',
+        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)',
+        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)',
+        'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(None)', 'A.__enter__', 'A.__exit__(exception)',
         'A.__enter__', 267504, 'A.__exit__(None)']
-        
+
         #test case with RAISE(exit consumes), YIELD, RETURN, BREAK and CONTINUE in WITH
         class A:
             def __enter__(self):
@@ -57,7 +56,7 @@ class WithTest(unittest.TestCase):
                 else:
                     events.append('A.__exit__(exception)')
                 return 1
-        
+
         a = A()
 
         def foo():
@@ -86,7 +85,7 @@ class WithTest(unittest.TestCase):
                         p = p + 1
         try:
             k = foo()
-            while(k.next()):pass
+            while(next(k)):pass
         except StopIteration: self.assertEqual(events, expectedEvents)
         else :self.fail("Expected StopIteration but found None")
 
@@ -163,7 +162,7 @@ class WithTest(unittest.TestCase):
 
     def test_exit_raises_on_successful(self):
         #exit raises on successful / throwing WITH
-        
+
         class Myerr2(Exception):pass
         class Myerr3(Exception):pass
         class ExitRaise:
@@ -193,7 +192,7 @@ class WithTest(unittest.TestCase):
         try:
             with PropagateException() as PE:
                 del PE
-                print PE
+                print(PE)
         except NameError:pass
         else: self.fail("Expected NameError but found None")
 
@@ -201,7 +200,7 @@ class WithTest(unittest.TestCase):
             with PropagateException() as PE:
                 PE.var1 = 100
                 del PE
-                print PE
+                print(PE)
         except AttributeError:pass
         else: self.fail("Expected AttributeError but found None")
 
@@ -224,12 +223,12 @@ class WithTest(unittest.TestCase):
     def test_with_stmt_under_compound_stmts_no_yield(self):
         events = []
         expectedEvents = [
-            'body', 'ZeroDivisionError', 
-            'inherited_cxtmgr.__enter__', 
-            'inner_with', 'inner_body', 
-            'inherited_cxtmgr.__enter__', 'deep_inner_with', 'cxtmgr.__exit__', 
-            'finally', 
-            'ClassInFinally.__enter__', 'last_with', 'ClassInFinally.__exit__', 
+            'body', 'ZeroDivisionError',
+            'inherited_cxtmgr.__enter__',
+            'inner_with', 'inner_body',
+            'inherited_cxtmgr.__enter__', 'deep_inner_with', 'cxtmgr.__exit__',
+            'finally',
+            'ClassInFinally.__enter__', 'last_with', 'ClassInFinally.__exit__',
             'cxtmgr.__exit__']
 
         #inheritance
@@ -265,7 +264,7 @@ class WithTest(unittest.TestCase):
                         if is_cpython: #http://ironpython.codeplex.com/workitem/27990/
                             self.assertEqual(sys.exc_info()[0], Myerr1)
                         else:
-                            self.assertEqual(sys.exc_info()[0], exceptions.ZeroDivisionError)
+                            self.assertEqual(sys.exc_info()[0], ZeroDivisionError)
                         events.append('finally')
                         class ClassInFinally:
                             def __enter__(self):
@@ -298,18 +297,18 @@ class WithTest(unittest.TestCase):
         with WithInEnterExit() as wie:
             with wie as wie_wie:
                 globals()["gblvar"] += 100
-            
+
         self.assertEqual(globals()["gblvar"],116)
 
     def test_void_return_value(self):
         class A:
             def __enter__(self): pass
             def __exit__(self, a,b,c): pass
-            
-        try:    
+
+        try:
             with A() as a:
                 raise Exception
         except Exception: pass
         else: self.fail("Should have raised exception")
-    
+
 run_test(__name__)

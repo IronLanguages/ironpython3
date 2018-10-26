@@ -152,6 +152,8 @@ import math as _math
 import numbers as _numbers
 import sys
 
+is_cli = sys.implementation.name == 'ironpython'
+
 try:
     from collections import namedtuple as _namedtuple
     DecimalTuple = _namedtuple('DecimalTuple', 'sign digits exponent')
@@ -583,6 +585,11 @@ class Decimal(object):
         # digits.
 
         self = object.__new__(cls)
+
+        if is_cli:
+            import System
+            if isinstance(value, System.Decimal):
+                value = str(value)
 
         # From a string
         # REs insist on real strings, so we can too.

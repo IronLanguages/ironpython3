@@ -19,7 +19,7 @@ s3 = [2, 4, 5, 6]
 class SetTest(IronPythonTestCase):
     def test_equality(self):
         ne_list = [1]
-        
+
         for z in [s1, s2, s3, []]:
             for x in (set, frozenset, myset, myfrozenset):
                 for y in (set, frozenset, myset, myfrozenset):
@@ -45,11 +45,11 @@ class SetTest(IronPythonTestCase):
             #!!!self.assertRaises(TypeError, x.__new__, str, 'abc')
 
             xs1, xs2, xs3 = x(s1), x(s2), x(s3)
-            
+
             # membership
             self.assertEqual(4 in xs1, True)
             self.assertEqual(6 in xs1, False)
-            
+
             # relation with another of the same type
             self.assertEqual(xs1.issubset(xs2), False)
             self.assertEqual(xs1.issubset(xs3), True)
@@ -61,7 +61,7 @@ class SetTest(IronPythonTestCase):
             self.assertEqual(xs1 <= xs3, True)
             self.assertEqual(xs3 >= xs1, True)
             self.assertEqual(xs3 >= xs2, False)
-            
+
             self.assertEqual(xs1.union(xs2), x([2, 4, 5, 7, 9, 10]))
             self.assertEqual(xs1.intersection(xs2), x([4]))
             self.assertEqual(xs1.difference(xs2), x([2, 5]))
@@ -82,7 +82,7 @@ class SetTest(IronPythonTestCase):
             self.assertEqual(xs1.issubset(s3), True)
             self.assertEqual(xs3.issuperset(s1), True)
             self.assertEqual(xs3.issuperset(s2), False)
-            
+
             self.assertEqual(xs1.union(s2), x([2, 4, 5, 7, 9, 10]))
             self.assertEqual(xs1.intersection(s2), x([4]))
             self.assertEqual(xs1.difference(s2), x([2, 5]))
@@ -96,25 +96,26 @@ class SetTest(IronPythonTestCase):
             for t2 in (set, frozenset, myset, myfrozenset):
                 # set/frozenset creation
                 self.assertEqual(t1(t2(s1)), t1(s1))
-                
+
                 # ops
                 for (op, exp1, exp2) in [('&', 'b', 'bd'), ('|', 'abcde', 'abcdefgh'), ('-', 'acd', 'ac'), ('^', 'acde', 'acefgh')]:
-                    
-                    x1 = t1(s1)
-                    exec "x1   %s= t2(s2)" % op
-                    self.assertEqual(x1, t1(exp1))
+                    d = dict(locals())
 
-                    x1 = t1(s1)
-                    exec "x1   %s= t2(s3)" % op
-                    self.assertEqual(x1, t1(exp2))
-                    
-                    x1 = t1(s1)
-                    exec "y = x1 %s t2(s2)" % op
-                    self.assertEqual(y, t1(exp1))
+                    d["x1"] = t1(s1)
+                    exec("x1   %s= t2(s2)" % op, d)
+                    self.assertEqual(d["x1"], t1(exp1))
 
-                    x1 = t1(s1)
-                    exec "y = x1 %s t2(s3)" % op
-                    self.assertEqual(y, t1(exp2))
+                    d["x1"] = t1(s1)
+                    exec("x1   %s= t2(s3)" % op, d)
+                    self.assertEqual(d["x1"], t1(exp2))
+
+                    d["x1"] = t1(s1)
+                    exec("y = x1 %s t2(s2)" % op, d)
+                    self.assertEqual(d["y"], t1(exp1))
+
+                    d["x1"] = t1(s1)
+                    exec("y = x1 %s t2(s3)" % op, d)
+                    self.assertEqual(d["y"], t1(exp2))
 
     def test_none(self):
         x, y = set([None, 'd']), set(['a', 'b', 'c', None])
@@ -124,7 +125,7 @@ class SetTest(IronPythonTestCase):
         self.assertEqual(y & x, set([None]))
         self.assertEqual(x - y, set('d'))
         self.assertEqual(y - x, set('abc'))
-        
+
         a = set()
         a.add(None)
         self.assertEqual(repr(a), 'set([None])')
@@ -132,30 +133,20 @@ class SetTest(IronPythonTestCase):
 
     def test_cmp(self):
         """Verify we can compare sets that aren't the same type"""
-        
+
         a = frozenset([1,2])
         b = set([1,2])
-        
-        abig = frozenset([1,2,3])
-        bbig = set([1,2,3])
-        
-        self.assertEqual(cmp(a,b), 0)
-        self.assertEqual(cmp(a,bbig), -1)
-        self.assertEqual(cmp(abig,b), 1)
-        
+
+        self.assertEqual(a, b)
+
         class sset(set): pass
-        
+
         class fset(frozenset): pass
-        
+
         a = fset([1,2])
         b = sset([1,2])
-        
-        abig = fset([1,2,3])
-        bbig = sset([1,2,3])
-        
-        self.assertEqual(cmp(a,b), 0)
-        self.assertEqual(cmp(a,bbig), -1)
-        self.assertEqual(cmp(abig,b), 1)
+
+        self.assertEqual(a, b)
 
     def test_deque(self):
         if is_cli:
@@ -169,7 +160,7 @@ class SetTest(IronPythonTestCase):
         self.assertEqual(x, deque([3,4,5]))
         x.remove(4)
         self.assertEqual(x, deque([3,5]))
-        
+
         # get a deque w/ head/tail backwards...
         x = deque([1,2,3,4,5,6,7,8])
         x.popleft()
@@ -193,7 +184,7 @@ class SetTest(IronPythonTestCase):
         class BadCmp:
             def __eq__(self, other):
                 raise RuntimeError
-        
+
         d = deque([1,2, BadCmp()])
         self.assertRaises(RuntimeError, d.remove, 3)
 
@@ -201,13 +192,13 @@ class SetTest(IronPythonTestCase):
         class y(object):
             def __eq__(self, other):
                 return True
-        
+
         x.append(y())
         self.assertEqual(y() in x, True)
-        
+
         x = deque({}, None)
         self.assertEqual(x, deque([]))
-        
+
         self.assertRaisesPartialMessage(TypeError, "takes at most 2 arguments (3 given)", deque, 'abc', 2, 2)
 
     def test_singleton(self):
@@ -219,13 +210,13 @@ class SetTest(IronPythonTestCase):
     # no random
     def test_iteration_no_mutation_bad_hash(self):
         """create a set w/ objects with a bad hash and enumerate through it.  No exceptions should be thrown"""
-        
+
         import random
         class c(object):
             def __hash__(self):
-                    return int(random.random()*200)
-        
-        l = [c() for i in xrange(1000)]
+                return int(random.random()*200)
+
+        l = [c() for i in range(1000)]
         b = set(l)
         for x in b:
             pass
@@ -235,13 +226,13 @@ class SetTest(IronPythonTestCase):
             pass
         class FrozenSetSubclass(frozenset):
             pass
-        
+
         for thetype in [set, frozenset, SetSubclass, FrozenSetSubclass]:
             s = thetype([None])
-            
+
             self.assertEqual(s, set([None]))
             self.assertEqual(s.copy(), set([None]))
-            
+
             self.assertEqual(s.isdisjoint(set()), True)
             self.assertEqual(s.isdisjoint(set([None])), False)
             self.assertEqual(s.isdisjoint(set([42])), True)
@@ -254,7 +245,7 @@ class SetTest(IronPythonTestCase):
             self.assertEqual(s.issuperset(set([42])), False)
             self.assertEqual(s.issuperset(set([None])), True)
             self.assertEqual(s.issuperset(set([None, 42])), False)
-            
+
             self.assertEqual(s.union(), set([None]))
             self.assertEqual(s.union(set([None])), set([None]))
             self.assertEqual(s.union(set()), set([None]))
@@ -266,7 +257,7 @@ class SetTest(IronPythonTestCase):
             self.assertEqual(s.difference(set()), set([None]))
             self.assertEqual(s.symmetric_difference(set([None])), set())
             self.assertEqual(s.symmetric_difference(set()), set([None]))
-            
+
             # Test mutating operations
             if 'add' in dir(s):
                 s.remove(None)
@@ -283,7 +274,7 @@ class SetTest(IronPythonTestCase):
                 s.add(None)
                 self.assertEqual(s.pop(), None)
                 self.assertEqual(s, set())
-                
+
                 s.update(set([None]))
                 self.assertEqual(s, set([None]))
                 s.intersection_update(set([42]))

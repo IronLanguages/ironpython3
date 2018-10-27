@@ -19,49 +19,49 @@ class IronMathTest(IronPythonTestCase):
         from System import IFormatProvider
         class myFormatProvider(IFormatProvider):
             def ToString():pass
-    
+
         self.p = myFormatProvider()
-        
-        clr.AddReference((1).GetType().Assembly)
+
+        clr.AddReference(long(1).GetType().Assembly)
         self.load_iron_python_test()
 
     def test_bigint(self):
         from System import Char, IConvertible
         from System.Numerics import BigInteger, Complex
-        self.assertEqual(BigInteger.Add(1,99999999999999999999999999999999999999999999999999999999999) ,BigInteger.Subtract(100000000000000000000000000000000000000000000000000000000001,1))
-        self.assertEqual(BigInteger.Multiply(400,500) , BigInteger.Divide(1000000,5))
-        self.assertEqual(BigInteger.Multiply(400,8) , BigInteger.LeftShift(400,3))
-        self.assertEqual(BigInteger.Divide(400,8) , BigInteger.RightShift(400,3))
-        self.assertEqual(BigInteger.RightShift(BigInteger.LeftShift(400,100),100) , 400)
-        self.assertEqual(BigInteger.RightShift(BigInteger.LeftShift(-12345678987654321,100),100) , -12345678987654321)
-        self.assertRaises(ValueError, BigInteger.RightShift, 400, -100)
-        self.assertRaises(ValueError, BigInteger.LeftShift, 400, -100)
-        self.assertRaises(ValueError, BigInteger.RightShift, -12345678987654321, -100)
-        self.assertRaises(ValueError, BigInteger.LeftShift, -12345678987654321, -100)
+        self.assertEqual(BigInteger.Add(long(1),99999999999999999999999999999999999999999999999999999999999) ,BigInteger.Subtract(100000000000000000000000000000000000000000000000000000000001,long(1)))
+        self.assertEqual(BigInteger.Multiply(long(400),long(500)) , BigInteger.Divide(long(1000000),long(5)))
+        self.assertEqual(BigInteger.Multiply(long(400),long(8)) , BigInteger.LeftShift(long(400),long(3)))
+        self.assertEqual(BigInteger.Divide(long(400),long(8)) , BigInteger.RightShift(long(400),long(3)))
+        self.assertEqual(BigInteger.RightShift(BigInteger.LeftShift(long(400),long(100)),long(100)) , long(400))
+        self.assertEqual(BigInteger.RightShift(BigInteger.LeftShift(-12345678987654321,long(100)),long(100)) , -12345678987654321)
+        self.assertRaises(ValueError, BigInteger.RightShift, long(400), -long(100))
+        self.assertRaises(ValueError, BigInteger.LeftShift, long(400), -long(100))
+        self.assertRaises(ValueError, BigInteger.RightShift, -12345678987654321, -long(100))
+        self.assertRaises(ValueError, BigInteger.LeftShift, -12345678987654321, -long(100))
         self.assertEqual(BigInteger(-123456781234567812345678123456781234567812345678123456781234567812345678).OnesComplement().OnesComplement() , -123456781234567812345678123456781234567812345678123456781234567812345678)
-        self.assertEqual(BigInteger(-1234567812345678123456781234567812345678123456781234567812345678123456781234567812345678).OnesComplement() , -(-1234567812345678123456781234567812345678123456781234567812345678123456781234567812345678 + 1 ))
-        self.assertTrue(BigInteger.Xor(-1234567812345678123456781234567812345678123456781234567812345678123456781234567812345678,BigInteger(-1234567812345678123456781234567812345678123456781234567812345678123456781234567812345678).OnesComplement()) , -1)
+        self.assertEqual(BigInteger(-1234567812345678123456781234567812345678123456781234567812345678123456781234567812345678).OnesComplement() , -(-1234567812345678123456781234567812345678123456781234567812345678123456781234567812345678 + long(1) ))
+        self.assertTrue(BigInteger.Xor(-1234567812345678123456781234567812345678123456781234567812345678123456781234567812345678,BigInteger(-1234567812345678123456781234567812345678123456781234567812345678123456781234567812345678).OnesComplement()) , -long(1))
         self.assertEqual(BigInteger.BitwiseAnd(0xff00ff00,BigInteger.BitwiseOr(0x00ff00ff,0xaabbaabb)) , BigInteger(0xaa00aa00))
         self.assertEqual(BigInteger.Mod(BigInteger(-9999999999999999999999999999999999999999),1000000000000000000) , -BigInteger.Mod(9999999999999999999999999999999999999999,BigInteger(-1000000000000000000)))
-        
+
         self.assertEqual(BigInteger.ToInt64(0x7fffffffffffffff) , 9223372036854775807)
         self.assertRaises(OverflowError, BigInteger.ToInt64, 0x8000000000000000)
-        
+
         self.assertEqual(BigInteger(-0).ToBoolean(self.p) , False )
         self.assertEqual(BigInteger(-1212321.3213).ToBoolean(self.p) , True )
         self.assertEqual(BigInteger(1212321384892342394723947).ToBoolean(self.p) , True )
-        
-        self.assertEqual(BigInteger(0).ToChar(self.p) , Char.MinValue)
-        self.assertEqual(BigInteger(65).ToChar(self.p) , IConvertible.ToChar('A', self.p))
+
+        self.assertEqual(BigInteger(long(0)).ToChar(self.p) , Char.MinValue)
+        self.assertEqual(BigInteger(long(65)).ToChar(self.p) , IConvertible.ToChar('A', self.p))
         self.assertEqual(BigInteger(0xffff).ToChar(self.p) , Char.MaxValue)
         self.assertRaises(OverflowError, BigInteger(-1).ToChar, self.p)
-        
+
         self.assertEqual(BigInteger(100).ToDouble(self.p) , 100.0)
         self.assertEqual(BigInteger(BigInteger(100).ToDouble(self.p)).ToSingle(self.p) , BigInteger(100.1213123).ToFloat())
-        
+
         self.assertTrue(BigInteger(100) != 100.32)
         self.assertEqual(BigInteger(100) , 100.0)
-        
+
         self.assertTrue( 100.32 != BigInteger(100))
         self.assertEqual(100.0 , BigInteger(100) )
 
@@ -78,18 +78,18 @@ class IronMathTest(IronPythonTestCase):
                             (63, "ToInt64", Int64,2),
                             (64, "ToUInt64", UInt64,0)
                         ]:
-        
+
             b = BigInteger(-x ** a )
             left = getattr(b, m)(self.p)
             right = t.MinValue
             self.assertEqual(left, right)
-            
+
             b = BigInteger(2 ** a -1)
             left = getattr(b, m)(self.p)
             right = t.MaxValue
             self.assertEqual(left, right)
-        
-            b = BigInteger(0)
+
+            b = BigInteger(long(0))
             left = getattr(b, m)(self.p)
             right = t.MaxValue - t.MaxValue
             self.assertEqual(left, 0)
@@ -107,7 +107,7 @@ class IronMathTest(IronPythonTestCase):
                             (63, "ToInt64",Int64,2),
                             (64, "ToUInt64",UInt64,0)
                         ]:
-        
+
             b = BigInteger(-x ** a )
             left = getattr(b, m)()
             right = t.MinValue
@@ -117,8 +117,8 @@ class IronMathTest(IronPythonTestCase):
             left = getattr(b, m)()
             right = t.MaxValue
             self.assertEqual(left, right)
-        
-            b = BigInteger(0)
+
+            b = BigInteger(long(0))
             left = getattr(b, m)()
             right = t.MaxValue - t.MaxValue
             self.assertEqual(left, right)
@@ -126,14 +126,13 @@ class IronMathTest(IronPythonTestCase):
             self.assertRaises(OverflowError,getattr(BigInteger(2 ** a ), m))
             self.assertRaises(OverflowError,getattr(BigInteger(-1 - x ** a ), m))
 
-
     def test_complex(self):
         from System.Numerics import BigInteger, Complex
         self.assertEqual(
             Complex.Add(
-                Complex(BigInteger(9999), -1234),
+                Complex(BigInteger(long(9999)), -1234),
                 Complex.Conjugate(Complex(9999, -1234)) ),
-            Complex.Multiply(BigInteger(9999), 2) )
+            Complex.Multiply(BigInteger(long(9999)), 2) )
         self.assertEqual(
             Complex.Add(
                 Complex(99999.99e-200, 12345.88e+100),
@@ -150,12 +149,12 @@ class IronMathTest(IronPythonTestCase):
         from System.Numerics import BigInteger
         def is_zero(bigint):
             return bigint.IsZero
-        
+
         self.assertEqual(BigInteger(-1234).Sign, -1)
         self.assertEqual(is_zero(BigInteger(-1234)), False)
         self.assertEqual(BigInteger(-1234).IsNegative(), True)
         self.assertEqual(BigInteger(-1234).IsPositive(), False)
-        
+
         self.assertEqual(BigInteger(0).Sign, 0)
         self.assertEqual(is_zero(BigInteger(0)), True)
         self.assertEqual(BigInteger(0).IsNegative(), False)
@@ -218,13 +217,14 @@ class IronMathTest(IronPythonTestCase):
                         -1,
                         Array[UInt32](dwords)),
                     BigInteger.Negate(bigint))
-        
+
         CheckDwordConversions(BigInteger(0), [0x00000000])
         CheckDwordConversions(BigInteger(1), [0x00000001])
         CheckDwordConversions(BigInteger((1<<31)), [0x80000000])
         CheckDwordConversions(BigInteger(((1<<31) + 9)), [0x80000009])
         CheckDwordConversions(BigInteger((1<<32)), [0x00000000, 0x00000001])
 
+    @unittest.expectedFailure # https://github.com/IronLanguages/ironpython3/issues/470
     def test_misc(self):
         from System import ArgumentException, ArgumentNullException
         from System.Numerics import BigInteger

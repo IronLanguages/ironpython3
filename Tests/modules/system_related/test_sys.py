@@ -28,7 +28,7 @@ class SysTest(IronPythonTestCase):
         """TODO: now that sys.settrace has been implemented this test case needs to be fully revisited"""
         # settrace
         self.assertTrue(hasattr(sys, 'settrace'))
-        
+
         global traces
         traces = []
         def f(frame, kind, info):
@@ -55,22 +55,22 @@ class SysTest(IronPythonTestCase):
         x()
         sys.settrace(None)
         self.assertEqual(traces, [('f', 'call', 'x'), ('g', 'line', 'x'), ('f', 'line', 'x'), ('g', 'return', 'x')])
-        
+
         # verify globals/locals are correct on the frame
         global frameobj
         def f(frame, event, payload):
             global frameobj
             frameobj = frame
-        
+
         def g(a):
             b = 42
-            
+
         sys.settrace(f)
         g(32)
         sys.settrace(None)
         self.assertEqual(frameobj.f_locals, {'a': 32, 'b':42})
         self.assertTrue('run_test' in frameobj.f_globals)
-        
+
         if is_cli:
             # -X:Tracing should enable tracing of top-level code
             import os
@@ -80,11 +80,11 @@ b = "bbb"
 c = "ccc"
 final = a + b + c
 print final"""
-            f = file('temp.py', 'w+')
+            f = open('temp.py', 'w+')
             try:
                 f.write(content)
                 f.close()
-                
+
                 stdin, stdout = os.popen2(sys.executable +  ' -X:Tracing -X:Frames temp.py')
                 stdin.write('n\nn\nn\nn\nn\nn\nn\nn\n')
                 stdin.flush()
@@ -105,10 +105,10 @@ print final"""
             return i * 2
         def g():
             pass
-            
+
         # outside of a traceback
         self.assertEqual(10, sys.call_tracing(f, (5, )))
-        
+
         # inside of a traceback
         log = []
         def thandler(frm, evt, pl):
@@ -117,11 +117,11 @@ print final"""
                 if log[-1] == 'g':
                     sys.call_tracing(f, (5, ))
             return thandler
-            
+
         sys.settrace(thandler)
         g()
         sys.settrace(None)
-        
+
         self.assertEqual(log, ['g', 'f'])
 
     @skipUnlessIronPython()
@@ -142,7 +142,7 @@ print final"""
         self.assertTrue(not hasattr(sys, "ps1"))
 
     def test_ps2(self):
-        self.assertTrue(not hasattr(sys, "ps2"))    
+        self.assertTrue(not hasattr(sys, "ps2"))
 
     def test_getsizeof(self):
         '''TODO: revisit'''
@@ -150,14 +150,14 @@ print final"""
             self.assertEqual(sys.getsizeof(1), sys.getsizeof(1.0))
         else:
             self.assertTrue(sys.getsizeof(1)<sys.getsizeof(1.0))
-        
+
     def test_gettrace(self):
         '''TODO: revisit'''
         self.assertEqual(sys.gettrace(), None)
-        
+
         def temp_func(*args, **kwargs):
             pass
-            
+
         sys.settrace(temp_func)
         self.assertEqual(sys.gettrace(), temp_func)
         sys.settrace(None)
@@ -171,7 +171,7 @@ print final"""
             global CP24381_MESSAGES
             CP24381_MESSAGES += args[1:]
             return f
-        
+
         cp24381_file_name = "cp24381.py"
         cp24381_contents  = """
 print 'a'
@@ -194,8 +194,8 @@ f()
             os.unlink(cp24381_file_name)
 
         self.assertEqual(CP24381_MESSAGES,
-                ['call', None, 'line', None, 'line', None, 'line', None, 'line', 
-                None, 'line', None, 'call', None, 'line', None, 'return', None, 
+                ['call', None, 'line', None, 'line', None, 'line', None, 'line',
+                None, 'line', None, 'call', None, 'line', None, 'return', None,
                 'return', None])
 
     def test_cp30130(self):
@@ -204,24 +204,24 @@ f()
                     global ex
                     ex = arg
             return f
-        
+
         sys.settrace(f)
-        
+
         def g():
             raise Exception()
-        
+
         try:
             g()
         except:
             pass
-        
+
         exc_type = ex[0]
         exc_value = ex[1]
         tb_value = ex[2]
-        
+
         import traceback
         self.assertTrue(''.join(traceback.format_exception(exc_type, exc_value, tb_value)).find('line') != -1)
-        
+
         sys.settrace(None)
 
     def test_getrefcount(self):
@@ -230,7 +230,7 @@ f()
 
         with warnings.catch_warnings(record = True) as w:
             count = sys.getrefcount(None)
-            
+
         self.assertNotEqual(0, count)
         self.assertTrue(w)
         self.assertTrue('dummy result' in str(w[0].message))

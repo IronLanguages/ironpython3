@@ -1,17 +1,6 @@
-##########################################################################
-#
-#  Copyright (c) Microsoft Corporation. All rights reserved.
-#
-# This source code is subject to terms and conditions of the Apache License, Version 2.0. A
-# copy of the license can be found in the License.html file at the root of this distribution. If
-# you cannot locate the  Apache License, Version 2.0, please send an email to
-# ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound
-# by the terms of the Apache License, Version 2.0.
-#
-# You must not remove this notice, or any other, from this software.
-#
-#
-##########################################################################
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the Apache 2.0 License.
+# See the LICENSE file in the project root for more information.
 
 #
 # Test Pep 342 enhancements to generator, including Throw(), Send(), Close() and yield expressions.
@@ -30,7 +19,7 @@ class MyError(Exception):
     pass
 
 
-class MyError2:
+class MyError2(Exception):
     pass
 
 # this is straight from the sample in Pep342
@@ -74,8 +63,8 @@ def gen_compare():
 class GeneratorThrowTest(unittest.TestCase):
 
     def EnsureClosed(self, g):
-        self.assertRaises(StopIteration, g.__next__)
-
+        with self.assertRaises(StopIteration):
+            next(g)
 
     def test_del(self):
         """Test that generator.__del__ is invoked and that it calls Close()"""
@@ -364,7 +353,7 @@ class GeneratorThrowTest(unittest.TestCase):
 
     def test_throw_value(self):
         """Test another throw overload passing (type,value)."""
-        class MyClass2:
+        class MyClass2(Exception):
             def __init__(self, val):
                 self.val = val
 
@@ -378,7 +367,7 @@ class GeneratorThrowTest(unittest.TestCase):
 
         g = f()
         self.assertEqual(next(g), 5)
-        self.assertEqual(g.throw(MyClass2(10)), 15)
+        self.assertEqual(g.throw(MyClass2, 10), 15)
 
 
     def test_catch_rethrow(self):
@@ -535,7 +524,7 @@ class GeneratorThrowTest(unittest.TestCase):
     def test_ctor_throws(self):
         """Creating the exception occurs inside the generator."""
         # Simple class to raise an error in __init__
-        class MyErrorClass:
+        class MyErrorClass(Exception):
             def __init__(self):
                 raise MyError
 
@@ -688,7 +677,7 @@ class GeneratorThrowTest(unittest.TestCase):
     def test_exp_print_redirect(self):
         @consumer
         def f(text):
-            print(text, end=' ', file=(yield))
+            print(text, end='', file=(yield))
             yield  # extra spot to stop on so send() won't immediately throw
 
         c = MyWriter()
@@ -828,7 +817,7 @@ class GeneratorThrowTest(unittest.TestCase):
             pipeline.close()
         #
         o = MyWriter()
-        DoIt(list(range(8)), o)
+        DoIt(range(8), o)
         self.assertEqual(
             o.data, 'Page=[0,1,2]\nPage=[3,4,5]\nPage=[6,7...incomplete\ndone\n')
 
@@ -844,14 +833,11 @@ class GeneratorThrowTest(unittest.TestCase):
         l = [0, 1, 2]
         try:
             raise MyError('a')
-        except (yield 'a') as xxx_todo_changeme:
+        except (yield 'a') as e:
             # doesn't work - cp35682
             # self.assertEqual(sys.exc_info(), (None,None,None)) # will print None from the
             # yields
-            l[(yield 'b')] = xxx_todo_changeme
-            # doesn't work - cp35682
-            # self.assertEqual(sys.exc_info(), (None,None,None)) # will print None from the
-            # yields
+            l[(yield 'b')] = e
             self.assertTrue(l[1] != 1)  # validate that the catch properly assigned to it.
             yield 'c'
         except (yield 'c'):  # especially interesting here
@@ -912,7 +898,7 @@ class GeneratorThrowTest(unittest.TestCase):
         try:
             next(x)
         except StopIteration as e:
-            self.assertEqual(e.message, 'foo')
+            self.assertEqual(e.args[0], 'foo')
 
 
 run_test(__name__)

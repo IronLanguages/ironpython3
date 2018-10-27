@@ -30,7 +30,7 @@ class ClrLoadTest(IronPythonTestCase):
         self.assertRaises(IOError, clr.AddReferenceToFileAndPath, os.path.join(self.test_dir, 'this_file_does_not_exist.dll'))
         self.assertRaises(IOError, clr.AddReferenceByName, 'bad assembly name', 'WellFormed.But.Nonexistent, Version=9.9.9.9, Culture=neutral, PublicKeyToken=deadbeefdeadbeef, processorArchitecture=6502')
         self.assertRaises(IOError, clr.AddReference, 'this_assembly_does_not_exist_neither_by_file_name_nor_by_strong_name')
-        
+
         self.assertRaises(TypeError, clr.AddReference, 35)
 
         for method in [
@@ -116,7 +116,7 @@ class ClrLoadTest(IronPythonTestCase):
         gaclist = get_gac()
         if (len(gaclist) > 0):
             clr.AddReferenceByName(gaclist[-1])
-        
+
 
     def test_nonamespaceloadtest(self):
         import NoNamespaceLoadTest
@@ -135,7 +135,7 @@ class ClrLoadTest(IronPythonTestCase):
         }
     }
     """
-        
+
         code2 = """
     using System;
 
@@ -156,7 +156,7 @@ class ClrLoadTest(IronPythonTestCase):
 
         self.assertEqual(self.run_csc("/nologo /target:library /out:" + test2_dll + ' ' + test2_cs), 0)
         self.assertEqual(self.run_csc("/nologo /target:library /out:" + test1_dll + ' ' + test1_cs), 0)
-        
+
         clr.AddReferenceToFileAndPath(test1_dll)
         import CollisionTest
         self.assertEqual(CollisionTest.Result(), "Test1")
@@ -175,7 +175,7 @@ class ClrLoadTest(IronPythonTestCase):
             test2 t2 = new test2();
             return t2.DoSomething();
         }
-        
+
         public static string Test2(){
             return "test1.test2";
         }
@@ -199,20 +199,20 @@ class ClrLoadTest(IronPythonTestCase):
 
         test1_cs, test1_dll = os.path.join(tmp, 'test1.cs'), os.path.join(tmp, 'test1.dll')
         test2_cs, test2_dll = os.path.join(tmp, 'test2.cs'), os.path.join(tmp, 'test2.dll')
-            
+
         self.write_to_file(test1_cs, code1)
         self.write_to_file(test2_cs, code2)
-        
+
         self.assertEqual(self.run_csc("/nologo /target:library /out:"+ test2_dll + ' ' + test2_cs), 0)
         self.assertEqual(self.run_csc("/nologo /target:library /r:" + test2_dll + " /out:" + test1_dll + ' ' + test1_cs), 0)
-        
+
         clr.AddReferenceToFile('test1')
-        
+
         self.assertEqual(len([x for x in clr.References if x.FullName.startswith("test1")]), 1)
 
         # test 2 shouldn't be loaded yet...
         self.assertEqual(len([x for x in clr.References if x.FullName.startswith("test2")]), 0)
-        
+
         import test1
         # should create test1 (even though we're a top-level namespace)
         a = test1()
@@ -220,7 +220,7 @@ class ClrLoadTest(IronPythonTestCase):
         # should load test2 from path
         self.assertEqual(a.Test1(), 'hello world')
         self.assertEqual(len([x for x in clr.References if x.FullName.startswith("test2")]), 0)
-        
+
         # this is to make peverify happy, apparently snippetx.dll referenced to test1
         copyfile(test1_dll, test1_dll_along_with_ipy)
 
@@ -241,7 +241,7 @@ class ClrLoadTest(IronPythonTestCase):
             os.mkdir(tmp1)
         if not os.path.exists(tmp2):
             os.mkdir(tmp2)
-        
+
         code1a = """
 using System;
 
@@ -252,7 +252,7 @@ public class ResolveTestA {
     }
 }
     """
-        
+
         code1b = """
 using System;
 
@@ -262,7 +262,7 @@ public class ResolveTestB {
     }
 }
     """
-        
+
         code2a = """
 using System;
 
@@ -273,7 +273,7 @@ public class ResolveTestA {
     }
 }
     """
-        
+
         code2b = """
 using System;
 
@@ -283,18 +283,18 @@ public class ResolveTestB {
     }
 }
     """
-        
+
         script_code = """import clr
 clr.AddReferenceToFile("ResolveTestA")
 from ResolveTestA import Test
 result = Test()
     """
-        
+
         test1a_cs, test1a_dll, test1b_cs, test1b_dll = map(
             lambda x: os.path.join(tmp1, x),
             ['ResolveTestA.cs', 'ResolveTestA.dll', 'ResolveTestB.cs', 'ResolveTestB.dll']
         )
-        
+
         test2a_cs, test2a_dll, test2b_cs, test2b_dll = map(
             lambda x: os.path.join(tmp2, x),
             ['ResolveTestA.cs', 'ResolveTestA.dll', 'ResolveTestB.cs', 'ResolveTestB.dll']
@@ -304,12 +304,12 @@ result = Test()
         self.write_to_file(test1b_cs, code1b)
         self.write_to_file(test2a_cs, code2a)
         self.write_to_file(test2b_cs, code2b)
-        
+
         self.assertEqual(self.run_csc("/nologo /target:library /out:" + test1b_dll + ' ' + test1b_cs), 0)
         self.assertEqual(self.run_csc("/nologo /target:library /r:" + test1b_dll + " /out:" + test1a_dll + ' ' + test1a_cs), 0)
         self.assertEqual(self.run_csc("/nologo /target:library /out:" + test2b_dll + ' ' + test2b_cs), 0)
         self.assertEqual(self.run_csc("/nologo /target:library /r:" + test2b_dll + " /out:" + test2a_dll + ' ' + test2a_cs), 0)
-        
+
         engine1 = Python.CreateEngine()
         paths1 = engine1.GetSearchPaths()
         paths1.Add(tmp1)
@@ -319,7 +319,7 @@ result = Test()
         script1.Execute(scope1)
         result1 = scope1.GetVariable("result")
         self.assertEqual(result1, "resolve test 1")
-        
+
         engine2 = Python.CreateEngine()
         paths2 = engine2.GetSearchPaths()
         paths2.Add(tmp2)
@@ -366,10 +366,10 @@ result = Test()
         x = self.compileAndLoad('c3', self.get_local_filename('c3.cs') )
 
         self.assertEqual(repr(x), "<Assembly c3, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null>")
-        self.assertEqual(repr(x.Foo), "<type 'Foo'>")
+        self.assertEqual(repr(x.Foo), "<class 'Foo'>")
         self.assertEqual(repr(x.BarNamespace), "<module 'BarNamespace' (CLS module from c3, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null)>")
         self.assertEqual(repr(x.BarNamespace.NestedNamespace), "<module 'NestedNamespace' (CLS module from c3, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null)>")
-        self.assertEqual(repr(x.BarNamespace.Bar.NestedBar), "<type 'NestedBar'>")
+        self.assertEqual(repr(x.BarNamespace.Bar.NestedBar), "<class 'NestedBar'>")
         self.assertEqual(x.__dict__["BarNamespace"], x.BarNamespace)
         self.assertEqual(x.BarNamespace.__dict__["Bar"], x.BarNamespace.Bar)
         self.assertEqual(x.BarNamespace.__dict__["NestedNamespace"], x.BarNamespace.NestedNamespace)
@@ -381,10 +381,10 @@ result = Test()
 
         def f(): x.BarNamespace.Bar = x.Foo
         self.assertRaises(AttributeError, f)
-        
+
         def f(): del x.BarNamespace.NotExist
         self.assertRaises(AttributeError, f)
-        
+
         def f(): del x.BarNamespace
         self.assertRaises(AttributeError, f)
 
@@ -395,19 +395,19 @@ result = Test()
         tmp = self.temporary_dir
         if tmp not in sys.path:
             sys.path.append(tmp)
-            
+
         code1 = "namespace TestNamespace { public class Test1 {} }"
         code2 = "namespace TestNamespace { public class Test2 {} }"
 
         test1_cs, test1_dll = os.path.join(tmp, 'testns1.cs'), os.path.join(tmp, 'testns1.dll')
         test2_cs, test2_dll = os.path.join(tmp, 'testns2.cs'), os.path.join(tmp, 'testns2.dll')
-            
+
         self.write_to_file(test1_cs, code1)
         self.write_to_file(test2_cs, code2)
-        
+
         self.assertEqual(self.run_csc("/nologo /target:library /out:"+ test1_dll + ' ' + test1_cs), 0)
         self.assertEqual(self.run_csc("/nologo /target:library /out:"+ test2_dll + ' ' + test2_cs), 0)
-        
+
         clr.AddReference('testns1')
         import TestNamespace
         self.assertEqual(dir(TestNamespace), ['Test1'])
@@ -448,5 +448,5 @@ result = Test()
         # what remains is an int - number of assemblies loaded.
         # The integer must have increased value by 1
         self.assertEqual(int(before[start:-end]) + 1, int(after[start:-end]))
-    
+
 run_test(__name__)

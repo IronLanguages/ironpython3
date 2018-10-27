@@ -37,18 +37,18 @@ class _StructTest(IronPythonTestCase):
             '6s': 'string',
             '15p': 'another string'
             }
-        
-        for (k, v) in mapping.iteritems():
+
+        for (k, v) in mapping.items():
             s = pack(k, v)
             v2 = unpack(k, s)
-            
+
             if isinstance(v, float):
                 self.assertAlmostEqual(v, v2[0], places=6)
             else:
                 self.assertEqual(v, v2[0])
 
         self.assertEqual(pack(' c\t', 'a'), 'a')
-    
+
     def test_padding_len(self):
         self.assertEqual(unpack('4xi','\x00\x01\x02\x03\x01\x00\x00\x00'), (1,))
 
@@ -56,15 +56,15 @@ class _StructTest(IronPythonTestCase):
         for format in [ "i", "I", "l", "L"]:
             mem = "\x01\x00\x00\x00" * 8
             self.assertEqual(len(mem), 32)
-        
+
             fmt = "<8" + format
             self.assertEqual(calcsize(fmt), 32)
             self.assertEqual(unpack(fmt, mem), (1,)*8)
-        
+
             fmt = "<2" + format + "4x5" + format
             self.assertEqual(calcsize(fmt), 32)
             self.assertEqual(unpack(fmt, mem), (1,)*7)
-            
+
             fmt = "<" + format + format + "4x5" + format
             self.assertEqual(calcsize(fmt), 32)
             self.assertEqual(unpack(fmt, mem), (1,)*7)
@@ -72,11 +72,11 @@ class _StructTest(IronPythonTestCase):
             fmt = "<32x"
             self.assertEqual(calcsize(fmt), 32)
             self.assertEqual(unpack(fmt, mem), ())
-        
+
             fmt = "<28x" + format
             self.assertEqual(calcsize(fmt), 32)
             self.assertEqual(unpack(fmt, mem), (1,))
-    
+
     def test_cp9347(self):
         temp_list = [("2xB",    '\x00\x00\xff',             255),
                     ("4s4x",   'AAAA\x00\x00\x00\x00',     "AAAA"),
@@ -90,12 +90,12 @@ class _StructTest(IronPythonTestCase):
                     ("32xLL",  '\x00' *32 + '~\x00\x00\x00~\x00\x00\x00', 126, 126),
                     ("LxL8xLL", '~\x00\x00\x00\x00\x00\x00\x00~\x00\x00\x00' + '\x00'*8 + '~\x00\x00\x00'*2, 126, 126, 126, 126),
         ]
-        
+
         for stuff in temp_list:
             format = stuff[0]
             expected_val = stuff[1]
             params = stuff[2:]
-            
+
             actual = pack(format, *params)
             self.assertEqual(expected_val, actual)
             self.assertEqual(unpack(format, actual),
@@ -104,12 +104,12 @@ class _StructTest(IronPythonTestCase):
     def test_negative(self):
         self.assertRaises(_struct.error, pack, 'x', 1)
         self.assertRaises(_struct.error, unpack, 'hh', pack('h', 1))
-        
+
         self.assertRaises(_struct.error, pack, 'a', 1)
-        
+
         # BUG: 1033
         # such chars should be in the leading position only
-        
+
         for x in '=@<>!':
             self.assertRaises(_struct.error, pack, 'h'+x+'h', 1, 2)
 
@@ -120,7 +120,7 @@ class _StructTest(IronPythonTestCase):
         TODO: Side by side test?
         '''
         struct_format = "xcbBhHiIlLqQfdspP"
-        
+
         expected = {'lB': 5, 'PQ': 16, 'BB': 2, 'BL': 8, 'lL': 8, 'BH': 4, 'ci': 8,
                     'lH': 6, 'lI': 8, 'ch': 4, 'BP': 8, 'BQ': 16, 'lP': 8,
                     'lQ': 16, 'PH': 6, 'Bd': 16, 'Bf': 8, 'lb': 5, 'lc': 5,
@@ -165,11 +165,11 @@ class _StructTest(IronPythonTestCase):
                     'dL': 12, 'Iq': 16, 'Ip': 5, 'Is': 5, 'sp': 2, 'QL': 12,
                     'Ii': 8, 'Ih': 6, 'fB': 5, 'QB': 9, 'Il': 8, 'sl': 8,
                     'QI': 12, 'QH': 10, 'Ic': 5,'Ib': 5, 'fL': 8, 'Id': 16, 'If': 8}
-        
+
         for x in struct_format:
             for y in struct_format:
                 temp_str = str(x) + str(y)
-                if is_64 and "P" in temp_str: 
+                if is_64 and "P" in temp_str:
                     continue #CodePlex 17683 - we need to test against 64-bit CPython
                 self.assertTrue(expected[temp_str] == calcsize(temp_str),
                         "_struct.Struct(" + temp_str + ").size is broken")
@@ -177,25 +177,25 @@ class _StructTest(IronPythonTestCase):
 
     def test_new_init(self):
         """tests for calling __new__/__init__ directly on the Struct object"""
-        for x in (_struct.Struct.__new__(_struct.Struct), _struct.Struct.__new__(_struct.Struct, a = 2)):        
+        for x in (_struct.Struct.__new__(_struct.Struct), _struct.Struct.__new__(_struct.Struct, a = 2)):
             # state of uninitialized object...
             self.assertEqual(x.size, -1)
             self.assertEqual(x.format, None)
             self.assertRaisesMessage(_struct.error, "pack requires exactly -1 arguments", x.pack)
-            self.assertRaisesMessage(_struct.error, "unpack requires a string argument of length -1", x.unpack, '')    
-        
+            self.assertRaisesMessage(_struct.error, "unpack requires a string argument of length -1", x.unpack, '')
+
         # invalid format passed to __init__ - format string is updated but old format info is stored...
         a = _struct.Struct('c')
         try:
             a.__init__('bad')
             self.assertUnreachable()
-        except _struct.error as e: 
+        except _struct.error as e:
             pass
-        
+
         self.assertEqual(a.format, 'bad')
         self.assertEqual(a.pack('1'), '1')
         self.assertEqual(a.unpack('1'), ('1', ))
-        
+
         # and then back to a valid format
         a.__init__('i')
         self.assertEqual(a.format, 'i')
@@ -210,12 +210,12 @@ class _StructTest(IronPythonTestCase):
 
     def test_cp16476(self):
         for expected, encoded_val in [(156909,       '\xedd\x02\x00'),
-                                    (sys.maxint,   '\xff\xff\xff\x7f'),
-                                    (sys.maxint-1, '\xfe\xff\xff\x7f'),
-                                    (sys.maxint-2, '\xfd\xff\xff\x7f'),
-                                    (sys.maxint+1, '\x00\x00\x00\x80'),
-                                    (sys.maxint+2, '\x01\x00\x00\x80'),
-                                    (sys.maxint+3, '\x02\x00\x00\x80'),
+                                    (sys.maxsize,   '\xff\xff\xff\x7f'),
+                                    (sys.maxsize-1, '\xfe\xff\xff\x7f'),
+                                    (sys.maxsize-2, '\xfd\xff\xff\x7f'),
+                                    (sys.maxsize+1, '\x00\x00\x00\x80'),
+                                    (sys.maxsize+2, '\x01\x00\x00\x80'),
+                                    (sys.maxsize+3, '\x02\x00\x00\x80'),
                                     (2**16,        '\x00\x00\x01\x00'),
                                     (2**16+1,      '\x01\x00\x01\x00'),
                                     (2**16-1,      '\xff\xff\x00\x00'),
@@ -233,7 +233,7 @@ class _StructTest(IronPythonTestCase):
         '''
         import array
         _struct.unpack_from("", array.array("c"))
-        
+
         self.assertEqual(_struct.unpack_from("", array.array("c")),
                 ())
 

@@ -116,29 +116,6 @@ namespace IronPython.Runtime.Operations {
             return new Binding.MetaUserObject(parameter, BindingRestrictions.Empty, baseMetaObject, self);
         }
 
-        public static bool TryGetMixedNewStyleOldStyleSlot(CodeContext context, object instance, string name, out object value) {
-            IPythonObject sdo = instance as IPythonObject;
-            if (sdo != null) {
-                PythonDictionary dict = sdo.Dict;
-                if (dict != null && dict.TryGetValue(name, out value)) {
-                    return true;
-                }
-            }
-
-            PythonType dt = DynamicHelpers.GetPythonType(instance);
-
-            foreach (PythonType type in dt.ResolutionOrder) {
-                PythonTypeSlot dts;
-                if (type.TryLookupSlot(context, name, out dts)) {
-                    // we're a dynamic type, check the dynamic type way
-                    return dts.TryGetValue(context, instance, dt, out value);
-                }
-            }
-
-            value = null;
-            return false;
-        }
-
         public static bool TryGetDictionaryValue(PythonDictionary dict, string name, int keyVersion, int keyIndex, out object res) {
             CustomInstanceDictionaryStorage dictStorage;
             if (dict != null) {

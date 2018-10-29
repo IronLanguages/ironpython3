@@ -104,23 +104,18 @@ namespace IronPython.Runtime.Binding {
                 foundSlot = FindSlot(context, name, sdo, out systemTypeResolution, out extensionMethodResolution);
                 _extensionMethodRestriction = extensionMethodResolution;
 
-                if (foundSlot is ReflectedSlotProperty) {
-                    if (sdo.PythonType.HasDictionary && (foundSlot == null || !foundSlot.IsSetDescriptor(context, sdo.PythonType))) {
-                        MakeDictionaryAccess();
-                    }
+                if (sdo.PythonType.HasDictionary && (foundSlot == null || !foundSlot.IsSetDescriptor(context, sdo.PythonType))) {
+                    MakeDictionaryAccess();
+                }
 
-                    if (foundSlot != null) {
-                        MakeSlotAccess(foundSlot, systemTypeResolution);
-                    }
-                } else {
-                    MakeOldStyleAccess();
+                if (foundSlot != null) {
+                    MakeSlotAccess(foundSlot, systemTypeResolution);
                 }
 
                 if (!IsFinal) {
                     // fall back to __getattr__ if it's defined.
                     // TODO: For InvokeMember we should probably do a fallback w/ an error suggestion
-                    PythonTypeSlot getattr;
-                    if (Value.PythonType.TryResolveSlot(context, "__getattr__", out getattr)) {
+                    if (Value.PythonType.TryResolveSlot(context, "__getattr__", out PythonTypeSlot getattr)) {
                         MakeGetAttrAccess(getattr);
                     }
 
@@ -138,8 +133,6 @@ namespace IronPython.Runtime.Binding {
             protected abstract TResult BindGetAttribute(PythonTypeSlot foundSlot);
             protected abstract TResult FinishRule();
             protected abstract void MakeDictionaryAccess();
-            protected abstract void MakeOldStyleAccess();
-
         
             public IPythonObject Value {
                 get {
@@ -465,7 +458,7 @@ namespace IronPython.Runtime.Binding {
                     // optimized instance value access
                     _bindingInfo.Body.AddCondition(
                         Ast.Call(
-                            typeof(UserTypeOps).GetMethod("TryGetDictionaryValue"),
+                            typeof(UserTypeOps).GetMethod(nameof(UserTypeOps.TryGetDictionaryValue)),
                             dict,
                             AstUtils.Constant(GetGetMemberName(_bindingInfo.Action)),
                             Ast.Constant(Value.PythonType.GetOptimizedInstanceVersion()),
@@ -493,25 +486,6 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            /// <summary>
-            /// Checks a range of the MRO to perform old-style class lookups if any old-style classes
-            /// are present.  We will call this twice to produce a search before a slot and after
-            /// a slot.
-            /// </summary>
-            protected override void MakeOldStyleAccess() {
-                _resolution += "MixedOldStyle ";
-                _bindingInfo.Body.AddCondition(
-                    Ast.Call(
-                        typeof(UserTypeOps).GetMethod("TryGetMixedNewStyleOldStyleSlot"),
-                        Ast.Constant(PythonContext.GetPythonContext(_bindingInfo.Action).SharedContext),
-                        AstUtils.Convert(_bindingInfo.Self, typeof(object)),
-                        AstUtils.Constant(GetGetMemberName(_bindingInfo.Action)),
-                        _bindingInfo.Result
-                    ),
-                    Invoke(_bindingInfo.Result)
-                );
-            }
-            
             public Expression Expression {
                 get {
                     return _target.Expression;
@@ -524,7 +498,7 @@ namespace IronPython.Runtime.Binding {
             private readonly PythonGetMemberBinder/*!*/ _binder;
             private readonly CallSite<Func<CallSite, object, CodeContext, object>> _site;
             private readonly CodeContext _context;
-            private bool _dictAccess, _noOptimizedForm;
+            private bool _dictAccess;
             private PythonTypeSlot _slot;
             private PythonTypeSlot _getattrSlot;
 
@@ -605,10 +579,6 @@ namespace IronPython.Runtime.Binding {
             }
 
             protected override FastGetBase FinishRule() {
-                if (_noOptimizedForm) {
-                    return null;
-                }
-
                 GetMemberDelegates func;
                 ReflectedSlotProperty rsp = _slot as ReflectedSlotProperty;
                 if (rsp != null) {
@@ -668,10 +638,6 @@ namespace IronPython.Runtime.Binding {
 
             protected override void MakeGetAttrAccess(PythonTypeSlot getattr) {
                 _getattrSlot = getattr;
-            }
-
-            protected override void MakeOldStyleAccess() {
-                _noOptimizedForm = true;
             }
         }
 
@@ -1034,7 +1000,7 @@ namespace IronPython.Runtime.Binding {
                         // return UserTypeOps.FastSetDictionaryValue(this._class, ref this._dict, name, value, keysVersion, keysIndex);
                         _info.Body.FinishCondition(
                             Ast.Call(
-                                typeof(UserTypeOps).GetMethod("FastSetDictionaryValueOptimized"),
+                                typeof(UserTypeOps).GetMethod(nameof(UserTypeOps.FastSetDictionaryValueOptimized)),
                                 Ast.Field(
                                     Ast.Convert(_info.Args[0].Expression, _info.Args[0].LimitType),
                                     classField
@@ -1053,7 +1019,7 @@ namespace IronPython.Runtime.Binding {
                         // return UserTypeOps.FastSetDictionaryValue(ref this._dict, name, value);
                         _info.Body.FinishCondition(
                             Ast.Call(
-                                typeof(UserTypeOps).GetMethod("FastSetDictionaryValue"),
+                                typeof(UserTypeOps).GetMethod(nameof(UserTypeOps.FastSetDictionaryValue)),
                                 Ast.Field(
                                     Ast.Convert(_info.Args[0].Expression, _info.Args[0].LimitType),
                                     fi
@@ -1069,7 +1035,7 @@ namespace IronPython.Runtime.Binding {
                     // return UserTypeOps.SetDictionaryValue(rule.Parameters[0], name, value);
                     _info.Body.FinishCondition(
                         Ast.Call(
-                            typeof(UserTypeOps).GetMethod("SetDictionaryValue"),
+                            typeof(UserTypeOps).GetMethod(nameof(UserTypeOps.SetDictionaryValue)),
                             Ast.Convert(_info.Args[0].Expression, typeof(IPythonObject)),
                             AstUtils.Constant(_info.Action.Name),
                             AstUtils.Convert(_info.Args[1].Expression, typeof(object))
@@ -1373,7 +1339,7 @@ namespace IronPython.Runtime.Binding {
         private static void MakeDictionaryDeleteTarget(DeleteBindingInfo/*!*/ info) {
             info.Body.FinishCondition(
                 Ast.Call(
-                    typeof(UserTypeOps).GetMethod("RemoveDictionaryValue"),
+                    typeof(UserTypeOps).GetMethod(nameof(UserTypeOps.RemoveDictionaryValue)),
                     Ast.Convert(info.Args[0].Expression, typeof(IPythonObject)),
                     AstUtils.Constant(info.Action.Name)
                 )

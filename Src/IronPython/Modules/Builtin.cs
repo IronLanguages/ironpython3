@@ -185,6 +185,8 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             if (value < 0 || value > 0x10ffff) {
                 return LightExceptions.Throw(PythonOps.ValueError("chr() arg not in range(0x110000)"));
             }
+
+            if (value > char.MaxValue) return char.ConvertFromUtf32(value); // not technically correct, but better than truncating
             return ScriptingRuntimeHelpers.CharToString((char)value);
         }
 
@@ -670,12 +672,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         //??? type this to string
         public static object hex(object o) {
             object res = PythonOps.Index(o);
-            if (res is BigInteger) {
-                BigInteger b = (BigInteger)res;
+            if (res is BigInteger b) {
                 if (b < 0) {
-                    return "-0x" + (-b).ToString(16);
+                    return "-0x" + (-b).ToString("x");
                 } else {
-                    return "0x" + b.ToString(16);
+                    return "0x" + b.ToString("x");
                 }
             }
 
@@ -1491,7 +1492,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                         try {
                             state.IntVal = checked(state.IntVal + ((int)current));
                         } catch (OverflowException) {
-                            state.BigIntVal = state.IntVal + (int)current;
+                            state.BigIntVal = (BigInteger)state.IntVal + (int)current;
                             state.CurType = SumVariantType.BigInt;
                         }
                     } else if (current.GetType() == typeof(double)) {

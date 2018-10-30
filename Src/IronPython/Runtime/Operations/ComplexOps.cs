@@ -10,6 +10,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Types;
+using IronPython.Modules;
 
 namespace IronPython.Runtime.Operations {
     public class ExtensibleComplex : Extensible<Complex> {
@@ -180,7 +181,12 @@ namespace IronPython.Runtime.Operations {
             if (x.Imaginary() == 0) {
                 return DoubleOps.__hash__(x.Real);
             }
-            return x.GetHashCode();
+
+            int hash = (DoubleOps.__hash__(x.Real) + SysModule.hash_info.imag * DoubleOps.__hash__(x.Imaginary)) % SysModule.hash_info.modulus;
+            if (hash == -1) {
+                hash = -2;
+            }
+            return hash;
         }
 
         public static bool __bool__(Complex x) {

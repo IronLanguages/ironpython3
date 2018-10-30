@@ -58,6 +58,17 @@ class NumberHashTest(unittest.TestCase):
         h2 = hash(l2)
         self.assertTrue(h1 != h2)
 
+    def test_complex_hash_quality(self):
+        """Ensure that the complex hash function uses the complex term."""
+        c1 = complex(2323853, 2.1e67)
+        h1 = hash(c1)
+        self.assertTrue(h1 != hash(c1.real))
+        c2 = complex(2323853, 2.3e65)
+        h2 = hash(c2)
+        self.assertTrue(h1 != h2)
+        c3 = complex(1323852, 2.3e65)
+        self.assertTrue(h2 != hash(c3))
+
     def test_userhash_result(self):
         class x(object):
             def __init__(self, hash):
@@ -105,5 +116,7 @@ class NumberHashTest(unittest.TestCase):
         self.assertEqual(hash(9223372036854775807), 1) # long.MaxValue
         self.assertEqual(hash(-9223372036854775808), -2) # long.MinValue
         self.assertEqual(hash(-9223372036854775807), -2) # long.MinValue+1
+        # this checks that we handle the case where the hash results in -1
+        self.assertEqual(hash(complex(-1000004, 1)), -2) # sys.hash_info.imag-1 + 1j
 
 run_test(__name__)

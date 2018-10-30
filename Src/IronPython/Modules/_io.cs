@@ -2277,6 +2277,8 @@ namespace IronPython.Modules {
                 return res;
             }
 
+            public BigInteger seek(CodeContext/*!*/ context, int offset, [DefaultParameterValue(0)]object whence) => this.seek(context, (BigInteger)offset, whence);
+
             public BigInteger seek(double offset, [DefaultParameterValue(0)]object whence) {
                 _checkClosed();
 

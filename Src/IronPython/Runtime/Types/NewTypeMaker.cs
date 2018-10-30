@@ -599,7 +599,7 @@ namespace IronPython.Runtime.Types {
             MethodInfo decl;
             MethodBuilder impl;
             ILGen il = DefineMethodOverride(MethodAttributes.Private, typeof(IDynamicMetaObjectProvider), "GetMetaObject", out decl, out impl);
-            MethodInfo mi = typeof(UserTypeOps).GetMethod("GetMetaObjectHelper");
+            MethodInfo mi = typeof(UserTypeOps).GetMethod(nameof(UserTypeOps.GetMetaObjectHelper));
 
             LocalBuilder retVal = il.DeclareLocal(typeof(DynamicMetaObject));
             Label retLabel = il.DefineLabel();
@@ -711,7 +711,7 @@ namespace IronPython.Runtime.Types {
                 il.Emit(OpCodes.Ret);
                 _tg.DefineMethodOverride(impl, decl);
 
-                il = DefineMethodOverride(attrs, typeof(IPythonObject), "ReplaceDict", out decl, out impl);
+                il = DefineMethodOverride(attrs, typeof(IPythonObject), nameof(IPythonObject.ReplaceDict), out decl, out impl);
                 il.EmitLoadArg(0);
                 il.EmitLoadArg(1);
                 EmitSetDict(il);
@@ -719,11 +719,11 @@ namespace IronPython.Runtime.Types {
                 il.Emit(OpCodes.Ret);
                 _tg.DefineMethodOverride(impl, decl);
 
-                il = DefineMethodOverride(attrs, typeof(IPythonObject), "SetDict", out decl, out impl);
+                il = DefineMethodOverride(attrs, typeof(IPythonObject), nameof(IPythonObject.SetDict), out decl, out impl);
                 il.EmitLoadArg(0);
                 il.EmitFieldAddress(_dictField);
                 il.EmitLoadArg(1);
-                il.EmitCall(typeof(UserTypeOps), "SetDictHelper");
+                il.EmitCall(typeof(UserTypeOps), nameof(UserTypeOps.SetDictHelper));
                 il.Emit(OpCodes.Ret);
                 _tg.DefineMethodOverride(impl, decl);
 
@@ -733,7 +733,7 @@ namespace IronPython.Runtime.Types {
                 il.Emit(OpCodes.Ret);
                 _tg.DefineMethodOverride(impl, decl);
 
-                il = DefineMethodOverride(attrs, typeof(IPythonObject), "SetPythonType", out decl, out impl);
+                il = DefineMethodOverride(attrs, typeof(IPythonObject), nameof(IPythonObject.SetPythonType), out decl, out impl);
                 il.EmitLoadArg(0);
                 il.EmitLoadArg(1);
                 il.EmitFieldSet(_typeField);
@@ -744,17 +744,17 @@ namespace IronPython.Runtime.Types {
             // Types w/ DynamicBaseType attribute still need new slots implementation
 
             _slotsField = _tg.DefineField(SlotsAndWeakRefFieldName, typeof(object[]), FieldAttributes.Public);
-            il = DefineMethodOverride(MethodAttributes.Private, typeof(IPythonObject), "GetSlots", out decl, out impl);
+            il = DefineMethodOverride(MethodAttributes.Private, typeof(IPythonObject), nameof(IPythonObject.GetSlots), out decl, out impl);
             il.EmitLoadArg(0);
             il.EmitFieldGet(_slotsField);
             il.Emit(OpCodes.Ret);
             _tg.DefineMethodOverride(impl, decl);
 
-            il = DefineMethodOverride(MethodAttributes.Private, typeof(IPythonObject), "GetSlotsCreate", out decl, out impl);
+            il = DefineMethodOverride(MethodAttributes.Private, typeof(IPythonObject), nameof(IPythonObject.GetSlotsCreate), out decl, out impl);
             il.EmitLoadArg(0);
             il.EmitLoadArg(0);
             il.EmitFieldAddress(_slotsField);
-            il.EmitCall(typeof(UserTypeOps).GetMethod("GetSlotsCreate"));
+            il.EmitCall(typeof(UserTypeOps).GetMethod(nameof(UserTypeOps.GetSlotsCreate)));
             il.Emit(OpCodes.Ret);
             _tg.DefineMethodOverride(impl, decl);
 
@@ -1133,7 +1133,7 @@ namespace IronPython.Runtime.Types {
             il.EmitLoadArg(0);
             il.EmitString(name);
             il.Emit(OpCodes.Ldloca, callTarget);
-            il.EmitCall(typeof(UserTypeOps), "TryGetNonInheritedValueHelper");
+            il.EmitCall(typeof(UserTypeOps), nameof(UserTypeOps.TryGetNonInheritedValueHelper));
             il.Emit(OpCodes.Brtrue, instanceCall);
 
             // then look up under the method name (get_Foo/set_Foo)
@@ -1164,7 +1164,7 @@ namespace IronPython.Runtime.Types {
             il.Emit(OpCodes.Ldloc, callTarget);
             il.EmitLoadArg(0);
             il.EmitString(name);
-            il.EmitCall(typeof(UserTypeOps), "GetPropertyHelper");
+            il.EmitCall(typeof(UserTypeOps), nameof(UserTypeOps.GetPropertyHelper));
 
             if (!il.TryEmitImplicitCast(typeof(object), mi.ReturnType)) {
                 EmitConvertFromObject(il, mi.ReturnType);
@@ -1220,7 +1220,7 @@ namespace IronPython.Runtime.Types {
             il.EmitLoadArg(1);
             il.EmitBoxing(mi.GetParameters()[0].ParameterType);    // newValue
             il.EmitString(name);    // name
-            il.EmitCall(typeof(UserTypeOps), "SetPropertyHelper");
+            il.EmitCall(typeof(UserTypeOps), nameof(UserTypeOps.SetPropertyHelper));
             il.Emit(OpCodes.Ret);
             _tg.DefineMethodOverride(impl, mi);
             return impl;
@@ -1238,7 +1238,7 @@ namespace IronPython.Runtime.Types {
             il.EmitLoadArg(1);
             il.EmitBoxing(mi.GetParameters()[0].ParameterType);
             il.EmitString(name);
-            il.EmitCall(typeof(UserTypeOps), "AddRemoveEventHelper");
+            il.EmitCall(typeof(UserTypeOps), nameof(UserTypeOps.AddRemoveEventHelper));
             il.Emit(OpCodes.Ret);
             _tg.DefineMethodOverride(impl, mi);
         }
@@ -1261,7 +1261,7 @@ namespace IronPython.Runtime.Types {
             il.EmitLoadArg(0);
             il.EmitString(name);
             il.Emit(OpCodes.Ldloca, callTarget);
-            il.EmitCall(typeof(UserTypeOps), "TryGetNonInheritedValueHelper");
+            il.EmitCall(typeof(UserTypeOps), nameof(UserTypeOps.TryGetNonInheritedValueHelper));
 
             il.Emit(OpCodes.Brtrue, instanceCall);
 
@@ -1333,7 +1333,7 @@ namespace IronPython.Runtime.Types {
             il.EmitLoadArg(0);
             il.EmitString(name);
             il.Emit(OpCodes.Ldloca, callTarget);
-            il.EmitCall(typeof(UserTypeOps), "TryGetNonInheritedMethodHelper");
+            il.EmitCall(typeof(UserTypeOps), nameof(UserTypeOps.TryGetNonInheritedMethodHelper));
             return callTarget;
         }
 

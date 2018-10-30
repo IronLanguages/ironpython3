@@ -259,7 +259,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
         // hex_version is set by PythonContext
 
         public const int maxsize = Int32.MaxValue;
-        public const int maxunicode = (int)ushort.MaxValue;
+        public const int maxunicode = 0x10ffff;
 
         // modules is set by PythonContext and only on the initial load
 

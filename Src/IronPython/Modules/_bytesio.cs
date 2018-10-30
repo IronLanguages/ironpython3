@@ -275,13 +275,9 @@ namespace IronPython.Modules {
                 }
             }
 
-            public BigInteger seek(double pos, int whence=0) {
-                throw PythonOps.TypeError("'float' object cannot be interpreted as an index");
-            }
-            
             public BigInteger seek(int pos, BigInteger whence) => seek(pos, (int)whence);
             public BigInteger seek(int pos, double whence) => throw PythonOps.TypeError("integer argument expected, got float");
-            public BigInteger seek(double pos, [DefaultParameterValue(0)]object whence) => throw PythonOps.TypeError("'float' object cannot be interpreted as an index");
+            public BigInteger seek(double pos, [DefaultParameterValue(0)]object whence) => throw PythonOps.TypeError("integer argument expected, got float");
 
             public override BigInteger seek(CodeContext/*!*/ context, BigInteger pos, [DefaultParameterValue(0)]object whence) {
                 _checkClosed();

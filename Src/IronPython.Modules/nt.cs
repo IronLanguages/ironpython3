@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -17,7 +16,6 @@ using System.Security.Cryptography;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
@@ -231,16 +229,6 @@ namespace IronPython.Modules {
             context.LanguageContext.DomainManager.Platform.TerminateScriptExecution(code);
         }
 
-        public static object fdopen(CodeContext/*!*/ context, int fd,
-            string mode = "r",
-            int buffering = -1,
-            string encoding = null,
-            string errors = null,
-            string newline = null,
-            bool closefd = true) {
-            return Builtin.open(context, fd, mode, buffering, encoding, errors, newline, closefd);
-        }
-
         [LightThrowing]
         public static object fstat(CodeContext/*!*/ context, int fd) {
             PythonContext pythonContext = context.LanguageContext;
@@ -269,8 +257,9 @@ namespace IronPython.Modules {
             return context.LanguageContext.DomainManager.Platform.CurrentDirectory;
         }
 
-        public static string getcwdu(CodeContext/*!*/ context) {
-            return context.LanguageContext.DomainManager.Platform.CurrentDirectory;
+        public static Bytes getcwdb(CodeContext/*!*/ context) {
+            var encoding = SysModule.getfilesystemencoding() as string;
+            return StringOps.encode(context, context.LanguageContext.DomainManager.Platform.CurrentDirectory, encoding);
         }
 
 #if NETCOREAPP2_1
@@ -516,101 +505,6 @@ namespace IronPython.Modules {
             return PythonFile.CreatePipeAsFd(context);
         }
 
-        public static PythonFile popen(CodeContext/*!*/ context, string command) {
-            return popen(context, command, "r");
-        }
-
-        public static PythonFile popen(CodeContext/*!*/ context, string command, string mode) {
-            return popen(context, command, mode, 4096);
-        }
-
-        public static PythonFile popen(CodeContext/*!*/ context, string command, string mode, int bufsize) {
-            if (String.IsNullOrEmpty(mode)) mode = "r";
-            ProcessStartInfo psi = GetProcessInfo(command, true);
-            psi.CreateNoWindow = true;  // ipyw shouldn't create a new console window
-            Process p;
-            PythonFile res;
-
-            try {
-                switch (mode) {
-                    case "r":
-                        psi.RedirectStandardOutput = true;
-                        p = Process.Start(psi);
-
-                        res = new POpenFile(context, command, p, p.StandardOutput.BaseStream, "r");
-                        break;
-                    case "w":
-                        psi.RedirectStandardInput = true;
-                        p = Process.Start(psi);
-
-                        res = new POpenFile(context, command, p, p.StandardInput.BaseStream, "w");
-                        break;
-                    default:
-                        throw PythonOps.ValueError("expected 'r' or 'w' for mode, got {0}", mode);
-                }
-            } catch (Exception e) {
-                throw ToPythonException(e);
-            }
-
-            return res;
-        }
-
-        public static PythonTuple popen2(CodeContext/*!*/ context, string command) {
-            return popen2(context, command, "t");
-        }
-
-        public static PythonTuple popen2(CodeContext/*!*/ context, string command, string mode) {
-            return popen2(context, command, "t", 4096);
-        }
-
-        public static PythonTuple popen2(CodeContext/*!*/ context, string command, string mode, int bufsize) {
-            if (String.IsNullOrEmpty(mode)) mode = "t";
-            if (mode != "t" && mode != "b") throw PythonOps.ValueError("mode must be 't' or 'b' (default is t)");
-            if (mode == "t") mode = String.Empty;
-
-            try {
-                ProcessStartInfo psi = GetProcessInfo(command, true);
-                psi.RedirectStandardInput = true;
-                psi.RedirectStandardOutput = true;
-                psi.CreateNoWindow = true; // ipyw shouldn't create a new console window
-                Process p = Process.Start(psi);
-
-                return PythonTuple.MakeTuple(new POpenFile(context, command, p, p.StandardInput.BaseStream, "w" + mode),
-                        new POpenFile(context, command, p, p.StandardOutput.BaseStream, "r" + mode));
-            } catch (Exception e) {
-                throw ToPythonException(e);
-            }
-        }
-
-        public static PythonTuple popen3(CodeContext/*!*/ context, string command) {
-            return popen3(context, command, "t");
-        }
-
-        public static PythonTuple popen3(CodeContext/*!*/ context, string command, string mode) {
-            return popen3(context, command, "t", 4096);
-        }
-
-        public static PythonTuple popen3(CodeContext/*!*/ context, string command, string mode, int bufsize) {
-            if (String.IsNullOrEmpty(mode)) mode = "t";
-            if (mode != "t" && mode != "b") throw PythonOps.ValueError("mode must be 't' or 'b' (default is t)");
-            if (mode == "t") mode = String.Empty;
-
-            try {
-                ProcessStartInfo psi = GetProcessInfo(command, true);
-                psi.RedirectStandardInput = true;
-                psi.RedirectStandardOutput = true;
-                psi.RedirectStandardError = true;
-                psi.CreateNoWindow = true; // ipyw shouldn't create a new console window
-                Process p = Process.Start(psi);
-
-                return PythonTuple.MakeTuple(new POpenFile(context, command, p, p.StandardInput.BaseStream, "w" + mode),
-                        new POpenFile(context, command, p, p.StandardOutput.BaseStream, "r" + mode),
-                        new POpenFile(context, command, p, p.StandardError.BaseStream, "r+" + mode));
-            } catch (Exception e) {
-                throw ToPythonException(e);
-            }
-        }
-
         public static void putenv(string varname, string value) {
             try {
                 System.Environment.SetEnvironmentVariable(varname, value);
@@ -651,43 +545,6 @@ namespace IronPython.Modules {
         }
 
 #if FEATURE_PROCESS
-        /// <summary>
-        /// spawns a new process.
-        /// 
-        /// If mode is nt.P_WAIT then then the call blocks until the process exits and the return value
-        /// is the exit code.
-        /// 
-        /// Otherwise the call returns a handle to the process.  The caller must then call nt.waitpid(pid, options)
-        /// to free the handle and get the exit code of the process.  Failure to call nt.waitpid will result
-        /// in a handle leak.
-        /// </summary>
-        public static object spawnl(CodeContext/*!*/ context, int mode, string path, params object[] args) {
-            return SpawnProcessImpl(context, MakeProcess(), mode, path, args);
-        }
-
-        /// <summary>
-        /// spawns a new process.
-        /// 
-        /// If mode is nt.P_WAIT then then the call blocks until the process exits and the return value
-        /// is the exit code.
-        /// 
-        /// Otherwise the call returns a handle to the process.  The caller must then call nt.waitpid(pid, options)
-        /// to free the handle and get the exit code of the process.  Failure to call nt.waitpid will result
-        /// in a handle leak.
-        /// </summary>
-        public static object spawnle(CodeContext/*!*/ context, int mode, string path, params object[] args) {
-            if (args.Length < 1) {
-                throw PythonOps.TypeError("spawnle() takes at least three arguments ({0} given)", 2 + args.Length);
-            }
-
-            object env = args[args.Length - 1];
-            object[] slicedArgs = ArrayUtils.RemoveFirst(args);
-
-            Process process = MakeProcess();
-            SetEnvironment(process.StartInfo.EnvironmentVariables, env);
-
-            return SpawnProcessImpl(context, process, mode, path, slicedArgs);
-        }
 
         /// <summary>
         /// spawns a new process.

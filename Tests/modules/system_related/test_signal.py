@@ -15,21 +15,21 @@ from iptest import IronPythonTestCase, is_cli, run_test
 
 SUPPORTED_SIGNALS = [   signal.SIGBREAK,
                         signal.SIGABRT,
-                        signal.SIGINT, 
+                        signal.SIGINT,
                         signal.SIGTERM,
-                        signal.SIGFPE, 
-                        signal.SIGILL, 
+                        signal.SIGFPE,
+                        signal.SIGILL,
                         signal.SIGSEGV,
                         ]
 
 class SignalTest(IronPythonTestCase):
-    
+
     def test_000_run_me_first(self):
         for x in [x for x in SUPPORTED_SIGNALS if x!=signal.SIGINT]:
             self.assertEqual(signal.getsignal(x), 0)
         self.assertEqual(signal.getsignal(signal.SIGINT), signal.default_int_handler)
 
-        for x in xrange(1, 23):
+        for x in range(1, 23):
             if x in SUPPORTED_SIGNALS: continue
             self.assertEqual(signal.getsignal(x), None)
 
@@ -62,11 +62,11 @@ class SignalTest(IronPythonTestCase):
     def test_signal_signal_neg(self):
         def a(b, c):
             pass
-        
+
         WEIRD_WORKING_CASES = [6]
         NO_SUCH_DIR = [21]
-        
-        for x in xrange(1, 23):
+
+        for x in range(1, 23):
             if x in SUPPORTED_SIGNALS: continue
             if x in WEIRD_WORKING_CASES: continue
             self.assertRaises(RuntimeError,
@@ -81,7 +81,7 @@ class SignalTest(IronPythonTestCase):
         def bad_sig3(a,b,c): pass
 
         for y in SUPPORTED_SIGNALS + WEIRD_WORKING_CASES:
-            bad_handlers = [-2, -1, 2, 3, 4, 10, 22, 23, 24, None] 
+            bad_handlers = [-2, -1, 2, 3, 4, 10, 22, 23, 24, None]
             for x in bad_handlers:
                 self.assertRaisesMessage(TypeError, "signal handler must be signal.SIG_IGN, signal.SIG_DFL, or a callable object",
                                     signal.signal, y, x)
@@ -96,22 +96,21 @@ class SignalTest(IronPythonTestCase):
             #Ideal handler signature
             def a(signum, frame):
                 return x
-            
+
             ret_val = signal.signal(x, a)
             if x not in WEIRD_CASES.keys():
                 self.assertEqual(ret_val, signal.SIG_DFL)
             else:
                 self.assertEqual(ret_val, WEIRD_CASES[x])
             self.assertEqual(a, signal.getsignal(x))
-            
+
         #Strange handler signatures
         class KNew(object):
             def __call__(self, *args, **kwargs):
                 pass
-        
+
         a = KNew()
         ret_val = signal.signal(signal.SIGBREAK, a)
         self.assertEqual(a, signal.getsignal(signal.SIGBREAK))
-                 
 
 run_test(__name__)

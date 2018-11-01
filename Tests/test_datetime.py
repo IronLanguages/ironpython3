@@ -149,5 +149,3 @@ class TestDatetime(unittest.TestCase):
         self.assertEqual(expected, result)
 
 run_test(__name__)
-
-

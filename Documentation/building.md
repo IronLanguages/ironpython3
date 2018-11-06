@@ -18,9 +18,9 @@ IronPython3 uses PowerShell to run the build and testing from the command line. 
 
 On Linux/macOS you will need to install [PowerShell](https://github.com/PowerShell/PowerShell/releases)
 
-Change the working directory to the path where you cloned the sources and run `.\make.ps1`
+Change the working directory to the path where you cloned the sources and run `./make.ps1`
 
-By default, with no options, make.ps1 will build Release mode binaries. If you would like to build debug binaries, you can run `.\make.ps1 debug`
+By default, with no options, make.ps1 will build Release mode binaries. If you would like to build debug binaries, you can run `./make.ps1 debug`
 
 Other options available for `make.ps1` are
 

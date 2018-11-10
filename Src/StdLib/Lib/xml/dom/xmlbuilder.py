@@ -334,12 +334,13 @@ del NodeFilter
 class DocumentLS:
     """Mixin to create documents that conform to the load/save spec."""
 
-    async = False
+    async_ = False
 
     def _get_async(self):
         return False
-    def _set_async(self, async):
-        if async:
+
+    def _set_async(self, flag):
+        if flag:
             raise xml.dom.NotSupportedErr(
                 "asynchronous document loading is not supported")
 

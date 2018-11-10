@@ -387,3 +387,4 @@ class Integral(Rational):
         return 1
 
 Integral.register(int)
+Integral.register(long) # TODO: remove me

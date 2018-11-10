@@ -1269,10 +1269,12 @@ namespace IronPython.Runtime {
         }
 
         internal static string SetToString(CodeContext/*!*/ context, object set, SetStorage items) {
+            bool notEmpty = items._hasNull || items._count > 0;
+
             string setTypeStr;
             Type setType = set.GetType();
             if (setType == typeof(SetCollection)) {
-                setTypeStr = "set";
+                setTypeStr = notEmpty ? null : "set";
             } else if (setType == typeof(FrozenSetCollection)) {
                 setTypeStr = "frozenset";
             } else {
@@ -1280,27 +1282,38 @@ namespace IronPython.Runtime {
             }
 
             StringBuilder sb = new StringBuilder();
-            sb.Append(setTypeStr);
-            sb.Append("([");
-            string comma = "";
-
-            if (items._hasNull) {
-                sb.Append(comma);
-                sb.Append(PythonOps.Repr(context, null));
-                comma = ", ";
+            if (setTypeStr != null) {
+                sb.Append(setTypeStr);
+                sb.Append("(");
             }
 
-            if (items._count > 0) {
-                foreach (Bucket bucket in items._buckets) {
-                    if (bucket.Item != null && bucket.Item != Removed) {
-                        sb.Append(comma);
-                        sb.Append(PythonOps.Repr(context, bucket.Item));
-                        comma = ", ";
+            if (notEmpty) {
+                sb.Append("{");
+                string comma = "";
+
+                if (items._hasNull) {
+                    sb.Append(comma);
+                    sb.Append(PythonOps.Repr(context, null));
+                    comma = ", ";
+                }
+
+                if (items._count > 0) {
+                    foreach (Bucket bucket in items._buckets) {
+                        if (bucket.Item != null && bucket.Item != Removed) {
+                            sb.Append(comma);
+                            sb.Append(PythonOps.Repr(context, bucket.Item));
+                            comma = ", ";
+                        }
                     }
                 }
+
+                sb.Append("}");
             }
 
-            sb.Append("])");
+            if (setTypeStr != null) {
+                sb.Append(")");
+            }
+
             return sb.ToString();
         }
 

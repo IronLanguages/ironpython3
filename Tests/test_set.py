@@ -128,7 +128,7 @@ class SetTest(IronPythonTestCase):
 
         a = set()
         a.add(None)
-        self.assertEqual(repr(a), 'set([None])')
+        self.assertEqual(repr(a), '{None}')
 
 
     def test_cmp(self):

@@ -76,7 +76,7 @@ namespace IronPython.Modules {
             if (text == null) throw PythonOps.TypeError("text must not be None");
 
             for (int i = 0; i < text.Length; i++) {
-                if (!Char.IsLetterOrDigit(text[i])) {
+                if (!char.IsLetterOrDigit(text[i])) {
                     StringBuilder sb = new StringBuilder(text, 0, i, text.Length);
 
                     char ch = text[i];
@@ -88,7 +88,7 @@ namespace IronPython.Modules {
                         int last = i;
                         while (i < text.Length) {
                             ch = text[i];
-                            if (!Char.IsLetterOrDigit(ch)) {
+                            if (!char.IsLetterOrDigit(ch)) {
                                 break;
                             }
                             i++;
@@ -104,7 +104,7 @@ namespace IronPython.Modules {
 
         public static PythonList findall(CodeContext/*!*/ context, object pattern, string @string, int flags = 0) {
             RE_Pattern pat = GetPattern(context, ValidatePattern(pattern), flags);
-            ValidateString(@string, "string");
+            ValidateString(@string, nameof(@string));
 
             MatchCollection mc = pat.FindAllWorker(context, @string, 0, @string.Length);
             return FixFindAllMatch(pat, mc, null);
@@ -112,7 +112,7 @@ namespace IronPython.Modules {
 
         public static PythonList findall(CodeContext context, object pattern, IList<byte> @string, int flags = 0) {
             RE_Pattern pat = GetPattern(context, ValidatePattern(pattern), flags);
-            ValidateString(@string, "string");
+            ValidateString(@string, nameof(@string));
 
             MatchCollection mc = pat.FindAllWorker(context, @string, 0, @string.Count);
             return FixFindAllMatch(pat, mc, FindMaker(@string));
@@ -168,31 +168,28 @@ namespace IronPython.Modules {
         public static object finditer(CodeContext/*!*/ context, object pattern, object @string, int flags = 0) {
             RE_Pattern pat = GetPattern(context, ValidatePattern(pattern), flags);
 
-            string str = ValidateString(@string, "string");
+            string str = ValidateString(@string, nameof(@string));
             return MatchIterator(pat.FindAllWorker(context, str, 0, str.Length), pat, str);
         }
 
-        public static RE_Match match(CodeContext/*!*/ context, object pattern, object @string, int flags = 0) {
-            return GetPattern(context, ValidatePattern(pattern), flags).match(ValidateString(@string, "string"));
-        }
+        public static RE_Match match(CodeContext/*!*/ context, object pattern, object @string, int flags = 0)
+            => GetPattern(context, ValidatePattern(pattern), flags).match(ValidateString(@string, nameof(@string)));
 
-        public static RE_Match search(CodeContext/*!*/ context, object pattern, object @string, int flags = 0) {
-            return GetPattern(context, ValidatePattern(pattern), flags).search(ValidateString(@string, "string"));
-        }
+        public static RE_Match fullmatch(CodeContext/*!*/ context, object pattern, object @string, int flags = 0)
+            => GetPattern(context, ValidatePattern(pattern), flags).fullmatch(context, ValidateString(@string, nameof(@string)));
+
+        public static RE_Match search(CodeContext/*!*/ context, object pattern, object @string, int flags = 0)
+            => GetPattern(context, ValidatePattern(pattern), flags).search(ValidateString(@string, nameof(@string)));
 
         [return: SequenceTypeInfo(typeof(string))]
-        public static PythonList split(CodeContext/*!*/ context, object pattern, object @string, int maxsplit = 0, int flags = 0) {
-            return GetPattern(context, ValidatePattern(pattern), flags).split(ValidateString(@string, "string"), maxsplit);
-        }
+        public static PythonList split(CodeContext/*!*/ context, object pattern, object @string, int maxsplit = 0, int flags = 0)
+            => GetPattern(context, ValidatePattern(pattern), flags).split(ValidateString(@string, nameof(@string)), maxsplit);
 
-        public static string sub(CodeContext/*!*/ context, object pattern, object repl, object @string, int count = 0, int flags = 0) {
-            return GetPattern(context, ValidatePattern(pattern), flags).sub(context, repl, ValidateString(@string, "string"), count);
-        }
+        public static string sub(CodeContext/*!*/ context, object pattern, object repl, object @string, int count = 0, int flags = 0)
+            => GetPattern(context, ValidatePattern(pattern), flags).sub(context, repl, ValidateString(@string, nameof(@string)), count);
 
-        public static object subn(CodeContext/*!*/ context, object pattern, object repl, object @string, int count = 0, int flags = 0) {
-            return GetPattern(context, ValidatePattern(pattern), flags).subn(context, repl, ValidateString(@string, "string"), count);
-
-        }
+        public static object subn(CodeContext/*!*/ context, object pattern, object repl, object @string, int count = 0, int flags = 0)
+            => GetPattern(context, ValidatePattern(pattern), flags).subn(context, repl, ValidateString(@string, nameof(@string)), count);
 
         public static void purge() {
             _cachedPatterns = new CacheDict<PatternKey, RE_Pattern>(100);
@@ -201,49 +198,53 @@ namespace IronPython.Modules {
         #endregion
 
         #region Public classes
+
         /// <summary>
         /// Compiled reg-ex pattern
         /// </summary>
         [PythonType]
         public class RE_Pattern : IWeakReferenceable {
-            internal Regex _re;
+            internal readonly Regex _re;
+            internal readonly ParsedRegex _pre;
             private PythonDictionary _groups;
-            private readonly int _compileFlags;
             private WeakRefTracker _weakRefTracker;
-            internal ParsedRegex _pre;
 
-            internal RE_Pattern(CodeContext/*!*/ context, object pattern, int flags = 0, bool compiled = false) {
-                _pre = PreParseRegex(context, ValidatePatternAsString(pattern));
+            private static Regex GenRegex(CodeContext/*!*/ context, string pattern, int flags, bool compiled, bool fullmatch) {
                 try {
-                    flags |= OptionToFlags(_pre.Options);
                     RegexOptions opts = FlagsToOption(flags);
-                    this._re = new Regex(_pre.Pattern, opts | (compiled ? RegexOptions.Compiled : RegexOptions.None));
+                    return new Regex(fullmatch ? $"(?:{pattern})\\Z" : pattern, opts | (compiled ? RegexOptions.Compiled : RegexOptions.None));
                 } catch (ArgumentException e) {
                     throw PythonExceptions.CreateThrowable(error(context), e.Message);
                 }
-                this._compileFlags = flags;
+            }
+
+            internal RE_Pattern(CodeContext/*!*/ context, object pattern, int flags = 0, bool compiled = false) {
+                _pre = PreParseRegex(context, ValidatePatternAsString(pattern));
+                flags |= OptionToFlags(_pre.Options);
+                _re = GenRegex(context, _pre.Pattern, flags, compiled, false);
+                this.flags = flags;
             }
 
             public RE_Match match(object text) {
-                string input = ValidateString(text, "text");
+                string input = ValidateString(text, nameof(text));
                 return RE_Match.makeMatch(_re.Match(input), this, input, 0, input.Length);
             }
 
             private static int FixPosition(string text, int position) {
-                if (position < 0) return 0;
+                if (position <= 0) return 0;
                 if (position > text.Length) return text.Length;
 
                 return position;
             }
 
             public RE_Match match(object text, int pos) {
-                string input = ValidateString(text, "text");
+                string input = ValidateString(text, nameof(text));
                 pos = FixPosition(input, pos);
                 return RE_Match.makeMatch(_re.Match(input, pos), this, input, pos, input.Length);
             }
 
             public RE_Match match(object text, [DefaultParameterValue(0)]int pos, int endpos) {
-                string input = ValidateString(text, "text");
+                string input = ValidateString(text, nameof(text));
                 pos = FixPosition(input, pos);
                 endpos = FixPosition(input, endpos);
                 return RE_Match.makeMatch(
@@ -254,35 +255,58 @@ namespace IronPython.Modules {
                     endpos);
             }
 
+            private Regex _re_fullmatch;
+            private Regex GetRegexFullMatch(CodeContext /*!*/ context) {
+                if (_re_fullmatch == null) {
+                    lock (_re) {
+                        if (_re_fullmatch == null)
+                            _re_fullmatch = GenRegex(context, _pre.Pattern, flags, _re.Options.HasFlag(RegexOptions.Compiled), true);
+                    }
+                }
+
+                return _re_fullmatch;
+            }
+
+            public RE_Match fullmatch(CodeContext/*!*/ context, object text, int pos = 0) {
+                string input = ValidateString(text, nameof(text));
+                pos = FixPosition(input, pos);
+
+                return RE_Match.makeFullMatch(GetRegexFullMatch(context).Match(input, pos), this, input, pos, input.Length);
+            }
+
+            public RE_Match fullmatch(CodeContext/*!*/ context, object text, [DefaultParameterValue(0)]int pos, int endpos) {
+                string input = ValidateString(text, nameof(text));
+                pos = FixPosition(input, pos);
+                endpos = FixPosition(input, endpos);
+                return RE_Match.makeFullMatch(
+                    GetRegexFullMatch(context).Match(input.Substring(0, endpos), pos),
+                    this,
+                    input,
+                    pos,
+                    endpos);
+            }
+
             public RE_Match search(object text) {
-                string input = ValidateString(text, "text");
+                string input = ValidateString(text, nameof(text));
                 return RE_Match.make(_re.Match(input), this, input);
             }
 
             public RE_Match search(object text, int pos) {
-                string input = ValidateString(text, "text");
+                string input = ValidateString(text, nameof(text));
                 if (pos < 0) pos = 0;
                 return RE_Match.make(_re.Match(input, pos), this, input);
             }
 
             public RE_Match search(object text, int pos, int endpos) {
-                string input = ValidateString(text, "text");
+                string input = ValidateString(text, nameof(text));
                 if (pos < 0) pos = 0;
                 if (endpos < pos) return null;
                 if (endpos < input.Length) input = input.Substring(0, endpos);
                 return RE_Match.make(_re.Match(input, pos), this, input);
             }
 
-            public object findall(CodeContext/*!*/ context, string @string) {
-                return findall(context, @string, 0, null);
-            }
-
-            public object findall(CodeContext/*!*/ context, string @string, int pos) {
-                return findall(context, @string, pos, null);
-            }
-
-            public object findall(CodeContext/*!*/ context, object @string, int pos, object endpos) {
-                MatchCollection mc = FindAllWorker(context, ValidateString(@string, "text"), pos, endpos);
+            public object findall(CodeContext/*!*/ context, object @string, int pos = 0, object endpos = null) {
+                MatchCollection mc = FindAllWorker(context, ValidateString(@string, nameof(@string)), pos, endpos);
                 return FixFindAllMatch(this, mc, FindMaker(@string));
             }
 
@@ -295,27 +319,16 @@ namespace IronPython.Modules {
                 return _re.Matches(against, pos);
             }
 
-            internal MatchCollection FindAllWorker(CodeContext/*!*/ context, IList<byte> str, int pos, object endpos) {
-                string against = str.MakeString();
-                if (endpos != null) {
-                    int end = context.LanguageContext.ConvertToInt32(endpos);
-                    against = against.Substring(0, Math.Max(end, 0));
-                }
-                return _re.Matches(against, pos);
-            }
+            internal MatchCollection FindAllWorker(CodeContext/*!*/ context, IList<byte> str, int pos, object endpos)
+                => FindAllWorker(context, str.MakeString(), pos, endpos);
 
-            public object finditer(CodeContext/*!*/ context, object @string) {
-                string input = ValidateString(@string, "string");
-                return MatchIterator(FindAllWorker(context, input, 0, input.Length), this, input);
-            }
-
-            public object finditer(CodeContext/*!*/ context, object @string, int pos) {
-                string input = ValidateString(@string, "string");
-                return MatchIterator(FindAllWorker(context, input, pos, input.Length), this, input);
+            public object finditer(CodeContext/*!*/ context, object @string, int pos=0) {
+                string input = ValidateString(@string, nameof(@string));
+                return MatchIterator(FindAllWorker(context, input, pos, null), this, input);
             }
 
             public object finditer(CodeContext/*!*/ context, object @string, int pos, int endpos) {
-                string input = ValidateString(@string, "string");
+                string input = ValidateString(@string, nameof(@string));
                 return MatchIterator(FindAllWorker(context, input, pos, endpos), this, input);
             }
 
@@ -324,10 +337,10 @@ namespace IronPython.Modules {
                 PythonList result = new PythonList();
                 // fast path for negative maxSplit ( == "make no splits")
                 if (maxsplit < 0) {
-                    result.AddNoLock(ValidateString(@string, "string"));
+                    result.AddNoLock(ValidateString(@string, nameof(@string)));
                 } else {
                     // iterate over all matches
-                    string theStr = ValidateString(@string, "string");
+                    string theStr = ValidateString(@string, nameof(@string));
                     MatchCollection matches = _re.Matches(theStr);
                     int lastPos = 0; // is either start of the string, or first position *after* the last match
                     int nSplits = 0; // how many splits have occurred?
@@ -358,7 +371,7 @@ namespace IronPython.Modules {
             public string sub(CodeContext/*!*/ context, object repl, object @string, int count = 0) {
                 if (repl == null) throw PythonOps.TypeError("NoneType is not valid repl");
                 //  if 'count' is omitted or 0, all occurrences are replaced
-                if (count == 0) count = Int32.MaxValue;
+                if (count == 0) count = int.MaxValue;
 
                 string replacement = repl as string;
                 if (replacement == null) {
@@ -370,13 +383,13 @@ namespace IronPython.Modules {
                 }
 
                 Match prev = null;
-                string input = ValidateString(@string, "string");
+                string input = ValidateString(@string, nameof(@string));
                 return _re.Replace(
                     input,
                     delegate (Match match) {
                         //  from the docs: Empty matches for the pattern are replaced 
                         //  only when not adjacent to a previous match
-                        if (String.IsNullOrEmpty(match.Value) && prev != null &&
+                        if (string.IsNullOrEmpty(match.Value) && prev != null &&
                                         (prev.Index + prev.Length) == match.Index) {
                             return "";
                         };
@@ -391,7 +404,7 @@ namespace IronPython.Modules {
             public object subn(CodeContext/*!*/ context, object repl, object @string, int count = 0) {
                 if (repl == null) throw PythonOps.TypeError("NoneType is not valid repl");
                 //  if 'count' is omitted or 0, all occurrences are replaced
-                if (count == 0) count = Int32.MaxValue;
+                if (count == 0) count = int.MaxValue;
 
                 int totalCount = 0;
                 string res;
@@ -406,13 +419,13 @@ namespace IronPython.Modules {
                 }
 
                 Match prev = null;
-                string input = ValidateString(@string, "string");
+                string input = ValidateString(@string, nameof(@string));
                 res = _re.Replace(
                     input,
                     delegate (Match match) {
                         //  from the docs: Empty matches for the pattern are replaced 
                         //  only when not adjacent to a previous match
-                        if (String.IsNullOrEmpty(match.Value) && prev != null &&
+                        if (string.IsNullOrEmpty(match.Value) && prev != null &&
                             (prev.Index + prev.Length) == match.Index) {
                             return "";
                         };
@@ -428,11 +441,7 @@ namespace IronPython.Modules {
                 return PythonTuple.MakeTuple(res, totalCount);
             }
 
-            public int flags {
-                get {
-                    return _compileFlags;
-                }
-            }
+            public int flags { get; }
 
             public PythonDictionary groupindex {
                 get {
@@ -441,7 +450,7 @@ namespace IronPython.Modules {
                         string[] names = _re.GetGroupNames();
                         int[] nums = _re.GetGroupNumbers();
                         for (int i = 1; i < names.Length; i++) {
-                            if (Char.IsDigit(names[i][0]) || names[i].StartsWith(_mangledNamedGroup)) {
+                            if (char.IsDigit(names[i][0]) || names[i].StartsWith(_mangledNamedGroup)) {
                                 // skip numeric names and our mangling for unnamed groups mixed w/ named groups.
                                 continue;
                             }
@@ -454,51 +463,32 @@ namespace IronPython.Modules {
                 }
             }
 
-            public int groups {
-                get {
-                    return _re.GetGroupNumbers().Length - 1;
-                }
-            }
+            public int groups => _re.GetGroupNumbers().Length - 1;
 
-            public string pattern {
-                get {
-                    return _pre.UserPattern;
-                }
-            }
+            public string pattern => _pre.UserPattern;
 
-            public override bool Equals(object obj) {
-                if (!(obj is RE_Pattern other)) {
-                    return false;
-                }
+            public override bool Equals(object obj)
+                => obj is RE_Pattern other && other.pattern == pattern && other.flags == flags;
 
-                return other.pattern == pattern && other.flags == flags;
-            }
-
-            public override int GetHashCode() {
-                return pattern.GetHashCode() ^ flags;
-            }
+            public override int GetHashCode() => pattern.GetHashCode() ^ flags;
 
             #region IWeakReferenceable Members
 
-            WeakRefTracker IWeakReferenceable.GetWeakRef() {
-                return _weakRefTracker;
-            }
+            WeakRefTracker IWeakReferenceable.GetWeakRef() => _weakRefTracker;
 
             bool IWeakReferenceable.SetWeakRef(WeakRefTracker value) {
                 _weakRefTracker = value;
                 return true;
             }
 
-            void IWeakReferenceable.SetFinalizer(WeakRefTracker value) {
-                ((IWeakReferenceable)this).SetWeakRef(value);
-            }
+            void IWeakReferenceable.SetFinalizer(WeakRefTracker value) => ((IWeakReferenceable)this).SetWeakRef(value);
 
             #endregion
         }
 
         public static PythonTuple _pickle(CodeContext/*!*/ context, RE_Pattern pattern) {
             object scope = Importer.ImportModule(context, new PythonDictionary(), "re", false, 0);
-            if (scope is PythonModule && ((PythonModule)scope).__dict__.TryGetValue("compile", out object compile)) {
+            if (scope is PythonModule module && module.__dict__.TryGetValue("compile", out object compile)) {
                 return PythonTuple.MakeTuple(compile, PythonTuple.MakeTuple(pattern.pattern, pattern.flags));
             }
             throw new InvalidOperationException("couldn't find compile method");
@@ -506,14 +496,11 @@ namespace IronPython.Modules {
 
         [PythonType]
         public class RE_Match {
-            private RE_Pattern _pattern;
-            private Match _m;
-            private readonly string _text;
+            private readonly Match _m;
             private int _lastindex = -1;
-            private readonly int _pos;
-            private readonly int _endPos;
 
             #region Internal makers
+
             internal static RE_Match make(Match m, RE_Pattern pattern, string input) {
                 if (m.Success) return new RE_Match(m, pattern, input, 0, input.Length);
                 return null;
@@ -528,39 +515,37 @@ namespace IronPython.Modules {
                 if (m.Success && m.Index == offset) return new RE_Match(m, pattern, input, offset, endpos);
                 return null;
             }
+
+            internal static RE_Match makeFullMatch(Match m, RE_Pattern pattern, string input, int offset, int endpos) {
+                if (m.Success && m.Index == offset && m.Length == endpos - offset) return new RE_Match(m, pattern, input, offset, endpos);
+                return null;
+            }
+
             #endregion
 
             #region Public ctors
 
             public RE_Match(Match m, RE_Pattern pattern, string text) {
                 _m = m;
-                _pattern = pattern;
-                _text = text;
+                re = pattern;
+                @string = text;
             }
 
             public RE_Match(Match m, RE_Pattern pattern, string text, int pos, int endpos) {
                 _m = m;
-                _pattern = pattern;
-                _text = text;
-                _pos = pos;
-                _endPos = endpos;
+                re = pattern;
+                @string = text;
+                this.pos = pos;
+                this.endpos = endpos;
             }
 
             #endregion
 
-            //			public override bool __bool__() {
-            //				return m.Success;
-            //			}
-
             #region Public API Surface
 
-            public int end() {
-                return _m.Index + _m.Length;
-            }
+            public int end() => _m.Index + _m.Length;
 
-            public int start() {
-                return _m.Index;
-            }
+            public int start() => _m.Index;
 
             public int start(object group) {
                 int grpIndex = GetGroupIndex(group);
@@ -598,14 +583,10 @@ namespace IronPython.Modules {
                 return g.Success ? g.Value : null;
             }
 
-            public string group() {
-                return group(0);
-            }
+            public string group() => group(0);
 
             [return: SequenceTypeInfo(typeof(string))]
-            public PythonTuple groups() {
-                return groups(null);
-            }
+            public PythonTuple groups() => groups(null);
 
             public PythonTuple groups(object @default) {
                 object[] ret = new object[_m.Groups.Count - 1];
@@ -620,14 +601,14 @@ namespace IronPython.Modules {
             }
 
             public string expand(object template) {
-                string strTmp = ValidateString(template, "template");
+                string strTmp = ValidateString(template, nameof(template));
 
                 StringBuilder res = new StringBuilder();
                 for (int i = 0; i < strTmp.Length; i++) {
                     if (strTmp[i] != '\\') { res.Append(strTmp[i]); continue; }
                     if (++i == strTmp.Length) { res.Append(strTmp[i - 1]); continue; }
 
-                    if (Char.IsDigit(strTmp[i])) {
+                    if (char.IsDigit(strTmp[i])) {
                         AppendGroup(res, (int)(strTmp[i] - '0'));
                     } else if (strTmp[i] == 'g') {
                         if (++i == strTmp.Length) { res.Append("\\g"); return res.ToString(); }
@@ -639,7 +620,7 @@ namespace IronPython.Modules {
                             while (strTmp[i] != '>' && i < strTmp.Length) {
                                 name.Append(strTmp[i++]);
                             }
-                            AppendGroup(res, _pattern._re.GroupNumberFromName(name.ToString()));
+                            AppendGroup(res, re._re.GroupNumberFromName(name.ToString()));
                         }
                     } else {
                         switch (strTmp[i]) {
@@ -655,25 +636,21 @@ namespace IronPython.Modules {
             }
 
             [return: DictionaryTypeInfo(typeof(string), typeof(string))]
-            public PythonDictionary groupdict() {
-                return groupdict(null);
-            }
+            public PythonDictionary groupdict() => groupdict(null);
 
             private static bool IsGroupNumber(string name) {
                 foreach (char c in name) {
-                    if (!Char.IsNumber(c)) return false;
+                    if (!char.IsNumber(c)) return false;
                 }
                 return true;
             }
 
             [return: DictionaryTypeInfo(typeof(string), typeof(string))]
-            public PythonDictionary groupdict([NotNull]string value) {
-                return groupdict((object)value);
-            }
+            public PythonDictionary groupdict([NotNull]string value) => groupdict((object)value);
 
             [return: DictionaryTypeInfo(typeof(string), typeof(object))]
             public PythonDictionary groupdict(object value) {
-                string[] groupNames = this._pattern._re.GetGroupNames();
+                string[] groupNames = this.re._re.GetGroupNames();
                 Debug.Assert(groupNames.Length == this._m.Groups.Count);
                 PythonDictionary d = new PythonDictionary();
                 for (int i = 0; i < groupNames.Length; i++) {
@@ -689,32 +666,16 @@ namespace IronPython.Modules {
             }
 
             [return: SequenceTypeInfo(typeof(int))]
-            public PythonTuple span() {
-                return PythonTuple.MakeTuple(this.start(), this.end());
-            }
+            public PythonTuple span() => PythonTuple.MakeTuple(start(), end());
 
             [return: SequenceTypeInfo(typeof(int))]
-            public PythonTuple span(object group) {
-                return PythonTuple.MakeTuple(this.start(group), this.end(group));
-            }
+            public PythonTuple span(object group) => PythonTuple.MakeTuple(start(group), end(group));
 
-            public int pos {
-                get {
-                    return _pos;
-                }
-            }
+            public int pos { get; }
 
-            public int endpos {
-                get {
-                    return _endPos;
-                }
-            }
+            public int endpos { get; }
 
-            public string @string {
-                get {
-                    return _text;
-                }
-            }
+            public string @string { get; }
 
             public PythonTuple regs {
                 get {
@@ -727,11 +688,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public RE_Pattern re {
-                get {
-                    return _pattern;
-                }
-            }
+            public RE_Pattern re { get; }
 
             public object lastindex {
                 get {
@@ -779,7 +736,7 @@ namespace IronPython.Modules {
                     // when group was not explicitly named, RegEx assigns the number as name
                     // This is different from C-Python, which returns None in such cases
 
-                    return this._pattern._re.GroupNameFromNumber((int)lastindex);
+                    return this.re._re.GroupNameFromNumber((int)lastindex);
                 }
             }
 
@@ -787,13 +744,11 @@ namespace IronPython.Modules {
 
             #region Private helper functions
 
-            private void AppendGroup(StringBuilder sb, int index) {
-                sb.Append(_m.Groups[index].Value);
-            }
+            private void AppendGroup(StringBuilder sb, int index) => sb.Append(_m.Groups[index].Value);
 
             private int GetGroupIndex(object group) {
                 if (!Converter.TryConvertToInt32(group, out int grpIndex)) {
-                    grpIndex = _pattern._re.GroupNumberFromName(ValidateString(group, "group"));
+                    grpIndex = re._re.GroupNumberFromName(ValidateString(group, nameof(group)));
                 }
                 if (grpIndex < 0 || grpIndex >= _m.Groups.Count) {
                     throw PythonOps.IndexError("no such group");
@@ -808,11 +763,7 @@ namespace IronPython.Modules {
 
         #region Private helper functions
 
-        private static RE_Pattern GetPattern(CodeContext/*!*/ context, object pattern, int flags) {
-            return GetPattern(context, pattern, flags, false);
-        }
-
-        private static RE_Pattern GetPattern(CodeContext/*!*/ context, object pattern, int flags, bool compiled) {
+        private static RE_Pattern GetPattern(CodeContext/*!*/ context, object pattern, int flags, bool compiled = false) {
             if (pattern is RE_Pattern res) {
                 return res;
             }
@@ -821,7 +772,7 @@ namespace IronPython.Modules {
             PatternKey key = new PatternKey(strPattern, flags);
             lock (_cachedPatterns) {
                 if (_cachedPatterns.TryGetValue(new PatternKey(strPattern, flags), out res)) {
-                    if (!compiled || (res._re.Options & RegexOptions.Compiled) == RegexOptions.Compiled) {
+                    if (!compiled || res._re.Options.HasFlag(RegexOptions.Compiled)) {
                         return res;
                     }
                 }
@@ -880,6 +831,7 @@ namespace IronPython.Modules {
 
         private static readonly char[] _preParsedChars = new[] { '(', '{', '[', ']' };
         private const string _mangledNamedGroup = "___PyRegexNameMangled";
+
         /// <summary>
         /// Preparses a regular expression text returning a ParsedRegex class
         /// that can be used for further regular expressions.
@@ -1113,9 +1065,7 @@ namespace IronPython.Modules {
             }
         }
 
-        private static string GetRandomString() {
-            return r.Next(Int32.MaxValue / 2, Int32.MaxValue).ToString();
-        }
+        private static string GetRandomString() => r.Next(int.MaxValue / 2, int.MaxValue).ToString();
 
         private static string UnescapeGroups(Match m, string text) {
             for (int i = 0; i < text.Length; i++) {
@@ -1148,13 +1098,13 @@ namespace IronPython.Modules {
 
                                             if (StringUtils.TryParseInt32(grp, out int num)) {
                                                 g = m.Groups[num];
-                                                if (String.IsNullOrEmpty(g.Value)) {
+                                                if (string.IsNullOrEmpty(g.Value)) {
                                                     throw PythonOps.IndexError("unknown group reference");
                                                 }
                                                 sb.Append(g.Value);
                                             } else {
                                                 g = m.Groups[grp];
-                                                if (String.IsNullOrEmpty(g.Value)) {
+                                                if (string.IsNullOrEmpty(g.Value)) {
                                                     throw PythonOps.IndexError("unknown group reference");
                                                 }
                                                 sb.Append(g.Value);
@@ -1167,10 +1117,10 @@ namespace IronPython.Modules {
                                     sb.Append((char)text[i]);
                                     break;
                                 default:
-                                    if (Char.IsDigit(text[i]) && text[i] <= '7') {
+                                    if (char.IsDigit(text[i]) && text[i] <= '7') {
                                         int val = 0;
                                         int digitCount = 0;
-                                        while (i < text.Length && Char.IsDigit(text[i]) && text[i] <= '7') {
+                                        while (i < text.Length && char.IsDigit(text[i]) && text[i] <= '7') {
                                             digitCount++;
                                             val += val * 8 + (text[i] - '0');
                                             i++;
@@ -1199,92 +1149,80 @@ namespace IronPython.Modules {
         }
 
         private static object ValidatePattern(object pattern) {
-            if (pattern is string) return pattern as string;
-
-            if (pattern is ExtensibleString es) return es.Value;
-
-            if (pattern is Bytes bytes) {
-                return bytes.ToString();
+            switch (pattern)
+            {
+                case string s:
+                    return s;
+                case ExtensibleString es:
+                    return es.Value;
+                case Bytes bytes:
+                    return bytes.ToString();
+                case RE_Pattern rep:
+                    return rep;
+                default:
+                    throw PythonOps.TypeError("pattern must be a string or compiled pattern");
             }
-
-            if (pattern is RE_Pattern rep) return rep;
-
-            throw PythonOps.TypeError("pattern must be a string or compiled pattern");
         }
 
         private static string ValidatePatternAsString(object pattern) {
-            if (pattern is string) return pattern as string;
-
-            if (pattern is ExtensibleString es) return es.Value;
-
-            if (pattern is Bytes bytes) {
-                return bytes.ToString();
+            switch (pattern)
+            {
+                case string s:
+                    return s;
+                case ExtensibleString es:
+                    return es.Value;
+                case Bytes bytes:
+                    return bytes.ToString();
+                case RE_Pattern rep:
+                    return rep._pre.UserPattern;
+                default:
+                    throw PythonOps.TypeError("pattern must be a string or compiled pattern");
             }
-
-            if (pattern is RE_Pattern rep) return rep._pre.UserPattern;
-
-            throw PythonOps.TypeError("pattern must be a string or compiled pattern");
         }
 
         private static string ValidateString(object str, string param) {
-            if (str is string) return str as string;
-
-            if (str is ExtensibleString es) return es.Value;
-
-            if (str is PythonBuffer buf) {
-                return buf.ToString();
-            }
-
-            if (str is Bytes bytes) {
-                return bytes.ToString();
-            }
-
-            if (str is ByteArray byteArray) {
-                return byteArray.MakeString();
-            }
-
-            if (str is ArrayModule.array array) {
-                return Bytes.Make(array.ToByteArray()).ToString();
-            }
-
+            switch (str)
+            {
+                case string s:
+                    return s;
+                case ExtensibleString es:
+                    return es.Value;
+                case PythonBuffer buf:
+                    return buf.ToString();
+                case Bytes bytes:
+                    return bytes.ToString();
+                case ByteArray byteArray:
+                    return byteArray.MakeString();
+                case ArrayModule.array array:
+                    return Bytes.Make(array.ToByteArray()).ToString();
 #if FEATURE_MMAP
-            if (str is MmapModule.mmap mmapFile) {
-                return mmapFile.GetSearchString();
-            }
+                case MmapModule.mmap mmapFile:
+                    return mmapFile.GetSearchString();
 #endif
+                default:
+                    throw PythonOps.TypeError($"expected string for parameter '{param}' but got '{PythonOps.GetPythonTypeName(str)}'");
+            }
 
-            throw PythonOps.TypeError($"expected string for parameter '{param}' but got '{PythonOps.GetPythonTypeName(str)}'");
         }
 
-        private static PythonType error(CodeContext/*!*/ context) {
-            return (PythonType)context.LanguageContext.GetModuleState("reerror");
-        }
+        private static PythonType error(CodeContext/*!*/ context) => (PythonType)context.LanguageContext.GetModuleState("reerror");
 
-        private class PatternKey : IEquatable<PatternKey> {
-            public string Pattern;
-            public int Flags;
+        private readonly struct PatternKey : IEquatable<PatternKey> {
+            public readonly string Pattern;
+            public readonly int Flags;
 
             public PatternKey(string pattern, int flags) {
                 Pattern = pattern;
                 Flags = flags;
             }
 
-            public override bool Equals(object obj) {
-                if (obj is PatternKey key) {
-                    return Equals(key);
-                }
-                return false;
-            }
+            public override bool Equals(object obj) => obj is PatternKey key && Equals(key);
 
-            public override int GetHashCode() {
-                return Pattern.GetHashCode() ^ Flags;
-            }
+            public override int GetHashCode() => Pattern.GetHashCode() ^ Flags;
 
             #region IEquatable<PatternKey> Members
 
-            public bool Equals(PatternKey other) {
-                return other.Pattern == Pattern && other.Flags == Flags;
-            }
+            public bool Equals(PatternKey other) => other.Pattern == Pattern && other.Flags == Flags;
 
             #endregion
         }

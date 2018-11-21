@@ -15,13 +15,12 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
-
     [PythonType("method"), DontMapGetMemberNamesToDir]
     public sealed partial class Method : PythonTypeSlot, IWeakReferenceable, IPythonMembersList, IDynamicMetaObjectProvider, ICodeFormattable, Binding.IFastInvokable {
         private readonly object _declaringClass;
         private WeakRefTracker _weakref;
 
-        public Method(object function, object instance, object @class) {
+        internal Method(object function, object instance, object @class) {
             __func__ = function;
             __self__ = instance;
             _declaringClass = @class;
@@ -36,15 +35,9 @@ namespace IronPython.Runtime {
             __self__ = instance;
         }
 
-        internal string Name {
-            get { return (string)PythonOps.GetBoundAttr(DefaultContext.Default, __func__, "__name__"); }
-        }
+        internal string Name => (string)PythonOps.GetBoundAttr(DefaultContext.Default, __func__, "__name__");
 
-        public string __doc__ {
-            get {
-                return PythonOps.GetBoundAttr(DefaultContext.Default, __func__, "__doc__") as string;
-            }
-        }
+        public string __doc__ => PythonOps.GetBoundAttr(DefaultContext.Default, __func__, "__doc__") as string;
 
         public object __func__ { get; }
 
@@ -58,17 +51,14 @@ namespace IronPython.Runtime {
         }
 
         [SpecialName]
-        public object Call(CodeContext/*!*/ context, params object[] args) {
-            return context.LanguageContext.CallSplat(this, args);
-        }
+        public object Call(CodeContext/*!*/ context, params object[] args)
+            => context.LanguageContext.CallSplat(this, args);
 
         [SpecialName]
-        public object Call(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
-            return context.LanguageContext.CallWithKeywords(this, args, kwArgs);
-        }
+        public object Call(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args)
+            => context.LanguageContext.CallWithKeywords(this, args, kwArgs);
 
         private Exception BadSelf(object got) {
-
             string firstArg;
             if (got == null) {
                 firstArg = "nothing";
@@ -94,41 +84,34 @@ namespace IronPython.Runtime {
         }
         
         #region Object Overrides
+
         private string DeclaringClassAsString() {
             if (im_class == null) return "?";
-            PythonType dt = im_class as PythonType;
-            if (dt != null) return dt.Name;
+            if (im_class is PythonType dt) return dt.Name;
             return im_class.ToString();
         }
 
-        public override bool Equals(object obj) {
-            Method other = obj as Method;
-            if (other == null) return false;
-            return PythonOps.IsOrEqualsRetBool(__self__, other.__self__) && PythonOps.EqualRetBool(__func__, other.__func__);
-        }
+        public override bool Equals(object obj)
+            => obj is Method other && PythonOps.IsOrEqualsRetBool(__self__, other.__self__) && PythonOps.EqualRetBool(__func__, other.__func__);
 
         public override int GetHashCode() {
             if (__self__ == null) return PythonOps.Hash(DefaultContext.Default, __func__);
 
             return PythonOps.Hash(DefaultContext.Default, __self__) ^ PythonOps.Hash(DefaultContext.Default, __func__);
         }
-        
+
         #endregion
 
         #region IWeakReferenceable Members
 
-        WeakRefTracker IWeakReferenceable.GetWeakRef() {
-            return _weakref;
-        }
+        WeakRefTracker IWeakReferenceable.GetWeakRef() => _weakref;
 
         bool IWeakReferenceable.SetWeakRef(WeakRefTracker value) {
             _weakref = value;
             return true;
         }
 
-        void IWeakReferenceable.SetFinalizer(WeakRefTracker value) {
-            ((IWeakReferenceable)this).SetWeakRef(value);
-        }
+        void IWeakReferenceable.SetFinalizer(WeakRefTracker value) => ((IWeakReferenceable)this).SetWeakRef(value);
 
         #endregion
 
@@ -156,26 +139,21 @@ namespace IronPython.Runtime {
         }
 
         [SpecialName]
-        public void SetMemberAfter(CodeContext context, string name, object value) {
-            TypeCache.Method.SetMember(context, this, name, value);
-        }
+        public void SetMemberAfter(CodeContext context, string name, object value)
+            => TypeCache.Method.SetMember(context, this, name, value);
 
         [SpecialName]
-        public void DeleteMember(CodeContext context, string name) {
-            TypeCache.Method.DeleteMember(context, this, name);
-        }
+        public void DeleteMember(CodeContext context, string name)
+            => TypeCache.Method.DeleteMember(context, this, name);
 
-        IList<string> IMembersList.GetMemberNames() {
-            return PythonOps.GetStringMemberList(this);
-        }
+        IList<string> IMembersList.GetMemberNames() => PythonOps.GetStringMemberList(this);
 
         IList<object> IPythonMembersList.GetMemberNames(CodeContext/*!*/ context) {
             PythonList ret = TypeCache.Method.GetMemberNames(context);
 
             ret.AddNoLockNoDups("__module__");
 
-            PythonFunction pf = __func__ as PythonFunction;
-            if (pf != null) {
+            if (__func__ is PythonFunction pf) {
                 PythonDictionary dict = pf.__dict__;
                 
                 // Check the func
@@ -192,7 +170,7 @@ namespace IronPython.Runtime {
         #region PythonTypeSlot Overrides
 
         internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
-            if (this.__self__ == null) {
+            if (__self__ == null) {
                 if (owner == null || owner == im_class || PythonOps.IsSubClass(context, owner, im_class)) {
                     value = new Method(__func__, instance, owner);
                     return true;
@@ -202,11 +180,7 @@ namespace IronPython.Runtime {
             return true;
         }
 
-        internal override bool GetAlwaysSucceeds {
-            get {
-                return true;
-            }
-        }
+        internal override bool GetAlwaysSucceeds => true;
 
         #endregion
 
@@ -219,12 +193,9 @@ namespace IronPython.Runtime {
             }
 
             if (__self__ != null) {
-                return string.Format("<bound method {0}.{1} of {2}>",
-                    DeclaringClassAsString(),
-                    name,
-                    PythonOps.Repr(context, __self__));
+                return $"<bound method {DeclaringClassAsString()}.{name} of {PythonOps.Repr(context, __self__)}>";
             } else {
-                return string.Format("<unbound method {0}.{1}>", DeclaringClassAsString(), name);
+                return $"<unbound method {DeclaringClassAsString()}.{name}>";
             }
         }
 
@@ -232,9 +203,8 @@ namespace IronPython.Runtime {
 
         #region IDynamicMetaObjectProvider Members
 
-        DynamicMetaObject/*!*/ IDynamicMetaObjectProvider.GetMetaObject(Expression/*!*/ parameter) {
-            return new Binding.MetaMethod(parameter, BindingRestrictions.Empty, this);
-        }
+        DynamicMetaObject/*!*/ IDynamicMetaObjectProvider.GetMetaObject(Expression/*!*/ parameter)
+            => new Binding.MetaMethod(parameter, BindingRestrictions.Empty, this);
 
         #endregion
     }

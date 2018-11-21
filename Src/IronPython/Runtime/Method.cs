@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
-
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Dynamic;
+using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
@@ -17,7 +16,7 @@ using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
 
-    [PythonType("instancemethod"), DontMapGetMemberNamesToDir]
+    [PythonType("method"), DontMapGetMemberNamesToDir]
     public sealed partial class Method : PythonTypeSlot, IWeakReferenceable, IPythonMembersList, IDynamicMetaObjectProvider, ICodeFormattable, Binding.IFastInvokable {
         private readonly object _func;
         private readonly object _inst;

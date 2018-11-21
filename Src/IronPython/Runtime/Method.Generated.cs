@@ -111,8 +111,8 @@ namespace IronPython.Runtime {
 
             public object SelfTarget(CallSite site, CodeContext context, object target) {
                 Method self = target as Method;
-                if (self != null && self._inst != null) {
-                    return _site.Target(_site, context, self._func, self._inst);
+                if (self != null && self.__self__ != null) {
+                    return _site.Target(_site, context, self.__func__, self.__self__);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, object>>)site).Update(site, context, target);
@@ -142,8 +142,8 @@ namespace IronPython.Runtime {
 
             public object SelfTarget(CallSite site, CodeContext context, object target, T0 arg0) {
                 Method self = target as Method;
-                if (self != null && self._inst != null) {
-                    return _site.Target(_site, context, self._func, self._inst, arg0);
+                if (self != null && self.__self__ != null) {
+                    return _site.Target(_site, context, self.__func__, self.__self__, arg0);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, object>>)site).Update(site, context, target, arg0);
@@ -151,8 +151,8 @@ namespace IronPython.Runtime {
 
             public object SelflessTarget(CallSite site, CodeContext context, object target, object arg0, T0 arg1) {
                 Method self = target as Method;
-                if (self != null && self._inst == null) {
-                    return _site.Target(_site, context, self._func, PythonOps.MethodCheckSelf(context, self, arg0), arg1);
+                if (self != null && self.__self__ == null) {
+                    return _site.Target(_site, context, self.__func__, PythonOps.MethodCheckSelf(context, self, arg0), arg1);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, object, T0, object>>)site).Update(site, context, target, arg0, arg1);
@@ -176,8 +176,8 @@ namespace IronPython.Runtime {
 
             public object SelfTarget(CallSite site, CodeContext context, object target, T0 arg0, T1 arg1) {
                 Method self = target as Method;
-                if (self != null && self._inst != null) {
-                    return _site.Target(_site, context, self._func, self._inst, arg0, arg1);
+                if (self != null && self.__self__ != null) {
+                    return _site.Target(_site, context, self.__func__, self.__self__, arg0, arg1);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, object>>)site).Update(site, context, target, arg0, arg1);
@@ -185,8 +185,8 @@ namespace IronPython.Runtime {
 
             public object SelflessTarget(CallSite site, CodeContext context, object target, object arg0, T0 arg1, T1 arg2) {
                 Method self = target as Method;
-                if (self != null && self._inst == null) {
-                    return _site.Target(_site, context, self._func, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2);
+                if (self != null && self.__self__ == null) {
+                    return _site.Target(_site, context, self.__func__, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, object, T0, T1, object>>)site).Update(site, context, target, arg0, arg1, arg2);
@@ -210,8 +210,8 @@ namespace IronPython.Runtime {
 
             public object SelfTarget(CallSite site, CodeContext context, object target, T0 arg0, T1 arg1, T2 arg2) {
                 Method self = target as Method;
-                if (self != null && self._inst != null) {
-                    return _site.Target(_site, context, self._func, self._inst, arg0, arg1, arg2);
+                if (self != null && self.__self__ != null) {
+                    return _site.Target(_site, context, self.__func__, self.__self__, arg0, arg1, arg2);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, object>>)site).Update(site, context, target, arg0, arg1, arg2);
@@ -219,8 +219,8 @@ namespace IronPython.Runtime {
 
             public object SelflessTarget(CallSite site, CodeContext context, object target, object arg0, T0 arg1, T1 arg2, T2 arg3) {
                 Method self = target as Method;
-                if (self != null && self._inst == null) {
-                    return _site.Target(_site, context, self._func, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3);
+                if (self != null && self.__self__ == null) {
+                    return _site.Target(_site, context, self.__func__, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3);
@@ -244,8 +244,8 @@ namespace IronPython.Runtime {
 
             public object SelfTarget(CallSite site, CodeContext context, object target, T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
                 Method self = target as Method;
-                if (self != null && self._inst != null) {
-                    return _site.Target(_site, context, self._func, self._inst, arg0, arg1, arg2, arg3);
+                if (self != null && self.__self__ != null) {
+                    return _site.Target(_site, context, self.__func__, self.__self__, arg0, arg1, arg2, arg3);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3);
@@ -253,8 +253,8 @@ namespace IronPython.Runtime {
 
             public object SelflessTarget(CallSite site, CodeContext context, object target, object arg0, T0 arg1, T1 arg2, T2 arg3, T3 arg4) {
                 Method self = target as Method;
-                if (self != null && self._inst == null) {
-                    return _site.Target(_site, context, self._func, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4);
+                if (self != null && self.__self__ == null) {
+                    return _site.Target(_site, context, self.__func__, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4);
@@ -278,8 +278,8 @@ namespace IronPython.Runtime {
 
             public object SelfTarget(CallSite site, CodeContext context, object target, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
                 Method self = target as Method;
-                if (self != null && self._inst != null) {
-                    return _site.Target(_site, context, self._func, self._inst, arg0, arg1, arg2, arg3, arg4);
+                if (self != null && self.__self__ != null) {
+                    return _site.Target(_site, context, self.__func__, self.__self__, arg0, arg1, arg2, arg3, arg4);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4);
@@ -287,8 +287,8 @@ namespace IronPython.Runtime {
 
             public object SelflessTarget(CallSite site, CodeContext context, object target, object arg0, T0 arg1, T1 arg2, T2 arg3, T3 arg4, T4 arg5) {
                 Method self = target as Method;
-                if (self != null && self._inst == null) {
-                    return _site.Target(_site, context, self._func, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4, arg5);
+                if (self != null && self.__self__ == null) {
+                    return _site.Target(_site, context, self.__func__, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4, arg5);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5);
@@ -312,8 +312,8 @@ namespace IronPython.Runtime {
 
             public object SelfTarget(CallSite site, CodeContext context, object target, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5) {
                 Method self = target as Method;
-                if (self != null && self._inst != null) {
-                    return _site.Target(_site, context, self._func, self._inst, arg0, arg1, arg2, arg3, arg4, arg5);
+                if (self != null && self.__self__ != null) {
+                    return _site.Target(_site, context, self.__func__, self.__self__, arg0, arg1, arg2, arg3, arg4, arg5);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5);
@@ -321,8 +321,8 @@ namespace IronPython.Runtime {
 
             public object SelflessTarget(CallSite site, CodeContext context, object target, object arg0, T0 arg1, T1 arg2, T2 arg3, T3 arg4, T4 arg5, T5 arg6) {
                 Method self = target as Method;
-                if (self != null && self._inst == null) {
-                    return _site.Target(_site, context, self._func, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4, arg5, arg6);
+                if (self != null && self.__self__ == null) {
+                    return _site.Target(_site, context, self.__func__, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4, arg5, arg6);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, T5, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
@@ -346,8 +346,8 @@ namespace IronPython.Runtime {
 
             public object SelfTarget(CallSite site, CodeContext context, object target, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6) {
                 Method self = target as Method;
-                if (self != null && self._inst != null) {
-                    return _site.Target(_site, context, self._func, self._inst, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+                if (self != null && self.__self__ != null) {
+                    return _site.Target(_site, context, self.__func__, self.__self__, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
@@ -355,8 +355,8 @@ namespace IronPython.Runtime {
 
             public object SelflessTarget(CallSite site, CodeContext context, object target, object arg0, T0 arg1, T1 arg2, T2 arg3, T3 arg4, T4 arg5, T5 arg6, T6 arg7) {
                 Method self = target as Method;
-                if (self != null && self._inst == null) {
-                    return _site.Target(_site, context, self._func, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                if (self != null && self.__self__ == null) {
+                    return _site.Target(_site, context, self.__func__, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, T5, T6, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
@@ -380,8 +380,8 @@ namespace IronPython.Runtime {
 
             public object SelfTarget(CallSite site, CodeContext context, object target, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7) {
                 Method self = target as Method;
-                if (self != null && self._inst != null) {
-                    return _site.Target(_site, context, self._func, self._inst, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                if (self != null && self.__self__ != null) {
+                    return _site.Target(_site, context, self.__func__, self.__self__, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
@@ -389,8 +389,8 @@ namespace IronPython.Runtime {
 
             public object SelflessTarget(CallSite site, CodeContext context, object target, object arg0, T0 arg1, T1 arg2, T2 arg3, T3 arg4, T4 arg5, T5 arg6, T6 arg7, T7 arg8) {
                 Method self = target as Method;
-                if (self != null && self._inst == null) {
-                    return _site.Target(_site, context, self._func, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+                if (self != null && self.__self__ == null) {
+                    return _site.Target(_site, context, self.__func__, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, T5, T6, T7, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
@@ -414,8 +414,8 @@ namespace IronPython.Runtime {
 
             public object SelfTarget(CallSite site, CodeContext context, object target, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8) {
                 Method self = target as Method;
-                if (self != null && self._inst != null) {
-                    return _site.Target(_site, context, self._func, self._inst, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+                if (self != null && self.__self__ != null) {
+                    return _site.Target(_site, context, self.__func__, self.__self__, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
@@ -423,8 +423,8 @@ namespace IronPython.Runtime {
 
             public object SelflessTarget(CallSite site, CodeContext context, object target, object arg0, T0 arg1, T1 arg2, T2 arg3, T3 arg4, T4 arg5, T5 arg6, T6 arg7, T7 arg8, T8 arg9) {
                 Method self = target as Method;
-                if (self != null && self._inst == null) {
-                    return _site.Target(_site, context, self._func, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+                if (self != null && self.__self__ == null) {
+                    return _site.Target(_site, context, self.__func__, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
@@ -448,8 +448,8 @@ namespace IronPython.Runtime {
 
             public object SelfTarget(CallSite site, CodeContext context, object target, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9) {
                 Method self = target as Method;
-                if (self != null && self._inst != null) {
-                    return _site.Target(_site, context, self._func, self._inst, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+                if (self != null && self.__self__ != null) {
+                    return _site.Target(_site, context, self.__func__, self.__self__, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
@@ -457,8 +457,8 @@ namespace IronPython.Runtime {
 
             public object SelflessTarget(CallSite site, CodeContext context, object target, object arg0, T0 arg1, T1 arg2, T2 arg3, T3 arg4, T4 arg5, T5 arg6, T6 arg7, T7 arg8, T8 arg9, T9 arg10) {
                 Method self = target as Method;
-                if (self != null && self._inst == null) {
-                    return _site.Target(_site, context, self._func, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
+                if (self != null && self.__self__ == null) {
+                    return _site.Target(_site, context, self.__func__, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
@@ -482,8 +482,8 @@ namespace IronPython.Runtime {
 
             public object SelfTarget(CallSite site, CodeContext context, object target, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10) {
                 Method self = target as Method;
-                if (self != null && self._inst != null) {
-                    return _site.Target(_site, context, self._func, self._inst, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
+                if (self != null && self.__self__ != null) {
+                    return _site.Target(_site, context, self.__func__, self.__self__, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
@@ -491,8 +491,8 @@ namespace IronPython.Runtime {
 
             public object SelflessTarget(CallSite site, CodeContext context, object target, object arg0, T0 arg1, T1 arg2, T2 arg3, T3 arg4, T4 arg5, T5 arg6, T6 arg7, T7 arg8, T8 arg9, T9 arg10, T10 arg11) {
                 Method self = target as Method;
-                if (self != null && self._inst == null) {
-                    return _site.Target(_site, context, self._func, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
+                if (self != null && self.__self__ == null) {
+                    return _site.Target(_site, context, self.__func__, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
@@ -516,8 +516,8 @@ namespace IronPython.Runtime {
 
             public object SelfTarget(CallSite site, CodeContext context, object target, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11) {
                 Method self = target as Method;
-                if (self != null && self._inst != null) {
-                    return _site.Target(_site, context, self._func, self._inst, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
+                if (self != null && self.__self__ != null) {
+                    return _site.Target(_site, context, self.__func__, self.__self__, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
@@ -525,8 +525,8 @@ namespace IronPython.Runtime {
 
             public object SelflessTarget(CallSite site, CodeContext context, object target, object arg0, T0 arg1, T1 arg2, T2 arg3, T3 arg4, T4 arg5, T5 arg6, T6 arg7, T7 arg8, T8 arg9, T9 arg10, T10 arg11, T11 arg12) {
                 Method self = target as Method;
-                if (self != null && self._inst == null) {
-                    return _site.Target(_site, context, self._func, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
+                if (self != null && self.__self__ == null) {
+                    return _site.Target(_site, context, self.__func__, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);

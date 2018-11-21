@@ -18,14 +18,12 @@ namespace IronPython.Runtime {
 
     [PythonType("method"), DontMapGetMemberNamesToDir]
     public sealed partial class Method : PythonTypeSlot, IWeakReferenceable, IPythonMembersList, IDynamicMetaObjectProvider, ICodeFormattable, Binding.IFastInvokable {
-        private readonly object _func;
-        private readonly object _inst;
         private readonly object _declaringClass;
         private WeakRefTracker _weakref;
 
         public Method(object function, object instance, object @class) {
-            _func = function;
-            _inst = instance;
+            __func__ = function;
+            __self__ = instance;
             _declaringClass = @class;
         }
 
@@ -34,45 +32,25 @@ namespace IronPython.Runtime {
                 throw PythonOps.TypeError("unbound methods must have a class provided");
             }
 
-            _func = function;
-            _inst = instance;
+            __func__ = function;
+            __self__ = instance;
         }
 
         internal string Name {
-            get { return (string)PythonOps.GetBoundAttr(DefaultContext.Default, _func, "__name__"); }
+            get { return (string)PythonOps.GetBoundAttr(DefaultContext.Default, __func__, "__name__"); }
         }
 
         public string __doc__ {
             get {
-                return PythonOps.GetBoundAttr(DefaultContext.Default, _func, "__doc__") as string;
+                return PythonOps.GetBoundAttr(DefaultContext.Default, __func__, "__doc__") as string;
             }
         }
 
-        public object im_func {
-            get {
-                return _func;
-            }
-        }
+        public object __func__ { get; }
 
-        public object __func__ {
-            get {
-                return _func;
-            }
-        }
+        public object __self__ { get; }
 
-        public object im_self {
-            get {
-                return _inst;
-            }
-        }
-
-        public object __self__ {
-            get {
-                return _inst;
-            }
-        }
-
-        public object im_class {
+        internal object im_class {
             get {
                 // we could have an OldClass (or any other object) here if the user called the ctor directly
                 return PythonOps.ToPythonType(_declaringClass as PythonType) ?? _declaringClass;
@@ -126,13 +104,13 @@ namespace IronPython.Runtime {
         public override bool Equals(object obj) {
             Method other = obj as Method;
             if (other == null) return false;
-            return PythonOps.IsOrEqualsRetBool(_inst, other._inst) && PythonOps.EqualRetBool(_func, other._func);
+            return PythonOps.IsOrEqualsRetBool(__self__, other.__self__) && PythonOps.EqualRetBool(__func__, other.__func__);
         }
 
         public override int GetHashCode() {
-            if (_inst == null) return PythonOps.Hash(DefaultContext.Default, _func);
+            if (__self__ == null) return PythonOps.Hash(DefaultContext.Default, __func__);
 
-            return PythonOps.Hash(DefaultContext.Default, _inst) ^ PythonOps.Hash(DefaultContext.Default, _func);
+            return PythonOps.Hash(DefaultContext.Default, __self__) ^ PythonOps.Hash(DefaultContext.Default, __func__);
         }
         
         #endregion
@@ -163,14 +141,14 @@ namespace IronPython.Runtime {
                 // no __module__ attribute and this value can be gotten via a call to method.__getattribute__ 
                 // there as well.
                 case "__module__":
-                    return PythonOps.GetBoundAttr(context, _func, "__module__");
+                    return PythonOps.GetBoundAttr(context, __func__, "__module__");
                 case "__name__":
-                    return PythonOps.GetBoundAttr(DefaultContext.Default, _func, "__name__");
+                    return PythonOps.GetBoundAttr(DefaultContext.Default, __func__, "__name__");
                 default:
                     object value;
                     string symbol = name;
                     if (TypeCache.Method.TryGetBoundMember(context, this, symbol, out value) ||       // look on method
-                        PythonOps.TryGetBoundAttr(context, _func, symbol, out value)) {               // Forward to the func
+                        PythonOps.TryGetBoundAttr(context, __func__, symbol, out value)) {               // Forward to the func
                         return value;
                     }
                     return OperationFailed.Value;
@@ -196,7 +174,7 @@ namespace IronPython.Runtime {
 
             ret.AddNoLockNoDups("__module__");
 
-            PythonFunction pf = _func as PythonFunction;
+            PythonFunction pf = __func__ as PythonFunction;
             if (pf != null) {
                 PythonDictionary dict = pf.__dict__;
                 
@@ -214,9 +192,9 @@ namespace IronPython.Runtime {
         #region PythonTypeSlot Overrides
 
         internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
-            if (this.im_self == null) {
+            if (this.__self__ == null) {
                 if (owner == null || owner == im_class || PythonOps.IsSubClass(context, owner, im_class)) {
-                    value = new Method(_func, instance, owner);
+                    value = new Method(__func__, instance, owner);
                     return true;
                 }
             }
@@ -236,15 +214,15 @@ namespace IronPython.Runtime {
 
         public string/*!*/ __repr__(CodeContext/*!*/ context) {
             object name;
-            if (!PythonOps.TryGetBoundAttr(context, _func, "__name__", out name)) {
+            if (!PythonOps.TryGetBoundAttr(context, __func__, "__name__", out name)) {
                 name = "?";
             }
 
-            if (_inst != null) {
+            if (__self__ != null) {
                 return string.Format("<bound method {0}.{1} of {2}>",
                     DeclaringClassAsString(),
                     name,
-                    PythonOps.Repr(context, _inst));
+                    PythonOps.Repr(context, __self__));
             } else {
                 return string.Format("<unbound method {0}.{1}>", DeclaringClassAsString(), name);
             }

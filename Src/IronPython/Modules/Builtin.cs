@@ -627,13 +627,13 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 if (!String.IsNullOrEmpty(pfDoc)) {
                     AppendMultiLine(doc, pfDoc, indent);
                 }
-            } else if ((method = obj as Method) != null && ((function = method.im_func as PythonFunction) != null)) {
+            } else if ((method = obj as Method) != null && ((function = method.__func__ as PythonFunction) != null)) {
                 if (indent == 0) doc.AppendFormat("Help on method {0} in module {1}:\n\n", function.__name__, function.__module__);
 
                 AppendIndent(doc, indent);
                 doc.Append(function.GetSignatureString());
 
-                if (method.im_self == null) {
+                if (method.__self__ == null) {
                     doc.AppendFormat(" unbound {0} method\n", PythonOps.ToString(method.im_class));
                 } else {
                     doc.AppendFormat(" method of {0} instance\n", PythonOps.ToString(method.im_class));

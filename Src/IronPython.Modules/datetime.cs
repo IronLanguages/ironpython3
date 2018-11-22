@@ -18,7 +18,7 @@ using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-[assembly: PythonModule("datetime", typeof(IronPython.Modules.PythonDateTime))]
+[assembly: PythonModule("_datetime", typeof(IronPython.Modules.PythonDateTime))]
 namespace IronPython.Modules {
     public class PythonDateTime {
         public static readonly int MAXYEAR = DateTime.MaxValue.Year;

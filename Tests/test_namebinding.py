@@ -84,28 +84,28 @@ def get_n(n):
     return n
 
 def fooCheck():
-    exec "foo = 42"
+    exec("foo = 42")
     return foo
 
 selph = None
 
 def execAdd():
-    exec 'a=2'
+    exec('a=2')
     selph.assertTrue(locals() == {'a': 2})
 
 def execAddExisting():
     b = 5
-    exec 'a=2'
+    exec('a=2')
     selph.assertTrue(locals() == {'a': 2, 'b':5})
 
 def execAddExistingArgs(c):
     b = 5
-    exec 'a=2'
+    exec('a=2')
     selph.assertTrue(locals() == {'a': 2, 'b': 5, 'c':7})
 
 def execDel():
     a = 5
-    exec 'del(a)'
+    exec('del(a)')
     selph.assertEqual(locals(), {})
 
 def nolocals():
@@ -210,9 +210,9 @@ def test_namebinding_locals_and_class_impl():
     selph.assertTrue(C.passed == True)
 
 def localsAfterExpr():
-    exec "pass"
+    exec("pass")
     10
-    exec "pass"
+    exec("pass")
 
 def my_locals():
     selph.fail("Calling wrong locals")
@@ -283,7 +283,7 @@ class NameBindingTest(IronPythonTestCase):
         def f():
             a = 2
             class c:
-                exec "a = 42"
+                exec("a = 42")
                 abc = a
             return c
 
@@ -451,18 +451,18 @@ class NameBindingTest(IronPythonTestCase):
     def _test_undefined(self, function, *args):
         try:
             function(*args)
-        except NameError, n:
-            self.assertTrue("'undefined'" in str(n), "%s: expected undefined variable exception, but different NameError caught: %s" % (function.func_name, n))
+        except NameError as n:
+            self.assertTrue("'undefined'" in str(n), "%s: expected undefined variable exception, but different NameError caught: %s" % (function.__name__, n))
         else:
-            self.fail("%s: expected undefined variable exception, but no exception caught" % function.func_name)
+            self.fail("%s: expected undefined variable exception, but no exception caught" % function.__name__)
 
     def _test_unassigned(self, function, *args):
         try:
             function(*args)
-        except UnboundLocalError, n:
+        except UnboundLocalError as n:
             pass
         else:
-            self.fail("%s: expected unassigned variable exception, but no exception caught" % function.func_name)
+            self.fail("%s: expected unassigned variable exception, but no exception caught" % function.__name__)
 
     def _test_attribute_error(function, *args):
         try:
@@ -470,7 +470,7 @@ class NameBindingTest(IronPythonTestCase):
         except AttributeError:
             pass
         else:
-            self.fail("%s: expected AttributeError, but no exception caught" % function.func_name)
+            self.fail("%s: expected AttributeError, but no exception caught" % function.__name__)
 
     def test_undefined_local(self):
         """straightforward undefined local"""
@@ -670,7 +670,7 @@ class NameBindingTest(IronPythonTestCase):
         def test():
             for undefined in []:
                 pass
-            print undefined
+            print(undefined)
 
         self._test_undefined(test)
 
@@ -689,7 +689,7 @@ class NameBindingTest(IronPythonTestCase):
         def test():
             try:
                 pass
-            except Error, undefined:
+            except Error as undefined:
                 pass
             x = undefined
 
@@ -910,7 +910,7 @@ class NameBindingTest(IronPythonTestCase):
 
     def test_delete_builting_func(self):
         ## delete builtin func
-        import __builtin__
+        import builtins
 
         try:
             del pow
@@ -921,26 +921,27 @@ class NameBindingTest(IronPythonTestCase):
         class C(object):
             name = None
             def test(self):
-                print name
+                print(name)
 
         self.assertRaises(NameError, C().test)
 
-    def test_delete_from__builtin__(self):
-        import __builtin__
+    def test_delete_from_builtins(self):
+        import builtins
+        from importlib import reload
         try:
-            del __builtin__.pow
+            del builtins.pow
             self.assertRaises(NameError, lambda: pow)
-            self.assertRaises(AttributeError, lambda: __builtin__.pow)
+            self.assertRaises(AttributeError, lambda: builtins.pow)
         finally:
-            reload(__builtin__)
-            # make sure we still have access to __builtin__'s after reloading
+            reload(builtins)
+            # make sure we still have access to builtins' after reloading
             # self.assertEqual(pow(2,2), 4) # bug 359890
             dir('abc')
 
     def test_override_builtin_method(self):
-        """Overriding __builtin__ method inconsistent with -X:LightweightScopes flag"""
-        import __builtin__
-        __builtin__.help = 10
+        """Overriding builtins method inconsistent with -X:LightweightScopes flag"""
+        import builtins
+        builtins.help = 10
         self.assertRaisesPartialMessage(TypeError, "is not callable", lambda: help(dir))
 
     def test_runtime_name_lookup_class_scopes(self):
@@ -952,7 +953,7 @@ class NameBindingTest(IronPythonTestCase):
             def foo(self):
                 # this exec statement is here to cause the "a" in the next statement
                 # to have its name looked up at run time.
-                exec "dummy = 10" in {}, locals()
+                exec("dummy = 10", {}, locals())
                 return a  # a should bind to the global a, not C.a
 
         self.assertEqual(C().foo(), 123)
@@ -997,7 +998,7 @@ class NameBindingTest(IronPythonTestCase):
         def f():
             abc = eval("locals()")
             abc['foo'] = 42
-            print foo
+            print(foo)
 
         self.assertRaises(NameError, f)
 
@@ -1005,14 +1006,14 @@ class NameBindingTest(IronPythonTestCase):
         def f():
             x = locals()
             x['foo'] = 42
-            print foo
+            print(foo)
 
         self.assertRaises(NameError, f)
 
         def f():
             x = vars()
             x['foo'] = 42
-            print foo
+            print(foo)
 
         self.assertRaises(NameError, f)
 
@@ -1047,7 +1048,7 @@ class NameBindingTest(IronPythonTestCase):
 
 
         def f():
-            exec "foo = 42" in {}
+            exec("foo = 42", {})
             return foo
 
         self.assertRaises(NameError, f)
@@ -1080,7 +1081,8 @@ class NameBindingTest(IronPythonTestCase):
         X = (42, 43)
         class Y:
             def outer_f(self):
-                def f((a,b)=X):
+                def f(X):
+                    (a, b) = X
                     return a, b
                 return f
 
@@ -1091,41 +1093,41 @@ class NameBindingTest(IronPythonTestCase):
 run_test(__name__)
 
 if __name__ == '__main__':
-    selph.assertTrue(locals().has_key('__builtins__'))
+    selph.assertTrue('builtins' in locals())
     a = 5
-    selph.assertTrue(locals().has_key('a'))
+    selph.assertTrue('a' in locals())
 
-    exec 'a = a+1'
+    exec('a = a+1')
 
     selph.assertTrue(locals()['a'] == 6)
 
-    exec "pass"
+    exec("pass")
     locals = my_locals
-    exec "pass"
-    import __builtin__
-    save_locals = __builtin__.locals
+    exec("pass")
+    import builtins
+    save_locals = builtins.locals
     try:
-        __builtin__.locals = my_locals
-        exec "pass"
+        builtins.locals = my_locals
+        exec("pass")
     finally:
-        __builtin__.locals = save_locals
+        builtins.locals = save_locals
 
     localsAfterExpr()
     del locals
 
-    # verify __builtin__ is accessed if a global isn't defined
+    # verify builtins is accessed if a global isn't defined
     xyz = 'aaa'
     selph.assertEqual(xyz, 'aaa')
 
-    import __builtin__
-    __builtin__.xyz = 'abc'
+    import builtins
+    builtins.xyz = 'abc'
 
     xyz = 'def'
     selph.assertEqual(xyz, 'def')
     del xyz
     selph.assertEqual(xyz, 'abc')
 
-    del __builtin__.xyz
+    del builtins.xyz
     try:
         a = xyz
     except NameError: pass

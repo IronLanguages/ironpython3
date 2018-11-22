@@ -2243,7 +2243,7 @@ namespace IronPython.Modules {
                 ) {
                     throw PythonOps.ValueError("while executing STRING, expected string that starts and ends with quotes");
                 }
-                _stack.Add(StringOps.decode(context, repr.Substring(1, repr.Length - 2), "string-escape", "strict"));
+                _stack.Add(StringOps.decode(context, repr.Substring(1, repr.Length - 2), "unicode_escape", "strict"));
             }
 
             private void LoadTuple(CodeContext/*!*/ context) {

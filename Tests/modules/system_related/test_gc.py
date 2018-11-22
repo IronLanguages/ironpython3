@@ -39,7 +39,7 @@ class GcTest(unittest.TestCase):
         self.assertEqual(result[0],0)
         self.assertEqual(result[1],-2)
         self.assertEqual(result[2],2)
-        
+
         ##the method has two argument
         gc.set_threshold(0,128)
         result = gc.get_threshold()
@@ -47,8 +47,8 @@ class GcTest(unittest.TestCase):
         self.assertEqual(result[1],128)
         #CodePlex Work Item 8523
         self.assertEqual(result[2],2)
-        
-    
+
+
         #the method has only one argument
         gc.set_threshold(-10009)
         result= gc.get_threshold()
@@ -56,25 +56,25 @@ class GcTest(unittest.TestCase):
         #CodePlex Work Item 8523
         self.assertEqual(result[1],128)
         self.assertEqual(result[2],2)
-        
+
         #the argument is a random int
-        for i in xrange(1,65535,6):
+        for i in range(1,65535,6):
             gc.set_threshold(i)
             result = gc.get_threshold()
             self.assertEqual(result[0],i)
-        
+
         #a argument is a float
         #CodePlex Work Item 8522
         self.assertRaises(TypeError,gc.set_threshold,2.1)
         self.assertRaises(TypeError,gc.set_threshold,3,-1.3)
-        
+
         #a argument is a string
         #CodePlex Work Item 8522
         self.assertRaises(TypeError,gc.set_threshold,"1")
         self.assertRaises(TypeError,gc.set_threshold,"str","xdv#4")
         self.assertRaises(TypeError,gc.set_threshold,2,"1")
         self.assertRaises(TypeError,gc.set_threshold,31,-123,"asdfasdf","1")
-        
+
         #a argument is a object
         #CodePlex Work Item 8522
         o  = object()
@@ -87,7 +87,7 @@ class GcTest(unittest.TestCase):
         self.assertRaises(TypeError,gc.set_threshold,o)
         self.assertRaises(TypeError,gc.set_threshold,o,o2)
         self.assertRaises(TypeError,gc.set_threshold,8,64,o)
-    
+
     def test_get_referrers(self):
         if is_cli:
             self.assertRaises(NotImplementedError, gc.get_referrers,1,"hello",True)
@@ -95,12 +95,12 @@ class GcTest(unittest.TestCase):
         else:
             gc.get_referrers(1,"hello",True)
             gc.get_referrers()
-            
+
             class TempClass: pass
             tc = TempClass()
             self.assertEqual(gc.get_referrers(TempClass).count(tc), 1)
-    
-    
+
+
     def test_get_referents(self):
         if is_cli:
             self.assertRaises(NotImplementedError, gc.get_referents,1,"hello",True)
@@ -108,7 +108,7 @@ class GcTest(unittest.TestCase):
         else:
             gc.get_referents(1,"hello",True)
             gc.get_referents()
-            
+
             class TempClass: pass
             self.assertEqual(gc.get_referents(TempClass).count('TempClass'), 1)
 
@@ -116,7 +116,7 @@ class GcTest(unittest.TestCase):
         gc.enable()
         result = gc.isenabled()
         self.assertTrue(result,"enable Method can't set gc.isenabled as true.")
-    
+
     def test_disable(self):
         if is_cli:
             import warnings
@@ -135,7 +135,7 @@ class GcTest(unittest.TestCase):
         gc.enable()
         result = gc.isenabled()
         self.assertTrue(result,"enable Method can't set gc.isenabled as true.")
-        
+
         if not is_cli:
             gc.disable()
             result = gc.isenabled()
@@ -149,11 +149,11 @@ class GcTest(unittest.TestCase):
                 gc.set_debug(debug)
                 gc.collect()
         gc.collect(0)
-        
+
         #Negative
         self.assertRaises(ValueError, gc.collect, -1)
         self.assertRaises(ValueError, gc.collect, 2147483647)
-    
+
     def test_setdebug(self):
         if is_cli:
             for debug in debug_list:
@@ -167,10 +167,10 @@ class GcTest(unittest.TestCase):
     def test_garbage(self):
         i = len(gc.garbage)
         self.assertEqual(0,i)
-    
+
     def test_gc(self):
         self.assertTrue(not hasattr(gc, 'gc'))
-    
+
     def test_debug_stats(self):
         self.assertEqual(1,gc.DEBUG_STATS)
         self.assertEqual(2,gc.DEBUG_COLLECTABLE)
@@ -179,13 +179,12 @@ class GcTest(unittest.TestCase):
         self.assertEqual(16,gc.DEBUG_OBJECTS)
         self.assertEqual(32,gc.DEBUG_SAVEALL)
         self.assertEqual(62,gc.DEBUG_LEAK)
- 
+
 
     def test_get_debug(self):
         state = [0,gc.DEBUG_STATS,gc.DEBUG_COLLECTABLE,gc.DEBUG_UNCOLLECTABLE,gc.DEBUG_INSTANCES,gc.DEBUG_OBJECTS,gc.DEBUG_SAVEALL,gc.DEBUG_LEAK]
         result = gc.get_debug()
         if result not in state:
             self.fail("Returned value of getdebug method is not valid value:" + str(result))
-
 
 run_test(__name__)

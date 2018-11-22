@@ -476,15 +476,11 @@ namespace IronPython.Runtime {
         #region PythonTypeSlot Overrides
 
         internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
-            value = new Method(this, instance, owner);
+            value = instance == null ? (object)this : new Method(this, instance, owner);
             return true;
         }
 
-        internal override bool GetAlwaysSucceeds {
-            get {
-                return true;
-            }
-        }
+        internal override bool GetAlwaysSucceeds => true;
 
         #endregion
 

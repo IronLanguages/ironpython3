@@ -2915,8 +2915,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         public object SlotDict(CallSite site, object self, CodeContext context) {
-            IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
+            if (self is IPythonObject ipo && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
                 _hitCount++;
 
                 object res;

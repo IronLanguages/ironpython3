@@ -21,18 +21,20 @@ namespace IronPython.Runtime {
         private WeakRefTracker _weakref;
 
         internal Method(object function, object instance, object @class) {
+            // TODO: is it possible to get rid of this constructor?
             __func__ = function;
             __self__ = instance;
             _declaringClass = @class;
         }
 
-        public Method(object function, object instance) {
-            if (instance == null) {
-                throw PythonOps.TypeError("unbound methods must have a class provided");
+        public Method(object function, object self) {
+            if (self == null) {
+                throw PythonOps.TypeError("self must not be None");
             }
 
             __func__ = function;
-            __self__ = instance;
+            __self__ = self;
+            _declaringClass = DynamicHelpers.GetPythonType(self);
         }
 
         internal string Name => (string)PythonOps.GetBoundAttr(DefaultContext.Default, __func__, "__name__");

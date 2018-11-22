@@ -564,11 +564,6 @@ namespace IronPython.Runtime.Types {
                         
         #region Public Python APIs
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "cls")]
-        public static object/*!*/ __new__(object cls, object newFunction, object inst) {
-            return new Method(newFunction, inst, null);
-        }
-
         public int __cmp__(CodeContext/*!*/ context, [NotNull]BuiltinFunction/*!*/  other) {
             if (other == this) {
                 return 0;

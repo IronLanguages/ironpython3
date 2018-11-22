@@ -819,4 +819,43 @@ class ReTest(IronPythonTestCase):
         self.assertRaisesMessage(re.error, "redefinition of group name 'hoge' as group 3; was group 2", re.compile, r'(abc)(?P<hoge>\w+):(?P<hoge>\w+)')
         self.assertRaisesMessage(re.error, "redefinition of group name 'hoge' as group 4; was group 2", re.compile, r'(abc)(?P<hoge>\w+):(abc)(?P<hoge>\w+)')
 
+    def test_re_fullmatch(self):
+        # test_re_fullmatch from the StdLib - can be removed once test_re is passing
+
+        class S(str):
+            def __getitem__(self, index):
+                return S(super().__getitem__(index))
+
+        class B(bytes):
+            def __getitem__(self, index):
+                return B(super().__getitem__(index))
+
+        self.assertEqual(re.fullmatch(r"a", "a").span(), (0, 1))
+        for string in "ab", S("ab"):
+            self.assertEqual(re.fullmatch(r"a|ab", string).span(), (0, 2))
+        for string in b"ab", B(b"ab"), bytearray(b"ab"):
+            self.assertEqual(re.fullmatch(br"a|ab", string).span(), (0, 2))
+        for a, b in "\xe0\xdf", "\u0430\u0431":
+            r = r"%s|%s" % (a, a + b)
+            self.assertEqual(re.fullmatch(r, a + b).span(), (0, 2))
+        self.assertEqual(re.fullmatch(r".*?$", "abc").span(), (0, 3))
+        self.assertEqual(re.fullmatch(r".*?", "abc").span(), (0, 3))
+        self.assertEqual(re.fullmatch(r"a.*?b", "ab").span(), (0, 2))
+        self.assertEqual(re.fullmatch(r"a.*?b", "abb").span(), (0, 3))
+        self.assertEqual(re.fullmatch(r"a.*?b", "axxb").span(), (0, 4))
+        self.assertIsNone(re.fullmatch(r"a+", "ab"))
+        self.assertIsNone(re.fullmatch(r"abc$", "abc\n"))
+        self.assertIsNone(re.fullmatch(r"abc\Z", "abc\n"))
+        self.assertIsNone(re.fullmatch(r"(?m)abc$", "abc\n"))
+        self.assertEqual(re.fullmatch(r"ab(?=c)cd", "abcd").span(), (0, 4))
+        self.assertEqual(re.fullmatch(r"ab(?<=b)cd", "abcd").span(), (0, 4))
+        self.assertEqual(re.fullmatch(r"(?=a|ab)ab", "ab").span(), (0, 2))
+
+        self.assertEqual(
+            re.compile(r"bc").fullmatch("abcd", pos=1, endpos=3).span(), (1, 3))
+        self.assertEqual(
+            re.compile(r".*?$").fullmatch("abcd", pos=1, endpos=3).span(), (1, 3))
+        self.assertEqual(
+            re.compile(r".*?").fullmatch("abcd", pos=1, endpos=3).span(), (1, 3))
+
 run_test(__name__)

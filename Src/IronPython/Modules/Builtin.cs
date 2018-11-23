@@ -632,12 +632,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
                 AppendIndent(doc, indent);
                 doc.Append(function.GetSignatureString());
-
-                if (method.__self__ == null) {
-                    doc.AppendFormat(" unbound {0} method\n", PythonOps.ToString(method.im_class));
-                } else {
-                    doc.AppendFormat(" method of {0} instance\n", PythonOps.ToString(method.im_class));
-                }
+                doc.AppendFormat(" method of {0} instance\n", PythonOps.ToString(method.im_class));
 
                 string pfDoc = Converter.ConvertToString(function.__doc__);
                 if (!String.IsNullOrEmpty(pfDoc)) {

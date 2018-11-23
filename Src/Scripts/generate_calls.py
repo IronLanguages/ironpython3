@@ -80,29 +80,15 @@ class MethodBinding<%(typeParams)s> : BaseMethodBinding {
     }
 
     public object SelfTarget(CallSite site, CodeContext context, object target, %(callParams)s) {
-        Method self = target as Method;
-        if (self != null && self.__self__ != null) {
+        if (target is Method self) {
             return _site.Target(_site, context, self.__func__, self.__self__, %(callArgs)s);
         }
 
         return ((CallSite<Func<CallSite, CodeContext, object, %(typeParams)s, object>>)site).Update(site, context, target, %(callArgs)s);
     }
-
-    public object SelflessTarget(CallSite site, CodeContext context, object target, object arg0, %(callParamsSelfless)s) {
-        Method self = target as Method;
-        if (self != null && self.__self__ == null) {
-            return _site.Target(_site, context, self.__func__, PythonOps.MethodCheckSelf(context, self, arg0), %(callArgsSelfless)s);
-        }
-
-        return ((CallSite<Func<CallSite, CodeContext, object, object, %(typeParams)s, object>>)site).Update(site, context, target, arg0, %(callArgsSelfless)s);
-    }
     
     public override Delegate GetSelfTarget() {
         return new Func<CallSite, CodeContext, object, %(typeParams)s, object>(SelfTarget);
-    }
-
-    public override Delegate GetSelflessTarget() {
-        return new Func<CallSite, CodeContext, object, object, %(typeParams)s, object>(SelflessTarget);
     }
 }"""
 

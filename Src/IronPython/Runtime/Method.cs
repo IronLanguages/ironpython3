@@ -17,24 +17,21 @@ using IronPython.Runtime.Types;
 namespace IronPython.Runtime {
     [PythonType("method"), DontMapGetMemberNamesToDir]
     public sealed partial class Method : PythonTypeSlot, IWeakReferenceable, IPythonMembersList, IDynamicMetaObjectProvider, ICodeFormattable, Binding.IFastInvokable {
-        private readonly object _declaringClass;
         private WeakRefTracker _weakref;
 
-        internal Method(object function, object instance, object @class) {
-            // TODO: is it possible to get rid of this constructor?
+        // TODO: get rid of this constructor?
+        internal Method(object function, object instance, PythonType @class) {
+            if (instance == null) throw new ArgumentNullException();
             __func__ = function;
             __self__ = instance;
-            _declaringClass = @class;
+            im_class = @class;
         }
 
         public Method(object function, object self) {
-            if (self == null) {
-                throw PythonOps.TypeError("self must not be None");
-            }
-
+            if (self == null) throw PythonOps.TypeError("self must not be None");
             __func__ = function;
             __self__ = self;
-            _declaringClass = DynamicHelpers.GetPythonType(self);
+            im_class = DynamicHelpers.GetPythonType(self);
         }
 
         internal string Name => (string)PythonOps.GetBoundAttr(DefaultContext.Default, __func__, "__name__");
@@ -43,14 +40,9 @@ namespace IronPython.Runtime {
 
         public object __func__ { get; }
 
-        public object __self__ { get; }
+        public object __self__ { get; } // TODO: mark that this property is never null
 
-        internal object im_class {
-            get {
-                // we could have an OldClass (or any other object) here if the user called the ctor directly
-                return PythonOps.ToPythonType(_declaringClass as PythonType) ?? _declaringClass;
-            }
-        }
+        internal PythonType im_class { get; }
 
         [SpecialName]
         public object Call(CodeContext/*!*/ context, params object[] args)
@@ -60,47 +52,15 @@ namespace IronPython.Runtime {
         public object Call(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args)
             => context.LanguageContext.CallWithKeywords(this, args, kwArgs);
 
-        private Exception BadSelf(object got) {
-            string firstArg;
-            if (got == null) {
-                firstArg = "nothing";
-            } else {
-                firstArg = PythonOps.GetPythonTypeName(got) + " instance";
-            }
-            PythonType pt = im_class as PythonType;
-
-            return PythonOps.TypeError("unbound method {0}() must be called with {1} instance as first argument (got {2} instead)",
-                Name,
-                (pt != null) ? pt.Name : im_class,
-                firstArg);
-        }
-
-        /// <summary>
-        /// Validates that the current self object is usable for this method.  
-        /// </summary>
-        internal object CheckSelf(CodeContext context, object self) {
-            if (!PythonOps.IsInstance(context, self, im_class)) {
-                throw BadSelf(self);
-            }
-            return self;
-        }
-        
         #region Object Overrides
 
-        private string DeclaringClassAsString() {
-            if (im_class == null) return "?";
-            if (im_class is PythonType dt) return dt.Name;
-            return im_class.ToString();
-        }
+        private string DeclaringClassAsString() => im_class == null ? "?" : im_class.Name;
 
         public override bool Equals(object obj)
             => obj is Method other && PythonOps.IsOrEqualsRetBool(__self__, other.__self__) && PythonOps.EqualRetBool(__func__, other.__func__);
 
-        public override int GetHashCode() {
-            if (__self__ == null) return PythonOps.Hash(DefaultContext.Default, __func__);
-
-            return PythonOps.Hash(DefaultContext.Default, __self__) ^ PythonOps.Hash(DefaultContext.Default, __func__);
-        }
+        public override int GetHashCode()
+            => PythonOps.Hash(DefaultContext.Default, __self__) ^ PythonOps.Hash(DefaultContext.Default, __func__);
 
         #endregion
 
@@ -172,12 +132,6 @@ namespace IronPython.Runtime {
         #region PythonTypeSlot Overrides
 
         internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
-            if (__self__ == null) {
-                if (owner == null || owner == im_class || PythonOps.IsSubClass(context, owner, im_class)) {
-                    value = new Method(__func__, instance, owner);
-                    return true;
-                }
-            }
             value = this;
             return true;
         }
@@ -194,11 +148,7 @@ namespace IronPython.Runtime {
                 name = "?";
             }
 
-            if (__self__ != null) {
-                return $"<bound method {DeclaringClassAsString()}.{name} of {PythonOps.Repr(context, __self__)}>";
-            } else {
-                return $"<unbound method {DeclaringClassAsString()}.{name}>";
-            }
+            return $"<bound method {DeclaringClassAsString()}.{name} of {PythonOps.Repr(context, __self__)}>";
         }
 
         #endregion

@@ -25,34 +25,22 @@ namespace IronPython.Runtime {
             if (binder.Signature.IsSimple) {
                 BaseMethodBinding binding = null;
 
-                if (__self__ == null) {
-                    if (args.Length != 0) {
-                        binding = GetMethodBinding<T>(binder, GetTypeArgsSelfless<T>(), binding);
+                var selfBinder = GetSelfBinder(binder, context);
 
-                        if (binding != null) {
-                            return new FastBindResult<T>(
-                                (T)(object)binding.GetSelflessTarget(),
-                                true
-                            );
-                        }
-                    }
+                if (args.Length == 0) {
+                    binding = new MethodBinding(selfBinder);
                 } else {
-                    var selfBinder = GetSelfBinder(binder, context);
+                    binding = GetMethodBinding<T>(selfBinder, GetTypeArgs<T>(), binding);
+                }
 
-                    if (args.Length == 0) {
-                        binding = new MethodBinding(selfBinder);
-                    } else {
-                        binding = GetMethodBinding<T>(selfBinder, GetTypeArgs<T>(), binding);
-                    }
-
-                    if (binding != null) {
-                        return new FastBindResult<T>(
-                            (T)(object)binding.GetSelfTarget(),
-                            true
-                        );
-                    }
+                if (binding != null) {
+                    return new FastBindResult<T>(
+                        (T) (object) binding.GetSelfTarget(),
+                        true
+                    );
                 }
             }
+
             return new Binding.FastBindResult<T>();
         }
 
@@ -87,10 +75,6 @@ namespace IronPython.Runtime {
             return ArrayUtils.ShiftLeft(ArrayUtils.ConvertAll(typeof(T).GetMethod("Invoke").GetParameters(), pi => pi.ParameterType), 3);
         }
 
-        private static Type[] GetTypeArgsSelfless<T>() where T : class {
-            return ArrayUtils.ShiftLeft(ArrayUtils.ConvertAll(typeof(T).GetMethod("Invoke").GetParameters(), pi => pi.ParameterType), 4);
-        }
-
         private static PythonInvokeBinder GetSelfBinder(Binding.PythonInvokeBinder binder, CodeContext context) {
             return context.LanguageContext.Invoke(
                 new CallSignature(ArrayUtils.Insert(new Argument(ArgumentType.Simple), binder.Signature.GetArgumentInfos()))
@@ -99,7 +83,6 @@ namespace IronPython.Runtime {
 
         abstract class BaseMethodBinding {
             public abstract Delegate GetSelfTarget();
-            public abstract Delegate GetSelflessTarget();
         }
 
         class MethodBinding : BaseMethodBinding {
@@ -110,8 +93,7 @@ namespace IronPython.Runtime {
             }
 
             public object SelfTarget(CallSite site, CodeContext context, object target) {
-                Method self = target as Method;
-                if (self != null && self.__self__ != null) {
+                if (target is Method self) {
                     return _site.Target(_site, context, self.__func__, self.__self__);
                 }
 
@@ -120,10 +102,6 @@ namespace IronPython.Runtime {
 
             public override Delegate GetSelfTarget() {
                 return new Func<CallSite, CodeContext, object, object>(SelfTarget);
-            }
-
-            public override Delegate GetSelflessTarget() {
-                throw new InvalidOperationException();
             }
         }
 
@@ -141,29 +119,15 @@ namespace IronPython.Runtime {
             }
 
             public object SelfTarget(CallSite site, CodeContext context, object target, T0 arg0) {
-                Method self = target as Method;
-                if (self != null && self.__self__ != null) {
+                if (target is Method self) {
                     return _site.Target(_site, context, self.__func__, self.__self__, arg0);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, object>>)site).Update(site, context, target, arg0);
             }
 
-            public object SelflessTarget(CallSite site, CodeContext context, object target, object arg0, T0 arg1) {
-                Method self = target as Method;
-                if (self != null && self.__self__ == null) {
-                    return _site.Target(_site, context, self.__func__, PythonOps.MethodCheckSelf(context, self, arg0), arg1);
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, object, T0, object>>)site).Update(site, context, target, arg0, arg1);
-            }
-
             public override Delegate GetSelfTarget() {
                 return new Func<CallSite, CodeContext, object, T0, object>(SelfTarget);
-            }
-
-            public override Delegate GetSelflessTarget() {
-                return new Func<CallSite, CodeContext, object, object, T0, object>(SelflessTarget);
             }
         }
 
@@ -175,29 +139,15 @@ namespace IronPython.Runtime {
             }
 
             public object SelfTarget(CallSite site, CodeContext context, object target, T0 arg0, T1 arg1) {
-                Method self = target as Method;
-                if (self != null && self.__self__ != null) {
+                if (target is Method self) {
                     return _site.Target(_site, context, self.__func__, self.__self__, arg0, arg1);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, object>>)site).Update(site, context, target, arg0, arg1);
             }
 
-            public object SelflessTarget(CallSite site, CodeContext context, object target, object arg0, T0 arg1, T1 arg2) {
-                Method self = target as Method;
-                if (self != null && self.__self__ == null) {
-                    return _site.Target(_site, context, self.__func__, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2);
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, object, T0, T1, object>>)site).Update(site, context, target, arg0, arg1, arg2);
-            }
-
             public override Delegate GetSelfTarget() {
                 return new Func<CallSite, CodeContext, object, T0, T1, object>(SelfTarget);
-            }
-
-            public override Delegate GetSelflessTarget() {
-                return new Func<CallSite, CodeContext, object, object, T0, T1, object>(SelflessTarget);
             }
         }
 
@@ -209,29 +159,15 @@ namespace IronPython.Runtime {
             }
 
             public object SelfTarget(CallSite site, CodeContext context, object target, T0 arg0, T1 arg1, T2 arg2) {
-                Method self = target as Method;
-                if (self != null && self.__self__ != null) {
+                if (target is Method self) {
                     return _site.Target(_site, context, self.__func__, self.__self__, arg0, arg1, arg2);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, object>>)site).Update(site, context, target, arg0, arg1, arg2);
             }
 
-            public object SelflessTarget(CallSite site, CodeContext context, object target, object arg0, T0 arg1, T1 arg2, T2 arg3) {
-                Method self = target as Method;
-                if (self != null && self.__self__ == null) {
-                    return _site.Target(_site, context, self.__func__, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3);
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3);
-            }
-
             public override Delegate GetSelfTarget() {
                 return new Func<CallSite, CodeContext, object, T0, T1, T2, object>(SelfTarget);
-            }
-
-            public override Delegate GetSelflessTarget() {
-                return new Func<CallSite, CodeContext, object, object, T0, T1, T2, object>(SelflessTarget);
             }
         }
 
@@ -243,29 +179,15 @@ namespace IronPython.Runtime {
             }
 
             public object SelfTarget(CallSite site, CodeContext context, object target, T0 arg0, T1 arg1, T2 arg2, T3 arg3) {
-                Method self = target as Method;
-                if (self != null && self.__self__ != null) {
+                if (target is Method self) {
                     return _site.Target(_site, context, self.__func__, self.__self__, arg0, arg1, arg2, arg3);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3);
             }
 
-            public object SelflessTarget(CallSite site, CodeContext context, object target, object arg0, T0 arg1, T1 arg2, T2 arg3, T3 arg4) {
-                Method self = target as Method;
-                if (self != null && self.__self__ == null) {
-                    return _site.Target(_site, context, self.__func__, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4);
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4);
-            }
-
             public override Delegate GetSelfTarget() {
                 return new Func<CallSite, CodeContext, object, T0, T1, T2, T3, object>(SelfTarget);
-            }
-
-            public override Delegate GetSelflessTarget() {
-                return new Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, object>(SelflessTarget);
             }
         }
 
@@ -277,29 +199,15 @@ namespace IronPython.Runtime {
             }
 
             public object SelfTarget(CallSite site, CodeContext context, object target, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) {
-                Method self = target as Method;
-                if (self != null && self.__self__ != null) {
+                if (target is Method self) {
                     return _site.Target(_site, context, self.__func__, self.__self__, arg0, arg1, arg2, arg3, arg4);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4);
             }
 
-            public object SelflessTarget(CallSite site, CodeContext context, object target, object arg0, T0 arg1, T1 arg2, T2 arg3, T3 arg4, T4 arg5) {
-                Method self = target as Method;
-                if (self != null && self.__self__ == null) {
-                    return _site.Target(_site, context, self.__func__, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4, arg5);
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5);
-            }
-
             public override Delegate GetSelfTarget() {
                 return new Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, object>(SelfTarget);
-            }
-
-            public override Delegate GetSelflessTarget() {
-                return new Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, object>(SelflessTarget);
             }
         }
 
@@ -311,29 +219,15 @@ namespace IronPython.Runtime {
             }
 
             public object SelfTarget(CallSite site, CodeContext context, object target, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5) {
-                Method self = target as Method;
-                if (self != null && self.__self__ != null) {
+                if (target is Method self) {
                     return _site.Target(_site, context, self.__func__, self.__self__, arg0, arg1, arg2, arg3, arg4, arg5);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5);
             }
 
-            public object SelflessTarget(CallSite site, CodeContext context, object target, object arg0, T0 arg1, T1 arg2, T2 arg3, T3 arg4, T4 arg5, T5 arg6) {
-                Method self = target as Method;
-                if (self != null && self.__self__ == null) {
-                    return _site.Target(_site, context, self.__func__, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4, arg5, arg6);
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, T5, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
-            }
-
             public override Delegate GetSelfTarget() {
                 return new Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, object>(SelfTarget);
-            }
-
-            public override Delegate GetSelflessTarget() {
-                return new Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, T5, object>(SelflessTarget);
             }
         }
 
@@ -345,29 +239,15 @@ namespace IronPython.Runtime {
             }
 
             public object SelfTarget(CallSite site, CodeContext context, object target, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6) {
-                Method self = target as Method;
-                if (self != null && self.__self__ != null) {
+                if (target is Method self) {
                     return _site.Target(_site, context, self.__func__, self.__self__, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
             }
 
-            public object SelflessTarget(CallSite site, CodeContext context, object target, object arg0, T0 arg1, T1 arg2, T2 arg3, T3 arg4, T4 arg5, T5 arg6, T6 arg7) {
-                Method self = target as Method;
-                if (self != null && self.__self__ == null) {
-                    return _site.Target(_site, context, self.__func__, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, T5, T6, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-            }
-
             public override Delegate GetSelfTarget() {
                 return new Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, object>(SelfTarget);
-            }
-
-            public override Delegate GetSelflessTarget() {
-                return new Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, T5, T6, object>(SelflessTarget);
             }
         }
 
@@ -379,29 +259,15 @@ namespace IronPython.Runtime {
             }
 
             public object SelfTarget(CallSite site, CodeContext context, object target, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7) {
-                Method self = target as Method;
-                if (self != null && self.__self__ != null) {
+                if (target is Method self) {
                     return _site.Target(_site, context, self.__func__, self.__self__, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
             }
 
-            public object SelflessTarget(CallSite site, CodeContext context, object target, object arg0, T0 arg1, T1 arg2, T2 arg3, T3 arg4, T4 arg5, T5 arg6, T6 arg7, T7 arg8) {
-                Method self = target as Method;
-                if (self != null && self.__self__ == null) {
-                    return _site.Target(_site, context, self.__func__, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, T5, T6, T7, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
-            }
-
             public override Delegate GetSelfTarget() {
                 return new Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, object>(SelfTarget);
-            }
-
-            public override Delegate GetSelflessTarget() {
-                return new Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, T5, T6, T7, object>(SelflessTarget);
             }
         }
 
@@ -413,29 +279,15 @@ namespace IronPython.Runtime {
             }
 
             public object SelfTarget(CallSite site, CodeContext context, object target, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8) {
-                Method self = target as Method;
-                if (self != null && self.__self__ != null) {
+                if (target is Method self) {
                     return _site.Target(_site, context, self.__func__, self.__self__, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
             }
 
-            public object SelflessTarget(CallSite site, CodeContext context, object target, object arg0, T0 arg1, T1 arg2, T2 arg3, T3 arg4, T4 arg5, T5 arg6, T6 arg7, T7 arg8, T8 arg9) {
-                Method self = target as Method;
-                if (self != null && self.__self__ == null) {
-                    return _site.Target(_site, context, self.__func__, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
-            }
-
             public override Delegate GetSelfTarget() {
                 return new Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, object>(SelfTarget);
-            }
-
-            public override Delegate GetSelflessTarget() {
-                return new Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, object>(SelflessTarget);
             }
         }
 
@@ -447,29 +299,15 @@ namespace IronPython.Runtime {
             }
 
             public object SelfTarget(CallSite site, CodeContext context, object target, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9) {
-                Method self = target as Method;
-                if (self != null && self.__self__ != null) {
+                if (target is Method self) {
                     return _site.Target(_site, context, self.__func__, self.__self__, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
             }
 
-            public object SelflessTarget(CallSite site, CodeContext context, object target, object arg0, T0 arg1, T1 arg2, T2 arg3, T3 arg4, T4 arg5, T5 arg6, T6 arg7, T7 arg8, T8 arg9, T9 arg10) {
-                Method self = target as Method;
-                if (self != null && self.__self__ == null) {
-                    return _site.Target(_site, context, self.__func__, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
-            }
-
             public override Delegate GetSelfTarget() {
                 return new Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, object>(SelfTarget);
-            }
-
-            public override Delegate GetSelflessTarget() {
-                return new Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, object>(SelflessTarget);
             }
         }
 
@@ -481,29 +319,15 @@ namespace IronPython.Runtime {
             }
 
             public object SelfTarget(CallSite site, CodeContext context, object target, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10) {
-                Method self = target as Method;
-                if (self != null && self.__self__ != null) {
+                if (target is Method self) {
                     return _site.Target(_site, context, self.__func__, self.__self__, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
             }
 
-            public object SelflessTarget(CallSite site, CodeContext context, object target, object arg0, T0 arg1, T1 arg2, T2 arg3, T3 arg4, T4 arg5, T5 arg6, T6 arg7, T7 arg8, T8 arg9, T9 arg10, T10 arg11) {
-                Method self = target as Method;
-                if (self != null && self.__self__ == null) {
-                    return _site.Target(_site, context, self.__func__, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
-            }
-
             public override Delegate GetSelfTarget() {
                 return new Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, object>(SelfTarget);
-            }
-
-            public override Delegate GetSelflessTarget() {
-                return new Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, object>(SelflessTarget);
             }
         }
 
@@ -515,29 +339,15 @@ namespace IronPython.Runtime {
             }
 
             public object SelfTarget(CallSite site, CodeContext context, object target, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11) {
-                Method self = target as Method;
-                if (self != null && self.__self__ != null) {
+                if (target is Method self) {
                     return _site.Target(_site, context, self.__func__, self.__self__, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
                 }
 
                 return ((CallSite<Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
             }
 
-            public object SelflessTarget(CallSite site, CodeContext context, object target, object arg0, T0 arg1, T1 arg2, T2 arg3, T3 arg4, T4 arg5, T5 arg6, T6 arg7, T7 arg8, T8 arg9, T9 arg10, T10 arg11, T11 arg12) {
-                Method self = target as Method;
-                if (self != null && self.__self__ == null) {
-                    return _site.Target(_site, context, self.__func__, PythonOps.MethodCheckSelf(context, self, arg0), arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
-                }
-
-                return ((CallSite<Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, object>>)site).Update(site, context, target, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
-            }
-
             public override Delegate GetSelfTarget() {
                 return new Func<CallSite, CodeContext, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, object>(SelfTarget);
-            }
-
-            public override Delegate GetSelflessTarget() {
-                return new Func<CallSite, CodeContext, object, object, T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, object>(SelflessTarget);
             }
         }
 

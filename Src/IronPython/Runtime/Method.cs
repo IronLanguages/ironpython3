@@ -42,7 +42,7 @@ namespace IronPython.Runtime {
 
         public object __self__ { get; } // TODO: mark that this property is never null
 
-        internal PythonType im_class { get; }
+        internal PythonType im_class { get; } // TODO: get rid of this property?
 
         [SpecialName]
         public object Call(CodeContext/*!*/ context, params object[] args)

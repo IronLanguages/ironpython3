@@ -523,18 +523,10 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         private static void help(CodeContext/*!*/ context, List<object>/*!*/ doced, StringBuilder/*!*/ doc, int indent, object obj) {
-            PythonType type;
-            BuiltinFunction builtinFunction;
-            PythonFunction function;
-            BuiltinMethodDescriptor methodDesc;
-            Method method;
-            string strVal;
-            PythonModule pyModule;
-
             if (doced.Contains(obj)) return;  // document things only once
             doced.Add(obj);
 
-            if ((strVal = obj as string) != null) {
+            if (obj is string strVal) {
                 if (indent != 0) return;
 
                 // try and find things that string could refer to,
@@ -554,9 +546,9 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
                     // favor types, then built-in functions, then python functions,
                     // and then only display help for one.
-                    type = null;
-                    builtinFunction = null;
-                    function = null;
+                    PythonType type = null;
+                    BuiltinFunction builtinFunction = null;
+                    PythonFunction function = null;
                     for (int i = 0; i < candidates.__len__(); i++) {
                         if ((type = candidates[i] as PythonType) != null) {
                             break;
@@ -573,17 +565,15 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                     else if (builtinFunction != null) help(context, doced, doc, indent, builtinFunction);
                     else if (function != null) help(context, doced, doc, indent, function);
                 }
-            } else if ((type = obj as PythonType) != null) {
+            } else if (obj is PythonType type) {
                 // find all the functions, and display their 
                 // documentation                
                 if (indent == 0) {
                     doc.AppendFormat("Help on {0} in module {1}\n\n", type.Name, PythonOps.GetBoundAttr(context, type, "__module__"));
                 }
 
-                PythonTypeSlot dts;
-                if (type.TryResolveSlot(context, "__doc__", out dts)) {
-                    object docText;
-                    if (dts.TryGetValue(context, null, type, out docText) && docText != null)
+                if (type.TryResolveSlot(context, "__doc__", out PythonTypeSlot dts)) {
+                    if (dts.TryGetValue(context, null, type, out object docText) && docText != null)
                         AppendMultiLine(doc, docText.ToString() + Environment.NewLine, indent);
                     AppendIndent(doc, indent);
                     doc.AppendLine("Data and other attributes defined here:");
@@ -597,53 +587,50 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 foreach (string name in names) {
                     if (name == "__class__") continue;
 
-                    PythonTypeSlot value;
-                    object val;
-                    if (type.TryLookupSlot(context, name, out value) &&
-                        value.TryGetValue(context, null, type, out val)) {
+                    if (type.TryLookupSlot(context, name, out PythonTypeSlot value) &&
+                        value.TryGetValue(context, null, type, out object val)) {
                         help(context, doced, doc, indent + 1, val);
                     }
                 }
-            } else if ((methodDesc = obj as BuiltinMethodDescriptor) != null) {
+            } else if (obj is BuiltinMethodDescriptor methodDesc) {
                 if (indent == 0) doc.AppendFormat("Help on method-descriptor {0}\n\n", methodDesc.__name__);
                 AppendIndent(doc, indent);
                 doc.Append(methodDesc.__name__);
                 doc.Append("(...)\n");
 
                 AppendMultiLine(doc, methodDesc.__doc__, indent + 1);
-            } else if ((builtinFunction = obj as BuiltinFunction) != null) {
+            } else if (obj is BuiltinFunction builtinFunction) {
                 if (indent == 0) doc.AppendFormat("Help on built-in function {0}\n\n", builtinFunction.Name);
                 AppendIndent(doc, indent);
                 doc.Append(builtinFunction.Name);
                 doc.Append("(...)\n");
 
                 AppendMultiLine(doc, builtinFunction.__doc__, indent + 1);
-            } else if ((function = obj as PythonFunction) != null) {
+            } else if (obj is PythonFunction function) {
                 if (indent == 0) doc.AppendFormat("Help on function {0} in module {1}:\n\n", function.__name__, function.__module__);
 
                 AppendIndent(doc, indent);
                 doc.Append(function.GetSignatureString());
                 string pfDoc = Converter.ConvertToString(function.__doc__);
-                if (!String.IsNullOrEmpty(pfDoc)) {
+                if (!string.IsNullOrEmpty(pfDoc)) {
                     AppendMultiLine(doc, pfDoc, indent);
                 }
-            } else if ((method = obj as Method) != null && ((function = method.__func__ as PythonFunction) != null)) {
-                if (indent == 0) doc.AppendFormat("Help on method {0} in module {1}:\n\n", function.__name__, function.__module__);
+            } else if (obj is Method method &&  method.__func__ is PythonFunction func) {
+                if (indent == 0) doc.AppendFormat("Help on method {0} in module {1}:\n\n", func.__name__, func.__module__);
 
                 AppendIndent(doc, indent);
-                doc.Append(function.GetSignatureString());
+                doc.Append(func.GetSignatureString());
                 doc.AppendFormat(" method of {0} instance\n", PythonOps.ToString(method.im_class));
 
-                string pfDoc = Converter.ConvertToString(function.__doc__);
-                if (!String.IsNullOrEmpty(pfDoc)) {
+                string pfDoc = Converter.ConvertToString(func.__doc__);
+                if (!string.IsNullOrEmpty(pfDoc)) {
                     AppendMultiLine(doc, pfDoc, indent);
                 }
-            } else if ((pyModule = obj as PythonModule) != null) {
+            } else if (obj is PythonModule pyModule) {
                 foreach (string name in pyModule.__dict__.Keys) {
                     if (name == "__class__" || name == "__builtins__") continue;
 
-                    object value;
-                    if (pyModule.__dict__.TryGetValue(name, out value)) {
+                    if (pyModule.__dict__.TryGetValue(name, out object value)) {
                         help(context, doced, doc, indent + 1, value);
                     }
                 }

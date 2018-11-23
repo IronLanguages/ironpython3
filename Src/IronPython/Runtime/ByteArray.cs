@@ -27,7 +27,7 @@ namespace IronPython.Runtime {
     ///  
     /// bytearray([int]) -> bytearray
     /// 
-    /// Construct a zero-ititialized bytearray of the specified length.
+    /// Construct a zero-initialized bytearray of the specified length.
     /// (default=0)
     /// </summary>
     [PythonType("bytearray")]

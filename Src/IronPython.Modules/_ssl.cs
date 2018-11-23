@@ -102,9 +102,11 @@ namespace IronPython.Modules {
             }
         }
 
-        public static int RAND_status() {
-            return 1; // always ready
-        }
+        public static int RAND_status() => 1; // always ready
+
+        public static object RAND_bytes(int num) => PythonNT.urandom(num);
+
+        public static object RAND_pseudo_bytes(int num) => PythonTuple.MakeTuple(PythonNT.urandom(num), true);
 
         #endregion
 
@@ -334,7 +336,7 @@ namespace IronPython.Modules {
             return CertificateToPython(context, new X509Certificate2(cert.GetRawCertData()));
         }
 
-        internal static PythonDictionary CertificateToPython(CodeContext context, X509Certificate2 cert, bool complete) {
+        internal static PythonDictionary CertificateToPython(CodeContext context, X509Certificate2 cert) {
             var dict = new CommonDictionaryStorage();
 
             dict.AddNoLock("notAfter", ToPythonDateFormat(cert.NotAfter));

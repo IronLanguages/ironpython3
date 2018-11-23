@@ -421,7 +421,7 @@ namespace IronPython.Modules {
                     return readall(context);
                 }
 
-                ByteArray arr = new ByteArray(new List<byte>(sizeInt));
+                ByteArray arr = new ByteArray(new byte[sizeInt]);
                 sizeInt = (int)readinto(context, arr);
 
                 List<byte> res = arr._bytes;

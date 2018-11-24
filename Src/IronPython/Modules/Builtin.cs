@@ -615,7 +615,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 if (!string.IsNullOrEmpty(pfDoc)) {
                     AppendMultiLine(doc, pfDoc, indent);
                 }
-            } else if (obj is Method method &&  method.__func__ is PythonFunction func) {
+            } else if (obj is Method method && method.__func__ is PythonFunction func) {
                 if (indent == 0) doc.AppendFormat("Help on method {0} in module {1}:\n\n", func.__name__, func.__module__);
 
                 AppendIndent(doc, indent);

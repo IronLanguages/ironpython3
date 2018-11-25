@@ -35,7 +35,7 @@ namespace IronPython.Runtime {
 
         public Enumerate(CodeContext context, object iter, object start) {
             object index;
-            if (!Converter.TryConvertToIndex(start, out index)) {
+            if (!Converter.TryConvertToIndex(start, false, out index)) {
                 throw PythonOps.TypeErrorForUnIndexableObject(start);
             }
 

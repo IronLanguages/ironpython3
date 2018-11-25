@@ -12,7 +12,7 @@ using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
     [PythonType("reversed")]
-    public class ReversedEnumerator : IEnumerator {
+    public class ReversedEnumerator : IEnumerator, IEnumerable {
         private readonly object _getItemMethod;
         private readonly int _savedIndex;
         private object _current;
@@ -79,6 +79,14 @@ namespace IronPython.Runtime {
 
         void IEnumerator.Reset() {
             _index = _savedIndex;
+        }
+
+        #endregion
+
+        #region IEnumerable implementation
+
+        public IEnumerator GetEnumerator() {
+            return this;
         }
 
         #endregion

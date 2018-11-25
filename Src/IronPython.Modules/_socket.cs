@@ -55,7 +55,6 @@ namespace IronPython.Modules {
             return context.EnsureModuleException("socketerror", PythonExceptions.OSError, dict, "error", "socket");
         }
 
-
         public const string __doc__ = "Implementation module for socket operations.\n\n"
             + "This module is a loose wrapper around the .NET System.Net.Sockets API, so you\n"
             + "may find the corresponding MSDN documentation helpful in decoding error\n"
@@ -117,44 +116,42 @@ namespace IronPython.Modules {
 
             #region Public API
 
-            public socket() {
-            }
+            public socket() { }
 
+            public void __init__(CodeContext/*!*/ context, int family=DefaultAddressFamily,
+                int type=DefaultSocketType,
+                int proto=DefaultProtocolType,
+                object fileno=null) {
 
-            public void __init__(CodeContext/*!*/ context, int addressFamily=DefaultAddressFamily,
-                int socketType=DefaultSocketType,
-                int protocolType=DefaultProtocolType,
-                socket _sock=null) {
-                System.Net.Sockets.SocketType type = (System.Net.Sockets.SocketType)Enum.ToObject(typeof(System.Net.Sockets.SocketType), socketType);
-                if (!Enum.IsDefined(typeof(System.Net.Sockets.SocketType), type)) {
+                var socketType = (SocketType)Enum.ToObject(typeof(SocketType), type);
+                if (!Enum.IsDefined(typeof(SocketType), socketType)) {
                     throw MakeException(context, new SocketException((int)SocketError.SocketNotSupported));
                 }
-                AddressFamily family = (AddressFamily)Enum.ToObject(typeof(AddressFamily), addressFamily);
-                if (!Enum.IsDefined(typeof(AddressFamily), family)) {
+                var addressFamily = (AddressFamily)Enum.ToObject(typeof(AddressFamily), family);
+                if (!Enum.IsDefined(typeof(AddressFamily), addressFamily)) {
                     throw MakeException(context, new SocketException((int)SocketError.AddressFamilyNotSupported));
                 }
-                ProtocolType proto = (ProtocolType)Enum.ToObject(typeof(ProtocolType), protocolType);
-                if (!Enum.IsDefined(typeof(ProtocolType), proto)) {
+                var protocolType = (ProtocolType)Enum.ToObject(typeof(ProtocolType), proto);
+                if (!Enum.IsDefined(typeof(ProtocolType), protocolType)) {
                     throw MakeException(context, new SocketException((int)SocketError.ProtocolNotSupported));
                 }
 
-                if (_sock == null) {
-                    Socket newSocket;
+                Socket socket;
+                if (fileno is socket sock) {
+                    socket = sock._socket;
+                    _hostName = sock._hostName;
+                    // we now own the lifetime of the socket
+                    GC.SuppressFinalize(sock);
+                } else if (fileno != null && (socket = HandleToSocket((long)fileno)) != null) {
+                    // nothing to do here
+                } else {
                     try {
-                        newSocket = new Socket(family, type, proto);
+                        socket = new Socket(addressFamily, socketType, protocolType);
                     } catch (SocketException e) {
                         throw MakeException(context, e);
                     }
-
-                    Initialize(context, newSocket);
-                } else {
-                    _socket = _sock._socket;
-                    _hostName = _sock._hostName;
-
-                    // we now own the lifetime of the socket
-                    GC.SuppressFinalize(_sock);
-                    Initialize(context, _socket);
                 }
+                Initialize(context, socket);
             }
 
             public void __del__() {
@@ -165,12 +162,6 @@ namespace IronPython.Modules {
                 _close();
             }
 
-            public socket _sock {
-                get {
-                    return this;
-                }
-            }
-
             private IAsyncResult _acceptResult;
 
             [Documentation("accept() -> (conn, address)\n\n"
@@ -179,7 +170,7 @@ namespace IronPython.Modules {
                 + "address is the remote host's address (e.g. a (host, port) tuple for IPv4).\n"
                 + "\n"
                 )]
-            public PythonTuple accept() {
+            public PythonTuple _accept() {
                 socket wrappedRemoteSocket;
                 Socket realRemoteSocket;
                 try {
@@ -302,10 +293,16 @@ namespace IronPython.Modules {
                 return (int)SocketError.Success;
             }
 
+            public long detach() {
+                var fd = fileno();
+                _socket = null;
+                return fd;
+            }
+
             [Documentation("fileno() -> file_handle\n\n"
                 + "Return the underlying system handle for this socket (a 64-bit integer)."
                 )]
-            public Int64 fileno() {
+            public long fileno() {
                 try {
                     return _socket.Handle.ToInt64();
                 } catch (Exception e) {
@@ -647,6 +644,7 @@ namespace IronPython.Modules {
                 else
                     return MakeException(_context, e);
             }
+
             [Documentation("send(string[, flags]) -> bytes_sent\n\n"
                 + "Send data to the remote socket. The socket must be connected to a remote\n"
                 + "socket (by calling either connect() or accept(). Returns the number of bytes\n"
@@ -1010,17 +1008,11 @@ namespace IronPython.Modules {
                 }
             }
 
-            public int family {
-                get { return (int)_socket.AddressFamily; }
-            }
+            public int family => (int)_socket.AddressFamily;
 
-            public int type {
-                get { return (int)_socket.SocketType; }
-            }
+            public int type => (int)_socket.SocketType;
 
-            public int proto {
-                get { return (int)_socket.ProtocolType; }
-            }
+            public int proto => (int)_socket.ProtocolType;
 
             public int ioctl(BigInteger cmd, object option) {
                 if(cmd == SIO_KEEPALIVE_VALS){ 
@@ -2744,24 +2736,30 @@ namespace IronPython.Modules {
             [Documentation(@"read([len]) -> string
 
 Read up to len bytes from the SSL socket.")]
-            public string read(CodeContext/*!*/ context, int len) {
+            public object read(CodeContext/*!*/ context, int len, ByteArray buffer = null) {
                 EnsureSslStream(true);
 
                 try {
-                    byte[] buffer = new byte[2048];
+                    byte[] buf = new byte[2048];
                     MemoryStream result = new MemoryStream(len);
                     while (true) {
-                        int readLength = (len < buffer.Length) ? len : buffer.Length;
-                        int bytes = _sslStream.Read(buffer, 0, readLength);
+                        int readLength = (len < buf.Length) ? len : buf.Length;
+                        int bytes = _sslStream.Read(buf, 0, readLength);
                         if (bytes > 0) {
-                            result.Write(buffer, 0, bytes);
+                            result.Write(buf, 0, bytes);
                             len -= bytes;
                         }
+
                         if (bytes == 0 || len == 0 || bytes < readLength) {
-                            return result.ToArray().MakeString();
+                            var res = result.ToArray();
+                            if (buffer == null)
+                                return Bytes.Make(res);
+
+                            // TODO: get rid of the MemoryStream and write directly to the buffer
+                            buffer[new Slice(0, res.Length)] = res;
+                            return res.Length;
                         }
                     }
-
                 } catch (Exception e) {
                     throw PythonSocket.MakeException(context, e);
                 }
@@ -2788,6 +2786,18 @@ of bytes written.")]
                 EnsureSslStream(true);
 
                 byte[] buffer = data.MakeByteArray();
+                try {
+                    _sslStream.Write(buffer);
+                    return buffer.Length;
+                } catch (Exception e) {
+                    throw PythonSocket.MakeException(context, e);
+                }
+            }
+
+            public int write(CodeContext/*!*/ context, Bytes data) {
+                EnsureSslStream(true);
+
+                byte[] buffer = data.GetUnsafeByteArray();
                 try {
                     _sslStream.Write(buffer);
                     return buffer.Length;

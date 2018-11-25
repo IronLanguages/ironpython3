@@ -336,23 +336,16 @@ namespace IronPython.Runtime {
             return res.HasValue;
         }
 
-        internal static bool TryConvertToIndex(object value, out object index) {
-            return TryConvertToIndex(value, true, out index);
-        }
-
         /// <summary>
-        /// Attempts to convert value into a index usable for slicing and return the integer
+        /// Attempts to convert value into an index usable for slicing and return the integer or BigInteger
         /// value.  If the conversion fails false is returned.
-        /// 
-        /// If throwOverflowError is true then BigInteger's outside the normal range of integers will
-        /// result in an OverflowError.
         /// </summary>
-        internal static bool TryConvertToIndex(object value, bool throwOverflowError, out object index) {
-            index = ConvertToSliceIndexHelper(value, throwOverflowError);
+        internal static bool TryConvertToIndex(object value, out object index) {
+            index = ConvertToSliceIndexHelper(value);
             if (index == null) {
                 object callable;
                 if (PythonOps.TryGetBoundAttr(value, "__index__", out callable)) {
-                    index = ConvertToSliceIndexHelper(PythonCalls.Call(callable), throwOverflowError);
+                    index = ConvertToSliceIndexHelper(PythonCalls.Call(callable));
                 }
             }
 

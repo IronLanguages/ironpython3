@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
-
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Dynamic;
+using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
@@ -16,142 +15,65 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
-
-    [PythonType("instancemethod"), DontMapGetMemberNamesToDir]
+    [PythonType("method"), DontMapGetMemberNamesToDir]
     public sealed partial class Method : PythonTypeSlot, IWeakReferenceable, IPythonMembersList, IDynamicMetaObjectProvider, ICodeFormattable, Binding.IFastInvokable {
-        private readonly object _func;
-        private readonly object _inst;
-        private readonly object _declaringClass;
         private WeakRefTracker _weakref;
 
-        public Method(object function, object instance, object @class) {
-            _func = function;
-            _inst = instance;
-            _declaringClass = @class;
+        // TODO: get rid of this constructor?
+        internal Method(object function, object instance, PythonType @class) {
+            if (instance == null) throw new ArgumentNullException();
+            __func__ = function;
+            __self__ = instance;
+            im_class = @class;
         }
 
-        public Method(object function, object instance) {
-            if (instance == null) {
-                throw PythonOps.TypeError("unbound methods must have a class provided");
-            }
-
-            _func = function;
-            _inst = instance;
+        public Method(object function, object self) {
+            if (self == null) throw PythonOps.TypeError("self must not be None");
+            __func__ = function;
+            __self__ = self;
+            im_class = DynamicHelpers.GetPythonType(self);
         }
 
-        internal string Name {
-            get { return (string)PythonOps.GetBoundAttr(DefaultContext.Default, _func, "__name__"); }
-        }
+        internal string Name => (string)PythonOps.GetBoundAttr(DefaultContext.Default, __func__, "__name__");
 
-        public string __doc__ {
-            get {
-                return PythonOps.GetBoundAttr(DefaultContext.Default, _func, "__doc__") as string;
-            }
-        }
+        public string __doc__ => PythonOps.GetBoundAttr(DefaultContext.Default, __func__, "__doc__") as string;
 
-        public object im_func {
-            get {
-                return _func;
-            }
-        }
+        public object __func__ { get; }
 
-        public object __func__ {
-            get {
-                return _func;
-            }
-        }
+        public object __self__ { get; } // TODO: mark that this property is never null
 
-        public object im_self {
-            get {
-                return _inst;
-            }
-        }
-
-        public object __self__ {
-            get {
-                return _inst;
-            }
-        }
-
-        public object im_class {
-            get {
-                // we could have an OldClass (or any other object) here if the user called the ctor directly
-                return PythonOps.ToPythonType(_declaringClass as PythonType) ?? _declaringClass;
-            }
-        }
+        internal PythonType im_class { get; } // TODO: get rid of this property?
 
         [SpecialName]
-        public object Call(CodeContext/*!*/ context, params object[] args) {
-            return context.LanguageContext.CallSplat(this, args);
-        }
+        public object Call(CodeContext/*!*/ context, params object[] args)
+            => context.LanguageContext.CallSplat(this, args);
 
         [SpecialName]
-        public object Call(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
-            return context.LanguageContext.CallWithKeywords(this, args, kwArgs);
-        }
+        public object Call(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args)
+            => context.LanguageContext.CallWithKeywords(this, args, kwArgs);
 
-        private Exception BadSelf(object got) {
-
-            string firstArg;
-            if (got == null) {
-                firstArg = "nothing";
-            } else {
-                firstArg = PythonOps.GetPythonTypeName(got) + " instance";
-            }
-            PythonType pt = im_class as PythonType;
-
-            return PythonOps.TypeError("unbound method {0}() must be called with {1} instance as first argument (got {2} instead)",
-                Name,
-                (pt != null) ? pt.Name : im_class,
-                firstArg);
-        }
-
-        /// <summary>
-        /// Validates that the current self object is usable for this method.  
-        /// </summary>
-        internal object CheckSelf(CodeContext context, object self) {
-            if (!PythonOps.IsInstance(context, self, im_class)) {
-                throw BadSelf(self);
-            }
-            return self;
-        }
-        
         #region Object Overrides
-        private string DeclaringClassAsString() {
-            if (im_class == null) return "?";
-            PythonType dt = im_class as PythonType;
-            if (dt != null) return dt.Name;
-            return im_class.ToString();
-        }
 
-        public override bool Equals(object obj) {
-            Method other = obj as Method;
-            if (other == null) return false;
-            return PythonOps.IsOrEqualsRetBool(_inst, other._inst) && PythonOps.EqualRetBool(_func, other._func);
-        }
+        private string DeclaringClassAsString() => im_class == null ? "?" : im_class.Name;
 
-        public override int GetHashCode() {
-            if (_inst == null) return PythonOps.Hash(DefaultContext.Default, _func);
+        public override bool Equals(object obj)
+            => obj is Method other && PythonOps.IsOrEqualsRetBool(__self__, other.__self__) && PythonOps.EqualRetBool(__func__, other.__func__);
 
-            return PythonOps.Hash(DefaultContext.Default, _inst) ^ PythonOps.Hash(DefaultContext.Default, _func);
-        }
-        
+        public override int GetHashCode()
+            => PythonOps.Hash(DefaultContext.Default, __self__) ^ PythonOps.Hash(DefaultContext.Default, __func__);
+
         #endregion
 
         #region IWeakReferenceable Members
 
-        WeakRefTracker IWeakReferenceable.GetWeakRef() {
-            return _weakref;
-        }
+        WeakRefTracker IWeakReferenceable.GetWeakRef() => _weakref;
 
         bool IWeakReferenceable.SetWeakRef(WeakRefTracker value) {
             _weakref = value;
             return true;
         }
 
-        void IWeakReferenceable.SetFinalizer(WeakRefTracker value) {
-            ((IWeakReferenceable)this).SetWeakRef(value);
-        }
+        void IWeakReferenceable.SetFinalizer(WeakRefTracker value) => ((IWeakReferenceable)this).SetWeakRef(value);
 
         #endregion
 
@@ -164,14 +86,14 @@ namespace IronPython.Runtime {
                 // no __module__ attribute and this value can be gotten via a call to method.__getattribute__ 
                 // there as well.
                 case "__module__":
-                    return PythonOps.GetBoundAttr(context, _func, "__module__");
+                    return PythonOps.GetBoundAttr(context, __func__, "__module__");
                 case "__name__":
-                    return PythonOps.GetBoundAttr(DefaultContext.Default, _func, "__name__");
+                    return PythonOps.GetBoundAttr(DefaultContext.Default, __func__, "__name__");
                 default:
                     object value;
                     string symbol = name;
                     if (TypeCache.Method.TryGetBoundMember(context, this, symbol, out value) ||       // look on method
-                        PythonOps.TryGetBoundAttr(context, _func, symbol, out value)) {               // Forward to the func
+                        PythonOps.TryGetBoundAttr(context, __func__, symbol, out value)) {               // Forward to the func
                         return value;
                     }
                     return OperationFailed.Value;
@@ -179,26 +101,21 @@ namespace IronPython.Runtime {
         }
 
         [SpecialName]
-        public void SetMemberAfter(CodeContext context, string name, object value) {
-            TypeCache.Method.SetMember(context, this, name, value);
-        }
+        public void SetMemberAfter(CodeContext context, string name, object value)
+            => TypeCache.Method.SetMember(context, this, name, value);
 
         [SpecialName]
-        public void DeleteMember(CodeContext context, string name) {
-            TypeCache.Method.DeleteMember(context, this, name);
-        }
+        public void DeleteMember(CodeContext context, string name)
+            => TypeCache.Method.DeleteMember(context, this, name);
 
-        IList<string> IMembersList.GetMemberNames() {
-            return PythonOps.GetStringMemberList(this);
-        }
+        IList<string> IMembersList.GetMemberNames() => PythonOps.GetStringMemberList(this);
 
         IList<object> IPythonMembersList.GetMemberNames(CodeContext/*!*/ context) {
             PythonList ret = TypeCache.Method.GetMemberNames(context);
 
             ret.AddNoLockNoDups("__module__");
 
-            PythonFunction pf = _func as PythonFunction;
-            if (pf != null) {
+            if (__func__ is PythonFunction pf) {
                 PythonDictionary dict = pf.__dict__;
                 
                 // Check the func
@@ -215,21 +132,11 @@ namespace IronPython.Runtime {
         #region PythonTypeSlot Overrides
 
         internal override bool TryGetValue(CodeContext context, object instance, PythonType owner, out object value) {
-            if (this.im_self == null) {
-                if (owner == null || owner == im_class || PythonOps.IsSubClass(context, owner, im_class)) {
-                    value = new Method(_func, instance, owner);
-                    return true;
-                }
-            }
             value = this;
             return true;
         }
 
-        internal override bool GetAlwaysSucceeds {
-            get {
-                return true;
-            }
-        }
+        internal override bool GetAlwaysSucceeds => true;
 
         #endregion
 
@@ -237,27 +144,19 @@ namespace IronPython.Runtime {
 
         public string/*!*/ __repr__(CodeContext/*!*/ context) {
             object name;
-            if (!PythonOps.TryGetBoundAttr(context, _func, "__name__", out name)) {
+            if (!PythonOps.TryGetBoundAttr(context, __func__, "__name__", out name)) {
                 name = "?";
             }
 
-            if (_inst != null) {
-                return string.Format("<bound method {0}.{1} of {2}>",
-                    DeclaringClassAsString(),
-                    name,
-                    PythonOps.Repr(context, _inst));
-            } else {
-                return string.Format("<unbound method {0}.{1}>", DeclaringClassAsString(), name);
-            }
+            return $"<bound method {DeclaringClassAsString()}.{name} of {PythonOps.Repr(context, __self__)}>";
         }
 
         #endregion
 
         #region IDynamicMetaObjectProvider Members
 
-        DynamicMetaObject/*!*/ IDynamicMetaObjectProvider.GetMetaObject(Expression/*!*/ parameter) {
-            return new Binding.MetaMethod(parameter, BindingRestrictions.Empty, this);
-        }
+        DynamicMetaObject/*!*/ IDynamicMetaObjectProvider.GetMetaObject(Expression/*!*/ parameter)
+            => new Binding.MetaMethod(parameter, BindingRestrictions.Empty, this);
 
         #endregion
     }

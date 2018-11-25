@@ -1278,4 +1278,22 @@ class C:
         with self.assertRaises(StopIteration):
             next(x)
 
+    def test_ipy3_gh490(self):
+        """https://github.com/IronLanguages/ironpython3/issues/490"""
+
+        import types
+
+        class C(object):
+            def foo(self):
+                pass
+
+        self.assertTrue(isinstance(C.foo, types.FunctionType))
+        self.assertTrue(isinstance(C().foo, types.MethodType))
+
+        try:
+            C.__new__ = lambda x: x
+            C()
+        except TypeError:
+            self.fail("Throws in Python 2, but allowed in Python 3!")
+
 run_test(__name__)

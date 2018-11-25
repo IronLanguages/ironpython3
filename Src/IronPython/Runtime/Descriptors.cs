@@ -78,21 +78,13 @@ namespace IronPython.Runtime {
             return true;
         }
 
-        internal override bool GetAlwaysSucceeds {
-            get {
-                return true;
-            }
-        }
+        internal override bool GetAlwaysSucceeds => true;
 
-        public object __func__ {
-            get {
-                return _func;
-            }
-        }
+        public object __func__ => _func;
+
         public bool __isabstractmethod__ {
             get {
-                object isabstract;
-                if (PythonOps.TryGetBoundAttr(_func, "__isabstractmethod__", out isabstract)) {
+                if (PythonOps.TryGetBoundAttr(_func, "__isabstractmethod__", out object isabstract)) {
                     return PythonOps.IsTrue(isabstract);
                 }
                 return false;
@@ -101,14 +93,12 @@ namespace IronPython.Runtime {
 
         #region IDescriptor Members
 
-        public object __get__(object instance) { return __get__(instance, null); }
-
-        public object __get__(object instance, object owner) {
+        public object __get__(object instance, object owner = null) {
             if (owner == null) {
                 if (instance == null) throw PythonOps.TypeError("__get__(None, None) is invalid");
                 owner = DynamicHelpers.GetPythonType(instance);
             }
-            return new Method(_func, owner, DynamicHelpers.GetPythonType(owner));
+            return new Method(_func, owner);
         }
 
         #endregion

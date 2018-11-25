@@ -142,7 +142,7 @@ namespace IronPython.Runtime.Types {
         public int __cmp__(object other) {
             BuiltinMethodDescriptor bmd = other as BuiltinMethodDescriptor;
             if (bmd == null) {
-                throw PythonOps.TypeError("instancemethod.__cmp__(x,y) requires y to be a 'instancemethod', not a {0}", PythonTypeOps.GetName(other));
+                throw PythonOps.TypeError("method.__cmp__(x,y) requires y to be a 'instancemethod', not a {0}", PythonTypeOps.GetName(other));
             }
 
             long result = PythonOps.Id(__objclass__) - PythonOps.Id(bmd.__objclass__);

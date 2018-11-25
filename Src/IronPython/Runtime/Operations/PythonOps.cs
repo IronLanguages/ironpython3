@@ -3116,10 +3116,6 @@ namespace IronPython.Runtime.Operations {
             );
         }
 
-        public static object MethodCheckSelf(CodeContext/*!*/ context, Method method, object self) {
-            return method.CheckSelf(context, self);
-        }
-
         [LightThrowing]
         public static object GeneratorCheckThrowableAndReturnSendValue(object self) {
             return ((PythonGenerator)self).CheckThrowableAndReturnSendValue();

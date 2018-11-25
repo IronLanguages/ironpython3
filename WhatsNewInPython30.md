@@ -107,7 +107,7 @@ Changes To Exceptions
 Operators And Special Methods
 ===============
 - [ ] != now returns the opposite of ==, unless == returns NotImplemented.
-- [ ] The concept of "unbound methods" has been removed from the language. When referencing a method as a class attribute, you now get a plain function object.
+- [x] The concept of "unbound methods" has been removed from the language. When referencing a method as a class attribute, you now get a plain function object.
 - [x] \_\_getslice\_\_(), \_\_setslice\_\_() and \_\_delslice\_\_() were killed. The syntax a[i:j] now translates to a.\_\_getitem\_\_(slice(i, j)) (or \_\_setitem\_\_() or \_\_delitem\_\_(), when used as an assignment or deletion target, respectively).
 - [x] PEP 3114: the standard next() method has been renamed to \_\_next\_\_().
 - [x] The \_\_oct\_\_() and \_\_hex\_\_() special methods are removed - oct() and hex() use \_\_index\_\_() now to convert the argument to an integer.

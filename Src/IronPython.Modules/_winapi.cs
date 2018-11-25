@@ -4,16 +4,13 @@
 
 #if FEATURE_PROCESS
 
-using System.Numerics;
-
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
+using System.Numerics;
 using System.Runtime.InteropServices;
-
-using Microsoft.Scripting.Runtime;
+using System.Text;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
@@ -24,7 +21,7 @@ namespace IronPython.Modules {
     public static class PythonWinApi {
         public const string __doc__ = "_subprocess Module";
 
-#region Public API
+        #region Public API
 
         public static PythonTuple CreatePipe(
             CodeContext context,
@@ -262,7 +259,7 @@ namespace IronPython.Modules {
 
         #endregion
 
-#region struct's and enum's
+        #region struct's and enum's
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal struct STARTUPINFO {
@@ -309,27 +306,27 @@ namespace IronPython.Modules {
 
         #endregion
 
-#region Privates / PInvokes
+        #region Privates / PInvokes
 
         [return: MarshalAs(UnmanagedType.Bool)]
         [DllImport("kernel32.dll", EntryPoint = "CreateProcess", SetLastError = true)]
         private static extern bool CreateProcessPI(string lpApplicationName,
-           string lpCommandLine, ref SECURITY_ATTRIBUTES lpProcessAttributes,
-           ref SECURITY_ATTRIBUTES lpThreadAttributes, [MarshalAs(UnmanagedType.Bool)]bool bInheritHandles,
-           uint dwCreationFlags, string lpEnvironment, string lpCurrentDirectory,
-           [In] ref STARTUPINFO lpStartupInfo,
-           out PROCESS_INFORMATION lpProcessInformation);
+            string lpCommandLine, ref SECURITY_ATTRIBUTES lpProcessAttributes,
+            ref SECURITY_ATTRIBUTES lpThreadAttributes, [MarshalAs(UnmanagedType.Bool)]bool bInheritHandles,
+            uint dwCreationFlags, string lpEnvironment, string lpCurrentDirectory,
+            [In] ref STARTUPINFO lpStartupInfo,
+            out PROCESS_INFORMATION lpProcessInformation);
 
         [DllImport("kernel32.dll", EntryPoint = "CreatePipe")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool CreatePipePI(out IntPtr hReadPipe, out IntPtr hWritePipe,
-           ref SECURITY_ATTRIBUTES lpPipeAttributes, uint nSize);
+            ref SECURITY_ATTRIBUTES lpPipeAttributes, uint nSize);
 
         [DllImport("kernel32.dll", SetLastError = true, EntryPoint = "DuplicateHandle")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool DuplicateHandlePI(IntPtr hSourceProcessHandle,
-           IntPtr hSourceHandle, IntPtr hTargetProcessHandle, out IntPtr lpTargetHandle,
-           uint dwDesiredAccess, [MarshalAs(UnmanagedType.Bool)] bool bInheritHandle, uint dwOptions);
+            IntPtr hSourceHandle, IntPtr hTargetProcessHandle, out IntPtr lpTargetHandle,
+            uint dwDesiredAccess, [MarshalAs(UnmanagedType.Bool)] bool bInheritHandle, uint dwOptions);
 
         [DllImport("kernel32.dll", EntryPoint = "GetCurrentProcess")]
         private static extern IntPtr GetCurrentProcessPI();
@@ -359,24 +356,53 @@ namespace IronPython.Modules {
 
         #endregion
 
-#region Constants
+        #region Constants
 
-        public const int CREATE_NEW_CONSOLE = 16;
-        public const int CREATE_NEW_PROCESS_GROUP = 512;
-        public const int DUPLICATE_SAME_ACCESS = 2;
-        public const int INFINITE = -1;
-        public const int STARTF_USESHOWWINDOW = 1;
-        public const int STARTF_USESTDHANDLES = 256;
+        public const int CREATE_NEW_CONSOLE = 0x10;
+        public const int CREATE_NEW_PROCESS_GROUP = 0x200;
+        public const int DUPLICATE_CLOSE_SOURCE = 0x1;
+        public const int DUPLICATE_SAME_ACCESS = 0x2;
+        public const int ERROR_ALREADY_EXISTS = 0xb7;
+        public const int ERROR_BROKEN_PIPE = 0x6d;
+        public const int ERROR_IO_PENDING = 0x3e5;
+        public const int ERROR_MORE_DATA = 0xea;
+        public const int ERROR_NETNAME_DELETED = 0x40;
+        public const int ERROR_NO_DATA = 0xe8;
+        public const int ERROR_NO_SYSTEM_RESOURCES = 0x5aa;
+        public const int ERROR_OPERATION_ABORTED = 0x3e3;
+        public const int ERROR_PIPE_BUSY = 0xe7;
+        public const int ERROR_PIPE_CONNECTED = 0x217;
+        public const int ERROR_SEM_TIMEOUT = 0x79;
+        public const int FILE_FLAG_FIRST_PIPE_INSTANCE = 0x80000;
+        public const int FILE_FLAG_OVERLAPPED = 0x40000000;
+        public const int FILE_GENERIC_READ = 0x120089;
+        public const int FILE_GENERIC_WRITE = 0x120116;
+        public const int GENERIC_READ = unchecked((int)0x80000000);
+        public const int GENERIC_WRITE = 0x40000000;
+        public const int INFINITE = unchecked((int)0xffffffff);
+        public const int NMPWAIT_WAIT_FOREVER = unchecked((int)0xffffffff);
+        public const int NULL = 0x0;
+        public const int OPEN_EXISTING = 0x3;
+        public const int PIPE_ACCESS_DUPLEX = 0x3;
+        public const int PIPE_ACCESS_INBOUND = 0x1;
+        public const int PIPE_READMODE_MESSAGE = 0x2;
+        public const int PIPE_TYPE_MESSAGE = 0x4;
+        public const int PIPE_UNLIMITED_INSTANCES = 0xff;
+        public const int PIPE_WAIT = 0x0;
+        public const int PROCESS_ALL_ACCESS = 0x1f0fff;
+        public const int PROCESS_DUP_HANDLE = 0x40;
+        public const int STARTF_USESHOWWINDOW = 0x1;
+        public const int STARTF_USESTDHANDLES = 0x100;
         public const int STD_ERROR_HANDLE = -12;
         public const int STD_INPUT_HANDLE = -10;
         public const int STD_OUTPUT_HANDLE = -11;
-        public const int SW_HIDE = 0;
-        public const int WAIT_OBJECT_0 = 0;
-        public const int PIPE = -1;
-        public const int STDOUT = -2;
+        public const int STILL_ACTIVE = 0x103;
+        public const int SW_HIDE = 0x0;
+        public const int WAIT_ABANDONED_0 = 0x80;
+        public const int WAIT_OBJECT_0 = 0x0;
+        public const int WAIT_TIMEOUT = 0x102;
 
         #endregion
-
     }
 
     [PythonType("_subprocess_handle")]
@@ -483,4 +509,5 @@ namespace IronPython.Modules {
         }
     }
 }
+
 #endif

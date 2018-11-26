@@ -1296,4 +1296,14 @@ class C:
         except TypeError:
             self.fail("Throws in Python 2, but allowed in Python 3!")
 
+    def test_ipy3_gh473(self):
+        """https://github.com/IronLanguages/ironpython3/issues/473"""
+
+        try:
+            x = list(enumerate([1], 1 << 40))
+            self.assertEqual(x[0], (1, 1099511627776))
+        except OverflowError:
+            self.fail("Should allow start index greater than int.MaxValue.")
+
+
 run_test(__name__)

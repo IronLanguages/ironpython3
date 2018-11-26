@@ -1301,7 +1301,7 @@ class C:
 
         try:
             x = list(enumerate([1], 1 << 40))
-            self.assertEqual(x[0], (1, 1099511627776))
+            self.assertEqual(x[0], (1099511627776, 1))
         except OverflowError:
             self.fail("Should allow start index greater than int.MaxValue.")
 

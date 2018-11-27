@@ -678,7 +678,6 @@ class BuiltinsTest2(IronPythonTestCase):
     def test_error_messages(self):
         self.assertRaisesMessages(TypeError, "join() takes exactly 1 argument (2 given)", "join() takes exactly one argument (2 given)", "".join, ["a", "b"], "c")
 
-    @unittest.expectedFailure # TODO: https://github.com/IronLanguages/ironpython3/issues/473
     def test_enumerate(self):
         class MyIndex(object):
             def __init__(self, value):

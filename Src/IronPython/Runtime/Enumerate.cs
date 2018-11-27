@@ -17,7 +17,7 @@ using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
     /* 
-     * Enumeraters exposed to Python code directly
+     * Enumerators exposed to Python code directly
      * 
      */
 

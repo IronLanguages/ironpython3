@@ -11,8 +11,8 @@ using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
     [PythonType("memoryview")]
-    public sealed class MemoryView : ICodeFormattable {
-        private readonly IBufferProtocol _buffer;
+    public sealed class MemoryView : IEquatable<MemoryView>, ICodeFormattable {
+        private IBufferProtocol _buffer;
         private readonly int _start;
         private readonly int? _end;
 
@@ -20,38 +20,75 @@ namespace IronPython.Runtime {
             _buffer = obj;
         }
 
-        private MemoryView(IBufferProtocol obj, int start, int? end) : this(obj) {
+        internal MemoryView(IBufferProtocol obj, int start, int? end) : this(obj) {
             _start = start;
             _end = end;
         }
 
         public MemoryView(MemoryView obj) : this(obj._buffer, obj._start, obj._end) { }
 
+        private void CheckBuffer() {
+            if (_buffer == null) throw PythonOps.ValueError("operation forbidden on released memoryview object");
+        }
+
         public int __len__() {
+            CheckBuffer();
             if (_end != null) {
                 return _end.Value - _start;
             }
             return _buffer.ItemCount;
         }
 
+        public object obj {
+            get {
+                CheckBuffer();
+                return _buffer;
+            }
+        }
+
+        public void release(CodeContext /*!*/ context) {
+            _buffer = null;
+        }
+
+        public object __enter__() {
+            return this;
+        }
+
+        public void __exit__(CodeContext/*!*/ context, params object[] excinfo) {
+            release(context);
+        }
+
         public string format {
-            get { return _buffer.Format; }
+            get {
+                CheckBuffer();
+                return _buffer.Format;
+            }
         }
 
         public BigInteger itemsize {
-            get { return _buffer.ItemSize; }
+            get {
+                CheckBuffer();
+                return _buffer.ItemSize;
+            }
         }
 
         public BigInteger ndim {
-            get { return _buffer.NumberDimensions; }
+            get {
+                CheckBuffer();
+                return _buffer.NumberDimensions;
+            }
         }
 
         public bool @readonly {
-            get { return _buffer.ReadOnly; }
+            get {
+                CheckBuffer();
+                return _buffer.ReadOnly;
+            }
         }
 
         public PythonTuple shape {
             get {
+                CheckBuffer();
                 var shape = _buffer.GetShape(_start, _end);
                 if (shape == null) {
                     return null;
@@ -61,27 +98,37 @@ namespace IronPython.Runtime {
         }
 
         public PythonTuple strides {
-            get { return _buffer.Strides; }
+            get {
+                CheckBuffer();
+                return _buffer.Strides;
+            }
         }
 
         public object suboffsets {
-            get { return _buffer.SubOffsets; }
+            get {
+                CheckBuffer();
+                return _buffer.SubOffsets;
+            }
         }
 
         public Bytes tobytes() {
+            CheckBuffer();
             return _buffer.ToBytes(_start, _end);
         }
 
         public PythonList tolist() {
+            CheckBuffer();
             return _buffer.ToList(_start, _end);
         }
 
         public object this[int index] {
             get {
+                CheckBuffer();
                 index = PythonOps.FixIndex(index, __len__());
                 return _buffer.GetItem(index + _start);
             }
             set {
+                CheckBuffer();
                 if (_buffer.ReadOnly) {
                     throw PythonOps.TypeError("cannot modify read-only memory");
                 }
@@ -91,6 +138,7 @@ namespace IronPython.Runtime {
         }
 
         public void __delitem__(int index) {
+            CheckBuffer();
             if (_buffer.ReadOnly) {
                 throw PythonOps.TypeError("cannot modify read-only memory");
             }
@@ -98,6 +146,7 @@ namespace IronPython.Runtime {
         }
 
         public void __delitem__([NotNull]Slice slice) {
+            CheckBuffer();
             if (_buffer.ReadOnly) {
                 throw PythonOps.TypeError("cannot modify read-only memory");
             }
@@ -106,12 +155,14 @@ namespace IronPython.Runtime {
 
         public object this[[NotNull]Slice slice] {
             get {
+                CheckBuffer();
                 int start, stop;
                 FixSlice(slice, __len__(), out start, out stop);
 
                 return new MemoryView(_buffer, _start + start, _start + stop);
             }
             set {
+                CheckBuffer();
                 if (_buffer.ReadOnly) {
                     throw PythonOps.TypeError("cannot modify read-only memory");
                 }
@@ -132,13 +183,12 @@ namespace IronPython.Runtime {
         /// MemoryView slicing is somewhat different and more restricted than
         /// standard slicing.
         /// </summary>
-        public static void FixSlice(Slice slice, int len, out int start, out int stop) {
+        private static void FixSlice(Slice slice, int len, out int start, out int stop) {
             if (slice.step != null) {
                 throw PythonOps.NotImplementedError("");
             }
 
-            int step;
-            slice.indices(len, out start, out stop, out step);
+            slice.indices(len, out start, out stop, out _);
 
             if (stop < start) {
                 // backwards iteration is interpreted as empty slice
@@ -146,117 +196,11 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static bool operator >(MemoryView self, IBufferProtocol other) {
-            return self > new MemoryView(other);
-        }
-
-        public static bool operator >(IBufferProtocol self, MemoryView other) {
-            return new MemoryView(self) > other;
-        }
-
-        public static bool operator >(MemoryView self, MemoryView other) {
-            if ((object)self == null) {
-                return (object)other != null;
-            } else if ((object)other == null) {
-                return true;
-            }
-            return self.tobytes() > other.tobytes();
-        }
-
-        public static bool operator <(MemoryView self, MemoryView other) {
-            if ((object)self == null) {
-                return (object)other == null;
-            } else if ((object)other == null) {
-                return false;
-            }
-            return self.tobytes() < other.tobytes();
-        }
-
-        public static bool operator <(MemoryView self, IBufferProtocol other) {
-            return self < new MemoryView(other);
-        }
-
-        public static bool operator <(IBufferProtocol self, MemoryView other) {
-            return new MemoryView(self) < other;
-        }
-
-        public static bool operator >=(MemoryView self, MemoryView other) {
-            if ((object)self == null) {
-                return (object)other == null;
-            } else if ((object)other == null) {
-                return false;
-            }
-            return self.tobytes() >= other.tobytes();
-        }
-
-        public static bool operator >=(MemoryView self, IBufferProtocol other) {
-            return self >= new MemoryView(other);
-        }
-
-        public static bool operator >=(IBufferProtocol self, MemoryView other) {
-            return new MemoryView(self) >= other;
-        }
-
-        public static bool operator <=(MemoryView self, MemoryView other) {
-            if ((object)self == null) {
-                return (object)other != null;
-            } else if ((object)other == null) {
-                return true;
-            }
-            return self.tobytes() <= other.tobytes();
-        }
-
-        public static bool operator <=(MemoryView self, IBufferProtocol other) {
-            return self <= new MemoryView(other);
-        }
-
-        public static bool operator <=(IBufferProtocol self, MemoryView other) {
-            return new MemoryView(self) <= other;
-        }
-
-        public static bool operator ==(MemoryView self, MemoryView other) {
-            if ((object)self == null) {
-                return (object)other == null;
-            } else if ((object)other == null) {
-                return false;
-            }
-            return self.tobytes().Equals(other.tobytes());
-        }
-
-        public static bool operator ==(MemoryView self, IBufferProtocol other) {
-            return self == new MemoryView(other);
-        }
-
-        public static bool operator ==(IBufferProtocol self, MemoryView other) {
-            return new MemoryView(self) == other;
-        }
-
-        public static bool operator !=(MemoryView self, MemoryView other) {
-            if ((object)self == null) {
-                return (object)other != null;
-            } else if ((object)other == null) {
-                return true;
-            }
-            return !self.tobytes().Equals(other.tobytes());
-        }
-
-        public static bool operator !=(MemoryView self, IBufferProtocol other) {
-            return self != new MemoryView(other);
-        }
-
-        public static bool operator !=(IBufferProtocol self, MemoryView other) {
-            return new MemoryView(self) != other;
-        }
-
         public const object __hash__ = null;
 
-        public override bool Equals(object obj) {
-            MemoryView mv = obj as MemoryView;
-            if ((object)mv != null) {
-                return this == mv;
-            }
-            return false;
-        }
+        public bool Equals(MemoryView other) => other != null && tobytes().Equals(other.tobytes());
+
+        public override bool Equals(object obj) => obj is MemoryView other && Equals(other);
 
         public override int GetHashCode() {
             return base.GetHashCode();

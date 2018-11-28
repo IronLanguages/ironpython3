@@ -724,30 +724,31 @@ namespace IronPython.Modules {
                 _tz = tzinfo;
             }
 
-            public datetime([NotNull]string str) {
-                if (str.Length != 10) {
+            public datetime([NotNull]Bytes bytes) {
+                var byteArray = bytes._bytes;
+                if (byteArray.Length != 10) {
                     throw PythonOps.TypeError("an integer is required");
                 }
 
-                int microSeconds = (((int)str[7]) << 16) | ((int)str[8] << 8) | (int)str[9];
-                int month = (int)str[2];
+                int microSeconds = (((int)byteArray[7]) << 16) | ((int)byteArray[8] << 8) | (int)byteArray[9];
+                int month = (int)byteArray[2];
                 if (month == 0 || month > 12) {
                     throw PythonOps.TypeError("invalid month");
                 }
                 InternalDateTime = new DateTime(
-                    (((int)str[0]) << 8) | (int)str[1], 
-                    month, 
-                    (int)str[3], 
-                    (int)str[4], 
-                    (int)str[5], 
-                    (int)str[6], 
-                    microSeconds  / 1000
+                    (((int)byteArray[0]) << 8) | (int)byteArray[1],
+                    month,
+                    (int)byteArray[3],
+                    (int)byteArray[4],
+                    (int)byteArray[5],
+                    (int)byteArray[6],
+                    microSeconds / 1000
                 );
                 _lostMicroseconds = microsecond % 1000;
             }
 
-            public datetime([NotNull]string str, [NotNull]tzinfo tzinfo)
-                : this(str) {
+            public datetime([NotNull]Bytes bytes, [NotNull]tzinfo tzinfo)
+                : this(bytes) {
                 _tz = tzinfo;
             }
 

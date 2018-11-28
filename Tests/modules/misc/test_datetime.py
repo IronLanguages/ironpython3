@@ -1111,11 +1111,11 @@ class DatetimeTest(IronPythonTestCase):
         import pickle
         with open(os.path.join(self.test_dir, r"pickles/cp18666.pickle"), "rb") as f:
             expected_dt    = datetime.datetime(2009, 8, 6, 8, 42, 38, 196000)
-            pickled_cpy_dt = pickle.load(f)
+            pickled_cpy_dt = pickle.load(f, encoding='bytes')
             self.assertEqual(expected_dt, pickled_cpy_dt)
 
         expected_dt    = datetime.datetime(2009, 8, 6, 8, 42, 38, 196000, mytzinfo())
-        pickled_cpy_dt = pickle.loads("cdatetime\ndatetime\np1\n(S'\\x07\\xd9\\x01\\x02\\x03\\x04\\x05\\x00\\x00\\x06'\nc" + __name__ + "\nmytzinfo\np2\n(tRp3\ntRp4\n.")
+        pickled_cpy_dt = pickle.loads(("cdatetime\ndatetime\np1\n(S'\\x07\\xd9\\x01\\x02\\x03\\x04\\x05\\x00\\x00\\x06'\nc" + __name__ + "\nmytzinfo\np2\n(tRp3\ntRp4\n.").encode(), encoding='bytes')
         self.assertEqual(expected_dt.tzinfo, pickled_cpy_dt.tzinfo)
 
     def test_datetime_repr(self):

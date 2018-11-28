@@ -5,12 +5,11 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using Microsoft.Scripting.Runtime;
 using System.Text;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
-using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Runtime;
 
 [assembly: PythonModule("_codecs", typeof(IronPython.Modules.PythonCodecs))]
 namespace IronPython.Modules {
@@ -112,10 +111,9 @@ namespace IronPython.Modules {
             return PythonOps.GetIndex(context, PythonCalls.Call(context, t[EncoderIndex], obj, errors), 0);
         }
 
-        public static object escape_decode(string text, string errors = "strict") {
-            StringBuilder res = new StringBuilder();
+        public static object escape_decode([BytesConversion]string text, string errors = "strict") {
+            var res = new StringBuilder();
             for (int i = 0; i < text.Length; i++) {
-
                 if (text[i] == '\\') {
                     if (i == text.Length - 1) throw PythonOps.ValueError("\\ at end of string");
 
@@ -131,7 +129,7 @@ namespace IronPython.Modules {
                         case '\n': break;
                         case 'x':
                             int dig1, dig2;
-                            if (i >= text.Length - 2 || !CharToInt(text[i], out dig1) || !CharToInt(text[i + 1], out dig2)) {
+                            if (i >= text.Length - 2 || !CharToInt(text[i + 1], out dig1) || !CharToInt(text[i + 2], out dig2)) {
                                 switch (errors) {
                                     case "strict":
                                         if (i >= text.Length - 2) {
@@ -141,9 +139,8 @@ namespace IronPython.Modules {
                                         }
                                     case "replace":
                                         res.Append("?");
-                                        i--;
-                                        while (i < (text.Length - 1)) {
-                                            res.Append(text[i++]);
+                                        while (i < (text.Length - 2)) {
+                                            res.Append(text[++i]);
                                         }
                                         continue;
                                     default:
@@ -151,7 +148,7 @@ namespace IronPython.Modules {
                                 }
                             }
 
-                            res.Append(dig1 * 16 + dig2);
+                            res.Append((char)(dig1 * 16 + dig2));
                             i += 2;
                             break;
                         default:
@@ -163,7 +160,7 @@ namespace IronPython.Modules {
                 }
 
             }
-            return PythonTuple.MakeTuple(res.ToString(), text.Length);
+            return PythonTuple.MakeTuple(Bytes.Make(res.ToString().MakeByteArray()), text.Length);
         }
 
         private static bool CharToInt(char ch, out int val) {

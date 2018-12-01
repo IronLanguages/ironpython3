@@ -4140,10 +4140,6 @@ namespace IronPython.Runtime.Operations {
             return PythonExceptions.GetDynamicStackFrames(e);
         }
 
-        public static byte[] ConvertBufferToByteArray(PythonBuffer buffer) {
-            return buffer.ToString().MakeByteArray();
-        }
-
         public static bool ModuleTryGetMember(CodeContext/*!*/ context, PythonModule module, string name, out object res) {
             object value = module.GetAttributeNoThrow(context, name);
             if (value != OperationFailed.Value) {

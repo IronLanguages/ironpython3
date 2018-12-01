@@ -35,7 +35,7 @@ namespace IronPython.Modules {
         /// Base class for all ctypes interop types.
         /// </summary>
         [PythonType("_CData"), PythonHidden]
-        public abstract class CData : IPythonBufferable, IBufferProtocol {
+        public abstract class CData : IBufferProtocol {
             internal MemoryHolder _memHolder;
 
             // members: __setstate__,  __reduce__ _b_needsfree_ __ctypes_from_outparam__ __hash__ _objects _b_base_ __doc__
@@ -58,7 +58,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            byte[] IPythonBufferable.GetBytes(int offset, int length) {
+            private byte[] GetBytes(int offset, int length) {
                 int maxLen = checked(offset + length);
                 byte[] res = new byte[length];
                 for (int i = offset; i < maxLen; i++) {
@@ -96,7 +96,7 @@ namespace IronPython.Modules {
             #region IBufferProtocol Members
 
             Bytes IBufferProtocol.GetItem(int index) {
-                return new Bytes(((IPythonBufferable)this).GetBytes(index, this.NativeType.Size));
+                return new Bytes(GetBytes(index, NativeType.Size));
             }
 
             void IBufferProtocol.SetItem(int index, object value) {
@@ -145,7 +145,7 @@ namespace IronPython.Modules {
             }
 
             Bytes IBufferProtocol.ToBytes(int start, int? end) {
-                return new Bytes(((IPythonBufferable)this).GetBytes(start, this.NativeType.Size));
+                return new Bytes(GetBytes(start, NativeType.Size));
             }
 
             PythonList IBufferProtocol.ToList(int start, int? end) {

@@ -95,10 +95,8 @@ namespace IronPython.Modules {
         // for cryptographically-strong randomness and doesn't need (or accept) user input
 
         public static void RAND_add(object buf, double entropy) {
-            if (buf == null) {
-                throw PythonOps.TypeError("must be string or read-only buffer, not None");
-            } else if (!(buf is string) && !(buf is PythonBuffer)) {
-                throw PythonOps.TypeError("must be string or read-only buffer, not {0}", PythonOps.GetPythonTypeName(buf));
+            if (!(buf is string) && !(buf is IBufferProtocol)) {
+                throw PythonOps.TypeError($"'{DynamicHelpers.GetPythonType(buf).Name}' does not support the buffer interface");
             }
         }
 

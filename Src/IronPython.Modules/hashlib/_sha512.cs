@@ -32,10 +32,6 @@ namespace IronPython.Modules {
             return new Sha512Object((IList<byte>)data);
         }
         
-        public static Sha512Object sha512(PythonBuffer data) {
-            return new Sha512Object((IList<byte>)data);
-        }
-
         public static Sha512Object sha512(ByteArray data) {
             return new Sha512Object((IList<byte>)data);
         }
@@ -56,14 +52,9 @@ namespace IronPython.Modules {
             return new Sha384Object((IList<byte>)data);
         }
 
-        public static Sha384Object sha384(PythonBuffer data) {
-            return new Sha384Object((IList<byte>)data);
-        }
-
         public static Sha384Object sha384(ByteArray data) {
             return new Sha384Object((IList<byte>)data);
         }
-
         
         public static Sha384Object sha384() {
             return new Sha384Object();

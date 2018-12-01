@@ -1704,31 +1704,6 @@ namespace IronPython.Runtime {
             }
         }
 
-        public void write([NotNull]PythonBuffer buf) {
-            write((IList<byte>)buf);
-        }
-
-        public void write([NotNull]object arr) {
-            WriteWorker(arr, true);
-        }
-
-        private void WriteWorker(object/*!*/ arr, bool locking) {
-            Debug.Assert(arr != null);
-
-            IPythonArray array = arr as IPythonArray;
-            if (array == null) {
-                throw PythonOps.TypeError("file.write() argument must be string or read-only character buffer, not {0}", DynamicHelpers.GetPythonType(arr).Name);
-            } else if (_fileMode != PythonFileMode.Binary) {
-                throw PythonOps.TypeError("file.write() argument must be string or buffer, not {0}", DynamicHelpers.GetPythonType(arr).Name);
-            }
-
-            if (locking) {
-                write(array.tostring());
-            } else {
-                WriteNoLock(array.tostring());
-            }
-        }
-
         public void writelines(object o) {
             System.Collections.IEnumerator e = PythonOps.GetEnumerator(o);
 
@@ -1740,21 +1715,8 @@ namespace IronPython.Runtime {
                 do {
                     string line = e.Current as string;
                     if (line == null) {
-                        Bytes b = e.Current as Bytes;
-                        if (b != null) {
-                            WriteWorker(b, false);
-                            continue;
-                        }
-
-                        PythonBuffer buf = e.Current as PythonBuffer;
-                        if (buf != null) {
-                            WriteNoLock(buf);
-                            continue;
-                        }
-
-                        IPythonArray arr = e.Current as IPythonArray;
-                        if (arr != null) {
-                            WriteWorker(arr, false);
+                        if (e.Current is Bytes b) {
+                            WriteNoLock(b);
                             continue;
                         }
 

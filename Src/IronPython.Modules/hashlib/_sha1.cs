@@ -55,11 +55,6 @@ namespace IronPython.Modules {
             return new sha((IList<byte>)data);
         }
 
-        [Documentation("sha1([data]) -> object (object used to calculate hash)")]
-        public static sha sha1(PythonBuffer data) {
-            return new sha(data);
-        }
-
         [Documentation("new([data]) -> object (object used to calculate hash)")]
         public static sha @new(ByteArray data) {
             return new sha((IList<byte>)data);

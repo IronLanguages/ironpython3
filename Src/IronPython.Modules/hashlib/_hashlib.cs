@@ -59,10 +59,6 @@ namespace IronPython.Modules {
             }
         }
 
-        public void update(PythonBuffer buffer) {
-            update((IList<byte>)buffer);
-        }
-
         internal void update(IList<byte> newBytes) {
             byte[] bytes = newBytes.ToArray();
             lock (_hasher) {

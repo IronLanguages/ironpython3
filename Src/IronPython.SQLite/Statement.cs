@@ -193,15 +193,6 @@ namespace IronPython.SQLite
                 rc = Sqlite3.sqlite3_bind_text(st, index, (string)arg, -1, Sqlite3.SQLITE_TRANSIENT);
             else if(arg is byte[])
                 rc = Sqlite3.sqlite3_bind_blob(this.st, index, (byte[])arg, -1, Sqlite3.SQLITE_TRANSIENT);
-            else if(arg is PythonBuffer)
-            {
-                //TODO: see if there is a better way to do this
-                PythonBuffer buffer = (PythonBuffer)arg;
-                string s = buffer[new Slice(0, null)].ToString();
-                byte[] bytes = PythonSQLite.Latin1.GetBytes(s);
-
-                rc = Sqlite3.sqlite3_bind_blob(this.st, index, bytes, -1, Sqlite3.SQLITE_TRANSIENT);
-            }
             else
                 throw PythonSQLite.MakeInterfaceError("Unable to bind parameter {0} - unsupported type {1}".Format(index, arg.GetType()));
 
@@ -225,8 +216,7 @@ namespace IronPython.SQLite
                 value is float ||
                 value is double ||
                 value is string ||
-                value is byte[] ||
-                value is PythonBuffer)
+                value is byte[])
             {
                 object proto = DynamicHelpers.GetPythonTypeFromType(typeof(PythonSQLite.PrepareProtocol));
                 object type = DynamicHelpers.GetPythonType(value);

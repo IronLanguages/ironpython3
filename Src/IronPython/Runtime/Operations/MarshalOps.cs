@@ -88,7 +88,6 @@ namespace IronPython.Runtime.Operations {
                     else if (o.GetType () == typeof (FrozenSetCollection)) WriteFrozenSet (o);
                     else if (o is BigInteger) WriteInteger ((BigInteger)o);
                     else if (o is Complex) WriteComplex ((Complex)o);
-                    else if (o is PythonBuffer) WriteBuffer ((PythonBuffer)o);
                     else if (o == PythonExceptions.StopIteration) WriteStopIteration ();
                     else throw PythonOps.ValueError ("unmarshallable object");
                 } finally {
@@ -147,27 +146,6 @@ namespace IronPython.Runtime.Operations {
                 WriteInt32 (wordCount);
 
                 _bytes.AddRange (bytes);
-            }
-
-            private void WriteBuffer (PythonBuffer b) {
-                _bytes.Add ((byte)'s');
-                List<byte> newBytes = new List<byte> ();
-                for (int i = 0; i < b.Size; i++) {
-                    if (b[i] is string) {
-                        string str = b[i] as string;
-                        byte[] utfBytes = Encoding.UTF8.GetBytes (str);
-                        if (utfBytes.Length != str.Length) {
-                            newBytes.AddRange (utfBytes);
-                        } else {
-                            byte[] strBytes = PythonAsciiEncoding.Instance.GetBytes (str);
-                            newBytes.AddRange (strBytes);
-                        }
-                    } else {
-                        newBytes.Add ((byte)b[i]);
-                    }
-                }
-                WriteInt32 (newBytes.Count);
-                _bytes.AddRange (newBytes);
             }
 
             private void WriteLong (long l) {

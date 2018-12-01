@@ -340,9 +340,7 @@ namespace IronPython.SQLite
                             break;
 
                         case Sqlite3.SQLITE_BLOB:
-                            byte[] result = Sqlite3.sqlite3_value_blob(cur_value);
-                            PythonBuffer buffer = new PythonBuffer(context, result);
-                            cur_py_value = buffer;
+                            cur_py_value = new Bytes(Sqlite3.sqlite3_value_blob(cur_value)); // TODO: avoid creating a copy
                             break;
 
                         case Sqlite3.SQLITE_NULL:
@@ -379,12 +377,6 @@ namespace IronPython.SQLite
                 {
                     byte[] b = (byte[])result;
                     string s = Latin1.GetString(b, 0, b.Length);
-                    Sqlite3.sqlite3_result_blob(ctx, s, s.Length, Sqlite3.SQLITE_TRANSIENT);
-                }
-                else if(result is PythonBuffer)
-                {
-                    PythonBuffer buffer = (PythonBuffer)result;
-                    string s = buffer[new Slice(0, null)].ToString();
                     Sqlite3.sqlite3_result_blob(ctx, s, s.Length, Sqlite3.SQLITE_TRANSIENT);
                 }
                 else

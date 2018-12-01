@@ -420,19 +420,6 @@ namespace IronPython.Modules {
                 + "is not specified (or 0), receive up to the size available in the given buffer.\n\n"
                 + "See recv() for documentation about the flags.\n"
                 )]
-            public int recv_into(PythonBuffer buffer, int nbytes=0, int flags=0) {
-                if (nbytes < 0) {
-                    throw PythonOps.ValueError("negative buffersize in recv_into");
-                }
-                throw PythonOps.TypeError("buffer is read-only");
-            }
-
-            [Documentation("recv_into(buffer, [nbytes[, flags]]) -> nbytes_read\n\n"
-                + "A version of recv() that stores its data into a buffer rather than creating\n"
-                + "a new string.  Receive up to buffersize bytes from the socket.  If buffersize\n"
-                + "is not specified (or 0), receive up to the size available in the given buffer.\n\n"
-                + "See recv() for documentation about the flags.\n"
-                )]
             public int recv_into(string buffer, int nbytes=0, int flags=0) {
                 throw PythonOps.TypeError("Cannot use string as modifiable buffer");
             }
@@ -536,16 +523,6 @@ namespace IronPython.Modules {
                 string data = PythonOps.MakeString(buffer, bytesRead);
                 PythonTuple remoteAddress = EndPointToTuple((IPEndPoint)remoteEP);
                 return PythonTuple.MakeTuple(data, remoteAddress);
-            }
-
-            [Documentation("recvfrom_into(buffer[, nbytes[, flags]]) -> (nbytes, address info)\n\n"
-                + "Like recv_into(buffer[, nbytes[, flags]]) but also return the sender's address info.\n"
-                )]
-            public PythonTuple recvfrom_into(PythonBuffer buffer, int nbytes=0, int flags=0) {
-                if (nbytes < 0) {
-                    throw PythonOps.ValueError("negative buffersize in recvfrom_into");
-                }
-                throw PythonOps.TypeError("buffer is read-only");
             }
 
             [Documentation("recvfrom_into(buffer[, nbytes[, flags]]) -> (nbytes, address info)\n\n"
@@ -693,31 +670,6 @@ namespace IronPython.Modules {
                 }
             }
 
-
-            [Documentation("send(string[, flags]) -> bytes_sent\n\n"
-                + "Send data to the remote socket. The socket must be connected to a remote\n"
-                + "socket (by calling either connect() or accept(). Returns the number of bytes\n"
-                + "sent to the remote socket.\n"
-                + "\n"
-                + "Note that the successful completion of a send() call does not mean that all of\n"
-                + "the data was sent. The caller must keep track of the number of bytes sent and\n"
-                + "retry the operation until all of the data has been sent.\n"
-                + "\n"
-                + "Also note that there is no guarantee that the data you send will appear on the\n"
-                + "network immediately. To increase network efficiency, the underlying system may\n"
-                + "delay transmission until a significant amount of outgoing data is collected. A\n"
-                + "successful completion of the Send method means that the underlying system has\n"
-                + "had room to buffer your data for a network send"
-                )]
-            public int send(PythonBuffer data, int flags=0) {
-                byte[] buffer = data.byteCache;
-                try {
-                    return _socket.Send(buffer, (SocketFlags)flags);
-                } catch (Exception e) {
-                    throw MakeException(_context, e);
-                }
-            }
-
             public int send(MemoryView data, int flags = 0) {
                 return send(data.tobytes(), flags);
             }
@@ -768,30 +720,6 @@ namespace IronPython.Modules {
                 )]
             public void sendall(Bytes data, int flags=0) {
                 sendallWorker(data.GetUnsafeByteArray(), flags);
-            }
-
-            [Documentation("sendall(string[, flags]) -> None\n\n"
-                + "Send data to the remote socket. The socket must be connected to a remote\n"
-                + "socket (by calling either connect() or accept().\n"
-                + "\n"
-                + "Unlike send(), sendall() blocks until all of the data has been sent or until a\n"
-                + "timeout or an error occurs. None is returned on success. If an error occurs,\n"
-                + "there is no way to tell how much data, if any, was sent.\n"
-                + "\n"
-                + "Difference from CPython: timeouts do not function as you would expect. The\n"
-                + "function is implemented using multiple calls to send(), so the timeout timer\n"
-                + "is reset after each of those calls. That means that the upper bound on the\n"
-                + "time that it will take for sendall() to return is the number of bytes in\n"
-                + "string times the timeout interval.\n"
-                + "\n"
-                + "Also note that there is no guarantee that the data you send will appear on the\n"
-                + "network immediately. To increase network efficiency, the underlying system may\n"
-                + "delay transmission until a significant amount of outgoing data is collected. A\n"
-                + "successful completion of the Send method means that the underlying system has\n"
-                + "had room to buffer your data for a network send"
-                )]
-            public void sendall(PythonBuffer data, int flags=0) {
-                sendallWorker(data.byteCache, flags);
             }
 
             public void sendall(MemoryView data, int flags = 0) {

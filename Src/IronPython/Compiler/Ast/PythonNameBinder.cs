@@ -685,6 +685,8 @@ namespace IronPython.Compiler.Ast {
                     // conflict?
                     switch (conflict.Kind) {
                         case VariableKind.Global:
+                            break;
+
                         case VariableKind.Local:
                             ReportSyntaxError($"name '{n}' is assigned to before global declaration", node);
                             break;

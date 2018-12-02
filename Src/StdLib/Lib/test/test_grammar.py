@@ -153,7 +153,6 @@ class GrammarTests(unittest.TestCase):
         # testlist ENDMARKER
         x = eval('1, 0 or 1')
 
-    @unittest.skipIf(sys.implementation.name=='ironpython', 'Need to debug this')
     def test_funcdef(self):
         ### [decorators] 'def' NAME parameters ['->' test] ':' suite
         ### decorator: '@' dotted_name [ '(' [arglist] ')' ] NEWLINE

@@ -223,7 +223,6 @@
     <Rule Id="CA5350" Action="None" />
   </Rules>
   <Rules AnalyzerId="Microsoft.CodeQuality.CSharp.Analyzers" RuleNamespace="Microsoft.CodeQuality.CSharp.Analyzers">
-    <Rule Id="CA1507" Action="None" />
     <Rule Id="CA1019" Action="None" />
     <Rule Id="CA1065" Action="None" />
     <Rule Id="CA1001" Action="None" />

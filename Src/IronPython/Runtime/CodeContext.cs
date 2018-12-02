@@ -25,8 +25,8 @@ namespace IronPython.Runtime {
         /// Creates a new CodeContext which is backed by the specified Python dictionary.
         /// </summary>
         public CodeContext(PythonDictionary/*!*/ dict, ModuleContext/*!*/ moduleContext) {
-            ContractUtils.RequiresNotNull(dict, "dict");
-            ContractUtils.RequiresNotNull(moduleContext, "moduleContext");
+            ContractUtils.RequiresNotNull(dict, nameof(dict));
+            ContractUtils.RequiresNotNull(moduleContext, nameof(moduleContext));
             _dict = dict;
             _modContext = moduleContext;
         }

@@ -304,7 +304,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static List<byte>/*!*/[]/*!*/ Split(this IList<byte>/*!*/ str, IList<byte>/*!*/ separators, int maxComponents, StringSplitOptions options) {
-            ContractUtils.RequiresNotNull(str, "str");
+            ContractUtils.RequiresNotNull(str, nameof(str));
             bool keep_empty = (options & StringSplitOptions.RemoveEmptyEntries) != StringSplitOptions.RemoveEmptyEntries;
             
             if (separators == null) {

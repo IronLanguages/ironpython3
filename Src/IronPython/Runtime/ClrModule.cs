@@ -102,7 +102,7 @@ import Namespace.")]
         public static void AddReference(CodeContext/*!*/ context, params object[] references) {
             if (references == null) throw new TypeErrorException("Expected string or Assembly, got NoneType");
             if (references.Length == 0) throw new ValueErrorException("Expected at least one name, got none");
-            ContractUtils.RequiresNotNull(context, "context");
+            ContractUtils.RequiresNotNull(context, nameof(context));
 
             foreach (object reference in references) {
                 AddReference(context, reference);
@@ -118,7 +118,7 @@ namespaces and top-level types will be available via import Namespace.")]
         public static void AddReferenceToFile(CodeContext/*!*/ context, params string[] files) {
             if (files == null) throw new TypeErrorException("Expected string, got NoneType");
             if (files.Length == 0) throw new ValueErrorException("Expected at least one name, got none");
-            ContractUtils.RequiresNotNull(context, "context");
+            ContractUtils.RequiresNotNull(context, nameof(context));
 
             foreach (string file in files) {
                 AddReferenceToFile(context, file);
@@ -131,7 +131,7 @@ import Namespace.")]
         public static void AddReferenceByName(CodeContext/*!*/ context, params string[] names) {
             if (names == null) throw new TypeErrorException("Expected string, got NoneType");
             if (names.Length == 0) throw new ValueErrorException("Expected at least one name, got none");
-            ContractUtils.RequiresNotNull(context, "context");
+            ContractUtils.RequiresNotNull(context, nameof(context));
 
             foreach (string name in names) {
                 AddReferenceByName(context, name);
@@ -263,7 +263,7 @@ the assembly object.")]
         /// current ScriptRuntime.
         /// </summary>
         public static object/*!*/ Use(CodeContext/*!*/ context, string/*!*/ path, string/*!*/ language) {
-            ContractUtils.RequiresNotNull(context, "context");
+            ContractUtils.RequiresNotNull(context, nameof(context));
 
             if (path == null) {
                 throw new TypeErrorException("Use: arg 1 must be a string");
@@ -294,7 +294,7 @@ the assembly object.")]
         /// continues to run on a non-UI thread.
         /// </summary>
         public static Action<Action> SetCommandDispatcher(CodeContext/*!*/ context, Action<Action> dispatcher) {
-            ContractUtils.RequiresNotNull(context, "context");
+            ContractUtils.RequiresNotNull(context, nameof(context));
 
             return ((PythonContext)context.LanguageContext).GetSetCommandDispatcher(dispatcher);
         }
@@ -434,7 +434,7 @@ the assembly object.")]
 #if FEATURE_LOADWITHPARTIALNAME
         private static void AddReferenceByPartialName(CodeContext/*!*/ context, string name) {
             if (name == null) throw new TypeErrorException("Expected string, got NoneType");
-            ContractUtils.RequiresNotNull(context, "context");
+            ContractUtils.RequiresNotNull(context, nameof(context));
 
             Assembly asm = LoadAssemblyByPartialName(name);
             if (asm == null) {
@@ -505,7 +505,7 @@ load the assemblies namespaces and top-level types will be available via
 import Namespace.")]
         public static void AddReferenceToFileAndPath(CodeContext/*!*/ context, params string[] files) {
             if (files == null) throw new TypeErrorException("Expected string, got NoneType");
-            ContractUtils.RequiresNotNull(context, "context");
+            ContractUtils.RequiresNotNull(context, nameof(context));
 
             foreach (string file in files) {
                 AddReferenceToFileAndPath(context, file);
@@ -1004,7 +1004,7 @@ import Namespace.")]
             #region Construction
 
             internal FileStreamContentProvider(PlatformAdaptationLayer manager, string path) {
-                ContractUtils.RequiresNotNull(path, "path");
+                ContractUtils.RequiresNotNull(path, nameof(path));
 
                 _path = path;
                 _pal = new PALHolder(manager);

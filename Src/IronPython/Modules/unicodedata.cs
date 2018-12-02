@@ -308,7 +308,7 @@ namespace IronPython.Modules {
                         break;
 
                     default:
-                        throw new ArgumentException("Invalid normalization form " + form, "form");
+                        throw new ArgumentException("Invalid normalization form " + form, nameof(form));
                 }
 
                 return unistr.Normalize(nf);

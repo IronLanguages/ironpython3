@@ -62,8 +62,8 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override Expression/*!*/ ConvertExpression(Expression/*!*/ expr, Type/*!*/ toType, ConversionResultKind kind, OverloadResolverFactory factory) {
-            ContractUtils.RequiresNotNull(expr, "expr");
-            ContractUtils.RequiresNotNull(toType, "toType");
+            ContractUtils.RequiresNotNull(expr, nameof(expr));
+            ContractUtils.RequiresNotNull(toType, nameof(toType));
 
             Type exprType = expr.Type;
 
@@ -229,8 +229,8 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override ErrorInfo/*!*/ MakeStaticPropertyInstanceAccessError(PropertyTracker/*!*/ tracker, bool isAssignment, IList<DynamicMetaObject>/*!*/ parameters) {            
-            ContractUtils.RequiresNotNull(tracker, "tracker");
-            ContractUtils.RequiresNotNull(parameters, "parameters");
+            ContractUtils.RequiresNotNull(tracker, nameof(tracker));
+            ContractUtils.RequiresNotNull(parameters, nameof(parameters));
 
             if (isAssignment) {
                 return ErrorInfo.FromException(

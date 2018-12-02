@@ -122,7 +122,7 @@ namespace IronPython.Compiler {
         public override ErrorSink ErrorSink {
             get { return _errors; }
             set {
-                ContractUtils.RequiresNotNull(value, "value");
+                ContractUtils.RequiresNotNull(value, nameof(value));
                 _errors = value;
             }
         }
@@ -151,7 +151,7 @@ namespace IronPython.Compiler {
         }
 
         public void Initialize(SourceUnit sourceUnit) {
-            ContractUtils.RequiresNotNull(sourceUnit, "sourceUnit");
+            ContractUtils.RequiresNotNull(sourceUnit, nameof(sourceUnit));
 
             Initialize(null, sourceUnit.GetReader(), sourceUnit, SourceLocation.MinValue, DefaultBufferCapacity);
         }

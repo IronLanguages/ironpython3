@@ -12,7 +12,7 @@ namespace IronPython.Runtime {
     /// </summary>
     public class Index {
         public Index(object/*!*/ value) {
-            ContractUtils.RequiresNotNull(value, "value");
+            ContractUtils.RequiresNotNull(value, nameof(value));
 
             Value = value;
         }

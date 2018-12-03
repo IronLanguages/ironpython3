@@ -10,7 +10,7 @@ using Microsoft.Scripting.Utils;
 namespace IronPython.Runtime.Types {
     public static class DynamicHelpers {
         public static PythonType/*!*/ GetPythonTypeFromType(Type/*!*/ type) {
-            ContractUtils.RequiresNotNull(type, "type");
+            ContractUtils.RequiresNotNull(type, nameof(type));
 
             PerfTrack.NoteEvent(PerfTrack.Categories.DictInvoke, "TypeLookup " + type.FullName);
 

@@ -24,7 +24,7 @@ namespace IronPython.Runtime {
         private CodeContext/*!*/ _codeContext;
 
         protected BuiltinPythonModule(PythonContext/*!*/ context) {
-            ContractUtils.RequiresNotNull(context, "context");
+            ContractUtils.RequiresNotNull(context, nameof(context));
 
             _context = context;
         }
@@ -36,8 +36,8 @@ namespace IronPython.Runtime {
         /// <param name="codeContext">The CodeContext for the module.</param>
         /// <param name="optimizedGlobals">A list of globals which have optimize access.  Contains at least all of the global variables reutrned by GetGlobalVariableNames.</param>
         protected internal virtual void Initialize(CodeContext/*!*/ codeContext, Dictionary<string/*!*/, PythonGlobal/*!*/>/*!*/ optimizedGlobals) {
-            ContractUtils.RequiresNotNull(codeContext, "codeContext");
-            ContractUtils.RequiresNotNull(optimizedGlobals, "globals");
+            ContractUtils.RequiresNotNull(codeContext, nameof(codeContext));
+            ContractUtils.RequiresNotNull(optimizedGlobals, nameof(optimizedGlobals));
 
             _codeContext = codeContext;
 

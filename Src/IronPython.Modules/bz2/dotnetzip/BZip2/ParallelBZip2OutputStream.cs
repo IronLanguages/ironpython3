@@ -298,12 +298,12 @@ namespace Ionic.BZip2
                 var msg = String.Format("blockSize={0} is out of range; must be between {1} and {2}",
                                         blockSize,
                                         BZip2.MinBlockSize, BZip2.MaxBlockSize);
-                throw new ArgumentException(msg, "blockSize");
+                throw new ArgumentException(msg, nameof(blockSize));
             }
 
             this.output = output;
             if (!this.output.CanWrite)
-                throw new ArgumentException("The stream is not writable.", "output");
+                throw new ArgumentException("The stream is not writable.", nameof(output));
 
             this.bw = new BitWriter(this.output);
             this.blockSize100k = blockSize;

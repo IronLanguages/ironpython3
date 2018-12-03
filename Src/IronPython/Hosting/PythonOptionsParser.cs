@@ -22,7 +22,7 @@ namespace IronPython.Hosting {
 
         /// <exception cref="Exception">On error.</exception>
         protected override void ParseArgument(string/*!*/ arg) {
-            ContractUtils.RequiresNotNull(arg, "arg");
+            ContractUtils.RequiresNotNull(arg, nameof(arg));
 
             switch (arg) {
                 case "-B": break; // dont_write_bytecode always true in IronPython

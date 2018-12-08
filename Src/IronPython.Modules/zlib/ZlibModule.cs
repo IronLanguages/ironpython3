@@ -85,7 +85,7 @@ a signed integer.")]
         public static int crc32([BytesConversion]IList<byte> data, long baseValue=0L)
         {
             if(baseValue < int.MinValue || baseValue > uint.MaxValue)
-                throw new ArgumentOutOfRangeException("baseValue");
+                throw new ArgumentOutOfRangeException(nameof(baseValue));
 
             if(baseValue >= 0 && baseValue <= uint.MaxValue)
                 return IronPython.Modules.PythonBinaryAscii.crc32(data.ToArray(), (uint)baseValue);

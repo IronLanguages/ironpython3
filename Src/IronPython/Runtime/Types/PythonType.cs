@@ -1083,7 +1083,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             set {
                 // validate input...
                 foreach (PythonType pt in value) {
-                    if (pt == null) throw new ArgumentNullException("value", "a PythonType was null while assigning base classes");
+                    if (pt == null) throw new ArgumentNullException(nameof(value), "a PythonType was null while assigning base classes");
                 }
 
                 // first update our sub-type list

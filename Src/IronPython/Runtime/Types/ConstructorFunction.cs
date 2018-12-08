@@ -36,7 +36,7 @@ namespace IronPython.Runtime.Types {
         }
 
         private static IList<MethodBase> GetTargetsValidateFunction(BuiltinFunction realTarget) {
-            ContractUtils.RequiresNotNull(realTarget, "realTarget");
+            ContractUtils.RequiresNotNull(realTarget, nameof(realTarget));
             return realTarget.Targets;
         }
 

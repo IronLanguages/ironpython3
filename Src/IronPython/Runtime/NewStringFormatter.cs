@@ -65,7 +65,7 @@ namespace IronPython.Runtime {
         /// text, field name, format spec, conversion
         /// </summary>
         public static IEnumerable<PythonTuple/*!*/>/*!*/ GetFormatInfo(string/*!*/ format) {
-            ContractUtils.RequiresNotNull(format, "format");
+            ContractUtils.RequiresNotNull(format, nameof(format));
 
             return StringFormatParser.Parse(format);
         }
@@ -78,7 +78,7 @@ namespace IronPython.Runtime {
         /// bool (true if attribute, false if element index), attribute/index value
         /// </summary>
         public static PythonTuple/*!*/ GetFieldNameInfo(string/*!*/ name) {
-            ContractUtils.RequiresNotNull(name, "name");
+            ContractUtils.RequiresNotNull(name, nameof(name));
 
 
             FieldName fieldName = ParseFieldName(name, false);

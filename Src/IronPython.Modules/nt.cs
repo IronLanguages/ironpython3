@@ -1265,7 +1265,7 @@ namespace IronPython.Modules {
 
         private static void UnlinkWorker(string path) {
             if (path == null) {
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             } else if (path.IndexOfAny(Path.GetInvalidPathChars()) != -1 || Path.GetFileName(path).IndexOfAny(Path.GetInvalidFileNameChars()) != -1) {
                 throw PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_INVALID_NAME, "The file could not be found for deletion: " + path, null, PythonExceptions._OSError.ERROR_INVALID_NAME);
             } else if (!File.Exists(path)) {

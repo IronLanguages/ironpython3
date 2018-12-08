@@ -193,7 +193,7 @@ namespace IronPython.Modules
                     if (allowNull)
                         return PythonOps.MakeEmptyList(0);
                     else
-                        throw new ArgumentNullException("stmt");
+                        throw new ArgumentNullException(nameof(stmt));
 
                 if (stmt is SuiteStatement) {
                     SuiteStatement suite = (SuiteStatement)stmt;
@@ -513,7 +513,7 @@ namespace IronPython.Modules
                     case PythonOperator.Xor:
                         return BitXor.Instance;
                     default:
-                        throw new ArgumentException("Unexpected PythonOperator: " + op, "op");
+                        throw new ArgumentException("Unexpected PythonOperator: " + op, nameof(op));
                 }
             }
         }

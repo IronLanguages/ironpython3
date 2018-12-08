@@ -1133,9 +1133,9 @@ namespace IronPython.Runtime
         }
 
         public PythonModule/*!*/ CompileModule(string fileName, string moduleName, SourceUnit sourceCode, ModuleOptions options, out ScriptCode scriptCode) {
-            ContractUtils.RequiresNotNull(fileName, "fileName");
-            ContractUtils.RequiresNotNull(moduleName, "moduleName");
-            ContractUtils.RequiresNotNull(sourceCode, "sourceCode");
+            ContractUtils.RequiresNotNull(fileName, nameof(fileName));
+            ContractUtils.RequiresNotNull(moduleName, nameof(moduleName));
+            ContractUtils.RequiresNotNull(sourceCode, nameof(sourceCode));
 
             scriptCode = GetScriptCode(sourceCode, moduleName, options);
             Scope scope = scriptCode.CreateScope();

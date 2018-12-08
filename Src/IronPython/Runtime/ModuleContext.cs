@@ -37,8 +37,8 @@ namespace IronPython.Runtime {
         /// Creates a new ModuleContext for the specified module.
         /// </summary>
         public ModuleContext(PythonModule/*!*/ module, PythonContext/*!*/ creatingContext) {
-            ContractUtils.RequiresNotNull(module, "module");
-            ContractUtils.RequiresNotNull(creatingContext, "creatingContext");
+            ContractUtils.RequiresNotNull(module, nameof(module));
+            ContractUtils.RequiresNotNull(creatingContext, nameof(creatingContext));
 
             _globals = module.__dict__;
             _pyContext = creatingContext;

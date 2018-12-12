@@ -333,8 +333,6 @@ namespace IronPython.Modules
                     ast = new BoolOp((OrExpression)expr);
                 else if (expr is CallExpression)
                     ast = new Call((CallExpression)expr);
-                else if (expr is ParenthesisExpression)
-                    return Convert(((ParenthesisExpression)expr).Expression);
                 else if (expr is LambdaExpression)
                     ast = new Lambda((LambdaExpression)expr);
                 else if (expr is ListExpression)

@@ -50,9 +50,6 @@ namespace IronPython.Compiler.Ast {
             _binder.DefineName(node.Name);
             return false;
         }
-        public override bool Walk(ParenthesisExpression node) {
-            return true;
-        }
         public override bool Walk(TupleExpression node) {
             return true;
         }
@@ -453,11 +450,6 @@ namespace IronPython.Compiler.Ast {
         }
         // Parameter
         public override bool Walk(Parameter node) {
-            node.Parent = _currentScope;
-            return base.Walk(node);
-        }
-        // ParenthesisExpression
-        public override bool Walk(ParenthesisExpression node) {
             node.Parent = _currentScope;
             return base.Walk(node);
         }

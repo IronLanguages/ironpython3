@@ -81,10 +81,6 @@ namespace IronPython.Compiler.Ast {
         public virtual bool Walk(OrExpression node) { return true; }
         public virtual void PostWalk(OrExpression node) { }
 
-        // ParenthesisExpression
-        public virtual bool Walk(ParenthesisExpression node) { return true; }
-        public virtual void PostWalk(ParenthesisExpression node) { }
-
         // SetComprehension
         public virtual bool Walk(SetComprehension node) { return true; }
         public virtual void PostWalk(SetComprehension node) { }
@@ -323,10 +319,6 @@ namespace IronPython.Compiler.Ast {
         // OrExpression
         public override bool Walk(OrExpression node) { return false; }
         public override void PostWalk(OrExpression node) { }
-
-        // ParenthesisExpression
-        public override bool Walk(ParenthesisExpression node) { return false; }
-        public override void PostWalk(ParenthesisExpression node) { }
 
         // SetComprehension
         public override bool Walk(SetComprehension node) { return false; }

@@ -98,10 +98,6 @@ namespace IronPython.Compiler.Ast {
             return false;
         }
         
-        public override bool Walk(ParenthesisExpression node) {
-            return true;
-        }
-
         public override bool Walk(TupleExpression node) {
             return true;
         }
@@ -126,10 +122,6 @@ namespace IronPython.Compiler.Ast {
         public override bool Walk(NameExpression node) {
             _fc.Delete(node.Name);
             return false;
-        }
-
-        public override bool Walk(ParenthesisExpression node) {
-            return true;
         }
 
         public override bool Walk(TupleExpression node) {

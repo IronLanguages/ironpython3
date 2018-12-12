@@ -2546,7 +2546,7 @@ namespace IronPython.Compiler {
                         ret = ParseGeneratorExpression(expr);
                     } else {
                         // "(" expression ")"
-                        ret = expr is ParenthesisExpression ? expr : new ParenthesisExpression(expr);
+                        ret = expr;
                     }
                     hasRightParenthesis = Eat(TokenKind.RightParenthesis);
                 } finally {

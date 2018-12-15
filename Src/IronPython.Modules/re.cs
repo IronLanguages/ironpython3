@@ -1187,8 +1187,6 @@ namespace IronPython.Modules {
                     return s;
                 case ExtensibleString es:
                     return es.Value;
-                case PythonBuffer buf:
-                    return buf.ToString();
                 case Bytes bytes:
                     return bytes.ToString();
                 case ByteArray byteArray:

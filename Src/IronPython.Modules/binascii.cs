@@ -423,10 +423,6 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             return (byte)('0' + p);
         }
 
-        public static string hexlify([NotNull]PythonBuffer data) {
-            return hexlify(data.ToString());
-        }
-
         public static object a2b_hex(CodeContext/*!*/ context, [BytesConversion]string data) {
             if (data == null) throw PythonOps.TypeError("expected string, got NoneType");
             if ((data.Length & 0x01) != 0) throw PythonOps.TypeError("Odd-length string");

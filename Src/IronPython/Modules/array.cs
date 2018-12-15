@@ -31,7 +31,7 @@ namespace IronPython.Modules {
         public static readonly string typecodes = "cbBuHhiIlLfd";
 
         [PythonType]
-        public class array : IPythonArray, IEnumerable, IWeakReferenceable, ICollection, ICodeFormattable, IList<object>, IStructuralEquatable
+        public class array : IEnumerable, IWeakReferenceable, ICollection, ICodeFormattable, IList<object>, IStructuralEquatable
         {
             private ArrayData _data;
             private readonly char _typeCode;
@@ -210,12 +210,6 @@ namespace IronPython.Modules {
                     return;
                 }
 
-                PythonBuffer buf = iterable as PythonBuffer;
-                if (buf != null) {
-                    fromstring(buf);
-                    return;
-                }
-
                 IEnumerator ie = PythonOps.GetEnumerator(iterable);
                 while (ie.MoveNext()) {
                     append(ie.Current);
@@ -261,12 +255,6 @@ namespace IronPython.Modules {
                 MemoryStream ms = new MemoryStream(bytes);
 
                 FromStream(ms);
-            }
-
-            public void fromstring([NotNull]PythonBuffer buf) {
-                if ((buf.Size % itemsize) != 0) throw PythonOps.ValueError("string length not a multiple of itemsize");
-
-                FromStream(new MemoryStream(buf.byteCache, false));
             }
 
             public void fromunicode(CodeContext/*!*/ context, string s) {

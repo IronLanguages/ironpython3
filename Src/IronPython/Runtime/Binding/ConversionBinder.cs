@@ -162,7 +162,7 @@ namespace IronPython.Runtime.Binding {
                     break;
                 case TypeCode.String:
                     var limitType = self.GetLimitType();
-                    if ((limitType == typeof(Bytes) || limitType == typeof(PythonBuffer) || limitType == typeof(ByteArray)) &&
+                    if ((limitType == typeof(Bytes) || limitType == typeof(ByteArray)) &&
                         !_context.PythonOptions.Python30) {
                         res = new DynamicMetaObject(
                             Ast.Call(

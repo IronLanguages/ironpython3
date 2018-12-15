@@ -156,12 +156,6 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        public static PythonType buffer {
-            get {
-                return DynamicHelpers.GetPythonTypeFromType(typeof(PythonBuffer));
-            }
-        }
-
         public static PythonType bytes {
             get {
                 return DynamicHelpers.GetPythonTypeFromType(typeof(Bytes));
@@ -223,8 +217,6 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             string text;
             if (source is string)
                 text = (string)source;                        
-            else if (source is PythonBuffer)
-                text = ((PythonBuffer)source).ToString();
             else if (source is ByteArray)
                 text = ((ByteArray)source).ToString();
             else if (source is Bytes)

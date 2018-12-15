@@ -393,12 +393,6 @@ namespace IronPython.Modules {
                 return buffer.Count;
             }
 
-            public BigInteger readinto([NotNull]PythonBuffer buffer) {
-                EnsureReadable();
-
-                throw PythonOps.TypeError("buffer is read-only");
-            }
-
             public override BigInteger readinto(CodeContext/*!*/ context, object buf) {
                 ByteArray bytes = buf as ByteArray;
                 if (bytes != null) {

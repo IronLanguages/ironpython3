@@ -44,15 +44,7 @@ For more information see the [.NET Foundation Code of Conduct](https://dotnetfou
 Builds of IronPython 3 are not yet provided.
 
 ## Build
-Make sure you **clone the Git repository recursively** (with `--recurse`) to clone all submodules.
-
-On Windows machines, start a Visual Studio command prompt and type:
-
-    > make
-    
-On Unix machines, make sure Mono is installed and in the PATH, and type:
-
-    $ make
+See the [building document](Documentation/building.md)
 
 Since the main development is on Windows, Mono bugs may inadvertantly be introduced
 - please report them!

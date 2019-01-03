@@ -32,12 +32,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README = README
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Templates", "Templates", "{CE9DF8A7-CEE3-44CB-8C17-E0E3004A8755}"
-	ProjectSection(SolutionItems) = preProject
-		Build\Templates\BuildInfo.Template.cs = Build\Templates\BuildInfo.Template.cs
-		Build\Templates\CurrentVersion.Template.cs = Build\Templates\CurrentVersion.Template.cs
-	EndProjectSection
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.SQLite", "Src\IronPython.SQLite\IronPython.SQLite.csproj", "{4A617A40-2BA7-4713-AAFE-F90C4325C581}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{17737ACB-40C6-41A6-83DA-3203A4DCEC19}"
@@ -46,7 +40,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{17737ACB
 		Build\net45.props = Build\net45.props
 		Build\netcoreapp2.0.props = Build\netcoreapp2.0.props
 		Build\netcoreapp2.1.props = Build\netcoreapp2.1.props
-		Build\Versioning.targets = Build\Versioning.targets
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPythonCompiler", "Src\IronPythonCompiler\IronPythonCompiler.csproj", "{3DFB096E-AC09-4E7A-9288-7F7C33C288C7}"
@@ -122,7 +115,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{CE9DF8A7-CEE3-44CB-8C17-E0E3004A8755} = {17737ACB-40C6-41A6-83DA-3203A4DCEC19}
 		{17737ACB-40C6-41A6-83DA-3203A4DCEC19} = {3A14D070-628F-44EF-92DD-47C8BE5C33CD}
 		{EB66B766-6354-4208-A3D4-AACBDCB5C3B3} = {AC38EFB1-820D-4E90-BF40-BEF3AC825542}
 		{02FF0909-F5AD-48CF-A86A-345E721B7E40} = {AC38EFB1-820D-4E90-BF40-BEF3AC825542}

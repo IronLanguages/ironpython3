@@ -31,9 +31,6 @@ packages/*
 .vs/
 
 # Generated files
-BuildInfo.Generated.cs
-CurrentVersion.Generated.cs
-
 TestResult.xml
 Solutions/TestResults/
 /Src/IronPythonTest/runsettings*.xml

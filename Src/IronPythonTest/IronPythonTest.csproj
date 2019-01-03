@@ -42,13 +42,6 @@
     <Copy SourceFiles="@(RowanTestFiles)" DestinationFolder="$(TargetDir)" />
   </Target>
 
-  <Import Project="$(BeforeTargetFiles)" />
-  <Target Name="BeforeBuildStarts" BeforeTargets="BeforeBuild" DependsOnTargets="$(BeforeTargets);GenerateCurrentVersion" />
-  <ItemGroup>
-    <!-- if the file does not exist it's not picked up automatically -->
-    <Compile Remove="Properties\CurrentVersion.Generated.cs" />
-    <Compile Remove="Properties\BuildInfo.Generated.cs" />
-  </ItemGroup>
   <Import Project="$(AfterTargetFiles)" />
   <Target Name="AfterBuildEnds" AfterTargets="AfterBuild" DependsOnTargets="$(AfterTargets)" />
 

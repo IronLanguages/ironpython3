@@ -327,7 +327,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
         // version and version_info are set by PythonContext
         public static PythonTuple subversion = PythonTuple.MakeTuple("IronPython", "", "");
 
-        public const string winver = CurrentVersion.Series;
+        public static readonly string winver = CurrentVersion.Series;
 
         #region Special types
 

@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
+using System.Reflection;
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
@@ -46,12 +48,12 @@ namespace IronPython.Runtime {
             this.serial = serial;
         }
 
-        internal VersionInfo() 
-            : this(CurrentVersion.Major, 
-                   CurrentVersion.Minor, 
+        internal VersionInfo()
+            : this(CurrentVersion.Major,
+                   CurrentVersion.Minor,
                    CurrentVersion.Micro,
                    CurrentVersion.ReleaseLevel,
-                   CurrentVersion.ReleaseSerial) {}
+                   CurrentVersion.ReleaseSerial) { }
 
         public override string __repr__(CodeContext context) {
             return string.Format("sys.version_info(major={0}, minor={1}, micro={2}, releaselevel='{3}', serial={4})",
@@ -60,7 +62,7 @@ namespace IronPython.Runtime {
 
         internal int GetHexVersion() {
             int hexlevel = 0;
-            switch(releaselevel) {
+            switch (releaselevel) {
                 case "alpha":
                     hexlevel = 0xA;
                     break;
@@ -85,15 +87,48 @@ namespace IronPython.Runtime {
                    (serial << 0);
         }
 
+        private string GetShortReleaseLevel() {
+            switch (releaselevel) {
+                case "alpha": return "a";
+                case "beta": return "b";
+                case "candidate": return "rc";
+                case "final": return "f";
+                default: return "";
+            }
+        }
+
         internal string GetVersionString(string _initialVersionString) {
             var version = string.Format("{0}.{1}.{2}{4}{5} ({3})",
                 major,
                 minor,
                 micro,
-                _initialVersionString, 
-                releaselevel != "final" ? CurrentVersion.ShortReleaseLevel : "",
+                _initialVersionString,
+                releaselevel != "final" ? GetShortReleaseLevel() : "",
                 releaselevel != "final" ? serial.ToString() : "");
             return version;
+        }
+    }
+
+    internal static class CurrentVersion {
+        public static int Major { get; }
+        public static int Minor { get; }
+        public static int Micro { get; }
+        public static string ReleaseLevel { get; }
+        public static int ReleaseSerial { get; }
+        public static string Series { get; }
+        public static string DisplayName { get; }
+
+        static CurrentVersion() {
+            var assembly = typeof(CurrentVersion).Assembly;
+            var version = assembly.GetName().Version;
+            Major = version.Major;
+            Minor = version.Minor;
+            Micro = version.Build;
+            Series = version.ToString(2);
+            DisplayName = $"IronPython {version.ToString(3)}";
+            var split = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            ReleaseLevel = split[split.Length - 2];
+            ReleaseSerial = int.Parse(split[split.Length - 1]);
         }
     }
 }

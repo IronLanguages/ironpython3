@@ -30,10 +30,7 @@ namespace IronPython.SQLite
 {
     public static partial class PythonSQLite
     {
-        public static readonly string version = string.Format("{0}.{1}.{2}", 
-                                                    IronPython.CurrentVersion.Major, 
-                                                    IronPython.CurrentVersion.Minor, 
-                                                    IronPython.CurrentVersion.Micro);
+        public static readonly string version = typeof(PythonSQLite).Assembly.GetName().Version.ToString(3);
         public static readonly string sqlite_version = Sqlite3.sqlite3_version.Replace("(C#)", "");
 
         public static PythonDictionary converters = new PythonDictionary();

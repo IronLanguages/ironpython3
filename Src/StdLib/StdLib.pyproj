@@ -24,9 +24,7 @@
 
   <ItemGroup>
     <Content Include="$(StdLibPath)\**\*.*" Exclude="$(ExcludedPackages)" />
-
   </ItemGroup>
-  <Import Project="$(BeforeTargetFiles)" />
 
   <Target Name="Stage">
     <Copy SourceFiles="@(Content)" DestinationFolder="$(OutputPath)\%(RelativeDir)" />

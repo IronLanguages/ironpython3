@@ -7,8 +7,6 @@ using System.Runtime.InteropServices;
 // associated with an assembly.
 [assembly: AssemblyTitle("IronPythonCompiler")]
 [assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration(BuildInfo.Configuration)]
-[assembly: AssemblyProduct("IronPythonCompiler")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

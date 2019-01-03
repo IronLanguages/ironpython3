@@ -8,8 +8,6 @@ using System.Security;
 // associated with an assembly.
 [assembly: AssemblyTitle("IronPython.SQLite")]
 [assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration(BuildInfo.Configuration)]
-[assembly: AssemblyProduct("IronPython")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

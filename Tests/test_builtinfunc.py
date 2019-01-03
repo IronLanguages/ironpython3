@@ -317,6 +317,15 @@ class BuiltinsTest2(IronPythonTestCase):
         self.assertTrue(min((1,2,3)) == 1)
         self.assertTrue(min(1,2,3) == 1)
 
+        self.assertTrue(max([], default=1) == 1)
+        self.assertTrue(max((), default=1) == 1)
+
+        self.assertTrue(min([], default=1) == 1)
+        self.assertTrue(min((), default=1) == 1)
+
+        self.assertTrue(max([[1,2,3],[5,4,3]], default=2, key=lambda x: x[1]) == [5,4,3])
+        self.assertTrue(min([[1,2,3],[5,4,3]], default=2, key=lambda x: x[1]) == [1,2,3])
+
         self.assertEqual(max((1,2), None), (1, 2))
         self.assertEqual(min((1,2), None), None)
 

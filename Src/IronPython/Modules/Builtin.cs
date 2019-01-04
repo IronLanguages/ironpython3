@@ -909,12 +909,12 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         public static object max(CodeContext/*!*/ context, object x, [ParamDictionary]IDictionary<object, object> dict) {
             IEnumerator i = PythonOps.GetEnumerator(x);
             
-            var kwargTuple = GetMaxKwArg(dict);
+            var kwargTuple = GetMaxKwArg(dict,isDefaultAllowed:true);
             object method = kwargTuple.Item1;
             object def = kwargTuple.Item2;
-
+            
             if (!i.MoveNext()) {
-                if(def != null) {
+                if(dict.Keys.Contains("default")) {
                     return def;
                 }
                 throw PythonOps.ValueError(" max() arg is an empty sequence");
@@ -934,7 +934,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object max(CodeContext/*!*/ context, object x, object y, [ParamDictionary] IDictionary<object, object> dict) {
-            var kwargTuple = GetMaxKwArg(dict);
+            var kwargTuple = GetMaxKwArg(dict, isDefaultAllowed: false);
             object method = kwargTuple.Item1;
 
             PythonContext pc = context.LanguageContext;
@@ -942,7 +942,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object max(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
-            var kwargTuple = GetMaxKwArg(dict);
+            var kwargTuple = GetMaxKwArg(dict, isDefaultAllowed: false);
             object method = kwargTuple.Item1;
             object def = kwargTuple.Item2;
             if (args.Length > 0) {
@@ -955,7 +955,18 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 PythonContext pc = context.LanguageContext;
                 for (int i = 1; i < args.Length; i++) {
                     object tmpRetValue = PythonCalls.Call(context, method, args[i]);
-                    if (pc.GreaterThan(tmpRetValue, retValue)) {
+                    var tmptype = tmpRetValue.GetType();
+                    var rettype = retValue.GetType();
+
+                    if ( tmptype == typeof(bool) && rettype == typeof(PythonList) ) {
+                        throw PythonOps.TypeError("\'>\' not supported between instances of \'bool\' and \'list\'");
+                    }
+
+                    if ( tmptype == null && rettype == typeof(PythonList)) {
+                        throw PythonOps.TypeError("\'>\' not supported between instances of \'NoneType\' and \'list\'");
+                    }
+
+                if (pc.GreaterThan(tmpRetValue, retValue)) {
                         retIndex = i;
                         retValue = tmpRetValue;
                     }
@@ -966,9 +977,12 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        private static Tuple<object, object> GetMaxKwArg(IDictionary<object, object> dict) {
+        private static Tuple<object, object> GetMaxKwArg(IDictionary<object, object> dict, bool isDefaultAllowed) {
             if (dict.Count != 1 && dict.Count != 2)
                 throw PythonOps.TypeError(" max() should have only 2 keyword arguments, but got {0} keyword arguments", dict.Count);
+            if (dict.Keys.Contains("default") && !isDefaultAllowed) {
+                throw PythonOps.TypeError(" Cannot specify a default for max() with multiple positional arguments");
+            }
 
             return VerifyKeys("max", dict);
         }
@@ -1009,12 +1023,12 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         public static object min(CodeContext/*!*/ context, object x, [ParamDictionary]IDictionary<object, object> dict) {
             IEnumerator i = PythonOps.GetEnumerator(x);
-            var kwargTuple = GetMinKwArg(dict);
+            var kwargTuple = GetMinKwArg(dict, isDefaultAllowed: true);
             object method = kwargTuple.Item1;
             object def = kwargTuple.Item2;
 
             if (!i.MoveNext()) {
-                if (def != null) {
+                if (dict.Keys.Contains("default")) {
                     return def;
                 }
                 throw PythonOps.ValueError(" min() arg is an empty sequence");
@@ -1025,6 +1039,16 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             PythonContext pc = context.LanguageContext;
             while (i.MoveNext()) {
                 object tmpRetValue = PythonCalls.Call(context, method, i.Current);
+                var tmptype = tmpRetValue.GetType();
+                var rettype = retValue.GetType();
+
+                if (tmptype == typeof(bool) && rettype == typeof(PythonList)) {
+                    throw PythonOps.TypeError("\'<\' not supported between instances of \'bool\' and \'list\'");
+                }
+
+                if (tmptype == null && rettype == typeof(PythonList)) {
+                    throw PythonOps.TypeError("\'<\' not supported between instances of \'NoneType\' and \'list\'");
+                }
 
                 if (pc.LessThan(tmpRetValue, retValue)) {
                     ret = i.Current;
@@ -1035,13 +1059,13 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object min(CodeContext/*!*/ context, object x, object y, [ParamDictionary]IDictionary<object, object> dict) {
-            var kwargTuple = GetMinKwArg(dict);
+            var kwargTuple = GetMinKwArg(dict, isDefaultAllowed: false);
             object method = kwargTuple.Item1;
             return context.LanguageContext.LessThan(PythonCalls.Call(context, method, x), PythonCalls.Call(context, method, y)) ? x : y;
         }
 
         public static object min(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
-            var kwargTuple = GetMinKwArg(dict);
+            var kwargTuple = GetMinKwArg(dict, isDefaultAllowed: true);
             object method = kwargTuple.Item1;
             object def = kwargTuple.Item2;
 
@@ -1056,6 +1080,16 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
                 for (int i = 1; i < args.Length; i++) {
                     object tmpRetValue = PythonCalls.Call(context, method, args[i]);
+                    var tmptype = tmpRetValue.GetType();
+                    var rettype = retValue.GetType();
+
+                    if (tmptype == typeof(bool) && rettype == typeof(PythonList)) {
+                        throw PythonOps.TypeError("\'<\' not supported between instances of \'bool\' and \'list\'");
+                    }
+
+                    if (tmptype == null && rettype == typeof(PythonList)) {
+                        throw PythonOps.TypeError("\'<\' not supported between instances of \'NoneType\' and \'list\'");
+                    }
 
                     if (pc.LessThan(tmpRetValue, retValue)) {
                         retIndex = i;
@@ -1068,10 +1102,13 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        private static Tuple<object,object> GetMinKwArg([ParamDictionary]IDictionary<object, object> dict) {
+        private static Tuple<object,object> GetMinKwArg([ParamDictionary]IDictionary<object, object> dict, bool isDefaultAllowed) {
             if (dict.Count != 1 && dict.Count != 2)
                 throw PythonOps.TypeError(" min() should have only 2 keyword arguments, but got {0} keyword arguments", dict.Count);
 
+            if (dict.Keys.Contains("default") && !isDefaultAllowed)
+                throw PythonOps.TypeError(" Cannot specify a default for min() with multiple positional arguments");
+            
             return VerifyKeys("min", dict);
         }
 
@@ -1079,15 +1116,17 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             object method;
             object def;
 
+            var MyCopiedDictionary = new Dictionary<object, object>(dict);
+           
             if (dict.TryGetValue("key", out method)) {
-                dict.Remove("key");
+                MyCopiedDictionary.Remove("key");
             }
             
             if(dict.TryGetValue("default", out def)) {
-                dict.Remove("default");
+                MyCopiedDictionary.Remove("default");
             }
 
-            ICollection<object> keys = dict.Keys;
+            ICollection<object> keys = MyCopiedDictionary.Keys;
             IEnumerator<object> en = keys.GetEnumerator();
 
             if (en.MoveNext()) {

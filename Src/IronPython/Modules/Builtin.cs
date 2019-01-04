@@ -1015,7 +1015,6 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             var kwargTuple = GetMinKwArg(dict, isDefaultAllowed: true);
             object method = kwargTuple.Item1;
             object def = kwargTuple.Item2;
-
             if (!i.MoveNext()) {
                 if (dict.Keys.Contains("default")) {
                     return def;
@@ -1028,7 +1027,6 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             PythonContext pc = context.LanguageContext;
             while (i.MoveNext()) {
                 object tmpRetValue = PythonCalls.Call(context, method, i.Current);
-              
                 if (pc.LessThan(tmpRetValue, retValue)) {
                     ret = i.Current;
                     retValue = tmpRetValue;
@@ -1099,10 +1097,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
 
             var keys = dict.Keys.Where(x => (string)x != "default" && (string)x != "key");
-            if (keys.Count() > 0) {
-                throw PythonOps.TypeError(" {1}() got an unexpected keyword argument ({0})", keys.FirstOrDefault(), name);
+            if (dict.Count > cnt) {
+                var key = dict.Keys.Cast<string>().Where(x => x != "default" && x != "key").First();
+                throw PythonOps.TypeError("{1}() got an unexpected keyword argument ({0})", key, name);
             }
-
+ 
             var result = Tuple.Create(method, def);
 
             return result;

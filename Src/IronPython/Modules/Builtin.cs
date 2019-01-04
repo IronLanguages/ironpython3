@@ -917,7 +917,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 if(dict.Keys.Contains("default")) {
                     return def;
                 }
-                throw PythonOps.ValueError(" max() arg is an empty sequence");
+                throw PythonOps.ValueError("max() arg is an empty sequence");
             }
 
             object ret = i.Current;
@@ -944,7 +944,6 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         public static object max(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
             var kwargTuple = GetMaxKwArg(dict, isDefaultAllowed: false);
             object method = kwargTuple.Item1;
-            object def = kwargTuple.Item2;
             if (args.Length > 0) {
                 int retIndex = 0;
                 if (args.Length == 1) {
@@ -955,18 +954,8 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 PythonContext pc = context.LanguageContext;
                 for (int i = 1; i < args.Length; i++) {
                     object tmpRetValue = PythonCalls.Call(context, method, args[i]);
-                    var tmptype = tmpRetValue.GetType();
-                    var rettype = retValue.GetType();
 
-                    if ( tmptype == typeof(bool) && rettype == typeof(PythonList) ) {
-                        throw PythonOps.TypeError("\'>\' not supported between instances of \'bool\' and \'list\'");
-                    }
-
-                    if ( tmptype == null && rettype == typeof(PythonList)) {
-                        throw PythonOps.TypeError("\'>\' not supported between instances of \'NoneType\' and \'list\'");
-                    }
-
-                if (pc.GreaterThan(tmpRetValue, retValue)) {
+                    if (pc.GreaterThan(tmpRetValue, retValue)) {
                         retIndex = i;
                         retValue = tmpRetValue;
                     }
@@ -979,9 +968,9 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         private static Tuple<object, object> GetMaxKwArg(IDictionary<object, object> dict, bool isDefaultAllowed) {
             if (dict.Count != 1 && dict.Count != 2)
-                throw PythonOps.TypeError(" max() should have only 2 keyword arguments, but got {0} keyword arguments", dict.Count);
+                throw PythonOps.TypeError("max() should have only 2 keyword arguments, but got {0} keyword arguments", dict.Count);
             if (dict.Keys.Contains("default") && !isDefaultAllowed) {
-                throw PythonOps.TypeError(" Cannot specify a default for max() with multiple positional arguments");
+                throw PythonOps.TypeError("Cannot specify a default for max() with multiple positional arguments");
             }
 
             return VerifyKeys("max", dict);
@@ -1031,7 +1020,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 if (dict.Keys.Contains("default")) {
                     return def;
                 }
-                throw PythonOps.ValueError(" min() arg is an empty sequence");
+                throw PythonOps.ValueError("min() arg is an empty sequence");
             }
 
             object ret = i.Current;
@@ -1039,17 +1028,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             PythonContext pc = context.LanguageContext;
             while (i.MoveNext()) {
                 object tmpRetValue = PythonCalls.Call(context, method, i.Current);
-                var tmptype = tmpRetValue.GetType();
-                var rettype = retValue.GetType();
-
-                if (tmptype == typeof(bool) && rettype == typeof(PythonList)) {
-                    throw PythonOps.TypeError("\'<\' not supported between instances of \'bool\' and \'list\'");
-                }
-
-                if (tmptype == null && rettype == typeof(PythonList)) {
-                    throw PythonOps.TypeError("\'<\' not supported between instances of \'NoneType\' and \'list\'");
-                }
-
+              
                 if (pc.LessThan(tmpRetValue, retValue)) {
                     ret = i.Current;
                     retValue = tmpRetValue;
@@ -1080,17 +1059,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
                 for (int i = 1; i < args.Length; i++) {
                     object tmpRetValue = PythonCalls.Call(context, method, args[i]);
-                    var tmptype = tmpRetValue.GetType();
-                    var rettype = retValue.GetType();
-
-                    if (tmptype == typeof(bool) && rettype == typeof(PythonList)) {
-                        throw PythonOps.TypeError("\'<\' not supported between instances of \'bool\' and \'list\'");
-                    }
-
-                    if (tmptype == null && rettype == typeof(PythonList)) {
-                        throw PythonOps.TypeError("\'<\' not supported between instances of \'NoneType\' and \'list\'");
-                    }
-
+                    
                     if (pc.LessThan(tmpRetValue, retValue)) {
                         retIndex = i;
                         retValue = tmpRetValue;
@@ -1104,10 +1073,10 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         private static Tuple<object,object> GetMinKwArg([ParamDictionary]IDictionary<object, object> dict, bool isDefaultAllowed) {
             if (dict.Count != 1 && dict.Count != 2)
-                throw PythonOps.TypeError(" min() should have only 2 keyword arguments, but got {0} keyword arguments", dict.Count);
+                throw PythonOps.TypeError("min() should have only 2 keyword arguments, but got {0} keyword arguments", dict.Count);
 
             if (dict.Keys.Contains("default") && !isDefaultAllowed)
-                throw PythonOps.TypeError(" Cannot specify a default for min() with multiple positional arguments");
+                throw PythonOps.TypeError("Cannot specify a default for min() with multiple positional arguments");
             
             return VerifyKeys("min", dict);
         }
@@ -1116,21 +1085,22 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             object method;
             object def;
 
-            var MyCopiedDictionary = new Dictionary<object, object>(dict);
-           
+            int cnt = 0;
             if (dict.TryGetValue("key", out method)) {
-                MyCopiedDictionary.Remove("key");
-            }
-            
-            if(dict.TryGetValue("default", out def)) {
-                MyCopiedDictionary.Remove("default");
+                cnt++;
             }
 
-            ICollection<object> keys = MyCopiedDictionary.Keys;
-            IEnumerator<object> en = keys.GetEnumerator();
+            if (dict.TryGetValue("default", out def)) {
+                cnt++;
+            }
 
-            if (en.MoveNext()) {
-                throw PythonOps.TypeError(" {1}() got an unexpected keyword argument ({0})", en.Current, name);
+            if (dict.Count > 2) {
+                throw PythonOps.TypeError("{1}() takes at most 2 keyword arguments ({0} given)", dict.Count, name);
+            }
+
+            var keys = dict.Keys.Where(x => (string)x != "default" && (string)x != "key");
+            if (keys.Count() > 0) {
+                throw PythonOps.TypeError(" {1}() got an unexpected keyword argument ({0})", keys.FirstOrDefault(), name);
             }
 
             var result = Tuple.Create(method, def);

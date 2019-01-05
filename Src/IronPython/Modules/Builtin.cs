@@ -870,6 +870,8 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return new mapobject(context, func, iters);
         }
 
+        private static object UndefinedKeywordArgument = new object();
+
         public static object max(CodeContext/*!*/ context, object x) {
             IEnumerator i = PythonOps.GetEnumerator(x);
             if (!i.MoveNext())
@@ -912,12 +914,14 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             var kwargTuple = GetMaxKwArg(dict,isDefaultAllowed:true);
             object method = kwargTuple.Item1;
             object def = kwargTuple.Item2;
-            
+
             if (!i.MoveNext()) {
-                if(dict.Keys.Contains("default")) {
-                    return def;
-                }
+                if (def != UndefinedKeywordArgument) return def;
                 throw PythonOps.ValueError("max() arg is an empty sequence");
+            }
+
+            if (method == UndefinedKeywordArgument) {
+                return max(context, x);
             }
 
             object ret = i.Current;
@@ -1016,10 +1020,12 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             object method = kwargTuple.Item1;
             object def = kwargTuple.Item2;
             if (!i.MoveNext()) {
-                if (dict.Keys.Contains("default")) {
-                    return def;
-                }
+                if (def != UndefinedKeywordArgument) return def;
                 throw PythonOps.ValueError("min() arg is an empty sequence");
+            }
+            
+            if (method == UndefinedKeywordArgument) {
+                return min(context, x);
             }
 
             object ret = i.Current;
@@ -1086,10 +1092,14 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             int cnt = 0;
             if (dict.TryGetValue("key", out method)) {
                 cnt++;
+            }else {
+                method = UndefinedKeywordArgument;
             }
 
             if (dict.TryGetValue("default", out def)) {
                 cnt++;
+            }else {
+                def = UndefinedKeywordArgument;
             }
 
             if (dict.Count > 2) {

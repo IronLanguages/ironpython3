@@ -357,8 +357,8 @@ class BuiltinsTest2(IronPythonTestCase):
         self.assertEqual(max((1,2), key=neg), 1)    # two elem iterable
         self.assertEqual(max(1, 2, key=neg), 1)     # two elems
         self.assertEqual(max((), default=None), None)    # zero elem iterable
-        #self.assertEqual(min((1,), default=None), 1)     # one elem iterable
-        #self.assertEqual(min((1,2), default=None), 1)    # two elem iterable
+        self.assertEqual(min((1,), default=None), 1)     # one elem iterable
+        self.assertEqual(min((1,2), default=None), 1)    # two elem iterable
         self.assertEqual(max((), default=1, key=neg), 1)
         self.assertEqual(max((1, 2), default=3, key=neg), 1)
 
@@ -408,8 +408,8 @@ class BuiltinsTest2(IronPythonTestCase):
         self.assertEqual(min(1, 2, key=neg), 2)     # two elems
 
         self.assertEqual(min((), default=None), None)    # zero elem iterable
-        #self.assertEqual(min((1,), default=None), 1)     # one elem iterable
-        #self.assertEqual(min((1,2), default=None), 1)    # two elem iterable
+        self.assertEqual(min((1,), default=None), 1)     # one elem iterable
+        self.assertEqual(min((1,2), default=None), 1)    # two elem iterable
 
         self.assertEqual(min((), default=1, key=neg), 1)
         self.assertEqual(min((1, 2), default=1, key=neg), 2)

@@ -1106,7 +1106,6 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 throw PythonOps.TypeError("{1}() takes at most 2 keyword arguments ({0} given)", dict.Count, name);
             }
 
-            var keys = dict.Keys.Where(x => (string)x != "default" && (string)x != "key");
             if (dict.Count > cnt) {
                 var key = dict.Keys.Cast<string>().Where(x => x != "default" && x != "key").First();
                 throw PythonOps.TypeError("{1}() got an unexpected keyword argument ({0})", key, name);

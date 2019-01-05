@@ -8,25 +8,19 @@ using System;
 
 namespace IronPython.Compiler.Ast {
     public class LambdaExpression : Expression {
-        private readonly FunctionDefinition _function;
-
         public LambdaExpression(FunctionDefinition function) {
-            _function = function;
+            Function = function;
         }
 
-        public FunctionDefinition Function {
-            get { return _function; }
-        }
+        public FunctionDefinition Function { get; }
 
-        public override MSAst.Expression Reduce() {
-            return _function.MakeFunctionExpression();
-        }
+        public override MSAst.Expression Reduce() => Function.MakeFunctionExpression();
 
         public override string NodeName => "lambda";
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                _function?.Walk(walker);
+                Function?.Walk(walker);
             }
             walker.PostWalk(this);
         }

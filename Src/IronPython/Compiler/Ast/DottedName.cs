@@ -15,12 +15,10 @@ namespace IronPython.Compiler.Ast {
             _names = names;
         }
 
-        public IList<string> Names {
-            get { return _names; }
-        }
+        public IList<string> Names => _names;
 
         public string MakeString() {
-            if (_names.Length == 0) return String.Empty;
+            if (_names.Length == 0) return string.Empty;
 
             StringBuilder ret = new StringBuilder(_names[0]);
             for (int i = 1; i < _names.Length; i++) {

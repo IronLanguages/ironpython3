@@ -10,43 +10,36 @@ using Microsoft.Scripting.Actions;
 
 namespace IronPython.Compiler.Ast {
     public class Arg : Node {
-        private readonly string _name;
-        private readonly Expression _expression;
-
         public Arg(Expression expression) : this(null, expression) { }
 
         public Arg(string name, Expression expression) {
-            _name = name;
-            _expression = expression;
+            Name = name;
+            Expression = expression;
         }
 
-        public string Name {
-            get { return _name; }
-        }
+        public string Name { get; }
 
-        public Expression Expression {
-            get { return _expression; }
-        } 
+        public Expression Expression { get; }
 
         public override string ToString() {
-            return base.ToString() + ":" + _name;
+            return base.ToString() + ":" + Name;
         }
 
         internal Argument GetArgumentInfo() {
-            if (_name == null) {
+            if (Name == null) {
                 return Argument.Simple;
-            } else if (_name == "*") {
+            } else if (Name == "*") {
                 return new Argument(ArgumentType.List);
-            } else if (_name == "**") {
+            } else if (Name == "**") {
                 return new Argument(ArgumentType.Dictionary);
             } else {
-                return new Argument(_name);
+                return new Argument(Name);
             }
         }
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                _expression?.Walk(walker);
+                Expression?.Walk(walker);
             }
             walker.PostWalk(this);
         }

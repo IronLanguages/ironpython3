@@ -22,35 +22,26 @@ namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
     
     public partial class BinaryExpression : Expression, IInstructionProvider {
-        private readonly Expression _left, _right;
-        private readonly PythonOperator _op;
-
         public BinaryExpression(PythonOperator op, Expression left, Expression right) {
             ContractUtils.RequiresNotNull(left, nameof(left));
             ContractUtils.RequiresNotNull(right, nameof(right));
             if (op == PythonOperator.None) throw new ValueErrorException("bad operator");
 
-            _op = op;
-            _left = left;
-            _right = right;
+            Operator = op;
+            Left = left;
+            Right = right;
             StartIndex = left.StartIndex;
             EndIndex = right.EndIndex;
         }
 
-        public Expression Left {
-            get { return _left; }
-        }
+        public Expression Left { get; }
 
-        public Expression Right {
-            get { return _right; }
-        }
+        public Expression Right { get; }
 
-        public PythonOperator Operator {
-            get { return _op; }
-        }
+        public PythonOperator Operator { get; }
 
         private bool IsComparison() {
-            switch (_op) {
+            switch (Operator) {
                 case PythonOperator.LessThan:
                 case PythonOperator.LessThanOrEqual:
                 case PythonOperator.GreaterThan:
@@ -66,14 +57,9 @@ namespace IronPython.Compiler.Ast {
             return false;
         }
 
-        private bool NeedComparisonTransformation() {
-            return IsComparison() && IsComparison(_right);
-        }
+        private bool NeedComparisonTransformation() => IsComparison() && IsComparison(Right);
 
-        public static bool IsComparison(Expression expression) {
-            BinaryExpression be = expression as BinaryExpression;
-            return be != null && be.IsComparison();
-        }
+        public static bool IsComparison(Expression expression) => expression is BinaryExpression be && be.IsComparison();
 
         // This is a compound comparison operator like: a < b < c.
         // That's represented as binary operators, but it's not the same as (a<b) < c, so we do special transformations.
@@ -82,9 +68,9 @@ namespace IronPython.Compiler.Ast {
         // - ensure evaluation order is correct (a,b,c)
         // - don't evaluate c if a<b is false.
         private MSAst.Expression FinishCompare(MSAst.Expression left) {
-            Debug.Assert(_right is BinaryExpression);
+            Debug.Assert(Right is BinaryExpression);
 
-            BinaryExpression bright = (BinaryExpression)_right;
+            BinaryExpression bright = (BinaryExpression)Right;
 
             // Transform the left child of my right child (the next node in sequence)
             MSAst.Expression rleft = bright.Left;
@@ -94,7 +80,7 @@ namespace IronPython.Compiler.Ast {
 
             // Create binary operation: left <_op> (temp = rleft)
             MSAst.Expression comparison = MakeBinaryOperation(
-                _op,
+                Operator,
                 left,
                 Ast.Assign(temp, AstUtils.Convert(rleft, temp.Type)),
                 Span
@@ -103,7 +89,7 @@ namespace IronPython.Compiler.Ast {
             MSAst.Expression rright;
 
             // Transform rright, comparing to temp
-            if (IsComparison(bright._right)) {
+            if (IsComparison(bright.Right)) {
                 rright = bright.FinishCompare(temp);
             } else {
                 MSAst.Expression transformedRight = bright.Right;
@@ -132,7 +118,7 @@ namespace IronPython.Compiler.Ast {
 
         public override MSAst.Expression Reduce() {
             ConstantExpression leftConst;
-            if (!CanEmitWarning(_op)) {
+            if (!CanEmitWarning(Operator)) {
                 var folded = ConstantFold();
                 if (folded != null) {
                     folded.Parent = Parent;
@@ -140,24 +126,24 @@ namespace IronPython.Compiler.Ast {
                 }
             } 
             
-            if (_op == PythonOperator.Mod && 
-                (leftConst = _left as ConstantExpression) != null && 
+            if (Operator == PythonOperator.Mod &&
+                (leftConst = Left as ConstantExpression) != null &&
                 leftConst.Value is string) {
 
                 return Expression.Call(
                     AstMethods.FormatString,
                     Parent.LocalContext,
-                    _left,
-                    AstUtils.Convert(_right, typeof(object))
+                    Left,
+                    AstUtils.Convert(Right, typeof(object))
                 );
             }
 
             if (NeedComparisonTransformation()) {
                 // This is a compound comparison like: (a < b < c)
-                return FinishCompare(_left);
+                return FinishCompare(Left);
             } else {
                 // Simple binary operator.
-                return MakeBinaryOperation(_op, _left, _right, Span);
+                return MakeBinaryOperation(Operator, Left, Right, Span);
             }
         }
 
@@ -170,15 +156,15 @@ namespace IronPython.Compiler.Ast {
                 return;
             }
 
-            switch (_op) {
+            switch (Operator) {
                 case PythonOperator.Is:
-                    compiler.Compile(_left);
-                    compiler.Compile(_right);
+                    compiler.Compile(Left);
+                    compiler.Compile(Right);
                     compiler.Instructions.Emit(IsInstruction.Instance);
                     break;
                 case PythonOperator.IsNot:
-                    compiler.Compile(_left);
-                    compiler.Compile(_right);
+                    compiler.Compile(Left);
+                    compiler.Compile(Right);
                     compiler.Instructions.Emit(IsNotInstruction.Instance);
                     break;
                 default:
@@ -187,7 +173,7 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        abstract class BinaryInstruction : Instruction {
+        private abstract class BinaryInstruction : Instruction {
             public override int ConsumedStack {
                 get {
                     return 2;
@@ -201,7 +187,7 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        class IsInstruction : BinaryInstruction {
+        private class IsInstruction : BinaryInstruction {
             public static readonly IsInstruction Instance = new IsInstruction();
 
             public override int Run(InterpretedFrame frame) {
@@ -211,8 +197,7 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-
-        class IsNotInstruction : BinaryInstruction {
+        private class IsNotInstruction : BinaryInstruction {
             public static readonly IsNotInstruction Instance = new IsNotInstruction();
 
             public override int Run(InterpretedFrame frame) {
@@ -277,8 +262,8 @@ namespace IronPython.Compiler.Ast {
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                _left.Walk(walker);
-                _right.Walk(walker);
+                Left.Walk(walker);
+                Right.Walk(walker);
             }
             walker.PostWalk(this);
         }
@@ -354,8 +339,8 @@ namespace IronPython.Compiler.Ast {
 
         internal override bool CanThrow {
             get {
-                if (_op == PythonOperator.Is || _op == PythonOperator.IsNot) {
-                    return _left.CanThrow || _right.CanThrow;
+                if (Operator == PythonOperator.Is || Operator == PythonOperator.IsNot) {
+                    return Left.CanThrow || Right.CanThrow;
                 }
                 return true;
             }

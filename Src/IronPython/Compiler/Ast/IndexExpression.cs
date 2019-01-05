@@ -4,33 +4,24 @@
 
 using MSAst = System.Linq.Expressions;
 
-using System;
 using IronPython.Runtime;
 using IronPython.Runtime.Binding;
+
 using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
     public class IndexExpression : Expression {
-        private readonly Expression _target;
-        private readonly Expression _index;
-
         public IndexExpression(Expression target, Expression index) {
-            _target = target;
-            _index = index;
+            Target = target;
+            Index = index;
         }
 
-        public Expression Target {
-            get { return _target; }
-        }
+        public Expression Target { get; }
 
-        public Expression Index {
-            get { return _index; }
-        }
+        public Expression Index { get; }
 
         public override MSAst.Expression Reduce() {
             if (IsSlice) {
@@ -40,30 +31,28 @@ namespace IronPython.Compiler.Ast {
         }
 
         private MSAst.Expression[] GetActionArgumentsForGetOrDelete() {
-            TupleExpression te = _index as TupleExpression;
-            if (te != null && te.IsExpandable) {
-                return ArrayUtils.Insert(_target, te.Items);
+            if (Index is TupleExpression te && te.IsExpandable) {
+                return ArrayUtils.Insert(Target, te.Items);
             }
 
-            SliceExpression se = _index as SliceExpression;
-            if (se != null) {
+            if (Index is SliceExpression se) {
                 if (se.StepProvided) {
-                    return new[] { 
-                        _target,
+                    return new[] {
+                        Target,
                         GetSliceValue(se.SliceStart),
                         GetSliceValue(se.SliceStop),
-                        GetSliceValue(se.SliceStep) 
+                        GetSliceValue(se.SliceStep)
                     };
                 }
 
-                return new[] { 
-                    _target,
+                return new[] {
+                    Target,
                     GetSliceValue(se.SliceStart),
                     GetSliceValue(se.SliceStop)
                 };
             }
 
-            return new[] { _target, _index };
+            return new[] { Target, Index };
         }
 
         private static MSAst.Expression GetSliceValue(Expression expr) {
@@ -106,30 +95,18 @@ namespace IronPython.Compiler.Ast {
             return GlobalParent.AddDebugInfoAndVoid(index, Span);
         }
 
-        internal override string CheckAssign() {
-            return null;
-        }
+        internal override string CheckAssign() => null;
 
-        internal override string CheckDelete() {
-            return null;
-        }
+        internal override string CheckDelete() => null;
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                if (_target != null) {
-                    _target.Walk(walker);
-                }
-                if (_index != null) {
-                    _index.Walk(walker);
-                }
+                Target?.Walk(walker);
+                Index?.Walk(walker);
             }
             walker.PostWalk(this);
         }
 
-        private bool IsSlice {
-            get {
-                return _index is SliceExpression;
-            }
-        }
+        private bool IsSlice => Index is SliceExpression;
     }
 }

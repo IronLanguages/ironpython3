@@ -14,32 +14,22 @@ namespace IronPython.Compiler.Ast {
     public class WhileStatement : Statement, ILoopStatement, IInstructionProvider {
         // Marks the end of the condition of the while loop
         private int _indexHeader;
-        private readonly Expression _test;
-        private readonly Statement _body;
-        private readonly Statement _else;
         private MSAst.LabelTarget _break, _continue;
 
         public WhileStatement(Expression test, Statement body, Statement else_) {
-            _test = test;
-            _body = body;
-            _else = else_;
+            Test = test;
+            Body = body;
+            ElseStatement = else_;
         }
 
-        public Expression Test {
-            get { return _test;}
-        }
+        public Expression Test { get; }
 
-        public Statement Body {
-            get { return _body; }
-        }
+        public Statement Body { get; }
 
-        public Statement ElseStatement {
-            get { return _else; }
-        }
+        public Statement ElseStatement { get; }
 
-        private SourceSpan Header {
-            get { return new SourceSpan(GlobalParent.IndexToLocation(StartIndex), GlobalParent.IndexToLocation(_indexHeader)); }
-        }
+        private SourceSpan Header
+            => new SourceSpan(GlobalParent.IndexToLocation(StartIndex), GlobalParent.IndexToLocation(_indexHeader));
 
         public void SetLoc(PythonAst globalParent, int start, int header, int end) {
             SetLoc(globalParent, start, end);
@@ -81,30 +71,28 @@ namespace IronPython.Compiler.Ast {
             // Only the body is "in the loop" for the purposes of break/continue
             // The "else" clause is outside
 
-            ConstantExpression constTest = _test as ConstantExpression;
-            if (constTest != null && constTest.Value is int) {
+            if (Test is ConstantExpression constTest && constTest.Value is int val) {
                 // while 0: / while 1:
-                int val = (int)constTest.Value;
                 if (val == 0) {
                     // completely optimize the loop away
-                    if (_else == null) {
+                    if (ElseStatement == null) {
                         return MSAst.Expression.Empty();
                     } else {
-                        return _else;
+                        return ElseStatement;
                     }
                 }
 
                 MSAst.Expression test = MSAst.Expression.Constant(true);
                 MSAst.Expression res = AstUtils.While(
                     test,
-                    _body,
-                    _else,
+                    Body,
+                    ElseStatement,
                     _break,
                     _continue
                 );
 
-                if (GlobalParent.IndexToLocation(_test.StartIndex).Line != GlobalParent.IndexToLocation(_body.StartIndex).Line) {
-                    res = GlobalParent.AddDebugInfoAndVoid(res, _test.Span);
+                if (GlobalParent.IndexToLocation(Test.StartIndex).Line != GlobalParent.IndexToLocation(Body.StartIndex).Line) {
+                    res = GlobalParent.AddDebugInfoAndVoid(res, Test.Span);
                 }
 
                 return res;
@@ -113,12 +101,12 @@ namespace IronPython.Compiler.Ast {
             return AstUtils.While(
                 GlobalParent.AddDebugInfo(
                     optimizeDynamicConvert ?
-                        TransformAndDynamicConvert(_test, typeof(bool)) :
-                        GlobalParent.Convert(typeof(bool), Microsoft.Scripting.Actions.ConversionResultKind.ExplicitCast, _test),
+                        TransformAndDynamicConvert(Test, typeof(bool)) :
+                        GlobalParent.Convert(typeof(bool), Microsoft.Scripting.Actions.ConversionResultKind.ExplicitCast, Test),
                     Header
                 ),
-                _body,
-                _else,
+                Body,
+                ElseStatement,
                 _break,
                 _continue
             );
@@ -126,9 +114,9 @@ namespace IronPython.Compiler.Ast {
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                _test?.Walk(walker);
-                _body?.Walk(walker);
-                _else?.Walk(walker);
+                Test?.Walk(walker);
+                Body?.Walk(walker);
+                ElseStatement?.Walk(walker);
             }
             walker.PostWalk(this);
         }

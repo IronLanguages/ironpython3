@@ -12,20 +12,16 @@ namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
     public class ComprehensionIf : ComprehensionIterator {
-        private readonly Expression _test;
-
         public ComprehensionIf(Expression test) {
-            _test = test;
+            Test = test;
         }
 
-        public Expression Test {
-            get { return _test; }
-        }
+        public Expression Test { get; }
 
         internal override MSAst.Expression Transform(MSAst.Expression body) {
             return GlobalParent.AddDebugInfoAndVoid(
                 AstUtils.If(
-                    GlobalParent.Convert(typeof(bool), ConversionResultKind.ExplicitCast, _test),
+                    GlobalParent.Convert(typeof(bool), ConversionResultKind.ExplicitCast, Test),
                     body
                 ),
                 Span
@@ -34,7 +30,7 @@ namespace IronPython.Compiler.Ast {
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                _test?.Walk(walker);
+                Test?.Walk(walker);
             }
             walker.PostWalk(this);
         }

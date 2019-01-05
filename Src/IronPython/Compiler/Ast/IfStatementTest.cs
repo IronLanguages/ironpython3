@@ -6,37 +6,23 @@ using Microsoft.Scripting;
 
 namespace IronPython.Compiler.Ast {
     public class IfStatementTest : Node {
-        private int _headerIndex;
-        private readonly Expression _test;
-        private Statement _body;
-
         public IfStatementTest(Expression test, Statement body) {
-            _test = test;
-            _body = body;
+            Test = test;
+            Body = body;
         }
 
-        public SourceLocation Header {
-            get { return GlobalParent.IndexToLocation(_headerIndex); }
-        }
+        public SourceLocation Header => GlobalParent.IndexToLocation(HeaderIndex);
 
-        public int HeaderIndex {
-            set { _headerIndex = value; }
-            get { return _headerIndex; }
-        }
+        public int HeaderIndex { set; get; }
 
-        public Expression Test {
-            get { return _test; }
-        }
+        public Expression Test { get; }
 
-        public Statement Body {
-            get { return _body; }
-            set { _body = value; }
-        }
+        public Statement Body { get; set; }
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                _test?.Walk(walker);
-                _body?.Walk(walker);
+                Test?.Walk(walker);
+                Body?.Walk(walker);
             }
             walker.PostWalk(this);
         }

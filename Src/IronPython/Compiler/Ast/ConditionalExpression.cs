@@ -4,8 +4,6 @@
 
 using MSAst = System.Linq.Expressions;
 
-using System;
-
 using Microsoft.Scripting.Actions;
 
 namespace IronPython.Compiler.Ast {
@@ -13,36 +11,26 @@ namespace IronPython.Compiler.Ast {
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public class ConditionalExpression : Expression {
-        private readonly Expression _testExpr;
-        private readonly Expression _trueExpr;
-        private readonly Expression _falseExpr;
-
         public ConditionalExpression(Expression testExpression, Expression trueExpression, Expression falseExpression) {
-            _testExpr = testExpression;
-            _trueExpr = trueExpression;
-            _falseExpr = falseExpression;
+            Test = testExpression;
+            TrueExpression = trueExpression;
+            FalseExpression = falseExpression;
         }
 
-        public Expression FalseExpression {
-            get { return _falseExpr; }
-        }
+        public Expression FalseExpression { get; }
 
-        public Expression Test {
-            get { return _testExpr; }
-        }
+        public Expression Test { get; }
 
-        public Expression TrueExpression {
-            get { return _trueExpr; }
-        }
+        public Expression TrueExpression { get; }
 
         public override string NodeName => "conditional expression";
 
         public override MSAst.Expression Reduce() {
-            MSAst.Expression ifTrue = AstUtils.Convert(_trueExpr, typeof(object));
-            MSAst.Expression ifFalse = AstUtils.Convert(_falseExpr, typeof(object));
+            MSAst.Expression ifTrue = AstUtils.Convert(TrueExpression, typeof(object));
+            MSAst.Expression ifFalse = AstUtils.Convert(FalseExpression, typeof(object));
 
             return Ast.Condition(
-                GlobalParent.Convert(typeof(bool), ConversionResultKind.ExplicitCast, _testExpr), 
+                GlobalParent.Convert(typeof(bool), ConversionResultKind.ExplicitCast, Test),
                 ifTrue, 
                 ifFalse
             );
@@ -50,9 +38,9 @@ namespace IronPython.Compiler.Ast {
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                _testExpr?.Walk(walker);
-                _trueExpr?.Walk(walker);
-                _falseExpr?.Walk(walker);
+                Test?.Walk(walker);
+                TrueExpression?.Walk(walker);
+                FalseExpression?.Walk(walker);
             }
             walker.PostWalk(this);
         }

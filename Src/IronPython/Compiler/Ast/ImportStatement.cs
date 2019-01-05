@@ -18,25 +18,16 @@ namespace IronPython.Compiler.Ast {
         private readonly ModuleName[] _names;
         private readonly string[] _asNames;
 
-        private PythonVariable[] _variables;
-
         public ImportStatement(ModuleName[] names, string[] asNames) {
             _names = names;
             _asNames = asNames;
         }
 
-        internal PythonVariable[] Variables {
-            get { return _variables; }
-            set { _variables = value; }
-        }
+        internal PythonVariable[] Variables { get; set; }
 
-        public IList<DottedName> Names {
-            get { return _names; }
-        }
+        public IList<DottedName> Names => _names;
 
-        public IList<string> AsNames {
-            get { return _asNames; }
-        }
+        public IList<string> AsNames => _asNames;
 
         public override MSAst.Expression Reduce() {
             ReadOnlyCollectionBuilder<MSAst.Expression> statements = new ReadOnlyCollectionBuilder<MSAst.Expression>();
@@ -46,7 +37,7 @@ namespace IronPython.Compiler.Ast {
                     // _references[i] = PythonOps.Import(<code context>, _names[i])
                     GlobalParent.AddDebugInfoAndVoid(
                         AssignValue(
-                            Parent.GetVariableExpression(_variables[i]),
+                            Parent.GetVariableExpression(Variables[i]),
                             LightExceptions.CheckAndThrow(
                                 Expression.Call(
                                     _asNames[i] == null ? AstMethods.ImportTop : AstMethods.ImportBottom,

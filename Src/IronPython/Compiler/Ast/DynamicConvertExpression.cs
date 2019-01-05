@@ -3,22 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Dynamic;
-using System.IO;
-using System.Runtime.CompilerServices;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Interpreter;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Binding;
-using IronPython.Runtime.Operations;
 
 using MSAst = System.Linq.Expressions;
 
@@ -36,23 +25,11 @@ namespace IronPython.Compiler.Ast {
             _target = target;
         }
 
-        public override bool CanReduce {
-            get {
-                return true;
-            }
-        }
+        public override bool CanReduce => true;
 
-        public override MSAst.ExpressionType NodeType {
-            get {
-                return MSAst.ExpressionType.Extension;
-            }
-        }
+        public override MSAst.ExpressionType NodeType => MSAst.ExpressionType.Extension;
 
-        public override Type Type {
-            get {
-                return _binder.Type;
-            }
-        }
+        public override Type Type => _binder.Type;
 
         public override MSAst.Expression Reduce() {
             return _mode.ReduceDynamic(
@@ -78,21 +55,13 @@ namespace IronPython.Compiler.Ast {
 
         #endregion
 
-        abstract class ConversionInstruction : Instruction {
-            public override int ConsumedStack {
-                get {
-                    return 1;
-                }
-            }
+        private abstract class ConversionInstruction : Instruction {
+            public override int ConsumedStack => 1;
 
-            public override int ProducedStack {
-                get {
-                    return 1;
-                }
-            }
+            public override int ProducedStack => 1;
         }
 
-        class BooleanConversionInstruction : ConversionInstruction {
+        private class BooleanConversionInstruction : ConversionInstruction {
             public static BooleanConversionInstruction Instance = new BooleanConversionInstruction();
 
             public override int Run(InterpretedFrame frame) {
@@ -101,7 +70,7 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        class TypedConversionInstruction : ConversionInstruction {
+        private class TypedConversionInstruction : ConversionInstruction {
             private readonly Type _type;
 
             public TypedConversionInstruction(Type type) {

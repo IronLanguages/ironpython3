@@ -4,28 +4,22 @@
 
 using MSAst = System.Linq.Expressions;
 
-using System;
-
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
     public class SliceExpression : Expression {
-        private readonly Expression _sliceStart;
-        private readonly Expression _sliceStop;
-        private readonly Expression _sliceStep;
-
         public SliceExpression(Expression start, Expression stop, Expression step, bool stepProvided) {
-            _sliceStart = start;
-            _sliceStop = stop;
-            _sliceStep = step;
+            SliceStart = start;
+            SliceStop = stop;
+            SliceStep = step;
             StepProvided = stepProvided;
         }
 
-        public Expression SliceStart => _sliceStart;
+        public Expression SliceStart { get; }
 
-        public Expression SliceStop => _sliceStop;
+        public Expression SliceStop { get; }
 
-        public Expression SliceStep => _sliceStep;
+        public Expression SliceStep { get; }
 
         /// <summary>
         /// True if the user provided a step parameter (either providing an explicit parameter
@@ -36,23 +30,17 @@ namespace IronPython.Compiler.Ast {
         public override MSAst.Expression Reduce() {
             return Call(
                 AstMethods.MakeSlice,                                    // method
-                TransformOrConstantNull(_sliceStart, typeof(object)),    // parameters
-                TransformOrConstantNull(_sliceStop, typeof(object)),
-                TransformOrConstantNull(_sliceStep, typeof(object))
+                TransformOrConstantNull(SliceStart, typeof(object)),    // parameters
+                TransformOrConstantNull(SliceStop, typeof(object)),
+                TransformOrConstantNull(SliceStep, typeof(object))
             );
         }
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                if (_sliceStart != null) {
-                    _sliceStart.Walk(walker);
-                }
-                if (_sliceStop != null) {
-                    _sliceStop.Walk(walker);
-                }
-                if (_sliceStep != null) {
-                    _sliceStep.Walk(walker);
-                }
+                SliceStart?.Walk(walker);
+                SliceStop?.Walk(walker);
+                SliceStep?.Walk(walker);
             }
             walker.PostWalk(this);
         }

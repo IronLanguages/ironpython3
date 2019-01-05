@@ -4,16 +4,12 @@
 
 using MSAst = System.Linq.Expressions;
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
-
-using IronPython.Runtime;
-using IronPython.Runtime.Operations;
 
 /*
  * The name binding:
@@ -41,7 +37,7 @@ using IronPython.Runtime.Operations;
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
-    class DefineBinder : PythonWalkerNonRecursive {
+    internal class DefineBinder : PythonWalkerNonRecursive {
         private PythonNameBinder _binder;
         public DefineBinder(PythonNameBinder binder) {
             _binder = binder;
@@ -61,7 +57,7 @@ namespace IronPython.Compiler.Ast {
         }
     }
 
-    class ParameterBinder : PythonWalkerNonRecursive {
+    internal class ParameterBinder : PythonWalkerNonRecursive {
         private PythonNameBinder _binder;
         public ParameterBinder(PythonNameBinder binder) {
             _binder = binder;
@@ -76,12 +72,11 @@ namespace IronPython.Compiler.Ast {
         private void WalkTuple(TupleExpression tuple) {
             tuple.Parent = _binder._currentScope;
             foreach (Expression innerNode in tuple.Items) {
-                NameExpression name = innerNode as NameExpression;
-                if (name != null) {
+                if (innerNode is NameExpression name) {
                     _binder.DefineName(name.Name);
                     name.Parent = _binder._currentScope;
                     name.Reference = _binder.Reference(name.Name);
-                } else {                    
+                } else {
                     WalkTuple((TupleExpression)innerNode);
                 }
             }
@@ -92,7 +87,7 @@ namespace IronPython.Compiler.Ast {
         }
     }
 
-    class DeleteBinder : PythonWalkerNonRecursive {
+    internal class DeleteBinder : PythonWalkerNonRecursive {
         private PythonNameBinder _binder;
         public DeleteBinder(PythonNameBinder binder) {
             _binder = binder;
@@ -103,7 +98,7 @@ namespace IronPython.Compiler.Ast {
         }
     }
 
-    class PythonNameBinder : PythonWalker {
+    internal class PythonNameBinder : PythonWalker {
         private PythonAst _globalScope;
         internal ScopeStatement _currentScope;
         private List<ScopeStatement> _scopes = new List<ScopeStatement>();
@@ -112,25 +107,19 @@ namespace IronPython.Compiler.Ast {
 
         #region Recursive binders
 
-        private DefineBinder _define;
-        private DeleteBinder _delete;
-        private ParameterBinder _parameter;
+        private readonly DefineBinder _define;
+        private readonly DeleteBinder _delete;
+        private readonly ParameterBinder _parameter;
 
         #endregion
 
-        private readonly CompilerContext _context;
-
-        public CompilerContext Context {
-            get {
-                return _context;
-            }
-        }
+        public CompilerContext Context { get; }
 
         private PythonNameBinder(CompilerContext context) {
             _define = new DefineBinder(this);
             _delete = new DeleteBinder(this);
             _parameter = new ParameterBinder(this);
-            _context = context;
+            Context = context;
         }
 
         #region Public surface
@@ -206,12 +195,12 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal void ReportSyntaxWarning(string message, Node node) {
-            _context.Errors.Add(_context.SourceUnit, message, node.Span, -1, Severity.Warning);
+            Context.Errors.Add(Context.SourceUnit, message, node.Span, -1, Severity.Warning);
         }
 
         internal void ReportSyntaxError(string message, Node node) {
             // TODO: Change the error code (-1)
-            _context.Errors.Add(_context.SourceUnit, message, node.Span, -1, Severity.FatalError);
+            Context.Errors.Add(Context.SourceUnit, message, node.Span, -1, Severity.FatalError);
         }
 
         #region AstBinder Overrides
@@ -592,8 +581,7 @@ namespace IronPython.Compiler.Ast {
 
         public override bool Walk(ReturnStatement node) {
             node.Parent = _currentScope;
-            FunctionDefinition funcDef = _currentScope as FunctionDefinition;
-            if (funcDef != null) {
+            if (_currentScope is FunctionDefinition funcDef) {
                 funcDef._hasReturn = true;
             }
             return base.Walk(node);
@@ -622,7 +610,7 @@ namespace IronPython.Compiler.Ast {
                 PythonVariable[] variables = new PythonVariable[node.Names.Count];
                 node.Root.Parent = _currentScope;
                 for (int i = 0; i < node.Names.Count; i++) {
-                    string name = node.AsNames[i] != null ? node.AsNames[i] : node.Names[i];
+                    string name = node.AsNames[i] ?? node.Names[i];
                     variables[i] = DefineName(name);
                 }
                 node.Variables = variables;
@@ -786,7 +774,7 @@ namespace IronPython.Compiler.Ast {
 
             PythonVariable[] variables = new PythonVariable[node.Names.Count];
             for (int i = 0; i < node.Names.Count; i++) {
-                string name = node.AsNames[i] != null ? node.AsNames[i] : node.Names[i].Names[0];
+                string name = node.AsNames[i] ?? node.Names[i].Names[0];
                 variables[i] = DefineName(name);
                 node.Names[i].Parent = _currentScope;
             }
@@ -832,9 +820,7 @@ namespace IronPython.Compiler.Ast {
         public override bool Walk(CallExpression node) {
             node.Parent = _currentScope;
 
-            var nameExpr = node.Target as NameExpression;
-            var func = _currentScope as FunctionDefinition;
-            if (nameExpr != null && nameExpr.Name == "super" && func != null) {
+            if (node.Target is NameExpression nameExpr && nameExpr.Name == "super" && _currentScope is FunctionDefinition func) {
                 _currentScope.Reference("__class__");
                 if (node.Args.Length == 0 && func.ParameterNames.Length > 0) {
                     node.ImplicitArgs.Add(new Arg(new NameExpression("__class__")));

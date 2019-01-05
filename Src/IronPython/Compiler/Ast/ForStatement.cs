@@ -19,73 +19,40 @@ namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
     public class ForStatement : Statement, ILoopStatement {
-        private int _headerIndex;
-        private readonly Expression _left;
-        private Expression _list;
-        private Statement _body;
-        private readonly Statement _else;
-        private MSAst.LabelTarget _break, _continue;
-
         public ForStatement(Expression left, Expression list, Statement body, Statement else_) {
-            _left = left;
-            _list = list;
-            _body = body;
-            _else = else_;
+            Left = left;
+            List = list;
+            Body = body;
+            Else = else_;
         }
 
-        public int HeaderIndex {
-            set { _headerIndex = value; }
-        }
+        public int HeaderIndex { private get; set; }
 
-        public Expression Left {
-            get { return _left; }
-        }
+        public Expression Left { get; }
 
-        public Statement Body {
-            get { return _body; }
-            set { _body = value; }
-        }
+        public Statement Body { get; set; }
 
-        public Expression List {
-            get { return _list; }
-            set { _list = value; }
-        }
+        public Expression List { get; set; }
 
-        public Statement Else {
-            get { return _else; }
-        }
+        public Statement Else { get; }
 
-        MSAst.LabelTarget ILoopStatement.BreakLabel {
-            get {
-                return _break;
-            }
-            set {
-                _break = value;
-            }
-        }
+        MSAst.LabelTarget ILoopStatement.BreakLabel { get; set; }
 
-        MSAst.LabelTarget ILoopStatement.ContinueLabel {
-            get {
-                return _continue;
-            }
-            set {
-                _continue = value;
-            }
-        }
+        MSAst.LabelTarget ILoopStatement.ContinueLabel { get; set; }
 
         public override MSAst.Expression Reduce() {
             // Temporary variable for the IEnumerator object
             MSAst.ParameterExpression enumerator = Ast.Variable(typeof(KeyValuePair<IEnumerator, IDisposable>), "foreach_enumerator");
 
-            return Ast.Block(new[] { enumerator }, TransformFor(Parent, enumerator, _list, _left, _body, _else, Span, GlobalParent.IndexToLocation(_headerIndex), _break, _continue, true));
+            return Ast.Block(new[] { enumerator }, TransformFor(Parent, enumerator, List, Left, Body, Else, Span, GlobalParent.IndexToLocation(HeaderIndex), ((ILoopStatement)this).BreakLabel, ((ILoopStatement)this).ContinueLabel, true));
         }
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                _left?.Walk(walker);
-                _list?.Walk(walker);
-                _body?.Walk(walker);
-                _else?.Walk(walker);
+                Left?.Walk(walker);
+                List?.Walk(walker);
+                Body?.Walk(walker);
+                Else?.Walk(walker);
             }
             walker.PostWalk(this);
         }
@@ -159,17 +126,16 @@ namespace IronPython.Compiler.Ast {
 
         internal override bool CanThrow {
             get {
-                if (_left.CanThrow) {
+                if (Left.CanThrow) {
                     return true;
                 }
 
-                if (_list.CanThrow) {
+                if (List.CanThrow) {
                     return true;
                 }
 
                 // most constants (int, float, long, etc...) will throw here
-                ConstantExpression ce = _list as ConstantExpression;
-                if (ce != null) {
+                if (List is ConstantExpression ce) {
                     if (ce.Value is string) {
                         return false;
                     }

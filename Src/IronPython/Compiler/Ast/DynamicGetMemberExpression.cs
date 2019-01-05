@@ -38,23 +38,11 @@ namespace IronPython.Compiler.Ast {
             _codeContext = codeContext;
         }
 
-        public override bool CanReduce {
-            get {
-                return true;
-            }
-        }
+        public override bool CanReduce => true;
 
-        public override MSAst.ExpressionType NodeType {
-            get {
-                return MSAst.ExpressionType.Extension;
-            }
-        }
+        public override MSAst.ExpressionType NodeType => MSAst.ExpressionType.Extension;
 
-        public override Type Type {
-            get {
-                return typeof(object);
-            }
-        }
+        public override Type Type => typeof(object);
 
         public override MSAst.Expression Reduce() {
             return _mode.ReduceDynamic(
@@ -75,7 +63,7 @@ namespace IronPython.Compiler.Ast {
 
         #endregion
 
-        class GetMemberInstruction : Instruction {
+        private class GetMemberInstruction : Instruction {
             private CallSite<Func<CallSite, object, CodeContext, object>> _site;
             private readonly PythonGetMemberBinder _binder;
 
@@ -83,17 +71,9 @@ namespace IronPython.Compiler.Ast {
                 _binder = binder;
             }
 
-            public override int ConsumedStack {
-                get {
-                    return 2;
-                }
-            }
+            public override int ConsumedStack => 2;
 
-            public override int ProducedStack {
-                get {
-                    return 1;
-                }
-            }
+            public override int ProducedStack => 1;
 
             public override int Run(InterpretedFrame frame) {
                 if (_site == null) {

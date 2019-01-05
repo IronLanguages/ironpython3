@@ -22,43 +22,33 @@ using IronPython.Runtime.Types;
 namespace IronPython.Compiler.Ast {
 
     public class CallExpression : Expression, IInstructionProvider {
-        private readonly Expression _target;
-        private readonly Arg[] _args;
-        private readonly IList<Arg> _implicitArgs = new List<Arg>();
-
         public CallExpression(Expression target, Arg[] args) {
-            _target = target;
-            _args = args;
+            Target = target;
+            Args = args;
         }
 
-        public Expression Target {
-            get { return _target; }
-        }
+        public Expression Target { get; }
 
-        public Arg[] Args {
-            get { return _args; }
-        } 
+        public Arg[] Args { get; }
 
-        internal IList<Arg> ImplicitArgs {
-            get { return _implicitArgs; }
-        }
+        internal IList<Arg> ImplicitArgs { get; } = new List<Arg>();
 
         public bool NeedsLocalsDictionary() {
-            NameExpression nameExpr = _target as NameExpression;
+            NameExpression nameExpr = Target as NameExpression;
             if (nameExpr == null) return false;
 
-            if (_args.Length == 0) {
+            if (Args.Length == 0) {
                 if (nameExpr.Name == "locals") return true;
                 if (nameExpr.Name == "vars") return true;
                 if (nameExpr.Name == "dir") return true;
                 return false;
-            } else if (_args.Length == 1 && (nameExpr.Name == "dir" || nameExpr.Name == "vars")) {
-                if (_args[0].Name == "*" || _args[0].Name == "**") {
+            } else if (Args.Length == 1 && (nameExpr.Name == "dir" || nameExpr.Name == "vars")) {
+                if (Args[0].Name == "*" || Args[0].Name == "**") {
                     // could be splatting empty list or dict resulting in 0-param call which needs context
                     return true;
                 }
-            } else if (_args.Length == 2 && (nameExpr.Name == "dir" || nameExpr.Name == "vars")) {
-                if (_args[0].Name == "*" && _args[1].Name == "**") {
+            } else if (Args.Length == 2 && (nameExpr.Name == "dir" || nameExpr.Name == "vars")) {
+                if (Args[0].Name == "*" && Args[1].Name == "**") {
                     // could be splatting empty list and dict resulting in 0-param call which needs context
                     return true;
                 }
@@ -69,16 +59,16 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override MSAst.Expression Reduce() {
-            Arg[] args = _args;
-            if(_args.Length == 0 && _implicitArgs.Count > 0) {
-                args = _implicitArgs.ToArray();
+            Arg[] args = Args;
+            if(Args.Length == 0 && ImplicitArgs.Count > 0) {
+                args = ImplicitArgs.ToArray();
             }
 
             MSAst.Expression[] values = new MSAst.Expression[args.Length + 2];
             Argument[] kinds = new Argument[args.Length];
 
             values[0] = Parent.LocalContext;
-            values[1] = _target;
+            values[1] = Target;
 
             for (int i = 0; i < args.Length; i++) {
                 kinds[i] = args[i].GetArgumentInfo();
@@ -94,9 +84,9 @@ namespace IronPython.Compiler.Ast {
         #region IInstructionProvider Members
 
         void IInstructionProvider.AddInstructions(LightCompiler compiler) {
-            Arg[] args = _args;
-            if(args.Length == 0 && _implicitArgs.Count > 0) {
-                args = _implicitArgs.ToArray();
+            Arg[] args = Args;
+            if(args.Length == 0 && ImplicitArgs.Count > 0) {
+                args = ImplicitArgs.ToArray();
             }
 
             for (int i = 0; i < args.Length; i++) {
@@ -114,25 +104,25 @@ namespace IronPython.Compiler.Ast {
 
                 case 0:
                     compiler.Compile(Parent.LocalContext);
-                    compiler.Compile(_target);
+                    compiler.Compile(Target);
                     compiler.Instructions.Emit(new Invoke0Instruction(Parent.PyContext));
                     return;
                 case 1:
                     compiler.Compile(Parent.LocalContext);
-                    compiler.Compile(_target);
+                    compiler.Compile(Target);
                     compiler.Compile(args[0].Expression);
                     compiler.Instructions.Emit(new Invoke1Instruction(Parent.PyContext));
                     return;
                 case 2:
                     compiler.Compile(Parent.LocalContext);
-                    compiler.Compile(_target);
+                    compiler.Compile(Target);
                     compiler.Compile(args[0].Expression);
                     compiler.Compile(args[1].Expression);
                     compiler.Instructions.Emit(new Invoke2Instruction(Parent.PyContext));
                     return;
                 case 3:
                     compiler.Compile(Parent.LocalContext);
-                    compiler.Compile(_target);
+                    compiler.Compile(Target);
                     compiler.Compile(args[0].Expression);
                     compiler.Compile(args[1].Expression);
                     compiler.Compile(args[2].Expression);
@@ -140,7 +130,7 @@ namespace IronPython.Compiler.Ast {
                     return;
                 case 4:
                     compiler.Compile(Parent.LocalContext);
-                    compiler.Compile(_target);
+                    compiler.Compile(Target);
                     compiler.Compile(args[0].Expression);
                     compiler.Compile(args[1].Expression);
                     compiler.Compile(args[2].Expression);
@@ -149,7 +139,7 @@ namespace IronPython.Compiler.Ast {
                     return;
                 case 5:
                     compiler.Compile(Parent.LocalContext);
-                    compiler.Compile(_target);
+                    compiler.Compile(Target);
                     compiler.Compile(args[0].Expression);
                     compiler.Compile(args[1].Expression);
                     compiler.Compile(args[2].Expression);
@@ -159,7 +149,7 @@ namespace IronPython.Compiler.Ast {
                     return;
                 case 6:
                     compiler.Compile(Parent.LocalContext);
-                    compiler.Compile(_target);
+                    compiler.Compile(Target);
                     compiler.Compile(args[0].Expression);
                     compiler.Compile(args[1].Expression);
                     compiler.Compile(args[2].Expression);
@@ -178,7 +168,7 @@ namespace IronPython.Compiler.Ast {
 
         #endregion
 
-        abstract class InvokeInstruction : Instruction {
+        private abstract class InvokeInstruction : Instruction {
             public override int ProducedStack {
                 get {
                     return 1;
@@ -197,19 +187,14 @@ namespace IronPython.Compiler.Ast {
         // *** BEGIN GENERATED CODE ***
         // generated by function: gen_call_expression_instructions from: generate_calls.py
 
-
-        class Invoke0Instruction : InvokeInstruction {
+        private class Invoke0Instruction : InvokeInstruction {
             private readonly CallSite<Func<CallSite, CodeContext, object, object>> _site;
 
             public Invoke0Instruction(PythonContext context) {
                 _site = context.CallSite0;
             }
 
-            public override int ConsumedStack {
-                get {
-                    return 2;
-                }
-            }
+            public override int ConsumedStack => 2;
 
             public override int Run(InterpretedFrame frame) {
 
@@ -219,18 +204,14 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        class Invoke1Instruction : InvokeInstruction {
+        private class Invoke1Instruction : InvokeInstruction {
             private readonly CallSite<Func<CallSite, CodeContext, object, object, object>> _site;
 
             public Invoke1Instruction(PythonContext context) {
                 _site = context.CallSite1;
             }
 
-            public override int ConsumedStack {
-                get {
-                    return 3;
-                }
-            }
+            public override int ConsumedStack => 3;
 
             public override int Run(InterpretedFrame frame) {
                 var arg0 = frame.Pop();
@@ -240,18 +221,14 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        class Invoke2Instruction : InvokeInstruction {
+        private class Invoke2Instruction : InvokeInstruction {
             private readonly CallSite<Func<CallSite, CodeContext, object, object, object, object>> _site;
 
             public Invoke2Instruction(PythonContext context) {
                 _site = context.CallSite2;
             }
 
-            public override int ConsumedStack {
-                get {
-                    return 4;
-                }
-            }
+            public override int ConsumedStack => 4;
 
             public override int Run(InterpretedFrame frame) {
                 var arg1 = frame.Pop();
@@ -262,18 +239,14 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        class Invoke3Instruction : InvokeInstruction {
+        private class Invoke3Instruction : InvokeInstruction {
             private readonly CallSite<Func<CallSite, CodeContext, object, object, object, object, object>> _site;
 
             public Invoke3Instruction(PythonContext context) {
                 _site = context.CallSite3;
             }
 
-            public override int ConsumedStack {
-                get {
-                    return 5;
-                }
-            }
+            public override int ConsumedStack => 5;
 
             public override int Run(InterpretedFrame frame) {
                 var arg2 = frame.Pop();
@@ -285,18 +258,14 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        class Invoke4Instruction : InvokeInstruction {
+        private class Invoke4Instruction : InvokeInstruction {
             private readonly CallSite<Func<CallSite, CodeContext, object, object, object, object, object, object>> _site;
 
             public Invoke4Instruction(PythonContext context) {
                 _site = context.CallSite4;
             }
 
-            public override int ConsumedStack {
-                get {
-                    return 6;
-                }
-            }
+            public override int ConsumedStack => 6;
 
             public override int Run(InterpretedFrame frame) {
                 var arg3 = frame.Pop();
@@ -309,18 +278,14 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        class Invoke5Instruction : InvokeInstruction {
+        private class Invoke5Instruction : InvokeInstruction {
             private readonly CallSite<Func<CallSite, CodeContext, object, object, object, object, object, object, object>> _site;
 
             public Invoke5Instruction(PythonContext context) {
                 _site = context.CallSite5;
             }
 
-            public override int ConsumedStack {
-                get {
-                    return 7;
-                }
-            }
+            public override int ConsumedStack => 7;
 
             public override int Run(InterpretedFrame frame) {
                 var arg4 = frame.Pop();
@@ -334,18 +299,14 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        class Invoke6Instruction : InvokeInstruction {
+        private class Invoke6Instruction : InvokeInstruction {
             private readonly CallSite<Func<CallSite, CodeContext, object, object, object, object, object, object, object, object>> _site;
 
             public Invoke6Instruction(PythonContext context) {
                 _site = context.CallSite6;
             }
 
-            public override int ConsumedStack {
-                get {
-                    return 8;
-                }
-            }
+            public override int ConsumedStack => 8;
 
             public override int Run(InterpretedFrame frame) {
                 var arg5 = frame.Pop();
@@ -368,16 +329,14 @@ namespace IronPython.Compiler.Ast {
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                if (_target != null) {
-                    _target.Walk(walker);
-                }
-                if (_args != null) {
-                    foreach (Arg arg in _args) {
+                Target?.Walk(walker);
+                if (Args != null) {
+                    foreach (Arg arg in Args) {
                         arg.Walk(walker);
                     }
                 }
-                if (_implicitArgs.Count > 0) {
-                    foreach (Arg arg in _implicitArgs) {
+                if (ImplicitArgs.Count > 0) {
+                    foreach (Arg arg in ImplicitArgs) {
                         arg.Walk(walker);
                     }
                 }

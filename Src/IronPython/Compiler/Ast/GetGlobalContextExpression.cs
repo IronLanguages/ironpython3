@@ -13,34 +13,21 @@ using IronPython.Runtime.Operations;
 using MSAst = System.Linq.Expressions;
 
 namespace IronPython.Compiler.Ast {
-    class GetGlobalContextExpression : MSAst.Expression, IInstructionProvider {
+    internal class GetGlobalContextExpression : MSAst.Expression, IInstructionProvider {
         private readonly MSAst.Expression _parentContext;
 
         public GetGlobalContextExpression(MSAst.Expression parentContext) {
             _parentContext = parentContext;
         }
 
-        public override bool CanReduce {
-            get {
-                return true;
-            }
-        }
+        public override bool CanReduce => true;
 
-        public override MSAst.ExpressionType NodeType {
-            get {
-                return MSAst.ExpressionType.Extension;
-            }
-        }
+        public override MSAst.ExpressionType NodeType => MSAst.ExpressionType.Extension;
 
-        public override Type Type {
-            get {
-                return typeof(CodeContext);
-            }
-        }
+        public override Type Type => typeof(CodeContext);
 
-        public override MSAst.Expression Reduce() {
-            return Expression.Call(AstMethods.GetGlobalContext, _parentContext);
-        }
+        public override MSAst.Expression Reduce()
+            => Expression.Call(AstMethods.GetGlobalContext, _parentContext);
 
         #region IInstructionProvider Members
 
@@ -51,20 +38,12 @@ namespace IronPython.Compiler.Ast {
 
         #endregion
 
-        class GetGlobalContextInstruction : Instruction {
+        private class GetGlobalContextInstruction : Instruction {
             public static readonly GetGlobalContextInstruction Instance = new GetGlobalContextInstruction();
 
-            public override int ConsumedStack {
-                get {
-                    return 1;
-                }
-            }
+            public override int ConsumedStack => 1;
 
-            public override int ProducedStack {
-                get {
-                    return 1;
-                }
-            }
+            public override int ProducedStack => 1;
 
             public override int Run(InterpretedFrame frame) {
                 frame.Push(PythonOps.GetGlobalContext((CodeContext)frame.Pop()));

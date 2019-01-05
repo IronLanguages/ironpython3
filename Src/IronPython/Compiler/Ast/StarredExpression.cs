@@ -1,7 +1,10 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information.
+
+using System;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Binding;
 
@@ -16,31 +19,18 @@ namespace IronPython.Compiler.Ast {
 
         public Expression Value { get; }
 
-        public override MSAst.Expression Reduce() {
-            return Value;
-        }
+        public override MSAst.Expression Reduce() => Value;
 
-        internal override MSAst.Expression TransformSet(SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
-            return Value.TransformSet(span, right, op);
-        }
+        internal override MSAst.Expression TransformSet(SourceSpan span, MSAst.Expression right, PythonOperationKind op)
+            => Value.TransformSet(span, right, op);
 
-        internal override string CheckAssign() {
-            return Value.CheckAssign();
-        }
+        internal override string CheckAssign() => Value.CheckAssign();
 
-        internal override string CheckDelete() {
-            return Value.CheckDelete();
-        }
+        internal override string CheckDelete() => Value.CheckDelete();
 
-        internal override MSAst.Expression TransformDelete() {
-            return Value.TransformDelete();
-        }
+        internal override MSAst.Expression TransformDelete() => Value.TransformDelete();
 
-        public override Type Type {
-            get {
-                return Value.Type;
-            }
-        }
+        public override Type Type => Value.Type;
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
@@ -49,10 +39,6 @@ namespace IronPython.Compiler.Ast {
             walker.PostWalk(this);
         }
 
-        internal override bool CanThrow {
-            get {
-                return Value.CanThrow;
-            }
-        }
+        internal override bool CanThrow => Value.CanThrow;
     }
 }

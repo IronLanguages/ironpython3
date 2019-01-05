@@ -4,37 +4,30 @@
 
 using MSAst = System.Linq.Expressions;
 
-using System;
-using Microsoft.Scripting.Utils;
-
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
     public class ReturnStatement : Statement {
-        private readonly Expression _expression;
-
         public ReturnStatement(Expression expression) {
-            _expression = expression;
+            Expression = expression;
         }
 
-        public Expression Expression {
-            get { return _expression; }
-        }
+        public Expression Expression { get; }
 
         public override MSAst.Expression Reduce() {
             if (Parent.IsGeneratorMethod) {
-                if (_expression == null) {
+                if (Expression == null) {
                     return GlobalParent.AddDebugInfo(AstUtils.YieldBreak(GeneratorLabel), Span);
                 }
                 // Reduce to a yield return with a marker of -2, this will be interpreted as a yield break with a return value
-                return GlobalParent.AddDebugInfo(AstUtils.YieldReturn(GeneratorLabel, TransformOrConstantNull(_expression, typeof(object)), -2), Span);
+                return GlobalParent.AddDebugInfo(AstUtils.YieldReturn(GeneratorLabel, TransformOrConstantNull(Expression, typeof(object)), -2), Span);
             }
 
             return GlobalParent.AddDebugInfo(
                 Ast.Return(
                     FunctionDefinition._returnLabel,
-                    TransformOrConstantNull(_expression, typeof(object))
+                    TransformOrConstantNull(Expression, typeof(object))
                 ),
                 Span
             );
@@ -42,20 +35,18 @@ namespace IronPython.Compiler.Ast {
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                if (_expression != null) {
-                    _expression.Walk(walker);
-                }
+                Expression?.Walk(walker);
             }
             walker.PostWalk(this);
         }
 
         internal override bool CanThrow {
             get {
-                if (_expression == null) {
+                if (Expression == null) {
                     return false;
                 }
 
-                return _expression.CanThrow;
+                return Expression.CanThrow;
             }
         }
     }

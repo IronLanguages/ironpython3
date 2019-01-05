@@ -19,15 +19,13 @@ namespace IronPython.Compiler.Ast {
 
     public class DictionaryExpression : Expression, IInstructionProvider {
         private readonly SliceExpression[] _items;
-        private static MSAst.Expression EmptyDictExpression = Ast.Call(AstMethods.MakeEmptyDict);
+        private static readonly MSAst.Expression EmptyDictExpression = Ast.Call(AstMethods.MakeEmptyDict);
 
         public DictionaryExpression(params SliceExpression[] items) {
             _items = items;
         }
 
-        public IList<SliceExpression> Items {
-            get { return _items; }
-        }
+        public IList<SliceExpression> Items => _items;
 
         public override MSAst.Expression Reduce() {
             // create keys & values into array and then call helper function
@@ -122,7 +120,7 @@ namespace IronPython.Compiler.Ast {
 
         #endregion
 
-        class EmptyDictInstruction: Instruction {
+        private class EmptyDictInstruction: Instruction {
             public static EmptyDictInstruction Instance = new EmptyDictInstruction();
 
             public override int Run(InterpretedFrame frame) {

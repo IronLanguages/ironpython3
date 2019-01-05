@@ -76,7 +76,7 @@ using Microsoft.Scripting;
  */
 
 namespace IronPython.Compiler.Ast {
-    class FlowDefiner : PythonWalkerNonRecursive {
+    internal class FlowDefiner : PythonWalkerNonRecursive {
         private readonly FlowChecker _fc;
 
         public FlowDefiner(FlowChecker fc) {
@@ -116,7 +116,7 @@ namespace IronPython.Compiler.Ast {
         }
     }
 
-    class FlowDeleter : PythonWalkerNonRecursive {
+    internal class FlowDeleter : PythonWalkerNonRecursive {
         private readonly FlowChecker _fc;
 
         public FlowDeleter(FlowChecker fc) {
@@ -141,7 +141,7 @@ namespace IronPython.Compiler.Ast {
         }
     }
 
-    class FlowChecker : PythonWalker {
+    internal class FlowChecker : PythonWalker {
         private BitArray _bits;
         private Stack<BitArray> _loops;
         private Dictionary<string, PythonVariable> _variables;
@@ -207,16 +207,14 @@ namespace IronPython.Compiler.Ast {
         }
 
         public void Define(string name) {
-            PythonVariable binding;
-            if (_variables.TryGetValue(name, out binding)) {
+            if (_variables.TryGetValue(name, out PythonVariable binding)) {
                 SetAssigned(binding, true);
                 SetInitialized(binding, true);
             }
         }
 
         public void Delete(string name) {
-            PythonVariable binding;
-            if (_variables.TryGetValue(name, out binding)) {
+            if (_variables.TryGetValue(name, out PythonVariable binding)) {
                 SetAssigned(binding, false);
                 SetInitialized(binding, true);
             }
@@ -287,8 +285,7 @@ namespace IronPython.Compiler.Ast {
 
         // NameExpr
         public override bool Walk(NameExpression node) {
-            PythonVariable binding;
-            if (_variables.TryGetValue(node.Name, out binding)) {
+            if (_variables.TryGetValue(node.Name, out PythonVariable binding)) {
                 node.Assigned = IsAssigned(binding);
 
                 if (!IsInitialized(binding)) {
@@ -386,7 +383,7 @@ namespace IronPython.Compiler.Ast {
         public override bool Walk(FromImportStatement node) {
             if (node.Names != FromImportStatement.Star) {
                 for (int i = 0; i < node.Names.Count; i++) {
-                    Define(node.AsNames[i] != null ? node.AsNames[i] : node.Names[i]);
+                    Define(node.AsNames[i] ?? node.Names[i]);
                 }
             }
             return true;
@@ -455,7 +452,7 @@ namespace IronPython.Compiler.Ast {
         // ImportStmt
         public override bool Walk(ImportStatement node) {
             for (int i = 0; i < node.Names.Count; i++) {
-                Define(node.AsNames[i] !=  null ? node.AsNames[i] : node.Names[i].Names[0]);
+                Define(node.AsNames[i] ?? node.Names[i].Names[0]);
             }
             return true;
         }

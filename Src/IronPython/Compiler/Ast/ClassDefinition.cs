@@ -5,16 +5,13 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
-using IronPython.Runtime.Operations;
 
 using MSAst = System.Linq.Expressions;
 
@@ -28,6 +25,7 @@ namespace IronPython.Compiler.Ast {
         private readonly string _name;
         private readonly Expression[] _bases;
         private readonly Expression[] _keywords;
+
         private LightLambdaExpression _dlrBody;       // the transformed body including all of our initialization, etc...
 
         private static int _classId;
@@ -94,7 +92,7 @@ namespace IronPython.Compiler.Ast {
         internal override bool ExposesLocalVariable(PythonVariable variable) => true;
 
         internal override bool TryBindOuter(ScopeStatement from, PythonReference reference, out PythonVariable variable) {
-            if(reference.Name == "__class__") {
+            if (reference.Name == "__class__") {
                 variable = from.EnsureVariable(reference.Name);
                 return true;
             }
@@ -253,15 +251,9 @@ namespace IronPython.Compiler.Ast {
         /// <summary>
         /// Gets the closure tuple from our parent context.
         /// </summary>
-        internal override MSAst.Expression GetParentClosureTuple() {
-            return _tupleExpression;
-        }
+        internal override MSAst.Expression GetParentClosureTuple() => _tupleExpression;
 
-        internal override string ScopeDocumentation {
-            get {
-                return GetDocumentation(Body);
-            }
-        }
+        internal override string ScopeDocumentation => GetDocumentation(Body);
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
@@ -281,22 +273,21 @@ namespace IronPython.Compiler.Ast {
         }
 
         private string FindSelfNames() {
-            SuiteStatement stmts = Body as SuiteStatement;
-            if (stmts == null) return "";
-
-            foreach (Statement stmt in stmts.Statements) {
-                if (stmt is FunctionDefinition def && def.Name == "__init__") {
-                    return string.Join(",", SelfNameFinder.FindNames(def));
+            if (Body is SuiteStatement stmts) {
+                foreach (Statement stmt in stmts.Statements) {
+                    if (stmt is FunctionDefinition def && def.Name == "__init__") {
+                        return string.Join(",", SelfNameFinder.FindNames(def));
+                    }
                 }
             }
-            return "";
+            return string.Empty;
         }
 
         private class SelfNameFinder : PythonWalker {
             private readonly FunctionDefinition _function;
             private readonly Parameter _self;
 
-            public SelfNameFinder(FunctionDefinition function, Parameter self) {
+            private SelfNameFinder(FunctionDefinition function, Parameter self) {
                 _function = function;
                 _self = self;
             }
@@ -304,36 +295,27 @@ namespace IronPython.Compiler.Ast {
             public static string[] FindNames(FunctionDefinition function) {
                 var parameters = function.Parameters;
 
-                if (parameters.Count > 0) {
-                    SelfNameFinder finder = new SelfNameFinder(function, parameters[0]);
-                    function.Body.Walk(finder);
-                    return ArrayUtils.ToArray(finder._names.Keys);
-                } else {
+                if (parameters.Count == 0) {
                     // no point analyzing function with no parameters
                     return ArrayUtils.EmptyStrings;
                 }
+
+                var finder = new SelfNameFinder(function, parameters[0]);
+                function.Body.Walk(finder);
+                return ArrayUtils.ToArray(finder._names.Keys);
             }
 
-            private Dictionary<string, bool> _names = new Dictionary<string, bool>(StringComparer.Ordinal);
+            private readonly Dictionary<string, bool> _names = new Dictionary<string, bool>(StringComparer.Ordinal);
 
             private bool IsSelfReference(Expression expr) {
-                NameExpression ne = expr as NameExpression;
-                if (ne == null) return false;
-
-                if (_function.TryGetVariable(ne.Name, out PythonVariable variable) && variable == _self.PythonVariable) {
-                    return true;
-                }
-
-                return false;
+                return expr is NameExpression ne
+                    && _function.TryGetVariable(ne.Name, out PythonVariable variable)
+                    && variable == _self.PythonVariable;
             }
 
             // Don't recurse into class or function definitions
-            public override bool Walk(ClassDefinition node) {
-                return false;
-            }
-            public override bool Walk(FunctionDefinition node) {
-                return false;
-            }
+            public override bool Walk(ClassDefinition node) => false;
+            public override bool Walk(FunctionDefinition node) => false;
 
             public override bool Walk(AssignmentStatement node) {
                 foreach (Expression lhs in node.Left) {

@@ -4,17 +4,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Ast;
 using Microsoft.Scripting.Interpreter;
-using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
@@ -25,17 +21,13 @@ using MSAst = System.Linq.Expressions;
 using LightLambdaExpression = Microsoft.Scripting.Ast.LightLambdaExpression;
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-using Debugging = Microsoft.Scripting.Debugging;
-
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
     public class FunctionDefinition : ScopeStatement, IInstructionProvider {
-        protected Statement _body;
         private readonly string _name;
         private readonly Parameter[] _parameters;
-        private IList<Expression> _decorators;
-        internal PythonVariable _nameVariable;          // the variable that refers to the global __name__
+        internal PythonVariable _nameVariable;        // the variable that refers to the global __name__
         private LightLambdaExpression _dlrBody;       // the transformed body including all of our initialization, etc...
         internal bool _hasReturn;
         private static int _lambdaId;
@@ -59,7 +51,7 @@ namespace IronPython.Compiler.Ast {
             }
 
             _parameters = parameters;
-            _body = body;
+            Body = body;
             IsAsync = isAsync;
         }
 
@@ -113,23 +105,15 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        public Statement Body {
-            get { return _body; }
-            set { _body = value; }
-        }
+        public Statement Body { get; set; }
 
         public SourceLocation Header => GlobalParent.IndexToLocation(HeaderIndex);
 
         public int HeaderIndex { get; set; }
 
-        public override string Name {
-            get { return _name; }
-        }
+        public override string Name => _name;
 
-        public IList<Expression> Decorators {
-            get { return _decorators; }
-            internal set { _decorators = value; }
-        }
+        public IList<Expression> Decorators { get; internal set; }
 
         public Expression ReturnAnnotation { get; internal set; }
 
@@ -383,13 +367,13 @@ namespace IronPython.Compiler.Ast {
                 );
             }
 
-            return AddDecorators(ret, _decorators);
+            return AddDecorators(ret, Decorators);
         }
 
         #region IInstructionProvider Members
 
         void IInstructionProvider.AddInstructions(LightCompiler compiler) {
-            if (_decorators != null) {
+            if (Decorators != null) {
                 // decorators aren't supported, skip using the optimized instruction.
                 compiler.Compile(Reduce());
                 return;
@@ -565,11 +549,7 @@ namespace IronPython.Compiler.Ast {
                 }
             }
 
-            public override int ProducedStack {
-                get {
-                    return 1;
-                }
-            }
+            public override int ProducedStack => 1;
         }
 
         #endregion
@@ -595,11 +575,7 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        internal override string ScopeDocumentation {
-            get {
-                return GetDocumentation(_body);
-            }
-        }
+        internal override string ScopeDocumentation => GetDocumentation(Body);
 
         /// <summary>
         /// Creates the LambdaExpression which implements the body of the function.
@@ -611,8 +587,7 @@ namespace IronPython.Compiler.Ast {
         /// </summary>
         private LightLambdaExpression CreateFunctionLambda() {
             bool needsWrapperMethod = _parameters.Length > PythonCallTargets.MaxArgs;
-            Delegate originalDelegate;
-            Type delegateType = GetDelegateType(_parameters, needsWrapperMethod, out originalDelegate);
+            Type delegateType = GetDelegateType(_parameters, needsWrapperMethod, out _);
 
             MSAst.ParameterExpression localContext = null;
             ReadOnlyCollectionBuilder<MSAst.ParameterExpression> locals = new ReadOnlyCollectionBuilder<MSAst.ParameterExpression>();
@@ -647,7 +622,7 @@ namespace IronPython.Compiler.Ast {
 
             CreateFunctionVariables(locals, init);
 
-            // If the __class__ variable is used the a class method then we need to initialize it.
+            // If the __class__ variable is used in a class method then we need to initialize it.
             // This must be done before parameter initialization (in case one of the parameters is called __class__).
             ClassDefinition parent = FindParentOfType<ClassDefinition>();
             if (parent != null && TryGetVariable("__class__", out PythonVariable pVar)) {
@@ -687,8 +662,8 @@ namespace IronPython.Compiler.Ast {
                 locals.Add(extracted);
             }
 
-            if (_body.CanThrow && !(_body is SuiteStatement) && _body.StartIndex != -1) {
-                statements.Add(UpdateLineNumber(GlobalParent.IndexToLocation(_body.StartIndex).Line));
+            if (Body.CanThrow && !(Body is SuiteStatement) && Body.StartIndex != -1) {
+                statements.Add(UpdateLineNumber(GlobalParent.IndexToLocation(Body.StartIndex).Line));
             }
 
             statements.Add(Body);
@@ -718,13 +693,13 @@ namespace IronPython.Compiler.Ast {
                 body = s;
             }
 
-            if (_body.CanThrow && GlobalParent.PyContext.PythonOptions.Frames) {
+            if (Body.CanThrow && GlobalParent.PyContext.PythonOptions.Frames) {
                 body = AddFrame(LocalContext, Ast.Property(_functionParam, typeof(PythonFunction).GetProperty("__code__")), body);
                 locals.Add(FunctionStackVariable);
             }
 
             body = AddProfiling(body);
-            body = WrapScopeStatements(body, _body.CanThrow);
+            body = WrapScopeStatements(body, Body.CanThrow);
             body = Ast.Block(body, AstUtils.Empty());
             body = AddReturnTarget(body);
 
@@ -757,15 +732,9 @@ namespace IronPython.Compiler.Ast {
             );
         }
 
-        internal override LightLambdaExpression GetLambda() {
-            return EnsureFunctionLambda();
-        }
+        internal override LightLambdaExpression GetLambda() => EnsureFunctionLambda();
 
-        internal FunctionCode FunctionCode {
-            get {
-                return GetOrMakeFunctionCode();
-            }
-        }
+        internal FunctionCode FunctionCode => GetOrMakeFunctionCode();
 
         private static MSAst.Expression/*!*/ AddDefaultReturn(MSAst.Expression/*!*/ body, Type returnType) {
             if (body.Type == typeof(void) && returnType != typeof(void)) {
@@ -822,9 +791,7 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        private bool EmitDebugFunction() {
-            return EmitDebugSymbols && !GlobalParent.PyContext.EnableTracing;
-        }
+        private bool EmitDebugFunction() => EmitDebugSymbols && !GlobalParent.PyContext.EnableTracing;
 
         internal override IList<string> GetVarNames() {
             List<string> res = new List<string>();
@@ -866,13 +833,13 @@ namespace IronPython.Compiler.Ast {
                         p.Walk(walker);
                     }
                 }
-                if (_decorators != null) {
-                    foreach (Expression decorator in _decorators) {
+                if (Decorators != null) {
+                    foreach (Expression decorator in Decorators) {
                         decorator.Walk(walker);
                     }
                 }
                 ReturnAnnotation?.Walk(walker);
-                _body?.Walk(walker);
+                Body?.Walk(walker);
             }
             walker.PostWalk(this);
         }
@@ -880,15 +847,10 @@ namespace IronPython.Compiler.Ast {
         /// <summary>
         /// Determines delegate type for the Python function
         /// </summary>
-        private static Type GetDelegateType(Parameter[] parameters, bool wrapper, out Delegate originalTarget) {
-            return PythonCallTargets.GetPythonTargetType(wrapper, parameters.Length, out originalTarget);
-        }
+        private static Type GetDelegateType(Parameter[] parameters, bool wrapper, out Delegate originalTarget)
+            => PythonCallTargets.GetPythonTargetType(wrapper, parameters.Length, out originalTarget);
 
-        internal override bool CanThrow {
-            get {
-                return false;
-            }
-        }
+        internal override bool CanThrow => false;
 
         internal override void RewriteBody(MSAst.ExpressionVisitor visitor) {
             _dlrBody = null;    // clear the cached body if we've been reduced

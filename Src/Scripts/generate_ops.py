@@ -611,7 +611,7 @@ def gen_constant_folding(cw):
     types = ['Int32', 'Double', 'BigInteger', 'Complex']
     for cur_type in types:
         cw.enter_block('if (constLeft.Value.GetType() == typeof(%s))' % (cur_type, ))
-        cw.enter_block('switch (_op)')
+        cw.enter_block('switch (Operator)')
         for op in ops:
             gen = getattr(op, 'genConstantFolding', None)
             if gen is not None:

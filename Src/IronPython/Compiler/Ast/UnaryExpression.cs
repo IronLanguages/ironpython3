@@ -16,19 +16,19 @@ namespace IronPython.Compiler.Ast {
 
     public class UnaryExpression : Expression {
         public UnaryExpression(PythonOperator op, Expression expression) {
-            Op = op;
+            Operator = op;
             Expression = expression;
             EndIndex = expression.EndIndex;
         }
 
         public Expression Expression { get; }
 
-        public PythonOperator Op { get; }
+        public PythonOperator Operator { get; }
 
         public override MSAst.Expression Reduce() {
             return GlobalParent.Operation(
                 typeof(object),
-                PythonOperatorToOperatorString(Op),
+                PythonOperatorToOperatorString(Operator),
                 Expression
             );
         }

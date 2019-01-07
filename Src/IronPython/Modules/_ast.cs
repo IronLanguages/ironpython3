@@ -2874,7 +2874,7 @@ namespace IronPython.Modules
 
             internal UnaryOp(UnaryExpression expression)
                 : this() {
-                op = (unaryop)Convert(expression.Op);
+                op = (unaryop)Convert(expression.Operator);
                 operand = Convert(expression.Expression);
             }
 

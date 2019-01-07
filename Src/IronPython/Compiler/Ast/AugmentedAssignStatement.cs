@@ -9,30 +9,20 @@ using IronPython.Runtime.Binding;
 
 namespace IronPython.Compiler.Ast {
     public class AugmentedAssignStatement : Statement {
-        private readonly PythonOperator _op;
-        private readonly Expression _left;
-        private readonly Expression _right;
-
         public AugmentedAssignStatement(PythonOperator op, Expression left, Expression right) {
-            _op = op;
-            _left = left; 
-            _right = right;
+            Operator = op;
+            Left = left;
+            Right = right;
         }
 
-        public PythonOperator Operator {
-            get { return _op; }
-        }
+        public PythonOperator Operator { get; }
 
-        public Expression Left {
-            get { return _left; }
-        }
+        public Expression Left { get; }
 
-        public Expression Right {
-            get { return _right; }
-        }
+        public Expression Right { get; }
 
         public override MSAst.Expression Reduce() {
-            return _left.TransformSet(Span, _right, PythonOperatorToAction(_op));
+            return Left.TransformSet(Span, Right, PythonOperatorToAction(Operator));
         }
 
         private static PythonOperationKind PythonOperatorToAction(PythonOperator op) {
@@ -70,12 +60,8 @@ namespace IronPython.Compiler.Ast {
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                if (_left != null) {
-                    _left.Walk(walker);
-                }
-                if (_right != null) {
-                    _right.Walk(walker);
-                }
+                Left?.Walk(walker);
+                Right?.Walk(walker);
             }
             walker.PostWalk(this);
         }

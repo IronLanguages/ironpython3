@@ -9,13 +9,11 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 namespace IronPython.Compiler.Ast {
 
     public class ContinueStatement : Statement {
-        private ILoopStatement _loop;
-
         public ContinueStatement() {
         }
 
         public override MSAst.Expression Reduce() {
-            return GlobalParent.AddDebugInfo(MSAst.Expression.Continue(_loop.ContinueLabel), Span);
+            return GlobalParent.AddDebugInfo(MSAst.Expression.Continue(LoopStatement.ContinueLabel), Span);
         }
 
         public override void Walk(PythonWalker walker) {
@@ -24,19 +22,8 @@ namespace IronPython.Compiler.Ast {
             walker.PostWalk(this);
         }
 
-        internal override bool CanThrow {
-            get {
-                return false;
-            }
-        }
+        internal override bool CanThrow => false;
 
-        internal ILoopStatement LoopStatement {
-            get {
-                return _loop;
-            }
-            set {
-                _loop = value;
-            }
-        }
+        internal ILoopStatement LoopStatement { get; set; }
     }
 }

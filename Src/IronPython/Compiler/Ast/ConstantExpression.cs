@@ -4,61 +4,50 @@
 
 using System;
 
-using Microsoft.Scripting;
 using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Runtime;
 
-using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 using MSAst = System.Linq.Expressions;
-
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
     public class ConstantExpression : Expression, IInstructionProvider {
-        private readonly object _value;
-
         public ConstantExpression(object value) {
-            _value = value;
+            Value = value;
         }
 
-        public object Value {
-            get {
-                return _value; 
-            }
-        }
+        public object Value { get; }
 
         private static readonly MSAst.Expression EllipsisExpr = Ast.Property(null, typeof(PythonOps).GetProperty(nameof(PythonOps.Ellipsis)));
         private static readonly MSAst.Expression TrueExpr = Ast.Field(null, typeof(ScriptingRuntimeHelpers).GetField(nameof(ScriptingRuntimeHelpers.True)));
         private static readonly MSAst.Expression FalseExpr = Ast.Field(null, typeof(ScriptingRuntimeHelpers).GetField(nameof(ScriptingRuntimeHelpers.False)));
 
         public override MSAst.Expression Reduce() {
-            if (_value == Ellipsis.Value) {
+            if (Value == Ellipsis.Value) {
                 return EllipsisExpr;
-            } else if (_value is bool) {
-                return (bool)_value ? TrueExpr : FalseExpr;
+            } else if (Value is bool) {
+                return (bool)Value ? TrueExpr : FalseExpr;
             }
 
-            return GlobalParent.Constant(_value);
+            return GlobalParent.Constant(Value);
         }
 
-        internal override ConstantExpression ConstantFold() {
-            return this;
-        }
+        internal override ConstantExpression ConstantFold() => this;
 
         public override Type Type {
             get {
-                if (_value is bool) return typeof(object);
+                if (Value is bool) return typeof(object);
                 return GlobalParent.CompilationMode.GetConstantType(Value);
             }
         }
 
         internal override string CheckAssign() {
-            if (_value == null || _value is bool) {
+            if (Value == null || Value is bool) {
                 return "can't assign to keyword";
             }
 
@@ -73,29 +62,19 @@ namespace IronPython.Compiler.Ast {
 
         public override string NodeName => "literal";
 
-        internal override bool CanThrow {
-            get {
-                return false;
-            }
-        }
+        internal override bool CanThrow => false;
 
-        internal override object GetConstantValue() {
-            return Value;
-        }
+        internal override object GetConstantValue() => Value;
 
-        internal override bool IsConstant {
-            get {
-                return true;
-            }
-        }
+        internal override bool IsConstant => true;
 
         #region IInstructionProvider Members
 
         void IInstructionProvider.AddInstructions(LightCompiler compiler) {
-            if (_value is bool) {
-                compiler.Instructions.EmitLoad((bool)_value);
+            if (Value is bool) {
+                compiler.Instructions.EmitLoad((bool)Value);
             } else {
-                compiler.Instructions.EmitLoad(_value);
+                compiler.Instructions.EmitLoad(Value);
             }
         }
 

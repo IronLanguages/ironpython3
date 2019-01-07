@@ -21,20 +21,15 @@ namespace IronPython.Compiler.Ast {
 
     public class IfStatement : Statement, IInstructionProvider {
         private readonly IfStatementTest[] _tests;
-        private readonly Statement _else;
 
         public IfStatement(IfStatementTest[] tests, Statement else_) {
             _tests = tests;
-            _else = else_;
+            ElseStatement = else_;
         }
 
-        public IList<IfStatementTest> Tests {
-            get { return _tests; }
-        }
+        public IList<IfStatementTest> Tests => _tests;
 
-        public Statement ElseStatement {
-            get { return _else; }
-        }
+        public Statement ElseStatement { get; }
 
         public override MSAst.Expression Reduce() {
             return ReduceWorker(true);
@@ -82,16 +77,16 @@ namespace IronPython.Compiler.Ast {
                     );
                 }
 
-                if (_else != null) {
-                    builder.Add(_else);
+                if (ElseStatement != null) {
+                    builder.Add(ElseStatement);
                 }
 
                 builder.Add(Ast.Label(label));
                 result = builder.ToExpression();
             } else {
                 // Now build from the inside out
-                if (_else != null) {
-                    result = _else;
+                if (ElseStatement != null) {
+                    result = ElseStatement;
                 } else {
                     result = AstUtils.Empty();
                 }
@@ -123,9 +118,7 @@ namespace IronPython.Compiler.Ast {
                         test.Walk(walker);
                     }
                 }
-                if (_else != null) {
-                    _else.Walk(walker);
-                }
+                ElseStatement?.Walk(walker);
             }
             walker.PostWalk(this);
         }

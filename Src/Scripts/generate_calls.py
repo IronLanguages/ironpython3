@@ -486,7 +486,7 @@ def gen_call_expression_instruction_switch(cw):
     for i in range(MAX_INSTRUCTION_PROVIDED_CALLS):
         cw.case_label('case %d:' % i)
         cw.write('compiler.Compile(Parent.LocalContext);')
-        cw.write('compiler.Compile(_target);')
+        cw.write('compiler.Compile(Target);')
         for j in range(i):
             cw.write('compiler.Compile(args[%d].Expression);' % j)
         cw.write('compiler.Instructions.Emit(new Invoke%dInstruction(Parent.PyContext));' % i)        
@@ -499,18 +499,14 @@ def gen_call_expression_instructions(cw):
         argfetch = '\n'.join(['        var arg%d = frame.Pop();' % (j-1) for j in range(i, 0, -1)])
         callargs = ', '.join(['target'] + ['arg%d' % j for j in range(i)])
         cw.write("""
-class Invoke%(argcount)dInstruction : InvokeInstruction {
+private class Invoke%(argcount)dInstruction : InvokeInstruction {
     private readonly CallSite<Func<CallSite, CodeContext, %(siteargs)sobject>> _site;
 
     public Invoke%(argcount)dInstruction(PythonContext context) {
         _site = context.CallSite%(argcount)d;
     }
 
-    public override int ConsumedStack {
-        get {
-            return %(consumedCount)d;
-        }
-    }
+    public override int ConsumedStack => %(consumedCount)d;
 
     public override int Run(InterpretedFrame frame) {
 %(argfetch)s

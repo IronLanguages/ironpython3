@@ -4,9 +4,10 @@
 
 using MSAst = System.Linq.Expressions;
 
-using System;
 using System.Collections.Generic;
+
 using Microsoft.Scripting.Utils;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
@@ -33,9 +34,7 @@ namespace IronPython.Compiler.Ast {
             );
         }
 
-        internal override string CheckAssign() {
-            return "can't assign to literal";
-        }
+        internal override string CheckAssign() => "can't assign to literal";
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {

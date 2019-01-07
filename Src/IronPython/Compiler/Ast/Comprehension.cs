@@ -64,55 +64,40 @@ namespace IronPython.Compiler.Ast {
 
     public sealed class ListComprehension : Comprehension {
         private readonly ComprehensionIterator[] _iterators;
-        private readonly Expression _item;
-        private readonly ComprehensionScope _scope;
 
         public ListComprehension(Expression item, ComprehensionIterator[] iterators) {
-            _item = item;
+            Item = item;
             _iterators = iterators;
-            _scope = new ComprehensionScope(this);
+            Scope = new ComprehensionScope(this);
         }
 
-        public Expression Item {
-            get { return _item; }
-        }
+        public Expression Item { get; }
 
-        public override IList<ComprehensionIterator> Iterators {
-            get { return _iterators; }
-        }
+        public override IList<ComprehensionIterator> Iterators => _iterators;
 
-        protected override MSAst.ParameterExpression MakeParameter() {
-            return Ast.Parameter(typeof(PythonList), "list_comprehension_list");
-        }
+        protected override MSAst.ParameterExpression MakeParameter()
+            => Ast.Parameter(typeof(PythonList), "list_comprehension_list");
 
-        protected override MethodInfo Factory() {
-            return AstMethods.MakeList;
-        }
+        protected override MethodInfo Factory() => AstMethods.MakeList;
 
-        public override Ast Reduce() {
-            return _scope.AddVariables(base.Reduce());
-        }
+        public override Ast Reduce() => Scope.AddVariables(base.Reduce());
 
         protected override Ast Body(MSAst.ParameterExpression res) {
             return GlobalParent.AddDebugInfo(
                 Ast.Call(
                     AstMethods.ListAddForComprehension,
                     res,
-                    AstUtils.Convert(_item, typeof(object))
+                    AstUtils.Convert(Item, typeof(object))
                 ),
-                _item.Span
+                Item.Span
             );
         }
 
-        public override string NodeName {
-            get {
-                return "list comprehension";
-            }
-        }
+        public override string NodeName => "list comprehension";
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                _item?.Walk(walker);
+                Item?.Walk(walker);
                 if (_iterators != null) {
                     foreach (ComprehensionIterator ci in _iterators) {
                         ci.Walk(walker);
@@ -122,66 +107,45 @@ namespace IronPython.Compiler.Ast {
             walker.PostWalk(this);
         }
 
-        internal ComprehensionScope Scope {
-            get {
-                return _scope;
-            }
-        }
+        internal ComprehensionScope Scope { get; }
     }
         
     public sealed class SetComprehension : Comprehension {
         private readonly ComprehensionIterator[] _iterators;
-        private readonly Expression _item;
-        private readonly ComprehensionScope _scope;
 
         public SetComprehension(Expression item, ComprehensionIterator[] iterators) {
-            _item = item;
+            Item = item;
             _iterators = iterators;
-            _scope = new ComprehensionScope(this);
+            Scope = new ComprehensionScope(this);
         }
 
-        public Expression Item {
-            get { return _item; }
-        }
+        public Expression Item { get; }
 
-        public override IList<ComprehensionIterator> Iterators {
-            get { return _iterators; }
-        }
+        public override IList<ComprehensionIterator> Iterators => _iterators;
 
-        protected override MSAst.ParameterExpression MakeParameter() {
-            return Ast.Parameter(typeof(SetCollection), "set_comprehension_set");
-        }
+        protected override MSAst.ParameterExpression MakeParameter()
+            => Ast.Parameter(typeof(SetCollection), "set_comprehension_set");
 
-        protected override MethodInfo Factory() {
-            return AstMethods.MakeEmptySet;
-        }
+        protected override MethodInfo Factory() => AstMethods.MakeEmptySet;
 
-        public override Ast Reduce() {
-            return _scope.AddVariables(base.Reduce());
-        }
+        public override Ast Reduce() => Scope.AddVariables(base.Reduce());
 
         protected override Ast Body(MSAst.ParameterExpression res) {
             return GlobalParent.AddDebugInfo(
                 Ast.Call(
                     AstMethods.SetAddForComprehension,
                     res,
-                    AstUtils.Convert(_item, typeof(object))
+                    AstUtils.Convert(Item, typeof(object))
                 ),
-                _item.Span
+                Item.Span
             );
         }
 
-        public override string NodeName {
-            get {
-                return "set comprehension";
-            }
-        }
+        public override string NodeName => "set comprehension";
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                if (_item != null) {
-                    _item.Walk(walker);
-                }
+                Item?.Walk(walker);
                 if (_iterators != null) {
                     foreach (ComprehensionIterator ci in _iterators) {
                         ci.Walk(walker);
@@ -191,75 +155,50 @@ namespace IronPython.Compiler.Ast {
             walker.PostWalk(this);
         }
 
-        internal ComprehensionScope Scope {
-            get {
-                return _scope;
-            }
-        }
+        internal ComprehensionScope Scope { get; }
     }
 
     public sealed class DictionaryComprehension : Comprehension {
         private readonly ComprehensionIterator[] _iterators;
-        private readonly Expression _key, _value;
-        private readonly ComprehensionScope _scope;
 
         public DictionaryComprehension(Expression key, Expression value, ComprehensionIterator[] iterators) {
-            _key = key;
-            _value = value;
+            Key = key;
+            Value = value;
             _iterators = iterators;
-            _scope = new ComprehensionScope(this);
+            Scope = new ComprehensionScope(this);
         }
 
-        public Expression Key {
-            get { return _key; }
-        }
+        public Expression Key { get; }
 
-        public Expression Value {
-            get { return _value; }
-        }
+        public Expression Value { get; }
 
-        public override IList<ComprehensionIterator> Iterators {
-            get { return _iterators; }
-        }
+        public override IList<ComprehensionIterator> Iterators => _iterators;
 
-        protected override MSAst.ParameterExpression MakeParameter() {
-            return Ast.Parameter(typeof(PythonDictionary), "dict_comprehension_dict");
-        }
+        protected override MSAst.ParameterExpression MakeParameter()
+            => Ast.Parameter(typeof(PythonDictionary), "dict_comprehension_dict");
 
-        protected override MethodInfo Factory() {
-            return AstMethods.MakeEmptyDict;
-        }
+        protected override MethodInfo Factory() => AstMethods.MakeEmptyDict;
 
-        public override Ast Reduce() {
-            return _scope.AddVariables(base.Reduce());
-        }
+        public override Ast Reduce() => Scope.AddVariables(base.Reduce());
 
         protected override Ast Body(MSAst.ParameterExpression res) {
             return GlobalParent.AddDebugInfo(
                 Ast.Call(
                     AstMethods.DictAddForComprehension,
                     res,
-                    AstUtils.Convert(_key, typeof(object)),
-                    AstUtils.Convert(_value, typeof(object))
+                    AstUtils.Convert(Key, typeof(object)),
+                    AstUtils.Convert(Value, typeof(object))
                 ),
-                new SourceSpan(_key.Span.Start, _value.Span.End)
+                new SourceSpan(Key.Span.Start, Value.Span.End)
             );
         }
 
-        public override string NodeName {
-            get {
-                return "dict comprehension";
-            }
-        }
+        public override string NodeName => "dict comprehension";
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                if (_key != null) {
-                    _key.Walk(walker);
-                }
-                if (_value != null) {
-                    _value.Walk(walker);
-                }
+                Key?.Walk(walker);
+                Value?.Walk(walker);
                 if (_iterators != null) {
                     foreach (ComprehensionIterator ci in _iterators) {
                         ci.Walk(walker);
@@ -269,18 +208,14 @@ namespace IronPython.Compiler.Ast {
             walker.PostWalk(this);
         }
 
-        internal ComprehensionScope Scope {
-            get {
-                return _scope;
-            }
-        }
+        internal ComprehensionScope Scope { get; }
     }
 
     /// <summary>
     /// Scope for the comprehension.  Because scopes are usually statements and comprehensions are expressions
     /// this doesn't actually show up in the AST hierarchy and instead hangs off the comprehension expression.
     /// </summary>
-    class ComprehensionScope : ScopeStatement {
+    internal class ComprehensionScope : ScopeStatement {
         private readonly Expression _comprehension;
         private static readonly MSAst.ParameterExpression _compContext = Ast.Parameter(typeof(CodeContext), "$compContext");
 
@@ -303,8 +238,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal override PythonVariable BindReference(PythonNameBinder binder, PythonReference reference) {
-            PythonVariable variable;
-            if (TryGetVariable(reference.Name, out variable)) {
+            if (TryGetVariable(reference.Name, out PythonVariable variable)) {
                 if (variable.Kind == VariableKind.Global) {
                     AddReferencedGlobal(reference.Name);
                 }
@@ -320,21 +254,17 @@ namespace IronPython.Compiler.Ast {
                 return GlobalParent.ModuleVariables[variable];
             }
 
-            Ast expr;
-            if (_variableMapping.TryGetValue(variable, out expr)) {
+            if (_variableMapping.TryGetValue(variable, out Ast expr)) {
                 return expr;
             }
 
             return _comprehension.Parent.GetVariableExpression(variable);
         }
 
-        internal override Microsoft.Scripting.Ast.LightLambdaExpression GetLambda() {
-            throw new NotImplementedException();
-        }
+        internal override Microsoft.Scripting.Ast.LightLambdaExpression GetLambda()
+            => throw new NotImplementedException();
 
-        public override void Walk(PythonWalker walker) {
-            _comprehension.Walk(walker);
-        }
+        public override void Walk(PythonWalker walker) => _comprehension.Walk(walker);
 
         internal override Ast LocalContext {
             get {

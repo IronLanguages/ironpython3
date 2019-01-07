@@ -4,14 +4,10 @@
 
 using MSAst = System.Linq.Expressions;
 
-using System;
-
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
     public class ListExpression : SequenceExpression {
-        
-
         public ListExpression(params Expression[] items)
             : base(items) {
         }

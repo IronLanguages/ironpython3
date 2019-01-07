@@ -24,27 +24,22 @@ namespace IronPython.Compiler.Ast {
         // _left.Length is 1 for simple assignments like "x = 1"
         // _left.Length will be 3 for "x = y = z = 1"
         private readonly Expression[] _left;
-        private readonly Expression _right;
 
         public AssignmentStatement(Expression[] left, Expression right) {
             _left = left;
-            _right = right;
+            Right = right;
         }
 
-        public IList<Expression> Left {
-            get { return _left; }
-        }
+        public IList<Expression> Left => _left;
 
-        public Expression Right {
-            get { return _right; }
-        }
+        public Expression Right { get; }
 
         public override MSAst.Expression Reduce() {
             if (_left.Length == 1) {
                 // Do not need temps for simple assignment
                 return AssignOne();
             } else {
-                return AssignComplex(_right);
+                return AssignComplex(Right);
             }
         }
 
@@ -94,7 +89,7 @@ namespace IronPython.Compiler.Ast {
             Debug.Assert(_left.Length == 1);
 
             SequenceExpression seLeft = _left[0] as SequenceExpression;
-            SequenceExpression seRight = _right as SequenceExpression;
+            SequenceExpression seRight = Right as SequenceExpression;
 
             bool isStarred = seLeft != null && seLeft.Items.OfType<StarredExpression>().Any();
 
@@ -133,7 +128,7 @@ namespace IronPython.Compiler.Ast {
                 return GlobalParent.AddDebugInfoAndVoid(Ast.Block(tmps, body), Span);
             }
 
-            return _left[0].TransformSet(Span, _right, PythonOperationKind.None);
+            return _left[0].TransformSet(Span, Right, PythonOperationKind.None);
         }
 
         public override void Walk(PythonWalker walker) {
@@ -141,7 +136,7 @@ namespace IronPython.Compiler.Ast {
                 foreach (Expression e in _left) {
                     e.Walk(walker);
                 }
-                _right.Walk(walker);
+                Right.Walk(walker);
             }
             walker.PostWalk(this);
         }

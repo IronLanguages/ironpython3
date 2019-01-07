@@ -8,7 +8,6 @@ using System;
 using System.Diagnostics;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Binding;
 
@@ -27,19 +26,13 @@ namespace IronPython.Compiler.Ast {
             throw new InvalidOperationException();
         }
 
-        internal virtual ConstantExpression ConstantFold() {
-            return null;
-        }
+        internal virtual ConstantExpression ConstantFold() => null;
 
-        internal virtual string CheckAssign() {
-            return "can't assign to " + NodeName;
-        }
+        internal virtual string CheckAssign() => "can't assign to " + NodeName;
 
         internal virtual string CheckAugmentedAssign() => CheckAssign();
 
-        internal virtual string CheckDelete() {
-            return "can't delete " + NodeName;
-        }
+        internal virtual string CheckDelete() => "can't delete " + NodeName;
 
         internal virtual bool IsConstant {
             get {
@@ -60,10 +53,6 @@ namespace IronPython.Compiler.Ast {
             throw new InvalidOperationException(GetType().Name + " is not a constant");
         }
 
-        public override Type Type {
-            get {
-                return typeof(object);
-            }
-        }
+        public override Type Type => typeof(object);
     }
 }

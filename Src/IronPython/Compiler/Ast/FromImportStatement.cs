@@ -18,40 +18,24 @@ namespace IronPython.Compiler.Ast {
         private readonly ModuleName _root;
         private readonly string[] _names;
         private readonly string[] _asNames;
-        private readonly bool _fromFuture;
 
-        private PythonVariable[] _variables;
+        public static IList<string> Star => FromImportStatement._star;
 
-        public static IList<string> Star {
-            get { return FromImportStatement._star; }
-        }
+        public DottedName Root => _root;
 
-        public DottedName Root {
-            get { return _root; }
-        } 
+        public bool IsFromFuture { get; }
 
-        public bool IsFromFuture {
-            get { return _fromFuture; }
-        }
+        public IList<string> Names => _names;
 
-        public IList<string> Names {
-            get { return _names; }
-        }
+        public IList<string> AsNames => _asNames;
 
-        public IList<string> AsNames {
-            get { return _asNames; }
-        }
-
-        internal PythonVariable[] Variables {
-            get { return _variables; }
-            set { _variables = value; }
-        }
+        internal PythonVariable[] Variables { get; set; }
 
         public FromImportStatement(ModuleName root, string[] names, string[] asNames, bool fromFuture) {
             _root = root;
             _names = names;
             _asNames = asNames;
-            _fromFuture = fromFuture;
+            IsFromFuture = fromFuture;
         }
 
         public override MSAst.Expression Reduce() {
@@ -102,7 +86,7 @@ namespace IronPython.Compiler.Ast {
                     statements.Add(
                         GlobalParent.AddDebugInfoAndVoid(
                             AssignValue(
-                                Parent.GetVariableExpression(_variables[i]),
+                                Parent.GetVariableExpression(Variables[i]),
                                 Ast.Call(
                                     AstMethods.ImportFrom,
                                     Parent.LocalContext,
@@ -121,8 +105,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         private object GetLevel() {
-            RelativeModuleName rmn = _root as RelativeModuleName;
-            if (rmn != null) {
+            if (_root is RelativeModuleName rmn) {
                 return rmn.DotCount;
             }
 

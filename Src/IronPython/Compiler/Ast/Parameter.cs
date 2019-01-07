@@ -30,9 +30,6 @@ namespace IronPython.Compiler.Ast {
         protected readonly ParameterKind _kind;
         protected Expression _defaultValue;
 
-        private PythonVariable _variable;
-        private MSAst.ParameterExpression _parameter;
-
         public Parameter(string name)
             : this(name, ParameterKind.Normal) {
         }
@@ -62,26 +59,19 @@ namespace IronPython.Compiler.Ast {
 
         internal ParameterKind Kind => _kind;
 
-        internal PythonVariable PythonVariable {
-            get { return _variable; }
-            set { _variable = value; }
-        }
+        internal PythonVariable PythonVariable { get; set; }
 
         internal MSAst.Expression FinishBind(bool needsLocalsDictionary) {
-            if (_variable.AccessedInNestedScope || needsLocalsDictionary) {
-                _parameter = Expression.Parameter(typeof(object), Name);
+            if (PythonVariable.AccessedInNestedScope || needsLocalsDictionary) {
+                ParameterExpression = Expression.Parameter(typeof(object), Name);
                 var cell = Ast.Parameter(typeof(ClosureCell), Name);
-                return new ClosureExpression(_variable, cell, _parameter);
+                return new ClosureExpression(PythonVariable, cell, ParameterExpression);
             } else {
-                return _parameter = Ast.Parameter(typeof(object), Name);
+                return ParameterExpression = Ast.Parameter(typeof(object), Name);
             }
         }
 
-        internal MSAst.ParameterExpression ParameterExpression {
-            get {
-                return _parameter;
-            }
-        }
+        internal MSAst.ParameterExpression ParameterExpression { get; private set; }
 
         internal virtual void Init(List<MSAst.Expression> init) {
             // Regular parameter has no initialization

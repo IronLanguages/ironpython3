@@ -16,40 +16,29 @@ namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
     public class GeneratorExpression : Expression {
-        private readonly FunctionDefinition _function;
-        private readonly Expression _iterable;
-
         public GeneratorExpression(FunctionDefinition function, Expression iterable) {
-            _function = function;
-            _iterable = iterable;
+            Function = function;
+            Iterable = iterable;
         }
 
         public override MSAst.Expression Reduce() {
             return Ast.Call(
                 AstMethods.MakeGeneratorExpression,
-                _function.MakeFunctionExpression(),
-                _iterable
+                Function.MakeFunctionExpression(),
+                Iterable
             );
         }
 
-        public FunctionDefinition Function {
-            get {
-                return _function;
-            }
-        }
+        public FunctionDefinition Function { get; }
 
-        public Expression Iterable {
-            get {
-                return _iterable;
-            }
-        }
+        public Expression Iterable { get; }
 
         public override string NodeName => "generator expression";
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                _function.Walk(walker);
-                _iterable.Walk(walker);
+                Function.Walk(walker);
+                Iterable.Walk(walker);
             }
             walker.PostWalk(this);
         }

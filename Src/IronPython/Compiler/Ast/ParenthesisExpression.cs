@@ -15,59 +15,34 @@ using MSAst = System.Linq.Expressions;
 namespace IronPython.Compiler.Ast {
 
     public class ParenthesisExpression : Expression {
-        private readonly Expression _expression;
-
         public ParenthesisExpression(Expression expression) {
-            _expression = expression;
+            Expression = expression;
         }
 
-        public Expression Expression {
-            get { return _expression; }
-        }
+        public Expression Expression { get; }
 
-        public override MSAst.Expression Reduce() {
-            return _expression;
-        }
+        public override MSAst.Expression Reduce() => Expression;
 
-        internal override MSAst.Expression TransformSet(SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
-            return _expression.TransformSet(span, right, op);
-        }
+        internal override MSAst.Expression TransformSet(SourceSpan span, MSAst.Expression right, PythonOperationKind op)
+            => Expression.TransformSet(span, right, op);
 
-        internal override string CheckAssign() {
-            return _expression.CheckAssign();
-        }
+        internal override string CheckAssign() => Expression.CheckAssign();
 
-        internal override string CheckAugmentedAssign() {
-            return _expression.CheckAugmentedAssign();
-        }
+        internal override string CheckAugmentedAssign() => Expression.CheckAugmentedAssign();
 
-        internal override string CheckDelete() {
-            return _expression.CheckDelete();
-        }
+        internal override string CheckDelete() => Expression.CheckDelete();
 
-        internal override MSAst.Expression TransformDelete() {
-            return _expression.TransformDelete();
-        }
+        internal override MSAst.Expression TransformDelete() => Expression.TransformDelete();
 
-        public override Type Type {
-            get {
-                return _expression.Type;
-            }
-        }
+        public override Type Type => Expression.Type;
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                if (_expression != null) {
-                    _expression.Walk(walker);
-                }
+                Expression?.Walk(walker);
             }
             walker.PostWalk(this);
         }
 
-        internal override bool CanThrow {
-            get {
-                return _expression.CanThrow;
-            }
-        }
+        internal override bool CanThrow => Expression.CanThrow;
     }
 }

@@ -17,9 +17,7 @@ namespace IronPython.Compiler.Ast {
             _expressions = expressions;
         }
 
-        public IList<Expression> Expressions {
-            get { return _expressions; }
-        }
+        public IList<Expression> Expressions => _expressions;
 
         public override MSAst.Expression Reduce() {
             // Transform to series of individual del statements.

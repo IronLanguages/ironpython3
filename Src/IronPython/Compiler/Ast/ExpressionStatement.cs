@@ -10,18 +10,14 @@ namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
     public class ExpressionStatement : Statement {
-        private readonly Expression _expression;
-
         public ExpressionStatement(Expression expression) {
-            _expression = expression;
+            Expression = expression;
         }
 
-        public Expression Expression {
-            get { return _expression; }
-        }
+        public Expression Expression { get; }
 
         public override MSAst.Expression Reduce() {
-            MSAst.Expression expression = _expression;
+            MSAst.Expression expression = Expression;
 
             return ReduceWorker(expression);
         }
@@ -35,32 +31,25 @@ namespace IronPython.Compiler.Ast {
                 );
             }
 
-            return GlobalParent.AddDebugInfoAndVoid(expression, _expression.Span);
+            return GlobalParent.AddDebugInfoAndVoid(expression, Expression.Span);
         }
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                if (_expression != null) {
-                    _expression.Walk(walker);
-                }
+                Expression?.Walk(walker);
             }
             walker.PostWalk(this);
         }
 
         public override string Documentation {
             get {
-                ConstantExpression ce = _expression as ConstantExpression;
-                if (ce != null) {
+                if (Expression is ConstantExpression ce) {
                     return ce.Value as string;
                 }
                 return null;
             }
         }
 
-        internal override bool CanThrow {
-            get {
-                return _expression.CanThrow;
-            }
-        }
+        internal override bool CanThrow => Expression.CanThrow;
     }
 }

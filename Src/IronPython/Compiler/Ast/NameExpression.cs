@@ -4,15 +4,9 @@
 
 using MSAst = System.Linq.Expressions;
 
-using System;
-using System.Diagnostics;
-using System.Dynamic;
-
 using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Binding;
-using IronPython.Runtime.Operations;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
@@ -20,50 +14,39 @@ namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
     public class NameExpression : Expression {
-        private readonly string _name;
-        private PythonReference _reference;
-        private bool _assigned;                  // definitely assigned
-
         public NameExpression(string name) {
-            _name = name;
+            Name = name;
         }
 
-        public string Name {
-            get { return _name; }
-        }
+        public string Name { get; }
 
-        internal PythonReference Reference {
-            get { return _reference; }
-            set { _reference = value; }
-        }
+        internal PythonReference Reference { get; set; }
 
-        internal bool Assigned {
-            get { return _assigned; }
-            set { _assigned = value; }
-        }
+        /// <summary>
+        /// definitely assigned
+        /// </summary>
+        internal bool Assigned { get; set; }
 
-        public override string ToString() {
-            return base.ToString() + ":" + _name;
-        }
+        public override string ToString() => base.ToString() + ":" + Name;
 
         public override MSAst.Expression Reduce() {
             MSAst.Expression read;
 
-            if (_reference.PythonVariable == null) {
+            if (Reference.PythonVariable == null) {
                 read = Ast.Call(
                     AstMethods.LookupName,
                     Parent.LocalContext,
-                    Ast.Constant(_name)                    
+                    Ast.Constant(Name)
                 );
             } else {
-                read = Parent.GetVariableExpression(_reference.PythonVariable);
+                read = Parent.GetVariableExpression(Reference.PythonVariable);
             }
 
-            if (!_assigned && !(read is IPythonGlobalExpression)) {
+            if (!Assigned && !(read is IPythonGlobalExpression)) {
                 read = Ast.Call(
                     AstMethods.CheckUninitialized,
                     read,
-                    Ast.Constant(_name)
+                    Ast.Constant(Name)
                 );
             }
 
@@ -84,9 +67,9 @@ namespace IronPython.Compiler.Ast {
 
             SourceSpan aspan = span.IsValid ? new SourceSpan(Span.Start, span.End) : SourceSpan.None;
 
-            if (_reference.PythonVariable != null) {
+            if (Reference.PythonVariable != null) {
                 assignment = AssignValue(
-                    Parent.GetVariableExpression(_reference.PythonVariable),
+                    Parent.GetVariableExpression(Reference.PythonVariable),
                     ConvertIfNeeded(right, typeof(object))
                 );
             } else {
@@ -94,7 +77,7 @@ namespace IronPython.Compiler.Ast {
                     null,
                     AstMethods.SetName,
                     Parent.LocalContext, 
-                    Ast.Constant(_name),
+                    Ast.Constant(Name),
                     AstUtils.Convert(right, typeof(object))
                 );
             }
@@ -102,17 +85,13 @@ namespace IronPython.Compiler.Ast {
             return GlobalParent.AddDebugInfoAndVoid(assignment, aspan);
         }
 
-        internal override string CheckAssign() {
-            return null;
-        }
+        internal override string CheckAssign() => null;
 
-        internal override string CheckDelete() {
-            return null;
-        }
+        internal override string CheckDelete() => null;
 
         internal override MSAst.Expression TransformDelete() {
-            if (_reference.PythonVariable != null) {
-                MSAst.Expression variable = Parent.GetVariableExpression(_reference.PythonVariable);
+            if (Reference.PythonVariable != null) {
+                MSAst.Expression variable = Parent.GetVariableExpression(Reference.PythonVariable);
                 // keep the variable alive until we hit the del statement to
                 // better match CPython's lifetimes
                 MSAst.Expression del = Ast.Block(
@@ -123,7 +102,7 @@ namespace IronPython.Compiler.Ast {
                     Delete(variable)
                 );
 
-                if (!_assigned) {
+                if (!Assigned) {
                     del = Ast.Block(
                         this,
                         del,
@@ -135,7 +114,7 @@ namespace IronPython.Compiler.Ast {
                 return Ast.Call(
                     AstMethods.RemoveName,
                     Parent.LocalContext,
-                    Ast.Constant(_name)
+                    Ast.Constant(Name)
                 );
             }
         }
@@ -146,10 +125,6 @@ namespace IronPython.Compiler.Ast {
             walker.PostWalk(this);
         }
 
-        internal override bool CanThrow {
-            get {
-                return !Assigned;
-            }
-        }
+        internal override bool CanThrow => !Assigned;
     }
 }

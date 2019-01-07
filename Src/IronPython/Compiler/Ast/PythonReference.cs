@@ -2,30 +2,18 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using MSAst = System.Linq.Expressions;
-
-using Microsoft.Scripting;
-
 namespace IronPython.Compiler.Ast {
     /// <summary>
     /// Represents a reference to a name.  A PythonReference is created for each name
     /// referred to in a scope (global, class, or function).  
     /// </summary>
-    class PythonReference {
-        private readonly string _name;
-        private PythonVariable _variable;
-
+    internal class PythonReference {
         public PythonReference(string name) {
-            _name = name;
+            Name = name;
         }
 
-        public string Name {
-            get { return _name; }
-        }
+        public string Name { get; }
 
-        internal PythonVariable PythonVariable {
-            get { return _variable; }
-            set { _variable = value; }
-        }
+        internal PythonVariable PythonVariable { get; set; }
     }
 }

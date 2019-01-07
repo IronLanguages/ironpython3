@@ -26,9 +26,7 @@ namespace IronPython.Compiler.Ast {
             _items = items;
         }
 
-        public IList<Expression> Items {
-            get { return _items; }
-        }
+        public IList<Expression> Items => _items;
 
         internal override MSAst.Expression TransformSet(SourceSpan span, MSAst.Expression right, PythonOperationKind op) {
             // if we just have a simple named multi-assignment  (e.g. a, b = 1,2)
@@ -145,17 +143,12 @@ namespace IronPython.Compiler.Ast {
             return null;
         }
 
-        internal override string CheckDelete() {
-            return null;
-        }
+        internal override string CheckDelete() => null;
 
-        internal override string CheckAugmentedAssign() {
-            return CheckAssign() ?? "illegal expression for augmented assignment";
-        }
+        internal override string CheckAugmentedAssign()
+            => CheckAssign() ?? "illegal expression for augmented assignment";
 
-        private static bool IsComplexAssignment(Expression expr) {
-            return !(expr is NameExpression);
-        }
+        private static bool IsComplexAssignment(Expression expr) => !(expr is NameExpression);
 
         internal override MSAst.Expression TransformDelete() {
             MSAst.Expression[] statements = new MSAst.Expression[_items.Length + 1];

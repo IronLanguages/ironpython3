@@ -15,30 +15,21 @@ namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
     public class MemberExpression : Expression {
-        private readonly Expression _target;
-        private readonly string _name;
-
         public MemberExpression(Expression target, string name) {
-            _target = target;
-            _name = name;
+            Target = target;
+            Name = name;
         }
 
-        public Expression Target {
-            get { return _target; }
-        }
+        public Expression Target { get; }
 
-        public string Name {
-            get { return _name; }
-        }
+        public string Name { get; }
 
-        public override string ToString() {
-            return base.ToString() + ":" + _name;
-        }
+        public override string ToString() => base.ToString() + ":" + Name;
 
         public override MSAst.Expression Reduce() {
             return GlobalParent.Get(
-                _name,
-                _target
+                Name,
+                Target
             );
         }
 
@@ -46,8 +37,8 @@ namespace IronPython.Compiler.Ast {
             if (op == PythonOperationKind.None) {
                 return GlobalParent.AddDebugInfoAndVoid(
                     GlobalParent.Set(
-                        _name,
-                        _target,
+                        Name,
+                        Target,
                         right
                     ),
                     span
@@ -57,7 +48,7 @@ namespace IronPython.Compiler.Ast {
                 return GlobalParent.AddDebugInfo(
                     Ast.Block(
                         new[] { temp },
-                        Ast.Assign(temp, _target),
+                        Ast.Assign(temp, Target),
                         SetMemberOperator(right, op, temp),
                         AstUtils.Empty()
                     ),
@@ -67,23 +58,19 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        internal override string CheckAssign() {
-            return null;
-        }
+        internal override string CheckAssign() => null;
 
-        internal override string CheckDelete() {
-            return null;
-        }
+        internal override string CheckDelete() => null;
 
         private MSAst.Expression SetMemberOperator(MSAst.Expression right, PythonOperationKind op, MSAst.ParameterExpression temp) {
             return GlobalParent.Set(
-                _name,
+                Name,
                 temp,
                 GlobalParent.Operation(
                     typeof(object),
                     op,
                     GlobalParent.Get(
-                        _name,
+                        Name,
                         temp
                     ),
                     right
@@ -94,16 +81,14 @@ namespace IronPython.Compiler.Ast {
         internal override MSAst.Expression TransformDelete() {
             return GlobalParent.Delete(
                 typeof(void),
-                _name,
-                _target
+                Name,
+                Target
             );
         }
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                if (_target != null) {
-                    _target.Walk(walker);
-                }
+                Target?.Walk(walker);
             }
             walker.PostWalk(this);
         }

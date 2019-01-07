@@ -18,11 +18,9 @@ namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
     public class TupleExpression : SequenceExpression {
-        private bool _expandable;
-
         public TupleExpression(bool expandable, params Expression[] items)
             : base(items) {
-            _expandable = expandable;
+            IsExpandable = expandable;
         }
 
         internal override string CheckAssign() {
@@ -48,7 +46,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override MSAst.Expression Reduce() {
-            if (_expandable) {
+            if (IsExpandable) {
                 return Ast.NewArrayInit(
                     typeof(object),
                     ToObjectArray(Items)
@@ -82,11 +80,7 @@ namespace IronPython.Compiler.Ast {
             walker.PostWalk(this);
         }
 
-        public bool IsExpandable {
-            get {
-                return _expandable;
-            }
-        }
+        public bool IsExpandable { get; }
 
         internal override bool IsConstant {
             get {

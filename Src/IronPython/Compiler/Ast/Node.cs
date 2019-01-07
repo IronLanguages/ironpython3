@@ -27,73 +27,51 @@ namespace IronPython.Compiler.Ast {
 
 
     public abstract class Node : MSAst.Expression {
-        private ScopeStatement _parent;
-        private IndexSpan _span;
-
         internal static readonly BlockExpression EmptyBlock = Ast.Block(AstUtils.Empty());
         internal static readonly MSAst.Expression[] EmptyExpression = new MSAst.Expression[0];
 
         internal static ParameterExpression FunctionStackVariable = Ast.Variable(typeof(List<FunctionStack>), "$funcStack");
         internal static readonly LabelTarget GeneratorLabel = Ast.Label(typeof(object), "$generatorLabel");
-        private static ParameterExpression _lineNumberUpdated = Ast.Variable(typeof(bool), "$lineUpdated");
+        private static readonly ParameterExpression _lineNumberUpdated = Ast.Variable(typeof(bool), "$lineUpdated");
         private static readonly ParameterExpression _lineNoVar = Ast.Parameter(typeof(int), "$lineNo");
 
-        protected Node() {
-        }
+        protected Node() { }
 
         #region Public API
 
-        public ScopeStatement Parent {
-            get { return _parent; }
-            set { _parent = value; }
-        }
-        
+        public ScopeStatement Parent { get; set; }
+
         public void SetLoc(PythonAst globalParent, int start, int end) {
-            _span = new IndexSpan(start, end > start ? end - start : start);
-            _parent = globalParent;
+            IndexSpan = new IndexSpan(start, end > start ? end - start : start);
+            Parent = globalParent;
         }
 
         public void SetLoc(PythonAst globalParent, IndexSpan span) {
-            _span = span;
-            _parent = globalParent;
+            IndexSpan = span;
+            Parent = globalParent;
         }
 
-        public IndexSpan IndexSpan {
-            get {
-                return _span;
-            }
-            set {
-                _span = value;
-            }
-        }
+        public IndexSpan IndexSpan { get; set; }
 
-        public SourceLocation Start {
-            get {
-                return GlobalParent.IndexToLocation(StartIndex); 
-            }
-        }
+        public SourceLocation Start => GlobalParent.IndexToLocation(StartIndex);
 
-        public SourceLocation End {
-            get {
-                return GlobalParent.IndexToLocation(EndIndex);
-            }
-        }
+        public SourceLocation End => GlobalParent.IndexToLocation(EndIndex);
 
         public int EndIndex {
             get {
-                return _span.End;
+                return IndexSpan.End;
             }
             set {
-                _span = new IndexSpan(_span.Start, value - _span.Start);
+                IndexSpan = new IndexSpan(IndexSpan.Start, value - IndexSpan.Start);
             }
         }
 
         public int StartIndex {
             get {
-                return _span.Start;
+                return IndexSpan.Start;
             }
             set {
-                _span = new IndexSpan(value, 0);
+                IndexSpan = new IndexSpan(value, 0);
             }
         }
         
@@ -117,19 +95,11 @@ namespace IronPython.Compiler.Ast {
             return new SourceLocation(index, match + 2, index - locs[match] + 1);
         }
 
-        public SourceSpan Span {
-            get {
-                return new SourceSpan(Start, End);
-            }
-        }
+        public SourceSpan Span => new SourceSpan(Start, End);
 
         public abstract void Walk(PythonWalker walker);
 
-        public virtual string NodeName {
-            get {
-                return GetType().Name;
-            }
-        }
+        public virtual string NodeName => GetType().Name;
 
         #endregion
 
@@ -176,23 +146,11 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        internal bool EmitDebugSymbols {
-            get {
-                return GlobalParent.EmitDebugSymbols;
-            }
-        }
+        internal bool EmitDebugSymbols => GlobalParent.EmitDebugSymbols;
 
-        internal bool StripDocStrings {
-            get {
-                return GlobalParent.PyContext.PythonOptions.StripDocStrings;
-            }
-        }
+        internal bool StripDocStrings => GlobalParent.PyContext.PythonOptions.StripDocStrings;
 
-        internal bool Optimize {
-            get {
-                return GlobalParent.PyContext.PythonOptions.Optimize;
-            }
-        }
+        internal bool Optimize => GlobalParent.PyContext.PythonOptions.Optimize;
 
         internal virtual string GetDocumentation(Statement/*!*/ stmt) {
             if (StripDocStrings) {
@@ -280,9 +238,8 @@ namespace IronPython.Compiler.Ast {
             return res;
         }
 
-        internal static bool CanAssign(Type/*!*/ to, Type/*!*/ from) {
-            return to.IsAssignableFrom(from) && (to.IsValueType == from.IsValueType);
-        }
+        internal static bool CanAssign(Type/*!*/ to, Type/*!*/ from)
+            => to.IsAssignableFrom(from) && (to.IsValueType == from.IsValueType);
 
         internal static MSAst.Expression/*!*/ ConvertIfNeeded(MSAst.Expression/*!*/ expression, Type/*!*/ type) {
             Debug.Assert(expression != null);
@@ -311,11 +268,9 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal static MSAst.Expression RemoveDebugInfo(int prevStart, MSAst.Expression res) {
-            MSAst.BlockExpression block = res as MSAst.BlockExpression;
-            if (block != null && block.Expressions.Count > 0) {
-                MSAst.DebugInfoExpression dbgInfo = block.Expressions[0] as MSAst.DebugInfoExpression;
+            if (res is MSAst.BlockExpression block && block.Expressions.Count > 0) {
                 // body on the same line as an if, don't generate a 2nd sequence point
-                if (dbgInfo != null && dbgInfo.StartLine == prevStart) {
+                if (block.Expressions[0] is MSAst.DebugInfoExpression dbgInfo && dbgInfo.StartLine == prevStart) {
                     // we remove the debug info based upon how it's generated in DebugStatement.AddDebugInfo which is
                     // the helper method which adds the debug info.
                     if (block.Type == typeof(void)) {
@@ -336,48 +291,37 @@ namespace IronPython.Compiler.Ast {
         /// <summary>
         /// Creates a method frame for tracking purposes and enforces recursion
         /// </summary>
-        internal static MSAst.Expression AddFrame(MSAst.Expression localContext, MSAst.Expression codeObject, MSAst.Expression body) {
-            return new FramedCodeExpression(localContext, codeObject, body);
-        }
+        internal static MSAst.Expression AddFrame(MSAst.Expression localContext, MSAst.Expression codeObject, MSAst.Expression body)
+            => new FramedCodeExpression(localContext, codeObject, body);
 
         /// <summary>
         /// Removes the frames from generated code for when we're compiling the tracing delegate
         /// which will track the frames it's self.
         /// </summary>
-        internal static MSAst.Expression RemoveFrame(MSAst.Expression expression) {
-            return new FramedCodeVisitor().Visit(expression);
-        }
+        internal static MSAst.Expression RemoveFrame(MSAst.Expression expression)
+            => new FramedCodeVisitor().Visit(expression);
 
-        class FramedCodeVisitor : ExpressionVisitor {
+        private class FramedCodeVisitor : ExpressionVisitor {
             public override MSAst.Expression Visit(MSAst.Expression node) {
-                FramedCodeExpression framedCode = node as FramedCodeExpression;
-                if (framedCode != null) {
+                if (node is FramedCodeExpression framedCode) {
                     return framedCode.Body;
                 }
                 return base.Visit(node);
             }
         }
 
-        sealed class FramedCodeExpression : MSAst.Expression {
-            private readonly MSAst.Expression _localContext, _codeObject, _body;
+        private sealed class FramedCodeExpression : MSAst.Expression {
+            private readonly MSAst.Expression _localContext, _codeObject;
 
             public FramedCodeExpression(MSAst.Expression localContext, MSAst.Expression codeObject, MSAst.Expression body) {
                 _localContext = localContext;
                 _codeObject = codeObject;
-                _body = body;
+                Body = body;
             }
 
-            public override ExpressionType NodeType {
-                get {
-                    return ExpressionType.Extension;
-                }
-            }
+            public override ExpressionType NodeType => ExpressionType.Extension;
 
-            public MSAst.Expression Body {
-                get {
-                    return _body;
-                }
-            }
+            public MSAst.Expression Body { get; }
 
             public override MSAst.Expression Reduce() {
                 return AstUtils.Try(
@@ -389,7 +333,7 @@ namespace IronPython.Compiler.Ast {
                             _codeObject
                         )
                     ),
-                    _body
+                    Body
                 ).Finally(
                     Ast.Call(
                         FunctionStackVariable,
@@ -405,24 +349,16 @@ namespace IronPython.Compiler.Ast {
                 );
             }
 
-            public override Type Type {
-                get {
-                    return _body.Type;
-                }
-            }
+            public override Type Type => Body.Type;
 
-            public override bool CanReduce {
-                get {
-                    return true;
-                }
-            }
+            public override bool CanReduce => true;
 
             protected override MSAst.Expression VisitChildren(ExpressionVisitor visitor) {
                 var localContext = visitor.Visit(_localContext);
                 var codeObject = visitor.Visit(_codeObject);
-                var body = visitor.Visit(_body);
+                var body = visitor.Visit(Body);
 
-                if (localContext != _localContext || _codeObject != codeObject || body != _body) {
+                if (localContext != _localContext || _codeObject != codeObject || body != Body) {
                     return new FramedCodeExpression(localContext, codeObject, body);
                 }
 
@@ -442,8 +378,7 @@ namespace IronPython.Compiler.Ast {
             Debug.Assert(expression != null);
             Debug.Assert(value != null);
 
-            IPythonVariableExpression pyGlobal = expression as IPythonVariableExpression;
-            if (pyGlobal != null) {
+            if (expression is IPythonVariableExpression pyGlobal) {
                 return pyGlobal.Assign(value);
             }
 
@@ -451,8 +386,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal static MSAst.Expression/*!*/ Delete(MSAst.Expression/*!*/ expression) {
-            IPythonVariableExpression pyGlobal = expression as IPythonVariableExpression;
-            if (pyGlobal != null) {
+            if (expression is IPythonVariableExpression pyGlobal) {
                 return pyGlobal.Delete();
             }
 

@@ -17,9 +17,7 @@ namespace IronPython.Compiler.Ast {
             _names = names;
         }
 
-        public IList<string> Names {
-            get { return _names; }
-        }
+        public IList<string> Names => _names;
 
         public override MSAst.Expression Reduce() {
             // nonlocal statement is Python's specific syntactic sugar.
@@ -32,10 +30,6 @@ namespace IronPython.Compiler.Ast {
             walker.PostWalk(this);
         }
 
-        internal override bool CanThrow {
-            get {
-                return false;
-            }
-        }
+        internal override bool CanThrow => false;
     }
 }

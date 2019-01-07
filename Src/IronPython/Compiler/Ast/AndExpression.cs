@@ -14,29 +14,23 @@ namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
     public class AndExpression : Expression {
-        private readonly Expression _left, _right;
-
         public AndExpression(Expression left, Expression right) {
             ContractUtils.RequiresNotNull(left, nameof(left));
             ContractUtils.RequiresNotNull(right, nameof(right));
 
-            _left = left;
-            _right = right;
+            Left = left;
+            Right = right;
             StartIndex = left.StartIndex;
             EndIndex = right.EndIndex;
         }
 
-        public Expression Left {
-            get { return _left; }
-        }
+        public Expression Left { get; }
 
-        public Expression Right {
-            get { return _right; }
-        } 
+        public Expression Right { get; }
 
         public override MSAst.Expression Reduce() {
-            MSAst.Expression left = _left;
-            MSAst.Expression right = _right;
+            MSAst.Expression left = Left;
+            MSAst.Expression right = Right;
 
             Type t = Type;
             MSAst.ParameterExpression tmp = Ast.Variable(t, "__all__");
@@ -66,21 +60,21 @@ namespace IronPython.Compiler.Ast {
 
         public override Type Type {
             get {
-                return _left.Type == _right.Type ? _left.Type : typeof(object);
+                return Left.Type == Right.Type ? Left.Type : typeof(object);
             }
         }
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                _left?.Walk(walker);
-                _right?.Walk(walker);
+                Left?.Walk(walker);
+                Right?.Walk(walker);
             }
             walker.PostWalk(this);
         }
 
         internal override bool CanThrow {
             get {
-                return _left.CanThrow || _right.CanThrow;
+                return Left.CanThrow || Right.CanThrow;
             }
         }
     }

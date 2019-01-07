@@ -322,7 +322,7 @@ namespace IronPython.Compiler {
                 errorCode |= ErrorCodes.IncompleteStatement;
             }
 
-            string msg = String.Format(System.Globalization.CultureInfo.InvariantCulture, GetErrorMessage(t, errorCode), t.Image);
+            string msg = string.Format(System.Globalization.CultureInfo.InvariantCulture, GetErrorMessage(t, errorCode), t.Image);
 
             ReportSyntaxError(start, end, msg, errorCode);
         }
@@ -373,13 +373,13 @@ namespace IronPython.Compiler {
         }
 
         private string ReadName() {
-            NameToken n = PeekToken() as NameToken;
-            if (n == null) {
-                ReportSyntaxError(_lookahead);
-                return null;
+            if (PeekToken() is NameToken n) {
+                NextToken();
+                return FixName(n.Name);
             }
-            NextToken();
-            return FixName(n.Name);
+
+            ReportSyntaxError(_lookahead);
+            return null;
         }
 
         //stmt: simple_stmt | compound_stmt
@@ -512,7 +512,7 @@ namespace IronPython.Compiler {
             return ret;
         }
 
-        // 'return' [testlist]
+        // return_stmt: 'return' [testlist]
         private Statement ParseReturnStmt() {
             if (CurrentFunction == null) {
                 ReportSyntaxError(IronPython.Resources.MisplacedReturn);
@@ -586,7 +586,7 @@ namespace IronPython.Compiler {
             bool isYieldFrom = false;
             if (MaybeEat(TokenKind.KeywordFrom)) {
                 yieldResult = ParseExpression();
-				yieldResult.SetLoc(_globalParent, start, GetEnd());
+                yieldResult.SetLoc(_globalParent, start, GetEnd());
                 isYieldFrom = true;
             } else {
                 bool trailingComma;
@@ -653,11 +653,7 @@ namespace IronPython.Compiler {
         }
 
         // expr_stmt: testlist_star_expr (augassign (yield_expr|testlist) | ('=' (yield_expr|testlist_star_expr))*)
-        // expr_stmt: testlist (augassign (yield_expr|testlist) | ('=' (yield_expr|testlist))*)
-        // testlist_star_expr: (test|star_expr) (',' (test|star_expr))* [',']
         // augassign: ('+=' | '-=' | '*=' | '@=' | '/=' | '%=' | '&=' | '|=' | '^=' | '<<=' | '>>=' | '**=' | '//=')
-        // testlist: test (',' test)* [',']
-        // star_expr: '*' expr
         private Statement ParseExprStmt() {
             Expression ret = ParseTestListStarExpr();
             if (ret is ErrorExpression) {
@@ -712,7 +708,6 @@ namespace IronPython.Compiler {
             }
         }
 
-
         private PythonOperator GetBinaryOperator(OperatorToken token) {
             switch (token.Kind) {
                 case TokenKind.Add: return PythonOperator.Add;
@@ -728,7 +723,7 @@ namespace IronPython.Compiler {
                 case TokenKind.Power: return PythonOperator.Power;
                 case TokenKind.FloorDivide: return PythonOperator.FloorDivide;
                 default:
-                    string message = String.Format(
+                    string message = string.Format(
                         System.Globalization.CultureInfo.InvariantCulture,
                         Resources.UnexpectedToken,
                         token.Kind);
@@ -736,7 +731,6 @@ namespace IronPython.Compiler {
                     throw new ValueErrorException(message);
             }
         }
-
 
         // import_stmt: 'import' module ['as' name"] (',' module ['as' name])*        
         // name: identifier
@@ -1170,7 +1164,7 @@ namespace IronPython.Compiler {
 
         private void CheckUniqueParameter(HashSet<string> names, string name) {
             if (names.Contains(name)) {
-                ReportSyntaxError(String.Format(
+                ReportSyntaxError(string.Format(
                     System.Globalization.CultureInfo.InvariantCulture,
                     Resources.DuplicateArgumentInFuncDef,
                     name));
@@ -1382,7 +1376,8 @@ namespace IronPython.Compiler {
             ret.SetLoc(_globalParent, start, mid, GetEnd());
             return ret;
         }
-        struct WithItem {
+
+        private readonly struct WithItem {
             public readonly int Start;
             public readonly Expression ContextManager;
             public readonly Expression Variable;
@@ -1786,7 +1781,7 @@ namespace IronPython.Compiler {
             return ret;
         }
 
-        //not_test: 'not' not_test | comparison
+        // not_test: 'not' not_test | comparison
         private Expression ParseNotTest() {
             if (MaybeEat(TokenKind.KeywordNot)) {
                 var start = GetStart();
@@ -1797,8 +1792,9 @@ namespace IronPython.Compiler {
                 return ParseComparison();
             }
         }
-        //comparison: expr (comp_op expr)*
-        //comp_op: '<'|'>'|'=='|'>='|'<='|'!='|'in'|'not' 'in'|'is'|'is' 'not'
+
+        // comparison: expr (comp_op expr)*
+        // comp_op: '<'|'>'|'=='|'>='|'<='|'!='|'in'|'not' 'in'|'is'|'is' 'not'
         private Expression ParseComparison() {
             Expression ret = ParseExpr();
             while (true) {
@@ -1832,19 +1828,13 @@ namespace IronPython.Compiler {
             }
         }
 
-        /*
-        expr: xor_expr ('|' xor_expr)*
-        xor_expr: and_expr ('^' and_expr)*
-        and_expr: shift_expr ('&' shift_expr)*
-        shift_expr: arith_expr (('<<'|'>>') arith_expr)*
-        arith_expr: term (('+'|'-') term)*
-        term: factor (('*'|'/'|'%'|'//') factor)*
-        */
-        private Expression ParseExpr() {
-            return ParseExpr(0);
-        }
-
-        private Expression ParseExpr(int precedence) {
+        // expr: xor_expr ('|' xor_expr)*
+        // xor_expr: and_expr ('^' and_expr)*
+        // and_expr: shift_expr ('&' shift_expr)*
+        // shift_expr: arith_expr (('<<'|'>>') arith_expr)*
+        // arith_expr: term (('+'|'-') term)*
+        // term: factor (('*'|'/'|'%'|'//') factor)*
+        private Expression ParseExpr(int precedence = 0) {
             Expression ret = ParseFactor();
             while (true) {
                 Token t = PeekToken();
@@ -1893,10 +1883,8 @@ namespace IronPython.Compiler {
             if (PeekToken().Kind == TokenKind.Constant) {
                 Token t = PeekToken();
 
-                if (t.Value is BigInteger) {
-                    BigInteger bi = (BigInteger)t.Value;
-                    uint iVal;
-                    if (bi.AsUInt32(out iVal) && iVal == 0x80000000) {
+                if (t.Value is BigInteger bi) {
+                    if (bi.AsUInt32(out uint iVal) && iVal == 0x80000000) {
                         string tokenString = _tokenizer.GetTokenString(); ;
                         Debug.Assert(tokenString.Length > 0);
 
@@ -1924,7 +1912,6 @@ namespace IronPython.Compiler {
             }
             return ret;
         }
-
 
         // primary: atom | attributeref | subscription | slicing | call 
         // atom:    identifier | literal | enclosure 
@@ -1961,14 +1948,10 @@ namespace IronPython.Compiler {
                     NextToken();
                     var start = GetStart();
                     object cv = t.Value;
-                    string cvs = cv as string;
-                    if (cvs != null) {
+                    if (cv is string cvs) {
                         cv = FinishStringPlus(cvs);
-                    } else {
-                        Bytes bytes = cv as Bytes;
-                        if (bytes != null) {
-                            cv = FinishBytesPlus(bytes);
-                        }
+                    } else if (cv is Bytes bytes) {
+                        cv = FinishBytesPlus(bytes);
                     }
 
                     ret = new ConstantExpression(cv);
@@ -1988,8 +1971,7 @@ namespace IronPython.Compiler {
             Token t = PeekToken();
             while (true) {
                 if (t is ConstantValueToken) {
-                    string cvs;
-                    if ((cvs = t.Value as String) != null) {
+                    if (t.Value is string cvs) {
                         s += cvs;
                         NextToken();
                         t = PeekToken();
@@ -2007,8 +1989,7 @@ namespace IronPython.Compiler {
             Token t = PeekToken();
             while (true) {
                 if (t is ConstantValueToken) {
-                    Bytes cvs;
-                    if ((cvs = t.Value as Bytes) != null) {
+                    if (t.Value is Bytes cvs) {
                         s = s + cvs;
                         NextToken();
                         t = PeekToken();
@@ -2236,16 +2217,15 @@ namespace IronPython.Compiler {
         }
 
         private Arg FinishKeywordArgument(Expression t) {
-            NameExpression n = t as NameExpression;
-            if (n == null) {
-                ReportSyntaxError(IronPython.Resources.ExpectedName);
-                Arg arg = new Arg(null, t);
-                arg.SetLoc(_globalParent, t.StartIndex, t.EndIndex);
-                return arg;
-            } else {
+            if (t is NameExpression n) {
                 Expression val = ParseExpression();
                 Arg arg = new Arg(n.Name, val);
                 arg.SetLoc(_globalParent, n.StartIndex, val.EndIndex);
+                return arg;
+            } else {
+                ReportSyntaxError(IronPython.Resources.ExpectedName);
+                Arg arg = new Arg(null, t);
+                arg.SetLoc(_globalParent, t.StartIndex, t.EndIndex);
                 return arg;
             }
         }
@@ -2313,8 +2293,7 @@ namespace IronPython.Compiler {
         }
 
         private List<Expression> ParseTestList() {
-            bool tmp;
-            return ParseExpressionList(out tmp);
+            return ParseExpressionList(out _);
         }
 
         private Expression ParseOldExpressionListAsExpr() {
@@ -2613,11 +2592,9 @@ namespace IronPython.Compiler {
         }
 
         private static Statement NestGenExpr(Statement current, Statement nested) {
-            ForStatement fes = current as ForStatement;
-            IfStatement ifs;
-            if (fes != null) {
+            if (current is ForStatement fes) {
                 fes.Body = nested;
-            } else if ((ifs = current as IfStatement) != null) {
+            } else if (current is IfStatement ifs) {
                 ifs.Tests[0].Body = nested;
             }
             return nested;
@@ -3114,10 +3091,8 @@ namespace IronPython.Compiler {
                 Statement s = ParseStmt();
                 l.Add(s);
                 _fromFutureAllowed = false;
-                ExpressionStatement es = s as ExpressionStatement;
-                if (es != null) {
-                    ConstantExpression ce = es.Expression as ConstantExpression;
-                    if (ce != null && ce.Value is string) {
+                if (s is ExpressionStatement es) {
+                    if (es.Expression is ConstantExpression ce && ce.Value is string) {
                         // doc string
                         _fromFutureAllowed = true;
                     }
@@ -3131,8 +3106,7 @@ namespace IronPython.Compiler {
                 while (PeekToken(Tokens.KeywordFromToken)) {
                     Statement s = ParseStmt();
                     l.Add(s);
-                    FromImportStatement fis = s as FromImportStatement;
-                    if (fis != null && !fis.IsFromFuture) {
+                    if (s is FromImportStatement fis && !fis.IsFromFuture) {
                         // end of from __future__
                         break;
                     }
@@ -3153,8 +3127,7 @@ namespace IronPython.Compiler {
             Statement[] stmts = l.ToArray();
 
             if (returnValue && stmts.Length > 0) {
-                ExpressionStatement exprStmt = stmts[stmts.Length - 1] as ExpressionStatement;
-                if (exprStmt != null) {
+                if (stmts[stmts.Length - 1] is ExpressionStatement exprStmt) {
                     var retStmt = new ReturnStatement(exprStmt.Expression);
                     stmts[stmts.Length - 1] = retStmt;
                     retStmt.SetLoc(_globalParent, exprStmt.Expression.IndexSpan);
@@ -3209,8 +3182,6 @@ namespace IronPython.Compiler {
                 throw BadSourceError(bse);
             }
         }
-
-
 
         private Expression ParseTestListAsExpression() {
             StartParsing();
@@ -3268,8 +3239,7 @@ namespace IronPython.Compiler {
         }
 
         private Exception/*!*/ BadSourceError(BadSourceException bse) {
-            StreamReader sr = _sourceReader.BaseReader as StreamReader;
-            if (sr != null && sr.BaseStream.CanSeek) {
+            if (_sourceReader.BaseReader is StreamReader sr && sr.BaseStream.CanSeek) {
                 return PythonContext.ReportEncodingError(sr.BaseStream, _sourceUnit.Path);
 
             }

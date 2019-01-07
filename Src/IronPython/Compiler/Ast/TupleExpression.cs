@@ -27,13 +27,12 @@ namespace IronPython.Compiler.Ast {
             if (Items.Count == 0) {
                 return "can't assign to ()";
             }
-            for (int i = 0; i < Items.Count; i++) {
-                Expression e = Items[i];
-                if (e.CheckAssign() != null) {
+            foreach (Expression item in Items) {
+                if (item.CheckAssign() != null) {
                     // we don't return the same message here as CPython doesn't seem to either, 
                     // for example ((yield a), 2,3) = (2,3,4) gives a different error than
                     // a = yield 3 = yield 4.
-                    return "can't assign to " + e.NodeName;
+                    return "can't assign to " + item.NodeName;
                 }
             }
             return null;

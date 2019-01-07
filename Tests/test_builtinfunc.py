@@ -37,6 +37,8 @@ y = 20
 
 import collections
 from functools import cmp_to_key, reduce
+from operator import neg
+import random
 
 from iptest import IronPythonTestCase, is_cli, is_netcoreapp, run_test
 
@@ -308,17 +310,114 @@ class BuiltinsTest2(IronPythonTestCase):
         self.assertTrue(unichr(0) == '\x00')
         self.assertTrue(unichr(max_uni) == max_ok_value)
 
-    def test_max_min(self):
+    def test_max(self):
+        self.assertEqual(max('123123'), '3')
         self.assertTrue(max([1,2,3]) == 3)
         self.assertTrue(max((1,2,3)) == 3)
         self.assertTrue(max(1,2,3) == 3)
-
-        self.assertTrue(min([1,2,3]) == 1)
-        self.assertTrue(min((1,2,3)) == 1)
-        self.assertTrue(min(1,2,3) == 1)
+        self.assertTrue(max((1, 2, 3, 1, 2, 3)) == 3)
+        self.assertEqual(max([1, 2, 3, 1, 2, 3]), 3)
+        self.assertTrue(max(1,2,3) == 3)
+        self.assertTrue(max([], default=1) == 1)
+        self.assertTrue(max((), default=1) == 1)
+        self.assertTrue(max([], default=None) is None)
 
         self.assertEqual(max((1,2), None), (1, 2))
-        self.assertEqual(min((1,2), None), None)
+
+        self.assertEqual(max(1, 2, 3.0), 3.0)
+        self.assertEqual(max(1, 2.0, 3), 3)
+        self.assertEqual(max(1.0, 2, 3), 3)
+
+        self.assertRaises(TypeError, max)
+        self.assertRaises(TypeError, max, 42)
+        self.assertRaises(ValueError, max, ())
+        class BadSeq:
+            def __getitem__(self, index):
+                raise ValueError
+        self.assertRaises(ValueError, max, BadSeq())
+
+        for stmt in (
+            "max(key=int)",                 # no args
+            "max(default=None)",
+            "max(1, 2, default=None)",      # require container for default
+            "max(default=None, key=int)",
+            "max(1, key=int)",              # single arg not iterable
+            "max(1, 2, keystone=int)",      # wrong keyword
+            "max(1, 2, key=int, abc=int)",  # two many keywords
+            "max(1, 2, key=1)",             # keyfunc is not callable
+            ):
+            try:
+                exec(stmt, globals())
+            except TypeError:
+                pass
+            else:
+                self.fail(stmt)
+
+        self.assertEqual(max((1,), key=neg), 1)     # one elem iterable
+        self.assertEqual(max((1,2), key=neg), 1)    # two elem iterable
+        self.assertEqual(max(1, 2, key=neg), 1)     # two elems
+        self.assertEqual(max((), default=None), None)    # zero elem iterable
+        self.assertEqual(min((1,), default=None), 1)     # one elem iterable
+        self.assertEqual(min((1,2), default=None), 1)    # two elem iterable
+        self.assertEqual(max((), default=1, key=neg), 1)
+        self.assertEqual(max((1, 2), default=3, key=neg), 1)
+
+        data = [random.randrange(200) for i in range(100)]
+        keys = dict((elem, random.randrange(50)) for elem in data)
+        f = keys.__getitem__
+        self.assertEqual(max(data, key=f), sorted(reversed(data), key=f)[-1])
+
+
+    def test_min(self):
+        self.assertEqual(min('123123'), '1')
+        self.assertEqual(min(1, 2, 3), 1)
+        self.assertEqual(min((1, 2, 3, 1, 2, 3)), 1)
+        self.assertEqual(min([1, 2, 3, 1, 2, 3]), 1)
+
+        self.assertEqual(min(1, 2, 3.0), 1)
+        self.assertEqual(min(1, 2.0, 3), 1)
+        self.assertEqual(min(1.0, 2, 3), 1.0)
+
+        self.assertRaises(TypeError, min)
+        self.assertRaises(TypeError, min, 42)
+        self.assertRaises(ValueError, min, ())
+        class BadSeq:
+            def __getitem__(self, index):
+                raise ValueError
+        self.assertRaises(ValueError, min, BadSeq())
+
+        for stmt in (
+            "min(key=int)",                 # no args
+            "min(default=None)",
+            "min(1, 2, default=None)",      # require container for default
+            "min(default=None, key=int)",
+            "min(1, key=int)",              # single arg not iterable
+            "min(1, 2, keystone=int)",      # wrong keyword
+            "min(1, 2, key=int, abc=int)",  # two many keywords
+            "min(1, 2, key=1)",             # keyfunc is not callable
+            ):
+            try:
+                exec(stmt, globals())
+            except TypeError:
+                pass
+            else:
+                self.fail(stmt)
+
+        self.assertEqual(min((1,), key=neg), 1)     # one elem iterable
+        self.assertEqual(min((1,2), key=neg), 2)    # two elem iterable
+        self.assertEqual(min(1, 2, key=neg), 2)     # two elems
+
+        self.assertEqual(min((), default=None), None)    # zero elem iterable
+        self.assertEqual(min((1,), default=None), 1)     # one elem iterable
+        self.assertEqual(min((1,2), default=None), 1)    # two elem iterable
+
+        self.assertEqual(min((), default=1, key=neg), 1)
+        self.assertEqual(min((1, 2), default=1, key=neg), 2)
+
+        data = [random.randrange(200) for i in range(100)]
+        keys = dict((elem, random.randrange(50)) for elem in data)
+        f = keys.__getitem__
+        self.assertEqual(min(data, key=f), sorted(data, key=f)[0])
 
     def test_abs(self):
         self.assertRaises(TypeError,abs,None)

@@ -870,6 +870,8 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return new mapobject(context, func, iters);
         }
 
+        private static object UndefinedKeywordArgument = new object();
+
         public static object max(CodeContext/*!*/ context, object x) {
             IEnumerator i = PythonOps.GetEnumerator(x);
             if (!i.MoveNext())
@@ -901,16 +903,27 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 }
                 return ret;
             } else {
-                throw PythonOps.TypeError("max expecting 1 arguments, got 0");
+                throw PythonOps.TypeError("max expected 1 arguments, got 0");
             }
 
         }
 
         public static object max(CodeContext/*!*/ context, object x, [ParamDictionary]IDictionary<object, object> dict) {
             IEnumerator i = PythonOps.GetEnumerator(x);
-            if (!i.MoveNext())
-                throw PythonOps.ValueError(" max() arg is an empty sequence");
-            object method = GetMaxKwArg(dict);
+            
+            var kwargTuple = GetMaxKwArg(dict,isDefaultAllowed:true);
+            object method = kwargTuple.Item1;
+            object def = kwargTuple.Item2;
+
+            if (!i.MoveNext()) {
+                if (def != UndefinedKeywordArgument) return def;
+                throw PythonOps.ValueError("max() arg is an empty sequence");
+            }
+
+            if (method == UndefinedKeywordArgument) {
+                return max(context, x);
+            }
+
             object ret = i.Current;
             object retValue = PythonCalls.Call(context, method, i.Current);
             PythonContext pc = context.LanguageContext;
@@ -925,22 +938,27 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object max(CodeContext/*!*/ context, object x, object y, [ParamDictionary] IDictionary<object, object> dict) {
-            object method = GetMaxKwArg(dict);
+            var kwargTuple = GetMaxKwArg(dict, isDefaultAllowed: false);
+            object method = kwargTuple.Item1;
+
             PythonContext pc = context.LanguageContext;
             return pc.GreaterThan(PythonCalls.Call(context, method, x), PythonCalls.Call(context, method, y)) ? x : y;
         }
 
         public static object max(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
+            var kwargTuple = GetMaxKwArg(dict, isDefaultAllowed: false);
+            object method = kwargTuple.Item1;
             if (args.Length > 0) {
                 int retIndex = 0;
                 if (args.Length == 1) {
                     return max(context, args[retIndex], dict);
                 }
-                object method = GetMaxKwArg(dict);
+                
                 object retValue = PythonCalls.Call(context, method, args[retIndex]);
                 PythonContext pc = context.LanguageContext;
                 for (int i = 1; i < args.Length; i++) {
                     object tmpRetValue = PythonCalls.Call(context, method, args[i]);
+
                     if (pc.GreaterThan(tmpRetValue, retValue)) {
                         retIndex = i;
                         retValue = tmpRetValue;
@@ -948,13 +966,16 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 }
                 return args[retIndex];
             } else {
-                throw PythonOps.TypeError("max expecting 1 arguments, got 0");
+                throw PythonOps.TypeError("max expected 1 arguments, got 0");
             }
         }
 
-        private static object GetMaxKwArg(IDictionary<object, object> dict) {
-            if (dict.Count != 1)
-                throw PythonOps.TypeError(" max() should have only 1 keyword argument, but got {0} keyword arguments", dict.Count);
+        private static Tuple<object, object> GetMaxKwArg(IDictionary<object, object> dict, bool isDefaultAllowed) {
+            if (dict.Count != 1 && dict.Count != 2)
+                throw PythonOps.TypeError("max() should have only 2 keyword arguments, but got {0} keyword arguments", dict.Count);
+            if (dict.Keys.Contains("default") && !isDefaultAllowed) {
+                throw PythonOps.TypeError("Cannot specify a default for max() with multiple positional arguments");
+            }
 
             return VerifyKeys("max", dict);
         }
@@ -989,21 +1010,29 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 }
                 return ret;
             } else {
-                throw PythonOps.TypeError("min expecting 1 arguments, got 0");
+                throw PythonOps.TypeError("min expected 1 arguments, got 0");
             }
         }
 
         public static object min(CodeContext/*!*/ context, object x, [ParamDictionary]IDictionary<object, object> dict) {
             IEnumerator i = PythonOps.GetEnumerator(x);
-            if (!i.MoveNext())
-                throw PythonOps.ValueError(" min() arg is an empty sequence");
-            object method = GetMinKwArg(dict);
+            var kwargTuple = GetMinKwArg(dict, isDefaultAllowed: true);
+            object method = kwargTuple.Item1;
+            object def = kwargTuple.Item2;
+            if (!i.MoveNext()) {
+                if (def != UndefinedKeywordArgument) return def;
+                throw PythonOps.ValueError("min() arg is an empty sequence");
+            }
+            
+            if (method == UndefinedKeywordArgument) {
+                return min(context, x);
+            }
+
             object ret = i.Current;
             object retValue = PythonCalls.Call(context, method, i.Current);
             PythonContext pc = context.LanguageContext;
             while (i.MoveNext()) {
                 object tmpRetValue = PythonCalls.Call(context, method, i.Current);
-
                 if (pc.LessThan(tmpRetValue, retValue)) {
                     ret = i.Current;
                     retValue = tmpRetValue;
@@ -1013,23 +1042,28 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object min(CodeContext/*!*/ context, object x, object y, [ParamDictionary]IDictionary<object, object> dict) {
-            object method = GetMinKwArg(dict);
+            var kwargTuple = GetMinKwArg(dict, isDefaultAllowed: false);
+            object method = kwargTuple.Item1;
             return context.LanguageContext.LessThan(PythonCalls.Call(context, method, x), PythonCalls.Call(context, method, y)) ? x : y;
         }
 
         public static object min(CodeContext/*!*/ context, [ParamDictionary]IDictionary<object, object> dict, params object[] args) {
+            var kwargTuple = GetMinKwArg(dict, isDefaultAllowed: true);
+            object method = kwargTuple.Item1;
+            object def = kwargTuple.Item2;
+
             if (args.Length > 0) {
                 int retIndex = 0;
                 if (args.Length == 1) {
                     return min(context, args[retIndex], dict);
                 }
-                object method = GetMinKwArg(dict);
+                
                 object retValue = PythonCalls.Call(context, method, args[retIndex]);
                 PythonContext pc = context.LanguageContext;
 
                 for (int i = 1; i < args.Length; i++) {
                     object tmpRetValue = PythonCalls.Call(context, method, args[i]);
-
+                    
                     if (pc.LessThan(tmpRetValue, retValue)) {
                         retIndex = i;
                         retValue = tmpRetValue;
@@ -1037,27 +1071,49 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 }
                 return args[retIndex];
             } else {
-                throw PythonOps.TypeError("min expecting 1 arguments, got 0");
+                throw PythonOps.TypeError("min expected 1 arguments, got 0");
             }
         }
 
-        private static object GetMinKwArg([ParamDictionary]IDictionary<object, object> dict) {
-            if (dict.Count != 1)
-                throw PythonOps.TypeError(" min() should have only 1 keyword argument, but got {0} keyword arguments", dict.Count);
+        private static Tuple<object,object> GetMinKwArg([ParamDictionary]IDictionary<object, object> dict, bool isDefaultAllowed) {
+            if (dict.Count != 1 && dict.Count != 2)
+                throw PythonOps.TypeError("min() should have only 2 keyword arguments, but got {0} keyword arguments", dict.Count);
 
+            if (dict.Keys.Contains("default") && !isDefaultAllowed)
+                throw PythonOps.TypeError("Cannot specify a default for min() with multiple positional arguments");
+            
             return VerifyKeys("min", dict);
         }
 
-        private static object VerifyKeys(string name, IDictionary<object, object> dict) {
-            object value;
-            if (!dict.TryGetValue("key", out value)) {
-                ICollection<object> keys = dict.Keys;
-                IEnumerator<object> en = keys.GetEnumerator();
-                if (en.MoveNext()) {
-                    throw PythonOps.TypeError(" {1}() got an unexpected keyword argument ({0})", en.Current, name);
-                }
+        private static Tuple<object, object> VerifyKeys(string name, IDictionary<object, object> dict) {
+            object method;
+            object def;
+
+            int cnt = 0;
+            if (dict.TryGetValue("key", out method)) {
+                cnt++;
+            }else {
+                method = UndefinedKeywordArgument;
             }
-            return value;
+
+            if (dict.TryGetValue("default", out def)) {
+                cnt++;
+            }else {
+                def = UndefinedKeywordArgument;
+            }
+
+            if (dict.Count > 2) {
+                throw PythonOps.TypeError("{1}() takes at most 2 keyword arguments ({0} given)", dict.Count, name);
+            }
+
+            if (dict.Count > cnt) {
+                var key = dict.Keys.Cast<string>().Where(x => x != "default" && x != "key").First();
+                throw PythonOps.TypeError("{1}() got an unexpected keyword argument ({0})", key, name);
+            }
+ 
+            var result = Tuple.Create(method, def);
+
+            return result;
         }
 
         /// <summary>

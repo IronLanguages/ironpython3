@@ -1301,10 +1301,10 @@ namespace IronPython.Compiler {
             node.SetLoc(_globalParent, GetStart(), GetEnd());
         }
 
-        //Python2.5 -> old_lambdef: 'lambda' [varargslist] ':' old_expression
-        private Expression FinishOldLambdef() {
+        // lambdef_nocond: 'lambda' [varargslist] ':' test_nocond
+        private Expression FinishLambdefNoCond() {
             FunctionDefinition func = ParseLambdaHelperStart(null);
-            Expression expr = ParseOldExpression();
+            Expression expr = ParseTestNoCond();
             return ParseLambdaHelperEnd(func, expr);
         }
 
@@ -1314,7 +1314,6 @@ namespace IronPython.Compiler {
             Expression expr = ParseExpression();
             return ParseLambdaHelperEnd(func, expr);
         }
-
 
         // Helpers for parsing lambda expressions. 
         // Usage
@@ -1726,10 +1725,10 @@ namespace IronPython.Compiler {
             }
         }
 
-        // Python 2.5 -> old_test: or_test | old_lambdef
-        private Expression ParseOldExpression() {
+        // test_nocond: or_test | lambdef_nocond
+        private Expression ParseTestNoCond() {
             if (MaybeEat(TokenKind.KeywordLambda)) {
-                return FinishOldLambdef();
+                return FinishLambdefNoCond();
             }
             return ParseOrTest();
         }
@@ -2593,11 +2592,11 @@ namespace IronPython.Compiler {
             return gef;
         }
 
-        //  genexpr_if: "if" old_test
+        //  genexpr_if: "if" test_nocond
         private IfStatement ParseGenExprIf() {
             var start = GetStart();
             Eat(TokenKind.KeywordIf);
-            Expression expr = ParseOldExpression();
+            Expression expr = ParseTestNoCond();
             IfStatementTest ist = new IfStatementTest(expr, null);
             var end = GetEnd();
             ist.HeaderIndex = end;
@@ -2607,12 +2606,9 @@ namespace IronPython.Compiler {
             return gei;
         }
 
-
         // dict_display: '{' [dictorsetmaker] '}'
         // dictorsetmaker: ( (test ':' test (comp_for | (',' test ':' test)* [','])) |
         //                   (test (comp_for | (',' test)* [','])) )
-
-
         private Expression FinishDictOrSetValue() {
             var oStart = GetStart();
             var oEnd = GetEnd();
@@ -2677,7 +2673,6 @@ namespace IronPython.Compiler {
                 _allowIncomplete = prevAllow;
             }
             
-
             var cStart = GetStart();
             var cEnd = GetEnd();
 
@@ -2774,9 +2769,9 @@ namespace IronPython.Compiler {
 
             // expr list is something like:
             //  ()
-            // a
-            // a,b
-            // a,b,c
+            //  a
+            //  a,b
+            //  a,b,c
             // we either want just () or a or we want (a,b) and (a,b,c)
             // so we can do tupleExpr.EmitSet() or loneExpr.EmitSet()
 
@@ -2843,12 +2838,11 @@ namespace IronPython.Compiler {
             return new ListComprehension(item, iters);
         }
 
-        // list_if: 'if' old_test [list_iter]
-        // comp_if: 'if' old_test [comp_iter]
+        // comp_if: 'if' test_nocond [comp_iter]
         private ComprehensionIf ParseCompIf() {
             Eat(TokenKind.KeywordIf);
             var start = GetStart();
-            Expression expr = ParseOldExpression();
+            Expression expr = ParseTestNoCond();
             ComprehensionIf ret = new ComprehensionIf(expr);
 
             ret.SetLoc(_globalParent, start, GetEnd());

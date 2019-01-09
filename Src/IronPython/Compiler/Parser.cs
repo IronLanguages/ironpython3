@@ -2296,32 +2296,6 @@ namespace IronPython.Compiler {
             return ParseExpressionList(out _);
         }
 
-        private Expression ParseOldExpressionListAsExpr() {
-            bool trailingComma;
-            List<Expression> l = ParseOldExpressionList(out trailingComma);
-            //  the case when no expression was parsed e.g. when we have an empty expression list
-            if (l.Count == 0 && !trailingComma) {
-                ReportSyntaxError("invalid syntax");
-            }
-            return MakeTupleOrExpr(l, trailingComma);
-        }
-
-        // old_expression_list: old_expression [(',' old_expression)+ [',']]
-        private List<Expression> ParseOldExpressionList(out bool trailingComma) {
-            List<Expression> l = new List<Expression>();
-            trailingComma = false;
-            while (true) {
-                if (NeverTestToken(PeekToken())) break;
-                l.Add(ParseOldExpression());
-                if (!MaybeEat(TokenKind.Comma)) {
-                    trailingComma = false;
-                    break;
-                }
-                trailingComma = true;
-            }
-            return l;
-        }
-
         // target_list: target ("," target)* [","] 
         private List<Expression> ParseTargetList(out bool trailingComma) {
             List<Expression> l = new List<Expression>();
@@ -2864,54 +2838,9 @@ namespace IronPython.Compiler {
 
         // list_iter ']'
         private ListComprehension FinishListComp(Expression item) {
-            ComprehensionIterator[] iters = ParseListCompIter();
+            ComprehensionIterator[] iters = ParseCompIter();
             Eat(TokenKind.RightBracket);
             return new ListComprehension(item, iters);
-        }
-
-        // list_iter: list_for | list_if
-        private ComprehensionIterator[] ParseListCompIter() {
-            List<ComprehensionIterator> iters = new List<ComprehensionIterator>();
-            ComprehensionFor firstFor = ParseListCompFor();
-            iters.Add(firstFor);
-
-            while (true) {
-                if (PeekToken(Tokens.KeywordForToken)) {
-                    iters.Add(ParseListCompFor());
-                } else if (PeekToken(Tokens.KeywordIfToken)) {
-                    iters.Add(ParseCompIf());
-                } else {
-                    break;
-                }
-            }
-
-            return iters.ToArray();
-        }
-
-        // list_for: 'for' target_list 'in' old_expression_list [list_iter]
-        private ComprehensionFor ParseListCompFor() {
-            Eat(TokenKind.KeywordFor);
-            var start = GetStart();
-            bool trailingComma;
-            List<Expression> l = ParseTargetList(out trailingComma);
-
-            // expr list is something like:
-            //  ()
-            //  a
-            //  a,b
-            //  a,b,c
-            // we either want just () or a or we want (a,b) and (a,b,c)
-            // so we can do tupleExpr.EmitSet() or loneExpr.EmitSet()
-
-            Expression lhs = MakeTupleOrExpr(l, trailingComma);
-            Eat(TokenKind.KeywordIn);
-
-            Expression list = ParseOldExpressionListAsExpr();
-
-            ComprehensionFor ret = new ComprehensionFor(lhs, list);
-
-            ret.SetLoc(_globalParent, start, GetEnd());
-            return ret;
         }
 
         // list_if: 'if' old_test [list_iter]

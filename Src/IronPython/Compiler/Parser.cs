@@ -495,7 +495,7 @@ namespace IronPython.Compiler {
 
         // del_stmt: "del" exprlist
         //  for error reporting reasons we allow any expression and then report the bad
-        //  delete node when it fails.  This is the reason we don't call ParseTargetList.
+        //  delete node when it fails
         private Statement ParseDelStmt() {
             NextToken();
             var start = GetStart();
@@ -1446,13 +1446,13 @@ namespace IronPython.Compiler {
             return null;
         }
 
-        //for_stmt: 'for' target_list 'in' expression_list ':' suite ['else' ':' suite]
+        // for_stmt: 'for' exprlist 'in' testlist ':' suite ['else' ':' suite]
         private ForStatement ParseForStmt() {
             Eat(TokenKind.KeywordFor);
             var start = GetStart();
 
             bool trailingComma;
-            List<Expression> l = ParseTargetList(out trailingComma);
+            List<Expression> l = ParseExprList(out trailingComma);
 
             // expr list is something like:
             //  ()
@@ -2137,7 +2137,6 @@ namespace IronPython.Compiler {
             return ret;
         }
 
-
         // exprlist: (expr|star_expr) (',' (expr|star_expr))* [',']
         // TODO: handle star_expr
         private List<Expression> ParseExprList(out bool trailingComma) {
@@ -2291,48 +2290,6 @@ namespace IronPython.Compiler {
 
             Arg[] ret = l.ToArray();
             return ret;
-        }
-
-        // target_list: target ("," target)* [","] 
-        private List<Expression> ParseTargetList(out bool trailingComma) {
-            List<Expression> l = new List<Expression>();
-            while (true) {
-                l.Add(ParseTarget());
-
-                if (!MaybeEat(TokenKind.Comma)) {
-                    trailingComma = false;
-                    break;
-                }
-
-                trailingComma = true;
-
-                if (NeverTestToken(PeekToken())) break;
-            }
-
-            return l;
-        }
-
-        // target: identifier | "(" target_list ")"  | "[" target_list "]"  | attributeref  | subscription  | slicing 
-        private Expression ParseTarget() {
-            Token t = PeekToken();
-            switch (t.Kind) {
-                case TokenKind.LeftParenthesis: // parenth_form or generator_expression
-                case TokenKind.LeftBracket:     // list_display
-                    Eat(t.Kind);
-
-                    bool trailingComma;
-                    Expression res = MakeTupleOrExpr(ParseTargetList(out trailingComma), trailingComma);
-
-                    if (t.Kind == TokenKind.LeftParenthesis) {
-                        Eat(TokenKind.RightParenthesis);
-                    } else {
-                        Eat(TokenKind.RightBracket);
-                    }
-
-                    return res;
-                default:        // identifier, attribute ref, subscription, slicing
-                    return AddTrailers(ParsePrimary(), false);
-            }
         }
 
         // testlist: test (',' test)* [',']
@@ -2570,12 +2527,12 @@ namespace IronPython.Compiler {
             return nested;
         }
 
-        // "for" target_list "in" or_test
+        // "for" exprlist "in" or_test
         private ForStatement ParseGenExprFor() {
             var start = GetStart();
             Eat(TokenKind.KeywordFor);
             bool trailingComma;
-            List<Expression> l = ParseTargetList(out trailingComma);
+            List<Expression> l = ParseExprList(out trailingComma);
             Expression lhs = MakeTupleOrExpr(l, trailingComma);
             Eat(TokenKind.KeywordIn);
 
@@ -2757,12 +2714,12 @@ namespace IronPython.Compiler {
             return iters.ToArray();
         }
 
-        // comp_for: 'for target_list 'in' or_test [comp_iter]
+        // comp_for: 'for' exprlist 'in' or_test [comp_iter]
         private ComprehensionFor ParseCompFor() {
             Eat(TokenKind.KeywordFor);
             var start = GetStart();
             bool trailingComma;
-            List<Expression> l = ParseTargetList(out trailingComma);
+            List<Expression> l = ParseExprList(out trailingComma);
 
             // expr list is something like:
             //  ()

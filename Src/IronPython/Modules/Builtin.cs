@@ -344,7 +344,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             var pythonContext = context.LanguageContext;
 
             // TODO: remove TrimStart
-            var sourceUnit = pythonContext.CreateSnippet(expression.TrimStart(' ', '\t'), SourceCodeKind.Expression);
+            var sourceUnit = pythonContext.CreateSnippet(expression.TrimStart(' ', '\t'), "<string>", SourceCodeKind.Expression);
             var compilerOptions = GetRuntimeGeneratedCodeCompilerOptions(context, true, 0);
             compilerOptions.Module |= ModuleOptions.LightThrow;
             compilerOptions.Module &= ~ModuleOptions.ModuleBuiltins;

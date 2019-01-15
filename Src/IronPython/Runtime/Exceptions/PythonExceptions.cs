@@ -479,22 +479,15 @@ namespace IronPython.Runtime.Exceptions {
 
         public partial class _SyntaxError : BaseException {
             public override string ToString() {
-                PythonTuple t = ((PythonTuple)args) as PythonTuple;
-                if (t != null) {
-                    switch (t.__len__()) {
-                        case 0: return PythonOps.ToString(null);
-                        case 1: return PythonOps.ToString(t[0]);
-                        case 2:
-                            string msg = t[0] as string;
-                            if (msg != null) {
-                                return msg;
-                            }
-
-                            goto default;
-                        default: return PythonOps.ToString(t);
+                if (filename is string fn) {
+                    if (lineno is int ln) {
+                        return $"{PythonOps.ToString(msg)} ({fn}, line {ln})";
                     }
+                    return $"{PythonOps.ToString(msg)} ({fn})";
+                } else if (lineno is int ln) {
+                    return $"{PythonOps.ToString(msg)} (line {ln})";
                 }
-                return String.Empty;
+                return PythonOps.ToString(msg);
             }
 
             public override void __init__(params object[] args) {
@@ -502,23 +495,18 @@ namespace IronPython.Runtime.Exceptions {
 
                 if (args != null && args.Length != 0) {
                     msg = args[0];
-                    
-                    if (args.Length >= 2) {
-                        // args can be provided either as:
-                        //  (msg, filename, lineno, offset, text, printFileandLineStr)
-                        // or:
-                        //  (msg, (filename, lineno, offset, text, printFileandLineStr))
-                        PythonTuple locationInfo = args[1] as PythonTuple;
-                        if(locationInfo != null) {
-                            if (locationInfo.__len__() != 4) {
-                                throw PythonOps.IndexError("SyntaxError expected tuple with 4 arguments, got {0}", locationInfo.__len__());
-                            }
 
-                            filename = locationInfo[0];
-                            lineno = locationInfo[1];
-                            offset = locationInfo[2];
-                            text = locationInfo[3];
-                        } 
+                    // (msg, (filename, lineno, offset, text))
+                    if (args.Length == 2) {
+                        var locationInfo = PythonTuple.Make(args[1]);
+                        if (locationInfo.__len__() != 4) {
+                            throw PythonOps.IndexError("tuple index out of range");
+                        }
+
+                        filename = locationInfo[0];
+                        lineno = locationInfo[1];
+                        offset = locationInfo[2];
+                        text = locationInfo[3];
                     }
                 }
             }

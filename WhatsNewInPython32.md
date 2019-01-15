@@ -46,7 +46,7 @@ New, Improved, and Deprecated Modules
 - [ ] collections
   - [ ] The collections.Counter class now has two forms of in-place subtraction, the existing -= operator for saturating subtraction and the new subtract() method for regular subtraction. The former is suitable for multisets which only have positive counts, and the latter is more suitable for use cases that allow negative counts.
   - [ ] The collections.OrderedDict class has a new method move_to_end() which takes an existing key and moves it to either the first or last position in the ordered sequence. The default is to move an item to the last position. This is equivalent of renewing an entry with od[k] = od.pop(k). A fast move-to-end operation is useful for resequencing entries. For example, an ordered dictionary can be used to track order of access by aging entries from the oldest to the most recently accessed.
-  - [ ] The collections.deque class grew two new methods count() and reverse() that make them more substitutable for list objects.
+  - [x] The collections.deque class grew two new methods count() and reverse() that make them more substitutable for list objects.
 - [ ] threading
 - [ ] datetime and time
   - [ ] The datetime module has a new type timezone that implements the tzinfo interface by returning a fixed UTC offset and timezone name. This makes it easier to create timezone-aware datetime objects.

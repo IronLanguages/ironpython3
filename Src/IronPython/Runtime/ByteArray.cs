@@ -242,6 +242,10 @@ namespace IronPython.Runtime {
             }
         }
 
+        public void clear() => Clear();
+
+        public ByteArray copy() => CopyThis();
+
         public int count([BytesConversion]IList<byte>/*!*/ sub) {
             return count(sub, 0, _bytes.Count);
         }

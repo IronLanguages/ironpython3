@@ -45,6 +45,11 @@ class FakeTimer:
 
 class TestTimeit(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        # IronPython emits a RuntimeWarning the first time around, run it now to prevent failures
+        timeit.timeit()
+
     def tearDown(self):
         try:
             del timeit._fake_timer

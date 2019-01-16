@@ -43,7 +43,7 @@ namespace IronPython.Modules {
         public static readonly int timezone;
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly PythonTuple tzname;
-        public const bool accept2dyear = true;
+        public const int _STRUCT_TM_ITEMS = 9;
 
         [MultiRuntimeAware]
         private static Stopwatch sw;
@@ -57,7 +57,6 @@ namespace IronPython.Modules {
         }
 
         static PythonTime() {
-
             // altzone, timezone are offsets from UTC in seconds, so they always fit in the
             // -13*3600 to 13*3600 range and are safe to cast to ints
             daylight = TimeZoneInfo.Local.SupportsDaylightSavingTime ? 1 : 0;
@@ -103,6 +102,8 @@ namespace IronPython.Modules {
             InitStopWatch();
             return ((double)sw.ElapsedTicks) / Stopwatch.Frequency;
         }
+
+        public static double perf_counter() => clock();
 
         public static string ctime(CodeContext/*!*/ context) {
             return asctime(context, localtime());
@@ -152,7 +153,6 @@ namespace IronPython.Modules {
         }
 
         public static string strftime(CodeContext/*!*/ context, string format) {
-
             return strftime(context, format, DateTime.Now, null);
         }
 
@@ -183,13 +183,13 @@ namespace IronPython.Modules {
 
                 if (doyIndex != -1 && dowMIndex == -1 && dowSIndex == -1) {
                     res = new DateTime(1900, 1, 1);
-                    res = res.AddDays(Int32.Parse(@string));
+                    res = res.AddDays(int.Parse(@string));
                 } else if (dowMIndex != -1 && doyIndex == -1 && dowSIndex == -1) {
                     res = new DateTime(1900, 1, 1);
-                    res = res.AddDays(Int32.Parse(@string) * 7);
+                    res = res.AddDays(int.Parse(@string) * 7);
                 } else if (dowSIndex != -1 && doyIndex == -1 && dowMIndex == -1) {
                     res = new DateTime(1900, 1, 1);
-                    res = res.AddDays(Int32.Parse(@string) * 7);
+                    res = res.AddDays(int.Parse(@string) * 7);
                 } else {
                     throw PythonOps.ValueError("cannot parse %j, %W, or %U w/ other values");
                 }
@@ -215,7 +215,7 @@ namespace IronPython.Modules {
                     }
                 }
                 var formats =
-                    fIdx == -1 ? new [] { String.Join("", formatParts) } : ExpandMicrosecondFormat(fIdx, formatParts);
+                    fIdx == -1 ? new [] { string.Join("", formatParts) } : ExpandMicrosecondFormat(fIdx, formatParts);
                 try {
                     if (!StringUtils.TryParseDateTimeExact(@string,
                         formats,
@@ -246,33 +246,32 @@ namespace IronPython.Modules {
         private static string[] ExpandMicrosecondFormat(int fIdx, string [] formatParts) {
             // for %f number of digits can be anything between 1 and 6
             string[] formats = new string[6];
-            formats[0] = String.Join("", formatParts);
+            formats[0] = string.Join("", formatParts);
             for (var i = 1; i < 6; i++) {
-                formatParts[fIdx] = new String('f', i+1);
-                formats[i] = String.Join("", formatParts);
+                formatParts[fIdx] = new string('f', i+1);
+                formats[i] = string.Join("", formatParts);
             }
             return formats;
         }
 
         internal static string strftime(CodeContext/*!*/ context, string format, DateTime dt, int? microseconds) {
             bool postProc;
-            FoundDateComponents found;
-            List<FormatInfo> formatInfo = PythonFormatToCLIFormat(format, false, out postProc, out found);
+            List<FormatInfo> formatInfoList = PythonFormatToCLIFormat(format, false, out postProc, out _);
             StringBuilder res = new StringBuilder();
 
-            for (int i = 0; i < formatInfo.Count; i++) {
-                switch (formatInfo[i].Type) {
-                    case FormatInfoType.UserText: res.Append(formatInfo[i].Text); break;
-                    case FormatInfoType.SimpleFormat: res.Append(dt.ToString(formatInfo[i].Text, PythonLocale.GetLocaleInfo(context).Time.DateTimeFormat)); break;
+            foreach (FormatInfo formatInfo in formatInfoList) {
+                switch (formatInfo.Type) {
+                    case FormatInfoType.UserText: res.Append(formatInfo.Text); break;
+                    case FormatInfoType.SimpleFormat: res.Append(dt.ToString(formatInfo.Text, PythonLocale.GetLocaleInfo(context).Time.DateTimeFormat)); break;
                     case FormatInfoType.CustomFormat:
                         // custom format strings need to be at least 2 characters long                        
-                        res.Append(dt.ToString("%" + formatInfo[i].Text, PythonLocale.GetLocaleInfo(context).Time.DateTimeFormat));
+                        res.Append(dt.ToString("%" + formatInfo.Text, PythonLocale.GetLocaleInfo(context).Time.DateTimeFormat));
                         break;
                 }
             }
 
             if (postProc) {
-                res = res.Replace("%f", microseconds != null ? System.String.Format("{0:D6}", microseconds) : "");
+                res = res.Replace("%f", microseconds != null ? string.Format("{0:D6}", microseconds) : "");
 
                 res = res.Replace("%j", dt.DayOfYear.ToString("D03"));  // day of the year (001 - 366)
 
@@ -319,14 +318,13 @@ namespace IronPython.Modules {
         }
 
         private static double GetTimestampFromObject(object seconds) {
-            int intSeconds;
-            if (Converter.TryConvertToInt32(seconds, out intSeconds)) {
+            if (Converter.TryConvertToInt32(seconds, out int intSeconds)) {
                 return intSeconds;
             }
 
             double dblVal;
             if (Converter.TryConvertToDouble(seconds, out dblVal)) {
-                if (dblVal > Int64.MaxValue || dblVal < Int64.MinValue) throw PythonOps.ValueError("unreasonable date/time");
+                if (dblVal > long.MaxValue || dblVal < long.MinValue) throw PythonOps.ValueError("unreasonable date/time");
                 return dblVal;
             }
 
@@ -380,8 +378,8 @@ namespace IronPython.Modules {
         /// which have different defaults from CPython.  Currently we only know that we need to do this for
         /// the year.
         /// </summary>
-        [Flags]       
-        enum FoundDateComponents {
+        [Flags]
+        private enum FoundDateComponents {
             None,
             Year = 0x01,
             Date = (Year),
@@ -392,7 +390,6 @@ namespace IronPython.Modules {
             postProcess = false;
             found = FoundDateComponents.None;
             List<FormatInfo> newFormat = new List<FormatInfo>();
-            
 
             for (int i = 0; i < format.Length; i++) {
                 if (format[i] == '%') {
@@ -547,8 +544,7 @@ namespace IronPython.Modules {
         }
 
         private static DateTime GetDateTimeFromTupleNoDst(CodeContext context, PythonTuple t) {
-            int[] dummy;
-            return GetDateTimeFromTupleNoDst(context, t, out dummy);
+            return GetDateTimeFromTupleNoDst(context, t, out _);
         }
 
         private static DateTime GetDateTimeFromTupleNoDst(CodeContext context, PythonTuple t, out int[] ints) {
@@ -558,7 +554,13 @@ namespace IronPython.Modules {
             }
 
             ints = ValidateDateTimeTuple(context, t);
-            return new DateTime(ints[YearIndex], ints[MonthIndex], ints[DayIndex], ints[HourIndex], ints[MinuteIndex], ints[SecondIndex]);
+
+            var month = ints[MonthIndex];
+            if (month == 0) month = 1;
+            var day = ints[DayIndex];
+            if (day == 0) day = 1;
+
+            return new DateTime(ints[YearIndex], month, day, ints[HourIndex], ints[MinuteIndex], ints[SecondIndex]);
         }
 
         private static int[] ValidateDateTimeTuple(CodeContext/*!*/ context, PythonTuple t) {
@@ -570,7 +572,7 @@ namespace IronPython.Modules {
             }
 
             int year = ints[YearIndex];
-            if (accept2dyear && (year >= 0 && year <= 99)) {
+            if (year >= 0 && year <= 99) {
                 if (year > 68) {
                     year += 1900;
                 } else {
@@ -599,46 +601,21 @@ namespace IronPython.Modules {
 
         [PythonType]
         public class struct_time : PythonTuple {
-            private static PythonType _StructTimeType = DynamicHelpers.GetPythonTypeFromType(typeof(struct_time));
+            private static readonly PythonType _StructTimeType = DynamicHelpers.GetPythonTypeFromType(typeof(struct_time));
 
-            public object tm_year {
-                get { return _data[0]; }
-            }
-            public object tm_mon {
-                get { return _data[1]; }
-            }
-            public object tm_mday {
-                get { return _data[2]; }
-            }
-            public object tm_hour {
-                get { return _data[3]; }
-            }
-            public object tm_min {
-                get { return _data[4]; }
-            }
-            public object tm_sec {
-                get { return _data[5]; }
-            }
-            public object tm_wday {
-                get { return _data[6]; }
-            }
-            public object tm_yday {
-                get { return _data[7]; }
-            }
-            public object tm_isdst {
-                get { return _data[8]; }
-            }
-            public int n_fields {
-                get { return _data.Length; }
-            }
+            public object tm_year => _data[0];
+            public object tm_mon => _data[1];
+            public object tm_mday => _data[2];
+            public object tm_hour => _data[3];
+            public object tm_min => _data[4];
+            public object tm_sec => _data[5];
+            public object tm_wday => _data[6];
+            public object tm_yday => _data[7];
+            public object tm_isdst => _data[8];
 
-            public int n_sequence_fields {
-                get { return _data.Length; }
-            }
-
-            public int n_unnamed_fields {
-                get { return 0; }
-            }
+            public int n_fields => _data.Length;
+            public int n_sequence_fields => _data.Length;
+            public int n_unnamed_fields => 0;
 
             internal struct_time(int year, int month, int day, int hour, int minute, int second, int dayOfWeek, int dayOfYear, int isDst)
                 : base(new object[] { year, month, day, hour, minute, second, dayOfWeek, dayOfYear, isDst }) {
@@ -651,12 +628,11 @@ namespace IronPython.Modules {
             public static struct_time __new__(CodeContext context, PythonType cls, int year, int month, int day, int hour, int minute, int second, int dayOfWeek, int dayOfYear, int isDst) {
                 if (cls == _StructTimeType) {
                     return new struct_time(year, month, day, hour, minute, second, dayOfWeek, dayOfYear, isDst);
-                } else {
-                    struct_time st = cls.CreateInstance(context, year, month, day, hour, minute, second, dayOfWeek, dayOfYear, isDst) as struct_time;
-                    if (st == null)
-                        throw PythonOps.TypeError("{0} is not a subclass of time.struct_time", cls);
+                }
+                if (cls.CreateInstance(context, year, month, day, hour, minute, second, dayOfWeek, dayOfYear, isDst) is struct_time st) {
                     return st;
                 }
+                throw PythonOps.TypeError("{0} is not a subclass of time.struct_time", cls);
             }
 
             public static struct_time __new__(CodeContext context, PythonType cls, [NotNull]PythonTuple sequence) {
@@ -665,13 +641,11 @@ namespace IronPython.Modules {
                 }
                 if (cls == _StructTimeType) {
                     return new struct_time(sequence);
-                } else {
-                    struct_time st = cls.CreateInstance(context, sequence) as struct_time;
-                    if (st == null) {
-                        throw PythonOps.TypeError("{0} is not a subclass of time.struct_time", cls);
-                    }
+                }
+                if (cls.CreateInstance(context, sequence) is struct_time st) {
                     return st;
                 }
+                throw PythonOps.TypeError("{0} is not a subclass of time.struct_time", cls);
             }
 
             public static struct_time __new__(CodeContext context, PythonType cls, [NotNull]IEnumerable sequence) {

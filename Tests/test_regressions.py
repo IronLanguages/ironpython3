@@ -1319,4 +1319,15 @@ class C:
 
         self.assertEquals(42, hash(x()))
 
+    def test_ipy2_gh536(self):
+        """https://github.com/IronLanguages/ironpython2/issues/536"""
+        import ctypes
+        class bar(ctypes.Union):
+            _fields_ = [("t", ctypes.c_uint), ("b", ctypes.c_uint)]
+
+        o = bar()
+        o.t = 1
+        self.assertEqual(1, o.b)
+        self.assertEqual(o.t, o.b)
+
 run_test(__name__)

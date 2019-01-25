@@ -14,7 +14,7 @@
     <BinDir>$(RootDir)bin</BinDir>
     <BuildSysDir>$(RootDir)Build</BuildSysDir>
     <MSBuildCommunityTasksPath>$(RootDir)Util\MSBuildCommunityTasks</MSBuildCommunityTasksPath>
-    <TargetFrameworks Condition="'$(TargetFrameworks)' == ''">net45;netcoreapp2.0;netcoreapp2.1</TargetFrameworks>
+    <TargetFrameworks Condition="'$(TargetFrameworks)' == ''">net45;netcoreapp2.1</TargetFrameworks>
   </PropertyGroup>
 
   <Import Project="$(BuildSysDir)\Tasks.Targets" />

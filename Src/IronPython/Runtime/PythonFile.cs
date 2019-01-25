@@ -1127,7 +1127,8 @@ namespace IronPython.Runtime {
             try {
                 Stream stream;
                 try {
-                    if (Environment.OSVersion.Platform == PlatformID.Win32NT && name == "nul") {
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && name == "nul"
+                        || (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) && name == "/dev/null") {
                         stream = Stream.Null;
                     } else if (buffering <= 0) {
                         stream = context.LanguageContext.DomainManager.Platform.OpenInputFileStream(name, fmode, faccess, fshare);
@@ -1327,6 +1328,8 @@ namespace IronPython.Runtime {
             FileStream fs = stream as FileStream;
             if (fs != null) {
                 name = fs.Name;
+            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                name = "/dev/null";
             } else {
                 name = "nul";
             }

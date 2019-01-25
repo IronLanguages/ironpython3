@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-#if FEATURE_NATIVE || NETCOREAPP2_1
+#if FEATURE_NATIVE
 
 using System;
 using System.Runtime.InteropServices;

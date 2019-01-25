@@ -171,18 +171,22 @@ namespace IronPython.Modules {
             return new Win32Exception(errorCode).Message;
         }
 
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static void FreeLibrary(int handle) {
             FreeLibrary(new IntPtr(handle));
         }
 
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static void FreeLibrary(BigInteger handle) {
             FreeLibrary(new IntPtr((long)handle));
         }
 
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static void FreeLibrary(IntPtr handle) {
             NativeFunctions.FreeLibrary(handle);
         }
 
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static object LoadLibrary(string library, int mode = 0) {
             IntPtr res = NativeFunctions.LoadDLL(library, mode);
             if (res == IntPtr.Zero) {
@@ -444,13 +448,11 @@ namespace IronPython.Modules {
             // we can't support this without a native library
         }
 
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static int set_last_error(int errorCode) {
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
-                int old_errno = NativeFunctions.GetLastError();
-                NativeFunctions.SetLastError(errorCode);
-                return old_errno;
-            }
-            throw PythonOps.NameError("set_last_error");
+            int old_errno = NativeFunctions.GetLastError();
+            NativeFunctions.SetLastError(errorCode);
+            return old_errno;
         }
 
         public static int @sizeof(PythonType/*!*/ type) {

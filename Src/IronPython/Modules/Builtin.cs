@@ -1618,55 +1618,10 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return value;
         }
 
-        [PythonType("zip")]
-        public class zipobject : IEnumerator {
-            private readonly IEnumerator[] enumerators;
-            private object current;
-
-            public zipobject(CodeContext context, object[] iters) {
-                if (iters == null) throw PythonOps.TypeError("zip argument #{0} must support iteration", 1);
-
-                enumerators = new IEnumerator[iters.Length];
-                for (var i = 0; i < iters.Length; i++) {
-                    if (!PythonOps.TryGetEnumerator(context, iters[i], out enumerators[i]))
-                        throw PythonOps.TypeError("zip argument #{0} must support iteration", i + 1);
-                }
+        public static PythonType zip {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(Zip));
             }
-
-            public object Current {
-                get {
-                    if (current == null) throw new InvalidOperationException();
-                    return current;
-                }
-            }
-
-            public bool MoveNext() {
-                if (enumerators.Length > 0 && enumerators[0].MoveNext()) {
-                    var res = new object[enumerators.Length];
-                    res[0] = enumerators[0].Current;
-
-                    for (var i = 1; i < enumerators.Length; i++) {
-                        var enumerator = enumerators[i];
-                        if (!enumerator.MoveNext()) {
-                            current = null;
-                            return false;
-                        }
-
-                        res[i] = enumerator.Current;
-                    }
-
-                    current = PythonTuple.MakeTuple(res);
-                    return true;
-                }
-                current = null;
-                return false;
-            }
-
-            public void Reset() { throw new NotSupportedException(); }
-        }
-
-        public static object zip(CodeContext context, params object[] seqs) {
-            return new zipobject(context, seqs);
         }
 
         public static PythonType BaseException {

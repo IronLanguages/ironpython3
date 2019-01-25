@@ -361,43 +361,10 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        [PythonType("filter")]
-        public class filterobj : IEnumerable {
-            private CodeContext _context;
-            private object _function;
-            private object _list;
-
-            public filterobj(CodeContext context, object function, object list) {
-                _context = context;
-                _function = function;
-                _list = list;
+        public static PythonType filter {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(Filter));
             }
-
-            public IEnumerator GetEnumerator() {
-                if (_function != null && !PythonOps.IsCallable(_context, _function)) {
-                    throw PythonOps.TypeError("'{0}' object is not callable", PythonOps.GetPythonTypeName(_function));
-                }
-
-                IEnumerator e = PythonOps.GetEnumerator(_context, _list);
-                while(e.MoveNext()) {
-                    object o = e.Current;
-                    object t = (_function != null) ? PythonCalls.Call(_context, _function, o) : o;
-
-                    if (PythonOps.IsTrue(t)) {
-                        yield return o;
-                    }
-                }
-            }
-        }
-
-        public static object filter(CodeContext/*!*/ context, object function, object list) {
-            if (list == null) throw PythonOps.TypeError("NoneType is not iterable");
-
-            IEnumerator e;
-            if(!PythonOps.TryGetEnumerator(context, list, out e)) {
-                throw PythonOps.TypeError("'{0}' object is not iterable", PythonOps.GetPythonTypeName(list));
-            }
-            return new filterobj(context, function, list);
         }
 
         public static PythonType @float {
@@ -835,43 +802,10 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             );
         }
 
-        [PythonType("map")]
-        public class mapobject : IEnumerable {
-            private CodeContext _context;
-            private object _func;
-            private object[] _iters;
-
-            public mapobject(CodeContext context, object func, params object[] iters) {
-                _context = context;
-                _func = func;
-                _iters = iters;
+        public static PythonType map {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(Map));
             }
-
-            IEnumerator IEnumerable.GetEnumerator() {
-                IEnumerator[] enumerators = _iters.Select(x => PythonOps.GetEnumerator(x)).ToArray();
-                while (enumerators.All(x => x.MoveNext())) {
-                    yield return PythonOps.CallWithContext(_context, _func, enumerators.Select(x => x.Current).ToArray());
-                }
-            }            
-        }
-
-        public static object map(CodeContext/*!*/ context, object func, params object[] iters) {
-            if(iters.Length == 0) {
-                throw PythonOps.TypeError("map() must have at least two arguments.");
-            }
-
-            if(!PythonOps.IsCallable(context, func)) {
-                throw PythonOps.TypeError("'{0}' object is not callable", PythonOps.GetPythonTypeName(func));
-            }
-
-            foreach(object o in iters) {
-                IEnumerator e;
-                if(!PythonOps.TryGetEnumerator(context, o, out e)) {
-                    throw PythonOps.TypeError("'{0}' object is not iterable", PythonOps.GetPythonTypeName(o));
-                }
-            }
-
-            return new mapobject(context, func, iters);
         }
 
         private static object UndefinedKeywordArgument = new object();
@@ -1684,55 +1618,10 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return value;
         }
 
-        [PythonType("zip")]
-        public class zipobject : IEnumerator {
-            private readonly IEnumerator[] enumerators;
-            private object current;
-
-            public zipobject(CodeContext context, object[] iters) {
-                if (iters == null) throw PythonOps.TypeError("zip argument #{0} must support iteration", 1);
-
-                enumerators = new IEnumerator[iters.Length];
-                for (var i = 0; i < iters.Length; i++) {
-                    if (!PythonOps.TryGetEnumerator(context, iters[i], out enumerators[i]))
-                        throw PythonOps.TypeError("zip argument #{0} must support iteration", i + 1);
-                }
+        public static PythonType zip {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(Zip));
             }
-
-            public object Current {
-                get {
-                    if (current == null) throw new InvalidOperationException();
-                    return current;
-                }
-            }
-
-            public bool MoveNext() {
-                if (enumerators.Length > 0 && enumerators[0].MoveNext()) {
-                    var res = new object[enumerators.Length];
-                    res[0] = enumerators[0].Current;
-
-                    for (var i = 1; i < enumerators.Length; i++) {
-                        var enumerator = enumerators[i];
-                        if (!enumerator.MoveNext()) {
-                            current = null;
-                            return false;
-                        }
-
-                        res[i] = enumerator.Current;
-                    }
-
-                    current = PythonTuple.MakeTuple(res);
-                    return true;
-                }
-                current = null;
-                return false;
-            }
-
-            public void Reset() { throw new NotSupportedException(); }
-        }
-
-        public static object zip(CodeContext context, params object[] seqs) {
-            return new zipobject(context, seqs);
         }
 
         public static PythonType BaseException {

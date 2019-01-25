@@ -1305,5 +1305,10 @@ class C:
         except OverflowError:
             self.fail("Should allow start index greater than int.MaxValue.")
 
+    def test_ipy2_gh528(self):
+        class x(int):
+            def __hash__(self): return 42
+
+        self.assertEquals(42, hash(x()))
 
 run_test(__name__)

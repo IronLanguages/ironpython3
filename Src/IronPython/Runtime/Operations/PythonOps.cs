@@ -2015,7 +2015,7 @@ namespace IronPython.Runtime.Operations {
         public static IEnumerator GetEnumerator(CodeContext/*!*/ context, object o) {
             IEnumerator ie;
             if (!TryGetEnumerator(context, o, out ie)) {
-                throw PythonOps.TypeError("{0} is not iterable", PythonTypeOps.GetName(o));
+                throw TypeErrorForNotIterable(o);
             }
             return ie;
         }
@@ -2028,7 +2028,7 @@ namespace IronPython.Runtime.Operations {
             if (o is PythonType) {
                 var pt = (PythonType)o;
                 if (!pt.IsIterable(context)) {
-                    throw PythonOps.TypeError("'{0}' object is not iterable", PythonTypeOps.GetName(o));
+                    throw TypeErrorForNotIterable(o);
                 }
             }
 

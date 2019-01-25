@@ -16,7 +16,7 @@ using IronPython.Runtime;
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
-    internal class PythonVariable {
+    public class PythonVariable {
 
         public PythonVariable(string name, VariableKind kind, ScopeStatement/*!*/ scope) {
             Assert.NotNull(scope);

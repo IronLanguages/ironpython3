@@ -4,7 +4,7 @@
 
 namespace IronPython.Compiler.Ast {
 
-    internal enum VariableKind {
+    public enum VariableKind {
 
         /// <summary>
         /// Local variable.

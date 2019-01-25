@@ -27,8 +27,8 @@
     <Exec Command="cp $(PackageDebFolder)/DEBIAN/* $(PackageTempFolder)/DEBIAN"/>
 
     <FileUpdate Files="$(PackageTempFolder)/DEBIAN/control"
-          Regex="{xxx}"
-          ReplacementText="$(PackageVersion)" />
+          Expression="{xxx}"
+          Replacement="$(PackageVersion)" />
 
     <ItemGroup>
       <StdLibOutputFiles Include="$(StageDir)/Lib/**/*.py" />

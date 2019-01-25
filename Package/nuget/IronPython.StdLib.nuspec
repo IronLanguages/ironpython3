@@ -22,5 +22,6 @@
   </metadata>
   <files>
     <file src="Lib\**" target="contentFiles\any\any\Lib" />
+    <file src="Lib\**" target="content\Lib" />
   </files>
 </package>

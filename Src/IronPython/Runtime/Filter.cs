@@ -35,7 +35,7 @@ or string, return the same type, else return a list.")]
         IEnumerator IEnumerable.GetEnumerator() {
 
             if (_function != null && !PythonOps.IsCallable(_context, _function)) {
-                throw PythonOps.TypeError("'{0}' object is not callable", PythonOps.GetPythonTypeName(_function));
+                throw PythonOps.UncallableError(_function);
             }
 
             IEnumerator e = PythonOps.GetEnumerator(_context, _iterable);

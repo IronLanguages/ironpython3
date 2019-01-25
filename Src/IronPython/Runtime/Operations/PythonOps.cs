@@ -4035,7 +4035,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static Exception UncallableError(object func) {
-            return PythonOps.TypeError("{0} is not callable", PythonTypeOps.GetName(func));
+            return PythonOps.TypeError("'{0}' object is not callable", PythonTypeOps.GetName(func));
         }
 
         public static Exception TypeErrorForProtectedMember(Type/*!*/ type, string/*!*/ name) {

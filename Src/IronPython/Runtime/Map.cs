@@ -31,7 +31,7 @@ each of the iterables.  Stops when the shortest iterable is exhausted.")]
             }
 
             if(!PythonOps.IsCallable(context, func)) {
-                throw PythonOps.TypeError("'{0}' object is not callable", PythonOps.GetPythonTypeName(func));
+                throw PythonOps.UncallableError(func);
             }
 
             foreach(object o in iters) {

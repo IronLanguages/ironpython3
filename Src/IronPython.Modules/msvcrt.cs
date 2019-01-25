@@ -13,7 +13,7 @@
  *
  * ***********************************************************************/
 
-#if FEATURE_NATIVE || NETCOREAPP2_1
+#if FEATURE_NATIVE
 
 using System;
 using System.ComponentModel;

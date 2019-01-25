@@ -1305,5 +1305,29 @@ class C:
         except OverflowError:
             self.fail("Should allow start index greater than int.MaxValue.")
 
+    def test_ipy2_gh519(self):
+        """https://github.com/IronLanguages/ironpython2/issues/519"""
+        x = set(range(8))
+        x.add(16)
+        x.remove(0)
+        self.assertTrue(16 in x)
+        self.assertTrue(16 in set(x))
+
+    def test_ipy2_gh528(self):
+        class x(int):
+            def __hash__(self): return 42
+
+        self.assertEquals(42, hash(x()))
+
+    def test_ipy2_gh536(self):
+        """https://github.com/IronLanguages/ironpython2/issues/536"""
+        import ctypes
+        class bar(ctypes.Union):
+            _fields_ = [("t", ctypes.c_uint), ("b", ctypes.c_uint)]
+
+        o = bar()
+        o.t = 1
+        self.assertEqual(1, o.b)
+        self.assertEqual(o.t, o.b)
 
 run_test(__name__)

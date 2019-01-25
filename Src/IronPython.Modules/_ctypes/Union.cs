@@ -4,8 +4,6 @@
 
 #if FEATURE_CTYPES
 
-using System;
-
 using IronPython.Runtime;
 using IronPython.Runtime.Types;
 
@@ -16,8 +14,11 @@ namespace IronPython.Modules {
     public static partial class CTypes {        
         [PythonType("Union")]
         public abstract class _Union : CData {
+            public void __init__(CodeContext/*!*/ context) {
+                _memHolder = new MemoryHolder(Size);
+            }
         }
     }
-
 }
+
 #endif

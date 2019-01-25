@@ -4,6 +4,6 @@
     <ItemGroup>
       <ZipFiles Include="$(StageDir)\**\*.*" Exclude="$(StageDir)\**\IronPythonTest.*" />
     </ItemGroup>
-    <Zip ZipLevel="9" Files="@(ZipFiles)" ZipFileName="$(PackageDir)\IronPython.$(PackageVersion).zip" WorkingDirectory="$(StageDir)" />
+    <Zip Files="@(ZipFiles)" ZipFileName="$(PackageDir)\IronPython.$(PackageVersion).zip" WorkingDirectory="$(StageDir)" />
   </Target>
 </Project>

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <UsingTask TaskName="Zip" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+    <ParameterGroup>
+      <ZipFileName ParameterType="System.String" Required="true" />
+      <Files ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <WorkingDirectory ParameterType="System.String" Required="false" />
+    </ParameterGroup>
+    <Task>
+      <Reference Include="System.IO.Compression" />
+      <Using Namespace="System.IO.Compression" />
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+        var cwd = string.Empty;
+        try {
+          if(!string.IsNullOrWhiteSpace(WorkingDirectory)) {
+            if(!Directory.Exists(WorkingDirectory)) {
+              Log.LogError(string.Format("{0} doesn't exist", WorkingDirectory));
+              return false;
+            }
+            cwd = Environment.CurrentDirectory;
+            Environment.CurrentDirectory = WorkingDirectory;
+          }
+          using (Stream zipStream = new FileStream(Path.GetFullPath(ZipFileName), FileMode.Create, FileAccess.Write))
+          using (ZipArchive archive = new ZipArchive(zipStream, ZipArchiveMode.Create)) {
+            foreach (ITaskItem fileItem in Files) {
+              string filename = fileItem.ItemSpec;
+              using (Stream fileStream = new FileStream(filename, FileMode.Open, FileAccess.Read))
+              using (Stream fileStreamInZip = archive.CreateEntry(new FileInfo(filename).Name).Open())
+                fileStream.CopyTo(fileStreamInZip);
+            }
+          }       
+          return true;
+        } catch (Exception ex) {
+          Log.LogErrorFromException(ex);
+          return false;
+        } finally {
+          if(!string.IsNullOrWhiteSpace(cwd)) {
+            Environment.CurrentDirectory = cwd;          
+          }
+        }
+        ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
+  <UsingTask TaskName="FileUpdate" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+    <ParameterGroup>
+      <Files ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <Expression ParameterType="System.String" Required="true" />
+      <Replacement ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System.Text.RegularExpressions" />
+      <Code Type="Fragment" Language="cs">
+	<![CDATA[
+	try {
+	  System.Text.RegularExpressions.Regex replaceRegex = new System.Text.RegularExpressions.Regex(Expression);
+	  foreach(ITaskItem item in Files) {
+	    string fileName = item.ItemSpec;
+	    Log.LogMessage(string.Format("Updating File \"{0}\".", fileName));
+	    string buffer = File.ReadAllText(fileName);
+	    buffer = replaceRegex.Replace(buffer, Replacement);
+	    File.WriteAllText(fileName, buffer);
+	  }
+	} catch(Exception ex) {
+          Log.LogErrorFromException(ex);
+          return false;
+	} 
+	return true;
+	]]>
+      </Code>
+    </Task>
+  </UsingTask>
+</Project>

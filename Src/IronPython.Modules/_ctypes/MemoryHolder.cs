@@ -268,7 +268,7 @@ namespace IronPython.Modules {
         /// Copies the data in data into this MemoryHolder.
         /// </summary>
         public void CopyFrom(IntPtr source, IntPtr size) {
-            NativeFunctions.CopyMemory(_data, source, size);
+            NativeFunctions.MemCopy(_data, source, size);
             GC.KeepAlive(this);
         }
 
@@ -296,7 +296,7 @@ namespace IronPython.Modules {
         /// operation.
         /// </summary>
         public void CopyTo(MemoryHolder/*!*/ destAddress, int writeOffset, int size) {
-            NativeFunctions.CopyMemory(destAddress._data.Add(writeOffset), _data, new IntPtr(size));
+            NativeFunctions.MemCopy(destAddress._data.Add(writeOffset), _data, new IntPtr(size));
             GC.KeepAlive(destAddress);
             GC.KeepAlive(this);
         }

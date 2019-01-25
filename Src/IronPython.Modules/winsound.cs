@@ -16,7 +16,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 
-#if FEATURE_NATIVE || NETCOREAPP2_1
+#if FEATURE_NATIVE
 [assembly: PythonModule("winsound", typeof(IronPython.Modules.PythonWinsoundModule), PlatformsAttribute.PlatformFamily.Windows)]
 namespace IronPython.Modules {
     public static class PythonWinsoundModule {

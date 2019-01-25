@@ -14,18 +14,15 @@
     <BinDir>$(RootDir)bin</BinDir>
     <BuildSysDir>$(RootDir)Build</BuildSysDir>
     <MSBuildCommunityTasksPath>$(RootDir)Util\MSBuildCommunityTasks</MSBuildCommunityTasksPath>
-    <TargetFrameworks Condition="'$(TargetFrameworks)' == ''">net45;netcoreapp2.0;netcoreapp2.1</TargetFrameworks>
+    <TargetFrameworks Condition="'$(TargetFrameworks)' == ''">net45;netcoreapp2.1</TargetFrameworks>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildCommunityTasksPath)\MSBuild.Community.Tasks.Targets" />
+  <Import Project="$(BuildSysDir)\Tasks.Targets" />
   <Import Project="$(MSBuildThisFileDirectory)\CurrentVersion.props" />
 
   <PropertyGroup>
     <PackageVersion Condition="'$(ReleaseLevel)' == 'final'">$(MajorVersion).$(MinorVersion).$(MicroVersion)</PackageVersion>
     <PackageVersion Condition="'$(ReleaseLevel)' != 'final' or '$(ReleaseSerial)' != '0'">$(MajorVersion).$(MinorVersion).$(MicroVersion)-$(ReleaseLevel)$(ReleaseSerial)</PackageVersion>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <StageDir>$(RootDir)Package\$(Configuration)\Stage\IronPython-$(PackageVersion)</StageDir>
     <PackageDir>$(RootDir)Package\$(Configuration)\Packages\IronPython-$(PackageVersion)</PackageDir>
   </PropertyGroup>
@@ -122,7 +119,7 @@
     <ItemGroup>
       <StdLibFiles Include="$(StageDir)\Lib\**\*.*" />
     </ItemGroup>
-    <Zip ZipLevel="9" Files="@(StdLibFiles)" ZipFileName="$(PackageDir)\IronPython.StdLib.$(PackageVersion).zip" WorkingDirectory="$(StageDir)\Lib"/>
+    <Zip Files="@(StdLibFiles)" ZipFileName="$(PackageDir)\IronPython.StdLib.$(PackageVersion).zip" WorkingDirectory="$(StageDir)\Lib"/>
   </Target>
 
   <PropertyGroup>

@@ -361,43 +361,10 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        [PythonType("filter")]
-        public class filterobj : IEnumerable {
-            private CodeContext _context;
-            private object _function;
-            private object _list;
-
-            public filterobj(CodeContext context, object function, object list) {
-                _context = context;
-                _function = function;
-                _list = list;
+        public static PythonType filter {
+            get {
+                return DynamicHelpers.GetPythonTypeFromType(typeof(Filter));
             }
-
-            public IEnumerator GetEnumerator() {
-                if (_function != null && !PythonOps.IsCallable(_context, _function)) {
-                    throw PythonOps.TypeError("'{0}' object is not callable", PythonOps.GetPythonTypeName(_function));
-                }
-
-                IEnumerator e = PythonOps.GetEnumerator(_context, _list);
-                while(e.MoveNext()) {
-                    object o = e.Current;
-                    object t = (_function != null) ? PythonCalls.Call(_context, _function, o) : o;
-
-                    if (PythonOps.IsTrue(t)) {
-                        yield return o;
-                    }
-                }
-            }
-        }
-
-        public static object filter(CodeContext/*!*/ context, object function, object list) {
-            if (list == null) throw PythonOps.TypeError("NoneType is not iterable");
-
-            IEnumerator e;
-            if(!PythonOps.TryGetEnumerator(context, list, out e)) {
-                throw PythonOps.TypeError("'{0}' object is not iterable", PythonOps.GetPythonTypeName(list));
-            }
-            return new filterobj(context, function, list);
         }
 
         public static PythonType @float {

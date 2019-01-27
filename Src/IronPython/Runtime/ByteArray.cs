@@ -917,18 +917,40 @@ namespace IronPython.Runtime {
             return new ByteArray(bytes);
         }
 
-        public static ByteArray operator *(ByteArray x, int y) {
-            lock (x) {
-                if (y == 1) {
-                    return x.CopyThis();
+        private static ByteArray MultiplyWorker(ByteArray self, int count) {
+            lock (self) {
+                if (count == 1) {
+                    return self.CopyThis();
                 }
 
-                return new ByteArray(x._bytes.Multiply(y));
+                return new ByteArray(self._bytes.Multiply(count));
             }
         }
 
-        public static ByteArray operator *(int x, ByteArray y) {
-            return y * x;
+        public static ByteArray operator *([NotNull]ByteArray self, int count) => MultiplyWorker(self, count);
+
+        public static object operator *([NotNull]ByteArray self, [NotNull]Index count)
+            => PythonOps.MultiplySequence(MultiplyWorker, self, count, true);
+
+        public static ByteArray operator *([NotNull]ByteArray self, object count) {
+            if (Converter.TryConvertToIndex(count, out int index)) {
+                return self * index;
+            }
+
+            throw PythonOps.TypeErrorForUnIndexableObject(count);
+        }
+
+        public static ByteArray operator *(int count, [NotNull]ByteArray self) => MultiplyWorker(self, count);
+
+        public static object operator *([NotNull]Index count, [NotNull]ByteArray self)
+            => PythonOps.MultiplySequence(MultiplyWorker, self, count, false);
+
+        public static ByteArray operator *(object count, [NotNull]ByteArray self) {
+            if (Converter.TryConvertToIndex(count, out int index)) {
+                return index * self;
+            }
+
+            throw PythonOps.TypeErrorForUnIndexableObject(count);
         }
 
         public static bool operator >(ByteArray/*!*/ x, ByteArray y) {
@@ -1129,6 +1151,15 @@ namespace IronPython.Runtime {
                         SliceNoStep(start, stop, list);
                     }
                 }
+            }
+        }
+
+        public object this[object index] {
+            get {
+                return this[Converter.ConvertToIndex(index)];
+            }
+            set {
+                this[Converter.ConvertToIndex(index)] = value;
             }
         }
 

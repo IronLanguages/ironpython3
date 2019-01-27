@@ -366,7 +366,7 @@ namespace IronPython.Runtime {
                     return res.Value;
                 }
 
-                throw PythonOps.TypeError("__index__ returned bad value: {0}", DynamicHelpers.GetPythonType(index).Name);
+                throw PythonOps.TypeError("__index__ returned non-int (type {0})", DynamicHelpers.GetPythonType(index).Name);
             }
 
             throw PythonOps.TypeError("expected index value, got {0}", DynamicHelpers.GetPythonType(value).Name);

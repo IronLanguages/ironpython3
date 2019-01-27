@@ -697,16 +697,39 @@ namespace IronPython.Runtime {
             return other + self.ToString();
         }
 
-        public static Bytes/*!*/ operator *(Bytes/*!*/ x, int y) {
-            if (y == 1) {
-                return x;
+        private static Bytes MultiplyWorker(Bytes self, int count) {
+            if (count == 1) {
+                return self;
             }
 
-            return new Bytes(x._bytes.Multiply(y));
+            return new Bytes(self._bytes.Multiply(count));
         }
 
-        public static Bytes/*!*/ operator *(int x, Bytes/*!*/ y) {
-            return y * x;
+        public static Bytes operator *([NotNull]Bytes self, int count) => MultiplyWorker(self, count);
+
+        public static object operator *([NotNull]Bytes self, [NotNull]Index count)
+            => PythonOps.MultiplySequence(MultiplyWorker, self, count, true);
+
+
+        public static Bytes operator *([NotNull]Bytes self, object count) {
+            if (Converter.TryConvertToIndex(count, out int index)) {
+                return self * index;
+            }
+
+            throw PythonOps.TypeErrorForUnIndexableObject(count);
+        }
+
+        public static Bytes operator *(int count, [NotNull]Bytes self) => MultiplyWorker(self, count);
+
+        public static object operator *([NotNull]Index count, [NotNull]Bytes self)
+            => PythonOps.MultiplySequence(MultiplyWorker, self, count, false);
+
+        public static Bytes operator *(object count, [NotNull]Bytes self) {
+            if (Converter.TryConvertToIndex(count, out int index)) {
+                return index * self;
+            }
+
+            throw PythonOps.TypeErrorForUnIndexableObject(count);
         }
 
         public static bool operator >(Bytes/*!*/ x, Bytes/*!*/ y) {
@@ -737,7 +760,7 @@ namespace IronPython.Runtime {
             return x._bytes.Compare(y._bytes) <= 0;
         }
 
-        public object this[CodeContext/*!*/ context, int index] {
+        public object this[int index] {
             get {
                 return (int)_bytes[PythonOps.FixIndex(index, _bytes.Length)];
             }
@@ -747,11 +770,11 @@ namespace IronPython.Runtime {
             }
         }
 
-        public object this[CodeContext/*!*/ context, BigInteger index] {
+        public object this[BigInteger index] {
             get {
                 int iVal;
                 if (index.AsInt32(out iVal)) {
-                    return this[context, iVal];
+                    return this[iVal];
                 }
 
                 throw PythonOps.IndexError("cannot fit long in index");
@@ -766,6 +789,15 @@ namespace IronPython.Runtime {
                 }
 
                 return new Bytes(res.ToArray());
+            }
+        }
+
+        public object this[object index] {
+            get {
+                return this[Converter.ConvertToIndex(index)];
+            }
+            set {
+                this[Converter.ConvertToIndex(index)] = value;
             }
         }
 

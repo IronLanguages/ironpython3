@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -277,6 +278,7 @@ namespace IronPython.Modules {
             private int _buffer_size = 8192;
             private bool _use_foreign_dtd = true;
             private bool _parsing_done = false;
+
             public object buffer_size {
                 get => _buffer_size;
                 set {
@@ -349,9 +351,7 @@ namespace IronPython.Modules {
 
             public long CurrentByteIndex { get; private set; } = 0;
 
-            private void parse(CodeContext context, TextReader textReader) {
-                var settings = new XmlReaderSettings() { DtdProcessing = DtdProcessing.Parse, XmlResolver = null };
-                xmlReader = XmlReader.Create(textReader, settings);
+            private void parse(CodeContext context) {
                 try {
                     while (xmlReader.Read()) {
                         switch (xmlReader.NodeType) {
@@ -577,18 +577,36 @@ namespace IronPython.Modules {
                 XmlDeclHandler?.Invoke(version, encoding, standalone);
             }
 
-            private readonly StringBuilder buffer = new StringBuilder();
+            private MemoryStream buffer = new MemoryStream();
 
-            public void Parse(CodeContext context, string data, bool isfinal = false) {
+            public void Parse(CodeContext context, [BytesConversion]IList<byte> data, bool isfinal = false) {
                 CheckParsingDone(context);
 
-                buffer.Append(data);
-                if (isfinal) {
-                    using (var reader = new StringReader(buffer.ToString())) {
-                        parse(context, reader);
+                if (data.Any()) {
+                    byte[] bytes;
+                    switch (data) {
+                        case Bytes b:
+                            bytes = b.GetUnsafeByteArray();
+                            break;
+                        case byte[] b:
+                            bytes = b;
+                            break;
+                        default:
+                            bytes = data.ToArray();
+                            break;
                     }
+
+                    buffer.Write(bytes, 0, bytes.Length);
+                }
+
+                if (isfinal) {
+                    buffer.Seek(0, SeekOrigin.Begin);
+                    var settings = new XmlReaderSettings() { DtdProcessing = DtdProcessing.Parse, XmlResolver = null };
+                    xmlReader = XmlReader.Create(buffer, settings);
+                    parse(context);
                     _parsing_done = true;
-                    buffer.Clear();
+                    xmlReader.Dispose();
+                    buffer.Dispose();
                 }
             }
 
@@ -601,13 +619,16 @@ namespace IronPython.Modules {
                 if (!(PythonOps.CallWithContext(context, _readMethod) is string data)) throw PythonOps.TypeError("read() did not return a string object");
 
                 using (var reader = new StringReader(data)) {
-                    parse(context, reader);
+                    var settings = new XmlReaderSettings() { DtdProcessing = DtdProcessing.Parse, XmlResolver = null };
+                    xmlReader = XmlReader.Create(reader, settings);
+                    parse(context);
+                    _parsing_done = true;
+                    xmlReader.Dispose();
                 }
-                _parsing_done = true;
             }
 
             private void CheckParsingDone(CodeContext context) {
-                if(_parsing_done) {
+                if (_parsing_done) {
                     throw Error(context, XmlErrors.XML_ERROR_FINISHED);
                 }
             }

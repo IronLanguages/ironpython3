@@ -510,7 +510,7 @@ namespace IronPython.Modules {
                 object setter;
                 if (PythonOps.TryGetBoundAttr(buf, "__setitem__", out setter)) {
                     for (int i = 0; i < data.Count; i++) {
-                        PythonOps.CallWithContext(context, setter, i, data[context, i]);
+                        PythonOps.CallWithContext(context, setter, i, data[i]);
                     }
                     GC.KeepAlive(this);
                     return data.Count;

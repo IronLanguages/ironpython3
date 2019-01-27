@@ -746,7 +746,7 @@ namespace IronPython.Runtime.Binding {
                 !PythonOps.IsNonExtensibleNumericType(types[1].GetLimitType())) {
                 // class M:
                 //      def __rmul__(self, other):
-                //          print "CALLED"
+                //          print("CALLED")
                 //          return 1
                 //
                 // print [1,2] * M()
@@ -799,9 +799,12 @@ namespace IronPython.Runtime.Binding {
         }
 
         private static bool IsSequence(DynamicMetaObject/*!*/ metaObject) {
-            if (typeof(PythonList).IsAssignableFrom(metaObject.GetLimitType()) ||
-                typeof(PythonTuple).IsAssignableFrom(metaObject.GetLimitType()) ||
-                typeof(string).IsAssignableFrom(metaObject.GetLimitType())) {
+            var limitType = metaObject.GetLimitType();
+            if (typeof(PythonList).IsAssignableFrom(limitType) ||
+                typeof(PythonTuple).IsAssignableFrom(limitType) ||
+                typeof(ByteArray).IsAssignableFrom(limitType) ||
+                typeof(Bytes).IsAssignableFrom(limitType) ||
+                typeof(string).IsAssignableFrom(limitType)) {
                 return true;
             }
             return false;

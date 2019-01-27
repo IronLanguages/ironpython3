@@ -1,6 +1,7 @@
 import unittest
 from test import support
 import operator
+import sys
 maxsize = support.MAX_Py_ssize_t
 
 class newstyle:
@@ -71,6 +72,7 @@ class BaseTestCase(unittest.TestCase):
         self.assertIs(type(direct_index), int)
         #self.assertIs(type(operator_index), int)
 
+    @unittest.skipIf(sys.implementation.name == 'ironpython', "https://github.com/IronLanguages/ironpython3/issues/524")
     def test_index_returns_int_subclass(self):
         class BadInt:
             def __index__(self):

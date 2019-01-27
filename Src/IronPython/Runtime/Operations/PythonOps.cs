@@ -4047,19 +4047,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static Exception TypeErrorForUnIndexableObject(object o) {
-            IPythonObject ipo;
-            if (o == null) {
-                return PythonOps.TypeError("'NoneType' object cannot be interpreted as an index");
-            } else if ((ipo = o as IPythonObject) != null) {
-                return TypeError("'{0}' object cannot be interpreted as an index", ipo.PythonType.Name);
-            }
-
-            return TypeError("object cannot be interpreted as an index");
-        }
-
-        [Obsolete("no longer used anywhere")]
-        public static Exception/*!*/ TypeErrorForBadDictionaryArgument(PythonFunction/*!*/ f) {
-            return PythonOps.TypeError("{0}() argument after ** must be a dictionary", f.__name__);
+            return TypeError("'{0}' object cannot be interpreted as an integer", DynamicHelpers.GetPythonType(o).Name);
         }
 
         public static T TypeErrorForBadEnumConversion<T>(object value) {

@@ -1305,6 +1305,28 @@ class C:
         except OverflowError:
             self.fail("Should allow start index greater than int.MaxValue.")
 
+    def test_ipy2_gh504(self):
+        """https://github.com/IronLanguages/ironpython2/issues/504"""
+        from xml.etree import ElementTree as ET
+        text = ET.fromstring(b"<root>hyv\xc3\xa4</root>").text
+        self.assertEqual(text, u"hyv\xe4")
+
+    def test_ipy2_gh505(self):
+        """https://github.com/IronLanguages/ironpython2/issues/505"""
+        from xml.etree import ElementTree as ET
+        text = ET.fromstring("<root>  \n<child>test</child>\n</root>").text
+        self.assertEqual(text, "  \n")
+
+    def test_ipy2_gh507(self):
+        """https://github.com/IronLanguages/ironpython2/issues/507"""
+        from xml.etree import ElementTree as ET
+        root = ET.fromstring("""<root xmlns="default" xmlns:prefix="http://uri">
+  <child>default namespace</child>
+  <prefix:child>namespace "prefix"</prefix:child>
+</root>""")
+        self.assertEqual((root.tag, root.attrib), ("{default}root", {}))
+        self.assertEqual([(child.tag, child.attrib) for child in root], [("{default}child", {}), ("{http://uri}child", {})])
+
     def test_ipy2_gh519(self):
         """https://github.com/IronLanguages/ironpython2/issues/519"""
         x = set(range(8))
@@ -1312,6 +1334,16 @@ class C:
         x.remove(0)
         self.assertTrue(16 in x)
         self.assertTrue(16 in set(x))
+
+    @unittest.skipIf(is_netcoreapp, 'https://github.com/IronLanguages/ironpython2/issues/524')
+    def test_ipy2_gh522(self):
+        """https://github.com/IronLanguages/ironpython2/issues/522"""
+        import sqlite3
+        conn = sqlite3.connect(":memory:")
+        c = conn.cursor()
+        c.execute("CREATE TABLE test (test BLOB);")
+        c.execute("INSERT INTO test (test) VALUES (x'');")
+        self.assertEqual(len(c.execute("SELECT * FROM test;").fetchone()[0]), 0)
 
     def test_ipy2_gh528(self):
         class x(int):

@@ -319,7 +319,7 @@ namespace IronPython.Modules {
 
         [DllImport("kernel32.dll", EntryPoint = "CreatePipe")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool CreatePipePI(out IntPtr hReadPipe, out IntPtr hWritePipe,
+        private static extern bool CreatePipePI(out IntPtr hReadPipe, out IntPtr hWritePipe,
             ref SECURITY_ATTRIBUTES lpPipeAttributes, uint nSize);
 
         [DllImport("kernel32.dll", SetLastError = true, EntryPoint = "DuplicateHandle")]

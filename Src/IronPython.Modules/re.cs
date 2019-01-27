@@ -1194,7 +1194,7 @@ namespace IronPython.Modules {
                 case ArrayModule.array array:
                     return Bytes.Make(array.ToByteArray()).ToString();
 #if FEATURE_MMAP
-                case MmapModule.mmap mmapFile:
+                case MmapModule.MmapDefault mmapFile:
                     return mmapFile.GetSearchString();
 #endif
                 default:

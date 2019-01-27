@@ -224,7 +224,7 @@ static int sqlite3_os_type = 0;
       //  sqlite3_os_type = sInfo.dwPlatformId == VER_PLATFORM_WIN32_NT ? 2 : 1;
       //}
       //return sqlite3_os_type == 2;
-      return Environment.OSVersion.Platform >= PlatformID.Win32NT;
+      return Environment.OSVersion.Platform == PlatformID.Win32NT;
     }
 #endif // * SQLITE_OS_WINCE */
 

@@ -1381,17 +1381,30 @@ namespace IronPython.Modules {
         }
 
 #if FEATURE_PROCESS
+
+        [DllImport("libc", SetLastError = true, EntryPoint = "kill")]
+        private static extern int sys_kill(int pid, int sig);
+
+
         [Documentation(@"Send signal sig to the process pid. Constants for the specific signals available on the host platform 
 are defined in the signal module.")]
         public static void kill(CodeContext/*!*/ context, int pid, int sig) {
-            if (PythonSignal.NativeSignal.GenerateConsoleCtrlEvent((uint)sig, (uint)pid)) return;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
+                RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                if (sys_kill(pid, sig) == 0) return;
 
-            //If the calls to GenerateConsoleCtrlEvent didn't work, simply
-            //forcefully kill the process.
-            Process toKill = Process.GetProcessById(pid);
-            toKill.Kill();
-            return;
+                var error = Marshal.GetLastWin32Error();
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, error, strerror(error));
+            } else {
+                if (PythonSignal.NativeSignal.GenerateConsoleCtrlEvent((uint)sig, (uint)pid)) return;
+
+                // If the calls to GenerateConsoleCtrlEvent didn't work, simply
+                // forcefully kill the process.
+                Process toKill = Process.GetProcessById(pid);
+                toKill.Kill();
+            }
         }
+
 #endif
 
         public const int O_APPEND = 0x8;

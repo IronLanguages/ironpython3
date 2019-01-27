@@ -272,7 +272,7 @@ namespace IronPython.Hosting {
                 foreach (string file in Directory.EnumerateFiles(dir, "*.dll")) {
                     if(file.ToLower().EndsWith(".dll")) {
                         try {
-                            ClrModule.AddReference(PythonContext.SharedContext, new FileInfo(file).Name);
+                            ClrModule.AddReferenceToFile(PythonContext.SharedContext, new FileInfo(file).Name);
                         } catch {
                         }
                     }

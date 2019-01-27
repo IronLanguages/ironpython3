@@ -1313,6 +1313,16 @@ class C:
         self.assertTrue(16 in x)
         self.assertTrue(16 in set(x))
 
+    @unittest.skipIf(is_netcoreapp, 'https://github.com/IronLanguages/ironpython2/issues/524')
+    def test_ipy2_gh522(self):
+        """https://github.com/IronLanguages/ironpython2/issues/522"""
+        import sqlite3
+        conn = sqlite3.connect(":memory:")
+        c = conn.cursor()
+        c.execute("CREATE TABLE test (test BLOB);")
+        c.execute("INSERT INTO test (test) VALUES (x'');")
+        self.assertEqual(len(c.execute("SELECT * FROM test;").fetchone()[0]), 0)
+
     def test_ipy2_gh528(self):
         class x(int):
             def __hash__(self): return 42

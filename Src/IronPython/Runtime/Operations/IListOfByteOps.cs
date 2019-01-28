@@ -405,8 +405,8 @@ namespace IronPython.Runtime.Operations {
                 throw PythonOps.TypeError("expected bytes or bytearray, got NoneType");
             }
 
-            if (count == -1) {
-                count = old.Count + 1;
+            if (count < 0) {
+                count = bytes.Count + 1;
             } 
             
             if (old.Count == 0) {
@@ -629,7 +629,7 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            throw PythonOps.ValueError("bytearray.index(item): item not in bytearray");
+            return -1;
         }
 
         internal static string/*!*/ BytesRepr(this IList<byte>/*!*/ bytes) {

@@ -149,16 +149,22 @@ namespace IronPython.Runtime {
 
         public void remove(int value) {
             lock (this) {
-                _bytes.RemoveAt(_bytes.IndexOfByte(value.ToByteChecked(), 0, _bytes.Count));
+                var idx = _bytes.IndexOfByte(value.ToByteChecked(), 0, _bytes.Count);
+                if (idx == -1)
+                    throw PythonOps.ValueError("value not found in bytearray");
+                _bytes.RemoveAt(idx);
             }
         }
 
         public void remove(object value) {
             lock (this) {
                 if (value is ByteArray) {
-                    throw PythonOps.TypeError("an integer or string of size 1 is required");
+                    throw PythonOps.TypeError("an integer is required");
                 }
-                _bytes.RemoveAt(_bytes.IndexOfByte(GetByte(value), 0, _bytes.Count));
+                var idx = _bytes.IndexOfByte(GetByte(value), 0, _bytes.Count);
+                if (idx == -1)
+                    throw PythonOps.ValueError("value not found in bytearray");
+                _bytes.RemoveAt(idx);
             }
         }
 
@@ -246,19 +252,21 @@ namespace IronPython.Runtime {
 
         public ByteArray copy() => CopyThis();
 
-        public int count([BytesConversion]IList<byte>/*!*/ sub) {
-            return count(sub, 0, _bytes.Count);
-        }
+        public int count([BytesConversion]IList<byte>/*!*/ sub) => count(sub, null, null);
 
-        public int count([BytesConversion]IList<byte>/*!*/ sub, int start) {
-            return count(sub, start, _bytes.Count);
-        }
+        public int count([BytesConversion]IList<byte>/*!*/ sub, int? start) => count(sub, start, null);
 
-        public int count([BytesConversion]IList<byte>/*!*/ ssub, int start, int end) {
+        public int count([BytesConversion]IList<byte>/*!*/ sub, int? start, int? end) {
             lock (this) {
-                return _bytes.CountOf(ssub, start, end);
+                return _bytes.CountOf(sub, start ?? 0, end ?? _bytes.Count);
             }
         }
+
+        public int count(int @byte) => count(@byte, null, null);
+
+        public int count(int @byte, int? start) => count(@byte, start, null);
+
+        public int count(int @byte, int? start, int? end) => count(new[] { @byte.ToByteChecked() }, start, end);
 
         public string decode(CodeContext/*!*/ context, [Optional]object encoding, string errors = "strict") {
             lock (this) {
@@ -312,21 +320,23 @@ namespace IronPython.Runtime {
             }
         }
 
-        public int find([BytesConversion]IList<byte>/*!*/ sub) {
-            lock (this) {
-                return _bytes.Find(sub);
-            }
-        }
+        public int find([BytesConversion]IList<byte>/*!*/ sub) => find(sub, null, null);
 
-        public int find([BytesConversion]IList<byte>/*!*/ sub, int start) {
-            lock (this) {
-                return _bytes.Find(sub, start);
-            }
-        }
+        public int find([BytesConversion]IList<byte>/*!*/ sub, int start) => find(sub, start, null);
 
-        public int find([BytesConversion]IList<byte>/*!*/ sub, int start, int end) {
+        public int find([BytesConversion]IList<byte>/*!*/ sub, int? start, int? end) {
             lock (this) {
                 return _bytes.Find(sub, start, end);
+            }
+        }
+
+        public int find(int @byte) => find(@byte, null, null);
+
+        public int find(int @byte, int start) => find(@byte, start, null);
+
+        public int find(int @byte, int? start, int? end) {
+            lock (this) {
+                return _bytes.IndexOfByte(@byte, start ?? 0, end ?? _bytes.Count);
             }
         }
 
@@ -334,19 +344,30 @@ namespace IronPython.Runtime {
             return new ByteArray(IListOfByteOps.FromHex(@string));
         }
 
-        public int index([BytesConversion]IList<byte>/*!*/ item) {
-            return index(item, 0, _bytes.Count);
-        }
+        public int index([BytesConversion]IList<byte>/*!*/ sub) => index(sub, null, null);
 
-        public int index([BytesConversion]IList<byte>/*!*/ item, int start) {
-            return index(item, start, _bytes.Count);
-        }
+        public int index([BytesConversion]IList<byte>/*!*/ sub, int? start) => index(sub, start, null);
 
-        public int index([BytesConversion]IList<byte>/*!*/ item, int start, int stop) {
+        public int index([BytesConversion]IList<byte>/*!*/ sub, int? start, int? end) {
             lock (this) {
-                int res = find(item, start, stop);
+                int res = find(sub, start, end);
                 if (res == -1) {
-                    throw PythonOps.ValueError("bytearray.index(item): item not in bytearray");
+                    throw PythonOps.ValueError("subsection not found");
+                }
+
+                return res;
+            }
+        }
+
+        public int index(int @byte) => index(@byte, null, null);
+
+        public int index(int @byte, int? start) => index(@byte, start, null);
+
+        public int index(int @byte, int? start, int? end) {
+            lock (this) {
+                int res = find(@byte, start, end);
+                if (res == -1) {
+                    throw PythonOps.ValueError("subsection not found");
                 }
 
                 return res;
@@ -535,15 +556,7 @@ namespace IronPython.Runtime {
             return partition(GetBytes(sep));
         }
 
-        public ByteArray/*!*/ replace([BytesConversion]IList<byte>/*!*/ old, [BytesConversion]IList<byte> @new) {
-            if (old == null) {
-                throw PythonOps.TypeError("expected bytes or bytearray, got NoneType");
-            }
-
-            return replace(old, @new, _bytes.Count);
-        }
-
-        public ByteArray/*!*/ replace([BytesConversion]IList<byte>/*!*/ old, [BytesConversion]IList<byte>/*!*/ @new, int count) {
+        public ByteArray/*!*/ replace([BytesConversion]IList<byte>/*!*/ old, [BytesConversion]IList<byte>/*!*/ @new, int count = -1) {
             if (old == null) {
                 throw PythonOps.TypeError("expected bytes or bytearray, got NoneType");
             } else if (count == 0) {
@@ -553,38 +566,40 @@ namespace IronPython.Runtime {
             return new ByteArray(_bytes.Replace(old, @new, count));
         }
 
+        public int rfind([BytesConversion]IList<byte>/*!*/ sub) => rfind(sub, null, null);
 
-        public int rfind([BytesConversion]IList<byte>/*!*/ sub) {
-            return rfind(sub, 0, _bytes.Count);
-        }
+        public int rfind([BytesConversion]IList<byte>/*!*/ sub, int? start) => rfind(sub, start, null);
 
-        public int rfind([BytesConversion]IList<byte>/*!*/ sub, int start) {
-            return rfind(sub, start, _bytes.Count);
-        }
-
-        public int rfind([BytesConversion]IList<byte>/*!*/ sub, int start, int end) {
+        public int rfind([BytesConversion]IList<byte>/*!*/ sub, int? start, int? end) {
             lock (this) {
                 return _bytes.ReverseFind(sub, start, end);
             }
         }
 
-        public int rindex([BytesConversion]IList<byte>/*!*/ sub) {
-            return rindex(sub, 0, _bytes.Count);
-        }
+        public int rfind(int @byte) => rfind(@byte, null, null);
 
-        public int rindex([BytesConversion]IList<byte>/*!*/ sub, int start) {
-            return rindex(sub, start, _bytes.Count);
-        }
+        public int rfind(int @byte, int? start) => rfind(@byte, start, null);
 
-        public int rindex([BytesConversion]IList<byte>/*!*/ sub, int start, int end) {
+        public int rfind(int @byte, int? start, int? end) => rfind(new[] { @byte.ToByteChecked() }, start, end);
+
+        public int rindex([BytesConversion]IList<byte>/*!*/ sub) => rindex(sub, null, null);
+
+        public int rindex([BytesConversion]IList<byte>/*!*/ sub, int? start) => rindex(sub, start, null);
+
+        public int rindex([BytesConversion]IList<byte>/*!*/ sub, int? start, int? end) {
             int ret = rfind(sub, start, end);
-
             if (ret == -1) {
-                throw PythonOps.ValueError("substring {0} not found in {1}", sub, this);
+                throw PythonOps.ValueError("subsection not found");
             }
 
             return ret;
         }
+
+        public int rindex(int @byte) => rindex(@byte, null, null);
+
+        public int rindex(int @byte, int? start) => rindex(@byte, start, null);
+
+        public int rindex(int @byte, int? start, int? end) => rindex(new[] { @byte.ToByteChecked() }, start, end);
 
         public ByteArray/*!*/ rjust(int width) {
             return rjust(width, (byte)' ');

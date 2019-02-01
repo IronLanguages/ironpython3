@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
@@ -147,24 +148,22 @@ namespace IronPython.Runtime {
             }
         }
 
+        private void RemoveByte(byte value) {
+            var idx = _bytes.IndexOfByte(value, 0, _bytes.Count);
+            if (idx == -1)
+                throw PythonOps.ValueError("value not found in bytearray");
+            _bytes.RemoveAt(idx);
+        }
+
         public void remove(int value) {
             lock (this) {
-                var idx = _bytes.IndexOfByte(value.ToByteChecked(), 0, _bytes.Count);
-                if (idx == -1)
-                    throw PythonOps.ValueError("value not found in bytearray");
-                _bytes.RemoveAt(idx);
+                RemoveByte(value.ToByteChecked());
             }
         }
 
         public void remove(object value) {
             lock (this) {
-                if (value is ByteArray) {
-                    throw PythonOps.TypeError("an integer is required");
-                }
-                var idx = _bytes.IndexOfByte(GetByte(value), 0, _bytes.Count);
-                if (idx == -1)
-                    throw PythonOps.ValueError("value not found in bytearray");
-                _bytes.RemoveAt(idx);
+                RemoveByte(GetByte(value));
             }
         }
 
@@ -1316,10 +1315,14 @@ namespace IronPython.Runtime {
         }
 
         private static byte GetByte(object/*!*/ value) {
-            if (value is double || value is Extensible<double> || value is float) {
-                throw PythonOps.TypeError("an integer or string of size 1 is required");
+            if (Converter.TryConvertToIndex(value, out object index)) {
+                switch (index) {
+                    case int i: return i.ToByteChecked();
+                    case BigInteger bi: return bi.ToByteChecked();
+                    default: throw new InvalidOperationException(); // unreachable
+                }
             }
-            return ByteOps.GetByteListOk(value);
+            throw PythonOps.TypeError("an integer is required");
         }
 
         private static IList<byte>/*!*/ GetBytes(object/*!*/ value) {

@@ -261,7 +261,9 @@ namespace IronPython.Runtime {
         }
 
         public string decode(CodeContext/*!*/ context, [Optional]object encoding, string errors = "strict") {
-            return StringOps.decode(context, _bytes.MakeString(), encoding, errors);
+            lock (this) {
+                return StringOps.RawDecode(context, _bytes.ToArray(), encoding, errors);
+            }
         }
 
         public bool endswith([BytesConversion]IList<byte>/*!*/ suffix) {

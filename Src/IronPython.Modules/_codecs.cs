@@ -107,7 +107,7 @@ namespace IronPython.Modules {
                 encoding = "latin-1";
             }
 
-            var res = StringOps.DoDecode(context, input.MakeString(), errors, encoding, e);
+            var res = StringOps.DoDecode(context, input, errors, encoding, e);
             return PythonTuple.MakeTuple(res, res.Length);
         }
 
@@ -237,7 +237,7 @@ namespace IronPython.Modules {
         [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static PythonTuple mbcs_decode(CodeContext/*!*/ context, [BytesConversion]IList<byte> input, string errors = "strict", bool final = false) {
             return PythonTuple.MakeTuple(
-                StringOps.decode(context, input.MakeString(), Encoding.Default, errors),
+                StringOps.RawDecode(context, input, Encoding.Default, errors),
                 Builtin.len(input)
             );
         }
@@ -255,7 +255,7 @@ namespace IronPython.Modules {
 
         public static PythonTuple raw_unicode_escape_decode(CodeContext/*!*/ context, [BytesConversion]IList<byte> input, string errors = "strict") {
             return PythonTuple.MakeTuple(
-                StringOps.decode(context, input.MakeString(), "raw-unicode-escape", errors),
+                StringOps.RawDecode(context, input, "raw-unicode-escape", errors),
                 Builtin.len(input)
             );
         }
@@ -436,7 +436,7 @@ namespace IronPython.Modules {
         #region Private implementation
 
         private static PythonTuple DoDecode(CodeContext context, string encodingName, Encoding encoding, [BytesConversion]IList<byte> input, string errors, bool final) {
-            var decoded = StringOps.DoDecode(context, input.MakeString(), errors, encodingName, encoding, final, out int numBytes);
+            var decoded = StringOps.DoDecode(context, input, errors, encodingName, encoding, final, out int numBytes);
             return PythonTuple.MakeTuple(decoded, numBytes);
         }
 

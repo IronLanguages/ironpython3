@@ -17,9 +17,11 @@ class _Sha512Test(unittest.TestCase):
         if is_cli:
             self.assertEqual(_sha512.__doc__, "SHA512 hash algorithm")
         self.assertTrue("__name__" in dir(_sha512))
+        self.assertTrue("__loader__" in dir(_sha512))
+        self.assertTrue("__spec__" in dir(_sha512))
         self.assertTrue("sha384" in dir (_sha512))
         self.assertTrue("sha512" in dir(_sha512))
-        self.assertEqual(len(dir(_sha512)), 5)#, "There should only be five attributes in the _sha512 module!")
+        self.assertEqual(len(dir(_sha512)), 7, "there should be 7 attributes in the _sha512 module")
 
     def test_sha512_sanity(self):
         x = _sha512.sha512()
@@ -34,11 +36,11 @@ class _Sha512Test(unittest.TestCase):
         x.update("abc")
         self.assertEqual(x.hexdigest(),
                 'ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f')
-        
+
         x_copy = x.copy()
         self.assertTrue(x!=x_copy)
         self.assertEqual(x.hexdigest(), x_copy.hexdigest())
-        
+
     def test_sha384_sanity(self):
         x = _sha512.sha384()
         self.assertEqual(x.block_size, 128)
@@ -52,7 +54,7 @@ class _Sha512Test(unittest.TestCase):
         x.update("abc")
         self.assertEqual(x.hexdigest(),
                 'cb00753f45a35e8bb5a03d699ac65007272c32ab0eded1631a8b605a43ff5bed8086072ba1e7cc2358baeca134c825a7')
-        
+
         x_copy = x.copy()
         self.assertTrue(x!=x_copy)
         self.assertEqual(x.hexdigest(), x_copy.hexdigest())

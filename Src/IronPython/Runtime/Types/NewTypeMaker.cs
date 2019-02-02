@@ -421,9 +421,6 @@ namespace IronPython.Runtime.Types {
                     } else if (pi.IsDefined(typeof(BytesConversionAttribute), false)) {
                         pb.SetCustomAttribute(new CustomAttributeBuilder(
                             typeof(BytesConversionAttribute).GetConstructor(ReflectionUtils.EmptyTypes), ArrayUtils.EmptyObjects));
-                    } else if (pi.IsDefined(typeof(BytesConversionNoStringAttribute), false)) {
-                        pb.SetCustomAttribute(new CustomAttributeBuilder(
-                            typeof(BytesConversionNoStringAttribute).GetConstructor(ReflectionUtils.EmptyTypes), ArrayUtils.EmptyObjects));
                     }
 
                     if ((pi.Attributes & ParameterAttributes.HasDefault) != 0) {

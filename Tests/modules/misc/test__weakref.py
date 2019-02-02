@@ -26,12 +26,12 @@ class _WeakrefTest(IronPythonTestCase):
             def run_test():
                 a = cls()
                 b = _weakref.proxy(a)
-                
+
                 self.assertEqual(dir(a), dir(b))
                 del(a)
-                
+
                 return b
-                
+
             prxy = run_test()
             gc.collect()
             # gc collection seems to take longer on OSX
@@ -46,13 +46,13 @@ class _WeakrefTest(IronPythonTestCase):
             # repr
             a = cls()
             b = _weakref.proxy(a)
-            
+
             self.assertTrue(repr(b).startswith('<weakproxy at'))
-            
+
             self.assertEqual(repr(a), b.__repr__())
-            
+
             keep_alive(a)
-            
+
         # calling a special method should work
         class strable(object):
                 def __str__(self): return 'abc'
@@ -66,36 +66,36 @@ class _WeakrefTest(IronPythonTestCase):
     def test_type_call(self):
         def get_dead_weakref():
             class C: pass
-            
+
             a = C()
             x = _weakref.proxy(a)
             del(a)
             return x
-            
+
         wr = get_dead_weakref()
         # Uncomment the next line after fixing merlin#243506
         # type(wr).__add__.__get__(wr, None) # no exception
-        
+
         try:
             type(wr).__add__.__get__(wr, None)() # object is dead, should throw
         except: pass
         else: self.assertUnreachable()
-        
-            
+
+
         # kwarg call
         class C:
             def __add__(self, other):
                 return "abc" + other
-            
+
         a = C()
         x = _weakref.proxy(a)
-        
+
         if is_cli:      # cli accepts kw-args everywhere
             res = type(x).__add__.__get__(x, None)(other = 'xyz')
             self.assertEqual(res, "abcxyz")
         res = type(x).__add__.__get__(x, None)('xyz') # test success-case without keyword args
         self.assertEqual(res, "abcxyz")
-        
+
         # calling non-existent method should raise attribute error
         try:
             type(x).__sub__.__get(x, None)('abc')
@@ -124,7 +124,7 @@ class _WeakrefTest(IronPythonTestCase):
         def helper_func():
             class C:
                 def __eq__(self, *args, **kwargs): return True
-        
+
             a = C()
             self.assertTrue(C()==3)
             x = _weakref.proxy(a)
@@ -133,10 +133,10 @@ class _WeakrefTest(IronPythonTestCase):
             keep_alive(a) #Just to keep 'a' alive up to this point.
 
             return x, y
-            
+
         x, y = helper_func()
         gc.collect()
-        
+
         self.assertTrue(not x==3)
         self.assertRaises(ReferenceError, lambda: x==y)
 
@@ -150,7 +150,7 @@ def %s(self, *args, **kwargs):
     called = '%s'
     return True
 """ % (method, op))
-    
+
         a = C()
         x = _weakref.proxy(a)
         for op in ('==', '>', '<', '>=', '<=', '!='):

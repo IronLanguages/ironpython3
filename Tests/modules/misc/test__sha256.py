@@ -6,8 +6,6 @@
 This tests what CPythons test_sha.py does not hit.
 '''
 
-#from __future__ import absolute_import
-
 import _sha256
 import unittest
 
@@ -22,8 +20,6 @@ class _Sha256Test(unittest.TestCase):
         self.assertTrue("__name__" in dir(_sha256))
         self.assertTrue("sha224" in dir (_sha256))
         self.assertTrue("sha256" in dir(_sha256))
-        #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21920
-        self.assertEqual(len(dir(_sha256)), 5)#, "There should only be five attributes in the _sha256 module!")
 
     def test_sha256_sanity(self):
         x = _sha256.sha256()
@@ -38,11 +34,11 @@ class _Sha256Test(unittest.TestCase):
         x.update("abc")
         self.assertEqual(x.hexdigest(),
                 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad')
-        
+
         x_copy = x.copy()
         self.assertTrue(x!=x_copy)
         self.assertEqual(x.hexdigest(), x_copy.hexdigest())
-        
+
     def test_sha224_sanity(self):
         x = _sha256.sha224()
         self.assertEqual(x.block_size, 64)
@@ -56,7 +52,7 @@ class _Sha256Test(unittest.TestCase):
         x.update("abc")
         self.assertEqual(x.hexdigest(),
                 '23097d223405d8228642a477bda255b32aadbce4bda0b3f7e36c9da7')
-        
+
         x_copy = x.copy()
         self.assertTrue(x!=x_copy)
         self.assertEqual(x.hexdigest(), x_copy.hexdigest())

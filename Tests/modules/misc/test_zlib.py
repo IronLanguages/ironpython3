@@ -15,14 +15,14 @@ def create_gzip(text):
     import gzip
     with gzip.open('test_data.gz', 'wb') as f:
         f.write(text)
-    with open('test_data.gz', 'r') as f:
+    with open('test_data.gz', 'rb') as f:
         gzip_compress = f.read()
     return gzip_compress
 
 class ZlibTest(IronPythonTestCase):
     def setUp(self):
         super(ZlibTest, self).setUp()
-        self.text = """
+        self.text = b"""
 Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Maecenas porttitor congue massa. Fusce posuere, magna sed pulvinar ultricies, purus lectus malesuada libero, sit amet commodo magna eros quis urna.
 Nunc viverra imperdiet enim. Fusce est. Vivamus a tellus.
 Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Proin pharetra nonummy pede. Mauris et orci.
@@ -80,19 +80,19 @@ Curabitur non eros. Nullam hendrerit bibendum justo. Fusce iaculis, est quis lac
                 bufs.append(do.decompress(self.gzip_data[i:i+delta]))
                 self.assertEqual(len(do.unconsumed_tail), 0)
             bufs.append(do.flush())
-            self.assertEqual("".join(bufs), self.text)
+            self.assertEqual(b"".join(bufs), self.text)
 
 
     def test_gzip_with_extra(self):
         """gzip header with extra field"""
         # the file was picked up from boost bug report
-        with open(os.path.join(self.test_dir, 'sample.txt.gz')) as f:
+        with open(os.path.join(self.test_dir, 'sample.txt.gz'), "rb") as f:
             gzipped = f.read()
-        self.assertEqual(zlib.decompress(gzipped, zlib.MAX_WBITS | 16), 'hello there\n')
+        self.assertEqual(zlib.decompress(gzipped, zlib.MAX_WBITS | 16), b'hello there\n')
 
 
     def test_gzip_stream_with_extra(self):
-        with open(os.path.join(self.test_dir, 'sample.txt.gz')) as f:
+        with open(os.path.join(self.test_dir, 'sample.txt.gz'), "rb") as f:
             gzipped = f.read()
         for delta in range(1, 25):
             do = zlib.decompressobj(zlib.MAX_WBITS | 16)
@@ -101,6 +101,6 @@ Curabitur non eros. Nullam hendrerit bibendum justo. Fusce iaculis, est quis lac
                 bufs.append(do.decompress(gzipped[i:i+delta]))
                 self.assertEqual(len(do.unconsumed_tail), 0)
             bufs.append(do.flush())
-            self.assertEqual("".join(bufs), 'hello there\n')
+            self.assertEqual(b"".join(bufs), b'hello there\n')
 
 run_test(__name__)

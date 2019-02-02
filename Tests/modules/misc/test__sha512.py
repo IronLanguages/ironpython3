@@ -17,11 +17,8 @@ class _Sha512Test(unittest.TestCase):
         if is_cli:
             self.assertEqual(_sha512.__doc__, "SHA512 hash algorithm")
         self.assertTrue("__name__" in dir(_sha512))
-        self.assertTrue("__loader__" in dir(_sha512))
-        self.assertTrue("__spec__" in dir(_sha512))
         self.assertTrue("sha384" in dir (_sha512))
         self.assertTrue("sha512" in dir(_sha512))
-        self.assertEqual(len(dir(_sha512)), 7, "there should be 7 attributes in the _sha512 module")
 
     def test_sha512_sanity(self):
         x = _sha512.sha512()

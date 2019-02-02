@@ -18,12 +18,8 @@ class _Sha256Test(unittest.TestCase):
         if is_cli:
             self.assertEqual(_sha256.__doc__, "SHA256 hash algorithm")
         self.assertTrue("__name__" in dir(_sha256))
-        self.assertTrue("__loader__" in dir(_sha256))
-        self.assertTrue("__spec__" in dir(_sha256))
         self.assertTrue("sha224" in dir (_sha256))
         self.assertTrue("sha256" in dir(_sha256))
-        #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21920
-        self.assertEqual(len(dir(_sha256)), 7, "there should be 7 attributes in the _sha256 module")
 
     def test_sha256_sanity(self):
         x = _sha256.sha256()

@@ -4,6 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -342,29 +344,17 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
         }
 
         [Documentation("crc32(string[, value]) -> string\n\nComputes a CRC (Cyclic Redundancy Check) checksum of string.")]
-        public static int crc32(string buffer, int baseValue=0) {
-            byte[] data = buffer.MakeByteArray();
+        public static BigInteger crc32([BytesConversion]IList<byte> buffer, int baseValue=0) {
+            byte[] data = buffer as byte[] ?? (buffer is Bytes b ? b.GetUnsafeByteArray() : buffer.ToArray());
             uint result = crc32(data, 0, data.Length, unchecked((uint)baseValue));
-            return unchecked((int)result);
+            return result;
         }
 
         [Documentation("crc32(string[, value]) -> string\n\nComputes a CRC (Cyclic Redundancy Check) checksum of string.")]
-        public static int crc32(string buffer, uint baseValue) {
-            byte[] data = buffer.MakeByteArray();
+        public static BigInteger crc32([BytesConversion]IList<byte> buffer, uint baseValue) {
+            byte[] data = buffer as byte[] ?? (buffer is Bytes b ? b.GetUnsafeByteArray() : buffer.ToArray());
             uint result = crc32(data, 0, data.Length, baseValue);
-            return unchecked((int)result);
-        }
-
-        [Documentation("crc32(byte_array[, value]) -> string\n\nComputes a CRC (Cyclic Redundancy Check) checksum of byte_array.")]
-        public static int crc32(byte[] buffer, int baseValue=0) {
-            uint result = crc32(buffer, 0, buffer.Length, unchecked((uint)baseValue));
-            return unchecked((int)result);
-        }
-
-        [Documentation("crc32(byte_array[, value]) -> string\n\nComputes a CRC (Cyclic Redundancy Check) checksum of byte_array.")]
-        public static int crc32(byte[] buffer, uint baseValue) {
-            uint result = crc32(buffer, 0, buffer.Length, baseValue);
-            return unchecked((int)result);
+            return result;
         }
 
         internal static uint crc32(byte[] buffer, int offset, int count, uint baseValue) {

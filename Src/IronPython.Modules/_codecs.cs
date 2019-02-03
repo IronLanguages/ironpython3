@@ -48,11 +48,11 @@ namespace IronPython.Modules {
         /// <summary>
         /// Encodes the input string with the specified optimized encoding map.
         /// </summary>
-        public static PythonTuple charmap_encode(CodeContext context, [BytesConversion]string input, string errors, [NotNull]EncodingMap map) {
+        public static PythonTuple charmap_encode(CodeContext context, string input, string errors, [NotNull]EncodingMap map) {
             return CharmapEncodeWorker(context, input, errors, new EncodingMapEncoding(map, errors));
         }
 
-        public static PythonTuple charmap_encode(CodeContext context, [BytesConversion]string input, string errors = "strict", IDictionary<object, object> map = null) {
+        public static PythonTuple charmap_encode(CodeContext context, string input, string errors = "strict", IDictionary<object, object> map = null) {
             Encoding e = map != null ? new CharmapEncoding(map, errors) : null;
             return CharmapEncodeWorker(context, input, errors, e);
         }
@@ -266,9 +266,11 @@ namespace IronPython.Modules {
             );
         }
 
-        public static PythonTuple readbuffer_encode([BytesConversion]string input, string errors = null) {
-            return PythonTuple.MakeTuple(input, input.Length);
-        }
+        public static PythonTuple readbuffer_encode(string input, string errors = null)
+            => readbuffer_encode(DoEncode(Encoding.UTF8, input).Item1, errors);
+
+        public static PythonTuple readbuffer_encode([BytesConversion]IList<byte> input, string errors = null)
+            => PythonTuple.MakeTuple(new Bytes(input), input.Count);
 
         public static void register(CodeContext/*!*/ context, object search_function) => PythonOps.RegisterEncoding(context, search_function);
 

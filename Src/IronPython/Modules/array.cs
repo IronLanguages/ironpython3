@@ -37,7 +37,7 @@ namespace IronPython.Modules {
             private readonly char _typeCode;
             private WeakRefTracker _tracker;
 
-            public array([BytesConversion]string type, [Optional]object initializer) {
+            public array(string type, [Optional]object initializer) {
                 if (type == null || type.Length != 1) {
                     throw PythonOps.TypeError("expected character, got {0}", PythonTypeOps.GetName(type));
                 }

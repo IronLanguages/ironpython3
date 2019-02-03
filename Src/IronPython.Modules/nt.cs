@@ -371,10 +371,15 @@ namespace IronPython.Modules {
         /// Like stat(path), but do not follow symbolic links.
         /// </summary>
         [LightThrowing]
-        public static object lstat([BytesConversion]string path) {
+        public static object lstat(string path) {
             // TODO: detect links
             return stat(path);
         }
+
+        [LightThrowing]
+        public static object lstat([BytesConversion]IList<byte> path)
+            => lstat(PythonOps.MakeString(path));
+
 
 #if FEATURE_NATIVE
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
@@ -1116,7 +1121,7 @@ namespace IronPython.Modules {
 
         [Documentation("stat(path) -> stat result\nGathers statistics about the specified file or directory")]
         [LightThrowing]
-        public static object stat([BytesConversion]string path) {
+        public static object stat(string path) {
             if (path == null) {
                 return LightExceptions.Throw(PythonOps.TypeError("expected string, got NoneType"));
             }
@@ -1169,6 +1174,10 @@ namespace IronPython.Modules {
                 return null;
             }
         }
+
+        [LightThrowing]
+        public static object stat([BytesConversion]IList<byte> path)
+            => stat(PythonOps.MakeString(path));
 
         public static string strerror(int code) {
             switch (code) {
@@ -1369,12 +1378,12 @@ namespace IronPython.Modules {
         }
 #endif
 
-        public static int write(CodeContext/*!*/ context, int fd, [BytesConversion]string text) {
+        public static int write(CodeContext/*!*/ context, int fd, [BytesConversion]IList<byte> text) {
             try {
                 PythonContext pythonContext = context.LanguageContext;
                 PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
                 pf.write(text);
-                return text.Length;
+                return text.Count;
             } catch (Exception e) {
                 throw ToPythonException(e);
             }

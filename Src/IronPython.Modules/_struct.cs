@@ -34,7 +34,6 @@ namespace IronPython.Modules {
 
         [PythonType, Documentation("Represents a compiled struct pattern")]
         public class Struct : IWeakReferenceable {
-            private string _formatString;           // the last format string passed to __init__
             private Format[] _formats;              // the various formatting options for the compiled struct
             private bool _isStandardized;           // true if the format is in standardized mode
             private bool _isLittleEndian;           // true if the format is in little endian mode
@@ -43,7 +42,7 @@ namespace IronPython.Modules {
             private WeakRefTracker _tracker;        // storage for weak proxy's
 
             private void Initialize(Struct s) {
-                _formatString = s._formatString;
+                format = s.format;
                 _formats = s._formats;
                 _isStandardized = s._isStandardized;
                 _isLittleEndian = s._isLittleEndian;
@@ -67,20 +66,18 @@ namespace IronPython.Modules {
             }
 
             [Documentation("initializes or re-initializes the compiled struct object with a new format")]
-            public void __init__(CodeContext/*!*/ context, [NotNull]string/*!*/ fmt) {
-                ContractUtils.RequiresNotNull(fmt, nameof(fmt));
-
-                _formatString = fmt;
+            public void __init__(CodeContext/*!*/ context, object fmt) {
+                format = FormatObjectToString(fmt);
 
                 Struct s;
                 bool gotIt;
                 lock (_cache) {
-                    gotIt = _cache.TryGetValue(_formatString, out s);
+                    gotIt = _cache.TryGetValue(format, out s);
                 }
                 if (gotIt) {
                     Initialize(s);
                 } else {
-                    Compile(context, fmt);
+                    Compile(context, format);
                 }
             }
 
@@ -89,11 +86,7 @@ namespace IronPython.Modules {
             #region Public API
 
             [Documentation("gets the current format string for the compiled Struct")]
-            public string format {
-                get {
-                    return _formatString;
-                }
-            }
+            public string format { get; private set; }
 
             [Documentation("returns a string consisting of the values serialized according to the format of the struct object")]
             public string/*!*/ pack(CodeContext/*!*/ context, params object[] values) {
@@ -640,14 +633,26 @@ namespace IronPython.Modules {
         private const int MAX_CACHE_SIZE = 1024;
         private static CacheDict<string, Struct> _cache = new CacheDict<string, Struct>(MAX_CACHE_SIZE);
 
-        private static Struct GetStructFromCache(CodeContext/*!*/ context, [NotNull] string fmt/*!*/) {
+        private static string FormatObjectToString(object fmt) {
+            if (Converter.TryConvertToString(fmt, out string res)) {
+                return res;
+            }
+            if (fmt is IList<byte> b) {
+                return PythonOps.MakeString(b);
+            }
+            throw PythonOps.TypeError("Struct() argument 1 must be a str or bytes object, not {0}", DynamicHelpers.GetPythonType(fmt).Name);
+        }
+
+        private static Struct GetStructFromCache(CodeContext/*!*/ context, object fmt) {
+            var formatString = FormatObjectToString(fmt);
+
             Struct s;
             bool gotIt;
             lock (_cache) {
-                gotIt = _cache.TryGetValue(fmt, out s);
+                gotIt = _cache.TryGetValue(formatString, out s);
             }
             if (!gotIt) {
-                s = new Struct(context, fmt);
+                s = new Struct(context, formatString);
             }
             return s;
         }
@@ -658,51 +663,41 @@ namespace IronPython.Modules {
         }
 
         [Documentation("int(x[, base]) -> integer\n\nConvert a string or number to an integer, if possible.  A floating point\nargument will be truncated towards zero (this does not include a string\nrepresentation of a floating point number!)  When converting a string, use\nthe optional base.  It is an error to supply a base when converting a\nnon-string.  If base is zero, the proper base is guessed based on the\nstring content.  If the argument is outside the integer range a\nlong object will be returned instead.")]
-        public static int calcsize(CodeContext/*!*/ context, [BytesConversion][NotNull]string fmt) {
+        public static int calcsize(CodeContext/*!*/ context, object fmt) {
             return GetStructFromCache(context, fmt).size;
         }
 
         [Documentation("Return string containing values v1, v2, ... packed according to fmt.")]
-        public static string/*!*/ pack(CodeContext/*!*/ context, [BytesConversion][NotNull]string fmt/*!*/, params object[] values) {
+        public static string/*!*/ pack(CodeContext/*!*/ context, object fmt/*!*/, params object[] values) {
             return GetStructFromCache(context, fmt).pack(context, values);
         }
 
         [Documentation("Pack the values v1, v2, ... according to fmt.\nWrite the packed bytes into the writable buffer buf starting at offset.")]
-        public static void pack_into(CodeContext/*!*/ context, [BytesConversion][NotNull]string/*!*/ fmt, [NotNull]ArrayModule.array/*!*/ buffer, int offset, params object[] args) {
+        public static void pack_into(CodeContext/*!*/ context, object fmt, [NotNull]ArrayModule.array/*!*/ buffer, int offset, params object[] args) {
             GetStructFromCache(context, fmt).pack_into(context, buffer, offset, args);
         }
 
-        public static void pack_into(CodeContext/*!*/ context, [BytesConversion][NotNull]string/*!*/ fmt, [NotNull]ByteArray/*!*/ buffer, int offset, params object[] args) {
+        public static void pack_into(CodeContext/*!*/ context, object fmt, [NotNull]ByteArray/*!*/ buffer, int offset, params object[] args) {
             GetStructFromCache(context, fmt).pack_into(context, buffer, offset, args);
         }
 
         [Documentation("Unpack the string containing packed C structure data, according to fmt.\nRequires len(string) == calcsize(fmt).")]
-        public static PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [BytesConversion][NotNull]string/*!*/ fmt, [NotNull]string/*!*/ @string) {
-            return GetStructFromCache(context, fmt).unpack(context, @string);
-        }
-
-        [Documentation("Unpack the string containing packed C structure data, according to fmt.\nRequires len(string) == calcsize(fmt).")]
-        public static PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [BytesConversion][NotNull]string/*!*/ fmt, [BytesConversion][NotNull]IList<byte>/*!*/ buffer) {
+        public static PythonTuple/*!*/ unpack(CodeContext/*!*/ context, object fmt, [BytesConversion][NotNull]IList<byte>/*!*/ buffer) {
             return GetStructFromCache(context, fmt).unpack(context, buffer);
         }
 
         [Documentation("Unpack the string containing packed C structure data, according to fmt.\nRequires len(string) == calcsize(fmt).")]
-        public static PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [BytesConversion][NotNull]string/*!*/ fmt, [NotNull]ArrayModule.array/*!*/ buffer) {
+        public static PythonTuple/*!*/ unpack(CodeContext/*!*/ context, object fmt, [NotNull]ArrayModule.array/*!*/ buffer) {
             return GetStructFromCache(context, fmt).unpack(context, buffer);
         }
 
         [Documentation("Unpack the buffer, containing packed C structure data, according to\nfmt, starting at offset. Requires len(buffer[offset:]) >= calcsize(fmt).")]
-        public static PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [BytesConversion][NotNull]string fmt/*!*/, [NotNull]string/*!*/ buffer, int offset = 0) {
+        public static PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, object fmt, [BytesConversion][NotNull]IList<byte>/*!*/ buffer, int offset = 0) {
             return GetStructFromCache(context, fmt).unpack_from(context, buffer, offset);
         }
 
         [Documentation("Unpack the buffer, containing packed C structure data, according to\nfmt, starting at offset. Requires len(buffer[offset:]) >= calcsize(fmt).")]
-        public static PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [BytesConversion][NotNull]string fmt/*!*/, [BytesConversion][NotNull]IList<byte>/*!*/ buffer, int offset = 0) {
-            return GetStructFromCache(context, fmt).unpack_from(context, buffer, offset);
-        }
-
-        [Documentation("Unpack the buffer, containing packed C structure data, according to\nfmt, starting at offset. Requires len(buffer[offset:]) >= calcsize(fmt).")]
-        public static PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [BytesConversion][NotNull]string fmt/*!*/, [NotNull]ArrayModule.array/*!*/ buffer, int offset = 0) {
+        public static PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, object fmt, [NotNull]ArrayModule.array/*!*/ buffer, int offset = 0) {
             return GetStructFromCache(context, fmt).unpack_from(context, buffer, offset);
         }
 

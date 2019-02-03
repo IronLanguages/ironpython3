@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -23,15 +24,11 @@ namespace IronPython.Modules {
 
         #region ASCII Encoding
 
-        public static object ascii_decode(CodeContext context, object input, string errors = "strict") => DoDecode(context, "ascii", PythonAsciiEncoding.Instance, input, errors, true);
+        public static PythonTuple ascii_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict") => DoDecode(context, "ascii", PythonAsciiEncoding.Instance, input, errors, true).ToPythonTuple();
 
-        public static object ascii_encode(object input, string errors = "strict") => DoEncode(PythonAsciiEncoding.Instance, input, errors);
+        public static PythonTuple ascii_encode(object input, string errors = "strict") => DoEncode(PythonAsciiEncoding.Instance, input, errors).ToPythonTuple();
 
         #endregion
-
-        public static object charbuffer_encode(string input) {
-            throw PythonOps.NotImplementedError("charbuffer_encode");
-        }
 
         /// <summary>
         /// Creates an optimized encoding mapping that can be consumed by an optimized version of charmap_encode.
@@ -51,34 +48,18 @@ namespace IronPython.Modules {
         /// <summary>
         /// Encodes the input string with the specified optimized encoding map.
         /// </summary>
-        public static PythonTuple charmap_encode(CodeContext context, [BytesConversion]string input, string errors, [NotNull]EncodingMap map) {
-            return CharmapDecodeWorker(context, input, errors, new EncodingMapEncoding(map, errors), false);
+        public static PythonTuple charmap_encode(CodeContext context, string input, string errors, [NotNull]EncodingMap map) {
+            return CharmapEncodeWorker(context, input, errors, new EncodingMapEncoding(map, errors));
         }
 
-        public static PythonTuple charmap_encode(CodeContext context, [BytesConversion]string input, string errors = "strict", IDictionary<object, object> map = null) {
+        public static PythonTuple charmap_encode(CodeContext context, string input, string errors = "strict", IDictionary<object, object> map = null) {
             Encoding e = map != null ? new CharmapEncoding(map, errors) : null;
-            return CharmapDecodeWorker(context, input, errors, e, false);
+            return CharmapEncodeWorker(context, input, errors, e);
         }
 
-        /// <summary>
-        /// Decodes the input string using the provided string mapping.
-        /// </summary>
-        public static PythonTuple charmap_decode(CodeContext context, [BytesConversion]string input, string errors, [NotNull]string map) {
-            EncodingMap m = new EncodingMap();
-            for (int i = 0; i < map.Length; i++) {
-                m.Mapping[i] = map[i];
-            }
-            return CharmapDecodeWorker(context, input, errors, new EncodingMapEncoding(m, errors), true);
-        }
-
-        public static PythonTuple charmap_decode(CodeContext context, [BytesConversion]string input, string errors = "strict", IDictionary<object, object> map = null) {
-            Encoding e = map != null ? new CharmapEncoding(map, errors) : null;
-            return CharmapDecodeWorker(context, input, errors, e, true);
-        }
-
-        private static PythonTuple CharmapDecodeWorker(CodeContext context, string input, string errors, Encoding e, bool isDecode) {
+        private static PythonTuple CharmapEncodeWorker(CodeContext context, string input, string errors, Encoding e) {
             if (input.Length == 0) {
-                return PythonTuple.MakeTuple(String.Empty, 0);
+                return PythonTuple.MakeTuple(Bytes.Empty, 0);
             }
 
             string encoding = "charmap";
@@ -89,7 +70,41 @@ namespace IronPython.Modules {
                 encoding = "latin-1";
             }
 
-            string res = isDecode ? StringOps.DoDecode(context, input, errors, encoding, e) : StringOps.DoEncode(context, input, errors, encoding, e).ToString();
+            var res = StringOps.DoEncode(context, input, errors, encoding, e);
+            return PythonTuple.MakeTuple(res, res.Count);
+        }
+
+        /// <summary>
+        /// Decodes the input string using the provided string mapping.
+        /// </summary>
+        public static PythonTuple charmap_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors, [NotNull]string map) {
+            EncodingMap m = new EncodingMap();
+            for (int i = 0; i < map.Length; i++) {
+                m.Mapping[i] = map[i];
+            }
+            return CharmapDecodeWorker(context, input, errors, new EncodingMapEncoding(m, errors));
+        }
+
+        public static PythonTuple charmap_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict", IDictionary<object, object> map = null) {
+            Encoding e = map != null ? new CharmapEncoding(map, errors) : null;
+            return CharmapDecodeWorker(context, input, errors, e);
+        }
+
+
+        private static PythonTuple CharmapDecodeWorker(CodeContext context, IList<byte> input, string errors, Encoding e) {
+            if (input.Count == 0) {
+                return PythonTuple.MakeTuple(string.Empty, 0);
+            }
+
+            string encoding = "charmap";
+
+            // default to latin-1 if an encoding is not specified
+            if (e == null) {
+                e = Encoding.GetEncoding("iso-8859-1");
+                encoding = "latin-1";
+            }
+
+            var res = StringOps.DoDecode(context, input, errors, encoding, e);
             return PythonTuple.MakeTuple(res, res.Length);
         }
 
@@ -111,13 +126,17 @@ namespace IronPython.Modules {
             return PythonOps.GetIndex(context, PythonCalls.Call(context, t[EncoderIndex], obj, errors), 0);
         }
 
-        public static object escape_decode([BytesConversion]string text, string errors = "strict") {
-            var res = new StringBuilder();
-            for (int i = 0; i < text.Length; i++) {
-                if (text[i] == '\\') {
-                    if (i == text.Length - 1) throw PythonOps.ValueError("\\ at end of string");
+        public static PythonTuple escape_decode(string data, string errors = "strict") {
+            return escape_decode(DoEncode(Encoding.UTF8, data).Item1, errors);
+        }
 
-                    switch (text[++i]) {
+        public static PythonTuple escape_decode([BytesConversion]IList<byte> data, string errors = "strict") {
+            var res = new StringBuilder();
+            for (int i = 0; i < data.Count; i++) {
+                if (data[i] == '\\') {
+                    if (i == data.Count - 1) throw PythonOps.ValueError("\\ at end of string");
+
+                    switch ((char)data[++i]) {
                         case 'a': res.Append((char)0x07); break;
                         case 'b': res.Append((char)0x08); break;
                         case 't': res.Append('\t'); break;
@@ -128,47 +147,45 @@ namespace IronPython.Modules {
                         case 'v': res.Append((char)0x0b); break;
                         case '\n': break;
                         case 'x':
-                            int dig1, dig2;
-                            if (i >= text.Length - 2 || !CharToInt(text[i + 1], out dig1) || !CharToInt(text[i + 2], out dig2)) {
+                            if (i >= data.Count - 2 || !CharToInt((char)data[i + 1], out int dig1) || !CharToInt((char)data[i + 2], out int dig2)) {
                                 switch (errors) {
                                     case "strict":
-                                        if (i >= text.Length - 2) {
+                                        if (i >= data.Count - 2) {
                                             throw PythonOps.ValueError("invalid character value");
                                         } else {
                                             throw PythonOps.ValueError("invalid hexadecimal digit");
                                         }
                                     case "replace":
                                         res.Append("?");
-                                        while (i < (text.Length - 2)) {
-                                            res.Append(text[++i]);
+                                        while (i < (data.Count - 2)) {
+                                            res.Append((char)data[++i]);
                                         }
                                         continue;
                                     default:
                                         throw PythonOps.ValueError("decoding error; unknown error handling code: " + errors);
                                 }
                             }
-
                             res.Append((char)(dig1 * 16 + dig2));
                             i += 2;
                             break;
                         default:
-                            res.Append("\\" + text[i]);
+                            res.Append("\\" + (char)data[i]);
                             break;
                     }
                 } else {
-                    res.Append(text[i]);
+                    res.Append((char)data[i]);
                 }
 
             }
-            return PythonTuple.MakeTuple(Bytes.Make(res.ToString().MakeByteArray()), text.Length);
+            return PythonTuple.MakeTuple(Bytes.Make(res.ToString().MakeByteArray()), data.Count);
         }
 
         private static bool CharToInt(char ch, out int val) {
-            if (Char.IsDigit(ch)) {
+            if (char.IsDigit(ch)) {
                 val = ch - '0';
                 return true;
             }
-            ch = Char.ToUpper(ch);
+            ch = char.ToUpper(ch);
             if (ch >= 'A' && ch <= 'F') {
                 val = ch - 'A' + 10;
                 return true;
@@ -196,15 +213,15 @@ namespace IronPython.Modules {
                         break;
                 }
             }
-            return PythonTuple.MakeTuple(res.ToString(), res.Length);
+            return PythonTuple.MakeTuple(res.ToString(), text.Length);
         }
 
         #region Latin-1 Functions
 
 
-        public static object latin_1_decode(CodeContext context, object input, string errors = "strict") => DoDecode(context, null, Encoding.GetEncoding("iso-8859-1"), input, errors, true);
+        public static PythonTuple latin_1_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict") => DoDecode(context, null, Encoding.GetEncoding("iso-8859-1"), input, errors, true).ToPythonTuple();
 
-        public static object latin_1_encode(object input, string errors = "strict") => DoEncode(Encoding.GetEncoding("iso-8859-1"), input, errors);
+        public static PythonTuple latin_1_encode(object input, string errors = "strict") => DoEncode(Encoding.GetEncoding("iso-8859-1"), input, errors).ToPythonTuple();
 
         #endregion
 
@@ -217,9 +234,9 @@ namespace IronPython.Modules {
         #region MBCS Functions
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
-        public static PythonTuple mbcs_decode(CodeContext/*!*/ context, string input, string errors = "strict", bool final = false) {
+        public static PythonTuple mbcs_decode(CodeContext/*!*/ context, [BytesConversion]IList<byte> input, string errors = "strict", bool final = false) {
             return PythonTuple.MakeTuple(
-                StringOps.decode(context, input, Encoding.Default, errors),
+                StringOps.RawDecode(context, input, Encoding.Default, errors),
                 Builtin.len(input)
             );
         }
@@ -235,9 +252,9 @@ namespace IronPython.Modules {
         #endregion
 #endif
 
-        public static PythonTuple raw_unicode_escape_decode(CodeContext/*!*/ context, object input, string errors = "strict") {
+        public static PythonTuple raw_unicode_escape_decode(CodeContext/*!*/ context, [BytesConversion]IList<byte> input, string errors = "strict") {
             return PythonTuple.MakeTuple(
-                StringOps.decode(context, Converter.ConvertToString(input), "raw-unicode-escape", errors),
+                StringOps.RawDecode(context, input, "raw-unicode-escape", errors),
                 Builtin.len(input)
             );
         }
@@ -249,9 +266,11 @@ namespace IronPython.Modules {
             );
         }
 
-        public static PythonTuple readbuffer_encode([BytesConversion]string input, string errors = null) {
-            return PythonTuple.MakeTuple(input, input.Length);
-        }
+        public static PythonTuple readbuffer_encode(string input, string errors = null)
+            => readbuffer_encode(DoEncode(Encoding.UTF8, input).Item1, errors);
+
+        public static PythonTuple readbuffer_encode([BytesConversion]IList<byte> input, string errors = null)
+            => PythonTuple.MakeTuple(new Bytes(input), input.Count);
 
         public static void register(CodeContext/*!*/ context, object search_function) => PythonOps.RegisterEncoding(context, search_function);
 
@@ -263,38 +282,35 @@ namespace IronPython.Modules {
 
         public static PythonTuple unicode_escape_encode(string input) => throw PythonOps.NotImplementedError("unicode_escape_encode");
 
-        public static PythonTuple unicode_internal_decode(CodeContext context, object input, string errors = "strict") => utf_16_decode(context, input, errors, false);
+        public static PythonTuple unicode_internal_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict") => utf_16_decode(context, input, errors, false);
 
         public static PythonTuple unicode_internal_encode(object input, [Optional]string errors) {
             // length consumed is returned in bytes and for a UTF-16 string that is 2 bytes per char
-            PythonTuple res = DoEncode(Encoding.Unicode, input, errors, false);
-            return PythonTuple.MakeTuple(
-                res[0],
-                ((int)res[1]) * 2
-            );
+            var res = DoEncode(Encoding.Unicode, input, errors, false);
+            return PythonTuple.MakeTuple(res.Item1, res.Item2 * 2);
         }
 
         #endregion
 
         #region Utf-16 Big Endian Functions
 
-        public static PythonTuple utf_16_be_decode(CodeContext context, object input, string errors = "strict", bool final = false) => DoDecode(context, "utf16", Encoding.BigEndianUnicode, input, errors, final);
+        public static PythonTuple utf_16_be_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict", bool final = false) => DoDecode(context, "utf16", Encoding.BigEndianUnicode, input, errors, final).ToPythonTuple();
 
-        public static PythonTuple utf_16_be_encode(object input, string errors = "strict") => DoEncode(Encoding.BigEndianUnicode, input, errors);
+        public static PythonTuple utf_16_be_encode(object input, string errors = "strict") => DoEncode(Encoding.BigEndianUnicode, input, errors).ToPythonTuple();
 
         #endregion
 
         #region Utf-16 Functions
 
-        public static PythonTuple utf_16_decode(CodeContext context, object input, string errors = "strict", bool final = false) => DoDecode(context, "utf16", Encoding.Unicode, input, errors, final);
+        public static PythonTuple utf_16_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict", bool final = false) => DoDecode(context, "utf16", Encoding.Unicode, input, errors, final).ToPythonTuple();
 
-        public static PythonTuple utf_16_encode(object input, string errors = "strict") => DoEncode(Encoding.Unicode, input, errors, true);
+        public static PythonTuple utf_16_encode(object input, string errors = "strict") => DoEncode(Encoding.Unicode, input, errors, true).ToPythonTuple();
 
         #endregion
 
-        public static PythonTuple utf_16_ex_decode(CodeContext context, object input, string errors = "strict") => utf_16_ex_decode(context, input, errors, null, null);
+        public static PythonTuple utf_16_ex_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict") => utf_16_ex_decode(context, input, errors, null, null);
 
-        public static PythonTuple utf_16_ex_decode(CodeContext context, object input, string errors, object unknown1, object unknown2) {
+        public static PythonTuple utf_16_ex_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors, object unknown1, object unknown2) {
             byte[] lePre = Encoding.Unicode.GetPreamble();
             byte[] bePre = Encoding.BigEndianUnicode.GetPreamble();
 
@@ -308,7 +324,7 @@ namespace IronPython.Modules {
                     }
                 }
                 if (match) {
-                    return PythonTuple.MakeTuple(String.Empty, lePre.Length, -1);
+                    return PythonTuple.MakeTuple(string.Empty, lePre.Length, -1);
                 }
                 match = true;
             }
@@ -322,7 +338,7 @@ namespace IronPython.Modules {
                 }
 
                 if (match) {
-                    return PythonTuple.MakeTuple(String.Empty, bePre.Length, 1);
+                    return PythonTuple.MakeTuple(string.Empty, bePre.Length, 1);
                 }
             }
 
@@ -332,9 +348,9 @@ namespace IronPython.Modules {
 
         #region Utf-16 Le Functions
 
-        public static PythonTuple utf_16_le_decode(CodeContext context, object input, string errors = "strict", bool final = false) => utf_16_decode(context, input, errors, final);
+        public static PythonTuple utf_16_le_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict", bool final = false) => utf_16_decode(context, input, errors, final);
 
-        public static PythonTuple utf_16_le_encode(object input, string errors = "strict") => DoEncode(Encoding.Unicode, input, errors);
+        public static PythonTuple utf_16_le_encode(object input, string errors = "strict") => DoEncode(Encoding.Unicode, input, errors).ToPythonTuple();
 
         #endregion
 
@@ -342,9 +358,9 @@ namespace IronPython.Modules {
 
 #if FEATURE_ENCODING
 
-        public static PythonTuple utf_7_decode(CodeContext context, object input, string errors = "strict", bool final = false) => DoDecode(context, "utf7", Encoding.UTF7, input, errors, final);
+        public static PythonTuple utf_7_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict", bool final = false) => DoDecode(context, "utf7", Encoding.UTF7, input, errors, final).ToPythonTuple();
 
-        public static PythonTuple utf_7_encode(object input, string errors = "strict") => DoEncode(Encoding.UTF7, input, errors);
+        public static PythonTuple utf_7_encode(object input, string errors = "strict") => DoEncode(Encoding.UTF7, input, errors).ToPythonTuple();
 
 #endif
 
@@ -352,24 +368,24 @@ namespace IronPython.Modules {
 
         #region Utf-8 Functions
 
-        public static PythonTuple utf_8_decode(CodeContext context, object input, string errors = "strict", bool final = false) => DoDecode(context, "utf8", Encoding.UTF8, input, errors, final);
+        public static PythonTuple utf_8_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict", bool final = false) => DoDecode(context, "utf8", Encoding.UTF8, input, errors, final).ToPythonTuple();
 
-        public static PythonTuple utf_8_encode(object input, string errors = "strict") => DoEncode(Encoding.UTF8, input, errors);
+        public static PythonTuple utf_8_encode(object input, string errors = "strict") => DoEncode(Encoding.UTF8, input, errors).ToPythonTuple();
 
         #endregion
 
 #if FEATURE_ENCODING
         #region Utf-32 Functions
 
-        public static PythonTuple utf_32_decode(CodeContext context, object input, string errors = "strict", bool final = false) => DoDecode(context, "utf32", Encoding.UTF32, input, errors, final);
+        public static PythonTuple utf_32_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict", bool final = false) => DoDecode(context, "utf32", Encoding.UTF32, input, errors, final).ToPythonTuple();
 
-        public static PythonTuple utf_32_encode(object input, string errors = "strict") => DoEncode(Encoding.UTF32, input, errors, true);
+        public static PythonTuple utf_32_encode(object input, string errors = "strict") => DoEncode(Encoding.UTF32, input, errors, true).ToPythonTuple();
 
         #endregion
 
-        public static PythonTuple utf_32_ex_decode(CodeContext context, object input, string errors = "strict") => utf_32_ex_decode(context, input, errors, null, null);
+        public static PythonTuple utf_32_ex_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict") => utf_32_ex_decode(context, input, errors, null, null);
 
-        public static PythonTuple utf_32_ex_decode(CodeContext context, object input, string errors, object byteorder, object final) {
+        public static PythonTuple utf_32_ex_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors, object byteorder, object final) {
             byte[] lePre = Encoding.UTF32.GetPreamble();
 
             string instr = Converter.ConvertToString(input);
@@ -382,7 +398,7 @@ namespace IronPython.Modules {
                     }
                 }
                 if (match) {
-                    return PythonTuple.MakeTuple(String.Empty, lePre.Length, -1);
+                    return PythonTuple.MakeTuple(string.Empty, lePre.Length, -1);
                 }
             }
 
@@ -392,9 +408,9 @@ namespace IronPython.Modules {
 
         #region Utf-32 Le Functions
 
-        public static PythonTuple utf_32_le_decode(CodeContext context, object input, string errors = "strict", bool final = false) => utf_32_decode(context, input, errors, final);
+        public static PythonTuple utf_32_le_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict", bool final = false) => utf_32_decode(context, input, errors, final);
 
-        public static PythonTuple utf_32_le_encode(object input, string errors = "strict") => DoEncode(Encoding.UTF32, input, errors);
+        public static PythonTuple utf_32_le_encode(object input, string errors = "strict") => DoEncode(Encoding.UTF32, input, errors).ToPythonTuple();
 
         #endregion
 
@@ -408,39 +424,23 @@ namespace IronPython.Modules {
             }
         }
 
-        public static PythonTuple utf_32_be_decode(CodeContext context, object input, string errors = "strict", bool final = false) => DoDecode(context, "utf32", UTF32BE, input, errors, final);
+        public static PythonTuple utf_32_be_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict", bool final = false) => DoDecode(context, "utf32", UTF32BE, input, errors, final).ToPythonTuple();
 
-        public static PythonTuple utf_32_be_encode(object input, string errors = "strict") => DoEncode(UTF32BE, input, errors);
+        public static PythonTuple utf_32_be_encode(object input, string errors = "strict") => DoEncode(UTF32BE, input, errors).ToPythonTuple();
 
         #endregion
 #endif
 
         #region Private implementation
 
-        private static PythonTuple DoDecode(CodeContext context, string encodingName, Encoding encoding, object input, string errors, bool final) {
-            // input should be character buffer of some form...
-            string res;
-
-            if (!Converter.TryConvertToString(input, out res)) {
-                if (input is Bytes tempBytes) {
-                    res = tempBytes.ToString();
-                } else {
-                    throw PythonOps.TypeErrorForBadInstance("argument 1 must be string, got {0}", input);
-                }
-            }
-
-            var decoded = StringOps.DoDecode(context, res, errors, encodingName, encoding, final, out int numBytes);
-
-            return PythonTuple.MakeTuple(decoded, numBytes);
+        private static Tuple<string, int> DoDecode(CodeContext context, string encodingName, Encoding encoding, [BytesConversion]IList<byte> input, string errors, bool final) {
+            var decoded = StringOps.DoDecode(context, input, errors, encodingName, encoding, final, out int numBytes);
+            return Tuple.Create(decoded, numBytes);
         }
 
-        private static PythonTuple DoEncode(Encoding encoding, object input, string errors) => DoEncode(encoding, input, errors, false);
-
-        private static PythonTuple DoEncode(Encoding encoding, object input, string errors, bool includePreamble) {
+        private static Tuple<Bytes, int> DoEncode(Encoding encoding, object input, string errors = "strict", bool includePreamble = false) {
             // input should be some Unicode object
-            string res;
-            if (Converter.TryConvertToString(input, out res)) {
-                StringBuilder sb = new StringBuilder();
+            if (Converter.TryConvertToString(input, out string str)) {
 
                 encoding = (Encoding)encoding.Clone();
 
@@ -448,18 +448,17 @@ namespace IronPython.Modules {
                 encoding.EncoderFallback = EncoderFallback.ExceptionFallback;
 #endif
 
-                if (includePreamble) {
-                    byte[] preamble = encoding.GetPreamble();
-                    for (int i = 0; i < preamble.Length; i++) {
-                        sb.Append((char)preamble[i]);
-                    }
-                }
+                byte[] bytes = encoding.GetBytes(str);
 
-                byte[] bytes = encoding.GetBytes(res);
-                for (int i = 0; i < bytes.Length; i++) {
-                    sb.Append((char)bytes[i]);
-                }
-                return PythonTuple.MakeTuple(sb.ToString(), res.Length);
+                if (!includePreamble)
+                    return Tuple.Create(Bytes.Make(bytes), str.Length);
+
+                MemoryStream sb = new MemoryStream();
+                byte[] preamble = encoding.GetPreamble();
+                sb.Write(preamble, 0, preamble.Length);
+                sb.Write(bytes, 0, bytes.Length);
+
+                return Tuple.Create(Bytes.Make(sb.ToArray()), str.Length);
             }
             throw PythonOps.TypeErrorForBadInstance("cannot decode {0}", input);
         }
@@ -477,7 +476,7 @@ namespace IronPython.Modules {
 
 #if FEATURE_ENCODING    // Encoding
 
-    class EncodingMapEncoding : Encoding {
+    internal class EncodingMapEncoding : Encoding {
         private readonly EncodingMap _map;
         private readonly string _errors;
 
@@ -583,7 +582,7 @@ namespace IronPython.Modules {
         }
     }
 
-    class CharmapEncoding : Encoding {
+    internal class CharmapEncoding : Encoding {
         private readonly IDictionary<object, object> _map;
         private readonly string _errors;
 

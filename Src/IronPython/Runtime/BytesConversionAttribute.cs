@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace IronPython {
     /// <summary>
@@ -17,10 +15,5 @@ namespace IronPython {
     /// as well. (2.6 only)
     /// </summary>
     [AttributeUsage(AttributeTargets.Parameter)]
-    public sealed class BytesConversionAttribute : Attribute {
-    }
-
-    [AttributeUsage(AttributeTargets.Parameter)]
-    public sealed class BytesConversionNoStringAttribute : Attribute {
-    }
+    public sealed class BytesConversionAttribute : Attribute { }
 }

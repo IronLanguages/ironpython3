@@ -23,16 +23,6 @@ class StructTest(unittest.TestCase):
         self.assertSequenceEqual(result, b"\x00\x01\x00\x02")
 
     def test_unpack(self):
-        # test string/string combination
-        a,b = struct.unpack(">HH", "\x00\x01\x00\x02")
-        self.assertEqual(a, 1)
-        self.assertEqual(b, 2)
-
-        # test bytes/string combination
-        a,b = struct.unpack(b">HH", "\x00\x01\x00\x02")
-        self.assertEqual(a, 1)
-        self.assertEqual(b, 2)
-
         # test bytes/string combination
         a,b = struct.unpack(b">HH", b"\x00\x01\x00\x02")
         self.assertEqual(a, 1)

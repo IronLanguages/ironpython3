@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -965,6 +966,28 @@ namespace IronPython.Runtime.Operations {
             Debug.Assert(digits[0] != '-');
 
             return spec.AlignNumericText(digits, self.IsZero(), self.IsPositive());
+        }
+
+        public static Bytes to_bytes(BigInteger value, int length, string byteorder, bool signed = false) {
+            // TODO: signed should be a keyword only argument
+            // TODO: should probably be moved to IntOps.Generated and included in all types
+
+            if (length < 0) throw PythonOps.ValueError("length argument must be non-negative");
+            if (!signed && value < 0) throw PythonOps.OverflowError("can't convert negative int to unsigned");
+
+            bool isLittle = byteorder == "little";
+            if (!isLittle && byteorder != "big") throw PythonOps.ValueError("byteorder must be either 'little' or 'big'");
+
+            var reqLength = (bit_length(value) + (signed ? 1 : 0)) / 8;
+            if (reqLength > length) throw PythonOps.OverflowError("int too big to convert");
+
+            var bytes = value.ToByteArray();
+            IEnumerable<byte> res = bytes;
+            if (length > bytes.Length) res = res.Concat(Enumerable.Repeat<byte>((value < 0) ? (byte)0xff : (byte)0, length - bytes.Length));
+            else if (length < bytes.Length) res = res.Take(length);
+            if (!isLittle) res = res.Reverse();
+
+            return Bytes.Make(res.ToArray());
         }
 
         internal static string AbsToHex(BigInteger val, bool lowercase) {

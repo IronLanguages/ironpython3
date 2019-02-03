@@ -4,6 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -50,9 +52,9 @@ namespace IronPython.Modules {
             }
         }
 
-        public static string a2b_uu(CodeContext/*!*/ context, string data) {
+        public static Bytes a2b_uu(CodeContext/*!*/ context, string data) {
             if (data == null) throw PythonOps.TypeError("expected string, got NoneType");
-            if (data.Length < 1) return new string(Char.MinValue, 32);
+            if (data.Length < 1) return Bytes.Make(new byte[32]);
 
             int lenDec = (data[0] + 32) % 64; // decoded length in bytes
             int lenEnc = (lenDec * 4 + 2) / 3; // encoded length in 6-bit chunks
@@ -71,21 +73,21 @@ namespace IronPython.Modules {
                 ProcessSuffix(context, suffix, UuDecFunc);
             }
             
-            return res.ToString();
+            return PythonOps.MakeBytes(res.ToString());
         }
 
-        public static string b2a_uu(CodeContext/*!*/ context, string data) {
+        public static Bytes b2a_uu(CodeContext/*!*/ context, [BytesConversion]IList<byte> data) {
             if (data == null) throw PythonOps.TypeError("expected string, got NoneType");
-            if (data.Length > 45) throw Error(context, "At most 45 bytes at once");
+            if (data.Count > 45) throw Error(context, "At most 45 bytes at once");
 
             StringBuilder res = EncodeWorker(data, ' ', delegate(int val) {
                 return (char)(32 + (val % 64));
             });
 
-            res.Insert(0, ((char)(32 + data.Length)).ToString());
+            res.Insert(0, ((char)(32 + data.Count)).ToString());
 
             res.Append('\n');
-            return res.ToString();
+            return PythonOps.MakeBytes(res.ToString());
         }
 
         private static int Base64DecFunc(char val) {
@@ -104,22 +106,25 @@ namespace IronPython.Modules {
             }
         }
 
-        public static object a2b_base64(CodeContext/*!*/ context, [BytesConversion]string data) {
+        public static Bytes a2b_base64(CodeContext/*!*/ context, string data) {
             if (data == null) throw PythonOps.TypeError("expected string, got NoneType");
             data = RemovePrefix(context, data, Base64DecFunc);
-            if (data.Length == 0) return String.Empty;
+            if (data.Length == 0) return Bytes.Empty;
 
             StringBuilder res = DecodeWorker(context, data, false, Base64DecFunc);
-            return res.ToString();
+            return PythonOps.MakeBytes(res.ToString());
         }
 
-        public static object b2a_base64([BytesConversion]string data) {
+        public static Bytes a2b_base64(CodeContext/*!*/ context, [BytesConversion]IList<byte> data)
+            => a2b_base64(context, PythonOps.MakeString(data));
+
+        public static Bytes b2a_base64([BytesConversion]IList<byte> data) {
             if (data == null) throw PythonOps.TypeError("expected string, got NoneType");
-            if (data.Length == 0) return String.Empty;
+            if (data.Count == 0) return Bytes.Empty;
 
             StringBuilder res = EncodeWorker(data, '=', EncodeValue);
             res.Append('\n');
-            return res.ToString();
+            return PythonOps.MakeBytes(res.ToString());
         }
 
         private static char EncodeValue(int val) {
@@ -132,7 +137,7 @@ namespace IronPython.Modules {
                 case 63:
                     return '/';
                 default:
-                    throw new InvalidOperationException(String.Format("Bad int val: {0}", val));
+                    throw new InvalidOperationException(string.Format("Bad int val: {0}", val));
             }
         }
 
@@ -295,7 +300,7 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             throw new NotImplementedException();
         }
 
-        private static ushort[] crctab_hqx = new ushort[] {
+        private static readonly ushort[] crctab_hqx = new ushort[] {
             0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7,
             0x8108, 0x9129, 0xa14a, 0xb16b, 0xc18c, 0xd1ad, 0xe1ce, 0xf1ef,
             0x1231, 0x0210, 0x3273, 0x2252, 0x52b5, 0x4294, 0x72f7, 0x62d6,
@@ -330,8 +335,8 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0x0ed1, 0x1ef0,
         };
 
-        public static object crc_hqx([BytesConversion]IList<byte> data, int crc) {
-            crc = crc & 0xffff;
+        public static int crc_hqx([BytesConversion]IList<byte> data, int crc) {
+            crc &= 0xffff;
             foreach (var b in data) {
                 crc = ((crc << 8) & 0xff00) ^ crctab_hqx[(crc >> 8) ^ b];
             }
@@ -339,35 +344,23 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
         }
 
         [Documentation("crc32(string[, value]) -> string\n\nComputes a CRC (Cyclic Redundancy Check) checksum of string.")]
-        public static int crc32(string buffer, int baseValue=0) {
-            byte[] data = buffer.MakeByteArray();
+        public static BigInteger crc32([BytesConversion]IList<byte> buffer, int baseValue=0) {
+            byte[] data = buffer as byte[] ?? (buffer is Bytes b ? b.GetUnsafeByteArray() : buffer.ToArray());
             uint result = crc32(data, 0, data.Length, unchecked((uint)baseValue));
-            return unchecked((int)result);
+            return result;
         }
 
         [Documentation("crc32(string[, value]) -> string\n\nComputes a CRC (Cyclic Redundancy Check) checksum of string.")]
-        public static int crc32(string buffer, uint baseValue) {
-            byte[] data = buffer.MakeByteArray();
+        public static BigInteger crc32([BytesConversion]IList<byte> buffer, uint baseValue) {
+            byte[] data = buffer as byte[] ?? (buffer is Bytes b ? b.GetUnsafeByteArray() : buffer.ToArray());
             uint result = crc32(data, 0, data.Length, baseValue);
-            return unchecked((int)result);
-        }
-
-        [Documentation("crc32(byte_array[, value]) -> string\n\nComputes a CRC (Cyclic Redundancy Check) checksum of byte_array.")]
-        public static int crc32(byte[] buffer, int baseValue=0) {
-            uint result = crc32(buffer, 0, buffer.Length, unchecked((uint)baseValue));
-            return unchecked((int)result);
-        }
-
-        [Documentation("crc32(byte_array[, value]) -> string\n\nComputes a CRC (Cyclic Redundancy Check) checksum of byte_array.")]
-        public static int crc32(byte[] buffer, uint baseValue) {
-            uint result = crc32(buffer, 0, buffer.Length, baseValue);
-            return unchecked((int)result);
+            return result;
         }
 
         internal static uint crc32(byte[] buffer, int offset, int count, uint baseValue) {
             uint remainder = (baseValue ^ 0xffffffff);
             for (int i = offset; i < offset + count; i++) {
-                remainder = remainder ^ buffer[i];
+                remainder ^= buffer[i];
                 for (int j = 0; j < 8; j++) {
                     if ((remainder & 0x01) != 0) {
                         remainder = (remainder >> 1) ^ 0xEDB88320;
@@ -423,39 +416,44 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             return (byte)('0' + p);
         }
 
-        public static object a2b_hex(CodeContext/*!*/ context, [BytesConversion]string data) {
+
+        public static Bytes a2b_hex(CodeContext/*!*/ context, string data) {
             if (data == null) throw PythonOps.TypeError("expected string, got NoneType");
             if ((data.Length & 0x01) != 0) throw PythonOps.TypeError("Odd-length string");
             StringBuilder res = new StringBuilder(data.Length / 2);
 
             for (int i = 0; i < data.Length; i += 2) {
                 byte b1, b2;
-                if (Char.IsDigit(data[i])) b1 = (byte)(data[i] - '0');
-                else b1 = (byte)(Char.ToUpper(data[i]) - 'A' + 10);
+                if (char.IsDigit(data[i])) b1 = (byte)(data[i] - '0');
+                else b1 = (byte)(char.ToUpper(data[i]) - 'A' + 10);
 
-                if (Char.IsDigit(data[i + 1])) b2 = (byte)(data[i + 1] - '0');
-                else b2 = (byte)(Char.ToUpper(data[i + 1]) - 'A' + 10);
+                if (char.IsDigit(data[i + 1])) b2 = (byte)(data[i + 1] - '0');
+                else b2 = (byte)(char.ToUpper(data[i + 1]) - 'A' + 10);
 
                 res.Append((char)(b1 * 16 + b2));
             }
-            return res.ToString();
+            return PythonOps.MakeBytes(res.ToString());
         }
+        public static Bytes a2b_hex(CodeContext/*!*/ context, [BytesConversion]IList<byte> data)
+            => a2b_hex(context, PythonOps.MakeString(data));
 
-        public static object unhexlify(CodeContext/*!*/ context, [BytesConversion]string hexstr) {
-            return a2b_hex(context, hexstr);
-        }
+        public static Bytes unhexlify(CodeContext/*!*/ context, string hexstr)
+            => a2b_hex(context, hexstr);
+
+        public static Bytes unhexlify(CodeContext/*!*/ context, [BytesConversion]IList<byte> hexstr)
+            => a2b_hex(context, hexstr);
 
         #region Private implementation
 
         private delegate char EncodeChar(int val);
         private delegate int DecodeByte(char val);
 
-        private static StringBuilder EncodeWorker(string data, char empty, EncodeChar encFunc) {
+        private static StringBuilder EncodeWorker(IList<byte> data, char empty, EncodeChar encFunc) {
             StringBuilder res = new StringBuilder();
 
             int bits;
-            for (int i = 0; i < data.Length; i += 3) {
-                switch (data.Length - i) {
+            for (int i = 0; i < data.Count; i += 3) {
+                switch (data.Count - i) {
                     case 1:
                         // only one char, emit 2 bytes &
                         // padding

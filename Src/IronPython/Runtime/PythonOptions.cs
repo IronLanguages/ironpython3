@@ -9,8 +9,6 @@ using System.Text.RegularExpressions;
 
 using Microsoft.Scripting;
 
-using IronPython.Runtime.Exceptions;
-
 namespace IronPython {
 
     [Serializable, CLSCompliant(true)]
@@ -39,11 +37,6 @@ namespace IronPython {
         /// Enables warnings related to Python 3.0 features.
         /// </summary>
         public bool WarnPython30 { get; }
-
-        /// <summary>
-        /// Enables 3.0 features that are implemented in IronPython.
-        /// </summary>
-        public bool Python30 { get; }
 
         public bool BytesWarning { get; }
 
@@ -136,12 +129,6 @@ namespace IronPython {
             : this(null) {
         }
 
-        /// <summary>
-        /// Gets the CPython version which IronPython will emulate.  Currently limited
-        /// to either 2.6 or 3.0.
-        /// </summary>
-        public Version PythonVersion { get; }
-
         public PythonOptions(IDictionary<string, object> options)
             : base(EnsureSearchPaths(options)) {
 
@@ -168,25 +155,6 @@ namespace IronPython {
             Tracing = GetOption(options, "Tracing", false);
             NoDebug = GetOption(options, "NoDebug", (Regex)null);
             Quiet = GetOption(options, "Quiet", false);
-
-            object value;
-            if (options != null && options.TryGetValue("PythonVersion", out value)) {
-                if (value is Version) {
-                    PythonVersion = (Version)value;
-                } else if (value is string) {
-                    PythonVersion = new Version((string)value);
-                } else {
-                    throw new ValueErrorException("Expected string or Version for PythonVersion");
-                }
-
-                if (PythonVersion != new Version(2, 7) && PythonVersion != new Version(3, 0)) {
-                    throw new ValueErrorException("Expected Version to be 2.7 or 3.0");
-                }
-            } else {
-                PythonVersion = new Version(2, 7);
-            }
-
-            Python30 = PythonVersion == new Version(3, 0);
         }
 
         private static IDictionary<string, object> EnsureSearchPaths(IDictionary<string, object> options) {

@@ -161,17 +161,6 @@ namespace IronPython.Runtime.Binding {
                     res = TryToCharConversion(self);
                     break;
                 case TypeCode.String:
-                    var limitType = self.GetLimitType();
-                    if ((limitType == typeof(Bytes) || limitType == typeof(ByteArray)) &&
-                        !_context.PythonOptions.Python30) {
-                        res = new DynamicMetaObject(
-                            Ast.Call(
-                                typeof(PythonOps).GetMethod(nameof(PythonOps.MakeString)),
-                                AstUtils.Convert(self.Expression, typeof(IList<byte>))
-                            ),
-                            BindingRestrictionsHelpers.GetRuntimeTypeRestriction(self.Expression, limitType)
-                        );
-                    }
                     break;
                 case TypeCode.Object:
                     // !!! Deferral?

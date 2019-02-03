@@ -49,7 +49,7 @@ namespace IronPython.Zlib
 After calling this function, some of the input data may still
 be stored in internal buffers for later processing.
 Call the flush() method to clear these buffers.")]
-        public string compress([BytesConversion]IList<byte> data)
+        public Bytes compress([BytesConversion]IList<byte> data)
         {
             byte[] input = data.ToArray();
             byte[] output = new byte[ZlibModule.DEFAULTALLOC];
@@ -80,7 +80,7 @@ Call the flush() method to clear these buffers.")]
                 throw ZlibModule.zlib_error(this.zst, err, "while compressing");
             }
 
-            return PythonAsciiEncoding.Instance.GetString(output, 0, (int)(zst.total_out - start_total_out));
+            return GetBytes(output, 0, (int)(zst.total_out - start_total_out));
         }
 
         [Documentation(@"flush( [mode] ) -- Return a string containing any remaining compressed data.
@@ -89,13 +89,13 @@ mode can be one of the constants Z_SYNC_FLUSH, Z_FULL_FLUSH, Z_FINISH; the
 default value used when mode is not specified is Z_FINISH.
 If mode == Z_FINISH, the compressor object can no longer be used after
 calling the flush() method.  Otherwise, more data can still be compressed.")]
-        public string flush(int mode=Z_FINISH)
+        public Bytes flush(int mode=Z_FINISH)
         {
             byte[] output = new byte[ZlibModule.DEFAULTALLOC];
 
             if(mode == Z_NO_FLUSH)
             {
-                return string.Empty;
+                return Bytes.Empty;
             }
 
             long start_total_out = zst.total_out;
@@ -129,7 +129,7 @@ calling the flush() method.  Otherwise, more data can still be compressed.")]
                 throw ZlibModule.zlib_error(this.zst, err, "while flushing");
             }
 
-            return PythonAsciiEncoding.Instance.GetString(output, 0, (int)(zst.total_out - start_total_out));
+            return GetBytes(output, 0, (int)(zst.total_out - start_total_out));
         }
 
         //[Documentation("copy() -- Return a copy of the compression object.")]
@@ -139,5 +139,12 @@ calling the flush() method.  Otherwise, more data can still be compressed.")]
         //}
 
         private ZStream zst;
+
+        private static Bytes GetBytes(byte[] bytes, int index, int count)
+        {
+            var res = new byte[count];
+            Array.Copy(bytes, index, res, 0, count);
+            return Bytes.Make(res);
+        }
     }
 }

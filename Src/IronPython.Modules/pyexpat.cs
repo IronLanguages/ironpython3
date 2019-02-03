@@ -579,6 +579,9 @@ namespace IronPython.Modules {
 
             private MemoryStream buffer = new MemoryStream();
 
+            public void Parse(CodeContext context, string data, bool isfinal = false)
+                => Parse(context, PythonOps.MakeBytes(data), isfinal);
+
             public void Parse(CodeContext context, [BytesConversion]IList<byte> data, bool isfinal = false) {
                 CheckParsingDone(context);
 

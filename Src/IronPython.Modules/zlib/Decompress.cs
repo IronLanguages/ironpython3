@@ -43,21 +43,12 @@ namespace IronPython.Zlib
                     throw ZlibModule.zlib_error(this.zst, err, "while creating decompression object");
             }
 
-            _unused_data = string.Empty;
-            _unconsumed_tail = string.Empty;
+            unused_data = Bytes.Empty;
+            unconsumed_tail = Bytes.Empty;
         }
 
-        private string _unused_data;
-        public string unused_data
-        {
-            get { return _unused_data; }
-        }
-
-        private string _unconsumed_tail;
-        public string unconsumed_tail
-        {
-            get { return _unconsumed_tail; }
-        }
+        public Bytes unused_data { get; private set; }
+        public Bytes unconsumed_tail { get; private set; }
 
         [Documentation(@"decompress(data, max_length) -- Return a string containing the decompressed
 version of the data.
@@ -68,7 +59,7 @@ Call the flush() method to clear these buffers.
 If the max_length parameter is specified then the return value will be
 no longer than max_length.  Unconsumed input data will be stored in
 the unconsumed_tail attribute.")]
-        public string decompress([BytesConversion]IList<byte> value, int max_length=0)
+        public Bytes decompress([BytesConversion]IList<byte> value, int max_length=0)
         {
             if(max_length < 0) throw new ArgumentException("max_length must be greater than zero");
 
@@ -100,19 +91,19 @@ the unconsumed_tail attribute.")]
 
             if(max_length > 0)
             {
-                _unconsumed_tail = PythonAsciiEncoding.Instance.GetString(zst.next_in, zst.next_in_index, zst.avail_in);
+                unconsumed_tail = GetBytes(zst.next_in, zst.next_in_index, zst.avail_in);
             }
 
             if(err == Z_STREAM_END)
             {
-                _unused_data += PythonAsciiEncoding.Instance.GetString(zst.next_in, zst.next_in_index, zst.avail_in);
+                unused_data += GetBytes(zst.next_in, zst.next_in_index, zst.avail_in);
             }
             else if(err != Z_OK && err != Z_BUF_ERROR)
             {
                 throw ZlibModule.zlib_error(this.zst, err, "while decompressing");
             }
 
-            return PythonAsciiEncoding.Instance.GetString(output, 0, (int)(zst.total_out - start_total_out));
+            return GetBytes(output, 0, (int)(zst.total_out - start_total_out));
         }
 
         [Documentation(@"flush( [length] ) -- Return a string containing any remaining
@@ -120,7 +111,7 @@ decompressed data. length, if given, is the initial size of the
 output buffer.
 
 The decompressor object can no longer be used after this call.")]
-        public string flush(int length=ZlibModule.DEFAULTALLOC)
+        public Bytes flush(int length=ZlibModule.DEFAULTALLOC)
         {
             if(length < 1)
                 throw PythonOps.ValueError("length must be greater than 0.");
@@ -153,7 +144,7 @@ The decompressor object can no longer be used after this call.")]
                 }
             }
 
-            return PythonAsciiEncoding.Instance.GetString(output, 0, (int)(zst.total_out - start_total_out));
+            return GetBytes(output, 0, (int)(zst.total_out - start_total_out));
         }
 
         //[Documentation("copy() -- Return a copy of the decompression object.")]
@@ -163,5 +154,12 @@ The decompressor object can no longer be used after this call.")]
         //}
 
         private ZStream zst;
+
+        private static Bytes GetBytes(byte[] bytes, int index, int count)
+        {
+            var res = new byte[count];
+            Array.Copy(bytes, index, res, 0, count);
+            return Bytes.Make(res);
+        }
     }
 }

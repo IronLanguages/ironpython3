@@ -261,7 +261,9 @@ namespace IronPython.Runtime {
         }
 
         public string decode(CodeContext/*!*/ context, [Optional]object encoding, string errors = "strict") {
-            return StringOps.decode(context, _bytes.MakeString(), encoding, errors);
+            lock (this) {
+                return StringOps.RawDecode(context, _bytes.ToArray(), encoding, errors);
+            }
         }
 
         public bool endswith([BytesConversion]IList<byte>/*!*/ suffix) {
@@ -495,7 +497,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public ByteArray/*!*/ lstrip([BytesConversionNoString]IList<byte> bytes) {
+        public ByteArray/*!*/ lstrip([BytesConversion]IList<byte> bytes) {
             lock (this) {
                 List<byte> res = _bytes.LeftStrip(bytes);
                 if (res == null) {
@@ -647,11 +649,11 @@ namespace IronPython.Runtime {
             }
         }
 
-        public PythonList/*!*/ rsplit([BytesConversionNoString]IList<byte>/*!*/ sep) {
+        public PythonList/*!*/ rsplit([BytesConversion]IList<byte>/*!*/ sep) {
             return rsplit(sep, -1);
         }
 
-        public PythonList/*!*/ rsplit([BytesConversionNoString]IList<byte>/*!*/ sep, int maxsplit) {
+        public PythonList/*!*/ rsplit([BytesConversion]IList<byte>/*!*/ sep, int maxsplit) {
             return _bytes.RightSplit(sep, maxsplit, x => new ByteArray(new List<byte>(x)));
         }
 
@@ -666,7 +668,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public ByteArray/*!*/  rstrip([BytesConversionNoString]IList<byte> bytes) {
+        public ByteArray/*!*/  rstrip([BytesConversion]IList<byte> bytes) {
             lock (this) {
                 List<byte> res = _bytes.RightStrip(bytes);
                 if (res == null) {
@@ -683,11 +685,11 @@ namespace IronPython.Runtime {
             }
         }
 
-        public PythonList/*!*/ split([BytesConversionNoString]IList<byte> sep) {
+        public PythonList/*!*/ split([BytesConversion]IList<byte> sep) {
             return split(sep, -1);
         }
 
-        public PythonList/*!*/ split([BytesConversionNoString]IList<byte> sep, int maxsplit) {
+        public PythonList/*!*/ split([BytesConversion]IList<byte> sep, int maxsplit) {
             lock (this) {
                 return _bytes.Split(sep, maxsplit, x => new ByteArray(x));
             }
@@ -757,7 +759,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public ByteArray/*!*/ strip([BytesConversionNoString]IList<byte> chars) {
+        public ByteArray/*!*/ strip([BytesConversion]IList<byte> chars) {
             lock (this) {
                 List<byte> res = _bytes.Strip(chars);
                 if (res == null) {
@@ -839,7 +841,7 @@ namespace IronPython.Runtime {
             return _bytes.Count + 1;
         }
 
-        public bool __contains__([BytesConversionNoString]IList<byte> bytes) {
+        public bool __contains__([BytesConversion]IList<byte> bytes) {
             return this.IndexOf(bytes, 0) != -1;
         }
 

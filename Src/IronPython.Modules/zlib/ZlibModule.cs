@@ -8,8 +8,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using ComponentAce.Compression.Libs.ZLib;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
@@ -82,7 +82,7 @@ a signed integer.")]
 
 An optional starting value can be specified.  The returned checksum is
 a signed integer.")]
-        public static int crc32([BytesConversion]IList<byte> data, long baseValue=0L)
+        public static BigInteger crc32([BytesConversion]IList<byte> data, long baseValue=0L)
         {
             if(baseValue < int.MinValue || baseValue > uint.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(baseValue));
@@ -96,7 +96,7 @@ a signed integer.")]
         [Documentation(@"compress(string[, level]) -- Returned compressed string.
 
 Optional arg level is the compression level, in 1-9.")]
-        public static string compress([BytesConversion]IList<byte> data,
+        public static Bytes compress([BytesConversion]IList<byte> data,
             int level=Z_DEFAULT_COMPRESSION)
         {
             byte[] input = data.ToArray();
@@ -135,9 +135,13 @@ Optional arg level is the compression level, in 1-9.")]
             err = zst.deflateEnd();
 
             if(err == Z_OK)
-                return PythonAsciiEncoding.Instance.GetString(output, 0, (int)zst.total_out);
-            else
-                throw zlib_error(zst, err, "while finishing compression");
+            {
+                var res = new byte[(int)zst.total_out];
+                Array.Copy(output, res, res.Length);
+                return Bytes.Make(res);
+            }
+
+            throw zlib_error(zst, err, "while finishing compression");
         }
 
         [Documentation(@"compressobj([level]) -- Return a compressor object.
@@ -157,12 +161,12 @@ Optional arg level is the compression level, in 1-9.")]
 
 Optional arg wbits is the window buffer size.  Optional arg bufsize is
 the initial output buffer size.")]
-        public static string decompress([BytesConversion]IList<byte> data,
+        public static Bytes decompress([BytesConversion]IList<byte> data,
             int wbits=MAX_WBITS,
             int bufsize=DEFAULTALLOC)
         {
             var bytes = Decompress(data.ToArray(), wbits, bufsize);
-            return PythonAsciiEncoding.Instance.GetString(bytes, 0, bytes.Length);
+            return Bytes.Make(bytes);
         }
 
         [Documentation(@"decompressobj([wbits]) -- Return a decompressor object.

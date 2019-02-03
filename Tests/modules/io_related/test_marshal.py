@@ -23,8 +23,8 @@ class MarshalTest(IronPythonTestCase):
                     254, -255, 256, 257,
                     65534, 65535, -65536,
                     3.1415926,
-                    
-                    0L,
+
+                    long(0),
                     -1234567890123456789,
                     2**33,
                     [],
@@ -39,18 +39,18 @@ class MarshalTest(IronPythonTestCase):
                     0+1j, 2-3.23j,
                     set(),
                     set(['abc', -5]),
-                    set([1, (2.1, 3L), frozenset([5]), 'x']),
+                    set([1, (2.1, long(3)), frozenset([5]), 'x']),
                     frozenset(),
                     frozenset(['abc', -5]),
-                    frozenset([1, (2.1, 3L), frozenset([5]), 'x'])
+                    frozenset([1, (2.1, long(3)), frozenset([5]), 'x'])
                 ]
-        
+
         if is_cli:
             import System
             objects.extend(
                 [
                 System.Single.Parse('-2345678'),
-                System.Int64.Parse('2345678'),                
+                System.Int64.Parse('2345678'),
                 ])
 
         # dumps / loads
@@ -58,7 +58,7 @@ class MarshalTest(IronPythonTestCase):
             s = marshal.dumps(x)
             x2 = marshal.loads(s)
             self.assertEqual(x, x2)
-            
+
             # on 64-bit the order in set/frozenset isn't the same after dumps/loads
             if (is_cli64 or is_osx) and isinstance(x, (set, frozenset)): continue
 
@@ -74,7 +74,7 @@ class MarshalTest(IronPythonTestCase):
                 x2 = marshal.load(f)
 
             self.assertEqual(x, x2)
-    
+
     def test_buffer(self):
         for s in ['', ' ', 'abc ', 'abcdef']:
             x = marshal.dumps(buffer(s))
@@ -83,7 +83,7 @@ class MarshalTest(IronPythonTestCase):
         for s in ['', ' ', 'abc ', 'abcdef']:
             with open(self.tfn, 'wb') as f:
                 marshal.dump(buffer(s), f)
-            
+
             with open(self.tfn, 'rb') as f:
                 x2 = marshal.load(f)
 
@@ -92,26 +92,26 @@ class MarshalTest(IronPythonTestCase):
     def test_negative(self):
         self.assertRaises(TypeError, marshal.dump, 2, None)
         self.assertRaises(TypeError, marshal.load, '-1', None)
-        
+
         l = [1, 2]
         l.append(l)
         self.assertRaises(ValueError, marshal.dumps, l) ## infinite loop
-        
+
         class my: pass
         self.assertRaises(ValueError, marshal.dumps, my())  ## unmarshallable object
 
     def test_file_multiple_reads(self):
         """calling load w/ a file should only advance the length of the file"""
         l = []
-        for i in xrange(10):
+        for i in range(10):
             l.append(marshal.dumps({i:i}))
-        
+
         data = ''.join(l)
         with open('tempfile.txt', 'w') as f:
             f.write(data)
-        
+
         with open('tempfile.txt') as f:
-            for i in xrange(10):
+            for i in range(10):
                 obj = marshal.load(f)
                 self.assertEqual(obj, {i:i})
 
@@ -125,7 +125,7 @@ class MarshalTest(IronPythonTestCase):
         self.assertEqual(marshal.loads(marshal.dumps(['abc', 'abc'], 1)), ['abc', 'abc'])
         self.assertEqual(marshal.loads(marshal.dumps(['abc', 'abc'], 0)), ['abc', 'abc'])
         self.assertEqual(marshal.loads(marshal.dumps(['abc', 'abc', 'abc', 'def', 'def'], 1)), ['abc', 'abc', 'abc', 'def', 'def'])
-    
+
     def test_binary_floats(self):
         self.assertEqual(marshal.dumps(2.0, 2), 'g\x00\x00\x00\x00\x00\x00\x00@')
         self.assertEqual(marshal.dumps(2.0), 'g\x00\x00\x00\x00\x00\x00\x00@')

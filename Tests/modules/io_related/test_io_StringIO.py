@@ -1,17 +1,6 @@
-#####################################################################################
-#
-# Copyright (c) IronPython Team. All rights reserved.
-#
-# This source code is subject to terms and conditions of the Apache License, Version 2.0. A
-# copy of the license can be found in the License.html file at the root of this distribution. If
-# you cannot locate the  Apache License, Version 2.0, please send an email to
-# ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound
-# by the terms of the Apache License, Version 2.0.
-#
-# You must not remove this notice, or any other, from this software.
-#
-#
-#####################################################################################
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the Apache 2.0 License.
+# See the LICENSE file in the project root for more information.
 
 ##
 ## Test the io.StringIO
@@ -97,8 +86,8 @@ class StringIOTest(unittest.TestCase):
     # __iter__, next
     def call_next(self, i):
         self.assertEqual(i.__iter__(), i)
-        self.assertEqual(i.next(), "Line 1\n")
-        self.assertEqual(i.next(), "Line 2\n")
+        self.assertEqual(next(i), "Line 1\n")
+        self.assertEqual(next(i), "Line 2\n")
         self.assertEqual([l for l in i], ["Line 3\n", "Line 4\n", "Line 5"])
         i.close()
         self.assertRaises(ValueError, i.readlines)
@@ -173,7 +162,6 @@ class StringIOTest(unittest.TestCase):
     def call_write(self, o):
         self.assertEqual(o.getvalue(), text)
         o.write("Data")
-        self.assertRaises(TypeError, o.write, buffer(' 1'))
         self.assertRaises(TypeError, o.write, None)
         o.write(" 1")
         self.assertEqual(o.read(7), "\nLine 2")
@@ -187,12 +175,9 @@ class StringIOTest(unittest.TestCase):
         o.writelines(["Data 1", "Data 2"])
         self.assertEqual(o.read(8), "2\nLine 3")
         self.assertEqual(o.getvalue(), "Data 1Data 22\nLine 3\nLine 4\nLine 5")
-        self.assertRaises(TypeError, o.writelines, [buffer('foo')])
         self.assertRaises(TypeError, o.writelines, [None])
         o.close()
         self.assertRaises(ValueError, o.writelines, "Hello")
-        self.assertRaises(ValueError, o.writelines, ['foo', buffer('foo')])
-        self.assertRaises(ValueError, o.writelines, [buffer('foo')])
 
     # softspace
     def call_softspace(self, o):
@@ -369,7 +354,7 @@ class StringIOTest(unittest.TestCase):
         stdout_save = sys.stdout
         capture = io.StringIO()
         sys.stdout = capture
-        print "Testing"
+        print("Testing")
         sys.stdout = stdout_save
         self.assertEqual(capture.getvalue(), "Testing\n")
 

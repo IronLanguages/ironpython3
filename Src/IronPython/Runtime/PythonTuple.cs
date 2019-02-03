@@ -670,4 +670,22 @@ namespace IronPython.Runtime {
             return _tuple.__len__() - _curIndex - 1;
         }
     }
+
+    internal static class TupleExtensions {
+        public static PythonTuple ToPythonTuple<T1>(this Tuple<T1> value) {
+            return PythonTuple.MakeTuple(value.Item1);
+        }
+
+        public static PythonTuple ToPythonTuple<T1, T2>(this Tuple<T1, T2> value) {
+            return PythonTuple.MakeTuple(value.Item1, value.Item2);
+        }
+
+        public static PythonTuple ToPythonTuple<T1, T2, T3>(this Tuple<T1, T2, T3> value) {
+            return PythonTuple.MakeTuple(value.Item1, value.Item2, value.Item3);
+        }
+
+        public static PythonTuple ToPythonTuple<T1, T2, T3, T4>(this Tuple<T1, T2, T3, T4> value) {
+            return PythonTuple.MakeTuple(value.Item1, value.Item2, value.Item3, value.Item4);
+        }
+    }
 }

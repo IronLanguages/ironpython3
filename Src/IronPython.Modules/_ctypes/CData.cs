@@ -95,7 +95,7 @@ namespace IronPython.Modules {
 
             #region IBufferProtocol Members
 
-            Bytes IBufferProtocol.GetItem(int index) {
+            object IBufferProtocol.GetItem(int index) {
                 return new Bytes(GetBytes(index, NativeType.Size));
             }
 

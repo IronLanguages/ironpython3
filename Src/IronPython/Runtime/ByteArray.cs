@@ -1500,9 +1500,9 @@ namespace IronPython.Runtime {
 
         #region IBufferProtocol Members
 
-        Bytes IBufferProtocol.GetItem(int index) {
+        object IBufferProtocol.GetItem(int index) {
             lock (this) {
-                return new Bytes(new[] { _bytes[PythonOps.FixIndex(index, _bytes.Count)] });
+                return (int)_bytes[PythonOps.FixIndex(index, _bytes.Count)];
             }
         }
 

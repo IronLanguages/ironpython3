@@ -998,9 +998,9 @@ namespace IronPython.Runtime {
 
         #region IBufferProtocol Members
         
-        Bytes IBufferProtocol.GetItem(int index) {
+        object IBufferProtocol.GetItem(int index) {
             byte res = _bytes[PythonOps.FixIndex(index, _bytes.Length)];
-            return new Bytes(new byte[] { res });
+            return (int)res;
         }
         
         void IBufferProtocol.SetItem(int index, object value) {

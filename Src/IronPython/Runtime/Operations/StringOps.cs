@@ -47,7 +47,7 @@ namespace IronPython.Runtime.Operations {
 
         [return: MaybeNotImplemented]
         public object __eq__(object other) {
-            if (other is string || other is ExtensibleString || other is Bytes) {
+            if (other is string || other is ExtensibleString) {
                 return ScriptingRuntimeHelpers.BooleanToObject(EqualsWorker(other));
             }
 
@@ -56,7 +56,7 @@ namespace IronPython.Runtime.Operations {
 
         [return: MaybeNotImplemented]
         public object __ne__(object other) {
-            if (other is string || other is ExtensibleString || other is Bytes) {
+            if (other is string || other is ExtensibleString) {
                 return ScriptingRuntimeHelpers.BooleanToObject(!EqualsWorker(other));
             }
 
@@ -78,12 +78,8 @@ namespace IronPython.Runtime.Operations {
                 return EqualsWorker(other);
             }
 
-            ExtensibleString es = other as ExtensibleString;
-            if (es != null) return EqualsWorker(es.Value, comparer);
-            string os = other as string;
-            if (os != null) return EqualsWorker(os, comparer);
-            Bytes tempBytes = other as Bytes;
-            if (tempBytes != null) return EqualsWorker(tempBytes.ToString(), comparer);
+            if (other is ExtensibleString es) return EqualsWorker(es.Value, comparer);
+            if (other is string os) return EqualsWorker(os, comparer);
 
             return false;
         }
@@ -91,12 +87,8 @@ namespace IronPython.Runtime.Operations {
         private bool EqualsWorker(object other) {
             if (other == null) return false;
 
-            ExtensibleString es = other as ExtensibleString;
-            if (es != null) return Value == es.Value;
-            string os = other as string;
-            if (os != null) return Value == os;
-            Bytes tempBytes = other as Bytes;
-            if (tempBytes != null) return Value == tempBytes.ToString();
+            if (other is ExtensibleString es) return Value == es.Value;
+            if (other is string os) return Value == os;
 
             return false;
         }
@@ -143,7 +135,6 @@ namespace IronPython.Runtime.Operations {
         public virtual bool __contains__(object value) {
             if (value is string) return Value.Contains((string)value);
             else if (value is ExtensibleString) return Value.Contains(((ExtensibleString)value).Value);
-            else if (value is Bytes) return Value.Contains(value.ToString());
 
             throw PythonOps.TypeErrorForBadInstance("expected string, got {0}", value);
         }
@@ -179,20 +170,6 @@ namespace IronPython.Runtime.Operations {
             }
 
             throw PythonOps.TypeError("expected str, got {0} from __str__", DynamicHelpers.GetPythonType(value).Name);
-        }
-
-        private static object CheckAsciiString(CodeContext context, string s) {
-            for (int i = 0; i < s.Length; i++) {
-                if (s[i] > '\x80')
-                    return StringOps.__new__(
-                        context,
-                        (PythonType)DynamicHelpers.GetPythonTypeFromType(typeof(String)),
-                        s,
-                        null,
-                        "strict"
-                        );
-            }
-            return s;
         }
 
         #region Python Constructors

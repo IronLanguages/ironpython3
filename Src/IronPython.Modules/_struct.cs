@@ -89,9 +89,9 @@ namespace IronPython.Modules {
             public string format { get; private set; }
 
             [Documentation("returns a string consisting of the values serialized according to the format of the struct object")]
-            public string/*!*/ pack(CodeContext/*!*/ context, params object[] values) {
+            public Bytes/*!*/ pack(CodeContext/*!*/ context, params object[] values) {
                 if (values.Length != _encodingCount) {
-                    throw Error(context, String.Format("pack requires exactly {0} arguments", _encodingCount));
+                    throw Error(context, string.Format("pack requires exactly {0} arguments", _encodingCount));
                 }
 
                 int curObj = 0;
@@ -193,7 +193,7 @@ namespace IronPython.Modules {
                     }
                 }
 
-                return res.ToString();
+                return PythonOps.MakeBytes(res.ToString());
             }
 
             [Documentation("Stores the deserialized data into the provided array")]
@@ -201,13 +201,13 @@ namespace IronPython.Modules {
                 byte[] existing = buffer.ToByteArray();
 
                 if (offset + size > existing.Length) {
-                    throw Error(context, String.Format("pack_into requires a buffer of at least {0} bytes", size));
+                    throw Error(context, string.Format("pack_into requires a buffer of at least {0} bytes", size));
                 }
 
-                string data = pack(context, args);
+                var data = pack(context, args).GetUnsafeByteArray();
 
                 for (int i = 0; i < data.Length; i++) {
-                    existing[i + offset] = (byte)data[i];
+                    existing[i + offset] = data[i];
                 }
 
                 buffer.Clear();
@@ -218,23 +218,23 @@ namespace IronPython.Modules {
                 IList<byte> existing = buffer._bytes;
 
                 if (offset + size > existing.Count) {
-                    throw Error(context, String.Format("pack_into requires a buffer of at least {0} bytes", size));
+                    throw Error(context, string.Format("pack_into requires a buffer of at least {0} bytes", size));
                 }
 
-                string data = pack(context, args);
+                var data = pack(context, args).GetUnsafeByteArray();
 
                 for (int i = 0; i < data.Length; i++) {
-                    existing[i + offset] = (byte)data[i];
+                    existing[i + offset] = data[i];
                 }
             }
 
             [Documentation("deserializes the string using the structs specified format")]
-            public PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [NotNull]string @string) {
-                if (@string.Length != size) {
+            public PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [BytesConversion][NotNull]IList<byte> @string) {
+                if (@string.Count != size) {
                     throw Error(context, $"unpack requires a string argument of length {size}");
                 }
 
-                string data = @string;
+                var data = @string;
                 int curIndex = 0;
                 var res = new object[_encodingCount];
                 var res_idx = 0;
@@ -261,7 +261,7 @@ namespace IronPython.Modules {
                             break;
                         case FormatType.Char:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                res[res_idx++] = CreateCharValue(context, ref curIndex, data).ToString();
+                                res[res_idx++] = Bytes.Make(new byte[] { CreateCharValue(context, ref curIndex, data) });
                             }
                             break;
                         case FormatType.SignedChar:
@@ -336,32 +336,25 @@ namespace IronPython.Modules {
                 System.Diagnostics.Debug.Assert(res_idx == res.Length);
 
                 return PythonTuple.MakeTuple(res);
+
             }
 
-            public PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [BytesConversion][NotNull]IList<byte> @string)
-                => unpack(context, @string.MakeString());
-
             public PythonTuple/*!*/ unpack(CodeContext/*!*/ context, [NotNull]ArrayModule.array/*!*/ buffer)
-                => unpack(context, buffer.ToByteArray().MakeString());
+                => unpack(context, buffer.ToByteArray());
 
-            [Documentation("reads the current format from the specified string")]
-            public PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [NotNull]string/*!*/ buffer, int offset = 0) {
-                int bytesAvail = buffer.Length - offset;
+            [Documentation("reads the current format from the specified array")]
+            public PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [BytesConversion][NotNull]IList<byte>/*!*/ buffer, int offset = 0) {
+                int bytesAvail = buffer.Count - offset;
                 if (bytesAvail < size) {
-                    throw Error(context, String.Format("unpack_from requires a buffer of at least {0} bytes", size));
+                    throw Error(context, string.Format("unpack_from requires a buffer of at least {0} bytes", size));
                 }
 
                 return unpack(context, buffer.Substring(offset, size));
             }
 
             [Documentation("reads the current format from the specified array")]
-            public PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [BytesConversion][NotNull]IList<byte>/*!*/ buffer, int offset = 0) {
-                return unpack_from(context, buffer.MakeString(), offset);
-            }
-
-            [Documentation("reads the current format from the specified array")]
             public PythonTuple/*!*/ unpack_from(CodeContext/*!*/ context, [NotNull]ArrayModule.array/*!*/ buffer, int offset = 0) {
-                return unpack_from(context, buffer.ToByteArray().MakeString(), offset);
+                return unpack_from(context, buffer.ToByteArray(), offset);
             }
 
 
@@ -491,13 +484,13 @@ namespace IronPython.Modules {
                             fStandardized = true;
                             break;
                         default:
-                            if (Char.IsDigit(fmt[i])) {
+                            if (char.IsDigit(fmt[i])) {
                                 count = 0;
-                                while (Char.IsDigit(fmt[i])) {
+                                while (char.IsDigit(fmt[i])) {
                                     count = count * 10 + (fmt[i] - '0');
                                     i++;
                                 }
-                                if (Char.IsWhiteSpace(fmt[i])) Error(context, "white space not allowed between count and format");
+                                if (char.IsWhiteSpace(fmt[i])) Error(context, "white space not allowed between count and format");
                                 i--;
                                 break;
                             }
@@ -668,7 +661,7 @@ namespace IronPython.Modules {
         }
 
         [Documentation("Return string containing values v1, v2, ... packed according to fmt.")]
-        public static string/*!*/ pack(CodeContext/*!*/ context, object fmt/*!*/, params object[] values) {
+        public static Bytes/*!*/ pack(CodeContext/*!*/ context, object fmt/*!*/, params object[] values) {
             return GetStructFromCache(context, fmt).pack(context, values);
         }
 
@@ -843,23 +836,23 @@ namespace IronPython.Modules {
             }
         }
 
-        private static void WriteString(StringBuilder res, int len, string val) {
-            for (int i = 0; i < val.Length && i < len; i++) {
-                res.Append(val[i]);
+        private static void WriteString(StringBuilder res, int len,  IList<byte> val) {
+            for (int i = 0; i < val.Count && i < len; i++) {
+                res.Append((char)val[i]);
             }
-            for (int i = val.Length; i < len; i++) {
+            for (int i = val.Count; i < len; i++) {
                 res.Append('\0');
             }
         }
 
-        private static void WritePascalString(StringBuilder res, int len, string val) {
-            int lenByte = Math.Min(255, Math.Min(val.Length, len));
+        private static void WritePascalString(StringBuilder res, int len, IList<byte> val) {
+            int lenByte = Math.Min(255, Math.Min(val.Count, len));
             res.Append((char)lenByte);
 
-            for (int i = 0; i < val.Length && i < len; i++) {
-                res.Append(val[i]);
+            for (int i = 0; i < val.Count && i < len; i++) {
+                res.Append((char)val[i]);
             }
-            for (int i = val.Length; i < len; i++) {
+            for (int i = val.Count; i < len; i++) {
                 res.Append('\0');
             }
         }
@@ -870,8 +863,7 @@ namespace IronPython.Modules {
         internal static bool GetBoolValue(CodeContext/*!*/ context, int index, object[] args) {
             object val = GetValue(context, index, args);
 
-            object res;
-            if (Converter.TryConvert(val, typeof(bool), out res)) {
+            if (Converter.TryConvert(val, typeof(bool), out object res)) {
                 return (bool)res;
             }
             // Should never happen
@@ -880,18 +872,14 @@ namespace IronPython.Modules {
 
         internal static char GetCharValue(CodeContext/*!*/ context, int index, object[] args) {
             object val = GetValue(context, index, args);
-            string strVal = val as string;
-            if (strVal != null && strVal.Length == 1) return strVal[0];
-
-            IList<Byte> byteVal = val as IList<Byte>;
-            if (byteVal == null || byteVal.Count != 1) throw Error(context, "char format requires string of length 1");
-            else return (char)byteVal[0];
+            if (val is string strVal && strVal.Length == 1) return strVal[0];
+            if (val is IList<byte> byteVal && byteVal.Count == 1) return (char)byteVal[0];
+            throw Error(context, "char format requires string of length 1");
         }
 
         internal static sbyte GetSByteValue(CodeContext/*!*/ context, int index, object[] args) {
             object val = GetValue(context, index, args);
-            sbyte res;
-            if (Converter.TryConvertToSByte(val, out res)) {
+            if (Converter.TryConvertToSByte(val, out sbyte res)) {
                 return res;
             }
             throw Error(context, "expected sbyte value got " + val.ToString());
@@ -900,33 +888,28 @@ namespace IronPython.Modules {
         internal static byte GetByteValue(CodeContext/*!*/ context, int index, object[] args) {
             object val = GetValue(context, index, args);
 
-            byte res;
-            if (Converter.TryConvertToByte(val, out res)) return res;
+            if (Converter.TryConvertToByte(val, out byte res)) return res;
 
-            char cres;
-            if (Converter.TryConvertToChar(val, out cres)) return (byte)cres;
+            if (Converter.TryConvertToChar(val, out char cres)) return (byte)cres;
 
             throw Error(context, "expected byte value got " + val.ToString());
         }
 
         internal static short GetShortValue(CodeContext/*!*/ context, int index, object[] args) {
             object val = GetValue(context, index, args);
-            short res;
-            if (Converter.TryConvertToInt16(val, out res)) return res;
+            if (Converter.TryConvertToInt16(val, out short res)) return res;
             throw Error(context, "expected short value");
         }
 
         internal static ushort GetUShortValue(CodeContext/*!*/ context, int index, object[] args) {
             object val = GetValue(context, index, args);
-            ushort res;
-            if (Converter.TryConvertToUInt16(val, out res)) return res;
+            if (Converter.TryConvertToUInt16(val, out ushort res)) return res;
             throw Error(context, "expected ushort value");
         }
 
         internal static int GetIntValue(CodeContext/*!*/ context, int index, object[] args) {
             object val = GetValue(context, index, args);
-            int res;
-            if (Converter.TryConvertToInt32(val, out res)) return res;
+            if (Converter.TryConvertToInt32(val, out int res)) return res;
             throw Error(context, "expected int value");
         }
 
@@ -945,16 +928,14 @@ namespace IronPython.Modules {
                 CheckRange(context, ((Extensible<BigInteger>)val).Value, type);
                 return (uint)((Extensible<BigInteger>)val).Value;
             } else {
-                object objres;
-                if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, val, "__int__", out objres)) {
+                if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, val, "__int__", out object objres)) {
                     if (objres is int) {
                         CheckRange(context, (int)objres, type);
                         return (uint)(int)objres;
                     }
                 }
 
-                uint res;
-                if (Converter.TryConvertToUInt32(val, out res)) {
+                if (Converter.TryConvertToUInt32(val, out uint res)) {
                     return res;
                 }
             }
@@ -981,13 +962,11 @@ namespace IronPython.Modules {
         internal static IntPtr GetPointer(CodeContext/*!*/ context, int index, object[] args) {
             object val = GetValue(context, index, args);
             if (IntPtr.Size == 4) {
-                uint res;
-                if (Converter.TryConvertToUInt32(val, out res)) {
+                if (Converter.TryConvertToUInt32(val, out uint res)) {
                     return new IntPtr(res);
                 }
             } else {
-                long res;
-                if (Converter.TryConvertToInt64(val, out res)) {
+                if (Converter.TryConvertToInt64(val, out long res)) {
                     return new IntPtr(res);
                 }
             }
@@ -996,29 +975,25 @@ namespace IronPython.Modules {
 
         internal static long GetLongValue(CodeContext/*!*/ context, int index, object[] args) {
             object val = GetValue(context, index, args);
-            long res;
-            if (Converter.TryConvertToInt64(val, out res)) return res;
+            if (Converter.TryConvertToInt64(val, out long res)) return res;
             throw Error(context, "expected long value");
         }
 
         internal static ulong GetULongLongValue(CodeContext/*!*/ context, int index, object[] args) {
             object val = GetValue(context, index, args);
-            ulong res;
-            if (Converter.TryConvertToUInt64(val, out res)) return res;
+            if (Converter.TryConvertToUInt64(val, out ulong res)) return res;
             throw Error(context, "expected ulong value");
         }
 
         internal static double GetDoubleValue(CodeContext/*!*/ context, int index, object[] args) {
             object val = GetValue(context, index, args);
-            double res;
-            if (Converter.TryConvertToDouble(val, out res)) return res;
+            if (Converter.TryConvertToDouble(val, out double res)) return res;
             throw Error(context, "expected double value");
         }
 
-        internal static string GetStringValue(CodeContext/*!*/ context, int index, object[] args) {
+        internal static IList<byte> GetStringValue(CodeContext/*!*/ context, int index, object[] args) {
             object val = GetValue(context, index, args);
-            string res;
-            if (Converter.TryConvertToString(val, out res)) return res;
+            if (val is IList<byte> res) return res;
             throw Error(context, "expected string value");
         }
 
@@ -1030,15 +1005,15 @@ namespace IronPython.Modules {
 
         #region Data creater helpers
 
-        internal static bool CreateBoolValue(CodeContext/*!*/ context, ref int index, string data) {
+        internal static bool CreateBoolValue(CodeContext/*!*/ context, ref int index, IList<byte> data) {
             return (int)ReadData(context, ref index, data) != 0;
         }
 
-        internal static char CreateCharValue(CodeContext/*!*/ context, ref int index, string data) {
+        internal static byte CreateCharValue(CodeContext/*!*/ context, ref int index, IList<byte> data) {
             return ReadData(context, ref index, data);
         }
 
-        internal static short CreateShortValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, string data) {
+        internal static short CreateShortValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
             byte b1 = (byte)ReadData(context, ref index, data);
             byte b2 = (byte)ReadData(context, ref index, data);
 
@@ -1049,7 +1024,7 @@ namespace IronPython.Modules {
             }
         }
 
-        internal static ushort CreateUShortValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, string data) {
+        internal static ushort CreateUShortValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
             byte b1 = (byte)ReadData(context, ref index, data);
             byte b2 = (byte)ReadData(context, ref index, data);
 
@@ -1060,7 +1035,7 @@ namespace IronPython.Modules {
             }
         }
 
-        internal static float CreateFloatValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, string data) {
+        internal static float CreateFloatValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
             byte[] bytes = new byte[4];
             if (fLittleEndian) {
                 bytes[0] = (byte)ReadData(context, ref index, data);
@@ -1076,7 +1051,7 @@ namespace IronPython.Modules {
             float res = BitConverter.ToSingle(bytes, 0);
 
             if (context.LanguageContext.FloatFormat == FloatFormat.Unknown) {
-                if (Single.IsNaN(res) || Single.IsInfinity(res)) {
+                if (float.IsNaN(res) || float.IsInfinity(res)) {
                     throw PythonOps.ValueError("can't unpack IEEE 754 special value on non-IEEE platform");
                 }
             }
@@ -1084,7 +1059,7 @@ namespace IronPython.Modules {
             return res;
         }
 
-        internal static int CreateIntValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, string data) {
+        internal static int CreateIntValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
             byte b1 = (byte)ReadData(context, ref index, data);
             byte b2 = (byte)ReadData(context, ref index, data);
             byte b3 = (byte)ReadData(context, ref index, data);
@@ -1096,7 +1071,7 @@ namespace IronPython.Modules {
                 return (int)((b1 << 24) | (b2 << 16) | (b3 << 8) | b4);
         }
 
-        internal static uint CreateUIntValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, string data) {
+        internal static uint CreateUIntValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
             byte b1 = (byte)ReadData(context, ref index, data);
             byte b2 = (byte)ReadData(context, ref index, data);
             byte b3 = (byte)ReadData(context, ref index, data);
@@ -1108,7 +1083,7 @@ namespace IronPython.Modules {
                 return (uint)((b1 << 24) | (b2 << 16) | (b3 << 8) | b4);
         }
 
-        internal static long CreateLongValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, string data) {
+        internal static long CreateLongValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
             long b1 = (byte)ReadData(context, ref index, data);
             long b2 = (byte)ReadData(context, ref index, data);
             long b3 = (byte)ReadData(context, ref index, data);
@@ -1126,7 +1101,7 @@ namespace IronPython.Modules {
                                 (b5 << 24) | (b6 << 16) | (b7 << 8) | b8);
         }
 
-        internal static ulong CreateULongValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, string data) {
+        internal static ulong CreateULongValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
             ulong b1 = (byte)ReadData(context, ref index, data);
             ulong b2 = (byte)ReadData(context, ref index, data);
             ulong b3 = (byte)ReadData(context, ref index, data);
@@ -1143,7 +1118,7 @@ namespace IronPython.Modules {
                                 (b5 << 24) | (b6 << 16) | (b7 << 8) | b8);
         }
 
-        internal static double CreateDoubleValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, string data) {
+        internal static double CreateDoubleValue(CodeContext/*!*/ context, ref int index, bool fLittleEndian, IList<byte> data) {
             byte[] bytes = new byte[8];
             if (fLittleEndian) {
                 bytes[0] = (byte)ReadData(context, ref index, data);
@@ -1167,7 +1142,7 @@ namespace IronPython.Modules {
 
             double res = BitConverter.ToDouble(bytes, 0);
             if (context.LanguageContext.DoubleFormat == FloatFormat.Unknown) {
-                if (Double.IsNaN(res) || Double.IsInfinity(res)) {
+                if (double.IsNaN(res) || double.IsInfinity(res)) {
                     throw PythonOps.ValueError("can't unpack IEEE 754 special value on non-IEEE platform");
                 }
             }
@@ -1175,30 +1150,30 @@ namespace IronPython.Modules {
             return res;
         }
 
-        internal static string CreateString(CodeContext/*!*/ context, ref int index, int count, string data) {
-            StringBuilder res = new StringBuilder();
+        internal static Bytes CreateString(CodeContext/*!*/ context, ref int index, int count, IList<byte> data) {
+            MemoryStream res = new MemoryStream();
             for (int i = 0; i < count; i++) {
-                res.Append(ReadData(context, ref index, data));
+                res.WriteByte(ReadData(context, ref index, data));
             }
-            return res.ToString();
+            return Bytes.Make(res.ToArray());
         }
 
 
-        internal static string CreatePascalString(CodeContext/*!*/ context, ref int index, int count, string data) {
+        internal static Bytes CreatePascalString(CodeContext/*!*/ context, ref int index, int count, IList<byte> data) {
             int realLen = (int)ReadData(context, ref index, data);
-            StringBuilder res = new StringBuilder();
+            MemoryStream res = new MemoryStream();
             for (int i = 0; i < realLen; i++) {
-                res.Append(ReadData(context, ref index, data));
+                res.WriteByte(ReadData(context, ref index, data));
             }
             for (int i = realLen; i < count; i++) {
                 // throw away null bytes
                 ReadData(context, ref index, data);
             }
-            return res.ToString();
+            return Bytes.Make(res.ToArray());
         }
 
-        private static char ReadData(CodeContext/*!*/ context, ref int index, string data) {
-            if (index >= data.Length) throw Error(context, "not enough data while reading");
+        private static byte ReadData(CodeContext/*!*/ context, ref int index, IList<byte> data) {
+            if (index >= data.Count) throw Error(context, "not enough data while reading");
 
             return data[index++];
         }

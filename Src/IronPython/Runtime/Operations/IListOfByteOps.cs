@@ -190,7 +190,7 @@ namespace IronPython.Runtime.Operations {
             if (ssub == null) {
                 throw PythonOps.TypeError("cannot do None in bytes or bytearray");
             } else if (ssub.Count == 0) {
-                return 0;
+                return start;
             }
 
             byte firstByte = ssub[0];
@@ -280,8 +280,9 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static int LastIndexOf(this IList<byte>/*!*/ self, IList<byte>/*!*/ sub, int start, int length) {
-            byte firstByte = sub[sub.Count - 1];            
-            for (int i = start - 1; i >= start - length; i--) {
+            byte firstByte = sub[sub.Count - 1];
+            var end = start - length + sub.Count - 1;
+            for (int i = start - 1; i >= end; i--) {
                 if (self[i] == firstByte) {
                     bool differ = false;
 

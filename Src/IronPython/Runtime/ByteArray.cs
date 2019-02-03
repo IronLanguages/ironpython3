@@ -219,25 +219,14 @@ namespace IronPython.Runtime {
             }
         }
 
-        public ByteArray/*!*/ center(int width) {
-            return center(width, " ");
-        }
+        public ByteArray/*!*/ center(int width) => center(width, (byte)' ');
 
-        public ByteArray/*!*/ center(int width, [NotNull]string fillchar) {
+        public ByteArray/*!*/ center(int width, [BytesConversion]IList<byte> fillchar)
+            => center(width, fillchar.ToByte("center", 2));
+
+        private ByteArray center(int width, byte fillchar) {
             lock (this) {
-                List<byte> res = _bytes.TryCenter(width, fillchar.ToByte("center", 2));
-
-                if (res == null) {
-                    return CopyThis();
-                }
-
-                return new ByteArray(res);
-            }
-        }
-
-        public ByteArray/*!*/ center(int width, [BytesConversion]IList<byte> fillchar) {
-            lock (this) {
-                List<byte> res = _bytes.TryCenter(width, fillchar.ToByte("center", 2));
+                List<byte> res = _bytes.TryCenter(width, fillchar);
 
                 if (res == null) {
                     return CopyThis();
@@ -335,7 +324,7 @@ namespace IronPython.Runtime {
 
         public int find(int @byte, int? start, int? end) {
             lock (this) {
-                return _bytes.IndexOfByte(@byte, start ?? 0, end ?? _bytes.Count);
+                return _bytes.IndexOfByte(@byte.ToByteChecked(), start ?? 0, end ?? _bytes.Count);
             }
         }
 
@@ -364,7 +353,7 @@ namespace IronPython.Runtime {
 
         public int index(int @byte, int? start, int? end) {
             lock (this) {
-                int res = find(@byte, start, end);
+                int res = find(@byte.ToByteChecked(), start, end);
                 if (res == -1) {
                     throw PythonOps.ValueError("subsection not found");
                 }
@@ -477,10 +466,6 @@ namespace IronPython.Runtime {
 
         public ByteArray/*!*/ ljust(int width) {
             return ljust(width, (byte)' ');
-        }
-
-        public ByteArray/*!*/ ljust(int width, [NotNull]string/*!*/ fillchar) {
-            return ljust(width, fillchar.ToByte("ljust", 2));
         }
 
         public ByteArray/*!*/ ljust(int width, IList<byte>/*!*/ fillchar) {
@@ -602,10 +587,6 @@ namespace IronPython.Runtime {
 
         public ByteArray/*!*/ rjust(int width) {
             return rjust(width, (byte)' ');
-        }
-
-        public ByteArray/*!*/ rjust(int width, [NotNull]string/*!*/ fillchar) {
-            return rjust(width, fillchar.ToByte("rjust", 2));
         }
 
         public ByteArray/*!*/ rjust(int width, [BytesConversion]IList<byte>/*!*/ fillchar) {
@@ -1331,16 +1312,6 @@ namespace IronPython.Runtime {
                 return (IList<byte>)value;
             }
 
-            var strValue = value as string;
-            if (strValue != null) {
-                return strValue.MakeByteArray();
-            }
-
-            var esValue = value as Extensible<string>;
-            if (esValue != null) {
-                return esValue.Value.MakeByteArray();
-            }
-
             List<byte> ret = new List<byte>();
             IEnumerator ie = PythonOps.GetEnumerator(value);
             while (ie.MoveNext()) {
@@ -1466,13 +1437,7 @@ namespace IronPython.Runtime {
         }
 
         public override bool Equals(object other) {
-            IList<byte> bytes;
-            if (other is string)
-                bytes = PythonOps.MakeBytes(((string)other).MakeByteArray());
-            else if (other is Extensible<string>)
-                bytes = PythonOps.MakeBytes(((Extensible<string>)other).Value.MakeByteArray());
-            else
-                bytes = other as IList<byte>;
+            var bytes = other as IList<byte>;
 
             if (bytes == null || Count != bytes.Count) {
                 return false;

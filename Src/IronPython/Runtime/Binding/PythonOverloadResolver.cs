@@ -72,19 +72,6 @@ namespace IronPython.Runtime.Binding {
                     toParameter.ParameterInfo.IsDefined(typeof(BytesConversionAttribute), false)) {
                     return false;
                 }
-            } else if (fromType == typeof(string)) {
-                if (toParameter.Type == typeof(IList<byte>) &&
-                    !Binder.Context.PythonOptions.Python30 &&
-                    toParameter.ParameterInfo.IsDefined(typeof(BytesConversionAttribute), false)) {
-                    // string -> byte array, we allow this in Python 2.6
-                    return true;
-                }
-            } else if (fromType == typeof(Bytes) || fromType == typeof(ByteArray)) {
-                if (toParameter.Type == typeof(string) &&
-                    !Binder.Context.PythonOptions.Python30 &&
-                    toParameter.ParameterInfo.IsDefined(typeof(BytesConversionAttribute), false)) {
-                    return true;
-                }
             }
 
             return base.CanConvertFrom(fromType, fromArg, toParameter, level);

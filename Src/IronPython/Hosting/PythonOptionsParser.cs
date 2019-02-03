@@ -171,9 +171,6 @@ namespace IronPython.Hosting {
                 case "-X:MTA":
                     ConsoleOptions.IsMta = true;
                     break;
-                case "-X:Python30":
-                    LanguageSetup.Options["PythonVersion"] = new Version(3, 0);
-                    break;
 
                 case "-X:Debug":
                     RuntimeSetup.DebugMode = true;
@@ -262,7 +259,6 @@ namespace IronPython.Hosting {
                 { "-X:Debug",               "Enable application debugging (preferred over -D)" },
                 { "-X:NoDebug <regex>",     "Provides a regular expression of files which should not be emitted in debug mode"},
                 { "-X:MTA",                 "Run in multithreaded apartment" },
-                { "-X:Python30",            "Enable available Python 3.0 features" },
                 { "-X:EnableProfiler",      "Enables profiling support in the compiler" },
                 { "-X:LightweightScopes",   "Generate optimized scopes that can be garbage collected" },
                 { "-X:BasicConsole",        "Use only the basic console features" },

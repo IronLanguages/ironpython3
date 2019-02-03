@@ -11,7 +11,6 @@ import unittest
 
 from iptest import run_test, skipUnlessIronPython
 
-
 class BinasciiTest(unittest.TestCase):
     def test_negative(self):
         """verify extra characters are ignored, and that we require padding."""
@@ -37,7 +36,6 @@ class BinasciiTest(unittest.TestCase):
                         lambda: binascii.rledecode_hqx(None),
                         lambda: binascii.rlecode_hqx(None),
                         lambda: binascii.b2a_hqx(None),
-                        lambda: binascii.crc_hqx(None, None),
                         ]
         for temp_func in test_cases:
             self.assertRaises(NotImplementedError, temp_func)

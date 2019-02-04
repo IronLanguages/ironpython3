@@ -232,6 +232,9 @@ namespace IronPython.Modules {
         [LightThrowing]
         public static object fstat(CodeContext/*!*/ context, int fd) {
             PythonContext pythonContext = context.LanguageContext;
+            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out Modules.PythonIOModule.FileIO file) && file.name is string strName) {
+                return lstat(strName);
+            }
             PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
             return lstat(pf.name);
         }

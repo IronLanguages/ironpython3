@@ -95,16 +95,14 @@ namespace IronPython.Modules {
                     name = (object)pf.name ?? fd;
                     _readStream = pf._stream;
                     _writeStream = pf._stream;
-                } else if (pc.FileManager.TryGetObjectFromId(pc, fd, out object fileObj)) {
-                    if (fileObj is FileIO file) {
-                        name = file.name ?? fd;
-                        _readStream = file._readStream;
-                        _writeStream = file._writeStream;
-                    } else if (fileObj is Stream stream) {
-                        name = fd;
-                        _readStream = stream;
-                        _writeStream = stream;
-                    }
+                } else if (pc.FileManager.TryGetFileFromId(pc, fd, out FileIO file)) {
+                    name = file.name ?? fd;
+                    _readStream = file._readStream;
+                    _writeStream = file._writeStream;
+                } else if (pc.FileManager.TryGetObjectFromId(pc, fd, out object fileObj) && fileObj is Stream stream) {
+                    name = fd;
+                    _readStream = stream;
+                    _writeStream = stream;
                 }
 
                 _closefd = closefd;

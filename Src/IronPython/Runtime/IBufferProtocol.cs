@@ -7,7 +7,7 @@ using System.Numerics;
 
 namespace IronPython.Runtime {
     public interface IBufferProtocol {
-        Bytes GetItem(int index);
+        object GetItem(int index);
         void SetItem(int index, object value);
         void SetSlice(Slice index, object value);
 

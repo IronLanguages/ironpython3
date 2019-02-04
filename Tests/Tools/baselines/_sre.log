@@ -9,8 +9,8 @@ DESCRIPTION
 -------------------------------------------------------
 Complete list of module attributes IronPython is still 
 missing implementations for:
-    _sre  copyright                     # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17455
-    _sre  getcodesize                   # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17455
+    _sre  copyright                     # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17455
+    _sre  getcodesize                   # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17455
 
 
 

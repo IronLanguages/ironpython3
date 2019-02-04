@@ -9,17 +9,17 @@ DESCRIPTION
 -------------------------------------------------------
 Complete list of module attributes IronPython is still 
 missing implementations for:
-    time.struct_time    n_fields                        # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17478
-    time.struct_time    n_sequence_fields             # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17478
-    time.struct_time    n_unnamed_fields              # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17478
+    time.struct_time    n_fields                        # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17478
+    time.struct_time    n_sequence_fields             # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17478
+    time.struct_time    n_unnamed_fields              # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17478
 
 
 
 -------------------------------------------------------
 Complete list of module attributes that should be removed 
 from IronPython:
-    time.struct_time    __getnewargs__                # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17478
-    time.struct_time    __iter__                      # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17478
-    time.struct_time    __radd__                      # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17478
-    time.struct_time    count                         # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17478
-    time.struct_time    index                         # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17478
+    time.struct_time    __getnewargs__                # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17478
+    time.struct_time    __iter__                      # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17478
+    time.struct_time    __radd__                      # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17478
+    time.struct_time    count                         # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17478
+    time.struct_time    index                         # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17478

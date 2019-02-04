@@ -9,8 +9,8 @@ DESCRIPTION
 -------------------------------------------------------
 Complete list of module attributes IronPython is still 
 missing implementations for:
-    _codecs  utf_32_be_decode              # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17454
-    _codecs  utf_32_be_encode              # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17454
+    _codecs  utf_32_be_decode              # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17454
+    _codecs  utf_32_be_encode              # http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17454
 
 
 

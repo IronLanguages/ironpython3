@@ -9,8 +9,8 @@ DESCRIPTION
 -------------------------------------------------------
 Complete list of module attributes IronPython is still 
 missing implementations for:
-    signal  CTRL_BREAK_EVENT              
-    signal  CTRL_C_EVENT                  
+    signal  CTRL_BREAK_EVENT              
+    signal  CTRL_C_EVENT                  
 
 
 

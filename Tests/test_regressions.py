@@ -1350,6 +1350,26 @@ class C:
 
         self.assertEquals(42, hash(x()))
 
+    def test_main_gh1081(self):
+        """https://github.com/IronLanguages/main/issues/1081"""
+        import io
+        import mmap
+
+        test_file_name = os.path.join(self.temporary_dir, "test_main_gh1081.bin")
+
+        with open(test_file_name, "wb") as f:
+            f.write(bytearray(range(256)))
+
+        try:
+            with io.open(test_file_name, "rb") as f:
+                mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+                try:
+                    self.assertEqual(mm[:], bytearray(range(256)))
+                finally:
+                    mm.close()
+        finally:
+            os.remove(test_file_name)
+
     def test_ipy2_gh536(self):
         """https://github.com/IronLanguages/ironpython2/issues/536"""
         import ctypes
@@ -1360,5 +1380,18 @@ class C:
         o.t = 1
         self.assertEqual(1, o.b)
         self.assertEqual(o.t, o.b)
+
+    def test_ipy2_gh584(self):
+        """https://github.com/IronLanguages/ironpython2/issues/584"""
+        class NoValue(object):
+            def __getattr__(self2, attr):
+                self.fail()
+
+        noValue = NoValue()
+
+        class test(object):
+            defaultValue = noValue
+
+        self.assertIs(test().defaultValue, noValue)
 
 run_test(__name__)

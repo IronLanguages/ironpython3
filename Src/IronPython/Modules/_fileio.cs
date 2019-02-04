@@ -1,28 +1,25 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
-using System.Linq.Expressions;
-using System.Numerics;
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
+using System.Linq.Expressions;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
+using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-using IronPython.Runtime.Exceptions;
-using Microsoft.Scripting.Utils;
 
 // TODO: Documentation copied from CPython is inadequate in some places and wrong in others.
 
@@ -41,10 +38,9 @@ namespace IronPython.Modules {
 
             private static readonly int DEFAULT_BUF_SIZE = 32;
 
-            private Stream _readStream;
+            internal Stream _readStream;
             private Stream _writeStream;
             private bool _closed, _closefd;
-            private string _mode;
             private WeakRefTracker _tracker;
             private PythonContext _context;
             public object name;
@@ -59,7 +55,7 @@ namespace IronPython.Modules {
                 if (stream.CanRead && stream.CanWrite) mode = "w+";
                 else if (stream.CanWrite) mode = "w";
                 else mode = "r";
-                _mode = mode;
+                this.mode = mode;
                 _writeStream = stream;
                 _readStream = stream;
                 _closefd = true;
@@ -81,36 +77,30 @@ namespace IronPython.Modules {
 
                 _context = pc;
                 switch (StandardizeMode(mode)) {
-                    case "r": _mode = "rb"; break;
-                    case "w": _mode = "wb"; break;
-                    case "a": _mode = "w"; break;
+                    case "r": this.mode = "rb"; break;
+                    case "w": this.mode = "wb"; break;
+                    case "a": this.mode = "w"; break;
                     case "r+":
-                    case "+r": _mode = "rb+"; break;
+                    case "+r": this.mode = "rb+"; break;
                     case "w+":
-                    case "+w": _mode = "rb+"; break;
+                    case "+w": this.mode = "rb+"; break;
                     case "a+":
-                    case "+a": _mode = "r+"; break;
+                    case "+a": this.mode = "r+"; break;
                     default:
                         BadMode(mode);
                         break;
                 }
 
-                PythonFile pythonFile;
-                if (pc.FileManager.TryGetFileFromId(pc, fd, out pythonFile)) {
-                    name = (object)pythonFile.name ?? fd;
-                    _writeStream = pythonFile._stream;
-                    _readStream = pythonFile._stream;
-                }
-                else {
-                    object obj = pc.FileManager.GetObjectFromId(fd);
-                    if (obj is FileIO) {
-                        FileIO file = (FileIO)obj;
+                if (pc.FileManager.TryGetFileFromId(pc, fd, out PythonFile pf)) {
+                    name = (object)pf.name ?? fd;
+                    _readStream = pf._stream;
+                    _writeStream = pf._stream;
+                } else if (pc.FileManager.TryGetObjectFromId(pc, fd, out object fileObj)) {
+                    if (fileObj is FileIO file) {
                         name = file.name ?? fd;
                         _readStream = file._readStream;
                         _writeStream = file._writeStream;
-                    }
-                    else if (obj is Stream) {
-                        Stream stream = (Stream)obj;
+                    } else if (fileObj is Stream stream) {
                         name = fd;
                         _readStream = stream;
                         _writeStream = stream;
@@ -132,26 +122,26 @@ namespace IronPython.Modules {
                 switch (StandardizeMode(mode)) {
                     case "r":
                         _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                        _mode = "rb";
+                        this.mode = "rb";
                         break;
                     case "w":
                         _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
-                        _mode = "wb";
+                        this.mode = "wb";
                         break;
                     case "a":
                         _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
                         _readStream.Seek(0L, SeekOrigin.End);
-                        _mode = "w";
+                        this.mode = "ab";
                         break;
                     case "r+":
                     case "+r":
                         _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
-                        _mode = "rb+";
+                        this.mode = "rb+";
                         break;
                     case "w+":
                     case "+w":
                         _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
-                        _mode = "rb+";
+                        this.mode = "rb+";
                         break;
                     case "a+":
                     case "+a":
@@ -159,7 +149,7 @@ namespace IronPython.Modules {
                         _writeStream = OpenFile(context, pal, name, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
                         _readStream.Seek(0L, SeekOrigin.End);
                         _writeStream.Seek(0L, SeekOrigin.End);
-                        _mode = "r+";
+                        this.mode = "ab+";
                         break;
                     default:
                         BadMode(mode);
@@ -271,7 +261,7 @@ namespace IronPython.Modules {
             public override int fileno(CodeContext/*!*/ context) {
                 _checkClosed();
 
-                return _context.FileManager.GetIdFromObject(this);
+                return _context.FileManager.GetOrAssignIdForObject(this);
             }
 
             [Documentation("Flush write buffers, if applicable.\n\n"
@@ -323,11 +313,7 @@ namespace IronPython.Modules {
             }
 
             [Documentation("String giving the file mode")]
-            public string mode {
-                get {
-                    return _mode;
-                }
-            }
+            public string mode { get; }
 
             [Documentation("read(size: int) -> bytes.  read at most size bytes, returned as bytes.\n\n"
                 + "Only makes one system call, so less data may be returned than requested\n"
@@ -550,7 +536,7 @@ namespace IronPython.Modules {
             #region ICodeFormattable Members
 
             public string __repr__(CodeContext/*!*/ context) {
-                return string.Format("<_io.FileIO name={0} mode='{1}'>", PythonOps.Repr(context, name), _mode);
+                return string.Format("<_io.FileIO name={0} mode='{1}'>", PythonOps.Repr(context, name), mode);
             }
 
             #endregion

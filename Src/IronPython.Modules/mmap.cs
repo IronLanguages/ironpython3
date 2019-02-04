@@ -163,14 +163,17 @@ namespace IronPython.Modules {
                     // Memory-map an actual file
                     _offset = offset;
 
-                    PythonFile file;
                     PythonContext pContext = context.LanguageContext;
-                    if (!pContext.FileManager.TryGetFileFromId(pContext, fileno, out file)) {
+                    if (pContext.FileManager.TryGetFileFromId(pContext, fileno, out PythonFile file)) {
+                        if ((_sourceStream = file._stream as FileStream) == null) {
+                            throw WindowsError(PythonExceptions._OSError.ERROR_INVALID_HANDLE);
+                        }
+                    } else if (pContext.FileManager.TryGetObjectFromId(pContext, fileno, out object obj) && obj is PythonIOModule.FileIO fileio) {
+                        if ((_sourceStream = fileio._readStream as FileStream) == null) {
+                            throw WindowsError(PythonExceptions._OSError.ERROR_INVALID_HANDLE);
+                        }
+                    } else {
                         throw Error(context, PythonExceptions._OSError.ERROR_INVALID_BLOCK, "Bad file descriptor");
-                    }
-
-                    if ((_sourceStream = file._stream as FileStream) == null) {
-                        throw WindowsError(PythonExceptions._OSError.ERROR_INVALID_HANDLE);
                     }
 
                     if (_fileAccess == MemoryMappedFileAccess.ReadWrite && !_sourceStream.CanWrite) {

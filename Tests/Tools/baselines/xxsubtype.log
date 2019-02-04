@@ -9,7 +9,7 @@ DESCRIPTION
 -------------------------------------------------------
 Complete list of module attributes that should be removed 
 from IronPython:
-    xxsubtype.spamdict    viewitems                     
-    xxsubtype.spamdict    viewkeys                      
-    xxsubtype.spamdict    viewvalues                    
-    xxsubtype.spamlist    __radd__                      # codeplex bug #23354 http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=23354
+    xxsubtype.spamdict    viewitems                     
+    xxsubtype.spamdict    viewkeys                      
+    xxsubtype.spamdict    viewvalues                    
+    xxsubtype.spamlist    __radd__                      # codeplex bug #23354 http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=23354

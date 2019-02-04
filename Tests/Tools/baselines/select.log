@@ -9,7 +9,7 @@ DESCRIPTION
 -------------------------------------------------------
 Complete list of module attributes IronPython is still 
 missing implementations for:
-    select  __file__                      # select is a .pyd in CPython, built-in in IronPython, not a bug.
+    select  __file__                      # select is a .pyd in CPython, built-in in IronPython, not a bug.
 
 
 

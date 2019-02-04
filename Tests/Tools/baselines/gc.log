@@ -9,7 +9,7 @@ DESCRIPTION
 -------------------------------------------------------
 Complete list of module attributes IronPython is still 
 missing implementations for:
-    gc  get_count                     # 17458 http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17458
+    gc  get_count                     # 17458 http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17458
 
 
 

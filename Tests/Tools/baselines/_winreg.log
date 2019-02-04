@@ -9,56 +9,56 @@ DESCRIPTION
 -------------------------------------------------------
 Complete list of module attributes IronPython is still 
 missing implementations for:
-    _winreg  DisableReflectionKey               # 15402	http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=15402
-    _winreg  EnableReflectionKey                # 15402	http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=15402
-    _winreg  ExpandEnvironmentStrings           # 15402	http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=15402
-    _winreg  KEY_WOW64_32KEY                    # 15402	http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=15402
-    _winreg  KEY_WOW64_64KEY                    # 15402	http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=15402
-    _winreg  LoadKey                            # 15402	http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=15402
-    _winreg  QueryReflectionKey                 # 15402	http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=15402
-    _winreg  SaveKey                            # 15402	http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=15402
-    _winreg.HKEYType    __abs__                       
-    _winreg.HKEYType    __add__                       
-    _winreg.HKEYType    __and__                       
-    _winreg.HKEYType    __cmp__                       
-    _winreg.HKEYType    __div__                       
-    _winreg.HKEYType    __divmod__                    
-    _winreg.HKEYType    __float__                     
-    _winreg.HKEYType    __hex__                       
-    _winreg.HKEYType    __invert__                    
-    _winreg.HKEYType    __lshift__                    
-    _winreg.HKEYType    __mod__                       
-    _winreg.HKEYType    __mul__                       
-    _winreg.HKEYType    __neg__                       
-    _winreg.HKEYType    __nonzero__                   
-    _winreg.HKEYType    __oct__                       
-    _winreg.HKEYType    __or__                        
-    _winreg.HKEYType    __pos__                       
-    _winreg.HKEYType    __pow__                       
-    _winreg.HKEYType    __radd__                      
-    _winreg.HKEYType    __rand__                      
-    _winreg.HKEYType    __rdiv__                      
-    _winreg.HKEYType    __rdivmod__                   
-    _winreg.HKEYType    __rlshift__                   
-    _winreg.HKEYType    __rmod__                      
-    _winreg.HKEYType    __rmul__                      
-    _winreg.HKEYType    __ror__                       
-    _winreg.HKEYType    __rpow__                      
-    _winreg.HKEYType    __rrshift__                   
-    _winreg.HKEYType    __rshift__                    
-    _winreg.HKEYType    __rsub__                      
-    _winreg.HKEYType    __rxor__                      
-    _winreg.HKEYType    __sub__                       
-    _winreg.HKEYType    __xor__                       
+    _winreg  DisableReflectionKey               # 15402	http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=15402
+    _winreg  EnableReflectionKey                # 15402	http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=15402
+    _winreg  ExpandEnvironmentStrings           # 15402	http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=15402
+    _winreg  KEY_WOW64_32KEY                    # 15402	http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=15402
+    _winreg  KEY_WOW64_64KEY                    # 15402	http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=15402
+    _winreg  LoadKey                            # 15402	http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=15402
+    _winreg  QueryReflectionKey                 # 15402	http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=15402
+    _winreg  SaveKey                            # 15402	http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=15402
+    _winreg.HKEYType    __abs__                       
+    _winreg.HKEYType    __add__                       
+    _winreg.HKEYType    __and__                       
+    _winreg.HKEYType    __cmp__                       
+    _winreg.HKEYType    __div__                       
+    _winreg.HKEYType    __divmod__                    
+    _winreg.HKEYType    __float__                     
+    _winreg.HKEYType    __hex__                       
+    _winreg.HKEYType    __invert__                    
+    _winreg.HKEYType    __lshift__                    
+    _winreg.HKEYType    __mod__                       
+    _winreg.HKEYType    __mul__                       
+    _winreg.HKEYType    __neg__                       
+    _winreg.HKEYType    __nonzero__                   
+    _winreg.HKEYType    __oct__                       
+    _winreg.HKEYType    __or__                        
+    _winreg.HKEYType    __pos__                       
+    _winreg.HKEYType    __pow__                       
+    _winreg.HKEYType    __radd__                      
+    _winreg.HKEYType    __rand__                      
+    _winreg.HKEYType    __rdiv__                      
+    _winreg.HKEYType    __rdivmod__                   
+    _winreg.HKEYType    __rlshift__                   
+    _winreg.HKEYType    __rmod__                      
+    _winreg.HKEYType    __rmul__                      
+    _winreg.HKEYType    __ror__                       
+    _winreg.HKEYType    __rpow__                      
+    _winreg.HKEYType    __rrshift__                   
+    _winreg.HKEYType    __rshift__                    
+    _winreg.HKEYType    __rsub__                      
+    _winreg.HKEYType    __rxor__                      
+    _winreg.HKEYType    __sub__                       
+    _winreg.HKEYType    __xor__                       
 
 
 
 -------------------------------------------------------
 Complete list of module attributes that should be removed 
 from IronPython:
-    _winreg  CreateKeyEx                   
-    _winreg.HKEYType    Close                     # These actually exist in CPython as well but this is a weird type    
-    _winreg.HKEYType    Detach                     # These actually exist in CPython as well but this is a weird type   
-    _winreg.HKEYType    __enter__                  # These actually exist in CPython as well but this is a weird type   
-    _winreg.HKEYType    __exit__                    # These actually exist in CPython as well but this is a weird type  
-    _winreg.HKEYType    handle                        # These actually exist in CPython as well but this is a weird type
+    _winreg  CreateKeyEx                   
+    _winreg.HKEYType    Close                     # These actually exist in CPython as well but this is a weird type    
+    _winreg.HKEYType    Detach                     # These actually exist in CPython as well but this is a weird type   
+    _winreg.HKEYType    __enter__                  # These actually exist in CPython as well but this is a weird type   
+    _winreg.HKEYType    __exit__                    # These actually exist in CPython as well but this is a weird type  
+    _winreg.HKEYType    handle                        # These actually exist in CPython as well but this is a weird type

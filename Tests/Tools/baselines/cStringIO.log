@@ -9,37 +9,37 @@ DESCRIPTION
 -------------------------------------------------------
 Complete list of module attributes IronPython is still 
 missing implementations for:
-    cStringIO  cStringIO_CAPI                   # Cpython implementation detail, no bug
-    cStringIO    __class__                     
-    cStringIO      __class__                     
-    cStringIO      __delattr__                   
-    cStringIO      __doc__                       
-    cStringIO      __format__                    
-    cStringIO      __getattribute__              
-    cStringIO      __hash__                      
-    cStringIO      __init__                      
-    cStringIO      __new__                       
-    cStringIO      __reduce__                    
-    cStringIO      __reduce_ex__                 
-    cStringIO      __repr__                      
-    cStringIO      __setattr__                   
-    cStringIO      __sizeof__                    
-    cStringIO      __str__                       
-    cStringIO      __subclasshook__              
-    cStringIO    __delattr__                   
-    cStringIO    __doc__                       
-    cStringIO    __format__                    
-    cStringIO    __getattribute__              
-    cStringIO    __hash__                      
-    cStringIO    __init__                      
-    cStringIO    __new__                       
-    cStringIO    __reduce__                    
-    cStringIO    __reduce_ex__                 
-    cStringIO    __repr__                      
-    cStringIO    __setattr__                   
-    cStringIO    __sizeof__                    
-    cStringIO    __str__                       
-    cStringIO    __subclasshook__              
+    cStringIO  cStringIO_CAPI                   # Cpython implementation detail, no bug
+    cStringIO    __class__                     
+    cStringIO      __class__                     
+    cStringIO      __delattr__                   
+    cStringIO      __doc__                       
+    cStringIO      __format__                    
+    cStringIO      __getattribute__              
+    cStringIO      __hash__                      
+    cStringIO      __init__                      
+    cStringIO      __new__                       
+    cStringIO      __reduce__                    
+    cStringIO      __reduce_ex__                 
+    cStringIO      __repr__                      
+    cStringIO      __setattr__                   
+    cStringIO      __sizeof__                    
+    cStringIO      __str__                       
+    cStringIO      __subclasshook__              
+    cStringIO    __delattr__                   
+    cStringIO    __doc__                       
+    cStringIO    __format__                    
+    cStringIO    __getattribute__              
+    cStringIO    __hash__                      
+    cStringIO    __init__                      
+    cStringIO    __new__                       
+    cStringIO    __reduce__                    
+    cStringIO    __reduce_ex__                 
+    cStringIO    __repr__                      
+    cStringIO    __setattr__                   
+    cStringIO    __sizeof__                    
+    cStringIO    __str__                       
+    cStringIO    __subclasshook__              
 
 
 

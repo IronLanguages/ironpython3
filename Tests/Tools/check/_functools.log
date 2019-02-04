@@ -9,7 +9,7 @@ DESCRIPTION
 -------------------------------------------------------
 Complete list of module attributes IronPython is still 
 missing implementations for:
-    _functools.partial    __setstate__                  
+    _functools.partial    __setstate__                  
 
 
 

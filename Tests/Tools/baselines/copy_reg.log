@@ -9,14 +9,14 @@ DESCRIPTION
 -------------------------------------------------------
 Complete list of module attributes IronPython is still 
 missing implementations for:
-    copy_reg  _ClassType                      # bug 17467	http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17467
-    copy_reg  _HEAPTYPE                     
-    copy_reg  __all__                       
-    copy_reg  __builtins__                  
-    copy_reg  __doc__                       
-    copy_reg  __file__                      
-    copy_reg  _reduce_ex                    
-    copy_reg  _slotnames                    
+    copy_reg  _ClassType                      # bug 17467	http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=17467
+    copy_reg  _HEAPTYPE                     
+    copy_reg  __all__                       
+    copy_reg  __builtins__                  
+    copy_reg  __doc__                       
+    copy_reg  __file__                      
+    copy_reg  _reduce_ex                    
+    copy_reg  _slotnames                    
 
 
 

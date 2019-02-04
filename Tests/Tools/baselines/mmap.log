@@ -9,12 +9,12 @@ DESCRIPTION
 -------------------------------------------------------
 Complete list of module attributes IronPython is still 
 missing implementations for:
-    mmap  __doc__                       
-    mmap.mmap    __add__                       
-    mmap.mmap    __getslice__                  
-    mmap.mmap    __mul__                       
-    mmap.mmap    __rmul__                      
-    mmap.mmap    __setslice__                  
+    mmap  __doc__                       
+    mmap.mmap    __add__                       
+    mmap.mmap    __getslice__                  
+    mmap.mmap    __mul__                       
+    mmap.mmap    __rmul__                      
+    mmap.mmap    __setslice__                  
 
 
 

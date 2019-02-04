@@ -9,37 +9,37 @@ DESCRIPTION
 -------------------------------------------------------
 Complete list of module attributes IronPython is still 
 missing implementations for:
-    datetime  datetime_CAPI                         # Cpython implementation detail, no bug
-    datetime.datetime_CAPI    __class__                     
-    datetime.datetime_CAPI      __class__                     
-    datetime.datetime_CAPI      __delattr__                   
-    datetime.datetime_CAPI      __doc__                       
-    datetime.datetime_CAPI      __format__                    
-    datetime.datetime_CAPI      __getattribute__              
-    datetime.datetime_CAPI      __hash__                      
-    datetime.datetime_CAPI      __init__                      
-    datetime.datetime_CAPI      __new__                       
-    datetime.datetime_CAPI      __reduce__                    
-    datetime.datetime_CAPI      __reduce_ex__                 
-    datetime.datetime_CAPI      __repr__                      
-    datetime.datetime_CAPI      __setattr__                   
-    datetime.datetime_CAPI      __sizeof__                    
-    datetime.datetime_CAPI      __str__                       
-    datetime.datetime_CAPI      __subclasshook__              
-    datetime.datetime_CAPI    __delattr__                   
-    datetime.datetime_CAPI    __doc__                       
-    datetime.datetime_CAPI    __format__                    
-    datetime.datetime_CAPI    __getattribute__              
-    datetime.datetime_CAPI    __hash__                      
-    datetime.datetime_CAPI    __init__                      
-    datetime.datetime_CAPI    __new__                       
-    datetime.datetime_CAPI    __reduce__                    
-    datetime.datetime_CAPI    __reduce_ex__                 
-    datetime.datetime_CAPI    __repr__                      
-    datetime.datetime_CAPI    __setattr__                   
-    datetime.datetime_CAPI    __sizeof__                    
-    datetime.datetime_CAPI    __str__                       
-    datetime.datetime_CAPI    __subclasshook__              
+    datetime  datetime_CAPI                         # Cpython implementation detail, no bug
+    datetime.datetime_CAPI    __class__                     
+    datetime.datetime_CAPI      __class__                     
+    datetime.datetime_CAPI      __delattr__                   
+    datetime.datetime_CAPI      __doc__                       
+    datetime.datetime_CAPI      __format__                    
+    datetime.datetime_CAPI      __getattribute__              
+    datetime.datetime_CAPI      __hash__                      
+    datetime.datetime_CAPI      __init__                      
+    datetime.datetime_CAPI      __new__                       
+    datetime.datetime_CAPI      __reduce__                    
+    datetime.datetime_CAPI      __reduce_ex__                 
+    datetime.datetime_CAPI      __repr__                      
+    datetime.datetime_CAPI      __setattr__                   
+    datetime.datetime_CAPI      __sizeof__                    
+    datetime.datetime_CAPI      __str__                       
+    datetime.datetime_CAPI      __subclasshook__              
+    datetime.datetime_CAPI    __delattr__                   
+    datetime.datetime_CAPI    __doc__                       
+    datetime.datetime_CAPI    __format__                    
+    datetime.datetime_CAPI    __getattribute__              
+    datetime.datetime_CAPI    __hash__                      
+    datetime.datetime_CAPI    __init__                      
+    datetime.datetime_CAPI    __new__                       
+    datetime.datetime_CAPI    __reduce__                    
+    datetime.datetime_CAPI    __reduce_ex__                 
+    datetime.datetime_CAPI    __repr__                      
+    datetime.datetime_CAPI    __setattr__                   
+    datetime.datetime_CAPI    __sizeof__                    
+    datetime.datetime_CAPI    __str__                       
+    datetime.datetime_CAPI    __subclasshook__              
 
 
 

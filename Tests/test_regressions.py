@@ -1350,6 +1350,26 @@ class C:
 
         self.assertEquals(42, hash(x()))
 
+    def test_main_gh1081(self):
+        """https://github.com/IronLanguages/main/issues/1081"""
+        import io
+        import mmap
+
+        test_file_name = os.path.join(self.temporary_dir, "test_main_gh1081.bin")
+
+        with open(test_file_name, "wb") as f:
+            f.write(bytearray(range(256)))
+
+        try:
+            with io.open(test_file_name, "rb") as f:
+                mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+                try:
+                    self.assertEqual(mm[:], bytearray(range(256)))
+                finally:
+                    mm.close()
+        finally:
+            os.remove(test_file_name)
+
     def test_ipy2_gh536(self):
         """https://github.com/IronLanguages/ironpython2/issues/536"""
         import ctypes

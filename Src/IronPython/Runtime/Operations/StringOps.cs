@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
@@ -28,8 +29,7 @@ namespace IronPython.Runtime.Operations {
     /// that derive from string.  It carries along with it the string's value and
     /// our converter recognizes it as a string.
     /// </summary>
-    public class ExtensibleString : Extensible<string>, ICodeFormattable, IStructuralEquatable
-    {
+    public class ExtensibleString : Extensible<string>, ICodeFormattable, IStructuralEquatable {
         public ExtensibleString() : base(String.Empty) { }
         public ExtensibleString(string self) : base(self) { }
 
@@ -285,8 +285,8 @@ namespace IronPython.Runtime.Operations {
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, PythonType cls,
             object @string,
-            string encoding="utf-8",
-            string errors="strict") {
+            string encoding = "utf-8",
+            string errors = "strict") {
 
             string str = @string as string;
             if (str == null) throw PythonOps.TypeError("converting to unicode: need string, got {0}", DynamicHelpers.GetPythonType(@string).Name);
@@ -301,8 +301,8 @@ namespace IronPython.Runtime.Operations {
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, PythonType cls,
             [BytesConversion]IList<byte> @object,
-            string encoding="utf-8",
-            string errors="strict") {
+            string encoding = "utf-8",
+            string errors = "strict") {
 
             if (cls == TypeCache.String) {
                 if (@object is Bytes) return ((Bytes)@object).decode(context, encoding, errors);
@@ -311,7 +311,7 @@ namespace IronPython.Runtime.Operations {
                 return cls.CreateInstance(context, __new__(context, TypeCache.String, @object, encoding, errors));
             }
         }
-      
+
         #endregion
 
         #region Python __ methods
@@ -372,7 +372,7 @@ namespace IronPython.Runtime.Operations {
                 return new string(newData);
             }
         }
-        
+
         #endregion
 
         #region Public Python methods
@@ -435,7 +435,7 @@ namespace IronPython.Runtime.Operations {
             return count;
         }
 
-        public static Bytes encode(CodeContext/*!*/ context, string s, [DefaultParameterValue("utf-8")]object encoding, string errors="strict") {
+        public static Bytes encode(CodeContext/*!*/ context, string s, [DefaultParameterValue("utf-8")]object encoding, string errors = "strict") {
             return RawEncode(context, s, encoding, errors);
         }
 
@@ -520,7 +520,7 @@ namespace IronPython.Runtime.Operations {
         public static int find(this string self, string sub) {
             if (sub == null) throw PythonOps.TypeError("expected string, got NoneType");
             if (sub.Length == 1) return self.IndexOf(sub[0]);
-            
+
             CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
             return c.IndexOf(self, sub, CompareOptions.Ordinal);
         }
@@ -557,7 +557,7 @@ namespace IronPython.Runtime.Operations {
             return find(self, sub, (int)start, (int)end);
         }
 
-        public static int find(this string self, string sub, object start, object end=null) {
+        public static int find(this string self, string sub, object start, object end = null) {
             return find(self, sub, CheckIndex(start, 0), CheckIndex(end, self.Length));
         }
 
@@ -578,7 +578,7 @@ namespace IronPython.Runtime.Operations {
             return ret;
         }
 
-        public static int index(this string self, string sub, object start, object end=null) {
+        public static int index(this string self, string sub, object start, object end = null) {
             return index(self, sub, CheckIndex(start, 0), CheckIndex(end, self.Length));
         }
 
@@ -629,8 +629,7 @@ namespace IronPython.Runtime.Operations {
             if (c <= 0xa0 || c == 0xad) return false;
             if (c <= 0xff) return true;
 
-            switch (CharUnicodeInfo.GetUnicodeCategory(c))
-            {
+            switch (CharUnicodeInfo.GetUnicodeCategory(c)) {
                 case UnicodeCategory.Control: // Cc
                 case UnicodeCategory.Format: // Cf
                 case UnicodeCategory.Surrogate: // Cs
@@ -843,7 +842,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static string replace(this string self, string old, string @new,
-            int count=-1) {
+            int count = -1) {
 
             if (old == null) {
                 throw PythonOps.TypeError("expected a character buffer object"); // cpython message
@@ -909,7 +908,7 @@ namespace IronPython.Runtime.Operations {
             return rfind(self, sub, (int)start, (int)end);
         }
 
-        public static int rfind(this string self, string sub, object start, object end=null) {
+        public static int rfind(this string self, string sub, object start, object end = null) {
             return rfind(self, sub, CheckIndex(start, 0), CheckIndex(end, self.Length));
         }
 
@@ -927,7 +926,7 @@ namespace IronPython.Runtime.Operations {
             return ret;
         }
 
-        public static int rindex(this string self, string sub, object start, object end=null) {
+        public static int rindex(this string self, string sub, object start, object end = null) {
             return rindex(self, sub, CheckIndex(start, 0), CheckIndex(end, self.Length));
         }
 
@@ -1019,7 +1018,7 @@ namespace IronPython.Runtime.Operations {
                     PythonList result = PythonOps.MakeEmptyList(1);
                     result.AddNoLock(self.TrimStart());
                     return result;
-                        
+
                 } else {
                     return SplitInternal(self, (char[])null, maxsplit);
                 }
@@ -1149,7 +1148,7 @@ namespace IronPython.Runtime.Operations {
                         continue;
                     }
                     if (mapped is int) {
-                        var mappedInt = (int) mapped;
+                        var mappedInt = (int)mapped;
                         if (mappedInt > 0xFFFF) {
                             throw PythonOps.TypeError("character mapping must be in range(0x%lx)");
                         }
@@ -1385,7 +1384,7 @@ namespace IronPython.Runtime.Operations {
         public static string ConvertFromChar(char c) {
             return ScriptingRuntimeHelpers.CharToString(c);
         }
-        
+
         [SpecialName, ExplicitConversionMethod]
         public static char ConvertToChar(string s) {
             if (s.Length == 1) return s[0];
@@ -1513,7 +1512,7 @@ namespace IronPython.Runtime.Operations {
             if (count == 0) return v;
             else if (count < 0) count = v.Length + 1;
             else if (count > v.Length + 1) count = checked(v.Length + 1);
-            
+
             int newLength = checked(v.Length + @new.Length * count);
             int max = Math.Min(v.Length, count);
             StringBuilder ret = new StringBuilder(newLength);
@@ -1556,8 +1555,7 @@ namespace IronPython.Runtime.Operations {
                         b.AppendFormat("\\u{0:x4}", (int)ch);
                     }
                     // TODO: support "wide" unicode
-                }
-                else if (b != null) {
+                } else if (b != null) {
                     b.Append(ch);
                 }
             }
@@ -1671,6 +1669,15 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
+            if (e == null) {
+                string normalizedName = NormalizeEncodingName(encoding);
+                if ("raw_unicode_escape" == normalizedName) {
+                    return LiteralParser.ParseString(s.Cast<char>().ToArray(), 0, s.Count, true, false);
+                } else if ("unicode_escape" == normalizedName) {
+                    return LiteralParser.ParseString(s.Cast<char>().ToArray(), 0, s.Count, false, false);
+                }
+            }
+
             if (e != null || TryGetEncoding(encoding, out e)) {
                 return DoDecode(context, s, errors, encoding, e);
             }
@@ -1705,11 +1712,7 @@ namespace IronPython.Runtime.Operations {
                 case "xmlcharrefreplace":
                 case "strict": e.DecoderFallback = final ? DecoderFallback.ExceptionFallback : new ExceptionFallBack(numBytes, e is UTF8Encoding); break;
                 case "replace": e.DecoderFallback = ReplacementFallback; break;
-                case "ignore":
-                    e.DecoderFallback = new PythonDecoderFallback(encoding,
-                        s,
-                        null);
-                    break;
+                case "ignore": e.DecoderFallback = new PythonDecoderFallback(); break;
                 default:
                     e.DecoderFallback = new PythonDecoderFallback(encoding,
                         s,
@@ -1751,7 +1754,7 @@ namespace IronPython.Runtime.Operations {
             return 0;
         }
 
-        private static Bytes RawEncode(CodeContext/*!*/ context, string s, object encodingType, string errors) {
+        internal static Bytes RawEncode(CodeContext/*!*/ context, string s, object encodingType, string errors) {
             string encoding = encodingType as string;
             Encoding e = null;
             if (encoding == null) {
@@ -1784,7 +1787,7 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.LookupError("unknown encoding: {0}", encoding);
         }
 
-        internal static Bytes DoEncode(CodeContext context, string s, string errors, string encoding, Encoding e) {
+        internal static Bytes DoEncode(CodeContext context, string s, string errors, string encoding, Encoding e, bool includePreamble = false) {
 #if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
             // so we just clone the encoding & set the fallback to throw in strict mode
@@ -1795,20 +1798,26 @@ namespace IronPython.Runtime.Operations {
                 case "replace": e.EncoderFallback = EncoderFallback.ReplacementFallback; break;
                 case "backslashreplace": e.EncoderFallback = new BackslashEncoderReplaceFallback(); break;
                 case "xmlcharrefreplace": e.EncoderFallback = new XmlCharRefEncoderReplaceFallback(); break;
-                case "ignore":
-                    e.EncoderFallback = new PythonEncoderFallback(encoding,
-                        s,
-                        null);
-                    break;
+                case "ignore": e.EncoderFallback = new PythonEncoderFallback(); break;
                 default:
                     e.EncoderFallback = new PythonEncoderFallback(encoding,
-                        s,
-                        LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors)));
+                    s,
+                    LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors)));
                     break;
             }
-
 #endif
-            return Bytes.Make(e.GetBytes(s));
+
+            byte[] bytes = e.GetBytes(s);
+
+            if (!includePreamble)
+                return Bytes.Make(bytes);
+
+            MemoryStream sb = new MemoryStream();
+            byte[] preamble = e.GetPreamble();
+            sb.Write(preamble, 0, preamble.Length);
+            sb.Write(bytes, 0, bytes.Length);
+
+            return Bytes.Make(sb.ToArray());
         }
 
         private static PythonTuple CallUserDecodeOrEncode(object function, object data, string errors) {
@@ -1838,7 +1847,7 @@ namespace IronPython.Runtime.Operations {
         }
 
 #if FEATURE_ENCODING
-        static class CodecsInfo {
+        private static class CodecsInfo {
             public static readonly Dictionary<string, EncodingInfoWrapper> Codecs = MakeCodecsDict();
 
             private static Dictionary<string, EncodingInfoWrapper> MakeCodecsDict() {
@@ -1907,7 +1916,7 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        class EncodingInfoWrapper {
+        private class EncodingInfoWrapper {
             private EncodingInfo _info;
             private Encoding _encoding;
             private byte[] _preamble;
@@ -1926,7 +1935,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             public virtual Encoding GetEncoding() {
-                if(_encoding != null) return _encoding;
+                if (_encoding != null) return _encoding;
 
                 if (_preamble == null) {
                     return _info.GetEncoding();
@@ -1940,7 +1949,7 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        class AsciiEncodingInfoWrapper : EncodingInfoWrapper {
+        private class AsciiEncodingInfoWrapper : EncodingInfoWrapper {
             public AsciiEncodingInfoWrapper()
                 : base((EncodingInfo)null) {
             }
@@ -1951,7 +1960,7 @@ namespace IronPython.Runtime.Operations {
         }
 #endif
 
-        class EncodingWrapper : Encoding {
+        private class EncodingWrapper : Encoding {
             private byte[] _preamble;
             private Encoding _encoding;
 
@@ -2005,7 +2014,7 @@ namespace IronPython.Runtime.Operations {
             public override byte[] GetPreamble() {
                 return _preamble;
             }
-            
+
             public override Encoder GetEncoder() {
                 SetEncoderFallback();
                 return _encoding.GetEncoder();
@@ -2022,7 +2031,7 @@ namespace IronPython.Runtime.Operations {
                 EncodingWrapper res = (EncodingWrapper)base.Clone();
                 res._encoding = (Encoding)_encoding.Clone();
                 return res;
-            }          
+            }
 #endif
         }
 
@@ -2038,7 +2047,7 @@ namespace IronPython.Runtime.Operations {
             if (String.IsNullOrEmpty(self)) {
                 return SplitEmptyString(seps != null);
             }
-        
+
             //  If the optional second argument sep is absent or None, the words are separated 
             //  by arbitrary strings of whitespace characters (space, tab, newline, return, formfeed);
             string[] r = StringUtils.Split(
@@ -2288,6 +2297,7 @@ namespace IronPython.Runtime.Operations {
         #region  Unicode Encode/Decode Fallback Support
 
 #if FEATURE_ENCODING
+
         /// When encoding or decoding strings if an error occurs CPython supports several different
         /// behaviors, in addition it supports user-extensible behaviors as well.  For the default
         /// behavior we're ok - both of us support throwing and replacing.  For custom behaviors
@@ -2306,15 +2316,16 @@ namespace IronPython.Runtime.Operations {
         /// and int is an index where encoding should continue.
 
         private class PythonEncoderFallbackBuffer : EncoderFallbackBuffer {
-            private object _function;
-            private string _encoding, _strData;
+            private readonly object _function;
+            private readonly string _encoding;
+            private readonly string _strData;
             private string _buffer;
             private int _bufferIndex;
 
             public PythonEncoderFallbackBuffer(string encoding, string str, object callable) {
-                _function = callable;
-                _strData = str;
                 _encoding = encoding;
+                _strData = str;
+                _function = callable;
             }
 
             public override bool Fallback(char charUnknown, int index) {
@@ -2362,7 +2373,7 @@ namespace IronPython.Runtime.Operations {
                     // call the user function...
                     object res = PythonCalls.Call(_function, exObj);
 
-                    string replacement = PythonDecoderFallbackBuffer.CheckReplacementTuple(res, "encoding");
+                    string replacement = CheckReplacementTuple(res, "encoding");
 
                     // finally process the user's request.
                     _buffer = replacement;
@@ -2370,20 +2381,21 @@ namespace IronPython.Runtime.Operations {
                     return true;
                 }
 
-                return false;                
+                return false;
             }
-
         }
 
-        class PythonEncoderFallback : EncoderFallback {
-            private object _function;
-            private string _str;
-            private string _enc;
+        private class PythonEncoderFallback : EncoderFallback {
+            private readonly object _function;
+            private readonly string _str;
+            private readonly string _enc;
+
+            public PythonEncoderFallback() { }
 
             public PythonEncoderFallback(string encoding, string data, object callable) {
-                _function = callable;
-                _str = data;
                 _enc = encoding;
+                _str = data;
+                _function = callable;
             }
 
             public override EncoderFallbackBuffer CreateFallbackBuffer() {
@@ -2396,9 +2408,9 @@ namespace IronPython.Runtime.Operations {
         }
 
         private class PythonDecoderFallbackBuffer : DecoderFallbackBuffer {
-            private object _function;
-            private string _encoding;
-            private IList<byte> _strData;
+            private readonly object _function;
+            private readonly string _encoding;
+            private readonly IList<byte> _strData;
             private string _buffer;
             private int _bufferIndex;
 
@@ -2414,7 +2426,7 @@ namespace IronPython.Runtime.Operations {
                     return _buffer.Length - _bufferIndex;
                 }
             }
-            
+
             public override char GetNextChar() {
                 if (_buffer == null || _bufferIndex >= _buffer.Length) return Char.MinValue;
 
@@ -2456,31 +2468,14 @@ namespace IronPython.Runtime.Operations {
                 return false;
             }
 
-            internal static string CheckReplacementTuple(object res, string encodeOrDecode) {
-                bool ok = true;
-                string replacement = null;
-                PythonTuple tres = res as PythonTuple;
-
-                // verify the result is sane...
-                if (tres != null && tres.__len__() == 2) {
-                    if (!Converter.TryConvertToString(tres[0], out replacement)) ok = false;
-                    if (ok) {
-                        int bytesSkipped;
-                        if (!Converter.TryConvertToInt32(tres[1], out bytesSkipped)) ok = false;
-                    }
-                } else {
-                    ok = false;
-                }
-
-                if (!ok) throw PythonOps.TypeError("{1} error handler must return tuple containing (str, int), got {0}", PythonOps.GetPythonTypeName(res), encodeOrDecode);
-                return replacement;
-            }
         }
 
         private class PythonDecoderFallback : DecoderFallback {
             private readonly object function;
             private readonly IList<byte> str;
             private readonly string enc;
+
+            public PythonDecoderFallback() { }
 
             public PythonDecoderFallback(string encoding, IList<byte> data, object callable) {
                 function = callable;
@@ -2497,8 +2492,19 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        class BackslashEncoderReplaceFallback : EncoderFallback {
-            class BackslashReplaceFallbackBuffer : EncoderFallbackBuffer {
+        private static string CheckReplacementTuple(object res, string encodeOrDecode) {
+            // verify the result is sane...
+            if (res is PythonTuple tres && tres.__len__() == 2
+                    && Converter.TryConvertToString(tres[0], out string replacement)
+                    && Converter.TryConvertToInt32(tres[1], out _)) {
+                return replacement;
+            }
+
+            throw PythonOps.TypeError("{1} error handler must return tuple containing (str, int), got {0}", PythonOps.GetPythonTypeName(res), encodeOrDecode);
+        }
+
+        private class BackslashEncoderReplaceFallback : EncoderFallback {
+            private class BackslashReplaceFallbackBuffer : EncoderFallbackBuffer {
                 private List<char> _buffer = new List<char>();
                 private int _index;
 
@@ -2561,8 +2567,8 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        class XmlCharRefEncoderReplaceFallback : EncoderFallback {
-            class XmlCharRefEncoderReplaceFallbackBuffer : EncoderFallbackBuffer {
+        private class XmlCharRefEncoderReplaceFallback : EncoderFallback {
+            private class XmlCharRefEncoderReplaceFallbackBuffer : EncoderFallbackBuffer {
                 private List<char> _buffer = new List<char>();
                 private int _index;
 
@@ -2609,13 +2615,13 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        class UnicodeEscapeEncoding : Encoding {
+        private class UnicodeEscapeEncoding : Encoding {
             private bool _raw;
 
             public UnicodeEscapeEncoding(bool raw) {
                 _raw = raw;
             }
-            
+
             public override int GetByteCount(char[] chars, int index, int count) {
                 return EscapeEncode(chars, index, count).Length;
             }
@@ -2635,7 +2641,7 @@ namespace IronPython.Runtime.Operations {
                         bytes[i + byteIndex] = _raw ? (byte)res[i] : (byte)chars[i];
                     }
                     return res.Length;
-                } else {                    
+                } else {
                     for (int i = 0; i < charCount; i++) {
                         bytes[i + byteIndex] = (byte)chars[i + charIndex];
                     }
@@ -2675,12 +2681,12 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        class ExceptionFallBack : DecoderFallback {
+        private class ExceptionFallBack : DecoderFallback {
             internal ExceptionFallbackBuffer buffer;
 
             #region check for Utf8 Fallback issue
 
-            static bool isUtf8Bugged;
+            private static bool isUtf8Bugged;
 
             private class TestUtf8DecoderFallBack : DecoderFallback {
                 public override int MaxCharCount => 0;
@@ -2718,7 +2724,7 @@ namespace IronPython.Runtime.Operations {
             public override int MaxCharCount => 0;
         }
 
-        class ExceptionFallbackBuffer : DecoderFallbackBuffer {
+        private class ExceptionFallbackBuffer : DecoderFallbackBuffer {
             private readonly int length;
             internal byte[] badBytes;
 
@@ -2744,7 +2750,7 @@ namespace IronPython.Runtime.Operations {
 
         // This class can be removed as soon as workaround for utf8 encoding in .net is
         // no longer necessary.
-        class ExceptionFallbackBufferUtf8DotNet : ExceptionFallbackBuffer {
+        private class ExceptionFallbackBufferUtf8DotNet : ExceptionFallbackBuffer {
             private bool ignoreNext = false;
 
             public ExceptionFallbackBufferUtf8DotNet(int length) : base(length) { }
@@ -2765,7 +2771,6 @@ namespace IronPython.Runtime.Operations {
                 return base.Fallback(bytesUnknown, index);
             }
         }
-
 
 #endif
 

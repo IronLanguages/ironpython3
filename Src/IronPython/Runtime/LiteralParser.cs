@@ -16,18 +16,9 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime {
-    /// <summary>
-    /// Summary description for ConstantValue.
-    /// </summary>
     public static class LiteralParser {
-        public static string ParseString(string text, bool isRaw) {
-            return ParseString(text.ToCharArray(), 0, text.Length, isRaw, false);
-        }
-
         public static string ParseString(char[] text, int start, int length, bool isRaw, bool normalizeLineEndings) {
             Debug.Assert(text != null);
-
-            if (isRaw && !normalizeLineEndings) return new String(text, start, length);
 
             StringBuilder buf = null;
             int i = start;

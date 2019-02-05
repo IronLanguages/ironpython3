@@ -1,2 +1,2 @@
-# coding: utf-8
-print 'µble'
+# coding: latin-1
+print('µble')

@@ -827,8 +827,8 @@ for k, v in toError.items():
             }
 
             public override string ToString() {
-                if (@object is string s) {
-                    if (s.Length == 1) {
+                if (@object is Bytes s) {
+                    if (s.Count == 1) {
                         return $"'{encoding}' codec can't decode byte 0x{(byte)s[0]:x2} in position {start}: {reason}";
                     }
                     return $"'{encoding}' codec can't decode bytes in position {start}-{end}: {reason}";
@@ -840,8 +840,7 @@ for k, v in toError.items():
         public partial class _UnicodeEncodeError : BaseException {
             [PythonHidden]
             protected internal override void InitializeFromClr(System.Exception/*!*/ exception) {
-                EncoderFallbackException ex = exception as EncoderFallbackException;
-                if (ex != null) {
+                if (exception is EncoderFallbackException ex) {
                     __init__((exception.Data.Contains("encoding")) ? exception.Data["encoding"] : "unknown",
                         new string(ex.CharUnknown, 1), ex.Index, ex.Index + 1, exception.Message);
                 } else {
@@ -850,6 +849,14 @@ for k, v in toError.items():
             }
 
             public override string ToString() {
+                if (@object is string s) {
+                    if (s.Length == 1) {
+                        var c = (int)s[0];
+                        var repr = c < 0x100 ? $"\\x{c:x2}" : $"\\u{c:x4}";
+                        return $"'{encoding}' codec can't encode character '{repr}' in position {start}: {reason}";
+                    }
+                    return $"'{encoding}' codec can't encode string in position {start}-{end}: {reason}";
+                }
                 return reason.ToString();
             }
         }

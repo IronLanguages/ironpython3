@@ -1067,6 +1067,10 @@ class Popen(object):
                 _winapi.GetCurrentProcess(), handle,
                 _winapi.GetCurrentProcess(), 0, 1,
                 _winapi.DUPLICATE_SAME_ACCESS)
+            # IronPython: Not closing this handle may cause read operations to block down the line.
+            #    Because of the GC of .NET, it may not get closed fast enough so we force it to close.
+            #    This is not an issue with CPython because the handle get closed via __del__.
+            if isinstance(handle, Handle): handle.Close()
             return Handle(h)
 
 

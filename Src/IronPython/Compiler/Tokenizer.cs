@@ -678,8 +678,14 @@ namespace IronPython.Compiler {
 
         private Token MakeStringToken(char quote, bool isRaw, bool isUnicode, bool isBytes, bool isTriple, int start, int length) {
             if (!isBytes) {
-                string contents = LiteralParser.ParseString(_buffer, start, length, isRaw, !_disableLineFeedLineSeparator);
-                return new ConstantValueToken(contents);
+                try {
+                    var contents = LiteralParser.ParseString(_buffer, start, length, isRaw, !isRaw, !_disableLineFeedLineSeparator);
+                    return new ConstantValueToken(contents);
+                } catch (DecoderFallbackException ex) {
+                    var msg = $"(unicode error) {PythonOps.ToString(PythonExceptions.GetPythonException(ex))}";
+                    ReportSyntaxError(BufferTokenSpan, msg, ErrorCodes.NoCaret);
+                    return new ErrorToken(msg);
+                }
             } else {
                 List<byte> data = LiteralParser.ParseBytes(_buffer, start, length, isRaw, !_disableLineFeedLineSeparator);
                 if (data.Count == 0) {

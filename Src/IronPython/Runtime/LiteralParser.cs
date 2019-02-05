@@ -17,8 +17,10 @@ using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime {
     public static class LiteralParser {
-        public static string ParseString(char[] text, int start, int length, bool isRaw, bool normalizeLineEndings) {
+        public static string ParseString(char[] text, int start, int length, bool isRaw, bool isUniEscape, bool normalizeLineEndings) {
             Debug.Assert(text != null);
+
+            if (isRaw && !isUniEscape && !normalizeLineEndings) return new String(text, start, length);
 
             StringBuilder buf = null;
             int i = start;
@@ -26,10 +28,10 @@ namespace IronPython.Runtime {
             int val;
             while (i < l) {
                 char ch = text[i++];
-                if (ch == '\\') {
+                if ((!isRaw || isUniEscape) && ch == '\\') {
                     if (buf == null) {
-                         buf = new StringBuilder(length);
-                         buf.Append(text, start, i - start - 1);
+                        buf = new StringBuilder(length);
+                        buf.Append(text, start, i - start - 1);
                     }
 
                     if (i >= l) {
@@ -45,10 +47,10 @@ namespace IronPython.Runtime {
                     if (ch == 'u' || ch == 'U') {
                         int len = (ch == 'u') ? 4 : 8;
                         int max = 16;
-                        if (!isRaw) {
+                        if (isUniEscape) {
                             if (TryParseInt(text, i, len, max, out val)) {
                                 if (val < 0 || val > 0x10ffff) {
-                                    throw PythonOps.SyntaxError(@"'unicodeescape' codec can't decode bytes in position {0}: illegal Unicode character", i);
+                                    throw PythonExceptions.CreateThrowable(PythonExceptions.UnicodeDecodeError, isRaw ? "rawunicodeescape" : "unicodeescape", Bytes.Empty, i - start - 2, i - start + len - 1, "illegal Unicode character");
                                 }
 
                                 if (val < 0x010000) {
@@ -56,10 +58,9 @@ namespace IronPython.Runtime {
                                 } else {
                                     buf.Append(char.ConvertFromUtf32(val));
                                 }
-
                                 i += len;
                             } else {
-                                throw PythonOps.SyntaxError(@"'unicodeescape' codec can't decode bytes in position {0}: truncated \uXXXX escape", i);
+                                throw PythonExceptions.CreateThrowable(PythonExceptions.UnicodeDecodeError, isRaw ? "rawunicodeescape" : "unicodeescape", Bytes.Empty, i - start - 2, i - start - 1, @"truncated \uXXXX escape");
                             }
                         } else {
                             buf.Append('\\');
@@ -100,18 +101,18 @@ namespace IronPython.Runtime {
                                             }
                                         }
 
-                                        if(!namecomplete || namebuf.Length  == 0)
-                                            throw PythonOps.SyntaxError(@"'unicodeescape' codec can't decode bytes in position {0}: malformed \N character escape", i);
-                                        
+                                        if (!namecomplete || namebuf.Length == 0)
+                                            throw PythonExceptions.CreateThrowable(PythonExceptions.UnicodeDecodeError, isRaw ? "rawunicodeescape" : "unicodeescape", Bytes.Empty, i, i, @"malformed \N character escape");
+
                                         try {
                                             string uval = IronPython.Modules.unicodedata.lookup(namebuf.ToString());
                                             buf.Append(uval);
-                                        } catch(KeyNotFoundException) {
-                                            throw PythonOps.SyntaxError(@"'unicodeescape' codec can't decode bytes in position {0}: unknown Unicode character name", i);
+                                        } catch (KeyNotFoundException) {
+                                            throw PythonExceptions.CreateThrowable(PythonExceptions.UnicodeDecodeError, isRaw ? "rawunicodeescape" : "unicodeescape", Bytes.Empty, i, i, "unknown Unicode character name");
                                         }
 
                                     } else {
-                                        throw PythonOps.SyntaxError(@"'unicodeescape' codec can't decode bytes in position {0}: malformed \N character escape", i);
+                                        throw PythonExceptions.CreateThrowable(PythonExceptions.UnicodeDecodeError, isRaw ? "rawunicodeescape" : "unicodeescape", Bytes.Empty, i, i, @"malformed \N character escape");
                                     }
                                 }
                                 continue;
@@ -159,7 +160,7 @@ namespace IronPython.Runtime {
                     // normalize line endings
                     if (i < text.Length && text[i] == '\n') {
                         i++;
-                    } 
+                    }
                     buf.Append('\n');
                 } else if (buf != null) {
                     buf.Append(ch);

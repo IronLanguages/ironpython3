@@ -72,7 +72,7 @@ namespace IronPython.Modules {
                 encoding = "latin-1";
             }
 
-            var res = StringOps.DoEncode(context, input, errors, encoding, e);
+            var res = StringOps.DoEncode(context, input, errors, encoding, e, true);
             return PythonTuple.MakeTuple(res, res.Count);
         }
 
@@ -147,26 +147,21 @@ namespace IronPython.Modules {
                         case 'v': res.Append((char)0x0b); break;
                         case '\n': break;
                         case 'x':
-                            if (i >= data.Count - 2 || !CharToInt((char)data[i + 1], out int dig1) || !CharToInt((char)data[i + 2], out int dig2)) {
+                            if (++i < data.Count && CharToInt((char)data[i], out int dig1)
+                                    && ++i < data.Count && CharToInt((char)data[i], out int dig2)) {
+                                res.Append((char)(dig1 * 16 + dig2));
+                            } else {
                                 switch (errors) {
                                     case "strict":
-                                        if (i >= data.Count - 2) {
-                                            throw PythonOps.ValueError("invalid character value");
-                                        } else {
-                                            throw PythonOps.ValueError("invalid hexadecimal digit");
-                                        }
+                                        throw PythonOps.ValueError("invalid \\x escape at position {0}", i);
                                     case "replace":
                                         res.Append("?");
-                                        while (i < (data.Count - 2)) {
-                                            res.Append((char)data[++i]);
-                                        }
-                                        continue;
+                                        i--;
+                                        break;
                                     default:
                                         throw PythonOps.ValueError("decoding error; unknown error handling code: " + errors);
                                 }
                             }
-                            res.Append((char)(dig1 * 16 + dig2));
-                            i += 2;
                             break;
                         default:
                             res.Append("\\" + (char)data[i]);
@@ -195,25 +190,25 @@ namespace IronPython.Modules {
             return false;
         }
 
-        public static PythonTuple/*!*/ escape_encode(string text, string errors = "strict") {
+        public static PythonTuple/*!*/ escape_encode([BytesConversion]IList<byte> text, string errors = "strict") {
             StringBuilder res = new StringBuilder();
-            for (int i = 0; i < text.Length; i++) {
+            for (int i = 0; i < text.Count; i++) {
                 switch (text[i]) {
-                    case '\n': res.Append("\\n"); break;
-                    case '\r': res.Append("\\r"); break;
-                    case '\t': res.Append("\\t"); break;
-                    case '\\': res.Append("\\\\"); break;
-                    case '\'': res.Append("\\'"); break;
+                    case (byte)'\n': res.Append("\\n"); break;
+                    case (byte)'\r': res.Append("\\r"); break;
+                    case (byte)'\t': res.Append("\\t"); break;
+                    case (byte)'\\': res.Append("\\\\"); break;
+                    case (byte)'\'': res.Append("\\'"); break;
                     default:
                         if (text[i] < 0x20 || text[i] >= 0x7f) {
-                            res.AppendFormat("\\x{0:x2}", (int)text[i]);
+                            res.AppendFormat("\\x{0:x2}", text[i]);
                         } else {
-                            res.Append(text[i]);
+                            res.Append((char)text[i]);
                         }
                         break;
                 }
             }
-            return PythonTuple.MakeTuple(res.ToString(), text.Length);
+            return PythonTuple.MakeTuple(Bytes.Make(res.ToString().MakeByteArray()), text.Count);
         }
 
         #region Latin-1 Functions
@@ -244,6 +239,9 @@ namespace IronPython.Modules {
 
         #endregion
 #endif
+
+        public static PythonTuple raw_unicode_escape_decode(CodeContext/*!*/ context, string input, string errors = "strict")
+            => raw_unicode_escape_decode(context, DoEncode(context, "utf-8", Encoding.UTF8, input, "strict").Item1, errors);
 
         public static PythonTuple raw_unicode_escape_decode(CodeContext/*!*/ context, [BytesConversion]IList<byte> input, string errors = "strict") {
             return PythonTuple.MakeTuple(
@@ -280,10 +278,10 @@ namespace IronPython.Modules {
         public static PythonTuple unicode_internal_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict")
             => DoDecode(context, "unicode-internal", Encoding.Unicode, input, errors, false).ToPythonTuple();
 
-        public static PythonTuple unicode_internal_encode(CodeContext context, string input, [Optional]string errors)
+        public static PythonTuple unicode_internal_encode(CodeContext context, string input, string errors = "strict")
             => DoEncode(context, "unicode-internal", Encoding.Unicode, input, errors, false).ToPythonTuple();
 
-        public static PythonTuple unicode_internal_encode([BytesConversion]IList<byte> input, [Optional]string errors)
+        public static PythonTuple unicode_internal_encode([BytesConversion]IList<byte> input, string errors = "strict")
             => PythonTuple.MakeTuple(new Bytes(input), input.Count);
 
         #endregion
@@ -315,11 +313,10 @@ namespace IronPython.Modules {
             byte[] lePre = Encoding.Unicode.GetPreamble();
             byte[] bePre = Encoding.BigEndianUnicode.GetPreamble();
 
-            string instr = Converter.ConvertToString(input);
             bool match = true;
-            if (instr.Length > lePre.Length) {
+            if (input.Count > lePre.Length) {
                 for (int i = 0; i < lePre.Length; i++) {
-                    if ((byte)instr[i] != lePre[i]) {
+                    if (input[i] != lePre[i]) {
                         match = false;
                         break;
                     }
@@ -330,9 +327,9 @@ namespace IronPython.Modules {
                 match = true;
             }
 
-            if (instr.Length > bePre.Length) {
+            if (input.Count > bePre.Length) {
                 for (int i = 0; i < bePre.Length; i++) {
-                    if ((byte)instr[i] != bePre[i]) {
+                    if (input[i] != bePre[i]) {
                         match = false;
                         break;
                     }
@@ -343,7 +340,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            PythonTuple res = utf_16_decode(context, input, errors, false) as PythonTuple;
+            PythonTuple res = utf_16_decode(context, input, errors, false);
             return PythonTuple.MakeTuple(res[0], res[1], 0);
         }
 
@@ -611,7 +608,7 @@ namespace IronPython.Modules {
                         byteCount += efb.Remaining;
                     }
                 } else if (val == null) {
-                    throw PythonOps.UnicodeEncodeError("charmap", c, index, "'charmap' codec can't encode character u'\\x{0:x}' in position {1}: character maps to <undefined>", (int)c, index);
+                    throw PythonOps.UnicodeEncodeError("charmap", c.ToString(), index, index + 1, "character maps to <undefined>");
                 } else if (val is string) {
                     byteCount += ((string)val).Length;
                 } else if (val is int) {
@@ -641,7 +638,7 @@ namespace IronPython.Modules {
                         }
                     }
                 } else if (val == null) {
-                    throw PythonOps.UnicodeEncodeError("charmap", c, charIndex, "'charmap' codec can't encode character u'\\x{0:x}' in position {1}: character maps to <undefined>", (int)c, charIndex);
+                    throw PythonOps.UnicodeEncodeError("charmap", c.ToString(), charIndex, charIndex + 1, "character maps to <undefined>");
                 } else if (val is string) {
                     string v = val as string;
                     for (int i = 0; i < v.Length; i++) {

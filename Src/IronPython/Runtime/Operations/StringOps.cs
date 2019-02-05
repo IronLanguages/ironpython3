@@ -435,7 +435,7 @@ namespace IronPython.Runtime.Operations {
             return count;
         }
 
-        public static Bytes encode(CodeContext/*!*/ context, string s, [DefaultParameterValue("utf-8")]object encoding, string errors = "strict") {
+        public static Bytes encode(CodeContext/*!*/ context, [NotNull]string s, [NotNull]string encoding = "utf-8", [NotNull]string errors = "strict") {
             return RawEncode(context, s, encoding, errors);
         }
 
@@ -1477,7 +1477,6 @@ namespace IronPython.Runtime.Operations {
             return b.ToString();
         }
 
-
         #endregion
 
         #region Private implementation details
@@ -1669,21 +1668,12 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            if (e == null) {
-                string normalizedName = NormalizeEncodingName(encoding);
-                if ("raw_unicode_escape" == normalizedName) {
-                    return LiteralParser.ParseString(s.Cast<char>().ToArray(), 0, s.Count, true, false);
-                } else if ("unicode_escape" == normalizedName) {
-                    return LiteralParser.ParseString(s.Cast<char>().ToArray(), 0, s.Count, false, false);
-                }
-            }
-
             if (e != null || TryGetEncoding(encoding, out e)) {
                 return DoDecode(context, s, errors, encoding, e);
             }
 
             // look for user-registered codecs
-            PythonTuple codecTuple = PythonOps.LookupEncoding(context, encoding);
+            PythonTuple codecTuple = PythonOps.LookupTextEncoding(context, encoding, "codecs.decode()");
             if (codecTuple != null) {
                 return UserDecode(codecTuple, s, errors);
             }
@@ -1714,9 +1704,8 @@ namespace IronPython.Runtime.Operations {
                 case "replace": e.DecoderFallback = ReplacementFallback; break;
                 case "ignore": e.DecoderFallback = new PythonDecoderFallback(); break;
                 default:
-                    e.DecoderFallback = new PythonDecoderFallback(encoding,
-                        s,
-                        LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors)));
+                    e.DecoderFallback = new PythonDecoderFallback(encoding, s,
+                        () => LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors)));
                     break;
             }
 #endif
@@ -1764,22 +1753,12 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            if (e == null) {
-                string normalizedName = NormalizeEncodingName(encoding);
-
-                if ("raw_unicode_escape" == normalizedName) {
-                    return PythonOps.MakeBytes(RawUnicodeEscapeEncode(s));
-                } else if ("unicode_escape" == normalizedName || "string_escape" == normalizedName) {
-                    return PythonOps.MakeBytes(ReprEncode(s, '\''));
-                }
-            }
-
             if (e != null || TryGetEncoding(encoding, out e)) {
-                return DoEncode(context, s, errors, encoding, e);
+                return DoEncode(context, s, errors, encoding, e, true);
             }
 
             // look for user-registered codecs
-            PythonTuple codecTuple = PythonOps.LookupEncoding(context, encoding);
+            PythonTuple codecTuple = PythonOps.LookupTextEncoding(context, encoding, "codecs.encode()");
             if (codecTuple != null) {
                 return UserEncode(encoding, codecTuple, s, errors);
             }
@@ -1787,7 +1766,7 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.LookupError("unknown encoding: {0}", encoding);
         }
 
-        internal static Bytes DoEncode(CodeContext context, string s, string errors, string encoding, Encoding e, bool includePreamble = false) {
+        internal static Bytes DoEncode(CodeContext context, string s, string errors, string encoding, Encoding e, bool includePreamble) {
 #if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
             // so we just clone the encoding & set the fallback to throw in strict mode
@@ -1800,24 +1779,32 @@ namespace IronPython.Runtime.Operations {
                 case "xmlcharrefreplace": e.EncoderFallback = new XmlCharRefEncoderReplaceFallback(); break;
                 case "ignore": e.EncoderFallback = new PythonEncoderFallback(); break;
                 default:
-                    e.EncoderFallback = new PythonEncoderFallback(encoding,
-                    s,
-                    LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors)));
+                    e.EncoderFallback = new PythonEncoderFallback(encoding, s,
+                        () => LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors)));
                     break;
             }
 #endif
 
-            byte[] bytes = e.GetBytes(s);
+            byte[] bytes;
+            try {
+                bytes = e.GetBytes(s);
+            } catch (EncoderFallbackException ex) {
+                ex.Data["encoding"] = encoding;
+                throw;
+            }
 
-            if (!includePreamble)
-                return Bytes.Make(bytes);
+            if (includePreamble) {
+                byte[] preamble = e.GetPreamble();
+                if (preamble.Length == 0)
+                    return Bytes.Make(bytes);
 
-            MemoryStream sb = new MemoryStream();
-            byte[] preamble = e.GetPreamble();
-            sb.Write(preamble, 0, preamble.Length);
-            sb.Write(bytes, 0, bytes.Length);
+                MemoryStream sb = new MemoryStream();
+                sb.Write(preamble, 0, preamble.Length);
+                sb.Write(bytes, 0, bytes.Length);
+                bytes = sb.ToArray();
+            }
 
-            return Bytes.Make(sb.ToArray());
+            return Bytes.Make(bytes);
         }
 
         private static PythonTuple CallUserDecodeOrEncode(object function, object data, string errors) {
@@ -2316,16 +2303,16 @@ namespace IronPython.Runtime.Operations {
         /// and int is an index where encoding should continue.
 
         private class PythonEncoderFallbackBuffer : EncoderFallbackBuffer {
-            private readonly object _function;
             private readonly string _encoding;
             private readonly string _strData;
+            private readonly object _function;
             private string _buffer;
             private int _bufferIndex;
 
-            public PythonEncoderFallbackBuffer(string encoding, string str, object callable) {
+            public PythonEncoderFallbackBuffer(string encoding, string str, object function) {
                 _encoding = encoding;
                 _strData = str;
-                _function = callable;
+                _function = function;
             }
 
             public override bool Fallback(char charUnknown, int index) {
@@ -2366,9 +2353,7 @@ namespace IronPython.Runtime.Operations {
             private bool DoPythonFallback(int index, int length) {
                 if (_function != null) {
                     // create the exception object to hand to the user-function...
-                    PythonExceptions._UnicodeEncodeError exObj = new PythonExceptions._UnicodeEncodeError();
-
-                    exObj.__init__(_encoding, _strData, index, index + length, "unexpected code byte");
+                    var exObj = PythonExceptions.CreatePythonThrowable(PythonExceptions.UnicodeEncodeError, _encoding, _strData, index, index + length, "unexpected code byte");
 
                     // call the user function...
                     object res = PythonCalls.Call(_function, exObj);
@@ -2386,20 +2371,24 @@ namespace IronPython.Runtime.Operations {
         }
 
         private class PythonEncoderFallback : EncoderFallback {
-            private readonly object _function;
-            private readonly string _str;
-            private readonly string _enc;
+            private readonly string encoding;
+            private readonly string data;
+            private readonly Func<object> lookup;
+            private object function;
 
             public PythonEncoderFallback() { }
 
-            public PythonEncoderFallback(string encoding, string data, object callable) {
-                _enc = encoding;
-                _str = data;
-                _function = callable;
+            public PythonEncoderFallback(string encoding, string data, Func<object> lookup) {
+                this.encoding = encoding;
+                this.data = data;
+                this.lookup = lookup;
             }
 
             public override EncoderFallbackBuffer CreateFallbackBuffer() {
-                return new PythonEncoderFallbackBuffer(_enc, _str, _function);
+                if (function == null && lookup != null) {
+                    function = lookup.Invoke();
+                }
+                return new PythonEncoderFallbackBuffer(encoding, data, function);
             }
 
             public override int MaxCharCount {
@@ -2450,9 +2439,7 @@ namespace IronPython.Runtime.Operations {
             public override bool Fallback(byte[] bytesUnknown, int index) {
                 if (_function != null) {
                     // create the exception object to hand to the user-function...
-                    PythonExceptions._UnicodeDecodeError exObj = new PythonExceptions._UnicodeDecodeError();
-
-                    exObj.__init__(_encoding, _strData, index, index + bytesUnknown.Length, "unexpected code byte");
+                    var exObj = PythonExceptions.CreatePythonThrowable(PythonExceptions.UnicodeDecodeError, _encoding, _strData, index, index + bytesUnknown.Length, "unexpected code byte");
 
                     // call the user function...
                     object res = PythonCalls.Call(_function, exObj);
@@ -2471,20 +2458,24 @@ namespace IronPython.Runtime.Operations {
         }
 
         private class PythonDecoderFallback : DecoderFallback {
-            private readonly object function;
-            private readonly IList<byte> str;
-            private readonly string enc;
+            private readonly string encoding;
+            private readonly IList<byte> data;
+            private readonly Func<object> lookup;
+            private object function;
 
             public PythonDecoderFallback() { }
 
-            public PythonDecoderFallback(string encoding, IList<byte> data, object callable) {
-                function = callable;
-                str = data;
-                enc = encoding;
+            public PythonDecoderFallback(string encoding, IList<byte> data, Func<object> lookup) {
+                this.encoding = encoding;
+                this.data = data;
+                this.lookup = lookup;
             }
 
             public override DecoderFallbackBuffer CreateFallbackBuffer() {
-                return new PythonDecoderFallbackBuffer(enc, str, function);
+                if (function == null && lookup != null) {
+                    function = lookup.Invoke();
+                }
+                return new PythonDecoderFallbackBuffer(encoding, data, function);
             }
 
             public override int MaxCharCount {
@@ -2642,10 +2633,11 @@ namespace IronPython.Runtime.Operations {
                     }
                     return res.Length;
                 } else {
-                    for (int i = 0; i < charCount; i++) {
-                        bytes[i + byteIndex] = (byte)chars[i + charIndex];
+                    string res = ReprEncode(new string(chars, charIndex, charCount));
+                    for (int i = 0; i < res.Length; i++) {
+                        bytes[i + byteIndex] = (byte)res[i];
                     }
-                    return charCount;
+                    return res.Length;
                 }
             }
 
@@ -2655,16 +2647,16 @@ namespace IronPython.Runtime.Operations {
                     tmpChars[i] = (char)bytes[i + index];
                 }
 
-                return LiteralParser.ParseString(tmpChars, 0, tmpChars.Length, _raw, false).Length;
+                return LiteralParser.ParseString(tmpChars, 0, tmpChars.Length, _raw, true, false).Length;
             }
 
             public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) {
                 char[] tmpChars = new char[byteCount];
                 for (int i = 0; i < byteCount; i++) {
-                    chars[i] = (char)bytes[i + byteIndex];
+                    tmpChars[i] = (char)bytes[i + byteIndex];
                 }
 
-                string res = LiteralParser.ParseString(tmpChars, 0, tmpChars.Length, _raw, false);
+                string res = LiteralParser.ParseString(tmpChars, 0, tmpChars.Length, _raw, true, false);
                 for (int i = 0; i < res.Length; i++) {
                     chars[i + charIndex] = (char)res[i];
                 }

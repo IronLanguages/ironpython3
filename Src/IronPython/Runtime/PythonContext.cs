@@ -936,7 +936,8 @@ namespace IronPython.Runtime
             ContractUtils.Requires(stream.CanSeek && stream.CanRead, nameof(stream), "The stream must support seeking and reading");
 
             // Python 3 uses UTF-8 as default
-            Encoding encoding = Encoding.UTF8;
+            var encoding = (Encoding)Encoding.UTF8.Clone();
+            encoding.DecoderFallback = new SourceNonStrictDecoderFallback();
 
             long startPosition = stream.Position;
 

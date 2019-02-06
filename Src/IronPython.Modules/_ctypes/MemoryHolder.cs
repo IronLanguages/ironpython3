@@ -5,6 +5,7 @@
 #if FEATURE_CTYPES
 
 using System;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
@@ -177,9 +178,9 @@ namespace IronPython.Modules {
             return new MemoryHolder(res, IntPtr.Size, this);
         }
 
-        internal string ReadAnsiString(int offset) {
+        internal Bytes ReadBytes(int offset) {
             try {
-                return Marshal.PtrToStringAnsi(_data.Add(offset));
+                return Bytes.Make(ReadBytes(_data, offset));
             } finally {
                 GC.KeepAlive(this);
             }
@@ -193,35 +194,35 @@ namespace IronPython.Modules {
             }
         }
 
-        internal string ReadAnsiString(int offset, int length) {
+        internal Bytes ReadBytes(int offset, int length) {
             try {
-                return ReadAnsiString(_data, offset, length);
+                return Bytes.Make(ReadBytes(_data, offset, length));
             } finally {
                 GC.KeepAlive(this);
             }
         }
 
-        internal static string ReadAnsiString(IntPtr addr, int offset, int length) {
+        internal static byte[] ReadBytes(IntPtr addr, int offset, int length) {
             // instead of Marshal.PtrToStringAnsi we do this because
             // ptrToStringAnsi gives special treatment to values >= 128.
-            StringBuilder res = new StringBuilder();
+            MemoryStream res = new MemoryStream();
             if (checked(offset + length) < Int32.MaxValue) {
                 for (int i = 0; i < length; i++) {
-                    res.Append((char)Marshal.ReadByte(addr, offset + i));
+                    res.WriteByte(Marshal.ReadByte(addr, offset + i));
                 }
             }
-            return res.ToString();
+            return res.ToArray();
         }
 
-        internal static string ReadAnsiString(IntPtr addr, int offset) {
+        internal static byte[] ReadBytes(IntPtr addr, int offset) {
             // instead of Marshal.PtrToStringAnsi we do this because
             // ptrToStringAnsi gives special treatment to values >= 128.
-            StringBuilder res = new StringBuilder();
+            MemoryStream res = new MemoryStream();
             byte b;
             while((b = Marshal.ReadByte(addr, offset++)) != 0) {
-                res.Append((char)b);
+                res.WriteByte(b);
             }
-            return res.ToString();
+            return res.ToArray();
         }
 
         internal string ReadUnicodeString(int offset, int length) {

@@ -261,7 +261,7 @@ namespace IronPython.Modules {
                             break;
                         case FormatType.Char:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                res[res_idx++] = Bytes.Make(new byte[] { CreateCharValue(context, ref curIndex, data) });
+                                res[res_idx++] = Bytes.FromByte(CreateCharValue(context, ref curIndex, data));
                             }
                             break;
                         case FormatType.SignedChar:

@@ -55,6 +55,18 @@ namespace IronPython.Runtime {
             return new Bytes(bytes);
         }
 
+        private static readonly Bytes[] oneByteBytes = new Bytes[256];
+
+        static Bytes() {
+            for (var i = 0; i < 256; i++) {
+                oneByteBytes[i] = new Bytes(new byte[] { (byte)i });
+            }
+        }
+
+        internal static Bytes FromByte(byte b) {
+            return oneByteBytes[b];
+        }
+
         #region Public Python API surface
 
         public Bytes capitalize() {

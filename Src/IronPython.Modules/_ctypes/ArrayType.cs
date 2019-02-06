@@ -187,21 +187,30 @@ namespace IronPython.Modules {
             object INativeType.GetValue(MemoryHolder owner, object readingFrom, int offset, bool raw) {
                 if (IsStringType) {
                     SimpleType st = (SimpleType)_type;
-                    string str;
                     if (st._type == SimpleTypeKind.Char) {
-                        str = owner.ReadAnsiString(offset, _length);
-                    } else {
-                        str = owner.ReadUnicodeString(offset, _length);
-                    }
+                        IList<byte> str = owner.ReadBytes(offset, _length);
 
-                    // remove any trailing nulls
-                    for (int i = 0; i < str.Length; i++) {
-                        if (str[i] == '\x00') {
-                            return str.Substring(0, i);
+                        // remove any trailing nulls
+                        for (int i = 0; i < str.Count; i++) {
+                            if (str[i] == 0) {
+                                return str.Substring(0, i);
+                            }
                         }
-                    }
 
-                    return str;
+                        return str;
+
+                    } else {
+                        string str = owner.ReadUnicodeString(offset, _length);
+
+                        // remove any trailing nulls
+                        for (int i = 0; i < str.Length; i++) {
+                            if (str[i] == '\x00') {
+                                return str.Substring(0, i);
+                            }
+                        }
+
+                        return str;
+                    }
                 }
 
                 _Array arr = (_Array)CreateInstance(Context.SharedContext);
@@ -209,17 +218,14 @@ namespace IronPython.Modules {
                 return arr;
             }
 
-            internal string GetRawValue(MemoryHolder owner, int offset) {
+            internal object GetRawValue(MemoryHolder owner, int offset) {
                 Debug.Assert(IsStringType);
                 SimpleType st = (SimpleType)_type;
-                string str;
                 if (st._type == SimpleTypeKind.Char) {
-                    str = owner.ReadAnsiString(offset, _length);
+                    return owner.ReadBytes(offset, _length);
                 } else {
-                    str = owner.ReadUnicodeString(offset, _length);
+                    return owner.ReadUnicodeString(offset, _length);
                 }
-
-                return str;
             }
 
             private bool IsStringType {

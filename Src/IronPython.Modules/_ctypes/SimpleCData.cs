@@ -5,6 +5,8 @@
 #if FEATURE_CTYPES
 
 using System;
+using System.Collections.Generic;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting.Runtime;
@@ -12,7 +14,6 @@ using Microsoft.Scripting.Runtime;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-using System.Numerics;
 
 namespace IronPython.Modules {
     /// <summary>
@@ -35,41 +36,71 @@ namespace IronPython.Modules {
             }
 
             public void __init__(CodeContext/*!*/ context, object value) {
-                if(IsChar && !(value is string t && t.Length == 1)) {
-                    throw PythonOps.TypeError("one character string expected");
-                }
-
-                if(IsIntegerType) {
-                    object __int__ = null;
-                    if(value is float || value is double) {
-                        throw PythonOps.TypeError("int expected instead of float");
-                    }
-
-                    if (!(value is int || value is BigInteger || PythonOps.TryGetBoundAttr(value, "__int__", out __int__))) {
-                        throw PythonOps.TypeError("an integer is required");
-                    }
-
-                    if(__int__ != null) {
-                        value = PythonOps.CallWithContext(context, __int__);
-                    }
-                }
-
-                if(IsFloatType) {
-                    object __float__ = null;
-
-                    if (!(value is double || value is float || value is int || value is BigInteger || PythonOps.TryGetBoundAttr(value, "__float__", out __float__))) {
-                        throw PythonOps.TypeError("a float is required");
-                    }
-
-                    if(value is BigInteger x) {
-                        if(x > (BigInteger)double.MaxValue) {
-                            throw PythonOps.OverflowError("long int too large to convert to float");
+                switch(((SimpleType)NativeType)._type) {
+                    case SimpleTypeKind.Char:
+                        {
+                            if (value is IList<byte> t && t.Count == 1) {
+                                value = Bytes.FromByte(t[0]);
+                            } else if (value is int i) {
+                                try {
+                                    value = Bytes.FromByte(checked((byte)i));
+                                } catch (OverflowException) {
+                                    throw PythonOps.TypeError("one character bytes, bytearray or integer expected");
+                                }
+                            } else {
+                                throw PythonOps.TypeError("one character bytes, bytearray or integer expected");
+                            }
                         }
-                    }
+                        break;
+                    case SimpleTypeKind.WChar: {
+                            if (!(value is string t && t.Length == 1)) {
+                                throw PythonOps.TypeError("one character unicode string expected");
+                            }
+                        }
+                        break;
+                    case SimpleTypeKind.SignedInt:
+                    case SimpleTypeKind.SignedLong:
+                    case SimpleTypeKind.SignedLongLong:
+                    case SimpleTypeKind.SignedShort:
+                    case SimpleTypeKind.UnsignedInt:
+                    case SimpleTypeKind.UnsignedLong:
+                    case SimpleTypeKind.UnsignedLongLong:
+                    case SimpleTypeKind.UnsignedShort: {
+                            object __int__ = null;
+                            if (value is float || value is double) {
+                                throw PythonOps.TypeError("int expected instead of float");
+                            }
 
-                    if(__float__ != null) {
-                        value = PythonOps.CallWithContext(context, __float__);
-                    }
+                            if (!(value is int || value is BigInteger || PythonOps.TryGetBoundAttr(value, "__int__", out __int__))) {
+                                throw PythonOps.TypeError("an integer is required");
+                            }
+
+                            if (__int__ != null) {
+                                value = PythonOps.CallWithContext(context, __int__);
+                            }
+                        }
+                        break;
+                    case SimpleTypeKind.Double:
+                    case SimpleTypeKind.Single: {
+                            object __float__ = null;
+
+                            if (!(value is double || value is float || value is int || value is BigInteger || PythonOps.TryGetBoundAttr(value, "__float__", out __float__))) {
+                                throw PythonOps.TypeError("a float is required");
+                            }
+
+                            if (value is BigInteger x) {
+                                if (x > (BigInteger)double.MaxValue) {
+                                    throw PythonOps.OverflowError("long int too large to convert to float");
+                                }
+                            }
+
+                            if (__float__ != null) {
+                                value = PythonOps.CallWithContext(context, __float__);
+                            }
+                        }
+                        break;
+                    default:
+                        break;
                 }
 
                 _memHolder = new MemoryHolder(Size);
@@ -79,7 +110,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            // implemented as PropertyMethod's so taht we can have delete
+            // implemented as PropertyMethod's so that we can have delete
             [PropertyMethod, SpecialName]
             public void Setvalue(object value) {
                 NativeType.SetValue(_memHolder, 0, value);
@@ -115,29 +146,6 @@ namespace IronPython.Modules {
                 get {
                     SimpleTypeKind t = ((SimpleType)NativeType)._type;
                     return t == SimpleTypeKind.CharPointer || t == SimpleTypeKind.WCharPointer;
-                }
-            }
-
-            private bool IsChar {
-                get {
-                    SimpleTypeKind t = ((SimpleType)NativeType)._type;
-                    return t == SimpleTypeKind.Char || t == SimpleTypeKind.WChar;
-                }
-            }
-
-            private bool IsIntegerType {
-                get {
-                    SimpleTypeKind t = ((SimpleType)NativeType)._type;
-                    return t == SimpleTypeKind.SignedInt || t == SimpleTypeKind.SignedLong || t == SimpleTypeKind.SignedLongLong ||
-                        t == SimpleTypeKind.SignedShort || t == SimpleTypeKind.UnsignedInt || t == SimpleTypeKind.UnsignedLong ||
-                        t == SimpleTypeKind.UnsignedLongLong || t == SimpleTypeKind.UnsignedShort;
-                }
-            }
-
-            private bool IsFloatType {
-                get {
-                    SimpleTypeKind t = ((SimpleType)NativeType)._type;
-                    return t == SimpleTypeKind.Double || t == SimpleTypeKind.Single;
                 }
             }
 

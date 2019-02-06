@@ -218,7 +218,7 @@ namespace IronPython.Modules {
                 object res;
                 switch (_type) {
                     case SimpleTypeKind.Boolean: res = owner.ReadByte(offset) != 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False; break;
-                    case SimpleTypeKind.Char: res = new string((char)owner.ReadByte(offset), 1); break;
+                    case SimpleTypeKind.Char: res = Bytes.FromByte(owner.ReadByte(offset)); break;
                     case SimpleTypeKind.SignedByte: res = GetIntReturn((int)(sbyte)owner.ReadByte(offset)); break;
                     case SimpleTypeKind.UnsignedByte: res = GetIntReturn((int)owner.ReadByte(offset)); break;
                     case SimpleTypeKind.SignedShort: res = GetIntReturn(owner.ReadInt16(offset, _swap)); break;
@@ -235,7 +235,7 @@ namespace IronPython.Modules {
                     case SimpleTypeKind.SignedLongLong: res = GetIntReturn(owner.ReadInt64(offset, _swap)); break;
                     case SimpleTypeKind.Object: res = GetObjectReturn(owner.ReadIntPtr(offset)); break;
                     case SimpleTypeKind.Pointer: res = owner.ReadIntPtr(offset).ToPython(); break;
-                    case SimpleTypeKind.CharPointer: res = owner.ReadMemoryHolder(offset).ReadAnsiString(0); break;
+                    case SimpleTypeKind.CharPointer: res = owner.ReadMemoryHolder(offset).ReadBytes(0); break;
                     case SimpleTypeKind.WCharPointer: res = owner.ReadMemoryHolder(offset).ReadUnicodeString(0); break;
                     case SimpleTypeKind.BStr: res = Marshal.PtrToStringBSTR(owner.ReadIntPtr(offset)); break;
                     default:

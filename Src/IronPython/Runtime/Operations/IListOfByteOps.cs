@@ -1306,7 +1306,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static IEnumerable BytesEnumerable(IList<byte> bytes) {
-            return new PythonBytesEnumerator<Bytes>(bytes, b => Bytes.Make(new byte[] { b }));
+            return new PythonBytesEnumerator<Bytes>(bytes, b => Bytes.FromByte(b));
         }
 
         internal static IEnumerable BytesIntEnumerable(IList<byte> bytes) {
@@ -1314,7 +1314,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static IEnumerator<Bytes> BytesEnumerator(IList<byte> bytes) {
-            return new PythonBytesEnumerator<Bytes>(bytes, b => Bytes.Make(new byte[] { b }));
+            return new PythonBytesEnumerator<Bytes>(bytes, b => Bytes.FromByte(b));
         }
 
         internal static IEnumerator<int> BytesIntEnumerator(IList<byte> bytes) {

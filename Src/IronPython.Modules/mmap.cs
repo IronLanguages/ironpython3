@@ -249,7 +249,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            public string this[Slice slice] {
+            public Bytes this[Slice slice] {
                 get {
                     using (new MmapLocker(this)) {
                         long start, stop, step, longCount;
@@ -261,17 +261,17 @@ namespace IronPython.Modules {
 
                         int count = (int)longCount;
                         if (count == 0) {
-                            return "";
+                            return Bytes.Empty;
                         }
 
-                        StringBuilder sb = new StringBuilder(count);
+                        var bytes = new byte[count];
 
-                        for (; count > 0; count--) {
-                            sb.Append((char)_view.ReadByte(start));
+                        for (var i=0; i<count;i++) {
+                            bytes[i] = _view.ReadByte(start);
                             start += step;
                         }
 
-                        return sb.ToString();
+                        return Bytes.Make(bytes);
                     }
                 }
 
@@ -290,16 +290,16 @@ namespace IronPython.Modules {
                         );
 
                         int count = (int)longCount;
-                        if (value.Length != count) {
+                        if (value.Count != count) {
                             throw PythonOps.IndexError("mmap slice assignment is wrong size");
                         } else if (count == 0) {
                             return;
                         }
 
-                        byte[] data = value.MakeByteArray();
+                        byte[] data = value.GetUnsafeByteArray();
 
                         if (step == 1) {
-                            _view.WriteArray(start, data, 0, value.Length);
+                            _view.WriteArray(start, data, 0, value.Count);
                         } else {
                             foreach (byte b in data) {
                                 _view.Write(start, b);
@@ -832,7 +832,7 @@ namespace IronPython.Modules {
                 return sb.ToString();
             }
 
-            internal string GetSearchString() {
+            internal Bytes GetSearchString() {
                 using (new MmapLocker(this)) {
                     return this[new Slice(0, null)];
                 }

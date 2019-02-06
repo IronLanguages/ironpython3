@@ -144,6 +144,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static byte GetByte(object o) {
+            // TODO: verify usage and clean up
             Extensible<int> ei;
             Extensible<BigInteger> ebi;
             Extensible<double> ed;

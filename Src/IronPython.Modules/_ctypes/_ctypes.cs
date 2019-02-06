@@ -638,11 +638,11 @@ namespace IronPython.Modules {
         /// Helper function for translating from memset to NT's FillMemory API.
         /// </summary>
         private static IntPtr StringAt(IntPtr src, int len) {
-            string res;
+            byte[] res;
             if (len == -1) {
-                res = MemoryHolder.ReadAnsiString(src, 0);
+                res = MemoryHolder.ReadBytes(src, 0);
             } else {
-                res = MemoryHolder.ReadAnsiString(src, 0, len);
+                res = MemoryHolder.ReadBytes(src, 0, len);
             }
 
             return GCHandle.ToIntPtr(GCHandle.Alloc(res));

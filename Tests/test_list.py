@@ -24,15 +24,13 @@ class ListTest(IronPythonTestCase):
         ## file
         fn = os.path.join(self.temporary_dir, "testfile.txt")
 
-        fo = open(fn, "wb")
-        a = list('abc')
-        a.append(a)
-        print(a, end='', file=fo)
-        fo.close()
+        with open(fn, "w") as fo:
+            a = list('abc')
+            a.append(a)
+            print(a, end='', file=fo)
 
-        fo = open(fn, "rb")
-        self.assertTrue(fo.read() == repr(a))
-        fo.close()
+        with open(fn, "r") as fo:
+            self.assertTrue(fo.read() == repr(a))
 
     @skipUnlessIronPython()
     def test_cli_enumerator(self):

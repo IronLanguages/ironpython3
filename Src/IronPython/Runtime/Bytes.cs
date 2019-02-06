@@ -55,6 +55,18 @@ namespace IronPython.Runtime {
             return new Bytes(bytes);
         }
 
+        private static readonly Bytes[] oneByteBytes = new Bytes[256];
+
+        static Bytes() {
+            for (var i = 0; i < 256; i++) {
+                oneByteBytes[i] = new Bytes(new byte[] { (byte)i });
+            }
+        }
+
+        internal static Bytes FromByte(byte b) {
+            return oneByteBytes[b];
+        }
+
         #region Public Python API surface
 
         public Bytes capitalize() {
@@ -65,22 +77,13 @@ namespace IronPython.Runtime {
             return new Bytes(_bytes.Capitalize());
         }
 
-        public Bytes/*!*/ center(int width) {
-            return center(width, " ");
-        }
+        public Bytes/*!*/ center(int width) => center(width, (byte)' ');
 
-        public Bytes/*!*/ center(int width, [NotNull]string/*!*/ fillchar) {
-            List<byte> res = _bytes.TryCenter(width, fillchar.ToByte("center", 2));
+        public Bytes/*!*/ center(int width, [BytesConversion]IList<byte>/*!*/ fillchar)
+            => center(width, fillchar.ToByte("center", 2));
 
-            if (res == null) {
-                return this;
-            }
-
-            return new Bytes(res);
-        }
-
-        public Bytes/*!*/ center(int width, [BytesConversion]IList<byte>/*!*/ fillchar) {
-            List<byte> res = _bytes.TryCenter(width, fillchar.ToByte("center", 2));
+        private Bytes center(int width, byte fillchar) {
+            List<byte> res = _bytes.TryCenter(width, fillchar);
 
             if (res == null) {
                 return this;
@@ -189,7 +192,7 @@ namespace IronPython.Runtime {
         public int find(int @byte, int? start) => find(@byte, start, null);
 
         public int find(int @byte, int? start, int? end)
-            => _bytes.IndexOfByte(@byte, start ?? 0, end ?? Count);
+            => _bytes.IndexOfByte(@byte.ToByteChecked(), start ?? 0, end ?? Count);
 
         public static Bytes/*!*/ fromhex(string/*!*/ @string) {
             return new Bytes(IListOfByteOps.FromHex(@string).ToArray());
@@ -213,7 +216,7 @@ namespace IronPython.Runtime {
         public int index(int @byte, int? start) => index(@byte, start, null);
 
         public int index(int @byte, int? start, int? end) {
-            int res = find(@byte, start, end);
+            int res = find(@byte.ToByteChecked(), start, end);
             if (res == -1) {
                 throw PythonOps.ValueError("subsection not found");
             }
@@ -307,10 +310,6 @@ namespace IronPython.Runtime {
 
         public Bytes ljust(int width) {
             return ljust(width, (byte)' ');
-        }
-
-        public Bytes ljust(int width, [NotNull]string/*!*/ fillchar) {
-            return ljust(width, fillchar.ToByte("ljust", 2));
         }
 
         public Bytes ljust(int width, [BytesConversion]IList<byte>/*!*/ fillchar) {
@@ -438,10 +437,6 @@ namespace IronPython.Runtime {
 
         public Bytes/*!*/ rjust(int width) {
             return rjust(width, (byte)' ');
-        }
-
-        public Bytes/*!*/ rjust(int width, [NotNull]string/*!*/ fillchar) {
-            return rjust(width, fillchar.ToByte("rjust", 2));
         }
 
         public Bytes/*!*/ rjust(int width, [BytesConversion]IList<byte>/*!*/ fillchar) {
@@ -643,14 +638,13 @@ namespace IronPython.Runtime {
         }
 
         public bool __contains__(CodeContext/*!*/ context, object value) {
-            if (value is Extensible<string>) {
-                return __contains__(PythonOps.MakeBytes(((Extensible<string>)value).Value.MakeByteArray()));
-            } else if (value is Extensible<int>) {
-                return IndexOf(((Extensible<int>)value).Value.ToByteChecked()) != -1;
-            } else if (value is BigInteger) {
-                return IndexOf(((BigInteger)value).ToByteChecked()) != -1;
-            } else if (value is Extensible<BigInteger>) {
-                return IndexOf(((Extensible<BigInteger>)value).Value.ToByteChecked()) != -1;
+            switch (value) {
+                case Extensible<int> ei:
+                    return IndexOf(ei.Value.ToByteChecked()) != -1;
+                case BigInteger bi:
+                    return IndexOf(bi.ToByteChecked()) != -1;
+                case Extensible<BigInteger> ebi:
+                    return IndexOf(ebi.Value.ToByteChecked()) != -1;
             }
 
             throw PythonOps.TypeError("Type {0} doesn't support the buffer API", PythonTypeOps.GetName(value));
@@ -694,14 +688,6 @@ namespace IronPython.Runtime {
             }
 
             return new ByteArray(bytes);
-        }
-
-        public static string/*!*/ operator +(Bytes/*!*/ self, string/*!*/ other) {
-            return self.ToString() + other;
-        }
-
-        public static string/*!*/ operator +(string/*!*/ other, Bytes/*!*/ self) {
-            return other + self.ToString();
         }
 
         private static Bytes MultiplyWorker(Bytes self, int count) {
@@ -841,11 +827,11 @@ namespace IronPython.Runtime {
         #region Implementation Details
 
         private static Bytes/*!*/ JoinOne(object curVal) {
-            if (curVal is IList<byte>) {
-                return curVal as Bytes ?? new Bytes(curVal as IList<byte>);
+            if (curVal?.GetType() == typeof(Bytes)) {
+                return curVal as Bytes;
             }
-            if (curVal is string) {
-                return PythonOps.MakeBytes(((string)curVal).MakeByteArray());
+            if (curVal is IList<byte> b) {
+                return new Bytes(b);
             }
             throw PythonOps.TypeError("can only join an iterable of bytes");
         }
@@ -956,21 +942,8 @@ namespace IronPython.Runtime {
         #region Equality Members
 
         public override bool Equals(object obj) {
-            IList<byte> bytes = obj as IList<byte>;
-            if (bytes != null) {
+            if (obj is IList<byte> bytes) {
                 return _bytes.Compare(bytes) == 0;
-            }
-
-            string s = obj as string;
-            if (s == null) {
-                Extensible<string> es = obj as Extensible<string>;
-                if (es != null) {
-                    s = es.Value;
-                }
-            }
-
-            if (s != null) {
-                return ToString() == s;
             }
 
             return false;

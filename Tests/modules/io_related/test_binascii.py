@@ -18,10 +18,10 @@ class BinasciiTest(unittest.TestCase):
                 self.assertRaises(binascii.Error, binascii.a2b_base64, x) # binascii.Error, incorrect padding
 
     def test_positive(self):
-        self.assertEqual(binascii.a2b_base64(''), '')
-        self.assertEqual(binascii.a2b_base64('AAA='), '\x00\x00')
-        self.assertEqual(binascii.a2b_base64('%%^^&&A%%&&**A**#%&A='), '\x00\x00')
-        self.assertEqual(binascii.a2b_base64('w/A='), '\xc3\xf0')
+        self.assertEqual(binascii.a2b_base64(''), b'')
+        self.assertEqual(binascii.a2b_base64('AAA='), b'\x00\x00')
+        self.assertEqual(binascii.a2b_base64('%%^^&&A%%&&**A**#%&A='), b'\x00\x00')
+        self.assertEqual(binascii.a2b_base64('w/A='), b'\xc3\xf0')
 
     def test_zeros(self):
         """verify zeros don't show up as being only a single character"""

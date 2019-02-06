@@ -1195,7 +1195,7 @@ namespace IronPython.Modules {
                     return Bytes.Make(array.ToByteArray()).ToString();
 #if FEATURE_MMAP
                 case MmapModule.MmapDefault mmapFile:
-                    return mmapFile.GetSearchString();
+                    return mmapFile.GetSearchString().ToString();
 #endif
                 default:
                     throw PythonOps.TypeError($"expected string for parameter '{param}' but got '{PythonOps.GetPythonTypeName(str)}'");

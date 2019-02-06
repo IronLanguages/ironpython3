@@ -21,7 +21,7 @@ class _StructTest(IronPythonTestCase):
 
     def test_sanity(self):
         mapping = {
-            'c': 'a',
+            'c': b'a',
             'b': ord('b'),
             'B': ord('c'),
             'h': -123,
@@ -34,8 +34,8 @@ class _StructTest(IronPythonTestCase):
             'Q': 1000000000,
             'f': 3.14,
             'd': -0.3439,
-            '6s': 'string',
-            '15p': 'another string'
+            '6s': b'string',
+            '15p': b'another string'
             }
 
         for (k, v) in mapping.items():
@@ -47,14 +47,14 @@ class _StructTest(IronPythonTestCase):
             else:
                 self.assertEqual(v, v2[0])
 
-        self.assertEqual(pack(' c\t', 'a'), 'a')
+        self.assertEqual(pack(' c\t', b'a'), b'a')
 
     def test_padding_len(self):
-        self.assertEqual(unpack('4xi','\x00\x01\x02\x03\x01\x00\x00\x00'), (1,))
+        self.assertEqual(unpack('4xi', b'\x00\x01\x02\x03\x01\x00\x00\x00'), (1,))
 
     def test_cp3092(self):
         for format in [ "i", "I", "l", "L"]:
-            mem = "\x01\x00\x00\x00" * 8
+            mem = b"\x01\x00\x00\x00" * 8
             self.assertEqual(len(mem), 32)
 
             fmt = "<8" + format
@@ -78,17 +78,17 @@ class _StructTest(IronPythonTestCase):
             self.assertEqual(unpack(fmt, mem), (1,))
 
     def test_cp9347(self):
-        temp_list = [("2xB",    '\x00\x00\xff',             255),
-                    ("4s4x",   'AAAA\x00\x00\x00\x00',     "AAAA"),
-                    ("x",      '\x00'),
-                    ("ix",     '\x01\x00\x00\x00\x00',     1),
-                    ("ix",     '\x01\x00\x00\x80\x00',     -(2**(32-1)-1)),
-                    ("xI",     '\x00\x00\x00\x00\xff\xff\xff\xff',     2**32-1),
-                    ("xlx",    '\x00\x00\x00\x00x\xec\xff\xff\x00',        -5000),
-                    ("LxL",    '~\x00\x00\x00\x00\x00\x00\x00~\x00\x00\x00', 126, 126),
-                    ("LxxL",   '~\x00\x00\x00\x00\x00\x00\x00~\x00\x00\x00', 126, 126),
-                    ("32xLL",  '\x00' *32 + '~\x00\x00\x00~\x00\x00\x00', 126, 126),
-                    ("LxL8xLL", '~\x00\x00\x00\x00\x00\x00\x00~\x00\x00\x00' + '\x00'*8 + '~\x00\x00\x00'*2, 126, 126, 126, 126),
+        temp_list = [("2xB",    b'\x00\x00\xff',             255),
+                    ("4s4x",   b'AAAA\x00\x00\x00\x00',     b"AAAA"),
+                    ("x",      b'\x00'),
+                    ("ix",     b'\x01\x00\x00\x00\x00',     1),
+                    ("ix",     b'\x01\x00\x00\x80\x00',     -(2**(32-1)-1)),
+                    ("xI",     b'\x00\x00\x00\x00\xff\xff\xff\xff',     2**32-1),
+                    ("xlx",    b'\x00\x00\x00\x00x\xec\xff\xff\x00',        -5000),
+                    ("LxL",    b'~\x00\x00\x00\x00\x00\x00\x00~\x00\x00\x00', 126, 126),
+                    ("LxxL",   b'~\x00\x00\x00\x00\x00\x00\x00~\x00\x00\x00', 126, 126),
+                    ("32xLL",  b'\x00' *32 + b'~\x00\x00\x00~\x00\x00\x00', 126, 126),
+                    ("LxL8xLL", b'~\x00\x00\x00\x00\x00\x00\x00~\x00\x00\x00' + b'\x00'*8 + b'~\x00\x00\x00'*2, 126, 126, 126, 126),
         ]
 
         for stuff in temp_list:
@@ -182,7 +182,7 @@ class _StructTest(IronPythonTestCase):
             self.assertEqual(x.size, -1)
             self.assertEqual(x.format, None)
             self.assertRaisesMessage(_struct.error, "pack requires exactly -1 arguments", x.pack)
-            self.assertRaisesMessage(_struct.error, "unpack requires a string argument of length -1", x.unpack, '')
+            self.assertRaisesMessage(_struct.error, "unpack requires a string argument of length -1", x.unpack, b'')
 
         # invalid format passed to __init__ - format string is updated but old format info is stored...
         a = _struct.Struct('c')
@@ -193,14 +193,14 @@ class _StructTest(IronPythonTestCase):
             pass
 
         self.assertEqual(a.format, 'bad')
-        self.assertEqual(a.pack('1'), '1')
-        self.assertEqual(a.unpack('1'), ('1', ))
+        self.assertEqual(a.pack(b'1'), b'1')
+        self.assertEqual(a.unpack(b'1'), (b'1', ))
 
         # and then back to a valid format
         a.__init__('i')
         self.assertEqual(a.format, 'i')
-        self.assertEqual(a.pack(0), '\x00\x00\x00\x00')
-        self.assertEqual(a.unpack('\x00\x00\x00\x00'), (0, ))
+        self.assertEqual(a.pack(0), b'\x00\x00\x00\x00')
+        self.assertEqual(a.unpack(b'\x00\x00\x00\x00'), (0, ))
 
     def test_weakref(self):
         """weakrefs to struct objects are supported"""
@@ -209,18 +209,18 @@ class _StructTest(IronPythonTestCase):
         self.assertEqual(_weakref.proxy(x).size, x.size)
 
     def test_cp16476(self):
-        for expected, encoded_val in [(156909,       '\xedd\x02\x00'),
-                                    (sys.maxsize,   '\xff\xff\xff\x7f'),
-                                    (sys.maxsize-1, '\xfe\xff\xff\x7f'),
-                                    (sys.maxsize-2, '\xfd\xff\xff\x7f'),
-                                    (sys.maxsize+1, '\x00\x00\x00\x80'),
-                                    (sys.maxsize+2, '\x01\x00\x00\x80'),
-                                    (sys.maxsize+3, '\x02\x00\x00\x80'),
-                                    (2**16,        '\x00\x00\x01\x00'),
-                                    (2**16+1,      '\x01\x00\x01\x00'),
-                                    (2**16-1,      '\xff\xff\x00\x00'),
-                                    (0,            '\x00\x00\x00\x00'),
-                                    (1,            '\x01\x00\x00\x00'),
+        for expected, encoded_val in [(156909,       b'\xedd\x02\x00'),
+                                    (sys.maxsize,   b'\xff\xff\xff\x7f'),
+                                    (sys.maxsize-1, b'\xfe\xff\xff\x7f'),
+                                    (sys.maxsize-2, b'\xfd\xff\xff\x7f'),
+                                    (sys.maxsize+1, b'\x00\x00\x00\x80'),
+                                    (sys.maxsize+2, b'\x01\x00\x00\x80'),
+                                    (sys.maxsize+3, b'\x02\x00\x00\x80'),
+                                    (2**16,        b'\x00\x00\x01\x00'),
+                                    (2**16+1,      b'\x01\x00\x01\x00'),
+                                    (2**16-1,      b'\xff\xff\x00\x00'),
+                                    (0,            b'\x00\x00\x00\x00'),
+                                    (1,            b'\x01\x00\x00\x00'),
                                         ]:
             actual_val = unpack('I', encoded_val)
             self.assertEqual((expected,), actual_val)

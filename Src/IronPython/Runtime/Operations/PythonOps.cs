@@ -1954,7 +1954,24 @@ namespace IronPython.Runtime.Operations {
                 noLineFeed = false;
             }
 
-            string strCode = code as string;
+            string strCode;
+            switch (code) {
+                case string s:
+                    strCode = s;
+                    break;
+
+                case ByteArray ba:
+                    strCode = ba.ToString();
+                    break;
+
+                case Bytes b:
+                    strCode = b.ToString();
+                    break;
+
+                default:
+                    strCode = null;
+                    break;
+            }
 
             if (strCode != null) {
                 SourceUnit source;

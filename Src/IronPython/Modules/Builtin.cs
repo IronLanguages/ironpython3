@@ -325,26 +325,45 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [LightThrowing]
-        public static object eval(CodeContext/*!*/ context, string expression) => eval(context, expression, null, null);
+        public static object eval(CodeContext/*!*/ context, object expression) => eval(context, expression, null, null);
 
         [LightThrowing]
-        public static object eval(CodeContext/*!*/ context, string expression, PythonDictionary globals) => eval(context, expression, globals, null);
+        public static object eval(CodeContext/*!*/ context, object expression, PythonDictionary globals) => eval(context, expression, globals, null);
 
         [LightThrowing]
-        public static object eval(CodeContext/*!*/ context, string expression, PythonDictionary globals, object locals) {
+        public static object eval(CodeContext/*!*/ context, object expression, PythonDictionary globals, object locals) {
             Debug.Assert(context != null);
-            if (expression == null) throw PythonOps.TypeError("eval() argument 1 must be string or code object");
+
+            string strExpression;
+            switch (expression) {
+                case string s:
+                    strExpression = s;
+                    break;
+
+                case ByteArray ba:
+                    strExpression = ba.ToString();
+                    break;
+
+                case Bytes b:
+                    strExpression = b.ToString();
+                    break;
+
+                default:
+                    strExpression = null;
+                    break;
+            }
+            if (strExpression == null) throw PythonOps.TypeError("eval() argument 1 must be string or code object");
 
             if (locals != null && PythonOps.IsMappingType(context, locals) == ScriptingRuntimeHelpers.False) {
                 throw PythonOps.TypeError("locals must be mapping");
             }
 
-            expression = RemoveBom(expression);
+            expression = RemoveBom(strExpression);
             var scope = GetExecEvalScopeOptional(context, globals, locals, false);
             var pythonContext = context.LanguageContext;
 
             // TODO: remove TrimStart
-            var sourceUnit = pythonContext.CreateSnippet(expression.TrimStart(' ', '\t'), "<string>", SourceCodeKind.Expression);
+            var sourceUnit = pythonContext.CreateSnippet(strExpression.TrimStart(' ', '\t'), "<string>", SourceCodeKind.Expression);
             var compilerOptions = GetRuntimeGeneratedCodeCompilerOptions(context, true, 0);
             compilerOptions.Module |= ModuleOptions.LightThrow;
             compilerOptions.Module &= ~ModuleOptions.ModuleBuiltins;

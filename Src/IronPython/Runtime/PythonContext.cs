@@ -1472,7 +1472,7 @@ namespace IronPython.Runtime
             }
             var symbolDocumentName = e.GetSymbolDocumentName();
 
-            var showCaret = e.GetData(_syntaxErrorNoCaret) == null;
+            var showCaret = e.Data[_syntaxErrorNoCaret] == null;
             var showSourceLine = sourceLine != null && (showCaret || symbolDocumentName != "<stdin>");
 
             var builder = new StringBuilder();

@@ -1063,30 +1063,26 @@ for k, v in toError.items():
         /// Internal helper to associate a .NET exception and a Python exception.
         /// </summary>
         private static void SetPythonException(this Exception e, object exception) {
-            IPythonAwareException pyAware = e as IPythonAwareException;
-            if (pyAware != null) {
+            if (e is IPythonAwareException pyAware) {
                 pyAware.PythonException = exception;
             } else {
-                e.SetData(_pythonExceptionKey, new ExceptionDataWrapper(exception));
+                e.Data[_pythonExceptionKey] = new ExceptionDataWrapper(exception);
             }
 
-            BaseException be = exception as BaseException;
-            if (be != null) {
+            if (exception is BaseException be) {
                 be.clsException = e;
-            }            
+            }
         }
 
         /// <summary>
         /// Internal helper to get the associated Python exception from a .NET exception.
         /// </summary>
         internal static object GetPythonException(this Exception e) {
-            IPythonAwareException pyAware = e as IPythonAwareException;
-            if (pyAware != null) {
+            if (e is IPythonAwareException pyAware) {
                 return pyAware.PythonException;
             }
 
-            var wrapper = e.GetData(_pythonExceptionKey) as ExceptionDataWrapper;
-            if (wrapper != null) {
+            if (e.Data[_pythonExceptionKey] is ExceptionDataWrapper wrapper) {
                 return wrapper.Value;
             }
 
@@ -1094,56 +1090,50 @@ for k, v in toError.items():
         }
 
         internal static List<DynamicStackFrame> GetFrameList(this Exception e) {
-            IPythonAwareException pyAware = e as IPythonAwareException;
-            if (pyAware != null) {
+            if (e is IPythonAwareException pyAware) {
                 return pyAware.Frames;
             } else {
-                return e.GetData(typeof(DynamicStackFrame)) as List<DynamicStackFrame>;
+                return e.Data[typeof(DynamicStackFrame)] as List<DynamicStackFrame>;
             }
         }
 
         internal static void SetFrameList(this Exception e, List<DynamicStackFrame> frames) {
-            IPythonAwareException pyAware = e as IPythonAwareException;
-            if (pyAware != null) {
+            if (e is IPythonAwareException pyAware) {
                 pyAware.Frames = frames;
             } else {
-                e.SetData(typeof(DynamicStackFrame), frames);
+                e.Data[typeof(DynamicStackFrame)] = frames;
             }
         }
 
         internal static void RemoveFrameList(this Exception e) {
-            IPythonAwareException pyAware = e as IPythonAwareException;
-            if (pyAware != null) {
+            if (e is IPythonAwareException pyAware) {
                 pyAware.Frames = null;
             } else {
-                e.RemoveData(typeof(DynamicStackFrame));
+                e.Data.Remove(typeof(DynamicStackFrame));
             }
         }
 
         internal static TraceBack GetTraceBack(this Exception e) {
-            IPythonAwareException pyAware = e as IPythonAwareException;
-            if (pyAware != null) {
+            if (e is IPythonAwareException pyAware) {
                 return pyAware.TraceBack;
             } else {
-                return e.GetData(typeof(TraceBack)) as TraceBack;
+                return e.Data[typeof(TraceBack)] as TraceBack;
             }
         }
 
         internal static void SetTraceBack(this Exception e, TraceBack traceback) {
-            IPythonAwareException pyAware = e as IPythonAwareException;
-            if (pyAware != null) {
+            if (e is IPythonAwareException pyAware) {
                 pyAware.TraceBack = traceback;
             } else {
-                e.SetData(typeof(TraceBack), traceback);
+                e.Data[typeof(TraceBack)] = traceback;
             }
         }
 
         internal static void RemoveTraceBack(this Exception e) {
-            IPythonAwareException pyAware = e as IPythonAwareException;
-            if (pyAware != null) {
+            if (e is IPythonAwareException pyAware) {
                 pyAware.TraceBack = null;
             } else {
-                e.RemoveData(typeof(TraceBack));
+                e.Data.Remove(typeof(TraceBack));
             }
         }
 
@@ -1162,7 +1152,7 @@ for k, v in toError.items():
 
             string sourceLine = PythonContext.GetSourceLine(e);
             string fileName = e.GetSymbolDocumentName();
-            object column = (e.Column == 0 || e.GetData(PythonContext._syntaxErrorNoCaret) != null) ? null : (object)e.Column;
+            object column = (e.Column == 0 || e.Data[PythonContext._syntaxErrorNoCaret] != null) ? null : (object)e.Column;
             
             se.args = PythonTuple.MakeTuple(e.Message, PythonTuple.MakeTuple(fileName, e.Line, column, sourceLine));
 

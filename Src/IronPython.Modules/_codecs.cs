@@ -22,6 +22,17 @@ namespace IronPython.Modules {
         internal const int StreamReaderIndex = 2;
         internal const int StreamWriterIndex = 3;
 
+        private static Encoding MbcsEncoding;
+
+        static PythonCodecs() {
+#if NETCOREAPP2_1
+            // This ensures that Encoding.GetEncoding(0) will return the default Windows ANSI code page
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+#endif
+            // Use Encoding.GetEncoding(0) instead of Encoding.Default (which returns UTF-8 with .NET Core)
+            MbcsEncoding = Encoding.GetEncoding(0);
+        }
+
         #region ASCII Encoding
 
         public static PythonTuple ascii_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict")
@@ -231,11 +242,11 @@ namespace IronPython.Modules {
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static PythonTuple mbcs_decode(CodeContext/*!*/ context, [BytesConversion]IList<byte> input, string errors = "strict", bool final = false)
-            => DoDecode(context, "mbcs", Encoding.Default, input, errors, final).ToPythonTuple();
+            => DoDecode(context, "mbcs", MbcsEncoding, input, errors, final).ToPythonTuple();
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static PythonTuple mbcs_encode(CodeContext/*!*/ context, string input, string errors = "strict")
-            => DoEncode(context, "mbcs", Encoding.Default, input, errors).ToPythonTuple();
+            => DoEncode(context, "mbcs", MbcsEncoding, input, errors).ToPythonTuple();
 
         #endregion
 #endif

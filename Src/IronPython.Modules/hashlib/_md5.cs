@@ -4,13 +4,11 @@
 
 #if FEATURE_FULL_CRYPTO // MD5
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using Microsoft.Scripting.Runtime;
-using System.Reflection;
 using System.Security.Cryptography;
-using System.Text;
+
+using Microsoft.Scripting.Runtime;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
@@ -27,23 +25,17 @@ namespace IronPython.Modules {
             get { return DIGEST_SIZE; }
         }
 
-        [Documentation("md5([data]) -> object (new md5 object)")]
-        public static MD5Object md5(object data) {
-            return new MD5Object(data);
+        public static MD5Object md5(string data) {
+            throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
         }
 
         public static MD5Object md5(ArrayModule.array data) {
+            return new MD5Object(data.ToByteArray());
+        }
+
+        [Documentation("md5([data]) -> object (new md5 object)")]
+        public static MD5Object md5([BytesConversion]IList<byte> data) {
             return new MD5Object(data);
-        }
-
-        [Documentation("md5([data]) -> object (new md5 object)")]
-        public static MD5Object md5(Bytes data) {
-            return new MD5Object((IList<byte>)data);
-        }
-
-        [Documentation("md5([data]) -> object (new md5 object)")]
-        public static MD5Object md5(ByteArray data) {
-            return new MD5Object((IList<byte>)data);
         }
 
         [Documentation("md5([data]) -> object (new md5 object)")]
@@ -55,10 +47,6 @@ namespace IronPython.Modules {
         [PythonHidden]
         public class MD5Object : HashBase<MD5> {
             public MD5Object() : base("MD5", BLOCK_SIZE, DIGEST_SIZE) { }
-
-            public MD5Object(object initialData) : this() {
-                update(initialData);
-            }
 
             internal MD5Object(IList<byte> initialBytes) : this() {
                 update(initialBytes);

@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -22,9 +19,6 @@ namespace IronPython.Modules {
         private const int DIGEST_SIZE = 20;
         private const int BLOCK_SIZE = 64;
 
-        private static readonly Encoding _raw = Encoding.GetEncoding("iso-8859-1");
-        private static readonly byte[] _empty = _raw.GetBytes(string.Empty);
-
         public static int digest_size {
             [Documentation("Size of the resulting digest in bytes (constant)")]
             get { return DIGEST_SIZE; }
@@ -40,24 +34,18 @@ namespace IronPython.Modules {
             get { return BLOCK_SIZE; }
         }
 
-        [Documentation("sha1([data]) -> object (object used to calculate hash)")]
-        public static sha sha1(object data) {
-            return new sha(data);
+        public static sha sha1(string data) {
+            throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
         }
 
         [Documentation("sha1([data]) -> object (object used to calculate hash)")]
         public static sha sha1(ArrayModule.array data) {
-            return new sha(data);
+            return new sha(data.ToByteArray());
         }
 
         [Documentation("sha1([data]) -> object (object used to calculate hash)")]
-        public static sha sha1(Bytes data) {
-            return new sha((IList<byte>)data);
-        }
-
-        [Documentation("new([data]) -> object (object used to calculate hash)")]
-        public static sha @new(ByteArray data) {
-            return new sha((IList<byte>)data);
+        public static sha sha1([BytesConversion]IList<byte> data) {
+            return new sha(data);
         }
 
         [Documentation("sha1([data]) -> object (object used to calculate hash)")]
@@ -70,10 +58,6 @@ namespace IronPython.Modules {
         public class sha : HashBase<SHA1>
         {
             public sha() : base("SHA1", BLOCK_SIZE, DIGEST_SIZE) { }
-
-            public sha(object initialData) : this() {
-                update(initialData);
-            }
 
             internal sha(IList<byte> initialBytes) : this() {
                 update(initialBytes);

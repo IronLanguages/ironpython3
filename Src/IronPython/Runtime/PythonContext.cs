@@ -936,7 +936,8 @@ namespace IronPython.Runtime
             ContractUtils.Requires(stream.CanSeek && stream.CanRead, nameof(stream), "The stream must support seeking and reading");
 
             // Python 3 uses UTF-8 as default
-            Encoding encoding = Encoding.UTF8;
+            var encoding = (Encoding)Encoding.UTF8.Clone();
+            encoding.DecoderFallback = new SourceNonStrictDecoderFallback();
 
             long startPosition = stream.Position;
 
@@ -1471,7 +1472,7 @@ namespace IronPython.Runtime
             }
             var symbolDocumentName = e.GetSymbolDocumentName();
 
-            var showCaret = e.GetData(_syntaxErrorNoCaret) == null;
+            var showCaret = e.Data[_syntaxErrorNoCaret] == null;
             var showSourceLine = sourceLine != null && (showCaret || symbolDocumentName != "<stdin>");
 
             var builder = new StringBuilder();

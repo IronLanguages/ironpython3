@@ -1,1 +1,1 @@
-print 'µble'
+print('µble')

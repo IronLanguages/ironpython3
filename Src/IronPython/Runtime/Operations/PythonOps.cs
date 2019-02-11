@@ -175,6 +175,15 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.LookupError("unknown encoding: {0}", encoding);
         }
 
+        internal static PythonTuple LookupTextEncoding(CodeContext/*!*/ context, string encoding, string alternateCommand) {
+            var tuple = LookupEncoding(context, encoding);
+            if (TryGetBoundAttr(tuple, "_is_text_encoding", out object isTextEncodingObj)
+                    && isTextEncodingObj is bool isTextEncoding && !isTextEncoding) {
+                throw LookupError("'{0}' is not a text encoding; use {1} to handle arbitrary codecs", encoding, alternateCommand);
+            }
+            return tuple;
+        }
+
         internal static void RegisterEncoding(CodeContext/*!*/ context, object search_function) {
             if (!PythonOps.IsCallable(context, search_function))
                 throw PythonOps.TypeError("search_function must be callable");
@@ -3488,10 +3497,10 @@ namespace IronPython.Runtime.Operations {
         public static byte[] MakeByteArray(this string s) {
             byte[] ret = new byte[s.Length];
             for (int i = 0; i < s.Length; i++) {
-                if (s[i] < 0x100) ret[i] = (byte)s[i];
-                else {
-                    throw PythonOps.UnicodeEncodeError("ascii", s[i], i,
-                        "'ascii' codec can't encode character '\\u{0:X}' in position {1}: ordinal not in range(128)", (int)s[i], i);
+                if (s[i] < 0x100) {
+                    ret[i] = (byte)s[i];
+                } else {
+                    throw PythonOps.UnicodeEncodeError("ascii", s[i].ToString(), i, i + 1, "ordinal not in range(128)");
                 }
             }
             return ret;
@@ -3769,15 +3778,17 @@ namespace IronPython.Runtime.Operations {
             return new EncoderFallbackException(string.Format(format, args));
         }
 
-        public static Exception UnicodeEncodeError(string encoding, char charUnkown, int index,
-            string format, params object[] args) {
+        public static Exception UnicodeEncodeError(string encoding, string @object, int start, int end, string reason) {
+            return PythonExceptions.CreateThrowable(PythonExceptions.UnicodeEncodeError, encoding, @object, start, end, reason);
+        }
+
+        public static Exception UnicodeEncodeError(string encoding, char charUnkown, int index, string format, params object[] args) {
             var ctor = typeof (EncoderFallbackException).GetConstructor(
                 BindingFlags.NonPublic | BindingFlags.Instance, null, new [] { typeof(string), typeof(char), typeof(int) } , null);
             var ex = (EncoderFallbackException)ctor.Invoke(new object[] { string.Format(format, args), charUnkown, index });
             ex.Data["encoding"] = encoding;
             return ex;
         }
-
 
         public static Exception IOError(Exception inner) {
             return OSError(inner.Message, inner);

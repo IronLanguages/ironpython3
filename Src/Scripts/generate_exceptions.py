@@ -382,7 +382,7 @@ def gen_one_new_exception(cw, exception, parent):
             cw.enter_block('if (args == null || args.Length != %d)' % (len(exception.args), ))
             cw.writeline('throw PythonOps.TypeError("__init__ takes exactly %d arguments ({0} given)", args.Length);' % len(exception.args))
             cw.exit_block()
-            cw.writeline('__init__(' + ', '.join([fix_object(x) for x in exception.args]) + ');')
+            cw.writeline('__init__(' + ', '.join(["args[" + str(i) + "]" for i in range(len(exception.args))]) + ');')
             cw.exit_block()
             cw.writeline('')
         

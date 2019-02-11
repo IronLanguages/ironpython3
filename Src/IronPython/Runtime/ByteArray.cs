@@ -258,7 +258,7 @@ namespace IronPython.Runtime {
 
         public string decode(CodeContext/*!*/ context, [Optional]object encoding, string errors = "strict") {
             lock (this) {
-                return StringOps.RawDecode(context, _bytes.ToArray(), encoding, errors);
+                return StringOps.RawDecode(context, _bytes, encoding, errors);
             }
         }
 

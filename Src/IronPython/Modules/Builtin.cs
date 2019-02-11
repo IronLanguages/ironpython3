@@ -1597,13 +1597,6 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        public static string unichr(int i) {
-            if (i < Char.MinValue || i > Char.MaxValue) {
-                throw PythonOps.ValueError("{0} is not in required range", i);
-            }
-            return ScriptingRuntimeHelpers.CharToString((char)i);
-        }
-
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods")]
         [Documentation("vars([object]) -> dictionary\n\nWithout arguments, equivalent to locals().\nWith an argument, equivalent to object.__dict__.")]
         public static object vars(CodeContext/*!*/ context) {

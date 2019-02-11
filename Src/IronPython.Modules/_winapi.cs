@@ -43,11 +43,8 @@ namespace IronPython.Modules {
                 out hWritePipe,
                 ref pSecA,
                 (uint)bufferSize);
-            
-            return PythonTuple.MakeTuple(
-                new PythonSubprocessHandle(hReadPipe),
-                new PythonSubprocessHandle(hWritePipe)
-            );
+
+            return PythonTuple.MakeTuple((BigInteger)(long)hReadPipe, (BigInteger)(long)hWritePipe);
         }
 
         private static string FormatError(int errorCode) {
@@ -127,10 +124,7 @@ namespace IronPython.Modules {
             int pid = lpProcessInformation.dwProcessId;
             int tid = lpProcessInformation.dwThreadId;
 
-            return PythonTuple.MakeTuple(
-                new PythonSubprocessHandle(hp, true),
-                new PythonSubprocessHandle(ht),
-                pid, tid);
+            return PythonTuple.MakeTuple((BigInteger)(long)hp, (BigInteger)(long)ht, pid, tid);
         }
 
         private static string EnvironmentToNative(CodeContext context, object environment) {
@@ -148,38 +142,11 @@ namespace IronPython.Modules {
             return res.ToString();
         }
 
-        public static void CloseHandle(PythonSubprocessHandle handle) {
-            handle.Close();
+        public static void CloseHandle(BigInteger handle) {
+            CloseHandle(new IntPtr((long)handle));
         }
 
-        /// <summary>
-        /// Duplicates a subprocess handle which was created for piping.
-        /// 
-        /// This is only called when we're duplicating the handle to make it inheritable to the child process.  In CPython
-        /// the parent handle is always reliably garbage collected.  Because we know this handle is not going to be 
-        /// used we close the handle being duplicated.
-        /// </summary>
-        public static PythonSubprocessHandle DuplicateHandle(CodeContext context,
-            BigInteger sourceProcess,
-            PythonSubprocessHandle handle,
-            BigInteger targetProcess,
-            int desiredAccess,
-            bool inherit_handle,
-            object DUPLICATE_SAME_ACCESS) {
-
-            if (handle._duplicated) {
-                // more ref counting issues - when stderr is set to subprocess.STDOUT we can't close the target handle so we need
-                // to track this situation.
-                return DuplicateHandle(context, sourceProcess, (BigInteger)handle, targetProcess, desiredAccess, inherit_handle, DUPLICATE_SAME_ACCESS);
-            }
-
-            var res = DuplicateHandle(context, sourceProcess, (BigInteger)handle, targetProcess, desiredAccess, inherit_handle, DUPLICATE_SAME_ACCESS);
-            res._duplicated = true;
-            handle.Close();
-            return res;
-        }
-
-        public static PythonSubprocessHandle DuplicateHandle(
+        public static BigInteger DuplicateHandle(
             CodeContext context,
             BigInteger sourceProcess,
             BigInteger handle,
@@ -206,23 +173,16 @@ namespace IronPython.Modules {
                 sameAccess ? (uint)DuplicateOptions.DUPLICATE_SAME_ACCESS : (uint)DuplicateOptions.DUPLICATE_CLOSE_SOURCE
             );
 
-            return new PythonSubprocessHandle(lpTargetHandle); //Converter.ConvertToBigInteger( lpTargetHandle.ToInt32());
+            return (long)lpTargetHandle;
         }
 
-        public static PythonSubprocessHandle GetCurrentProcess() {
-            IntPtr id = GetCurrentProcessPI();
-            return new PythonSubprocessHandle(id);
+        public static BigInteger GetCurrentProcess() {
+            return (long)GetCurrentProcessPI();
         }
 
-        public static int GetExitCodeProcess(PythonSubprocessHandle hProcess) {
-            if (hProcess._isProcess && hProcess._closed) {
-                // deal with finalization & resurrection oddness...  see PythonSubprocessHandle finalizer
-                return hProcess._exitCode;
-            }
-
-            IntPtr hProcessIntPtr = new IntPtr(Converter.ConvertToInt32(hProcess));
-            int exitCode = int.MinValue;
-            GetExitCodeProcessPI(hProcessIntPtr, out exitCode);
+        public static int GetExitCodeProcess(BigInteger hProcess) {
+            int exitCode;
+            GetExitCodeProcessPI(new IntPtr((long)hProcess), out exitCode);
             return exitCode;
         }
 
@@ -240,21 +200,19 @@ namespace IronPython.Modules {
         }
 
         public static bool TerminateProcess(
-            PythonSubprocessHandle handle,
+            BigInteger handle,
             object uExitCode) {
 
-            // Alternative Managed API: System.Diagnostics.Process.Kill()
-            IntPtr hProcessIntPtr = new IntPtr(Converter.ConvertToInt32(handle));
             uint uExitCodeUint = Converter.ConvertToUInt32(uExitCode);
             bool result = TerminateProcessPI(
-                hProcessIntPtr,
+                new IntPtr((long)handle),
                 uExitCodeUint);
 
             return result;
         }
 
-        public static int WaitForSingleObject(PythonSubprocessHandle handle, int dwMilliseconds) {
-            return WaitForSingleObjectPI(handle, dwMilliseconds);
+        public static int WaitForSingleObject(BigInteger handle, int dwMilliseconds) {
+            return WaitForSingleObjectPI(new IntPtr((long)handle), dwMilliseconds);
         }
 
         #endregion
@@ -403,110 +361,6 @@ namespace IronPython.Modules {
         public const int WAIT_TIMEOUT = 0x102;
 
         #endregion
-    }
-
-    [PythonType("_subprocess_handle")]
-    public class PythonSubprocessHandle {
-        private readonly IntPtr _internalHandle;
-        internal bool _closed;
-        internal bool _duplicated, _isProcess;
-        internal int _exitCode;
-        private static List<PythonSubprocessHandle> _active = new List<PythonSubprocessHandle>();
-
-        internal PythonSubprocessHandle(IntPtr handle) {
-            _internalHandle = handle;
-        }
-
-        internal PythonSubprocessHandle(IntPtr handle, bool isProcess) {
-            _internalHandle = handle;
-            _isProcess = isProcess;
-        }
-
-        ~PythonSubprocessHandle() {
-            if (_isProcess) {
-                lock (_active) {
-                    // we need to deal w/ order of finalization and the fact that Popen will resurrect
-                    // it's self and want to be able to poll us for exit.  Therefore we can't close until
-                    // the process has really exited (and we've captured that exit code).  So we keep
-                    // resurrecting ourselves until it finally happens.
-                    int insertion = -1;
-                    for (int i = 0; i < _active.Count; i++) {
-                        if (_active[i] == null) {
-                            insertion = i;
-                        } else if (_active[i].PollForExit()) {
-                            _active[i] = null;
-                            insertion = i;
-                            if (_active[i] == this) {
-                                // we've exited, and we're removed from the list
-                                Close();
-                                return;
-                            }
-                        } else if (_active[i] == this) {
-                            // we haven't exited
-                            return;
-                        }
-                    }
-
-                    // we're not in the list.
-                    if (!PollForExit()) {
-                        // resurrect ourselves - this is to account for subprocess.py's resurrection of
-                        // handles.  We cannot close our handle until we have been successfully polled
-                        // for the end of the process.
-                        if (insertion != -1) {
-                            _active[insertion] = this;
-                        } else {
-                            _active.Add(this);
-                        }
-                        return;
-                    } else {
-                        Close();
-                    }
-                }
-            }
-
-            Close();
-        }
-
-        private bool PollForExit() {
-            if (PythonWinApi.WaitForSingleObjectPI(_internalHandle, 0) == PythonWinApi.WAIT_OBJECT_0) {
-                PythonWinApi.GetExitCodeProcessPI(_internalHandle, out _exitCode);
-                return true;
-            }
-            return false;
-        }
-
-        public void Close() {
-            lock (this) {
-                if (!_closed) {
-                    PythonWinApi.CloseHandle(_internalHandle);
-                    _closed = true;
-                    GC.SuppressFinalize(this);
-                }
-            }
-        }
-
-        public object Detach(CodeContext context) {
-            lock (this) {
-                if (!_closed) {
-                    _closed = true;
-                    GC.SuppressFinalize(this);
-                    return _internalHandle.ToPython();
-                }
-            }
-            return -1;
-        }
-
-        public static implicit operator int(PythonSubprocessHandle type) {
-            return type._internalHandle.ToInt32(); // ToPython()
-        }
-
-        public static implicit operator BigInteger(PythonSubprocessHandle type) {
-            return type._internalHandle.ToInt32(); // ToPython()
-        }
-
-        public static implicit operator IntPtr(PythonSubprocessHandle type) {
-            return type._internalHandle; // ToPython()
-        }
     }
 }
 

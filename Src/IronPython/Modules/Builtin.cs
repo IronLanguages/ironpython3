@@ -190,8 +190,46 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        [Documentation("compile a unit of source code.\n\nThe source can be compiled either as exec, eval, or single.\nexec compiles the code as if it were a file\neval compiles the code as if were an expression\nsingle compiles a single statement\n\nsource can either be a string or an AST object")]
-        public static object compile(CodeContext/*!*/ context, object source, string filename, string mode, object flags=null, object dont_inherit=null) {
+        [Documentation("compile(source, filename, mode[, flags[, dont_inherit]]) -> code object\n\n" +
+            "Compile a unit of source code.\n\n" +
+            "The source can be compiled either as exec, eval, or single.\n" +
+            "exec compiles the code as if it were a file\n" +
+            "eval compiles the code as if were an expression\n" +
+            "single compiles a single statement\n\n" +
+            "source can either be a string, bytes or an AST object")]
+        public static object compile(CodeContext/*!*/ context, _ast.AST source, string filename, string mode, object flags = null, object dont_inherit = null) {
+
+            if (mode != "exec" && mode != "eval" && mode != "single") {
+                throw PythonOps.ValueError("compile() arg 3 must be 'exec' or 'eval' or 'single'");
+            }
+
+            bool astOnly = flags != null && (Converter.ConvertToInt32(flags) & _ast.PyCF_ONLY_AST) != 0;
+
+            if (astOnly) {
+                return source;
+            } else {
+                PythonAst ast = _ast.ConvertToPythonAst(context, (_ast.AST)source, filename);
+                ast.Bind();
+                ScriptCode code = ast.ToScriptCode();
+                return ((RunnableScriptCode)code).GetFunctionCode(true);
+            }
+        }
+
+        [Documentation("")] // provided by first overload
+        public static object compile(CodeContext/*!*/ context, [BytesConversion]IList<byte> source, string filename, string mode, object flags = null, object dont_inherit = null)
+            // TODO: Detect encoding as prescribed in PEP 263
+            => compile(context, StringOps.RawDecode(context, source, "utf-8", "strict"), filename, mode, flags, dont_inherit);
+
+        [Documentation("")] // provided by first overload
+        public static object compile(CodeContext/*!*/ context, string source, string filename, string mode, object flags = null, object dont_inherit = null) {
+
+            if (mode != "exec" && mode != "eval" && mode != "single") {
+                throw PythonOps.ValueError("compile() arg 3 must be 'exec' or 'eval' or 'single'");
+            }
+
+            if (source.IndexOf('\0') != -1) {
+                throw PythonOps.TypeError("compile() expected string without null bytes");
+            }
 
             bool astOnly = false;
             int iflags = flags != null ? Converter.ConvertToInt32(flags) : 0;
@@ -200,36 +238,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 iflags &= ~_ast.PyCF_ONLY_AST;
             }
 
-            if (mode != "exec" && mode != "eval" && mode != "single") {
-                throw PythonOps.ValueError("compile() arg 3 must be 'exec' or 'eval' or 'single'");
-            }
-            if (source is _ast.AST) {
-                if (astOnly) {
-                    return source;
-                } else {
-                    PythonAst ast = _ast.ConvertToPythonAst(context, (_ast.AST)source, filename);
-                    ast.Bind();
-                    ScriptCode code = ast.ToScriptCode();
-                    return ((RunnableScriptCode)code).GetFunctionCode(true);
-                }
-            }
-
-            string text;
-            if (source is string)
-                text = (string)source;                        
-            else if (source is ByteArray)
-                text = ((ByteArray)source).ToString();
-            else if (source is Bytes)
-                text = ((Bytes)source).ToString();
-            else 
-                // cpython accepts either AST or readable buffer object
-                throw PythonOps.TypeError("source can be either AST or string, actual argument: {0}", source.GetType());
-            
-            if (text.IndexOf('\0') != -1) {
-                throw PythonOps.TypeError("compile() expected string without null bytes");
-            }
-
-            text = RemoveBom(text);
+            source = RemoveBom(source);
 
             bool inheritContext = GetCompilerInheritance(dont_inherit);
             CompileFlags cflags = GetCompilerFlags(iflags);
@@ -240,20 +249,20 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
             SourceUnit sourceUnit = null;
             switch (mode) {
-                case "exec": sourceUnit = context.LanguageContext.CreateSnippet(text, filename, SourceCodeKind.Statements); break;
-                case "eval": sourceUnit = context.LanguageContext.CreateSnippet(text, filename, SourceCodeKind.Expression); break;
-                case "single": sourceUnit = context.LanguageContext.CreateSnippet(text, filename, SourceCodeKind.InteractiveCode); break;
+                case "exec": sourceUnit = context.LanguageContext.CreateSnippet(source, filename, SourceCodeKind.Statements); break;
+                case "eval": sourceUnit = context.LanguageContext.CreateSnippet(source, filename, SourceCodeKind.Expression); break;
+                case "single": sourceUnit = context.LanguageContext.CreateSnippet(source, filename, SourceCodeKind.InteractiveCode); break;
             }
 
-            return !astOnly ? 
+            return !astOnly ?
                 (object)FunctionCode.FromSourceUnit(sourceUnit, opts, true) :
                 (object)_ast.BuildAst(context, sourceUnit, opts, mode);
         }
 
         private static string RemoveBom(string source) {
-            // skip BOM (TODO: this is ugly workaround that is in fact not strictly correct, we need binary strings to handle it correctly)
-            if (source.StartsWith("\u00ef\u00bb\u00bf", StringComparison.Ordinal)) {
-                source = source.Substring(3, source.Length - 3);
+            // skip BOM
+            if (source.StartsWith("\ufeff", StringComparison.Ordinal)) {
+                source = source.Substring(1, source.Length - 1);
             }
             return source;
         }
@@ -301,17 +310,6 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
         }
 
-        public static object eval(CodeContext/*!*/ context, FunctionCode code) => eval(context, code, null, null);
-
-        public static object eval(CodeContext/*!*/ context, FunctionCode code, PythonDictionary globals) => eval(context, code, globals, null);
-
-        public static object eval(CodeContext/*!*/ context, FunctionCode code, PythonDictionary globals, object locals) {
-            Debug.Assert(context != null);
-            if (code == null) throw PythonOps.TypeError("eval() argument 1 must be string or code object");
-
-            return code.Call(GetExecEvalScopeOptional(context, globals, locals, false));
-        }
-
         internal static PythonDictionary GetAttrLocals(CodeContext/*!*/ context, object locals) {
             PythonDictionary attrLocals = null;
             if (locals == null) {
@@ -324,42 +322,60 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             return attrLocals;
         }
 
-        [LightThrowing]
-        public static object eval(CodeContext/*!*/ context, string expression) => eval(context, expression, null, null);
-
-        [LightThrowing]
-        public static object eval(CodeContext/*!*/ context, string expression, PythonDictionary globals) => eval(context, expression, globals, null);
-
-        [LightThrowing]
-        public static object eval(CodeContext/*!*/ context, string expression, PythonDictionary globals, object locals) {
+        [Documentation("eval(source[, globals[, locals]]) -> value\n\n" +
+            "Evaluate the expression in the context of globals and locals.\n" +
+            "The expression can be either be a string, bytes\n" +
+            "or a code object returned by compile()")]
+        public static object eval(CodeContext/*!*/ context, [NotNull]FunctionCode code, PythonDictionary globals = null, object locals = null) {
             Debug.Assert(context != null);
-            if (expression == null) throw PythonOps.TypeError("eval() argument 1 must be string or code object");
+
+            return code.Call(GetExecEvalScopeOptional(context, globals, locals, copyModule: false));
+        }
+
+        [Documentation("")] // provided by first overload
+        [LightThrowing]
+        public static object eval(CodeContext/*!*/ context, [BytesConversion, NotNull]IList<byte> expression, PythonDictionary globals = null, object locals = null)
+            // TODO: Detect encoding as prescribed in PEP 263
+            => eval(context, StringOps.RawDecode(context, expression, "utf-8", "strict"), globals, locals);
+
+        [LightThrowing]
+        public static object eval(CodeContext/*!*/ context, [NotNull]string expression, PythonDictionary globals = null, object locals = null) {
+            Debug.Assert(context != null);
 
             if (locals != null && PythonOps.IsMappingType(context, locals) == ScriptingRuntimeHelpers.False) {
                 throw PythonOps.TypeError("locals must be mapping");
             }
 
             expression = RemoveBom(expression);
-            var scope = GetExecEvalScopeOptional(context, globals, locals, false);
+            var scope = GetExecEvalScopeOptional(context, globals, locals, copyModule: false);
             var pythonContext = context.LanguageContext;
 
             // TODO: remove TrimStart
             var sourceUnit = pythonContext.CreateSnippet(expression.TrimStart(' ', '\t'), "<string>", SourceCodeKind.Expression);
-            var compilerOptions = GetRuntimeGeneratedCodeCompilerOptions(context, true, 0);
+            var compilerOptions = GetRuntimeGeneratedCodeCompilerOptions(context, inheritContext: true, cflags: 0);
             compilerOptions.Module |= ModuleOptions.LightThrow;
             compilerOptions.Module &= ~ModuleOptions.ModuleBuiltins;
-            var code = FunctionCode.FromSourceUnit(sourceUnit, compilerOptions, false);
+            var code = FunctionCode.FromSourceUnit(sourceUnit, compilerOptions, register: false);
 
             return code.Call(scope);
         }
 
-        public static void exec(CodeContext context, object code, PythonDictionary globals = null, object locals = null) {
+        [Documentation("exec(object[, globals[, locals]])\n\n" +
+            "Read and execute code from an object, which can be a string, bytes,\n" +
+            "file or a code object.\n" +
+            "The globals and locals are dictionaries providing the context.")]
+        public static void exec(CodeContext/*!*/ context, object code, PythonDictionary globals = null, object locals = null) {
             if (globals == null && locals == null) {
                 PythonOps.UnqualifiedExec(context, code);
             } else {
                 PythonOps.QualifiedExec(context, code, globals, locals);
             }
         }
+
+        [Documentation("")] // provided by first overload
+        public static void exec(CodeContext/*!*/ context, [BytesConversion, NotNull]IList<byte> code, PythonDictionary globals = null, object locals = null)
+            // TODO: Detect encoding as prescribed in PEP 263
+            => exec(context, StringOps.RawDecode(context, code, "utf-8", "strict"), globals, locals);
 
         public static PythonType filter {
             get {

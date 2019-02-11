@@ -1954,24 +1954,7 @@ namespace IronPython.Runtime.Operations {
                 noLineFeed = false;
             }
 
-            string strCode;
-            switch (code) {
-                case string s:
-                    strCode = s;
-                    break;
-
-                case ByteArray ba:
-                    strCode = ba.ToString();
-                    break;
-
-                case Bytes b:
-                    strCode = b.ToString();
-                    break;
-
-                default:
-                    strCode = null;
-                    break;
-            }
+            string strCode = code as string;
 
             if (strCode != null) {
                 SourceUnit source;
@@ -1990,7 +1973,7 @@ namespace IronPython.Runtime.Operations {
 
             FunctionCode fc = code as FunctionCode;
             if (fc == null) {
-                throw PythonOps.TypeError("arg 1 must be a string, file, Stream, or code object, not {0}", PythonTypeOps.GetName(code));
+                throw PythonOps.TypeError("arg 1 must be a string, bytes, file, Stream, or code object, not {0}", PythonTypeOps.GetName(code));
             }
 
             if (locals == null) locals = globals;

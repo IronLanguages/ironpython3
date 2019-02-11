@@ -879,9 +879,7 @@ namespace IronPython.Runtime {
                          bool reverse=false) {
             // the empty list is already sorted
             if (_size != 0) {                
-                IComparer comparer = context.LanguageContext.GetComparer(
-                    null,
-                    GetComparisonType());
+                IComparer comparer = context.LanguageContext.GetLtComparer(GetComparisonType());
 
                 DoSort(context, comparer, key, reverse, 0, _size);
             }
@@ -1046,8 +1044,8 @@ namespace IronPython.Runtime {
         private bool DoCompare(object[] keys, IComparer cmp, int p, int q, bool reverse) {
             Debug.Assert(_data.Length == 0);
 
-            int result = cmp.Compare(keys[p], keys[q]);
-            bool ret = reverse ? (result >= 0) : (result <= 0);
+            int result = reverse ? cmp.Compare(keys[p], keys[q]) : cmp.Compare(keys[q], keys[p]);
+            bool ret = !(result < 0);
 
             if (_data.Length != 0) throw PythonOps.ValueError("list mutated during sort");
             return ret;

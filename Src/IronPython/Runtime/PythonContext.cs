@@ -116,6 +116,7 @@ namespace IronPython.Runtime
         private Dictionary<Type, CallSite<Func<CallSite, object, object>>> _implicitConvertSites;
         private Dictionary<PythonOperationKind, CallSite<Func<CallSite, object, object, object>>> _binarySites;
         private Dictionary<Type, DefaultPythonComparer> _defaultComparer;
+        private Dictionary<Type, DefaultPythonLtComparer> _defaultLtComparer;
         private CallSite<Func<CallSite, CodeContext, object, object, object, int>> _sharedFunctionCompareSite;
         private CallSite<Func<CallSite, CodeContext, PythonFunction, object, object, int>> _sharedPythonFunctionCompareSite;
         private CallSite<Func<CallSite, CodeContext, BuiltinFunction, object, object, int>> _sharedBuiltinFunctionCompareSite;
@@ -3270,6 +3271,17 @@ namespace IronPython.Runtime
             }
         }
 
+        private class DefaultPythonLtComparer : IComparer {
+            private readonly CallSite<Func<CallSite, object, object, bool>> _lessThanSite;
+            public DefaultPythonLtComparer(PythonContext context) {
+                _lessThanSite = context.CreateComparisonSite(PythonOperationKind.LessThan);
+            }
+
+            public int Compare(object x, object y) {
+                return _lessThanSite.Target(_lessThanSite, x, y) ? -1 : 0;
+            }
+        }
+
         private class FunctionComparer<T> : IComparer {
             private T _cmpfunc;
             private CallSite<Func<CallSite, CodeContext, T, object, object, int>> _funcSite;
@@ -3354,6 +3366,28 @@ namespace IronPython.Runtime
 
             return new FunctionComparer<object>(this, cmp, _sharedFunctionCompareSite);
 
+        }
+
+        internal IComparer GetLtComparer(Type type) {
+            if (type == null) {
+                return new DefaultPythonLtComparer(this);
+            }
+
+            if (_defaultLtComparer == null) {
+                Interlocked.CompareExchange(
+                    ref _defaultLtComparer,
+                    new Dictionary<Type, DefaultPythonLtComparer>(),
+                    null
+                );
+            }
+
+            lock (_defaultLtComparer) {
+                DefaultPythonLtComparer comparer;
+                if (!_defaultLtComparer.TryGetValue(type, out comparer)) {
+                    _defaultLtComparer[type] = comparer = new DefaultPythonLtComparer(this);
+                }
+                return comparer;
+            }
         }
 
         internal CallSite<Func<CallSite, CodeContext, object, int, object>> GetItemCallSite {

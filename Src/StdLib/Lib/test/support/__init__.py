@@ -826,8 +826,13 @@ elif sys.platform != 'darwin':
         b'\xff'.decode(TESTFN_ENCODING)
     except UnicodeDecodeError:
         # 0xff will be encoded using the surrogate character u+DCFF
-        TESTFN_UNENCODABLE = TESTFN \
-            + b'-\xff'.decode(TESTFN_ENCODING, 'surrogateescape')
+        try:
+            TESTFN_UNENCODABLE = TESTFN \
+                + b'-\xff'.decode(TESTFN_ENCODING, 'surrogateescape')
+        except LookupError:
+            pass
+        else:
+            raise Exception("Revert this workaround when https://github.com/IronLanguages/ironpython3/issues/2 is resolved")
     else:
         # File system encoding (eg. ISO-8859-* encodings) can encode
         # the byte 0xff. Skip some unicode filename tests.

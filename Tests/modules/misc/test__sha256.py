@@ -31,7 +31,7 @@ class _Sha256Test(unittest.TestCase):
         self.assertEqual(x.hexdigest(),
                 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')
         self.assertEqual(x.name, "SHA256")
-        x.update("abc")
+        x.update(b"abc")
         self.assertEqual(x.hexdigest(),
                 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad')
 
@@ -49,7 +49,7 @@ class _Sha256Test(unittest.TestCase):
         self.assertEqual(x.hexdigest(),
                 'd14a028c2a3a2bc9476102bb288234c415a2b01f828ea62ac5b3e42f')
         self.assertEqual(x.name, "SHA224")
-        x.update("abc")
+        x.update(b"abc")
         self.assertEqual(x.hexdigest(),
                 '23097d223405d8228642a477bda255b32aadbce4bda0b3f7e36c9da7')
 

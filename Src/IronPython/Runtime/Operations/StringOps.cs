@@ -283,23 +283,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls,
-            object @string,
-            string encoding = "utf-8",
-            string errors = "strict") {
-
-            string str = @string as string;
-            if (str == null) throw PythonOps.TypeError("converting to unicode: need string, got {0}", DynamicHelpers.GetPythonType(@string).Name);
-
-            if (cls == TypeCache.String) {
-                throw PythonOps.TypeError("decoding str is not supported");
-            } else {
-                return cls.CreateInstance(context, __new__(context, TypeCache.String, str, encoding, errors));
-            }
-        }
-
-        [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls, [BytesConversion]IList<byte> @object) {
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull][BytesConversion]IList<byte> @object) {
             if (cls == TypeCache.String) {
                 return FastNew(context, @object);
             } else {
@@ -308,11 +292,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls,
-            [BytesConversion]IList<byte> @object,
-            string encoding = "utf-8",
-            string errors = "strict") {
-
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull][BytesConversion]IList<byte> @object, string encoding = "utf-8", string errors = "strict") {
             if (cls == TypeCache.String) {
                 if (@object is Bytes) return ((Bytes)@object).decode(context, encoding, errors);
                 return new Bytes(@object).decode(context, encoding, errors);

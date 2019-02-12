@@ -1156,7 +1156,7 @@ namespace IronPython.Modules {
                 case ExtensibleString es:
                     return es.Value;
                 case Bytes bytes:
-                    return bytes.ToString();
+                    return bytes.MakeString();
                 case RE_Pattern rep:
                     return rep;
                 default:
@@ -1188,19 +1188,18 @@ namespace IronPython.Modules {
                 case ExtensibleString es:
                     return es.Value;
                 case Bytes bytes:
-                    return bytes.ToString();
+                    return bytes.MakeString();
                 case ByteArray byteArray:
                     return byteArray.MakeString();
                 case ArrayModule.array array:
-                    return Bytes.Make(array.ToByteArray()).ToString();
+                    return Bytes.Make(array.ToByteArray()).MakeString();
 #if FEATURE_MMAP
                 case MmapModule.MmapDefault mmapFile:
-                    return mmapFile.GetSearchString().ToString();
+                    return mmapFile.GetSearchString().MakeString();
 #endif
                 default:
                     throw PythonOps.TypeError($"expected string for parameter '{param}' but got '{PythonOps.GetPythonTypeName(str)}'");
             }
-
         }
 
         private static PythonType error(CodeContext/*!*/ context) => (PythonType)context.LanguageContext.GetModuleState("reerror");

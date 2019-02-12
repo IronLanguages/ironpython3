@@ -1293,7 +1293,7 @@ namespace IronPython.Runtime {
             throw PythonOps.TypeError("an integer is required");
         }
 
-        private static IList<byte>/*!*/ GetBytes(object/*!*/ value) {
+        internal static IList<byte>/*!*/ GetBytes(object/*!*/ value) {
             ListGenericWrapper<byte> genWrapper = value as ListGenericWrapper<byte>;
             if (genWrapper == null && value is IList<byte>) {
                 return (IList<byte>)value;

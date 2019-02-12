@@ -4,13 +4,13 @@
 
 #if FEATURE_FULL_CRYPTO // SHA384, SHA512
 
-using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
+using IronPython.Runtime.Operations;
 
 [assembly: PythonModule("_sha512", typeof(IronPython.Modules.PythonSha512))]
 namespace IronPython.Modules {
@@ -20,40 +20,32 @@ namespace IronPython.Modules {
 
         public const string __doc__ = "SHA512 hash algorithm";
 
-        public static Sha512Object sha512(object data) {
-            return new Sha512Object(data);
+        public static Sha512Object sha512(string data) {
+            throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
         }
 
         public static Sha512Object sha512(ArrayModule.array data) {
+            return new Sha512Object(data.ToByteArray());
+        }
+
+        public static Sha512Object sha512([BytesConversion]IList<byte> data) {
             return new Sha512Object(data);
         }
-
-        public static Sha512Object sha512(Bytes data) {
-            return new Sha512Object((IList<byte>)data);
-        }
         
-        public static Sha512Object sha512(ByteArray data) {
-            return new Sha512Object((IList<byte>)data);
-        }
-
         public static Sha512Object sha512() {
             return new Sha512Object();
         }
 
-        public static Sha384Object sha384(object data) {
-            return new Sha384Object(data);
+        public static Sha384Object sha384(string data) {
+            throw PythonOps.TypeError("Unicode-objects must be encoded before hashing");
         }
 
         public static Sha384Object sha384(ArrayModule.array data) {
+            return new Sha384Object(data.ToByteArray());
+        }
+
+        public static Sha384Object sha384([BytesConversion]IList<byte> data) {
             return new Sha384Object(data);
-        }
-
-        public static Sha384Object sha384(Bytes data) {
-            return new Sha384Object((IList<byte>)data);
-        }
-
-        public static Sha384Object sha384(ByteArray data) {
-            return new Sha384Object((IList<byte>)data);
         }
         
         public static Sha384Object sha384() {
@@ -63,10 +55,6 @@ namespace IronPython.Modules {
         [PythonHidden]
         public sealed class Sha384Object : HashBase<SHA384> {
             internal Sha384Object() : base("SHA384", BLOCK_SIZE, 48) { }
-
-            internal Sha384Object(object initialData) : this() {
-                update(initialData);
-            }
 
             internal Sha384Object(IList<byte> initialBytes) : this() {
                 update(initialBytes);
@@ -88,10 +76,6 @@ namespace IronPython.Modules {
         public sealed class Sha512Object : HashBase<SHA512> {
             internal Sha512Object() : base("SHA512", BLOCK_SIZE, 64) { }
 
-            internal Sha512Object(object initialData) : this() {
-                update(initialData);
-            }
-
             internal Sha512Object(IList<byte> initialBytes) : this() {
                 update(initialBytes);
             }
@@ -109,4 +93,5 @@ namespace IronPython.Modules {
         }        
     }   
 }
+
 #endif

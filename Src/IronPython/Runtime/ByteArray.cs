@@ -70,6 +70,10 @@ namespace IronPython.Runtime {
             __init__(GetBytes(source));
         }
 
+        public void  __init__([NotNull]string @string) {
+            throw PythonOps.TypeError("string argument without an encoding");
+        }
+
         public void __init__(CodeContext/*!*/ context, string source, string encoding, string errors = "strict") {
             _bytes = new List<byte>(StringOps.encode(context, source, encoding, errors));
         }
@@ -256,7 +260,7 @@ namespace IronPython.Runtime {
 
         public int count(int @byte, int? start, int? end) => count(new[] { @byte.ToByteChecked() }, start, end);
 
-        public string decode(CodeContext/*!*/ context, [Optional]object encoding, string errors = "strict") {
+        public string decode(CodeContext/*!*/ context, [NotNull]string encoding = "utf-8", [NotNull]string errors = "strict") {
             lock (this) {
                 return StringOps.RawDecode(context, _bytes, encoding, errors);
             }
@@ -867,11 +871,15 @@ namespace IronPython.Runtime {
             );
         }
 
-        public virtual string/*!*/ __repr__(CodeContext/*!*/ context) {
+        private string Repr() {
             lock (this) {
                 return "bytearray(" + _bytes.BytesRepr() + ")";
             }
         }
+
+        public virtual string/*!*/ __repr__(CodeContext/*!*/ context) => Repr();
+
+        public override string ToString() => Repr();
 
         public static ByteArray operator +(ByteArray self, ByteArray other) {
             if (self == null) {
@@ -1079,31 +1087,10 @@ namespace IronPython.Runtime {
 
                 IList<byte> list = value as IList<byte>;
                 if (list == null) {
-                    int? iVal = null;
-                    if (value is int) {
-                        iVal = (int)value;
-                    } else if (value is Extensible<int>) {
-                        iVal = ((Extensible<int>)value).Value;
-                    } else if (value is BigInteger) {
-                        int intval;
-                        if (((BigInteger)value).AsInt32(out intval)) {
-                            iVal = intval;
-                        }
-                    }
-
-                    if (iVal != null) {
-                        List<byte> newlist = new List<byte>();
-                        newlist.Capacity = iVal.Value;
-                        for (int i = 0; i < iVal; i++) {
-                            newlist.Add(0);
-                        }
-                        list = newlist;
-                    } else {
-                        IEnumerator ie = PythonOps.GetEnumerator(value);
-                        list = new List<byte>();
-                        while (ie.MoveNext()) {
-                            list.Add(GetByte(ie.Current));
-                        }
+                    IEnumerator ie = PythonOps.GetEnumerator(value);
+                    list = new List<byte>();
+                    while (ie.MoveNext()) {
+                        list.Add(GetByte(ie.Current));
                     }
                 }
 
@@ -1306,7 +1293,7 @@ namespace IronPython.Runtime {
             throw PythonOps.TypeError("an integer is required");
         }
 
-        private static IList<byte>/*!*/ GetBytes(object/*!*/ value) {
+        internal static IList<byte>/*!*/ GetBytes(object/*!*/ value) {
             ListGenericWrapper<byte> genWrapper = value as ListGenericWrapper<byte>;
             if (genWrapper == null && value is IList<byte>) {
                 return (IList<byte>)value;
@@ -1458,10 +1445,6 @@ namespace IronPython.Runtime {
         }
 
         #endregion
-
-        public override string ToString() {
-            return _bytes.MakeString();
-        }
 
         #region IBufferProtocol Members
 

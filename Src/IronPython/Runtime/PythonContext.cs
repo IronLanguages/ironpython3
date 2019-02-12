@@ -62,7 +62,6 @@ namespace IronPython.Runtime
         private readonly AssemblyResolveHolder _resolveHolder;
         private readonly HashSet<Assembly> _loadedAssemblies = new HashSet<Assembly>();
 #endif
-        private Encoding _defaultEncoding = PythonAsciiEncoding.Instance;
 
         // conditional variables for silverlight/desktop CLR features
         private PythonService _pythonService;
@@ -1760,10 +1759,7 @@ namespace IronPython.Runtime
         /// <summary>
         /// Gets or sets the default encoding for this system state / engine.
         /// </summary>
-        public Encoding DefaultEncoding {
-            get { return _defaultEncoding; }
-            set { _defaultEncoding = value; }
-        }
+        public Encoding DefaultEncoding { get; set; } = PythonAsciiEncoding.Instance;
 
         public string GetDefaultEncodingName() {
             return DefaultEncoding.WebName.ToLower().Replace('-', '_');

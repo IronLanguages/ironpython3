@@ -916,7 +916,7 @@ class C:
         import hashlib
         m = hashlib.md5()
         m.digest()
-        m.update('foo')
+        m.update(b'foo')
         m.digest()
 
     def test_gh1284(self):

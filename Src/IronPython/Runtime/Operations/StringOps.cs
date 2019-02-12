@@ -177,7 +177,7 @@ namespace IronPython.Runtime.Operations {
         [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, PythonType cls) {
             if (cls == TypeCache.String) {
-                return "";
+                return string.Empty;
             } else {
                 return cls.CreateInstance(context);
             }
@@ -283,27 +283,16 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls,
-            object @string,
-            string encoding = "utf-8",
-            string errors = "strict") {
-
-            string str = @string as string;
-            if (str == null) throw PythonOps.TypeError("converting to unicode: need string, got {0}", DynamicHelpers.GetPythonType(@string).Name);
-
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull][BytesConversion]IList<byte> @object) {
             if (cls == TypeCache.String) {
-                throw PythonOps.TypeError("decoding str is not supported");
+                return FastNew(context, @object);
             } else {
-                return cls.CreateInstance(context, __new__(context, TypeCache.String, str, encoding, errors));
+                return cls.CreateInstance(context, __new__(context, TypeCache.String, @object));
             }
         }
 
         [StaticExtensionMethod]
-        public static object __new__(CodeContext/*!*/ context, PythonType cls,
-            [BytesConversion]IList<byte> @object,
-            string encoding = "utf-8",
-            string errors = "strict") {
-
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull][BytesConversion]IList<byte> @object, string encoding = "utf-8", string errors = "strict") {
             if (cls == TypeCache.String) {
                 if (@object is Bytes) return ((Bytes)@object).decode(context, encoding, errors);
                 return new Bytes(@object).decode(context, encoding, errors);
@@ -1652,23 +1641,8 @@ namespace IronPython.Runtime.Operations {
             return name.ToLower(CultureInfo.InvariantCulture).Replace('-', '_').Replace(' ', '_');
         }
 
-        internal static string RawDecode(CodeContext/*!*/ context, IList<byte> s, object encodingType, string errors) {
-            PythonContext pc = context.LanguageContext;
-
-            Encoding e = null;
-            string encoding = encodingType as string;
-            if (encoding == null) {
-                e = encodingType as Encoding;
-                if (e == null) {
-                    if (encodingType == Missing.Value) {
-                        encoding = pc.GetDefaultEncodingName();
-                    } else {
-                        throw PythonOps.TypeError("decode() expected string, got '{0}'", DynamicHelpers.GetPythonType(encodingType).Name);
-                    }
-                }
-            }
-
-            if (e != null || TryGetEncoding(encoding, out e)) {
+        internal static string RawDecode(CodeContext/*!*/ context, IList<byte> s, string encoding, string errors) {
+            if (TryGetEncoding(encoding, out Encoding e)) {
                 return DoDecode(context, s, errors, encoding, e);
             }
 
@@ -1743,17 +1717,8 @@ namespace IronPython.Runtime.Operations {
             return 0;
         }
 
-        internal static Bytes RawEncode(CodeContext/*!*/ context, string s, object encodingType, string errors) {
-            string encoding = encodingType as string;
-            Encoding e = null;
-            if (encoding == null) {
-                e = encodingType as Encoding;
-                if (e == null) {
-                    throw PythonOps.TypeError("encode() expected string, got '{0}'", DynamicHelpers.GetPythonType(encodingType).Name);
-                }
-            }
-
-            if (e != null || TryGetEncoding(encoding, out e)) {
+        internal static Bytes RawEncode(CodeContext/*!*/ context, string s, string encoding, string errors) {
+            if (TryGetEncoding(encoding, out Encoding e)) {
                 return DoEncode(context, s, errors, encoding, e, true);
             }
 

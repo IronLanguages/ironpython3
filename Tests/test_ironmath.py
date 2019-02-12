@@ -224,7 +224,6 @@ class IronMathTest(IronPythonTestCase):
         CheckDwordConversions(BigInteger(((1<<31) + 9)), [0x80000009])
         CheckDwordConversions(BigInteger((1<<32)), [0x00000000, 0x00000001])
 
-    @unittest.expectedFailure # https://github.com/IronLanguages/ironpython3/issues/470
     def test_misc(self):
         from System import ArgumentException, ArgumentNullException
         from System.Numerics import BigInteger

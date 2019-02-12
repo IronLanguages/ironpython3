@@ -24,8 +24,7 @@ namespace IronPython.Modules {
         protected T _hasher;
         private static MethodInfo _memberwiseClone;
 
-        private static readonly Encoding _raw = Encoding.GetEncoding("iso-8859-1");
-        private static readonly byte[] _empty = _raw.GetBytes(string.Empty);
+        private static readonly byte[] _empty = new byte[0];
 
         public readonly string name;
         public readonly int block_size;
@@ -41,25 +40,8 @@ namespace IronPython.Modules {
 
         protected abstract void CreateHasher();
 
-        public void update(Bytes newBytes) {
-            update((IList<byte>)newBytes);
-        }
-
-        public void update(ByteArray newBytes) {
-            update((IList<byte>)newBytes);
-        }
-
         [Documentation("update(string) -> None (update digest with string data)")]
-        public void update(object newData) {
-            ArrayModule.array a = newData as ArrayModule.array;
-            if (a != null) {
-                update(a.ToByteArray());
-            } else {
-                update(Converter.ConvertToString(newData).MakeByteArray());
-            }
-        }
-
-        internal void update(IList<byte> newBytes) {
+        public void update([BytesConversion]IList<byte> newBytes) {
             byte[] bytes = newBytes.ToArray();
             lock (_hasher) {
                 _hasher.TransformBlock(bytes, 0, bytes.Length, bytes, 0);

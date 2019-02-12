@@ -27,7 +27,9 @@ namespace IronPython.Runtime {
             _bytes = new byte[0];
         }
 
-        public Bytes(IEnumerable<object> source) {
+        public Bytes(object source) : this(ByteArray.GetBytes(source)) { }
+
+        public Bytes([NotNull]IEnumerable<object> source) {
             _bytes = source.Select(b => ((int)PythonOps.Index(b)).ToByteChecked()).ToArray();
         }
 
@@ -45,6 +47,10 @@ namespace IronPython.Runtime {
 
         private Bytes(byte[] bytes) {
             _bytes = bytes;
+        }
+
+        public Bytes([NotNull]string @string) {
+            throw PythonOps.TypeError("string argument without an encoding");
         }
 
         public Bytes(CodeContext/*!*/ context, [NotNull]string/*!*/ unicode, [NotNull]string/*!*/ encoding) {
@@ -94,7 +100,7 @@ namespace IronPython.Runtime {
 
         // necessary to avoid bad conversion of List -> IList<Byte>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
-        public ByteArray/*!*/ center(int width, PythonList fillchar) {
+        public Bytes/*!*/ center(int width, PythonList fillchar) {
             throw PythonOps.TypeError("center() argument 2 must be byte, not list");
         }
 
@@ -128,7 +134,7 @@ namespace IronPython.Runtime {
             throw PythonOps.TypeError("expected bytes or bytearray, got list");
         }
 
-        public string decode(CodeContext/*!*/ context, [Optional]object/*!*/ encoding, [NotNull]string/*!*/ errors="strict") {
+        public string decode(CodeContext/*!*/ context, [NotNull]string encoding = "utf-8", [NotNull]string errors = "strict") {
             return StringOps.RawDecode(context, _bytes, encoding, errors);
         }
 
@@ -666,7 +672,7 @@ namespace IronPython.Runtime {
         }
         
         public override string/*!*/ ToString() {
-            return PythonOps.MakeString(this);
+            return _bytes.BytesRepr();
         }
 
         public static Bytes/*!*/ operator +(Bytes/*!*/ self, Bytes/*!*/ other) {
@@ -681,13 +687,13 @@ namespace IronPython.Runtime {
         }
 
 
-        public static ByteArray/*!*/ operator +(Bytes/*!*/ self, ByteArray/*!*/ other) {
+        public static Bytes/*!*/ operator +(Bytes/*!*/ self, ByteArray/*!*/ other) {
             var bytes = new List<byte>(self._bytes);
             lock (other) {
                 bytes.AddRange(other);
             }
 
-            return new ByteArray(bytes);
+            return new Bytes(bytes);
         }
 
         private static Bytes MultiplyWorker(Bytes self, int count) {

@@ -382,6 +382,7 @@ namespace IronPython.Modules {
 
 
 #if FEATURE_NATIVE
+
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         public static void symlink(string source, string link_name) {
             int result = Mono.Unix.Native.Syscall.symlink(source, link_name);
@@ -420,9 +421,15 @@ namespace IronPython.Modules {
         }
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static uint geteuid() {
+        public static BigInteger getuid() {
+            return Mono.Unix.Native.Syscall.getuid();
+        }
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        public static BigInteger geteuid() {
             return Mono.Unix.Native.Syscall.geteuid();
         }
+
 #endif
 
 #if FEATURE_FILESYSTEM

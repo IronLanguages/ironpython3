@@ -2277,13 +2277,7 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            public BigInteger seek(CodeContext/*!*/ context, int offset, [DefaultParameterValue(0)]object whence) => this.seek(context, (BigInteger)offset, whence);
-
-            public BigInteger seek(double offset, [DefaultParameterValue(0)]object whence) {
-                _checkClosed();
-
-                throw PythonOps.TypeError("an integer is required");
-            }
+            public BigInteger seek(double offset, [DefaultParameterValue(0)]object whence) => throw PythonOps.TypeError("integer argument expected, got float");
 
             public override BigInteger seek(CodeContext/*!*/ context, BigInteger cookie, [DefaultParameterValue(0)]object whence) {
                 int whenceInt = GetInt(whence);

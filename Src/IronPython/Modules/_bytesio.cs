@@ -254,7 +254,7 @@ namespace IronPython.Modules {
                 + "     2  End of stream - pos usually negative.\n"
                 + "Returns the new absolute position."
                 )]
-            public BigInteger seek(int pos, int whence=0) {
+            private BigInteger seek(int pos, int whence=0) {
                 _checkClosed();
 
                 switch (whence) {
@@ -275,8 +275,6 @@ namespace IronPython.Modules {
                 }
             }
 
-            public BigInteger seek(int pos, BigInteger whence) => seek(pos, (int)whence);
-            public BigInteger seek(int pos, double whence) => throw PythonOps.TypeError("integer argument expected, got float");
             public BigInteger seek(double pos, [DefaultParameterValue(0)]object whence) => throw PythonOps.TypeError("integer argument expected, got float");
 
             public override BigInteger seek(CodeContext/*!*/ context, BigInteger pos, [DefaultParameterValue(0)]object whence) {

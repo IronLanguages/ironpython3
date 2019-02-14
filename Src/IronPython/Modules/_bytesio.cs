@@ -287,9 +287,9 @@ namespace IronPython.Modules {
                     case Extensible<int> v:
                         return seek(posInt, v);
                     case BigInteger v:
-                        return seek(posInt, v);
+                        return seek(posInt, (int)v);
                     case Extensible<BigInteger> v:
-                        return seek(posInt, v);
+                        return seek(posInt, (int)v.Value);
                     case double _:
                     case Extensible<double> _:
                         throw PythonOps.TypeError("integer argument expected, got float");

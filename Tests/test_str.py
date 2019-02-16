@@ -1,18 +1,7 @@
 # -*- coding: utf-8 -*-
-#####################################################################################
-#
-#  Copyright (c) Microsoft Corporation. All rights reserved.
-#
-# This source code is subject to terms and conditions of the Apache License, Version 2.0. A
-# copy of the license can be found in the License.html file at the root of this distribution. If
-# you cannot locate the  Apache License, Version 2.0, please send an email to
-# ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound
-# by the terms of the Apache License, Version 2.0.
-#
-# You must not remove this notice, or any other, from this software.
-#
-#
-#####################################################################################
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the Apache 2.0 License.
+# See the LICENSE file in the project root for more information.
 
 import os
 import sys
@@ -20,8 +9,10 @@ import unittest
 
 from iptest import IronPythonTestCase, is_cli, run_test, skipUnlessIronPython
 
+long = type(sys.maxsize + 1)
+
 class StrTest(IronPythonTestCase):
- 
+
     def test_none(self):
         self.assertEqual("abc".translate(None), "abc")
         self.assertEqual("abc".translate(None, 'h'), "abc")
@@ -38,7 +29,7 @@ class StrTest(IronPythonTestCase):
 
         self.assertRaises(TypeError, 'abc'.replace, None, 'ef')
         self.assertRaises(TypeError, 'abc'.replace, None, 'ef', 1)
-        
+
         self.assertRaisesMessage(TypeError, "unsupported operand type(s) for +: 'NoneType' and 'str'",
                             lambda: None + 'abc')
         self.assertRaises(TypeError, #"cannot concatenate 'str' and 'NoneType' objects", #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=21947
@@ -51,35 +42,36 @@ class StrTest(IronPythonTestCase):
     def test_constructor(self):
         self.assertEqual('', str())
         self.assertEqual('None', str(None))
-        
+
         # https://github.com/IronLanguages/main/issues/1108
         self.assertEqual('ä', str('ä')) # StringOps.__new__(..., string)
-        self.assertEqual('ä', str('ä'.Chars[0])) # StringOps.__new__(..., char)
-                           
+        if is_cli:
+            self.assertEqual('ä', str('ä'.Chars[0])) # StringOps.__new__(..., char)
+
     def test_add_mul(self):
         self.assertRaises(TypeError, lambda: "a" + 3)
         self.assertRaises(TypeError, lambda: 3 + "a")
 
         self.assertRaises(TypeError, lambda: "a" * "3")
-        self.assertRaises(OverflowError, lambda: "a" * (sys.maxint + 1))
-        self.assertRaises(OverflowError, lambda: (sys.maxint + 1) * "a")
+        self.assertRaises(OverflowError, lambda: "a" * (sys.maxsize + 1))
+        self.assertRaises(OverflowError, lambda: (sys.maxsize + 1) * "a")
 
         class mylong(long): pass
-        
+
         if is_cli:
             from System.IO import Path
             self.assertEqual("foo" + os.sep, "foo" + Path.DirectorySeparatorChar)
             self.assertEqual(os.sep + os.sep, Path.DirectorySeparatorChar + os.sep)
 
         # multiply
-        self.assertEqual("aaaa", "a" * 4L)
-        self.assertEqual("aaaa", "a" * mylong(4L))
+        self.assertEqual("aaaa", "a" * long(4))
+        self.assertEqual("aaaa", "a" * mylong(4))
         self.assertEqual("aaa", "a" * 3)
         self.assertEqual("a", "a" * True)
         self.assertEqual("", "a" * False)
 
-        self.assertEqual("aaaa", 4L * "a")
-        self.assertEqual("aaaa", mylong(4L) * "a")
+        self.assertEqual("aaaa", long(4) * "a")
+        self.assertEqual("aaaa", mylong(4) * "a")
         self.assertEqual("aaa", 3 * "a")
         self.assertEqual("a", True * "a")
         self.assertEqual("", False * "a" )
@@ -88,7 +80,7 @@ class StrTest(IronPythonTestCase):
         self.assertEqual("abcde".startswith('c', 2, 6), True)
         self.assertEqual("abc".startswith('c', 4, 6), False)
         self.assertEqual("abcde".startswith('cde', 2, 9), True)
-        
+
         hw = "hello world"
         self.assertTrue(hw.startswith("hello"))
         self.assertTrue(not hw.startswith("heloo"))
@@ -115,18 +107,18 @@ class StrTest(IronPythonTestCase):
         self.assertEqual("abcdbcda".rfind("cd", 1), 5)
         self.assertEqual("abcdbcda".rfind("cd", 3), 5)
         self.assertEqual("abcdbcda".rfind("cd", 7), -1)
-        
+
         self.assertEqual('abc'.rfind('', 0, 0), 0)
         self.assertEqual('abc'.rfind('', 0, 1), 1)
         self.assertEqual('abc'.rfind('', 0, 2), 2)
         self.assertEqual('abc'.rfind('', 0, 3), 3)
         self.assertEqual('abc'.rfind('', 0, 4), 3)
-        
+
         self.assertEqual('x'.rfind('x', 0, 0), -1)
-        
+
         self.assertEqual('x'.rfind('x', 3, 0), -1)
         self.assertEqual('x'.rfind('', 3, 0), -1)
-    
+
 
     def test_split(self):
         x="Hello Worllds"
@@ -158,7 +150,7 @@ class StrTest(IronPythonTestCase):
 
         for temp_string in ["", "  ", "   ", "\t", " \t", "\t ", "\t\t", "\n", "\n\n", "\n \n"]:
             self.assertEqual(temp_string.rsplit(None), [])
-        
+
         self.assertEqual("ab".rsplit(None), ["ab"])
         self.assertEqual("a b".rsplit(None), ["a", "b"])
 
@@ -166,9 +158,9 @@ class StrTest(IronPythonTestCase):
     def test_codecs(self):
         from iptest.misc_util import ip_supported_encodings
         encodings = [ x for x in ip_supported_encodings]
-            
+
         for encoding in encodings: self.assertTrue('abc'.encode(encoding).decode(encoding)=='abc', encoding + " failed!")
-    
+
     def test_count(self):
         self.assertTrue("adadad".count("d") == 3)
         self.assertTrue("adbaddads".count("ad") == 3)
@@ -176,7 +168,7 @@ class StrTest(IronPythonTestCase):
     def test_expandtabs(self):
         self.assertTrue("\ttext\t".expandtabs(0) == "text")
         self.assertTrue("\ttext\t".expandtabs(-10) == "text")
-        
+
         self.assertEqual(len("aaa\taaa\taaa".expandtabs()), 19)
         self.assertEqual("aaa\taaa\taaa".expandtabs(), "aaa     aaa     aaa")
 
@@ -193,43 +185,40 @@ class StrTest(IronPythonTestCase):
         self.assertEqual(''.split(' '), [''])
         self.assertEqual(''.split('a'), [''])
 
-    def test_string_escape(self):
+    def test_unicode_escape(self):
         for i in range(0x7f):
-            if chr(i) == "'":
-                self.assertEqual(chr(i).encode('string-escape'), "\\" + repr(chr(i))[1:-1])
-            else:
-                self.assertEqual(chr(i).encode('string-escape'), repr(chr(i))[1:-1])
+            self.assertEqual(chr(i).encode('unicode-escape'), bytes(repr(chr(i))[1:-1], "ascii"))
 
     def test_encoding_backslashreplace(self):
                     # codec, input, output
-        tests =   [ ('ascii',      u"a\xac\u1234\u20ac\u8000", "a\\xac\\u1234\\u20ac\\u8000"),
-                    ('latin-1',    u"a\xac\u1234\u20ac\u8000", "a\xac\\u1234\\u20ac\\u8000"),
-                    ('iso-8859-15', u"a\xac\u1234\u20ac\u8000", "a\xac\\u1234\xa4\\u8000") ]
-        
+        tests =   [ ('ascii',      u"a\xac\u1234\u20ac\u8000", b"a\\xac\\u1234\\u20ac\\u8000"),
+                    ('latin-1',    u"a\xac\u1234\u20ac\u8000", b"a\xac\\u1234\\u20ac\\u8000"),
+                    ('iso-8859-15', u"a\xac\u1234\u20ac\u8000", b"a\xac\\u1234\xa4\\u8000") ]
+
         for test in tests:
             self.assertEqual(test[1].encode(test[0], 'backslashreplace'), test[2])
 
 
     def test_encoding_xmlcharrefreplace(self):
                     # codec, input, output
-        tests =   [ ('ascii',      u"a\xac\u1234\u20ac\u8000", "a&#172;&#4660;&#8364;&#32768;"),
-                    ('latin-1',    u"a\xac\u1234\u20ac\u8000", "a\xac&#4660;&#8364;&#32768;"),
-                    ('iso-8859-15', u"a\xac\u1234\u20ac\u8000", "a\xac&#4660;\xa4&#32768;") ]
+        tests =   [ ('ascii',      u"a\xac\u1234\u20ac\u8000", b"a&#172;&#4660;&#8364;&#32768;"),
+                    ('latin-1',    u"a\xac\u1234\u20ac\u8000", b"a\xac&#4660;&#8364;&#32768;"),
+                    ('iso-8859-15', u"a\xac\u1234\u20ac\u8000", b"a\xac&#4660;\xa4&#32768;") ]
         for test in tests:
             self.assertEqual(test[1].encode(test[0], 'xmlcharrefreplace'), test[2])
 
     def test_encode_decode(self):
-        self.assertEqual('abc'.encode(), 'abc')
-        self.assertEqual('abc'.decode(), 'abc')
+        self.assertEqual('abc'.encode(), b'abc')
+        self.assertEqual(b'abc'.decode(), 'abc')
 
     def test_encode_decode_error(self):
         self.assertRaises(TypeError, 'abc'.encode, None)
-        self.assertRaises(TypeError, 'abc'.decode, None)
+        self.assertRaises(TypeError, b'abc'.decode, None)
 
     def test_string_escape_trailing_slash(self):
         ok = False
         try:
-            "\\".decode("string-escape")
+            b"\\".decode("unicode-escape")
         except ValueError:
             ok = True
         self.assertTrue(ok, "string that ends in trailing slash should fail string decode")
@@ -244,7 +233,7 @@ class StrTest(IronPythonTestCase):
             def __add__(self, other): return 23
             def __len__(self): return 2300
             def __contains__(self, value): return False
-        
+
         o = customstring('abc')
         self.assertEqual(str(o), 'ABC')
         self.assertEqual(repr(o), '<abc>')
@@ -259,12 +248,12 @@ class StrTest(IronPythonTestCase):
         import System
         #System.Char.Parse('a') is not available in Silverlight mscorlib
         a = 'a'.ToCharArray()[0]
-            
+
         for x in [{'a':'b'}, set(['a']), 'abc', ['a'], ('a',)]:
             self.assertEqual(a in x, True)
 
         self.assertEqual(hash(a), hash('a'))
-        
+
         self.assertEqual('a' in a, True)
 
     def test_str_equals(self):
@@ -272,59 +261,62 @@ class StrTest(IronPythonTestCase):
         y = 'def' == 'def'
         self.assertEqual(id(x), id(y))
         self.assertEqual(id(x), id(True))
-        
+
         x = 'abc' != 'abc'
         y = 'def' != 'def'
         self.assertEqual(id(x), id(y))
         self.assertEqual(id(x), id(False))
-        
+
         x = 'abcx' == 'abc'
         y = 'defx' == 'def'
         self.assertEqual(id(x), id(y))
         self.assertEqual(id(x), id(False))
-        
+
         x = 'abcx' != 'abc'
         y = 'defx' != 'def'
         self.assertEqual(id(x), id(y))
         self.assertEqual(id(x), id(True))
 
     def test_str_dict(self):
-        extra_str_dict_keys = [ "__radd__", "isdecimal", "isnumeric", "isunicode"]
-        missing_str_dict_keys = ["__rmod__"]
-        
+        extra_str_dict_keys = [ "__radd__"]
+        missing_str_dict_keys = ["casefold", "format_map", "maketrans"]
+
         #It's OK that __getattribute__ does not show up in the __dict__.  It is
         #implemented.
         self.assertTrue(hasattr(str, "__getattribute__"), "str has no __getattribute__ method")
         self.assertTrue('__init__' not in str.__dict__.keys())
-        
+
         for temp_key in extra_str_dict_keys:
-            if sys.platform=="win32":
-                self.assertTrue(not temp_key in str.__dict__.keys())
-            else:
+            if is_cli:
                 self.assertTrue(temp_key in str.__dict__.keys(), "str.__dict__ bug was fixed.  Please update test.")
-            
+            else:
+                self.assertTrue(not temp_key in str.__dict__.keys())
+
         for temp_key in missing_str_dict_keys:
-            self.assertTrue(temp_key in str.__dict__.keys())
-            
+            if is_cli:
+                self.assertTrue(not temp_key in str.__dict__.keys(), "str.__dict__ bug was fixed.  Please update test.")
+            else:
+                self.assertTrue(temp_key in str.__dict__.keys())
+
         class x(str): pass
-        
+
         self.assertEqual('abc'.__rmod__('-%s-'), '-abc-')
         self.assertEqual(x('abc').__rmod__('-%s-'), '-abc-')
         self.assertEqual(x('abc').__rmod__(2), NotImplemented)
-    
+
     def test_formatting_userdict(self):
         """verify user mapping object works with string formatting"""
         class mydict(object):
             def __getitem__(self, key):
                 if key == 'abc': return 42
                 elif key == 'bar': return 23
-                raise KeyError, key
+                raise KeyError(key)
         self.assertEqual('%(abc)s %(bar)s' % (mydict()), '42 23')
-        
+
         class mydict(dict):
             def __missing__(self, key):
-                return 'ok' 
-        
+                return 'ok'
+
         a = mydict()
 
         self.assertEqual('%(anykey)s' % a, 'ok')
@@ -332,45 +324,45 @@ class StrTest(IronPythonTestCase):
     def test_str_to_numeric(self):
         class substring(str):
             def __int__(self): return 1
-            def __long__(self): return 1L
+            def __long__(self): return long(1)
             def __complex__(self): return 1j
             def __float__(self): return 1.0
-        
+
         v = substring("123")
-        
-        
-        self.assertEqual(long(v), 1L)
+
+
+        self.assertEqual(long(v), long(1))
         self.assertEqual(int(v), 1)
         self.assertEqual(complex(v), 123+0j)
         self.assertEqual(float(v), 1.0)
-        
+
         class substring(str): pass
-        
+
         v = substring("123")
-        
-        self.assertEqual(long(v), 123L)
+
+        self.assertEqual(long(v), long(123))
         self.assertEqual(int(v), 123)
         self.assertEqual(complex(v), 123+0j)
         self.assertEqual(float(v), 123.0)
 
     def test_subclass_ctor(self):
         # verify all of the ctors work for various types...
-        class myunicode(unicode): pass
-        class myunicode2(unicode): 
+        class myunicode(str): pass
+        class myunicode2(str):
             def __init__(self, *args): pass
-        
+
         class myfloat(float): pass
         class mylong(long): pass
         class myint(int): pass
-        
-        for x in [1, 1.0, 1L, 1j, 
-                myfloat(1.0), mylong(1L), myint(1), 
+
+        for x in [1, 1.0, long(1), 1j,
+                myfloat(1.0), mylong(1), myint(1),
                 True, False, None, object(),
                 "", u""]:
-            self.assertEqual(myunicode(x), unicode(x))
-            self.assertEqual(myunicode2(x), unicode(x))
-        self.assertEqual(myunicode('foo', 'ascii'), unicode('foo', 'ascii'))
-        self.assertEqual(myunicode2('foo', 'ascii'), unicode('foo', 'ascii'))
+            self.assertEqual(myunicode(x), str(x))
+            self.assertEqual(myunicode2(x), str(x))
+        self.assertEqual(myunicode(b'foo', 'ascii'), str(b'foo', 'ascii'))
+        self.assertEqual(myunicode2(b'foo', 'ascii'), str(b'foo', 'ascii'))
 
     def test_upper_lower(self):
         # CodePlex work item #33133
@@ -404,7 +396,7 @@ class StrTest(IronPythonTestCase):
 
         # as defined in http://www.unicode.org/Public/UNIDATA/SpecialCasing.txt
         PERFECT_UNICODE_CASING=False
-    
+
         import locale
         lang,encoding = locale.getlocale()
 
@@ -425,7 +417,7 @@ class StrTest(IronPythonTestCase):
 
         # Note:
         # IronPython casing matches cpython implementation (linux and windows)
-        # In order to take advantage of better build-in unicode support in Windows 
+        # In order to take advantage of better build-in unicode support in Windows
         # ToUpper/ToLower can be called directly
         if is_cli:
             import System.Globalization.CultureInfo as CultureInfo

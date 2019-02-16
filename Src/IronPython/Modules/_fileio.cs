@@ -405,13 +405,13 @@ namespace IronPython.Modules {
                 + "seeking beyond the end of a file).\n"
                 + "Note that not all file objects are seekable."
                 )]
-            public override BigInteger seek(CodeContext/*!*/ context, BigInteger offset, [DefaultParameterValue(0)]object whence) {
+            public override BigInteger seek(CodeContext/*!*/ context, BigInteger offset, [Optional]object whence) {
                 _checkClosed();
 
                 return _readStream.Seek((long)offset, (SeekOrigin)GetInt(whence));
             }
 
-            public BigInteger seek(double offset, [DefaultParameterValue(0)]object whence) {
+            public BigInteger seek(double offset, [Optional]object whence) {
                 _checkClosed();
 
                 throw PythonOps.TypeError("an integer is required");

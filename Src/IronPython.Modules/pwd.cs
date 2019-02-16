@@ -121,7 +121,11 @@ or via the object attributes as named in the above tuple.")]
             uid = PythonOps.Index(uid);
 
             if (uid is BigInteger bi) {
-                uid = (int)bi;
+                try {
+                    uid = (int)bi;
+                } catch (OverflowException) {
+                    throw PythonOps.KeyError($"getpwuid(): uid not found");
+                }
             }
 
             if (uid is int id) {

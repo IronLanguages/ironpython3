@@ -476,9 +476,7 @@ namespace IronPython.Runtime.Operations {
             //  reverse the original string (and the sep), split, reverse 
             //  the split list and finally reverse each element of the list
             IList<byte> reversed = bytes.ReverseBytes();
-            if (sep != null) {
-                sep = sep.ReverseBytes();
-            }
+            sep = sep?.ReverseBytes();
 
             PythonList temp = null, ret = null;
             temp = ctor(reversed).Split(sep, maxsplit, x => ctor(x));

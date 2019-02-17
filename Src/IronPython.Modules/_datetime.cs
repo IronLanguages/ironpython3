@@ -346,8 +346,7 @@ namespace IronPython.Modules {
         }
 
         internal static bool IsNaiveTimeZone(tzinfo tz) {
-            if (tz == null) return true;
-            if (tz.utcoffset(null) == null) return true;
+            if (tz?.utcoffset(null) == null) return true;
             return false;
         }
 
@@ -1384,10 +1383,7 @@ namespace IronPython.Modules {
                 return delta;
             }
 
-            public object tzname() {
-                if (_tz == null) return null;
-                return _tz.tzname(null);
-            }
+            public object tzname() => _tz?.tzname(null);
 
             public override int GetHashCode() {
                 return this.UtcTime.GetHashCode();

@@ -99,39 +99,18 @@ namespace IronPythonTest {
 
                 e_struct(dts);
             }
-            if (e_tt != null) {
-                e_tt(stringVal);
-            }
-            if (e_tt2 != null) {
-                e_tt2(stringVal2);
-            }
-            if (d_tt != null) {
-                d_tt(stringVal);
-            }
-            if (e_tsd != null) {
-                e_tsd(stringVal, stringVal2, stringVal, stringVal2, stringVal, stringVal2);
-            }
-            if (d_tsd != null) {
-                d_tsd(stringVal, stringVal2, stringVal, stringVal2, stringVal, stringVal2);
-            }
-            if (e_ted != null) {
-                e_ted(enumVal);
-            }
-            if (d_ted != null) {
-                d_ted(enumVal);
-            }
-            if (e_tedl != null) {
-                e_tedl(longEnumVal);
-            }
-            if (d_tedl != null) {
-                d_tedl(longEnumVal);
-            }
-            if (e_tcd != null) {
-                e_tcd(stringVal, intVal, floatVal, doubleVal, enumVal, stringVal2, enumVal, longEnumVal);
-            }
-            if (d_tcd != null) {
-                d_tcd(stringVal, intVal, floatVal, doubleVal, enumVal, stringVal2, enumVal, longEnumVal);
-            }
+
+            e_tt?.Invoke(stringVal);
+            e_tt2?.Invoke(stringVal2);
+            d_tt?.Invoke(stringVal);
+            e_tsd?.Invoke(stringVal, stringVal2, stringVal, stringVal2, stringVal, stringVal2);
+            d_tsd?.Invoke(stringVal, stringVal2, stringVal, stringVal2, stringVal, stringVal2);
+            e_ted?.Invoke(enumVal);
+            d_ted?.Invoke(enumVal);
+            e_tedl?.Invoke(longEnumVal);
+            d_tedl?.Invoke(longEnumVal);
+            e_tcd?.Invoke(stringVal, intVal, floatVal, doubleVal, enumVal, stringVal2, enumVal, longEnumVal);
+            d_tcd?.Invoke(stringVal, intVal, floatVal, doubleVal, enumVal, stringVal2, enumVal, longEnumVal);
         }
 
         public DeTestStruct ActualTestStruct(DeTestStruct dts) {

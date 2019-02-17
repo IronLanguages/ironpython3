@@ -451,11 +451,8 @@ namespace IronPythonTest {
             Report(">=", x, y);
             return x.value >= y.value;
         }
-        private static void Report(string op, ComparisonTest x, ComparisonTest y) {
-            if (report != null) {
-                report(string.Format("{0} on [{1}, {2}]", op, x, y));
-            }
-        }
+        private static void Report(string op, ComparisonTest x, ComparisonTest y) =>
+            report?.Invoke(string.Format("{0} on [{1}, {2}]", op, x, y));
     }
 
     public enum BigEnum : long {

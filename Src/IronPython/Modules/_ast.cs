@@ -716,9 +716,7 @@ namespace IronPython.Modules
             }
 
             internal static AstExpression Revert(expr ex) {
-                if (ex == null)
-                    return null;
-                return ex.Revert();
+                return ex?.Revert();
             }
 
             internal static AstExpression Revert(object ex) {

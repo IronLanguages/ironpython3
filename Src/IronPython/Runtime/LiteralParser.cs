@@ -162,8 +162,8 @@ namespace IronPython.Runtime {
                         i++;
                     }
                     buf.Append('\n');
-                } else if (buf != null) {
-                    buf.Append(ch);
+                } else {
+                    buf?.Append(ch);
                 }
             }
 

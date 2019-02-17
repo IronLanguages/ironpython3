@@ -66,11 +66,8 @@ namespace IronPython.Runtime.Operations {
 
         public static WeakRefTracker GetWeakRefHelper(IPythonObject obj) {
             object[] slots = obj.GetSlots();
-            if (slots == null) {
-                return null;
-            }
 
-            return (WeakRefTracker)slots[slots.Length - 1];
+            return (WeakRefTracker)slots?[slots.Length - 1];
         }
 
         public static void SetFinalizerHelper(IPythonObject obj, WeakRefTracker value) {

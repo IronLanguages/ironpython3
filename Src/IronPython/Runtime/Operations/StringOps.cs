@@ -1543,8 +1543,8 @@ namespace IronPython.Runtime.Operations {
                         b.AppendFormat("\\u{0:x4}", (int)ch);
                     }
                     // TODO: support "wide" unicode
-                } else if (b != null) {
-                    b.Append(ch);
+                } else {
+                    b?.Append(ch);
                 }
             }
 
@@ -1578,9 +1578,10 @@ namespace IronPython.Runtime.Operations {
                                 b.AppendFormat("\\u{0:x4}", (int)ch);
                             }
                             // TODO: support "wide" unicode
-                        } else if (b != null) {
-                            b.Append(ch);
+                        } else {
+                            b?.Append(ch);
                         }
+
                         break;
                 }
             }
@@ -1634,12 +1635,8 @@ namespace IronPython.Runtime.Operations {
             return NormalizeEncodingName(name);
         }
 
-        internal static string NormalizeEncodingName(string name) {
-            if (name == null) {
-                return null;
-            }
-            return name.ToLower(CultureInfo.InvariantCulture).Replace('-', '_').Replace(' ', '_');
-        }
+        internal static string NormalizeEncodingName(string name) =>
+            name?.ToLower(CultureInfo.InvariantCulture).Replace('-', '_').Replace(' ', '_');
 
         internal static string RawDecode(CodeContext/*!*/ context, IList<byte> s, string encoding, string errors) {
             if (TryGetEncoding(encoding, out Encoding e)) {

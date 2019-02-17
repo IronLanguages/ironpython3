@@ -3194,8 +3194,8 @@ namespace IronPython.Runtime
             Action<Action> dispatcher = _commandDispatcher;
             if (dispatcher != null) {
                 dispatcher(command);
-            } else if (command != null) {
-                command();
+            } else {
+                command?.Invoke();
             }
         }
 
@@ -4116,8 +4116,7 @@ namespace IronPython.Runtime
                     _parent._tracebackListeners.Value = listener = new PythonTracebackListener(_parent, null);
                 }
 
-                if (listener != null)
-                    listener.OnTraceEvent(kind, name, sourceFileName, sourceSpan, scopeCallback, payload, customPayload);
+                listener?.OnTraceEvent(kind, name, sourceFileName, sourceSpan, scopeCallback, payload, customPayload);
             }
         }
 
@@ -4191,10 +4190,8 @@ namespace IronPython.Runtime
                 return null;
 
             var listener = _tracebackListeners.Value;
-            if (listener == null)
-                return null;
 
-            return listener.TraceObject;
+            return listener?.TraceObject;
         }
 
 #endregion

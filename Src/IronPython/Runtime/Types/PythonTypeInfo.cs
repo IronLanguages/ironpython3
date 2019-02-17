@@ -464,8 +464,8 @@ namespace IronPython.Runtime.Types {
                         }
 
                         res.Add(MemberTracker.FromMemberInfo(typeof(object).GetMethod("Equals", new Type[] { typeof(object) })));
-                    } else if (res != null) {
-                        res.Add(group[i]);
+                    } else {
+                        res?.Add(@group[i]);
                     }
                 }
 
@@ -1367,8 +1367,8 @@ namespace IronPython.Runtime.Types {
                                 filteredMembers.Add(foundMembersArray[j]);
                             }
                         }
-                    } else if (filteredMembers != null) {
-                        filteredMembers.Add(foundMembersArray[i]);
+                    } else {
+                        filteredMembers?.Add(foundMembersArray[i]);
                     }
                 }
                 if (filteredMembers != null) {
@@ -1937,8 +1937,8 @@ namespace IronPython.Runtime.Types {
                         // add any ones we skipped...
                         mts = MakeListWithPreviousMembers(group, mts, i);
                     }
-                } else if (mts != null) {
-                    mts.Add(mt);
+                } else {
+                    mts?.Add(mt);
                 }
             }
             if (mts != null) {

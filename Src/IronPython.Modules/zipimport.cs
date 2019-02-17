@@ -556,9 +556,7 @@ contain the module, but has no source for it.")]
                         count++;
                     }
                 } finally {
-                    if (fp != null) {
-                        fp.Close();
-                    }
+                    fp?.Close();
                 }
 
                 return files;

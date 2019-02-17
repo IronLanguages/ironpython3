@@ -40,8 +40,8 @@ namespace IronPython.Modules {
 
                 foreach (PythonType pt in ResolutionOrder) {
                     StructType st = pt as StructType;
-                    if (st != this && st != null) {
-                        st.EnsureFinal();
+                    if (st != this) {
+                        st?.EnsureFinal();
                     }
 
                     if (pt is UnionType ut) {

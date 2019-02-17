@@ -95,7 +95,7 @@ namespace Ionic.Crc
 
                 _TotalBytesRead = 0;
                 int count = input.Read(buffer, 0, readSize);
-                if (output != null) output.Write(buffer, 0, count);
+                output?.Write(buffer, 0, count);
                 _TotalBytesRead += count;
                 while (count > 0)
                 {

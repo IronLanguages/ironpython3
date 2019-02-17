@@ -15,7 +15,7 @@ class AssemlbyTest(IronPythonTestCase):
         mscorlib = clr.LoadAssemblyByName("mscorlib")
 
         #GetMemberNames
-        self.assertEqual(len(dir(mscorlib)), 78)
+        self.assertGreaterEqual(len(dir(mscorlib)), 77)
         for x in ["System", "Microsoft"]:
             self.assertTrue( x in dir(mscorlib), "dir(mscorlib) does not have %s" % x)
         
@@ -30,10 +30,7 @@ class AssemlbyTest(IronPythonTestCase):
         assemblyBuilder = System.AppDomain.CurrentDomain.DefineDynamicAssembly(name, System.Reflection.Emit.AssemblyBuilderAccess.Run)
         
         asm_builder_dir = dir(assemblyBuilder)
-        if is_mono: # Mono has another member
-            self.assertEqual(len(asm_builder_dir), 90)
-        else:
-            self.assertEqual(len(asm_builder_dir), 89)
+        self.assertGreaterEqual(len(asm_builder_dir), 89)
         self.assertTrue("GetCustomAttributesData" in asm_builder_dir)
             
         self.assertTrue("AddResourceFile" in asm_builder_dir)
@@ -44,13 +41,7 @@ class AssemlbyTest(IronPythonTestCase):
         from System.Reflection.Emit import AssemblyBuilder
         mscorlib = Assembly.Load("mscorlib")
         self.assertTrue("Assembly" in repr(mscorlib))
-        if is_mono: # Mono has another member
-            self.assertEqual(len(dir(Assembly)), 76)
-        else:
-            self.assertEqual(len(dir(Assembly)), 75)
-        if is_mono: # Mono has another member
-            self.assertEqual(len(dir(AssemblyBuilder)), 90)
-        else:
-            self.assertEqual(len(dir(AssemblyBuilder)), 89)
+        self.assertGreaterEqual(len(dir(Assembly)), 75)
+        self.assertGreaterEqual(len(dir(AssemblyBuilder)), 89)
         
 run_test(__name__)

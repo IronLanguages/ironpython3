@@ -533,6 +533,7 @@ class TestBasic(unittest.TestCase):
                 container = reversed(deque([obj, 1]))
             obj.x = iter(container)
             del obj, container
+            for _ in range(5): pass # IronPython: do something so that the weakref will be collected by the Mono GC
             gc.collect()
             self.assertTrue(ref() is None, "Cycle was not collected")
 

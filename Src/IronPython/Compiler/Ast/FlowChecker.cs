@@ -232,7 +232,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         private void PopLoop() {
-            if (_loops != null) _loops.Pop();
+            _loops?.Pop();
         }
 
         #region AstWalker Methods
@@ -315,9 +315,8 @@ namespace IronPython.Compiler.Ast {
         // BreakStmt
         public override bool Walk(BreakStatement node) {
             BitArray exit = PeekLoop();
-            if (exit != null) { // break outside loop
-                exit.And(_bits);
-            }
+            // break outside loop
+            exit?.And(_bits);
             return true;
         }
 
@@ -433,10 +432,8 @@ namespace IronPython.Compiler.Ast {
             _bits.SetAll(false);
             _bits.Or(save);
 
-            if (node.ElseStatement != null) {
-                // Flow the else_
-                node.ElseStatement.Walk(this);
-            }
+            // Flow the else_
+            node.ElseStatement?.Walk(this);
 
             // Intersect
             result.And(_bits);
@@ -467,8 +464,7 @@ namespace IronPython.Compiler.Ast {
             _bits = new BitArray(_bits);
 
             // Define the Rhs
-            if (node.Variable != null)
-                node.Variable.Walk(_fdef);
+            node.Variable?.Walk(_fdef);
 
             // Flow the body
             node.Body.Walk(this);
@@ -485,11 +481,8 @@ namespace IronPython.Compiler.Ast {
             // Flow the body
             node.Body.Walk(this);
 
-            if (node.Else != null) {
-                // Else is flown only after completion of Try with same bits
-                node.Else.Walk(this);
-            }
-
+            // Else is flown only after completion of Try with same bits
+            node.Else?.Walk(this);
 
             if (node.Handlers != null) {
                 foreach (TryStatementHandler tsh in node.Handlers) {
@@ -510,10 +503,8 @@ namespace IronPython.Compiler.Ast {
 
             _bits = save;
 
-            if (node.Finally != null) {
-                // Flow finally - this executes no matter what
-                node.Finally.Walk(this);
-            }
+            // Flow finally - this executes no matter what
+            node.Finally?.Walk(this);
 
             return false;
         }

@@ -2085,11 +2085,7 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-        public static void ForLoopDispose(KeyValuePair<IEnumerator, IDisposable> iteratorInfo) {
-            if (iteratorInfo.Value != null) {
-                iteratorInfo.Value.Dispose();
-            }
-        }
+        public static void ForLoopDispose(KeyValuePair<IEnumerator, IDisposable> iteratorInfo) => iteratorInfo.Value?.Dispose();
 
         public static KeyValuePair<IEnumerator, IDisposable> StringEnumerator(string str) {
             return new KeyValuePair<IEnumerator, IDisposable>(StringOps.StringEnumerator(str), null);
@@ -2356,12 +2352,8 @@ namespace IronPython.Runtime.Operations {
             return e;
         }
 
-        internal static PythonExceptions.BaseException GetRawContextException() {
-            if (RawException != null) {
-                return RawException.GetPythonException() as PythonExceptions.BaseException;
-            }
-            return null;
-        }
+        internal static PythonExceptions.BaseException GetRawContextException() =>
+            RawException?.GetPythonException() as PythonExceptions.BaseException;
 
         public static Exception MakeExceptionForGenerator(CodeContext/*!*/ context, object type, object value, object traceback, object cause) {
             Exception e = MakeExceptionWorker(context, type, value, traceback, cause, false, true);

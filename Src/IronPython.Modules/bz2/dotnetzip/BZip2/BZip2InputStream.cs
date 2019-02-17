@@ -410,8 +410,8 @@ namespace Ionic.BZip2
             {
                 if (!_disposed)
                 {
-                    if (disposing && (this.input != null))
-                        this.input.Close();
+                    if (disposing)
+                        input?.Close();
                     _disposed = true;
                 }
             }

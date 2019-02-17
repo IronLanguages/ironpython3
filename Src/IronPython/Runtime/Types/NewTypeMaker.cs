@@ -1361,9 +1361,7 @@ namespace IronPython.Runtime.Types {
         }
 
         private Type FinishType() {
-            if (_cctor != null) {
-                _cctor.Emit(OpCodes.Ret);
-            }
+            _cctor?.Emit(OpCodes.Ret);
 
             return _tg.CreateType();
         }

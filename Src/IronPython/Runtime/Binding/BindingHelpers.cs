@@ -216,24 +216,22 @@ namespace IronPython.Runtime.Binding {
         }
 
         internal static DynamicMetaObject/*!*/ AddDynamicTestAndDefer(DynamicMetaObjectBinder/*!*/ operation, DynamicMetaObject/*!*/ res, DynamicMetaObject/*!*/[] args, ValidationInfo typeTest, Type deferType, params ParameterExpression[] temps) {
-            if (typeTest != null) {
-                if (typeTest.Test != null) {
-                    // add the test and a validator if persent
-                    Expression defer = operation.GetUpdateExpression(deferType ?? typeof(object));
+            if (typeTest?.Test != null) {
+                // add the test and a validator if persent
+                Expression defer = operation.GetUpdateExpression(deferType ?? typeof(object));
 
-                    Type bestType = BindingHelpers.GetCompatibleType(defer.Type, res.Expression.Type);
+                Type bestType = BindingHelpers.GetCompatibleType(defer.Type, res.Expression.Type);
 
-                    res = new DynamicMetaObject(
-                        Ast.Condition(
-                            typeTest.Test,
-                            AstUtils.Convert(res.Expression, bestType),
-                            AstUtils.Convert(defer, bestType)
-                        ),
-                        res.Restrictions 
-                    );
-                }
-            } 
-            
+                res = new DynamicMetaObject(
+                    Ast.Condition(
+                        typeTest.Test,
+                        AstUtils.Convert(res.Expression, bestType),
+                        AstUtils.Convert(defer, bestType)
+                    ),
+                    res.Restrictions 
+                );
+            }
+
             if (temps.Length > 0) {
                 // finally add the scoped variables
                 res = new DynamicMetaObject(

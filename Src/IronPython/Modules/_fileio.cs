@@ -236,9 +236,7 @@ namespace IronPython.Modules {
                     }
 
                     PythonFileManager myManager = _context.RawFileManager;
-                    if (myManager != null) {
-                        myManager.Remove(this);
-                    }
+                    myManager?.Remove(this);
                 }                
             }
 
@@ -270,9 +268,7 @@ namespace IronPython.Modules {
             public override void flush(CodeContext/*!*/ context) {
                 _checkClosed();
 
-                if (_writeStream != null) {
-                    _writeStream.Flush();
-                }
+                _writeStream?.Flush();
             }
 
             [Documentation("isatty() -> bool.  True if the file is connected to a tty device.")]

@@ -982,8 +982,7 @@ namespace IronPythonTest {
 
         public virtual void FireEvent() {
             SimpleDelegate simple = MyEvent;
-            if (simple != null)
-                simple();
+            simple?.Invoke();
         }
     }
 
@@ -1003,8 +1002,7 @@ namespace IronPythonTest {
 
         public override void FireEvent() {
             SimpleDelegate simple = MyEvent;
-            if (simple != null)
-                simple();
+            simple?.Invoke();
         }
     }
 

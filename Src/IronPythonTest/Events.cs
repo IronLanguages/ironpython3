@@ -25,23 +25,11 @@ namespace IronPythonTest {
 
         public static event OtherEvent OtherStaticTest;
 
-        public void CallInstance() {
-            if (InstanceTest != null) {
-                InstanceTest();
-            }
-        }
+        public void CallInstance() => InstanceTest?.Invoke();
 
-        public static void CallStatic() {
-            if (StaticTest != null) {
-                StaticTest();
-            }
-        }
+        public static void CallStatic() => StaticTest?.Invoke();
 
-        public void CallOtherInstance(object sender, EventArgs args) {            
-            if (InstanceOther != null) {
-                InstanceOther(sender, args);
-            }
-        }
+        public void CallOtherInstance(object sender, EventArgs args) => InstanceOther?.Invoke(sender, args);
 
         public static void CallOtherStatic(object sender, EventArgs args) {
             OtherStaticTest(sender, args);

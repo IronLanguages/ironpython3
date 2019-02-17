@@ -1075,9 +1075,7 @@ namespace IronPython.Runtime {
 
                 WalkLoopBody(node.Body, false);
 
-                if (node.ElseStatement != null) {
-                    node.ElseStatement.Walk(this);
-                }
+                node.ElseStatement?.Walk(this);
 
                 return false;
             }

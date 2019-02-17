@@ -587,9 +587,7 @@ namespace IronPython.Runtime {
             }
 
             ret = ImportReflected(context, name);
-            if (ret != null) return ret;
-
-            return null;
+            return ret;
         }
 
         private static string [] SubArray(string[] t, int len) {

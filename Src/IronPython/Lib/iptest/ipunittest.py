@@ -86,12 +86,12 @@ class stdout_trapper(object):
         self.oldstdout, sys.stdout = sys.stdout, self.stdout
         return self
     def __exit__(self, *args):
+        sys.stdout = self.oldstdout # do this first to avoid writes after seek(0) (e.g. test_regressions.test_cp23555)
         self.stdout.flush()
         self.stdout.seek(0)
         self.messages = self.stdout.readlines()
         self.messages = [x.rstrip() for x in self.messages]
         self.stdout.close()
-        sys.stdout = self.oldstdout
 
 class path_modifier(object):
     def __init__(self, *directories):

@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.Linq.Expressions;
 using System.Numerics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -235,7 +236,7 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            public virtual BigInteger seek(CodeContext/*!*/ context, BigInteger pos, [DefaultParameterValue(0)]object whence) {
+            public virtual BigInteger seek(CodeContext/*!*/ context, BigInteger pos, [Optional]object whence) {
                 throw UnsupportedOperation(context, "seek");
             }
 
@@ -899,13 +900,13 @@ namespace IronPython.Modules {
                 return res - _readBuf.Count + _readBufPos;
             }
 
-            public BigInteger seek(double offset, [DefaultParameterValue(0)]object whence) {
+            public BigInteger seek(double offset, [Optional]object whence) {
                 _checkClosed();
 
                 throw PythonOps.TypeError("an integer is required");
             }
 
-            public override BigInteger seek(CodeContext/*!*/ context, BigInteger pos, [DefaultParameterValue(0)]object whence) {
+            public override BigInteger seek(CodeContext/*!*/ context, BigInteger pos, [Optional]object whence) {
                 int whenceInt = GetInt(whence);
                 if (whenceInt < 0 || whenceInt > 2) {
                     throw PythonOps.ValueError("invalid whence ({0}, should be 0, 1, or 2)", whenceInt);
@@ -1239,13 +1240,13 @@ namespace IronPython.Modules {
                 return res + _writeBuf.Count;
             }
 
-            public BigInteger seek(double offset, [DefaultParameterValue(0)]object whence) {
+            public BigInteger seek(double offset, [Optional]object whence) {
                 _checkClosed();
 
                 throw PythonOps.TypeError("an integer is required");
             }
 
-            public override BigInteger seek(CodeContext/*!*/ context, BigInteger pos, [DefaultParameterValue(0)]object whence) {
+            public override BigInteger seek(CodeContext/*!*/ context, BigInteger pos, [Optional]object whence) {
                 int whenceInt = GetInt(whence);
                 if (whenceInt < 0 || whenceInt > 2) {
                     throw PythonOps.ValueError("invalid whence ({0}, should be 0, 1, or 2)", whenceInt);
@@ -1634,13 +1635,13 @@ namespace IronPython.Modules {
                 return base.readinto(context, buf);
             }
 
-            public BigInteger seek(double offset, [DefaultParameterValue(0)]object whence) {
+            public BigInteger seek(double offset, [Optional]object whence) {
                 _checkClosed();
 
                 throw PythonOps.TypeError("an integer is required");
             }
 
-            public override BigInteger seek(CodeContext/*!*/ context, BigInteger pos, [DefaultParameterValue(0)]object whence) {
+            public override BigInteger seek(CodeContext/*!*/ context, BigInteger pos, [Optional]object whence) {
                 int whenceInt = GetInt(whence);
                 if (whenceInt < 0 || whenceInt > 2) {
                     throw PythonOps.ValueError("invalid whence ({0}, should be 0, 1, or 2)", whenceInt);
@@ -2277,15 +2278,9 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            public BigInteger seek(CodeContext/*!*/ context, int offset, [DefaultParameterValue(0)]object whence) => this.seek(context, (BigInteger)offset, whence);
+            public BigInteger seek(double offset, [Optional]object whence) => throw PythonOps.TypeError("integer argument expected, got float");
 
-            public BigInteger seek(double offset, [DefaultParameterValue(0)]object whence) {
-                _checkClosed();
-
-                throw PythonOps.TypeError("an integer is required");
-            }
-
-            public override BigInteger seek(CodeContext/*!*/ context, BigInteger cookie, [DefaultParameterValue(0)]object whence) {
+            public override BigInteger seek(CodeContext/*!*/ context, BigInteger cookie, [Optional]object whence) {
                 int whenceInt = GetInt(whence);
                 if (closed) {
                     throw PythonOps.ValueError("tell on closed file");
@@ -3141,6 +3136,8 @@ namespace IronPython.Modules {
         }
 
         private static int GetInt(object i, string msg, params object[] args) {
+            if (i == Missing.Value) return 0;
+
             int res;
             if (TryGetInt(i, out res)) {
                 return res;

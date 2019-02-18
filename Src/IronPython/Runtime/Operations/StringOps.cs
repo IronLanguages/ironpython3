@@ -1675,7 +1675,7 @@ namespace IronPython.Runtime.Operations {
                 case "replace": e.DecoderFallback = ReplacementFallback; break;
                 case "ignore": e.DecoderFallback = new PythonDecoderFallback(); break;
                 case "surrogateescape":
-                    e = (e.CodePage == 20127) ? // PythonAsciiEncoding insists on using its own fallbacks, downgrade to pure ASCII
+                    e = (e is PythonAsciiEncoding) ? // PythonAsciiEncoding insists on using its own fallbacks, downgrade to pure ASCII
                         new PythonSurrogateEscapeEncoding(Encoding.ASCII) : new PythonSurrogateEscapeEncoding(e);
                     break;
                 default:
@@ -1745,7 +1745,7 @@ namespace IronPython.Runtime.Operations {
                 case "xmlcharrefreplace": e.EncoderFallback = new XmlCharRefEncoderReplaceFallback(); break;
                 case "ignore": e.EncoderFallback = new PythonEncoderFallback(); break;
                 case "surrogateescape":
-                    e = (e.CodePage == 20127) ? // PythonAsciiEncoding insists on using its own fallbacks, downgrade to pure ASCII
+                    e = (e is PythonAsciiEncoding) ? // PythonAsciiEncoding insists on using its own fallbacks, downgrade to pure ASCII
                         new PythonSurrogateEscapeEncoding(Encoding.ASCII) : new PythonSurrogateEscapeEncoding(e);
                     break;
                 default:

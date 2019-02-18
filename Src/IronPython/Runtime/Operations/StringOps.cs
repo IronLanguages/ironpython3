@@ -1990,8 +1990,6 @@ namespace IronPython.Runtime.Operations {
                 return res;
             }
 #endif
-
-            public override int CodePage => _encoding.CodePage;
         }
 
         private static PythonList SplitEmptyString(bool separators) {

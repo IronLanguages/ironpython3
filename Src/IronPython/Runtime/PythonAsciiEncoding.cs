@@ -175,12 +175,6 @@ namespace IronPython.Runtime {
                 return "ascii";
             }
         }
-
-        public override int CodePage {
-            get {
-                return 20127;
-            }
-        }
 #endif
     }
 

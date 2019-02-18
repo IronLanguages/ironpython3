@@ -86,7 +86,7 @@ class stdout_trapper(object):
         self.oldstdout, sys.stdout = sys.stdout, self.stdout
         return self
     def __exit__(self, *args):
-        sys.stdout = self.oldstdout # do this to avoid writes after seek(0) (e.g. test_regressions.test_cp23555)
+        sys.stdout = self.oldstdout # do this first to avoid writes after seek(0) (e.g. test_regressions.test_cp23555)
         self.stdout.flush()
         self.stdout.seek(0)
         self.messages = self.stdout.readlines()

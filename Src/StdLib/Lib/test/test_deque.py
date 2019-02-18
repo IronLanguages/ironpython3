@@ -520,6 +520,7 @@ class TestBasic(unittest.TestCase):
             d.append(1)
             gc.collect()
 
+    @unittest.skipIf(sys.implementation.name == "ironpython", "https://github.com/IronLanguages/ironpython3/issues/544")
     def test_container_iterator(self):
         # Bug #3680: tp_traverse was not implemented for deque iterator objects
         class C(object):

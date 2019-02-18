@@ -346,11 +346,7 @@ namespace IronPython.Compiler.Ast {
                 parent = parent.Parent;
             }
 
-            if (parent != null) {
-                return (T)parent;
-            }
-
-            return null;
+            return (T)parent;
         }
 
         internal virtual void FinishBind(PythonNameBinder binder) {

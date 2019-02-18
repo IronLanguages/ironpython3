@@ -1394,4 +1394,14 @@ class C:
 
         self.assertIs(test().defaultValue, noValue)
 
+    def test_ipy2_gh546(self):
+        """https://github.com/IronLanguages/ironpython2/issues/546"""
+        from io import StringIO
+        class Test(StringIO): pass
+        Test().seek(0)
+
+        from io import BytesIO
+        class Test(BytesIO): pass
+        Test().seek(0)
+
 run_test(__name__)

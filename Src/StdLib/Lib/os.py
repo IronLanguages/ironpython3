@@ -706,8 +706,12 @@ def _createenviron():
         def encode(value):
             if not isinstance(value, str):
                 raise TypeError("str expected, not %s" % type(value).__name__)
+            if sys.implementation.name == "ironpython":
+                return value
             return value.encode(encoding, 'surrogateescape')
         def decode(value):
+            if sys.implementation.name == "ironpython":
+                return value
             return value.decode(encoding, 'surrogateescape')
         encodekey = encode
         data = environ

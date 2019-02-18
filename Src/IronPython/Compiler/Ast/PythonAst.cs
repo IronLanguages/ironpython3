@@ -162,9 +162,7 @@ namespace IronPython.Compiler.Ast {
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                if (_body != null) {
-                    _body.Walk(walker);
-                }
+                _body?.Walk(walker);
             }
             walker.PostWalk(this);
         }
@@ -493,10 +491,7 @@ namespace IronPython.Compiler.Ast {
 
         internal SourceUnit SourceUnit {
             get {
-                if (_compilerContext == null) {
-                    return null;
-                }
-                return _compilerContext.SourceUnit;
+                return _compilerContext?.SourceUnit;
             }
         }
 

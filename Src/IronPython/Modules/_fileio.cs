@@ -95,16 +95,14 @@ namespace IronPython.Modules {
                     name = (object)pf.name ?? fd;
                     _readStream = pf._stream;
                     _writeStream = pf._stream;
-                } else if (pc.FileManager.TryGetObjectFromId(pc, fd, out object fileObj)) {
-                    if (fileObj is FileIO file) {
-                        name = file.name ?? fd;
-                        _readStream = file._readStream;
-                        _writeStream = file._writeStream;
-                    } else if (fileObj is Stream stream) {
-                        name = fd;
-                        _readStream = stream;
-                        _writeStream = stream;
-                    }
+                } else if (pc.FileManager.TryGetFileFromId(pc, fd, out FileIO file)) {
+                    name = file.name ?? fd;
+                    _readStream = file._readStream;
+                    _writeStream = file._writeStream;
+                } else if (pc.FileManager.TryGetObjectFromId(pc, fd, out object fileObj) && fileObj is Stream stream) {
+                    name = fd;
+                    _readStream = stream;
+                    _writeStream = stream;
                 }
 
                 _closefd = closefd;
@@ -236,9 +234,7 @@ namespace IronPython.Modules {
                     }
 
                     PythonFileManager myManager = _context.RawFileManager;
-                    if (myManager != null) {
-                        myManager.Remove(this);
-                    }
+                    myManager?.Remove(this);
                 }                
             }
 
@@ -270,9 +266,7 @@ namespace IronPython.Modules {
             public override void flush(CodeContext/*!*/ context) {
                 _checkClosed();
 
-                if (_writeStream != null) {
-                    _writeStream.Flush();
-                }
+                _writeStream?.Flush();
             }
 
             [Documentation("isatty() -> bool.  True if the file is connected to a tty device.")]
@@ -405,13 +399,13 @@ namespace IronPython.Modules {
                 + "seeking beyond the end of a file).\n"
                 + "Note that not all file objects are seekable."
                 )]
-            public override BigInteger seek(CodeContext/*!*/ context, BigInteger offset, [DefaultParameterValue(0)]object whence) {
+            public override BigInteger seek(CodeContext/*!*/ context, BigInteger offset, [Optional]object whence) {
                 _checkClosed();
 
                 return _readStream.Seek((long)offset, (SeekOrigin)GetInt(whence));
             }
 
-            public BigInteger seek(double offset, [DefaultParameterValue(0)]object whence) {
+            public BigInteger seek(double offset, [Optional]object whence) {
                 _checkClosed();
 
                 throw PythonOps.TypeError("an integer is required");

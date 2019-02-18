@@ -167,9 +167,7 @@ namespace IronPython.Modules {
             public void __delattr__(string name) {
                 if (name == "__dict__") Delete__dict__();
 
-                if (_dict != null) {
-                    _dict.Remove(name);
-                }
+                _dict?.Remove(name);
             }
 
             #endregion

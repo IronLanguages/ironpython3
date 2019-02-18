@@ -1121,9 +1121,7 @@ namespace IronPython.Modules {
                     return socket;
                 } catch (Exception ex) {
                     lastException = ex;
-                    if (socket != null) {
-                        socket.close();
-                    }
+                    socket?.close();
                 }
             }
             throw lastException;
@@ -2628,15 +2626,13 @@ namespace IronPython.Modules {
             }
 
             public object peer_certificate(bool binary_form) {
-                if (_sslStream != null) {
-                    var peerCert = _sslStream.RemoteCertificate;
+                var peerCert = _sslStream?.RemoteCertificate;
 
-                    if (peerCert != null) {
-                        if (binary_form) {
-                            return peerCert.GetRawCertData().MakeString();
-                        } else if (_validate) {
-                            return PythonSsl.CertificateToPython(_context, peerCert);
-                        }
+                if (peerCert != null) {
+                    if (binary_form) {
+                        return peerCert.GetRawCertData().MakeString();
+                    } else if (_validate) {
+                        return PythonSsl.CertificateToPython(_context, peerCert);
                     }
                 }
                 return null;

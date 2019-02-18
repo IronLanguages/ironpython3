@@ -376,6 +376,7 @@ class CodecTest(IronPythonTestCase):
             sys.path.remove(os.path.join(self.temporary_dir, "tmp_encodings"))
             shutil.rmtree(os.path.join(self.temporary_dir, "tmp_encodings"), True)
 
+    @unittest.skipIf(is_posix, "https://github.com/IronLanguages/ironpython3/issues/541")
     @unittest.skipIf(is_mono, "https://github.com/IronLanguages/main/issues/1608")
     def test_cp11334(self):
         #--Test that not using "# coding ..." results in a warning

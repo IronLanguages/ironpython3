@@ -97,6 +97,7 @@ namespace IronPython.Modules {
         }
 
 #if FEATURE_FILESYSTEM
+
         public static void chdir([NotNull]string path) {
             if (String.IsNullOrEmpty(path)) {
                 throw PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_INVALID_NAME, "Path cannot be an empty string", null, PythonExceptions._OSError.ERROR_INVALID_NAME);
@@ -109,19 +110,34 @@ namespace IronPython.Modules {
             }
         }
 
+        // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Posix assembly on Windows.
+        private static void chmodUnix(string path, int mode) {
+            if (Mono.Unix.Native.Syscall.chmod(path, Mono.Unix.Native.NativeConvert.ToFilePermissions((uint)mode)) == 0) return;
+            var error = Marshal.GetLastWin32Error();
+            throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, error, strerror(error));
+        }
+
         public static void chmod(string path, int mode) {
-            try {
-                FileInfo fi = new FileInfo(path);
-                if ((mode & S_IWRITE) != 0) {
-                    fi.Attributes &= ~(FileAttributes.ReadOnly);
-                } else {
-                    fi.Attributes |= FileAttributes.ReadOnly;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                try {
+                    FileInfo fi = new FileInfo(path);
+                    if ((mode & S_IWRITE) != 0) {
+                        fi.Attributes &= ~(FileAttributes.ReadOnly);
+                    } else {
+                        fi.Attributes |= FileAttributes.ReadOnly;
+                    }
+                } catch (Exception e) {
+                    throw ToPythonException(e, path);
                 }
-            } catch (Exception e) {
-                throw ToPythonException(e, path);
+            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                chmodUnix(path, mode);
+            } else {
+                throw new PlatformNotSupportedException();
             }
         }
+
 #endif
+
         public static void close(CodeContext/*!*/ context, int fd) {
             PythonContext pythonContext = context.LanguageContext;
             PythonFileManager fileManager = pythonContext.FileManager;
@@ -232,6 +248,9 @@ namespace IronPython.Modules {
         [LightThrowing]
         public static object fstat(CodeContext/*!*/ context, int fd) {
             PythonContext pythonContext = context.LanguageContext;
+            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out Modules.PythonIOModule.FileIO file) && file.name is string strName) {
+                return lstat(strName);
+            }
             PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
             return lstat(pf.name);
         }
@@ -382,6 +401,7 @@ namespace IronPython.Modules {
 
 
 #if FEATURE_NATIVE
+
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         public static void symlink(string source, string link_name) {
             int result = Mono.Unix.Native.Syscall.symlink(source, link_name);
@@ -420,9 +440,15 @@ namespace IronPython.Modules {
         }
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
-        public static uint geteuid() {
+        public static BigInteger getuid() {
+            return Mono.Unix.Native.Syscall.getuid();
+        }
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
+        public static BigInteger geteuid() {
             return Mono.Unix.Native.Syscall.geteuid();
         }
+
 #endif
 
 #if FEATURE_FILESYSTEM
@@ -720,8 +746,8 @@ namespace IronPython.Modules {
                 _mode = mode;
             }
 
-            internal stat_result(Mono.Unix.Native.Stat stat, int? mode = null) {
-                _mode = mode ?? (int)stat.st_mode;
+            internal stat_result(Mono.Unix.Native.Stat stat) {
+                _mode = (int)stat.st_mode;
                 st_ino = stat.st_ino;
                 _dev = stat.st_dev;
                 _nlink = stat.st_nlink;
@@ -1119,6 +1145,16 @@ namespace IronPython.Modules {
             return (extension == ".exe" || extension == ".dll" || extension == ".com" || extension == ".bat");
         }
 
+
+        // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Posix assembly on Windows.
+        private static object statUnix(string path) {
+            if (Mono.Unix.Native.Syscall.stat(path, out Mono.Unix.Native.Stat buf) == 0) {
+                return new stat_result(buf);
+            }
+            var error = Marshal.GetLastWin32Error();
+            return LightExceptions.Throw(PythonExceptions.CreateThrowable(PythonExceptions.OSError, error, strerror(error)));
+        }
+
         [Documentation("stat(path) -> stat result\nGathers statistics about the specified file or directory")]
         [LightThrowing]
         public static object stat(string path) {
@@ -1126,52 +1162,44 @@ namespace IronPython.Modules {
                 return LightExceptions.Throw(PythonOps.TypeError("expected string, got NoneType"));
             }
 
-            try {
-                FileInfo fi = new FileInfo(path);
-                int mode = 0;
-                long size;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                try {
+                    FileInfo fi = new FileInfo(path);
+                    int mode = 0;
+                    long size;
 
-                if (Directory.Exists(path)) {
-                    size = 0;
-                    mode = 0x4000 | S_IEXEC;
-                } else if (File.Exists(path)) {
-                    size = fi.Length;
-                    mode = 0x8000;
-                    if (HasExecutableExtension(path)) {
-                        mode |= S_IEXEC;
+                    if (Directory.Exists(path)) {
+                        size = 0;
+                        mode = 0x4000 | S_IEXEC;
+                    } else if (File.Exists(path)) {
+                        size = fi.Length;
+                        mode = 0x8000;
+                        if (HasExecutableExtension(path)) {
+                            mode |= S_IEXEC;
+                        }
+                    } else {
+                        return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, "file does not exist: " + path, null, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND));
                     }
-                } else {
-                    return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, "file does not exist: " + path, null, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND));
+
+                    mode |= S_IREAD;
+                    if ((fi.Attributes & FileAttributes.ReadOnly) == 0) {
+                        mode |= S_IWRITE;
+                    }
+
+                    long st_atime = (long)PythonTime.TicksToTimestamp(fi.LastAccessTime.ToUniversalTime().Ticks);
+                    long st_ctime = (long)PythonTime.TicksToTimestamp(fi.CreationTime.ToUniversalTime().Ticks);
+                    long st_mtime = (long)PythonTime.TicksToTimestamp(fi.LastWriteTime.ToUniversalTime().Ticks);
+
+                    return new stat_result(mode, size, st_atime, st_mtime, st_ctime);
+                } catch (ArgumentException) {
+                    return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_INVALID_NAME, "The path is invalid: " + path, null, PythonExceptions._OSError.ERROR_INVALID_NAME));
+                } catch (Exception e) {
+                    return LightExceptions.Throw(ToPythonException(e, path));
                 }
-
-                mode |= S_IREAD;
-                if ((fi.Attributes & FileAttributes.ReadOnly) == 0) {
-                    mode |= S_IWRITE;
-                }
-
-                if (Environment.OSVersion.Platform == PlatformID.Unix) {
-                    var stat = statUnix(mode);
-                    if (stat != null) return stat;
-                }
-
-                long st_atime = (long)PythonTime.TicksToTimestamp(fi.LastAccessTime.ToUniversalTime().Ticks);
-                long st_ctime = (long)PythonTime.TicksToTimestamp(fi.CreationTime.ToUniversalTime().Ticks);
-                long st_mtime = (long)PythonTime.TicksToTimestamp(fi.LastWriteTime.ToUniversalTime().Ticks);
-
-                return new stat_result(mode, size, st_atime, st_mtime, st_ctime);
-            } catch (ArgumentException) {
-                return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_INVALID_NAME, "The path is invalid: " + path, null, PythonExceptions._OSError.ERROR_INVALID_NAME));
-            } catch (Exception e) {
-                return LightExceptions.Throw(ToPythonException(e, path));
-            }
-
-            // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Posix assembly on Windows.
-            stat_result statUnix(int mode) {
-                if (Mono.Unix.Native.Syscall.stat(path, out Mono.Unix.Native.Stat buf) == 0) {
-                    // TODO: get rid of the mode override
-                    return new stat_result(buf, mode);
-                }
-                return null;
+            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                return statUnix(path);
+            } else {
+                throw new PlatformNotSupportedException();
             }
         }
 

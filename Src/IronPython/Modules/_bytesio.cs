@@ -247,14 +247,7 @@ namespace IronPython.Modules {
                 return lines;
             }
 
-            [Documentation("seek(pos, whence=0) -> int.  Change stream position.\n\n"
-                + "Seek to byte offset pos relative to position indicated by whence:\n"
-                + "     0  Start of stream (the default).  pos should be >= 0;\n"
-                + "     1  Current position - pos may be negative;\n"
-                + "     2  End of stream - pos usually negative.\n"
-                + "Returns the new absolute position."
-                )]
-            public BigInteger seek(int pos, int whence=0) {
+            private BigInteger seek(int pos, int whence) {
                 _checkClosed();
 
                 switch (whence) {
@@ -275,11 +268,16 @@ namespace IronPython.Modules {
                 }
             }
 
-            public BigInteger seek(int pos, BigInteger whence) => seek(pos, (int)whence);
-            public BigInteger seek(int pos, double whence) => throw PythonOps.TypeError("integer argument expected, got float");
-            public BigInteger seek(double pos, [DefaultParameterValue(0)]object whence) => throw PythonOps.TypeError("integer argument expected, got float");
+            public BigInteger seek(double pos, [Optional]object whence) => throw PythonOps.TypeError("integer argument expected, got float");
 
-            public override BigInteger seek(CodeContext/*!*/ context, BigInteger pos, [DefaultParameterValue(0)]object whence) {
+            [Documentation("seek(pos, whence=0) -> int.  Change stream position.\n\n"
+                + "Seek to byte offset pos relative to position indicated by whence:\n"
+                + "     0  Start of stream (the default).  pos should be >= 0;\n"
+                + "     1  Current position - pos may be negative;\n"
+                + "     2  End of stream - pos usually negative.\n"
+                + "Returns the new absolute position."
+                )]
+            public override BigInteger seek(CodeContext/*!*/ context, BigInteger pos, [Optional]object whence) {
                 _checkClosed();
 
                 int posInt = (int)pos;
@@ -289,9 +287,9 @@ namespace IronPython.Modules {
                     case Extensible<int> v:
                         return seek(posInt, v);
                     case BigInteger v:
-                        return seek(posInt, v);
+                        return seek(posInt, (int)v);
                     case Extensible<BigInteger> v:
-                        return seek(posInt, v);
+                        return seek(posInt, (int)v.Value);
                     case double _:
                     case Extensible<double> _:
                         throw PythonOps.TypeError("integer argument expected, got float");

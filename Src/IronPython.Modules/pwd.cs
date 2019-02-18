@@ -118,17 +118,23 @@ or via the object attributes as named in the above tuple.")]
 
         [Documentation("Return the password database entry for the given numeric user ID.")]
         public static struct_passwd getpwuid(object uid) {
-            if(uid is int id) {
+            uid = PythonOps.Index(uid);
+
+            if (uid is BigInteger bi) {
+                try {
+                    uid = (int)bi;
+                } catch (OverflowException) {
+                    throw PythonOps.KeyError($"getpwuid(): uid not found");
+                }
+            }
+
+            if (uid is int id) {
                 var pwd = _getpwuid(id);
                 if(pwd == IntPtr.Zero) {
                     throw PythonOps.KeyError($"getpwuid(): uid not found: {id}");
                 }
 
                 return Make(pwd);                
-            }
-
-            if(uid is long || uid is BigInteger) {
-                throw PythonOps.KeyError("getpwuid(): uid not found");
             }
 
             throw PythonOps.TypeError($"integer argument expected, got {PythonOps.GetPythonTypeName(uid)}");

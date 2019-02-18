@@ -99,9 +99,7 @@ namespace IronPythonTest {
         public override void Clear(ref DictionaryStorage storage) {
             lock (this) {
                 _dict.Clear();
-                if (_objDict != null) {
-                    _objDict.Clear();
-                }
+                _objDict?.Clear();
             }
         }
 

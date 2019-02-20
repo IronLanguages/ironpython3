@@ -156,11 +156,7 @@ class AttrTest(IronPythonTestCase):
         class C(object):
             def foo(self): pass
 
-        # C.foo is "unbound method" on IronPython but "function" on CPython
-        if is_cli:
-            self.assertEqual(C.foo, C.__getattribute__(C, "foo"))
-        else:
-            self.assertEqual(C.foo.im_func, C.__getattribute__(C, "foo"))
+        self.assertEqual(C.foo, C.__getattribute__(C, "foo"))
         self.assertEqual(C.__doc__, C.__getattribute__(C, "__doc__"))
 
         # fancy type.__doc__ access...

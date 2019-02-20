@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -9,6 +10,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -117,7 +119,20 @@ namespace IronPython.Modules {
             throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, error, strerror(error));
         }
 
-        public static void chmod(string path, int mode) {
+        public static void chmod(string path, int mode, [ParamDictionary]IDictionary<string, object> dict) {
+            if (dict != null) {
+                foreach (var key in dict.Keys) {
+                    switch (key) {
+                        case "dir_fd":
+                        case "follow_symlinks":
+                            // TODO: implement these!
+                            break;
+                        default:
+                            throw PythonOps.TypeError("'{0}' is an invalid keyword argument for this function", key);
+                    }
+                }
+            }
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                 try {
                     FileInfo fi = new FileInfo(path);
@@ -392,7 +407,7 @@ namespace IronPython.Modules {
         [LightThrowing]
         public static object lstat(string path) {
             // TODO: detect links
-            return stat(path);
+            return stat(path, null);
         }
 
         [LightThrowing]
@@ -734,172 +749,97 @@ namespace IronPython.Modules {
         }
 #endif
 
-        [PythonType, DontMapIEnumerableToIter]
-        public class stat_result : IList, IList<object> {
-            private readonly object _mode, _atime, _mtime, _ctime, _dev, _nlink;
-
-            public const int n_fields = 13;
+        [PythonType]
+        public class stat_result : PythonTuple {
+            public const int n_fields = 16;
             public const int n_sequence_fields = 10;
             public const int n_unnamed_fields = 3;
 
-            internal stat_result(int mode) : this(mode, BigInteger.Zero, BigInteger.Zero, BigInteger.Zero, BigInteger.Zero) {
-                _mode = mode;
-            }
+            private const long nanosecondsToSeconds = 1_000_000_000;
 
-            internal stat_result(Mono.Unix.Native.Stat stat) {
-                _mode = (int)stat.st_mode;
-                st_ino = stat.st_ino;
-                _dev = stat.st_dev;
-                _nlink = stat.st_nlink;
-                st_uid = stat.st_uid;
-                st_gid = stat.st_gid;
-                st_size = stat.st_size;
-                st_atime = _atime = stat.st_atime;
-                st_mtime = _mtime = stat.st_mtime;
-                st_ctime = _ctime = stat.st_ctime;
-            }
+            internal stat_result(Mono.Unix.Native.Stat stat)
+                : this(new object[16] {(int)stat.st_mode, stat.st_ino, stat.st_dev, stat.st_nlink, stat.st_uid, stat.st_gid, stat.st_size, stat.st_atime, stat.st_mtime, stat.st_ctime,
+                      stat.st_atime_nsec / (double)nanosecondsToSeconds, stat.st_mtime_nsec / (double)nanosecondsToSeconds, stat.st_ctime_nsec / (double)nanosecondsToSeconds,
+                      stat.st_atime_nsec, stat.st_mtime_nsec, stat.st_ctime_nsec }, null) { }
 
-            internal stat_result(int mode, BigInteger size, BigInteger st_atime, BigInteger st_mtime, BigInteger st_ctime) {
-                _mode = mode;
-                st_size = size;
-                this.st_atime = _atime = TryShrinkToInt(st_atime);
-                this.st_mtime = _mtime = TryShrinkToInt(st_mtime);
-                this.st_ctime = _ctime = TryShrinkToInt(st_ctime);
+            internal stat_result(int mode, ulong fileidx, long size, long st_atime_ns, long st_mtime_ns, long st_ctime_ns)
+                : this(new object[16] { mode, fileidx, 0, 0, 0, 0, size, st_atime_ns / nanosecondsToSeconds, st_mtime_ns / nanosecondsToSeconds, st_ctime_ns / nanosecondsToSeconds,
+                      st_atime_ns / (double)nanosecondsToSeconds, st_mtime_ns / (double)nanosecondsToSeconds, st_ctime_ns / (double)nanosecondsToSeconds,
+                      st_atime_ns, st_mtime_ns, st_ctime_ns }, null) { }
 
-                st_ino = _dev = _nlink = st_uid = st_gid = ScriptingRuntimeHelpers.Int32ToObject(0);
-            }
-
-            public stat_result(CodeContext/*!*/ context, IList statResult, [DefaultParameterValue(null)]PythonDictionary dict) {
-                // dict is allowed by CPython's stat_result, but doesn't seem to do anything, so we ignore it here.
-
-                if (statResult.Count < 10) {
-                    throw PythonOps.TypeError("stat_result() takes an at least 10-sequence ({0}-sequence given)", statResult.Count);
+            private stat_result(object[] statResult, PythonDictionary dict) : base(statResult.Take(n_sequence_fields).ToArray()) {
+                if (statResult.Length < n_sequence_fields) {
+                    throw PythonOps.TypeError($"os.stat_result() takes an at least {n_sequence_fields}-sequence ({statResult.Length}-sequence given)");
+                }
+                else if (statResult.Length > n_fields) {
+                    throw PythonOps.TypeError($"os.stat_result() takes an at least {n_sequence_fields}-sequence ({statResult.Length}-sequence given)");
                 }
 
-                _mode = statResult[0];
-                st_ino = statResult[1];
-                _dev = statResult[2];
-                _nlink = statResult[3];
-                st_uid = statResult[4];
-                st_gid = statResult[5];
-                st_size = statResult[6];
-                _atime = statResult[7];
-                _mtime = statResult[8];
-                _ctime = statResult[9];
-
-                object dictTime;
-                if (statResult.Count >= 11) {
-                    st_atime = TryShrinkToInt(statResult[10]);
-                } else if (TryGetDictValue(dict, "st_atime", out dictTime)) {
-                    st_atime = dictTime;
-                } else {
-                    st_atime = TryShrinkToInt(_atime);
+                object obj;
+                if (statResult.Length >= 11) {
+                    _atime = statResult[10];
+                } else if (TryGetDictValue(dict, "st_atime", out obj)) {
+                    _atime = obj;
                 }
 
-                if (statResult.Count >= 12) {
-                    st_mtime = TryShrinkToInt(statResult[11]);
-                } else if (TryGetDictValue(dict, "st_mtime", out dictTime)) {
-                    st_mtime = dictTime;
-                } else {
-                    st_mtime = TryShrinkToInt(_mtime);
+                if (statResult.Length >= 12) {
+                    _mtime = statResult[11];
+                } else if (TryGetDictValue(dict, "st_mtime", out obj)) {
+                    _mtime = obj;
                 }
 
-                if (statResult.Count >= 13) {
-                    st_ctime = TryShrinkToInt(statResult[12]);
-                } else if (TryGetDictValue(dict, "st_ctime", out dictTime)) {
-                    st_ctime = dictTime;
-                } else {
-                    st_ctime = TryShrinkToInt(_ctime);
+                if (statResult.Length >= 13) {
+                    _ctime = statResult[12];
+                } else if (TryGetDictValue(dict, "st_ctime", out obj)) {
+                    _ctime = obj;
+                }
+
+                if (statResult.Length >= 14) {
+                    st_atime_ns = statResult[13];
+                } else if (TryGetDictValue(dict, "st_atime_ns", out obj)) {
+                    st_atime_ns = obj;
+                }
+
+                if (statResult.Length >= 15) {
+                    st_mtime_ns = statResult[14];
+                } else if (TryGetDictValue(dict, "st_mtime_ns", out obj)) {
+                    st_mtime_ns = obj;
+                }
+
+                if (statResult.Length >= 16) {
+                    st_ctime_ns = statResult[15];
+                } else if (TryGetDictValue(dict, "st_ctime_ns", out obj)) {
+                    st_ctime_ns = obj;
                 }
             }
 
-            private static bool TryGetDictValue(PythonDictionary dict, string name, out object dictTime) {
-                if (dict != null && dict.TryGetValue(name, out dictTime)) {
-                    dictTime = TryShrinkToInt(dictTime);
-                    return true;
-                }
+            public stat_result(CodeContext/*!*/ context, IEnumerable<object> statResult, [DefaultParameterValue(null)]PythonDictionary dict)
+                : this(statResult.ToArray(), dict) { }
 
-                dictTime = null;
-                return false;
+            private static bool TryGetDictValue(PythonDictionary dict, string name, out object value) {
+                value = null;
+                return dict != null && dict.TryGetValue(name, out value);
             }
 
-            private static object TryShrinkToInt(object value) {
-                if (!(value is BigInteger)) {
-                    return value;
-                }
+            private readonly object _atime;
+            private readonly object _mtime;
+            private readonly object _ctime;
 
-                return BigIntegerOps.__int__((BigInteger)value);
-            }
+            public object st_mode => this[0];
+            public object st_ino => this[1];
+            public object st_dev => this[2];
+            public object st_nlink => this[3];
+            public object st_uid => this[4];
+            public object st_gid => this[5];
+            public object st_size => this[6];
+            public object st_atime => _atime ?? this[7];
+            public object st_mtime => _mtime ?? this[8];
+            public object st_ctime => _ctime ?? this[9];
+            public object st_atime_ns { get; }
+            public object st_mtime_ns { get; }
+            public object st_ctime_ns { get; }
 
-            public object st_atime { get; }
-
-            public object st_ctime { get; }
-
-            public object st_mtime { get; }
-
-            public object st_dev => TryShrinkToInt(_dev);
-
-            public object st_gid { get; }
-
-            public object st_ino { get; }
-
-            public object st_mode => TryShrinkToInt(_mode);
-
-            public object st_nlink => TryShrinkToInt(_nlink);
-
-            public object st_size { get; }
-
-            public object st_uid { get; }
-
-            public static PythonTuple operator +(stat_result stat, object tuple) {
-                PythonTuple tupleObj = tuple as PythonTuple;
-                if (tupleObj == null) {
-                    throw PythonOps.TypeError("can only concatenate tuple (not \"{0}\") to tuple", PythonTypeOps.GetName(tuple));
-                }
-                return stat.MakeTuple() + tupleObj;
-            }
-
-            public static bool operator >(stat_result stat, [NotNull]stat_result o) {
-                return stat.MakeTuple() > PythonTuple.Make(o);
-            }
-
-            public static bool operator <(stat_result stat, [NotNull]stat_result o) {
-                return stat.MakeTuple() < PythonTuple.Make(o);
-            }
-
-            public static bool operator >=(stat_result stat, [NotNull]stat_result o) {
-                return stat.MakeTuple() >= PythonTuple.Make(o);
-            }
-
-            public static bool operator <=(stat_result stat, [NotNull]stat_result o) {
-                return stat.MakeTuple() <= PythonTuple.Make(o);
-            }
-
-            public static bool operator >(stat_result stat, object o) {
-                return true;
-            }
-
-            public static bool operator <(stat_result stat, object o) {
-                return false;
-            }
-
-            public static bool operator >=(stat_result stat, object o) {
-                return true;
-            }
-
-            public static bool operator <=(stat_result stat, object o) {
-                return false;
-            }
-
-            public static PythonTuple operator *(stat_result stat, int size) {
-                return stat.MakeTuple() * size;
-            }
-
-            public static PythonTuple operator *(int size, stat_result stat) {
-                return stat.MakeTuple() * size;
-            }
-
-            public override string ToString() {
+            public override string/*!*/ __repr__(CodeContext/*!*/ context) {
                 return string.Format("nt.stat_result("
                     + "st_mode={0}, "
                     + "st_ino={1}, "
@@ -910,241 +850,29 @@ namespace IronPython.Modules {
                     + "st_size={6}, "
                     + "st_atime={7}, "
                     + "st_mtime={8}, "
-                    + "st_ctime={9})", MakeTuple().ToArray());
-            }
-
-            public string/*!*/ __repr__() {
-                return ToString();
+                    + "st_ctime={9})", ToArray());
             }
 
             public PythonTuple __reduce__() {
                 PythonDictionary timeDict = new PythonDictionary(3);
-                timeDict["st_atime"] = st_atime;
-                timeDict["st_ctime"] = st_ctime;
-                timeDict["st_mtime"] = st_mtime;
+                timeDict["st_atime"] = _atime;
+                timeDict["st_mtime"] = _mtime;
+                timeDict["st_ctime"] = _ctime;
+                timeDict["st_atime_ns"] = st_atime_ns;
+                timeDict["st_mtime_ns"] = st_mtime_ns;
+                timeDict["st_ctime_ns"] = st_ctime_ns;
 
-                return PythonTuple.MakeTuple(
+                return MakeTuple(
                     DynamicHelpers.GetPythonTypeFromType(typeof(stat_result)),
-                    PythonTuple.MakeTuple(MakeTuple(), timeDict)
+                    MakeTuple(MakeTuple(this), timeDict)
                 );
             }
-
-            #region ISequence Members
-
-            //public object AddSequence(object other) {
-            //    return MakeTuple().AddSequence(other);
-            //}
-
-            //public object MultiplySequence(object count) {
-            //    return MakeTuple().MultiplySequence(count);
-            //}
-
-            public object this[int index] {
-                get {
-                    return MakeTuple()[index];
-                }
-            }
-
-            public object this[Slice slice] {
-                get {
-                    return MakeTuple()[slice];
-                }
-            }
-
-            public int __len__() {
-                return MakeTuple().__len__();
-            }
-
-            public bool __contains__(object item) {
-                return ((ICollection<object>)MakeTuple()).Contains(item);
-            }
-
-            #endregion
-
-            private PythonTuple MakeTuple() {
-                return PythonTuple.MakeTuple(
-                    st_mode,
-                    st_ino,
-                    st_dev,
-                    st_nlink,
-                    st_uid,
-                    st_gid,
-                    st_size,
-                    _atime,
-                    _mtime,
-                    _ctime
-                );
-            }
-
-            #region Object overrides
-
-            public override bool Equals(object obj) {
-                if (obj is stat_result) {
-                    return MakeTuple().Equals(((stat_result)obj).MakeTuple());
-                } else {
-                    return MakeTuple().Equals(obj);
-                }
-
-            }
-
-            public override int GetHashCode() {
-                return MakeTuple().GetHashCode();
-            }
-
-            #endregion
-
-            #region IList<object> Members
-
-            int IList<object>.IndexOf(object item) {
-                return MakeTuple().IndexOf(item);
-            }
-
-            void IList<object>.Insert(int index, object item) {
-                throw new InvalidOperationException();
-            }
-
-            void IList<object>.RemoveAt(int index) {
-                throw new InvalidOperationException();
-            }
-
-            object IList<object>.this[int index] {
-                get {
-                    return MakeTuple()[index];
-                }
-                set {
-                    throw new InvalidOperationException();
-                }
-            }
-
-            #endregion
-
-            #region ICollection<object> Members
-
-            void ICollection<object>.Add(object item) {
-                throw new InvalidOperationException();
-            }
-
-            void ICollection<object>.Clear() {
-                throw new InvalidOperationException();
-            }
-
-            bool ICollection<object>.Contains(object item) {
-                return __contains__(item);
-            }
-
-            void ICollection<object>.CopyTo(object[] array, int arrayIndex) {
-                throw new NotImplementedException();
-            }
-
-            int ICollection<object>.Count {
-                get { return __len__(); }
-            }
-
-            bool ICollection<object>.IsReadOnly {
-                get { return true; }
-            }
-
-            bool ICollection<object>.Remove(object item) {
-                throw new InvalidOperationException();
-            }
-
-            #endregion
-
-            #region IEnumerable<object> Members
-
-            IEnumerator<object> IEnumerable<object>.GetEnumerator() {
-                foreach (object o in MakeTuple()) {
-                    yield return o;
-                }
-            }
-
-            #endregion
-
-            #region IEnumerable Members
-
-            IEnumerator IEnumerable.GetEnumerator() {
-                foreach (object o in MakeTuple()) {
-                    yield return o;
-                }
-            }
-
-            #endregion
-
-            #region IList Members
-
-            int IList.Add(object value) {
-                throw new InvalidOperationException();
-            }
-
-            void IList.Clear() {
-                throw new InvalidOperationException();
-            }
-
-            bool IList.Contains(object value) {
-                return __contains__(value);
-            }
-
-            int IList.IndexOf(object value) {
-                return MakeTuple().IndexOf(value);
-            }
-
-            void IList.Insert(int index, object value) {
-                throw new InvalidOperationException();
-            }
-
-            bool IList.IsFixedSize {
-                get { return true; }
-            }
-
-            bool IList.IsReadOnly {
-                get { return true; }
-            }
-
-            void IList.Remove(object value) {
-                throw new InvalidOperationException();
-            }
-
-            void IList.RemoveAt(int index) {
-                throw new InvalidOperationException();
-            }
-
-            object IList.this[int index] {
-                get {
-                    return MakeTuple()[index];
-                }
-                set {
-                    throw new InvalidOperationException();
-                }
-            }
-
-            #endregion
-
-            #region ICollection Members
-
-            void ICollection.CopyTo(Array array, int index) {
-                throw new NotImplementedException();
-            }
-
-            int ICollection.Count {
-                get { return __len__(); }
-            }
-
-            bool ICollection.IsSynchronized {
-                get { return false; }
-            }
-
-            object ICollection.SyncRoot {
-                get { return this; }
-            }
-
-            #endregion
         }
 
         private static bool HasExecutableExtension(string path) {
             string extension = Path.GetExtension(path).ToLower(CultureInfo.InvariantCulture);
             return (extension == ".exe" || extension == ".dll" || extension == ".com" || extension == ".bat");
         }
-
 
         // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Posix assembly on Windows.
         private static object statUnix(string path) {
@@ -1155,11 +883,57 @@ namespace IronPython.Modules {
             return LightExceptions.Throw(PythonExceptions.CreateThrowable(PythonExceptions.OSError, error, strerror(error)));
         }
 
+        private const int OPEN_EXISTING = 3;
+        private const int FILE_ATTRIBUTE_NORMAL = 0x00000080;
+        private const int FILE_READ_ATTRIBUTES = 0x0080;
+        private const int FILE_FLAG_BACKUP_SEMANTICS = 0x02000000;
+        private const int FILE_FLAG_OPEN_REPARSE_POINT = 0x00200000;
+
+        [DllImport("kernel32.dll", EntryPoint = "CreateFileW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
+        private static extern SafeFileHandle CreateFile(
+            string lpFileName,
+            int dwDesiredAccess,
+            int dwShareMode,
+            IntPtr securityAttrs,
+            int dwCreationDisposition,
+            int dwFlagsAndAttributes,
+            IntPtr hTemplateFile);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool GetFileInformationByHandle(SafeFileHandle hFile, out BY_HANDLE_FILE_INFORMATION lpFileInformation);
+
+        [StructLayout(LayoutKind.Sequential, Pack = 4)]
+        private struct BY_HANDLE_FILE_INFORMATION {
+            public uint FileAttributes;
+            public System.Runtime.InteropServices.ComTypes.FILETIME CreationTime;
+            public System.Runtime.InteropServices.ComTypes.FILETIME LastAccessTime;
+            public System.Runtime.InteropServices.ComTypes.FILETIME LastWriteTime;
+            public uint VolumeSerialNumber;
+            public uint FileSizeHigh;
+            public uint FileSizeLow;
+            public uint NumberOfLinks;
+            public uint FileIndexHigh;
+            public uint FileIndexLow;
+        }
+
         [Documentation("stat(path) -> stat result\nGathers statistics about the specified file or directory")]
         [LightThrowing]
-        public static object stat(string path) {
+        public static object stat(string path, [ParamDictionary]IDictionary<string, object> dict) {
             if (path == null) {
                 return LightExceptions.Throw(PythonOps.TypeError("expected string, got NoneType"));
+            }
+
+            if (dict != null) {
+                foreach (var key in dict.Keys) {
+                    switch (key) {
+                        case "dir_fd":
+                        case "follow_symlinks":
+                            // TODO: implement these!
+                            break;
+                        default:
+                            return LightExceptions.Throw(PythonOps.TypeError("'{0}' is an invalid keyword argument for this function", key));
+                    }
+                }
             }
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
@@ -1186,11 +960,23 @@ namespace IronPython.Modules {
                         mode |= S_IWRITE;
                     }
 
-                    long st_atime = (long)PythonTime.TicksToTimestamp(fi.LastAccessTime.ToUniversalTime().Ticks);
-                    long st_ctime = (long)PythonTime.TicksToTimestamp(fi.CreationTime.ToUniversalTime().Ticks);
-                    long st_mtime = (long)PythonTime.TicksToTimestamp(fi.LastWriteTime.ToUniversalTime().Ticks);
+                    const long epochDifferenceLong = 62135596800 * TimeSpan.TicksPerSecond;
 
-                    return new stat_result(mode, size, st_atime, st_mtime, st_ctime);
+                    // 1 tick = 100 nanoseconds
+                    long st_atime_ns = (fi.LastAccessTime.ToUniversalTime().Ticks - epochDifferenceLong) * 100;
+                    long st_mtime_ns = (fi.LastWriteTime.ToUniversalTime().Ticks - epochDifferenceLong) * 100;
+                    long st_ctime_ns = (fi.CreationTime.ToUniversalTime().Ticks - epochDifferenceLong) * 100;
+
+                    ulong fileIdx = 0;
+                    var handle = CreateFile(path, FILE_READ_ATTRIBUTES, 0, IntPtr.Zero, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, IntPtr.Zero);
+                    if (!handle.IsInvalid) {
+                        if (GetFileInformationByHandle(handle, out BY_HANDLE_FILE_INFORMATION fileInfo)) {
+                            fileIdx = (((ulong)fileInfo.FileIndexHigh) << 32) + fileInfo.FileIndexLow;
+                        }
+                        handle.Close();
+                    }
+
+                    return new stat_result(mode, fileIdx, size, st_atime_ns, st_mtime_ns, st_ctime_ns);
                 } catch (ArgumentException) {
                     return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_INVALID_NAME, "The path is invalid: " + path, null, PythonExceptions._OSError.ERROR_INVALID_NAME));
                 } catch (Exception e) {
@@ -1204,8 +990,8 @@ namespace IronPython.Modules {
         }
 
         [LightThrowing]
-        public static object stat([BytesConversion]IList<byte> path)
-            => stat(PythonOps.MakeString(path));
+        public static object stat([BytesConversion]IList<byte> path, [ParamDictionary]IDictionary<string, object> dict)
+            => stat(PythonOps.MakeString(path), dict);
 
         public static string strerror(int code) {
             switch (code) {
@@ -1361,27 +1147,60 @@ namespace IronPython.Modules {
         }
 
 #if FEATURE_FILESYSTEM
-        public static void utime(string path, PythonTuple times) {
+
+        public static void utime(string path, [ParamDictionary]IDictionary<string, object> dict)
+            => utime(path, null, dict);
+
+        public static void utime(string path, PythonTuple times, [ParamDictionary]IDictionary<string, object> dict) {
+            PythonTuple ns = null;
+            if (dict != null) {
+                foreach (var pair in dict) {
+                    switch (pair.Key) {
+                        case "ns":
+                            if (times != null) {
+                                throw PythonOps.ValueError("utime: you may specify either 'times' or 'ns' but not both");
+                            }
+                            if (pair.Value is PythonTuple t && t.__len__() == 2) {
+                                ns = t;
+                            } else {
+                                throw PythonOps.TypeError("utime: 'ns' must be a tuple of two ints");
+                            }
+                            break;
+                        case "dir_fd":
+                        case "follow_symlinks":
+                            // TODO: implement these!
+                            break;
+                        default:
+                            throw PythonOps.TypeError("'{0}' is an invalid keyword argument for this function", pair.Key);
+                    }
+                }
+            }
+
+            if (times != null && times.__len__() != 2) {
+                throw PythonOps.TypeError("times value must be a 2-value tuple (atime, mtime)");
+            }
+
             try {
                 // Create a DirectoryInfo or FileInfo depending on what it is
                 // Changing the times of a directory does not work with a FileInfo and v.v.
-                FileSystemInfo fi = Directory.Exists(path) ? new DirectoryInfo(path) : (FileSystemInfo)new FileInfo(path);
-                if (times == null) {
-                    fi.LastAccessTime = DateTime.Now;
-                    fi.LastWriteTime = DateTime.Now;
-                } else if (times.__len__() == 2) {
-                    DateTime atime = new DateTime(PythonTime.TimestampToTicks(Converter.ConvertToDouble(times[0])), DateTimeKind.Utc);
-                    DateTime mtime = new DateTime(PythonTime.TimestampToTicks(Converter.ConvertToDouble(times[1])), DateTimeKind.Utc);
-
-                    fi.LastAccessTime = atime;
-                    fi.LastWriteTime = mtime;
-                } else {
-                    throw PythonOps.TypeError("times value must be a 2-value tuple (atime, mtime)");
+                var fi = Directory.Exists(path) ? (FileSystemInfo)new DirectoryInfo(path) : new FileInfo(path);
+                var atime = DateTime.Now;
+                var mtime = DateTime.Now;
+                if (times != null) {
+                    atime = new DateTime(PythonTime.TimestampToTicks(Converter.ConvertToDouble(times[0])), DateTimeKind.Utc);
+                    mtime = new DateTime(PythonTime.TimestampToTicks(Converter.ConvertToDouble(times[1])), DateTimeKind.Utc);
+                } else if (ns != null) {
+                    const long epochDifferenceLong = 62135596800 * TimeSpan.TicksPerSecond;
+                    atime = new DateTime(Converter.ConvertToInt64(ns[0]) / 100 + epochDifferenceLong, DateTimeKind.Utc);
+                    mtime = new DateTime(Converter.ConvertToInt64(ns[1]) / 100 + epochDifferenceLong, DateTimeKind.Utc);
                 }
+                fi.LastAccessTime = atime;
+                fi.LastWriteTime = mtime;
             } catch (Exception e) {
                 throw ToPythonException(e, path);
             }
         }
+
 #endif
 
 #if FEATURE_PROCESS
@@ -1795,7 +1614,7 @@ the 'status' value."),
 #endif
 
         private static Exception DirectoryExists() {
-            return PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_ALREADY_EXISTS, "directory already exists", null, PythonExceptions._OSError.ERROR_ALREADY_EXISTS);
+            return PythonExceptions.CreateThrowable(PythonExceptions.FileExistsError, PythonExceptions._OSError.ERROR_ALREADY_EXISTS, "directory already exists", null, PythonExceptions._OSError.ERROR_ALREADY_EXISTS);
         }
 
         #endregion

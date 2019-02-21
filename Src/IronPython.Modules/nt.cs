@@ -755,16 +755,16 @@ namespace IronPython.Modules {
             public const int n_sequence_fields = 10;
             public const int n_unnamed_fields = 3;
 
-            private const long nanosecondsToSeconds = 1_000_000_000;
+            private const long nanosecondsPerSeconds = 1_000_000_000;
 
             internal stat_result(Mono.Unix.Native.Stat stat)
                 : this(new object[16] {(int)stat.st_mode, stat.st_ino, stat.st_dev, stat.st_nlink, stat.st_uid, stat.st_gid, stat.st_size, stat.st_atime, stat.st_mtime, stat.st_ctime,
-                      stat.st_atime_nsec / (double)nanosecondsToSeconds, stat.st_mtime_nsec / (double)nanosecondsToSeconds, stat.st_ctime_nsec / (double)nanosecondsToSeconds,
-                      stat.st_atime_nsec, stat.st_mtime_nsec, stat.st_ctime_nsec }, null) { }
+                      stat.st_atime + stat.st_atime_nsec / (double)nanosecondsPerSeconds, stat.st_mtime + stat.st_mtime_nsec / (double)nanosecondsPerSeconds, stat.st_ctime + stat.st_ctime_nsec / (double)nanosecondsPerSeconds,
+                      stat.st_atime * nanosecondsPerSeconds + stat.st_atime_nsec, stat.st_mtime * nanosecondsPerSeconds + stat.st_mtime_nsec, stat.st_ctime * nanosecondsPerSeconds + stat.st_ctime_nsec }, null) { }
 
             internal stat_result(int mode, ulong fileidx, long size, long st_atime_ns, long st_mtime_ns, long st_ctime_ns)
-                : this(new object[16] { mode, fileidx, 0, 0, 0, 0, size, st_atime_ns / nanosecondsToSeconds, st_mtime_ns / nanosecondsToSeconds, st_ctime_ns / nanosecondsToSeconds,
-                      st_atime_ns / (double)nanosecondsToSeconds, st_mtime_ns / (double)nanosecondsToSeconds, st_ctime_ns / (double)nanosecondsToSeconds,
+                : this(new object[16] { mode, fileidx, 0, 0, 0, 0, size, st_atime_ns / nanosecondsPerSeconds, st_mtime_ns / nanosecondsPerSeconds, st_ctime_ns / nanosecondsPerSeconds,
+                      st_atime_ns / (double)nanosecondsPerSeconds, st_mtime_ns / (double)nanosecondsPerSeconds, st_ctime_ns / (double)nanosecondsPerSeconds,
                       st_atime_ns, st_mtime_ns, st_ctime_ns }, null) { }
 
             private stat_result(object[] statResult, PythonDictionary dict) : base(statResult.Take(n_sequence_fields).ToArray()) {

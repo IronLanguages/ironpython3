@@ -236,7 +236,7 @@ namespace IronPython.Runtime {
                 var fbuf2 = (SurrogateEscapeEncoderFallbackBuffer)_pass2encoder.FallbackBuffer;
                 int surIdxStart = fbuf1.LoneSurrogateCount;
 
-                int written = _pass1encoder.GetBytes(chars, charIndex, charCount, bytes, byteIndex, flush: false);
+                int written = _pass1encoder.GetBytes(chars, charIndex, charCount, bytes, byteIndex, flush);
 
                 // If there were no lone surrogates, the job is done
                 if (fbuf1.LoneSurrogateCount == surIdxStart && fbuf2.IsEmpty && flush) {
@@ -246,7 +246,7 @@ namespace IronPython.Runtime {
 
                 // Restore original escaped bytes
                 var bytes2 = new byte[written];
-                _pass2encoder.GetBytes(chars, charIndex, charCount, bytes2, 0, flush: false);
+                _pass2encoder.GetBytes(chars, charIndex, charCount, bytes2, 0, flush);
 
                 for (int i = 0, j = byteIndex; i < written; i++, j++) {
                     if (bytes[j] != bytes2[i]) {

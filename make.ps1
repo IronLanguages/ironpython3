@@ -46,6 +46,7 @@ $_defaultFrameworkSettings = @{
         "ironpython" = "TestCategory=IronPython";
         "ctypes" = "TestCategory=CTypesCPython";
         "single" = "Name=__TESTNAME__";
+        "query" = "FullyQualifiedName__QUERY__";
     }
 }
 
@@ -127,7 +128,10 @@ function Test([String] $target, [String] $configuration, [String[]] $frameworks,
         $frameworkSettings = $_FRAMEWORKS[$framework]
         if ($frameworkSettings -eq $null) { $frameworkSettings = $_defaultFrameworkSettings }
 
-        if(!$frameworkSettings["filters"].ContainsKey($target)) {
+        if ($target -imatch "^ID[=~]") {
+            $testquery = $target.Substring(2)
+            $filtername = "query"
+        } elseif(!$frameworkSettings["filters"].ContainsKey($target)) {
             Write-Warning "No tests available for '$target' trying to run single test '$framework.$target'"
             $testname = "$framework.$target"
             $filtername = "single"
@@ -142,6 +146,7 @@ function Test([String] $target, [String] $configuration, [String[]] $frameworks,
             "__FILTER__" = $filter;
             "__BASEDIR__" = $_BASEDIR;
             "__TESTNAME__" = $testname;
+            "__QUERY__" = $testquery;
             "__RUNSETTINGS__" = $runSettings;
         };
 

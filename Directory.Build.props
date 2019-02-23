@@ -28,6 +28,16 @@
     <InformationalVersion>$(MSBuildProjectName) $(MajorVersion).$(MinorVersion).$(MicroVersion) $(ReleaseLevel) $(ReleaseSerial)</InformationalVersion>
 
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
+
+    <!-- DisplayVersion is used by the msi project -->
+    <ShortReleaseLevel Condition="'$(ReleaseLevel)' == 'alpha'">a</ShortReleaseLevel>
+    <ShortReleaseLevel Condition="'$(ReleaseLevel)' == 'beta'">b</ShortReleaseLevel>
+    <ShortReleaseLevel Condition="'$(ReleaseLevel)' == 'candidate'">rc</ShortReleaseLevel>
+    <ShortReleaseLevel Condition="'$(ReleaseLevel)' == 'final'">f</ShortReleaseLevel>
+
+    <DisplayVersion Condition="'$(ReleaseLevel)' == 'final' and '$(MicroVersion)' == '0'">$(MajorVersion).$(MinorVersion)</DisplayVersion>
+    <DisplayVersion Condition="'$(ReleaseLevel)' == 'final' and '$(MicroVersion)' != '0'">$(MajorVersion).$(MinorVersion).$(MicroVersion)</DisplayVersion>
+    <DisplayVersion Condition="'$(ReleaseLevel)' != 'final'">$(MajorVersion).$(MinorVersion).$(MicroVersion)$(ShortReleaseLevel)$(ReleaseSerial)</DisplayVersion>
   </PropertyGroup>
 
   <!-- Signing -->

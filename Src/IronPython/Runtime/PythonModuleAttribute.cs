@@ -14,6 +14,14 @@ namespace IronPython.Runtime {
     /// </summary>
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
     public sealed class PythonModuleAttribute : PlatformsAttribute {
+        public PythonModuleAttribute(string/*!*/ name, Type/*!*/ type) {
+            ContractUtils.RequiresNotNull(name, nameof(name));
+            ContractUtils.RequiresNotNull(type, nameof(type));
+
+            Name = name;
+            Type = type;
+        }
+
         /// <summary>
         /// Creates a new PythonModuleAttribute that can be used to specify a built-in module that exists
         /// within an assembly.
@@ -21,21 +29,11 @@ namespace IronPython.Runtime {
         /// <param name="name">The built-in module name</param>
         /// <param name="type">The type that implements the built-in module.</param>
         /// <param name="validPlatforms">The valid platform identifiers for this module.</param>
-        public PythonModuleAttribute(string/*!*/ name, Type/*!*/ type, params PlatformID[] validPlatforms) {
-            ContractUtils.RequiresNotNull(name, nameof(name));
-            ContractUtils.RequiresNotNull(type, nameof(type));
-
-            Name = name;
-            Type = type;
+        public PythonModuleAttribute(string/*!*/ name, Type/*!*/ type, params PlatformID[] validPlatforms) : this(name, type) {
             ValidPlatforms = validPlatforms;
         }
 
-        public PythonModuleAttribute(string/*!*/ name, Type/*!*/ type, PlatformsAttribute.PlatformFamily validPlatformFamily) {
-            ContractUtils.RequiresNotNull(name, nameof(name));
-            ContractUtils.RequiresNotNull(type, nameof(type));
-
-            Name = name;
-            Type = type;
+        public PythonModuleAttribute(string/*!*/ name, Type/*!*/ type, PlatformFamily validPlatformFamily) : this(name, type) {
             SetValidPlatforms(validPlatformFamily);
         }
 

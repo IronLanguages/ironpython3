@@ -4,5 +4,6 @@ Priority: optional
 Architecture: all
 Depends: mono-runtime (>=5.12), libmono-posix4.0-cil (>=5.12)
 Section: python
+Maintainer: IronPython Project <official.ironpython@gmail.com>
 Description: Implementation of the Python 3.4 language 
  on the .NET Framework (IRON -> Implementation Runs on .NET). 

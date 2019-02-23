@@ -38,6 +38,8 @@ WHEN PERFORMING MAJOR IP UPGRADES (e.g., 2.5 => 2.6):
     <Property Id="ARPHELPLINK" Value="http://ironpython.net/support/" />
     <Property Id="ARPURLINFOABOUT" Value="http://www.ironpython.net" />
     <Property Id="ARPURLUPDATEINFO" Value="https://github.com/IronLanguages/ironpython2" />
+    <Property Id="ARPNOREPAIR" Value="yes" Secure="yes" />      <!-- Remove repair -->
+    <Property Id="ARPNOMODIFY" Value="yes" Secure="yes" />      <!-- Remove modify -->
 
     <!-- We search for an existing file type for .py files.  If it's found we'll use it, otherwise we'll default to Python.File which matches CPython -->
     <Property Id="PYTHONFILETYPE" Value="Python.File">

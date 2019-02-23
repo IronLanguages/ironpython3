@@ -281,7 +281,7 @@ namespace IronPython.Modules {
             return StringOps.encode(context, context.LanguageContext.DomainManager.Platform.CurrentDirectory, encoding);
         }
 
-#if NETCOREAPP2_1
+#if NETCOREAPP2_1 || NETSTANDARD2_0
         private static readonly char[] invalidPathChars = new char[] { '\"', '<', '>' };
 #endif
 
@@ -322,7 +322,7 @@ namespace IronPython.Modules {
                     newdir = newdir.Replace(c, Char.MaxValue);
                 }
 
-#if NETCOREAPP2_1
+#if NETCOREAPP2_1 || NETSTANDARD2_0
                 foreach (char c in invalidPathChars) {
                     newdir = newdir.Replace(c, Char.MaxValue);
                 }

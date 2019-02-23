@@ -25,7 +25,7 @@ namespace IronPython.Modules {
         private static Encoding MbcsEncoding;
 
         static PythonCodecs() {
-#if NETCOREAPP2_1
+#if NETCOREAPP2_1 || NETSTANDARD2_0
             // This ensures that Encoding.GetEncoding(0) will return the default Windows ANSI code page
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 #endif

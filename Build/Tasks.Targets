@@ -4,39 +4,45 @@
     <ParameterGroup>
       <ZipFileName ParameterType="System.String" Required="true" />
       <Files ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
-      <WorkingDirectory ParameterType="System.String" Required="false" />
+      <WorkingDirectory ParameterType="System.String" Required="true" />
     </ParameterGroup>
     <Task>
       <Reference Include="System.IO.Compression" />
       <Using Namespace="System.IO.Compression" />
       <Code Type="Fragment" Language="cs">
         <![CDATA[
-        var cwd = string.Empty;
+        string cwd = null;
         try {
-          if(!string.IsNullOrWhiteSpace(WorkingDirectory)) {
-            if(!Directory.Exists(WorkingDirectory)) {
-              Log.LogError(string.Format("{0} doesn't exist", WorkingDirectory));
-              return false;
-            }
-            cwd = Environment.CurrentDirectory;
-            Environment.CurrentDirectory = WorkingDirectory;
+          var di = new DirectoryInfo(WorkingDirectory);
+          if (!di.Exists) {
+            Log.LogError(string.Format("{0} doesn't exist", WorkingDirectory));
+            return false;
           }
+          cwd = Environment.CurrentDirectory;
+          Environment.CurrentDirectory = di.FullName;
+
           using (Stream zipStream = new FileStream(Path.GetFullPath(ZipFileName), FileMode.Create, FileAccess.Write))
           using (ZipArchive archive = new ZipArchive(zipStream, ZipArchiveMode.Create)) {
             foreach (ITaskItem fileItem in Files) {
-              string filename = fileItem.ItemSpec;
-              using (Stream fileStream = new FileStream(filename, FileMode.Open, FileAccess.Read))
-              using (Stream fileStreamInZip = archive.CreateEntry(new FileInfo(filename).Name).Open())
+              var filename = fileItem.ItemSpec;
+              FileInfo fi = new FileInfo(filename);
+              if (!fi.FullName.StartsWith(di.FullName)) {
+                Log.LogError(string.Format("{0} not in {1}", filename, WorkingDirectory));
+                return false;
+              }
+              var archivename = fi.FullName.Substring(di.FullName.Length).TrimStart(new char [] { '\\', '/' });
+              using (Stream fileStream = new FileStream(fi.FullName, FileMode.Open, FileAccess.Read))
+              using (Stream fileStreamInZip = archive.CreateEntry(archivename).Open())
                 fileStream.CopyTo(fileStreamInZip);
             }
-          }       
+          }
           return true;
         } catch (Exception ex) {
           Log.LogErrorFromException(ex);
           return false;
         } finally {
-          if(!string.IsNullOrWhiteSpace(cwd)) {
-            Environment.CurrentDirectory = cwd;          
+          if (cwd != null) {
+            Environment.CurrentDirectory = cwd;
           }
         }
         ]]>
@@ -53,22 +59,22 @@
     <Task>
       <Using Namespace="System.Text.RegularExpressions" />
       <Code Type="Fragment" Language="cs">
-	<![CDATA[
-	try {
-	  System.Text.RegularExpressions.Regex replaceRegex = new System.Text.RegularExpressions.Regex(Expression);
-	  foreach(ITaskItem item in Files) {
-	    string fileName = item.ItemSpec;
-	    Log.LogMessage(string.Format("Updating File \"{0}\".", fileName));
-	    string buffer = File.ReadAllText(fileName);
-	    buffer = replaceRegex.Replace(buffer, Replacement);
-	    File.WriteAllText(fileName, buffer);
-	  }
-	} catch(Exception ex) {
+        <![CDATA[
+        try {
+          System.Text.RegularExpressions.Regex replaceRegex = new System.Text.RegularExpressions.Regex(Expression);
+          foreach(ITaskItem item in Files) {
+            string fileName = item.ItemSpec;
+            Log.LogMessage(string.Format("Updating File \"{0}\".", fileName));
+            string buffer = File.ReadAllText(fileName);
+            buffer = replaceRegex.Replace(buffer, Replacement);
+            File.WriteAllText(fileName, buffer);
+          }
+        } catch(Exception ex) {
           Log.LogErrorFromException(ex);
           return false;
-	} 
-	return true;
-	]]>
+        }
+        return true;
+        ]]>
       </Code>
     </Task>
   </UsingTask>

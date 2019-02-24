@@ -61,8 +61,10 @@ namespace IronPythonTest {
 
             [SetUp]
             public void SetUp() {
-                // 12 bytes, rounded to multiply of 4 for the sake of UTF-32 test
-                bytes = "\xd0\x9f\xd0\xb8\xd1\x82\xd0\xbe\xd0\xbd!!".Select(c => (byte)c).ToArray();
+                // 12 bytes: two valid UTF-8 2-byte chars, one non-decodable byte, 
+                // one UTF-8 2-byte char with a non-decodable byte inserted in between the UTF-8 bytes
+                // and final valid UTF-8 2-byte char
+                bytes = "\xd0\x9f\xd0\xb8\x80\xd1\x20\x82\xd0\xbe\xd0\xbd".Select(c => (byte)c).ToArray();
             }
 
             [Test] public void TestBrokenUtf8WithAscii() => TestRoundTrip(Encoding.ASCII, bytes);

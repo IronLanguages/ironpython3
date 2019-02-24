@@ -83,7 +83,6 @@ namespace IronPython.Runtime {
             public SurrogateEscapeDecoder(PythonSurrogateEscapeEncoding parentEncoding) {
                 _parentEncoding = parentEncoding;
                 _pass1decoder = _parentEncoding.Pass1Encoding.GetDecoder();
-                _pass2decoder = _parentEncoding.Pass2Encoding.GetDecoder();  // TODO lazy creation
             }
 
             public override int GetCharCount(byte[] bytes, int index, int count)
@@ -103,6 +102,12 @@ namespace IronPython.Runtime {
                 if (fbuf1?.LoneSurrogateCount == surIdxStart && (fbuf2?.IsEmpty ?? true) && flush) {
                     if (flush) Reset();
                     return written;
+                }
+
+                // Lazy creation od _pass2decoder
+                if (_pass2decoder == null) {
+                    _pass2decoder = _parentEncoding.Pass2Encoding.GetDecoder();
+                    fbuf2 = (SurrogateEscapeDecoderFallbackBuffer)_pass2decoder.FallbackBuffer;
                 }
 
                 // replace surrogate markers with actual surrogates
@@ -172,7 +177,6 @@ namespace IronPython.Runtime {
                         _escapes.Enqueue(bytesUnknown[i]);
                     }
                 }
-                //_escapes?.AddRange(bytesUnknown);
                 _escCnt += _charWidth;
                 _charCnt = _charWidth;
 
@@ -219,13 +223,9 @@ namespace IronPython.Runtime {
                 _characterWidth = _parentEncoding.CharacterWidth;
 
                 _pass1encoder = _parentEncoding.Pass1Encoding.GetEncoder();
-                _pass2encoder = _parentEncoding.Pass2Encoding.GetEncoder();  // TODO lazy creation
 
                 var fbuf1 = _pass1encoder.FallbackBuffer as SurrogateEscapeEncoderFallbackBuffer;
                 if (fbuf1 != null) fbuf1.EncodingCharWidth = _characterWidth;
-
-                var fbuf2 = _pass2encoder?.FallbackBuffer as SurrogateEscapeEncoderFallbackBuffer;
-                if (fbuf2 != null) fbuf2.EncodingCharWidth = _characterWidth;
             }
 
             public override int GetByteCount(char[] chars, int index, int count, bool flush) {
@@ -245,6 +245,13 @@ namespace IronPython.Runtime {
                 if (fbuf1?.LoneSurrogateCount == surIdxStart && (fbuf2?.IsEmpty ?? true) && flush) {
                     if (flush) Reset();
                     return written;
+                }
+
+                // Lazy creation od _pass2encoder
+                if (_pass2encoder == null) {
+                    _pass2encoder = _parentEncoding.Pass2Encoding.GetEncoder();
+                    fbuf2 = (SurrogateEscapeEncoderFallbackBuffer)_pass2encoder.FallbackBuffer;
+                    fbuf2.EncodingCharWidth = _characterWidth;
                 }
 
                 // Restore original escaped bytes

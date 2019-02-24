@@ -262,17 +262,6 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         [MultiRuntimeAware]
-        private static PythonType DirectoryNotFoundErrorStorage;
-        public static PythonType DirectoryNotFoundError {
-            get {
-                if (DirectoryNotFoundErrorStorage == null) {
-                    Interlocked.CompareExchange(ref DirectoryNotFoundErrorStorage, CreateSubType(FileNotFoundError, "DirectoryNotFoundError", (msg, innerException) => new DirectoryNotFoundException(msg, innerException)), null);
-                }
-                return DirectoryNotFoundErrorStorage;
-            }
-        }
-
-        [MultiRuntimeAware]
         private static PythonType PermissionErrorStorage;
         public static PythonType PermissionError {
             get {
@@ -907,7 +896,6 @@ namespace IronPython.Runtime.Exceptions {
             if (clrException is ConnectionResetException) return new PythonExceptions._OSError(PythonExceptions.ConnectionResetError);
             if (clrException is DecoderFallbackException) return new PythonExceptions._UnicodeDecodeError();
             if (clrException is DeprecationWarningException) return new PythonExceptions.BaseException(PythonExceptions.DeprecationWarning);
-            if (clrException is DirectoryNotFoundException) return new PythonExceptions._OSError(PythonExceptions.DirectoryNotFoundError);
             if (clrException is DivideByZeroException) return new PythonExceptions.BaseException(PythonExceptions.ZeroDivisionError);
             if (clrException is EncoderFallbackException) return new PythonExceptions._UnicodeEncodeError();
             if (clrException is EndOfStreamException) return new PythonExceptions.BaseException(PythonExceptions.EOFError);

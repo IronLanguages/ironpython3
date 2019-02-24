@@ -1033,6 +1033,8 @@ for k, v in toError.items():
                 }
                 pyExcep.__init__(errorCode, win32.Message, null, errorCode);
                 return pyExcep;
+            } else if (clrException is DirectoryNotFoundException) {
+                pyExcep = new _OSError(FileNotFoundError);
             } else {
                 // conversions from generated code (in the generated hierarchy)...
                 pyExcep = ToPythonHelper(clrException);

@@ -1148,6 +1148,19 @@ namespace IronPython.Modules {
 
 #if FEATURE_FILESYSTEM
 
+        private static void utimeUnix(string path, long atime_ns, long utime_ns) {
+            var atime = new Mono.Unix.Native.Timespec();
+            atime.tv_sec = atime_ns / 1_000_000_000;
+            atime.tv_nsec = atime_ns % 1_000_000_000;
+            var utime = new Mono.Unix.Native.Timespec();
+            utime.tv_sec = utime_ns / 1_000_000_000;
+            utime.tv_nsec = utime_ns % 1_000_000_000;
+
+            if (Mono.Unix.Native.Syscall.utimensat(Mono.Unix.Native.Syscall.AT_FDCWD, path, new[] { atime, utime }, 0) == 0) return;
+            var error = Marshal.GetLastWin32Error();
+            throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, error, strerror(error));
+        }
+
         public static void utime(string path, [ParamDictionary]IDictionary<string, object> dict)
             => utime(path, null, dict);
 
@@ -1178,6 +1191,12 @@ namespace IronPython.Modules {
 
             if (times != null && times.__len__() != 2) {
                 throw PythonOps.TypeError("times value must be a 2-value tuple (atime, mtime)");
+            }
+
+            // precision is lost when using FileInfo on Linux, use a syscall instead
+            if (ns != null && RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
+                utimeUnix(path, Converter.ConvertToInt64(ns[0]), Converter.ConvertToInt64(ns[1]));
+                return;
             }
 
             try {

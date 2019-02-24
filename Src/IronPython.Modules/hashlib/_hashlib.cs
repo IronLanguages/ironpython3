@@ -49,10 +49,10 @@ namespace IronPython.Modules {
         }
 
         [Documentation("digest() -> int (current digest value)")]
-        public string digest() {
+        public Bytes digest() {
             T copy = CloneHasher();
             copy.TransformFinalBlock(_empty, 0, 0);
-            return copy.Hash.MakeString();
+            return Bytes.Make(copy.Hash);
         }
 
         [Documentation("hexdigest() -> string (current digest as hex digits)")]

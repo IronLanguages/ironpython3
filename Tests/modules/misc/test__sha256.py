@@ -25,7 +25,7 @@ class _Sha256Test(unittest.TestCase):
         x = _sha256.sha256()
         self.assertEqual(x.block_size, 64)
         self.assertEqual(x.digest(),
-                "\xe3\xb0\xc4B\x98\xfc\x1c\x14\x9a\xfb\xf4\xc8\x99o\xb9$'\xaeA\xe4d\x9b\x93L\xa4\x95\x99\x1bxR\xb8U")
+                b"\xe3\xb0\xc4B\x98\xfc\x1c\x14\x9a\xfb\xf4\xc8\x99o\xb9$'\xaeA\xe4d\x9b\x93L\xa4\x95\x99\x1bxR\xb8U")
         self.assertEqual(x.digest_size, 32)
         self.assertEqual(x.digest_size, x.digestsize)
         self.assertEqual(x.hexdigest(),
@@ -43,7 +43,7 @@ class _Sha256Test(unittest.TestCase):
         x = _sha256.sha224()
         self.assertEqual(x.block_size, 64)
         self.assertEqual(x.digest(),
-                '\xd1J\x02\x8c*:+\xc9Ga\x02\xbb(\x824\xc4\x15\xa2\xb0\x1f\x82\x8e\xa6*\xc5\xb3\xe4/')
+                b'\xd1J\x02\x8c*:+\xc9Ga\x02\xbb(\x824\xc4\x15\xa2\xb0\x1f\x82\x8e\xa6*\xc5\xb3\xe4/')
         self.assertEqual(x.digest_size, 28)
         self.assertEqual(x.digest_size, x.digestsize)
         self.assertEqual(x.hexdigest(),

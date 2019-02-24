@@ -279,7 +279,7 @@ class StrTest(IronPythonTestCase):
 
     def test_str_dict(self):
         extra_str_dict_keys = [ "__radd__"]
-        missing_str_dict_keys = ["casefold", "format_map", "maketrans"]
+        missing_str_dict_keys = ["casefold", "format_map"]
 
         #It's OK that __getattribute__ does not show up in the __dict__.  It is
         #implemented.

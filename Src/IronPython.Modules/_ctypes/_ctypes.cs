@@ -733,7 +733,7 @@ namespace IronPython.Modules {
         public static void SetWCharArrayRaw(_Array arr, object value) {
             MemoryView view = value as MemoryView;
             if ((object)view != null) {
-                string strVal = view.tobytes().ToString();
+                string strVal = view.tobytes().MakeString();
                 if (strVal.Length > arr.__len__()) {
                     throw PythonOps.ValueError("string too long");
                 }

@@ -76,7 +76,8 @@ namespace IronPython.Runtime.Operations {
                     if (o == null) _bytes.Add ((byte)'N');
                     else if (o == ScriptingRuntimeHelpers.True || (o is bool && (bool)o)) _bytes.Add ((byte)'T');
                     else if (o == ScriptingRuntimeHelpers.False || (o is bool && (!(bool)o))) _bytes.Add ((byte)'F');
-                    else if (o is string) WriteString (o as string);
+                    else if (o is IList<byte>) WriteBytes(o as IList<byte>);
+                    else if (o is string) WriteString(o as string);
                     else if (o is int) WriteInt ((int)o);
                     else if (o is float) WriteFloat ((float)o);
                     else if (o is double) WriteFloat ((double)o);
@@ -89,7 +90,7 @@ namespace IronPython.Runtime.Operations {
                     else if (o is BigInteger) WriteInteger ((BigInteger)o);
                     else if (o is Complex) WriteComplex ((Complex)o);
                     else if (o == PythonExceptions.StopIteration) WriteStopIteration ();
-                    else throw PythonOps.ValueError ("unmarshallable object");
+                    else throw PythonOps.ValueError ("unmarshallable object" + o.GetType().ToString());
                 } finally {
                     infinite.RemoveAt (index);
                 }
@@ -179,36 +180,17 @@ namespace IronPython.Runtime.Operations {
                 _bytes.Add ((byte)((val >> 24) & 0xff));
             }
 
-            private void WriteString (string s) {
-                byte[] utfBytes = Encoding.UTF8.GetBytes (s);
-                if (utfBytes.Length != s.Length) {
-                    _bytes.Add ((byte)'u');
-                    WriteInt32 (utfBytes.Length);
-                    for (int i = 0; i < utfBytes.Length; i++) {
-                        _bytes.Add (utfBytes[i]);
-                    }
-                } else {
-                    int index;
-                    if (_strings != null && _strings.TryGetValue (s, out index)) {
-                        _bytes.Add ((byte)'R');
-                        WriteInt32 (index);
-                    } else {
-                        byte[] strBytes = PythonAsciiEncoding.Instance.GetBytes (s);
-                        if (_strings != null) {
-                            _bytes.Add ((byte)'t');
-                        } else {
-                            _bytes.Add ((byte)'s');
-                        }
-                        WriteInt32 (strBytes.Length);
-                        for (int i = 0; i < strBytes.Length; i++) {
-                            _bytes.Add (strBytes[i]);
-                        }
+            private void WriteBytes(IList<byte> s) {
+                _bytes.Add((byte)'s');
+                WriteInt32(s.Count);
+                _bytes.AddRange(s);
+            }
 
-                        if (_strings != null) {
-                            _strings[s] = _strings.Count;
-                        }
-                    }
-                }
+            private void WriteString(string s) {
+                byte[] utfBytes = Encoding.UTF8.GetBytes(s);
+                _bytes.Add((byte)'u');
+                WriteInt32(utfBytes.Length);
+                _bytes.AddRange(utfBytes);
             }
 
             private void WriteList (object o) {
@@ -568,7 +550,7 @@ namespace IronPython.Runtime.Operations {
             }
 
             private object ReadBuffer () {
-                return DecodeString (Encoding.UTF8, ReadBytes (ReadInt32 ()));
+                return Bytes.Make (ReadBytes (ReadInt32 ()));
             }
 
             private object ReadLong () {

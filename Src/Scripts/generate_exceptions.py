@@ -106,7 +106,9 @@ exceptionHierarchy = ExceptionInfo('BaseException', 'IronPython.Runtime.Exceptio
                 ExceptionInfo('OSError', 'IronPython.Runtime.Exceptions.OSException', None, ('errno', 'strerror', 'filename', 'winerror', 'filename2'), (
                     ExceptionInfo('BlockingIOError', 'IronPython.Runtime.Exceptions.BlockingIOException', None, ('characters_written', ), ()),
                     ExceptionInfo('FileExistsError', 'IronPython.Runtime.Exceptions.FileExistsException', None, (), ()),
-                    ExceptionInfo('FileNotFoundError', 'System.IO.FileNotFoundException', None, (), ()),
+                    ExceptionInfo('FileNotFoundError', 'System.IO.FileNotFoundException', None, (), (
+                        ExceptionInfo('DirectoryNotFoundError', 'System.IO.DirectoryNotFoundException', None, (), ()), # CPython does not have a DirectoryNotFoundError
+                    )),
                     ExceptionInfo('PermissionError', 'System.UnauthorizedAccessException', None, (), ()),
                     ExceptionInfo('NotADirectoryError', 'IronPython.Runtime.Exceptions.NotADirectoryException', None, (), ()),
                     ExceptionInfo('InterruptedError', 'IronPython.Runtime.Exceptions.InterruptedException', None, (), ()),

@@ -97,6 +97,7 @@ the unconsumed_tail attribute.")]
             if(err == Z_STREAM_END)
             {
                 unused_data += GetBytes(zst.next_in, zst.next_in_index, zst.avail_in);
+                eof = true;
             }
             else if(err != Z_OK && err != Z_BUF_ERROR)
             {
@@ -105,6 +106,8 @@ the unconsumed_tail attribute.")]
 
             return GetBytes(output, 0, (int)(zst.total_out - start_total_out));
         }
+
+        public bool eof { get; set; }
 
         [Documentation(@"flush( [length] ) -- Return a string containing any remaining
 decompressed data. length, if given, is the initial size of the

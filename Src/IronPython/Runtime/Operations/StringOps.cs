@@ -808,6 +808,17 @@ namespace IronPython.Runtime.Operations {
             return self.TrimStart(chars.ToCharArray());
         }
 
+        [StaticExtensionMethod]
+        public static PythonDictionary maketrans([NotNull]string from, [NotNull]string to) {
+            if (from.Length != to.Length) throw PythonOps.ValueError("maketrans arguments must have same length");
+
+            var res = new PythonDictionary();
+            for (var i = 0; i < from.Length; i++) {
+                res[(int)from[i]] = (int)to[i];
+            }
+            return res;
+        }
+
         [return: SequenceTypeInfo(typeof(string))]
         public static PythonTuple partition(this string self, string sep) {
             if (sep == null)

@@ -13,6 +13,7 @@ namespace IronPython.Modules {
         public const string __doc__ = "Provides functions for serializing and deserializing primitive data types.";
 
         #region Public marshal APIs
+
         public static void dump(object value, PythonFile/*!*/ file) {
             dump(value, file, version);
         }
@@ -33,20 +34,16 @@ namespace IronPython.Modules {
             return dumps(value, version);
         }
 
-        public static string dumps(object value, int version) {
-            byte[] bytes = MarshalOps.GetBytes(value, version);
-            StringBuilder sb = new StringBuilder(bytes.Length);
-            for (int i = 0; i < bytes.Length; i++) {
-                sb.Append((char)bytes[i]);
-            }
-            return sb.ToString();
+        public static Bytes dumps(object value, int version) {
+            return Bytes.Make(MarshalOps.GetBytes(value, version));
         }
 
-        public static object loads(string @string) {
-            return MarshalOps.GetObject(StringEnumerator(@string));
+        public static object loads([BytesConversion]IList<byte> bytes) {
+            return MarshalOps.GetObject(bytes.GetEnumerator());
         }
 
         public const int version = 2;
+
         #endregion
 
         #region Implementation details
@@ -59,12 +56,6 @@ namespace IronPython.Modules {
                 }
 
                 yield return (byte)data[0];
-            }
-        }
-
-        private static IEnumerator<byte> StringEnumerator(string/*!*/ str) {
-            for (int i = 0; i < str.Length; i++) {
-                yield return (byte)str[i];
             }
         }
 

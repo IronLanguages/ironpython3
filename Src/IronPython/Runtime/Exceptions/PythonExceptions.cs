@@ -930,7 +930,7 @@ for k, v in toError.items():
                 pyEx = PythonCalls.Call(context, type);
             }
 
-            if (PythonOps.IsInstance(pyEx, type)) {
+            if (pyEx is BaseException) {
                 var contextException = PythonOps.GetRawContextException();
 
                 // If we have a context-exception or no context/cause return the existing, or a new exception
@@ -946,8 +946,7 @@ for k, v in toError.items():
                 }
             }
 
-            // user returned arbitrary object from overridden __new__, let it throw...
-            return new ObjectException(type, pyEx);
+            throw PythonOps.TypeError($"calling {PythonOps.ToString(type)} should have returned an instance of BaseException, not {PythonOps.ToString(DynamicHelpers.GetPythonType(pyEx))}");
         }
         
         /// <summary>

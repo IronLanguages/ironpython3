@@ -60,9 +60,6 @@ namespace IronPython.Modules {
         public static PythonType FileNotFoundError {
             get { return PythonExceptions.FileNotFoundError; }
         }
-        public static PythonType DirectoryNotFoundError {
-            get { return PythonExceptions.DirectoryNotFoundError; }
-        }
         public static PythonType PermissionError {
             get { return PythonExceptions.PermissionError; }
         }

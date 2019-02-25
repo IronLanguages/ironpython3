@@ -2180,29 +2180,25 @@ namespace IronPython.Runtime.Operations {
         public static object CheckException(CodeContext/*!*/ context, object exception, object test) {
             Debug.Assert(exception != null);
 
-            ObjectException objex;
-
-            if ((objex = exception as ObjectException) != null) {
-                if (PythonOps.IsSubClass(context, objex.Type, test)) {
-                    return objex.Instance;
-                }
-                return null;
-            } else if (test is PythonType) {
-                if (PythonOps.IsSubClass(test as PythonType, TypeCache.BaseException)) {
+            if (test is PythonType pt) {
+                if (PythonOps.IsSubClass(pt, TypeCache.BaseException)) {
                     // catching a Python exception type explicitly.
-                    if (PythonOps.IsInstance(context, exception, test)) return exception;
-                } else if (PythonOps.IsSubClass(test as PythonType, DynamicHelpers.GetPythonTypeFromType(typeof(Exception)))) {
+                    if (PythonOps.IsInstance(context, exception, pt)) return exception;
+                } else if (PythonOps.IsSubClass(pt, DynamicHelpers.GetPythonTypeFromType(typeof(Exception)))) {
                     // catching a CLR exception type explicitly.
                     Exception clrEx = PythonExceptions.ToClr(exception);
-                    if (PythonOps.IsInstance(context, clrEx, test)) return clrEx;
+                    if (PythonOps.IsInstance(context, clrEx, pt)) return clrEx;
+                } else {
+                    throw PythonOps.TypeError("catching classes that do not inherit from BaseException is not allowed");
                 }
-            } else if (test is PythonTuple) {
+            } else if (test is PythonTuple tt) {
                 // we handle multiple exceptions, we'll check them one at a time.
-                PythonTuple tt = test as PythonTuple;
                 for (int i = 0; i < tt.__len__(); i++) {
                     object res = CheckException(context, exception, tt[i]);
                     if (res != null) return res;
                 }
+            } else {
+                throw PythonOps.TypeError("catching classes that do not inherit from BaseException is not allowed");
             }
 
             return null;
@@ -2363,7 +2359,6 @@ namespace IronPython.Runtime.Operations {
 
         private static Exception MakeExceptionWorker(CodeContext/*!*/ context, object type, object value, object traceback, object cause, bool forRethrow, bool forGenerator = false) {
             Exception throwable;
-            PythonType pt;
 
             if (cause != null) {
                 // TODO: allow CLR exceptions as a cause
@@ -2380,7 +2375,7 @@ namespace IronPython.Runtime.Operations {
 
             if (type is PythonExceptions.BaseException) {
                 throwable = ((PythonExceptions.BaseException)type).CreateClrExceptionWithCause((PythonExceptions.BaseException)cause, GetRawContextException());
-            } else if ((pt = type as PythonType) != null && typeof(PythonExceptions.BaseException).IsAssignableFrom(pt.UnderlyingSystemType)) {
+            } else if (type is PythonType pt && typeof(PythonExceptions.BaseException).IsAssignableFrom(pt.UnderlyingSystemType)) {
                 throwable = PythonExceptions.CreateThrowableForRaise(context, pt, value, (PythonExceptions.BaseException)cause);
             } else if (type is Exception) {
                 // TODO: maybe add cause?

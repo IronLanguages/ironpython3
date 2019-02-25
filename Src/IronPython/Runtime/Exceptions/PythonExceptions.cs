@@ -930,7 +930,7 @@ for k, v in toError.items():
                 pyEx = PythonCalls.Call(context, type);
             }
 
-            if (PythonOps.IsInstance(pyEx, type)) {
+            if (pyEx is BaseException) {
                 var contextException = PythonOps.GetRawContextException();
 
                 // If we have a context-exception or no context/cause return the existing, or a new exception
@@ -946,8 +946,7 @@ for k, v in toError.items():
                 }
             }
 
-            // user returned arbitrary object from overridden __new__, let it throw...
-            return new ObjectException(type, pyEx);
+            throw PythonOps.TypeError($"calling {PythonOps.ToString(type)} should have returned an instance of BaseException, not {PythonOps.ToString(DynamicHelpers.GetPythonType(pyEx))}");
         }
         
         /// <summary>
@@ -974,19 +973,10 @@ for k, v in toError.items():
         internal static object ToPython(System.Exception/*!*/ clrException) {
             Debug.Assert(clrException != null);
 
-            // certain Python exceptions (StringException, OldInstanceException, ObjectException)
-            // expose the underlying object they're wrapping directly.
-            IPythonException ipe = clrException as IPythonException;
-            if (ipe != null) {
-                return ipe.ToPythonException();
-            }
-
             object res = clrException.GetPythonException();
             if (res == null) {
-                SyntaxErrorException syntax;
-
                 // explicit extra conversions that need a special transformation
-                if ((syntax = clrException as SyntaxErrorException) != null) {
+                if (clrException is SyntaxErrorException syntax) {
                     return SyntaxErrorToPython(syntax);
                 }
 
@@ -1034,6 +1024,8 @@ for k, v in toError.items():
                 }
                 pyExcep.__init__(errorCode, win32.Message, null, errorCode);
                 return pyExcep;
+            } else if (clrException is DirectoryNotFoundException) {
+                pyExcep = new _OSError(FileNotFoundError);
             } else {
                 // conversions from generated code (in the generated hierarchy)...
                 pyExcep = ToPythonHelper(clrException);

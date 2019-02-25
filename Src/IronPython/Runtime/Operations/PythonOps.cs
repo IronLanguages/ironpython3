@@ -2180,21 +2180,14 @@ namespace IronPython.Runtime.Operations {
         public static object CheckException(CodeContext/*!*/ context, object exception, object test) {
             Debug.Assert(exception != null);
 
-            ObjectException objex;
-
-            if ((objex = exception as ObjectException) != null) {
-                if (PythonOps.IsSubClass(context, objex.Type, test)) {
-                    return objex.Instance;
-                }
-                return null;
-            } else if (test is PythonType) {
-                if (PythonOps.IsSubClass(test as PythonType, TypeCache.BaseException)) {
+            if (test is PythonType pt) {
+                if (PythonOps.IsSubClass(pt, TypeCache.BaseException)) {
                     // catching a Python exception type explicitly.
-                    if (PythonOps.IsInstance(context, exception, test)) return exception;
-                } else if (PythonOps.IsSubClass(test as PythonType, DynamicHelpers.GetPythonTypeFromType(typeof(Exception)))) {
+                    if (PythonOps.IsInstance(context, exception, pt)) return exception;
+                } else if (PythonOps.IsSubClass(pt, DynamicHelpers.GetPythonTypeFromType(typeof(Exception)))) {
                     // catching a CLR exception type explicitly.
                     Exception clrEx = PythonExceptions.ToClr(exception);
-                    if (PythonOps.IsInstance(context, clrEx, test)) return clrEx;
+                    if (PythonOps.IsInstance(context, clrEx, pt)) return clrEx;
                 } else {
                     throw PythonOps.TypeError("catching classes that do not inherit from BaseException is not allowed");
                 }

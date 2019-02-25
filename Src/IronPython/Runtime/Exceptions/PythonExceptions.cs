@@ -973,19 +973,10 @@ for k, v in toError.items():
         internal static object ToPython(System.Exception/*!*/ clrException) {
             Debug.Assert(clrException != null);
 
-            // certain Python exceptions (StringException, OldInstanceException, ObjectException)
-            // expose the underlying object they're wrapping directly.
-            IPythonException ipe = clrException as IPythonException;
-            if (ipe != null) {
-                return ipe.ToPythonException();
-            }
-
             object res = clrException.GetPythonException();
             if (res == null) {
-                SyntaxErrorException syntax;
-
                 // explicit extra conversions that need a special transformation
-                if ((syntax = clrException as SyntaxErrorException) != null) {
+                if (clrException is SyntaxErrorException syntax) {
                     return SyntaxErrorToPython(syntax);
                 }
 

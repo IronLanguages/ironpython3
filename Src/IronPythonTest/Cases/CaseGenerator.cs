@@ -3,11 +3,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
-using System.Linq;
-using System.Text;
+using System.Runtime.InteropServices;
+
+using IronPython;
 using IronPythonTest.Util;
+
 using NUnit.Framework;
-using NUnit.Framework.Api;
 
 namespace IronPythonTest.Cases {
     public class TestInfo {
@@ -99,11 +100,13 @@ namespace IronPythonTest.Cases {
             string filter = expression;
             var replacements = new Dictionary<string, string>() {
                 // variables
-                { "$(OS)", Environment.OSVersion.Platform.ToString() },
                 { "$(IS_NETCOREAPP)", IronPython.Runtime.ClrModule.IsNetCoreApp.ToString() },
                 { "$(IS_MONO)", IronPython.Runtime.ClrModule.IsMono.ToString() },
                 { "$(IS_DEBUG)", IronPython.Runtime.ClrModule.IsDebug.ToString() },
-                { "$(IS_MACOS)", IronPython.Runtime.ClrModule.IsMacOS.ToString() },
+                { "$(IS_POSIX)", (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux)).ToString() },
+                { "$(IS_OSX)", RuntimeInformation.IsOSPlatform(OSPlatform.OSX).ToString() },
+                { "$(IS_LINUX)", RuntimeInformation.IsOSPlatform(OSPlatform.Linux).ToString() },
+                { "$(IS_WINDOWS)", RuntimeInformation.IsOSPlatform(OSPlatform.Windows).ToString() },
 
                 // operators
                 { "==", "=" },

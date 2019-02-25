@@ -97,7 +97,7 @@ namespace IronPythonTest {
         #region Tests comparing with CPython results
 
         // Test 256 bytes sequence
-        public class CPythonCompareTests {
+        public class CPythonCompare256Tests {
 
             private byte[] bytes;
 
@@ -196,8 +196,128 @@ namespace IronPythonTest {
                 dotnet_decoded = Encoding.UTF7.GetChars(encoded_bytes);
                 Assert.AreEqual(chars, dotnet_decoded);
             }
+
+            // Compare UTF-16 handling with CPython results
+            [Test]
+            public void TestCompare256Utf16() {
+                Encoding penc = new PythonSurrogateEscapeEncoding(Encoding.Unicode);
+                char[] chars = penc.GetChars(bytes);
+                char[] python_chars = (new[] { 0x0100, 0x0302, 0x0504, 0x0706, 0x0908, 0x0b0a, 0x0d0c, 0x0f0e, 0x1110, 0x1312, 0x1514, 0x1716, 0x1918, 0x1b1a, 0x1d1c, 0x1f1e, 0x2120, 0x2322, 0x2524, 0x2726, 0x2928, 0x2b2a, 0x2d2c, 0x2f2e, 0x3130, 0x3332, 0x3534, 0x3736, 0x3938, 0x3b3a, 0x3d3c, 0x3f3e, 0x4140, 0x4342, 0x4544, 0x4746, 0x4948, 0x4b4a, 0x4d4c, 0x4f4e, 0x5150, 0x5352, 0x5554, 0x5756, 0x5958, 0x5b5a, 0x5d5c, 0x5f5e, 0x6160, 0x6362, 0x6564, 0x6766, 0x6968, 0x6b6a, 0x6d6c, 0x6f6e, 0x7170, 0x7372, 0x7574, 0x7776, 0x7978, 0x7b7a, 0x7d7c, 0x7f7e, 0x8180, 0x8382, 0x8584, 0x8786, 0x8988, 0x8b8a, 0x8d8c, 0x8f8e, 0x9190, 0x9392, 0x9594, 0x9796, 0x9998, 0x9b9a, 0x9d9c, 0x9f9e, 0xa1a0, 0xa3a2, 0xa5a4, 0xa7a6, 0xa9a8, 0xabaa, 0xadac, 0xafae, 0xb1b0, 0xb3b2, 0xb5b4, 0xb7b6, 0xb9b8, 0xbbba, 0xbdbc, 0xbfbe, 0xc1c0, 0xc3c2, 0xc5c4, 0xc7c6, 0xc9c8, 0xcbca, 0xcdcc, 0xcfce, 0xd1d0, 0xd3d2, 0xd5d4, 0xd7d6, 0xdcd8, 0xdcd9, 0x1069dc, 0xdcde, 0xdcdf, 0xe1e0, 0xe3e2, 0xe5e4, 0xe7e6, 0xe9e8, 0xebea, 0xedec, 0xefee, 0xf1f0, 0xf3f2, 0xf5f4, 0xf7f6, 0xf9f8, 0xfbfa, 0xfdfc, 0xfffe })
+                        .SelectMany(i => i <= 0xffff ? ((char)i).ToString() : char.ConvertFromUtf32(i)).ToArray();
+                Assert.AreEqual(python_chars, chars);
+
+                // byte[] python_bytes = ??? - CPython fails to encode the string it decoded itself; a bug in CPython?
+                byte[] bytes1 = penc.GetBytes(chars);
+                Assert.AreEqual(bytes, bytes1);
+            }
+        }
+
+        // Test sequence with surrogates
+        public class CPythonCompareSurrogateTests {
+
+            private byte[] bytes;
+
+            [SetUp]
+            public void SetUp() {
+                // In UTF-16LE: Lone high surrogate (invalid), surrogate pair: high-low (valid), lone low surrogate (invalid)
+                bytes = new byte[] { 0xd8, 0xd9, 0xda, 0xdb, 0xdc, 0xdd, 0xde, 0xdf };
+            }
+
+            [Test]
+            public void TesWithtUtf16() {
+                Encoding penc = new PythonSurrogateEscapeEncoding(Encoding.Unicode);
+                char[] chars = penc.GetChars(bytes);
+                char[] python_chars = (new[] { 0x0000dcd8, 0x0000dcd9, 0x001069dc, 0x0000dcde, 0x0000dcdf })
+                        .SelectMany(i => i <= 0xffff ? ((char)i).ToString() : char.ConvertFromUtf32(i)).ToArray();
+                Assert.AreEqual(python_chars, chars);
+
+                // byte[] python_bytes = ??? - CPython fails on encoding the string it decoded itself; a bug in CPython?
+                byte[] bytes1 = penc.GetBytes(chars);
+                Assert.AreEqual(bytes, bytes1);
+            }
+
+            [Test]
+            public void TestWithUtf32() {
+                Encoding penc = new PythonSurrogateEscapeEncoding(Encoding.UTF32);
+                char[] chars = penc.GetChars(bytes);
+                char[] python_chars = (new[] { 0x0000dcd8, 0x0000dcd9, 0x0000dcda, 0x0000dcdb, 0x0000dcdc, 0x0000dcdd, 0x0000dcde, 0x0000dcdf })
+                        .SelectMany(i => i <= 0xffff ? ((char)i).ToString() : char.ConvertFromUtf32(i)).ToArray();
+                Assert.AreEqual(python_chars, chars);
+
+                // byte[] python_bytes = ??? - CPython fails on encoding the string it decoded itself; a bug in CPython?
+                byte[] bytes1 = penc.GetBytes(chars);
+                Assert.AreEqual(bytes, bytes1);
+            }
         }
 
         #endregion
+
+        // Test block-wise decoding/encoding
+        public class BlockWiseTests {
+
+            private byte[] bytes;
+
+            [SetUp]
+            public void SetUp() {
+                // In UTF-16LE: Lone high surrogate (invalid), surrogate pair: high-low (valid), lone low surrogate (invalid)
+                bytes = new byte[] { 0xd8, 0xd9, 0xda, 0xdb, 0xdc, 0xdd, 0xde, 0xdf };
+            }
+
+            [Test]
+            public void TestBlockWiseWithtUtf16() {
+                Encoding penc = new PythonSurrogateEscapeEncoding(Encoding.Unicode);
+                BlockWiseTest(penc);
+            }
+
+            [Test]
+            public void TestBlockWiseWithUtf32() {
+                Encoding penc = new PythonSurrogateEscapeEncoding(Encoding.UTF32);
+                BlockWiseTest(penc);
+            }
+
+            [Test]
+            public void TestBlockWiseWithUtf8() {
+                // translate bytes in UTF-8 form
+                Encoding pencUtf16 = new PythonSurrogateEscapeEncoding(Encoding.Unicode);
+                Encoding pencUtf8 = new PythonSurrogateEscapeEncoding(Encoding.UTF8);
+                bytes = Encoding.Convert(pencUtf16, pencUtf8, bytes);
+                BlockWiseTest(pencUtf8);
+            }
+
+            private void BlockWiseTest(Encoding penc) { 
+                // Reference for comparisons: chars encoded in one step
+                char[] chars = penc.GetChars(bytes);
+
+                for (int splitBytesAt = 0; splitBytesAt <= bytes.Length; splitBytesAt += 1) {
+                    // From https://docs.microsoft.com/en-us/dotnet/api/system.text.decoder.getchars?view=netframework-4.5:
+                    // The application should call GetCharCount on a block of data immediately before calling GetChars on the same block,
+                    // so that any trailing bytes from the previous block are included in the calculation. 
+                    var dec = penc.GetDecoder();
+                    char[] chars1 = new char[dec.GetCharCount(bytes, 0, splitBytesAt, flush: false)];
+                    dec.GetChars(bytes, 0, splitBytesAt, chars1, 0, flush: false);
+                    char[] chars2 = new char[dec.GetCharCount(bytes, splitBytesAt, bytes.Length - splitBytesAt, flush: true)];
+                    dec.GetChars(bytes, splitBytesAt, bytes.Length - splitBytesAt, chars2, 0, flush: true);
+
+                    char[] total_chars = chars1.Concat(chars2).ToArray();
+                    Assert.AreEqual(chars, total_chars);
+
+                    for (int splitCharsAt = 1; splitCharsAt <= total_chars.Length; splitCharsAt += 1) {
+                        // From https://docs.microsoft.com/en-us/dotnet/api/system.text.encoder.getbytecount?view=netframework-4.5:
+                        // The application should call GetByteCount on a block of data immediately before calling GetBytes on the same block,
+                        // so that any trailing characters from the previous block are included in the calculation.
+
+                        var enc = penc.GetEncoder();
+                        byte[] bytes1 = new byte[enc.GetByteCount(total_chars, 0, splitCharsAt, flush: false)];
+                        enc.GetBytes(total_chars, 0, splitCharsAt, bytes1, 0, flush: false);
+                        byte[] bytes2 = new byte[enc.GetByteCount(total_chars, splitCharsAt, total_chars.Length - splitCharsAt, flush: true)];
+                        enc.GetBytes(total_chars, splitCharsAt, total_chars.Length - splitCharsAt, bytes2, 0, flush: true);
+
+                        byte[] total_bytes = bytes1.Concat(bytes2).ToArray();
+                        Assert.AreEqual(bytes, total_bytes);
+                    }
+                }
+            }
+        }
+
     }
 }

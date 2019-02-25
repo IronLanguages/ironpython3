@@ -86,7 +86,10 @@ namespace IronPython.Runtime {
             }
 
             public override int GetCharCount(byte[] bytes, int index, int count)
-                => _pass1decoder.GetCharCount(bytes, index, count);
+                => _pass1decoder.GetCharCount(bytes, index, count, flush: true);
+
+            public override int GetCharCount(byte[] bytes, int index, int count, bool flush)
+                => _pass1decoder.GetCharCount(bytes, index, count, flush);
 
             public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
                 => GetChars(bytes, byteIndex, byteCount, chars, charIndex, flush: true);
@@ -96,15 +99,14 @@ namespace IronPython.Runtime {
                 var fbuf2 = _pass2decoder?.FallbackBuffer as SurrogateEscapeDecoderFallbackBuffer;
                 int? surIdxStart = fbuf1?.LoneSurrogateCount;
 
-                int written = _pass1decoder.GetChars(bytes, byteIndex, byteCount, chars, charIndex);
+                int written = _pass1decoder.GetChars(bytes, byteIndex, byteCount, chars, charIndex, flush);
 
                 // If there were no lone surrogates, the job is done
                 if (fbuf1?.LoneSurrogateCount == surIdxStart && (fbuf2?.IsEmpty ?? true) && flush) {
-                    if (flush) Reset();
                     return written;
                 }
 
-                // Lazy creation od _pass2decoder
+                // Lazy creation of _pass2decoder
                 if (_pass2decoder == null) {
                     _pass2decoder = _parentEncoding.Pass2Encoding.GetDecoder();
                     fbuf2 = (SurrogateEscapeDecoderFallbackBuffer)_pass2decoder.FallbackBuffer;
@@ -112,15 +114,13 @@ namespace IronPython.Runtime {
 
                 // replace surrogate markers with actual surrogates
                 var chars2 = new char[written];
-                _pass2decoder.GetChars(bytes, byteIndex, byteCount, chars2, 0);
+                _pass2decoder.GetChars(bytes, byteIndex, byteCount, chars2, 0, flush);
 
                 for (int i = 0, j = charIndex; i < written; i++, j++) {
                     if (chars[j] != chars2[i]) {
                         chars[j] = fbuf2.GetLoneSurrogate();
                     }
                 }
-
-                if (flush) Reset();
 
                 return written;
             }
@@ -229,9 +229,13 @@ namespace IronPython.Runtime {
             }
 
             public override int GetByteCount(char[] chars, int index, int count, bool flush) {
-                int cnt = _pass1encoder.GetByteCount(chars, index, count, flush);
-                if (flush) Reset();
-                return cnt;
+                var fbuf1 = _pass1encoder.FallbackBuffer as SurrogateEscapeEncoderFallbackBuffer;
+
+                if (fbuf1 != null) fbuf1.ByteCountingMode = true;
+                int numBytes = _pass1encoder.GetByteCount(chars, index, count, flush);
+                if (fbuf1 != null) fbuf1.ByteCountingMode = false;
+
+                return numBytes;
             }
 
             public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex, bool flush) {
@@ -243,11 +247,10 @@ namespace IronPython.Runtime {
 
                 // If there were no lone surrogates, the job is done
                 if (fbuf1?.LoneSurrogateCount == surIdxStart && (fbuf2?.IsEmpty ?? true) && flush) {
-                    if (flush) Reset();
                     return written;
                 }
 
-                // Lazy creation od _pass2encoder
+                // Lazy creation of _pass2encoder
                 if (_pass2encoder == null) {
                     _pass2encoder = _parentEncoding.Pass2Encoding.GetEncoder();
                     fbuf2 = (SurrogateEscapeEncoderFallbackBuffer)_pass2encoder.FallbackBuffer;
@@ -269,8 +272,6 @@ namespace IronPython.Runtime {
                         j += skip;
                     }
                 }
-
-                if (flush) Reset();
 
                 return written;
             }
@@ -297,23 +298,44 @@ namespace IronPython.Runtime {
         private class SurrogateEscapeEncoderFallbackBuffer : EncoderFallbackBuffer {
             private readonly char _marker;
             private readonly Queue<byte> _escapes;
+
+            private struct ByteCounter {
+                private int _bcmCounter; // used when only counting bytes
+                private int _encCounter; // used during actual encoding
+
+                public bool ByteCountingMode { get; set; }
+
+                public int Value => ByteCountingMode ? _bcmCounter : _encCounter;
+
+                public void AddNumBytes(int numBytes) {
+                    if (ByteCountingMode) {
+                        _bcmCounter += numBytes;
+                    } else {
+                        _encCounter += numBytes;
+                    }
+                }
+
+                public void Reset() => _bcmCounter = _encCounter = 0;
+            }
+            private ByteCounter _byteCnt;
             private int _escCnt;
-            private int _byteCnt;
 
             public SurrogateEscapeEncoderFallbackBuffer(bool isPass1) {
                 _marker = isPass1 ? Pass1SurrogateMarker : Pass2SurrogateMarker;
                 _escapes = isPass1 ? null : new Queue<byte>();
             }
 
-            public override int Remaining => _byteCnt >= EncodingCharWidth ? 1 : 0;
+            public override int Remaining => _byteCnt.Value / EncodingCharWidth;
 
             public override bool Fallback(char charUnknown, int index) {
                 if ((charUnknown & ~0xff) != LoneSurrogateBase) throw new EncoderFallbackException($"Cannot encode character '{charUnknown}' at position {index}");
 
-                _escapes?.Enqueue((byte)(charUnknown & 0xff));
-                _escCnt++;
-                _byteCnt++;
-                return _byteCnt >= EncodingCharWidth;
+                if (!ByteCountingMode) {
+                    _escapes?.Enqueue((byte)(charUnknown & 0xff));
+                    _escCnt++;
+                }
+                _byteCnt.AddNumBytes(1);
+                return _byteCnt.Value >= EncodingCharWidth;
             }
 
             public override bool Fallback(char charUnknownHigh, char charUnknownLow, int index) {
@@ -322,15 +344,15 @@ namespace IronPython.Runtime {
             }
 
             public override char GetNextChar() {
-                if (_byteCnt < EncodingCharWidth) return '\0';
-                _byteCnt -= EncodingCharWidth;
+                if (_byteCnt.Value < EncodingCharWidth) return '\0';
+                _byteCnt.AddNumBytes(-EncodingCharWidth);
                 //return (char)_surrogates[_surrogates.Count - 1].ByteValue; // unfortunately, this would be encoded if used with a multibyte encoding
                 return _marker;
             }
 
             public override bool MovePrevious() {
-                if (_byteCnt > 0) return false;
-                _byteCnt += EncodingCharWidth;
+                if (_byteCnt.Value > 0) return false;
+                _byteCnt.AddNumBytes(EncodingCharWidth);
                 return true;
             }
 
@@ -345,10 +367,15 @@ namespace IronPython.Runtime {
 
             public int EncodingCharWidth { get; set; }
 
+            public bool ByteCountingMode {
+                get { return _byteCnt.ByteCountingMode; }
+                set { _byteCnt.ByteCountingMode = value; }
+            }
+
             public override void Reset() {
                 _escapes?.Clear();
                 _escCnt = 0;
-                _byteCnt = 0;
+                _byteCnt.Reset();
             }
         }
     }

@@ -67,16 +67,6 @@ namespace IronPython.Runtime {
             }
         }
 
-        private static int _isMacOS = -1;
-        public static bool IsMacOS {
-            get {
-                if (_isMacOS == -1) {
-                    _isMacOS = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 1 : 0;
-                }
-                return _isMacOS == 1;
-            }
-        }
-
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             if (!dict.ContainsKey("References")) {

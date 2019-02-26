@@ -239,12 +239,10 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static string ToString(CodeContext/*!*/ context, object o) {
-            string x = o as string;
-            PythonType dt;
-            if (x != null) return x;
-            if (o == null) return "None";
+            if (o is string x) return x;
+            if (o is null) return "None";
             if (o is double) return DoubleOps.__str__(context, (double)o);
-            if ((dt = o as PythonType) != null) return dt.__repr__(DefaultContext.Default);
+            if (o is PythonType dt) return dt.__repr__(DefaultContext.Default);
             if (o.GetType() == typeof(object).Assembly.GetType("System.__ComObject")) return ComOps.__repr__(o);
 
             object value = PythonContext.InvokeUnaryOperator(context, UnaryOperators.String, o);
@@ -1666,32 +1664,6 @@ namespace IronPython.Runtime.Operations {
             return PythonOps.Invoke(context, f, "readline");
         }
 
-        public static void WriteSoftspace(CodeContext/*!*/ context, object f) {
-            if (CheckSoftspace(f)) {
-                SetSoftspace(f, ScriptingRuntimeHelpers.False);
-                Write(context, f, " ");
-            }
-        }
-
-        public static void SetSoftspace(object f, object value) {
-            PythonOps.SetAttr(DefaultContext.Default, f, "softspace", value);
-        }
-
-        public static bool CheckSoftspace(object f) {
-            PythonFile pf = f as PythonFile;
-            if (pf != null) {
-                // avoid spinning up a site in the common case
-                return pf.softspace;
-            }
-
-            object result;
-            if (PythonOps.TryGetBoundAttr(f, "softspace", out result)) {
-                return PythonOps.IsTrue(result);
-            }
-
-            return false;
-        }
-
         // Must stay here for now because libs depend on it.
         public static void Print(CodeContext/*!*/ context, object o) {
             PrintWithDest(context, context.LanguageContext.SystemStandardOut, o);
@@ -1707,8 +1679,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static void PrintWithDestNoNewline(CodeContext/*!*/ context, object dest, object o) {
-            WriteSoftspace(context, dest);
-            Write(context, dest, o == null ? "None" : ToString(o));
+            Write(context, dest, ToString(context, o));
         }
 
         public static object ReadLineFromSrc(CodeContext/*!*/ context, object src) {
@@ -1723,11 +1694,10 @@ namespace IronPython.Runtime.Operations {
         }
 
         /// <summary>
-        /// Prints newline into specified destination. Sets softspace property to false.
+        /// Prints newline into specified destination
         /// </summary>
         public static void PrintNewlineWithDest(CodeContext/*!*/ context, object dest) {
             PythonOps.Write(context, dest, "\n");
-            PythonOps.SetSoftspace(dest, ScriptingRuntimeHelpers.False);
         }
 
         /// <summary>

@@ -326,11 +326,9 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             "Evaluate the expression in the context of globals and locals.\n" +
             "The expression can be either be a string, bytes\n" +
             "or a code object returned by compile()")]
-        public static object eval(CodeContext/*!*/ context, [NotNull]FunctionCode code, PythonDictionary globals = null, object locals = null) {
-            Debug.Assert(context != null);
-
-            return code.Call(GetExecEvalScopeOptional(context, globals, locals, copyModule: false));
-        }
+        [LightThrowing]
+        public static object eval(CodeContext/*!*/ context, [NotNull]FunctionCode code, PythonDictionary globals = null, object locals = null)
+            => code.Call(GetExecEvalScopeOptional(context, globals, locals, copyModule: false));
 
         [Documentation("")] // provided by first overload
         [LightThrowing]
@@ -340,36 +338,53 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         [LightThrowing]
         public static object eval(CodeContext/*!*/ context, [NotNull]string expression, PythonDictionary globals = null, object locals = null) {
-            Debug.Assert(context != null);
-
             if (locals != null && PythonOps.IsMappingType(context, locals) == ScriptingRuntimeHelpers.False) {
                 throw PythonOps.TypeError("locals must be mapping");
             }
 
             expression = RemoveBom(expression);
-            var scope = GetExecEvalScopeOptional(context, globals, locals, copyModule: false);
-            var pythonContext = context.LanguageContext;
 
             // TODO: remove TrimStart
-            var sourceUnit = pythonContext.CreateSnippet(expression.TrimStart(' ', '\t'), "<string>", SourceCodeKind.Expression);
+            var sourceUnit = context.LanguageContext.CreateSnippet(expression.TrimStart(' ', '\t'), "<string>", SourceCodeKind.Expression);
             var compilerOptions = GetRuntimeGeneratedCodeCompilerOptions(context, inheritContext: true, cflags: 0);
             compilerOptions.Module |= ModuleOptions.LightThrow;
             compilerOptions.Module &= ~ModuleOptions.ModuleBuiltins;
             var code = FunctionCode.FromSourceUnit(sourceUnit, compilerOptions, register: false);
 
-            return code.Call(scope);
+            return eval(context, code, globals, locals);
         }
 
         [Documentation("exec(object[, globals[, locals]])\n\n" +
-            "Read and execute code from an object, which can be a string, bytes,\n" +
-            "file or a code object.\n" +
+            "Read and execute code from an object, which can be a string, bytes or a code object.\n" +
             "The globals and locals are dictionaries providing the context.")]
-        public static void exec(CodeContext/*!*/ context, object code, PythonDictionary globals = null, object locals = null) {
-            if (globals == null && locals == null) {
-                PythonOps.UnqualifiedExec(context, code);
-            } else {
-                PythonOps.QualifiedExec(context, code, globals, locals);
+        public static void exec(CodeContext/*!*/ context, [NotNull]FunctionCode code, PythonDictionary globals = null, object locals = null) {
+            if (locals == null) locals = globals;
+            if (globals == null) globals = context.GlobalDict;
+
+            if (locals != null && PythonOps.IsMappingType(context, locals) != ScriptingRuntimeHelpers.True) {
+                throw PythonOps.TypeError($"locals must be mapping or None, not {DynamicHelpers.GetPythonType(locals).Name}");
             }
+
+            CodeContext execContext = Builtin.GetExecEvalScope(context, globals, Builtin.GetAttrLocals(context, locals), true, false);
+            if (context.LanguageContext.PythonOptions.Frames) {
+                List<FunctionStack> stack = PythonOps.PushFrame(execContext, code);
+                try {
+                    code.Call(execContext);
+                } finally {
+                    stack.RemoveAt(stack.Count - 1);
+                }
+            } else {
+                code.Call(execContext);
+            }
+        }
+
+        [Documentation("")] // provided by first overload
+        public static void exec(CodeContext/*!*/ context, [NotNull]string code, PythonDictionary globals = null, object locals = null) {
+            SourceUnit source = context.LanguageContext.CreateSourceUnit(new NoLineFeedSourceContentProvider(code), "<string>", SourceCodeKind.Statements);
+            PythonCompilerOptions compilerOptions = Builtin.GetRuntimeGeneratedCodeCompilerOptions(context, true, 0);
+            var funcCode = FunctionCode.FromSourceUnit(source, compilerOptions, false);
+
+            exec(context, funcCode, globals, locals);
         }
 
         [Documentation("")] // provided by first overload
@@ -1170,10 +1185,8 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         /// 
         /// stream -> the stream to wrap in a file object.
         /// </summary>
-        public static PythonFile open(CodeContext context, [NotNull]Stream stream) {
-            PythonFile res = new PythonFile(context);
-            res.__init__(context, stream);
-            return res;            
+        public static PythonIOModule.FileIO open(CodeContext context, [NotNull]Stream stream) {
+            return new PythonIOModule.FileIO(context, stream);
         }
 
         public static int ord(object value) {
@@ -1270,13 +1283,13 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 args = new object[1];
             }
 
-            PythonFile pf = file as PythonFile;
+            var pf = file as PythonIOModule._IOBase;
 
             for (int i = 0; i < args.Length; i++) {
                 string text = PythonOps.ToString(context, args[i]);
 
                 if (pf != null) {
-                    pf.write(text);
+                    pf.write(context, text);
                 } else {
                     pc.WriteCallSite.Target(
                         pc.WriteCallSite,
@@ -1288,7 +1301,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
                 if (i != args.Length - 1) {
                     if (pf != null) {
-                        pf.write(sep);
+                        pf.write(context, sep);
                     } else {
                         pc.WriteCallSite.Target(
                             pc.WriteCallSite,
@@ -1301,7 +1314,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
 
             if (pf != null) {
-                pf.write(end);
+                pf.write(context, end);
             } else {
                 pc.WriteCallSite.Target(
                     pc.WriteCallSite,

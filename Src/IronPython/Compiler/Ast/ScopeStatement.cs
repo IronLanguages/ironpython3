@@ -50,11 +50,6 @@ namespace IronPython.Compiler.Ast {
         /// </summary>
         internal bool ContainsExceptionHandling { get; set; }
 
-        /// <summary>
-        /// exec "code"
-        /// </summary>
-        internal bool ContainsUnqualifiedExec { get; set; }
-
         internal virtual bool IsGeneratorMethod {
             get {
                 return false;
@@ -112,7 +107,7 @@ namespace IronPython.Compiler.Ast {
         /// True if variables can be set in a late bound fashion that we don't
         /// know about at code gen time - for example via from foo import *.
         /// 
-        /// This is tracked independently of the ContainsUnqualifiedExec/NeedsLocalsDictionary
+        /// This is tracked independently of NeedsLocalsDictionary
         /// </summary>
         internal virtual bool HasLateBoundVariableSets { get; set; }
 

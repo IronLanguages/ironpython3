@@ -22,8 +22,6 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo RaiseAssertionErrorNoMessage = GetMethod((Action<CodeContext>)PythonOps.RaiseAssertionError);
         public static readonly MethodInfo Repr = GetMethod((Func<CodeContext, object, string>)PythonOps.Repr);
         public static readonly MethodInfo MakeClass = GetMethod((Func<FunctionCode, Func<CodeContext, CodeContext>, CodeContext, string, object[], string, object>)PythonOps.MakeClass);
-        public static readonly MethodInfo UnqualifiedExec = GetMethod((Action<CodeContext, object>)PythonOps.UnqualifiedExec);
-        public static readonly MethodInfo QualifiedExec = GetMethod((Action<CodeContext, object, PythonDictionary, object>)PythonOps.QualifiedExec);
         public static readonly MethodInfo PrintExpressionValue = GetMethod((Action<CodeContext, object>)PythonOps.PrintExpressionValue);
         public static readonly MethodInfo PrintWithDest = GetMethod((Action<CodeContext, object, object>)PythonOps.PrintWithDest);
         public static readonly MethodInfo Print = GetMethod((Action<CodeContext, object>)PythonOps.Print);

@@ -21,18 +21,11 @@ namespace IronPython.Runtime {
             _isErrorOutput = isErrorOutput;
         }
 
-        public object Sink {
-            get {
-                return (_isErrorOutput) ? _context.SystemStandardError : _context.SystemStandardOut;
-            }
-        }
+        public object Sink
+            => _isErrorOutput ? _context.SystemStandardError : _context.SystemStandardOut;
 
-        public override Encoding Encoding {
-            get {
-                PythonFile file = Sink as PythonFile;
-                return (file != null) ? file.Encoding : null;
-            }
-        }
+        public override Encoding Encoding
+            => (Sink is Modules.PythonIOModule._TextIOBase file && StringOps.TryGetEncoding(file.encoding, out Encoding encoding)) ? encoding : null;
 
         public override void Write(string value) {
             // the context arg is only used to get stdout if it's not passed in
@@ -54,14 +47,13 @@ namespace IronPython.Runtime {
 
         public override void Flush() {
             // avoid creating a site in the common case
-            PythonFile pf = Sink as PythonFile;
-            if (pf != null) {
-                pf.flush();
+            if (Sink is Modules.PythonIOModule._IOBase pf) {
+                pf.flush(_context.SharedContext);
                 return;
             }
 
-            if (PythonOps.HasAttr(_context.SharedContext, Sink, "flush")) {
-                PythonOps.Invoke(_context.SharedContext, Sink, "flush");
+            if (PythonOps.TryGetBoundAttr(_context.SharedContext, Sink, "flush", out object attr)) {
+                PythonCalls.Call(_context.SharedContext, attr);
             }
         }
     }

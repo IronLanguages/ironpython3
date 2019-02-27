@@ -242,16 +242,15 @@ namespace IronPython.Modules {
             try {
                 if (file == null) {
                     PythonContext pContext = context.LanguageContext;
-                    PythonFile stderr = pContext.GetSystemStateValue("stderr") as PythonFile;
-                    if (stderr != null) {
-                        stderr.write(text);
+                    if (pContext.GetSystemStateValue("stderr") is PythonIOModule._IOBase stderr) {
+                        stderr.write(context, text);
                     } else {
                         // use CLR stderr if python's is unavailable
                         Console.Error.Write(text);
                     }
                 } else {
-                    if (file is PythonFile) {
-                        ((PythonFile)file).write(text);
+                    if (file is PythonIOModule._IOBase) {
+                        ((PythonIOModule._IOBase)file).write(context, text);
                     } else if (file is TextWriter) {
                         ((TextWriter)file).Write(text);
                     } // unrecognized file type - warning is lost

@@ -18,6 +18,7 @@ using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Binding;
+using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
@@ -91,11 +92,7 @@ namespace IronPython.Modules {
                         break;
                 }
 
-                if (pc.FileManager.TryGetFileFromId(pc, fd, out PythonFile pf)) {
-                    name = (object)pf.name ?? fd;
-                    _readStream = pf._stream;
-                    _writeStream = pf._stream;
-                } else if (pc.FileManager.TryGetFileFromId(pc, fd, out FileIO file)) {
+                if (pc.FileManager.TryGetFileFromId(pc, fd, out FileIO file)) {
                     name = file.name ?? fd;
                     _readStream = file._readStream;
                     _writeStream = file._writeStream;
@@ -565,16 +562,27 @@ namespace IronPython.Modules {
             }
 
             #endregion
-            
+
             #region Private implementation details
+
+            private static Exception ToIoException(CodeContext context, string name, UnauthorizedAccessException e) {
+                Exception excp = new IOException(e.Message, e);
+                AddFilename(context, name, excp);
+                return excp;
+            }
+
+            private static void AddFilename(CodeContext context, string name, Exception ioe) {
+                var pyExcep = PythonExceptions.ToPython(ioe);
+                PythonOps.SetAttr(context, pyExcep, "filename", name);
+            }
 
             private static Stream OpenFile(CodeContext/*!*/ context, PlatformAdaptationLayer pal, string name, FileMode fileMode, FileAccess fileAccess, FileShare fileShare) {
                 try {
                     return pal.OpenInputFileStream(name, fileMode, fileAccess, fileShare);
                 } catch (UnauthorizedAccessException e) {
-                    throw PythonFile.ToIoException(context, name, e);
+                    throw ToIoException(context, name, e);
                 } catch (IOException e) {
-                    PythonFile.AddFilename(context, name, e);
+                    AddFilename(context, name, e);
                     throw;
                 }
             }

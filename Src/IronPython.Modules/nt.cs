@@ -384,10 +384,10 @@ namespace IronPython.Modules {
             }
         }
 
-        public static void lseek(CodeContext context, int filedes, long offset, int whence) {
+        public static BigInteger lseek(CodeContext context, int filedes, long offset, int whence) {
             var file = context.LanguageContext.FileManager.GetFileFromId(context.LanguageContext, filedes);
 
-            file.seek(context, offset, whence);
+            return file.seek(context, offset, whence);
         }
 
         /// <summary>

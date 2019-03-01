@@ -869,33 +869,15 @@ namespace IronPython.Runtime {
         }
 
         public Modules.PythonIOModule.FileIO GetFileFromId(PythonContext context, int id) {
-            Modules.PythonIOModule.FileIO pf;
-            if (!TryGetFileFromId(context, id, out pf)) {
-                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+            if (TryGetFileFromId(context, id, out Modules.PythonIOModule.FileIO pf)) {
+                return pf;
             }
 
-            return pf;
+            throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
         }
 
         public bool TryGetFileFromId(PythonContext context, int id, out Modules.PythonIOModule.FileIO pf) {
-            // TODO:
-            // the meaning of 0, 1 and 2 can be changed by open/close/dup
-            // stdin/out/err should be also in the dynamic mapping
-            switch (id) {
-                case 0:
-                    pf = context.GetSystemStateValue("__stdin__") as Modules.PythonIOModule.FileIO;
-                    break;
-                case 1:
-                    pf = context.GetSystemStateValue("__stdout__") as Modules.PythonIOModule.FileIO;
-                    break;
-                case 2:
-                    pf = context.GetSystemStateValue("__stderr__") as Modules.PythonIOModule.FileIO;
-                    break;
-                default:
-                    pf = mapping.GetObjectFromId(id) as Modules.PythonIOModule.FileIO;
-                    break;
-            }
-
+            pf = mapping.GetObjectFromId(id) as Modules.PythonIOModule.FileIO;
             return pf != null;
         }
 
@@ -933,13 +915,6 @@ namespace IronPython.Runtime {
         }
 
         public int GetOrAssignIdForFile(Modules.PythonIOModule.FileIO pf) {
-            // TODO: again logic fixed on 0, 1 and 2
-            for (int i = 0; i < 3; i++) {
-                if (pf == GetFileFromId(pf.context.LanguageContext, i)) {
-                    return i;
-                }
-            }
-
             int res = mapping.GetIdFromObject(pf);
             if (res == -1) {
                 // lazily created weak mapping

@@ -515,7 +515,7 @@ namespace IronPython.Modules {
                     mode2 += "b";
                 }
 
-                return context.LanguageContext.FileManager.AddToStrongMapping(new PythonIOModule.FileIO(context, fs));
+                return context.LanguageContext.FileManager.AddToStrongMapping(new PythonIOModule.FileIO(context, fs) { name = filename });
             } catch (Exception e) {
                 throw ToPythonException(e, filename);
             }

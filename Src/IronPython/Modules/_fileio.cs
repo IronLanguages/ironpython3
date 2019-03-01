@@ -45,8 +45,6 @@ namespace IronPython.Modules {
             private WeakRefTracker _tracker;
             private PythonContext _context;
             public object name;
-
-            private bool _isConsole;
             private ConsoleStreamType _consoleStreamType;
 
             internal FileIO(CodeContext/*!*/ context, Stream stream)
@@ -64,7 +62,7 @@ namespace IronPython.Modules {
 
             internal FileIO(CodeContext/*!*/ context, Stream stream, ConsoleStreamType consoleStreamType)
                 : this(context, stream) {
-                _isConsole = true;
+                IsConsole = true;
                 _consoleStreamType = consoleStreamType;
             }
 
@@ -208,6 +206,8 @@ namespace IronPython.Modules {
 
             #endregion
 
+            internal bool IsConsole { get; }
+
             #region Public API
 
             [Documentation("close() -> None.  Close the file.\n\n"
@@ -219,7 +219,12 @@ namespace IronPython.Modules {
                     return;
                 }
 
-                flush(context);
+                try {
+                    flush(context);
+                } catch (IOException) {
+                    // flushing can fail, esp. if the other half of a pipe is closed
+                    // ignore it because we're closing anyway
+                }
                 _closed = true;
 
                 if (_closefd) {
@@ -263,7 +268,9 @@ namespace IronPython.Modules {
             public override void flush(CodeContext/*!*/ context) {
                 _checkClosed();
 
-                _writeStream?.Flush();
+                if (_writeStream != null && _writeStream.CanWrite) {
+                    _writeStream.Flush();
+                }
             }
 
             [Documentation("isatty() -> bool.  True if the file is connected to a tty device.")]
@@ -274,11 +281,11 @@ namespace IronPython.Modules {
                     return isattyUnix();
                 }
 
-                return _isConsole && !isRedirected();
+                return IsConsole && !isRedirected();
 
                 // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Posix assembly on Windows.
                 bool isattyUnix() {
-                    if (_isConsole) {
+                    if (IsConsole) {
                         if (_consoleStreamType == ConsoleStreamType.Input) {
                             return Mono.Unix.Native.Syscall.isatty(0);
                         }

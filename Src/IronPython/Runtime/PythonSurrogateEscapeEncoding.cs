@@ -18,17 +18,23 @@ namespace IronPython.Runtime {
 
         private Encoding Pass1Encoding { get; }
         private Encoding Pass2Encoding { get; }
-        private int CharacterWidth { get; }
+
+        public int CharacterWidth { get; }
+        public bool IsBigEndian { get; } // meaningul only for wide-char encodings
 
         public PythonSurrogateEscapeEncoding(Encoding encoding) {
-            CharacterWidth = encoding.GetByteCount(new[] { Pass1SurrogateMarker }, index: 0, count: 1);
+            if (encoding == null) throw new ArgumentNullException(nameof(encoding));
+
+            byte[] markerBytes = encoding.GetBytes(new[] { Pass1SurrogateMarker });
+            CharacterWidth = markerBytes.Length;
+            IsBigEndian = markerBytes[0] == 0;
 
             Pass1Encoding = (Encoding)encoding.Clone();
-            Pass1Encoding.DecoderFallback = new SurrogateEscapeDecoderFallback(isPass1: true, charWidth: CharacterWidth);
+            Pass1Encoding.DecoderFallback = new SurrogateEscapeDecoderFallback(isPass1: true, CharacterWidth, IsBigEndian);
             Pass1Encoding.EncoderFallback = new SurrogateEscapeEncoderFallback(isPass1: true);
 
             Pass2Encoding = (Encoding)encoding.Clone();
-            Pass2Encoding.DecoderFallback = new SurrogateEscapeDecoderFallback(isPass1: false, charWidth: CharacterWidth);
+            Pass2Encoding.DecoderFallback = new SurrogateEscapeDecoderFallback(isPass1: false, CharacterWidth, IsBigEndian);
             Pass2Encoding.EncoderFallback = new SurrogateEscapeEncoderFallback(isPass1: false);
         }
 
@@ -134,43 +140,67 @@ namespace IronPython.Runtime {
         private class SurrogateEscapeDecoderFallback : DecoderFallback {
             private readonly bool _isPass1;
             private readonly int _charWidth;
+            private readonly bool _isBigEndian;
 
-            public SurrogateEscapeDecoderFallback(bool isPass1, int charWidth) {
+            public SurrogateEscapeDecoderFallback(bool isPass1, int charWidth, bool isBigEndian) {
                 _isPass1 = isPass1;
                 _charWidth = charWidth;
+                _isBigEndian = isBigEndian;
             }
 
             public override int MaxCharCount => _charWidth;
 
             public override DecoderFallbackBuffer CreateFallbackBuffer()
-                => new SurrogateEscapeDecoderFallbackBuffer(_isPass1);
+                => new SurrogateEscapeDecoderFallbackBuffer(_isPass1, _charWidth, _isBigEndian);
         }
 
         private class SurrogateEscapeDecoderFallbackBuffer : DecoderFallbackBuffer {
             private readonly char _marker;
             private readonly Queue<byte> _escapes;
+            private readonly int _charWidth;
+            private readonly bool _isBigEndian;
+
             private int _escCnt;
             private int _charCnt;
-            private int _charWidth;
 
-            public SurrogateEscapeDecoderFallbackBuffer(bool isPass1) {
+            public SurrogateEscapeDecoderFallbackBuffer(bool isPass1, int charWidth, bool isBigEndian) {
                 _marker = isPass1 ? Pass1SurrogateMarker : Pass2SurrogateMarker;
                 _escapes = isPass1 ? null : new Queue<byte>();
+                _charWidth = charWidth;
+                _isBigEndian = isBigEndian;
             }
 
             public override int Remaining => _charCnt;
 
             public override bool Fallback(byte[] bytesUnknown, int index) {
-                _charWidth = bytesUnknown.Length;
+
+                if (bytesUnknown.Length != _charWidth) {
+                    throw new DecoderFallbackException($"Invalid encoding bytes at position {index}", bytesUnknown, index);
+                }
+
+                // test for value below 128
+                byte[] orderedBytes = bytesUnknown;
+                if (_charWidth > 1 && _isBigEndian == BitConverter.IsLittleEndian) {
+                    // non-native endianness
+                    orderedBytes = new byte[_charWidth];
+                    for (int i = 0, j = _charWidth - 1; i < _charWidth / 2; i++, j--) {
+                        orderedBytes[j] = bytesUnknown[i];
+                    }
+                }
                 uint unknown;
                 switch (_charWidth) {
                     case 1: unknown = bytesUnknown[0]; break;
-                    case 2: unknown = BitConverter.ToUInt16(bytesUnknown, 0); break;
-                    case 4: unknown = BitConverter.ToUInt32(bytesUnknown, 0); break;
-                    default: throw new DecoderFallbackException("Invalid encoding bytes", bytesUnknown, index);
+                    case 2: unknown = BitConverter.ToUInt16(orderedBytes, 0); break;
+                    case 4: unknown = BitConverter.ToUInt32(orderedBytes, 0); break;
+                    default: throw new DecoderFallbackException($"Invalid encoding bytes at position {index}", bytesUnknown, index);
                 }
-                if (unknown < 128u)
-                    throw new DecoderFallbackException($"Character '{System.Convert.ToChar(unknown)}' at {index}: bytes below 128 cannot be smuggled (PEP 383)", bytesUnknown, index);
+                if (unknown < 128u) {
+                    throw new DecoderFallbackException(
+                        $"Character '\\x{unknown:X2}' at position {index}: values below 128 cannot be smuggled (PEP 383)",
+                        bytesUnknown,
+                        index
+                    );
+                }
 
                 if (_escapes != null) {
                     for (int i = 0; i < bytesUnknown.Length; i++) {
@@ -208,7 +238,7 @@ namespace IronPython.Runtime {
             public override void Reset() {
                 _escapes?.Clear();
                 _escCnt = 0;
-                _charWidth = _charCnt = 0;
+                _charCnt = 0;
             }
         }
 

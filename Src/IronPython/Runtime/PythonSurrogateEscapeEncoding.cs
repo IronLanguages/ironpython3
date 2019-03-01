@@ -16,11 +16,14 @@ namespace IronPython.Runtime {
         private const char Pass1SurrogateMarker = '?';
         private const char Pass2SurrogateMarker = '-';
 
+        public int CharacterWidth { get; }
+        public bool IsBigEndian { get; } // meaningul only for wide-char encodings
+
         private Encoding Pass1Encoding { get; }
         private Encoding Pass2Encoding { get; }
 
-        public int CharacterWidth { get; }
-        public bool IsBigEndian { get; } // meaningul only for wide-char encodings
+        private Decoder _residentDecoder;
+        private Encoder _residentEncoder;
 
         public PythonSurrogateEscapeEncoding(Encoding encoding) {
             if (encoding == null) throw new ArgumentNullException(nameof(encoding));
@@ -38,17 +41,33 @@ namespace IronPython.Runtime {
             Pass2Encoding.EncoderFallback = new SurrogateEscapeEncoderFallback(isPass1: false);
         }
 
-        public override int GetByteCount(char[] chars, int index, int count)
-            => GetEncoder().GetByteCount(chars, index, count, flush: true);
+        public override int GetByteCount(char[] chars, int index, int count) {
+            if (_residentEncoder == null) {
+                _residentEncoder = GetEncoder();
+            }
+            return _residentEncoder.GetByteCount(chars, index, count, flush: true);
+        }
 
-        public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
-            => GetEncoder().GetBytes(chars, charIndex, charCount, bytes, byteIndex, flush: true);
+        public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex) {
+            if (_residentEncoder == null) {
+                _residentEncoder = GetEncoder();
+            }
+            return _residentEncoder.GetBytes(chars, charIndex, charCount, bytes, byteIndex, flush: true);
+        }
 
-        public override int GetCharCount(byte[] bytes, int index, int count)
-            => GetDecoder().GetCharCount(bytes, index, count);
+        public override int GetCharCount(byte[] bytes, int index, int count) {
+            if (_residentDecoder == null) {
+                _residentDecoder = GetDecoder();
+            }
+            return _residentDecoder.GetCharCount(bytes, index, count);
+        }
 
-        public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
-            => GetDecoder().GetChars(bytes, byteIndex, byteCount, chars, charIndex, flush: true);
+        public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) {
+            if (_residentDecoder == null) {
+                _residentDecoder = GetDecoder();
+            }
+            return _residentDecoder.GetChars(bytes, byteIndex, byteCount, chars, charIndex, flush: true);
+        }
 
         public override int GetMaxByteCount(int charCount)
             => Pass1Encoding.GetMaxByteCount(charCount);

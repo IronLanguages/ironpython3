@@ -262,7 +262,7 @@ namespace IronPython.Modules {
         public static object fstat(CodeContext/*!*/ context, int fd) {
             PythonContext pythonContext = context.LanguageContext;
             if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out PythonIOModule.FileIO file) && file.name is string strName) {
-                return lstat(strName);
+                return file.IsConsole ? new stat_result(8192) : lstat(strName);
             }
             throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
         }
@@ -771,6 +771,8 @@ namespace IronPython.Modules {
             public const int n_unnamed_fields = 3;
 
             private const long nanosecondsPerSeconds = 1_000_000_000;
+
+            internal stat_result(int mode) : this(new object[10] { mode, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, null) { }
 
             internal stat_result(Mono.Unix.Native.Stat stat)
                 : this(new object[16] {(int)stat.st_mode, stat.st_ino, stat.st_dev, stat.st_nlink, stat.st_uid, stat.st_gid, stat.st_size, stat.st_atime, stat.st_mtime, stat.st_ctime,

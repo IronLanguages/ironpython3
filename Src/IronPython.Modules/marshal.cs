@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Text;
+
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
@@ -14,27 +14,19 @@ namespace IronPython.Modules {
 
         #region Public marshal APIs
 
-        public static void dump(object value, PythonFile/*!*/ file) {
-            dump(value, file, version);
-        }
-
-        public static void dump(object value, PythonFile/*!*/ file, int version) {
+        public static void dump(CodeContext/*!*/ context, object value, PythonIOModule._IOBase/*!*/ file, int version = PythonMarshal.version) {
             if (file == null) throw PythonOps.TypeError("expected file, found None");
 
-            file.write(dumps(value, version));
+            file.write(context, dumps(value, version));
         }
 
-        public static object load(PythonFile/*!*/ file) {
+        public static object load(CodeContext/*!*/ context, PythonIOModule._IOBase/*!*/ file) {
             if (file == null) throw PythonOps.TypeError("expected file, found None");
 
-            return MarshalOps.GetObject(FileEnumerator (file));
+            return MarshalOps.GetObject(FileEnumerator(context, file));
         }
 
-        public static object dumps(object value) {
-            return dumps(value, version);
-        }
-
-        public static Bytes dumps(object value, int version) {
+        public static Bytes dumps(object value, int version = PythonMarshal.version) {
             return Bytes.Make(MarshalOps.GetBytes(value, version));
         }
 
@@ -48,10 +40,13 @@ namespace IronPython.Modules {
 
         #region Implementation details
 
-        private static IEnumerator<byte> FileEnumerator(PythonFile/*!*/ file) {
+        private static IEnumerator<byte> FileEnumerator(CodeContext/*!*/ context, PythonIOModule._IOBase/*!*/ file) {
+            object bytes = file.read(context, 0);
+            if (!(bytes is Bytes)) throw PythonOps.TypeError($"file.read() returned not bytes but {Runtime.Types.DynamicHelpers.GetPythonType(bytes).Name}");
+
             for (; ; ) {
-                string data = file.read(1);
-                if (data.Length == 0) {
+                Bytes data = (Bytes)file.read(context, 1);
+                if (data.Count == 0) {
                     yield break;
                 }
 

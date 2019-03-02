@@ -1,32 +1,25 @@
-﻿/* ****************************************************************************
- *
- * Copyright (c) Microsoft Corporation. 
- *
- * This source code is subject to terms and conditions of the Microsoft Public License. A 
- * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Microsoft Public License, please send an email to 
- * ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Microsoft Public License.
- *
- * You must not remove this notice, or any other, from this software.
- *
- *
- * ***********************************************************************/
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information.
 
 #if FEATURE_NATIVE
 
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.ComponentModel;
 using System.IO;
-using System.IO.Pipes;
 using System.Numerics;
+using System.Reflection;
 using System.Runtime.InteropServices;
-using Microsoft.Win32.SafeHandles;
 
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
+
+#if FEATURE_PIPES
+using System.IO.Pipes;
+#endif
 
 [assembly: PythonModule("msvcrt", typeof(IronPython.Modules.PythonMsvcrt), PlatformsAttribute.PlatformFamily.Windows)]
 namespace IronPython.Modules {
@@ -46,6 +39,9 @@ to the operating system. On failure, this raises IOError.")]
             }
         }
 
+        private const int O_TEXT = 0x4000;
+        private const int O_BINARY = 0x8000;
+
         // python call: c2pread = msvcrt.open_osfhandle(c2pread.Detach(), 0)
         [Documentation(@"open_osfhandle(handle, flags) -> file descriptor
 
@@ -55,9 +51,45 @@ and os.O_TEXT. The returned file descriptor may be used as a parameter
 to os.fdopen() to create a file object.
 ")]
 
-        public static int open_osfhandle(CodeContext context, BigInteger os_handle, int arg1) {
+        public static int open_osfhandle(CodeContext context, BigInteger os_handle, int flags) {
+            if ((flags & O_TEXT) != 0) throw new NotImplementedException();
             FileStream stream = new FileStream(new SafeFileHandle(new IntPtr((long)os_handle), true), FileAccess.ReadWrite);
             return context.LanguageContext.FileManager.AddToStrongMapping(stream);
+        }
+
+        private static bool TryGetFileHandle(Stream stream, out object handle) {
+            if (stream is FileStream) {
+                handle = ((FileStream)stream).SafeFileHandle.DangerousGetHandle().ToPython();
+                return true;
+            }
+#if FEATURE_PIPES
+            if (stream is PipeStream) {
+                handle = ((PipeStream)stream).SafePipeHandle.DangerousGetHandle().ToPython();
+                return true;
+            }
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                handle = GetFileHandleUnix();
+                if (handle != null) return true;
+            }
+#endif
+
+            // if all else fails try reflection
+            var sfh = stream.GetType().GetField("_handle", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(stream);
+            if (sfh is SafeFileHandle) {
+                handle = ((SafeFileHandle)sfh).DangerousGetHandle().ToPython();
+                return true;
+            }
+
+            handle = null;
+            return false;
+
+            // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Posix assembly on Windows.
+            object GetFileHandleUnix() {
+                if (stream is Mono.Unix.UnixStream) {
+                    return ((Mono.Unix.UnixStream)stream).Handle;
+                }
+                return null;
+            }
         }
 
         [Documentation(@"get_osfhandle(fd) -> file handle
@@ -65,10 +97,11 @@ to os.fdopen() to create a file object.
 Return the file handle for the file descriptor fd. Raises IOError
 if fd is not recognized.")]
         public static object get_osfhandle(CodeContext context, int fd) {
-            PythonFile pfile = context.LanguageContext.FileManager.GetFileFromId(context.LanguageContext, fd);
+            // TODO: handle other FileManager types?
+            var pfile = context.LanguageContext.FileManager.GetFileFromId(context.LanguageContext, fd);
 
             object handle;
-            if (pfile.TryGetFileHandle(out handle)) return handle;
+            if (TryGetFileHandle(pfile._readStream, out handle)) return handle;
 
             return -1;
         }
@@ -79,16 +112,8 @@ Set the line-end translation mode for the file descriptor fd. To set
 it to text mode, flags should be os.O_TEXT; for binary, it should be
 os.O_BINARY.")]
         public static int setmode(CodeContext context, int fd, int flags) {
-            PythonFile pfile = context.LanguageContext.FileManager.GetFileFromId(context.LanguageContext, fd);
-            int oldMode;
-            if (flags == PythonNT.O_TEXT) {
-                oldMode = pfile.SetMode(context, true) ? PythonNT.O_TEXT : PythonNT.O_BINARY;
-            } else if (flags == PythonNT.O_BINARY) {
-                oldMode = pfile.SetMode(context, false) ? PythonNT.O_TEXT : PythonNT.O_BINARY;
-            } else {
-                throw PythonOps.ValueError("unknown mode: {0}", flags);
-            }
-            return oldMode;
+            if (flags != O_BINARY) throw new NotImplementedException();
+            return O_BINARY;
         }
 
         [Documentation(@"kbhit() -> bool

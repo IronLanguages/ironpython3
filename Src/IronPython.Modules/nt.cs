@@ -24,6 +24,10 @@ using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
+#if FEATURE_PIPES
+using System.IO.Pipes;
+#endif
+
 [assembly: PythonModule("nt", typeof(IronPython.Modules.PythonNT))]
 namespace IronPython.Modules {
     public static class PythonNT {
@@ -156,9 +160,8 @@ namespace IronPython.Modules {
         public static void close(CodeContext/*!*/ context, int fd) {
             PythonContext pythonContext = context.LanguageContext;
             PythonFileManager fileManager = pythonContext.FileManager;
-            PythonFile file;
-            if (fileManager.TryGetFileFromId(pythonContext, fd, out file)) {
-                fileManager.CloseIfLast(fd, file);
+            if (fileManager.TryGetFileFromId(pythonContext, fd, out PythonIOModule.FileIO file)) {
+                fileManager.CloseIfLast(context, fd, file);
             } else {
                 Stream stream = fileManager.GetObjectFromId(fd) as Stream;
                 if (stream == null) {
@@ -179,14 +182,11 @@ namespace IronPython.Modules {
         }
         private static bool IsValidFd(CodeContext/*!*/ context, int fd) {
             PythonContext pythonContext = context.LanguageContext;
-            PythonFile file;
-            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out file)) {
+            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out PythonIOModule.FileIO _)) {
                 return true;
             }
-            Object o;
-            if (pythonContext.FileManager.TryGetObjectFromId(pythonContext, fd, out o)) {
-                var stream = o as Stream;
-                if (stream != null) {
+            if (pythonContext.FileManager.TryGetObjectFromId(pythonContext, fd, out object o)) {
+                if (o is Stream) {
                     return true;
                 }
             }
@@ -195,8 +195,7 @@ namespace IronPython.Modules {
 
         public static int dup(CodeContext/*!*/ context, int fd) {
             PythonContext pythonContext = context.LanguageContext;
-            PythonFile file;
-            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out file)) {
+            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out PythonIOModule.FileIO file)) {
                 return pythonContext.FileManager.AddToStrongMapping(file);
             } else {
                 Stream stream = pythonContext.FileManager.GetObjectFromId(fd) as Stream;
@@ -210,7 +209,6 @@ namespace IronPython.Modules {
 
         public static int dup2(CodeContext/*!*/ context, int fd, int fd2) {
             PythonContext pythonContext = context.LanguageContext;
-            PythonFile file;
 
             if (!IsValidFd(context, fd)) {
                 throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
@@ -233,7 +231,7 @@ namespace IronPython.Modules {
                 close(context, fd2);
             }
 
-            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out file)) {
+            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out PythonIOModule.FileIO file)) {
                 return pythonContext.FileManager.AddToStrongMapping(file, fd2);
             }
             var stream = pythonContext.FileManager.GetObjectFromId(fd) as Stream;
@@ -263,27 +261,19 @@ namespace IronPython.Modules {
         [LightThrowing]
         public static object fstat(CodeContext/*!*/ context, int fd) {
             PythonContext pythonContext = context.LanguageContext;
-            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out Modules.PythonIOModule.FileIO file) && file.name is string strName) {
-                return lstat(strName);
+            if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out PythonIOModule.FileIO file) && file.name is string strName) {
+                return file.IsConsole ? new stat_result(8192) : lstat(strName);
             }
-            PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
-            return lstat(pf.name);
+            throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
         }
 
         public static void fsync(CodeContext context, int fd) {
             PythonContext pythonContext = context.LanguageContext;
-            PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
-            if (!pf.IsOutput) {
-                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
-            }
+            var pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
             try {
-                pf.FlushToDisk();
-            } catch (Exception ex) {
-                if (ex is ValueErrorException ||
-                    ex is IOException) {
-                    throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
-                }
-                throw;
+                pf.flush(context);
+            } catch (Exception ex) when (ex is ValueErrorException || ex is IOException) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
             }
         }
 
@@ -394,10 +384,10 @@ namespace IronPython.Modules {
             }
         }
 
-        public static void lseek(CodeContext context, int filedes, long offset, int whence) {
-            PythonFile file = context.LanguageContext.FileManager.GetFileFromId(context.LanguageContext, filedes);
+        public static BigInteger lseek(CodeContext context, int filedes, long offset, int whence) {
+            var file = context.LanguageContext.FileManager.GetFileFromId(context.LanguageContext, filedes);
 
-            file.seek(offset, whence);
+            return file.seek(context, offset, whence);
         }
 
         /// <summary>
@@ -525,7 +515,7 @@ namespace IronPython.Modules {
                     mode2 += "b";
                 }
 
-                return context.LanguageContext.FileManager.AddToStrongMapping(PythonFile.Create(context, fs, filename, mode2));
+                return context.LanguageContext.FileManager.AddToStrongMapping(new PythonIOModule.FileIO(context, fs) { name = filename });
             } catch (Exception e) {
                 throw ToPythonException(e, filename);
             }
@@ -547,11 +537,36 @@ namespace IronPython.Modules {
         }
 #endif
 
-#if FEATURE_PROCESS
-        public static PythonTuple pipe(CodeContext context) {
-            return PythonFile.CreatePipeAsFd(context);
+#if FEATURE_PIPES
+        private static Tuple<Stream, Stream> CreatePipeStreamsUnix() {
+            Mono.Unix.UnixPipes pipes = Mono.Unix.UnixPipes.CreatePipes();
+            return Tuple.Create<Stream, Stream>(pipes.Reading, pipes.Writing);
         }
 
+        private static Tuple<Stream, Stream> CreatePipeStreams() {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                return CreatePipeStreamsUnix();
+            } else {
+                var inPipe = new AnonymousPipeServerStream(PipeDirection.In);
+                var outPipe = new AnonymousPipeClientStream(PipeDirection.Out, inPipe.ClientSafePipeHandle);
+                return Tuple.Create<Stream, Stream>(inPipe, outPipe);
+            }
+        }
+
+        public static PythonTuple pipe(CodeContext context) {
+            var pipeStreams = CreatePipeStreams();
+
+            var inFile = new PythonIOModule.FileIO(context, pipeStreams.Item1);
+            var outFile = new PythonIOModule.FileIO(context, pipeStreams.Item2);
+
+            return PythonTuple.MakeTuple(
+                context.LanguageContext.FileManager.AddToStrongMapping(inFile),
+                context.LanguageContext.FileManager.AddToStrongMapping(outFile)
+            );
+        }
+#endif
+
+#if FEATURE_PROCESS
         public static void putenv(string varname, string value) {
             try {
                 System.Environment.SetEnvironmentVariable(varname, value);
@@ -561,15 +576,15 @@ namespace IronPython.Modules {
         }
 #endif
 
-        public static string read(CodeContext/*!*/ context, int fd, int buffersize) {
+        public static Bytes read(CodeContext/*!*/ context, int fd, int buffersize) {
             if (buffersize < 0) {
                 throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, PythonErrorNumber.EINVAL, "Invalid argument");
             }
 
             try {
                 PythonContext pythonContext = context.LanguageContext;
-                PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
-                return pf.read(buffersize);
+                var pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
+                return (Bytes)pf.read(context, buffersize);
             } catch (Exception e) {
                 throw ToPythonException(e);
             }
@@ -756,6 +771,8 @@ namespace IronPython.Modules {
             public const int n_unnamed_fields = 3;
 
             private const long nanosecondsPerSeconds = 1_000_000_000;
+
+            internal stat_result(int mode) : this(new object[10] { mode, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, null) { }
 
             internal stat_result(Mono.Unix.Native.Stat stat)
                 : this(new object[16] {(int)stat.st_mode, stat.st_ino, stat.st_dev, stat.st_nlink, stat.st_uid, stat.st_gid, stat.st_size, stat.st_atime, stat.st_mtime, stat.st_ctime,
@@ -1247,8 +1264,8 @@ namespace IronPython.Modules {
         public static int write(CodeContext/*!*/ context, int fd, [BytesConversion]IList<byte> text) {
             try {
                 PythonContext pythonContext = context.LanguageContext;
-                PythonFile pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
-                pf.write(text);
+                var pf = pythonContext.FileManager.GetFileFromId(pythonContext, fd);
+                pf.write(context, text);
                 return text.Count;
             } catch (Exception e) {
                 throw ToPythonException(e);
@@ -1528,26 +1545,6 @@ the 'status' value."),
         }
 
 #if FEATURE_PROCESS
-        [PythonType]
-        private class POpenFile : PythonFile {
-            private Process _process;
-
-            internal POpenFile(CodeContext/*!*/ context, string command, Process process, Stream stream, string mode)
-                : base(context.LanguageContext) {
-                __init__(stream, context.LanguageContext.DefaultEncoding, command, mode);
-                this._process = process;
-            }
-
-            public override object close() {
-                base.close();
-
-                if (_process.HasExited && _process.ExitCode != 0) {
-                    return _process.ExitCode;
-                }
-
-                return null;
-            }
-        }
 
         private static ProcessStartInfo GetProcessInfo(string command, bool throwException) {
             // TODO: always run through cmd.exe ?
@@ -1630,6 +1627,7 @@ the 'status' value."),
             }
             return true;
         }
+
 #endif
 
         private static Exception DirectoryExists() {

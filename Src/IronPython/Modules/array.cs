@@ -232,10 +232,10 @@ namespace IronPython.Modules {
                 extend(items);
             }
 
-            public void fromfile(PythonFile f, int n) {
+            public void fromfile(CodeContext context, PythonIOModule._IOBase f, int n) {
                 int bytesNeeded = n * itemsize;
-                string bytes = f.read(bytesNeeded);
-                if (bytes.Length < bytesNeeded) throw PythonOps.EofError("file not large enough");
+                Bytes bytes = (Bytes)f.read(context, bytesNeeded);
+                if (bytes.Count < bytesNeeded) throw PythonOps.EofError("file not large enough");
 
                 fromstring(bytes);
             }
@@ -563,8 +563,8 @@ namespace IronPython.Modules {
                 _data.SetData(index, value);
             }
 
-            public void tofile(PythonFile f) {
-                f.write(tostring());
+            public void tofile(CodeContext context, PythonIOModule._IOBase f) {
+                f.write(context, tostring());
             }
 
             public PythonList tolist() {

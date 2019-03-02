@@ -1115,6 +1115,10 @@ namespace IronPython.Runtime.Operations {
                 out dummy);
         }
 
+        public static object Invoke(CodeContext/*!*/ context, object target, string name, object arg0) {
+            return PythonCalls.Call(context, PythonOps.GetBoundAttr(context, target, name), arg0);
+        }
+
         public static object Invoke(CodeContext/*!*/ context, object target, string name, params object[] args) {
             return PythonCalls.Call(context, PythonOps.GetBoundAttr(context, target, name), args);
         }
@@ -1644,10 +1648,9 @@ namespace IronPython.Runtime.Operations {
                 throw PythonOps.RuntimeError("lost sys.stdout");
             }
 
-            PythonFile pf = f as PythonFile;
-            if (pf != null) {
+            if (f is PythonIOModule._IOBase pf) {
                 // avoid spinning up a site in the normal case
-                pf.write(text);
+                pf.write(context, text);
                 return;
             }
 

@@ -18,6 +18,7 @@ using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Binding;
+using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
@@ -44,8 +45,6 @@ namespace IronPython.Modules {
             private WeakRefTracker _tracker;
             private PythonContext _context;
             public object name;
-
-            private bool _isConsole;
             private ConsoleStreamType _consoleStreamType;
 
             internal FileIO(CodeContext/*!*/ context, Stream stream)
@@ -63,7 +62,7 @@ namespace IronPython.Modules {
 
             internal FileIO(CodeContext/*!*/ context, Stream stream, ConsoleStreamType consoleStreamType)
                 : this(context, stream) {
-                _isConsole = true;
+                IsConsole = true;
                 _consoleStreamType = consoleStreamType;
             }
 
@@ -91,11 +90,7 @@ namespace IronPython.Modules {
                         break;
                 }
 
-                if (pc.FileManager.TryGetFileFromId(pc, fd, out PythonFile pf)) {
-                    name = (object)pf.name ?? fd;
-                    _readStream = pf._stream;
-                    _writeStream = pf._stream;
-                } else if (pc.FileManager.TryGetFileFromId(pc, fd, out FileIO file)) {
+                if (pc.FileManager.TryGetFileFromId(pc, fd, out FileIO file)) {
                     name = file.name ?? fd;
                     _readStream = file._readStream;
                     _writeStream = file._writeStream;
@@ -211,6 +206,8 @@ namespace IronPython.Modules {
 
             #endregion
 
+            internal bool IsConsole { get; }
+
             #region Public API
 
             [Documentation("close() -> None.  Close the file.\n\n"
@@ -222,7 +219,12 @@ namespace IronPython.Modules {
                     return;
                 }
 
-                flush(context);
+                try {
+                    flush(context);
+                } catch (IOException) {
+                    // flushing can fail, esp. if the other half of a pipe is closed
+                    // ignore it because we're closing anyway
+                }
                 _closed = true;
 
                 if (_closefd) {
@@ -266,7 +268,9 @@ namespace IronPython.Modules {
             public override void flush(CodeContext/*!*/ context) {
                 _checkClosed();
 
-                _writeStream?.Flush();
+                if (_writeStream != null && _writeStream.CanWrite) {
+                    _writeStream.Flush();
+                }
             }
 
             [Documentation("isatty() -> bool.  True if the file is connected to a tty device.")]
@@ -277,11 +281,11 @@ namespace IronPython.Modules {
                     return isattyUnix();
                 }
 
-                return _isConsole && !isRedirected();
+                return IsConsole && !isRedirected();
 
                 // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Posix assembly on Windows.
                 bool isattyUnix() {
-                    if (_isConsole) {
+                    if (IsConsole) {
                         if (_consoleStreamType == ConsoleStreamType.Input) {
                             return Mono.Unix.Native.Syscall.isatty(0);
                         }
@@ -565,16 +569,27 @@ namespace IronPython.Modules {
             }
 
             #endregion
-            
+
             #region Private implementation details
+
+            private static Exception ToIoException(CodeContext context, string name, UnauthorizedAccessException e) {
+                Exception excp = new IOException(e.Message, e);
+                AddFilename(context, name, excp);
+                return excp;
+            }
+
+            private static void AddFilename(CodeContext context, string name, Exception ioe) {
+                var pyExcep = PythonExceptions.ToPython(ioe);
+                PythonOps.SetAttr(context, pyExcep, "filename", name);
+            }
 
             private static Stream OpenFile(CodeContext/*!*/ context, PlatformAdaptationLayer pal, string name, FileMode fileMode, FileAccess fileAccess, FileShare fileShare) {
                 try {
                     return pal.OpenInputFileStream(name, fileMode, fileAccess, fileShare);
                 } catch (UnauthorizedAccessException e) {
-                    throw PythonFile.ToIoException(context, name, e);
+                    throw ToIoException(context, name, e);
                 } catch (IOException e) {
-                    PythonFile.AddFilename(context, name, e);
+                    AddFilename(context, name, e);
                     throw;
                 }
             }

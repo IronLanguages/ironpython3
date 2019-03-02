@@ -2002,16 +2002,19 @@ namespace IronPython.Runtime
         private void SetStandardIO() {
             SharedIO io = DomainManager.SharedIO;
 
-            var stdin = PythonIOModule.CreateConsole(this, io, ConsoleStreamType.Input, "<stdin>");
-            var stdout = PythonIOModule.CreateConsole(this, io, ConsoleStreamType.Output, "<stdout>");
-            var stderr = PythonIOModule.CreateConsole(this, io, ConsoleStreamType.ErrorOutput, "<stderr>");
+            var stdin = PythonIOModule.CreateConsole(this, io, ConsoleStreamType.Input, "<stdin>", out PythonIOModule.FileIO fstdin);
+            var stdout = PythonIOModule.CreateConsole(this, io, ConsoleStreamType.Output, "<stdout>", out PythonIOModule.FileIO fstdout);
+            var stderr = PythonIOModule.CreateConsole(this, io, ConsoleStreamType.ErrorOutput, "<stderr>", out PythonIOModule.FileIO fstderr);
 
+            FileManager.AddToStrongMapping(fstdin, 0);
             SetSystemStateValue("__stdin__", stdin);
             SetSystemStateValue("stdin", stdin);
 
+            FileManager.AddToStrongMapping(fstdout, 1);
             SetSystemStateValue("__stdout__", stdout);
             SetSystemStateValue("stdout", stdout);
 
+            FileManager.AddToStrongMapping(fstderr, 2);
             SetSystemStateValue("__stderr__", stderr);
             SetSystemStateValue("stderr", stderr);
         }

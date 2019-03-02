@@ -1,5 +1,6 @@
 import io
 import os
+import re
 import sys
 import unittest
 
@@ -10,60 +11,6 @@ from .process_util import ProcessUtil
 if is_cli:
     import clr
 
-class _AssertRaisesContext(object):
-    """A context manager used to implement TestCase.assertRaises* methods."""
-
-    def __init__(self, expected, test_case, expected_regexp=None, expected_number=None, expected_message=None, expected_messages=[], partial=False):
-        self.expected = expected
-        self.failureException = test_case.failureException
-        self.expected_regexp = expected_regexp
-        self.expected_message = expected_message
-        self.expected_number = expected_number
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, tb):
-        if exc_type is None:
-            try:
-                exc_name = self.expected.__name__
-            except AttributeError:
-                exc_name = str(self.expected)
-            raise self.failureException(
-                "{0} not raised".format(exc_name))
-        if not issubclass(exc_type, self.expected):
-            # let unexpected exceptions pass through
-            return False
-        self.exception = exc_value # store for later retrieval
-        if self.expected_regexp is None:
-            return True
-
-        if expected_messages:
-            if is_cli:
-                self.expected_message = expected_messages[0]
-            else:
-                self.expected_message = expected_messages[1]
-
-        if self.expected_regexp:
-            expected_regexp = self.expected_regexp
-            if not expected_regexp.search(str(exc_value)):
-                raise self.failureException('"%s" does not match "%s"' %
-                        (expected_regexp.pattern, str(exc_value)))
-        elif self.expected_message:
-            if partial:
-                if self.expected_message in str(exc_value):
-                    raise self.failureException("'%s' does not match '%s'" %
-                            (self.expected_message, str(exc_value)))
-            else:
-                if self.expected_message != str(exc_value):
-                    raise self.failureException("'%s' does not match '%s'" %
-                            (self.expected_message, str(exc_value)))
-        elif not (self.expected_number is None):
-            if self.expected_number != exc_value.errno:
-                raise self.failureException("'%d' does not match '%d'" % 
-                            (self.expected_number, exc_value.errno))
-        return True
-
 class stderr_trapper(object):
     def __init__(self):
         self.stderr = io.StringIO()
@@ -72,12 +19,12 @@ class stderr_trapper(object):
         sys.stderr = self.stderr
         return self
     def __exit__(self, *args):
+        sys.stderr = self.oldstderr
         self.stderr.flush()
         self.stderr.seek(0)
         self.messages = self.stderr.readlines()
         self.messages = [x.rstrip() for x in self.messages]
         self.stderr.close()
-        sys.stderr = self.oldstderr
 
 class stdout_trapper(object):
     def __init__(self):
@@ -210,122 +157,11 @@ class IronPythonTestCase(unittest.TestCase, FileUtil, ProcessUtil):
 
     # assertion helpers
 
-    def assertRaisesMessage(self, expected_exception, expected_message,
-                           callable_obj=None, *args, **kwargs):
-        """Asserts that the message in a raised exception matches the expected message.
+    def assertRaisesMessage(self, expected_exception, expected_message, callable_obj=None, *args, **kwargs):
+        return self.assertRaisesRegex(expected_exception, "^" + re.escape(expected_message) + "$", callable_obj, *args, **kwargs)
 
-        Args:
-            expected_exception: Exception class expected to be raised.
-            expected_message: Expected error message
-            callable_obj: Function to be called.
-            args: Extra args.
-            kwargs: Extra kwargs.
-        """
-        context = _AssertRaisesContext(expected_exception, self, expected_message=expected_message)
-        if callable_obj is None:
-            return context
-        with context:
-            callable_obj(*args, **kwargs)
-
-    def assertRaisesMessages(self, expected_exception, ipy_expected_message, cpy_expected_message,
-                           callable_obj=None, *args, **kwargs):
-        """Asserts that the message in a raised exception matches the expected messages for IPy and CPy.
-
-        Args:
-            expected_exception: Exception class expected to be raised.
-            expected_message: Expected error message
-            callable_obj: Function to be called.
-            args: Extra args.
-            kwargs: Extra kwargs.
-        """
-        context = _AssertRaisesContext(expected_exception, self, expected_messages=[ipy_expected_message, cpy_expected_message])
-        if callable_obj is None:
-            return context
-        with context:
-            callable_obj(*args, **kwargs)
-
-    def assertRaisesPartialMessage(self, expected_exception, expected_message,
-                           callable_obj=None, *args, **kwargs):
-        """Asserts that the message in a raised exception is contained in the expected message.
-
-        Args:
-            expected_exception: Exception class expected to be raised.
-            expected_message: Expected error message
-            callable_obj: Function to be called.
-            args: Extra args.
-            kwargs: Extra kwargs.
-        """
-        context = _AssertRaisesContext(expected_exception, self, expected_message=expected_message, partial=True)
-        if callable_obj is None:
-            return context
-        with context:
-            callable_obj(*args, **kwargs)
-
-    def assertRaisesNumber(self, expected_exception, expected_number, 
-                        callable_obj=None, *args, **kwargs):
-        """Asserts that the message in a raised exception is contained in the expected message.
-
-        Args:
-            expected_exception: Exception class expected to be raised.
-            expected_message: Expected error message
-            callable_obj: Function to be called.
-            args: Extra args.
-            kwargs: Extra kwargs.
-        """
-        context = _AssertRaisesContext(expected_exception, self, expected_number=expected_number)
-        if callable_obj is None:
-            return context
-        with context:
-            callable_obj(*args, **kwargs)
-
-    def assertArrayEqual(self,a,b):
-        self.assertEqual(a.Length, b.Length)
-        for x in range(a.Length):
-            self.assertEqual(a[x], b[x])
-
-    def assertUnreachable(self, msg=None):
-        if msg: self.fail("Unreachable code reached: " + msg)
-        else: self.fail("Unreachable code reached")
-
-    def assertWarns(self, warning, callable, *args, **kwds):
-        import warnings
-        with warnings.catch_warnings(record=True) as warning_list:
-            warnings.simplefilter('always')
-            result = callable(*args, **kwds)
-            self.assertTrue(any(item.category == warning for item in warning_list))
-
-    def assertWarnsPartialMessage(self, warning, msg, callable, *args, **kwds):
-        import warnings
-        with warnings.catch_warnings(record=True) as warning_list:
-            warnings.simplefilter('always')
-            result = callable(*args, **kwds)
-            self.assertEqual(len(warning_list), 1)
-            self.assertTrue(any(item.category == warning for item in warning_list))
-            self.assertIn(msg, str(warning_list[0].message))
-
-    def assertNotWarns(self, warning, callable, *args, **kwds):
-        import warnings
-        with warnings.catch_warnings(record=True) as warning_list:
-            warnings.simplefilter('always')
-            result = callable(*args, **kwds)
-            self.assertFalse(any(item.category == warning for item in warning_list))
-
-    def assertDocEqual(self, received, expected):
-        expected = expected.split(newline)
-        received = received.split(newline)
-        for x in received:
-            if not x in expected:
-                self.fail('Extra doc string: ' + x)
-            index = expected.index(x)
-            del expected[index]
-        
-        if expected: self.fail('Missing doc strings: ' + expected.join(', '))
-
-    def assertInAndNot(self, test_list, in_list, not_in_list):
-        for x in in_list:
-            self.assertIn(x, test_list)
-        for x in not_in_list:
-            self.assertNotIn(x, test_list)
+    def assertRaisesPartialMessage(self, expected_exception, expected_message, callable_obj=None, *args, **kwargs):
+        return self.assertRaisesRegex(expected_exception, re.escape(expected_message), callable_obj, *args, **kwargs)
 
     # environment variables
     def get_environ_variable(self, key):

@@ -5,7 +5,7 @@
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, run_test
+from iptest import IronPythonTestCase, is_cli, run_test
 
 class It:
     x = 0
@@ -83,8 +83,10 @@ class IteratorTest(IronPythonTestCase):
         y += Indexer()
         self.assertTrue(y == ['1', 1, 2, 3, 4, 5, 6, 7, 8, 9, 0])
 
-        self.assertRaisesMessages(TypeError, "iter() takes at least 1 argument (0 given)",
-                                        "iter expected at least 1 arguments, got 0", iter)
+        if is_cli:
+            self.assertRaisesMessage(TypeError, "iter() takes at least 1 argument (0 given)", iter)
+        else:
+            self.assertRaisesMessage(TypeError, "iter expected at least 1 arguments, got 0", iter)
 
     def test_itertools_same_value(self):
         x = iter(range(4))

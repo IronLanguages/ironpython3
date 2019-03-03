@@ -20,9 +20,9 @@ class ArrayTest(IronPythonTestCase):
         # 1-dimension array
         array1 = System.Array.CreateInstance(int, 2)
         for i in range(2): array1[i] = i * 10
-        
+
         self.assertRaises(IndexError, lambda: array1[2])
-            
+
         array2 = System.Array.CreateInstance(int, 4)
         for i in range(2, 6): array2[i - 2] = i * 10
 
@@ -60,19 +60,19 @@ class ArrayTest(IronPythonTestCase):
             lambda a, b : System.Array.__add__(a, b),
             lambda a, b : a + b
             ) :
-            
+
             temp = System.Array.__add__(array1, array2)
             result = f(array1, array2)
-            
+
             for i in range(6): self.assertEqual(i * 10, result[i])
             self.assertEqual(repr(result), "Array[int]((0, 10, 20, 30, 40, 50))")
-            
+
             result = f(array1, array3)
             self.assertEqual(len(result), 2 + 3)
             self.assertEqual([x for x in result], [0, 10, 2.1, 3.14, 0.14])
-            
+
             self.assertRaises(NotImplementedError, f, array1, array4)
-            
+
         for f in [
             lambda a, x: System.Array.__mul__(a, x),
             lambda a, x: array1 * x
@@ -87,7 +87,7 @@ class ArrayTest(IronPythonTestCase):
     def test_slice(self):
         array1 = System.Array.CreateInstance(int, 20)
         for i in range(20): array1[i] = i * i
-        
+
         # positive
         array1[::2] = [x * 2 for x in range(10)]
 
@@ -115,17 +115,19 @@ class ArrayTest(IronPythonTestCase):
     def test_nonzero_lowerbound(self):
         a = System.Array.CreateInstance(int, (5,), (5,))
         for i in range(5): a[i] = i
-        
-        self.assertArrayEqual(a[:2], System.Array[int]((0,1)))
-        self.assertArrayEqual(a[2:], System.Array[int]((2,3,4)))
-        self.assertArrayEqual(a[2:4], System.Array[int]((2,3)))
+
+        self.assertEqual(a[:2], System.Array[int]((0,1)))
+        self.assertEqual(a[2:], System.Array[int]((2,3,4)))
+        self.assertEqual(a[2:4], System.Array[int]((2,3)))
         self.assertEqual(a[-1], 4)
 
         self.assertEqual(repr(a), 'Array[int]((0, 1, 2, 3, 4))')
 
         a = System.Array.CreateInstance(int, (5,), (15,))
         b = System.Array.CreateInstance(int, (5,), (20,))
-        self.assertArrayEqual(a,b)
+        self.assertEqual(a.Length, b.Length)
+        for i in range(a.Length):
+            self.assertEqual(a[i], b[i])
 
         ## 5-dimension
         a = System.Array.CreateInstance(int, (2,2,2,2,2), (1,2,3,4,5))
@@ -134,14 +136,14 @@ class ArrayTest(IronPythonTestCase):
         for i in range(5):
             index = [0,0,0,0,0]
             index[i] = 1
-            
+
             a[index[0], index[1], index[2], index[3], index[4]] = i
             self.assertEqual(a[index[0], index[1], index[2], index[3], index[4]], i)
-            
+
         for i in range(5):
             index = [0,0,0,0,0]
             index[i] = 0
-            
+
             a[index[0], index[1], index[2], index[3], index[4]] = i
             self.assertEqual(a[index[0], index[1], index[2], index[3], index[4]], i)
 
@@ -159,28 +161,28 @@ class ArrayTest(IronPythonTestCase):
 
     @unittest.skipUnless(is_cli, 'IronPython specific test')
     def test_array_type(self):
-        
+
         def type_helper(array_type, instance):
             #create the array type
             AT = System.Array[array_type]
-            
+
             a0 = AT([])
             a1 = AT([instance])
             a2 = AT([instance, instance])
-                    
+
             a_normal = System.Array.CreateInstance(array_type, 3)
             self.assertTrue(str(AT)==str(type(a_normal)))
             for i in range(3):
                 a_normal[i] = instance
                 self.assertTrue(str(AT)==str(type(a_normal)))
-    
+
             a_multi  = System.Array.CreateInstance(array_type, 2, 3)
             self.assertTrue(str(AT)==str(type(a_multi)))
             for i in range(2):
                 for j in range(3):
                     self.assertTrue(str(AT)==str(type(a_multi)))
                     a_multi[i, j]=instance
-                    
+
             self.assertTrue(str(AT)==str(type(a0)))
             self.assertTrue(str(AT)==str(type(a0[0:])))
             self.assertTrue(str(AT)==str(type(a0[:0])))
@@ -197,7 +199,7 @@ class ArrayTest(IronPythonTestCase):
             def silly(): a_multi[0:][1:0]
             self.assertRaises(NotImplementedError, silly)
             self.assertTrue(str(AT)==str(type((a0+a1)[:0])))
-                
+
         type_helper(int, 0)
         type_helper(int, 1)
         type_helper(int, 100)

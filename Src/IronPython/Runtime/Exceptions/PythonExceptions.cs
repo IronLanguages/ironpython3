@@ -140,7 +140,7 @@ namespace IronPython.Runtime.Exceptions {
             /// <summary>
             /// Gets or sets the arguments used for creating the exception
             /// </summary>
-            public object/*!*/ args {
+            public PythonTuple/*!*/ args {
                 get {
                     return _args ?? PythonTuple.EMPTY;
                 }
@@ -788,6 +788,19 @@ for k, v in toError.items():
                     }
                 }
                 return errno;
+            }
+
+            public override string ToString() {
+                // TODO: this should probably be based on args length
+                if (errno != null && strerror != null) {
+                    if (filename != null) {
+                        return string.Format("[Errno {0}] {1}: {2}", errno, strerror, filename);
+                    } else {
+                        return string.Format("[Errno {0}] {1}", errno, strerror);
+                    }
+                }
+
+                return base.ToString();
             }
         }
 

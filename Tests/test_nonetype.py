@@ -13,6 +13,6 @@ class NoneTypeTest(IronPythonTestCase):
         self.assertEqual(str(None), None.__str__())
         self.assertEqual(repr(None), None.__repr__())
         None.__init__('abc')
-        self.assertRaisesMessage(TypeError, 'NoneType', lambda : None())
+        self.assertRaisesMessage(TypeError, 'NoneType is not callable', lambda : None())
     
 run_test(__name__)

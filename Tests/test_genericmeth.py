@@ -14,6 +14,17 @@ class GenericMethTest(IronPythonTestCase):
 
         self.load_iron_python_test()
 
+    def assertDocEqual(self, received, expected):
+        expected = expected.split(os.linesep)
+        received = received.split(os.linesep)
+        for x in received:
+            if not x in expected:
+                self.fail('Extra doc string: ' + x)
+            index = expected.index(x)
+            del expected[index]
+
+        if expected: self.fail('Missing doc strings: ' + expected.join(', '))
+
     def test_generic_method_binding(self):
         from IronPythonTest import GenMeth
 

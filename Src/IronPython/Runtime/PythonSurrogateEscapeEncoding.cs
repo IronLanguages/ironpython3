@@ -180,6 +180,7 @@ namespace IronPython.Runtime {
             private readonly bool _isBigEndian;
 
             private int _escCnt;
+            private int _charNum;
             private int _charCnt;
 
             public SurrogateEscapeDecoderFallbackBuffer(bool isPass1, int charWidth, bool isBigEndian) {
@@ -192,54 +193,44 @@ namespace IronPython.Runtime {
             public override int Remaining => _charCnt;
 
             public override bool Fallback(byte[] bytesUnknown, int index) {
-
-                if (bytesUnknown.Length != _charWidth) {
-                    throw new DecoderFallbackException($"Invalid encoding bytes at position {index}", bytesUnknown, index);
-                }
+                _charNum = bytesUnknown.Length;
 
                 // test for value below 128
-                byte[] orderedBytes = bytesUnknown;
-                if (_charWidth > 1 && _isBigEndian == BitConverter.IsLittleEndian) {
-                    // non-native endianness
-                    orderedBytes = new byte[_charWidth];
-                    for (int i = 0, j = _charWidth - 1; i < _charWidth / 2; i++, j--) {
-                        orderedBytes[j] = bytesUnknown[i];
+                if (_charWidth == 1) {
+                    for (int i = 0; i < _charNum; i++) {
+                        if (bytesUnknown[i] < 128u) {
+                            throw new DecoderFallbackException(
+                                $"Character '\\x{bytesUnknown[i]:X2}' at position {index+i}: values below 128 cannot be smuggled (PEP 383)",
+                                bytesUnknown,
+                                index
+                            );
+                        }
                     }
                 }
-                uint unknown;
-                switch (_charWidth) {
-                    case 1: unknown = bytesUnknown[0]; break;
-                    case 2: unknown = BitConverter.ToUInt16(orderedBytes, 0); break;
-                    case 4: unknown = BitConverter.ToUInt32(orderedBytes, 0); break;
-                    default: throw new DecoderFallbackException($"Invalid encoding bytes at position {index}", bytesUnknown, index);
-                }
-                if (unknown < 128u) {
-                    throw new DecoderFallbackException(
-                        $"Character '\\x{unknown:X2}' at position {index}: values below 128 cannot be smuggled (PEP 383)",
-                        bytesUnknown,
-                        index
-                    );
-                }
+                // no test for "else" case because all supported wide char encodings (UTF-16LE, UTF-16BE, UTF-32LE, UTF-32BE)
+                // will never fall back for values under 128
 
                 if (_escapes != null) {
-                    for (int i = 0; i < bytesUnknown.Length; i++) {
+                    for (int i = 0; i < _charNum; i++) {
                         _escapes.Enqueue(bytesUnknown[i]);
                     }
                 }
-                _escCnt += _charWidth;
-                _charCnt = _charWidth;
+                _escCnt += _charNum;
+                _charCnt = _charNum;
 
                 return true;
             }
 
             public override char GetNextChar() {
-                if (_charCnt <= 0) return '\0';
+                if (_charCnt <= 0) return char.MinValue;
+
                 _charCnt--;
                 return _marker; // unfortunately, returning the actual lone surrogate here would result in an exception
             }
 
             public override bool MovePrevious() {
-                if (_charCnt >= _charWidth) return false;
+                if (_charCnt >= _charNum) return false;
+
                 _charCnt++;
                 return true;
             }
@@ -257,7 +248,7 @@ namespace IronPython.Runtime {
             public override void Reset() {
                 _escapes?.Clear();
                 _escCnt = 0;
-                _charCnt = 0;
+                _charNum = _charCnt = 0;
             }
         }
 
@@ -393,7 +384,8 @@ namespace IronPython.Runtime {
             }
 
             public override char GetNextChar() {
-                if (_byteCnt.Value < EncodingCharWidth) return '\0';
+                if (_byteCnt.Value < EncodingCharWidth) return char.MinValue;
+
                 _byteCnt.AddNumBytes(-EncodingCharWidth);
                 //return (char)_surrogates[_surrogates.Count - 1].ByteValue; // unfortunately, this would be encoded if used with a multibyte encoding
                 return _marker;
@@ -401,6 +393,7 @@ namespace IronPython.Runtime {
 
             public override bool MovePrevious() {
                 if (_byteCnt.Value > 0) return false;
+
                 _byteCnt.AddNumBytes(EncodingCharWidth);
                 return true;
             }

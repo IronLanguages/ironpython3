@@ -42,7 +42,7 @@ namespace IronPythonTest {
             [SetUp]
             public void SetUp() {
                 // 12 bytes, rounded to multiply of 4 for the sake of UTF-32 test
-                _bytes = "\xd0\x9f\xd0\xb8\xd1\x82\xd0\xbe\xd0\xbd!!".Select(c => (byte)c).ToArray();
+                _bytes = "\xd0\x9f\xd0\xb8\xd1\x82\xd0\xbe\xd0\xbd!!".AsBytes();
             }
 
             [Test] public void TestValidUtf8WithAscii() => TestRoundTrip(Encoding.ASCII, _bytes);
@@ -64,7 +64,7 @@ namespace IronPythonTest {
                 // 12 bytes: two valid UTF-8 2-byte chars, one non-decodable byte, 
                 // one UTF-8 2-byte char with a non-decodable byte inserted in between the UTF-8 bytes
                 // and final valid UTF-8 2-byte char
-                _bytes = "\xd0\x9f\xd0\xb8\x80\xd1\x20\x82\xd0\xbe\xd0\xbd".Select(c => (byte)c).ToArray();
+                _bytes = "\xd0\x9f\xd0\xb8\x80\xd1\x20\x82\xd0\xbe\xd0\xbd".AsBytes();
             }
 
             [Test] public void TestBrokenUtf8WithAscii() => TestRoundTrip(Encoding.ASCII, _bytes);
@@ -323,6 +323,7 @@ namespace IronPythonTest {
 
             private byte[] _bytes1, _bytes2;
 
+            // U+0A00 is an unassigned character, U+000A is LF
             [SetUp]
             public void SetUp() {
                 _bytes1 = new byte[] { 0x0a, 0x00, 0x00, 0x00 };
@@ -332,30 +333,134 @@ namespace IronPythonTest {
             [Test]
             public void TestEndiannessWithtUtf16LE() {
                 Encoding penc = new PythonSurrogateEscapeEncoding(Encoding.Unicode);
-                Assert.DoesNotThrow(delegate { penc.GetChars(_bytes1); });
-                Assert.DoesNotThrow(delegate { penc.GetChars(_bytes2); });
+                Assert.AreEqual("\u000a\u0000", penc.GetChars(_bytes1));
+                Assert.AreEqual("\u0000\u0a00", penc.GetChars(_bytes2));
             }
 
             [Test]
             public void TestEndiannessWithtUtf16BE() {
                 Encoding penc = new PythonSurrogateEscapeEncoding(Encoding.BigEndianUnicode);
-                Assert.DoesNotThrow(delegate { penc.GetChars(_bytes1); });
-                Assert.DoesNotThrow(delegate { penc.GetChars(_bytes2); });
+                Assert.AreEqual("\u0a00\u0000", penc.GetChars(_bytes1));
+                Assert.AreEqual("\u0000\u000a", penc.GetChars(_bytes2));
             }
 
             [Test]
             public void TestEndiannessWithtUtf32LE() {
                 Encoding penc = new PythonSurrogateEscapeEncoding(new UTF32Encoding(bigEndian: false, byteOrderMark: false));
-                Assert.DoesNotThrow(delegate { penc.GetChars(_bytes1); });
-                Assert.DoesNotThrow(delegate { penc.GetChars(_bytes2); });
+                Assert.AreEqual("\u000a", penc.GetChars(_bytes1));
+                Assert.AreEqual("\udc00\udc00\udc00\udc0a", penc.GetChars(_bytes2));
             }
 
             [Test]
             public void TestEndiannessWithtUtf32BE() {
                 Encoding penc = new PythonSurrogateEscapeEncoding(new UTF32Encoding(bigEndian: true, byteOrderMark: false));
-                Assert.DoesNotThrow(delegate { penc.GetChars(_bytes1); });
-                Assert.DoesNotThrow(delegate { penc.GetChars(_bytes2); });
+                Assert.AreEqual("\udc0a\udc00\udc00\udc00", penc.GetChars(_bytes1));
+                Assert.AreEqual("\u000a", penc.GetChars(_bytes2));
             }
         }
+
+        // Tests equivalent to selected CPython tests from the standard library
+        // These tests can be deleted here once the corresponding CPython tests are included in the test coverage
+        public class CPythonStdLib {
+
+            // Tests from test_codecs module
+            public class test_codecs {
+
+                // Tests from SurrogateEscapeTest test case
+                public class SurrogateEscapeTest {
+                    /*
+                    def test_utf8(self):
+                        # Bad byte
+                        self.assertEqual(b"foo\x80bar".decode("utf-8", "surrogateescape"),
+                                         "foo\udc80bar")
+                        self.assertEqual("foo\udc80bar".encode("utf-8", "surrogateescape"),
+                                         b"foo\x80bar")
+                        # bad-utf-8 encoded surrogate
+                        self.assertEqual(b"\xed\xb0\x80".decode("utf-8", "surrogateescape"),
+                                         "\udced\udcb0\udc80")
+                        self.assertEqual("\udced\udcb0\udc80".encode("utf-8", "surrogateescape"),
+                                         b"\xed\xb0\x80")
+                    */
+                    [Test]
+                    public void test_utf8() {
+                        Encoding penc = new PythonSurrogateEscapeEncoding(Encoding.UTF8);
+                        // Bad byte
+                        Assert.AreEqual("foo\udc80bar",
+                            penc.GetChars("foo\u0080bar".AsBytes()));
+                        Assert.AreEqual("foo\u0080bar".AsBytes(),
+                            penc.GetBytes("foo\udc80bar"));
+                        // bad-utf-8 encoded surogate
+                        Assert.AreEqual("\udced\udcb0\udc80",
+                            penc.GetChars("\xed\xb0\x80".AsBytes()));
+                        Assert.AreEqual("\xed\xb0\x80".AsBytes(),
+                            penc.GetBytes("\udced\udcb0\udc80"));
+                    }
+
+                    /*
+                    def test_ascii(self):
+                        # bad byte
+                        self.assertEqual(b"foo\x80bar".decode("ascii", "surrogateescape"),
+                                         "foo\udc80bar")
+                        self.assertEqual("foo\udc80bar".encode("ascii", "surrogateescape"),
+                                         b"foo\x80bar")
+                    */
+                    [Test]
+                    public void test_ascii() {
+                        Encoding penc = new PythonSurrogateEscapeEncoding(Encoding.ASCII);
+                        // Bad byte
+                        Assert.AreEqual("foo\udc80bar",
+                            penc.GetChars("foo\u0080bar".AsBytes()));
+                        Assert.AreEqual("foo\u0080bar".AsBytes(),
+                            penc.GetBytes("foo\udc80bar"));
+                    }
+
+                    /*
+                    def test_charmap(self):
+                        # bad byte: \xa5 is unmapped in iso-8859-3
+                        self.assertEqual(b"foo\xa5bar".decode("iso-8859-3", "surrogateescape"),
+                                         "foo\udca5bar")
+                        self.assertEqual("foo\udca5bar".encode("iso-8859-3", "surrogateescape"),
+                                         b"foo\xa5bar")
+                    */
+                    /* 
+                    [Test]
+                    public void test_charmap() {
+                        // bad byte: \xa5 is unmapped in iso-8859-3
+                        // However, .NET maps this byte to U+F7F5 (private use character)
+                        // so no escaping is trigered
+                        Encoding penc = new PythonSurrogateEscapeEncoding(Encoding.GetEncoding("iso-8859-3"));
+                        Assert.AreEqual("foo\udca5bar",
+                            penc.GetChars("foo\u00a5bar".AsBytes()));
+                    }
+                    */
+
+                    /*
+                    def test_latin1(self):
+                        # Issue6373
+                        self.assertEqual("\udce4\udceb\udcef\udcf6\udcfc".encode("latin-1", "surrogateescape"),
+                                         b"\xe4\xeb\xef\xf6\xfc")
+
+                     */
+                    [Test]
+                     public void test_latin1() {
+                        // Issue6373
+                        Encoding penc = new PythonSurrogateEscapeEncoding(Encoding.GetEncoding("iso-8859-1"));
+                        Assert.AreEqual("\xe4\xeb\xef\xf6\xfc".AsBytes(),
+                            penc.GetBytes("\udce4\udceb\udcef\udcf6\udcfc"));
+                    }
+                }
+
+            }
+        }
+
     }
+
+
+    #region Helper methods
+
+    public static class Helpers {
+        public static byte[] AsBytes(this string s) => s.Select(c => (byte)c).ToArray();
+    }
+
+    #endregion
 }

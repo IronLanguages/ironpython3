@@ -305,7 +305,7 @@ class FunctionTest(IronPythonTestCase):
         # an OpsExtensibleType and doesn't define __str__ on this
         # overload
 
-        self.assertEqual(System.Double.ToString(1.0, 'f'), '1.00')
+        self.assertEqual(System.Double.ToString(1.0, 'f', System.Globalization.CultureInfo.InvariantCulture), '1.00')
 
     def test_incorrect_number_of_args(self):
         """Incorrect number of arguments"""

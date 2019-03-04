@@ -7,7 +7,6 @@ import warnings
 
 from iptest import IronPythonTestCase, run_test, skipUnlessIronPython
 
-
 @skipUnlessIronPython()
 class InstanceFieldsTest(IronPythonTestCase):
     def setUp(self):
@@ -183,7 +182,7 @@ class InstanceFieldsTest(IronPythonTestCase):
         funcs = [ eval("f%s" % i) for i in range(1, 25) ]
         if clr.GetClrType(t).IsValueType:
             for f in funcs:
-                self.assertWarnsPartialMessage(RuntimeWarning, 'may result in updating a copy', f)
+                self.assertWarns(RuntimeWarning, 'may result in updating a copy', f)
         else: 
             for f in funcs: f()
             self._test_verify(o)
@@ -239,7 +238,7 @@ class InstanceFieldsTest(IronPythonTestCase):
         funcs = [ eval("f%s" % i) for i in range(1, 25) ]
         if clr.GetClrType(t).IsValueType:
             for f in funcs:
-                self.assertWarnsPartialMessage(RuntimeWarning, 'may result in updating a copy', f)
+                self.assertWarns(RuntimeWarning, 'may result in updating a copy', f)
         else: 
             for f in funcs: f()
             self._test_verify(o)
@@ -471,7 +470,7 @@ class InstanceFieldsTest(IronPythonTestCase):
         def tryUpdate():
             o.InstanceTField="abc"
         
-        self.assertWarnsPartialMessage(RuntimeWarning, 'may result in updating a copy', tryUpdate)
+        self.assertWarns(RuntimeWarning, 'may result in updating a copy', tryUpdate)
         
         current_type = GenericClass2[int]
         o = current_type()
@@ -513,4 +512,3 @@ class InstanceFieldsTest(IronPythonTestCase):
             self._test_delete_by_type(current_type)    
 
 run_test(__name__)
-

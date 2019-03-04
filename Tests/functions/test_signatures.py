@@ -17,41 +17,41 @@ def gen_major_cases():
 
     for num_params in xrange(0, NUM_PARAMS):
         for num_kwparams in xrange(0, NUM_KWPARAMS):
-            print NICE_SPACE, "#--%d params with %d keyword params--#" % (num_params, num_kwparams)
-            print NICE_SPACE, "def f%dParams%dKwparams(self, " % (num_params, num_kwparams),
-            for i in xrange(0, num_params):
+            print(NICE_SPACE, "#--%d params with %d keyword params--#" % (num_params, num_kwparams))
+            print(NICE_SPACE, "def f%dParams%dKwparams(self, " % (num_params, num_kwparams), end='')
+            for i in range(0, num_params):
                 if i==num_params-1 and num_kwparams==0:
-                    print "p%d" % (i+1),
+                    print("p%d" % (i+1), end='')
                 else:
-                    print "p%d," % (i+1),
-            for i in xrange(0, num_kwparams):
+                    print("p%d," % (i+1), end='')
+            for i in range(0, num_kwparams):
                 if i!=num_kwparams-1:
-                    print "kw%d=%d," % (i+1, i+1),
+                    print("kw%d=%d," % (i+1, i+1), end='')
                 else:
-                    print "kw%d=%d" % (i+1, i+1),
-            print "):"
+                    print("kw%d=%d" % (i+1, i+1), end='')
+            print("):")
             if num_params==0:
-                print NICE_SPACE, "    ret_valP = ()"
+                print(NICE_SPACE, "    ret_valP = ()")
             else:
-                print NICE_SPACE, "    ret_valP = (",
-                for i in xrange(0, num_params):
-                    print "p%d" % (i+1),
-                    print ",",
+                print(NICE_SPACE, "    ret_valP = (", end='')
+                for i in range(0, num_params):
+                    print("p%d" % (i+1), end='')
+                    print(",", end='')
                     if i==num_params-1:
-                        print ")"
+                        print(")")
 
             if num_kwparams==0:
-                print NICE_SPACE, "    ret_valKW = ()"
+                print(NICE_SPACE, "    ret_valKW = ()")
             else:
-                print NICE_SPACE, "    ret_valKW = (",
-                for i in xrange(0, num_kwparams):
-                    print "kw%d" % (i+1),
-                    print ",",
+                print(NICE_SPACE, "    ret_valKW = (", end='')
+                for i in range(0, num_kwparams):
+                    print("kw%d" % (i+1), end='')
+                    print(",", end='')
                     if i==num_kwparams-1:
-                        print ")"
+                        print(")")
 
-            print NICE_SPACE, "    return ret_valP, ret_valKW"
-            print ""
+            print(NICE_SPACE, "    return ret_valP, ret_valKW")
+            print("")
 
             params = str(range(1, num_params+1))[1:-1]
             params_expected = params
@@ -61,24 +61,22 @@ def gen_major_cases():
             kwparams_expected = str(range(1, num_kwparams+1))[1:-1]
             if num_kwparams==1:
                 kwparams_expected += ","
-            print NICE_SPACE, "self.assertEqual(f%dParams%dKwparams(%s" % (num_params, num_kwparams, params), "),"
-            print NICE_SPACE, "         ((%s), " % params_expected, "(%s))" % kwparams_expected, ")"
-            print NICE_SPACE, ""
+            print(NICE_SPACE, "self.assertEqual(f%dParams%dKwparams(%s" % (num_params, num_kwparams, params), "),")
+            print(NICE_SPACE, "         ((%s), " % params_expected, "(%s))" % kwparams_expected, ")")
+            print(NICE_SPACE, "")
 
-            for i in xrange(0, num_kwparams):
+            for i in range(0, num_kwparams):
                 kwparams = str(["kw%d=None" % (x+1) for x in xrange(0, i+1)])[1:-1].replace("'", "")
                 kwparams_expected = "None," * (i+1)
                 kwparams_expected += str(range(i+2, num_kwparams+1))[1:-1]
-                print NICE_SPACE, "self.assertEqual(f%dParams%dKwparams(%s" % (num_params, num_kwparams, params),
+                print(NICE_SPACE, "self.assertEqual(f%dParams%dKwparams(%s" % (num_params, num_kwparams, params), end='')
                 if num_params!=0:
-                    print ",",
-                print kwparams, "),"
-                print NICE_SPACE, "         ((%s), " % params_expected, "(%s))" % kwparams_expected, ")"
-            print ""
-
+                    print(",", end='')
+                print(kwparams, "),")
+                print(NICE_SPACE, "         ((%s), " % params_expected, "(%s))" % kwparams_expected, ")")
+            print("")
 
 class SignaturesTest(unittest.TestCase):
-
     def test_args_plus_kwargs_optimizations(self):
         '''
         Because IronPython utilizes DLR site caching for function signatures,
@@ -5484,6 +5482,5 @@ class SignaturesTest(unittest.TestCase):
                 ((1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14),  (None,None,None,None,None,None,None,None,None,None,None,None,None,14)) )
         self.assertEqual(f14Params14Kwparams(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 , kw1=None, kw2=None, kw3=None, kw4=None, kw5=None, kw6=None, kw7=None, kw8=None, kw9=None, kw10=None, kw11=None, kw12=None, kw13=None, kw14=None ),
                 ((1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14),  (None,None,None,None,None,None,None,None,None,None,None,None,None,None,)) )
-
 
 run_test(__name__)

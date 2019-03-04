@@ -95,8 +95,16 @@ namespace IronPython.Modules {
             return false;
         }
 
+        public static bool is_frozen_package(string name) {
+            return false;
+        }
+
         public static object load_dynamic(string name, string pathname, object file = null) {
             return null;
+        }
+
+        public static void _fix_co_filename() {
+            throw new NotImplementedException();
         }
 
         #region Implementation

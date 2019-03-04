@@ -13,8 +13,8 @@ import unittest
 from iptest import IronPythonTestCase, is_cli, path_modifier, run_test
 
 def always_true(self):
-    exec "self.assertEqual(1 / 2, 0)"
-    exec "from __future__ import division; self.assertEqual(1 / 2, 0.5)"
+    exec("self.assertEqual(1 / 2, 0)")
+    exec("from __future__ import division; self.assertEqual(1 / 2, 0.5)")
     self.assertEqual(1/2, 0)
     self.assertEqual(eval("1/2"), 0)
 
@@ -62,7 +62,7 @@ class NoFutureTest(IronPythonTestCase):
             with path_modifier(self.temporary_dir):
                 for code in (code1, code2) :
                     self.write_to_file(self.tempfile, code)
-                    
+
                     f1(self.tempfile)
                     always_true(self)
                     f2(code, self.tempfile)

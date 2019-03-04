@@ -932,8 +932,12 @@ class DictTest(IronPythonTestCase):
             mapping = { 10: 10}
             for k in mapping.keys: pass
 
-        self.assertRaisesMessages(TypeError,
+        if is_cli:
+            self.assertRaisesMessage(TypeError,
                 "iteration over non-sequence of type builtin_function_or_method",
+                f)
+        else:
+            self.assertRaisesMessage(TypeError,
                 "'builtin_function_or_method' object is not iterable",
                 f)
 

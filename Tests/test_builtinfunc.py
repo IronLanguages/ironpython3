@@ -169,21 +169,37 @@ class BuiltinsTest2(IronPythonTestCase):
         self.assertEqual(list(map(lambda x:'a' + x + 'c', 'b')), ['abc'])
 
     def test_range(self):
-        self.assertRaisesMessage(TypeError, "range() integer end argument expected, got float.",
+        if is_cli:
+            self.assertRaisesMessage(TypeError, "expected index value, got float",
                             range, 2, 5.0)
-        self.assertRaisesMessage(TypeError, "range() integer step argument expected, got float.",
+            self.assertRaisesMessage(TypeError, "expected index value, got float",
                             range, 3, 10, 2.0)
-
-        self.assertRaisesMessage(TypeError, "range() integer end argument expected, got float.",
+            self.assertRaisesMessage(TypeError, "expected index value, got float",
                             range, float(-2<<32))
-        self.assertRaisesMessage(TypeError, "range() integer end argument expected, got float.",
+            self.assertRaisesMessage(TypeError, "expected index value, got float",
                             range, 0, float(-2<<32))
-        self.assertRaisesMessage(TypeError, "range() integer start argument expected, got float.",
+            self.assertRaisesMessage(TypeError, "expected index value, got float",
                             range, float(-2<<32), 100)
-        self.assertRaisesMessage(TypeError, "range() integer step argument expected, got float.",
+            self.assertRaisesMessage(TypeError, "expected index value, got float",
                             range, 0, 100, float(-2<<32))
-        self.assertRaisesMessage(TypeError, "range() integer end argument expected, got float.",
+            self.assertRaisesMessage(TypeError, "expected index value, got float",
                             range, float(-2<<32), float(-2<<32), float(-2<<32))
+        else:
+            self.assertRaisesMessage(TypeError, "'float' object cannot be interpreted as an integer",
+                            range, 2, 5.0)
+            self.assertRaisesMessage(TypeError, "'float' object cannot be interpreted as an integer",
+                            range, 3, 10, 2.0)
+            self.assertRaisesMessage(TypeError, "'float' object cannot be interpreted as an integer",
+                            range, float(-2<<32))
+            self.assertRaisesMessage(TypeError, "'float' object cannot be interpreted as an integer",
+                            range, 0, float(-2<<32))
+            self.assertRaisesMessage(TypeError, "'float' object cannot be interpreted as an integer",
+                            range, float(-2<<32), 100)
+            self.assertRaisesMessage(TypeError, "'float' object cannot be interpreted as an integer",
+                            range, 0, 100, float(-2<<32))
+            self.assertRaisesMessage(TypeError, "'float' object cannot be interpreted as an integer",
+                            range, float(-2<<32), float(-2<<32), float(-2<<32))
+
 
     def test_sorted(self):
         a = [6,9,4,5,3,1,2,7,8]
@@ -775,7 +791,10 @@ class BuiltinsTest2(IronPythonTestCase):
 
 
     def test_error_messages(self):
-        self.assertRaisesMessages(TypeError, "join() takes exactly 1 argument (2 given)", "join() takes exactly one argument (2 given)", "".join, ["a", "b"], "c")
+        if is_cli:
+            self.assertRaisesMessage(TypeError, "join() takes exactly 1 argument (2 given)", "".join, ["a", "b"], "c")
+        else:
+            self.assertRaisesMessage(TypeError, "join() takes exactly one argument (2 given)", "".join, ["a", "b"], "c")
 
     def test_enumerate(self):
         class MyIndex(object):

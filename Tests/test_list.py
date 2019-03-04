@@ -382,7 +382,7 @@ class ListTest(IronPythonTestCase):
             self.assertEqual(data.__mul__(Index()), data * 2)
             self.assertEqual(data.__mul__(OldIndex()), data * 2)
 
-            self.assertRaisesMessage(TypeError, "'NoneType' object cannot be interpreted as an index", lambda : data.__mul__(None))
+            self.assertRaisesMessage(TypeError, "'NoneType' object cannot be interpreted as an integer", lambda : data.__mul__(None))
             self.assertRaises(TypeError, lambda : data * None)
             self.assertRaises(TypeError, lambda : None * data)
 

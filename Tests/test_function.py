@@ -1,17 +1,6 @@
-######################################################################################
-#
-#  Copyright (c) Microsoft Corporation. All rights reserved.
-#
-# This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
-# copy of the license can be found in the License.html file at the root of this distribution. If 
-# you cannot locate the  Apache License, Version 2.0, please send an email to 
-# ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
-# by the terms of the Apache License, Version 2.0.
-#
-# You must not remove this notice, or any other, from this software.
-#
-#
-#####################################################################################
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the Apache 2.0 License.
+# See the LICENSE file in the project root for more information.
 
 import unittest
 
@@ -23,15 +12,15 @@ global init
 # defined globally because unqualified exec isn't allowed in
 # a nested function.
 def unqualified_exec():
-    print x
-    exec ""
+    print(x)
+    exec("")
 
 def copyfunc(f, name):
-    return FunctionType(f.func_code, f.func_globals, name, f.func_defaults, f.func_closure)
+    return FunctionType(f.__code__, f.__globals__, name, f.__defaults__, f.__closure__)
 
 
 def substitute_globals(f, name, globals):
-    return FunctionType(f.func_code, globals, name, f.func_defaults, f.func_closure)
+    return FunctionType(f.__code__, globals, name, f.__defaults__, f.__closure__)
 
 global_variable = 13
 
@@ -85,8 +74,8 @@ class FunctionTest(IronPythonTestCase):
 
         def foo(): pass
 
-        self.assertEqual(foo.func_code.co_filename.lower().endswith('test_function.py'), True)
-        self.assertEqual(foo.func_code.co_firstlineno, 86)  # if you added lines to the top of this file you need to update this number.
+        self.assertEqual(foo.__code__.co_filename.lower().endswith('test_function.py'), True)
+        self.assertEqual(foo.__code__.co_firstlineno, 86)  # if you added lines to the top of this file you need to update this number.
 
     def test_inherit_function(self):
         def foo(): pass
@@ -95,7 +84,7 @@ class FunctionTest(IronPythonTestCase):
         def CreateSubType(t):
             class SubType(t): pass
             return SubType
-            
+
         self.assertRaisesRegexp(TypeError, ".*\n?.* is not an acceptable base type", CreateSubType, type(foo))
 
     def test_varargs(self):
@@ -112,7 +101,7 @@ class FunctionTest(IronPythonTestCase):
                 return a + b
             else:
                 return z
-                
+
         self.assertEqual(x,x)
         self.assertEqual(xwd(), 3)
         self.assertRaises(TypeError, (lambda:x()))
@@ -160,33 +149,33 @@ class FunctionTest(IronPythonTestCase):
 
         for f in (f1, f2, f3, f4, f5):
             self.assertEqual(f(10,11,12,13), 10 * 11 * 12 * 13 * 5)         # 4 args
-        for f in (f6,):    
+        for f in (f6,):
             self.assertRaises(TypeError, f, 1, 1, 1, 1)
 
         for f in (f1, f2, f3, f4):
             self.assertEqual(f(10,11,12), 10 * 11 * 12 * 4 * 5)             # 3 args
-        for f in (f5, f6):    
+        for f in (f5, f6):
             self.assertRaises(TypeError, f, 1, 1, 1)
 
         for f in (f1, f2, f3):
             self.assertEqual(f(10,11), 10 * 11 * 3 * 4 * 5)                 # 2 args
-        for f in (f4, f5, f6):    
+        for f in (f4, f5, f6):
             self.assertRaises(TypeError, f, 1, 1)
 
         for f in (f1, f2):
             self.assertEqual(f(10), 10 * 2 * 3 * 4 * 5)                     # 1 args
-        for f in (f3, f4, f5, f6):    
+        for f in (f3, f4, f5, f6):
             self.assertRaises(TypeError, f, 1)
 
         for f in (f1,):
             self.assertEqual(f(), 1 * 2 * 3 * 4 * 5)                        # no args
-        for f in (f2, f3, f4, f5, f6):    
+        for f in (f2, f3, f4, f5, f6):
             self.assertRaises(TypeError, f)
 
 
     def test_class_method(self):
         # method
-        
+
         class C2: pass
 
         c1, c2 = C1(), C2()
@@ -200,7 +189,7 @@ class FunctionTest(IronPythonTestCase):
             #line +=  "try: C1.f%d(c2, %s) \nexcept TypeError: pass \nelse: raise AssertionError\n" % (i, args)
 
         #print line
-        exec line
+        exec(line)
 
     def test_set_attr_instance_method(self):
         def SetAttrOfInstanceMethod():
@@ -282,7 +271,7 @@ class FunctionTest(IronPythonTestCase):
 
         if is_cli:
             import System
-            
+
             # Test Hashtable and Dictionary.
             htlist = [System.Collections.Generic.Dictionary[System.Object, System.Object]()]
             htlist += [System.Collections.Hashtable()]
@@ -290,14 +279,14 @@ class FunctionTest(IronPythonTestCase):
             for ht in htlist:
                 def foo(**kwargs):
                     return kwargs['key']
-                    
+
                 ht['key'] = 'xyz'
-                
+
                 self.assertEqual(foo(**ht), 'xyz')
 
         def foo(a,b):
             return a-b
-            
+
         self.assertEqual(foo(b=1, *(2,)), 1)
 
         # kw-args passed to init through method instance
@@ -317,7 +306,7 @@ class FunctionTest(IronPythonTestCase):
         """call a params method w/ no params"""
         import clr
         import System
-        self.assertEqual('abc\ndef'.Split()[0], 'abc') 
+        self.assertEqual('abc\ndef'.Split()[0], 'abc')
         self.assertEqual('abc\ndef'.Split()[1], 'def')
         x = 'a bc   def'.Split()
         self.assertEqual(x[0], 'a')
@@ -325,11 +314,11 @@ class FunctionTest(IronPythonTestCase):
         self.assertEqual(x[2], '')
         self.assertEqual(x[3], '')
         self.assertEqual(x[4], 'def')
-        
+
         # calling Double.ToString(...) should work - Double is
         # an OpsExtensibleType and doesn't define __str__ on this
         # overload
-        
+
         self.assertEqual(System.Double.ToString(1.0, 'f'), '1.00')
 
 
@@ -367,7 +356,7 @@ class FunctionTest(IronPythonTestCase):
             self.assertRaisesMessage(TypeError, "f() takes at least 1 non-keyword argument (0 given)", f, b=2)
         else:
             self.assertRaisesMessage(TypeError, "f() takes at least 1 argument (1 given)", f, b=2)
-            
+
         self.assertRaisesMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", f, dummy=3)
         self.assertRaisesMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", f, b=2, dummy=3)
         self.assertRaisesMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", f, 1, dummy=3)
@@ -377,7 +366,7 @@ class FunctionTest(IronPythonTestCase):
             self.assertRaisesMessage(TypeError, "f() takes at least 1 non-keyword argument (0 given)", lambda:f(b=2))
         else:
             self.assertRaisesMessage(TypeError, "f() takes at least 1 argument (1 given)", lambda:f(b=2))
-            
+
         self.assertRaisesMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", lambda:f(dummy=3))
         self.assertRaisesMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", lambda:f(b=2, dummy=3))
         self.assertRaisesMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", lambda:f(1, dummy=3))
@@ -410,22 +399,24 @@ class FunctionTest(IronPythonTestCase):
             self.assertRaisesMessage(TypeError, "f() takes exactly 1 argument (0 given)", lambda:f(dummy=2))
             self.assertRaisesMessage(TypeError, "f() takes exactly 1 argument (0 given)", lambda:f(dummy=2, dummy2=3))
 
-        self.assertRaisesMessages(TypeError, "abs() takes exactly 1 argument (0 given)",
-                                        "abs() takes exactly one argument (0 given)",   abs)
-        self.assertRaisesMessages(TypeError, "abs() takes exactly 1 argument (3 given)",
-                                        "abs() takes exactly one argument (3 given)",   abs, 1, 2, 3)
-        self.assertRaisesMessages(TypeError, "abs() got an unexpected keyword argument 'dummy'",
-                                        "abs() takes no keyword arguments",             abs, dummy=2)
-        self.assertRaisesMessages(TypeError, "abs() takes exactly 1 argument (2 given)",
-                                        "abs() takes no keyword arguments",             abs, 1, dummy=2)
-        self.assertRaisesMessages(TypeError, "abs() takes exactly 1 argument (0 given)",
-                                        "abs() takes exactly one argument (0 given)",   lambda:abs())
-        self.assertRaisesMessages(TypeError, "abs() takes exactly 1 argument (3 given)",
-                                        "abs() takes exactly one argument (3 given)",   lambda:abs(1, 2, 3))
-        self.assertRaisesMessages(TypeError, "abs() got an unexpected keyword argument 'dummy'",
-                                        "abs() takes no keyword arguments",             lambda:abs(dummy=2))
-        self.assertRaisesMessages(TypeError, "abs() takes exactly 1 argument (2 given)",
-                                        "abs() takes no keyword arguments",             lambda:abs(1, dummy=2))
+        if is_cli:
+            self.assertRaisesMessage(TypeError, "abs() takes exactly 1 argument (0 given)",         abs)
+            self.assertRaisesMessage(TypeError, "abs() takes exactly 1 argument (3 given)",         abs, 1, 2, 3)
+            self.assertRaisesMessage(TypeError, "abs() got an unexpected keyword argument 'dummy'", abs, dummy=2)
+            self.assertRaisesMessage(TypeError, "abs() takes exactly 1 argument (2 given)",         abs, 1, dummy=2)
+            self.assertRaisesMessage(TypeError, "abs() takes exactly 1 argument (0 given)",         lambda:abs())
+            self.assertRaisesMessage(TypeError, "abs() takes exactly 1 argument (3 given)",         lambda:abs(1, 2, 3))
+            self.assertRaisesMessage(TypeError, "abs() got an unexpected keyword argument 'dummy'", lambda:abs(dummy=2))
+            self.assertRaisesMessage(TypeError, "abs() takes exactly 1 argument (2 given)",         lambda:abs(1, dummy=2))
+        else:
+            self.assertRaisesMessage(TypeError, "abs() takes exactly one argument (0 given)",   abs)
+            self.assertRaisesMessage(TypeError, "abs() takes exactly one argument (3 given)",   abs, 1, 2, 3)
+            self.assertRaisesMessage(TypeError, "abs() takes no keyword arguments",             abs, dummy=2)
+            self.assertRaisesMessage(TypeError, "abs() takes no keyword arguments",             abs, 1, dummy=2)
+            self.assertRaisesMessage(TypeError, "abs() takes exactly one argument (0 given)",   lambda:abs())
+            self.assertRaisesMessage(TypeError, "abs() takes exactly one argument (3 given)",   lambda:abs(1, 2, 3))
+            self.assertRaisesMessage(TypeError, "abs() takes no keyword arguments",             lambda:abs(dummy=2))
+            self.assertRaisesMessage(TypeError, "abs() takes no keyword arguments",             lambda:abs(1, dummy=2))
 
         # list([m]) has one default argument (built-in type)
         #self.assertRaisesMessage(TypeError, "list() takes at most 1 argument (2 given)", list, 1, 2)
@@ -447,7 +438,7 @@ class FunctionTest(IronPythonTestCase):
         class UserClass(object): pass
         self.assertRaisesMessage(TypeError, "object.__new__() takes no parameters", UserClass, 1)
         self.assertRaisesMessage(TypeError, "object.__new__() takes no parameters", apply, UserClass, [], dict({"dummy":2}))
-            
+
         class OldStyleClass: pass
         self.assertRaisesMessage(TypeError, "this constructor takes no arguments", OldStyleClass, 1)
         self.assertRaisesMessage(TypeError, "this constructor takes no arguments", apply, OldStyleClass, [], dict({"dummy":2}))
@@ -457,14 +448,14 @@ class FunctionTest(IronPythonTestCase):
         """accepts / returns runtype type checking tests"""
 
         import clr
-        
+
         @clr.accepts(object)
-        def foo(x): 
+        def foo(x):
             return x
 
         self.assertEqual(foo('abc'), 'abc')
         self.assertEqual(foo(2), 2)
-        self.assertEqual(foo(2L), 2L)
+        self.assertEqual(foo(long(2)), long(2))
         self.assertEqual(foo(2.0), 2.0)
         self.assertEqual(foo(True), True)
 
@@ -472,10 +463,10 @@ class FunctionTest(IronPythonTestCase):
         @clr.accepts(str)
         def foo(x):
             return x
-            
+
         self.assertEqual(foo('abc'), 'abc')
         self.assertRaises(AssertionError, foo, 2)
-        self.assertRaises(AssertionError, foo, 2L)
+        self.assertRaises(AssertionError, foo, long(2))
         self.assertRaises(AssertionError, foo, 2.0)
         self.assertRaises(AssertionError, foo, True)
 
@@ -485,11 +476,11 @@ class FunctionTest(IronPythonTestCase):
 
         self.assertEqual(foo('abc', True), ('abc', True))
         self.assertRaises(AssertionError, foo, ('abc',2))
-        self.assertRaises(AssertionError, foo, ('abc',2L))
+        self.assertRaises(AssertionError, foo, ('abc',long(2)))
         self.assertRaises(AssertionError, foo, ('abc',2.0))
 
 
-        class bar:  
+        class bar:
             @clr.accepts(clr.Self(), str)
             def foo(self, x):
                 return x
@@ -498,7 +489,7 @@ class FunctionTest(IronPythonTestCase):
         a = bar()
         self.assertEqual(a.foo('xyz'), 'xyz')
         self.assertRaises(AssertionError, a.foo, 2)
-        self.assertRaises(AssertionError, a.foo, 2L)
+        self.assertRaises(AssertionError, a.foo, long(2))
         self.assertRaises(AssertionError, a.foo, 2.0)
         self.assertRaises(AssertionError, a.foo, True)
 
@@ -509,7 +500,7 @@ class FunctionTest(IronPythonTestCase):
 
         self.assertEqual(foo('abc'), 'abc')
         self.assertRaises(AssertionError, foo, 2)
-        self.assertRaises(AssertionError, foo, 2L)
+        self.assertRaises(AssertionError, foo, long(2))
         self.assertRaises(AssertionError, foo, 2.0)
         self.assertRaises(AssertionError, foo, True)
 
@@ -518,11 +509,11 @@ class FunctionTest(IronPythonTestCase):
         def foo(x):
             if x: return str(x)
             else: return 0
-            
+
         self.assertEqual(foo(True), 'True')
 
         self.assertRaises(AssertionError, foo, 2)
-        self.assertRaises(AssertionError, foo, 2)
+        self.assertRaises(AssertionError, foo, long(2))
         self.assertRaises(AssertionError, foo, False)
 
         @clr.returns(None)
@@ -533,21 +524,21 @@ class FunctionTest(IronPythonTestCase):
     def test_error_message(self):
         try:
             buffer()
-        except TypeError, e:
+        except TypeError as e:
             # make sure we get the right type name when calling w/ wrong # of args
             self.assertEqual(str(e)[:8], 'buffer()')
-    
+
         #try:
         #    list(1,2,3)
         #except TypeError, e:
             # make sure we get the right type name when calling w/ wrong # of args
-        #    self.assertEqual(str(e)[:6], 'list()')    
+        #    self.assertEqual(str(e)[:6], 'list()')
 
         # oldinstance
         class foo:
             def bar(self): pass
             def bar1(self, xyz): pass
-            
+
         class foo2: pass
         class foo3(object): pass
 
@@ -574,7 +565,7 @@ class FunctionTest(IronPythonTestCase):
         # access a method w/ caller context w/ an args parameter.
         def foo(*args):
             return hasattr(*args)
-            
+
         self.assertEqual(foo('', 'index'), True)
 
     @skipUnlessIronPython()
@@ -584,9 +575,9 @@ class FunctionTest(IronPythonTestCase):
         from iptest.console_util import IronPythonInstance
         from System import Environment
         from sys import executable
-        
+
         wkdir = self.test_dir
-        
+
         if "-X:LightweightScopes" in Environment.GetCommandLineArgs():
             ipi = IronPythonInstance(executable, wkdir, "-X:LightweightScopes", "-X:BasicConsole")
         else:
@@ -605,8 +596,8 @@ class FunctionTest(IronPythonTestCase):
     def test_zip(self):
         p = ((1, 2),)
 
-        self.assertEqual(zip(*(p * 10)), [(1, 1, 1, 1, 1, 1, 1, 1, 1, 1), (2, 2, 2, 2, 2, 2, 2, 2, 2, 2)])
-        self.assertEqual(zip(*(p * 10)), [(1, 1, 1, 1, 1, 1, 1, 1, 1, 1), (2, 2, 2, 2, 2, 2, 2, 2, 2, 2)])
+        self.assertEqual(list(zip(*(p * 10))), [(1, 1, 1, 1, 1, 1, 1, 1, 1, 1), (2, 2, 2, 2, 2, 2, 2, 2, 2, 2)])
+        self.assertEqual(list(zip(*(p * 10))), [(1, 1, 1, 1, 1, 1, 1, 1, 1, 1), (2, 2, 2, 2, 2, 2, 2, 2, 2, 2)])
 
     def test_super(self):
 
@@ -647,13 +638,13 @@ class FunctionTest(IronPythonTestCase):
             self.assertUnreachable()
         except TypeError:
             pass
-            
+
         try:
             super(B,A)
             self.assertUnreachable()
         except TypeError:
             pass
-            
+
 
         class A(object):
             def __init__(self, name):
@@ -661,7 +652,7 @@ class FunctionTest(IronPythonTestCase):
             def meth(self):
                 return self.__name__
             classmeth = classmethod(meth)
-            
+
         class B(A): pass
 
         b = B('derived')
@@ -675,11 +666,11 @@ class FunctionTest(IronPythonTestCase):
         # descriptor supper
         class A(object):
             def meth(self): return 'A'
-            
+
         class B(A):
-            def meth(self):    
+            def meth(self):
                 return 'B' + self.__super.meth()
-                
+
         B._B__super = super(B)
         b = B()
         self.assertEqual(b.meth(), 'BA')
@@ -690,8 +681,8 @@ class FunctionTest(IronPythonTestCase):
         class D(object):
             @classmethod
             def classmeth(cls): pass
-            
-        self.assertEqual(D.classmeth.im_class, type)
+
+        self.assertEqual(D.classmeth.__class__, type)
 
         class MetaType(type): pass
 
@@ -699,8 +690,8 @@ class FunctionTest(IronPythonTestCase):
             __metaclass__ = MetaType
             @classmethod
             def classmeth(cls): pass
-            
-        self.assertEqual(D.classmeth.im_class, MetaType)
+
+        self.assertEqual(D.classmeth.__class__, MetaType)
 
     def test_cases(self):
         def runTest(testCase):
@@ -737,7 +728,7 @@ class FunctionTest(IronPythonTestCase):
                     TestCase(str, 'abc', 'abc', True, 'abc'),
                     TestCase(float, 2.3, 2.3, True, 2.3),
                     TestCase(type, type(object), type(object), False, object),
-                    TestCase(long, 10000000000L, 10000000000L, True, 10000000000L),
+                    TestCase(long, long(10000000000), long(10000000000), True, long(10000000000)),
                     #TestCase(complex, complex(2.0, 0), complex(2.0, 0), True, 2.0),        # complex is currently a struct w/ no extensibel, we fail here
                     # TestCase(file, 'abc', True),      # ???
                     ]
@@ -776,28 +767,28 @@ class FunctionTest(IronPythonTestCase):
         def foo7(a, *args, **kwargs): pass
         def foo8(a,b,c,d,e,f): pass
         def foo9(a,b): pass
-        
-        self.assertEqual(foo0.func_code.co_flags & 12, 0)
-        self.assertEqual(foo1.func_code.co_flags & 12, 4)
-        self.assertEqual(foo2.func_code.co_flags & 12, 8)
-        self.assertEqual(foo3.func_code.co_flags & 12, 12)
-        self.assertEqual(foo4.func_code.co_flags & 12, 0)
-        self.assertEqual(foo5.func_code.co_flags & 12, 4)
-        self.assertEqual(foo6.func_code.co_flags & 12, 8)
-        self.assertEqual(foo7.func_code.co_flags & 12, 12)
-        self.assertEqual(foo8.func_code.co_flags & 12, 0)
-        self.assertEqual(foo9.func_code.co_flags & 12, 0)
-        
-        self.assertEqual(foo0.func_code.co_argcount, 0)
-        self.assertEqual(foo1.func_code.co_argcount, 0)
-        self.assertEqual(foo2.func_code.co_argcount, 0)
-        self.assertEqual(foo3.func_code.co_argcount, 0)
-        self.assertEqual(foo4.func_code.co_argcount, 1)
-        self.assertEqual(foo5.func_code.co_argcount, 1)
-        self.assertEqual(foo6.func_code.co_argcount, 1)
-        self.assertEqual(foo7.func_code.co_argcount, 1)
-        self.assertEqual(foo8.func_code.co_argcount, 6)
-        self.assertEqual(foo9.func_code.co_argcount, 2)
+
+        self.assertEqual(foo0.__code__.co_flags & 12, 0)
+        self.assertEqual(foo1.__code__.co_flags & 12, 4)
+        self.assertEqual(foo2.__code__.co_flags & 12, 8)
+        self.assertEqual(foo3.__code__.co_flags & 12, 12)
+        self.assertEqual(foo4.__code__.co_flags & 12, 0)
+        self.assertEqual(foo5.__code__.co_flags & 12, 4)
+        self.assertEqual(foo6.__code__.co_flags & 12, 8)
+        self.assertEqual(foo7.__code__.co_flags & 12, 12)
+        self.assertEqual(foo8.__code__.co_flags & 12, 0)
+        self.assertEqual(foo9.__code__.co_flags & 12, 0)
+
+        self.assertEqual(foo0.__code__.co_argcount, 0)
+        self.assertEqual(foo1.__code__.co_argcount, 0)
+        self.assertEqual(foo2.__code__.co_argcount, 0)
+        self.assertEqual(foo3.__code__.co_argcount, 0)
+        self.assertEqual(foo4.__code__.co_argcount, 1)
+        self.assertEqual(foo5.__code__.co_argcount, 1)
+        self.assertEqual(foo6.__code__.co_argcount, 1)
+        self.assertEqual(foo7.__code__.co_argcount, 1)
+        self.assertEqual(foo8.__code__.co_argcount, 6)
+        self.assertEqual(foo9.__code__.co_argcount, 2)
 
     def test_big_calls(self):
         # check various function call sizes and boundaries
@@ -810,25 +801,25 @@ class FunctionTest(IronPythonTestCase):
 
         for size in sizes:
             # w/o defaults
-            exec 'def f(' + ','.join(['a' + str(i) for i in range(size)]) + '): return ' + ','.join(['a' + str(i) for i in range(size)])
+            exec('def f(' + ','.join(['a' + str(i) for i in range(size)]) + '): return ' + ','.join(['a' + str(i) for i in range(size)]))
             # w/ defaults
-            exec 'def g(' + ','.join(['a' + str(i) + '=' + str(i) for i in range(size)]) + '): return ' + ','.join(['a' + str(i) for i in range(size)])
+            exec('def g(' + ','.join(['a' + str(i) + '=' + str(i) for i in range(size)]) + '): return ' + ','.join(['a' + str(i) for i in range(size)]))
             if size <= 255 or is_cli:
                 # CPython allows function definitions > 255, but not calls w/ > 255 params.
-                exec 'a = f(' + ', '.join([str(x) for x in xrange(size)]) + ')'
-                self.assertEqual(a, tuple(xrange(size)))
-                exec 'a = g()'
-                self.assertEqual(a, tuple(xrange(size)))
-                exec 'a = g(' + ', '.join([str(x) for x in xrange(size)]) + ')'
-                self.assertEqual(a, tuple(xrange(size)))
-            
-            exec 'a = f(*(' + ', '.join([str(x) for x in xrange(size)]) + '))'
-            self.assertEqual(a, tuple(xrange(size)))
-    
+                exec('a = f(' + ', '.join([str(x) for x in range(size)]) + ')')
+                self.assertEqual(a, tuple(range(size)))
+                exec('a = g()')
+                self.assertEqual(a, tuple(range(size)))
+                exec('a = g(' + ', '.join([str(x) for x in range(size)]) + ')')
+                self.assertEqual(a, tuple(range(size)))
+
+            exec('a = f(*(' + ', '.join([str(x) for x in range(size)]) + '))')
+            self.assertEqual(a, tuple(range(size)))
+
     def test_compile(self):
-        x = compile("print 2/3", "<string>", "exec", 8192)
+        x = compile("print(2/3)", "<string>", "exec", 8192)
         self.assertTrue((x.co_flags & 8192) == 8192)
-        
+
         x = compile("2/3", "<string>", "eval", 8192)
         self.assertEqual(eval(x), 2.0 / 3.0)
 
@@ -842,20 +833,20 @@ class FunctionTest(IronPythonTestCase):
                     """
                     ]
         for name in names:
-            self.assertEqual(compile("print 2/3", name, "exec", 8192).co_filename,
+            self.assertEqual(compile("print(2/3)", name, "exec", 8192).co_filename,
                     name)
 
     def test_filename(self):
         c = compile("x = 2", "test", "exec")
         self.assertEqual(c.co_filename, 'test')
-    
+
     def test_name(self):
         def f(): pass
-        
+
         f.__name__ = 'g'
         self.assertEqual(f.__name__, 'g')
         self.assertTrue(repr(f).startswith('<function g'))
-        
+
         f.func_name = 'x'
         self.assertEqual(f.__name__, 'x')
         self.assertTrue(repr(f).startswith('<function x'))
@@ -871,48 +862,48 @@ class FunctionTest(IronPythonTestCase):
         def foo7(a, *args, **kwargs): pass
         def foo8(a,b,c,d,e,f): pass
         def foo9(a,b): pass
-        
-        self.assertEqual(foo0.func_code.co_argcount, 0)
-        self.assertEqual(foo1.func_code.co_argcount, 0)
-        self.assertEqual(foo2.func_code.co_argcount, 0)
-        self.assertEqual(foo3.func_code.co_argcount, 0)
-        self.assertEqual(foo4.func_code.co_argcount, 1)
-        self.assertEqual(foo5.func_code.co_argcount, 1)
-        self.assertEqual(foo6.func_code.co_argcount, 1)
-        self.assertEqual(foo7.func_code.co_argcount, 1)
-        self.assertEqual(foo8.func_code.co_argcount, 6)
-        self.assertEqual(foo9.func_code.co_argcount, 2)
+
+        self.assertEqual(foo0.__code__.co_argcount, 0)
+        self.assertEqual(foo1.__code__.co_argcount, 0)
+        self.assertEqual(foo2.__code__.co_argcount, 0)
+        self.assertEqual(foo3.__code__.co_argcount, 0)
+        self.assertEqual(foo4.__code__.co_argcount, 1)
+        self.assertEqual(foo5.__code__.co_argcount, 1)
+        self.assertEqual(foo6.__code__.co_argcount, 1)
+        self.assertEqual(foo7.__code__.co_argcount, 1)
+        self.assertEqual(foo8.__code__.co_argcount, 6)
+        self.assertEqual(foo9.__code__.co_argcount, 2)
 
     def test_defaults(self):
         defaults = [None, object, int, [], 3.14, [3.14], (None,), "a string"]
         for default in defaults:
             def helperFunc(): pass
-            self.assertEqual(helperFunc.func_defaults, None)
-            self.assertEqual(helperFunc.func_defaults, None)
-        
+            self.assertEqual(helperFunc.__defaults__, None)
+            self.assertEqual(helperFunc.__defaults__, None)
+
             def helperFunc1(a): pass
-            self.assertEqual(helperFunc1.func_defaults, None)
-            self.assertEqual(helperFunc1.func_defaults, None)
-            
-            
+            self.assertEqual(helperFunc1.__defaults__, None)
+            self.assertEqual(helperFunc1.__defaults__, None)
+
+
             def helperFunc2(a=default): pass
-            self.assertEqual(helperFunc2.func_defaults, (default,))
+            self.assertEqual(helperFunc2.__defaults__, (default,))
             helperFunc2(a=7)
-            self.assertEqual(helperFunc2.func_defaults, (default,))
-            
-            
+            self.assertEqual(helperFunc2.__defaults__, (default,))
+
+
             def helperFunc3(a, b=default, c=[42]): c.append(b)
-            self.assertEqual(helperFunc3.func_defaults, (default, [42]))
+            self.assertEqual(helperFunc3.__defaults__, (default, [42]))
             helperFunc3("stuff")
-            self.assertEqual(helperFunc3.func_defaults, (default, [42, default]))
+            self.assertEqual(helperFunc3.__defaults__, (default, [42, default]))
 
     def test_splat_defaults(self):
         def g(a, b, x=None):
             return a, b, x
-            
-        def f(x, *args):        
+
+        def f(x, *args):
             return g(x, *args)
-            
+
         self.assertEqual(f(1, *(2,)), (1,2,None))
 
     def test_argument_eval_order(self):
@@ -927,30 +918,30 @@ class FunctionTest(IronPythonTestCase):
         class foo(object):
             def f(self): pass
             abc = 3
-        
-        method = type(foo.f)    
-        
+
+        method = type(foo.f)
+
         self.assertEqual(method(foo, 'abc').abc, 3)
 
     #TODO: @skip("interpreted")  # we don't have FuncEnv's in interpret modes so this always returns None
     def test_function_closure_negative(self):
         def f(): pass
-        
+
         for assignment_val in [None, 1, "a string"]:
             try:
-                f.func_closure = assignment_val
-                self.assertUnreachable("func_closure is a read-only attribute of functions")
-            except TypeError, e:
+                f.__closure__ = assignment_val
+                self.assertUnreachable("__closure__ is a read-only attribute of functions")
+            except TypeError as e:
                 pass
 
     def test_paramless_function_call_error(self):
         def f(): pass
-        
+
         try:
             f(*(1, ))
             self.assertUnreachable()
         except TypeError: pass
-            
+
         try:
             f(**{'abc':'def'})
             self.assertUnreachable()
@@ -959,22 +950,22 @@ class FunctionTest(IronPythonTestCase):
 
     def test_function_closure(self):
         def f(): pass
-        
-        self.assertEqual(f.func_closure, None)
-        
-        def f():    
+
+        self.assertEqual(f.__closure__, None)
+
+        def f():
             def g(): pass
             return g
-            
-        self.assertEqual(f().func_closure, None)
+
+        self.assertEqual(f().__closure__, None)
 
         def f():
             x = 4
             def g(): return x
             return g
-            
-        self.assertEqual(sorted([x.cell_contents for x in f().func_closure]), [4])
-        
+
+        self.assertEqual(sorted([x.cell_contents for x in f().__closure__]), [4])
+
         def f():
             x = 4
             def g():
@@ -983,7 +974,7 @@ class FunctionTest(IronPythonTestCase):
                 return h
             return g()
 
-        self.assertEqual(sorted([x.cell_contents for x in f().func_closure]), [4, 5])
+        self.assertEqual(sorted([x.cell_contents for x in f().__closure__]), [4, 5])
 
         # don't use z
         def f():
@@ -994,9 +985,9 @@ class FunctionTest(IronPythonTestCase):
                 def h(): return x,y
                 return h
             return g()
-        
-        self.assertEqual(sorted([x.cell_contents for x in f().func_closure]), [4, 5])
-        
+
+        self.assertEqual(sorted([x.cell_contents for x in f().__closure__]), [4, 5])
+
         def f():
             x = 4
             def g():
@@ -1006,7 +997,7 @@ class FunctionTest(IronPythonTestCase):
                 return h
             return g()
 
-        self.assertEqual(sorted([x.cell_contents for x in f().func_closure]), [4, 5, 7])
+        self.assertEqual(sorted([x.cell_contents for x in f().__closure__]), [4, 5, 7])
 
         def f():
             x = 4
@@ -1018,12 +1009,12 @@ class FunctionTest(IronPythonTestCase):
                 return h
             return g()
 
-        self.assertEqual(sorted([x.cell_contents for x in f().func_closure]), [4, 5])
-        
+        self.assertEqual(sorted([x.cell_contents for x in f().__closure__]), [4, 5])
+
         # closure cells are not recreated
         callRes = f()
-        a = sorted([id(x) for x in callRes.func_closure])
-        b = sorted([id(x) for x in callRes.func_closure])
+        a = sorted([id(x) for x in callRes.__closure__])
+        b = sorted([id(x) for x in callRes.__closure__])
         self.assertEqual(a, b)
 
         def f():
@@ -1036,16 +1027,16 @@ class FunctionTest(IronPythonTestCase):
                 return h
             return g()
 
-        self.assertEqual(sorted([x.cell_contents for x in f().func_closure]), [4, 5, 7, 9])
+        self.assertEqual(sorted([x.cell_contents for x in f().__closure__]), [4, 5, 7, 9])
 
-        self.assertRaises(TypeError, hash, f().func_closure[0])
-        
+        self.assertRaises(TypeError, hash, f().__closure__[0])
+
         def f():
             x = 5
             def g():
                 return x
             return g
-            
+
         def h():
             x = 5
             def g():
@@ -1058,19 +1049,19 @@ class FunctionTest(IronPythonTestCase):
                 return x
             return g
 
-        self.assertEqual(f().func_closure[0], h().func_closure[0])
-        self.assertTrue(f().func_closure[0] != j().func_closure[0])
+        self.assertEqual(f().__closure__[0], h().__closure__[0])
+        self.assertTrue(f().__closure__[0] != j().__closure__[0])
 
         # <cell at 45: int object at 44>
-        self.assertTrue(repr(f().func_closure[0]).startswith('<cell at '))
-        self.assertTrue(repr(f().func_closure[0]).find(': int object at ') != -1)
-    
-    
+        self.assertTrue(repr(f().__closure__[0]).startswith('<cell at '))
+        self.assertTrue(repr(f().__closure__[0]).find(': int object at ') != -1)
+
+
     def test_func_code(self):
         def foo(): pass
-        def assign(): foo.func_code = None
+        def assign(): foo.__code__ = None
         self.assertRaises(TypeError, assign)
-    
+
     def def_func_doc(self):
         foo.func_doc = 'abc'
         self.assertEqual(foo.__doc__, 'abc')
@@ -1083,88 +1074,87 @@ class FunctionTest(IronPythonTestCase):
     def test_func_defaults(self):
         def f(a, b): return (a, b)
 
-        f.func_defaults = (1,2)
+        f.__defaults__ = (1,2)
         self.assertEqual(f(), (1,2))
-        
-        f.func_defaults = (1,2,3,4)
+
+        f.__defaults__ = (1,2,3,4)
         self.assertEqual(f(), (3,4))
 
-        f.func_defaults = None
+        f.__defaults__ = None
         self.assertRaises(TypeError, f)
 
-        f.func_defaults = (1,2)
-        self.assertEqual(f.func_defaults, (1,2))
-        
-        del f.func_defaults
-        self.assertEqual(f.func_defaults, None)
-        del f.func_defaults
-        self.assertEqual(f.func_defaults, None)
-        
+        f.__defaults__ = (1,2)
+        self.assertEqual(f.__defaults__, (1,2))
+
+        del f.__defaults__
+        self.assertEqual(f.__defaults__, None)
+        del f.__defaults__
+        self.assertEqual(f.__defaults__, None)
+
         def func_with_many_args(one, two, three, four, five, six, seven, eight, nine, ten, eleven=None, twelve=None, thirteen=None, fourteen=None, fifteen=None, sixteen=None, seventeen=None, eighteen=None, nineteen=None):
-            print 'hello'
-            
+            print('hello')
+
         func_with_many_args(None, None, None, None, None, None, None, None, None, None)
 
 
     def test_func_dict(self):
         def f(): pass
-        
+
         f.abc = 123
-        self.assertEqual(f.func_dict, {'abc': 123})
-        f.func_dict = {'def': 'def'}
+        self.assertEqual(f.__dict__, {'abc': 123})
+        f.__dict__ = {'def': 'def'}
         self.assertEqual(hasattr(f, 'def'), True)
         self.assertEqual(getattr(f, 'def'), 'def')
-        f.func_dict = {}
+        f.__dict__ = {}
         self.assertEqual(hasattr(f, 'abc'), False)
         self.assertEqual(hasattr(f, 'def'), False)
-            
-        self.assertRaises(TypeError, lambda : delattr(f, 'func_dict'))
+
         self.assertRaises(TypeError, lambda : delattr(f, '__dict__'))
-    
+
     def test_method(self):
         class C:
             def method(self): pass
-        
+
         method = type(C.method)(id, None, 'abc')
-        self.assertEqual(method.im_class, 'abc')
-        
+        self.assertEqual(method.__class__, 'abc')
+
         class myobj:
-            def __init__(self, val):            
+            def __init__(self, val):
                 self.val = val
                 self.called = []
             def __hash__(self):
                 self.called.append('hash')
-                return hash(self.val)        
-            def __eq__(self, other): 
+                return hash(self.val)
+            def __eq__(self, other):
                 self.called.append('eq')
                 return self.val == other.val
             def __call__(*args): pass
-        
+
         func1, func2 = myobj(2), myobj(2)
         inst1, inst2 = myobj(3), myobj(3)
-        
+
         method = type(C().method)
         m1 = method(func1, inst1)
         m2 = method(func2, inst2)
         self.assertEqual(m1, m2)
-        
+
         self.assertTrue('eq' in func1.called)
         self.assertTrue('eq' in inst1.called)
 
-        hash(m1)   
+        hash(m1)
         self.assertTrue('hash' in func1.called)
         self.assertTrue('hash' in inst1.called)
-    
+
     def test_function_type(self):
         def f1(): pass
         def f2(a): pass
         def f3(a, b, c): pass
         def f4(*a, **b): pass
-        
+
         def decorator(f): return f
         @decorator
         def f5(a): pass
-        
+
         for x in [ f2, f3, f4, f5]:
             self.assertEqual(type(f1), type(x))
 
@@ -1173,7 +1163,7 @@ class FunctionTest(IronPythonTestCase):
         def f2(__a): return __a
         def f3(a, __a): return __a
         def f4(_a, __a): return _a + __a
-        
+
         f1("12")
         self.assertEqual(f2("hello"), "hello")
         self.assertEqual(f3("a","b"), "b")
@@ -1183,43 +1173,43 @@ class FunctionTest(IronPythonTestCase):
         def f(*args): pass
         def g(**kwargs): pass
         def h(*args, **kwargs): pass
-        
+
         #CodePlex 20250
-        self.assertRaisesMessage(TypeError, "f() argument after * must be a sequence, not NoneType", 
+        self.assertRaisesMessage(TypeError, "f() argument after * must be a sequence, not NoneType",
                             lambda : f(*None))
-        self.assertRaisesMessage(TypeError, "g() argument after ** must be a mapping, not NoneType", 
+        self.assertRaisesMessage(TypeError, "g() argument after ** must be a mapping, not NoneType",
                             lambda : g(**None))
         self.assertRaisesMessage(TypeError, "h() argument after ** must be a mapping, not NoneType",
                             lambda : h(*None, **None))
 
     def test_exec_funccode(self):
         # can't exec a func code w/ parameters
-        def f(a, b, c): print a, b, c
-        
-        self.assertRaises(TypeError, lambda : eval(f.func_code))
-        
+        def f(a, b, c): print(a, b, c)
+
+        self.assertRaises(TypeError, lambda : eval(f.__code__))
+
         # can exec *args/**args
         def f(*args): pass
-        exec f.func_code in {}, {}
-        
+        exec(f.__code__, {}, {})
+
         def f(*args, **kwargs): pass
-        exec f.func_code in {}, {}
+        exec(f.__code__, {}, {})
 
         # can't exec function which closes over vars
         def f():
             x = 2
             def g():
-                    print x
-            return g.func_code
-        
+                print(x)
+            return g.__code__
+
         self.assertRaises(TypeError, lambda : eval(f()))
-    
+
     def test_exec_funccode_filename(self):
         import sys
         mod = type(sys)('fake_mod_name')
         mod.__file__ = 'some file'
-        exec "def x(): pass" in mod.__dict__
-        self.assertEqual(mod.x.func_code.co_filename, '<string>')
+        exec("def x(): pass", mod.__dict__)
+        self.assertEqual(mod.x.__code__.co_filename, '<string>')
 
 
     def test_func_code_variables(self):
@@ -1228,55 +1218,46 @@ class FunctionTest(IronPythonTestCase):
             self.assertEqual(code.co_names, names)
             self.assertEqual(code.co_freevars, freevars)
             self.assertEqual(code.co_cellvars, cellvars)
-        
+
         # simple local
         def f():
             a = 2
-        
-        CompareCodeVars(f.func_code, ('a', ), (), (), ())    
-        
+
+        CompareCodeVars(f.__code__, ('a', ), (), (), ())
+
         # closed over var
         def f():
             a = 2
             def g():
-                print a
+                print(a)
             return g
-            
-        CompareCodeVars(f.func_code, ('g', ), (), (), ('a', ))
-        CompareCodeVars(f().func_code, (), (), ('a', ), ())
 
-        # tuple parameters
-        def f((a, b)): pass
-        
-        CompareCodeVars(f.func_code, ('.0', 'a', 'b'), (), (), ())
-        
-        def f((a, b), (c, d)): pass
-        
-        CompareCodeVars(f.func_code, ('.0', '.1', 'a', 'b', 'c', 'd'), (), (), ())
-        
+        CompareCodeVars(f.__code__, ('g', ), (), (), ('a', ))
+        CompareCodeVars(f().__code__, (), (), ('a', ), ())
+
         # explicitly marked global
         def f():
             global a
             a = 2
-            
-        CompareCodeVars(f.func_code, (), ('a', ), (), ())
-        
+
+        CompareCodeVars(f.__code__, (), ('a', ), (), ())
+
         # implicit global
         def f():
-            print some_global
-            
-        CompareCodeVars(f.func_code, (), ('some_global', ), (), ())
+            print(some_global)
+
+        CompareCodeVars(f.__code__, (), ('some_global', ), (), ())
 
         # global that's been "closed over"
         def f():
             global a
             a = 2
             def g():
-                print a
+                print(a)
             return g
-            
-        CompareCodeVars(f.func_code, ('g', ), ('a', ), (), ())
-        CompareCodeVars(f().func_code, (), ('a', ), (), ())
+
+        CompareCodeVars(f.__code__, ('g', ), ('a', ), (), ())
+        CompareCodeVars(f().__code__, (), ('a', ), (), ())
 
         # multi-depth closure
         def f():
@@ -1287,10 +1268,10 @@ class FunctionTest(IronPythonTestCase):
                     y = a
                 return h
             return g
-                    
-        CompareCodeVars(f.func_code, ('g', ), (), (), ('a', ))
-        CompareCodeVars(f().func_code, ('x', 'h'), (), ('a', ), ())
-        CompareCodeVars(f()().func_code, ('y', ), (), ('a', ), ())
+
+        CompareCodeVars(f.__code__, ('g', ), (), (), ('a', ))
+        CompareCodeVars(f().__code__, ('x', 'h'), (), ('a', ), ())
+        CompareCodeVars(f()().__code__, ('y', ), (), ('a', ), ())
 
         # multi-depth closure 2
         def f():
@@ -1300,21 +1281,21 @@ class FunctionTest(IronPythonTestCase):
                     y = a
                 return h
             return g
-                    
-        CompareCodeVars(f.func_code, ('g', ), (), (), ('a', ))
-        CompareCodeVars(f().func_code, ('h', ), (), ('a', ), ())
-        CompareCodeVars(f()().func_code, ('y', ), (), ('a', ), ())
-        
+
+        CompareCodeVars(f.__code__, ('g', ), (), (), ('a', ))
+        CompareCodeVars(f().__code__, ('h', ), (), ('a', ), ())
+        CompareCodeVars(f()().__code__, ('y', ), (), ('a', ), ())
+
         # closed over parameter
         def f(a):
             def g():
                 return a
             return g
-        
-        CompareCodeVars(f.func_code, ('a', 'g'), (), (), ('a', ))    
-        CompareCodeVars(f(42).func_code, (), (), ('a', ), ())
-            
-        self.assertEqual(unqualified_exec.func_code.co_names, ('x', ))
+
+        CompareCodeVars(f.__code__, ('a', 'g'), (), (), ('a', ))
+        CompareCodeVars(f(42).__code__, (), (), ('a', ), ())
+
+        self.assertEqual(unqualified_exec.__code__.co_names, ('x', ))
 
     def test_delattr(self):
         def f(): pass
@@ -1331,7 +1312,7 @@ class FunctionTest(IronPythonTestCase):
             return 42
         dpf = copyfunc(foo, "dpf")
         self.assertEqual(dpf(), 13)
-        foo.func_code = bar.func_code
+        foo.__code__ = bar.__code__
         self.assertEqual(foo(), 42)
         self.assertEqual(dpf(), 13)
         self.assertEqual(foo.__module__, '__main__')
@@ -1390,13 +1371,13 @@ class FunctionTest(IronPythonTestCase):
         def fn_no_closure():
             pass
         self.assertRaises(NotImplementedError, copyfunc, fn_with_closure, "new_fn_name")
-        self.assertRaises(NotImplementedError, FunctionType, fn_with_closure.func_code,
-                fn_with_closure.func_globals, "name", fn_with_closure.func_defaults)
-        self.assertRaises(NotImplementedError, FunctionType, fn_with_closure.func_code,
-                fn_with_closure.func_globals, "name", fn_with_closure.func_defaults,
-                fn_with_closure.func_closure)
-        self.assertRaises(NotImplementedError, FunctionType, fn_no_closure.func_code,
-                fn_no_closure.func_globals, "name", fn_no_closure.func_defaults,
-                fn_with_closure.func_closure)
-   
+        self.assertRaises(NotImplementedError, FunctionType, fn_with_closure.__code__,
+                fn_with_closure.__globals__, "name", fn_with_closure.__defaults__)
+        self.assertRaises(NotImplementedError, FunctionType, fn_with_closure.__code__,
+                fn_with_closure.__globals__, "name", fn_with_closure.__defaults__,
+                fn_with_closure.__closure__)
+        self.assertRaises(NotImplementedError, FunctionType, fn_no_closure.__code__,
+                fn_no_closure.__globals__, "name", fn_no_closure.__defaults__,
+                fn_with_closure.__closure__)
+
 run_test(__name__)

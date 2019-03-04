@@ -298,7 +298,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                     meta = metaCls;
                     continue;
                 }
-                throw PythonOps.TypeError("metaclass conflict {0} and {1}", metaCls.Name, meta.Name);
+                throw PythonOps.TypeError("metaclass conflict: the metaclass of a derived class must be a (non-strict) subclass of the metaclasses of all its bases");
             }
             return meta;
         }

@@ -27,9 +27,9 @@ class SimpleDeriveTest(IronPythonTestCase):
 
         class C(INotEmpty): pass
         class C(AbstractNotEmptyClass): pass
-        
+
         #class C(EmptyDelegate): pass
-        
+
         class C(System.Double): pass
 
     def test_multiple_typegroup(self):
@@ -38,7 +38,7 @@ class SimpleDeriveTest(IronPythonTestCase):
         class C(IInterfaceGroup1, IInterfaceGroup2, EmptyClass): pass
         class C(EmptyTypeGroup2, IInterfaceGroup1, IInterfaceGroup2): pass
         class C(EmptyTypeGroup2, IInterfaceGroup1[int], IInterfaceGroup2): pass
-    
+
     def test_negative_simply_derive(self):
         import clr
         import System
@@ -53,7 +53,7 @@ class SimpleDeriveTest(IronPythonTestCase):
         def f4():
             class C(System.Single): pass
 
-        
+
         self.assertRaisesMessage(TypeError, "cannot derive from Merlin.Testing.BaseClass.EmptyStruct because it is a value type", f1)
         self.assertRaisesMessage(TypeError, "cannot derive from Merlin.Testing.BaseClass.EmptyEnum because it is a value type", f2)
         self.assertRaisesMessage(TypeError, "cannot derive from Merlin.Testing.BaseClass.SealedClass because it is sealed", f3)
@@ -62,27 +62,27 @@ class SimpleDeriveTest(IronPythonTestCase):
         # open generic
         def f():
             class C(EmptyGenericClass): pass
-        self.assertRaisesMessage(TypeError, 
+        self.assertRaisesMessage(TypeError,
             "C: cannot inhert from open generic instantiation IronPython.Runtime.Types.PythonType. Only closed instantiations are supported.",
             f)
-        
+
         def f():
             class C(IGenericEmpty): pass
-        self.assertRaisesMessage(TypeError, 
+        self.assertRaisesMessage(TypeError,
             "C: cannot inhert from open generic instantiation Merlin.Testing.BaseClass.IGenericEmpty`1[T]. Only closed instantiations are supported.",
             f)
-        
+
         def f():
             class C(EmptyTypeGroup1): pass
-        self.assertRaisesMessage(TypeError, 
+        self.assertRaisesMessage(TypeError,
             "cannot derive from open generic types <types 'EmptyTypeGroup1[T]', 'EmptyTypeGroup1[K, V]'>",
             f)
 
         # too many base (same or diff)
-        def f():    
+        def f():
             class C(EmptyClass, EmptyClass): pass
         self.assertRaisesMessage(TypeError, "duplicate base class EmptyClass", f)
-    
+
         def f():
             class C(IEmpty, EmptyClass, IEmpty): pass
         self.assertRaisesMessage(TypeError, "duplicate base class IEmpty", f)
@@ -90,22 +90,22 @@ class SimpleDeriveTest(IronPythonTestCase):
         assemblyqualifiedname = clr.GetClrType(int).AssemblyQualifiedName
         def f():
             class C(EmptyClass, EmptyGenericClass[int]): pass
-        self.assertRaisesMessage(TypeError, 
+        self.assertRaisesMessage(TypeError,
             "C: can only extend one CLI or builtin type, not both Merlin.Testing.BaseClass.EmptyClass (for IronPython.Runtime.Types.PythonType) and Merlin.Testing.BaseClass.EmptyGenericClass`1[[%s]] (for IronPython.Runtime.Types.PythonType)" % assemblyqualifiedname,
             f)
-        
+
         class B:pass
         b = B()
-        def f(): 
+        def f():
             class C(object, b): pass
-        self.assertRaisesPartialMessage(TypeError, 
+        self.assertRaisesMessage(TypeError,
             "metaclass conflict: the metaclass of a derived class must be a (non-strict) subclass of the metaclasses of all its bases",
             f)
-        
+
         def f():
             class C(EmptyGenericClass[()]): pass
         self.assertRaises(ValueError, f)
-    
+
     def test_system_type_cs0644(self):
         # http://msdn2.microsoft.com/en-us/library/hxds244y(VS.80).aspx
         # bug 363984

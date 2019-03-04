@@ -198,7 +198,6 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             "single compiles a single statement\n\n" +
             "source can either be a string, bytes or an AST object")]
         public static object compile(CodeContext/*!*/ context, _ast.AST source, string filename, string mode, object flags = null, object dont_inherit = null) {
-
             if (mode != "exec" && mode != "eval" && mode != "single") {
                 throw PythonOps.ValueError("compile() arg 3 must be 'exec' or 'eval' or 'single'");
             }
@@ -222,7 +221,6 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         [Documentation("")] // provided by first overload
         public static object compile(CodeContext/*!*/ context, string source, string filename, string mode, object flags = null, object dont_inherit = null) {
-
             if (mode != "exec" && mode != "eval" && mode != "single") {
                 throw PythonOps.ValueError("compile() arg 3 must be 'exec' or 'eval' or 'single'");
             }
@@ -338,7 +336,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         [LightThrowing]
         public static object eval(CodeContext/*!*/ context, [NotNull]string expression, PythonDictionary globals = null, object locals = null) {
-            if (locals != null && PythonOps.IsMappingType(context, locals) == ScriptingRuntimeHelpers.False) {
+            if (locals != null && !PythonOps.IsMappingType(context, locals)) {
                 throw PythonOps.TypeError("locals must be mapping");
             }
 
@@ -361,7 +359,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             if (locals == null) locals = globals;
             if (globals == null) globals = context.GlobalDict;
 
-            if (locals != null && PythonOps.IsMappingType(context, locals) != ScriptingRuntimeHelpers.True) {
+            if (locals != null && !PythonOps.IsMappingType(context, locals)) {
                 throw PythonOps.TypeError($"locals must be mapping or None, not {DynamicHelpers.GetPythonType(locals).Name}");
             }
 
@@ -1669,17 +1667,20 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             }
             
             ModuleOptions langFeat = ModuleOptions.None;
+            if ((cflags & CompileFlags.CO_FUTURE_DIVISION) != 0) {
+                // Ignored since Python 3
+            }
             if ((cflags & CompileFlags.CO_FUTURE_WITH_STATEMENT) != 0) {
-                // Ignored in Python 2.7
+                // Ignored since Python 2.7
             }
             if ((cflags & CompileFlags.CO_FUTURE_ABSOLUTE_IMPORT) != 0) {
-                // Ignored in Python 3
+                // Ignored since Python 3
             }
             if ((cflags & CompileFlags.CO_FUTURE_PRINT_FUNCTION) != 0) {
-                // Ignored in Python 3
+                // Ignored since Python 3
             }
             if ((cflags & CompileFlags.CO_FUTURE_UNICODE_LITERALS) != 0) {
-                // Ignored in Python 3
+                // Ignored since Python 3
             }
             pco.Module |= langFeat;
 

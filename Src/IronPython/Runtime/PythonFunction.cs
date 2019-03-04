@@ -70,9 +70,10 @@ namespace IronPython.Runtime {
 
             _defaults = defaults == null ? ArrayUtils.EmptyObjects : defaults.ToArray();
             _code = code;
-            _name = name ?? code.PythonCode.Name;
             _doc = code._initialDoc;
-            
+            _name = name ?? code.PythonCode.Name;
+            _annotations = new PythonDictionary();
+
             Closure = null;
 
             var scopeStatement = _code.PythonCode;
@@ -89,14 +90,14 @@ namespace IronPython.Runtime {
 
             _context = context;
             _defaults = defaults ?? ArrayUtils.EmptyObjects;
-            __kwdefaults__ = kwdefaults ?? new PythonDictionary();
+            __kwdefaults__ = kwdefaults;
             _code = funcInfo;
             _doc = funcInfo._initialDoc;
             _name = funcInfo.co_name;
             _annotations = annotations ?? new PythonDictionary();
 
             Debug.Assert(_defaults.Length <= _code.co_argcount);
-            Debug.Assert(__kwdefaults__.Count <= _code.co_kwonlyargcount);
+            Debug.Assert((__kwdefaults__ ?.Count ?? 0) <= _code.co_kwonlyargcount);
             if (modName != Uninitialized.Instance) {
                 _module = modName;
             }
@@ -148,7 +149,7 @@ namespace IronPython.Runtime {
         public PythonDictionary __kwdefaults__ { get; set; }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public PythonTuple __closure__ {
+        public object __closure__ {
             get {
                 var storage = (Context.Dict._storage as RuntimeVariablesDictionaryStorage);
                 if (storage != null) {
@@ -296,7 +297,7 @@ namespace IronPython.Runtime {
             return (NormalArgumentCount) |
                 (Defaults.Length << 8) |
                 (KeywordOnlyArgumentCount << 16) |
-                (__kwdefaults__.Count << 23) |
+                ((__kwdefaults__?.Count ?? 0) << 23) |
                 ((ExpandListPosition != -1) ? 0x40000000 : 0) |
                 ((ExpandDictPosition != -1) ? unchecked((int)0x80000000) : 0);
         }

@@ -522,13 +522,12 @@ namespace IronPython.Runtime.Binding {
                 }
 
                 var keywordOnlyArgumentCount = _func.Value.KeywordOnlyArgumentCount;
-                var keywordOnlyNoDefaults = keywordOnlyArgumentCount - _func.Value.__kwdefaults__.Count;
 
                 for (int i = normalArgumentCount; i < normalArgumentCount + keywordOnlyArgumentCount; i++) {
                     var argName = _func.Value.ArgNames[i];
 
                     if (exprArgs[i] == null) {
-                        if (_func.Value.__kwdefaults__.ContainsKey(argName)) {
+                        if (_func.Value.__kwdefaults__ != null && _func.Value.__kwdefaults__.ContainsKey(argName)) {
                             exprArgs[i] = ExtractKeywordOnlyDefault(argName);
                         } else if (_dict != null) {
                             exprArgs[i] = ExtractDictionaryArgument(argName);

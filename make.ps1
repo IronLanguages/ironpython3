@@ -1,4 +1,4 @@
-#!/usr/bin/pwsh
+#!/usr/bin/env pwsh
 [CmdletBinding()]
 Param(
     [Parameter(Position=1)]

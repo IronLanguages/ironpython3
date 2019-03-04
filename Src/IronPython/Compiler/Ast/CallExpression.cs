@@ -53,7 +53,7 @@ namespace IronPython.Compiler.Ast {
                     return true;
                 }
             } else {
-                if (nameExpr.Name == "eval") return true;
+                if (nameExpr.Name == "eval" || nameExpr.Name == "exec") return true;
             }
             return false;
         }

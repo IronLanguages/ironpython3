@@ -1158,9 +1158,9 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        public static object IsMappingType(CodeContext/*!*/ context, object o) {
+        public static bool IsMappingType(CodeContext/*!*/ context, object o) {
             if (o is IDictionary || o is PythonDictionary || o is IDictionary<object, object>) {
-                return ScriptingRuntimeHelpers.True;
+                return true;
             }
             object getitem;
             if ((o is IPythonObject) && PythonOps.TryGetBoundAttr(context, o, "__getitem__", out getitem)) {
@@ -1168,11 +1168,11 @@ namespace IronPython.Runtime.Operations {
                     // in standard Python methods aren't mapping types, therefore
                     // if the user hasn't broken out of that box yet don't treat 
                     // them as mapping types.
-                    if (o is BuiltinFunction) return ScriptingRuntimeHelpers.False;
+                    if (o is BuiltinFunction) return false;
                 }
-                return ScriptingRuntimeHelpers.True;
+                return true;
             }
-            return ScriptingRuntimeHelpers.False;
+            return false;
         }
 
         public static int FixSliceIndex(int v, int len) {
@@ -2459,7 +2459,7 @@ namespace IronPython.Runtime.Operations {
                 return val;
             }
 
-            return function.__kwdefaults__[name];
+            return function.__kwdefaults__?[name];
         }
 
         public static void CheckParamsZero(PythonFunction function, PythonList extraArgs) {
@@ -2891,6 +2891,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object FunctionGetKeywordOnlyDefaultValue(PythonFunction func, string name) {
+            if (func.__kwdefaults__ == null) return null;
             func.__kwdefaults__.TryGetValue(name, out object res);
             return res;
         }

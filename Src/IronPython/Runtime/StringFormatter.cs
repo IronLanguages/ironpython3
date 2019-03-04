@@ -344,7 +344,7 @@ namespace IronPython.Runtime {
             if (map == null) {
                 PythonDictionary dict = _data as PythonDictionary;
                 if (dict == null) {
-                    if (PythonOps.IsMappingType(DefaultContext.Default, _data) == ScriptingRuntimeHelpers.True) {
+                    if (PythonOps.IsMappingType(DefaultContext.Default, _data)) {
                         return PythonOps.GetIndex(_context, _data, key);
                     }
 
@@ -398,7 +398,7 @@ namespace IronPython.Runtime {
         }
 
         private void CheckDataUsed() {
-            if (PythonOps.IsMappingType(DefaultContext.Default, _data) == ScriptingRuntimeHelpers.False) {
+            if (!PythonOps.IsMappingType(DefaultContext.Default, _data)) {
                 if ((!(_data is PythonTuple) && _dataIndex != 1) ||
                     (_data is PythonTuple && _dataIndex != ((PythonTuple)_data).__len__())) {
                     throw PythonOps.TypeError("not all arguments converted during string formatting");

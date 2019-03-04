@@ -5,25 +5,17 @@
 import unittest
 
 from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
-from types import FunctionType
+from types import FunctionType, MethodType
 
 global init
 
-# defined globally because unqualified exec isn't allowed in
-# a nested function.
-def unqualified_exec():
-    print(x)
-    exec("")
-
 def copyfunc(f, name):
     return FunctionType(f.__code__, f.__globals__, name, f.__defaults__, f.__closure__)
-
 
 def substitute_globals(f, name, globals):
     return FunctionType(f.__code__, globals, name, f.__defaults__, f.__closure__)
 
 global_variable = 13
-
 
 def create_fn_with_closure():
     x=13
@@ -71,11 +63,10 @@ class FunctionTest(IronPythonTestCase):
 
         self.assertTrue(g.a == 20)
 
-
         def foo(): pass
 
         self.assertEqual(foo.__code__.co_filename.lower().endswith('test_function.py'), True)
-        self.assertEqual(foo.__code__.co_firstlineno, 86)  # if you added lines to the top of this file you need to update this number.
+        self.assertEqual(foo.__code__.co_firstlineno, 66)  # if you added lines to the top of this file you need to update this number.
 
     def test_inherit_function(self):
         def foo(): pass
@@ -192,11 +183,7 @@ class FunctionTest(IronPythonTestCase):
         exec(line)
 
     def test_set_attr_instance_method(self):
-        def SetAttrOfInstanceMethod():
-            C1.f0.attr = 1
-        self.assertRaises(AttributeError, SetAttrOfInstanceMethod)
-
-        C1.f0.im_func.attr = 1
+        C1.f0.attr = 1
         self.assertEqual(C1.f0.attr, 1)
         self.assertEqual(dir(C1.f0).__contains__("attr"), True)
 
@@ -300,7 +287,6 @@ class FunctionTest(IronPythonTestCase):
 
         foo.__init__(a, target='baz')
 
-
     @skipUnlessIronPython()
     def test_params_method_no_params(self):
         """call a params method w/ no params"""
@@ -319,53 +305,76 @@ class FunctionTest(IronPythonTestCase):
         # an OpsExtensibleType and doesn't define __str__ on this
         # overload
 
-        self.assertEqual(System.Double.ToString(1.0, 'f'), '1.00')
-
+        self.assertEqual(System.Double.ToString(1.0, 'f', System.Globalization.CultureInfo.InvariantCulture), '1.00')
 
     def test_incorrect_number_of_args(self):
         """Incorrect number of arguments"""
 
         def f(a): pass
 
-        self.assertRaisesMessage(TypeError, "f() takes exactly 1 argument (0 given)", f)
-        self.assertRaisesMessage(TypeError, "f() takes exactly 1 argument (3 given)", f, 1, 2, 3)
+        if is_cli:
+            self.assertRaisesMessage(TypeError, "f() takes exactly 1 argument (0 given)", f)
+            self.assertRaisesMessage(TypeError, "f() takes exactly 1 argument (3 given)", f, 1, 2, 3)
+        else:
+            self.assertRaisesMessage(TypeError, "f() missing 1 required positional argument: 'a'", f)
+            self.assertRaisesMessage(TypeError, "f() takes 1 positional argument but 3 were given", f, 1, 2, 3)
         self.assertRaisesMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", f, dummy=2)
         self.assertRaisesMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", f, dummy=2)
         #self.assertRaises calls f(*args), which generates a different AST than f(1,2,3)
-        self.assertRaisesMessage(TypeError, "f() takes exactly 1 argument (0 given)", lambda:f())
-        self.assertRaisesMessage(TypeError, "f() takes exactly 1 argument (3 given)", lambda:f(1, 2, 3))
+        if is_cli:
+            self.assertRaisesMessage(TypeError, "f() takes exactly 1 argument (0 given)", lambda:f())
+            self.assertRaisesMessage(TypeError, "f() takes exactly 1 argument (3 given)", lambda:f(1, 2, 3))
+        else:
+            self.assertRaisesMessage(TypeError, "f() missing 1 required positional argument: 'a'", lambda:f())
+            self.assertRaisesMessage(TypeError, "f() takes 1 positional argument but 3 were given", lambda:f(1, 2, 3))
         self.assertRaisesMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", lambda:f(dummy=2))
         self.assertRaisesMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", lambda:f(1, dummy=2))
 
         def f(a,b,c,d,e,f,g,h,i,j): pass
 
-        self.assertRaisesMessage(TypeError, "f() takes exactly 10 arguments (0 given)", f)
-        self.assertRaisesMessage(TypeError, "f() takes exactly 10 arguments (3 given)", f, 1, 2, 3)
+        if is_cli:
+            self.assertRaisesMessage(TypeError, "f() takes exactly 10 arguments (0 given)", f)
+            self.assertRaisesMessage(TypeError, "f() takes exactly 10 arguments (3 given)", f, 1, 2, 3)
+        else:
+            self.assertRaisesMessage(TypeError, "f() missing 10 required positional arguments: 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', and 'j'", f)
+            self.assertRaisesMessage(TypeError, "f() missing 7 required positional arguments: 'd', 'e', 'f', 'g', 'h', 'i', and 'j'", f, 1, 2, 3)
         self.assertRaisesMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", f, dummy=2)
         self.assertRaisesMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", f, dummy=2)
-        self.assertRaisesMessage(TypeError, "f() takes exactly 10 arguments (0 given)", lambda:f())
-        self.assertRaisesMessage(TypeError, "f() takes exactly 10 arguments (3 given)", lambda:f(1, 2, 3))
+        if is_cli:
+            self.assertRaisesMessage(TypeError, "f() takes exactly 10 arguments (0 given)", lambda:f())
+            self.assertRaisesMessage(TypeError, "f() takes exactly 10 arguments (3 given)", lambda:f(1, 2, 3))
+        else:
+            self.assertRaisesMessage(TypeError, "f() missing 10 required positional arguments: 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', and 'j'", lambda:f())
+            self.assertRaisesMessage(TypeError, "f() missing 7 required positional arguments: 'd', 'e', 'f', 'g', 'h', 'i', and 'j'", lambda:f(1, 2, 3))
         self.assertRaisesMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", lambda:f(dummy=2))
         self.assertRaisesMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", lambda:f(1, dummy=2))
 
         def f(a, b=2): pass
 
-        self.assertRaisesMessage(TypeError, "f() takes at least 1 argument (0 given)", f)
-        self.assertRaisesMessage(TypeError, "f() takes at most 2 arguments (3 given)", f, 1, 2, 3)
+        if is_cli:
+            self.assertRaisesMessage(TypeError, "f() takes at least 1 argument (0 given)", f)
+            self.assertRaisesMessage(TypeError, "f() takes at most 2 arguments (3 given)", f, 1, 2, 3)
+        else:
+            self.assertRaisesMessage(TypeError, "f() missing 1 required positional argument: 'a'", f)
+            self.assertRaisesMessage(TypeError, "f() takes from 1 to 2 positional arguments but 3 were given", f, 1, 2, 3)
         if is_cli: #CPython bug 9326
             self.assertRaisesMessage(TypeError, "f() takes at least 1 non-keyword argument (0 given)", f, b=2)
         else:
-            self.assertRaisesMessage(TypeError, "f() takes at least 1 argument (1 given)", f, b=2)
+            self.assertRaisesMessage(TypeError, "f() missing 1 required positional argument: 'a'", f, b=2)
 
         self.assertRaisesMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", f, dummy=3)
         self.assertRaisesMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", f, b=2, dummy=3)
         self.assertRaisesMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", f, 1, dummy=3)
-        self.assertRaisesMessage(TypeError, "f() takes at least 1 argument (0 given)", lambda:f())
-        self.assertRaisesMessage(TypeError, "f() takes at most 2 arguments (3 given)", lambda:f(1, 2, 3))
+        if is_cli:
+            self.assertRaisesMessage(TypeError, "f() takes at least 1 argument (0 given)", lambda:f())
+            self.assertRaisesMessage(TypeError, "f() takes at most 2 arguments (3 given)", lambda:f(1, 2, 3))
+        else:
+            self.assertRaisesMessage(TypeError, "f() missing 1 required positional argument: 'a'", lambda:f())
+            self.assertRaisesMessage(TypeError, "f() takes from 1 to 2 positional arguments but 3 were given", lambda:f(1, 2, 3))
         if is_cli: #CPython bug 9326
             self.assertRaisesMessage(TypeError, "f() takes at least 1 non-keyword argument (0 given)", lambda:f(b=2))
         else:
-            self.assertRaisesMessage(TypeError, "f() takes at least 1 argument (1 given)", lambda:f(b=2))
+            self.assertRaisesMessage(TypeError, "f() missing 1 required positional argument: 'a'", lambda:f(b=2))
 
         self.assertRaisesMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", lambda:f(dummy=3))
         self.assertRaisesMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", lambda:f(b=2, dummy=3))
@@ -373,31 +382,45 @@ class FunctionTest(IronPythonTestCase):
 
         def f(a, *argList): pass
 
-        self.assertRaisesMessage(TypeError, "f() takes at least 1 argument (0 given)", f)
+        if is_cli:
+            self.assertRaisesMessage(TypeError, "f() takes at least 1 argument (0 given)", f)
+        else:
+            self.assertRaisesMessage(TypeError, "f() missing 1 required positional argument: 'a'", f)
         self.assertRaisesMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", f, dummy=2)
         self.assertRaisesMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", f, 1, dummy=2)
-        self.assertRaisesMessage(TypeError, "f() takes at least 1 argument (0 given)", lambda:f())
+        if is_cli:
+            self.assertRaisesMessage(TypeError, "f() takes at least 1 argument (0 given)", lambda:f())
+        else:
+            self.assertRaisesMessage(TypeError, "f() missing 1 required positional argument: 'a'", lambda:f())
         self.assertRaisesMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", lambda:f(dummy=2))
         self.assertRaisesMessage(TypeError, "f() got an unexpected keyword argument 'dummy'", lambda:f(1, dummy=2))
 
         def f(a, **keywordDict): pass
 
-        self.assertRaisesMessage(TypeError, "f() takes exactly 1 argument (0 given)", f)
-        self.assertRaisesMessage(TypeError, "f() takes exactly 1 argument (3 given)", f, 1, 2, 3)
+        if is_cli:
+            self.assertRaisesMessage(TypeError, "f() takes exactly 1 argument (0 given)", f)
+            self.assertRaisesMessage(TypeError, "f() takes exactly 1 argument (3 given)", f, 1, 2, 3)
+        else:
+            self.assertRaisesMessage(TypeError, "f() missing 1 required positional argument: 'a'", f)
+            self.assertRaisesMessage(TypeError, "f() takes 1 positional argument but 3 were given", f, 1, 2, 3)
         if is_cli: #CPython bug 9326
             self.assertRaisesMessage(TypeError, "f() takes exactly 1 non-keyword argument (0 given)", f, dummy=2)
             self.assertRaisesMessage(TypeError, "f() takes exactly 1 non-keyword argument (0 given)", f, dummy=2, dummy2=3)
         else:
-            self.assertRaisesMessage(TypeError, "f() takes exactly 1 argument (0 given)", f, dummy=2)
-            self.assertRaisesMessage(TypeError, "f() takes exactly 1 argument (0 given)", f, dummy=2, dummy2=3)
-        self.assertRaisesMessage(TypeError, "f() takes exactly 1 argument (0 given)", lambda:f())
-        self.assertRaisesMessage(TypeError, "f() takes exactly 1 argument (3 given)", lambda:f(1, 2, 3))
+            self.assertRaisesMessage(TypeError, "f() missing 1 required positional argument: 'a'", f, dummy=2)
+            self.assertRaisesMessage(TypeError, "f() missing 1 required positional argument: 'a'", f, dummy=2, dummy2=3)
+        if is_cli:
+            self.assertRaisesMessage(TypeError, "f() takes exactly 1 argument (0 given)", lambda:f())
+            self.assertRaisesMessage(TypeError, "f() takes exactly 1 argument (3 given)", lambda:f(1, 2, 3))
+        else:
+            self.assertRaisesMessage(TypeError, "f() missing 1 required positional argument: 'a'", lambda:f())
+            self.assertRaisesMessage(TypeError, "f() takes 1 positional argument but 3 were given", lambda:f(1, 2, 3))
         if is_cli: #CPython bug 9326
             self.assertRaisesMessage(TypeError, "f() takes exactly 1 non-keyword argument (0 given)", lambda:f(dummy=2))
             self.assertRaisesMessage(TypeError, "f() takes exactly 1 non-keyword argument (0 given)", lambda:f(dummy=2, dummy2=3))
         else:
-            self.assertRaisesMessage(TypeError, "f() takes exactly 1 argument (0 given)", lambda:f(dummy=2))
-            self.assertRaisesMessage(TypeError, "f() takes exactly 1 argument (0 given)", lambda:f(dummy=2, dummy2=3))
+            self.assertRaisesMessage(TypeError, "f() missing 1 required positional argument: 'a'", lambda:f(dummy=2))
+            self.assertRaisesMessage(TypeError, "f() missing 1 required positional argument: 'a'", lambda:f(dummy=2, dummy2=3))
 
         if is_cli:
             self.assertRaisesMessage(TypeError, "abs() takes exactly 1 argument (0 given)",         abs)
@@ -436,12 +459,24 @@ class FunctionTest(IronPythonTestCase):
         #self.assertRaisesMessage(TypeError, "'dummy' is an invalid keyword argument for this function", apply, bool, [1], dict({"dummy":2}))
 
         class UserClass(object): pass
-        self.assertRaisesMessage(TypeError, "object.__new__() takes no parameters", UserClass, 1)
-        self.assertRaisesMessage(TypeError, "object.__new__() takes no parameters", apply, UserClass, [], dict({"dummy":2}))
+        if is_cli:
+            self.assertRaisesMessage(TypeError, "object.__new__() takes no parameters", UserClass, 1)
+            with self.assertRaisesMessage(TypeError, "object.__new__() takes no parameters"):
+                UserClass(*[], **dict({"dummy":2}))
+        else:
+            self.assertRaisesMessage(TypeError, "object() takes no parameters", UserClass, 1)
+            with self.assertRaisesMessage(TypeError, "object() takes no parameters"):
+                UserClass(*[], **dict({"dummy":2}))
 
         class OldStyleClass: pass
-        self.assertRaisesMessage(TypeError, "this constructor takes no arguments", OldStyleClass, 1)
-        self.assertRaisesMessage(TypeError, "this constructor takes no arguments", apply, OldStyleClass, [], dict({"dummy":2}))
+        if is_cli:
+            self.assertRaisesMessage(TypeError, "object.__new__() takes no parameters", OldStyleClass, 1)
+            with self.assertRaisesMessage(TypeError, "object.__new__() takes no parameters"):
+                OldStyleClass(*[], **dict({"dummy":2}))
+        else:
+            self.assertRaisesMessage(TypeError, "object() takes no parameters", OldStyleClass, 1)
+            with self.assertRaisesMessage(TypeError, "object() takes no parameters"):
+                OldStyleClass(*[], **dict({"dummy":2}))
 
     @skipUnlessIronPython()
     def test_runtime_type_checking(self):
@@ -523,43 +558,10 @@ class FunctionTest(IronPythonTestCase):
 
     def test_error_message(self):
         try:
-            buffer()
+            repr()
         except TypeError as e:
             # make sure we get the right type name when calling w/ wrong # of args
-            self.assertEqual(str(e)[:8], 'buffer()')
-
-        #try:
-        #    list(1,2,3)
-        #except TypeError, e:
-            # make sure we get the right type name when calling w/ wrong # of args
-        #    self.assertEqual(str(e)[:6], 'list()')
-
-        # oldinstance
-        class foo:
-            def bar(self): pass
-            def bar1(self, xyz): pass
-
-        class foo2: pass
-        class foo3(object): pass
-
-        self.assertRaises(TypeError, foo.bar)
-        self.assertRaises(TypeError, foo.bar1, None, None)
-        self.assertRaises(TypeError, foo.bar1, None, 'abc')
-        self.assertRaises(TypeError, foo.bar1, 'xyz', 'abc')
-        self.assertRaises(TypeError, foo.bar, foo2())
-        self.assertRaises(TypeError, foo.bar, foo3())
-
-        # usertype
-        class foo(object):
-            def bar(self): pass
-            def bar1(self, xyz): pass
-
-        self.assertRaises(TypeError, foo.bar)
-        self.assertRaises(TypeError, foo.bar1, None, None)
-        self.assertRaises(TypeError, foo.bar1, None, 'abc')
-        self.assertRaises(TypeError, foo.bar1, 'xyz', 'abc')
-        self.assertRaises(TypeError, foo.bar, foo2())
-        self.assertRaises(TypeError, foo.bar, foo3())
+            self.assertTrue(str(e).startswith("repr()"))
 
     def test_caller_context(self):
         # access a method w/ caller context w/ an args parameter.
@@ -645,7 +647,6 @@ class FunctionTest(IronPythonTestCase):
         except TypeError:
             pass
 
-
         class A(object):
             def __init__(self, name):
                 self.__name__ = name
@@ -661,7 +662,6 @@ class FunctionTest(IronPythonTestCase):
         self.assertEqual(super(B,b).__self_class__.__name__, 'B')
 
         self.assertEqual(super(B,b).classmeth(), 'B')
-
 
         # descriptor supper
         class A(object):
@@ -682,16 +682,15 @@ class FunctionTest(IronPythonTestCase):
             @classmethod
             def classmeth(cls): pass
 
-        self.assertEqual(D.classmeth.__class__, type)
+        self.assertEqual(D.classmeth.__class__, MethodType)
 
         class MetaType(type): pass
 
-        class D(object):
-            __metaclass__ = MetaType
+        class D(object, metaclass = MetaType):
             @classmethod
             def classmeth(cls): pass
 
-        self.assertEqual(D.classmeth.__class__, MetaType)
+        self.assertEqual(D.classmeth.__class__, MethodType)
 
     def test_cases(self):
         def runTest(testCase):
@@ -794,31 +793,40 @@ class FunctionTest(IronPythonTestCase):
         # check various function call sizes and boundaries
         sizes = [3, 4, 5, 7, 8, 9, 13, 15, 16, 17, 23, 24, 25, 31, 32, 33, 47, 48, 49, 63, 64, 65, 127, 128, 129, 254, 255, 256, 257, 258, 511, 512, 513]
 
-
         # mono has a limitation of < 1023
         if not is_mono:
             sizes.extend([1023, 1024, 1025, 2047, 2048, 2049])
 
         for size in sizes:
+            d = {}
             # w/o defaults
-            exec('def f(' + ','.join(['a' + str(i) for i in range(size)]) + '): return ' + ','.join(['a' + str(i) for i in range(size)]))
+            if size <= 255 or is_cli:
+                exec('def f(' + ','.join(['a' + str(i) for i in range(size)]) + '): return ' + ','.join(['a' + str(i) for i in range(size)]), d)
+            else:
+                with self.assertRaises(SyntaxError):
+                    exec('def f(' + ','.join(['a' + str(i) for i in range(size)]) + '): return ' + ','.join(['a' + str(i) for i in range(size)]), d)
+                continue
+
             # w/ defaults
-            exec('def g(' + ','.join(['a' + str(i) + '=' + str(i) for i in range(size)]) + '): return ' + ','.join(['a' + str(i) for i in range(size)]))
+            exec('def g(' + ','.join(['a' + str(i) + '=' + str(i) for i in range(size)]) + '): return ' + ','.join(['a' + str(i) for i in range(size)]), d)
             if size <= 255 or is_cli:
                 # CPython allows function definitions > 255, but not calls w/ > 255 params.
-                exec('a = f(' + ', '.join([str(x) for x in range(size)]) + ')')
-                self.assertEqual(a, tuple(range(size)))
-                exec('a = g()')
-                self.assertEqual(a, tuple(range(size)))
-                exec('a = g(' + ', '.join([str(x) for x in range(size)]) + ')')
-                self.assertEqual(a, tuple(range(size)))
+                exec('a = f(' + ', '.join([str(x) for x in range(size)]) + ')', d)
+                self.assertEqual(d["a"], tuple(range(size)))
+                exec('a = g()', d)
+                self.assertEqual(d["a"], tuple(range(size)))
+                exec('a = g(' + ', '.join([str(x) for x in range(size)]) + ')', d)
+                self.assertEqual(d["a"], tuple(range(size)))
 
-            exec('a = f(*(' + ', '.join([str(x) for x in range(size)]) + '))')
-            self.assertEqual(a, tuple(range(size)))
+            exec('a = f(*(' + ', '.join([str(x) for x in range(size)]) + '))', d)
+            self.assertEqual(d["a"], tuple(range(size)))
 
     def test_compile(self):
         x = compile("print(2/3)", "<string>", "exec", 8192)
-        self.assertTrue((x.co_flags & 8192) == 8192)
+        if is_cli:
+            self.assertEqual(x.co_flags & 8192, 0)
+        else:
+            self.assertEqual(x.co_flags & 8192, 8192)
 
         x = compile("2/3", "<string>", "eval", 8192)
         self.assertEqual(eval(x), 2.0 / 3.0)
@@ -845,11 +853,17 @@ class FunctionTest(IronPythonTestCase):
 
         f.__name__ = 'g'
         self.assertEqual(f.__name__, 'g')
-        self.assertTrue(repr(f).startswith('<function g'))
+        if is_cli:
+            self.assertTrue(repr(f).startswith('<function g'))
+        else:
+            self.assertTrue(repr(f).startswith('<function FunctionTest.test_name.<locals>.f'))
 
-        f.func_name = 'x'
-        self.assertEqual(f.__name__, 'x')
-        self.assertTrue(repr(f).startswith('<function x'))
+        f.__qualname__ = 'x'
+        self.assertEqual(f.__qualname__, 'x')
+        if is_cli:
+            self.assertTrue(repr(f).startswith('<function g'))
+        else:
+            self.assertTrue(repr(f).startswith('<function x'))
 
     def test_argcount(self):
         def foo0(): pass
@@ -919,20 +933,15 @@ class FunctionTest(IronPythonTestCase):
             def f(self): pass
             abc = 3
 
-        method = type(foo.f)
-
-        self.assertEqual(method(foo, 'abc').abc, 3)
+        self.assertEqual(MethodType(foo, 'abc').abc, 3)
 
     #TODO: @skip("interpreted")  # we don't have FuncEnv's in interpret modes so this always returns None
     def test_function_closure_negative(self):
         def f(): pass
 
         for assignment_val in [None, 1, "a string"]:
-            try:
+            with self.assertRaises(AttributeError):
                 f.__closure__ = assignment_val
-                self.assertUnreachable("__closure__ is a read-only attribute of functions")
-            except TypeError as e:
-                pass
 
     def test_paramless_function_call_error(self):
         def f(): pass
@@ -1112,11 +1121,8 @@ class FunctionTest(IronPythonTestCase):
         self.assertRaises(TypeError, lambda : delattr(f, '__dict__'))
 
     def test_method(self):
-        class C:
-            def method(self): pass
-
-        method = type(C.method)(id, None, 'abc')
-        self.assertEqual(method.__class__, 'abc')
+        method = MethodType(id, object())
+        self.assertEqual(method.__class__, MethodType)
 
         class myobj:
             def __init__(self, val):
@@ -1133,9 +1139,8 @@ class FunctionTest(IronPythonTestCase):
         func1, func2 = myobj(2), myobj(2)
         inst1, inst2 = myobj(3), myobj(3)
 
-        method = type(C().method)
-        m1 = method(func1, inst1)
-        m2 = method(func2, inst2)
+        m1 = MethodType(func1, inst1)
+        m2 = MethodType(func2, inst2)
         self.assertEqual(m1, m2)
 
         self.assertTrue('eq' in func1.called)
@@ -1175,12 +1180,9 @@ class FunctionTest(IronPythonTestCase):
         def h(*args, **kwargs): pass
 
         #CodePlex 20250
-        self.assertRaisesMessage(TypeError, "f() argument after * must be a sequence, not NoneType",
-                            lambda : f(*None))
-        self.assertRaisesMessage(TypeError, "g() argument after ** must be a mapping, not NoneType",
-                            lambda : g(**None))
-        self.assertRaisesMessage(TypeError, "h() argument after ** must be a mapping, not NoneType",
-                            lambda : h(*None, **None))
+        self.assertRaisesMessage(TypeError, "f() argument after * must be a sequence, not NoneType", lambda : f(*None))
+        self.assertRaisesMessage(TypeError, "g() argument after ** must be a mapping, not NoneType", lambda : g(**None))
+        self.assertRaisesMessage(TypeError, "h() argument after ** must be a mapping, not NoneType", lambda : h(*None, **None))
 
     def test_exec_funccode(self):
         # can't exec a func code w/ parameters
@@ -1229,7 +1231,7 @@ class FunctionTest(IronPythonTestCase):
         def f():
             a = 2
             def g():
-                print(a)
+                a
             return g
 
         CompareCodeVars(f.__code__, ('g', ), (), (), ('a', ))
@@ -1244,7 +1246,7 @@ class FunctionTest(IronPythonTestCase):
 
         # implicit global
         def f():
-            print(some_global)
+            some_global
 
         CompareCodeVars(f.__code__, (), ('some_global', ), (), ())
 
@@ -1253,7 +1255,7 @@ class FunctionTest(IronPythonTestCase):
             global a
             a = 2
             def g():
-                print(a)
+                a
             return g
 
         CompareCodeVars(f.__code__, ('g', ), ('a', ), (), ())
@@ -1295,15 +1297,12 @@ class FunctionTest(IronPythonTestCase):
         CompareCodeVars(f.__code__, ('a', 'g'), (), (), ('a', ))
         CompareCodeVars(f(42).__code__, (), (), ('a', ), ())
 
-        self.assertEqual(unqualified_exec.__code__.co_names, ('x', ))
-
     def test_delattr(self):
         def f(): pass
         f.abc = 42
         del f.abc
         def g(): f.abc
         self.assertRaises(AttributeError, g)
-
 
     def test_cp35180(self):
         def foo():
@@ -1366,6 +1365,7 @@ class FunctionTest(IronPythonTestCase):
         self.assertNotEqual(b.foo, a.foo)
         self.assertIn('eq', b.called)
 
+    @unittest.skipUnless(is_cli, "NotImplementedError only on IronPython")
     def test_function_type(self):
         fn_with_closure = create_fn_with_closure()
         def fn_no_closure():

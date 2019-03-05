@@ -17,7 +17,7 @@ namespace IronPython.Runtime {
         private const char Pass2SurrogateMarker = '-';
 
         public int CharacterWidth { get; }
-        public bool IsBigEndian { get; } // meaningul only for wide-char encodings
+        public bool IsBigEndian { get; } // meaningful only for wide-char encodings
 
         private Encoding Pass1Encoding { get; }
         private Encoding Pass2Encoding { get; }
@@ -44,6 +44,8 @@ namespace IronPython.Runtime {
         public override int GetByteCount(char[] chars, int index, int count) {
             if (_residentEncoder == null) {
                 _residentEncoder = GetEncoder();
+            } else {
+                _residentEncoder.Reset();
             }
             return _residentEncoder.GetByteCount(chars, index, count, flush: true);
         }
@@ -51,6 +53,8 @@ namespace IronPython.Runtime {
         public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex) {
             if (_residentEncoder == null) {
                 _residentEncoder = GetEncoder();
+            } else {
+                _residentEncoder.Reset();
             }
             return _residentEncoder.GetBytes(chars, charIndex, charCount, bytes, byteIndex, flush: true);
         }
@@ -58,13 +62,17 @@ namespace IronPython.Runtime {
         public override int GetCharCount(byte[] bytes, int index, int count) {
             if (_residentDecoder == null) {
                 _residentDecoder = GetDecoder();
+            } else {
+                _residentDecoder.Reset();
             }
-            return _residentDecoder.GetCharCount(bytes, index, count);
+            return _residentDecoder.GetCharCount(bytes, index, count, flush: true);
         }
 
         public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) {
             if (_residentDecoder == null) {
                 _residentDecoder = GetDecoder();
+            } else {
+                _residentDecoder.Reset();
             }
             return _residentDecoder.GetChars(bytes, byteIndex, byteCount, chars, charIndex, flush: true);
         }

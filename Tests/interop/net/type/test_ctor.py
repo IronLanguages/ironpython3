@@ -1,11 +1,12 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
+
 '''
 Calls to constructor.
 '''
 
-import unittest 
+import unittest
 
 from iptest import IronPythonTestCase, run_test, skipUnlessIronPython
 
@@ -15,7 +16,7 @@ class CtorTest(IronPythonTestCase):
         super(CtorTest, self).setUp()
         self.add_clr_assemblies("methodargs", "typesamples")
 
-#// 1 argument 
+#// 1 argument
 #public class Ctor100 {
     #public Ctor100(int arg) { }
 #}
@@ -25,13 +26,13 @@ class CtorTest(IronPythonTestCase):
 #public class Ctor102 {
     #public Ctor102([Optional]int arg) { }
 #}
-    
+
     def test_ctor_1_arg(self):
         from clr import StrongBox
         from Merlin.Testing.Call import Ctor101, Ctor103, Ctor105, Ctor110
         box_int = StrongBox[int]
         Ctor101()
-        
+
         #public class Ctor103 {
         #   public Ctor103(params int[] arg) { }
         #}
@@ -42,14 +43,12 @@ class CtorTest(IronPythonTestCase):
         #public class Ctor110 {
         #   public Ctor110(ref int arg) { arg = 10; }
         #}
-        
-        
+
         x, y = Ctor110(2)
 
         x = box_int()
         Ctor110(x)
         self.assertEqual(x.Value, 10)  # bug 313045
-        
 
         #public class Ctor111 {
         #   public Ctor111(out int arg) { arg = 10; }
@@ -60,12 +59,12 @@ class CtorTest(IronPythonTestCase):
         #x = box_int()
         #Ctor111(x)
         #self.assertEqual(x.Value, 10)   # bug 313045
-    
+
     def test_object_array_as_ctor_args(self):
         from System import Array
         from Merlin.Testing.Call import Ctor104
         Ctor104(Array[object]([1,2]))
-    
+
     def test_ctor_keyword(self):
         from Merlin.Testing import Flag
         from Merlin.Testing.Call import Ctor610
@@ -73,7 +72,7 @@ class CtorTest(IronPythonTestCase):
             Flag[int, int, int].Check(1, 2, 3)
             self.assertEqual(o.Arg4, 4)
             Flag[int, int, int].Reset()
-            
+
         x = 4
         o = Ctor610(1, arg2 = 2, Arg3 = 3, Arg4 = x); check(o)
         o = Ctor610(Arg3 = 3, Arg4 = x, arg1 = 1, arg2 = 2); check(o)
@@ -113,17 +112,17 @@ class CtorTest(IronPythonTestCase):
         self.assertEqual(x.IntField, 0)
         self.assertEqual(x.StringField, "def")
         self.assertEqual(x.ObjectField, None)
-        
+
         # with not-existing field as keyword
         # bug: 361389
-        self.assertRaisesMessage(TypeError, 
-            "CreateInstance() takes no arguments (2 given)", 
+        self.assertRaisesMessage(TypeError,
+            "CreateInstance() takes no arguments (2 given)",
             lambda: Struct(IntField = 2, FloatField = 3.4))
-        
+
         # set with value of "wrong" type
         # bug: 361389
-        self.assertRaisesMessage(TypeError, 
-            "expected str, got int", 
+        self.assertRaisesMessage(TypeError,
+            "expected str, got int",
             lambda: Struct(StringField = 2))
 
     def test_cp14861(self):
@@ -133,9 +132,8 @@ class CtorTest(IronPythonTestCase):
             self.assertEqual(x.IntField, 2)
             self.assertEqual(x.StringField, "abc")
             self.assertEqual(x.ObjectField, 4)
-        for i in xrange(2):
+        for i in range(2):
             foo()
-            exec "foo()" in globals(), locals() 
+            exec("foo()", globals(), locals())
 
 run_test(__name__)
-

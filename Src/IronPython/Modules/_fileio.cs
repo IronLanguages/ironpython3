@@ -66,7 +66,7 @@ namespace IronPython.Modules {
                 _consoleStreamType = consoleStreamType;
             }
 
-            public FileIO(CodeContext/*!*/ context, int fd, string mode="r", bool closefd=true)
+            public FileIO(CodeContext/*!*/ context, int fd, string mode="r", bool closefd=true, object opener=null)
                 : base(context) {
                 if (fd < 0) {
                     throw PythonOps.ValueError("fd must be >= 0");
@@ -103,38 +103,45 @@ namespace IronPython.Modules {
                 _closefd = closefd;
             }
             
-            public FileIO(CodeContext/*!*/ context, string name, string mode="r", bool closefd=true)
+            public FileIO(CodeContext/*!*/ context, string name, string mode="r", bool closefd=true, object opener = null)
                 : base(context) {
                 if (!closefd) {
                     throw PythonOps.ValueError("Cannot use closefd=False with file name");
                 }
                 _closefd = true;
+
                 this.name = name;
                 PlatformAdaptationLayer pal = context.LanguageContext.DomainManager.Platform;
 
+                int flags = 0;
                 switch (StandardizeMode(mode)) {
                     case "r":
                         _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                         this.mode = "rb";
+                        flags |= O_RDONLY;
                         break;
                     case "w":
                         _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
                         this.mode = "wb";
+                        flags |= O_CREAT | O_TRUNC | O_WRONLY;
                         break;
                     case "a":
                         _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
                         _readStream.Seek(0L, SeekOrigin.End);
                         this.mode = "ab";
+                        flags |= O_APPEND | O_CREAT;
                         break;
                     case "r+":
                     case "+r":
                         _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
                         this.mode = "rb+";
+                        flags |= O_RDWR;
                         break;
                     case "w+":
                     case "+w":
                         _readStream = _writeStream = OpenFile(context, pal, name, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
                         this.mode = "rb+";
+                        flags |= O_CREAT | O_TRUNC | O_RDWR;
                         break;
                     case "a+":
                     case "+a":
@@ -143,6 +150,7 @@ namespace IronPython.Modules {
                         _readStream.Seek(0L, SeekOrigin.End);
                         _writeStream.Seek(0L, SeekOrigin.End);
                         this.mode = "ab+";
+                        flags |= O_APPEND | O_CREAT | O_RDWR;
                         break;
                     default:
                         BadMode(mode);
@@ -150,6 +158,25 @@ namespace IronPython.Modules {
                 }
 
                 _context = context.LanguageContext;
+
+                if (opener != null) {
+                    object fdobj = PythonOps.CallWithContext(context, opener, name, flags);
+                    if (fdobj is int fd) {
+                        if (fd < 0) {
+                            throw PythonOps.ValueError("opener returned {0}", fd);
+                        }
+
+                        if (_context.FileManager.TryGetFileFromId(_context, fd, out FileIO file)) {
+                            _readStream = file._readStream;
+                            _writeStream = file._writeStream;
+                        } else if (_context.FileManager.TryGetObjectFromId(_context, fd, out object fileObj) && fileObj is Stream stream) {
+                            _readStream = stream;
+                            _writeStream = stream;
+                        }
+                    } else {
+                        throw PythonOps.TypeError("expected integer from opener");
+                    }
+                }
             }
 
             /// <summary>

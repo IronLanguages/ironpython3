@@ -564,7 +564,7 @@ namespace IronPython.Modules {
             }
 
             public void tofile(CodeContext context, PythonIOModule._IOBase f) {
-                f.write(context, tostring());
+                f.write(context, tobytes());
             }
 
             public PythonList tolist() {
@@ -575,17 +575,14 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            public string tostring() {
+            public Bytes tobytes() {
                 Stream s = ToStream();
                 byte[] bytes = new byte[s.Length];
                 s.Read(bytes, 0, (int)s.Length);
-
-                StringBuilder res = new StringBuilder();
-                for (int i = 0; i < bytes.Length; i++) {
-                    res.Append((char)bytes[i]);
-                }
-                return res.ToString();
+                return Bytes.Make(bytes);
             }
+
+            public Bytes tostring() => tobytes();
 
             public string tounicode(CodeContext/*!*/ context) {
                 if (_typeCode != 'u') throw PythonOps.ValueError("only 'u' arrays can be converted to unicode");

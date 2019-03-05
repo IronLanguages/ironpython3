@@ -2805,39 +2805,9 @@ namespace IronPython.Modules {
                 mode += '+';
             }
 
-            FileIO fio;
-            if (opener != null) {
-                int flags = 0;
-                if (writing) {
-                    flags |= O_CREAT | O_TRUNC;
-                }
-                if (appending) {
-                    flags |= O_APPEND | O_CREAT;
-                }
-
-                if (updating) {
-                    flags |= O_RDWR;
-                } else if (reading) {
-                    flags |= O_RDONLY;
-                } else {
-                    flags |= O_WRONLY;
-                }
-                
-                object fdobj = PythonOps.CallWithContext(context, opener, file, flags);
-                if (!(fdobj is int)) {
-                    throw PythonOps.TypeError("expected integer from opener");
-                }
-                
-                fd = (int) fdobj;
-                if (fd < 0) {
-                    throw PythonOps.ValueError("opener returned {0}", fd);
-                }
-                fio = new FileIO(context, fd, mode, closefd);
-            } else {
-                fio = fname != null
-                    ? new FileIO(context, fname, mode, closefd)
-                    : new FileIO(context, fd, mode, closefd);
-            }
+            FileIO fio = fname != null
+                    ? new FileIO(context, fname, mode, closefd, opener)
+                    : new FileIO(context, fd, mode, closefd, opener);
 
             bool line_buffering = false;
             if (buffering == 1 || buffering < 0 && fio.isatty(context)) {

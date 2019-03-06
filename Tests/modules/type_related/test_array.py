@@ -393,7 +393,7 @@ class ArrayTest(unittest.TestCase):
 
     def test_array_tostring(self):
         import array
-        self.assertEqual(array.array('u', u'abc').tostring(), 'a\x00b\x00c\x00')
+        self.assertEqual(array.array('u', u'abc').tostring(), b'a\x00b\x00c\x00')
 
     def test_array_tounicode(self):
         '''

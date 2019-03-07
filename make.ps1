@@ -30,7 +30,10 @@ if(!$global:isUnix) {
         Exit 1
     }
 
-    if([System.IO.File]::Exists([System.IO.Path]::Combine($_VSINSTPATH, 'MSBuild\15.0\Bin\MSBuild.exe'))) {
+    if([System.IO.File]::Exists([System.IO.Path]::Combine($_VSINSTPATH, 'MSBuild\Current\Bin\MSBuild.exe'))) {
+        $env:PATH = [String]::Join(';', $env:PATH, [System.IO.Path]::Combine($_VSINSTPATH, 'MSBuild\Current\Bin'))
+    }
+    elseif([System.IO.File]::Exists([System.IO.Path]::Combine($_VSINSTPATH, 'MSBuild\15.0\Bin\MSBuild.exe'))) {
         $env:PATH = [String]::Join(';', $env:PATH, [System.IO.Path]::Combine($_VSINSTPATH, 'MSBuild\15.0\Bin'))
     }
 }

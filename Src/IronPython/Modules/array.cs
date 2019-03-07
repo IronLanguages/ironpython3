@@ -31,7 +31,7 @@ namespace IronPython.Modules {
         public static readonly string typecodes = "cbBuHhiIlLfd";
 
         [PythonType]
-        public class array : IEnumerable, IWeakReferenceable, ICollection, ICodeFormattable, IList<object>, IStructuralEquatable
+        public class array : IEnumerable, IWeakReferenceable, ICollection, ICodeFormattable, IList<object>, IStructuralEquatable, IBufferProtocol
         {
             private ArrayData _data;
             private readonly char _typeCode;
@@ -1256,6 +1256,52 @@ namespace IronPython.Modules {
                 for (int i = 0; i < _data.Length; i++) {
                     yield return _data.GetData(i);
                 }
+            }
+
+            #endregion
+
+            #region IBufferProtocol Members
+
+            object IBufferProtocol.GetItem(int index) => this[index];
+
+            void IBufferProtocol.SetItem(int index, object value) {
+                this[index] = value;
+            }
+
+            void IBufferProtocol.SetSlice(Slice index, object value) {
+                this[index] = value;
+            }
+
+            int IBufferProtocol.ItemCount => _data.Length;
+
+            string IBufferProtocol.Format => _typeCode.ToString();
+
+            BigInteger IBufferProtocol.ItemSize => itemsize;
+
+            BigInteger IBufferProtocol.NumberDimensions => 1;
+
+            bool IBufferProtocol.ReadOnly => false;
+
+            IList<BigInteger> IBufferProtocol.GetShape(int start, int? end) => new[] { (BigInteger)(end ?? _data.Length) - start };
+
+            PythonTuple IBufferProtocol.Strides => PythonTuple.MakeTuple(itemsize);
+
+            object IBufferProtocol.SubOffsets => null;
+
+            Bytes IBufferProtocol.ToBytes(int start, int? end) {
+                if (start == 0 && end == null) {
+                    return tobytes();
+                }
+
+                return ((array)this[new Slice(start, end)]).tobytes();
+            }
+
+            PythonList IBufferProtocol.ToList(int start, int? end) {
+                if (start == 0 && end == null) {
+                    return tolist();
+                }
+
+                return ((array)this[new Slice(start, end)]).tolist();
             }
 
             #endregion

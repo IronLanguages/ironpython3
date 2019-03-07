@@ -57,7 +57,7 @@ namespace IronPython.Modules {
                         SetCustomMember(context,
                             "value",
                             new ReflectedExtensionProperty(
-                                new ExtensionPropertyInfo(this, typeof(CTypes).GetMethod("GetCharArrayValue")),
+                                new ExtensionPropertyInfo(this, typeof(CTypes).GetMethod(nameof(CTypes.GetCharArrayValue))),
                                 NameType.Property | NameType.Python
                             )
                         );
@@ -65,7 +65,7 @@ namespace IronPython.Modules {
                         SetCustomMember(context,
                             "raw",
                             new ReflectedExtensionProperty(
-                                new ExtensionPropertyInfo(this, typeof(CTypes).GetMethod("GetWCharArrayRaw")),
+                                new ExtensionPropertyInfo(this, typeof(CTypes).GetMethod(nameof(CTypes.GetWCharArrayRaw))),
                                 NameType.Property | NameType.Python
                             )
                         );
@@ -73,7 +73,7 @@ namespace IronPython.Modules {
                         SetCustomMember(context,
                             "value",
                             new ReflectedExtensionProperty(
-                                new ExtensionPropertyInfo(this, typeof(CTypes).GetMethod("GetWCharArrayValue")),
+                                new ExtensionPropertyInfo(this, typeof(CTypes).GetMethod(nameof(CTypes.GetWCharArrayValue))),
                                 NameType.Property | NameType.Python
                             )
                         );
@@ -81,7 +81,7 @@ namespace IronPython.Modules {
                         SetCustomMember(context,
                             "raw",
                             new ReflectedExtensionProperty(
-                                new ExtensionPropertyInfo(this, typeof(CTypes).GetMethod("GetWCharArrayRaw")),
+                                new ExtensionPropertyInfo(this, typeof(CTypes).GetMethod(nameof(CTypes.GetWCharArrayRaw))),
                                 NameType.Property | NameType.Python
                             )
                         );
@@ -193,7 +193,7 @@ namespace IronPython.Modules {
                         // remove any trailing nulls
                         for (int i = 0; i < str.Count; i++) {
                             if (str[i] == 0) {
-                                return str.Substring(0, i);
+                                return new Bytes(str.Substring(0, i));
                             }
                         }
 

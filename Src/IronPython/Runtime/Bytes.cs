@@ -19,7 +19,7 @@ using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
     [PythonType("bytes")]
-    public class Bytes : IList<byte>, ICodeFormattable, IExpressionSerializable, IBufferProtocol {
+    public class Bytes : IList<byte>, IEquatable<Bytes>, ICodeFormattable, IExpressionSerializable, IBufferProtocol {
         internal byte[]/*!*/ _bytes;
         internal static Bytes/*!*/ Empty = new Bytes();
 
@@ -947,16 +947,22 @@ namespace IronPython.Runtime {
 
         #region Equality Members
 
-        public override bool Equals(object obj) {
-            if (obj is IList<byte> bytes) {
-                return _bytes.Compare(bytes) == 0;
-            }
+        public bool __eq__(CodeContext/*!*/ context, [NotNull]Bytes value) => Equals(value);
 
-            return false;
-        }
+        [return: MaybeNotImplemented]
+        public object __eq__(CodeContext/*!*/ context, object value) => NotImplementedType.Value;
+
+        public bool __ne__(CodeContext/*!*/ context, [NotNull]Bytes value) => !Equals(value);
+
+        [return: MaybeNotImplemented]
+        public object __ne__(CodeContext/*!*/ context, object value) => NotImplementedType.Value;
+
+        public bool Equals(Bytes other) => other != null && (ReferenceEquals(this, other) || Enumerable.SequenceEqual(_bytes, other._bytes));
+
+        public override bool Equals(object obj) => obj is Bytes bytes && Equals(bytes);
 
         public override int GetHashCode() {
-            return ToString().GetHashCode();
+            return PythonOps.MakeString(this).GetHashCode();
         }
 
         #endregion

@@ -638,7 +638,7 @@ namespace IronPython.Modules {
         /// Helper function for translating from memset to NT's FillMemory API.
         /// </summary>
         private static IntPtr StringAt(IntPtr src, int len) {
-            byte[] res;
+            Bytes res;
             if (len == -1) {
                 res = MemoryHolder.ReadBytes(src, 0);
             } else {

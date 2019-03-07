@@ -8,10 +8,11 @@ using System.Numerics;
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
     [PythonType("memoryview")]
-    public sealed class MemoryView : IEquatable<MemoryView>, ICodeFormattable {
+    public sealed class MemoryView : ICodeFormattable {
         private IBufferProtocol _buffer;
         private readonly int _start;
         private readonly int? _end;
@@ -198,13 +199,20 @@ namespace IronPython.Runtime {
 
         public const object __hash__ = null;
 
-        public bool Equals(MemoryView other) => other != null && tobytes().Equals(other.tobytes());
+        public bool __eq__(CodeContext/*!*/ context, [NotNull]MemoryView value) => tobytes().Equals(value.tobytes());
 
-        public override bool Equals(object obj) => obj is MemoryView other && Equals(other);
+        public bool __eq__(CodeContext/*!*/ context, [NotNull]IBufferProtocol value) => __eq__(context, new MemoryView(value));
 
-        public override int GetHashCode() {
-            return base.GetHashCode();
-        }
+        [return: MaybeNotImplemented]
+        public object __eq__(CodeContext/*!*/ context, object value) => NotImplementedType.Value;
+
+
+        public bool __ne__(CodeContext/*!*/ context, [NotNull]MemoryView value) => !__eq__(context, value);
+
+        public bool __ne__(CodeContext/*!*/ context, [NotNull]IBufferProtocol value) => !__eq__(context, value);
+
+        [return: MaybeNotImplemented]
+        public object __ne__(CodeContext/*!*/ context, object value) => NotImplementedType.Value;
 
         #region ICodeFormattable Members
 

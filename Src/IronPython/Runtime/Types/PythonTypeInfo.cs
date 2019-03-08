@@ -1012,7 +1012,7 @@ namespace IronPython.Runtime.Types {
                         ParameterInfo[] pis = method.Method.GetParameters();
                         if (pis.Length == 1) {
                             if (pis[0].ParameterType == typeof(object)) {
-                                return new MemberGroup(MethodTracker.FromMemberInfo(typeof(InstanceOps).GetMethod("NotEqualsMethod"), curType));
+                                return new MemberGroup(MethodTracker.FromMemberInfo(typeof(InstanceOps).GetMethod(nameof(InstanceOps.NotEqualsMethod)), curType));
                             }
                         }
                     }

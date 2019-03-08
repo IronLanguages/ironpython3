@@ -92,6 +92,12 @@ namespace IronPython.Modules {
                 return Bytes.Make(arr);
             }
 
+            public MemoryView getbuffer() {
+                _checkClosed();
+
+                return new MemoryView(new Bytes(_data), 0, _length);
+            }
+
             [Documentation("isatty() -> False\n\n"
                 + "Always returns False since BytesIO objects are not connected\n"
                 + "to a TTY-like device."
@@ -474,17 +480,20 @@ namespace IronPython.Modules {
             }
 
             private int DoWrite(object bytes) {
-                if (bytes is byte[]) {
-                    return DoWrite((byte[])bytes);
-                } else if (bytes is Bytes) {
-                    return DoWrite(((Bytes)bytes)._bytes); // as byte[]
-                } else if (bytes is ArrayModule.array) {
-                    return DoWrite(((ArrayModule.array)bytes).ToByteArray()); // as byte[]
-                } else if (bytes is ICollection<byte>) {
-                    return DoWrite((ICollection<byte>)bytes);
-                } else if (bytes is string) {
-                    // TODO Remove this when we move to 3.x
-                    return DoWrite((string)bytes); // as string
+                switch (bytes) {
+                    case byte[] b:
+                        return DoWrite(b);
+                    case Bytes b:
+                        return DoWrite(b.GetUnsafeByteArray());
+                    case ArrayModule.array a:
+                        return DoWrite(a.ToByteArray()); // as byte[]
+                    case ICollection<byte> c:
+                        return DoWrite(c);
+                    case string s:
+                        // TODO Remove this when we move to 3.x
+                        return DoWrite(s);
+                    case MemoryView mv:
+                        return DoWrite(mv.tobytes().GetUnsafeByteArray());
                 }
 
                 throw PythonOps.TypeError("expected a readable buffer object");

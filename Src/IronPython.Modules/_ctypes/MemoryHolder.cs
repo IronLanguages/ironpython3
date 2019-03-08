@@ -180,7 +180,7 @@ namespace IronPython.Modules {
 
         internal Bytes ReadBytes(int offset) {
             try {
-                return Bytes.Make(ReadBytes(_data, offset));
+                return ReadBytes(_data, offset);
             } finally {
                 GC.KeepAlive(this);
             }
@@ -196,13 +196,13 @@ namespace IronPython.Modules {
 
         internal Bytes ReadBytes(int offset, int length) {
             try {
-                return Bytes.Make(ReadBytes(_data, offset, length));
+                return ReadBytes(_data, offset, length);
             } finally {
                 GC.KeepAlive(this);
             }
         }
 
-        internal static byte[] ReadBytes(IntPtr addr, int offset, int length) {
+        internal static Bytes ReadBytes(IntPtr addr, int offset, int length) {
             // instead of Marshal.PtrToStringAnsi we do this because
             // ptrToStringAnsi gives special treatment to values >= 128.
             MemoryStream res = new MemoryStream();
@@ -211,10 +211,10 @@ namespace IronPython.Modules {
                     res.WriteByte(Marshal.ReadByte(addr, offset + i));
                 }
             }
-            return res.ToArray();
+            return Bytes.Make(res.ToArray());
         }
 
-        internal static byte[] ReadBytes(IntPtr addr, int offset) {
+        internal static Bytes ReadBytes(IntPtr addr, int offset) {
             // instead of Marshal.PtrToStringAnsi we do this because
             // ptrToStringAnsi gives special treatment to values >= 128.
             MemoryStream res = new MemoryStream();
@@ -222,7 +222,7 @@ namespace IronPython.Modules {
             while((b = Marshal.ReadByte(addr, offset++)) != 0) {
                 res.WriteByte(b);
             }
-            return res.ToArray();
+            return Bytes.Make(res.ToArray());
         }
 
         internal string ReadUnicodeString(int offset, int length) {

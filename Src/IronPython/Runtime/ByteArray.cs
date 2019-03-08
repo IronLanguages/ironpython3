@@ -532,7 +532,7 @@ namespace IronPython.Runtime {
                     obj[0] = CopyThis();
                 } else {
                     obj[0] = new ByteArray(_bytes.Substring(0, index));
-                    obj[1] = sep;
+                    obj[1] = new ByteArray(new List<byte>(sep));
                     obj[2] = new ByteArray(_bytes.Substring(index + sep.Count, _bytes.Count - index - sep.Count));
                 }
             }
@@ -1415,18 +1415,30 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        #region IValueEquality Members
+        #region Equality Members
 
         public const object __hash__ = null;
 
-        public override int GetHashCode() {
-            return (PythonTuple.MakeTuple(_bytes.ToArray())).GetHashCode();
-        }
+        public bool __eq__(CodeContext/*!*/ context, [NotNull]ByteArray value) => Equals(value);
 
-        public override bool Equals(object other) {
-            var bytes = other as IList<byte>;
+        public bool __eq__(CodeContext/*!*/ context, [NotNull]MemoryView value) => Equals(value.tobytes());
 
-            if (bytes == null || Count != bytes.Count) {
+        public bool __eq__(CodeContext/*!*/ context, [NotNull]IBufferProtocol value) => Equals(value.ToBytes(0, null));
+
+        [return: MaybeNotImplemented]
+        public object __eq__(CodeContext/*!*/ context, object value) => NotImplementedType.Value;
+
+        public bool __ne__(CodeContext/*!*/ context, [NotNull]ByteArray value) => !__eq__(context, value);
+
+        public bool __ne__(CodeContext/*!*/ context, [NotNull]MemoryView value) => !__eq__(context, value);
+
+        public bool __ne__(CodeContext/*!*/ context, [NotNull]IBufferProtocol value) => !__eq__(context, value);
+
+        [return: MaybeNotImplemented]
+        public object __ne__(CodeContext/*!*/ context, object value) => NotImplementedType.Value;
+
+        private bool Equals(ByteArray other) {
+            if (Count != other.Count) {
                 return false;
             } else if (Count == 0) {
                 // 2 empty ByteArrays are equal
@@ -1435,7 +1447,26 @@ namespace IronPython.Runtime {
 
             using (new OrderedLocker(this, other)) {
                 for (int i = 0; i < Count; i++) {
-                    if (_bytes[i] != bytes[i]) {
+                    if (_bytes[i] != other._bytes[i]) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private bool Equals(Bytes other) {
+            if (Count != other.Count) {
+                return false;
+            } else if (Count == 0) {
+                // 2 empty ByteArrays are equal
+                return true;
+            }
+
+            lock (this) {
+                for (int i = 0; i < Count; i++) {
+                    if (_bytes[i] != other._bytes[i]) {
                         return false;
                     }
                 }

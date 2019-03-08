@@ -6,13 +6,13 @@ import array
 import itertools
 import unittest
 
-from iptest import is_cli, run_test
+from iptest import run_test
 
 class SliceTests(unittest.TestCase):
     def testGet(self):
         m = memoryview(bytearray(range(5)))
         self.assertEqual(bytearray([3, 4]), m[3:5].tobytes())
-        
+
     def testGetNested(self):
         m = memoryview(bytearray(range(5)))
         self.assertEqual(bytearray([2, 3]), m[1:-1][1:3].tobytes())

@@ -7,6 +7,8 @@ import unittest
 
 from iptest import run_test
 
+long = type(sys.maxsize + 1)
+
 x="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 class SliceTest(unittest.TestCase):
 
@@ -80,9 +82,9 @@ class SliceTest(unittest.TestCase):
         self.assertTrue(l == list("ab~d!f@h#j$l%n^p&r*t(v)x-z=B_D+F[H]J{L}N|P;R:T/V?XYZ"))
 
     def test_negative(self):
-        l = range(10)
+        l = list(range(10))
         def f1(): l[::3] = [1]
-        def f2(): l[::3] = range(5)
+        def f2(): l[::3] = list(range(5))
         def f3(): l[::3] = (1,)
         def f4(): l[::3] = (1, 2, 3, 4, 5, 6)
         
@@ -94,7 +96,7 @@ class SliceTest(unittest.TestCase):
         self.assertEqual(slice(3) == slice(None, 3, None), True)
         self.assertEqual(slice(3) == 3, False)
 
-        self.assertEqual(range(10)[slice(None,None,2)], [0,2,4,6,8])
+        self.assertEqual(list(range(10))[slice(None,None,2)], [0,2,4,6,8])
 
     def test_coverage(self):
         # ToString
@@ -2685,12 +2687,12 @@ class SliceTest(unittest.TestCase):
             
         # only numeric types are passed to __getslice__
         validate_slice_result(foo()[:], (0, 2147483647))
-        validate_slice_result(foo()[2L:], (2L, 2147483647))
-        validate_slice_result(foo()[2L<<64:], (2147483647, 2147483647))
-        validate_slice_result(foo()[:2L], (0, 2L))
-        validate_slice_result(foo()[:2L<<64], (0, 2147483647))
-        validate_slice_result(foo()[2L:3L], (2L, 3L))
-        validate_slice_result(foo()[2L<<64:3L<<64], (2147483647, 2147483647))
+        validate_slice_result(foo()[long(2):], (long(2), 2147483647))
+        validate_slice_result(foo()[long(2)<<64:], (2147483647, 2147483647))
+        validate_slice_result(foo()[:long(2)], (0, long(2)))
+        validate_slice_result(foo()[:long(2)<<64], (0, 2147483647))
+        validate_slice_result(foo()[long(2):long(3)], (long(2), long(3)))
+        validate_slice_result(foo()[long(2)<<64:long(3)<<64], (2147483647, 2147483647))
         validate_slice_result(foo()[myint(2):], (2, 2147483647))
         validate_slice_result(foo()[:myint(2)], (0, 2))
         validate_slice_result(foo()[myint(2):myint(3)], (2, 3))
@@ -2744,17 +2746,17 @@ class SliceTest(unittest.TestCase):
         # only numeric types are passed to __getslice__
         foo()[:] = 123
         self.assertEqual(setVal, (0, 2147483647, 123))
-        foo()[2L:] = 123
-        self.assertEqual(setVal, (2L, 2147483647, 123))
-        foo()[2L<<64:] = 123
+        foo()[long(2):] = 123
+        self.assertEqual(setVal, (long(2), 2147483647, 123))
+        foo()[long(2)<<64:] = 123
         self.assertEqual(setVal, (2147483647, 2147483647, 123))
-        foo()[:2L] = 123
-        self.assertEqual(setVal, (0, 2L, 123))
-        foo()[:2L<<64] = 123
+        foo()[:long(2)] = 123
+        self.assertEqual(setVal, (0, long(2), 123))
+        foo()[:long(2)<<64] = 123
         self.assertEqual(setVal, (0, 2147483647, 123))
-        foo()[2L:3L] = 123
-        self.assertEqual(setVal, (2L, 3L, 123))
-        foo()[2L<<64:3L<<64] = 123
+        foo()[long(2):long(3)] = 123
+        self.assertEqual(setVal, (long(2), long(3), 123))
+        foo()[long(2)<<64:long(3)<<64] = 123
         self.assertEqual(setVal, (2147483647, 2147483647, 123))
         foo()[myint(2):] = 123
         self.assertEqual(setVal,  (2, 2147483647, 123))
@@ -2832,17 +2834,17 @@ class SliceTest(unittest.TestCase):
         # only numeric types are passed to __getslice__
         del foo()[:]
         self.assertEqual(setVal, (0, 2147483647))
-        del foo()[2L:]
-        self.assertEqual(setVal, (2L, 2147483647))
-        del foo()[2L<<64:]
+        del foo()[long(2):]
+        self.assertEqual(setVal, (long(2), 2147483647))
+        del foo()[long(2)<<64:]
         self.assertEqual(setVal, (2147483647, 2147483647))
-        del foo()[:2L]
-        self.assertEqual(setVal, (0, 2L))
-        del foo()[:2L<<64]
+        del foo()[:long(2)]
+        self.assertEqual(setVal, (0, long(2)))
+        del foo()[:long(2)<<64]
         self.assertEqual(setVal, (0, 2147483647))
-        del foo()[2L:3L]
-        self.assertEqual(setVal, (2L, 3L))
-        del foo()[2L<<64:3L<<64]
+        del foo()[long(2):long(3)]
+        self.assertEqual(setVal, (long(2), long(3)))
+        del foo()[long(2)<<64:long(3)<<64]
         self.assertEqual(setVal, (2147483647, 2147483647))
         del foo()[myint(2):]
         self.assertEqual(setVal,  (2, 2147483647))
@@ -3118,22 +3120,22 @@ class SliceTest(unittest.TestCase):
     
     def test_cp8297(self):
         #-1
-        x = range(3)
+        x = list(range(3))
         x[:-1] = x
         self.assertEqual(x, [0, 1, 2, 2])
         
         #-2
-        x = range(3)
+        x = list(range(3))
         x[:-2] = x
         self.assertEqual(x, [0, 1, 2, 1, 2])
         
-        for i in [0, -3, -10, -1001, -2147483648, -2147483649, -9223372036854775807L, -9223372036854775808L, -9223372036854775809L]:
-            x = range(3)
+        for i in [0, -3, -10, -1001, -2147483648, -2147483649, -9223372036854775807, -9223372036854775808, -9223372036854775809]:
+            x = list(range(3))
             x[:i] = x
             self.assertEqual(x, [0, 1, 2, 0, 1, 2])
 
     def test_pickle(self):
-        from cPickle import dumps, loads
+        from pickle import dumps, loads
         vals = [None, 1]
         for start in vals:
             for stop in vals:

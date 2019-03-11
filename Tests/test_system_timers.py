@@ -4,7 +4,7 @@
 
 import unittest
 
-from iptest import is_netcoreapp, run_test, skipUnlessIronPython
+from iptest import is_netcoreapp, is_osx, run_test, skipUnlessIronPython
 from time import sleep
 from _thread import start_new_thread
 
@@ -94,7 +94,7 @@ class SystemTimersTest(unittest.TestCase):
         self.timer_helper(num_handlers=5)
         self.timer_helper(num_handlers=500)
 
-
+    @unittest.skipIf(is_osx, 'https://github.com/IronLanguages/ironpython2/issues/469')
     def test_elapsed_event_args(self):
         '''
         http://msdn2.microsoft.com/en-us/library/system.timers.elapsedeventargs.aspx

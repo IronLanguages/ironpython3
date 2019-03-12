@@ -2001,6 +2001,27 @@ namespace IronPython.Runtime.Operations {
                 return res;
             }
 #endif
+
+            #region Forwarders
+
+            public override int CodePage => _encoding.CodePage;
+            public override int WindowsCodePage => _encoding.WindowsCodePage;
+
+            public override string EncodingName => _encoding.EncodingName;
+            public override string WebName => _encoding.WebName;
+            public override string HeaderName => _encoding.HeaderName;
+            public override string BodyName => _encoding.BodyName;
+            public override bool IsBrowserDisplay => _encoding.IsBrowserDisplay;
+            public override bool IsBrowserSave => _encoding.IsBrowserSave;
+            public override bool IsMailNewsDisplay => _encoding.IsMailNewsDisplay;
+            public override bool IsMailNewsSave => _encoding.IsMailNewsSave;
+
+            public override bool IsSingleByte => _encoding.IsSingleByte;
+
+            public override int GetHashCode() => _encoding.GetHashCode();
+            public override bool IsAlwaysNormalized(NormalizationForm form) => _encoding.IsAlwaysNormalized(form);
+
+            #endregion
         }
 
         private static PythonList SplitEmptyString(bool separators) {

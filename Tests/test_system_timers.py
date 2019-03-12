@@ -94,7 +94,6 @@ class SystemTimersTest(unittest.TestCase):
         self.timer_helper(num_handlers=5)
         self.timer_helper(num_handlers=500)
 
-    @unittest.skipIf(is_osx, 'https://github.com/IronLanguages/ironpython2/issues/469')
     def test_elapsed_event_args(self):
         '''
         http://msdn2.microsoft.com/en-us/library/system.timers.elapsedeventargs.aspx
@@ -134,7 +133,6 @@ class SystemTimersTest(unittest.TestCase):
 
         #Let checkEventArgs take care of verification
         self.assertEqual(EVENT_ERRORS, [])
-
 
     def test_elapsed_event_handler(self):
         '''
@@ -257,7 +255,6 @@ class SystemTimersTest(unittest.TestCase):
         #Dispose
         aTimer.Dispose()
         self.assertTrue(DISPOSED_CALLED)
-
 
     def test_timer_description_attribute(self):
         '''

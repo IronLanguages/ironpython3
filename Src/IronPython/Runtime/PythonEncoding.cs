@@ -168,7 +168,7 @@ namespace IronPython.Runtime {
                 int written = _pass1encoder.GetBytes(chars, charIndex, charCount, bytes, byteIndex, flush);
 
                 // If there were no fallback bytes, the job is done
-                if (fbuf1?.FallbackByteCount == fbkIdxStart && (fbuf2?.IsEmpty ?? true) && flush) {
+                if (fbuf1 == null || fbuf1.FallbackByteCount == fbkIdxStart && (fbuf2?.IsEmpty ?? true) && flush) {
                     return written;
                 }
 
@@ -328,7 +328,7 @@ namespace IronPython.Runtime {
                 int written = _pass1decoder.GetChars(bytes, byteIndex, byteCount, chars, charIndex, flush);
 
                 // If there were no lone surrogates, the job is done
-                if (fbuf1?.FallbackCharCount == surIdxStart && (fbuf2?.IsEmpty ?? true) && flush) {
+                if (fbuf1 == null || fbuf1.FallbackCharCount == surIdxStart && (fbuf2?.IsEmpty ?? true) && flush) {
                     return written;
                 }
 

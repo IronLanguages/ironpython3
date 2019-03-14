@@ -7,7 +7,8 @@
     <authors>IronPython Contributors,Microsoft</authors>
     <owners>IronPython Community</owners>
     <projectUrl>http://ironpython.net</projectUrl>
-    <licenseUrl>https://github.com/IronLanguages/ironpython3/blob/master/LICENSE</licenseUrl>
+    <repository type="git" url="https://github.com/IronLanguages/ironpython3.git" />
+    <license type="expression">Apache-2.0</license>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>IronPython is an open-source implementation of the Python programming language which is tightly integrated with the .NET Framework. IronPython can use the .NET Framework and Python libraries, and other .NET languages can use Python code just as easily.</description>
     <summary>IronPython is an open-source implementation of the Python programming language which is tightly integrated with the .NET Framework.</summary>
@@ -30,8 +31,9 @@
     </dependencies>
   </metadata>
   <files>
-    <file src="**\*.dll" target="lib" exclude="**\rowantest*.dll;**\IronPythonTest.dll;**\DLLs\*.dll;Lib\*.*;**\Microsoft.*.*;**\IKVM.Reflection.dll;**\ipy.dll;**\System*.dll" />
-    <file src="**\*.xml" target="lib" exclude="**\Microsoft.*.*;**\DLLs\*.xml" />
+    <file src="**\IronPython*.dll" target="lib" exclude="**\IronPythonTest.dll;**\DLLs\*.dll" />
+    <file src="**\IronPython*.pdb" target="lib" exclude="**\IronPythonTest.pdb;**\DLLs\*.pdb" />
+    <file src="**\IronPython*.xml" target="lib" exclude="**\IronPythonTest.xml;**\DLLs\*.xml" />
     <file src="LICENSE;README.md" />
   </files>
 </package>

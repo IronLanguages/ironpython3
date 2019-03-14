@@ -26,10 +26,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		IronPython.ruleset = IronPython.ruleset
 		IronPython.StdLib.nuspec = IronPython.StdLib.nuspec
 		LICENSE = LICENSE
-		make.cmd = make.cmd
-		Makefile = Makefile
+		make.ps1 = make.ps1
 		NuGet.config = NuGet.config
-		README = README
+		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IronPython.SQLite", "Src\IronPython.SQLite\IronPython.SQLite.csproj", "{4A617A40-2BA7-4713-AAFE-F90C4325C581}"

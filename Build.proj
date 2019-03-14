@@ -13,7 +13,6 @@
     <ReferenceDir>$(RootDir)Util\References</ReferenceDir>
     <BinDir>$(RootDir)bin</BinDir>
     <BuildSysDir>$(RootDir)Build</BuildSysDir>
-    <MSBuildCommunityTasksPath>$(RootDir)Util\MSBuildCommunityTasks</MSBuildCommunityTasksPath>
     <TargetFrameworks Condition="'$(TargetFrameworks)' == ''">net45;netcoreapp2.1</TargetFrameworks>
   </PropertyGroup>
 
@@ -78,10 +77,6 @@
     <MakeDir Directories="$(StageDir)" Condition="!Exists('$(StageDir)')" />
   </Target>
 
-  <Target Name="_MakePackageDir">
-    <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')"/>
-  </Target>
-
   <Target Name="_PlatformStage" DependsOnTargets="RestoreReferences;_MakeStageDir">
     <MSBuild 
       Projects="$(Solution)" 
@@ -115,22 +110,13 @@
              Targets="Stage" />
   </Target>
 
-  <Target Name="_ZipStdLib" DependsOnTargets="_CopyStdLib">
-    <ItemGroup>
-      <StdLibFiles Include="$(StageDir)\Lib\**\*.*" />
-    </ItemGroup>
-    <Zip Files="@(StdLibFiles)" ZipFileName="$(PackageDir)\IronPython.StdLib.$(PackageVersion).zip" WorkingDirectory="$(StageDir)\Lib"/>
-  </Target>
-
   <PropertyGroup>
     <StageDependsOn>
       _MakeStageDir;
-      _MakePackageDir;
       _PlatformStage;
       _CopyDlrMainReferences;
       _CopyMainStageFiles;
       _CopyStdLib;
-      _ZipStdLib
     </StageDependsOn>
   </PropertyGroup>
 

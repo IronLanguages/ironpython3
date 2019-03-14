@@ -29,6 +29,9 @@
 
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
 
+    <!-- Don't include SourceRevisionId in InformationalVersion (SourceLink) - causes issues with IronPython.Runtime.CurrentVersion if true -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+
     <!-- DisplayVersion is used by the msi project -->
     <ShortReleaseLevel Condition="'$(ReleaseLevel)' == 'alpha'">a</ShortReleaseLevel>
     <ShortReleaseLevel Condition="'$(ReleaseLevel)' == 'beta'">b</ShortReleaseLevel>
@@ -98,7 +101,7 @@
   <!-- Release -->
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <DebugSymbols>false</DebugSymbols>
-    <DebugType>pdbonly</DebugType>
+    <DebugType>portable</DebugType>
     <Optimize>true</Optimize>
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
     <DefineConstants>$(Features);$(SignedSym);IPY3;TRACE</DefineConstants>

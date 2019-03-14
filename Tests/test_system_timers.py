@@ -4,7 +4,7 @@
 
 import unittest
 
-from iptest import is_netcoreapp, is_osx, run_test, skipUnlessIronPython
+from iptest import is_netcoreapp, run_test, skipUnlessIronPython
 from time import sleep
 from _thread import start_new_thread
 

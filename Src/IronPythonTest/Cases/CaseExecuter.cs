@@ -3,16 +3,16 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
+
 using IronPython.Hosting;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPythonTest.Util;
+
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
-using IronPython.Runtime.Operations;
 
 namespace IronPythonTest.Cases {
     class CaseExecuter {
@@ -77,12 +77,7 @@ namespace IronPythonTest.Cases {
         }
 
         public CaseExecuter() {
-            this.defaultEngine = Python.CreateEngine(new Dictionary<string, object> {
-                {"Debug", false},
-                {"Frames", true},
-                {"FullFrames", false},
-                {"RecursionLimit", 100}
-            });
+            this.defaultEngine = Python.CreateEngine();
 
             this.defaultEngine.SetHostVariables(
                 Path.GetDirectoryName(Executable),
@@ -181,9 +176,23 @@ namespace IronPythonTest.Cases {
                 { "TEST_FILE_DIR", Path.GetDirectoryName(testcase.Path) }
             };
 
+            // add the arguments - in the normal case no arguments should be added
+            var arguments = new List<string>();
+            if (testcase.Options.Debug)
+                arguments.Add("-X:Debug");
+            if (!testcase.Options.Frames)
+                arguments.Add("-X:NoFrames");
+            if (testcase.Options.FullFrames)
+                arguments.Add("-X:FullFrames");
+            if (testcase.Options.MaxRecursion != int.MaxValue)
+                arguments.Add($"-X:MaxRecursion {testcase.Options.MaxRecursion}");
+            if (testcase.Options.Tracing)
+                arguments.Add("-X:Tracing");
+            arguments.Add(ReplaceVariables(testcase.Options.Arguments, argReplacements));
+
             using (Process proc = new Process()) {
                 proc.StartInfo.FileName = Executable;
-                proc.StartInfo.Arguments = ReplaceVariables(testcase.Options.Arguments, argReplacements);
+                proc.StartInfo.Arguments = string.Join(" ", arguments);
 
                 if (!string.IsNullOrEmpty(IRONPYTHONPATH)) {
                     proc.StartInfo.EnvironmentVariables["IRONPYTHONPATH"] = IRONPYTHONPATH;
@@ -231,6 +240,14 @@ namespace IronPythonTest.Cases {
         }
 
         private int GetScopeTest(TestInfo testcase) {
+            if (testcase.Options.Debug
+                    || !testcase.Options.Frames
+                    || testcase.Options.FullFrames
+                    || testcase.Options.MaxRecursion != int.MaxValue
+                    || testcase.Options.Tracing) {
+                throw new Exception("Options have no effect with IsolationLevel=DEFAULT, use ENGINE or PROCESS instead.");
+            }
+
             var source = this.defaultEngine.CreateScriptSourceFromString(
                 testcase.Text, testcase.Path, SourceCodeKind.File);
 

@@ -122,6 +122,7 @@ class IronPythonTestCase(unittest.TestCase, FileUtil, ProcessUtil):
         _add_reference_to_dlr_core()
         
     def load_iron_python_test(self, *args):
+        if not is_cli: return
         if args:
             return load_ironpython_test(*args)
         else:

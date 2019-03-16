@@ -1685,10 +1685,7 @@ namespace IronPython.Runtime.Operations {
                 case "strict": e.DecoderFallback = final ? DecoderFallback.ExceptionFallback : new ExceptionFallBack(numBytes, e is UTF8Encoding); break;
                 case "replace": e.DecoderFallback = ReplacementFallback; break;
                 case "ignore": e.DecoderFallback = new PythonDecoderFallback(); break;
-                case "surrogateescape":
-                    e = (e is PythonAsciiEncoding) ? // PythonAsciiEncoding insists on using its own fallbacks, downgrade to pure ASCII
-                        new PythonSurrogateEscapeEncoding(Encoding.ASCII) : new PythonSurrogateEscapeEncoding(e);
-                    break;
+                case "surrogateescape": e =  new PythonSurrogateEscapeEncoding(e); break;
                 default:
                     e.DecoderFallback = new PythonDecoderFallback(encoding, s,
                         () => LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors)));
@@ -1755,10 +1752,7 @@ namespace IronPython.Runtime.Operations {
                 case "backslashreplace": e.EncoderFallback = new BackslashEncoderReplaceFallback(); break;
                 case "xmlcharrefreplace": e.EncoderFallback = new XmlCharRefEncoderReplaceFallback(); break;
                 case "ignore": e.EncoderFallback = new PythonEncoderFallback(); break;
-                case "surrogateescape":
-                    e = (e is PythonAsciiEncoding) ? // PythonAsciiEncoding insists on using its own fallbacks, downgrade to pure ASCII
-                        new PythonSurrogateEscapeEncoding(Encoding.ASCII) : new PythonSurrogateEscapeEncoding(e);
-                    break;
+                case "surrogateescape": e = new PythonSurrogateEscapeEncoding(e); break;
                 default:
                     e.EncoderFallback = new PythonEncoderFallback(encoding, s,
                         () => LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors)));

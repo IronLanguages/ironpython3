@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
-  <Target Name="PkgPackage" Condition="'$(MacOS)' == 'true'" AfterTargets="Package"
+  <Target Name="PkgPackage" Condition="'$(MacOS)' == 'true'" DependsOnTargets="Stage" AfterTargets="Package"
           Outputs="$(PackageDir)\IronPython-$(PackageVersion).pkg">
     <!-- We need to create the directory structure we want to package -->
     <PropertyGroup>

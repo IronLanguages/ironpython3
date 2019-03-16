@@ -6,6 +6,8 @@
         <StageItem Include="$(TargetPath)" />
         <StageItem Include="$(DocumentationFile)" />
         <StageItem Include="$(PdbFile)" />
+        <StageItem Include="$(TargetDir)$(TargetName).xml" Condition=" Exists('$(TargetDir)$(TargetName).xml') " />
+        <StageItem Include="$(TargetDir)$(TargetName).pdb" Condition=" Exists('$(TargetDir)$(TargetName).pdb') " />
       </ItemGroup>
     </When>
     <When Condition=" '$(OutputType)' == 'Exe' or '$(OutputType)' == 'WinExe' ">

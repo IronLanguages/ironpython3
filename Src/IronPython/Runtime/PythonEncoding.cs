@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using IronPython.Runtime.Operations;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -42,7 +43,7 @@ namespace IronPython.Runtime {
         private Encoder _residentEncoder;
 
         public PythonEncoding(Encoding encoding, PythonEncoderFallback encoderFallback, PythonDecoderFallback decoderFallback)
-            //: base(0, encoderFallback, decoderFallback)  // unfortunately, this constructor is internal until .NET Framework 4.6
+        //: base(0, encoderFallback, decoderFallback)  // unfortunately, this constructor is internal until .NET Framework 4.6
         {
 
             if (encoding == null) throw new ArgumentNullException(nameof(encoding));
@@ -120,8 +121,7 @@ namespace IronPython.Runtime {
         public override int CodePage => Pass1Encoding.CodePage;
         public override int WindowsCodePage => Pass1Encoding.WindowsCodePage;
 
-        //public override string EncodingName => Pass1Encoding.EncodingName;
-        public override string EncodingName => Pass1Encoding.EncodingName + " with Surrogate Escape";
+        public override string EncodingName => Pass1Encoding.EncodingName;
 
         public override string HeaderName => Pass1Encoding.BodyName;
         public override string BodyName => Pass1Encoding.BodyName;
@@ -151,12 +151,16 @@ namespace IronPython.Runtime {
             }
 
             public override int GetByteCount(char[] chars, int index, int count, bool flush) {
+                int numBytes;
+
                 var fbuf1 = _pass1encoder.FallbackBuffer as PythonEncoderFallbackBuffer;
-
                 if (fbuf1 != null) fbuf1.ByteCountingMode = true;
-                int numBytes = _pass1encoder.GetByteCount(chars, index, count, flush);
-                if (fbuf1 != null) fbuf1.ByteCountingMode = false;
-
+                try {
+                    numBytes = _pass1encoder.GetByteCount(chars, index, count, flush);
+                    fbuf1?.ThrowIfNotEmpty(count, flush);
+                } finally {
+                    if (fbuf1 != null) fbuf1.ByteCountingMode = false;
+                }
                 return numBytes;
             }
 
@@ -167,8 +171,8 @@ namespace IronPython.Runtime {
 
                 int written = _pass1encoder.GetBytes(chars, charIndex, charCount, bytes, byteIndex, flush);
 
-                // If there were no fallback bytes, the job is done
-                if (fbuf1 == null || fbuf1.FallbackByteCount == fbkIdxStart && (fbuf2?.IsEmpty ?? true) && flush) {
+                // If the final increment and there were no fallback bytes, the job is done
+                if (fbuf1 == null || flush && fbuf1.FallbackByteCount == fbkIdxStart && fbuf1.IsEmpty && (fbuf2?.IsEmpty ?? true)) {
                     return written;
                 }
 
@@ -193,6 +197,10 @@ namespace IronPython.Runtime {
                         j += skip;
                     }
                 }
+
+                // Check if all fallback bytes are restored properly
+                fbuf1.ThrowIfNotEmpty(charCount, flush);
+                fbuf2.ThrowIfNotEmpty(charCount, flush);
 
                 return written;
             }
@@ -235,8 +243,11 @@ namespace IronPython.Runtime {
             private ByteCounter _byteCnt;
             private int _fbkCnt;
 
-            public PythonEncoderFallbackBuffer(bool isPass1, int encodingCharWidth)
-            {
+            // for error reporting
+            private char _lastCharUnknown;
+            private int _lastIndexUnknown = -1;
+
+            public PythonEncoderFallbackBuffer(bool isPass1, int encodingCharWidth) {
                 _marker = isPass1 ? Pass1Marker : Pass2Marker;
                 _fallbackBytes = isPass1 ? null : new Queue<byte>();
                 this.EncodingCharWidth = encodingCharWidth;
@@ -247,6 +258,14 @@ namespace IronPython.Runtime {
             public abstract byte[] GetFallbackBytes(char charUnknown, int index);
 
             public override bool Fallback(char charUnknown, int index) {
+                // The design limitation fow wide-char encodings is that
+                // fallback bytes must be char-aligned.
+                if (_byteCnt.Value % EncodingCharWidth != 0) {
+                    // bytes are not char-aligned, the fallback chars must be consecutive
+                    if (index != _lastIndexUnknown + 1) {
+                        throw PythonOps.UnicodeEncodeError($"incomplete input sequence at index: {_lastIndexUnknown}", _lastCharUnknown, _lastIndexUnknown);
+                    }
+                }
                 byte[] newFallbackBytes = GetFallbackBytes(charUnknown, index);
 
                 if (!ByteCountingMode) {
@@ -258,6 +277,8 @@ namespace IronPython.Runtime {
                     _fbkCnt += newFallbackBytes.Length;
                 }
                 _byteCnt.AddNumBytes(newFallbackBytes.Length);
+                _lastCharUnknown = charUnknown;
+                _lastIndexUnknown = index;
                 return _byteCnt.Value >= EncodingCharWidth;
             }
 
@@ -285,19 +306,34 @@ namespace IronPython.Runtime {
                 return _fallbackBytes.Dequeue();
             }
 
-            public bool IsEmpty => (_fallbackBytes?.Count ?? 0) == 0;
+            public virtual bool IsEmpty => (_fallbackBytes?.Count ?? 0) == 0;
 
             public int FallbackByteCount => _fbkCnt;
 
-            public bool ByteCountingMode {
+            public virtual bool ByteCountingMode {
                 get { return _byteCnt.ByteCountingMode; }
                 set { _byteCnt.ByteCountingMode = value; }
+            }
+
+            public virtual void ThrowIfNotEmpty(int endIndex, bool flush) {
+                if (flush && !IsEmpty || _byteCnt.Value % EncodingCharWidth != 0 && endIndex != _lastIndexUnknown + 1) {
+                    throw PythonOps.UnicodeEncodeError($"incomplete input sequence at index {_lastIndexUnknown}", _lastCharUnknown, _lastIndexUnknown);
+                }
+                if (ByteCountingMode) {
+                    // This increment has successfully been counted.
+                    // Therefore there will be no errors during translation.
+                    _lastIndexUnknown = -1;
+                } else {
+                    _lastIndexUnknown -= endIndex; // prep. for next incremental encoding step
+                }
             }
 
             public override void Reset() {
                 _fallbackBytes?.Clear();
                 _fbkCnt = 0;
                 _byteCnt.Reset();
+                _lastCharUnknown = '\0';
+                _lastIndexUnknown = -1;
             }
         }
 
@@ -314,8 +350,20 @@ namespace IronPython.Runtime {
             public override int GetCharCount(byte[] bytes, int index, int count)
                 => _pass1decoder.GetCharCount(bytes, index, count, flush: true);
 
-            public override int GetCharCount(byte[] bytes, int index, int count, bool flush)
-                => _pass1decoder.GetCharCount(bytes, index, count, flush);
+            public override int GetCharCount(byte[] bytes, int index, int count, bool flush) {
+                int numChars;
+
+                var fbuf1 = _pass1decoder.FallbackBuffer as PythonDecoderFallbackBuffer;
+                if (fbuf1 != null) fbuf1.CharCountingMode = true;
+                try {
+                    numChars = _pass1decoder.GetCharCount(bytes, index, count, flush);
+                    fbuf1?.ThrowIfNotEmpty(count, flush);
+                } finally {
+                    if (fbuf1 != null) fbuf1.CharCountingMode = false;
+                }
+                return numChars;
+            }
+
 
             public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
                 => GetChars(bytes, byteIndex, byteCount, chars, charIndex, flush: true);
@@ -327,8 +375,8 @@ namespace IronPython.Runtime {
 
                 int written = _pass1decoder.GetChars(bytes, byteIndex, byteCount, chars, charIndex, flush);
 
-                // If there were no lone surrogates, the job is done
-                if (fbuf1 == null || fbuf1.FallbackCharCount == surIdxStart && (fbuf2?.IsEmpty ?? true) && flush) {
+                // If the final increment and there were no fallback characters, the job is done
+                if (fbuf1 == null || flush && fbuf1.FallbackCharCount == surIdxStart && fbuf1.IsEmpty && (fbuf2?.IsEmpty ?? true)) {
                     return written;
                 }
 
@@ -347,6 +395,10 @@ namespace IronPython.Runtime {
                         chars[j] = fbuf2.GetFallbackChar();
                     }
                 }
+
+                // Check if all fallback chars are restored properly
+                fbuf1.ThrowIfNotEmpty(byteCount, flush);
+                fbuf2.ThrowIfNotEmpty(byteCount, flush);
 
                 return written;
             }
@@ -372,8 +424,7 @@ namespace IronPython.Runtime {
             private int _charNum;
             private int _charCnt;
 
-            public PythonDecoderFallbackBuffer(bool isPass1, int encodingCharWidth)
-            {
+            public PythonDecoderFallbackBuffer(bool isPass1, int encodingCharWidth) {
                 _marker = isPass1 ? Pass1Marker : Pass2Marker;
                 _fallbackChars = isPass1 ? null : new Queue<char>();
                 this.EncodingCharWidth = encodingCharWidth;
@@ -420,9 +471,19 @@ namespace IronPython.Runtime {
                 return _fallbackChars.Dequeue();
             }
 
-            public bool IsEmpty => (_fallbackChars?.Count ?? 0) == 0;
+            public virtual bool IsEmpty => (_fallbackChars?.Count ?? 0) == 0;
 
             public int FallbackCharCount => _fbkCnt;
+
+            public virtual bool CharCountingMode { get; set; }
+
+            public virtual void ThrowIfNotEmpty(int endIndex, bool flush) {
+                if (flush && !IsEmpty) {
+                    // If this exception is being thrown, the problem is with the code, not the input sequence.
+                    // Therefore, the exception does not carry any input data.
+                    throw new DecoderFallbackException("decoding failure");
+                }
+            }
 
             public override void Reset() {
                 _fallbackChars?.Clear();
@@ -435,7 +496,7 @@ namespace IronPython.Runtime {
 
     internal class PythonSurrogateEscapeEncoding : PythonEncoding {
         // Defined in PEP 383
-        private const int LoneSurrogateBase = 0xdc00;
+        private const ushort LoneSurrogateBase = 0xdc00;
 
         public PythonSurrogateEscapeEncoding(Encoding encoding)
             : base(encoding, new SurrogateEscapeEncoderFallback(), new SurrogateEscapeDecoderFallback()) { }
@@ -453,10 +514,11 @@ namespace IronPython.Runtime {
 
             public override byte[] GetFallbackBytes(char charUnknown, int index) {
                 if ((charUnknown & ~0xff) != LoneSurrogateBase) {
-                    // unfortunately, EncoderFallbackException(string, char, int) is not accessible here
-                    // TODO: use reflection to access it
-                    throw new EncoderFallbackException(
-                        $"'surrogateescape' error handler can't encode character '{charUnknown}' in position {index}: value not in range(0xdc00, 0xdd00)"
+                    // EncoderFallbackException(string, char, int) is not accessible here
+                    throw PythonOps.UnicodeEncodeError(
+                        $"'surrogateescape' error handler can't encode character '{charUnknown}' at index {index}: value not in range(0xdc00, 0xdd00)",
+                        charUnknown,
+                        index
                     );
                 }
 
@@ -487,7 +549,7 @@ namespace IronPython.Runtime {
                         // test for value below 128
                         if (bytesUnknown[i] < 128u) {
                             throw new DecoderFallbackException(
-                                $"Character '\\x{bytesUnknown[i]:X2}' in position {index + i}: values below 128 cannot be smuggled (PEP 383)",
+                                $"Character '\\x{bytesUnknown[i]:X2}' at index {index + i}: values below 128 cannot be smuggled (PEP 383)",
                                 bytesUnknown,
                                 index
                             );
@@ -502,6 +564,292 @@ namespace IronPython.Runtime {
                 return fallbackChars;
             }
 
+        }
+    }
+
+    internal class PythonSurrogatePassEncoding : PythonEncoding {
+        private const ushort SurrogateRangeStart = 0xd800;
+        private const ushort SurrogateRangeEnd = 0xdfff;
+        private const byte Utf8LeadByte = 0b_1110_0000;
+        private const byte Utf8LeadBytePayload = 0b_1111;
+        private const byte Utf8ContByte = 0b_10_000000;
+        private const byte Utf8ContBytePayload = 0b_111111;
+
+        public PythonSurrogatePassEncoding(Encoding encoding)
+            : base(encoding, new SurrogatePassEncoderFallback(), new SurrogatePassDecoderFallback()) { }
+
+        public class SurrogatePassEncoderFallback : PythonEncoderFallback {
+            public override int MaxCharCount => 1;
+
+            public override EncoderFallbackBuffer CreateFallbackBuffer()
+                => new SurrogatePassEncoderFallbackBuffer(this.IsPass1, this.Encoding);
+        }
+
+        private class SurrogatePassEncoderFallbackBuffer : PythonEncoderFallbackBuffer {
+            private readonly int _codePage;
+            private readonly bool _isBigEndianEncoding;
+
+            public SurrogatePassEncoderFallbackBuffer(bool isPass1, PythonEncoding encoding)
+                : base(isPass1, encoding.CharacterWidth) {
+                _codePage = encoding.CodePage;
+                _isBigEndianEncoding = encoding.IsBigEndian;
+            }
+
+            public override byte[] GetFallbackBytes(char charUnknown, int index) {
+                if (charUnknown < SurrogateRangeStart || SurrogateRangeEnd < charUnknown) {
+                    // EncoderFallbackException(string, char, int) is not accessible here
+                    throw PythonOps.UnicodeEncodeError(
+                        $"'surrogatepass' error handler can't encode character '{charUnknown}' at index {index}: value not in range(0x{SurrogateRangeStart:x4}, 0x{SurrogateRangeEnd + 1:x4})",
+                        charUnknown,
+                        index
+                    );
+                }
+
+                byte[] fallbackBytes;
+                if (this.EncodingCharWidth > 1) {
+                    fallbackBytes = BitConverter.GetBytes(charUnknown);
+                    if (fallbackBytes.Length == this.EncodingCharWidth) {
+                        // UTF-16LE or UTF-16BE
+                        if (BitConverter.IsLittleEndian == _isBigEndianEncoding) {
+                            // swap bytes for non-native endianness encoding
+                            //(fallbackBytes[0], fallbackBytes[1]) = (fallbackBytes[1], fallbackBytes[0]);
+                            // the above requires .NET Core 2.x, .NET Standard 2.0 or .NET Framework 4.7
+                            // For .NET 4.5 use: <PackageReference Include="System.ValueTuple" Version="4.4.0" />
+                            var temp = fallbackBytes[0];
+                            fallbackBytes[0] = fallbackBytes[1];
+                            fallbackBytes[1] = temp;
+                        }
+                    } else {
+                        // UTF-32LE or UTF-32BE
+                        byte[] paddedBytes = new byte[this.EncodingCharWidth];
+
+                        if (!BitConverter.IsLittleEndian) {
+                            Array.Reverse(fallbackBytes); // to little endian
+                        }
+
+                        Array.Copy(fallbackBytes, 0, paddedBytes, 0, fallbackBytes.Length);
+                        fallbackBytes = paddedBytes;
+
+                        if (_isBigEndianEncoding) {
+                            Array.Reverse(fallbackBytes);
+                        }
+                    }
+                } else if (_codePage == 65001) {
+                    // UTF-8
+                    fallbackBytes = new byte[3]; // UTF-8 for range U+0800 to U+FFFF
+                    ushort codepoint = charUnknown;
+                    fallbackBytes[0] = (byte)(Utf8LeadByte | codepoint >> 12);
+                    codepoint &= 0b_111111_111111;
+                    fallbackBytes[1] = (byte)(Utf8ContByte | codepoint >> 6);
+                    codepoint &= 0b_111111;
+                    fallbackBytes[2] = (byte)(Utf8ContByte | codepoint);
+                } else {
+                    throw PythonOps.UnicodeEncodeError($"'surrogatepass' error handler does not support this encoding (cp{_codePage})", charUnknown, index);
+                }
+
+                return fallbackBytes;
+            }
+
+        }
+
+        public class SurrogatePassDecoderFallback : PythonDecoderFallback {
+
+            public override int MaxCharCount => this.Encoding.CharacterWidth;
+
+            public override DecoderFallbackBuffer CreateFallbackBuffer()
+                => new SurrogatePassDecoderFallbackBuffer(this.IsPass1, this.Encoding.CharacterWidth, this.Encoding.CodePage);
+        }
+
+        private class SurrogatePassDecoderFallbackBuffer : PythonDecoderFallbackBuffer {
+            private readonly int _codePage;
+
+            private class ByteBuffer {
+                private byte[] _buffer;
+                private int _buflen;
+                private int _bufidx;
+
+                private byte[] _savebuf;
+                private int _savelen;
+                private int _saveidx;
+
+                public ByteBuffer(int size) {
+                    _buffer = new byte[size];
+                }
+
+                public byte[] Bytes => _buffer;
+                public int Length => _buflen;
+                public int Index { get => _bufidx; set { _bufidx = value; } }
+                public int EndIndex => _bufidx + _buflen;
+
+                public void AddByte(byte b) {
+                    _buffer[_buflen++] = b;
+                }
+
+                public void Flush() {
+                    _bufidx += _buflen;
+                    _buflen = 0;
+                }
+
+                public byte[] TrimmedBytes() {
+                    var copy = new byte[_buflen];
+                    Array.Copy(_buffer, 0, copy, 0, _buflen);
+                    return copy;
+                }
+
+                public void Save() {
+                    if (_savebuf != null) {
+                        Array.Copy(_buffer, _savebuf, _buflen);
+                    } else {
+                        _savebuf = (byte[])_buffer.Clone();
+                    }
+                    _savelen = _buflen;
+                    _saveidx = _bufidx;
+                }
+
+                public void Restore() {
+                    if (_savebuf != null) {
+                        Array.Copy(_savebuf, _buffer, _savelen);
+                    }
+                    _buflen = _savelen;
+                    _bufidx = _saveidx;
+                }
+            }
+
+            private ByteBuffer _buffer;
+
+            public SurrogatePassDecoderFallbackBuffer(bool isPass1, int characterWidth, int codePage)
+                : base(isPass1, characterWidth) {
+                _codePage = codePage;
+            }
+
+            public override char[] GetFallbackChars(byte[] bytesUnknown, int index) {
+                const int bytesPerChar = 3; // UTF-8 uses 3 bytes to encode a surrogate
+                int numBytes = bytesUnknown.Length;
+                char fallbackChar = char.MinValue;
+                char[] fallbackChars = null;
+                int numFallbackChars = 0;
+
+                switch (_codePage) {
+                    case 65001: // UTF-8
+                        if (_buffer == null) _buffer = new ByteBuffer(bytesPerChar);
+                        if (index != _buffer.EndIndex) {
+                            // new fallback sequence
+                            if (_buffer.Length != 0) {
+                                // leftover bytes not consumed
+                                Throw(_buffer.TrimmedBytes(), _buffer.Index);
+                            }
+                            _buffer.Index = index;
+                        }
+                        fallbackChars = new char[(_buffer.Length + numBytes) / bytesPerChar];
+                        for (int i = 0; i < numBytes; i++) {
+                            _buffer.AddByte(bytesUnknown[i]);
+                            if (_buffer.Length == bytesPerChar) {
+                                byte[] bytes = _buffer.Bytes;
+                                if ((bytes[0] & ~Utf8LeadBytePayload) != Utf8LeadByte
+                                 || (bytes[1] & ~Utf8ContBytePayload) != Utf8ContByte
+                                 || (bytes[2] & ~Utf8ContBytePayload) != Utf8ContByte) {
+                                    Throw(bytes, _buffer.Index);
+                                }
+
+                                int fallbackValue = bytes[0] & Utf8LeadBytePayload;
+                                fallbackValue = (bytes[1] & Utf8ContBytePayload) | (fallbackValue << 6);
+                                fallbackValue = (bytes[2] & Utf8ContBytePayload) | (fallbackValue << 6);
+
+                                if (fallbackValue < SurrogateRangeStart || SurrogateRangeEnd < fallbackValue) {
+                                    Throw(bytes, _buffer.Index);
+                                }
+
+                                fallbackChars[numFallbackChars++] = (char)fallbackValue;
+                                _buffer.Flush();
+                            }
+                        }
+                        break;
+
+                    case 1200: // UTF-16LE
+                        if (numBytes != 2) break;
+                        fallbackChar = (char)(bytesUnknown[0] | (bytesUnknown[1] << 8));
+                        break;
+
+                    case 1201: // UTF-16BE
+                        if (numBytes != 2) break;
+                        fallbackChar = (char)(bytesUnknown[1] | (bytesUnknown[0] << 8));
+                        break;
+
+                    case 12000: // UTF-32LE
+                        if (numBytes != 4) break;
+                        if (bytesUnknown[2] != 0 || bytesUnknown[3] != 0) break;
+                        fallbackChar = (char)(bytesUnknown[0] | (bytesUnknown[1] << 8));
+                        break;
+
+                    case 12001: // UTF-32BE
+                        if (numBytes != 4) break;
+                        if (bytesUnknown[1] != 0 || bytesUnknown[0] != 0) break;
+                        fallbackChar = (char)(bytesUnknown[3] | (bytesUnknown[2] << 8));
+                        break;
+
+                    default:
+                        throw new DecoderFallbackException($"'surrogatepass' error handler does not support this encoding (cp{_codePage})", bytesUnknown, index);
+                }
+
+                if (fallbackChars == null) {
+                    if (fallbackChar < SurrogateRangeStart || SurrogateRangeEnd < fallbackChar) {
+                        Throw(bytesUnknown, index);
+                    }
+                    fallbackChars = new[] { fallbackChar };
+                }
+                return fallbackChars;
+            }
+
+            public override bool IsEmpty => base.IsEmpty && (_buffer?.Length ?? 0) == 0;
+
+            public override bool CharCountingMode {
+                get => base.CharCountingMode;
+                set {
+                    base.CharCountingMode = value;
+                    if (value) {
+                        _buffer?.Save();
+                    } else {
+                        _buffer?.Restore();
+                    }
+                }
+            }
+
+            public override void ThrowIfNotEmpty(int endIndex, bool flush) {
+                if (_buffer != null) {
+                    if (_buffer.Length != 0 && (_buffer.EndIndex != endIndex || flush)) {
+                        // leftover bytes not consumed
+                        Throw(_buffer.TrimmedBytes(), _buffer.Index);
+                    }
+                    // Prepare for next incremental decode step (if any)
+                    _buffer.Index = -_buffer.Length;
+                }
+                base.ThrowIfNotEmpty(endIndex, flush);
+            }
+
+            public override void Reset() {
+                base.Reset();
+                _buffer = null;
+            }
+
+            // Method like this belongs to PythonOps
+            protected void Throw(byte[] bytesUnknown, int index) {
+                // Create a string representation of our bytes.
+                const int maxNumBytes = 20;
+
+                StringBuilder strBytes = new StringBuilder(Math.Min(bytesUnknown.Length, maxNumBytes + 1) * 4);
+
+                int i;
+                for (i = 0; i < bytesUnknown.Length && i < maxNumBytes; i++) {
+                    strBytes.Append("[");
+                    strBytes.Append(bytesUnknown[i].ToString("X2", System.Globalization.CultureInfo.InvariantCulture));
+                    strBytes.Append("]");
+                }
+
+                // In case the string's really long...
+                if (i == maxNumBytes) strBytes.Append(" ...");
+
+                throw new DecoderFallbackException($"'surrogatepass' error handler can't decode bytes {strBytes} at index {index}: not a surrogate character", bytesUnknown, index);
+            }
         }
     }
 }

@@ -178,7 +178,7 @@ namespace IronPythonTest {
                 Encoding penc = new PythonSurrogateEscapeEncoding(Encoding.UTF7);
                 // The following Python output is produced with python 3.4 but is not correct: it is missing the '+' character
                 string python_chars = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f !\"#$%&'()*,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\x7f\udc80\udc81\udc82\udc83\udc84\udc85\udc86\udc87\udc88\udc89\udc8a\udc8b\udc8c\udc8d\udc8e\udc8f\udc90\udc91\udc92\udc93\udc94\udc95\udc96\udc97\udc98\udc99\udc9a\udc9b\udc9c\udc9d\udc9e\udc9f\udca0\udca1\udca2\udca3\udca4\udca5\udca6\udca7\udca8\udca9\udcaa\udcab\udcac\udcad\udcae\udcaf\udcb0\udcb1\udcb2\udcb3\udcb4\udcb5\udcb6\udcb7\udcb8\udcb9\udcba\udcbb\udcbc\udcbd\udcbe\udcbf\udcc0\udcc1\udcc2\udcc3\udcc4\udcc5\udcc6\udcc7\udcc8\udcc9\udcca\udccb\udccc\udccd\udcce\udccf\udcd0\udcd1\udcd2\udcd3\udcd4\udcd5\udcd6\udcd7\udcd8\udcd9\udcda\udcdb\udcdc\udcdd\udcde\udcdf\udce0\udce1\udce2\udce3\udce4\udce5\udce6\udce7\udce8\udce9\udcea\udceb\udcec\udced\udcee\udcef\udcf0\udcf1\udcf2\udcf3\udcf4\udcf5\udcf6\udcf7\udcf8\udcf9\udcfa\udcfb\udcfc\udcfd\udcfe\udcff";
-                // Our implementation will refuse to decode (correctly) because the ',' after '+' is not valid thus requires escaping,
+                // Our implementation will refuse (correctly) to decode because the ',' after '+' is not valid thus requires escaping,
                 // but escaping of chars under 128 is not allowed.
                 Assert.Throws<DecoderFallbackException>(() => penc.GetChars(bytes));
 
@@ -264,8 +264,8 @@ namespace IronPythonTest {
 
         #endregion
 
-        // Test block-wise decoding/encoding
-        public class BlockWiseTests {
+        // Test incremental (block-wise) decoding/encoding
+        public class IncrementalTests {
 
             private byte[] _bytes;
 
@@ -276,74 +276,39 @@ namespace IronPythonTest {
             }
 
             [Test]
-            public void TestBlockWiseWithtAscii() {
+            public void TestIncrementalWithtAscii() {
                 // intersperse with ASCII letters
                 _bytes = _bytes.SelectMany((b, i) => new[] { (byte)('A' + i), b }).Concat(new[] { (byte)'Z' }).ToArray();
                 Encoding penc = new PythonSurrogateEscapeEncoding(Encoding.ASCII);
-                BlockWiseTest(penc);
+                SurrogateTestHelpers.IncrementalTest(penc, _bytes, roundTrip: true);
             }
 
             [Test]
-            public void TestBlockWiseWithtPythonAscii() {
+            public void TestIncrementalWithtPythonAscii() {
                 // intersperse with ASCII letters
                 _bytes = _bytes.SelectMany((b, i) => new[] { (byte)('A' + i), b }).Concat(new[] { (byte)'Z' }).ToArray();
                 Encoding penc = new PythonSurrogateEscapeEncoding(PythonAsciiEncoding.Instance);
-                BlockWiseTest(penc);
+                SurrogateTestHelpers.IncrementalTest(penc, _bytes, roundTrip: true);
             }
 
             [Test]
-            public void TestBlockWiseWithtUtf16() {
+            public void TestIncrementalWithtUtf16() {
                 Encoding penc = new PythonSurrogateEscapeEncoding(Encoding.Unicode);
-                BlockWiseTest(penc);
+                SurrogateTestHelpers.IncrementalTest(penc, _bytes, roundTrip: true);
             }
 
             [Test]
-            public void TestBlockWiseWithUtf32() {
+            public void TestIncrementalWithUtf32() {
                 Encoding penc = new PythonSurrogateEscapeEncoding(Encoding.UTF32);
-                BlockWiseTest(penc);
+                SurrogateTestHelpers.IncrementalTest(penc, _bytes, roundTrip: true);
             }
 
             [Test]
-            public void TestBlockWiseWithUtf8() {
-                // translate bytes in UTF-8 form
-                Encoding pencUtf16 = new PythonSurrogateEscapeEncoding(Encoding.Unicode);
-                Encoding pencUtf8 = new PythonSurrogateEscapeEncoding(Encoding.UTF8);
-                _bytes = Encoding.Convert(pencUtf16, pencUtf8, _bytes);
-                BlockWiseTest(pencUtf8);
-            }
-
-            private void BlockWiseTest(Encoding penc) { 
-                // Reference for comparisons: chars encoded in one step
-                char[] chars = penc.GetChars(_bytes);
-
-                for (int splitBytesAt = 0; splitBytesAt <= _bytes.Length; splitBytesAt += 1) {
-                    // From https://docs.microsoft.com/en-us/dotnet/api/system.text.decoder.getchars?view=netframework-4.5:
-                    // The application should call GetCharCount on a block of data immediately before calling GetChars on the same block,
-                    // so that any trailing bytes from the previous block are included in the calculation. 
-                    var dec = penc.GetDecoder();
-                    char[] chars1 = new char[dec.GetCharCount(_bytes, 0, splitBytesAt, flush: false)];
-                    dec.GetChars(_bytes, 0, splitBytesAt, chars1, 0, flush: false);
-                    char[] chars2 = new char[dec.GetCharCount(_bytes, splitBytesAt, _bytes.Length - splitBytesAt, flush: true)];
-                    dec.GetChars(_bytes, splitBytesAt, _bytes.Length - splitBytesAt, chars2, 0, flush: true);
-
-                    char[] total_chars = chars1.Concat(chars2).ToArray();
-                    Assert.AreEqual(chars, total_chars);
-
-                    for (int splitCharsAt = 1; splitCharsAt <= total_chars.Length; splitCharsAt += 1) {
-                        // From https://docs.microsoft.com/en-us/dotnet/api/system.text.encoder.getbytecount?view=netframework-4.5:
-                        // The application should call GetByteCount on a block of data immediately before calling GetBytes on the same block,
-                        // so that any trailing characters from the previous block are included in the calculation.
-
-                        var enc = penc.GetEncoder();
-                        byte[] bytes1 = new byte[enc.GetByteCount(total_chars, 0, splitCharsAt, flush: false)];
-                        enc.GetBytes(total_chars, 0, splitCharsAt, bytes1, 0, flush: false);
-                        byte[] bytes2 = new byte[enc.GetByteCount(total_chars, splitCharsAt, total_chars.Length - splitCharsAt, flush: true)];
-                        enc.GetBytes(total_chars, splitCharsAt, total_chars.Length - splitCharsAt, bytes2, 0, flush: true);
-
-                        byte[] total_bytes = bytes1.Concat(bytes2).ToArray();
-                        Assert.AreEqual(_bytes, total_bytes);
-                    }
-                }
+            public void TestIncrementalWithUtf8() {
+                // In UTF-8: Lone high surrogate (invalid), surrogate pair: high-low (valid), lone low surrogate (invalid)
+                _bytes = new byte[] { 0xed, 0xa7, 0x98, 0xed, 0xaf, 0x9a, 0xed, 0xb7, 0x9c, 0xed, 0xbf, 0x9e };
+                Encoding penc = new PythonSurrogateEscapeEncoding(Encoding.UTF8);
+                SurrogateTestHelpers.IncrementalTest(penc, _bytes, roundTrip: true);
             }
         }
 
@@ -386,13 +351,423 @@ namespace IronPythonTest {
                 Assert.AreEqual("\u000a", penc.GetChars(_bytes2));
             }
         }
+
+        public class IncompleteSequenceTests {
+
+            private char[] _chars;
+
+            [SetUp]
+            public void SetUp() {
+                // one surrogate escape is not enough for wide-char encodings
+                _chars = "+++\udc41++".ToCharArray();
+            }
+
+            [Test] public void TestIncompleteSequenceWithtUtf16LE() => TestIncompleteSequence(Encoding.Unicode, 2);
+            [Test] public void TestIncompleteSequenceWithtUtf16BE() => TestIncompleteSequence(Encoding.BigEndianUnicode, 2);
+            [Test] public void TestIncompleteSequenceWithtUtf32LE() => TestIncompleteSequence(new UTF32Encoding(bigEndian: false, byteOrderMark: false), 4);
+            [Test] public void TestIncompleteSequenceWithtUtf32BE() => TestIncompleteSequence(new UTF32Encoding(bigEndian: true, byteOrderMark: false), 4);
+
+            public void TestIncompleteSequence(Encoding codec, int charWidth) {
+                Encoding penc = new PythonSurrogateEscapeEncoding(codec);
+
+                Assert.That(() => penc.GetBytes(_chars),
+                            Throws.TypeOf<EncoderFallbackException>()
+                            .With.Property("Index").EqualTo(3)
+                            .And.Property("CharUnknown").EqualTo(_chars[3]));
+
+                var enc = penc.GetEncoder();
+                var bytes = new byte[_chars.Length * charWidth];
+
+                Assert.That(enc.GetByteCount(_chars, 0, 3, flush: false), Is.EqualTo(3 * charWidth));
+                Assert.That(() => enc.GetBytes(_chars, 0, 3, bytes, 0, flush: false), Throws.Nothing);
+                Assert.That(() => enc.GetBytes(_chars, 3, 2, bytes, 3 * charWidth, flush: false),
+                            Throws.TypeOf<EncoderFallbackException>()
+                            .With.Property("Index").EqualTo(0)
+                            .And.Property("CharUnknown").EqualTo(_chars[3]));
+
+                enc.Reset();
+
+                Assert.That(enc.GetByteCount(_chars, 0, 4, flush: false), Is.EqualTo(3 * charWidth));
+                Assert.That(() => enc.GetBytes(_chars, 0, 4, bytes, 0, flush: false), Throws.Nothing);
+                Assert.That(() => enc.GetByteCount(_chars, 4, 1, flush: false),
+                            Throws.TypeOf<EncoderFallbackException>()
+                            .With.Property("Index").EqualTo(-1)  // last char from previous increment
+                            .And.Property("CharUnknown").EqualTo(_chars[3]));
+            }
+        }
+    }
+
+
+    // Unit testing class PythonSurrogatePassEncoding
+    [TestFixture(Category = "IronPython")]
+    public class SurrogatePassTest {
+
+        public class EncodingTests {
+
+            [Test]
+            public void TestAscii() {
+                // 'surrogatepass' is supported only for UTF-8, UTF-16LE, UTF-16BE, UTF-32LE, and UTF-32BE
+                // nevertheless, it can be used with other encodings as long as there are no encoding errors
+                Encoding penc = new PythonSurrogatePassEncoding(Encoding.ASCII);
+
+                // clean ASCII
+                Assert.AreEqual("abc".AsBytes(), penc.GetBytes("abc"));
+
+                // Attempting to encode surrogates to ASCII will throw an exception.
+                // Note that this is CPython 3.5 behaviour, CPython 3.4 will happily contaminate ASCII with UTF-8 encoded surrogates.
+
+                // lone high surrogate
+                Assert.Throws<EncoderFallbackException>(() => penc.GetBytes("\ud810"));
+
+                // lone low surrogate
+                Assert.Throws<EncoderFallbackException>(() => penc.GetBytes("\udc0a"));
+
+                // invalid surrogate pair (low, high)
+                Assert.Throws<EncoderFallbackException>(() => penc.GetBytes("\ude51\uda2f"));
+            }
+
+            [Test]
+            public void TestUtf7() {
+                // "surrogatepass" is not supported for UTF-7 per se,
+                // but UTF-7 is supposed to encode any surogate characters into its ASCII mangled form
+                // without requiring any fallback support
+                Encoding penc = new PythonSurrogatePassEncoding(Encoding.UTF7);
+
+                // lone high surrogate
+                Assert.AreEqual("abc+2BA-xyz".AsBytes(), penc.GetBytes("abc\ud810xyz"));
+
+                // lone low surrogate
+                Assert.AreEqual("abc+3Ao-xyz".AsBytes(), penc.GetBytes("abc\udc0axyz"));
+
+                // invalid surrogate pair (low, high)
+                Assert.AreEqual("abc+3lHaLw-xyz".AsBytes(), penc.GetBytes("abc\ude51\uda2fxyz"));
+            }
+
+            [Test]
+            public void TestUtf8() {
+                Encoding penc = new PythonSurrogatePassEncoding(Encoding.UTF8);
+
+                // lone high surrogate
+                Assert.AreEqual("abc\xed\xa0\x90xyz".AsBytes(), penc.GetBytes("abc\ud810xyz"));
+
+                // lone low surrogate
+                Assert.AreEqual("abc\xed\xb0\x8axyz".AsBytes(), penc.GetBytes("abc\udc0axyz"));
+
+                // invalid surrogate pair (low, high)
+                Assert.AreEqual("abc\xed\xb9\x91\xed\xa8\xafxyz".AsBytes(), penc.GetBytes("abc\ude51\uda2fxyz"));
+            }
+
+            [Test]
+            public void TestUtf16LE() {
+                Encoding penc = new PythonSurrogatePassEncoding(Encoding.Unicode);
+
+                // lone high surrogate
+                Assert.AreEqual("\x10\xd8".AsBytes(), penc.GetBytes("\ud810"));
+
+                // lone low surrogate
+                Assert.AreEqual("\n\xdc".AsBytes(), penc.GetBytes("\udc0a"));
+
+                // invalid surrogate pair (low, high)
+                Assert.AreEqual("Q\xde/\xda".AsBytes(), penc.GetBytes("\ude51\uda2f"));
+            }
+
+            [Test]
+            public void TestUtf16BE() {
+                Encoding penc = new PythonSurrogatePassEncoding(Encoding.BigEndianUnicode);
+
+                // lone high surrogate
+                Assert.AreEqual("\xd8\x10".AsBytes(), penc.GetBytes("\ud810"));
+
+                // lone low surrogate
+                Assert.AreEqual("\xdc\n".AsBytes(), penc.GetBytes("\udc0a"));
+
+                // invalid surrogate pair (low, high)
+                Assert.AreEqual("\xdeQ\xda/".AsBytes(), penc.GetBytes("\ude51\uda2f"));
+            }
+
+            [Test]
+            public void TestUtf32LE() {
+                Encoding penc = new PythonSurrogatePassEncoding(new UTF32Encoding(bigEndian: false, byteOrderMark: false));
+
+                // lone high surrogate
+                Assert.AreEqual("\x10\xd8\x00\x00".AsBytes(), penc.GetBytes("\ud810"));
+
+                // lone low surrogate
+                Assert.AreEqual("\n\xdc\x00\x00".AsBytes(), penc.GetBytes("\udc0a"));
+
+                // invalid surrogate pair (low, high)
+                Assert.AreEqual("Q\xde\x00\x00/\xda\x00\x00".AsBytes(), penc.GetBytes("\ude51\uda2f"));
+            }
+
+            [Test]
+            public void TestUtf32BE() {
+                Encoding penc = new PythonSurrogatePassEncoding(new UTF32Encoding(bigEndian: true, byteOrderMark: false));
+
+                // lone high surrogate
+                Assert.AreEqual("\x00\x00\xd8\x10".AsBytes(), penc.GetBytes("\ud810"));
+
+                // lone low surrogate
+                Assert.AreEqual("\x00\x00\xdc\n".AsBytes(), penc.GetBytes("\udc0a"));
+
+                // invalid surrogate pair (low, high)
+                Assert.AreEqual("\x00\x00\xdeQ\x00\x00\xda/".AsBytes(), penc.GetBytes("\ude51\uda2f"));
+            }
+        }
+
+        public class DecodingTests {
+
+            [Test]
+            public void TestAscii() {
+                // 'surrogatepass' is supported only for UTF-8, UTF-16LE, UTF-16BE, UTF-32LE, and UTF-32BE
+                // nevertheless, it can be used with other encodings as long as there are no encoding errors
+                Encoding penc = new PythonSurrogatePassEncoding(Encoding.ASCII);
+
+                // clean ASCII
+                Assert.AreEqual("abc", penc.GetChars("abc".AsBytes()));
+
+                // Attempting to decode surrogates from ASCII will throw an exception.
+                // Note that this is CPython 3.5 behaviour, CPython 3.4 will will blindly extract UTF-8 encoded surrogates from ASCII.
+
+                // lone high surrogate in UTF-8
+                Assert.Throws<DecoderFallbackException>(() => penc.GetChars("\xed\xa0\x90".AsBytes()));
+
+                // lone low surrogate in UTF-8
+                Assert.Throws<DecoderFallbackException>(() => penc.GetChars("\xed\xb0\x8a".AsBytes()));
+
+                // invalid surrogate pair (low, high) in UTF-8
+                Assert.Throws<DecoderFallbackException>(() => penc.GetChars("\xed\xb9\x91\xed\xa8\xaf".AsBytes()));
+            }
+
+            [Test]
+            public void TestUtf7() {
+                // "surrogatepass" is not supported for UTF-7 per se,
+                // but UTF-7 is supposed to decode any surogate characters from its ASCII mangled form
+                // without requiring any fallback support
+                Encoding penc = new PythonSurrogatePassEncoding(Encoding.UTF7);
+
+                // lone high surrogate
+                Assert.AreEqual("abc\ud810xyz", penc.GetChars("abc+2BA-xyz".AsBytes()));
+
+                // lone low surrogate
+                Assert.AreEqual("abc\udc0axyz", penc.GetChars("abc+3Ao-xyz".AsBytes()));
+
+                // invalid surrogate pair (low, high)
+                Assert.AreEqual("abc\ude51\uda2fxyz", penc.GetChars("abc+3lHaLw-xyz".AsBytes()));
+            }
+
+            [Test]
+            public void TestUtf8() {
+                Encoding penc = new PythonSurrogatePassEncoding(Encoding.UTF8);
+
+                // lone high surrogate
+                Assert.AreEqual("abc\ud810xyz", penc.GetChars("abc\xed\xa0\x90xyz".AsBytes()));
+
+                // lone low surrogate
+                Assert.AreEqual("abc\udc0axyz", penc.GetChars("abc\xed\xb0\x8axyz".AsBytes()));
+
+                // invalid surrogate pair (low, high)
+                Assert.AreEqual("abc\ude51\uda2fxyz", penc.GetChars("abc\xed\xb9\x91\xed\xa8\xafxyz".AsBytes()));
+
+                // valid surrogate pair (high, low)
+                Assert.AreEqual("abc\uda2f\ude51xyz", penc.GetChars("abc\xed\xa8\xaf\xed\xb9\x91xyz".AsBytes()));
+
+                var chars = new char[9];
+
+                // broken lone high surrogate
+                var bytes = "abc\xed-\xa0\x90xyz".AsBytes();
+                Assert.That(() => penc.GetChars(bytes),
+                            Throws.TypeOf<DecoderFallbackException>()
+                            .With.Property("Index").EqualTo(3)
+                            .And.Property("BytesUnknown").One.EqualTo(0xed));
+
+                var dec = penc.GetDecoder();
+                Assert.That(dec.GetCharCount(bytes, 0, 4, flush: false), Is.EqualTo(3));
+                Assert.That(dec.GetChars(bytes, 0, 4, chars, 0, flush: false), Is.EqualTo(3));
+                Assert.That(() => dec.GetCharCount(bytes, 4, 4, flush: false),
+                            Throws.TypeOf<DecoderFallbackException>()
+                            .With.Property("Index").EqualTo(-1)
+                            .And.Property("BytesUnknown").One.EqualTo(0xed));
+
+                // broken in a different way
+                bytes = "abc\xed\xa0-\x90xyz".AsBytes();
+                Assert.That(() => penc.GetChars(bytes),
+                            Throws.TypeOf<DecoderFallbackException>()
+                            .With.Property("Index").EqualTo(3)
+                            .And.Property("BytesUnknown").One.EqualTo(0xed));
+
+                dec.Reset();
+                Assert.That(dec.GetCharCount(bytes, 0, 4, flush: false), Is.EqualTo(3));
+                Assert.That(dec.GetChars(bytes, 0, 4, chars, 0, flush: false), Is.EqualTo(3));
+                Assert.That(() => dec.GetCharCount(bytes, 4, 4, flush: false),
+                            Throws.TypeOf<DecoderFallbackException>()
+                            .With.Property("Index").EqualTo(-1)
+                            .And.Property("BytesUnknown").One.EqualTo(0xed));
+
+                dec.Reset();
+                Assert.That(dec.GetCharCount(bytes, 0, 5, flush: false), Is.EqualTo(3));
+                Assert.That(dec.GetChars(bytes, 0, 5, chars, 0, flush: false), Is.EqualTo(3));
+                Assert.That(() => dec.GetCharCount(bytes, 5, 3, flush: false),
+                            Throws.TypeOf<DecoderFallbackException>()
+                            .With.Property("Index").EqualTo(-2)
+                            .And.Property("BytesUnknown").One.EqualTo(0xed));
+
+                // unfinished surrogate sequence in the middle
+                bytes = "abc\xed\xa0xyz".AsBytes();
+                Assert.That(() => penc.GetChars(bytes),
+                            Throws.TypeOf<DecoderFallbackException>()
+                            .With.Property("Index").EqualTo(3)
+                            .And.Property("BytesUnknown").One.EqualTo(0xed));
+
+                dec.Reset();
+                Assert.That(dec.GetCharCount(bytes, 0, 5, flush: false), Is.EqualTo(3));
+                Assert.That(dec.GetChars(bytes, 0, 5, chars, 0, flush: false), Is.EqualTo(3));
+                Assert.That(() => dec.GetCharCount(bytes, 5, 2, flush: false),
+                            Throws.TypeOf<DecoderFallbackException>()
+                            .With.Property("Index").EqualTo(-2)
+                            .And.Property("BytesUnknown").One.EqualTo(0xed));
+
+                // unfinished surrogate sequence at the end
+                bytes = "abcxyz\xed\xa0".AsBytes();
+                Assert.That(() => penc.GetChars(bytes),
+                            Throws.TypeOf<DecoderFallbackException>()
+                            .With.Property("Index").EqualTo(6)
+                            .And.Property("BytesUnknown").One.EqualTo(0xed));
+
+                dec.Reset();
+                Assert.That(dec.GetCharCount(bytes, 0, 7, flush: false), Is.EqualTo(6));
+                Assert.That(dec.GetChars(bytes, 0, 7, chars, 0, flush: false), Is.EqualTo(6));
+                Assert.That(() => dec.GetCharCount(bytes, 7, 1, flush: true),
+                            Throws.TypeOf<DecoderFallbackException>()
+                            .With.Property("Index").EqualTo(-1)
+                            .And.Property("BytesUnknown").One.EqualTo(0xed));
+            }
+
+            [Test]
+            public void TestUtf16LE() {
+                Encoding penc = new PythonSurrogatePassEncoding(Encoding.Unicode);
+
+                // lone high surrogate
+                Assert.AreEqual("\ud810", penc.GetChars("\x10\xd8".AsBytes()));
+
+                // lone low surrogate
+                Assert.AreEqual("\udc0a", penc.GetChars("\n\xdc".AsBytes()));
+
+                // invalid surrogate pair (low, high)
+                Assert.AreEqual("\ude51\uda2f", penc.GetChars("Q\xde/\xda".AsBytes()));
+            }
+
+            [Test]
+            public void TestUtf16BE() {
+                Encoding penc = new PythonSurrogatePassEncoding(Encoding.BigEndianUnicode);
+
+                // lone high surrogate
+                Assert.AreEqual("\ud810", penc.GetChars("\xd8\x10".AsBytes()));
+
+                // lone low surrogate
+                Assert.AreEqual("\udc0a", penc.GetChars("\xdc\n".AsBytes()));
+
+                // invalid surrogate pair (low, high)
+                Assert.AreEqual("\ude51\uda2f", penc.GetChars("\xdeQ\xda/".AsBytes()));
+            }
+
+            [Test]
+            public void TestUtf32LE() {
+                Encoding penc = new PythonSurrogatePassEncoding(new UTF32Encoding(bigEndian: false, byteOrderMark: false));
+
+                // lone high surrogate
+                Assert.AreEqual("\ud810", penc.GetChars("\x10\xd8\x00\x00".AsBytes()));
+
+                // lone low surrogate
+                Assert.AreEqual("\udc0a", penc.GetChars("\n\xdc\x00\x00".AsBytes()));
+
+                // invalid surrogate pair (low, high)
+                Assert.AreEqual("\ude51\uda2f", penc.GetChars("Q\xde\x00\x00/\xda\x00\x00".AsBytes()));
+            }
+
+            [Test]
+            public void TestUtf32BE() {
+                Encoding penc = new PythonSurrogatePassEncoding(new UTF32Encoding(bigEndian: true, byteOrderMark: false));
+
+                // lone high surrogate
+                Assert.AreEqual("\ud810", penc.GetChars("\x00\x00\xd8\x10".AsBytes()));
+
+                // lone low surrogate
+                Assert.AreEqual("\udc0a", penc.GetChars("\x00\x00\xdc\n".AsBytes()));
+
+                // invalid surrogate pair (low, high)
+                Assert.AreEqual("\ude51\uda2f", penc.GetChars("\x00\x00\xdeQ\x00\x00\xda/".AsBytes()));
+            }
+        }
+
+        // Test incremental (block-wise) decoding/encoding
+        public class IncrementalTests {
+
+            [Test]
+            public void TestIncrementalWithtUtf16() {
+                // In UTF-16LE: lone low surrogate (invalid) Lone high surrogate (invalid), surrogate pair: high-low (valid), 
+                var bytes = new byte[] { 0xd8, 0xd9, 0xda, 0xdb, 0xdc, 0xdd, 0xde, 0xdf };
+                Encoding penc = new PythonSurrogatePassEncoding(Encoding.Unicode);
+                SurrogateTestHelpers.IncrementalTest(penc, bytes, roundTrip: false);
+            }
+
+            [Test]
+            public void TestIncrementalWithUtf32() {
+                var bytes = new byte[] { 0xd8, 0xd9, 0x00, 0x00, 0xda, 0xdb, 0x00, 0x00, 0xdc, 0xdd, 0x00, 0x00, 0xde, 0xdf, 0x00, 0x00};
+                Encoding penc = new PythonSurrogatePassEncoding(Encoding.UTF32);
+                SurrogateTestHelpers.IncrementalTest(penc, bytes, roundTrip: false);
+            }
+
+            [Test]
+            public void TestIncrementalWithUtf8() {
+                // In UTF-8: Lone high surrogate (invalid), surrogate pair: high-low (valid), lone low surrogate (invalid)
+                var bytes = new byte[] { 0xed, 0xa7, 0x98, 0xed, 0xaf, 0x9a, 0xed, 0xb7, 0x9c, 0xed, 0xbf, 0x9e };
+                Encoding penc = new PythonSurrogatePassEncoding(Encoding.UTF8);
+                SurrogateTestHelpers.IncrementalTest(penc, bytes, roundTrip: false);
+            }
+
+        }
     }
 
 
     #region Helper methods
 
-    public static class Helpers {
+    public static class SurrogateTestHelpers {
         public static byte[] AsBytes(this string s) => s.Select(c => (byte)c).ToArray();
+
+        public static void IncrementalTest(Encoding penc, byte[] bytes, bool roundTrip) {
+            // Reference for comparisons: chars encoded in one step
+            char[] expChars = penc.GetChars(bytes);
+            byte[] expBytes = roundTrip ? bytes : penc.GetBytes(expChars);
+
+            for (int splitBytesAt = 0; splitBytesAt <= expBytes.Length; splitBytesAt += 1) {
+                // From https://docs.microsoft.com/en-us/dotnet/api/system.text.decoder.getchars?view=netframework-4.5:
+                // The application should call GetCharCount on a block of data immediately before calling GetChars on the same block,
+                // so that any trailing bytes from the previous block are included in the calculation. 
+                var dec = penc.GetDecoder();
+                char[] chars1 = new char[dec.GetCharCount(expBytes, 0, splitBytesAt, flush: false)];
+                dec.GetChars(expBytes, 0, splitBytesAt, chars1, 0, flush: false);
+                char[] chars2 = new char[dec.GetCharCount(expBytes, splitBytesAt, expBytes.Length - splitBytesAt, flush: true)];
+                dec.GetChars(expBytes, splitBytesAt, expBytes.Length - splitBytesAt, chars2, 0, flush: true);
+
+                char[] total_chars = chars1.Concat(chars2).ToArray();
+                Assert.AreEqual(expChars, total_chars, "Splitting bytes at {0}", splitBytesAt);
+
+                for (int splitCharsAt = 0; splitCharsAt <= total_chars.Length; splitCharsAt += 1) {
+                    // From https://docs.microsoft.com/en-us/dotnet/api/system.text.encoder.getbytecount?view=netframework-4.5:
+                    // The application should call GetByteCount on a block of data immediately before calling GetBytes on the same block,
+                    // so that any trailing characters from the previous block are included in the calculation.
+
+                    var enc = penc.GetEncoder();
+                    byte[] bytes1 = new byte[enc.GetByteCount(total_chars, 0, splitCharsAt, flush: false)];
+                    enc.GetBytes(total_chars, 0, splitCharsAt, bytes1, 0, flush: false);
+                    byte[] bytes2 = new byte[enc.GetByteCount(total_chars, splitCharsAt, total_chars.Length - splitCharsAt, flush: true)];
+                    enc.GetBytes(total_chars, splitCharsAt, total_chars.Length - splitCharsAt, bytes2, 0, flush: true);
+
+                    byte[] total_bytes = bytes1.Concat(bytes2).ToArray();
+                    Assert.AreEqual(expBytes, total_bytes, "Splitting chars at {0}", splitCharsAt);
+                }
+            }
+        }
     }
 
     #endregion

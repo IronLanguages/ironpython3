@@ -52,7 +52,7 @@ namespace IronPython.Modules {
             context.EnsureModuleException("ArgumentError", dict, "ArgumentError", "_ctypes");
 
             // TODO: Provide an implementation which is coordinated with our _refCountTable
-            context.SystemState.__dict__["getrefcount"] = null;
+            // context.SystemState.__dict__["getrefcount"] = null;
             PythonDictionary pointerTypeCache = new PythonDictionary();
             dict["_pointer_type_cache"] = pointerTypeCache;
             context.SetModuleState(_pointerTypeCacheKey, pointerTypeCache);

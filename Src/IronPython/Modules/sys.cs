@@ -123,14 +123,6 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             throw PythonOps.NotImplementedError("IronPython does not support sys.setcheckinterval");
         }
 
-        public static int getrefcount(CodeContext/*!*/ context, object o) {
-            // getrefcount() is used at various places in the CPython test suite, usually to 
-            // check that instances are not cloned. Under .NET, we cannot provide that functionality, 
-            // but we can at least return a dummy result so that the tests can continue.
-            PythonOps.Warn(context, PythonExceptions.RuntimeWarning, "IronPython does not support sys.getrefcount. A dummy result is returned.");
-            return 1000000;
-        }
-
         // warnoptions is set by PythonContext and updated on each reload        
 
         public static PythonTuple exc_info(CodeContext/*!*/ context) {

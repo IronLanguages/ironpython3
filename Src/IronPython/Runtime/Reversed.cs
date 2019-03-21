@@ -13,13 +13,15 @@ using IronPython.Runtime.Operations;
 namespace IronPython.Runtime {
     [PythonType("reversed")]
     public class ReversedEnumerator : IEnumerator, IEnumerable {
-        private readonly object _getItemMethod;
         private readonly int _savedIndex;
+        private readonly object _obj;
+        private readonly object _getItemMethod;
         private object _current;
         private int _index;
 
-        protected ReversedEnumerator(int length, object getitem) {
+        protected ReversedEnumerator(int length, object obj, object getitem) {
             _index = _savedIndex = length;
+            _obj = obj;
             _getItemMethod = getitem;
         }
 
@@ -28,8 +30,7 @@ namespace IronPython.Runtime {
         }
 
         public static object __new__(CodeContext context, PythonType type, object o) {
-            object reversed;
-            if (PythonOps.TryGetBoundAttr(context, o, "__reversed__", out reversed)) {
+            if (PythonOps.TryGetBoundAttr(context, o, "__reversed__", out object reversed)) {
                 return PythonCalls.Call(context, reversed);
             }
 
@@ -49,17 +50,32 @@ namespace IronPython.Runtime {
             }
 
             if (type.UnderlyingSystemType == typeof(ReversedEnumerator)) {
-                return new ReversedEnumerator((int)length, boundFunc);
+                return new ReversedEnumerator(length, o, boundFunc);
             }
 
             return type.CreateInstance(context, length, getitem);
         }
 
-        public int __length_hint__() { return _savedIndex; }
+        public int __length_hint__() { return _index; }
 
         public ReversedEnumerator/*!*/ __iter__() {
             return this;
         }
+
+        public PythonTuple __reduce__() {
+            return PythonTuple.MakeTuple(
+                DynamicHelpers.GetPythonType(this),
+                PythonTuple.MakeTuple(_obj),
+                _index - 1
+            );
+        }
+
+        public void __setstate__(int position) {
+            if (position < 0) position = 0;
+            else if (position > _savedIndex) position = _savedIndex;
+            _index = position + 1;
+        }
+
 
         #region IEnumerator implementation
 

@@ -1895,16 +1895,17 @@ namespace IronPython.Runtime.Operations {
         public static object GetEnumeratorObject(CodeContext/*!*/ context, object o) {
             object iterFunc;
 
-            if (o is PythonType) {
-                var pt = (PythonType)o;
-                if (!pt.IsIterable(context)) {
-                    throw TypeErrorForNotIterable(o);
-                }
+            if (o is PythonType pt && !pt.IsIterable(context)) {
+                throw TypeErrorForNotIterable(o);
             }
 
             if (PythonOps.TryGetBoundAttr(context, o, "__iter__", out iterFunc) &&
                 !Object.ReferenceEquals(iterFunc, NotImplementedType.Value)) {
-                return PythonOps.CallWithContext(context, iterFunc);
+                var iter = PythonOps.CallWithContext(context, iterFunc);
+                if (!PythonOps.TryGetBoundAttr(context, iter, "__next__", out _)) {
+                    throw TypeError("iter() returned non-iterator of type '{0}'", PythonTypeOps.GetName(iter));
+                }
+                return iter;
             }
 
             return GetEnumerator(context, o);
@@ -1930,15 +1931,11 @@ namespace IronPython.Runtime.Operations {
         internal static bool TryGetEnumerator(CodeContext/*!*/ context, object enumerable, out IEnumerator enumerator) {
             enumerator = null;
 
-            if (enumerable is PythonType) {
-                var ptEnumerable = (PythonType)enumerable;
-                if (!ptEnumerable.IsIterable(context)) {
-                    return false;
-                }
+            if (enumerable is PythonType ptEnumerable && !ptEnumerable.IsIterable(context)) {
+                return false;
             }
 
-            IEnumerable enumer;
-            if (context.LanguageContext.TryConvertToIEnumerable(enumerable, out enumer)) {
+            if (context.LanguageContext.TryConvertToIEnumerable(enumerable, out IEnumerable enumer)) {
                 enumerator = enumer.GetEnumerator();
                 return true;
             }

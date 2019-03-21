@@ -1,18 +1,9 @@
-/* ****************************************************************************
- *
- * Copyright (c) Microsoft Corporation.
- * Copyright (c) Pawel Jasinski.
- *
- * This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
- * copy of the license can be found in the License.html file at the root of this distribution. If 
- * you cannot locate the  Apache License, Version 2.0, please send an email to 
- * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound 
- * by the terms of the Apache License, Version 2.0.
- *
- * You must not remove this notice, or any other, from this software.
- *
- *
- * ***************************************************************************/
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information.
+//
+// Copyright (c) Pawel Jasinski.
+//
 
 using System;
 using System.Collections;
@@ -24,13 +15,14 @@ using Microsoft.Scripting.Runtime;
 using IronPython.Runtime.Binding;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     [PythonType("range")]
     [DontMapIEnumerableToContains]
     public sealed class Range : IEnumerable<int>, ICodeFormattable, IList, IReversible {
-        private int _start, _stop, _step, _length;
+        private int _length;
 
         public Range(object stop) : this(0, stop, 1) { }
         public Range(object start, object stop) : this(start, stop, 1) { }
@@ -40,48 +32,43 @@ namespace IronPython.Runtime {
         }
 
         private void Initialize(object ostart, object ostop, object ostep) {
-            _stop = Converter.ConvertToIndex(ostop);
-            _start = Converter.ConvertToIndex(ostart);
-            _step = Converter.ConvertToIndex(ostep);
-            if (_step == 0) {
+            stop = Converter.ConvertToIndex(ostop);
+            start = Converter.ConvertToIndex(ostart);
+            step = Converter.ConvertToIndex(ostep);
+            if (step == 0) {
                 throw PythonOps.ValueError("step must not be zero");
             }
             _length = GetLengthHelper();
         }
 
-        public int start {
-            get {
-                return _start;
-            }
-        }
+        public int start { get; private set; }
 
-        public int stop {
-            get {
-                return _stop;
-            }
-        }
+        public int stop { get; private set; }
 
-        public int step {
-            get {
-                return _step;
-            }
-        }
+        public int step { get; private set; }
 
         private int GetLengthHelper() {
             long length = 0;
-            if (_step > 0) {
-                if (_start < _stop) {
-                    length = (0L + _stop - _start + _step - 1) / _step;
+            if (step > 0) {
+                if (start < stop) {
+                    length = (0L + stop - start + step - 1) / step;
                 }
             } else {
-                if (_start > _stop) {
-                    length = (0L + _stop - _start + _step + 1) / _step;
+                if (start > stop) {
+                    length = (0L + stop - start + step + 1) / step;
                 }
             }
             if (length > Int32.MaxValue) {
                 throw PythonOps.OverflowError("range() result has too many items");
             }
             return (int)length;
+        }
+
+        public PythonTuple __reduce__() {
+            return PythonTuple.MakeTuple(
+                DynamicHelpers.GetPythonType(this),
+                PythonTuple.MakeTuple(start, stop, step)
+            );
         }
 
         #region ISequence Members
@@ -97,7 +84,7 @@ namespace IronPython.Runtime {
                 if (index >= _length || index < 0)
                     throw PythonOps.IndexError("range object index out of range");
 
-                int ind = index * _step + _start;
+                int ind = index * step + start;
                 return ScriptingRuntimeHelpers.Int32ToObject(ind);
             }
         }
@@ -109,7 +96,7 @@ namespace IronPython.Runtime {
         }
 
         private int Compute(int index) {
-            return index * _step + _start;
+            return index * step + start;
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
@@ -117,7 +104,7 @@ namespace IronPython.Runtime {
             get {
                 int ostart, ostop, ostep;
                 slice.indices(_length, out ostart, out ostop, out ostep);
-                return new Range(Compute(ostart), Compute(ostop), _step * ostep);
+                return new Range(Compute(ostart), Compute(ostop), step * ostep);
             }
         }
 
@@ -128,7 +115,7 @@ namespace IronPython.Runtime {
             if (_length == 0) {
                 return true;
             }
-            if (_start != other._start) {
+            if (start != other.start) {
                 return false;
             }
             if (_length == 1) {
@@ -137,7 +124,7 @@ namespace IronPython.Runtime {
             if (Last() != other.Last()) {
                 return false;
             }
-            return _step == other._step;
+            return step == other.step;
         }
 
         public bool __ne__(Range other) {
@@ -148,10 +135,10 @@ namespace IronPython.Runtime {
             if (_length == 0) {
                 return 0;
             }
-            var hash = _start.GetHashCode();
+            var hash = start.GetHashCode();
             hash ^= _length.GetHashCode();
             if (_length > 1) {
-                hash ^= _step.GetHashCode();
+                hash ^= step.GetHashCode();
             }
             return hash;
         }
@@ -201,16 +188,16 @@ namespace IronPython.Runtime {
             if (_length == 0) {
                 return 0;
             }
-            if (_start < _stop) {
-                if (value < _start || value >= _stop) {
+            if (start < stop) {
+                if (value < start || value >= stop) {
                     return 0;
                 }
-            } else if (_start > _stop) {
-                if (value > _start || value <= _stop) {
+            } else if (start > stop) {
+                if (value > start || value <= stop) {
                     return 0;
                 }
             }
-            return (value - _start) % _step == 0 ? 1 : 0;
+            return (value - start) % step == 0 ? 1 : 0;
         }
 
         private int CountOf(CodeContext context, object obj) {
@@ -247,7 +234,7 @@ namespace IronPython.Runtime {
                 if (CountOf(intValue) == 0) {
                     throw PythonOps.ValueError("{0} is not in range", intValue);
                 }
-                return (intValue - _start) / _step;
+                return (intValue - start) / step;
             }
             var idx = IndexOf(context, value);
             if (idx == -1) {
@@ -259,11 +246,11 @@ namespace IronPython.Runtime {
         #endregion
 
         private int Last() {
-            return _start + (_length - 1) * _step;
+            return start + (_length - 1) * step;
         }
 
         public IEnumerator __reversed__() {
-            return new RangeIterator(new Range(Last(), _start - _step, -_step));
+            return new RangeIterator(new Range(Last(), start - step, -step));
         }
 
         IEnumerator IEnumerable.GetEnumerator() {
@@ -281,9 +268,9 @@ namespace IronPython.Runtime {
         #region ICodeFormattable Members
 
         public string/*!*/ __repr__(CodeContext/*!*/ context) {
-            return _step == 1 ?
-                string.Format("range({0}, {1})", _start, _stop) :
-                string.Format("range({0}, {1}, {2})", _start, _stop, _step);
+            return step == 1 ?
+                string.Format("range({0}, {1})", start, stop) :
+                string.Format("range({0}, {1}, {2})", start, stop, step);
         }
 
         #endregion
@@ -406,6 +393,23 @@ namespace IronPython.Runtime {
         public void Reset() {
             _value = _range.start - _range.step;
             _position = 0;
+        }
+
+        public PythonTuple __reduce__(CodeContext/*!*/ context) {
+            object iter;
+            context.TryLookupBuiltin("iter", out iter);
+            return PythonTuple.MakeTuple(
+                iter,
+                PythonTuple.MakeTuple(_range),
+                _position
+            );
+        }
+
+        public void __setstate__(int position) {
+            if (position < 0) position = 0;
+            else if (position > _range.__len__()) position = _range.__len__();
+            _position = position;
+            _value = _range.start + (_position - 1) * _range.step;
         }
 
         #region IEnumerator<int> Members

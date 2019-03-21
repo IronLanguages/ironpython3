@@ -735,9 +735,9 @@ namespace IronPython.Runtime.Binding {
             PythonTypeSlot pts;
 
             if (pt.TryResolveSlot(context, "__iter__", out pts)) {
-                return MakeIterRule(metaUserObject, "CreatePythonEnumerable");
+                return MakeIterRule(metaUserObject, nameof(PythonOps.CreatePythonEnumerable));
             } else if (pt.TryResolveSlot(context, "__getitem__", out pts)) {
-                return MakeGetItemIterable(metaUserObject, pyContext, pts, "CreateItemEnumerable");
+                return MakeGetItemIterable(metaUserObject, pyContext, pts, nameof(PythonOps.CreateItemEnumerable));
             }
 
             return null;

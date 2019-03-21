@@ -669,6 +669,7 @@ class _Pickler:
             return
         self.write(LONG + repr(obj).encode("ascii") + b'L\n')
     dispatch[int] = save_long
+    dispatch[long] = save_long
 
     def save_float(self, obj):
         if self.bin:

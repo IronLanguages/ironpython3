@@ -23,7 +23,7 @@ namespace IronPython.Runtime {
 
     [PythonType("enumerate")]
     [Documentation("enumerate(iterable) -> iterator for index, value of iterable")]
-    [DontMapIDisposableToContextManagerAttribute, DontMapIEnumerableToContains]
+    [DontMapIDisposableToContextManager, DontMapIEnumerableToContains]
     public class Enumerate : IEnumerator, IEnumerator<object> {
         private readonly IEnumerator _iter;
         private object _index;
@@ -47,6 +47,26 @@ namespace IronPython.Runtime {
             return this;
         }
 
+        public PythonTuple __reduce__() {
+            return PythonTuple.MakeTuple(
+                DynamicHelpers.GetPythonType(this),
+                PythonTuple.MakeTuple(_iter, AddOneTo(_index))
+            );
+        }
+
+        private static object AddOneTo(object _index) {
+            if (_index is int index) {
+                if (index != int.MaxValue) {
+                    return ScriptingRuntimeHelpers.Int32ToObject(index + 1);
+                } else {
+                    return new BigInteger(int.MaxValue) + 1;
+                }
+            } else {
+                Debug.Assert(_index is BigInteger);
+                return (BigInteger)_index + 1;
+            }
+        }
+
         #region IEnumerator Members
 
         void IEnumerator.Reset() {
@@ -66,18 +86,7 @@ namespace IronPython.Runtime {
         }
 
         bool IEnumerator.MoveNext() {
-            if (_index is int) {
-                int index = (int)_index;
-                if (index != Int32.MaxValue) {
-                    _index = ScriptingRuntimeHelpers.Int32ToObject(index + 1);
-                } else {
-                    _index = new BigInteger(Int32.MaxValue) + 1;
-                }
-            } else {
-                Debug.Assert(_index is BigInteger);
-                _index = (BigInteger)_index + 1;
-            }
-            
+            _index = AddOneTo(_index);
             return _iter.MoveNext();
         }
 
@@ -195,8 +204,7 @@ namespace IronPython.Runtime {
                 return true;
             }
 
-            object iter;
-            if (PythonOps.TryGetBoundAttr(baseObject, "__iter__", out iter)) {
+            if (PythonOps.TryGetBoundAttr(baseObject, "__iter__", out object iter)) {
                 object iterator = PythonCalls.Call(iter);
                 // don't re-wrap if we don't need to (common case is PythonGenerator).
                 if (TryCastIEnumer(iterator, out enumerator)) {
@@ -273,17 +281,20 @@ namespace IronPython.Runtime {
 
     [PythonType("enumerable")]
     public class PythonEnumerable : IEnumerable {
-        private object _iterator;
+        private readonly object _iterator;
 
         public static bool TryCreate(object baseEnumerator, out IEnumerable enumerator) {
             Debug.Assert(!(baseEnumerator is IEnumerable) || baseEnumerator is IPythonObject);   // we shouldn't re-wrap things that don't need it
-            object iter;
 
-            if (PythonOps.TryGetBoundAttr(baseEnumerator, "__iter__", out iter)) {
+            if (PythonOps.TryGetBoundAttr(baseEnumerator, "__iter__", out object iter)) {
                 object iterator = PythonCalls.Call(iter);
                 if (iterator is IEnumerable) {
                     enumerator = (IEnumerable)iterator;
                 } else {
+                    if (!PythonOps.TryGetBoundAttr(iterator, "__next__", out _)) {
+                        enumerator = null;
+                        return false;
+                    }
                     enumerator = new PythonEnumerable(iterator);
                 }
                 return true;

@@ -374,7 +374,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         /// <summary>
-        /// Check whether the current type is iterabel
+        /// Check whether the current type is iterable
         /// </summary>
         /// <param name="context"></param>
         /// <returns>True if it is iterable</returns>

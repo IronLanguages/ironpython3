@@ -862,6 +862,10 @@ namespace IronPython.Runtime.Types {
         }
 
         #endregion
+
+        public string __reduce__() {
+            return _data.Name;
+        }
     }
 
     

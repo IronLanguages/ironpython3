@@ -2204,7 +2204,7 @@ namespace IronPython.Runtime.Operations {
         // note: any changes in how this iterator works should also be applied in the
         //       optimized overloads of Builtins.map()
         [PythonType("str_iterator")]
-        private class PythonStringEnumerable : IEnumerable, IEnumerator<string> {
+        public class PythonStringEnumerable : IEnumerable, IEnumerator<string> {
             private readonly string/*!*/ _s;
             private int _index;
 
@@ -2213,6 +2213,20 @@ namespace IronPython.Runtime.Operations {
 
                 _index = -1;
                 _s = s;
+            }
+
+            public PythonTuple __reduce__(CodeContext/*!*/ context) {
+                object iter;
+                context.TryLookupBuiltin("iter", out iter);
+                return PythonTuple.MakeTuple(
+                    iter,
+                    PythonTuple.MakeTuple(_s),
+                    _index + 1
+                );
+            }
+
+            public void __setstate__(int index) {
+                _index = index - 1;
             }
 
             #region IEnumerable Members

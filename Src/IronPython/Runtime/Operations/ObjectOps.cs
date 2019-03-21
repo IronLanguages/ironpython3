@@ -268,6 +268,7 @@ namespace IronPython.Runtime.Operations {
                     hashSet.Add(TypeCache.Null);
                     hashSet.Add(TypeCache.Boolean);
                     hashSet.Add(TypeCache.Int32);
+                    hashSet.Add(TypeCache.BigInteger);
                     hashSet.Add(TypeCache.Double);
                     hashSet.Add(TypeCache.Complex);
                     hashSet.Add(TypeCache.String);
@@ -275,7 +276,6 @@ namespace IronPython.Runtime.Operations {
                     hashSet.Add(TypeCache.PythonList);
                     hashSet.Add(TypeCache.Dict);
                     hashSet.Add(TypeCache.Function);
-                    hashSet.Add(TypeCache.BuiltinFunction);
 
                     // type dict needs to be ensured to be fully initialized before assigning back
                     Thread.MemoryBarrier();

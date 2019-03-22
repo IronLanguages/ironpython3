@@ -3664,9 +3664,11 @@ namespace IronPython.Runtime.Operations {
             return new IndexOutOfRangeException(string.Format(format, args));
         }
 
-        public static Exception MemoryError(string format, params object[] args) {
-            return new OutOfMemoryException(string.Format(format, args));
-        }
+        public static Exception MemoryError() => new OutOfMemoryException();
+
+        public static Exception MemoryError(string message) => new OutOfMemoryException(message);
+
+        public static Exception MemoryError(string format, params object[] args) => new OutOfMemoryException(string.Format(format, args));
 
         public static Exception ArithmeticError(string format, params object[] args) {
             return new ArithmeticException(string.Format(format, args));

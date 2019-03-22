@@ -128,9 +128,12 @@ namespace IronPython.Runtime {
         }
 
         private static object[] MakeItems(object o) {
-            object[] arr;
-            if (o is PythonTuple) {
+            var t = o.GetType();
+            // Only use fast paths if we have an exact tuple/list, otherwise use iter
+            if (t == typeof(PythonTuple)) {
                 return ((PythonTuple)o)._data;
+            } else if (t == typeof(PythonList)) {
+                return ((PythonList)o).GetObjectArray();
             } else if (o is string) {
                 string s = (string)o;
                 object[] res = new object[s.Length];
@@ -138,9 +141,7 @@ namespace IronPython.Runtime {
                     res[i] = ScriptingRuntimeHelpers.CharToString(s[i]);
                 }
                 return res;
-            } else if (o is PythonList) {
-                return ((PythonList)o).GetObjectArray();
-            } else if ((arr = o as object[])!=null) {
+            } else if (o is object[] arr) {
                 return ArrayOps.CopyArray(arr, arr.Length);
             } else {
                 PerfTrack.NoteEvent(PerfTrack.Categories.OverAllocate, "TupleOA: " + PythonTypeOps.GetName(o));
@@ -665,6 +666,18 @@ namespace IronPython.Runtime {
         }
 
         #endregion
+
+        public PythonTuple __reduce__(CodeContext/*!*/ context) {
+            object iter;
+            context.TryLookupBuiltin("iter", out iter);
+            return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(_tuple), _curIndex + 1);
+        }
+
+        public void __setstate__(int position) {
+            if (position < 0) position = 0;
+            else if (position > _tuple.Count) position = _tuple.Count;
+            _curIndex = position - 1;
+        }
 
         public int __length_hint__() {
             return _tuple.__len__() - _curIndex - 1;

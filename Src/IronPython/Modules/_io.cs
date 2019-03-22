@@ -1914,7 +1914,7 @@ namespace IronPython.Modules {
             private Bytes _nextInput;
             private int _decodeFlags;
 
-            internal TextIOWrapper(CodeContext/*!*/ context) : base(context) { }
+            public TextIOWrapper(CodeContext/*!*/ context) : base(context) { }
 
             internal static TextIOWrapper Create(CodeContext/*!*/ context,
                 object buffer,
@@ -1922,19 +1922,9 @@ namespace IronPython.Modules {
                 string errors=null,
                 string newline=null,
                 bool line_buffering=false) {
-                var res = new TextIOWrapper(context, buffer, encoding, errors, newline, line_buffering);
+                var res = new TextIOWrapper(context);
                 res.__init__(context, buffer, encoding, errors, newline, line_buffering);
                 return res;
-            }
-
-            public TextIOWrapper(
-                CodeContext/*!*/ context,
-                object buffer,
-                string encoding=null,
-                string errors=null,
-                string newline=null,
-                bool line_buffering=false
-            ) : base(context) {
             }
 
             public void __init__(

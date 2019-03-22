@@ -76,6 +76,9 @@ namespace IronPython.Modules {
             return PythonOps.MakeBytes(res.ToString());
         }
 
+        public static Bytes a2b_uu(CodeContext/*!*/ context, [BytesConversion]IList<byte> data)
+            => a2b_uu(context, PythonOps.MakeString(data));
+
         public static Bytes b2a_uu(CodeContext/*!*/ context, [BytesConversion]IList<byte> data) {
             if (data == null) throw PythonOps.TypeError("expected string, got NoneType");
             if (data.Count > 45) throw Error(context, "At most 45 bytes at once");

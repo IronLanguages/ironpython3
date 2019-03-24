@@ -1,4 +1,5 @@
 import unittest
+import array
 
 from iptest import IronPythonTestCase, is_cli, path_modifier, run_test
 
@@ -24,5 +25,9 @@ class HashTest(IronPythonTestCase):
         x = EqBeforeHash()
         self.assertNotEquals(x.__hash__, None)
         self.assertEquals(hash(x), 1)
+
+    def test_hash_writable_memoryviews(self):
+        buffer = array.array('b', [1,2,3])
+        self.assertRaises(ValueError, hash, memoryview(buffer))
 
 run_test(__name__)

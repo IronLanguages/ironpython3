@@ -2746,6 +2746,8 @@ namespace IronPython.Modules {
             if (fname == null) {
                 if (file is Extensible<string>) {
                     fname = ((Extensible<string>)file).Value;
+                } else if (file is Bytes b) {
+                    fname = StringOps.RawDecode(context, b, SysModule.getfilesystemencoding(), "strict");
                 } else {
                     fd = GetInt(file, 0);
                 }

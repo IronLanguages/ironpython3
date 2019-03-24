@@ -156,7 +156,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             return context.LanguageContext.GetDefaultEncodingName();
         }
 
-        public static object getfilesystemencoding() {
+        public static string getfilesystemencoding() {
             if (Environment.OSVersion.Platform == PlatformID.Unix)
                 return "utf-8";
             return "mbcs";

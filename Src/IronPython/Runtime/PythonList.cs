@@ -72,6 +72,12 @@ namespace IronPython.Runtime {
                 return;
             }
 
+            // Only initialize from using _data if we have an exact list
+            if (sequence.GetType() != typeof(PythonList)) {
+                __init__((IEnumerable)sequence);
+                return;
+            }
+
             _data = new object[sequence._size];
 
             object[] data = sequence._data;
@@ -139,8 +145,8 @@ namespace IronPython.Runtime {
         }
 
         private PythonList(params object[] items) {
-            _data = items; 
-            _size = _data.Length; 
+            _data = items;
+            _size = _data.Length;
         }
 
         public PythonList()
@@ -287,8 +293,12 @@ namespace IronPython.Runtime {
                 n = self._size;
                 //??? is this useful optimization
                 //???if (n == 1) return new PythonList(Array.ArrayList.Repeat(this[0], count));
-                newCount = checked(n * count);
-                ret = ArrayOps.CopyArray(self._data, newCount);                
+                try {
+                    newCount = checked(n * count);
+                } catch (OverflowException) {
+                    throw PythonOps.MemoryError();
+                }
+                ret = ArrayOps.CopyArray(self._data, newCount);
             }
 
             // this should be extremely fast for large count as it uses the same algoithim as efficient integer powers
@@ -364,7 +374,7 @@ namespace IronPython.Runtime {
                     append(e.Current);
                 }
             } else {
-                InPlaceMultiply(2);                
+                InPlaceMultiply(2);
             }
 
             return this;
@@ -374,7 +384,12 @@ namespace IronPython.Runtime {
         public PythonList InPlaceMultiply(int count) {
             lock (this) {
                 int n = _size;
-                int newCount = checked(n * count);
+                int newCount;
+                try {
+                    newCount = checked(n * count);
+                } catch (OverflowException) {
+                    throw PythonOps.MemoryError();
+                }
                 EnsureSize(newCount);
 
                 int block = n;
@@ -493,7 +508,7 @@ namespace IronPython.Runtime {
             // we'd take and release the locks repeatedly.
             int otherSize = other._size;
             object[] otherData = other._data;
-            
+
             lock (this) {
                 if ((stop - start) == otherSize) {
                     // we are simply replacing values, this is fast...
@@ -547,7 +562,7 @@ namespace IronPython.Runtime {
                     for (int i = 0; i < start; i++) {
                         newData[i] = _data[i];
                     }
-                    
+
                     for (int i = 0; i < other.Count; i++) {
                         newData[i + start] = other[i];
                     }
@@ -560,7 +575,7 @@ namespace IronPython.Runtime {
                     _size = newSize;
                     _data = newData;
                 }
-            }        
+            }
         }
 
         private void SliceAssign(int index, object value) {
@@ -735,9 +750,9 @@ namespace IronPython.Runtime {
         }
 
         public void extend([NotNull]PythonList/*!*/ seq) {
-            using(new OrderedLocker(this, seq)) {
+            using (new OrderedLocker(this, seq)) {
                 // use the original count for if we're extending this w/ this
-                int count = seq.Count;  
+                int count = seq.Count;
                 EnsureSize(Count + count);
 
                 for (int i = 0; i < count; i++) {
@@ -874,11 +889,11 @@ namespace IronPython.Runtime {
             lock (this) Array.Reverse(_data, index, count);
         }
 
-        public void sort(CodeContext/*!*/ context, 
-                         object key=null,
-                         bool reverse=false) {
+        public void sort(CodeContext/*!*/ context,
+                         object key = null,
+                         bool reverse = false) {
             // the empty list is already sorted
-            if (_size != 0) {                
+            if (_size != 0) {
                 IComparer comparer = context.LanguageContext.GetLtComparer(GetComparisonType());
 
                 DoSort(context, comparer, key, reverse, 0, _size);
@@ -1117,7 +1132,7 @@ namespace IronPython.Runtime {
                 // a current item...        
 
                 // force reading the array first, _size can change after
-                object[] data = GetData();  
+                object[] data = GetData();
 
                 return data[PythonOps.FixIndex(index, _size)];
             }
@@ -1252,7 +1267,12 @@ namespace IronPython.Runtime {
                 buf.Append("[");
                 for (int i = 0; i < _size; i++) {
                     if (i > 0) buf.Append(", ");
-                    buf.Append(PythonOps.Repr(context, _data[i]));
+                    try {
+                        PythonOps.FunctionPushFrame(context.LanguageContext);
+                        buf.Append(PythonOps.Repr(context, _data[i]));
+                    } finally {
+                        PythonOps.FunctionPopFrame();
+                    }
                 }
                 buf.Append("]");
                 return buf.ToString();
@@ -1273,7 +1293,7 @@ namespace IronPython.Runtime {
                 return 0;
             }
 
-            int res; 
+            int res;
             CompareUtil.Push(this);
             try {
                 res = ((IStructuralEquatable)new PythonTuple(this)).GetHashCode(comparer);
@@ -1358,7 +1378,7 @@ namespace IronPython.Runtime {
         #region Rich Comparison Members
 
         [return: MaybeNotImplemented]
-        public static object operator > (PythonList self, object other) {
+        public static object operator >(PythonList self, object other) {
             PythonList l = other as PythonList;
             if (l == null) return NotImplementedType.Value;
 
@@ -1549,7 +1569,7 @@ namespace IronPython.Runtime {
 
         public void Dispose() {
         }
-        
+
         #endregion
 
         #region IEnumerable<object> Members

@@ -197,7 +197,9 @@ namespace IronPython.Runtime {
             }
         }
 
-        public const object __hash__ = null;
+        public int __hash__(CodeContext context) {
+            return tobytes().GetHashCode();
+        }
 
         public bool __eq__(CodeContext/*!*/ context, [NotNull]MemoryView value) => tobytes().Equals(value.tobytes());
 

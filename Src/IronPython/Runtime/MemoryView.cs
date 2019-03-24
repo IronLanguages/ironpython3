@@ -198,11 +198,15 @@ namespace IronPython.Runtime {
         }
 
         public int __hash__(CodeContext context) {
-            if (format == "B" || format == "b" || format == "c") {
-                return tobytes().GetHashCode();
+            if (format != "B" && format != "b" && format != "c") {
+                throw PythonOps.ValueError("memoryview: hashing is restricted to formats 'B', 'b' or 'c'");
             }
 
-            throw PythonOps.ValueError("memoryview: hashing is restricted to formats 'B', 'b' or 'c'");
+            if (!@readonly) {
+                throw PythonOps.ValueError("cannot hash writable memoryview object");
+            }
+
+            return tobytes().GetHashCode();
         }
 
         public bool __eq__(CodeContext/*!*/ context, [NotNull]MemoryView value) => tobytes().Equals(value.tobytes());

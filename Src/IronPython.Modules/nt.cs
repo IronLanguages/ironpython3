@@ -857,7 +857,7 @@ namespace IronPython.Modules {
             public object st_ctime_ns { get; }
 
             public override string/*!*/ __repr__(CodeContext/*!*/ context) {
-                return string.Format("nt.stat_result("
+                return string.Format("os.stat_result("
                     + "st_mode={0}, "
                     + "st_ino={1}, "
                     + "st_dev={2}, "

@@ -393,7 +393,7 @@ namespace IronPython.Modules {
                 + "settimeout(). If the timeout was exceeded, socket.timeout is raised."
                 + "recv() returns immediately with zero bytes when the connection is closed."
                 )]
-            public string recv(int maxBytes, int flags=0) {
+            public Bytes recv(int maxBytes, int flags = 0) {
                 int bytesRead;
                 if (maxBytes < 0)
                     throw PythonOps.ValueError("negative buffersize in recv");
@@ -403,7 +403,11 @@ namespace IronPython.Modules {
                 } catch (Exception e) {
                     throw MakeRecvException(e, SocketError.NotConnected);
                 }
-                return PythonOps.MakeString(buffer, bytesRead);
+                if (bytesRead == buffer.Length)
+                    return Bytes.Make(buffer);
+                var bytes = new byte[bytesRead];
+                Array.Copy(buffer, bytes, bytes.Length);
+                return Bytes.Make(bytes);
             }
 
             [Documentation("recv_into(buffer, [nbytes[, flags]]) -> nbytes_read\n\n"

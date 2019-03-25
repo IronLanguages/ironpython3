@@ -88,7 +88,7 @@ namespace IronPython.Runtime.Exceptions {
         /// which inherits from BaseException.  User defined exceptions likewise inherit
         /// from this and have their own .NET class.
         /// </summary>
-        [PythonType("BaseException"), DynamicBaseTypeAttribute, Serializable]
+        [PythonType("BaseException"), DynamicBaseType, Serializable]
         public class BaseException : ICodeFormattable, IPythonObject, IDynamicMetaObjectProvider, IWeakReferenceable {
             private PythonType/*!*/ _type;          // the actual Python type of the Exception object
             private object _message = String.Empty; // the message object, cached at __init__ time, not updated on args assignment
@@ -151,11 +151,13 @@ namespace IronPython.Runtime.Exceptions {
                 __traceback__ = tb;
                 return this;
             }
-            
+
             /// <summary>
             /// Returns a tuple of (type, (arg0, ..., argN)) for implementing pickling/copying
             /// </summary>
             public virtual object/*!*/ __reduce__() {
+                if (_dict.Count > 0)
+                    return PythonTuple.MakeTuple(DynamicHelpers.GetPythonType(this), args, _dict);
                 return PythonTuple.MakeTuple(DynamicHelpers.GetPythonType(this), args);
             }
 

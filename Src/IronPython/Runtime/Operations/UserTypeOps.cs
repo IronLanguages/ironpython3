@@ -208,9 +208,8 @@ namespace IronPython.Runtime.Operations {
             }
 
             // check instance
-            IPythonObject isdo = instance as IPythonObject;
             PythonDictionary dict;
-            if (isdo != null && (dict = isdo.Dict) != null) {
+            if (instance is IPythonObject isdo && (dict = isdo.Dict) != null) {
                 if (dict.TryGetValue(name, out callTarget))
                     return true;
             }
@@ -220,8 +219,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         private static bool LookupValue(PythonType dt, object instance, string name, out object value) {
-            PythonTypeSlot dts;
-            if (dt.TryLookupSlot(DefaultContext.Default, name, out dts) &&
+            if (dt.TryLookupSlot(DefaultContext.Default, name, out PythonTypeSlot dts) &&
                 dts.TryGetValue(DefaultContext.Default, instance, dt, out value)) {
                 return true;
             }

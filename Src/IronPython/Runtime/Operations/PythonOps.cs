@@ -206,17 +206,24 @@ namespace IronPython.Runtime.Operations {
         public static string Repr(CodeContext/*!*/ context, object o) {
             if (o == null) return "None";
 
-            string s;
-            if ((s = o as string) != null) return StringOps.__repr__(s);
+            if (o is string s) return StringOps.__repr__(s);
             if (o is int) return Int32Ops.__repr__((int)o);
             if (o is long) return ((long)o).ToString();
 
             // could be a container object, we need to detect recursion, but only
             // for our own built-in types that we're aware of.  The user can setup
             // infinite recursion in their own class if they want.
-            ICodeFormattable f = o as ICodeFormattable;
-            if (f != null) {
-                return f.__repr__(context);
+            if (o is ICodeFormattable f) {
+                if (o is PythonExceptions.BaseException) {
+                    Debug.Assert(typeof(PythonExceptions.BaseException).IsDefined(typeof(DynamicBaseTypeAttribute), false));
+                    // let it fall through to InvokeUnaryOperator, resolves the following:
+                    // class MyException(Exception):
+                    //     def __repr__(self): return "qwerty"
+                    //
+                    // assert repr(MyException) == "qwerty"
+                } else {
+                    return f.__repr__(context);
+                }
             }
 
             PerfTrack.NoteEvent(PerfTrack.Categories.Temporary, "Repr " + o.GetType().FullName);

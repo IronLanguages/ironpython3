@@ -1314,6 +1314,8 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             } else if (name == "__init__") {
                 _objectInit = null;
                 ClearObjectInitInSubclasses(this);
+            } else if (name == "__eq__" && !_dict.ContainsKey("__hash__")) {
+                AddSlot("__hash__", ToTypeSlot(null));
             }
         }
 

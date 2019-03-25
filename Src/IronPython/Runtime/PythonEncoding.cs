@@ -137,6 +137,22 @@ namespace IronPython.Runtime {
         public override byte[] GetPreamble() => Pass1Encoding.GetPreamble();
         public override bool IsAlwaysNormalized(NormalizationForm form) => false;
 
+        public bool HasBugCorefx29898 {
+            get {
+                if (_hasBugCorefx29898 == null) {
+                    try {
+                        var codec = (Encoding)new UTF8Encoding(false, throwOnInvalidBytes: true);
+                        codec.GetCharCount(new byte[] { 255 });
+                        _hasBugCorefx29898 = false;
+                    } catch (DecoderFallbackException ex) {
+                        _hasBugCorefx29898 = (ex.Index < 0);
+                    }
+                }
+                return (bool)_hasBugCorefx29898;
+            }
+        }
+        private bool? _hasBugCorefx29898;
+
         public class PythonEncoder : Encoder {
             private readonly PythonEncoding _parentEncoding;
             private readonly Encoder _pass1encoder;
@@ -247,13 +263,15 @@ namespace IronPython.Runtime {
             private char _lastCharUnknown;
             private int _lastIndexUnknown = -1;
 
-            public PythonEncoderFallbackBuffer(bool isPass1, int encodingCharWidth) {
+            public PythonEncoderFallbackBuffer(bool isPass1, PythonEncoding encoding) {
                 _marker = isPass1 ? Pass1Marker : Pass2Marker;
                 _fallbackBytes = isPass1 ? null : new Queue<byte>();
-                this.EncodingCharWidth = encodingCharWidth;
+                this.EncodingCharWidth = encoding.CharacterWidth;
+                this.CodePage = encoding.CodePage;
             }
 
             protected int EncodingCharWidth { get; }
+            protected int CodePage { get; }
 
             public abstract byte[] GetFallbackBytes(char charUnknown, int index);
 
@@ -419,22 +437,29 @@ namespace IronPython.Runtime {
         protected abstract class PythonDecoderFallbackBuffer : DecoderFallbackBuffer {
             private readonly char _marker;
             private readonly Queue<char> _fallbackChars;
+            private readonly bool _hasIndexBug;
 
             private int _fbkCnt;
             private int _charNum;
             private int _charCnt;
 
-            public PythonDecoderFallbackBuffer(bool isPass1, int encodingCharWidth) {
+            public PythonDecoderFallbackBuffer(bool isPass1, PythonEncoding encoding) {
                 _marker = isPass1 ? Pass1Marker : Pass2Marker;
                 _fallbackChars = isPass1 ? null : new Queue<char>();
-                this.EncodingCharWidth = encodingCharWidth;
+                this.EncodingCharWidth = encoding.CharacterWidth;
+                this.CodePage = encoding.CodePage;
+                _hasIndexBug = encoding.HasBugCorefx29898;
             }
 
             protected int EncodingCharWidth { get; }
+            protected int CodePage { get; }
 
             public abstract char[] GetFallbackChars(byte[] bytesUnknown, int index);
 
             public override bool Fallback(byte[] bytesUnknown, int index) {
+                if (_hasIndexBug && this.CharCountingMode && this.CodePage == 65001) { // only for UTF-8
+                    index += bytesUnknown.Length;
+                }
                 char[] newFallbackChars = GetFallbackChars(bytesUnknown, index);
                 _charNum = newFallbackChars.Length;
 
@@ -505,12 +530,12 @@ namespace IronPython.Runtime {
             public override int MaxCharCount => 1;
 
             public override EncoderFallbackBuffer CreateFallbackBuffer()
-                => new SurrogateEscapeEncoderFallbackBuffer(this.IsPass1, this.Encoding.CharacterWidth);
+                => new SurrogateEscapeEncoderFallbackBuffer(this.IsPass1, this.Encoding);
         }
 
         private class SurrogateEscapeEncoderFallbackBuffer : PythonEncoderFallbackBuffer {
-            public SurrogateEscapeEncoderFallbackBuffer(bool isPass1, int encodingCharWidth)
-                : base(isPass1, encodingCharWidth) { }
+            public SurrogateEscapeEncoderFallbackBuffer(bool isPass1, PythonEncoding encoding)
+                : base(isPass1, encoding) { }
 
             public override byte[] GetFallbackBytes(char charUnknown, int index) {
                 if ((charUnknown & ~0xff) != LoneSurrogateBase) {
@@ -532,13 +557,13 @@ namespace IronPython.Runtime {
             public override int MaxCharCount => this.Encoding.CharacterWidth;
 
             public override DecoderFallbackBuffer CreateFallbackBuffer()
-                => new SurrogateEscapeDecoderFallbackBuffer(this.IsPass1, this.Encoding.CharacterWidth);
+                => new SurrogateEscapeDecoderFallbackBuffer(this.IsPass1, this.Encoding);
         }
 
         private class SurrogateEscapeDecoderFallbackBuffer : PythonDecoderFallbackBuffer {
 
-            public SurrogateEscapeDecoderFallbackBuffer(bool isPass1, int encodingCharWidth)
-                : base(isPass1, encodingCharWidth) { }
+            public SurrogateEscapeDecoderFallbackBuffer(bool isPass1, PythonEncoding encoding)
+                : base(isPass1, encoding) { }
 
             public override char[] GetFallbackChars(byte[] bytesUnknown, int index) {
                 int charNum = bytesUnknown.Length;
@@ -590,7 +615,7 @@ namespace IronPython.Runtime {
             private readonly bool _isBigEndianEncoding;
 
             public SurrogatePassEncoderFallbackBuffer(bool isPass1, PythonEncoding encoding)
-                : base(isPass1, encoding.CharacterWidth) {
+                : base(isPass1, encoding) {
                 _codePage = encoding.CodePage;
                 _isBigEndianEncoding = encoding.IsBigEndian;
             }
@@ -657,11 +682,10 @@ namespace IronPython.Runtime {
             public override int MaxCharCount => this.Encoding.CharacterWidth;
 
             public override DecoderFallbackBuffer CreateFallbackBuffer()
-                => new SurrogatePassDecoderFallbackBuffer(this.IsPass1, this.Encoding.CharacterWidth, this.Encoding.CodePage);
+                => new SurrogatePassDecoderFallbackBuffer(this.IsPass1, this.Encoding);
         }
 
         private class SurrogatePassDecoderFallbackBuffer : PythonDecoderFallbackBuffer {
-            private readonly int _codePage;
 
             private class ByteBuffer {
                 private byte[] _buffer;
@@ -717,9 +741,8 @@ namespace IronPython.Runtime {
 
             private ByteBuffer _buffer;
 
-            public SurrogatePassDecoderFallbackBuffer(bool isPass1, int characterWidth, int codePage)
-                : base(isPass1, characterWidth) {
-                _codePage = codePage;
+            public SurrogatePassDecoderFallbackBuffer(bool isPass1, PythonEncoding encoding)
+                : base(isPass1, encoding) {
             }
 
             public override char[] GetFallbackChars(byte[] bytesUnknown, int index) {
@@ -729,7 +752,7 @@ namespace IronPython.Runtime {
                 char[] fallbackChars = null;
                 int numFallbackChars = 0;
 
-                switch (_codePage) {
+                switch (this.CodePage) {
                     case 65001: // UTF-8
                         if (_buffer == null) _buffer = new ByteBuffer(bytesPerChar);
                         if (index != _buffer.EndIndex) {
@@ -788,7 +811,7 @@ namespace IronPython.Runtime {
                         break;
 
                     default:
-                        throw new DecoderFallbackException($"'surrogatepass' error handler does not support this encoding (cp{_codePage})", bytesUnknown, index);
+                        throw new DecoderFallbackException($"'surrogatepass' error handler does not support this encoding (cp{this.CodePage})", bytesUnknown, index);
                 }
 
                 if (fallbackChars == null) {

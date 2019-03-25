@@ -137,7 +137,7 @@ namespace IronPython.Runtime {
         public override byte[] GetPreamble() => Pass1Encoding.GetPreamble();
         public override bool IsAlwaysNormalized(NormalizationForm form) => false;
 
-        public bool HasBugCorefx29898 {
+        public static bool HasBugCorefx29898 {
             get {
                 if (_hasBugCorefx29898 == null) {
                     try {
@@ -151,7 +151,7 @@ namespace IronPython.Runtime {
                 return (bool)_hasBugCorefx29898;
             }
         }
-        private bool? _hasBugCorefx29898;
+        private static bool? _hasBugCorefx29898;
 
         public class PythonEncoder : Encoder {
             private readonly PythonEncoding _parentEncoding;
@@ -276,7 +276,7 @@ namespace IronPython.Runtime {
             public abstract byte[] GetFallbackBytes(char charUnknown, int index);
 
             public override bool Fallback(char charUnknown, int index) {
-                // The design limitation fow wide-char encodings is that
+                // The design limitation for wide-char encodings is that
                 // fallback bytes must be char-aligned.
                 if (_byteCnt.Value % EncodingCharWidth != 0) {
                     // bytes are not char-aligned, the fallback chars must be consecutive
@@ -437,7 +437,6 @@ namespace IronPython.Runtime {
         protected abstract class PythonDecoderFallbackBuffer : DecoderFallbackBuffer {
             private readonly char _marker;
             private readonly Queue<char> _fallbackChars;
-            private readonly bool _hasIndexBug;
 
             private int _fbkCnt;
             private int _charNum;
@@ -448,7 +447,6 @@ namespace IronPython.Runtime {
                 _fallbackChars = isPass1 ? null : new Queue<char>();
                 this.EncodingCharWidth = encoding.CharacterWidth;
                 this.CodePage = encoding.CodePage;
-                _hasIndexBug = encoding.HasBugCorefx29898;
             }
 
             protected int EncodingCharWidth { get; }
@@ -457,7 +455,7 @@ namespace IronPython.Runtime {
             public abstract char[] GetFallbackChars(byte[] bytesUnknown, int index);
 
             public override bool Fallback(byte[] bytesUnknown, int index) {
-                if (_hasIndexBug && this.CharCountingMode && this.CodePage == 65001) { // only for UTF-8
+                if (PythonEncoding.HasBugCorefx29898 && this.CharCountingMode && this.CodePage == 65001) { // only for UTF-8
                     index += bytesUnknown.Length;
                 }
                 char[] newFallbackChars = GetFallbackChars(bytesUnknown, index);
@@ -637,9 +635,6 @@ namespace IronPython.Runtime {
                         // UTF-16LE or UTF-16BE
                         if (BitConverter.IsLittleEndian == _isBigEndianEncoding) {
                             // swap bytes for non-native endianness encoding
-                            //(fallbackBytes[0], fallbackBytes[1]) = (fallbackBytes[1], fallbackBytes[0]);
-                            // the above requires .NET Core 2.x, .NET Standard 2.0 or .NET Framework 4.7
-                            // For .NET 4.5 use: <PackageReference Include="System.ValueTuple" Version="4.4.0" />
                             var temp = fallbackBytes[0];
                             fallbackBytes[0] = fallbackBytes[1];
                             fallbackBytes[1] = temp;

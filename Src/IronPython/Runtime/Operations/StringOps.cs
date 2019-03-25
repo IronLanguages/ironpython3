@@ -1686,6 +1686,7 @@ namespace IronPython.Runtime.Operations {
                 case "replace": e.DecoderFallback = ReplacementFallback; break;
                 case "ignore": e.DecoderFallback = new PythonDecoderFallback(); break;
                 case "surrogateescape": e =  new PythonSurrogateEscapeEncoding(e); break;
+                case "surrogatepass": e =  new PythonSurrogatePassEncoding(e); break;
                 default:
                     e.DecoderFallback = new PythonDecoderFallback(encoding, s,
                         () => LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors)));
@@ -1753,6 +1754,7 @@ namespace IronPython.Runtime.Operations {
                 case "xmlcharrefreplace": e.EncoderFallback = new XmlCharRefEncoderReplaceFallback(); break;
                 case "ignore": e.EncoderFallback = new PythonEncoderFallback(); break;
                 case "surrogateescape": e = new PythonSurrogateEscapeEncoding(e); break;
+                case "surrogatepass": e = new PythonSurrogatePassEncoding(e); break;
                 default:
                     e.EncoderFallback = new PythonEncoderFallback(encoding, s,
                         () => LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors)));

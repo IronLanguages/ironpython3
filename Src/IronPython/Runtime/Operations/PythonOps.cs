@@ -3635,12 +3635,16 @@ namespace IronPython.Runtime.Operations {
             return PythonExceptions.CreateThrowable(PythonExceptions.UnicodeEncodeError, encoding, @object, start, end, reason);
         }
 
-        public static Exception UnicodeEncodeError(string encoding, char charUnkown, int index, string format, params object[] args) {
-            var ctor = typeof (EncoderFallbackException).GetConstructor(
-                BindingFlags.NonPublic | BindingFlags.Instance, null, new [] { typeof(string), typeof(char), typeof(int) } , null);
-            var ex = (EncoderFallbackException)ctor.Invoke(new object[] { string.Format(format, args), charUnkown, index });
+        public static Exception UnicodeEncodeError(string encoding, char charUnknown, int index, string format, params object[] args) {
+            var ex = (EncoderFallbackException)UnicodeEncodeError(string.Format(format, args), charUnknown, index);
             ex.Data["encoding"] = encoding;
             return ex;
+        }
+
+        public static Exception UnicodeEncodeError(string message, char charUnknown, int index) {
+            var ctor = typeof(EncoderFallbackException).GetConstructor(
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, new[] { typeof(string), typeof(char), typeof(int) }, null);
+            return (EncoderFallbackException)ctor.Invoke(new object[] { message, charUnknown, index });
         }
 
         public static Exception IOError(Exception inner) {

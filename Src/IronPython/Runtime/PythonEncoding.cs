@@ -455,7 +455,7 @@ namespace IronPython.Runtime {
             public abstract char[] GetFallbackChars(byte[] bytesUnknown, int index);
 
             public override bool Fallback(byte[] bytesUnknown, int index) {
-                if (PythonEncoding.HasBugCorefx29898 && this.CharCountingMode && this.CodePage == 65001) { // only for UTF-8
+                if (this.CharCountingMode && this.CodePage == 65001 && PythonEncoding.HasBugCorefx29898) { // only for UTF-8
                     index += bytesUnknown.Length;
                 }
                 char[] newFallbackChars = GetFallbackChars(bytesUnknown, index);

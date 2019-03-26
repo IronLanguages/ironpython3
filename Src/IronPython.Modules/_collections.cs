@@ -42,15 +42,15 @@ namespace IronPython.Modules {
             // extra overloads just so that __init__ and __new__ are compatible and __new__ can accept any arguments
             public deque(object iterable) : this() { }
 
-            public deque(object iterable, object maxLen) : this() { }
+            public deque(object iterable, int maxlen) : this() { }
 
             public deque(params object[] args) : this() { }
 
             public deque([ParamDictionary]IDictionary<object, object> dict, params object[] args) : this() { }
 
-            private deque(int maxLen) {
+            private deque(int maxlen) {
                 // internal private constructor accepts maxlen < 0
-                _maxLen = maxLen;
+                _maxLen = maxlen;
                 clear();
             }
 
@@ -70,8 +70,8 @@ namespace IronPython.Modules {
                 extend(iterable);
             }
 
-            public void __init__(object iterable, object maxLen) {
-                _maxLen = VerifyMaxLenValue(maxLen);
+            public void __init__(object iterable, int maxlen) {
+                _maxLen = VerifyMaxLenValue(maxlen);
                 
                 clear();
                 extend(iterable);

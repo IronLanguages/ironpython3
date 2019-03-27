@@ -86,8 +86,29 @@ namespace IronPython.Modules {
 
         [PythonType]
         public class accumulate : IterBase {
+            private static readonly object Undefined = new object();
+
+            private readonly IEnumerator iterable;
+            private readonly object func;
+            private object total;
+
             public accumulate(CodeContext/*!*/ context, object iterable, object func = null) {
-                InnerEnumerator = Accumulator(context, PythonOps.GetEnumerator(iterable), func);
+                this.iterable = PythonOps.GetEnumerator(iterable);
+                this.func = func;
+                total = Undefined;
+                InnerEnumerator = Accumulator(context, this.iterable, func);
+            }
+
+            public PythonTuple __reduce__() {
+                return PythonTuple.MakeTuple(
+                    DynamicHelpers.GetPythonType(this),
+                    PythonTuple.MakeTuple(iterable, func),
+                    total == Undefined ? null : total
+                );
+            }
+
+            public void __setstate__(object state) {
+                total = state;
             }
 
             private IEnumerator<object> Accumulator(CodeContext/*!*/ context, IEnumerator iterable, object function) {
@@ -95,16 +116,17 @@ namespace IronPython.Modules {
                     yield break;
                 }
 
-                object total = iterable.Current;
-                yield return total;
-
                 if (function == null) {
                     PythonContext pc = context.LanguageContext;
+                    total = total == Undefined ? iterable.Current : pc.Add(total, iterable.Current);
+                    yield return total;
                     while (MoveNextHelper(iterable)) {
                         total = pc.Add(total, iterable.Current);
                         yield return total;
                     }
                 } else {
+                    total = total == Undefined ? iterable.Current : PythonCalls.Call(function, total, iterable.Current);
+                    yield return total;
                     while (MoveNextHelper(iterable)) {
                         total = PythonCalls.Call(function, total, iterable.Current);
                         yield return total;
@@ -115,10 +137,13 @@ namespace IronPython.Modules {
 
         [PythonType]
         public class chain : IterBase {
+            private IEnumerator ie;
+            private IEnumerator inner;
+
             private chain() { }
 
             public chain(params object[] iterables) {
-                InnerEnumerator = LazyYielder(iterables);
+                SetInnerEnumerator(PythonTuple.MakeTuple(iterables));
             }
 
             [ClassMethod]
@@ -126,19 +151,41 @@ namespace IronPython.Modules {
                 chain res;
                 if (cls == DynamicHelpers.GetPythonTypeFromType(typeof(chain))) {
                     res = new chain();
-                    res.InnerEnumerator = LazyYielder(iterables);
                 } else {
                     res = (chain)cls.CreateInstance(context);
-                    res.InnerEnumerator = LazyYielder(iterables);
                 }
 
+                res.SetInnerEnumerator(iterables);
                 return res;
             }
 
-            private static IEnumerator<object> LazyYielder(object iterables) {
-                IEnumerator ie = PythonOps.GetEnumerator(iterables);
+            public PythonTuple __reduce__() {
+                return PythonTuple.MakeTuple(
+                    DynamicHelpers.GetPythonType(this),
+                    PythonTuple.EMPTY,
+                    inner == null ? PythonTuple.MakeTuple(ie) : PythonTuple.MakeTuple(ie, inner)
+                );
+            }
+
+            public void __setstate__(PythonTuple state) {
+                // TODO: error handling?
+                ie = state[0] as IEnumerator;
+                inner = (state.Count > 1) ? state[1] as IEnumerator : null;
+                InnerEnumerator = LazyYielder();
+            }
+
+            private void SetInnerEnumerator(object iterables) {
+                ie = PythonOps.GetEnumerator(iterables);
+                InnerEnumerator = LazyYielder();
+            }
+
+            private IEnumerator<object> LazyYielder() {
+                while (inner != null && inner.MoveNext()) {
+                    yield return inner.Current;
+                }
+
                 while (ie.MoveNext()) {
-                    IEnumerator inner = PythonOps.GetEnumerator(ie.Current);
+                    inner = PythonOps.GetEnumerator(ie.Current);
                     while (inner.MoveNext()) {
                         yield return inner.Current;
                     }
@@ -154,6 +201,14 @@ namespace IronPython.Modules {
                 EnsureIterator(context, data);
                 EnsureIterator(context, selectors);
                 InnerEnumerator = LazyYielder(data, selectors);
+            }
+
+            public PythonTuple __reduce__() {
+                // TODO
+                return PythonTuple.MakeTuple(
+                    DynamicHelpers.GetPythonType(this),
+                    PythonTuple.MakeTuple() // arguments
+                );
             }
 
             private static void EnsureIterator(CodeContext/*!*/ context, object iter) {
@@ -323,10 +378,6 @@ namespace IronPython.Modules {
                 return PythonTuple.MakeTuple(DynamicHelpers.GetPythonType(this), args);
             }
 
-            public PythonTuple __reduce_ex__([Optional]int protocol) {
-                return __reduce__();
-            }
-
             private bool StepIsOne() {
                 if (_step is int) {
                     return (int)_step == 1;
@@ -365,6 +416,19 @@ namespace IronPython.Modules {
                 InnerEnumerator = Yielder(PythonOps.GetEnumerator(iterable));
             }
 
+            public PythonTuple __reduce__() {
+                // TODO
+                return PythonTuple.MakeTuple(
+                    DynamicHelpers.GetPythonType(this),
+                    PythonTuple.MakeTuple(), // arguments
+                    null // state
+                );
+            }
+
+            public void __setstate__(object state) {
+                // TODO
+            }
+
             private IEnumerator<object> Yielder(IEnumerator iter) {
                 PythonList result = new PythonList();
                 while (MoveNextHelper(iter)) {
@@ -388,6 +452,19 @@ namespace IronPython.Modules {
             public dropwhile(CodeContext/*!*/ context, object predicate, object iterable) {
                 _context = context;
                 InnerEnumerator = Yielder(predicate, PythonOps.GetEnumerator(iterable));
+            }
+
+            public PythonTuple __reduce__() {
+                // TODO
+                return PythonTuple.MakeTuple(
+                    DynamicHelpers.GetPythonType(this),
+                    PythonTuple.MakeTuple(), // arguments
+                    null // state
+                );
+            }
+
+            public void __setstate__(object state) {
+                // TODO
             }
 
             private IEnumerator<object> Yielder(object predicate, IEnumerator iter) {
@@ -424,6 +501,19 @@ namespace IronPython.Modules {
                 if (key != null) {
                     _key = key;
                 }
+            }
+
+            public PythonTuple __reduce__() {
+                // TODO
+                return PythonTuple.MakeTuple(
+                    DynamicHelpers.GetPythonType(this),
+                    PythonTuple.MakeTuple(), // arguments
+                    null // state
+                );
+            }
+
+            public void __setstate__(object state) {
+                // TODO
             }
 
             private IEnumerator<object> Yielder(IEnumerator iter) {
@@ -466,6 +556,14 @@ namespace IronPython.Modules {
             public filterfalse(CodeContext/*!*/ context, object predicate, object iterable) {
                 _context = context;
                 InnerEnumerator = Yielder(predicate, PythonOps.GetEnumerator(iterable));
+            }
+
+            public PythonTuple __reduce__() {
+                // TODO
+                return PythonTuple.MakeTuple(
+                    DynamicHelpers.GetPythonType(this),
+                    PythonTuple.MakeTuple() // arguments
+                );
             }
 
             private IEnumerator<object> Yielder(object predicate, IEnumerator iter) {
@@ -512,6 +610,19 @@ namespace IronPython.Modules {
                 }
 
                 InnerEnumerator = Yielder(PythonOps.GetEnumerator(iterable), startInt, stopInt, stepInt);
+            }
+
+            public PythonTuple __reduce__() {
+                // TODO
+                return PythonTuple.MakeTuple(
+                    DynamicHelpers.GetPythonType(this),
+                    PythonTuple.MakeTuple(), // arguments
+                    null // state
+                );
+            }
+
+            public void __setstate__(object state) {
+                // TODO
             }
 
             private IEnumerator<object> Yielder(IEnumerator iter, int start, int stop, int step) {
@@ -569,6 +680,19 @@ namespace IronPython.Modules {
                 for (int i = 0; i < iterables.Length; i++) {
                     _iters[i] = PythonOps.GetEnumerator(iterables[i]);
                 }
+            }
+
+            public PythonTuple __reduce__() {
+                // TODO
+                return PythonTuple.MakeTuple(
+                    DynamicHelpers.GetPythonType(this),
+                    PythonTuple.MakeTuple(), // arguments
+                    null // state
+                );
+            }
+
+            public void __setstate__(object state) {
+                // TODO
             }
 
             #region IEnumerator Members
@@ -654,6 +778,19 @@ namespace IronPython.Modules {
                 InnerEnumerator = Yielder(finalIterables);
             }
 
+            public PythonTuple __reduce__() {
+                // TODO
+                return PythonTuple.MakeTuple(
+                    DynamicHelpers.GetPythonType(this),
+                    PythonTuple.MakeTuple(), // arguments
+                    null // state
+                );
+            }
+
+            public void __setstate__(object state) {
+                // TODO
+            }
+
             private IEnumerator<object> Yielder(PythonList[] iterables) {
                 if (iterables.Length > 0) {
                     IEnumerator[] enums = new IEnumerator[iterables.Length];
@@ -694,6 +831,19 @@ namespace IronPython.Modules {
                 _data = new PythonList(iterable);
 
                 InnerEnumerator = Yielder(GetR(r, _data));
+            }
+
+            public PythonTuple __reduce__() {
+                // TODO
+                return PythonTuple.MakeTuple(
+                    DynamicHelpers.GetPythonType(this),
+                    PythonTuple.MakeTuple(), // arguments
+                    null // state
+                );
+            }
+
+            public void __setstate__(object state) {
+                // TODO
             }
 
             private IEnumerator<object> Yielder(int r) {
@@ -751,6 +901,19 @@ namespace IronPython.Modules {
                 _data = new PythonList(iterable);
 
                 InnerEnumerator = Yielder(GetR(r, _data));
+            }
+
+            public PythonTuple __reduce__() {
+                // TODO
+                return PythonTuple.MakeTuple(
+                    DynamicHelpers.GetPythonType(this),
+                    PythonTuple.MakeTuple(), // arguments
+                    null // state
+                );
+            }
+
+            public void __setstate__(object state) {
+                // TODO
             }
 
             private IEnumerator<object> Yielder(int r) {
@@ -813,6 +976,19 @@ namespace IronPython.Modules {
                 _data = new PythonList(iterable);
                 
                 InnerEnumerator = Yielder(GetR(r, _data));
+            }
+
+            public PythonTuple __reduce__() {
+                // TODO
+                return PythonTuple.MakeTuple(
+                    DynamicHelpers.GetPythonType(this),
+                    PythonTuple.MakeTuple(), // arguments
+                    null // state
+                );
+            }
+
+            public void __setstate__(object state) {
+                // TODO
             }
 
             private IEnumerator<object> Yielder(int r) {
@@ -904,6 +1080,14 @@ namespace IronPython.Modules {
                 return Math.Max(_remaining, 0);
             }
 
+            public PythonTuple __reduce__() {
+                // TODO
+                return PythonTuple.MakeTuple(
+                    DynamicHelpers.GetPythonType(this),
+                    PythonTuple.MakeTuple() // arguments
+                );
+            }
+
             #region ICodeFormattable Members
 
             public virtual string/*!*/ __repr__(CodeContext/*!*/ context) {
@@ -960,6 +1144,14 @@ namespace IronPython.Modules {
                 InnerEnumerator = Yielder(context, function, PythonOps.GetEnumerator(iterable));
             }
 
+            public PythonTuple __reduce__() {
+                // TODO
+                return PythonTuple.MakeTuple(
+                    DynamicHelpers.GetPythonType(this),
+                    PythonTuple.MakeTuple() // arguments
+                );
+            }
+
             private IEnumerator<object> Yielder(CodeContext context, object function, IEnumerator iter) {
                 PythonContext pc = context.LanguageContext;
 
@@ -989,6 +1181,19 @@ namespace IronPython.Modules {
                 _context = context;
 
                 InnerEnumerator = Yielder(predicate, PythonOps.GetEnumerator(iterable));
+            }
+
+            public PythonTuple __reduce__() {
+                // TODO
+                return PythonTuple.MakeTuple(
+                    DynamicHelpers.GetPythonType(this),
+                    PythonTuple.MakeTuple(), // arguments
+                    null // state
+                );
+            }
+
+            public void __setstate__(object state) {
+                // TODO
             }
 
             private IEnumerator<object> Yielder(object predicate, IEnumerator iter) {

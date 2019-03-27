@@ -457,7 +457,6 @@ class TestBasic(unittest.TestCase):
         self.assertNotEqual(id(d), id(e))
         self.assertEqual(list(d), list(e))
 
-    @unittest.skipIf(sys.implementation.name == "ironpython", "https://github.com/IronLanguages/ironpython3/issues/515")
     def test_pickle(self):
         d = deque(range(200))
         for i in range(pickle.HIGHEST_PROTOCOL + 1):
@@ -474,7 +473,6 @@ class TestBasic(unittest.TestCase):
 ##            self.assertNotEqual(id(d), id(e))
 ##            self.assertEqual(id(e), id(e[-1]))
 
-    @unittest.skipIf(sys.implementation.name == "ironpython", "https://github.com/IronLanguages/ironpython3/issues/515")
     def test_iterator_pickle(self):
         data = deque(range(200))
         for proto in range(pickle.HIGHEST_PROTOCOL + 1):
@@ -607,7 +605,6 @@ class TestSubclass(unittest.TestCase):
         d.clear()
         self.assertEqual(len(d), 0)
 
-    @unittest.skipIf(sys.implementation.name == "ironpython", "https://github.com/IronLanguages/ironpython3/issues/515")
     def test_copy_pickle(self):
 
         d = Deque('abc')

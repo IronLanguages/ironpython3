@@ -371,7 +371,7 @@ namespace IronPython.Runtime.Operations {
             
             if (type.IsValueType() && !hasDefaultConstructor && type != typeof(void)) {
                 try {
-                    methods.Add(typeof(ScriptingRuntimeHelpers).GetMethod("CreateInstance", ReflectionUtils.EmptyTypes).MakeGenericMethod(type));
+                    methods.Add(typeof(ScriptingRuntimeHelpers).GetMethod(nameof(ScriptingRuntimeHelpers.CreateInstance), ReflectionUtils.EmptyTypes).MakeGenericMethod(type));
                 } catch (BadImageFormatException) {
                     // certain types (e.g. ArgIterator) won't survive the above call.
                     // we won't let you create instances of these types.

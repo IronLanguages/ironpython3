@@ -101,51 +101,51 @@ namespace IronPython.Runtime.Binding {
         internal static MethodInfo GetGenericConvertMethod(Type toType) {
             if (toType.IsValueType()) {
                 if (toType.IsGenericType() && toType.GetGenericTypeDefinition() == typeof(Nullable<>)) {
-                    return typeof(Converter).GetMethod("ConvertToNullableType");
+                    return typeof(Converter).GetMethod(nameof(Converter.ConvertToNullableType));
                 } else {
-                    return typeof(Converter).GetMethod("ConvertToValueType");
+                    return typeof(Converter).GetMethod(nameof(Converter.ConvertToValueType));
                 }
             } else {
-                return typeof(Converter).GetMethod("ConvertToReferenceType");
+                return typeof(Converter).GetMethod(nameof(Converter.ConvertToReferenceType));
             }
         }
 
 
         internal static MethodInfo GetFastConvertMethod(Type toType) {
             if (toType == typeof(char)) {
-                return typeof(Converter).GetMethod("ConvertToChar");
+                return typeof(Converter).GetMethod(nameof(Converter.ConvertToChar));
             } else if (toType == typeof(int)) {
-                return typeof(Converter).GetMethod("ConvertToInt32");
+                return typeof(Converter).GetMethod(nameof(Converter.ConvertToInt32));
             } else if (toType == typeof(string)) {
-                return typeof(Converter).GetMethod("ConvertToString");
+                return typeof(Converter).GetMethod(nameof(Converter.ConvertToString));
             } else if (toType == typeof(long)) {
-                return typeof(Converter).GetMethod("ConvertToInt64");
+                return typeof(Converter).GetMethod(nameof(Converter.ConvertToInt64));
             } else if (toType == typeof(double)) {
-                return typeof(Converter).GetMethod("ConvertToDouble");
+                return typeof(Converter).GetMethod(nameof(Converter.ConvertToDouble));
             } else if (toType == typeof(bool)) {
-                return typeof(Converter).GetMethod("ConvertToBoolean");
+                return typeof(Converter).GetMethod(nameof(Converter.ConvertToBoolean));
             } else if (toType == typeof(BigInteger)) {
-                return typeof(Converter).GetMethod("ConvertToBigInteger");
+                return typeof(Converter).GetMethod(nameof(Converter.ConvertToBigInteger));
             } else if (toType == typeof(Complex)) {
-                return typeof(Converter).GetMethod("ConvertToComplex");
+                return typeof(Converter).GetMethod(nameof(Converter.ConvertToComplex));
             } else if (toType == typeof(IEnumerable)) {
-                return typeof(Converter).GetMethod("ConvertToIEnumerable");
+                return typeof(Converter).GetMethod(nameof(Converter.ConvertToIEnumerable));
             } else if (toType == typeof(float)) {
-                return typeof(Converter).GetMethod("ConvertToSingle");
+                return typeof(Converter).GetMethod(nameof(Converter.ConvertToSingle));
             } else if (toType == typeof(byte)) {
-                return typeof(Converter).GetMethod("ConvertToByte");
+                return typeof(Converter).GetMethod(nameof(Converter.ConvertToByte));
             } else if (toType == typeof(sbyte)) {
-                return typeof(Converter).GetMethod("ConvertToSByte");
+                return typeof(Converter).GetMethod(nameof(Converter.ConvertToSByte));
             } else if (toType == typeof(short)) {
-                return typeof(Converter).GetMethod("ConvertToInt16");
+                return typeof(Converter).GetMethod(nameof(Converter.ConvertToInt16));
             } else if (toType == typeof(uint)) {
-                return typeof(Converter).GetMethod("ConvertToUInt32");
+                return typeof(Converter).GetMethod(nameof(Converter.ConvertToUInt32));
             } else if (toType == typeof(ulong)) {
-                return typeof(Converter).GetMethod("ConvertToUInt64");
+                return typeof(Converter).GetMethod(nameof(Converter.ConvertToUInt64));
             } else if (toType == typeof(ushort)) {
-                return typeof(Converter).GetMethod("ConvertToUInt16");
+                return typeof(Converter).GetMethod(nameof(Converter.ConvertToUInt16));
             } else if (toType == typeof(Type)) {
-                return typeof(Converter).GetMethod("ConvertToType");
+                return typeof(Converter).GetMethod(nameof(Converter.ConvertToType));
             } else {
                 return null;
             }

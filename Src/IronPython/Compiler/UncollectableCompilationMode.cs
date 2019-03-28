@@ -116,7 +116,7 @@ namespace IronPython.Compiler.Ast {
                     fieldInfo = storageType.GetField(string.Format("Context{0:000}", index % StorageData.StaticFields));
                     expr = Ast.Field(null, fieldInfo);
                 } else {
-                    fieldInfo = typeof(StorageData).GetField("Contexts");
+                    fieldInfo = typeof(StorageData).GetField(nameof(StorageData.Contexts));
                     expr = Ast.ArrayIndex(
                         Ast.Field(null, fieldInfo),
                         Ast.Constant(arrIndex, typeof(int))
@@ -291,7 +291,7 @@ namespace IronPython.Compiler.Ast {
                 DelegateType = GetDelegateType(retType, args);
                 SiteType = typeof(CallSite<>).MakeGenericType(DelegateType);
                 NextSite = (Func<DynamicMetaObjectBinder, SiteInfo>)
-                    typeof(UncollectableCompilationMode).GetMethod("NextSite").MakeGenericMethod(DelegateType).
+                    typeof(UncollectableCompilationMode).GetMethod(nameof(UncollectableCompilationMode.NextSite)).MakeGenericMethod(DelegateType).
                         CreateDelegate(typeof(Func<DynamicMetaObjectBinder, SiteInfo>)
                 );
                 TargetField = SiteType.GetField("Target");

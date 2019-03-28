@@ -92,8 +92,8 @@ namespace IronPython.Runtime.Types {
         }
 
         public static class _IPythonObject {
-            public static readonly PropertyInfo/*!*/ PythonType = typeof(IPythonObject).GetProperty("PythonType");
-            public static readonly PropertyInfo/*!*/ Dict = typeof(IPythonObject).GetProperty("Dict");
+            public static readonly PropertyInfo/*!*/ PythonType = typeof(IPythonObject).GetProperty(nameof(IPythonObject.PythonType));
+            public static readonly PropertyInfo/*!*/ Dict = typeof(IPythonObject).GetProperty(nameof(IPythonObject.Dict));
         }
 
         public static class _PythonOps {
@@ -103,11 +103,11 @@ namespace IronPython.Runtime.Types {
         }
 
         public static class _OperationFailed {
-            public static readonly FieldInfo/*!*/ Value = typeof(OperationFailed).GetField("Value");
+            public static readonly FieldInfo/*!*/ Value = typeof(OperationFailed).GetField(nameof(OperationFailed.Value));
         }
 
         public static class _PythonDictionary {
-            public static readonly MethodInfo/*!*/ TryGetvalue = typeof(PythonDictionary).GetMethod("TryGetValue");
+            public static readonly MethodInfo/*!*/ TryGetvalue = typeof(PythonDictionary).GetMethod(nameof(PythonDictionary.TryGetValue));
         }
 
         public static class _PythonGenerator {
@@ -939,7 +939,7 @@ namespace IronPython.Runtime.Types {
 
                 foreach (Type t in binder.GetInterfaces(type)) {
                     if (t.IsGenericType() && t.GetGenericTypeDefinition() == typeof(ICollection<>)) {
-                        MethodInfo genMeth = typeof(InstanceOps).GetMethod("GenericLengthMethod");
+                        MethodInfo genMeth = typeof(InstanceOps).GetMethod(nameof(InstanceOps.GenericLengthMethod));
                         return new MemberGroup(
                             MethodTracker.FromMemberInfo(genMeth.MakeGenericMethod(t.GetGenericArguments()), type)
                         );

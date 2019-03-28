@@ -36,7 +36,7 @@ namespace IronPython.Compiler {
         private readonly PythonGlobal/*!*/ _global;
         private readonly Ast.PythonVariable/*!*/ _variable;
         private readonly bool _lightEh;
-        internal static Expression/*!*/ Uninitialized = Expression.Field(null, typeof(Uninitialized).GetField("Instance"));
+        internal static Expression/*!*/ Uninitialized = Expression.Field(null, typeof(Uninitialized).GetField(nameof(Microsoft.Scripting.Runtime.Uninitialized.Instance)));
 
         public PythonGlobalVariableExpression(Expression/*!*/ globalExpr, Ast.PythonVariable/*!*/ variable, PythonGlobal/*!*/ global)
             : this(globalExpr, variable, global, false) {
@@ -209,7 +209,7 @@ namespace IronPython.Compiler {
             return Expression.Assign(
                 Expression.Property(
                     _global.Target,
-                    typeof(PythonGlobal).GetProperty("CurrentValue")
+                    typeof(PythonGlobal).GetProperty(nameof(PythonGlobal.CurrentValue))
                 ),
                 Utils.Convert(_value, typeof(object))
             );

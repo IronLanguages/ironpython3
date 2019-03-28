@@ -222,7 +222,7 @@ namespace IronPython.Runtime {
                     tick,
                     Ast.Call(
                         Ast.Constant(this, typeof(Profiler)),
-                        typeof(Profiler).GetMethod("StartCall"),
+                        typeof(Profiler).GetMethod(nameof(Profiler.StartCall)),
                         AstUtils.Constant(profileIndex)
                     )
                 ),
@@ -231,7 +231,7 @@ namespace IronPython.Runtime {
                 ).Finally(
                     Ast.Call(
                         Ast.Constant(this, typeof(Profiler)),
-                        typeof(Profiler).GetMethod("FinishCall"),
+                        typeof(Profiler).GetMethod(nameof(Profiler.FinishCall)),
                         AstUtils.Constant(profileIndex),
                         tick
                     )
@@ -245,7 +245,7 @@ namespace IronPython.Runtime {
                     tick,
                     Ast.Call(
                         Ast.Constant(this, typeof(Profiler)),
-                        typeof(Profiler).GetMethod("StartNestedCall"),
+                        typeof(Profiler).GetMethod(nameof(Profiler.StartNestedCall)),
                         AstUtils.Constant(profileIndex),
                         tick
                     )
@@ -257,7 +257,7 @@ namespace IronPython.Runtime {
                         tick,
                         Ast.Call(
                             Ast.Constant(this, typeof(Profiler)),
-                            typeof(Profiler).GetMethod("FinishNestedCall"),
+                            typeof(Profiler).GetMethod(nameof(Profiler.FinishNestedCall)),
                             AstUtils.Constant(profileIndex),
                             tick
                         )

@@ -1473,7 +1473,7 @@ namespace IronPython.Runtime.Types {
 
             for (int i = 0; i < genericArgs.Length; i++) {
                 il.EmitType(genericArgs[i]);
-                il.EmitCall(typeof(DynamicHelpers).GetMethod("GetPythonTypeFromType"));
+                il.EmitCall(typeof(DynamicHelpers).GetMethod(nameof(DynamicHelpers.GetPythonTypeFromType)));
             }
 
             il.EmitCall(target.FieldType, "Invoke");
@@ -1489,7 +1489,7 @@ namespace IronPython.Runtime.Types {
             if (context) {
                 il.EmitLoadArg(1);
             } else {
-                il.EmitPropertyGet(typeof(DefaultContext).GetProperty("Default"));
+                il.EmitPropertyGet(typeof(DefaultContext).GetProperty(nameof(DefaultContext.Default)));
             }
         }
 

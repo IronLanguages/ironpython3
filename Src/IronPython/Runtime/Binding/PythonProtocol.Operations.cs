@@ -924,7 +924,7 @@ namespace IronPython.Runtime.Binding {
                             tmp,
                             target.Target.Expression
                         ),
-                        Ast.Property(null, typeof(PythonOps).GetProperty("NotImplemented"))
+                        Ast.Property(null, typeof(PythonOps).GetProperty(nameof(PythonOps.NotImplemented)))
                     ),
                     tmp
                 );
@@ -969,7 +969,7 @@ namespace IronPython.Runtime.Binding {
                         AstUtils.Convert(Utils.WeakConstant(slotTarget), typeof(PythonTypeSlot)),
                         AstUtils.Convert(self, typeof(object)),
                         Ast.Call(
-                            typeof(DynamicHelpers).GetMethod("GetPythonType"),
+                            typeof(DynamicHelpers).GetMethod(nameof(DynamicHelpers.GetPythonType)),
                             AstUtils.Convert(self, typeof(object))
                         ),
                         callable
@@ -985,7 +985,7 @@ namespace IronPython.Runtime.Binding {
                                 ArrayUtils.Insert(AstUtils.Constant(state.SharedContext), (Expression)callable, args)
                             )
                         ),
-                        Ast.Property(null, typeof(PythonOps).GetProperty("NotImplemented"))
+                        Ast.Property(null, typeof(PythonOps).GetProperty(nameof(PythonOps.NotImplemented)))
                     )
                 ),
                 tmp
@@ -1609,7 +1609,7 @@ namespace IronPython.Runtime.Binding {
                     args[0],
                     new DynamicMetaObject(
                         Ast.Call(
-                            typeof(DynamicHelpers).GetMethod("GetPythonType"),
+                            typeof(DynamicHelpers).GetMethod(nameof(DynamicHelpers.GetPythonType)),
                             AstUtils.Convert(args[0].Expression, typeof(object))
                         ),
                         BindingRestrictions.Empty,

@@ -678,7 +678,7 @@ namespace IronPython.Compiler.Ast {
                                 init.Add(
                                     AssignValue(
                                         GetVariableExpression(variable),
-                                        MSAst.Expression.Field(null, typeof(Uninitialized).GetField("Instance"))
+                                        MSAst.Expression.Field(null, typeof(Uninitialized).GetField(nameof(Uninitialized.Instance)))
                                     )
                                 );
                             }

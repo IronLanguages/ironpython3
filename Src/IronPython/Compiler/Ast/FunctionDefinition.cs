@@ -694,7 +694,7 @@ namespace IronPython.Compiler.Ast {
             }
 
             if (Body.CanThrow && GlobalParent.PyContext.PythonOptions.Frames) {
-                body = AddFrame(LocalContext, Ast.Property(_functionParam, typeof(PythonFunction).GetProperty("__code__")), body);
+                body = AddFrame(LocalContext, Ast.Property(_functionParam, typeof(PythonFunction).GetProperty(nameof(PythonFunction.__code__))), body);
                 locals.Add(FunctionStackVariable);
             }
 

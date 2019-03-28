@@ -60,7 +60,7 @@ namespace IronPython.Compiler.Ast {
                 return expr;
             }
 
-            return Ast.Field(null, typeof(MissingParameter).GetField("Value"));
+            return Ast.Field(null, typeof(MissingParameter).GetField(nameof(MissingParameter.Value)));
         }
 
         private MSAst.Expression[] GetActionArgumentsForSet(MSAst.Expression right) {

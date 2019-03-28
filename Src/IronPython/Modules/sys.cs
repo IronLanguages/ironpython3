@@ -108,7 +108,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
 
         public static readonly BuiltinFunction excepthook = BuiltinFunction.MakeFunction(
             "excepthook",
-            ArrayUtils.ConvertAll(typeof(SysModule).GetMember("excepthookImpl"), (x) => (MethodBase)x),
+            ArrayUtils.ConvertAll(typeof(SysModule).GetMember(nameof(SysModule.excepthookImpl)), (x) => (MethodBase)x),
             typeof(SysModule)
         );
 

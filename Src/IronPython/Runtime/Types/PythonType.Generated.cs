@@ -666,7 +666,7 @@ namespace IronPython.Runtime.Types {
                         context,
                         args,
                         Expression.Call(
-                            typeof(PythonOps).GetMethod("GetInitSlotMember"),
+                            typeof(PythonOps).GetMethod(nameof(PythonOps.GetInitSlotMember)),
                             codeContext.Expression,
                             Expression.Convert(AstUtils.WeakConstant(_newType), typeof(PythonType)),
                             Expression.Convert(AstUtils.WeakConstant(init), typeof(PythonTypeSlot)),
@@ -687,7 +687,7 @@ namespace IronPython.Runtime.Types {
                 res = Expression.Block(
                     res,
                     Expression.Call(
-                        typeof(PythonOps).GetMethod("InitializeForFinalization"),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.InitializeForFinalization)),
                         codeContext.Expression,
                         AstUtils.Convert(target.Expression, typeof(object))
                     )

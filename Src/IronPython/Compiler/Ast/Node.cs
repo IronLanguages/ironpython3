@@ -390,7 +390,7 @@ namespace IronPython.Compiler.Ast {
                 return pyGlobal.Delete();
             }
 
-            return Ast.Assign(expression, Ast.Field(null, typeof(Uninitialized).GetField("Instance")));
+            return Ast.Assign(expression, Ast.Field(null, typeof(Uninitialized).GetField(nameof(Uninitialized.Instance))));
         }
 
         #endregion

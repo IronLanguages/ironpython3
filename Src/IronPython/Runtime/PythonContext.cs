@@ -247,7 +247,7 @@ namespace IronPython.Runtime
             if (_options.Frames) {
                 var getFrame = BuiltinFunction.MakeFunction(
                     "_getframe", 
-                    ArrayUtils.ConvertAll(typeof(SysModule).GetMember("_getframeImpl"), (x) => (MethodBase)x), 
+                    ArrayUtils.ConvertAll(typeof(SysModule).GetMember(nameof(SysModule._getframeImpl)), (x) => (MethodBase)x), 
                     typeof(SysModule)
                 );
                 _systemState.__dict__["_getframe"] = getFrame;

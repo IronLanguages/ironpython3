@@ -347,7 +347,7 @@ namespace IronPython.Runtime.Binding {
                                     Ast.Constant(rsp.Index)
                                 )
                             ),
-                            Ast.Field(null, typeof(Uninitialized).GetField("Instance"))
+                            Ast.Field(null, typeof(Uninitialized).GetField(nameof(Uninitialized.Instance)))
                         ),
                         Invoke(_bindingInfo.Result)
                     );
@@ -1086,7 +1086,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         private static void MakeSlotsDeleteTarget(MemberBindingInfo/*!*/ info, ReflectedSlotProperty/*!*/ rsp) {
-            MakeSlotsSetTargetHelper(info, rsp, Ast.Field(null, typeof(Uninitialized).GetField("Instance")));
+            MakeSlotsSetTargetHelper(info, rsp, Ast.Field(null, typeof(Uninitialized).GetField(nameof(Uninitialized.Instance))));
         }
 
         private static void MakeSlotsSetTargetHelper(MemberBindingInfo/*!*/ info, ReflectedSlotProperty/*!*/ rsp, Expression/*!*/ value) {
@@ -1440,7 +1440,7 @@ namespace IronPython.Runtime.Binding {
                 return Fallback(action, codeContext);
             } else if (BindingHelpers.IsNoThrow(action)) {
                 return new DynamicMetaObject(
-                    Ast.Field(null, typeof(OperationFailed).GetField("Value")),
+                    Ast.Field(null, typeof(OperationFailed).GetField(nameof(OperationFailed.Value))),
                     BindingRestrictions.Empty
                 );
             } else if (action is PythonGetMemberBinder) {
@@ -1482,7 +1482,7 @@ namespace IronPython.Runtime.Binding {
             }
             return Ast.Call(
                 Ast.Convert(self.Expression, typeof(IPythonObject)),
-                typeof(IPythonObject).GetMethod("GetSlots")
+                typeof(IPythonObject).GetMethod(nameof(IPythonObject.GetSlots))
             );
         }
     }

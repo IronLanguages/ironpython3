@@ -167,7 +167,7 @@ namespace IronPython.Runtime.Binding {
                                 tmp,
                                 types[0].Expression,
                                 Ast.Call(
-                                    typeof(DynamicHelpers).GetMethod("GetPythonType"),
+                                    typeof(DynamicHelpers).GetMethod(nameof(DynamicHelpers.GetPythonType)),
                                     types[0].Expression
                                 )
                             ),

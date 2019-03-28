@@ -605,7 +605,7 @@ namespace IronPython.Runtime.Binding {
                                 strExpr,
                                 typeof(Extensible<string>)
                             ),
-                            typeof(Extensible<string>).GetProperty("Value")
+                            typeof(Extensible<string>).GetProperty(nameof(Extensible<string>.Value))
                         );
                 }
             }
@@ -719,7 +719,7 @@ namespace IronPython.Runtime.Binding {
             return new DynamicMetaObject(
                 this.Throw(
                     Ast.Call(
-                        typeof(ScriptingRuntimeHelpers).GetMethod("SimpleTypeError"),
+                        typeof(ScriptingRuntimeHelpers).GetMethod(nameof(ScriptingRuntimeHelpers.SimpleTypeError)),
                         AstUtils.Constant("Can't convert a Reference<> instance to a bool")
                     ),
                     ReturnType
@@ -780,7 +780,7 @@ namespace IronPython.Runtime.Binding {
                     metaUserObject.Restrictions
                 );
             } else if (pt.TryResolveSlot(context, "__getitem__", out pts)) {
-                return MakeGetItemIterable(metaUserObject, state, pts, "CreateItemEnumerator");
+                return MakeGetItemIterable(metaUserObject, state, pts, nameof(PythonOps.CreateItemEnumerator));
             }
 
             return null;
@@ -800,7 +800,7 @@ namespace IronPython.Runtime.Binding {
                                 tmp,
                                 metaUserObject.Expression,
                                 Ast.Call(
-                                    typeof(DynamicHelpers).GetMethod("GetPythonType"),
+                                    typeof(DynamicHelpers).GetMethod(nameof(DynamicHelpers.GetPythonType)),
                                     AstUtils.Convert(
                                         metaUserObject.Expression,
                                         typeof(object)

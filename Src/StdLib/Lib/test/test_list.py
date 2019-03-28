@@ -16,7 +16,7 @@ class ListTest(list_tests.CommonTest):
         self.assertEqual(list(''), [])
         self.assertEqual(list('spam'), ['s', 'p', 'a', 'm'])
 
-        if sys.maxsize == 0x7fffffff:
+        if sys.maxsize == 0x7fffffff and sys.implementation.name != "ironpython":
             # This test can currently only work on 32-bit machines.
             # XXX If/when PySequence_Length() returns a ssize_t, it should be
             # XXX re-enabled.

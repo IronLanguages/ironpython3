@@ -133,8 +133,8 @@ namespace IronPython.Runtime.Operations {
         }
 
         public virtual bool __contains__(object value) {
-            if (value is string) return Value.Contains((string)value);
-            else if (value is ExtensibleString) return Value.Contains(((ExtensibleString)value).Value);
+            if (value is ExtensibleString es) return Value.Contains(es.Value);
+            if (value is string s) return Value.Contains((string)value);
 
             throw PythonOps.TypeErrorForBadInstance("expected string, got {0}", value);
         }
@@ -1416,6 +1416,10 @@ namespace IronPython.Runtime.Operations {
 
         public static Extensible<string> __str__(ExtensibleString self) {
             return self;
+        }
+
+        public static string/*!*/ __repr__(string/*!*/ self) {
+            return StringOps.Quote(self);
         }
 
         #region Internal implementation details
@@ -2779,9 +2783,5 @@ namespace IronPython.Runtime.Operations {
 #endif
 
         #endregion
-
-        public static string/*!*/ __repr__(string/*!*/ self) {
-            return StringOps.Quote(self);
-        }
     }
 }

@@ -1,4 +1,4 @@
-This page documents various differences between IronPython and CPython.
+This page documents various differences between IronPython and CPython. Since IronPython is under active development, any of the differences described here may change or disappear in the future.
 
 # Environment Variables
 

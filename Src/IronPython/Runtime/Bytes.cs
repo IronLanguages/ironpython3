@@ -16,6 +16,7 @@ using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+using System.Text;
 
 namespace IronPython.Runtime {
     [PythonType("bytes")]
@@ -136,6 +137,10 @@ namespace IronPython.Runtime {
 
         public string decode(CodeContext/*!*/ context, [NotNull]string encoding = "utf-8", [NotNull]string errors = "strict") {
             return StringOps.RawDecode(context, _bytes, encoding, errors);
+        }
+
+        public string decode(CodeContext/*!*/ context, [NotNull]Encoding encoding, [NotNull]string errors = "strict") {
+            return StringOps.DoDecode(context, _bytes, errors, StringOps.GetEncodingName(encoding, normalize: false), encoding);
         }
 
         public bool endswith([BytesConversion]IList<byte>/*!*/ suffix) {

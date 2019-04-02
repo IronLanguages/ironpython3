@@ -14,6 +14,7 @@ using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+using System.Text;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -263,6 +264,12 @@ namespace IronPython.Runtime {
         public string decode(CodeContext/*!*/ context, [NotNull]string encoding = "utf-8", [NotNull]string errors = "strict") {
             lock (this) {
                 return StringOps.RawDecode(context, _bytes, encoding, errors);
+            }
+        }
+
+        public string decode(CodeContext/*!*/ context, [NotNull]Encoding encoding, [NotNull]string errors = "strict") {
+            lock (this) {
+                return StringOps.DoDecode(context, _bytes, errors, StringOps.GetEncodingName(encoding, normalize: false), encoding);
             }
         }
 

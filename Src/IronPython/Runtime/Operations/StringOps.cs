@@ -428,6 +428,10 @@ namespace IronPython.Runtime.Operations {
             return RawEncode(context, s, encoding, errors);
         }
 
+        public static Bytes encode(CodeContext/*!*/ context, [NotNull]string s, [NotNull]Encoding encoding, [NotNull]string errors = "strict") {
+            return DoEncode(context, s, errors, GetEncodingName(encoding, normalize: false), encoding, includePreamble: true);
+        }
+
         private static string CastString(object o) {
             string res = o as string;
             if (res != null) {
@@ -1615,12 +1619,12 @@ namespace IronPython.Runtime.Operations {
             return ch == '+' || ch == '-';
         }
 
-        internal static string GetEncodingName(Encoding encoding) {
+        internal static string GetEncodingName(Encoding encoding, bool normalize = true) {
 #if FEATURE_ENCODING
             string name = null;
 
             // if we have a valid code page try and get a reasonable name.  The
-            // web names / mail displays match tend to CPython's terse names
+            // web names / mail displays tend to match CPython's terse names
             if (encoding.CodePage != 0) {
 #if !NETCOREAPP2_1 && !NETSTANDARD2_0
                 if (encoding.IsBrowserDisplay) {
@@ -1632,9 +1636,25 @@ namespace IronPython.Runtime.Operations {
                 }
 #endif
 
-                // otherwise use a code page number which also matches CPython               
                 if (name == null) {
-                    name = "cp" + encoding.CodePage;
+                    switch (encoding.CodePage) {
+
+                        // recognize a few common cases
+                        case 1200: name = (encoding.GetPreamble()?.Length ?? 0) == 0 ? "utf-16LE" : "utf-16"; break;
+                        case 1201: name = "utf-16BE"; break;
+
+                        case 12000: name = (encoding.GetPreamble()?.Length ?? 0) == 0 ? "utf-32LE" : "utf-32"; break;
+                        case 12001: name = "utf-32BE"; break;
+
+                        case 20127: name = "us-ascii"; break;
+                        case 28591: name = "iso-8859-1"; break;
+
+                        case 65000: name = "utf-7"; break;
+                        case 65001: name = (encoding.GetPreamble()?.Length ?? 0) == 0 ? "utf-8" : "utf-8-sig"; break;
+
+                        // otherwise use a code page number which also matches CPython
+                        default: name = "cp" + encoding.CodePage; break;
+                    }
                 }
             }
 
@@ -1647,7 +1667,7 @@ namespace IronPython.Runtime.Operations {
             string name = encoding.WebName;
 #endif
 
-            return NormalizeEncodingName(name);
+            return normalize ? NormalizeEncodingName(name) : name;
         }
 
         internal static string NormalizeEncodingName(string name) =>

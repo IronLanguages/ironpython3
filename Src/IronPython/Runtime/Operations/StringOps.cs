@@ -1640,17 +1640,17 @@ namespace IronPython.Runtime.Operations {
                     switch (encoding.CodePage) {
 
                         // recognize a few common cases
-                        case 1200: name = (encoding.GetPreamble()?.Length ?? 0) == 0 ? "utf-16LE" : "utf-16"; break;
+                        case 1200: name = "utf-16LE"; break;
                         case 1201: name = "utf-16BE"; break;
 
-                        case 12000: name = (encoding.GetPreamble()?.Length ?? 0) == 0 ? "utf-32LE" : "utf-32"; break;
+                        case 12000: name = "utf-32LE"; break;
                         case 12001: name = "utf-32BE"; break;
 
                         case 20127: name = "us-ascii"; break;
                         case 28591: name = "iso-8859-1"; break;
 
                         case 65000: name = "utf-7"; break;
-                        case 65001: name = (encoding.GetPreamble()?.Length ?? 0) == 0 ? "utf-8" : "utf-8-sig"; break;
+                        case 65001: name = "utf-8"; break;
 
                         // otherwise use a code page number which also matches CPython
                         default: name = "cp" + encoding.CodePage; break;
@@ -1718,7 +1718,17 @@ namespace IronPython.Runtime.Operations {
             }
 #endif
 
-            string decoded = e.GetString(bytes, start, numBytes);
+            string decoded;
+            try {
+                decoded = e.GetString(bytes, start, numBytes);
+            } catch (DecoderFallbackException ex) {
+                // augmenting the caught exception ISO greating UnicodeDecodeError to preserve the stack trace
+                ex.Data["encoding"] = encoding;
+                byte[] inputBytes = new byte[numBytes];
+                Array.Copy(bytes, start, inputBytes, 0, numBytes);
+                ex.Data["object"] = Bytes.Make(inputBytes);
+                throw;
+            }
 
 #if FEATURE_ENCODING
             if (e.DecoderFallback is ExceptionFallBack fallback) {

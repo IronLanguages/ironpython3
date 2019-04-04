@@ -3353,7 +3353,7 @@ namespace IronPython.Runtime.Operations {
                 if (s[i] < 0x100) {
                     ret[i] = (byte)s[i];
                 } else {
-                    throw PythonOps.UnicodeEncodeError("ascii", s[i].ToString(), i, i + 1, "ordinal not in range(128)");
+                    throw PythonOps.UnicodeEncodeError("ascii", s, i, i + 1, "ordinal not in range(128)");
                 }
             }
             return ret;

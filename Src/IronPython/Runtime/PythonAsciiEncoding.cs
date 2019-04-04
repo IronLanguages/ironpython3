@@ -269,7 +269,7 @@ namespace IronPython.Runtime {
 
         public override bool Fallback(char charUnknown, int index) {
             if (charUnknown > 0xff) {
-                throw PythonOps.UnicodeEncodeError("ascii", charUnknown.ToString(), index, index + 1, "ordinal not in range(128)");
+                throw PythonOps.UnicodeEncodeError("ordinal not in range(128)", charUnknown, index);
             }
 
             if (_curIndex == _buffer.Count && _curIndex > 0) {

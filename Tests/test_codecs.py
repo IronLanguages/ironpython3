@@ -99,6 +99,62 @@ class CodecsTest(unittest.TestCase):
         self.assertEqual("abć".encode('utf_32_be'), b"\x00\x00\x00a\x00\x00\x00b\x00\x00\x01\x07")
         self.assertEqual(b"\x00\x00\x00a\x00\x00\x00b\x00\x00\x01\x07".decode('utf_32_be'), "abć")
 
+    def test_interop_ascii_encode_exeption(self):
+        def check_error1(encoding, name):
+            # exception on a single character
+            with self.assertRaises(UnicodeEncodeError) as uee:
+                "abćẋyz".encode(encoding)
+            self.assertEqual(uee.exception.encoding, name)
+            self.assertEqual(uee.exception.start, 2)
+            self.assertEqual(uee.exception.end, 3)
+            self.assertEqual(uee.exception.object, "abćẋyz")
+
+        def check_error2(encoding, name):
+            # exception on a surrogate pair
+            with self.assertRaises(UnicodeEncodeError) as uee:
+                "ab🜋yz".encode(encoding)
+            self.assertEqual(uee.exception.encoding, name)
+            self.assertEqual(uee.exception.start, 2)
+            self.assertEqual(uee.exception.end, 4)
+            self.assertEqual(uee.exception.object, "ab🜋yz")
+
+        check_error1(System.Text.ASCIIEncoding(), 'us-ascii')
+        check_error2(System.Text.ASCIIEncoding(), 'us-ascii')
+        check_error1(System.Text.Encoding.ASCII, 'us-ascii')
+        check_error2(System.Text.Encoding.ASCII, 'us-ascii')
+        check_error1('ascii', 'ascii')
+        #check_error2('ascii', 'ascii') # TODO: Replace PythonAsciiEncoding with ASCIIEncoding
+
+    def test_interop_utf8_encode_exeption(self):
+        def check_error(encoding, name):
+            # exception on a lone surrogate
+            with self.assertRaises(UnicodeEncodeError) as uee:
+                "abć\uddddẋyz".encode(encoding)
+            self.assertEqual(uee.exception.encoding, name)
+            self.assertEqual(uee.exception.start, 3)
+            self.assertEqual(uee.exception.end, 4)
+            self.assertEqual(uee.exception.object, "abć\uddddẋyz")
+
+        check_error(System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier=False, throwOnInvalidBytes=True), 'utf-8')
+        check_error(System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier=True, throwOnInvalidBytes=True), 'utf-8')
+        check_error(System.Text.Encoding.UTF8, 'utf-8')
+        check_error('utf-8', 'utf-8')
+        check_error('utf-8-sig', 'utf-8-sig') # TODO: CPython uses 'utf-8' as encoding name in UnicodeDecodeError
+
+    def test_interop_utf16_encode_exeption(self):
+        def check_error(encoding, name):
+            # exception on a lone surrogate
+            with self.assertRaises(UnicodeEncodeError) as uee:
+                "abć\uddddẋyz".encode(encoding)
+            self.assertEqual(uee.exception.encoding, name)
+            self.assertEqual(uee.exception.start, 3)
+            self.assertEqual(uee.exception.end, 4)
+            self.assertEqual(uee.exception.object, "abć\uddddẋyz")
+
+        check_error(System.Text.UnicodeEncoding(bigEndian=False, byteOrderMark=True, throwOnInvalidBytes=True), 'utf-16LE')
+        check_error(System.Text.UnicodeEncoding(bigEndian=True, byteOrderMark=True, throwOnInvalidBytes=True), 'utf-16BE')
+        check_error('utf-16', 'utf-16') # TODO: should be 'utf-16LE', CPython uses 'utf-16-le' here
+
     def test_interop_ascii_decode_exeption(self):
         def check_error(encoding, name):
             with self.assertRaises(UnicodeDecodeError) as ude:

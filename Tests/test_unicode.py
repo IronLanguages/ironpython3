@@ -77,10 +77,7 @@ class UnicodeTest(unittest.TestCase):
             self.assertEqual(ex.encoding, 'ascii')
             self.assertEqual(ex.start, 2)
             self.assertEqual(ex.end, 3)
-            if is_cli:
-                self.assertEqual(ex.object, u'\uff21')
-            else:
-                self.assertEqual(ex.object, u'xx\uff21')
+            self.assertEqual(ex.object, u'xx\uff21')
             self.assertTrue(ex.reason is not None)
             self.assertTrue(len(ex.reason) > 0)
 

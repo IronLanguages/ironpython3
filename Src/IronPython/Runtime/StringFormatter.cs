@@ -688,6 +688,8 @@ namespace IronPython.Runtime {
         }
 
         private void AppendNumericDecimal(object val, bool fPos, char format) {
+            val = TryConvertToDecimal(val);
+
             if (fPos && (_opts.SignChar || _opts.Space)) {
                 string strval = (_opts.SignChar ? "+" : " ") + String.Format(_nfi, "{0:" + format + "}", val);
                 if (strval.Length < _opts.FieldWidth) {
@@ -708,6 +710,14 @@ namespace IronPython.Runtime {
             // decorative ".0". ie. to display "123.0"
             if (_TrailingZeroAfterWholeFloat && (format == 'f' || format == 'F') && _opts.Precision == 0)
                 _buf.Append(".0");
+        }
+
+        private object TryConvertToDecimal(object val) {
+            try {
+                return new Decimal((double)val);
+            } catch (Exception) {
+                return val;
+            }
         }
 
         private void AppendNumericCommon(object val, char format) {

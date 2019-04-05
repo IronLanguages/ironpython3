@@ -881,23 +881,42 @@ for k, v in toError.items():
             [PythonHidden]
             protected internal override void InitializeFromClr(System.Exception/*!*/ exception) {
                 if (exception is EncoderFallbackException ex) {
-                    __init__((exception.Data.Contains("encoding")) ? exception.Data["encoding"] : "unknown",
-                        new string(ex.CharUnknown, 1), ex.Index, ex.Index + 1, exception.Message);
+                    object inputString = null;
+                    int startIdx = 0;
+                    int endIdx = 1;
+                    if (ex.Data.Contains("object") && ex.Data["object"] is string s) {
+                        startIdx += ex.Index;
+                        endIdx += ex.Index;
+                        inputString = s;
+                    }
+                    if (ex.CharUnknownHigh != default(char) || ex.CharUnknownLow != default(char) ) {
+                        endIdx++;
+                        if (inputString == null) inputString = new string(new[] { ex.CharUnknownHigh, ex.CharUnknownLow });
+                    } else if (ex.CharUnknown != default(char)) {
+                        if (inputString == null) inputString = new string(ex.CharUnknown, 1);
+                    }
+
+                    if (inputString == null) startIdx = endIdx = 0;  // no data
+
+                    __init__((ex.Data.Contains("encoding")) ? ex.Data["encoding"] : "unknown", inputString, startIdx, endIdx, ex.Message);
                 } else {
                     base.InitializeFromClr(exception);
                 }
             }
 
             public override string ToString() {
-                if (@object is string s) {
-                    if (s.Length == 1) {
-                        var c = (int)s[0];
-                        var repr = c < 0x100 ? $"\\x{c:x2}" : $"\\u{c:x4}";
-                        return $"'{encoding}' codec can't encode character '{repr}' in position {start}: {reason}";
+                string repr(int c) => c < 0x100 ? $"\\x{c:x2}" : $"\\u{c:x4}";
+
+                if (@object is string s && start is int startIdx && end is int endIdx) {
+                    if (0 <= startIdx && endIdx <= s.Length) {
+                        switch (endIdx - startIdx) {
+                            case 1: return $"'{encoding}' codec can't encode character '{repr(s[startIdx])}' in position {start}: {reason}";
+                            case 2: return $"'{encoding}' codec can't encode surrogate pair '{repr(s[startIdx])}{repr(s[startIdx + 1])}' in position {start}: {reason}";
+                        }
                     }
-                    return $"'{encoding}' codec can't encode string in position {start}-{end}: {reason}";
+                    return $"'{encoding}' codec can't encode string in position {startIdx}-{endIdx - 1}: {reason}";
                 }
-                return reason.ToString();
+                return reason?.ToString() ?? GetType().Name;
             }
         }
 

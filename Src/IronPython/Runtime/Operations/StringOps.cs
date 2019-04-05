@@ -1801,6 +1801,7 @@ namespace IronPython.Runtime.Operations {
                 bytes = e.GetBytes(s);
             } catch (EncoderFallbackException ex) {
                 ex.Data["encoding"] = encoding;
+                ex.Data["object"] = s;
                 throw;
             }
 

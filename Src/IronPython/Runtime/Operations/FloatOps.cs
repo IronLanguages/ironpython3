@@ -470,9 +470,7 @@ namespace IronPython.Runtime.Operations {
         #region ToString
 
         public static string __str__(CodeContext/*!*/ context, double x) {
-            StringFormatter sf = new StringFormatter(context, "%.12g", x);
-            sf._TrailingZeroAfterWholeFloat = true;
-            return sf.Format();
+            return __repr__(context, x);
         }
 
         public static string __str__(double x, IFormatProvider provider) {

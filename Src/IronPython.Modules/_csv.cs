@@ -353,11 +353,8 @@ The Dialect type records CSV parsing and generation options.")]
                 if (string.Compare(name, "delimiter") == 0 ||
                     string.Compare(name, "skipinitialspace") == 0 ||
                     string.Compare(name, "doublequote") == 0 ||
-                    string.Compare(name, "strict") == 0)
-                {
-                    throw PythonOps.TypeError("readonly attribute");
-                }
-                else if (string.Compare(name, "escapechar") == 0 ||
+                    string.Compare(name, "strict") == 0 ||
+                    string.Compare(name, "escapechar") == 0 ||
                     string.Compare(name, "lineterminator") == 0 ||
                     string.Compare(name, "quotechar") == 0 ||
                     string.Compare(name, "quoting") == 0)
@@ -378,11 +375,8 @@ The Dialect type records CSV parsing and generation options.")]
                 if (string.Compare(name, "delimiter") == 0 ||
                     string.Compare(name, "skipinitialspace") == 0 ||
                     string.Compare(name, "doublequote") == 0 ||
-                    string.Compare(name, "strict") == 0)
-                {
-                    throw PythonOps.TypeError("readonly attribute");
-                }
-                else if (string.Compare(name, "escapechar") == 0 ||
+                    string.Compare(name, "strict") == 0 ||
+                    string.Compare(name, "escapechar") == 0 ||
                     string.Compare(name, "lineterminator") == 0 ||
                     string.Compare(name, "quotechar") == 0 ||
                     string.Compare(name, "quoting") == 0)
@@ -716,9 +710,9 @@ in CSV format.")]
 
                         if (!(lineobj is string))
                         {
-                            throw PythonOps.TypeError("expected string or " +
-                                "Unicode object, {0} found",
-                                DynamicHelpers.GetPythonType(lineobj.GetType()));
+                            throw MakeError("iterator should return strings, not "
+                                + PythonOps.GetPythonTypeName(lineobj) +
+                                " (did you open the file in text mode?)");
                         }
 
                         string line = lineobj as string;
@@ -731,6 +725,12 @@ in CSV format.")]
                                     throw MakeError("line contains NULL byte");
 
                                 ProcessChar(c);
+                            }
+                            // If we ended on an escaped newline, then we want to continue onto
+                            // the nextline without processing the end of this one, as the newline
+                            // is in the middle of the field.
+                            if ((line.EndsWith("\n") || line.EndsWith("\r")) && _state == State.InField) {
+                                continue;
                             }
                         }
 
@@ -1085,7 +1085,7 @@ elements will be converted to string.")]
                     else if (field == null)
                         JoinAppend(string.Empty, quoted, rowlen == 1);
                     else
-                        JoinAppend(field.ToString(), quoted, rowlen == 1);
+                        JoinAppend(PythonOps.ToString(context, field), quoted, rowlen == 1);
                 }
 
                 _rec.Add(_dialect.lineterminator);
@@ -1128,9 +1128,9 @@ elements will be converted to string.")]
                 List<char> need_escape = new List<char>();
                 if (_dialect.quoting == QUOTE_NONE)
                 {
-                    need_escape.AddRange(_dialect.lineterminator.ToCharArray());
                     if (!string.IsNullOrEmpty(_dialect.escapechar))
                         need_escape.Add(_dialect.escapechar[0]);
+                    need_escape.AddRange(_dialect.lineterminator.ToCharArray());
                     if (!string.IsNullOrEmpty(_dialect.delimiter))
                         need_escape.Add(_dialect.delimiter[0]);
                     if (!string.IsNullOrEmpty(_dialect.quotechar))
@@ -1139,11 +1139,11 @@ elements will be converted to string.")]
                 else
                 {
                     List<char> temp = new List<char>();
+                    if (!string.IsNullOrEmpty(_dialect.escapechar))
+                        temp.Add(_dialect.escapechar[0]);
                     temp.AddRange(_dialect.lineterminator.ToCharArray());
                     if (!string.IsNullOrEmpty(_dialect.delimiter))
                         temp.Add(_dialect.delimiter[0]);
-                    if (!string.IsNullOrEmpty(_dialect.escapechar))
-                        temp.Add(_dialect.escapechar[0]);
 
                     if (field.IndexOfAny(temp.ToArray()) >= 0)
                         quoted = true;

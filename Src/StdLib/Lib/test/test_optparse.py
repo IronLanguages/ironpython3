@@ -610,13 +610,14 @@ Options:
         self.parser.set_defaults(file=None)
         self.assertHelp(self.parser, self.expected_help_none)
 
+    @support.impl_detail('Relies on short float', cpython=True)
     def test_float_default(self):
         self.parser.add_option(
             "-p", "--prob",
             help="blow up with probability PROB [default: %default]")
         self.parser.set_defaults(prob=0.43)
         expected_help = self.help_prefix + \
-            "  -p PROB, --prob=PROB  blow up with probability PROB [default: 0.43]\n"
+            "  -p PROB, --prob=PROB  blow up with probability PROB [default: z0.43]\n"
         self.assertHelp(self.parser, expected_help)
 
     def test_alt_expand(self):

@@ -197,7 +197,9 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             "eval compiles the code as if were an expression\n" +
             "single compiles a single statement\n\n" +
             "source can either be a string, bytes or an AST object")]
-        public static object compile(CodeContext/*!*/ context, _ast.AST source, string filename, string mode, object flags = null, object dont_inherit = null) {
+        public static object compile(CodeContext/*!*/ context, _ast.AST source, string filename, string mode, object flags = null, object dont_inherit = null, int optimize = -1) {
+            // TODO: implement optimize
+
             if (mode != "exec" && mode != "eval" && mode != "single") {
                 throw PythonOps.ValueError("compile() arg 3 must be 'exec' or 'eval' or 'single'");
             }
@@ -215,12 +217,14 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [Documentation("")] // provided by first overload
-        public static object compile(CodeContext/*!*/ context, [BytesConversion]IList<byte> source, string filename, string mode, object flags = null, object dont_inherit = null)
+        public static object compile(CodeContext/*!*/ context, [BytesConversion]IList<byte> source, string filename, string mode, object flags = null, object dont_inherit = null, int optimize = -1)
             // TODO: Detect encoding as prescribed in PEP 263
-            => compile(context, StringOps.RawDecode(context, source, "utf-8", "strict"), filename, mode, flags, dont_inherit);
+            => compile(context, StringOps.RawDecode(context, source, "utf-8", "strict"), filename, mode, flags, dont_inherit, optimize);
 
         [Documentation("")] // provided by first overload
-        public static object compile(CodeContext/*!*/ context, string source, string filename, string mode, object flags = null, object dont_inherit = null) {
+        public static object compile(CodeContext/*!*/ context, string source, string filename, string mode, object flags = null, object dont_inherit = null, int optimize = -1) {
+            // TODO: implement optimize
+
             if (mode != "exec" && mode != "eval" && mode != "single") {
                 throw PythonOps.ValueError("compile() arg 3 must be 'exec' or 'eval' or 'single'");
             }

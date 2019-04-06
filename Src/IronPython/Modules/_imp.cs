@@ -76,8 +76,7 @@ namespace IronPython.Modules {
 
         public static int is_builtin(CodeContext/*!*/ context, string/*!*/ name) {
             if (name == null) throw PythonOps.TypeError("is_builtin() argument 1 must be string, not None");
-            Type ty;
-            if (context.LanguageContext.BuiltinModules.TryGetValue(name, out ty)) {
+            if (context.LanguageContext.BuiltinModules.TryGetValue(name, out Type ty)) {
                 if (ty.Assembly == typeof(PythonContext).Assembly) {
                     // supposedly these can't be re-initialized and return -1 to
                     // indicate that here, but CPython does allow passing them
@@ -97,10 +96,6 @@ namespace IronPython.Modules {
 
         public static bool is_frozen_package(string name) {
             return false;
-        }
-
-        public static object load_dynamic(string name, string pathname, object file = null) {
-            return null;
         }
 
         public static void _fix_co_filename() {

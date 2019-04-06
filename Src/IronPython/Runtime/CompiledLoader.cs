@@ -31,7 +31,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public ModuleLoader find_module(CodeContext/*!*/ context, string fullname, PythonList path) {
+        public ModuleLoader find_module(CodeContext/*!*/ context, string fullname, PythonList path = null) {
             if (_codes.TryGetValue(fullname, out OnDiskScriptCode sc)) {
                 int sep = fullname.LastIndexOf('.');
                 string name = fullname;

@@ -476,10 +476,6 @@ x = 42", scope);
             Assert.AreEqual(body.Compile()(), null);
         }
 
-        public void ScenarioLightExceptions() {
-            LightExceptionTests.RunTests();
-        }
-
         public class TestCodePlex23562 {
             public bool MethodCalled = false;
             public TestCodePlex23562() {

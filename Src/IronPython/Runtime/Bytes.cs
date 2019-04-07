@@ -10,16 +10,16 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-using System.Text;
 
 namespace IronPython.Runtime {
-    [PythonType("bytes")]
+    [PythonType("bytes"), Serializable]
     public class Bytes : IList<byte>, IEquatable<Bytes>, ICodeFormattable, IExpressionSerializable, IBufferProtocol {
         internal byte[]/*!*/ _bytes;
         internal static Bytes/*!*/ Empty = new Bytes();

@@ -134,7 +134,7 @@ namespace IronPython.Runtime.Operations {
 
         public virtual bool __contains__(object value) {
             if (value is ExtensibleString es) return Value.Contains(es.Value);
-            if (value is string s) return Value.Contains((string)value);
+            if (value is string s) return Value.Contains(s);
 
             throw PythonOps.TypeErrorForBadInstance("expected string, got {0}", value);
         }

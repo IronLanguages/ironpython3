@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq;
 using System.Linq.Expressions;
 
 #if !FEATURE_REMOTING
@@ -829,26 +830,50 @@ for k, v in toError.items():
             [PythonHidden]
             protected internal override void InitializeFromClr(System.Exception/*!*/ exception) {
                 if (exception is DecoderFallbackException ex) {
-                    StringBuilder sb = new StringBuilder();
-                    if (ex.BytesUnknown != null) {
-                        for (int i = 0; i < ex.BytesUnknown.Length; i++) {
-                            sb.Append((char)ex.BytesUnknown[i]);
-                        }
+                    object inputData = ex.BytesUnknown;
+                    int startIdx = 0;
+                    int endIdx = ex.BytesUnknown?.Length ?? 0;
+                    if (ex.Data.Contains("object") && ex.Data["object"] is IList<byte> s) {
+                        inputData = s;
+                        startIdx = ex.Index;
+                        endIdx += startIdx;
                     }
-                    __init__(ex.Data.Contains("encoding") ? ex.Data["encoding"] : "unknown", sb.ToString(), ex.Index, ex.Index + sb.Length, ex.Message);
+                    __init__(ex.Data.Contains("encoding") ? ex.Data["encoding"] : "unknown", inputData, startIdx, endIdx, ex.Message);
                 } else {
                     base.InitializeFromClr(exception);
                 }
             }
 
             public override string ToString() {
-                if (@object is Bytes s) {
-                    if (s.Count == 1) {
-                        return $"'{encoding}' codec can't decode byte 0x{(byte)s[0]:x2} in position {start}: {reason}";
+                if (@object is IList<byte> s && start is int startIdx && end is int endIdx) {
+                    if (0 <= startIdx && startIdx < endIdx && endIdx <= s.Count) {
+                        int numBytes = endIdx - startIdx;
+                        if (numBytes == 1) {
+                            return $"'{encoding}' codec can't decode byte 0x{s[startIdx]:x2} in position {startIdx}: {reason}";
+                        } else {
+                            // Create a string representation of our bytes.
+                            const int maxNumBytes = 20;
+
+                            StringBuilder strBytes = new StringBuilder(3 + Math.Min(numBytes, maxNumBytes + 1) * 4);
+
+                            strBytes.Append("b'");
+                            int i;
+                            for (i = startIdx; i < endIdx && i < s.Count && i < maxNumBytes; i++) {
+                                strBytes.Append("\\x");
+                                strBytes.Append(s[i].ToString("x2", System.Globalization.CultureInfo.InvariantCulture));
+                            }
+                            strBytes.Append("'");
+
+                            // In case the string's really long...
+                            if (i < endIdx) strBytes.Append("...");
+
+                            return $"'{encoding}' codec can't decode bytes {strBytes} in position {startIdx}-{endIdx - 1}: {reason}";
+                        }
+                    } else {
+                        return $"'{encoding}' codec can't decode bytes in position {startIdx}-{endIdx - 1}: {reason}";
                     }
-                    return $"'{encoding}' codec can't decode bytes in position {start}-{end}: {reason}";
                 }
-                return reason.ToString();
+                return reason?.ToString() ?? GetType().Name;
             }
         }
 
@@ -856,23 +881,42 @@ for k, v in toError.items():
             [PythonHidden]
             protected internal override void InitializeFromClr(System.Exception/*!*/ exception) {
                 if (exception is EncoderFallbackException ex) {
-                    __init__((exception.Data.Contains("encoding")) ? exception.Data["encoding"] : "unknown",
-                        new string(ex.CharUnknown, 1), ex.Index, ex.Index + 1, exception.Message);
+                    object inputString = null;
+                    int startIdx = 0;
+                    int endIdx = 1;
+                    if (ex.Data.Contains("object") && ex.Data["object"] is string s) {
+                        startIdx += ex.Index;
+                        endIdx += ex.Index;
+                        inputString = s;
+                    }
+                    if (ex.CharUnknownHigh != default(char) || ex.CharUnknownLow != default(char) ) {
+                        endIdx++;
+                        if (inputString == null) inputString = new string(new[] { ex.CharUnknownHigh, ex.CharUnknownLow });
+                    } else if (ex.CharUnknown != default(char)) {
+                        if (inputString == null) inputString = new string(ex.CharUnknown, 1);
+                    }
+
+                    if (inputString == null) startIdx = endIdx = 0;  // no data
+
+                    __init__((ex.Data.Contains("encoding")) ? ex.Data["encoding"] : "unknown", inputString, startIdx, endIdx, ex.Message);
                 } else {
                     base.InitializeFromClr(exception);
                 }
             }
 
             public override string ToString() {
-                if (@object is string s) {
-                    if (s.Length == 1) {
-                        var c = (int)s[0];
-                        var repr = c < 0x100 ? $"\\x{c:x2}" : $"\\u{c:x4}";
-                        return $"'{encoding}' codec can't encode character '{repr}' in position {start}: {reason}";
+                string repr(int c) => c < 0x100 ? $"\\x{c:x2}" : $"\\u{c:x4}";
+
+                if (@object is string s && start is int startIdx && end is int endIdx) {
+                    if (0 <= startIdx && endIdx <= s.Length) {
+                        switch (endIdx - startIdx) {
+                            case 1: return $"'{encoding}' codec can't encode character '{repr(s[startIdx])}' in position {start}: {reason}";
+                            case 2: return $"'{encoding}' codec can't encode surrogate pair '{repr(s[startIdx])}{repr(s[startIdx + 1])}' in position {start}: {reason}";
+                        }
                     }
-                    return $"'{encoding}' codec can't encode string in position {start}-{end}: {reason}";
+                    return $"'{encoding}' codec can't encode string in position {startIdx}-{endIdx - 1}: {reason}";
                 }
-                return reason.ToString();
+                return reason?.ToString() ?? GetType().Name;
             }
         }
 

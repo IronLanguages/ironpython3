@@ -9,6 +9,8 @@ using System.Text;
 
 namespace IronPython.Runtime {
 
+#if FEATURE_ENCODING
+
     /// <summary>
     /// Wrapper class for any well-behaved <see cref="System.Text.Encoding"/> (like any encodings provided by .NET)
     /// that allows for encoding/decoding fallbacks operating on byte level.
@@ -281,7 +283,7 @@ namespace IronPython.Runtime {
                 if (_byteCnt.Value % EncodingCharWidth != 0) {
                     // bytes are not char-aligned, the fallback chars must be consecutive
                     if (index != _lastIndexUnknown + 1) {
-                        throw PythonOps.UnicodeEncodeError($"incomplete input sequence at index: {_lastIndexUnknown}", _lastCharUnknown, _lastIndexUnknown);
+                        throw PythonOps.UnicodeEncodeError($"incomplete input sequence", _lastCharUnknown, _lastIndexUnknown);
                     }
                 }
                 byte[] newFallbackBytes = GetFallbackBytes(charUnknown, index);
@@ -335,7 +337,7 @@ namespace IronPython.Runtime {
 
             public virtual void ThrowIfNotEmpty(int endIndex, bool flush) {
                 if (flush && !IsEmpty || _byteCnt.Value % EncodingCharWidth != 0 && endIndex != _lastIndexUnknown + 1) {
-                    throw PythonOps.UnicodeEncodeError($"incomplete input sequence at index {_lastIndexUnknown}", _lastCharUnknown, _lastIndexUnknown);
+                    throw PythonOps.UnicodeEncodeError($"incomplete input sequence", _lastCharUnknown, _lastIndexUnknown);
                 }
                 if (ByteCountingMode) {
                     // This increment has successfully been counted.
@@ -504,7 +506,7 @@ namespace IronPython.Runtime {
                 if (flush && !IsEmpty) {
                     // If this exception is being thrown, the problem is with the code, not the input sequence.
                     // Therefore, the exception does not carry any input data.
-                    throw new DecoderFallbackException("decoding failure");
+                    throw new DecoderFallbackException("internal error");
                 }
             }
 
@@ -539,7 +541,7 @@ namespace IronPython.Runtime {
                 if ((charUnknown & ~0xff) != LoneSurrogateBase) {
                     // EncoderFallbackException(string, char, int) is not accessible here
                     throw PythonOps.UnicodeEncodeError(
-                        $"'surrogateescape' error handler can't encode character '{charUnknown}' at index {index}: value not in range(0xdc00, 0xdd00)",
+                        $"'surrogateescape' error handler: value not in range(0x{LoneSurrogateBase:x4}, 0x{LoneSurrogateBase+0x100:x4})",
                         charUnknown,
                         index
                     );
@@ -572,7 +574,7 @@ namespace IronPython.Runtime {
                         // test for value below 128
                         if (bytesUnknown[i] < 128u) {
                             throw new DecoderFallbackException(
-                                $"Character '\\x{bytesUnknown[i]:X2}' at index {index + i}: values below 128 cannot be smuggled (PEP 383)",
+                                $"values below 128 cannot be smuggled (PEP 383)",
                                 bytesUnknown,
                                 index
                             );
@@ -622,7 +624,7 @@ namespace IronPython.Runtime {
                 if (charUnknown < SurrogateRangeStart || SurrogateRangeEnd < charUnknown) {
                     // EncoderFallbackException(string, char, int) is not accessible here
                     throw PythonOps.UnicodeEncodeError(
-                        $"'surrogatepass' error handler can't encode character '{charUnknown}' at index {index}: value not in range(0x{SurrogateRangeStart:x4}, 0x{SurrogateRangeEnd + 1:x4})",
+                        $"'surrogatepass' error handler: value not in range(0x{SurrogateRangeStart:x4}, 0x{SurrogateRangeEnd + 1:x4})",
                         charUnknown,
                         index
                     );
@@ -849,25 +851,10 @@ namespace IronPython.Runtime {
                 _buffer = null;
             }
 
-            // Method like this belongs to PythonOps
-            protected void Throw(byte[] bytesUnknown, int index) {
-                // Create a string representation of our bytes.
-                const int maxNumBytes = 20;
-
-                StringBuilder strBytes = new StringBuilder(Math.Min(bytesUnknown.Length, maxNumBytes + 1) * 4);
-
-                int i;
-                for (i = 0; i < bytesUnknown.Length && i < maxNumBytes; i++) {
-                    strBytes.Append("[");
-                    strBytes.Append(bytesUnknown[i].ToString("X2", System.Globalization.CultureInfo.InvariantCulture));
-                    strBytes.Append("]");
-                }
-
-                // In case the string's really long...
-                if (i == maxNumBytes) strBytes.Append(" ...");
-
-                throw new DecoderFallbackException($"'surrogatepass' error handler can't decode bytes {strBytes} at index {index}: not a surrogate character", bytesUnknown, index);
-            }
+            protected void Throw(byte[] bytesUnknown, int index) 
+                => throw new DecoderFallbackException($"'surrogatepass' error handler: not a surrogate character", bytesUnknown, index);
         }
     }
+
+#endif
 }

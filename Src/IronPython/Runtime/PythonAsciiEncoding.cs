@@ -264,12 +264,12 @@ namespace IronPython.Runtime {
         private int _prevIndex;
 
         public override bool Fallback(char charUnknownHigh, char charUnknownLow, int index) {
-            throw PythonOps.UnicodeEncodeError("'ascii' codec can't encode character '\\u{0:X}{1:04X}' in position {2}: ordinal not in range(128)", (int)charUnknownHigh, (int)charUnknownLow, index);
+            throw PythonOps.UnicodeEncodeError("ordinal not in range(128)", charUnknownHigh, charUnknownLow, index);
         }
 
         public override bool Fallback(char charUnknown, int index) {
             if (charUnknown > 0xff) {
-                throw PythonOps.UnicodeEncodeError("ascii", charUnknown.ToString(), index, index + 1, "ordinal not in range(128)");
+                throw PythonOps.UnicodeEncodeError("ordinal not in range(128)", charUnknown, index);
             }
 
             if (_curIndex == _buffer.Count && _curIndex > 0) {

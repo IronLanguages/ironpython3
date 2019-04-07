@@ -133,8 +133,8 @@ namespace IronPython.Runtime.Operations {
         }
 
         public virtual bool __contains__(object value) {
-            if (value is string) return Value.Contains((string)value);
-            else if (value is ExtensibleString) return Value.Contains(((ExtensibleString)value).Value);
+            if (value is ExtensibleString es) return Value.Contains(es.Value);
+            if (value is string s) return Value.Contains(s);
 
             throw PythonOps.TypeErrorForBadInstance("expected string, got {0}", value);
         }
@@ -426,6 +426,10 @@ namespace IronPython.Runtime.Operations {
 
         public static Bytes encode(CodeContext/*!*/ context, [NotNull]string s, [NotNull]string encoding = "utf-8", [NotNull]string errors = "strict") {
             return RawEncode(context, s, encoding, errors);
+        }
+
+        public static Bytes encode(CodeContext/*!*/ context, [NotNull]string s, [NotNull]Encoding encoding, [NotNull]string errors = "strict") {
+            return DoEncode(context, s, errors, GetEncodingName(encoding, normalize: false), encoding, includePreamble: true);
         }
 
         private static string CastString(object o) {
@@ -1418,6 +1422,10 @@ namespace IronPython.Runtime.Operations {
             return self;
         }
 
+        public static string/*!*/ __repr__(string/*!*/ self) {
+            return StringOps.Quote(self);
+        }
+
         #region Internal implementation details
 
         internal static string Quote(string s) {
@@ -1611,12 +1619,12 @@ namespace IronPython.Runtime.Operations {
             return ch == '+' || ch == '-';
         }
 
-        internal static string GetEncodingName(Encoding encoding) {
+        internal static string GetEncodingName(Encoding encoding, bool normalize = true) {
 #if FEATURE_ENCODING
             string name = null;
 
             // if we have a valid code page try and get a reasonable name.  The
-            // web names / mail displays match tend to CPython's terse names
+            // web names / mail displays tend to match CPython's terse names
             if (encoding.CodePage != 0) {
 #if !NETCOREAPP2_1 && !NETSTANDARD2_0
                 if (encoding.IsBrowserDisplay) {
@@ -1628,9 +1636,25 @@ namespace IronPython.Runtime.Operations {
                 }
 #endif
 
-                // otherwise use a code page number which also matches CPython               
                 if (name == null) {
-                    name = "cp" + encoding.CodePage;
+                    switch (encoding.CodePage) {
+
+                        // recognize a few common cases
+                        case 1200: name = "utf-16LE"; break;
+                        case 1201: name = "utf-16BE"; break;
+
+                        case 12000: name = "utf-32LE"; break;
+                        case 12001: name = "utf-32BE"; break;
+
+                        case 20127: name = "us-ascii"; break;
+                        case 28591: name = "iso-8859-1"; break;
+
+                        case 65000: name = "utf-7"; break;
+                        case 65001: name = "utf-8"; break;
+
+                        // otherwise use a code page number which also matches CPython
+                        default: name = "cp" + encoding.CodePage; break;
+                    }
                 }
             }
 
@@ -1643,7 +1667,7 @@ namespace IronPython.Runtime.Operations {
             string name = encoding.WebName;
 #endif
 
-            return NormalizeEncodingName(name);
+            return normalize ? NormalizeEncodingName(name) : name;
         }
 
         internal static string NormalizeEncodingName(string name) =>
@@ -1694,7 +1718,17 @@ namespace IronPython.Runtime.Operations {
             }
 #endif
 
-            string decoded = e.GetString(bytes, start, numBytes);
+            string decoded;
+            try {
+                decoded = e.GetString(bytes, start, numBytes);
+            } catch (DecoderFallbackException ex) {
+                // augmenting the caught exception ISO greating UnicodeDecodeError to preserve the stack trace
+                ex.Data["encoding"] = encoding;
+                byte[] inputBytes = new byte[numBytes];
+                Array.Copy(bytes, start, inputBytes, 0, numBytes);
+                ex.Data["object"] = Bytes.Make(inputBytes);
+                throw;
+            }
 
 #if FEATURE_ENCODING
             if (e.DecoderFallback is ExceptionFallBack fallback) {
@@ -1767,6 +1801,7 @@ namespace IronPython.Runtime.Operations {
                 bytes = e.GetBytes(s);
             } catch (EncoderFallbackException ex) {
                 ex.Data["encoding"] = encoding;
+                ex.Data["object"] = s;
                 throw;
             }
 
@@ -2779,9 +2814,5 @@ namespace IronPython.Runtime.Operations {
 #endif
 
         #endregion
-
-        public static string/*!*/ __repr__(string/*!*/ self) {
-            return StringOps.Quote(self);
-        }
     }
 }

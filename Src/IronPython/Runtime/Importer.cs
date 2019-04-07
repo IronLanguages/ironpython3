@@ -515,7 +515,8 @@ namespace IronPython.Runtime {
             object find_module = PythonOps.GetBoundAttr(context, importer, "find_module");
 
             PythonContext pycontext = context.LanguageContext;
-            object loader = pycontext.Call(context, find_module, fullName, path);
+            object loader = path == null ? pycontext.Call(context, find_module, fullName) : pycontext.Call(context, find_module, fullName, path);
+
             if (loader != null) {
                 object findMod = PythonOps.GetBoundAttr(context, loader, "load_module");
                 ret = pycontext.Call(context, findMod, fullName);
@@ -784,7 +785,7 @@ namespace IronPython.Runtime {
                 return null;
             }
 
-            foreach (object dirname in (IEnumerable)path) {
+            foreach (object dirname in path) {
                 string str = dirname as string;
 
                 if (str != null || (Converter.TryConvertToString(dirname, out str) && str != null)) {  // ignore non-string
@@ -853,7 +854,7 @@ namespace IronPython.Runtime {
         private static object FindImporterForPath(CodeContext/*!*/ context, string dirname) {
             PythonList pathHooks = context.LanguageContext.GetSystemStateValue("path_hooks") as PythonList;
 
-            foreach (object hook in (IEnumerable)pathHooks) {
+            foreach (object hook in pathHooks) {
                 try {
                     object handler = PythonCalls.Call(context, hook, dirname);
 

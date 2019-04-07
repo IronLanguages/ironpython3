@@ -90,7 +90,7 @@ namespace IronPython.Runtime.Operations {
                     else if (o is BigInteger) WriteInteger ((BigInteger)o);
                     else if (o is Complex) WriteComplex ((Complex)o);
                     else if (o == PythonExceptions.StopIteration) WriteStopIteration ();
-                    else throw PythonOps.ValueError ("unmarshallable object" + o.GetType().ToString());
+                    else throw PythonOps.ValueError ("unmarshallable object " + o.GetType().ToString());
                 } finally {
                     infinite.RemoveAt (index);
                 }

@@ -277,7 +277,7 @@ Raise ZipImportError if the module couldn't be found.")]
 
 Return the data associated with 'pathname'. Raise IOError if
 the file wasn't found.")]
-            public string get_data(CodeContext/*!*/ context, string path) {
+            public Bytes get_data(CodeContext/*!*/ context, string path) {
                 if (path.Length >= MAXPATHLEN) {
                     throw MakeError(context, "path too long");
                 }
@@ -288,7 +288,7 @@ the file wasn't found.")]
                 }
 
                 var data = GetData(context, _archive, __files[path] as PythonTuple);
-                return PythonAsciiEncoding.Instance.GetString(data, 0, data.Length);
+                return Bytes.Make(data);
             }
 
             [Documentation(@"get_code(fullname) -> code object.

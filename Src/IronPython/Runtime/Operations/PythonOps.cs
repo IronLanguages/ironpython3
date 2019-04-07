@@ -3353,7 +3353,7 @@ namespace IronPython.Runtime.Operations {
                 if (s[i] < 0x100) {
                     ret[i] = (byte)s[i];
                 } else {
-                    throw PythonOps.UnicodeEncodeError("ascii", s, i, i + 1, "ordinal not in range(128)");
+                    throw PythonOps.UnicodeEncodeError("latin-1", s, i, i + 1, "ordinal not in range(256)");
                 }
             }
             return ret;
@@ -3619,32 +3619,25 @@ namespace IronPython.Runtime.Operations {
             return new KeyNotFoundException(string.Format(format, args));
         }
 
-        public static Exception UnicodeDecodeError(string format, params object[] args) {
-            return new System.Text.DecoderFallbackException(string.Format(format, args));
-        }
-
         public static Exception UnicodeDecodeError(string message, byte[] bytesUnknown, int index) {
-            return new System.Text.DecoderFallbackException(message, bytesUnknown, index);
-        }
-
-        public static Exception UnicodeEncodeError(string format, params object[] args) {
-            return new EncoderFallbackException(string.Format(format, args));
+            return new DecoderFallbackException(message, bytesUnknown, index);
         }
 
         public static Exception UnicodeEncodeError(string encoding, string @object, int start, int end, string reason) {
             return PythonExceptions.CreateThrowable(PythonExceptions.UnicodeEncodeError, encoding, @object, start, end, reason);
         }
 
-        public static Exception UnicodeEncodeError(string encoding, char charUnknown, int index, string format, params object[] args) {
-            var ex = (EncoderFallbackException)UnicodeEncodeError(string.Format(format, args), charUnknown, index);
-            ex.Data["encoding"] = encoding;
-            return ex;
-        }
-
+        // access to possibly internal constructors of EncoderFallbackException
         public static Exception UnicodeEncodeError(string message, char charUnknown, int index) {
             var ctor = typeof(EncoderFallbackException).GetConstructor(
                 BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, new[] { typeof(string), typeof(char), typeof(int) }, null);
             return (EncoderFallbackException)ctor.Invoke(new object[] { message, charUnknown, index });
+        }
+
+        public static Exception UnicodeEncodeError(string message, char charUnknownHigh, char charUnknownLow, int index) {
+            var ctor = typeof(EncoderFallbackException).GetConstructor(
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, new[] { typeof(string), typeof(char), typeof(char), typeof(int) }, null);
+            return (EncoderFallbackException)ctor.Invoke(new object[] { message, charUnknownHigh, charUnknownLow, index });
         }
 
         public static Exception IOError(Exception inner) {

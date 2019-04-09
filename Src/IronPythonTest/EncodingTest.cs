@@ -175,7 +175,8 @@ namespace IronPythonTest {
             // Compare UTF-7 handling with CPython results
             [Test]
             public void TestCompare256WithUtf7() {
-                Encoding penc = new PythonSurrogateEscapeEncoding(Encoding.UTF7);
+                Encoding utf7 = new UTF7Encoding(allowOptionals: true);
+                Encoding penc = new PythonSurrogateEscapeEncoding(utf7);
                 // The following Python output is produced with python 3.4 but is not correct: it is missing the '+' character
                 string python_chars = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f !\"#$%&'()*,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\x7f\udc80\udc81\udc82\udc83\udc84\udc85\udc86\udc87\udc88\udc89\udc8a\udc8b\udc8c\udc8d\udc8e\udc8f\udc90\udc91\udc92\udc93\udc94\udc95\udc96\udc97\udc98\udc99\udc9a\udc9b\udc9c\udc9d\udc9e\udc9f\udca0\udca1\udca2\udca3\udca4\udca5\udca6\udca7\udca8\udca9\udcaa\udcab\udcac\udcad\udcae\udcaf\udcb0\udcb1\udcb2\udcb3\udcb4\udcb5\udcb6\udcb7\udcb8\udcb9\udcba\udcbb\udcbc\udcbd\udcbe\udcbf\udcc0\udcc1\udcc2\udcc3\udcc4\udcc5\udcc6\udcc7\udcc8\udcc9\udcca\udccb\udccc\udccd\udcce\udccf\udcd0\udcd1\udcd2\udcd3\udcd4\udcd5\udcd6\udcd7\udcd8\udcd9\udcda\udcdb\udcdc\udcdd\udcde\udcdf\udce0\udce1\udce2\udce3\udce4\udce5\udce6\udce7\udce8\udce9\udcea\udceb\udcec\udced\udcee\udcef\udcf0\udcf1\udcf2\udcf3\udcf4\udcf5\udcf6\udcf7\udcf8\udcf9\udcfa\udcfb\udcfc\udcfd\udcfe\udcff";
                 // Our implementation will refuse (correctly) to decode because the ',' after '+' is not valid thus requires escaping,
@@ -189,7 +190,7 @@ namespace IronPythonTest {
 
                 // Now the encoding part
                 byte[] encoded_bytes = penc.GetBytes(chars);
-                byte[] expected_bytes = "+AAAAAQACAAMABAAFAAYABwAI-\t\n+AAsADA-\r+AA4ADwAQABEAEgATABQAFQAWABcAGAAZABoAGwAcAB0AHgAf- +ACEAIgAjACQAJQAm-'()+ACo-,-./0123456789:+ADsAPAA9AD4-?+AEA-ABCDEFGHIJKLMNOPQRSTUVWXYZ+AFsAXABdAF4AXwBg-abcdefghijklmnopqrstuvwxyz+AHsAfAB9AH4Af9yA3IHcgtyD3ITchdyG3IfciNyJ3Irci9yM3I3cjtyP3JDckdyS3JPclNyV3Jbcl9yY3Jncmtyb3Jzcndye3J/coNyh3KLco9yk3KXcptyn3Kjcqdyq3KvcrNyt3K7cr9yw3LHcstyz3LTctdy23LfcuNy53Lrcu9y83L3cvty/3MDcwdzC3MPcxNzF3Mbcx9zI3MncytzL3MzczdzO3M/c0NzR3NLc09zU3NXc1tzX3Njc2dza3Nvc3Nzd3N7c39zg3OHc4tzj3OTc5dzm3Ofc6Nzp3Orc69zs3O3c7tzv3PDc8dzy3PPc9Nz13Pbc99z43Pnc+tz73Pzc/dz+3P8-"
+                byte[] expected_bytes = "+AAAAAQACAAMABAAFAAYABwAI-\t\n+AAsADA-\r+AA4ADwAQABEAEgATABQAFQAWABcAGAAZABoAGwAcAB0AHgAf- !\"#$%&'()*,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[+AFw-]^_`abcdefghijklmnopqrstuvwxyz{|}+AH4Af9yA3IHcgtyD3ITchdyG3IfciNyJ3Irci9yM3I3cjtyP3JDckdyS3JPclNyV3Jbcl9yY3Jncmtyb3Jzcndye3J/coNyh3KLco9yk3KXcptyn3Kjcqdyq3KvcrNyt3K7cr9yw3LHcstyz3LTctdy23LfcuNy53Lrcu9y83L3cvty/3MDcwdzC3MPcxNzF3Mbcx9zI3MncytzL3MzczdzO3M/c0NzR3NLc09zU3NXc1tzX3Njc2dza3Nvc3Nzd3N7c39zg3OHc4tzj3OTc5dzm3Ofc6Nzp3Orc69zs3O3c7tzv3PDc8dzy3PPc9Nz13Pbc99z43Pnc+tz73Pzc/dz+3P8-"
                     .Select(c => (byte)c).ToArray();
                 Assert.AreEqual(expected_bytes, encoded_bytes);
 
@@ -197,15 +198,14 @@ namespace IronPythonTest {
                 byte[] python_bytes =   "+AAAAAQACAAMABAAFAAYABwAI\t\n+AAsADA\r+AA4ADwAQABEAEgATABQAFQAWABcAGAAZABoAGwAcAB0AHgAf !\"#$%&'()*,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[+AFw]^_`abcdefghijklmnopqrstuvwxyz{|}+AH4Af9yA3IHcgtyD3ITchdyG3IfciNyJ3Irci9yM3I3cjtyP3JDckdyS3JPclNyV3Jbcl9yY3Jncmtyb3Jzcndye3J/coNyh3KLco9yk3KXcptyn3Kjcqdyq3KvcrNyt3K7cr9yw3LHcstyz3LTctdy23LfcuNy53Lrcu9y83L3cvty/3MDcwdzC3MPcxNzF3Mbcx9zI3MncytzL3MzczdzO3M/c0NzR3NLc09zU3NXc1tzX3Njc2dza3Nvc3Nzd3N7c39zg3OHc4tzj3OTc5dzm3Ofc6Nzp3Orc69zs3O3c7tzv3PDc8dzy3PPc9Nz13Pbc99z43Pnc+tz73Pzc/dz+3P8-"
                     .Select(c => (byte)c).ToArray();
                 // The sequences expected_bytes and python_bytes are NOT equal: .NET ends encoded blocks (starting with '+') with '-'
-                // and encodes some additional characters, like !"#$%&*;<=>@{|}
-                // Encoding those characters is optional, and terminating the encoded blocks with '-' is also optional.
-                // CPython does not do it, resulting in a more compact encoding.
+                // Terminating encoded blocks with '-' is optional if not ambiguous.
+                // CPython doesn't terminate blocks with '-' if not mandatory, resulting in a more compact encoding.
                 // However, they both decode to the same text, although, again, CPython's version cannot be decoded using surrogateescape
                 char[] dotnet_decoded = penc.GetChars(encoded_bytes);
-                char[] python_decoded = Encoding.UTF7.GetChars(python_bytes);
+                char[] python_decoded = utf7.GetChars(python_bytes);
                 Assert.AreEqual(chars, python_decoded);
                 Assert.AreEqual(chars, dotnet_decoded);
-                dotnet_decoded = Encoding.UTF7.GetChars(encoded_bytes);
+                dotnet_decoded = utf7.GetChars(encoded_bytes);
                 Assert.AreEqual(chars, dotnet_decoded);
             }
 
@@ -431,7 +431,7 @@ namespace IronPythonTest {
                 // "surrogatepass" is not supported for UTF-7 per se,
                 // but UTF-7 is supposed to encode any surogate characters into its ASCII mangled form
                 // without requiring any fallback support
-                Encoding penc = new PythonSurrogatePassEncoding(Encoding.UTF7);
+                Encoding penc = new PythonSurrogatePassEncoding(new UTF7Encoding(allowOptionals: true));
 
                 // lone high surrogate
                 Assert.AreEqual("abc+2BA-xyz".AsBytes(), penc.GetBytes("abc\ud810xyz"));
@@ -543,7 +543,7 @@ namespace IronPythonTest {
                 // "surrogatepass" is not supported for UTF-7 per se,
                 // but UTF-7 is supposed to decode any surogate characters from its ASCII mangled form
                 // without requiring any fallback support
-                Encoding penc = new PythonSurrogatePassEncoding(Encoding.UTF7);
+                Encoding penc = new PythonSurrogatePassEncoding(new UTF7Encoding(allowOptionals: true));
 
                 // lone high surrogate
                 Assert.AreEqual("abc\ud810xyz", penc.GetChars("abc+2BA-xyz".AsBytes()));

@@ -1448,18 +1448,24 @@ namespace IronPython.Runtime.Operations {
 #if FEATURE_ENCODING
             name = NormalizeEncodingName(name);
 
-            EncodingInfoWrapper encInfo;
-            if (CodecsInfo.Codecs.TryGetValue(name, out encInfo)) {
-                encoding = (Encoding)encInfo.GetEncoding().Clone();
+            EncodingSingletonFactory efac;
+            if (CodecsInfo.Codecs.TryGetValue(name, out efac)) {
+                encoding = (Encoding)efac.GetEncoding().Clone();
                 return true;
             }
 #else
             switch (NormalizeEncodingName(name)) {
                 case "us_ascii":
                 case "ascii": encoding = PythonAsciiEncoding.Instance; return true;
-                case "utf_8": encoding = (Encoding)new EncodingWrapper(Encoding.UTF8, new byte[0]).Clone(); return true;
-                case "utf_16_le": encoding = (Encoding)new EncodingWrapper(Encoding.Unicode, new byte[0]).Clone(); return true;
-                case "utf_16_be": encoding = (Encoding)new EncodingWrapper(Encoding.BigEndianUnicode, new byte[0]).Clone(); return true;
+
+                case "utf_8": encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false); return true;
+
+                case "utf_16le":
+                case "utf_16_le": encoding = new UnicodeEncoding(bigEndian: false, byteOrderMark: false); return true;
+
+                case "utf_16be":
+                case "utf_16_be": encoding = new UnicodeEncoding(bigEndian: true, byteOrderMark: false); return true;
+
                 case "utf_8_sig": encoding = Encoding.UTF8; return true;
             }
 #endif
@@ -1847,67 +1853,67 @@ namespace IronPython.Runtime.Operations {
 
 #if FEATURE_ENCODING
         private static class CodecsInfo {
-            public static readonly Dictionary<string, EncodingInfoWrapper> Codecs = MakeCodecsDict();
+            public static readonly Dictionary<string, EncodingSingletonFactory> Codecs = MakeCodecsDict();
 
-            private static Dictionary<string, EncodingInfoWrapper> MakeCodecsDict() {
-                Dictionary<string, EncodingInfoWrapper> d = new Dictionary<string, EncodingInfoWrapper>();
+            private static Dictionary<string, EncodingSingletonFactory> MakeCodecsDict() {
+                Dictionary<string, EncodingSingletonFactory> d = new Dictionary<string, EncodingSingletonFactory>();
 #if NETCOREAPP2_1 || NETSTANDARD2_0
                 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
                 // TODO: add more encodings
-                d["cp1252"] = d["windows-1252"] = new EncodingInfoWrapper(() => Encoding.GetEncoding(1252));
-                d["iso8859_15"] = d["iso_8859_15"] = d["latin9"] = d["l9"] = new EncodingInfoWrapper(() => Encoding.GetEncoding(28605));
+                d["cp1252"] = d["windows-1252"] = new EncodingSingletonFactory(() => Encoding.GetEncoding(1252));
+                d["iso8859_15"] = d["iso_8859_15"] = d["latin9"] = d["l9"] = new EncodingSingletonFactory(() => Encoding.GetEncoding(28605));
 #endif
                 EncodingInfo[] encs = Encoding.GetEncodings();
 
-                foreach (EncodingInfo encinfo in encs) {
-                    string normalizedName = NormalizeEncodingName(encinfo.Name);
+                foreach (EncodingInfo encInfo in encs) {
+                    string normalizedName = NormalizeEncodingName(encInfo.Name);
 
                     // setup well-known mappings, for everything else we'll store as lower case w/ _
                     // for the common types cp* are not actual Python aliases, but GetEncodingName may return them
                     switch (normalizedName) {
                         case "us_ascii":
-                            d["cp" + encinfo.CodePage.ToString()] = d["us_ascii"] = d["us"] = d["ascii"] = d["646"] = new AsciiEncodingInfoWrapper();
+                            d["cp" + encInfo.CodePage.ToString()] = d["us_ascii"] = d["us"] = d["ascii"] = d["646"] = new EncodingSingletonFactory(() => PythonAsciiEncoding.Instance);
                             continue;
                         case "iso_8859_1":
-                            d["8859"] = d["latin_1"] = d["latin1"] = d["iso 8859_1"] = d["iso8859_1"] = d["cp819"] = d["819"] = d["latin"] = d["l1"] = encinfo;
+                            d["8859"] = d["latin_1"] = d["latin1"] = d["iso 8859_1"] = d["iso8859_1"] = d["cp819"] = d["819"] = d["latin"] = d["l1"] = encInfo;
                             break;
                         case "utf_7":
-                            d["cp" + encinfo.CodePage.ToString()] = d["utf_7"] = d["u7"] = d["unicode-1-1-utf-7"] = new EncodingInfoWrapper(() => new UTF7Encoding(allowOptionals: true));
+                            d["cp" + encInfo.CodePage.ToString()] = d["utf_7"] = d["u7"] = d["unicode-1-1-utf-7"] = new EncodingSingletonFactory(() => new UTF7Encoding(allowOptionals: true));
                             break;
                         case "utf_8":
-                            d["cp" + encinfo.CodePage.ToString()] = d["utf_8"] = d["utf8"] = d["u8"] = new EncodingInfoWrapper(encinfo, new byte[0]);
-                            d["utf_8_sig"] = encinfo;
+                            d["cp" + encInfo.CodePage.ToString()] = d["utf_8"] = d["utf8"] = d["u8"] = new EncodingSingletonFactory(() => new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+                            d["utf_8_sig"] = encInfo;
                             continue;
                         case "utf_16":
-                            d["utf_16le"] = d["utf_16_le"] = new EncodingInfoWrapper(encinfo, new byte[0]);
-                            d["cp" + encinfo.CodePage.ToString()] = d["utf_16"] = d["utf16"] = d["u16"] = encinfo;
+                            d["utf_16le"] = d["utf_16_le"] = new EncodingSingletonFactory(() => new UnicodeEncoding(bigEndian: false, byteOrderMark: false));
+                            d["cp" + encInfo.CodePage.ToString()] = d["utf_16"] = d["utf16"] = d["u16"] = encInfo;
                             continue;
                         case "utf_16be":
-                            d["cp" + encinfo.CodePage.ToString()] = d["utf_16be"] = d["utf_16_be"] = new EncodingInfoWrapper(encinfo, new byte[0]);
+                            d["cp" + encInfo.CodePage.ToString()] = d["utf_16be"] = d["utf_16_be"] = new EncodingSingletonFactory(() => new UnicodeEncoding(bigEndian: true, byteOrderMark: false));
                             continue;
                         case "utf_32":
-                            d["utf_32le"] = d["utf_32_le"] = new EncodingInfoWrapper(encinfo, new byte[0]);
-                            d["cp" + encinfo.CodePage.ToString()] = d["utf_32"] = d["utf32"] = d["u32"] = encinfo;
+                            d["utf_32le"] = d["utf_32_le"] = new EncodingSingletonFactory(() => new UTF32Encoding(bigEndian: false, byteOrderMark: false));
+                            d["cp" + encInfo.CodePage.ToString()] = d["utf_32"] = d["utf32"] = d["u32"] = encInfo;
                             continue;
                         case "utf_32be":
-                            d["cp" + encinfo.CodePage.ToString()] = d["utf_32be"] = d["utf_32_be"] = new EncodingInfoWrapper(encinfo, new byte[0]);
+                            d["cp" + encInfo.CodePage.ToString()] = d["utf_32be"] = d["utf_32_be"] = new EncodingSingletonFactory(() => new UTF32Encoding(bigEndian: true, byteOrderMark: false));
                             continue;
                     }
 
                     // publish under normalized name (all lower cases, -s replaced with _s)
-                    d[normalizedName] = encinfo;
+                    d[normalizedName] = encInfo;
                     // publish under Windows code page as well...
-                    d["windows-" + encinfo.GetEncoding().WindowsCodePage.ToString()] = encinfo;
+                    d["windows-" + encInfo.GetEncoding().WindowsCodePage.ToString()] = encInfo;
                     // publish under code page number as well...
-                    d["cp" + encinfo.CodePage.ToString()] = d[encinfo.CodePage.ToString()] = encinfo;
+                    d["cp" + encInfo.CodePage.ToString()] = d[encInfo.CodePage.ToString()] = encInfo;
                 }
 
-                d["raw_unicode_escape"] = new EncodingInfoWrapper(() => new UnicodeEscapeEncoding(true));
-                d["unicode_escape"] = new EncodingInfoWrapper(() => new UnicodeEscapeEncoding(false));
+                d["raw_unicode_escape"] = new EncodingSingletonFactory(() => new UnicodeEscapeEncoding(true));
+                d["unicode_escape"] = new EncodingSingletonFactory(() => new UnicodeEscapeEncoding(false));
 
 #if DEBUG
                 // all codecs should be stored in lowercase because we only look up from lowercase strings
-                foreach (KeyValuePair<string, EncodingInfoWrapper> kvp in d) {
+                foreach (KeyValuePair<string, EncodingSingletonFactory> kvp in d) {
                     Debug.Assert(kvp.Key.ToLower(CultureInfo.InvariantCulture) == kvp.Key);
                 }
 #endif
@@ -1915,151 +1921,25 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        private class EncodingInfoWrapper {
+        private class EncodingSingletonFactory {
             private readonly Func<Encoding> _encFactory;
-            private readonly EncodingInfo _info;
-            private readonly byte[] _preamble;
-
             private Encoding _encoding;
 
-            public EncodingInfoWrapper(Func<Encoding> encFactory) {
+            public EncodingSingletonFactory([NotNull]Func<Encoding> encFactory) {
                 _encFactory = encFactory;
             }
 
-            public EncodingInfoWrapper(EncodingInfo info) {
-                _info = info;
-            }
-
-            public EncodingInfoWrapper(EncodingInfo info, byte[] preamble) {
-                _info = info;
-                _preamble = preamble;
-            }
-
-            public virtual Encoding GetEncoding() {
+            public Encoding GetEncoding() {
                 if (_encoding != null) return _encoding;
 
-                if (_encFactory != null) {
-                    return _encoding = _encFactory();
-                }
-
-                if (_preamble == null) {
-                    return _info.GetEncoding();
-                }
-
-                return new EncodingWrapper(_info.GetEncoding(), _preamble);
+                return _encoding = _encFactory();
             }
 
-            public static implicit operator EncodingInfoWrapper(EncodingInfo info) {
-                return new EncodingInfoWrapper(info);
-            }
-        }
-
-        private class AsciiEncodingInfoWrapper : EncodingInfoWrapper {
-            public AsciiEncodingInfoWrapper()
-                : base((EncodingInfo)null) {
-            }
-
-            public override Encoding GetEncoding() {
-                return PythonAsciiEncoding.Instance;
+            public static implicit operator EncodingSingletonFactory(EncodingInfo info) {
+                return new EncodingSingletonFactory(info.GetEncoding);
             }
         }
 #endif
-
-        private class EncodingWrapper : Encoding {
-            private byte[] _preamble;
-            private Encoding _encoding;
-
-            public EncodingWrapper(Encoding encoding, byte[] preamable) {
-                _preamble = preamable;
-                _encoding = encoding;
-            }
-
-            private void SetEncoderFallback() {
-#if FEATURE_ENCODING
-                _encoding.EncoderFallback = EncoderFallback;
-#endif
-            }
-
-            private void SetDecoderFallback() {
-#if FEATURE_ENCODING
-                _encoding.DecoderFallback = DecoderFallback;
-#endif
-            }
-
-            public override int GetByteCount(char[] chars, int index, int count) {
-                SetEncoderFallback();
-                return _encoding.GetByteCount(chars, index, count);
-            }
-
-            public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex) {
-                SetEncoderFallback();
-                return _encoding.GetBytes(chars, charIndex, charCount, bytes, byteIndex);
-            }
-
-            public override int GetCharCount(byte[] bytes, int index, int count) {
-                SetDecoderFallback();
-                return _encoding.GetCharCount(bytes, index, count);
-            }
-
-            public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) {
-                SetDecoderFallback();
-                return _encoding.GetChars(bytes, byteIndex, byteCount, chars, charIndex);
-            }
-
-            public override int GetMaxByteCount(int charCount) {
-                SetEncoderFallback();
-                return _encoding.GetMaxByteCount(charCount);
-            }
-
-            public override int GetMaxCharCount(int byteCount) {
-                SetDecoderFallback();
-                return _encoding.GetMaxCharCount(byteCount);
-            }
-
-            public override byte[] GetPreamble() {
-                return _preamble;
-            }
-
-            public override Encoder GetEncoder() {
-                SetEncoderFallback();
-                return _encoding.GetEncoder();
-            }
-
-            public override Decoder GetDecoder() {
-                SetDecoderFallback();
-                return _encoding.GetDecoder();
-            }
-
-#if FEATURE_ENCODING
-            public override object Clone() {
-                // need to call base.Clone to be marked as read/write
-                EncodingWrapper res = (EncodingWrapper)base.Clone();
-                res._encoding = (Encoding)_encoding.Clone();
-                return res;
-            }
-#endif
-
-            #region Forwarders
-
-            public override int CodePage => _encoding.CodePage;
-            public override int WindowsCodePage => _encoding.WindowsCodePage;
-
-            public override string EncodingName => _encoding.EncodingName;
-            public override string WebName => _encoding.WebName;
-            public override string HeaderName => _encoding.HeaderName;
-            public override string BodyName => _encoding.BodyName;
-            public override bool IsBrowserDisplay => _encoding.IsBrowserDisplay;
-            public override bool IsBrowserSave => _encoding.IsBrowserSave;
-            public override bool IsMailNewsDisplay => _encoding.IsMailNewsDisplay;
-            public override bool IsMailNewsSave => _encoding.IsMailNewsSave;
-
-            public override bool IsSingleByte => _encoding.IsSingleByte;
-
-            public override int GetHashCode() => _encoding.GetHashCode();
-            public override bool IsAlwaysNormalized(NormalizationForm form) => _encoding.IsAlwaysNormalized(form);
-
-            #endregion
-        }
 
         private static PythonList SplitEmptyString(bool separators) {
             PythonList ret = PythonOps.MakeEmptyList(1);

@@ -1854,56 +1854,56 @@ namespace IronPython.Runtime.Operations {
 #if NETCOREAPP2_1 || NETSTANDARD2_0
                 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
                 // TODO: add more encodings
-                d["cp1252"] = d["windows-1252"] = new EncodingInfoWrapper(Encoding.GetEncoding(1252));
-                d["iso8859_15"] = d["iso_8859_15"] = d["latin9"] = d["l9"] = new EncodingInfoWrapper(Encoding.GetEncoding(28605));
+                d["cp1252"] = d["windows-1252"] = new EncodingInfoWrapper(() => Encoding.GetEncoding(1252));
+                d["iso8859_15"] = d["iso_8859_15"] = d["latin9"] = d["l9"] = new EncodingInfoWrapper(() => Encoding.GetEncoding(28605));
 #endif
                 EncodingInfo[] encs = Encoding.GetEncodings();
 
-                foreach (EncodingInfo enc in encs) {
-                    string normalizedName = NormalizeEncodingName(enc.Name);
+                foreach (EncodingInfo encinfo in encs) {
+                    string normalizedName = NormalizeEncodingName(encinfo.Name);
 
                     // setup well-known mappings, for everything else we'll store as lower case w/ _
                     // for the common types cp* are not actual Python aliases, but GetEncodingName may return them
                     switch (normalizedName) {
                         case "us_ascii":
-                            d["cp" + enc.CodePage.ToString()] = d["us_ascii"] = d["us"] = d["ascii"] = d["646"] = new AsciiEncodingInfoWrapper();
+                            d["cp" + encinfo.CodePage.ToString()] = d["us_ascii"] = d["us"] = d["ascii"] = d["646"] = new AsciiEncodingInfoWrapper();
                             continue;
                         case "iso_8859_1":
-                            d["8859"] = d["latin_1"] = d["latin1"] = d["iso 8859_1"] = d["iso8859_1"] = d["cp819"] = d["819"] = d["latin"] = d["l1"] = enc;
+                            d["8859"] = d["latin_1"] = d["latin1"] = d["iso 8859_1"] = d["iso8859_1"] = d["cp819"] = d["819"] = d["latin"] = d["l1"] = encinfo;
                             break;
                         case "utf_7":
-                            d["cp" + enc.CodePage.ToString()] = d["utf_7"] = d["u7"] = d["unicode-1-1-utf-7"] = enc;
+                            d["cp" + encinfo.CodePage.ToString()] = d["utf_7"] = d["u7"] = d["unicode-1-1-utf-7"] = new EncodingInfoWrapper(() => new UTF7Encoding(allowOptionals: true));
                             break;
                         case "utf_8":
-                            d["cp" + enc.CodePage.ToString()] = d["utf_8"] = d["utf8"] = d["u8"] = new EncodingInfoWrapper(enc, new byte[0]);
-                            d["utf_8_sig"] = enc;
+                            d["cp" + encinfo.CodePage.ToString()] = d["utf_8"] = d["utf8"] = d["u8"] = new EncodingInfoWrapper(encinfo, new byte[0]);
+                            d["utf_8_sig"] = encinfo;
                             continue;
                         case "utf_16":
-                            d["utf_16le"] = d["utf_16_le"] = new EncodingInfoWrapper(enc, new byte[0]);
-                            d["cp" + enc.CodePage.ToString()] = d["utf_16"] = d["utf16"] = d["u16"] = enc;
+                            d["utf_16le"] = d["utf_16_le"] = new EncodingInfoWrapper(encinfo, new byte[0]);
+                            d["cp" + encinfo.CodePage.ToString()] = d["utf_16"] = d["utf16"] = d["u16"] = encinfo;
                             continue;
                         case "utf_16be":
-                            d["cp" + enc.CodePage.ToString()] = d["utf_16be"] = d["utf_16_be"] = new EncodingInfoWrapper(enc, new byte[0]);
+                            d["cp" + encinfo.CodePage.ToString()] = d["utf_16be"] = d["utf_16_be"] = new EncodingInfoWrapper(encinfo, new byte[0]);
                             continue;
                         case "utf_32":
-                            d["utf_32le"] = d["utf_32_le"] = new EncodingInfoWrapper(enc, new byte[0]);
-                            d["cp" + enc.CodePage.ToString()] = d["utf_32"] = d["utf32"] = d["u32"] = enc;
+                            d["utf_32le"] = d["utf_32_le"] = new EncodingInfoWrapper(encinfo, new byte[0]);
+                            d["cp" + encinfo.CodePage.ToString()] = d["utf_32"] = d["utf32"] = d["u32"] = encinfo;
                             continue;
                         case "utf_32be":
-                            d["cp" + enc.CodePage.ToString()] = d["utf_32be"] = d["utf_32_be"] = new EncodingInfoWrapper(enc, new byte[0]);
+                            d["cp" + encinfo.CodePage.ToString()] = d["utf_32be"] = d["utf_32_be"] = new EncodingInfoWrapper(encinfo, new byte[0]);
                             continue;
                     }
 
                     // publish under normalized name (all lower cases, -s replaced with _s)
-                    d[normalizedName] = enc;
+                    d[normalizedName] = encinfo;
                     // publish under Windows code page as well...
-                    d["windows-" + enc.GetEncoding().WindowsCodePage.ToString()] = enc;
+                    d["windows-" + encinfo.GetEncoding().WindowsCodePage.ToString()] = encinfo;
                     // publish under code page number as well...
-                    d["cp" + enc.CodePage.ToString()] = d[enc.CodePage.ToString()] = enc;
+                    d["cp" + encinfo.CodePage.ToString()] = d[encinfo.CodePage.ToString()] = encinfo;
                 }
 
-                d["raw_unicode_escape"] = new EncodingInfoWrapper(new UnicodeEscapeEncoding(true));
-                d["unicode_escape"] = new EncodingInfoWrapper(new UnicodeEscapeEncoding(false));
+                d["raw_unicode_escape"] = new EncodingInfoWrapper(() => new UnicodeEscapeEncoding(true));
+                d["unicode_escape"] = new EncodingInfoWrapper(() => new UnicodeEscapeEncoding(false));
 
 #if DEBUG
                 // all codecs should be stored in lowercase because we only look up from lowercase strings
@@ -1916,12 +1916,14 @@ namespace IronPython.Runtime.Operations {
         }
 
         private class EncodingInfoWrapper {
-            private EncodingInfo _info;
-            private Encoding _encoding;
-            private byte[] _preamble;
+            private readonly Func<Encoding> _encFactory;
+            private readonly EncodingInfo _info;
+            private readonly byte[] _preamble;
 
-            public EncodingInfoWrapper(Encoding enc) {
-                _encoding = enc;
+            private Encoding _encoding;
+
+            public EncodingInfoWrapper(Func<Encoding> encFactory) {
+                _encFactory = encFactory;
             }
 
             public EncodingInfoWrapper(EncodingInfo info) {
@@ -1935,6 +1937,10 @@ namespace IronPython.Runtime.Operations {
 
             public virtual Encoding GetEncoding() {
                 if (_encoding != null) return _encoding;
+
+                if (_encFactory != null) {
+                    return _encoding = _encFactory();
+                }
 
                 if (_preamble == null) {
                     return _info.GetEncoding();

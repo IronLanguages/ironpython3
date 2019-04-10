@@ -24,7 +24,10 @@ def _():
     import sys
     if sys.implementation.name == 'ironpython':
         import clr
-        clr.AddReference('IronPython.SQLite')
+        try:
+            clr.AddReference('IronPython.SQLite')
+        except:
+            pass
 _()
 del _
 

@@ -1448,9 +1448,8 @@ namespace IronPython.Runtime.Operations {
 #if FEATURE_ENCODING
             name = NormalizeEncodingName(name);
 
-            EncodingSingletonFactory efac;
-            if (CodecsInfo.Codecs.TryGetValue(name, out efac)) {
-                encoding = (Encoding)efac.GetEncoding().Clone();
+            if (CodecsInfo.Codecs.TryGetValue(name, out Lazy<Encoding> proxy)) {
+                encoding = proxy.Value;
                 return true;
             }
 #else
@@ -1707,7 +1706,7 @@ namespace IronPython.Runtime.Operations {
 #if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
             // so we just clone the encoding & set the fallback to throw in strict mode.
-            e = (Encoding)e.Clone();
+            if (e.IsReadOnly) e = (Encoding)e.Clone();
 
             switch (errors) {
                 case "backslashreplace":
@@ -1785,7 +1784,7 @@ namespace IronPython.Runtime.Operations {
 #if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
             // so we just clone the encoding & set the fallback to throw in strict mode
-            e = (Encoding)e.Clone();
+            if (e.IsReadOnly) e = (Encoding)e.Clone();
 
             switch (errors) {
                 case "strict": e.EncoderFallback = EncoderFallback.ExceptionFallback; break;
@@ -1853,15 +1852,17 @@ namespace IronPython.Runtime.Operations {
 
 #if FEATURE_ENCODING
         private static class CodecsInfo {
-            public static readonly Dictionary<string, EncodingSingletonFactory> Codecs = MakeCodecsDict();
+            public static readonly Dictionary<string, Lazy<Encoding>> Codecs = MakeCodecsDict();
 
-            private static Dictionary<string, EncodingSingletonFactory> MakeCodecsDict() {
-                Dictionary<string, EncodingSingletonFactory> d = new Dictionary<string, EncodingSingletonFactory>();
+            private static Dictionary<string, Lazy<Encoding>> MakeCodecsDict() {
+                Dictionary<string, Lazy<Encoding>> d = new Dictionary<string, Lazy<Encoding>>();
+                Lazy<Encoding> makeEncodingProxy(Func<Encoding> factory) => new Lazy<Encoding>(factory, isThreadSafe: false);
+
 #if NETCOREAPP2_1 || NETSTANDARD2_0
                 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
                 // TODO: add more encodings
-                d["cp1252"] = d["windows-1252"] = new EncodingSingletonFactory(() => Encoding.GetEncoding(1252));
-                d["iso8859_15"] = d["iso_8859_15"] = d["latin9"] = d["l9"] = new EncodingSingletonFactory(() => Encoding.GetEncoding(28605));
+                d["cp1252"] = d["windows-1252"] = makeEncodingProxy(() => Encoding.GetEncoding(1252));
+                d["iso8859_15"] = d["iso_8859_15"] = d["latin9"] = d["l9"] = makeEncodingProxy(() => Encoding.GetEncoding(28605));
 #endif
                 EncodingInfo[] encs = Encoding.GetEncodings();
 
@@ -1872,71 +1873,53 @@ namespace IronPython.Runtime.Operations {
                     // for the common types cp* are not actual Python aliases, but GetEncodingName may return them
                     switch (normalizedName) {
                         case "us_ascii":
-                            d["cp" + encInfo.CodePage.ToString()] = d["us_ascii"] = d["us"] = d["ascii"] = d["646"] = new EncodingSingletonFactory(() => PythonAsciiEncoding.Instance);
+                            d["cp" + encInfo.CodePage.ToString()] = d["us_ascii"] = d["us"] = d["ascii"] = d["646"] = makeEncodingProxy(() => PythonAsciiEncoding.Instance);
                             continue;
-                        case "iso_8859_1":
-                            d["8859"] = d["latin_1"] = d["latin1"] = d["iso 8859_1"] = d["iso8859_1"] = d["cp819"] = d["819"] = d["latin"] = d["l1"] = encInfo;
-                            break;
                         case "utf_7":
-                            d["cp" + encInfo.CodePage.ToString()] = d["utf_7"] = d["u7"] = d["unicode-1-1-utf-7"] = new EncodingSingletonFactory(() => new UTF7Encoding(allowOptionals: true));
-                            break;
+                            d["cp" + encInfo.CodePage.ToString()] = d["utf_7"] = d["u7"] = d["unicode-1-1-utf-7"] = makeEncodingProxy(() => new UTF7Encoding(allowOptionals: true));
+                            continue;
                         case "utf_8":
-                            d["cp" + encInfo.CodePage.ToString()] = d["utf_8"] = d["utf8"] = d["u8"] = new EncodingSingletonFactory(() => new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-                            d["utf_8_sig"] = encInfo;
+                            d["cp" + encInfo.CodePage.ToString()] = d["utf_8"] = d["utf8"] = d["u8"] = makeEncodingProxy(() => new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+                            d["utf_8_sig"] = makeEncodingProxy(encInfo.GetEncoding); ;
                             continue;
                         case "utf_16":
-                            d["utf_16le"] = d["utf_16_le"] = new EncodingSingletonFactory(() => new UnicodeEncoding(bigEndian: false, byteOrderMark: false));
-                            d["cp" + encInfo.CodePage.ToString()] = d["utf_16"] = d["utf16"] = d["u16"] = encInfo;
+                            d["utf_16le"] = d["utf_16_le"] = makeEncodingProxy(() => new UnicodeEncoding(bigEndian: false, byteOrderMark: false));
+                            d["cp" + encInfo.CodePage.ToString()] = d["utf_16"] = d["utf16"] = d["u16"] = makeEncodingProxy(encInfo.GetEncoding); ;
                             continue;
                         case "utf_16be":
-                            d["cp" + encInfo.CodePage.ToString()] = d["utf_16be"] = d["utf_16_be"] = new EncodingSingletonFactory(() => new UnicodeEncoding(bigEndian: true, byteOrderMark: false));
+                            d["cp" + encInfo.CodePage.ToString()] = d["utf_16be"] = d["utf_16_be"] = makeEncodingProxy(() => new UnicodeEncoding(bigEndian: true, byteOrderMark: false));
                             continue;
                         case "utf_32":
-                            d["utf_32le"] = d["utf_32_le"] = new EncodingSingletonFactory(() => new UTF32Encoding(bigEndian: false, byteOrderMark: false));
-                            d["cp" + encInfo.CodePage.ToString()] = d["utf_32"] = d["utf32"] = d["u32"] = encInfo;
+                            d["utf_32le"] = d["utf_32_le"] = makeEncodingProxy(() => new UTF32Encoding(bigEndian: false, byteOrderMark: false));
+                            d["cp" + encInfo.CodePage.ToString()] = d["utf_32"] = d["utf32"] = d["u32"] = makeEncodingProxy(encInfo.GetEncoding); ;
                             continue;
                         case "utf_32be":
-                            d["cp" + encInfo.CodePage.ToString()] = d["utf_32be"] = d["utf_32_be"] = new EncodingSingletonFactory(() => new UTF32Encoding(bigEndian: true, byteOrderMark: false));
+                            d["cp" + encInfo.CodePage.ToString()] = d["utf_32be"] = d["utf_32_be"] = makeEncodingProxy(() => new UTF32Encoding(bigEndian: true, byteOrderMark: false));
                             continue;
+
+                        case "iso_8859_1":
+                            d["8859"] = d["latin_1"] = d["latin1"] = d["iso 8859_1"] = d["iso8859_1"] = d["cp819"] = d["819"] = d["latin"] = d["l1"] = makeEncodingProxy(encInfo.GetEncoding);
+                            break;
                     }
 
                     // publish under normalized name (all lower cases, -s replaced with _s)
-                    d[normalizedName] = encInfo;
+                    d[normalizedName] = //...
                     // publish under Windows code page as well...
-                    d["windows-" + encInfo.GetEncoding().WindowsCodePage.ToString()] = encInfo;
+                    d["windows-" + encInfo.GetEncoding().WindowsCodePage.ToString()] = //...
                     // publish under code page number as well...
-                    d["cp" + encInfo.CodePage.ToString()] = d[encInfo.CodePage.ToString()] = encInfo;
+                    d["cp" + encInfo.CodePage.ToString()] = d[encInfo.CodePage.ToString()] = makeEncodingProxy(encInfo.GetEncoding);
                 }
 
-                d["raw_unicode_escape"] = new EncodingSingletonFactory(() => new UnicodeEscapeEncoding(true));
-                d["unicode_escape"] = new EncodingSingletonFactory(() => new UnicodeEscapeEncoding(false));
+                d["raw_unicode_escape"] = makeEncodingProxy(() => new UnicodeEscapeEncoding(true));
+                d["unicode_escape"] = makeEncodingProxy(() => new UnicodeEscapeEncoding(false));
 
 #if DEBUG
                 // all codecs should be stored in lowercase because we only look up from lowercase strings
-                foreach (KeyValuePair<string, EncodingSingletonFactory> kvp in d) {
+                foreach (KeyValuePair<string, Lazy<Encoding>> kvp in d) {
                     Debug.Assert(kvp.Key.ToLower(CultureInfo.InvariantCulture) == kvp.Key);
                 }
 #endif
                 return d;
-            }
-        }
-
-        private class EncodingSingletonFactory {
-            private readonly Func<Encoding> _encFactory;
-            private Encoding _encoding;
-
-            public EncodingSingletonFactory([NotNull]Func<Encoding> encFactory) {
-                _encFactory = encFactory;
-            }
-
-            public Encoding GetEncoding() {
-                if (_encoding != null) return _encoding;
-
-                return _encoding = _encFactory();
-            }
-
-            public static implicit operator EncodingSingletonFactory(EncodingInfo info) {
-                return new EncodingSingletonFactory(info.GetEncoding);
             }
         }
 #endif

@@ -1706,19 +1706,22 @@ namespace IronPython.Runtime.Operations {
 #if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
             // so we just clone the encoding & set the fallback to throw in strict mode.
-            if (e.IsReadOnly) e = (Encoding)e.Clone();
-
+            Encoding setFallback(Encoding enc, DecoderFallback fb) {
+                enc = (Encoding)enc.Clone();
+                enc.DecoderFallback = fb;
+                return enc;
+            }
             switch (errors) {
                 case "backslashreplace":
                 case "xmlcharrefreplace":
-                case "strict": e.DecoderFallback = final ? DecoderFallback.ExceptionFallback : new ExceptionFallBack(numBytes, e is UTF8Encoding); break;
-                case "replace": e.DecoderFallback = ReplacementFallback; break;
-                case "ignore": e.DecoderFallback = new PythonDecoderFallback(); break;
+                case "strict": e = final ? setFallback(e, DecoderFallback.ExceptionFallback) : setFallback(e, new ExceptionFallBack(numBytes, e is UTF8Encoding)); break;
+                case "replace": e = setFallback(e, ReplacementFallback); break;
+                case "ignore": e = setFallback(e, new PythonDecoderFallback()); break;
                 case "surrogateescape": e =  new PythonSurrogateEscapeEncoding(e); break;
                 case "surrogatepass": e =  new PythonSurrogatePassEncoding(e); break;
                 default:
-                    e.DecoderFallback = new PythonDecoderFallback(encoding, s,
-                        () => LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors)));
+                    e = setFallback(e, new PythonDecoderFallback(encoding, s,
+                        () => LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors))));
                     break;
             }
 #endif
@@ -1784,19 +1787,22 @@ namespace IronPython.Runtime.Operations {
 #if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
             // so we just clone the encoding & set the fallback to throw in strict mode
-            if (e.IsReadOnly) e = (Encoding)e.Clone();
-
+            Encoding setFallback(Encoding enc, EncoderFallback fb) {
+                enc = (Encoding)enc.Clone();
+                enc.EncoderFallback = fb;
+                return enc;
+            }
             switch (errors) {
-                case "strict": e.EncoderFallback = EncoderFallback.ExceptionFallback; break;
-                case "replace": e.EncoderFallback = EncoderFallback.ReplacementFallback; break;
-                case "backslashreplace": e.EncoderFallback = new BackslashEncoderReplaceFallback(); break;
-                case "xmlcharrefreplace": e.EncoderFallback = new XmlCharRefEncoderReplaceFallback(); break;
-                case "ignore": e.EncoderFallback = new PythonEncoderFallback(); break;
+                case "strict": e = setFallback(e, EncoderFallback.ExceptionFallback); break;
+                case "replace": e = setFallback(e, EncoderFallback.ReplacementFallback); break;
+                case "backslashreplace": e = setFallback(e, new BackslashEncoderReplaceFallback()); break;
+                case "xmlcharrefreplace": e = setFallback(e, new XmlCharRefEncoderReplaceFallback()); break;
+                case "ignore": e = setFallback(e, new PythonEncoderFallback()); break;
                 case "surrogateescape": e = new PythonSurrogateEscapeEncoding(e); break;
                 case "surrogatepass": e = new PythonSurrogatePassEncoding(e); break;
                 default:
-                    e.EncoderFallback = new PythonEncoderFallback(encoding, s,
-                        () => LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors)));
+                    e = setFallback(e, new PythonEncoderFallback(encoding, s,
+                        () => LightExceptions.CheckAndThrow(PythonOps.LookupEncodingError(context, errors))));
                     break;
             }
 #endif

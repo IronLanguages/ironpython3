@@ -214,25 +214,9 @@ _IronPython_
 b'\x81'
 ```
 
-* When using the UTF-7 encoding, IronPython (and .NET) uses the long encoding form and encodes optional characters, while CPython uses the short form and passes the optional characters unmodified.
+* When using the UTF-7 encoding, IronPython (and .NET) always terminates the modified Base64 encoded blocks with a '-' while CPython omits the '-' if allowed.
 
-The UTF-7 standars allows encoders for some freedom of implementation. There are some characters, called _direct characters_, that are allways passed through literally on encoding (letters, digits, and 9 symbols: ` ' ( ) , - . / : ?. `). The other main group, known as "optional direct characters", contains all other printable characters in the range U+0021÷U+007E except ` ~ \ +`. Using the optional direct characters reduces size and enhances human readability but also increases the chance of breakage by things like badly designed mail gateways. 
-
-Here is where CPython and IronPython make different choices. CPython chooses on encoding to pass through the optional characters, while IronPython will encode them in the `+ -` delimited modified Base64 encoded sequence:
-
-_CPython_
-```
->>> '!"#$%&*;<=>@[]^_`{|}'.encode('utf-7')
-b'!"#$%&*;<=>@[]^_`{|}'
-```
-
-_IronPython_
-```
->>> '!"#$%&*;<=>@[]^_`{|}'.encode('utf-7')
-b'+ACEAIgAjACQAJQAmACoAOwA8AD0APgBAAFsAXQBeAF8AYAB7AHwAfQ-'
-```
-
-Another optionality allowed in UTF-7 is how to end a sequence encoded in the modified Base64 code. In principle, `+` marks the start of the sequence, and `-` is the terminator. However, it is allowed to ommit the terminating `-` if the next character unabiguously does not belong to the encoded Base64 block. CPython chooses to drop the terminating `-` in such cases, while IronPython will always terminate Base64-encoded blocks with a `-`:
+The UTF-7 standard allows encoders for some freedom of implementation. One optionality allowed in UTF-7 is how to end a sequence encoded in the modified Base64 code. In principle, `+` marks the start of the sequence, and `-` is the terminator. However, it is allowed to omit the terminating `-` if the next character unambiguously does not belong to the encoded Base64 block. CPython chooses to drop the terminating `-` in such cases, while IronPython will always terminate Base64-encoded blocks with a `-`:
 
 _CPython_
 ```

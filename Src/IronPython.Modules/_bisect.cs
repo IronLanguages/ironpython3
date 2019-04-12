@@ -1,17 +1,18 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using IronPython.Runtime;
-using IronPython.Runtime.Binding;
-using IronPython.Runtime.Exceptions;
-using IronPython.Runtime.Operations;
-using IronPython.Runtime.Types;
-using Microsoft.Scripting;
+using System.Reflection;
+
 using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
+
+using IronPython.Runtime;
+using IronPython.Runtime.Operations;
+using IronPython.Runtime.Types;
 
 [assembly: PythonModule("_bisect", typeof(IronPython.Modules.PythonBisectModule))]
 
@@ -143,6 +144,7 @@ common approach.
 
         #region Public API Surface
 
+        [PythonHidden]
         [Documentation(@"bisect_right(a, x[, lo[, hi]]) -> index
 
 Return the index where to insert item x in list a, assuming a is sorted.
@@ -154,7 +156,7 @@ beyond the rightmost x already there
 Optional args lo (default 0) and hi (default len(a)) bound the
 slice of a to be searched.
 ")]
-        public static object bisect_right(CodeContext/*!*/ context, object a, object x, int lo=0, int hi=-1) {
+        public static object BisectRight(CodeContext/*!*/ context, object a, object x, int lo = 0, int hi = -1) {
             if (a is PythonList l && l.GetType() == typeof(PythonList)) {
                 return InternalBisectRight(context, l, x, lo, hi);
             }
@@ -162,23 +164,13 @@ slice of a to be searched.
             return InternalBisectRight(context, a, x, lo, hi);
         }
 
-        [Documentation(@"insort_right(a, x[, lo[, hi]])
+        public static object bisect_right = BuiltinFunction.MakeFunction(
+            nameof(bisect_right),
+            ArrayUtils.ConvertAll(typeof(PythonBisectModule).GetMember(nameof(BisectRight)), x => (MethodBase)x),
+            typeof(PythonBisectModule)
+        );
 
-Insert item x in list a, and keep it sorted assuming a is sorted.
-
-If x is already in a, insert it to the right of the rightmost x.
-
-Optional args lo (default 0) and hi (default len(a)) bound the
-slice of a to be searched.
-")]
-        public static void insort_right(CodeContext/*!*/ context, object a, object x, int lo=0, int hi=-1) {
-            if (a is PythonList l && l.GetType() == typeof(PythonList)) {
-                l.Insert(InternalBisectRight(context, l, x, lo, hi), x);
-                return;
-            }
-
-            PythonOps.Invoke(context, a, "insert", InternalBisectRight(context, a, x, lo, hi), x);
-        }
+        public static object bisect = bisect_right;
 
         [Documentation(@"bisect_left(a, x[, lo[, hi]]) -> index
 
@@ -191,13 +183,40 @@ before the leftmost x already there.
 Optional args lo (default 0) and hi (default len(a)) bound the
 slice of a to be searched.
 ")]
-        public static object bisect_left(CodeContext/*!*/ context, object a, object x, int lo=0, int hi=-1) {
+        public static object bisect_left(CodeContext/*!*/ context, object a, object x, int lo = 0, int hi = -1) {
             if (a is PythonList l && l.GetType() == typeof(PythonList)) {
                 return InternalBisectLeft(context, l, x, lo, hi);
             }
 
             return InternalBisectLeft(context, a, x, lo, hi);
         }
+
+        [PythonHidden]
+        [Documentation(@"insort_right(a, x[, lo[, hi]])
+
+Insert item x in list a, and keep it sorted assuming a is sorted.
+
+If x is already in a, insert it to the right of the rightmost x.
+
+Optional args lo (default 0) and hi (default len(a)) bound the
+slice of a to be searched.
+")]
+        public static void InsortRight(CodeContext/*!*/ context, object a, object x, int lo=0, int hi=-1) {
+            if (a is PythonList l && l.GetType() == typeof(PythonList)) {
+                l.Insert(InternalBisectRight(context, l, x, lo, hi), x);
+                return;
+            }
+
+            PythonOps.Invoke(context, a, "insert", InternalBisectRight(context, a, x, lo, hi), x);
+        }
+
+        public static object insort_right = BuiltinFunction.MakeFunction(
+            nameof(insort_right),
+            ArrayUtils.ConvertAll(typeof(PythonBisectModule).GetMember(nameof(InsortRight)), x => (MethodBase)x),
+            typeof(PythonBisectModule)
+        );
+
+        public static object insort = insort_right;
 
         [Documentation(@"insort_left(a, x[, lo[, hi]])
 
@@ -215,16 +234,6 @@ slice of a to be searched.
             }
 
             PythonOps.Invoke(context, a, "insert", InternalBisectLeft(context, a, x, lo, hi), x);
-        }
-
-        [Documentation("Alias for bisect_right().")]
-        public static object bisect(CodeContext/*!*/ context, object a, object x, int lo=0, int hi=-1) {
-            return bisect_right(context, a, x, lo, hi);
-        }
-
-        [Documentation("Alias for insort_right().")]
-        public static void insort(CodeContext/*!*/ context, object a, object x, int lo=0, int hi=-1) {
-            insort_right(context, a, x, lo, hi);
         }
 
         #endregion Public API Surface

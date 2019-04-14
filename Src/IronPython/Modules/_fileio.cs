@@ -90,20 +90,24 @@ namespace IronPython.Modules {
                         break;
                 }
 
-                if (pc.FileManager.TryGetFileFromId(pc, fd, out FileIO file)) { // Could fail & fall through to else-if
-                    // This is equivalent to using TryGetObjectFromID and then casting the result to FileIO
+                object fileObject = pc.FileManager.GetObjectFromId(fd); // OSError here if no such fd
+
+                if (fileObject is FileIO file) {
                     name = file.name ?? fd;
                     _readStream = file._readStream;
                     _writeStream = file._writeStream;
-                } else if (pc.FileManager.GetObjectFromId(fd) is Stream stream) { // Will raise OSError if fd not a good file descriptor
+                }
+                else if (fileObject is Stream stream) {
                     name = fd;
                     _readStream = stream;
                     _writeStream = stream;
                 }
-                // What happens if GetObjectFromId returns something other than a FileIO or a Stream?
-                // Then the _readStream and _writeStream fields are null,
-                // & using this object raises an exception at an indeterminate future time,
-                // e.g. in the call to `readable` from BufferedReader.__init__
+                else {
+                    // Fail fast
+                    throw PythonExceptions.CreateThrowable(
+                        PythonExceptions.SystemError,
+                        "FileManager representation corrupted by insertion of non-file descriptor object");
+                }
 
                 _closefd = closefd;
             }

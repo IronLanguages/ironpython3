@@ -92,6 +92,8 @@ namespace IronPython.Modules {
 
                 object fileObject = pc.FileManager.GetObjectFromId(fd); // OSError here if no such fd
 
+                // FileManager interface guarantees fileObject is
+                // one of these two types
                 if (fileObject is FileIO file) {
                     name = file.name ?? fd;
                     _readStream = file._readStream;
@@ -101,12 +103,6 @@ namespace IronPython.Modules {
                     name = fd;
                     _readStream = stream;
                     _writeStream = stream;
-                }
-                else {
-                    // Fail fast
-                    throw PythonExceptions.CreateThrowable(
-                        PythonExceptions.SystemError,
-                        "FileManager representation corrupted by insertion of non-file descriptor object");
                 }
 
                 _closefd = closefd;

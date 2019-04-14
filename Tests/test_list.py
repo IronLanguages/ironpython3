@@ -50,10 +50,9 @@ class ListTest(IronPythonTestCase):
         lst.Add('Hello')
         lst.Add('World')
         vals = []
-        with self.assertRaises(TypeError): # TODO: remove assertRaises when https://github.com/IronLanguages/ironpython3/issues/456 is fixed
-            for v in lst[1:]:
-                vals.append(v)
-            self.assertEqual(vals, ['World'])
+        for v in lst[1:]:
+            vals.append(v)
+        self.assertEqual(vals, ['World'])
 
     def test_assign_to_empty(self):
         # should all succeed

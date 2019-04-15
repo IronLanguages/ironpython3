@@ -291,7 +291,7 @@ namespace IronPython.Modules {
             public override int fileno(CodeContext/*!*/ context) {
                 _checkClosed();
 
-                return _context.FileManager.GetOrAssignIdForObject(this);
+                return _context.FileManager.GetOrAssignIdForFile(this);
             }
 
             [Documentation("Flush write buffers, if applicable.\n\n"

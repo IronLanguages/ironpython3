@@ -119,8 +119,11 @@ namespace IronPython.Runtime.Operations {
             l.RemoveRange(curr, l.Count - curr);
         }
 
-        [SpecialName]
-        public static List<T> GetItem(List<T> l, Slice slice) {
+        public static T __getitem__(List<T> l, int index) {
+            return l[index];
+        }
+
+        public static List<T> __getitem__(List<T> l, Slice slice) {
             if (slice == null) throw PythonOps.TypeError("List<T> indices must be slices or integers");
             int start, stop, step;
             slice.indices(l.Count, out start, out stop, out step);

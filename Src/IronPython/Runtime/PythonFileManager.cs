@@ -86,24 +86,6 @@ namespace IronPython.Runtime {
             return mapping.GetIdFromObject(o);
         }
 
-
-        private int GetOrAssignIdForObject(object o) {
-            int res = mapping.GetIdFromObject(o);
-            if (res == -1) {
-                // lazily created weak mapping
-                res = mapping.WeakAdd(o);
-            }
-            return res;
-        }
-        /*
-        public int GetOrAssignIdForObject(Modules.PythonIOModule.FileIO file) {
-            return _GetOrAssignIdForObject(file);
-        }
-
-        public int GetOrAssignIdForObject(Stream stream) {
-            return _GetOrAssignIdForObject(stream);
-        }*/
-
         public bool ValidateFdRange(int fd) {
             return fd >= 0 && fd < HybridMapping<object>.SIZE;
         }

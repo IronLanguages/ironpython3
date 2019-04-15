@@ -130,15 +130,14 @@ namespace IronPython.Runtime.Operations {
             if (step == 1) {
                 return stop > start ? l.Skip(start).Take(stop - start).ToList() : new List<T>();
             } else {
-                int index = 0;
-                List<T> newData = null;
+                List<T> newData;
                 if (step > 0) {
                     if (start > stop) return new List<T>();
 
                     int icnt = (stop - start + step - 1) / step;
                     newData = new List<T>(icnt);
                     for (int i = start; i < stop; i += step) {
-                        newData[index++] = l[i];
+                        newData.Add(l[i]);
                     }
                 } else {
                     if (start < stop) return new List<T>();
@@ -146,7 +145,7 @@ namespace IronPython.Runtime.Operations {
                     int icnt = (stop - start + step + 1) / step;
                     newData = new List<T>(icnt);
                     for (int i = start; i > stop; i += step) {
-                        newData[index++] = l[i];
+                        newData.Add(l[i]);
                     }
                 }
                 return newData;

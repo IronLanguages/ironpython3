@@ -53,6 +53,8 @@ class ListTest(IronPythonTestCase):
         for v in lst[1:]:
             vals.append(v)
         self.assertEqual(vals, ['World'])
+        lst.Add('Universe')
+        self.assertEqual(list(lst[0::2]), ['Hello', 'Universe'])
 
     def test_assign_to_empty(self):
         # should all succeed

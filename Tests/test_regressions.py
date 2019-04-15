@@ -1404,4 +1404,10 @@ class C:
         class Test(BytesIO): pass
         Test().seek(0)
 
+    def test_ipy3_gh580(self):
+        """https://github.com/IronLanguages/ironpython3/issues/580"""
+        bogus_file_descriptor = 12345
+        with self.assertRaises(OSError):
+            open(bogus_file_descriptor)
+
 run_test(__name__)

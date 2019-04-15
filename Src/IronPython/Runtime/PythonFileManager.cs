@@ -12,8 +12,12 @@ namespace IronPython.Runtime {
     internal class PythonFileManager {
         private HybridMapping<object> mapping = new HybridMapping<object>(3);
 
-        public int AddToStrongMapping(object o, int pos = -1) {
-            return mapping.StrongAdd(o, pos);
+        public int AddToStrongMapping(Modules.PythonIOModule.FileIO file, int pos = -1) {
+            return mapping.StrongAdd(file, pos);
+        }
+
+        public int AddToStrongMapping(Stream stream, int pos = -1) {
+            return mapping.StrongAdd(stream, pos);
         }
 
         public void Remove(object o) {
@@ -36,7 +40,6 @@ namespace IronPython.Runtime {
             pf = mapping.GetObjectFromId(id) as Modules.PythonIOModule.FileIO;
             return pf != null;
         }
-
 
         public bool TryGetObjectFromId(PythonContext context, int id, out object o) {
             o = mapping.GetObjectFromId(id);
@@ -81,16 +84,6 @@ namespace IronPython.Runtime {
 
         public int GetIdFromObject(object o) {
             return mapping.GetIdFromObject(o);
-        }
-
-
-        public int GetOrAssignIdForObject(object o) {
-            int res = mapping.GetIdFromObject(o);
-            if (res == -1) {
-                // lazily created weak mapping
-                res = mapping.WeakAdd(o);
-            }
-            return res;
         }
 
         public bool ValidateFdRange(int fd) {

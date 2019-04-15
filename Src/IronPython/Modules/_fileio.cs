@@ -90,11 +90,16 @@ namespace IronPython.Modules {
                         break;
                 }
 
-                if (pc.FileManager.TryGetFileFromId(pc, fd, out FileIO file)) {
+                object fileObject = pc.FileManager.GetObjectFromId(fd); // OSError here if no such fd
+
+                // FileManager interface guarantees fileObject is
+                // one of these two types
+                if (fileObject is FileIO file) {
                     name = file.name ?? fd;
                     _readStream = file._readStream;
                     _writeStream = file._writeStream;
-                } else if (pc.FileManager.TryGetObjectFromId(pc, fd, out object fileObj) && fileObj is Stream stream) {
+                }
+                else if (fileObject is Stream stream) {
                     name = fd;
                     _readStream = stream;
                     _writeStream = stream;
@@ -286,7 +291,7 @@ namespace IronPython.Modules {
             public override int fileno(CodeContext/*!*/ context) {
                 _checkClosed();
 
-                return _context.FileManager.GetOrAssignIdForObject(this);
+                return _context.FileManager.GetOrAssignIdForFile(this);
             }
 
             [Documentation("Flush write buffers, if applicable.\n\n"

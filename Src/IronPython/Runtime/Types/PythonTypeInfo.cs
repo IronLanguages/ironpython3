@@ -206,7 +206,7 @@ namespace IronPython.Runtime.Types {
                 MemberGroup res;
 
                 foreach (Type curType in binder.GetContributingTypes(type)) {
-                    res = FilterSpecialNames(binder.GetMember(curType, name), name, action);
+                    res = FilterObjectMembers(FilterSpecialNames(binder.GetMember(curType, name), name, action));
                     if (res.Count > 0) {
                         return res;
                     }
@@ -247,6 +247,31 @@ namespace IronPython.Runtime.Types {
                         yield return mi.Name;
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Resolver that resolves members on Object and ObjectOps by reflection.
+        /// </summary>
+        private class ObjectResolver : StandardResolver {
+            public override MemberGroup/*!*/ ResolveMember(MemberBinder/*!*/ binder, MemberRequestKind/*!*/ action, Type/*!*/ type, string/*!*/ name) {
+                if (name == ".ctor" || name == ".cctor") return MemberGroup.EmptyGroup;
+
+                IList<Type> contributingTypes = binder.GetContributingTypes(type);
+                MemberGroup res;
+
+                foreach (Type curType in binder.GetContributingTypes(typeof(object))) {
+                    if (!contributingTypes.Contains(curType)) {
+                        continue;
+                    }
+
+                    res = FilterSpecialNames(binder.GetMember(curType, name), name, action);
+                    if (res.Count > 0) {
+                        return res;
+                    }
+                }
+
+                return MemberGroup.EmptyGroup;
             }
         }
 
@@ -587,19 +612,22 @@ namespace IronPython.Runtime.Types {
         /// </summary>
         /// <returns></returns>
         private static MemberResolver/*!*/[]/*!*/ MakeResolverTable() {
-            return new MemberResolver[] { 
-                // values that live on object need to run before the StandardResolver
-                // which will pick up values off of object.
+            return new MemberResolver[] {
+                // The standard resolver looks for types using .NET reflection by name,
+                // but not those that live on object; those that live on object are
+                // picked by the ObjectResolver
+                new StandardResolver(),
+
+                // The following members and __format__ live on object
                 new OneOffResolver("__str__", StringResolver),
                 new OneOffResolver("__new__", NewResolver),
                 new OneOffResolver("__repr__", ReprResolver),
-                new OneOffResolver("__hash__", HashResolver),       
-                new OneOffResolver("__iter__", IterResolver),         
+                new OneOffResolver("__hash__", HashResolver),
+                new OneOffResolver("__iter__", IterResolver),
+
 #if FEATURE_SERIALIZATION
                 new OneOffResolver("__reduce_ex__", SerializationResolver),
 #endif
-                // The standard resolver looks for types using .NET reflection by name
-                new StandardResolver(), 
                 
                 // Runs after StandardResolver so custom __eq__ methods can be added
                 // that support things like returning NotImplemented vs. IValueEquality
@@ -652,6 +680,8 @@ namespace IronPython.Runtime.Types {
 
                 // Runs after the operator resolver to map IComparable
                 new ComparisonResolver(typeof(IComparable), "Comparable"),
+
+                new ObjectResolver(),
                 
                 // Protected members are visible but only usable from derived types
                 new ProtectedMemberResolver(),
@@ -1882,6 +1912,20 @@ namespace IronPython.Runtime.Types {
             if (_pythonOperatorTable == null) {
                 _pythonOperatorTable = InitializeOperatorTable();
             }
+        }
+
+        private static MemberGroup/*!*/ FilterObjectMembers(MemberGroup/*!*/ group) {
+            Assert.NotNull(group);
+            List<MemberTracker> mts = new List<MemberTracker>();
+            for (int i = 0; i < group.Count; i++) {
+                MemberTracker mt = group[i];
+
+                if (mt.DeclaringType == typeof(object) || mt.DeclaringType == typeof(ObjectOps)) {
+                   continue;
+                }
+                mts.Add(mt);
+            }
+            return new MemberGroup(mts.ToArray());
         }
 
         private static MemberGroup/*!*/ FilterSpecialNames(MemberGroup/*!*/ group, string/*!*/ name, MemberRequestKind/*!*/ action) {

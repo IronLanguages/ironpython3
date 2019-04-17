@@ -935,13 +935,7 @@ namespace IronPython.Runtime
             ContractUtils.RequiresNotNull(defaultEncoding, nameof(defaultEncoding));
             ContractUtils.Requires(stream.CanSeek && stream.CanRead, nameof(stream), "The stream must support seeking and reading");
 
-            // Python 3 uses UTF-8 as default
-            var encoding = (Encoding)Encoding.UTF8.Clone();
-            encoding.DecoderFallback = new SourceNonStrictDecoderFallback();
-
-            long startPosition = stream.Position;
-
-            StreamReader sr = new StreamReader(stream, PythonAsciiEncoding.SourceEncoding);
+            stream.Seek(0, SeekOrigin.Begin);
             byte[] bomBuffer = new byte[3];
             int bomRead = stream.Read(bomBuffer, 0, 3);
             int bytesRead = 0;
@@ -953,72 +947,58 @@ namespace IronPython.Runtime
                 stream.Seek(0, SeekOrigin.Begin);
             }
 
-            string line;
-            try {
-                line = ReadOneLine(sr, ref bytesRead);
-            } catch (BadSourceException) {
-                throw ReportEncodingError(stream, path);                
-            }
-
-            bool gotEncoding = false;
+            Encoding encoding = defaultEncoding;
             string encodingName = null;
-            // magic encoding must be on line 1 or 2
-            if (line != null && !(gotEncoding = Tokenizer.TryGetEncoding(defaultEncoding, line, ref encoding, out encodingName))) {
-                try {
+            bool gotEncodingName = false;
+            // sr is used to read the magic comments (PEP-263)
+            // default system ASCII encoding will never throw exceptions, converting bad bytes to '?' instead
+            // which is sufficient to parse the magic comments
+            // also StreamReader will automatically switch to proper Unicode encoding (non-throwing) when BOM present
+            using (StreamReader sr = new StreamReader(stream, Encoding.ASCII, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true)) {
+                string line;
+                line = ReadOneLine(sr, ref bytesRead);
+
+                // magic encoding must be on line 1 or 2
+                // if there is any encoding specified on line 1 (even an invalid one), line 2 is ignored
+                if (line != null && !(gotEncodingName = Tokenizer.TryGetEncoding(line, ref encoding, out encodingName))) {
+                    // try the second line
                     line = ReadOneLine(sr, ref bytesRead);
-                } catch (BadSourceException) {
-                    throw ReportEncodingError(stream, path);
-                }
 
-                if (line != null) {
-                    gotEncoding = Tokenizer.TryGetEncoding(defaultEncoding, line, ref encoding, out encodingName);
+                    if (line != null) {
+                        gotEncodingName = Tokenizer.TryGetEncoding(line, ref encoding, out encodingName);
+                    }
                 }
             }
 
-            if (gotEncoding && isUtf8 && encodingName != "utf-8") {
-                // we have both a BOM & an encoding type, throw an error
-                throw new IOException("file has both Unicode marker and PEP-263 file encoding.  You can only use \"utf-8\" as the encoding name when a BOM is present.");
+            if (gotEncodingName && isUtf8 && encodingName != "utf-8") {
+                // we have both a UTF-8 BOM & an encoding type, throw an error
+                throw ReportEncodingError($"encoding problem: {encodingName} with BOM. Only \"utf-8\" is allowed as the encoding name when a UTF-8 BOM is present (PEP-236)", path);
             } else if (encoding == null) {
-                throw new IOException("unknown encoding type");
+                throw ReportEncodingError($"unknown encoding: {encodingName}", path);
             }
 
-            // if we didn't get an encoding seek back to the beginning...
-            if (!gotEncoding || stream.Position != stream.Length) {
-                stream.Seek(startPosition, SeekOrigin.Begin);
-            }
+            // seek back to the beginning to correctly report invalid bytes, if any
+            stream.Seek(0, SeekOrigin.Begin);
 
             // re-read w/ the correct encoding type...
             return new SourceCodeReader(new StreamReader(stream, encoding), encoding);
         }
 
-        internal static Exception ReportEncodingError(Stream stream, string path) {
-            stream.Seek(0, SeekOrigin.Begin);
-            byte[] buffer = new byte[1024];
-            int bytesRead = 0;
-            int curLine = 1, curOffset = 1, index = 0;
-            while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) != -1) {
-                for (int i = 0; i < bytesRead; i++) {
-                    if (buffer[i] > 0x7f) {
-                        return PythonOps.BadSourceError(
-                            buffer[i], 
-                            new SourceSpan(
-                                new SourceLocation(index, curLine, curOffset),
-                                new SourceLocation(index, curLine, curOffset)
-                            ), 
-                            path
-                        );
-                    } else if (buffer[i] == '\n') {
-                        curLine++;
-                        curOffset = 1;
-                    } else {
-                        curOffset++;
-                    }
-
-                    index++;
-                }
-            }
-
-            return new InvalidOperationException();
+        internal static Exception ReportEncodingError(string message, string path) {
+            SyntaxErrorException res = new SyntaxErrorException(
+                message,
+                path,
+                null,
+                null,
+                new SourceSpan(
+                    new SourceLocation(),
+                    new SourceLocation()
+                ),
+                ErrorCodes.SyntaxError,
+                Severity.FatalError
+            );
+            res.Data[PythonContext._syntaxErrorNoCaret] = ScriptingRuntimeHelpers.True;
+            return res;
         }
 
         /// <summary>
@@ -1757,9 +1737,9 @@ namespace IronPython.Runtime
         }
 
         /// <summary>
-        /// Gets or sets the default encoding for this system state / engine.
+        /// Gets the default encoding for this system state / engine.
         /// </summary>
-        public Encoding DefaultEncoding { get; set; } = PythonAsciiEncoding.Instance;
+        public Encoding DefaultEncoding { get; } = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
         public string GetDefaultEncodingName() {
             return DefaultEncoding.WebName.ToLower().Replace('-', '_');

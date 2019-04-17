@@ -122,7 +122,7 @@ namespace IronPython.Modules {
 
         public static object decode(CodeContext/*!*/ context, object obj, string encoding = null, string errors = "strict") {
             if (encoding == null) {
-                encoding = context.LanguageContext.DefaultEncoding.EncodingName;
+                encoding = context.LanguageContext.GetDefaultEncodingName();
             }
             PythonTuple t = lookup(context, encoding);
 
@@ -131,7 +131,7 @@ namespace IronPython.Modules {
 
         public static object encode(CodeContext/*!*/ context, object obj, string encoding = null, string errors = "strict") {
             if (encoding == null) {
-                encoding = context.LanguageContext.DefaultEncoding.EncodingName;
+                encoding = context.LanguageContext.GetDefaultEncodingName();
             }
             PythonTuple t = lookup(context, encoding);
 

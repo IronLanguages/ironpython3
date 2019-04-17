@@ -627,27 +627,5 @@ contain the module, but has no source for it.")]
                 dict, "ZipImportError", "zipimport",
                 (msg, innerException) => new ImportException(msg, innerException));
         }
-
-        /// <summary>
-        /// Provides a StreamContentProvider for a stream of content backed by a file on disk.
-        /// </summary>
-        [Serializable]
-        internal sealed class MemoryStreamContentProvider : TextContentProvider {
-            private readonly PythonContext _context;
-            private readonly MemoryStream _stream;
-            private readonly string _path;
-
-            internal MemoryStreamContentProvider(PythonContext context, byte[] data, string path) {
-                ContractUtils.RequiresNotNull(context, nameof(context));
-                ContractUtils.RequiresNotNull(data, nameof(data));
-                _context = context;
-                _stream = new MemoryStream(data);
-                _path = path;
-            }
-
-            public override SourceCodeReader GetReader() {
-                return _context.GetSourceReader(_stream, _context.DefaultEncoding, _path);
-            }
-        }
     }
 }

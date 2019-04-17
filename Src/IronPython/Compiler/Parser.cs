@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Numerics;
+using System.Text;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
@@ -127,8 +128,8 @@ namespace IronPython.Compiler {
         public PythonAst ParseFile(bool makeModule, bool returnValue) {
             try {
                 return ParseFileWorker(makeModule, returnValue);
-            } catch (BadSourceException bse) {
-                throw BadSourceError(bse);
+            } catch (DecoderFallbackException dfe) {
+                throw BadSourceError(dfe);
             }
         }
         
@@ -216,8 +217,8 @@ namespace IronPython.Compiler {
                 Statement statement = ParseStmt();
                 EatEndOfInput();
                 return FinishParsing(statement);
-            } catch (BadSourceException bse) {
-                throw BadSourceError(bse);
+            } catch (DecoderFallbackException dfe) {
+                throw BadSourceError(dfe);
             }
         }
 
@@ -228,8 +229,8 @@ namespace IronPython.Compiler {
                 ReturnStatement ret = new ReturnStatement(ParseTestListAsExpression());
                 ret.SetLoc(_globalParent, 0, 0);
                 return FinishParsing(ret);
-            } catch (BadSourceException bse) {
-                throw BadSourceError(bse);
+            } catch (DecoderFallbackException dfe) {
+                throw BadSourceError(dfe);
             }
         }
 
@@ -3020,8 +3021,8 @@ namespace IronPython.Compiler {
                         break;
                 }
                 return s;
-            } catch (BadSourceException bse) {
-                throw BadSourceError(bse);
+            } catch (DecoderFallbackException dfe) {
+                throw BadSourceError(dfe);
             }
         }
 
@@ -3080,17 +3081,16 @@ namespace IronPython.Compiler {
             return t;
         }
 
-        private Exception/*!*/ BadSourceError(BadSourceException bse) {
+        private Exception/*!*/ BadSourceError(DecoderFallbackException dfe) {
             if (_sourceReader.BaseReader is StreamReader sr && sr.BaseStream.CanSeek) {
-                return PythonContext.ReportEncodingError(sr.BaseStream, _sourceUnit.Path);
-
+                // TODO: Convert exception index to proper SourceLocation
             }
             // BUG: We have some weird stream and we can't accurately track the 
             // position where the exception came from.  There are too many levels
             // of buffering below us to re-wind and calculate the actual line number, so
             // we'll give the last line number the tokenizer was at.
             return Runtime.Operations.PythonOps.BadSourceError(
-                bse._badByte,
+                dfe.BytesUnknown[0],
                 new SourceSpan(_tokenizer.CurrentPosition, _tokenizer.CurrentPosition),
                 _sourceUnit.Path
             );

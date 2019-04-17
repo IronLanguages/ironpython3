@@ -20,7 +20,6 @@ namespace IronPython.Runtime {
     sealed class PythonAsciiEncoding : Encoding {
         // Singleton (global) instances are readonly, so their fallbacks cannot be accidentally modified unless cloned
         internal static readonly Encoding Instance = MakeNonThrowing();
-        internal static readonly Encoding SourceEncoding = MakeSourceEncoding();
 
         internal PythonAsciiEncoding()
             : base() {
@@ -42,16 +41,6 @@ namespace IronPython.Runtime {
             Encoding enc;
 #if FEATURE_ENCODING
             enc = new PythonAsciiEncoding(new NonStrictEncoderFallback(), new NonStrictDecoderFallback());
-#else
-            enc = new PythonAsciiEncoding();
-#endif
-            return enc;
-        }
-
-        private static Encoding MakeSourceEncoding() {
-            Encoding enc;
-#if FEATURE_ENCODING
-            enc = new PythonAsciiEncoding(new NonStrictEncoderFallback(), new SourceNonStrictDecoderFallback());
 #else
             enc = new PythonAsciiEncoding();
 #endif
@@ -349,34 +338,6 @@ namespace IronPython.Runtime {
         }
     }
     
-    class SourceNonStrictDecoderFallback : DecoderFallback {
-        public override DecoderFallbackBuffer CreateFallbackBuffer() {
-            return new SourceNonStrictDecoderFallbackBuffer();
-        }
-
-        public override int MaxCharCount {
-            get { return 1; }
-        }
-    }
-
-    // no ctors on DecoderFallbackBuffer in Silverlight
-    class SourceNonStrictDecoderFallbackBuffer : DecoderFallbackBuffer {
-        public override bool Fallback(byte[] bytesUnknown, int index) {
-            throw new BadSourceException(bytesUnknown[0]);
-        }
-
-        public override char GetNextChar() {
-            throw new NotImplementedException();
-        }
-
-        public override bool MovePrevious() {
-            throw new NotImplementedException();
-        }
-
-        public override int Remaining {
-            get { throw new NotImplementedException(); }
-        }
-    }
 #endif
 
     [Serializable]

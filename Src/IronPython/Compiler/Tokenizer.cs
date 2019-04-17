@@ -1529,15 +1529,16 @@ namespace IronPython.Compiler {
             }
         }
 
-        internal static bool TryGetEncoding(Encoding defaultEncoding, string line, ref Encoding enc, out string encName) {
-            // PEP 0263 defines the following regex for the encoding line
-            // coding[:=]\s*([-\w.]+)
+        internal static bool TryGetEncoding(string line, ref Encoding enc, out string encName) {
+            // PEP 0263 defines the following regex for the encoding line (https://www.python.org/dev/peps/pep-0263/#defining-the-encoding):
+            // ^[ \t\f]*#.*?coding[:=][ \t]*([-_.a-zA-Z0-9]+)
+            // in practice, however, CPython acceps any Unicode whitespace character in place of ' '
             encName = null;
             int startIndex = 0;
             if (line.Length < 10) return false;
             while (startIndex < line.Length) {
-                if (!Char.IsWhiteSpace (line[startIndex])) break;
-                
+                if (!Char.IsWhiteSpace(line[startIndex])) break;
+
                 startIndex++;
             }
 
@@ -1562,25 +1563,29 @@ namespace IronPython.Compiler {
             if (encodingStart == line.Length) return false;
 
             int encodingEnd = encodingStart;
-            // ([-\w.]+)
+            // ([-_.a-zA-Z0-9]+)
             while (encodingEnd < line.Length) {
-                if (line[encodingEnd] != '-' && line[encodingEnd] != '.' && !Char.IsLetterOrDigit(line[encodingEnd])) break;
-
-                encodingEnd++;
+                char c = line[encodingEnd];
+                if (c == '-' || c == '_' || c == '.' || ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9')) {
+                    encodingEnd++;
+                } else {
+                    break;
+                }
             }
+
+            if (encodingEnd == encodingStart) return false;
 
             // get the encoding string name
             encName = line.Substring(encodingStart, encodingEnd - encodingStart);
 
-            // and we have the magic ending as well...
+            // and we have the magic encoding as well...
             if (StringOps.TryGetEncoding(encName, out enc)) {
 #if FEATURE_ENCODING
                 enc = (Encoding)enc.Clone();
-                enc.DecoderFallback = new NonStrictDecoderFallback();
+                enc.DecoderFallback = DecoderFallback.ExceptionFallback;
 #endif
-                return true;
             }
-            return false;
+            return true;
         }
 
         private void ReportSyntaxError(SourceSpan span, string message, int errorCode) {

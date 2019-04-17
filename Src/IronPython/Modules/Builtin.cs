@@ -217,9 +217,15 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [Documentation("")] // provided by first overload
-        public static object compile(CodeContext/*!*/ context, [BytesConversion]IList<byte> source, string filename, string mode, object flags = null, object dont_inherit = null, int optimize = -1)
-            // TODO: Detect encoding as prescribed in PEP 263
-            => compile(context, StringOps.RawDecode(context, source, "utf-8", "strict"), filename, mode, flags, dont_inherit, optimize);
+        public static object compile(CodeContext/*!*/ context, [BytesConversion]IList<byte> source, string filename, string mode, object flags = null, object dont_inherit = null, int optimize = -1) {
+            byte[] bytes = source as byte[] ?? ((source is Bytes b) ? b.GetUnsafeByteArray() : source.ToArray());
+            PythonContext pcontext = context.LanguageContext;
+            using (var stream = new MemoryStream(bytes))
+            using (var reader = pcontext.GetSourceReader(stream, pcontext.DefaultEncoding, filename)) {
+                string strSource = reader.ReadToEnd();
+                return compile(context, strSource, filename, mode, flags, dont_inherit, optimize);
+            }
+        }
 
         [Documentation("")] // provided by first overload
         public static object compile(CodeContext/*!*/ context, string source, string filename, string mode, object flags = null, object dont_inherit = null, int optimize = -1) {
@@ -334,9 +340,15 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         [Documentation("")] // provided by first overload
         [LightThrowing]
-        public static object eval(CodeContext/*!*/ context, [BytesConversion, NotNull]IList<byte> expression, PythonDictionary globals = null, object locals = null)
-            // TODO: Detect encoding as prescribed in PEP 263
-            => eval(context, StringOps.RawDecode(context, expression, "utf-8", "strict"), globals, locals);
+        public static object eval(CodeContext/*!*/ context, [BytesConversion, NotNull]IList<byte> expression, PythonDictionary globals = null, object locals = null) {
+            byte[] bytes = expression as byte[] ?? ((expression is Bytes b) ? b.GetUnsafeByteArray() : expression.ToArray());
+            PythonContext pcontext = context.LanguageContext;
+            using (var stream = new MemoryStream(bytes))
+            using (var reader = pcontext.GetSourceReader(stream, pcontext.DefaultEncoding, "<string>")) {
+                string strExpression = reader.ReadToEnd();
+                return eval(context, strExpression, globals, locals);
+            }
+        }
 
         [LightThrowing]
         public static object eval(CodeContext/*!*/ context, [NotNull]string expression, PythonDictionary globals = null, object locals = null) {
@@ -390,9 +402,17 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [Documentation("")] // provided by first overload
-        public static void exec(CodeContext/*!*/ context, [BytesConversion, NotNull]IList<byte> code, PythonDictionary globals = null, object locals = null)
-            // TODO: Detect encoding as prescribed in PEP 263
-            => exec(context, StringOps.RawDecode(context, code, "utf-8", "strict"), globals, locals);
+        public static void exec(CodeContext/*!*/ context, [BytesConversion, NotNull]IList<byte> code, PythonDictionary globals = null, object locals = null) {
+            byte[] bytes = code as byte[] ?? ((code is Bytes b) ? b.GetUnsafeByteArray() : code.ToArray());
+            SourceUnit source = context.LanguageContext.CreateSourceUnit(
+                new MemoryStreamContentProvider(context.LanguageContext, bytes, "<string>"),
+                "<string>",
+                SourceCodeKind.Statements);
+            PythonCompilerOptions compilerOptions = Builtin.GetRuntimeGeneratedCodeCompilerOptions(context, true, 0);
+            var funcCode = FunctionCode.FromSourceUnit(source, compilerOptions, false);
+
+            exec(context, funcCode, globals, locals);
+        }
 
         public static PythonType filter {
             get {

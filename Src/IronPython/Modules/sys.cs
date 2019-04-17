@@ -261,19 +261,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
 
         // ps1 and ps2 are set by PythonContext and only on the initial load
 
-        public static void setdefaultencoding(CodeContext context, object name) {
-            if (name == null) throw PythonOps.TypeError("name cannot be None");
-            string strName = name as string;
-            if (strName == null) throw PythonOps.TypeError("name must be a string");
-
-            PythonContext pc = context.LanguageContext;
-            Encoding enc;
-            if (!StringOps.TryGetEncoding(strName, out enc)) {
-                throw PythonOps.LookupError("'{0}' does not match any available encodings", strName);
-            }
-
-            pc.DefaultEncoding = enc;
-        }
+        // setdefaultencoding has been removed in Python 3
 
 #if PROFILE_SUPPORT
         // not enabled because we don't yet support tracing built-in functions.  Doing so is a little

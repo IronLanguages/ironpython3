@@ -14,6 +14,7 @@ many special cases that are not being covered *yet*.
 
 import codecs
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -364,11 +365,24 @@ class CodecTest(IronPythonTestCase):
         try:
             #positive cases
             for coding in ip_supported_encodings:
-                temp_mod_name = "test_encoding_" + coding.replace("-", "_").replace(" ", "_")
-                with open(os.path.join(self.temporary_dir, "tmp_encodings", temp_mod_name + ".py"), "w") as f:
+                # check if the coding name matches PEP-263 requirements; this test is meaningless for names that do not match
+                # https://www.python.org/dev/peps/pep-0263/#defining-the-encoding
+                if not re.match('[-_.a-zA-Z0-9]+$', coding):
+                    continue
+                
+                temp_mod_name = "test_encoding_" + coding
+                with open(os.path.join(self.temporary_dir, "tmp_encodings", temp_mod_name + ".py"), "w", encoding=coding) as f:
+                    # wide-char Unicode encodings need a BOM to be recognized
+                    if re.match('utf[-_](16|32).', coding, re.IGNORECASE):
+                        f.write("\ufeff")
+                    
+                    # UTF-8 with signature may only use 'utf-8' as coding (PEP-263)
+                    if re.match('utf[-_]8[-_]sig$', coding, re.IGNORECASE):
+                        coding = 'utf-8'
+                    
                     f.write("# coding: %s" % (coding))
-                if temp_mod_name not in ["test_encoding_uTf!!!8"]: #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=20302
-                    __import__(temp_mod_name)
+                
+                __import__(temp_mod_name)
                 os.remove(os.path.join(self.temporary_dir, "tmp_encodings", temp_mod_name + ".py"))
 
         finally:
@@ -379,8 +393,8 @@ class CodecTest(IronPythonTestCase):
     @unittest.skipIf(is_posix, "https://github.com/IronLanguages/ironpython3/issues/541")
     @unittest.skipIf(is_mono, "https://github.com/IronLanguages/main/issues/1608")
     def test_cp11334(self):
-        #--Test that not using "# coding ..." results in a warning
-        p = subprocess.Popen([sys.executable, os.path.join(self.test_dir, "encoded_files", "cp11334_warn.py")], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        #--Test that not using "# coding ..." results in an error
+        p = subprocess.Popen([sys.executable, os.path.join(self.test_dir, "encoded_files", "cp11334_bad.py")], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         t_in, t_out, t_err = (p.stdin, p.stdout, p.stderr)
         t_err_lines = t_err.readlines()
         t_out_lines = t_out.readlines()
@@ -390,12 +404,27 @@ class CodecTest(IronPythonTestCase):
 
         self.assertEqual(len(t_out_lines), 0)
         self.assertTrue(t_err_lines[0].startswith(b"  File"))
-        if is_cli:
-            self.assertTrue(t_err_lines[1].startswith(b"SyntaxError: Non-ASCII character '\\xb5' in file"))
-        else:
-            self.assertTrue(t_err_lines[1].startswith(b"SyntaxError: Non-UTF-8 code starting with '\\xb5' in file"))
+        self.assertTrue(t_err_lines[1].startswith(b"SyntaxError: Non-UTF-8 code starting with '\\xb5' in file"))
 
         #--Test that using "# coding ..." is OK
+        p = subprocess.Popen([sys.executable, os.path.join(self.test_dir, "encoded_files", "cp11334_ok.py")], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        t_in, t_out, t_err = (p.stdin, p.stdout, p.stderr)
+        t_err_lines = t_err.readlines()
+        t_out_lines = t_out.readlines()
+        t_err.close()
+        t_out.close()
+        t_in.close()
+
+        self.assertEqual(len(t_err_lines), 0)
+        if is_cli:
+            print("CodePlex 11334")
+            self.assertEqual(t_out_lines[0].rstrip(), b"\xe6ble")
+        else:
+            self.assertEqual(t_out_lines[0].rstrip(), b"\xb5ble")
+        self.assertEqual(len(t_out_lines), 1)
+
+        #--Test that using other whitespace characters (rather than [ \t\f]) is OK
+        #but non-ASCII letters in the encoding name are not accepted
         p = subprocess.Popen([sys.executable, os.path.join(self.test_dir, "encoded_files", "cp11334_ok.py")], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         t_in, t_out, t_err = (p.stdin, p.stdout, p.stderr)
         t_err_lines = t_err.readlines()

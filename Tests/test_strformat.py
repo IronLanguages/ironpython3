@@ -119,7 +119,6 @@ class StrFormatTest(IronPythonTestCase):
             abc = dt
 
         self.assertEqual(format(dt, 'MM-dd'), '10-26')
-        return
         self.assertEqual('{0:MM-dd}'.format(dt), '10-26')
         self.assertEqual('{abc:MM-dd}'.format(abc=dt), '10-26')
         self.assertEqual('{0.abc:MM-dd}'.format(x), '10-26')

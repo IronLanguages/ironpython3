@@ -947,9 +947,7 @@ namespace IronPython.Runtime
                 stream.Seek(0, SeekOrigin.Begin);
             }
 
-            Encoding encoding = defaultEncoding;
             string encodingName = null;
-            bool gotEncodingName = false;
             // sr is used to read the magic comments (PEP-263)
             // default system ASCII encoding will never throw exceptions, converting bad bytes to '?' instead
             // which is sufficient to parse the magic comments
@@ -960,21 +958,32 @@ namespace IronPython.Runtime
 
                 // magic encoding must be on line 1 or 2
                 // if there is any encoding specified on line 1 (even an invalid one), line 2 is ignored
-                if (line != null && !(gotEncodingName = Tokenizer.TryGetEncoding(line, ref encoding, out encodingName))) {
+                if (line != null && (encodingName = Tokenizer.GetEncodingNameFromComment(line)) == null) {
                     // try the second line
                     line = ReadOneLine(sr, ref bytesRead);
 
                     if (line != null) {
-                        gotEncodingName = Tokenizer.TryGetEncoding(line, ref encoding, out encodingName);
+                        encodingName = Tokenizer.GetEncodingNameFromComment(line);
                     }
                 }
             }
 
-            if (gotEncodingName && isUtf8 && encodingName != "utf-8") {
+            if (isUtf8 && encodingName != null && encodingName != "utf-8") {
                 // we have both a UTF-8 BOM & an encoding type, throw an error
                 throw ReportEncodingError($"encoding problem: {encodingName} with BOM. Only \"utf-8\" is allowed as the encoding name when a UTF-8 BOM is present (PEP-236)", path);
-            } else if (encoding == null) {
-                throw ReportEncodingError($"unknown encoding: {encodingName}", path);
+            }
+
+            Encoding encoding = defaultEncoding;
+            if (encodingName != null) {
+                // we have the encoding declared in the magic comment
+                if (StringOps.TryGetEncoding(encodingName, out encoding)) {
+#if FEATURE_ENCODING
+                    encoding = (Encoding)encoding.Clone();
+                    encoding.DecoderFallback = DecoderFallback.ExceptionFallback;
+#endif
+                } else {
+                    throw ReportEncodingError($"unknown encoding: {encodingName}", path);
+                }
             }
 
             // seek back to the beginning to correctly report invalid bytes, if any

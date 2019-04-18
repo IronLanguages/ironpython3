@@ -1529,27 +1529,26 @@ namespace IronPython.Compiler {
             }
         }
 
-        internal static bool TryGetEncoding(string line, ref Encoding enc, out string encName) {
+        internal static string GetEncodingNameFromComment(string line) {
             // PEP 0263 defines the following regex for the encoding line (https://www.python.org/dev/peps/pep-0263/#defining-the-encoding):
             // ^[ \t\f]*#.*?coding[:=][ \t]*([-_.a-zA-Z0-9]+)
             // in practice, however, CPython acceps any Unicode whitespace character in place of ' '
-            encName = null;
             int startIndex = 0;
-            if (line.Length < 10) return false;
+            if (line.Length < 10) return null;
             while (startIndex < line.Length) {
                 if (!Char.IsWhiteSpace(line[startIndex])) break;
 
                 startIndex++;
             }
 
-            if (startIndex == line.Length || line[startIndex] != '#') return false;
+            if (startIndex == line.Length || line[startIndex] != '#') return null;
 
             // we have magic comment line
             int codingIndex;
-            if ((codingIndex = line.IndexOf("coding")) == -1) return false;
-            if (line.Length <= (codingIndex + 6)) return false;
+            if ((codingIndex = line.IndexOf("coding")) == -1) return null;
+            if (line.Length <= (codingIndex + 6)) return null;
             // [:=]
-            if (line[codingIndex + 6] != ':' && line[codingIndex + 6] != '=') return false;
+            if (line[codingIndex + 6] != ':' && line[codingIndex + 6] != '=') return null;
 
             // it contains coding: or coding=
             int encodingStart = codingIndex + 7;
@@ -1560,7 +1559,7 @@ namespace IronPython.Compiler {
             }
 
             // line is coding: [all white space]
-            if (encodingStart == line.Length) return false;
+            if (encodingStart == line.Length) return null;
 
             int encodingEnd = encodingStart;
             // ([-_.a-zA-Z0-9]+)
@@ -1573,19 +1572,10 @@ namespace IronPython.Compiler {
                 }
             }
 
-            if (encodingEnd == encodingStart) return false;
+            if (encodingEnd == encodingStart) return null;
 
             // get the encoding string name
-            encName = line.Substring(encodingStart, encodingEnd - encodingStart);
-
-            // and we have the magic encoding as well...
-            if (StringOps.TryGetEncoding(encName, out enc)) {
-#if FEATURE_ENCODING
-                enc = (Encoding)enc.Clone();
-                enc.DecoderFallback = DecoderFallback.ExceptionFallback;
-#endif
-            }
-            return true;
+            return line.Substring(encodingStart, encodingEnd - encodingStart);
         }
 
         private void ReportSyntaxError(SourceSpan span, string message, int errorCode) {

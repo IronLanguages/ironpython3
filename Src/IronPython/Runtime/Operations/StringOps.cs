@@ -1818,13 +1818,12 @@ namespace IronPython.Runtime.Operations {
 
             if (includePreamble) {
                 byte[] preamble = e.GetPreamble();
-                if (preamble.Length == 0)
-                    return Bytes.Make(bytes);
-
-                MemoryStream sb = new MemoryStream();
-                sb.Write(preamble, 0, preamble.Length);
-                sb.Write(bytes, 0, bytes.Length);
-                bytes = sb.ToArray();
+                if (preamble.Length > 0) {
+                    MemoryStream sb = new MemoryStream();
+                    sb.Write(preamble, 0, preamble.Length);
+                    sb.Write(bytes, 0, bytes.Length);
+                    bytes = sb.ToArray();
+                }
             }
 
             return Bytes.Make(bytes);

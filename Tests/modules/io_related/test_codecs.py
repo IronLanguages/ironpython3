@@ -425,7 +425,7 @@ class CodecTest(IronPythonTestCase):
 
         #--Test that using other whitespace characters (rather than [ \t\f]) is OK
         #but non-ASCII letters in the encoding name are not accepted
-        p = subprocess.Popen([sys.executable, os.path.join(self.test_dir, "encoded_files", "cp11334_ok.py")], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p = subprocess.Popen([sys.executable, os.path.join(self.test_dir, "encoded_files", "cp11334_ok2.py")], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         t_in, t_out, t_err = (p.stdin, p.stdout, p.stderr)
         t_err_lines = t_err.readlines()
         t_out_lines = t_out.readlines()

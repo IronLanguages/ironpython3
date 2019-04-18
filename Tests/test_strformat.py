@@ -118,9 +118,7 @@ class StrFormatTest(IronPythonTestCase):
         class x(object):
             abc = dt
 
-        with self.assertRaises(ValueError): # TODO: get rid of the assertRaise+return when https://github.com/IronLanguages/ironpython3/issues/465 is fixed
-            self.assertEqual(format(dt, 'MM-dd'), '10-26')
-        return
+        self.assertEqual(format(dt, 'MM-dd'), '10-26')
         self.assertEqual('{0:MM-dd}'.format(dt), '10-26')
         self.assertEqual('{abc:MM-dd}'.format(abc=dt), '10-26')
         self.assertEqual('{0.abc:MM-dd}'.format(x), '10-26')

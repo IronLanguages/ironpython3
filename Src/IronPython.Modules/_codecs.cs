@@ -122,7 +122,12 @@ namespace IronPython.Modules {
 
         public static object decode(CodeContext/*!*/ context, object obj, string encoding = null, string errors = "strict") {
             if (encoding == null) {
-                encoding = context.LanguageContext.DefaultEncoding.EncodingName;
+                if (obj is IList<byte> bytesLikeObj) {
+                    PythonContext lc = context.LanguageContext;
+                    return StringOps.DoDecode(context, bytesLikeObj, errors, lc.GetDefaultEncodingName(), lc.DefaultEncoding, final: true, out _);
+                } else {
+                    throw PythonOps.TypeError("expected bytes-like object, got {0}", PythonTypeOps.GetName(obj));
+                }
             }
             PythonTuple t = lookup(context, encoding);
 
@@ -131,7 +136,12 @@ namespace IronPython.Modules {
 
         public static object encode(CodeContext/*!*/ context, object obj, string encoding = null, string errors = "strict") {
             if (encoding == null) {
-                encoding = context.LanguageContext.DefaultEncoding.EncodingName;
+                if (obj is string str) {
+                    PythonContext lc = context.LanguageContext;
+                    return StringOps.DoEncode(context, str, errors, lc.GetDefaultEncodingName(), lc.DefaultEncoding, includePreamble: true);
+                } else {
+                    throw PythonOps.TypeError("expected str, got {0}", PythonTypeOps.GetName(obj));
+                }
             }
             PythonTuple t = lookup(context, encoding);
 

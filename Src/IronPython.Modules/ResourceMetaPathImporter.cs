@@ -101,7 +101,7 @@ module, or raises ResourceImportError if it wasn't found."
             ScriptCode script;
             var mod = pythonContext.CompileModule(modpath, fullname,
                                                   new SourceUnit(pythonContext,
-                                                                 new ZipImportModule.MemoryStreamContentProvider(pythonContext, code, modpath),
+                                                                 new MemoryStreamContentProvider(pythonContext, code, modpath),
                                                                  modpath, SourceCodeKind.File),
                                                   ModuleOptions.None, out script);
 

@@ -1529,26 +1529,26 @@ namespace IronPython.Compiler {
             }
         }
 
-        internal static bool TryGetEncoding(Encoding defaultEncoding, string line, ref Encoding enc, out string encName) {
-            // PEP 0263 defines the following regex for the encoding line
-            // coding[:=]\s*([-\w.]+)
-            encName = null;
+        internal static string GetEncodingNameFromComment(string line) {
+            // PEP 0263 defines the following regex for the encoding line (https://www.python.org/dev/peps/pep-0263/#defining-the-encoding):
+            // ^[ \t\f]*#.*?coding[:=][ \t]*([-_.a-zA-Z0-9]+)
+            // in practice, however, CPython acceps any Unicode whitespace character in place of ' '
             int startIndex = 0;
-            if (line.Length < 10) return false;
+            if (line.Length < 10) return null;
             while (startIndex < line.Length) {
-                if (!Char.IsWhiteSpace (line[startIndex])) break;
-                
+                if (!Char.IsWhiteSpace(line[startIndex])) break;
+
                 startIndex++;
             }
 
-            if (startIndex == line.Length || line[startIndex] != '#') return false;
+            if (startIndex == line.Length || line[startIndex] != '#') return null;
 
             // we have magic comment line
             int codingIndex;
-            if ((codingIndex = line.IndexOf("coding")) == -1) return false;
-            if (line.Length <= (codingIndex + 6)) return false;
+            if ((codingIndex = line.IndexOf("coding")) == -1) return null;
+            if (line.Length <= (codingIndex + 6)) return null;
             // [:=]
-            if (line[codingIndex + 6] != ':' && line[codingIndex + 6] != '=') return false;
+            if (line[codingIndex + 6] != ':' && line[codingIndex + 6] != '=') return null;
 
             // it contains coding: or coding=
             int encodingStart = codingIndex + 7;
@@ -1559,28 +1559,23 @@ namespace IronPython.Compiler {
             }
 
             // line is coding: [all white space]
-            if (encodingStart == line.Length) return false;
+            if (encodingStart == line.Length) return null;
 
             int encodingEnd = encodingStart;
-            // ([-\w.]+)
+            // ([-_.a-zA-Z0-9]+)
             while (encodingEnd < line.Length) {
-                if (line[encodingEnd] != '-' && line[encodingEnd] != '.' && !Char.IsLetterOrDigit(line[encodingEnd])) break;
-
-                encodingEnd++;
+                char c = line[encodingEnd];
+                if (c == '-' || c == '_' || c == '.' || ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9')) {
+                    encodingEnd++;
+                } else {
+                    break;
+                }
             }
+
+            if (encodingEnd == encodingStart) return null;
 
             // get the encoding string name
-            encName = line.Substring(encodingStart, encodingEnd - encodingStart);
-
-            // and we have the magic ending as well...
-            if (StringOps.TryGetEncoding(encName, out enc)) {
-#if FEATURE_ENCODING
-                enc = (Encoding)enc.Clone();
-                enc.DecoderFallback = new NonStrictDecoderFallback();
-#endif
-                return true;
-            }
-            return false;
+            return line.Substring(encodingStart, encodingEnd - encodingStart);
         }
 
         private void ReportSyntaxError(SourceSpan span, string message, int errorCode) {

@@ -3732,7 +3732,7 @@ namespace IronPython.Runtime.Operations {
 
         public static SyntaxErrorException BadSourceError(byte badByte, SourceSpan span, string path) {
             SyntaxErrorException res = new SyntaxErrorException(
-                String.Format("Non-ASCII character '\\x{0:x2}' in file {2} on line {1}, but no encoding declared; see http://www.python.org/peps/pep-0263.html for details",
+                String.Format("Non-UTF-8 code starting with '\\x{0:x2}' in file {2} on line {1}, but no encoding declared; see http://python.org/dev/peps/pep-0263/ for details",
                     badByte,
                     span.Start.Line,
                     path

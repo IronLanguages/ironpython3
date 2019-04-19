@@ -200,9 +200,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         public static object compile(CodeContext/*!*/ context, _ast.AST source, string filename, string mode, object flags = null, object dont_inherit = null, int optimize = -1) {
             // TODO: implement optimize
 
-            if (mode != "exec" && mode != "eval" && mode != "single") {
-                throw PythonOps.ValueError("compile() arg 3 must be 'exec' or 'eval' or 'single'");
-            }
+            ValidateCompileMode(mode);
 
             bool astOnly = flags != null && (Converter.ConvertToInt32(flags) & _ast.PyCF_ONLY_AST) != 0;
 
@@ -217,22 +215,45 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [Documentation("")] // provided by first overload
-        public static object compile(CodeContext/*!*/ context, [BytesConversion]IList<byte> source, string filename, string mode, object flags = null, object dont_inherit = null, int optimize = -1)
-            // TODO: Detect encoding as prescribed in PEP 263
-            => compile(context, StringOps.RawDecode(context, source, "utf-8", "strict"), filename, mode, flags, dont_inherit, optimize);
+        public static object compile(CodeContext/*!*/ context, [BytesConversion]IList<byte> source, string filename, string mode, object flags = null, object dont_inherit = null, int optimize = -1) {
+            // TODO: implement optimize
+            var sourceCodeKind = ValidateCompileMode(mode);
+
+            byte[] bytes = source as byte[] ?? ((source is Bytes b) ? b.GetUnsafeByteArray() : source.ToArray());
+            var contentProvider = new MemoryStreamContentProvider(context.LanguageContext, bytes, filename);
+            var sourceUnit = context.LanguageContext.CreateSourceUnit(contentProvider, filename, sourceCodeKind);
+
+            return CompileHelper(context, sourceUnit, mode, flags, dont_inherit);
+        }
 
         [Documentation("")] // provided by first overload
         public static object compile(CodeContext/*!*/ context, string source, string filename, string mode, object flags = null, object dont_inherit = null, int optimize = -1) {
             // TODO: implement optimize
 
-            if (mode != "exec" && mode != "eval" && mode != "single") {
-                throw PythonOps.ValueError("compile() arg 3 must be 'exec' or 'eval' or 'single'");
-            }
+            var sourceCodeKind = ValidateCompileMode(mode);
 
             if (source.IndexOf('\0') != -1) {
                 throw PythonOps.TypeError("compile() expected string without null bytes");
             }
 
+            source = RemoveBom(source);
+
+            var sourceUnit = context.LanguageContext.CreateSnippet(source, filename, sourceCodeKind);
+
+            return CompileHelper(context, sourceUnit, mode, flags, dont_inherit);
+        }
+
+        private static SourceCodeKind ValidateCompileMode(string mode) {
+            switch (mode) {
+                case "exec": return SourceCodeKind.Statements;
+                case "eval": return SourceCodeKind.Expression;
+                case "single": return SourceCodeKind.InteractiveCode;
+                default:
+                    throw PythonOps.ValueError("compile() arg 3 must be 'exec' or 'eval' or 'single'");
+            }
+        }
+
+        private static object CompileHelper(CodeContext/*!*/ context, SourceUnit sourceUnit, string mode, object flags, object dont_inherit) {
             bool astOnly = false;
             int iflags = flags != null ? Converter.ConvertToInt32(flags) : 0;
             if ((iflags & _ast.PyCF_ONLY_AST) != 0) {
@@ -240,20 +261,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 iflags &= ~_ast.PyCF_ONLY_AST;
             }
 
-            source = RemoveBom(source);
-
             bool inheritContext = GetCompilerInheritance(dont_inherit);
             CompileFlags cflags = GetCompilerFlags(iflags);
             PythonCompilerOptions opts = GetRuntimeGeneratedCodeCompilerOptions(context, inheritContext, cflags);
             if ((cflags & CompileFlags.CO_DONT_IMPLY_DEDENT) != 0) {
                 opts.DontImplyDedent = true;
-            }
-
-            SourceUnit sourceUnit = null;
-            switch (mode) {
-                case "exec": sourceUnit = context.LanguageContext.CreateSnippet(source, filename, SourceCodeKind.Statements); break;
-                case "eval": sourceUnit = context.LanguageContext.CreateSnippet(source, filename, SourceCodeKind.Expression); break;
-                case "single": sourceUnit = context.LanguageContext.CreateSnippet(source, filename, SourceCodeKind.InteractiveCode); break;
             }
 
             return !astOnly ?
@@ -334,9 +346,15 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         [Documentation("")] // provided by first overload
         [LightThrowing]
-        public static object eval(CodeContext/*!*/ context, [BytesConversion, NotNull]IList<byte> expression, PythonDictionary globals = null, object locals = null)
-            // TODO: Detect encoding as prescribed in PEP 263
-            => eval(context, StringOps.RawDecode(context, expression, "utf-8", "strict"), globals, locals);
+        public static object eval(CodeContext/*!*/ context, [BytesConversion, NotNull]IList<byte> expression, PythonDictionary globals = null, object locals = null) {
+            byte[] bytes = expression as byte[] ?? ((expression is Bytes b) ? b.GetUnsafeByteArray() : expression.ToArray());
+            PythonContext pcontext = context.LanguageContext;
+            using (var stream = new MemoryStream(bytes))
+            using (var reader = pcontext.GetSourceReader(stream, pcontext.DefaultEncoding, "<string>")) {
+                string strExpression = reader.ReadToEnd();
+                return eval(context, strExpression, globals, locals);
+            }
+        }
 
         [LightThrowing]
         public static object eval(CodeContext/*!*/ context, [NotNull]string expression, PythonDictionary globals = null, object locals = null) {
@@ -390,9 +408,17 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         [Documentation("")] // provided by first overload
-        public static void exec(CodeContext/*!*/ context, [BytesConversion, NotNull]IList<byte> code, PythonDictionary globals = null, object locals = null)
-            // TODO: Detect encoding as prescribed in PEP 263
-            => exec(context, StringOps.RawDecode(context, code, "utf-8", "strict"), globals, locals);
+        public static void exec(CodeContext/*!*/ context, [BytesConversion, NotNull]IList<byte> code, PythonDictionary globals = null, object locals = null) {
+            byte[] bytes = code as byte[] ?? ((code is Bytes b) ? b.GetUnsafeByteArray() : code.ToArray());
+            SourceUnit source = context.LanguageContext.CreateSourceUnit(
+                new MemoryStreamContentProvider(context.LanguageContext, bytes, "<string>"),
+                "<string>",
+                SourceCodeKind.Statements);
+            PythonCompilerOptions compilerOptions = Builtin.GetRuntimeGeneratedCodeCompilerOptions(context, true, 0);
+            var funcCode = FunctionCode.FromSourceUnit(source, compilerOptions, false);
+
+            exec(context, funcCode, globals, locals);
+        }
 
         public static PythonType filter {
             get {

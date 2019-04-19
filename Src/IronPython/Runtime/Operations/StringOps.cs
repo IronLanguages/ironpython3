@@ -1807,23 +1807,19 @@ namespace IronPython.Runtime.Operations {
             }
 #endif
 
+            byte[] preamble = includePreamble ? e.GetPreamble() : null;
+            int preambleLen = preamble?.Length ?? 0;
             byte[] bytes;
             try {
-                bytes = e.GetBytes(s);
+                bytes = new byte[preambleLen + e.GetByteCount(s)];
+                if (preambleLen > 0) {
+                    Array.Copy(preamble, 0, bytes, 0, preambleLen);
+                }
+                e.GetBytes(s, 0, s.Length, bytes, preambleLen);
             } catch (EncoderFallbackException ex) {
                 ex.Data["encoding"] = encoding;
                 ex.Data["object"] = s;
                 throw;
-            }
-
-            if (includePreamble) {
-                byte[] preamble = e.GetPreamble();
-                if (preamble.Length > 0) {
-                    MemoryStream sb = new MemoryStream();
-                    sb.Write(preamble, 0, preamble.Length);
-                    sb.Write(bytes, 0, bytes.Length);
-                    bytes = sb.ToArray();
-                }
             }
 
             return Bytes.Make(bytes);

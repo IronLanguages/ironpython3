@@ -14,19 +14,19 @@ namespace IronPython.Runtime {
     [Serializable]
     internal sealed class MemoryStreamContentProvider : TextContentProvider {
         private readonly PythonContext _context;
-        private readonly MemoryStream _stream;
+        private readonly byte[] _data;
         private readonly string _path;
 
         internal MemoryStreamContentProvider(PythonContext context, byte[] data, string path) {
             ContractUtils.RequiresNotNull(context, nameof(context));
             ContractUtils.RequiresNotNull(data, nameof(data));
             _context = context;
-            _stream = new MemoryStream(data);
+            _data = data;
             _path = path;
         }
 
         public override SourceCodeReader GetReader() {
-            return _context.GetSourceReader(_stream, _context.DefaultEncoding, _path);
+            return _context.GetSourceReader(new MemoryStream(_data, writable: false), _context.DefaultEncoding, _path);
         }
     }
 }

@@ -393,27 +393,34 @@ class CodecTest(IronPythonTestCase):
     @unittest.skipIf(is_posix, "https://github.com/IronLanguages/ironpython3/issues/541")
     @unittest.skipIf(is_mono, "https://github.com/IronLanguages/main/issues/1608")
     def test_cp11334(self):
+        def run_python(filename):
+            p = subprocess.Popen([sys.executable, os.path.join(self.test_dir, "encoded_files", filename)], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            t_in, t_out, t_err = (p.stdin, p.stdout, p.stderr)
+            t_err_lines = t_err.readlines()
+            t_out_lines = t_out.readlines()
+            t_err.close()
+            t_out.close()
+            t_in.close()
+            return t_out_lines, t_err_lines
+
         #--Test that not using "# coding ..." results in an error
-        p = subprocess.Popen([sys.executable, os.path.join(self.test_dir, "encoded_files", "cp11334_bad.py")], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        t_in, t_out, t_err = (p.stdin, p.stdout, p.stderr)
-        t_err_lines = t_err.readlines()
-        t_out_lines = t_out.readlines()
-        t_err.close()
-        t_out.close()
-        t_in.close()
+        t_out_lines, t_err_lines = run_python("cp11334_bad.py")
 
         self.assertEqual(len(t_out_lines), 0)
         self.assertTrue(t_err_lines[0].startswith(b"  File"))
+        self.assertTrue(t_err_lines[0].rstrip().endswith(b', line 1'))
         self.assertTrue(t_err_lines[1].startswith(b"SyntaxError: Non-UTF-8 code starting with '\\xb5' in file"))
 
+        #--Test that "# coding ..." in the first line shadows the second line
+        t_out_lines, t_err_lines = run_python("cp11334_bad2.py")
+
+        self.assertEqual(len(t_out_lines), 0)
+        self.assertTrue(t_err_lines[0].startswith(b"  File"))
+        self.assertTrue(t_err_lines[0].rstrip().endswith(b', line 1'))
+        self.assertTrue(t_err_lines[1].startswith(b"SyntaxError: encoding problem: bad-coding-name"))
+
         #--Test that using "# coding ..." is OK
-        p = subprocess.Popen([sys.executable, os.path.join(self.test_dir, "encoded_files", "cp11334_ok.py")], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        t_in, t_out, t_err = (p.stdin, p.stdout, p.stderr)
-        t_err_lines = t_err.readlines()
-        t_out_lines = t_out.readlines()
-        t_err.close()
-        t_out.close()
-        t_in.close()
+        t_out_lines, t_err_lines = run_python("cp11334_ok.py")
 
         self.assertEqual(len(t_err_lines), 0)
         if is_cli:
@@ -425,13 +432,7 @@ class CodecTest(IronPythonTestCase):
 
         #--Test that using other whitespace characters (rather than [ \t\f]) is OK
         #but non-ASCII letters in the encoding name are not accepted
-        p = subprocess.Popen([sys.executable, os.path.join(self.test_dir, "encoded_files", "cp11334_ok2.py")], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        t_in, t_out, t_err = (p.stdin, p.stdout, p.stderr)
-        t_err_lines = t_err.readlines()
-        t_out_lines = t_out.readlines()
-        t_err.close()
-        t_out.close()
-        t_in.close()
+        t_out_lines, t_err_lines = run_python("cp11334_ok2.py")
 
         self.assertEqual(len(t_err_lines), 0)
         if is_cli:

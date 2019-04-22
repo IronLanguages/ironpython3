@@ -236,8 +236,6 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 throw PythonOps.TypeError("compile() expected string without null bytes");
             }
 
-            source = RemoveBom(source);
-
             var sourceUnit = context.LanguageContext.CreateSnippet(source, filename, sourceCodeKind);
 
             return CompileHelper(context, sourceUnit, mode, flags, dont_inherit);
@@ -273,14 +271,6 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 (object)_ast.BuildAst(context, sourceUnit, opts, mode);
         }
 
-        private static string RemoveBom(string source) {
-            // skip BOM
-            if (source.StartsWith("\ufeff", StringComparison.Ordinal)) {
-                source = source.Substring(1, source.Length - 1);
-            }
-            return source;
-        }
-
         public static PythonType complex {
             get {
                 return DynamicHelpers.GetPythonTypeFromType(typeof(Complex));
@@ -290,7 +280,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         public static void delattr(CodeContext/*!*/ context, object o, string name) {
             PythonOps.DeleteAttr(context, o, name);
         }
-        
+
         public static PythonType dict {
             get {
                 return DynamicHelpers.GetPythonTypeFromType(typeof(PythonDictionary));
@@ -347,13 +337,29 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         [Documentation("")] // provided by first overload
         [LightThrowing]
         public static object eval(CodeContext/*!*/ context, [BytesConversion, NotNull]IList<byte> expression, PythonDictionary globals = null, object locals = null) {
-            byte[] bytes = expression as byte[] ?? ((expression is Bytes b) ? b.GetUnsafeByteArray() : expression.ToArray());
-            PythonContext pcontext = context.LanguageContext;
-            using (var stream = new MemoryStream(bytes))
-            using (var reader = pcontext.GetSourceReader(stream, pcontext.DefaultEncoding, "<string>")) {
-                string strExpression = reader.ReadToEnd();
-                return eval(context, strExpression, globals, locals);
+            if (locals != null && !PythonOps.IsMappingType(context, locals)) {
+                throw PythonOps.TypeError("locals must be mapping");
             }
+
+            byte[] bytes = expression as byte[] ?? ((expression is Bytes b) ? b.GetUnsafeByteArray() : expression.ToArray());
+
+            // Count number of whitespace characters to skip at the beginning.
+            // It assumes an ASCII compatible encoding (like UTF-8 or Latin-1) but excludes UTF-16 or UTF-32.
+            // This is not a problem as widechar Unicode encodings, to be recognized, must start with a BOM anyway
+            // Whitespace after a BOM is not skipped (CPython behavior).
+            int skip = 0;
+            while (skip < bytes.Length && (bytes[skip] == (byte)' ' || bytes[skip] == (byte)'\t')) skip++;
+
+            var sourceUnit = context.LanguageContext.CreateSourceUnit(
+                new MemoryStreamContentProvider(context.LanguageContext, bytes, skip, bytes.Length - skip, "<string>"),
+                "<string>",
+                SourceCodeKind.Expression);
+            PythonCompilerOptions compilerOptions = GetRuntimeGeneratedCodeCompilerOptions(context, inheritContext: true, cflags: 0);
+            compilerOptions.Module |= ModuleOptions.LightThrow;
+            compilerOptions.Module &= ~ModuleOptions.ModuleBuiltins;
+            var code = FunctionCode.FromSourceUnit(sourceUnit, compilerOptions, register: false);
+
+            return eval(context, code, globals, locals);
         }
 
         [LightThrowing]
@@ -362,10 +368,9 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 throw PythonOps.TypeError("locals must be mapping");
             }
 
-            expression = RemoveBom(expression);
+            expression = expression.TrimStart(' ', '\t'); // CPython does whitespace trimming, but does not remove BOM
 
-            // TODO: remove TrimStart
-            var sourceUnit = context.LanguageContext.CreateSnippet(expression.TrimStart(' ', '\t'), "<string>", SourceCodeKind.Expression);
+            var sourceUnit = context.LanguageContext.CreateSnippet(expression, "<string>", SourceCodeKind.Expression);
             var compilerOptions = GetRuntimeGeneratedCodeCompilerOptions(context, inheritContext: true, cflags: 0);
             compilerOptions.Module |= ModuleOptions.LightThrow;
             compilerOptions.Module &= ~ModuleOptions.ModuleBuiltins;

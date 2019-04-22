@@ -3100,7 +3100,7 @@ namespace IronPython.Compiler {
 
             } else if (dfe.BytesUnknown != null && dfe.BytesUnknown.Length > 0) {
 
-                if ( _sourceUnit.LanguageContext is PythonContext pc && ReferenceEquals(_sourceReader.Encoding, pc.DefaultEncoding)) {
+                if (_sourceUnit.LanguageContext is PythonContext pc && ReferenceEquals(_sourceReader.Encoding, pc.DefaultEncoding)) {
                     // more specific error message if default encoding is used
                     message = string.Format("Non-UTF-8 code starting with '\\x{0:x2}' in file {1} on line {2}, but no encoding declared; see http://python.org/dev/peps/pep-0263/ for details",
                         dfe.BytesUnknown[0],

@@ -948,6 +948,7 @@ namespace IronPython.Runtime
             }
 
             string encodingName = null;
+            int linesRead = 0;
             // sr is used to read the magic comments (PEP-263)
             // default system ASCII encoding will never throw exceptions, converting bad bytes to '?' instead
             // which is sufficient to parse the magic comments
@@ -955,12 +956,14 @@ namespace IronPython.Runtime
             using (StreamReader sr = new StreamReader(stream, Encoding.ASCII, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true)) {
                 string line;
                 line = ReadOneLine(sr, ref bytesRead);
+                linesRead++;
 
                 // magic encoding must be on line 1 or 2
                 // if there is any encoding specified on line 1 (even an invalid one), line 2 is ignored
                 if (line != null && (encodingName = Tokenizer.GetEncodingNameFromComment(line)) == null) {
                     // try the second line
                     line = ReadOneLine(sr, ref bytesRead);
+                    linesRead++;
 
                     if (line != null) {
                         encodingName = Tokenizer.GetEncodingNameFromComment(line);
@@ -970,7 +973,8 @@ namespace IronPython.Runtime
 
             if (isUtf8 && encodingName != null && encodingName != "utf-8") {
                 // we have both a UTF-8 BOM & an encoding type, throw an error
-                throw ReportEncodingError($"encoding problem: {encodingName} with BOM. Only \"utf-8\" is allowed as the encoding name when a UTF-8 BOM is present (PEP-236)", path);
+                throw PythonOps.BadSourceEncodingError(
+                    $"encoding problem: {encodingName} with BOM. Only \"utf-8\" is allowed as the encoding name when a UTF-8 BOM is present (PEP-236)", linesRead, path);
             }
 
             Encoding encoding = defaultEncoding;
@@ -982,7 +986,7 @@ namespace IronPython.Runtime
                     encoding.DecoderFallback = DecoderFallback.ExceptionFallback;
 #endif
                 } else {
-                    throw ReportEncodingError($"unknown encoding: {encodingName}", path);
+                    throw PythonOps.BadSourceEncodingError($"encoding problem: {encodingName}: unknown encoding", linesRead, path);
                 }
             }
 
@@ -991,23 +995,6 @@ namespace IronPython.Runtime
 
             // re-read w/ the correct encoding type...
             return new SourceCodeReader(new StreamReader(stream, encoding), encoding);
-        }
-
-        internal static Exception ReportEncodingError(string message, string path) {
-            SyntaxErrorException res = new SyntaxErrorException(
-                message,
-                path,
-                null,
-                null,
-                new SourceSpan(
-                    new SourceLocation(),
-                    new SourceLocation()
-                ),
-                ErrorCodes.SyntaxError,
-                Severity.FatalError
-            );
-            res.Data[PythonContext._syntaxErrorNoCaret] = ScriptingRuntimeHelpers.True;
-            return res;
         }
 
         /// <summary>

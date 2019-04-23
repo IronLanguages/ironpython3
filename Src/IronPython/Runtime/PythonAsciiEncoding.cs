@@ -126,7 +126,7 @@ namespace IronPython.Runtime {
                             while (dfb.GetNextChar() != char.MinValue) { /* empty */ }
                         }
                     } catch (DecoderFallbackException ex) {
-                        var dfe = new DecoderFallbackException("ordinal out of range(128)", ex.BytesUnknown, ex.Index);
+                        var dfe = new DecoderFallbackException("ordinal not in range(128)", ex.BytesUnknown, ex.Index);
                         dfe.Data.Add("encoding", EncodingName);
                         throw dfe;
                     }
@@ -162,7 +162,7 @@ namespace IronPython.Runtime {
                             }
                         }
                     } catch (DecoderFallbackException ex) {
-                        var dfe = new DecoderFallbackException("ordinal out of range(128)", ex.BytesUnknown, ex.Index);
+                        var dfe = new DecoderFallbackException("ordinal not in range(128)", ex.BytesUnknown, ex.Index);
                         dfe.Data.Add("encoding", EncodingName);
                         throw dfe;
                     }
@@ -339,24 +339,4 @@ namespace IronPython.Runtime {
     }
     
 #endif
-
-    [Serializable]
-    internal class BadSourceException : Exception {
-        internal byte _badByte;
-        public BadSourceException(byte b) {
-            _badByte = b;
-        }
-
-        public BadSourceException() : base() { }
-        public BadSourceException(string msg)
-            : base(msg) {
-        }
-        public BadSourceException(string message, Exception innerException)
-            : base(message, innerException) {
-        }
-
-#if FEATURE_SERIALIZATION
-        protected BadSourceException(SerializationInfo info, StreamingContext context) : base(info, context) { }
-#endif
-    }
 }

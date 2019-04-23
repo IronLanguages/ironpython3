@@ -3730,17 +3730,14 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        public static SyntaxErrorException BadSourceError(byte badByte, SourceSpan span, string path) {
+        public static SyntaxErrorException BadSourceEncodingError(string message, int line, string path) {
+            SourceLocation sloc = new SourceLocation(0, line, 1); // index and column will be ignored
             SyntaxErrorException res = new SyntaxErrorException(
-                String.Format("Non-UTF-8 code starting with '\\x{0:x2}' in file {2} on line {1}, but no encoding declared; see http://python.org/dev/peps/pep-0263/ for details",
-                    badByte,
-                    span.Start.Line,
-                    path
-                ),
+                message,
                 path,
+                null, 
                 null,
-                null,
-                span,
+                new SourceSpan(sloc, sloc),
                 ErrorCodes.SyntaxError,
                 Severity.FatalError
             );

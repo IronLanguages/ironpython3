@@ -16,6 +16,7 @@ using IronPython.Compiler.Ast;
 using IronPython.Hosting;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
+using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 namespace IronPython.Compiler {
@@ -3089,11 +3090,46 @@ namespace IronPython.Compiler {
             // position where the exception came from.  There are too many levels
             // of buffering below us to re-wind and calculate the actual line number, so
             // we'll give the last line number the tokenizer was at.
-            return Runtime.Operations.PythonOps.BadSourceError(
-                dfe.BytesUnknown[0],
-                new SourceSpan(_tokenizer.CurrentPosition, _tokenizer.CurrentPosition),
-                _sourceUnit.Path
-            );
+            int lineNum = _tokenizer.CurrentPosition.Line;
+
+            string message;
+
+            if (_sourceReader.Encoding == null) {
+                // BUG: source reader reads from a text source so no DecoderFallbackException can originate from there
+                message = "encoding problem";
+
+            } else if (dfe.BytesUnknown != null && dfe.BytesUnknown.Length > 0) {
+
+                if (_sourceUnit.LanguageContext is PythonContext pc && ReferenceEquals(_sourceReader.Encoding, pc.DefaultEncoding)) {
+                    // more specific error message if default encoding is used
+                    message = string.Format("Non-UTF-8 code starting with '\\x{0:x2}' in file {1} on line {2}, but no encoding declared; see http://python.org/dev/peps/pep-0263/ for details",
+                        dfe.BytesUnknown[0],
+                        _sourceUnit.Path,
+                        lineNum
+                    );
+                } else {
+                    // standard message
+                    message = string.Format("'{0}' codec can't decode byte 0x{1:x2} in position {2}: {3}",
+                        StringOps.GetEncodingName(_sourceReader.Encoding),
+                        dfe.BytesUnknown[0],
+                        dfe.Index,
+                        dfe.Message
+                    );
+                }
+
+            } else if (!string.IsNullOrEmpty(dfe.Message)) {
+                message = string.Format("encoding problem: {0}: {1}",
+                    StringOps.GetEncodingName(_sourceReader.Encoding),
+                    dfe.Message
+                );
+
+            } else {
+                message = string.Format("encoding problem: {0}",
+                    StringOps.GetEncodingName(_sourceReader.Encoding)
+                );
+            }
+
+            return PythonOps.BadSourceEncodingError(message, lineNum, _sourceUnit.Path);
         }
 
         private void StartParsing() {

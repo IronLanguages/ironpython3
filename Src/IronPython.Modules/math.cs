@@ -307,7 +307,7 @@ namespace IronPython.Modules {
             }
 
             // Apply correction factor
-            return log(v1) * v0 / (v1 - 1.0);
+            return log(v1) * (v0 / (v1 - 1.0));
         }
 
         public static double log1p(BigInteger value) {

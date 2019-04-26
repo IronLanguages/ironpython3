@@ -619,7 +619,12 @@ namespace IronPython.Modules {
                 if (!PythonOps.TryGetBoundAttr(context, file, "read", out object _readMethod))
                     throw PythonOps.TypeError("argument must have 'read' attribute");
 
-                if (!(PythonOps.CallWithContext(context, _readMethod) is string data)) throw PythonOps.TypeError("read() did not return a string object");
+                object readResult = PythonOps.CallWithContext(context, _readMethod);
+                if (readResult is Bytes byteData)
+                    readResult = byteData.MakeString();
+
+                if (!(readResult is string data))
+                    throw PythonOps.TypeError("read() did not return a string object");
 
                 using (var reader = new StringReader(data)) {
                     var settings = new XmlReaderSettings() { DtdProcessing = DtdProcessing.Parse, XmlResolver = null };

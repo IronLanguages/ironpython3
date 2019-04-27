@@ -936,125 +936,79 @@ namespace IronPython.Runtime
             ContractUtils.Requires(stream.CanSeek && stream.CanRead, nameof(stream), "The stream must support seeking and reading");
 
             stream.Seek(0, SeekOrigin.Begin);
-            byte[] bomBuffer = new byte[3];
-            int bomRead = stream.Read(bomBuffer, 0, 3);
-            int bytesRead = 0;
-            bool isUtf8 = false;
-            if (bomRead == 3 && (bomBuffer[0] == 0xef && bomBuffer[1] == 0xbb && bomBuffer[2] == 0xbf)) {
-                isUtf8 = true;
-                bytesRead = 3;
-            } else {
-                stream.Seek(0, SeekOrigin.Begin);
-            }
 
+            Encoding sourceEncoding = null;
             string encodingName = null;
             int linesRead = 0;
+            bool hasBom = false;
             // sr is used to read the magic comments (PEP-263)
-            // default system ASCII encoding will never throw exceptions, converting bad bytes to '?' instead
-            // which is sufficient to parse the magic comments
-            // also StreamReader will automatically switch to proper Unicode encoding (non-throwing) when BOM present
-            using (StreamReader sr = new StreamReader(stream, Encoding.ASCII, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true)) {
+            // Default system ASCII encoding will not throw exceptions, converting bad bytes to '?' instead
+            // which is sufficient to correctly parse the magic comments.
+            // Also StreamReader will automatically switch to proper Unicode encoding (non-throwing) when BOM present.
+            Encoding bootstrapEncoding = Encoding.ASCII;
+            using (StreamReader sr = new StreamReader(stream, bootstrapEncoding, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true)) {
                 string line;
-                line = ReadOneLine(sr, ref bytesRead);
+                line = sr.ReadLine();
                 linesRead++;
 
                 // magic encoding must be on line 1 or 2
                 // if there is any encoding specified on line 1 (even an invalid one), line 2 is ignored
-                if (line != null && (encodingName = Tokenizer.GetEncodingNameFromComment(line)) == null) {
+                if ((encodingName = Tokenizer.GetEncodingNameFromComment(line)) == null) {
                     // try the second line
-                    line = ReadOneLine(sr, ref bytesRead);
+                    line = sr.ReadLine();
                     linesRead++;
 
-                    if (line != null) {
-                        encodingName = Tokenizer.GetEncodingNameFromComment(line);
-                    }
+                    encodingName = Tokenizer.GetEncodingNameFromComment(line);
+                }
+
+                if (!ReferenceEquals(sr.CurrentEncoding, bootstrapEncoding)) {
+                    // stream autodetected a Unicode encoding from BOM
+                    sourceEncoding = sr.CurrentEncoding;
+                    hasBom = true;
                 }
             }
 
-            if (isUtf8 && encodingName != null && encodingName != "utf-8") {
-                // we have both a UTF-8 BOM & an encoding type, throw an error
+            if (hasBom && sourceEncoding.CodePage == 65001 && encodingName != null && encodingName != "utf-8" && encodingName != "utf-8-sig") {
+                // we have both a UTF-8 BOM & a declared encoding different than 'utf-8' -> throw an error in accordance with PEP-236
+                // CPython will accept 'utf-8-sig' as well, which makes sense
                 throw PythonOps.BadSourceEncodingError(
                     $"encoding problem: {encodingName} with BOM. Only \"utf-8\" is allowed as the encoding name when a UTF-8 BOM is present (PEP-236)", linesRead, path);
             }
 
-            Encoding encoding = defaultEncoding;
             if (encodingName != null) {
-                // we have the encoding declared in the magic comment
-                if (StringOps.TryGetEncoding(encodingName, out encoding)) {
-#if FEATURE_ENCODING
-                    encoding = (Encoding)encoding.Clone();
-                    encoding.DecoderFallback = DecoderFallback.ExceptionFallback;
-#endif
-                } else {
-                    throw PythonOps.BadSourceEncodingError($"encoding problem: {encodingName}: unknown encoding", linesRead, path);
+                // we have an encoding declared in the magic comment
+                if (!StringOps.TryGetEncoding(encodingName, out Encoding declaredEncoding)) {
+                    throw PythonOps.BadSourceEncodingError($"unknown encoding: {encodingName}", linesRead, path);
                 }
+
+                if (sourceEncoding == null) {
+                    // no autodetected encoding, use the one from the explicit declaration
+                    sourceEncoding = declaredEncoding;
+                } else if (sourceEncoding.CodePage != declaredEncoding.CodePage) {
+                    // if the stream autodetected an encoding, the declared one must match the detected one, otherwise it's an error
+                    throw PythonOps.BadSourceEncodingError($"encoding problem: {encodingName}: does not match the Unicode BOM used", linesRead, path);
+                }
+            }
+
+            if (sourceEncoding == null) {
+                // not autodetected and not declared, hence use default
+                sourceEncoding = defaultEncoding;
+            } else {
+#if FEATURE_ENCODING
+                sourceEncoding = (Encoding)sourceEncoding.Clone();
+                sourceEncoding.DecoderFallback = DecoderFallback.ExceptionFallback;
+#endif
             }
 
             // seek back to the beginning to correctly report invalid bytes, if any
             stream.Seek(0, SeekOrigin.Begin);
 
-            // re-read w/ the correct encoding type...
-            return new SourceCodeReader(new StreamReader(stream, encoding), encoding);
+            // re-read w/ the correct encoding type
+            // disable autodetection so that the strict error handler is intact
+            // encodings with non-empty preable will skip it over on reading
+            return new SourceCodeReader(new StreamReader(stream, sourceEncoding, detectEncodingFromByteOrderMarks: false), sourceEncoding);
         }
 
-        /// <summary>
-        /// Reads one line keeping track of the # of bytes read
-        /// </summary>
-        private static string ReadOneLine(StreamReader reader, ref int totalRead) {
-            Stream sr = reader.BaseStream;
-            byte[] buffer = new byte[256];
-            StringBuilder builder = null;
-            
-            int bytesRead = sr.Read(buffer, 0, buffer.Length);
-
-            while (bytesRead > 0) {
-                totalRead += bytesRead;
-
-                bool foundEnd = false;
-                for (int i = 0; i < bytesRead; i++) {
-                    if (buffer[i] == '\r') {
-                        if (i + 1 < bytesRead) {
-                            if (buffer[i + 1] == '\n') {
-                                totalRead -= (bytesRead - (i + 2));   // skip cr/lf
-                                sr.Seek(i + 2, SeekOrigin.Begin);
-                                reader.DiscardBufferedData();
-                                foundEnd = true;
-                            }
-                        } else {
-                            totalRead -= (bytesRead - (i + 1)); // skip cr
-                            sr.Seek(i + 1, SeekOrigin.Begin);
-                            reader.DiscardBufferedData();
-                            foundEnd = true;
-                        }
-                    } else if (buffer[i] == '\n') {
-                        totalRead -= (bytesRead - (i + 1)); // skip lf
-                        sr.Seek(i + 1, SeekOrigin.Begin);
-                        reader.DiscardBufferedData();
-                        foundEnd = true;
-                    }
-
-                    if (foundEnd) {
-                        if (builder != null) {
-                            builder.Append(buffer.MakeString(), 0, i);
-                            return builder.ToString();
-                        }
-                        return buffer.MakeString().Substring(0, i);
-                    }
-                }
-
-                if (builder == null) builder = new StringBuilder();
-                builder.Append(buffer.MakeString(), 0, bytesRead);
-                bytesRead = sr.Read(buffer, 0, buffer.Length);
-            }
-
-            // no string
-            if (builder == null) {
-                return null;
-            }
-
-            // no new-line
-            return builder.ToString();
-        }
 
 #if FEATURE_CODEDOM
         // Convert a CodeDom to source code, and output the generated code and the line number mappings (if any)

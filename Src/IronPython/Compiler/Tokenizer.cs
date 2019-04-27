@@ -1532,11 +1532,12 @@ namespace IronPython.Compiler {
         internal static string GetEncodingNameFromComment(string line) {
             // PEP 0263 defines the following regex for the encoding line (https://www.python.org/dev/peps/pep-0263/#defining-the-encoding):
             // ^[ \t\f]*#.*?coding[:=][ \t]*([-_.a-zA-Z0-9]+)
-            // in practice, however, CPython acceps any Unicode whitespace character in place of ' '
+            if (line == null || line.Length < 10) return null;
+
             int startIndex = 0;
-            if (line.Length < 10) return null;
             while (startIndex < line.Length) {
-                if (!Char.IsWhiteSpace(line[startIndex])) break;
+                char c = line[startIndex];
+                if (c != ' ' && c != '\t' && c != '\f') break;
 
                 startIndex++;
             }
@@ -1553,7 +1554,8 @@ namespace IronPython.Compiler {
             // it contains coding: or coding=
             int encodingStart = codingIndex + 7;
             while (encodingStart < line.Length) {
-                if (!Char.IsWhiteSpace(line[encodingStart])) break;
+                char c = line[encodingStart];
+                if (c != ' ' && c != '\t') break;
 
                 encodingStart++;
             }

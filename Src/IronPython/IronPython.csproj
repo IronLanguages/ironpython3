@@ -42,6 +42,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Modules\unicodedata\IPyUnicodeData.txt.gz" />
+    <EmbeddedResource Include="..\StdLib\Lib\importlib\_bootstrap.py" Link="Modules\_bootstrap.py" />
   </ItemGroup>
 
   <ItemGroup>

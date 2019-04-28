@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
+
 #if FEATURE_SERIALIZATION
 using System.Runtime.Serialization.Formatters.Binary;
 #endif
@@ -51,11 +52,31 @@ namespace IronPython.Runtime {
 
         public static string TargetFramework => typeof(ClrModule).Assembly.GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName;
 
+        internal static string FileVersion => typeof(ClrModule).Assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version;
+
 #if DEBUG
         public static readonly bool IsDebug = true;
 #else
         public static readonly bool IsDebug = false;
 #endif
+
+        internal static string FrameworkDescription {
+            get {
+#if FEATURE_RUNTIMEINFORMATION
+                var frameworkDescription = RuntimeInformation.FrameworkDescription;
+                if (frameworkDescription.StartsWith(".NET Core 4.6.", StringComparison.OrdinalIgnoreCase)) {
+                    return $".NET Core 2.x ({frameworkDescription.Substring(10)})";
+                }
+                return frameworkDescription;
+#else
+                // try reflection since we're probably running on a newer runtime anyway
+                if (typeof(void).Assembly.GetType("System.Runtime.InteropServices.RuntimeInformation")?.GetProperty("FrameworkDescription")?.GetValue(null) is string frameworkDescription) {
+                    return frameworkDescription;
+                }
+                return (IsMono ? "Mono " : ".NET Framework ") + Environment.Version.ToString();
+#endif
+            }
+        }
 
         private static int _isMono = -1;
         public static bool IsMono {

@@ -34,15 +34,12 @@ namespace IronPython.Compiler.Ast {
     public sealed class PythonAst : ScopeStatement {
         private Statement _body;
         private CompilationMode _mode;
-        private readonly bool _isModule;
         private readonly bool _printExpressions;
         private ModuleOptions _languageFeatures;
         private readonly CompilerContext _compilerContext;
         private readonly MSAst.SymbolDocumentInfo _document;
         private readonly string/*!*/ _name;
         internal int[] _lineLocations;
-
-        private PythonVariable _docVariable, _nameVariable, _fileVariable;
         private ModuleContext _modContext;
         private readonly bool _onDiskProxy;
         internal MSAst.Expression _arrayExpression;
@@ -60,7 +57,7 @@ namespace IronPython.Compiler.Ast {
             ContractUtils.RequiresNotNull(body, nameof(body));
 
             _body = body;
-            _isModule = isModule;
+            IsModule = isModule;
             _printExpressions = printExpressions;
             _languageFeatures = languageFeatures;
         }
@@ -80,7 +77,7 @@ namespace IronPython.Compiler.Ast {
         /// the body.
         /// </summary>
         public PythonAst(bool isModule, ModuleOptions languageFeatures, bool printExpressions, CompilerContext context) {
-            _isModule = isModule;
+            IsModule = isModule;
             _printExpressions = printExpressions;
             _languageFeatures = languageFeatures;
             _mode = ((PythonCompilerOptions)context.Options).CompilationMode ?? GetCompilationMode(context);
@@ -236,20 +233,11 @@ namespace IronPython.Compiler.Ast {
             get { return true; }
         }
 
-        internal PythonVariable DocVariable {
-            get { return _docVariable; }
-            set { _docVariable = value; }
-        }
+        internal PythonVariable DocVariable { get; set; }
 
-        internal PythonVariable NameVariable {
-            get { return _nameVariable; }
-            set { _nameVariable = value; }
-        }
+        internal PythonVariable NameVariable { get; set; }
 
-        internal PythonVariable FileVariable {
-            get { return _fileVariable; }
-            set { _fileVariable = value; }
-        }
+        internal PythonVariable FileVariable { get; set; }
 
         internal CompilerContext CompilerContext {
             get {
@@ -326,9 +314,7 @@ namespace IronPython.Compiler.Ast {
             get { return _body; }
         }
 
-        public bool Module {
-            get { return _isModule; }
-        }
+        public bool IsModule { get; }
 
         #endregion
 
@@ -353,7 +339,7 @@ namespace IronPython.Compiler.Ast {
                 // for simple eval's we can construct a simple tree which just
                 // leaves the value on the stack.  Return's can't exist in modules
                 // so this is always safe.
-                Debug.Assert(!_isModule);
+                Debug.Assert(!IsModule);
 
                 var ret = (ReturnStatement)_body;
                 Ast simpleBody;
@@ -381,8 +367,8 @@ namespace IronPython.Compiler.Ast {
             ReadOnlyCollectionBuilder<MSAst.Expression> block = new ReadOnlyCollectionBuilder<MSAst.Expression>();
             AddInitialiation(block);
 
-            if (_isModule) {
-                block.Add(AssignValue(GetVariableExpression(_docVariable), Ast.Constant(GetDocumentation(_body))));
+            if (IsModule) {
+                block.Add(AssignValue(GetVariableExpression(DocVariable), Ast.Constant(GetDocumentation(_body))));
             }
 
             if (!(_body is SuiteStatement) && _body.CanThrow) {
@@ -414,12 +400,12 @@ namespace IronPython.Compiler.Ast {
         }
 
         private void AddInitialiation(ReadOnlyCollectionBuilder<MSAst.Expression> block) {
-            if (_isModule) {
-                block.Add(AssignValue(GetVariableExpression(_fileVariable), Ast.Constant(ModuleFileName)));
-                block.Add(AssignValue(GetVariableExpression(_nameVariable), Ast.Constant(ModuleName)));
+            if (IsModule) {
+                block.Add(AssignValue(GetVariableExpression(FileVariable), Ast.Constant(ModuleFileName)));
+                block.Add(AssignValue(GetVariableExpression(NameVariable), Ast.Constant(ModuleName)));
             }
 
-            if (_languageFeatures != ModuleOptions.None || _isModule) {
+            if (_languageFeatures != ModuleOptions.None || IsModule) {
                 block.Add(
                     Ast.Call(
                         AstMethods.ModuleStarted,
@@ -437,7 +423,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         private MSAst.Expression AddModulePublishing(MSAst.Expression body) {
-            if (_isModule) {
+            if (IsModule) {
                 PythonCompilerOptions pco = _compilerContext.Options as PythonCompilerOptions;
 
                 string moduleName = ModuleName;

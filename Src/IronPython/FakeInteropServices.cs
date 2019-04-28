@@ -6,7 +6,7 @@ using System;
 using System.IO;
 
 namespace IronPython {
-#if NET45
+#if !FEATURE_RUNTIMEINFORMATION
     internal static class RuntimeInformation {
         private static readonly OSPlatform _osPlatform;
 

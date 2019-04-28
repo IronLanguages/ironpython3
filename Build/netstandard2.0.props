@@ -36,6 +36,7 @@
     <Features>$(Features);FEATURE_PROCESS</Features>
     <Features>$(Features);FEATURE_REFEMIT</Features>
     <Features>$(Features);FEATURE_REGISTRY</Features>
+    <Features>$(Features);FEATURE_RUNTIMEINFORMATION</Features>
     <Features>$(Features);FEATURE_SECURITY_RULES</Features>
     <Features>$(Features);FEATURE_SERIALIZATION</Features>
     <Features>$(Features);FEATURE_SORTKEY</Features>

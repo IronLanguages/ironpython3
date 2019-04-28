@@ -1903,27 +1903,15 @@ namespace IronPython.Runtime
             dict["implementation"] = implementation;
             dict["version_info"] = implementation.version;
             dict["hexversion"] = implementation.hexversion;
-            dict["version"] = implementation.version.GetVersionString(
-                    _initialVersionString ?? GetVersionString());
+            dict["version"] = _initialVersionString;
         }
 
         internal static string GetVersionString() {
-#if DEBUG
-            const string configuration = " DEBUG";
-#else
-            string configuration = string.Empty;
-#endif
-            string platform = Type.GetType("Mono.Runtime") == null ? ".NET" : "Mono";
+            string configuration = Runtime.ClrModule.IsDebug ? " DEBUG" : string.Empty;
             string bitness = (IntPtr.Size * 8).ToString();
 
-            return String.Format("{0}{3} ({1}) on {4} {2} ({5}-bit)",
-                                PythonContext.IronPythonDisplayName,
-                                PythonContext.GetPythonVersion().ToString(),
-                                Environment.Version,
-                                configuration,
-                                platform,
-                                bitness
-                                );
+            return $"{Implementation.Instance.version.GetVersionString()}{configuration} ({Runtime.ClrModule.FileVersion})\n" +
+                $"[{Runtime.ClrModule.TargetFramework} on {Runtime.ClrModule.FrameworkDescription} ({bitness}-bit)]";
         }
 
         private static string GetInitialPrefix() {

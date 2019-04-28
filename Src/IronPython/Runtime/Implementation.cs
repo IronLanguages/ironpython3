@@ -1,15 +1,22 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Linq;
 using System.Reflection;
+
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
     [PythonHidden, PythonType("sys.implementation")]
     public class Implementation {
-        internal static readonly string _Name = "IronPython";
-        internal static readonly string _name = _Name.ToLowerInvariant();
-        internal static readonly VersionInfo _version = new VersionInfo();
-        internal static readonly int _hexversion = _version.GetHexVersion();
+        private static readonly string _Name = "IronPython";
+        private static readonly string _name = _Name.ToLowerInvariant();
+        private static readonly VersionInfo _version = new VersionInfo();
+        private static readonly int _hexversion = _version.GetHexVersion();
+
+        internal static Implementation Instance { get; } = new Implementation();
 
         public readonly string cache_tag = null;
         public readonly string name = _name;
@@ -97,15 +104,13 @@ namespace IronPython.Runtime {
             }
         }
 
-        internal string GetVersionString(string _initialVersionString) {
-            var version = string.Format("{0}.{1}.{2}{4}{5} ({3})",
+        internal string GetVersionString() {
+            return string.Format("{0}.{1}.{2}{3}{4}",
                 major,
                 minor,
                 micro,
-                _initialVersionString,
-                releaselevel != "final" ? GetShortReleaseLevel() : "",
-                releaselevel != "final" ? serial.ToString() : "");
-            return version;
+                releaselevel != "final" ? GetShortReleaseLevel() : string.Empty,
+                releaselevel != "final" ? serial.ToString() : string.Empty);
         }
     }
 

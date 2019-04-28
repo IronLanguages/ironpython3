@@ -127,10 +127,11 @@ print final"""
     @skipUnlessIronPython()
     def test_version(self):
         import re
-        # 2.7.5 (IronPython 2.7.5 (2.7.5.0) on .NET 4.0.30319.18444 (32-bit))
-        # 2.7.6a0 (IronPython 2.7.6a0 DEBUG (2.7.6.0) on .NET 4.0.30319.18444 (32-bit))
-        # 2.7.6 (IronPython 2.7.6.3 (2.7.6.3) on .NET 4.0.30319.42000 (32-bit))
-        regex = "^\d\.\d\.\d+((RC\d+ )|(a\d+ )|(b\d+ )|( ))\(IronPython \d\.\d(\.\d)?(\.\d+)?((RC\d+ )|(a\d+ )|(b\d+ )|( ))?((DEBUG )|()|(\d?))\(\d\.\d\.\d{1,8}\.\d{1,8}\) on ((\.NET)|(Mono)) \d(\.\d{1,5}){3} \(((32)|(64))-bit\)\)$"
+        # version DEBUG (FileVersion) [TargetFramework on FrameworkDescription (bitness-bit)]
+        # for example:
+        #     2.7.10a1 DEBUG (2.7.10.0001)
+        #     [.NETFramework,Version=v4.5 on .NET Framework 4.8.3752.0 (64-bit)]
+        regex = r'[\w.+]+\s*(?: DEBUG)?\s+\([^)]+\)\s+\[[^\]]+ \((?:32|64)-bit\)\]'
         self.assertTrue(re.match(regex, sys.version, re.IGNORECASE) != None)
 
     def test_winver(self):

@@ -8,6 +8,7 @@
     <Features>$(Features);FEATURE_APARTMENTSTATE</Features>
     <Features>$(Features);FEATURE_APPLICATIONEXCEPTION</Features>
     <Features>$(Features);FEATURE_ASSEMBLY_CODEBASE</Features>
+    <Features>$(Features);FEATURE_ASSEMBLY_GETFORWARDEDTYPES</Features>
     <Features>$(Features);FEATURE_ASSEMBLY_LOCATION</Features>
     <Features>$(Features);FEATURE_ASSEMBLY_RESOLVE</Features>
     <Features>$(Features);FEATURE_ASSEMBLYBUILDER_DEFINEDYNAMICASSEMBLY</Features>

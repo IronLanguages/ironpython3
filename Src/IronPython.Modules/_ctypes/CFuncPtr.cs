@@ -660,11 +660,11 @@ namespace IronPython.Modules {
                 }
 
                 private static SignatureHelper GetMethodSigHelper(CallingConvention convention, Type calliRetType) {
-#if NETCOREAPP2_1 || NETSTANDARD2_0
+#if FEATURE_REFEMIT_FULL
+                    return SignatureHelper.GetMethodSigHelper(convention, calliRetType);
+#else
                     var helper = typeof(SignatureHelper).GetMethod("GetMethodSigHelper", BindingFlags.Public | BindingFlags.Static, null, new Type[] { typeof(CallingConvention), typeof(Type) }, null);
                     return (SignatureHelper)helper.Invoke(null, new object[] { convention, calliRetType });
-#else
-                    return SignatureHelper.GetMethodSigHelper(convention, calliRetType);
 #endif
                 }
 

@@ -1025,18 +1025,15 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static IList<object> GetAttrNames(CodeContext/*!*/ context, object o) {
-            IPythonMembersList pyMemList = o as IPythonMembersList;
-            if (pyMemList != null) {
+            if (o is IPythonMembersList pyMemList) {
                 return pyMemList.GetMemberNames(context);
             }
 
-            IMembersList memList = o as IMembersList;
-            if (memList != null) {
+            if (o is IMembersList memList) {
                 return new PythonList(memList.GetMemberNames());
             }
 
-            IPythonObject po = o as IPythonObject;
-            if (po != null) {
+            if (o is IPythonObject po) {
                 return po.PythonType.GetMemberNames(context, o);
             }
 

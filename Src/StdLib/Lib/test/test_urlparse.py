@@ -876,8 +876,9 @@ class UrlParseTestCase(unittest.TestCase):
         # Ensure that ALL of them are detected and cause an error
         illegal_chars = '/:#?@'
         hex_chars = {'{:04X}'.format(ord(c)) for c in illegal_chars}
+        maxunicode = 0xffff if sys.implementation.name == "ironpython" else sys.maxunicode # https://github.com/IronLanguages/ironpython3/issues/252
         denorm_chars = [
-            c for c in map(chr, range(128, sys.maxunicode))
+            c for c in map(chr, range(128, maxunicode))
             if (hex_chars & set(unicodedata.decomposition(c).split()))
             and c not in illegal_chars
         ]

@@ -295,6 +295,7 @@ class TestJunkAPIs(unittest.TestCase):
         for line in ['##', ' ##', '## ', 'abc ', 'abc #', 'Mr. Moose is up!']:
             self.assertFalse(difflib.IS_LINE_JUNK(line), repr(line))
 
+    @unittest.skip("very slow - even on CPython 3.4.4")
     def test_is_line_junk_REDOS(self):
         evil_input = ('\t' * 1000000) + '##'
         self.assertFalse(difflib.IS_LINE_JUNK(evil_input))

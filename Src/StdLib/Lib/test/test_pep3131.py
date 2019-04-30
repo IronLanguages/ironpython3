@@ -1,14 +1,10 @@
 import unittest
 import sys
-import os
 from test import support
 
 class PEP3131Test(unittest.TestCase):
 
-    # TODO: AppVeyor sets the 'CI' environment variable, 
-    # need to determine why this test causes issues
-    @unittest.skipIf('CI' in os.environ)
-    def test_valid(self):        
+    def test_valid(self):
         class T:
             ä = 1
             µ = 2 # this is a compatibility character

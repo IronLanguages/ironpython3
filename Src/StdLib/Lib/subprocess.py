@@ -344,11 +344,11 @@ os.spawnlpe(os.P_NOWAIT, "/bin/mycmd", "mycmd", "myarg", env)
 Popen(["/bin/mycmd", "myarg"], env={"PATH": "/usr/bin"})
 """
 
-import os
 import sys
-mswindows = sys.platform == "win32"
+mswindows = (sys.platform == "win32")
 
 import io
+import os
 import time
 import signal
 import builtins
@@ -1068,8 +1068,8 @@ class Popen(object):
                 _winapi.GetCurrentProcess(), 0, 1,
                 _winapi.DUPLICATE_SAME_ACCESS)
             # IronPython: Not closing this handle may cause read operations to block down the line.
-            #    Because of the GC of .NET, it may not get closed fast enough so we force it to close.
-            #    This is not an issue with CPython because the handle get closed via __del__.
+            #    Because of the GC of .NET, it may not be closed fast enough so we force it to close.
+            #    This is not an issue with CPython because the handle is closed via __del__.
             if isinstance(handle, Handle): handle.Close()
             return Handle(h)
 
@@ -1379,8 +1379,12 @@ class Popen(object):
                     # and pass it to fork_exec()
 
                     if env is not None:
-                        env_list = [os.fsencode(k) + b'=' + os.fsencode(v)
-                                    for k, v in env.items()]
+                        env_list = []
+                        for k, v in env.items():
+                            k = os.fsencode(k)
+                            if b'=' in k:
+                                raise ValueError("illegal environment variable name")
+                            env_list.append(k + b'=' + os.fsencode(v))
                     else:
                         env_list = None  # Use execv instead of execve.
                     executable = os.fsencode(executable)

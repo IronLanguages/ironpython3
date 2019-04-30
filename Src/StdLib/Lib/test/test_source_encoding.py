@@ -30,7 +30,10 @@ class SourceEncodingTest(unittest.TestCase):
         try:
             compile(b"# coding: cp932\nprint '\x94\x4e'", "dummy", "exec")
         except SyntaxError as v:
-            self.assertEqual(v.text, "print '\u5e74'\n")
+            # IronPython: assert made implementation-independent
+            self.assertEqual(v.text.rstrip('\n'), "print '\u5e74'")
+            # originally was:
+            # self.assertEqual(v.text, "print '\u5e74'\n")
         else:
             self.fail()
 

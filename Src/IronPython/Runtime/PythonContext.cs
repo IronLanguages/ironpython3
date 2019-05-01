@@ -940,31 +940,36 @@ namespace IronPython.Runtime {
             string encodingName = null;
             int linesRead = 0;
             bool hasBom = false;
-            // sr is used to read the magic comments (PEP-263)
-            // Default system ASCII encoding will not throw exceptions, converting bad bytes to '?' instead
-            // which is sufficient to correctly parse the magic comments.
-            // Also StreamReader will automatically switch to proper Unicode encoding (non-throwing) when BOM present.
+
+            // sr is used to detect encoding from BOM
             Encoding bootstrapEncoding = Encoding.ASCII;
-            using (StreamReader sr = new StreamReader(stream, bootstrapEncoding, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true)) {
-                string line;
-                line = sr.ReadLine();
-                linesRead++;
-
-                // magic encoding must be on line 1 or 2
-                // if there is any encoding specified on line 1 (even an invalid one), line 2 is ignored
-                if ((encodingName = Tokenizer.GetEncodingNameFromComment(line)) == null) {
-                    // try the second line
-                    line = sr.ReadLine();
-                    linesRead++;
-
-                    encodingName = Tokenizer.GetEncodingNameFromComment(line);
-                }
+            using (StreamReader sr = new StreamReader(stream, bootstrapEncoding, detectEncodingFromByteOrderMarks: true, bufferSize: 1, leaveOpen: true)) {
+                sr.Peek(); // will detect BOM
 
                 if (!ReferenceEquals(sr.CurrentEncoding, bootstrapEncoding)) {
                     // stream autodetected a Unicode encoding from BOM
-                    sourceEncoding = sr.CurrentEncoding;
+                    sourceEncoding = bootstrapEncoding = sr.CurrentEncoding;
                     hasBom = true;
                 }
+            }
+            // back to the begining of text data
+            stream.Seek(bootstrapEncoding.GetPreamble().Length, SeekOrigin.Begin);
+
+            // read the magic comments (PEP-263)
+            string line;
+            int maxMagicLineLen = 512;
+            line = ReadOneLine(stream, maxMagicLineLen);
+            linesRead++;
+
+            // magic encoding must be on line 1 or 2
+            // if there is any encoding specified on line 1 (even an invalid one), line 2 is ignored
+            // line 2 is also ignored if there was no EOL within the limit of bytes
+            if (line != null && (encodingName = Tokenizer.GetEncodingNameFromComment(line)) == null && (line[line.Length - 1] == '\r' || line[line.Length - 1] == '\n')) {
+                // try the second line
+                line = ReadOneLine(stream, maxMagicLineLen);
+                linesRead++;
+
+                encodingName = Tokenizer.GetEncodingNameFromComment(line);
             }
 
             if (hasBom && sourceEncoding.CodePage == 65001 && encodingName != null && encodingName != "utf-8" && encodingName != "utf-8-sig") {
@@ -983,9 +988,6 @@ namespace IronPython.Runtime {
                 if (sourceEncoding == null) {
                     // no autodetected encoding, use the one from the explicit declaration
                     sourceEncoding = declaredEncoding;
-                } else if (sourceEncoding.CodePage != declaredEncoding.CodePage) {
-                    // if the stream autodetected an encoding, the declared one must match the detected one, otherwise it's an error
-                    throw PythonOps.BadSourceEncodingError($"encoding problem: {encodingName}: does not match the Unicode BOM used", linesRead, path);
                 }
             }
 
@@ -1006,6 +1008,46 @@ namespace IronPython.Runtime {
             // disable autodetection so that the strict error handler is intact
             // encodings with non-empty preable will skip it over on reading
             return new SourceCodeReader(new StreamReader(stream, sourceEncoding, detectEncodingFromByteOrderMarks: false), sourceEncoding);
+        }
+
+        /// <summary>
+        /// Reads one line up to the given limit of bytes, decoding it using ISO-8859-1.
+        /// </summary>
+        /// <returns>
+        /// Decoded line including the EOL characters, possibly truncated at the limit of bytes.
+        /// null if EOS.
+        /// </returns>
+        private static string ReadOneLine(Stream stream, int maxBytes) {
+            byte[] buffer = new byte[maxBytes];
+            int bytesRead = stream.Read(buffer, 0, buffer.Length);
+
+            if (bytesRead == 0) return null; // EOS
+
+            int i = 0;
+            while (i < bytesRead) {
+                int c = buffer[i++];
+                if (c == '\r') {
+                    if (i < bytesRead) {
+                        // LF following CR must be included too
+                        if (buffer[i] == '\n') i++;
+
+                        // seek back to the byte after CR or CRLF
+                        stream.Seek(i - bytesRead, SeekOrigin.Current);
+                    } else {
+                        // the buffer ends on CR, check whether the next byte is LF, if so, it has to be skipped
+                        if ((c = stream.ReadByte()) != -1 && c != '\n') stream.Seek(-1, SeekOrigin.Current);
+                    }
+                    return buffer.MakeString(i);
+                } else if (c == '\n') {
+                    // seek back to the byte after LF
+                    stream.Seek(i - bytesRead, SeekOrigin.Current);
+                    return buffer.MakeString(i);
+                }
+            }
+            // completing the loop means there was no EOL within the limit
+            if (i == maxBytes) i--; // CPython behavior
+
+            return buffer.MakeString(i);
         }
 
 #if FEATURE_CODEDOM

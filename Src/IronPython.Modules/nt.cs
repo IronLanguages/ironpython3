@@ -1109,14 +1109,16 @@ namespace IronPython.Modules {
                 throw new ArgumentNullException(nameof(path));
             } else if (path.IndexOfAny(Path.GetInvalidPathChars()) != -1 || Path.GetFileName(path).IndexOfAny(Path.GetInvalidFileNameChars()) != -1) {
                 throw PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_INVALID_NAME, "The filename, directory name, or volume label syntax is incorrect", path, PythonExceptions._OSError.ERROR_INVALID_NAME);
-            } else if (!File.Exists(path)) {
-                throw PythonExceptions.CreateThrowable(PythonExceptions.FileNotFoundError, PythonExceptions._OSError.ERROR_FILE_NOT_FOUND, "The system cannot find the file specified", path, PythonExceptions._OSError.ERROR_FILE_NOT_FOUND);
             }
 
+            bool existing = File.Exists(path); // will return false also on access denied
             try {
-                File.Delete(path);
+                File.Delete(path); // will throw an exception on access denied, no exception on file not existing
             } catch (Exception e) {
                 throw ToPythonException(e, path);
+            }
+            if (!existing) { // file was not existing in the first place
+                throw PythonExceptions.CreateThrowable(PythonExceptions.FileNotFoundError, PythonExceptions._OSError.ERROR_FILE_NOT_FOUND, "The system cannot find the file specified", path, PythonExceptions._OSError.ERROR_FILE_NOT_FOUND);
             }
         }
 #endif
@@ -1459,29 +1461,15 @@ the 'status' value."),
             bool isWindowsError = false;
             if (e is Win32Exception winExcep) {
                 errorCode = winExcep.NativeErrorCode;
-                message = GetFormattedException(e, errorCode);
+                message = GetFormattedExceptionMessage(e, errorCode);
                 isWindowsError = true;
+            } else if (e is UnauthorizedAccessException unauth) {
+                errorCode = PythonExceptions._OSError.ERROR_ACCESS_DENIED;
+                return PythonExceptions.CreateThrowable(PythonExceptions.PermissionError, errorCode, "Access is denied", filename, errorCode);
             } else {
-                if (e is UnauthorizedAccessException unauth) {
-                    isWindowsError = true;
-                    errorCode = PythonExceptions._OSError.ERROR_ACCESS_DENIED;
-                    if (filename != null) {
-                        message = string.Format("Access is denied: '{0}'", filename);
-                    } else {
-                        message = "Access is denied";
-                    }
-                }
-
-                if (e is IOException ioe) {
-                    switch (error) {
-                        case PythonExceptions._OSError.ERROR_DIR_NOT_EMPTY:
-                            throw PythonExceptions.CreateThrowable(WindowsError, error, "The directory is not empty", null, error);
-                        case PythonExceptions._OSError.ERROR_ACCESS_DENIED:
-                            throw PythonExceptions.CreateThrowable(WindowsError, error, "Access is denied", null, error);
-                        case PythonExceptions._OSError.ERROR_SHARING_VIOLATION:
-                            throw PythonExceptions.CreateThrowable(WindowsError, error, "The process cannot access the file because it is being used by another process", null, error);
-                    }
-                }
+                var ioe = e as IOException;
+                Exception pe = IOExceptionToPythonException(ioe, error, filename);
+                if (pe != null) return pe;
 
                 errorCode = System.Runtime.InteropServices.Marshal.GetHRForException(e);
 
@@ -1489,7 +1477,11 @@ the 'status' value."),
                     // Win32 HR, translate HR to Python error code if possible, otherwise
                     // report the HR.
                     errorCode = errorCode & 0xfff;
-                    message = GetFormattedException(e, errorCode);
+
+                    pe = IOExceptionToPythonException(ioe, errorCode, filename);
+                    if (pe != null) return pe;
+
+                    message = GetFormattedExceptionMessage(e, errorCode);
                     isWindowsError = true;
                 }
             }
@@ -1501,8 +1493,25 @@ the 'status' value."),
             return PythonExceptions.CreateThrowable(PythonExceptions.OSError, errorCode, message);
         }
 
-        private static string GetFormattedException(Exception e, int hr) {
-            return "[Errno " + hr.ToString() + "] " + e.Message;
+        private static string GetFormattedExceptionMessage(Exception e, int hr) {
+            return "[WinError " + hr.ToString() + "] " + e.Message;
+        }
+
+        private static Exception IOExceptionToPythonException(IOException ioe, int error, string filename) {
+            if (ioe == null) return null;
+
+            switch (error) {
+                case PythonExceptions._OSError.ERROR_DIR_NOT_EMPTY:
+                    return PythonExceptions.CreateThrowable(PythonExceptions.OSError, error, "The directory is not empty", filename, error);
+                case PythonExceptions._OSError.ERROR_ACCESS_DENIED:
+                    return PythonExceptions.CreateThrowable(PythonExceptions.PermissionError, error, "Access is denied", filename, error);
+                case PythonExceptions._OSError.ERROR_SHARING_VIOLATION:
+                    return PythonExceptions.CreateThrowable(PythonExceptions.PermissionError, error, "The process cannot access the file because it is being used by another process", null, error);
+                case PythonExceptions._OSError.ERROR_PATH_NOT_FOUND:
+                    return PythonExceptions.CreateThrowable(PythonExceptions.FileNotFoundError, error, "The system cannot find the path specified", filename, error);
+                default:
+                    return null;
+            }
         }
 
         // Win32 error codes

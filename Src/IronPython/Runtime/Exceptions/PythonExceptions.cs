@@ -795,9 +795,10 @@ for k, v in toError.items():
 
             public override string ToString() {
                 // TODO: this should probably be based on args length
+                // TODO: report WinError ISO Errno if available and running on Windows
                 if (errno != null && strerror != null) {
                     if (filename != null) {
-                        return string.Format("[Errno {0}] {1}: {2}", errno, strerror, filename);
+                        return string.Format("[Errno {0}] {1}: '{2}'", errno, strerror, filename);
                     } else {
                         return string.Format("[Errno {0}] {1}", errno, strerror);
                     }

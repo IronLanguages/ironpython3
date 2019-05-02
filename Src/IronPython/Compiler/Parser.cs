@@ -3109,8 +3109,10 @@ namespace IronPython.Compiler {
                     );
                 } else {
                     // standard message
-                    message = string.Format("'{0}' codec can't decode byte 0x{1:x2} in position {2}: {3}",
-                        StringOps.GetEncodingName(_sourceReader.Encoding),
+                    int cp = _sourceReader.Encoding.CodePage;
+                    message = string.Format("{0}'{1}' codec can't decode byte 0x{2:x2} in position {3}: {4}",
+                        cp == 65001 || cp == 1200 || cp == 1201 || cp == 12000 || cp == 12001 ? "(unicode error) " : string.Empty,
+                        StringOps.GetEncodingName(_sourceReader.Encoding, normalize: false),
                         dfe.BytesUnknown[0],
                         dfe.Index,
                         dfe.Message

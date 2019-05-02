@@ -351,9 +351,7 @@ class CodecTest(IronPythonTestCase):
 
     def test_file_encodings(self):
         '''
-        Once this gets fixed, we should use *.py files in the correct encoding instead
-        of dynamically generating ASCII files.  Also, need variations on the encoding
-        names.
+        Tests valid PEP-236 style file encoding declarations during import
         '''
 
         sys.path.append(os.path.join(self.temporary_dir, "tmp_encodings"))
@@ -370,7 +368,7 @@ class CodecTest(IronPythonTestCase):
                 if not re.match('[-_.a-zA-Z0-9]+$', coding):
                     continue
                 
-                temp_mod_name = "test_encoding_" + coding
+                temp_mod_name = "test_encoding_" + coding.replace('-','_')
                 with open(os.path.join(self.temporary_dir, "tmp_encodings", temp_mod_name + ".py"), "w", encoding=coding) as f:
                     # wide-char Unicode encodings need a BOM to be recognized
                     if re.match('utf[-_](16|32).', coding, re.IGNORECASE):
@@ -389,6 +387,62 @@ class CodecTest(IronPythonTestCase):
             #cleanup
             sys.path.remove(os.path.join(self.temporary_dir, "tmp_encodings"))
             shutil.rmtree(os.path.join(self.temporary_dir, "tmp_encodings"), True)
+        
+
+        # handcrafted positive cases
+        sys.path.append(os.path.join(self.test_dir, "encoded_files"))
+        try:
+            # Test that using tab of formfeed whitespace characters before "# coding ..." is OK
+            # and that a tab between 'coding:' and the encoding name is OK too
+            __import__('ok_encoding_whitespace')
+
+            # Test that non-ASCII letters in the encoding name are not part of the name
+            __import__('ok_encoding_nonascii')
+        
+        finally:
+            sys.path.remove(os.path.join(self.test_dir, "encoded_files"))
+
+    def test_file_encodings_negative(self):
+        '''
+        Test source file encoding errorr on import
+        '''
+        sys.path.append(os.path.join(self.test_dir, "encoded_files"))
+        try:
+            # Test that "# coding ..." declaration in the first line shadows the second line
+            with self.assertRaises(SyntaxError) as cm:
+                __import__("bad_encoding_name")
+            # CPython's message differs when running this file, but is the same when importing it
+            self.assertEqual(cm.exception.msg, "unknown encoding: bad-coding-name")
+
+            # Test that latin-1 encoded files result in error if a coding declaration is missing
+            with self.assertRaises(SyntaxError) as cm:
+                __import__("bad_latin1_nodecl")
+            # CPython's message differs when importing this file, but is the same when running it
+            self.assertTrue(cm.exception.msg.startswith("Non-UTF-8 code starting with '\\xb5' in file"))
+
+            # Test that latin-1 encoded files result in error if a UTF-8 BOM is present
+            with self.assertRaises(SyntaxError) as cm:
+                __import__("bad_latin1_bom")
+            # CPython's message is the same (both on import and run)
+            self.assertTrue(cm.exception.msg.startswith("(unicode error) 'utf-8' codec can't decode byte 0xb5 in position"))
+
+            # Test that latin-1 encoded files result in error if a UTF-8 BOM is present and 'utf-8' encoding is declared
+            with self.assertRaises(SyntaxError) as cm:
+                __import__("bad_latin1_bom_decl")
+            # CPython's message is the same (both on import and run)
+            self.assertTrue(cm.exception.msg.startswith("(unicode error) 'utf-8' codec can't decode byte 0xb5 in position"))
+
+            # Test that utf-8 encoded files result in error if a UTF-8 BOM is present and 'iso-8859-1' encoding is declared
+            with self.assertRaises(SyntaxError) as cm:
+                __import__("bad_utf8_bom_decl")
+            # CPython's message is the same (both on import and run)
+            self.assertTrue(cm.exception.msg.startswith("encoding problem: iso-8859-1 with BOM"))
+
+            # Test that using a non-breaking whitespace inside the magic comment removes the magic
+            self.assertRaises(SyntaxError, __import__, "bad_latin1_nbsp")
+        
+        finally:
+            sys.path.remove(os.path.join(self.test_dir, "encoded_files"))
 
     @unittest.skipIf(is_posix, "https://github.com/IronLanguages/ironpython3/issues/541")
     @unittest.skipIf(is_mono, "https://github.com/IronLanguages/main/issues/1608")
@@ -411,14 +465,6 @@ class CodecTest(IronPythonTestCase):
         self.assertTrue(t_err_lines[0].rstrip().endswith(b', line 1'))
         self.assertTrue(t_err_lines[1].startswith(b"SyntaxError: Non-UTF-8 code starting with '\\xb5' in file"))
 
-        #--Test that "# coding ..." in the first line shadows the second line
-        t_out_lines, t_err_lines = run_python("cp11334_bad2.py")
-
-        self.assertEqual(len(t_out_lines), 0)
-        self.assertTrue(t_err_lines[0].startswith(b"  File"))
-        self.assertTrue(t_err_lines[0].rstrip().endswith(b', line 1'))
-        self.assertTrue(t_err_lines[1].startswith(b"SyntaxError: encoding problem: bad-coding-name"))
-
         #--Test that using "# coding ..." is OK
         t_out_lines, t_err_lines = run_python("cp11334_ok.py")
 
@@ -429,45 +475,6 @@ class CodecTest(IronPythonTestCase):
         else:
             self.assertEqual(t_out_lines[0].rstrip(), b"\xb5ble")
         self.assertEqual(len(t_out_lines), 1)
-
-        #--Test that using other whitespace characters (rather than [ \t\f]) is OK
-        #but non-ASCII letters in the encoding name are not accepted
-        t_out_lines, t_err_lines = run_python("cp11334_ok2.py")
-
-        self.assertEqual(len(t_err_lines), 0)
-        if is_cli:
-            print("CodePlex 11334")
-            self.assertEqual(t_out_lines[0].rstrip(), b"\xe6ble")
-        else:
-            self.assertEqual(t_out_lines[0].rstrip(), b"\xb5ble")
-        self.assertEqual(len(t_out_lines), 1)
-
-    #TODO:@skip("multiple_execute")
-    def test_file_encodings_negative(self):
-        '''
-        TODO:
-        - we should use *.py files in the correct encoding instead
-        of dynamically generating ASCII files
-        - need variations on the encoding names
-        '''
-        import sys
-        sys.path.append(os.path.join(os.getcwd(), "tmp_encodings"))
-        try:
-            os.mkdir(os.path.join(os.getcwd(), "tmp_encodings"))
-        except:
-            pass
-
-        try:
-            #negative case
-            f = open(os.path.join(os.getcwd(), "tmp_encodings", "bad_encoding.py"), "w")
-            f.write("# coding: bad")
-            f.close()
-            self.assertRaises(SyntaxError, __import__, "bad_encoding")
-            os.remove(os.path.join(os.getcwd(), "tmp_encodings", "bad_encoding.py"))
-        finally:
-            #cleanup
-            sys.path.remove(os.path.join(os.getcwd(), "tmp_encodings"))
-            os.rmdir(os.path.join(os.getcwd(), "tmp_encodings"))
 
     def test_cp1214(self):
         """

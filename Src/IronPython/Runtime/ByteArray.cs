@@ -75,7 +75,7 @@ namespace IronPython.Runtime {
             throw PythonOps.TypeError("string argument without an encoding");
         }
 
-        public void __init__(CodeContext/*!*/ context, string source, string encoding, string errors = "strict") {
+        public void __init__(CodeContext/*!*/ context, [NotNull]string source, [NotNull]string encoding, [NotNull]string errors = "strict") {
             _bytes = new List<byte>(StringOps.encode(context, source, encoding, errors));
         }
 

@@ -1446,16 +1446,45 @@ namespace IronPython.Runtime.Operations {
 
         internal static bool TryGetEncoding(string name, out Encoding encoding) {
 #if FEATURE_ENCODING
-            name = NormalizeEncodingName(name);
+            encoding = null;
 
-            if (CodecsInfo.Codecs.TryGetValue(name, out Lazy<Encoding> proxy)) {
+            if (string.IsNullOrWhiteSpace(name)) return false;
+
+            string normName = NormalizeEncodingName(name);
+
+            if (CodecsInfo.Codecs.TryGetValue(normName, out Lazy<Encoding> proxy)) {
                 encoding = proxy.Value;
-                return true;
+#if NETCOREAPP2_1 || NETSTANDARD2_0
+            } else {
+                try {
+                    Encoding enc;
+                    if (name.StartsWith("cp") && int.TryParse(name.Substring(2), out int codepage)) {
+                        if (codepage < 0 || 65535 < codepage) return false;
+                        enc = Encoding.GetEncoding(codepage);
+                        CodecsInfo.Codecs[normName] = new Lazy<Encoding>(() => enc, isThreadSafe: false);
+                    } else {
+                        enc = Encoding.GetEncoding(name);
+                        var fac = new Lazy<Encoding>(() => enc, isThreadSafe: false);
+                        CodecsInfo.Codecs[normName] = fac;
+                        if (enc.CodePage != 0) CodecsInfo.Codecs["cp" + enc.CodePage.ToString()] = fac;
+                    }
+                    encoding = enc;
+                } catch (Exception ex) when (ex is NotSupportedException || ex is ArgumentException) {
+                    CodecsInfo.Codecs[normName] = new Lazy<Encoding>(() => null, isThreadSafe: false);
+                    return false;
+                }
+#endif // NETCOREAPP2_1 || NETSTANDARD2_0
             }
-#else
+            return encoding != null;
+
+#else // !FEATURE_ENCODING
             switch (NormalizeEncodingName(name)) {
                 case "us_ascii":
                 case "ascii": encoding = PythonAsciiEncoding.Instance; return true;
+
+                case "latin1":
+                case "latin_1":
+                case "iso_8859_1": encoding = Encoding.GetEncoding(28591); return true;
 
                 case "utf_8": encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false); return true;
 
@@ -1466,10 +1495,10 @@ namespace IronPython.Runtime.Operations {
                 case "utf_16_be": encoding = new UnicodeEncoding(bigEndian: true, byteOrderMark: false); return true;
 
                 case "utf_8_sig": encoding = Encoding.UTF8; return true;
+
+                default: encoding = null; return false;
             }
 #endif
-            encoding = null;
-            return false;
         }
 
         internal static string RawUnicodeEscapeEncode(string s) {

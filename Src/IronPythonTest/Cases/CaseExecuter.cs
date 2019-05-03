@@ -158,8 +158,8 @@ namespace IronPythonTest.Cases {
 
         private int GetEngineTest(TestInfo testcase) {
             var engine = CreateEngine(testcase.Options);
-            var source = engine.CreateScriptSourceFromString(
-                testcase.Text, testcase.Path, SourceCodeKind.File);
+            var source = engine.CreateScriptSourceFromFile(
+               testcase.Path, System.Text.Encoding.UTF8, SourceCodeKind.File);
 
             return GetResult(testcase, engine, source, testcase.Path, testcase.Options.WorkingDirectory);
         }

@@ -211,7 +211,6 @@ class CastTests(unittest.TestCase):
         self.assertEqual(mv[(1,1,1,1)], 15)
 
     # WIP: fails because this[PythonTuple] is not implemented
-    # and 
     @unittest.expectedFailure
     def test_cast_reshape_then_slice(self):
         a = array.array('b', range(16))

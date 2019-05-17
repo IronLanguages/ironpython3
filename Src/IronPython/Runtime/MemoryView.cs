@@ -19,30 +19,40 @@ namespace IronPython.Runtime {
         private IBufferProtocol _buffer;
         private readonly int _start;
         private readonly int? _end;
-        private int? _step;
+        private readonly int _step;
         private readonly string _format;
         private readonly PythonTuple _shape;
-        private readonly int? _itemsize;
+        private readonly int _itemsize;
+
+        // Variable to determine whether this memoryview is aligned
+        // with and has the same type as the underlying buffer. This
+        // allows us to fast-path by getting the specific item instead
+        // of having to convert to and from bytes.
+        private readonly bool _matchesBuffer;
 
         public MemoryView(IBufferProtocol obj) {
             _buffer = obj;
+            _step = 1;
+            _format = _buffer.Format;
+            _itemsize = (int)_buffer.ItemSize;
+            _matchesBuffer = true;
         }
 
-        internal MemoryView(IBufferProtocol obj, int start, int? end) : this(obj) {
-            _start = start;
-            _end = end;
-        }
+        public MemoryView(MemoryView obj) : this(obj._buffer, obj._start, obj._end, obj._step, obj._format, obj._shape) { }
 
-        public MemoryView(MemoryView obj) : this(obj._buffer, obj._start, obj._end) { }
-
-        internal MemoryView(IBufferProtocol @object, int start, int? end, int? step, string format, PythonTuple shape) : this(@object, start, end) {
+        internal MemoryView(IBufferProtocol @object, int start, int? end, int step, string format, PythonTuple shape) {
+            _buffer = @object;
             _format = format;
             _shape = shape;
+            _start = start;
+            _end = end;
             _step = step;
 
-            if (TypecodeOps.IsTypecodeFormat(format)) {
-                _itemsize = TypecodeOps.GetTypecodeWidth(format[0]);
+            if (!TypecodeOps.TryGetTypecodeWidth(format, out _itemsize)) {
+                _itemsize = (int) _buffer.ItemSize;
             }
+
+            _matchesBuffer = _format == _buffer.Format && _start % itemsize == 0;
         }
 
         private void CheckBuffer() {
@@ -52,9 +62,9 @@ namespace IronPython.Runtime {
         public int __len__() {
             CheckBuffer();
             if (_end != null) {
-                return (_end.Value - _start) / ((int)itemsize * (_step ?? 1));
+                return (_end.Value - _start) / ((int)itemsize * _step);
             }
-            return _buffer.ItemCount * (int)_buffer.ItemSize / ((int)itemsize * (_step ?? 1));
+            return _buffer.ItemCount * (int)_buffer.ItemSize / ((int)itemsize * _step);
         }
 
         public object obj {
@@ -86,7 +96,7 @@ namespace IronPython.Runtime {
         public BigInteger itemsize {
             get {
                 CheckBuffer();
-                return _itemsize ?? _buffer.ItemSize;
+                return _itemsize;
             }
         }
 
@@ -147,12 +157,12 @@ namespace IronPython.Runtime {
             return cast(format, null);
         }
 
-        public MemoryView cast(object format, object shape) {
+        public MemoryView cast(object format, [NotNull]object shape) {
             if (!(format is string formatAsString)) {
                 throw PythonOps.TypeError("memoryview: format argument must be a string");
             }
 
-            if (_step != null && _step != 1) {
+            if (_step != 1) {
                 throw PythonOps.TypeError("memoryview: casts are restricted to C-contiguous views");
             }
 
@@ -160,7 +170,6 @@ namespace IronPython.Runtime {
                 throw PythonOps.TypeError("memoryview: cannot cast view with zeros in shape or strides");
             }
 
-            int newNDim = 1;
             PythonTuple shapeAsTuple = null;
 
             if (shape != null) {
@@ -169,7 +178,7 @@ namespace IronPython.Runtime {
                 }
 
                 shapeAsTuple = PythonOps.MakeTupleFromSequence(shape);
-                newNDim = shapeAsTuple.Count;
+                int newNDim = shapeAsTuple.Count;
 
                 if (newNDim > MaximumDimensions) {
                     throw PythonOps.TypeError("memoryview: number of dimensions must not exceed {0}", MaximumDimensions);
@@ -187,12 +196,19 @@ namespace IronPython.Runtime {
                 throw PythonOps.TypeError("memoryview: cannot cast between two non-byte formats");
             }
 
-            int newItemsize = TypecodeOps.GetTypecodeWidth(formatAsString[0]);
-            if (__len__() % newItemsize != 0) {
+            int newItemsize;
+            if (!TypecodeOps.TryGetTypecodeWidth(formatAsString, out newItemsize)) {
+                throw PythonOps.ValueError(
+                    "memoryview: destination format must be a native single character format prefixed with an optional '@'");
+            }
+
+            int length = __len__();
+
+            if (length % newItemsize != 0) {
                 throw PythonOps.TypeError("memoryview: length is not a multiple of itemsize");
             }
 
-            int newLength = __len__() * (int)itemsize / newItemsize;
+            int newLength = length * (int)itemsize / newItemsize;
             if (shapeAsTuple != null) {
                 int lengthGivenShape = 1;
                 for (int i = 0; i < shapeAsTuple.Count; i++) {
@@ -208,8 +224,8 @@ namespace IronPython.Runtime {
         }
 
         private byte[] unpackBytes(string format, object o) {
-            if (TypecodeOps.IsTypecodeFormat(format)) {
-                return TypecodeOps.ToBytes(format[0], o);
+            if (TypecodeOps.TryGetBytes(format, o, out byte[] bytes)) {
+                return bytes;
             } else if (o is Bytes b) {
                 return b._bytes; // CData returns a bytes object for its type
             } else {
@@ -218,8 +234,8 @@ namespace IronPython.Runtime {
         }
 
         private object packBytes(string format, byte[] bytes, int offset, int itemsize) {
-            if (TypecodeOps.IsTypecodeFormat(format))
-                return TypecodeOps.FromBytes(format[0], bytes, offset);
+            if (TypecodeOps.TryGetFromBytes(format, bytes, offset, out object result))
+                return result;
             else {
                 byte[] obj = new byte[itemsize];
                 for (int i = 0; i < obj.Length; i++) {
@@ -321,7 +337,7 @@ namespace IronPython.Runtime {
         /// index (1,1,0).
         /// </summary>
         private object getAtFlatIndex(int index) {
-            int firstByteIndex = _start + index * (int)itemsize * (_step ?? 1);
+            int firstByteIndex = _start + index * (int)itemsize * _step;
             object result = packBytes(format, getByteRange(firstByteIndex, (int)itemsize), 0, (int)_buffer.ItemSize);
 
             // TODO: BigInteger should also be merged into an integer once the int/long merge occurs
@@ -333,7 +349,7 @@ namespace IronPython.Runtime {
         }
 
         private void setAtFlatIndex(int index, object value) {
-            int firstByteIndex = _start + index * (int)itemsize * (_step ?? 1);
+            int firstByteIndex = _start + index * (int)itemsize * _step;
             setByteRange(firstByteIndex, unpackBytes(format, value));
         }
 
@@ -385,7 +401,7 @@ namespace IronPython.Runtime {
 
                 int newStart = _start + (start * (int)itemsize);
                 int newEnd = _start + (stop * (int)itemsize);
-                int newStep = (_step ?? 1) * step;
+                int newStep = _step * step;
 
                 List<int> dimensions = new List<int>();
 

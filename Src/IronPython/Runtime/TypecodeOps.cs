@@ -8,97 +8,119 @@ using System.Threading.Tasks;
 namespace IronPython.Runtime {
     class TypecodeOps {
 
-        public static bool IsTypecodeFormat(string format) {
-            switch (format) {
+        public static bool TryGetTypecodeWidth(string typecode, out int width) {
+            switch (typecode) {
                 case "c": // char
                 case "b": // signed byte
                 case "B": // unsigned byte
                 case "x": // pad byte
                 case "s": // null-terminated string
                 case "p": // Pascal string
+                    width = 1;
+                    return true;
                 case "u": // unicode char
                 case "h": // signed short
                 case "H": // unsigned short
+                    width = 2;
+                    return true;
                 case "i": // signed int
                 case "I": // unsigned int
                 case "l": // signed long
                 case "L": // unsigned long
                 case "f": // float
+                    width = 4;
+                    return true;
                 case "P": // pointer
+                    width = IntPtr.Size;
+                    return true;
                 case "q": // signed long long
                 case "Q": // unsigned long long
                 case "d": // double
+                    width = 8;
                     return true;
                 default:
+                    width = 0;
                     return false;
             }
         }
 
-        public static int GetTypecodeWidth(char typecode) {
+        public static bool TryGetFromBytes(string typecode, byte[] bytes, int offset, out object result) {
             switch (typecode) {
-                case 'c': // char
-                case 'b': // signed byte
-                case 'B': // unsigned byte
-                case 'x': // pad byte
-                case 's': // null-terminated string
-                case 'p': // Pascal string
-                    return 1;
-                case 'u': // unicode char
-                case 'h': // signed short
-                case 'H': // unsigned short
-                    return 2;
-                case 'i': // signed int
-                case 'I': // unsigned int
-                case 'l': // signed long
-                case 'L': // unsigned long
-                case 'f': // float
-                    return 4;
-                case 'P': // pointer
-                    return IntPtr.Size;
-                case 'q': // signed long long
-                case 'Q': // unsigned long long
-                case 'd': // double
-                    return 8;
+                case "c":
+                    result = (char)bytes[offset];
+                    return true;
+                case "b":
+                    result = (sbyte)bytes[offset];
+                    return true;
+                case "B":
+                    result = bytes[offset];
+                    return true;
+                case "u":
+                    result = BitConverter.ToChar(bytes, offset);
+                    return true;
+                case "h":
+                    result = BitConverter.ToInt16(bytes, offset);
+                    return true;
+                case "H":
+                    result = BitConverter.ToUInt16(bytes, offset);
+                    return true;
+                case "l":
+                case "i":
+                    result = BitConverter.ToInt32(bytes, offset);
+                    return true;
+                case "L":
+                case "I":
+                    result = BitConverter.ToUInt32(bytes, offset);
+                    return true;
+                case "f":
+                    result = BitConverter.ToSingle(bytes, offset);
+                    return true;
+                case "d":
+                    result = BitConverter.ToDouble(bytes, offset);
+                    return true;
                 default:
-                    throw PythonOps.ValueError("Bad type code (expected one of 'c', 'b', 'B', 'u', 'H', 'h', 'i', 'I', 'l', 'L', 'f', 'd')");
+                    result = 0;
+                    return false;
             }
         }
 
-        public static object FromBytes(char typecode, byte[] bytes, int offset) {
+        public static bool TryGetBytes(string typecode, object obj, out byte[] result) {
             switch (typecode) {
-                case 'c': return (char)bytes[offset];
-                case 'b': return (sbyte)bytes[offset];
-                case 'B': return bytes[offset];
-                case 'u': return BitConverter.ToChar(bytes, offset);
-                case 'h': return BitConverter.ToInt16(bytes, offset);
-                case 'H': return BitConverter.ToUInt16(bytes, offset);
-                case 'l':
-                case 'i': return BitConverter.ToInt32(bytes, offset);
-                case 'L':
-                case 'I': return BitConverter.ToUInt32(bytes, offset);
-                case 'f': return BitConverter.ToSingle(bytes, offset);
-                case 'd': return BitConverter.ToDouble(bytes, offset);
+                case "c": result =
+                        new[] { (byte)Convert.ToChar(obj) };
+                    return true;
+                case "b":
+                    result = new[] { (byte)Convert.ToSByte(obj) };
+                    return true;
+                case "B":
+                    result = new[] { Convert.ToByte(obj) };
+                    return true;
+                case "u":
+                    result = BitConverter.GetBytes((byte)Convert.ToChar(obj));
+                    return true;
+                case "h":
+                    result = BitConverter.GetBytes(Convert.ToInt16(obj));
+                    return true;
+                case "H":
+                    result = BitConverter.GetBytes(Convert.ToUInt16(obj));
+                    return true;
+                case "l":
+                case "i":
+                    result = BitConverter.GetBytes(Convert.ToInt32(obj));
+                    return true;
+                case "L":
+                case "I":
+                    result = BitConverter.GetBytes(Convert.ToUInt32(obj));
+                    return true;
+                case "f":
+                    result = BitConverter.GetBytes(Convert.ToSingle(obj));
+                    return true;
+                case "d":
+                    result = BitConverter.GetBytes(Convert.ToDouble(obj));
+                    return true;
                 default:
-                    throw PythonOps.ValueError("Bad type code (expected one of 'c', 'b', 'B', 'u', 'H', 'h', 'i', 'I', 'l', 'L', 'f', 'd')");
-            }
-        }
-
-        public static byte[] ToBytes(char typecode, object obj) {
-            switch (typecode) {
-                case 'c': return new[] { (byte)Convert.ToChar(obj) };
-                case 'b': return new[] { (byte)Convert.ToSByte(obj) };
-                case 'B': return new[] { Convert.ToByte(obj) };
-                case 'u': return BitConverter.GetBytes((byte)Convert.ToChar(obj));
-                case 'h': return BitConverter.GetBytes(Convert.ToInt16(obj));
-                case 'H': return BitConverter.GetBytes(Convert.ToUInt16(obj));
-                case 'l':
-                case 'i': return BitConverter.GetBytes(Convert.ToInt32(obj));
-                case 'L':
-                case 'I': return BitConverter.GetBytes(Convert.ToUInt32(obj));
-                case 'f': return BitConverter.GetBytes(Convert.ToSingle(obj));
-                case 'd': return BitConverter.GetBytes(Convert.ToDouble(obj));
-                default:
-                    throw PythonOps.ValueError("Bad type code (expected one of 'c', 'b', 'B', 'u', 'H', 'h', 'i', 'I', 'l', 'L', 'f', 'd')");
+                    result = null;
+                    return false;
             }
         }
     }

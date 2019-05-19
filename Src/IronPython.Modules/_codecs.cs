@@ -391,11 +391,14 @@ namespace IronPython.Modules {
 
         #region Utf-8 Functions
 
-        public static PythonTuple utf_8_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict", bool final = false)
-            => DoDecode(context, "utf-8", Encoding.UTF8, input, errors, final).ToPythonTuple();
+        public static PythonTuple utf_8_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict", bool final = false) {
+            StringOps.TryGetEncoding("utf-8", out Encoding encoding); // no preamble skipping
+            return DoDecode(context, "utf-8", encoding, input, errors, final).ToPythonTuple();
+        }
 
-        public static PythonTuple utf_8_encode(CodeContext context, string input, string errors = "strict")
-            => DoEncode(context, "utf-8", Encoding.UTF8, input, errors).ToPythonTuple();
+        public static PythonTuple utf_8_encode(CodeContext context, string input, string errors = "strict") {
+            return DoEncode(context, "utf-8", Encoding.UTF8, input, errors).ToPythonTuple();
+        }
 
         #endregion
 

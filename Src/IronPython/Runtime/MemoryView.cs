@@ -337,6 +337,10 @@ namespace IronPython.Runtime {
         /// index (1,1,0).
         /// </summary>
         private object getAtFlatIndex(int index) {
+            if (_matchesBuffer) {
+                return _buffer.GetItem((_start / _itemsize) + (index * _step));
+            }
+
             int firstByteIndex = _start + index * (int)itemsize * _step;
             object result = packBytes(format, getByteRange(firstByteIndex, (int)itemsize), 0, (int)_buffer.ItemSize);
 
@@ -349,6 +353,11 @@ namespace IronPython.Runtime {
         }
 
         private void setAtFlatIndex(int index, object value) {
+            if (_matchesBuffer) {
+                _buffer.SetItem((_start / _itemsize) + (index * _step), value);
+                return;
+            }
+
             int firstByteIndex = _start + index * (int)itemsize * _step;
             setByteRange(firstByteIndex, unpackBytes(format, value));
         }

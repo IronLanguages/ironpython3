@@ -231,3 +231,19 @@ b'abc:+AH4Afg-:zyz'
 ```
 
 Note that both forms are fully interchangeable; IronPython will correctly decode what CPython encoded and vice versa.
+
+# Source File Encoding
+
+* Widechar Unicode encodings are supported as source file encoding, in addition to standard Python encodings.
+
+The default source file encoding is UTF-8. This also applies to bytestrings used within the program (processed by `compile`, `eval`, or `exec`). The source file encoding can be explicitly specified, and possibly changed, in one of the two ways:
+
+  1. By declaring the encoding in a Python comment in one of the first two lines — in accordance with [PEP-263](https://www.python.org/dev/peps/pep-0263/).
+  2. By a byte-order-mark (BOM) — only for Unicode encodings.
+
+CPython recognizes only UTF-8 BOM. IronPython recognizes BOM in UTF-8, UTF-16LE, UTF-16BE, UTF-32LE, and UTF-32BE.
+
+If both BOM and PEP-263 methods are used simultaneously in the same file, they should be specifying the same encoding. If the PEP-263 encoding does not match the BOM, then:
+
+  * In case of UTF-8 BOM, an error will be reported (by both CPython and IronPython).
+  * In case of other BOMs, the encoding specified in the PEP-263 comment is silently ignored.

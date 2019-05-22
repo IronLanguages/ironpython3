@@ -59,12 +59,20 @@ namespace IronPython.Runtime {
             if (_buffer == null) throw PythonOps.ValueError("operation forbidden on released memoryview object");
         }
 
-        public int __len__() {
-            CheckBuffer();
+        private int numberOfElements() {
             if (_end != null) {
                 return (_end.Value - _start) / ((int)itemsize * _step);
             }
             return _buffer.ItemCount * (int)_buffer.ItemSize / ((int)itemsize * _step);
+        }
+
+        public int __len__() {
+            CheckBuffer();
+            if (shape[0] is BigInteger b) {
+                return (int)b;
+            }
+
+            return (int)shape[0];
         }
 
         public object obj {
@@ -189,6 +197,12 @@ namespace IronPython.Runtime {
                 }
             }
 
+            int newItemsize;
+            if (!TypecodeOps.TryGetTypecodeWidth(formatAsString, out newItemsize)) {
+                throw PythonOps.ValueError(
+                    "memoryview: destination format must be a native single character format prefixed with an optional '@'");
+            }
+
             bool thisIsBytes = this.format == "B" || this.format == "b" || this.format == "c";
             bool otherIsBytes = formatAsString == "B" || formatAsString == "b" || formatAsString == "c";
 
@@ -196,13 +210,7 @@ namespace IronPython.Runtime {
                 throw PythonOps.TypeError("memoryview: cannot cast between two non-byte formats");
             }
 
-            int newItemsize;
-            if (!TypecodeOps.TryGetTypecodeWidth(formatAsString, out newItemsize)) {
-                throw PythonOps.ValueError(
-                    "memoryview: destination format must be a native single character format prefixed with an optional '@'");
-            }
-
-            int length = __len__();
+            int length = numberOfElements();
 
             if (length % newItemsize != 0) {
                 throw PythonOps.TypeError("memoryview: length is not a multiple of itemsize");

@@ -6,8 +6,7 @@ import array
 import itertools
 import unittest
 
-#from iptest import run_test
-import test.support
+from iptest import run_test
 
 class SliceTests(unittest.TestCase):
     def testGet(self):
@@ -222,10 +221,4 @@ class CastTests(unittest.TestCase):
                 for k in range(2):
                     self.assertEqual(mv[(i + 2, j, k)], mv2[(i, j, k)])
 
-#run_test(__name__)
-
-def test_main():
-    test.support.run_unittest(__name__)
-
-if __name__ == "__main__":
-    test_main()
+run_test(__name__)

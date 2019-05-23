@@ -21,14 +21,14 @@
     <Reference Include="System.Runtime.Remoting" Condition=" $(Features.Contains('FEATURE_REMOTING')) " />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
-    <Reference Include="Mono.Posix" Condition=" '$(Mono)' == 'true' ">
-      <SpecificVersion>False</SpecificVersion>
+  <ItemGroup Condition=" '$(IsFullFramework)' == 'true' ">
+    <Reference Include="Mono.Posix" Version="4.0.0">
+      <Private>True</Private>
+      <HintPath>..\..\Util\References\Mono.Posix.dll</HintPath>
     </Reference>
-    <PackageReference Include="Mono.Posix" Version="5.4.0.201" Condition=" '$(Mono)' != 'true' " />
   </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" Condition=" $(TargetFramework.StartsWith('netcoreapp')) OR '$(TargetFramework)' == 'netstandard2.0' " />
+  <ItemGroup Condition=" '$(IsFullFramework)' == 'false' ">
+    <PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -44,16 +44,20 @@
     <EmbeddedResource Include="Modules\unicodedata\IPyUnicodeData.txt.gz" />
   </ItemGroup>
 
-  <ItemGroup Condition=" $(TargetFramework.StartsWith('netcoreapp')) OR '$(TargetFramework)' == 'netstandard2.0' ">
-    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.5.0" />
-  </ItemGroup>
-
   <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-18618-05" PrivateAssets="All" Condition="'$(MSBuildRuntimeType)' == 'Full'" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0-preview.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-18618-05" PrivateAssets="All" />
     <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.6.3">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(IsFullFramework)' == 'false' ">
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.5.1" />
   </ItemGroup>
 
   <Import Project="$(AfterTargetFiles)" />

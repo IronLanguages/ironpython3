@@ -14,11 +14,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NUnit.ConsoleRunner" Version="3.8.0" />
     <PackageReference Include="NUnitLite" Version="3.11.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.7.2" />
-    <PackageReference Include="NUnit3TestAdapter" Version="3.11.0" />
-    <PackageReference Include="Mono.Cecil" Version="0.9.6.4" Condition=" '$(TargetFramework)' == 'net45' " /> <!-- dependency for nunit -->
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.1.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.13.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -37,10 +35,18 @@
 
   <Target Name="CopyRowanTestFiles" AfterTargets="AfterBuild">
     <ItemGroup>
-      <RowanTestFiles Include="..\DLR\bin\$(Configuration)\$(TargetFramework)\rowantest.*.dll" />
+      <RowanTestFiles Include="..\DLR\bin\$(Configuration)\$(TargetFramework)\rowantest.*.dll" Condition=" '$(TargetFramework)' == 'net45' " />
+      <RowanTestFiles Include="..\DLR\bin\$(Configuration)\netstandard2.0\rowantest.*.dll" Condition=" '$(TargetFramework)' != 'net45' " />
     </ItemGroup>
     <Copy SourceFiles="@(RowanTestFiles)" DestinationFolder="$(TargetDir)" />
   </Target>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0-preview.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
 
   <Import Project="$(AfterTargetFiles)" />
   <Target Name="AfterBuildEnds" AfterTargets="AfterBuild" DependsOnTargets="$(AfterTargets)" />

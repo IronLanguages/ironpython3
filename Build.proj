@@ -13,7 +13,6 @@
     <ReferenceDir>$(RootDir)Util\References</ReferenceDir>
     <BinDir>$(RootDir)bin</BinDir>
     <BuildSysDir>$(RootDir)Build</BuildSysDir>
-    <TargetFrameworks Condition="'$(TargetFrameworks)' == ''">net45;netcoreapp2.1</TargetFrameworks>
   </PropertyGroup>
 
   <Import Project="$(BuildSysDir)\Tasks.Targets" />

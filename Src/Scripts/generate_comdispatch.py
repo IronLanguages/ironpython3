@@ -5,7 +5,7 @@
 from generate import generate
 
 class VariantType:
-    def __init__(self, 
+    def __init__(self,
         variantType,
         managedType,
         emitAccessors=True,
@@ -15,25 +15,25 @@ class VariantType:
         getStatements=None,
         setStatements=None,
         critical=False):
-        
+
         self.emitAccessors = emitAccessors
         self.variantType = variantType
         self.managedType = managedType
         self.isPrimitiveType = isPrimitiveType
         if unmanagedRepresentationType == None: self.unmanagedRepresentationType = managedType
         else: self.unmanagedRepresentationType = unmanagedRepresentationType
-        
+
         self.includeInUnionTypes = includeInUnionTypes
-        
+
         self.getStatements = getStatements
         self.setStatements = setStatements
-        
+
         self.managedFieldName = "_" + self.variantType.lower()
         firstChar = self.variantType[0]
         self.name = self.variantType.lower().replace(firstChar.lower(), firstChar, 1)
         self.accessorName = "As" + self.name
         self.critical = critical
-    
+
     def write_UnionTypes(self, cw):
         if not self.includeInUnionTypes: return
         if self.unmanagedRepresentationType == "IntPtr":
@@ -48,9 +48,9 @@ class VariantType:
     def write_accessor(self, cw, transparent):
         if self.emitAccessors == False :
             return
-            
+
         cw.write("// VT_%s" % self.variantType)
-        
+
         cw.enter_block('public %s %s' % (self.managedType, self.accessorName))
 
         # Getter
@@ -87,17 +87,17 @@ class VariantType:
         cw.exit_block()
 
         cw.writeline()
-        
+
     def write_accessor_propertyinfo(self, cw):
         if self.emitAccessors == True :
             cw.write('case VarEnum.VT_%s: return typeof(Variant).GetProperty("%s");' % (self.variantType, self.accessorName))
-        
+
     def write_byref_setters(self, cw):
         if self.emitAccessors == True :
             cw.write('case VarEnum.VT_%s: return typeof(Variant).GetMethod("SetAsByref%s");' % (self.variantType, self.name))
 
     def write_ComToManagedPrimitiveTypes(self, cw):
-        wrapper_types = ["CY", "DISPATCH", "UNKNOWN", "ERROR"]           
+        wrapper_types = ["CY", "DISPATCH", "UNKNOWN", "ERROR"]
         if not self.isPrimitiveType or (self.variantType in wrapper_types) : return
         cw.write("dict[VarEnum.VT_%s] = typeof(%s);" % (self.variantType, self.managedType))
 
@@ -116,7 +116,7 @@ class VariantType:
             cw.enter_block('fixed (%s *x = &value)' % self.unmanagedRepresentationType)
             cw.write('AssertByrefPointsToStack(new IntPtr(x));')
             cw.write('return new IntPtr(x);')
-            cw.exit_block()        
+            cw.exit_block()
             cw.exit_block()
             cw.write('')
 
@@ -151,34 +151,34 @@ variantTypes = [
     VariantType('INT', "IntPtr"),
     VariantType('UINT', "UIntPtr"),
 
-    VariantType('BOOL', "Boolean", 
+    VariantType('BOOL', "Boolean",
         unmanagedRepresentationType="Int16",
         getStatements=["return _typeUnion._unionTypes._bool != 0;"],
         setStatements=["_typeUnion._unionTypes._bool = value ? (Int16)(-1) : (Int16)0;"]),
-    
+
     VariantType("ERROR", "Int32"),
 
     VariantType('R4', "Single"),
     VariantType('R8', "Double"),
-    VariantType('DECIMAL', "Decimal", 
+    VariantType('DECIMAL', "Decimal",
         includeInUnionTypes=False,
-        getStatements=["// The first byte of Decimal is unused, but usually set to 0", 
-                       "Variant v = this;", 
-                       "v._typeUnion._vt = 0;", 
+        getStatements=["// The first byte of Decimal is unused, but usually set to 0",
+                       "Variant v = this;",
+                       "v._typeUnion._vt = 0;",
                        "return v._decimal;"],
-        setStatements=["_decimal = value;", 
-                        "// _vt overlaps with _decimal, and should be set after setting _decimal", 
+        setStatements=["_decimal = value;",
+                        "// _vt overlaps with _decimal, and should be set after setting _decimal",
                         "_typeUnion._vt = (ushort)VarEnum.VT_DECIMAL;"]),
-    VariantType("CY", "Decimal", 
+    VariantType("CY", "Decimal",
         unmanagedRepresentationType="Int64",
         getStatements=["return Decimal.FromOACurrency(_typeUnion._unionTypes._cy);"],
         setStatements=["_typeUnion._unionTypes._cy = Decimal.ToOACurrency(value);"]),
 
-    VariantType('DATE', "DateTime", 
+    VariantType('DATE', "DateTime",
         unmanagedRepresentationType="Double",
         getStatements=["return DateTime.FromOADate(_typeUnion._unionTypes._date);"],
         setStatements=["_typeUnion._unionTypes._date = value.ToOADate();"]),
-    VariantType('BSTR', "String", 
+    VariantType('BSTR', "String",
         unmanagedRepresentationType="IntPtr",
         getStatements=[
                 "if (_typeUnion._unionTypes._bstr != IntPtr.Zero) {",
@@ -192,7 +192,7 @@ variantTypes = [
                 "}"
         ],
         critical=True),
-    VariantType("UNKNOWN", "Object", 
+    VariantType("UNKNOWN", "Object",
         isPrimitiveType=False,
         unmanagedRepresentationType="IntPtr",
         getStatements=[
@@ -207,7 +207,7 @@ variantTypes = [
                 "}"
         ],
         critical=True),
-    VariantType("DISPATCH", "Object", 
+    VariantType("DISPATCH", "Object",
         isPrimitiveType=False,
         unmanagedRepresentationType="IntPtr",
         getStatements=[
@@ -218,15 +218,15 @@ variantTypes = [
         ],
         setStatements=[
                 "if (value != null) {",
-                "    _typeUnion._unionTypes._unknown = Marshal.GetIDispatchForObject(value);",
+                "    _typeUnion._unionTypes._unknown = GetIDispatchForObject(value);",
                 "}"
         ],
         critical=True),
-    VariantType("VARIANT", "Object", 
+    VariantType("VARIANT", "Object",
         emitAccessors=False,
         isPrimitiveType=False,
         unmanagedRepresentationType="Variant",
-        includeInUnionTypes=False,              # will use "this" 
+        includeInUnionTypes=False,              # will use "this"
         getStatements=["return Marshal.GetObjectForNativeVariant(UnsafeMethods.ConvertVariantByrefToPtr(ref this));"],
         setStatements=["UnsafeMethods.InitVariantForObject(value, ref this);"],
         critical=True)

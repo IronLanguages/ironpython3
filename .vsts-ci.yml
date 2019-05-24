@@ -6,7 +6,7 @@ jobs:
   displayName: Windows
   timeoutInMinutes: 180
   pool:
-    vmImage: vs2017-win2016
+    vmImage: windows-2019
   steps:
   - template: Build/steps.yml
     parameters:
@@ -18,7 +18,7 @@ jobs:
   displayName: Linux (Ubuntu)
   timeoutInMinutes: 180
   pool:
-    vmImage: 'ubuntu-16.04'    
+    vmImage: 'ubuntu-16.04'
   steps:
   - template: Build/steps.yml
     parameters:
@@ -29,8 +29,8 @@ jobs:
 ################################################################################
   displayName: macOS
   timeoutInMinutes: 180
-  pool: 
-    vmImage: 'macOS-10.13'    
+  pool:
+    vmImage: 'macOS-10.13'
   steps:
   - template: Build/steps.yml
     parameters:

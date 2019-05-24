@@ -2,6 +2,9 @@ parameters:
   os: ''
 
 steps:
+  - checkout: self
+    submodules: true
+
   - powershell: |
 
      $xml = [xml] (Get-Content CurrentVersion.props)
@@ -21,6 +24,18 @@ steps:
      Write-Host ("##vso[task.setvariable variable=PackageVersion;isSecret=false;isOutput=true;]$PackageVersion")
     displayName: Grab Package Version
 
+  - task: DotNetCoreInstaller@1
+    displayName: Install .NET Core 2.1 runtime for running tests
+    inputs:
+      packageType: 'runtime'
+      version: '2.1.x'
+
+  - task: DotNetCoreInstaller@1
+    displayName: Install .NET Core 3.0 SDK for build
+    inputs:
+      packageType: 'sdk'
+      version: '3.0.100-preview4-011223'
+
   # Install mono when running on Linux
   - ${{ if eq(parameters.os, 'Linux') }}:
     - task: ms-devlabs.utilitytasks.task-Shellpp.Shell++@0
@@ -37,7 +52,7 @@ steps:
           msbuild /version
           dotnet --info
           df -Th
-          
+
   # Dump version info on macOS
   - ${{ if eq(parameters.os, 'macOS') }}:
     - task: ms-devlabs.utilitytasks.task-Shellpp.Shell++@0
@@ -60,10 +75,10 @@ steps:
 
   - powershell: ./make.ps1
     displayName: Build
-  
+
   - powershell: ./make.ps1 test-all
     displayName: Test
-     
+
   - task: PublishTestResults@2
     displayName: Publish Test Results
     inputs:
@@ -86,7 +101,7 @@ steps:
         **/*.zip
       TargetFolder: '$(Build.ArtifactStagingDirectory)'
     condition: and(succeededOrFailed(), eq(variables['system.pullrequest.isfork'], false))
-      
+
   - ${{ if eq(parameters.os, 'Windows') }}:
     - task: CopyFiles@2
       displayName: Copy MSI Installer
@@ -126,5 +141,3 @@ steps:
     inputs:
       ArtifactName: ${{ format('{0} Artifacts', parameters.os) }}
     condition: and(succeededOrFailed(), eq(variables['system.pullrequest.isfork'], false))
-
-  

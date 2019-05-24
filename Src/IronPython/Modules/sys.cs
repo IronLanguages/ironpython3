@@ -455,6 +455,12 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             }
         }
 
+#if NETCOREAPP3_0
+        public static string float_repr_style = "short";
+#else
+        public static string float_repr_style = "legacy";
+#endif
+
         public static floatinfo float_info = new floatinfo(
             Double.MaxValue,    // DBL_MAX
             1024,               // DBL_MAX_EXP

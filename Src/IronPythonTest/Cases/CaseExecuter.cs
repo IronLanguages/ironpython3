@@ -1,33 +1,52 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Hosting;
 
 using IronPython.Hosting;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPythonTest.Util;
 
-using Microsoft.Scripting;
-using Microsoft.Scripting.Hosting;
-
 namespace IronPythonTest.Cases {
     class CaseExecuter {
         private static string Executable {
             get {
-#if NETCOREAPP2_1
-                if (Environment.OSVersion.Platform == PlatformID.Unix) {
-                    return Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "ipy.sh");
+                var folder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                string runner;
+#if NETCOREAPP
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                    runner = Path.Combine(folder, "ipy.exe");
+                    if (File.Exists(runner)) return runner;
+                    runner = Path.Combine(folder, "ipy.bat");
+                    if (File.Exists(runner)) return runner;
+                } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                    runner = Path.Combine(folder, "ipy");
+                    if (File.Exists(runner)) return runner;
+                    runner = Path.Combine(folder, "ipy.sh");
+                    if (File.Exists(runner)) return runner;
                 }
-                return Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "ipy.bat");
 #else
-                return Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "ipy.exe");
+                runner = Path.Combine(folder, "ipy.exe");
+                if (File.Exists(runner)) return runner;
 #endif
+                throw new FileNotFoundException();
+
             }
         }
+
         private static readonly string IRONPYTHONPATH = GetIronPythonPath();
 
         private ScriptEngine defaultEngine;

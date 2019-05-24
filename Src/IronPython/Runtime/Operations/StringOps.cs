@@ -1454,7 +1454,7 @@ namespace IronPython.Runtime.Operations {
 
             if (CodecsInfo.Codecs.TryGetValue(normName, out Lazy<Encoding> proxy)) {
                 encoding = proxy.Value;
-#if NETCOREAPP2_1 || NETSTANDARD2_0
+#if NETCOREAPP || NETSTANDARD
             } else {
                 try {
                     Encoding enc;
@@ -1473,7 +1473,7 @@ namespace IronPython.Runtime.Operations {
                     CodecsInfo.Codecs[normName] = new Lazy<Encoding>(() => null, isThreadSafe: false);
                     return false;
                 }
-#endif // NETCOREAPP2_1 || NETSTANDARD2_0
+#endif // NETCOREAPP || NETSTANDARD
             }
             return encoding != null;
 
@@ -1660,7 +1660,7 @@ namespace IronPython.Runtime.Operations {
             // if we have a valid code page try and get a reasonable name.  The
             // web names / mail displays tend to match CPython's terse names
             if (encoding.CodePage != 0) {
-#if !NETCOREAPP2_1 && !NETSTANDARD2_0
+#if !NETCOREAPP && !NETSTANDARD
                 if (encoding.IsBrowserDisplay) {
                     name = encoding.WebName;
                 }
@@ -1888,7 +1888,7 @@ namespace IronPython.Runtime.Operations {
                 Dictionary<string, Lazy<Encoding>> d = new Dictionary<string, Lazy<Encoding>>();
                 Lazy<Encoding> makeEncodingProxy(Func<Encoding> factory) => new Lazy<Encoding>(factory, isThreadSafe: false);
 
-#if NETCOREAPP2_1 || NETSTANDARD2_0
+#if NETCOREAPP || NETSTANDARD
                 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
                 // TODO: add more encodings
                 d["cp1252"] = d["windows-1252"] = makeEncodingProxy(() => Encoding.GetEncoding(1252));

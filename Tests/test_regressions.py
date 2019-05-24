@@ -451,10 +451,7 @@ with open(r"%s", "w") as f:
     @skipUnlessIronPython()
     def test_cp22735(self):
         import System
-        if System.Environment.Version.Major < 4:
-            clr.AddReference("System.Core")
         from System import Func
-
 
     def test_xxsubtype_bench(self):
         import xxsubtype

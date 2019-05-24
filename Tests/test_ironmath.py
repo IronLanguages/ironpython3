@@ -132,7 +132,7 @@ class IronMathTest(IronPythonTestCase):
             Complex.Add(
                 Complex(BigInteger(long(9999)), -1234),
                 Complex.Conjugate(Complex(9999, -1234)) ),
-            Complex.Multiply(BigInteger(long(9999)), 2) )
+            Complex.Multiply.Overloads[complex, complex](BigInteger(long(9999)), 2) )
         self.assertEqual(
             Complex.Add(
                 Complex(99999.99e-200, 12345.88e+100),

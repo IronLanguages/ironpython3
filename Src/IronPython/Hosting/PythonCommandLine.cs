@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
+
 #if FEATURE_FULL_CONSOLE
 
 using System;
@@ -8,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 using IronPython.Compiler;
 using IronPython.Modules;
@@ -240,14 +242,26 @@ namespace IronPython.Hosting {
             if (entryAssembly != null) {
                 executable = entryAssembly.Location;
                 prefix = Path.GetDirectoryName(executable);
-#if NETCOREAPP2_1
+#if NETCOREAPP || NETSTANDARD
                 if (Path.GetExtension(executable) == ".dll") {
                     var name = Path.GetFileNameWithoutExtension(executable);
-                    var runner = Path.Combine(prefix, name + ".bat");
-                    if (Environment.OSVersion.Platform == PlatformID.Unix) {
-                        runner = Path.Combine(prefix, name + ".sh");
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                        var runner = Path.Combine(prefix, name + ".exe");
+                        if (File.Exists(runner)) {
+                            executable = runner;
+                        } else {
+                            runner = Path.Combine(prefix, name + ".bat");
+                            if (File.Exists(runner)) executable = runner;
+                        }
+                    } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                        var runner = Path.Combine(prefix, name);
+                        if (File.Exists(runner)) {
+                            executable = runner;
+                        } else {
+                            runner = Path.Combine(prefix, name + ".sh");
+                            if (File.Exists(runner)) executable = runner;
+                        }
                     }
-                    if (File.Exists(runner)) executable = runner;
                 }
 #endif
             }
@@ -291,9 +305,9 @@ namespace IronPython.Hosting {
             }
         }
 
-        #endregion
+#endregion
 
-        #region Interactive
+#region Interactive
 
         protected override int RunInteractive() {
             PrintLogo();
@@ -460,9 +474,9 @@ namespace IronPython.Hosting {
             return Parser.GetNextAutoIndentSize(text, Options.AutoIndentSize);
         }
 
-        #endregion
+#endregion
 
-        #region Command
+#region Command
 
         protected override int RunCommand(string command) {
             if (Options.HandleExceptions) {
@@ -501,9 +515,9 @@ namespace IronPython.Hosting {
             return 0;
         }
 
-        #endregion
+#endregion
 
-        #region File
+#region File
 
         protected override int RunFile(string/*!*/ fileName) {
             int result = 1;
@@ -566,7 +580,7 @@ namespace IronPython.Hosting {
             return 0;
         }
 
-        #endregion
+#endregion
 
         public override IList<string> GetGlobals(string name) {
             IList<string> res = base.GetGlobals(name);

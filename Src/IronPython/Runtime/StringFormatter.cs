@@ -661,6 +661,7 @@ namespace IronPython.Runtime {
             double doubleVal = (double)val;
             if (IsNegativeZero(doubleVal)) {
                 forceMinus = true;
+                val = 0.0;
             }
             if (fPos && (_opts.SignChar || _opts.Space)) {
                 string strval = (_opts.SignChar ? "+" : " ") + String.Format(_nfi, "{0:" + format + _opts.Precision + "}", val);

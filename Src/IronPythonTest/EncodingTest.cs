@@ -104,6 +104,13 @@ namespace IronPythonTest {
 
             private byte[] bytes;
 
+            [OneTimeSetUp]
+            public void OneTimeSetUp() {
+#if NETCOREAPP
+                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+#endif
+            }
+
             [SetUp]
             public void SetUp() {
                 bytes = Enumerable.Range(0, 256).Select(c => (byte)c).ToArray();
@@ -137,14 +144,13 @@ namespace IronPythonTest {
                 Assert.AreEqual(python_chars, chars);
             }
 
-
             // Compare Windows-1252 (Western European Windows, variant of ISO-8859-1) handling with CPython results
-#if !NETCOREAPP2_1
-            // Windows-1252 is not available on .NET Core
             [Test]
             public void TestCompare256WithWindows1252() {
                 Encoding penc = new PythonSurrogateEscapeEncoding(Encoding.GetEncoding(1252));
+#if !NETCOREAPP
                 Assert.AreEqual("iso-8859-1", penc.WebName);
+#endif
 
                 char[] chars = penc.GetChars(bytes);
                 string python_chars = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\x7f€\udc81‚ƒ„…†‡ˆ‰Š‹Œ\udc8dŽ\udc8f\udc90‘’“”•–—˜™š›œ\udc9džŸ\xa0¡¢£¤¥¦§¨©ª«¬\xad®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ";
@@ -158,7 +164,6 @@ namespace IronPythonTest {
                     }
                 }
             }
-#endif
 
             // Compare  ISO-8859-1 (Western European) handling with CPython results
             [Test]
@@ -195,7 +200,7 @@ namespace IronPythonTest {
                 Assert.AreEqual(expected_bytes, encoded_bytes);
 
                 // Encoding the given chars with CPython produces the following byte string
-                byte[] python_bytes =   "+AAAAAQACAAMABAAFAAYABwAI\t\n+AAsADA\r+AA4ADwAQABEAEgATABQAFQAWABcAGAAZABoAGwAcAB0AHgAf !\"#$%&'()*,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[+AFw]^_`abcdefghijklmnopqrstuvwxyz{|}+AH4Af9yA3IHcgtyD3ITchdyG3IfciNyJ3Irci9yM3I3cjtyP3JDckdyS3JPclNyV3Jbcl9yY3Jncmtyb3Jzcndye3J/coNyh3KLco9yk3KXcptyn3Kjcqdyq3KvcrNyt3K7cr9yw3LHcstyz3LTctdy23LfcuNy53Lrcu9y83L3cvty/3MDcwdzC3MPcxNzF3Mbcx9zI3MncytzL3MzczdzO3M/c0NzR3NLc09zU3NXc1tzX3Njc2dza3Nvc3Nzd3N7c39zg3OHc4tzj3OTc5dzm3Ofc6Nzp3Orc69zs3O3c7tzv3PDc8dzy3PPc9Nz13Pbc99z43Pnc+tz73Pzc/dz+3P8-"
+                byte[] python_bytes = "+AAAAAQACAAMABAAFAAYABwAI\t\n+AAsADA\r+AA4ADwAQABEAEgATABQAFQAWABcAGAAZABoAGwAcAB0AHgAf !\"#$%&'()*,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[+AFw]^_`abcdefghijklmnopqrstuvwxyz{|}+AH4Af9yA3IHcgtyD3ITchdyG3IfciNyJ3Irci9yM3I3cjtyP3JDckdyS3JPclNyV3Jbcl9yY3Jncmtyb3Jzcndye3J/coNyh3KLco9yk3KXcptyn3Kjcqdyq3KvcrNyt3K7cr9yw3LHcstyz3LTctdy23LfcuNy53Lrcu9y83L3cvty/3MDcwdzC3MPcxNzF3Mbcx9zI3MncytzL3MzczdzO3M/c0NzR3NLc09zU3NXc1tzX3Njc2dza3Nvc3Nzd3N7c39zg3OHc4tzj3OTc5dzm3Ofc6Nzp3Orc69zs3O3c7tzv3PDc8dzy3PPc9Nz13Pbc99z43Pnc+tz73Pzc/dz+3P8-"
                     .Select(c => (byte)c).ToArray();
                 // The sequences expected_bytes and python_bytes are NOT equal: .NET ends encoded blocks (starting with '+') with '-'
                 // Terminating encoded blocks with '-' is optional if not ambiguous.
@@ -712,7 +717,7 @@ namespace IronPythonTest {
 
             [Test]
             public void TestIncrementalWithUtf32() {
-                var bytes = new byte[] { 0xd8, 0xd9, 0x00, 0x00, 0xda, 0xdb, 0x00, 0x00, 0xdc, 0xdd, 0x00, 0x00, 0xde, 0xdf, 0x00, 0x00};
+                var bytes = new byte[] { 0xd8, 0xd9, 0x00, 0x00, 0xda, 0xdb, 0x00, 0x00, 0xdc, 0xdd, 0x00, 0x00, 0xde, 0xdf, 0x00, 0x00 };
                 Encoding penc = new PythonSurrogatePassEncoding(Encoding.UTF32);
                 SurrogateTestHelpers.IncrementalTest(penc, bytes, roundTrip: false);
             }

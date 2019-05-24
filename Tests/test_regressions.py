@@ -451,10 +451,7 @@ with open(r"%s", "w") as f:
     @skipUnlessIronPython()
     def test_cp22735(self):
         import System
-        if System.Environment.Version.Major < 4:
-            clr.AddReference("System.Core")
         from System import Func
-
 
     def test_xxsubtype_bench(self):
         import xxsubtype
@@ -903,7 +900,6 @@ class C:
             help(gh1435.someMethod4)
         self.assertTrue('\n'.join(trapper.messages), expected)
 
-    @unittest.skipIf(is_netcoreapp, 'https://github.com/IronLanguages/ironpython2/issues/373')
     def test_gh278(self):
         import _random
         r = _random.Random()

@@ -125,9 +125,9 @@ namespace IronPython.Runtime {
 
         public override string EncodingName => Pass1Encoding.EncodingName;
 
-        public override string HeaderName => Pass1Encoding.BodyName;
+        public override string HeaderName => Pass1Encoding.HeaderName;
         public override string BodyName => Pass1Encoding.BodyName;
-        public override string WebName => Pass1Encoding.BodyName;
+        public override string WebName => Pass1Encoding.WebName;
         public override bool IsBrowserDisplay => false;
         public override bool IsBrowserSave => false;
         public override bool IsMailNewsDisplay => false;

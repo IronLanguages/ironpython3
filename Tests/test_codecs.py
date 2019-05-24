@@ -9,14 +9,14 @@
 import unittest
 import codecs
 
-from iptest import run_test, is_ironpython
+from iptest import run_test, is_cli
 
-if is_ironpython:
+if is_cli:
     import System.Text
 
 class CodecsTest(unittest.TestCase):
 
-    @unittest.skipUnless(is_ironpython, "Interop with CLI")
+    @unittest.skipUnless(is_cli, "Interop with CLI")
     def test_interop_ascii(self):
         self.assertEqual("abc".encode(System.Text.Encoding.ASCII), b"abc")
         self.assertEqual(b"abc".decode(System.Text.Encoding.ASCII), "abc")
@@ -26,7 +26,7 @@ class CodecsTest(unittest.TestCase):
         self.assertEqual(b"abc".decode(us_ascii), "abc")
 
     def test_interop_utf8(self):
-        if is_ironpython:
+        if is_cli:
             utf_8 = System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier=False, throwOnInvalidBytes=True)
             utf_8_sig = System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier=True, throwOnInvalidBytes=True)
 
@@ -48,7 +48,7 @@ class CodecsTest(unittest.TestCase):
         self.assertEqual(b"\xef\xbb\xbfab\xc4\x87".decode('utf_8_sig'), "abć")
 
     def test_interop_utf16(self):
-        if is_ironpython:
+        if is_cli:
             utf_16 = System.Text.UnicodeEncoding(bigEndian=False, byteOrderMark=True, throwOnInvalidBytes=True)
             utf_16_le = System.Text.UnicodeEncoding(bigEndian=False, byteOrderMark=False, throwOnInvalidBytes=True)
             utf_16_be = System.Text.UnicodeEncoding(bigEndian=True, byteOrderMark=False, throwOnInvalidBytes=True)
@@ -77,7 +77,7 @@ class CodecsTest(unittest.TestCase):
         self.assertEqual(b"\x00a\x00b\x01\x07".decode('utf_16_be'), "abć")
 
     def test_interop_utf32(self):
-        if is_ironpython:
+        if is_cli:
             utf_32 = System.Text.UTF32Encoding(bigEndian=False, byteOrderMark=True, throwOnInvalidCharacters=True)
             utf_32_le = System.Text.UTF32Encoding(bigEndian=False, byteOrderMark=False, throwOnInvalidCharacters=True)
             utf_32_be = System.Text.UTF32Encoding(bigEndian=True, byteOrderMark=False, throwOnInvalidCharacters=True)
@@ -126,14 +126,14 @@ class CodecsTest(unittest.TestCase):
             self.assertGreaterEqual(uee.exception.end, 3) # CPython 3 (single character), IronPython 4 (surrogate pair)
             self.assertLessEqual(uee.exception.end, 4)
 
-        if is_ironpython:
+        if is_cli:
             check_error1(System.Text.ASCIIEncoding(), 'us-ascii')
             check_error2(System.Text.ASCIIEncoding(), 'us-ascii')
             check_error1(System.Text.Encoding.ASCII, 'us-ascii')
             check_error2(System.Text.Encoding.ASCII, 'us-ascii')
 
         check_error1('ascii', 'ascii')
-        if not is_ironpython: # TODO: Replace PythonAsciiEncoding with ASCIIEncoding
+        if not is_cli: # TODO: Replace PythonAsciiEncoding with ASCIIEncoding
             check_error2('ascii', 'ascii')
 
     def test_interop_utf8_encode_exeption(self):
@@ -146,13 +146,13 @@ class CodecsTest(unittest.TestCase):
             self.assertEqual(uee.exception.start, 3)
             self.assertEqual(uee.exception.end, 4)
 
-        if is_ironpython:
+        if is_cli:
             check_error(System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier=False, throwOnInvalidBytes=True), 'utf-8')
             check_error(System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier=True, throwOnInvalidBytes=True), 'utf-8')
             check_error(System.Text.Encoding.UTF8, 'utf-8')
 
         check_error('utf-8', 'utf-8')
-        if is_ironpython:
+        if is_cli:
             check_error('utf-8-sig', 'utf-8-sig')
         else:
             check_error('utf-8-sig', 'utf-8')
@@ -167,7 +167,7 @@ class CodecsTest(unittest.TestCase):
             self.assertEqual(uee.exception.start, 3)
             self.assertEqual(uee.exception.end, 4)
 
-        if is_ironpython:
+        if is_cli:
             check_error(System.Text.UnicodeEncoding(bigEndian=False, byteOrderMark=True, throwOnInvalidBytes=True), 'utf-16LE')
             check_error(System.Text.UnicodeEncoding(bigEndian=True, byteOrderMark=True, throwOnInvalidBytes=True), 'utf-16BE')
 
@@ -182,7 +182,7 @@ class CodecsTest(unittest.TestCase):
             self.assertEqual(ude.exception.start, 3)
             self.assertEqual(ude.exception.end, 4)
 
-        if is_ironpython:
+        if is_cli:
             check_error(System.Text.ASCIIEncoding(), 'us-ascii')
             check_error(System.Text.Encoding.ASCII, 'us-ascii')
 
@@ -199,7 +199,7 @@ class CodecsTest(unittest.TestCase):
             self.assertEqual(ude.exception.start, 4)
             self.assertEqual(ude.exception.end, 5)
 
-        if is_ironpython:
+        if is_cli:
             check_error(System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier=False, throwOnInvalidBytes=True), 'utf-8')
             check_error(System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier=True, throwOnInvalidBytes=True), 'utf-8')
             check_error(System.Text.Encoding.UTF8, 'utf-8')
@@ -218,7 +218,7 @@ class CodecsTest(unittest.TestCase):
             self.assertEqual(ude.exception.start, 7)
             self.assertEqual(ude.exception.end, 8)
 
-        if is_ironpython:
+        if is_cli:
             check_error(System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier=False, throwOnInvalidBytes=True), 'utf-8')
 
         check_error('utf-8', 'utf-8')
@@ -235,11 +235,11 @@ class CodecsTest(unittest.TestCase):
             self.assertEqual(ude.exception.start, 4)
             self.assertEqual(ude.exception.end, 5)
 
-        if is_ironpython:
+        if is_cli:
             check_error(System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier=True, throwOnInvalidBytes=True), 'utf-8')
             check_error(System.Text.Encoding.UTF8, 'utf-8')
 
-        if is_ironpython:
+        if is_cli:
             check_error('utf-8-sig', 'utf-8-sig')
         else:
             check_error('utf-8-sig', 'utf-8')
@@ -252,7 +252,7 @@ class CodecsTest(unittest.TestCase):
             self.assertEqual(ude.exception.encoding, name)
             # regular utf-16 skips BOM
             # NOTE: CPython is not consistent in this behavior, possibly a CPython bug (utf-8-sig behaves correctly)
-            if is_ironpython:
+            if is_cli:
                 self.assertEqual(ude.exception.object, b'a\x00b\x00\x07\x01\xdd\xdd\x8b\x1ey\x00z\x00')
                 self.assertEqual(ude.exception.start, 6)
                 self.assertEqual(ude.exception.end, 8)
@@ -261,10 +261,10 @@ class CodecsTest(unittest.TestCase):
                 self.assertEqual(ude.exception.start, 8)
                 self.assertEqual(ude.exception.end, 10)
 
-        if is_ironpython:
+        if is_cli:
             check_error(System.Text.UnicodeEncoding(bigEndian=False, byteOrderMark=True, throwOnInvalidBytes=True), 'utf-16LE')
 
-        if is_ironpython:
+        if is_cli:
             check_error('utf-16', 'utf-16') # TODO: should be 'utf-16LE'
         else:
             check_error('utf-16', 'utf-16-le')
@@ -280,10 +280,10 @@ class CodecsTest(unittest.TestCase):
             self.assertEqual(ude.exception.start, 8)
             self.assertEqual(ude.exception.end, 10)
 
-        if is_ironpython:
+        if is_cli:
             check_error(System.Text.UnicodeEncoding(bigEndian=False, byteOrderMark=False, throwOnInvalidBytes=True), 'utf-16LE')
 
-        if is_ironpython:
+        if is_cli:
             check_error('utf-16LE', 'utf-16LE')
         else:
             check_error('utf-16LE', 'utf-16-le')

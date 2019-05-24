@@ -16,6 +16,7 @@ import codecs
 import os
 import re
 import shutil
+import string
 import subprocess
 import sys
 import unittest
@@ -258,23 +259,18 @@ class CodecTest(IronPythonTestCase):
         self.assertEqual(size, 3)
 
     def test_cp34951(self):
-        def internal_cp34951(sample1):
-            self.assertEqual(codecs.utf_8_decode(sample1), ('12\u20ac\x0a', 6))
+        def internal_cp34951(sample1, preamble, bom_len):
+            self.assertEqual(codecs.utf_8_decode(sample1), (preamble + '12\u20ac\x0a', 6 + bom_len))
             sample1 = sample1[:-1] # 12<euro>
-            self.assertEqual(codecs.utf_8_decode(sample1), ('12\u20ac', 5))
+            self.assertEqual(codecs.utf_8_decode(sample1), (preamble + '12\u20ac', 5 + bom_len))
             sample1 = sample1[:-1] # 12<uncomplete euro>
-            self.assertEqual(codecs.utf_8_decode(sample1), ('12', 2))
+            self.assertEqual(codecs.utf_8_decode(sample1), (preamble + '12', 2 + bom_len))
 
             sample1 = sample1 + b'x7f' # makes it invalid
-            try:
-                r = codecs.utf_8_decode(sample1)
-                self.assertTrue(False, "expected UncodeDecodeError not raised")
-            except Exception as e:
-                self.assertEqual(type(e), UnicodeDecodeError)
+            self.assertRaises(UnicodeDecodeError, codecs.utf_8_decode, sample1)
 
-        internal_cp34951(b'\x31\x32\xe2\x82\xac\x0a') # 12<euro><cr>
-        if is_cli:
-            internal_cp34951(b'\xef\xbb\xbf\x31\x32\xe2\x82\xac\x0a') # <BOM>12<euro><cr>
+        internal_cp34951(b'\x31\x32\xe2\x82\xac\x0a', '', 0) # 12<euro><cr>
+        internal_cp34951(b'\xef\xbb\xbf\x31\x32\xe2\x82\xac\x0a', '\ufeff', 3) # <BOM>12<euro><cr>
 
     def test_utf_8_encode(self):
         #sanity
@@ -345,9 +341,9 @@ class CodecTest(IronPythonTestCase):
     def test_misc_encodings(self):
         self.assertEqual('abc'.encode('utf-16'), b'\xff\xfea\x00b\x00c\x00')
         self.assertEqual('abc'.encode('utf-16-be'), b'\x00a\x00b\x00c')
-        for unicode_escape in ['unicode-escape', 'unicode escape']:
-            self.assertEqual('abc'.encode('unicode-escape'), b'abc')
-            self.assertEqual('abc\\u1234'.encode('unicode-escape'), b'abc\\\\u1234')
+        for unicode_escape in ['unicode-escape', 'unicode escape', 'unicode_escape']:
+            self.assertEqual('abc'.encode(unicode_escape), b'abc')
+            self.assertEqual('abc\\u1234'.encode(unicode_escape), b'abc\\\\u1234')
 
     def test_file_encodings(self):
         '''
@@ -367,19 +363,23 @@ class CodecTest(IronPythonTestCase):
                 # https://www.python.org/dev/peps/pep-0263/#defining-the-encoding
                 if not re.match('[-_.a-zA-Z0-9]+$', coding):
                     continue
-                
+
+                # wide-char Unicode encodings not supported by CPython
+                if not is_cli and re.match('utf[-_](16|32)', coding, re.IGNORECASE):
+                    continue
+
                 temp_mod_name = "test_encoding_" + coding.replace('-','_')
                 with open(os.path.join(self.temporary_dir, "tmp_encodings", temp_mod_name + ".py"), "w", encoding=coding) as f:
                     # wide-char Unicode encodings need a BOM to be recognized
                     if re.match('utf[-_](16|32).', coding, re.IGNORECASE):
                         f.write("\ufeff")
-                    
+
                     # UTF-8 with signature may only use 'utf-8' as coding (PEP-263)
                     if re.match('utf[-_]8[-_]sig$', coding, re.IGNORECASE):
                         coding = 'utf-8'
-                    
+
                     f.write("# coding: %s" % (coding))
-                
+
                 __import__(temp_mod_name)
                 os.remove(os.path.join(self.temporary_dir, "tmp_encodings", temp_mod_name + ".py"))
 
@@ -387,7 +387,7 @@ class CodecTest(IronPythonTestCase):
             #cleanup
             sys.path.remove(os.path.join(self.temporary_dir, "tmp_encodings"))
             shutil.rmtree(os.path.join(self.temporary_dir, "tmp_encodings"), True)
-        
+
 
         # handcrafted positive cases
         sys.path.append(os.path.join(self.test_dir, "encoded_files"))
@@ -398,7 +398,7 @@ class CodecTest(IronPythonTestCase):
 
             # Test that non-ASCII letters in the encoding name are not part of the name
             __import__('ok_encoding_nonascii')
-        
+
         finally:
             sys.path.remove(os.path.join(self.test_dir, "encoded_files"))
 
@@ -418,7 +418,10 @@ class CodecTest(IronPythonTestCase):
             with self.assertRaises(SyntaxError) as cm:
                 __import__("bad_latin1_nodecl")
             # CPython's message differs when importing this file, but is the same when running it
-            self.assertTrue(cm.exception.msg.startswith("Non-UTF-8 code starting with '\\xb5' in file"))
+            if is_cli:
+                self.assertTrue(cm.exception.msg.startswith("Non-UTF-8 code starting with '\\xb5' in file"))
+            else:
+                self.assertTrue(cm.exception.msg.startswith("(unicode error) 'utf-8' codec can't decode byte 0xb5 in position "))
 
             # Test that latin-1 encoded files result in error if a UTF-8 BOM is present
             with self.assertRaises(SyntaxError) as cm:
@@ -440,7 +443,7 @@ class CodecTest(IronPythonTestCase):
 
             # Test that using a non-breaking whitespace inside the magic comment removes the magic
             self.assertRaises(SyntaxError, __import__, "bad_latin1_nbsp")
-        
+
         finally:
             sys.path.remove(os.path.join(self.test_dir, "encoded_files"))
 
@@ -469,12 +472,25 @@ class CodecTest(IronPythonTestCase):
         t_out_lines, t_err_lines = run_python("cp11334_ok.py")
 
         self.assertEqual(len(t_err_lines), 0)
-        if is_cli:
-            print("CodePlex 11334")
-            self.assertEqual(t_out_lines[0].rstrip(), b"\xe6ble")
-        else:
-            self.assertEqual(t_out_lines[0].rstrip(), b"\xb5ble")
         self.assertEqual(len(t_out_lines), 1)
+        if is_cli:
+            # CodePlex 11334: IronPython uses active console codepage for output
+            # Check active codepage in cmd.exe by running 'chcp' or 'mode'
+            # Check active codepage in powershell.exe by evaluating [Console]::OutputEncoding
+            import clr
+            import System
+            clr.AddReference('System.Console')
+            # expected = '\xb5ble'.encode(System.Console.OutputEncoding) # this will not work correctly if encoding is UTF-8, which by default adds a preamble
+            expected = '\xb5ble'.encode("cp" + str(System.Console.OutputEncoding.CodePage))
+            self.assertEqual(t_out_lines[0].rstrip(), expected)
+        else:
+            # CPython uses locale.getpreferredencoding() for pipe output
+            # unless overriden by PYTHONIOENCODING emvironment vairable.
+            # The active console codepage is ignored (which is a confirmed bug: bpo-6135, bpo-27179)
+            if not 'PYTHONIOENCODING' in os.environ:
+                import locale
+                expected = '\xb5ble'.encode(locale.getpreferredencoding())
+                self.assertEqual(t_out_lines[0].rstrip(), expected)
 
     def test_cp1214(self):
         """
@@ -493,14 +509,11 @@ class CodecTest(IronPythonTestCase):
 
         codecs.register(my_func)
         allchars = ''.join([chr(i) for i in range(1, 256)])
-        try:
-            codecs.lookup(allchars)
-            self.assertUnreachable()
-        except LookupError:
-            pass
+        self.assertRaises(LookupError, codecs.lookup, allchars)
 
-        lowerchars = allchars.lower().replace(' ', '-')
-        for i in range(1, 255):
+        # Only ASCII chars are set to lowercase for lookup purposes
+        lowerchars = allchars.translate(str.maketrans(' ' + string.ascii_uppercase, '-' + string.ascii_lowercase))
+        for i in range(len(lowerchars)):
             if l[0][i] != lowerchars[i]:
                 self.assertTrue(False, 'bad chars at index %d: %r %r' % (i, l[0][i], lowerchars[i]))
 
@@ -517,9 +530,10 @@ class CodecTest(IronPythonTestCase):
             # make sure we're failing because we don't have encodings
             self.assertRaises(ImportError, __import__, 'encodings')
 
-    @unittest.skipIf(is_cli, 'https://github.com/IronLanguages/main/issues/255')
+    @unittest.skipIf(is_posix, "https://github.com/IronLanguages/ironpython3/issues/541")
     def test_cp1019(self):
         #--Test that bogus encodings fail properly
+        # https://github.com/IronLanguages/main/issues/255
         p = subprocess.Popen([sys.executable, os.path.join(self.test_dir, "encoded_files", "cp1019.py")], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         t_in, t_out, t_err = (p.stdin, p.stdout, p.stderr)
         t_err_lines = t_err.readlines()
@@ -530,17 +544,16 @@ class CodecTest(IronPythonTestCase):
 
         self.assertEqual(len(t_out_lines), 0)
         self.assertTrue(t_err_lines[0].startswith(b"  File"))
+        # CPython's message differs when running this file, but is the same when importing it
         if is_cli:
-            self.assertTrue(t_err_lines[1].startswith(b"SyntaxError: encoding problem: with BOM"))
+            self.assertTrue(t_err_lines[1].startswith(b"SyntaxError: unknown encoding: garbage"))
         else:
             self.assertTrue(t_err_lines[1].startswith(b"SyntaxError: encoding problem: garbage"))
 
     def test_cp20302(self):
         import _codecs
         for encoding in ip_supported_encodings:
-            if encoding.lower() in ['cp1252']: #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=20302
-                continue
-            temp = _codecs.lookup(encoding)
+            _codecs.lookup(encoding)
 
     def test_charmap_build(self):
         decodemap = ''.join([chr(i).upper() if chr(i).islower() else chr(i).lower() for i in range(256)])
@@ -549,7 +562,9 @@ class CodecTest(IronPythonTestCase):
         self.assertEqual(codecs.charmap_encode('Hello World', 'strict', encodemap), (b'hELLO wORLD', 11))
 
     def test_gh16(self):
-        """https://github.com/IronLanguages/ironpython2/issues/16"""
+        """
+        https://github.com/IronLanguages/ironpython2/issues/16
+        """
         # test with a standard error handler
         res = "\xac\u1234\u20ac\u8000".encode("ptcp154", "backslashreplace")
         self.assertEqual(res, b"\xac\\u1234\\u20ac\\u8000")

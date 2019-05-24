@@ -6,7 +6,7 @@
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_mono, is_ironpython, run_test
+from iptest import IronPythonTestCase, is_cli, is_mono, run_test
 
 GETATTRIBUTE_CALLED = False
 class myint(int): pass
@@ -1781,7 +1781,7 @@ class ClassTest(IronPythonTestCase):
         self.assertRaises(TypeError, descr.__get__, None, int)
 
     def test_classmethod(self):
-        if is_ironpython: #http://ironpython.codeplex.com/workitem/27908
+        if is_cli: #http://ironpython.codeplex.com/workitem/27908
             self.assertRaises(TypeError, classmethod, 1)
         else:
             cm = classmethod(1)

@@ -1,2 +1,2 @@
 # coding: latin-1é
-print('µble')
+s = 'µble'

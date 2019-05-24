@@ -7,7 +7,7 @@
 import sys
 import unittest
 
-from iptest import is_ironpython, run_test
+from iptest import is_cli, run_test
 
 # Rules:
 # 1) thread has a current exception
@@ -477,7 +477,7 @@ class ExcInfoTest(unittest.TestCase):
             # exit is invoked when 'with' body exits (either via exception, branch)
             def __exit__(self, t, v, tb):
                 self.s.assertEqual(v[0], 15)  # exception passed in as local
-                if is_ironpython:  # http://ironpython.codeplex.com/workitem/27990
+                if is_cli:  # http://ironpython.codeplex.com/workitem/27990
                     self.s.A(None)  # but sys.exc_info() should not be set!!
                 else:
                     self.s.A(15)
@@ -524,7 +524,7 @@ class ExcInfoTest(unittest.TestCase):
 
             def __exit__(self, t, v, tb):
                 self.s.assertEqual(v[0], 34)  # gets failure from With block
-                if is_ironpython:  # http://ironpython.codeplex.com/workitem/27990
+                if is_cli:  # http://ironpython.codeplex.com/workitem/27990
                     self.s.A(15)  # gets failure from sys.exc_info() which is from outer except block
                 else:
                     self.s.A(34)
@@ -538,7 +538,7 @@ class ExcInfoTest(unittest.TestCase):
             with M2(self):
                 self.A(15)
                 raise ValueError(34)
-            if is_ironpython:  # http://ironpython.codeplex.com/workitem/27990
+            if is_cli:  # http://ironpython.codeplex.com/workitem/27990
                 self.A(15)
             else:
                 self.A(34)

@@ -472,20 +472,25 @@ class CodecTest(IronPythonTestCase):
         t_out_lines, t_err_lines = run_python("cp11334_ok.py")
 
         self.assertEqual(len(t_err_lines), 0)
+        self.assertEqual(len(t_out_lines), 1)
         if is_cli:
             # CodePlex 11334: IronPython uses active console codepage for output
-            # The test below assumes cp850, which is default on Western European/Northern American Windows
             # Check active codepage in cmd.exe by running 'chcp' or 'mode'
             # Check active codepage in powershell.exe by evaluating [Console]::OutputEncoding
+            import clr
             import System
-            if not is_netcoreapp and System.Console.OutputEncoding.CodePage == 850:
-                self.assertEqual(t_out_lines[0].rstrip(), b"\xe6ble")
+            clr.AddReference('System.Console')
+            # expected = '\xb5ble'.encode(System.Console.OutputEncoding) # this will not work correctly if encoding is UTF-8, which by default adds a preamble
+            expected = '\xb5ble'.encode("cp" + str(System.Console.OutputEncoding.CodePage))
+            self.assertEqual(t_out_lines[0].rstrip(), expected)
         else:
-            # CPython uses Latin-1 for pipe output, unless overriden by PYTHONIOENCODING emvironment vairable
-            # The test below assumes PYTHONIOENCODING not defined, which is default
+            # CPython uses locale.getpreferredencoding() for pipe output
+            # unless overriden by PYTHONIOENCODING emvironment vairable.
+            # The active console codepage is ignored (which is a confirmed bug: bpo-6135, bpo-27179)
             if not 'PYTHONIOENCODING' in os.environ:
-                self.assertEqual(t_out_lines[0].rstrip(), b"\xb5ble")
-        self.assertEqual(len(t_out_lines), 1)
+                import locale
+                expected = '\xb5ble'.encode(locale.getpreferredencoding())
+                self.assertEqual(t_out_lines[0].rstrip(), expected)
 
     def test_cp1214(self):
         """

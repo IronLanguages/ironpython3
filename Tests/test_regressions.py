@@ -900,7 +900,6 @@ class C:
             help(gh1435.someMethod4)
         self.assertTrue('\n'.join(trapper.messages), expected)
 
-    @unittest.skipIf(is_netcoreapp, 'https://github.com/IronLanguages/ironpython2/issues/373')
     def test_gh278(self):
         import _random
         r = _random.Random()

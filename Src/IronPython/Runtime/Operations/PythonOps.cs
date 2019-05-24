@@ -158,13 +158,20 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static PythonTuple LookupEncoding(CodeContext/*!*/ context, string encoding) {
-            context.LanguageContext.EnsureEncodings();
-
-            List<object> searchFunctions = context.LanguageContext.SearchFunctions;
-            string normalized = encoding.ToLower().Replace(' ', '-');
-            if (normalized.IndexOf(Char.MinValue) != -1) {
+            if (encoding.IndexOf('\0') != -1) {
                 throw PythonOps.TypeError("lookup string cannot contain null character");
             }
+            //compute encoding.ToLower().Replace(' ', '-') but ToLower only on ASCII letters
+            var sb = new StringBuilder(encoding.Length);
+            foreach (var c in encoding) {
+                if (c == ' ') sb.Append('-');
+                else if (c < 0x80) sb.Append(char.ToLowerInvariant(c));
+                else sb.Append(c);
+            }
+            string normalized = sb.ToString();
+
+            context.LanguageContext.EnsureEncodings();
+            List<object> searchFunctions = context.LanguageContext.SearchFunctions;
             lock (searchFunctions) {
                 for (int i = 0; i < searchFunctions.Count; i++) {
                     object res = PythonCalls.Call(context, searchFunctions[i], normalized);

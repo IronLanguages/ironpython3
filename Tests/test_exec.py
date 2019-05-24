@@ -306,7 +306,7 @@ def test_eolns():
     def f3(sep): exec("exec '''x = 3$y = 5$'''".replace('$', sep))
 
     for x in [f1, f2, f3]:
-        if is_ironpython: #http://ironpython.codeplex.com/workitem/27991
+        if is_cli: #http://ironpython.codeplex.com/workitem/27991
             AssertError(SyntaxError, x, '\r\n')
             AssertError(SyntaxError, x, '\r')
         else:

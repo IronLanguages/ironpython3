@@ -120,7 +120,7 @@ namespace IronPython.Hosting {
 
         protected override int RunInteractiveLoop() {
             var sys = Engine.GetSysModule();
-                        
+
             sys.SetVariable("ps1", ">>> ");
             sys.SetVariable("ps2", "... ");
             return base.RunInteractiveLoop();
@@ -135,10 +135,10 @@ namespace IronPython.Hosting {
 
             Console.Output = new OutputWriter(PythonContext, false);
             Console.ErrorOutput = new OutputWriter(PythonContext, true);
-            
+
             // TODO: must precede path initialization! (??? - test test_importpkg.py)
             int pathIndex = PythonContext.PythonOptions.SearchPaths.Count;
-                        
+
             Language.DomainManager.LoadAssembly(typeof(string).Assembly);
             Language.DomainManager.LoadAssembly(typeof(System.Diagnostics.Debug).Assembly);
 
@@ -200,7 +200,7 @@ namespace IronPython.Hosting {
 
             return modCtx.GlobalScope;
         }
-        
+
         private void InitializePath(ref int pathIndex) {
 
             // paths, environment vars
@@ -236,7 +236,7 @@ namespace IronPython.Hosting {
         private void InitializeModules() {
             string executable = "";
             string prefix = null;
- 
+
             Assembly entryAssembly = Assembly.GetEntryAssembly();
             //Can be null if called from unmanaged code (VS integration scenario)
             if (entryAssembly != null) {
@@ -284,7 +284,7 @@ namespace IronPython.Hosting {
             string dir = Path.Combine(PythonContext.InitialPrefix, "DLLs");
             if (Directory.Exists(dir)) {
                 foreach (string file in Directory.EnumerateFiles(dir, "*.dll")) {
-                    if(file.ToLower().EndsWith(".dll")) {
+                    if (file.ToLower().EndsWith(".dll")) {
                         try {
                             ClrModule.AddReferenceToFile(PythonContext.SharedContext, new FileInfo(file).Name);
                         } catch {
@@ -305,9 +305,9 @@ namespace IronPython.Hosting {
             }
         }
 
-#endregion
+        #endregion
 
-#region Interactive
+        #region Interactive
 
         protected override int RunInteractive() {
             PrintLogo();
@@ -325,7 +325,7 @@ namespace IronPython.Hosting {
             }
 
             var sys = Engine.GetSysModule();
-            
+
             sys.SetVariable("ps1", ">>> ");
             sys.SetVariable("ps2", "... ");
 
@@ -359,7 +359,7 @@ namespace IronPython.Hosting {
                 return "... ";
             }
         }
-        
+
         private void RunStartup() {
             if (Options.IgnoreEnvironmentVariables)
                 return;
@@ -444,7 +444,7 @@ namespace IronPython.Hosting {
             PythonCompilerOptions pco = (PythonCompilerOptions)Language.GetCompilerOptions(Scope);
             pco.Module |= ModuleOptions.ExecOrEvalCode;
 
-            Action action = delegate() {
+            Action action = delegate () {
                 try {
                     su.Compile(pco, ErrorSink).Run(Scope);
                 } catch (Exception e) {
@@ -474,9 +474,9 @@ namespace IronPython.Hosting {
             return Parser.GetNextAutoIndentSize(text, Options.AutoIndentSize);
         }
 
-#endregion
+        #endregion
 
-#region Command
+        #region Command
 
         protected override int RunCommand(string command) {
             if (Options.HandleExceptions) {
@@ -486,9 +486,9 @@ namespace IronPython.Hosting {
                     Console.WriteLine(Language.FormatException(e), Style.Error);
                     return 1;
                 }
-            } 
+            }
 
-            return RunCommandWorker(command);            
+            return RunCommandWorker(command);
         }
 
         private int RunCommandWorker(string command) {
@@ -515,9 +515,9 @@ namespace IronPython.Hosting {
             return 0;
         }
 
-#endregion
+        #endregion
 
-#region File
+        #region File
 
         protected override int RunFile(string/*!*/ fileName) {
             int result = 1;
@@ -532,8 +532,8 @@ namespace IronPython.Hosting {
             }
 
             return result;
-        }        
-        
+        }
+
         private int RunFileWorker(string/*!*/ fileName) {
             try {
                 // There is no PEP for this case, only http://bugs.python.org/issue1739468
@@ -554,15 +554,15 @@ namespace IronPython.Hosting {
             // classic file
             ScriptCode compiledCode;
             ModuleOptions modOpt = ModuleOptions.Optimized | ModuleOptions.ModuleBuiltins;
-            if(Options.SkipFirstSourceLine) {
+            if (Options.SkipFirstSourceLine) {
                 modOpt |= ModuleOptions.SkipFirstLine;
 
             }
             PythonModule module = PythonContext.CompileModule(
-                fileName, 
+                fileName,
                 "__main__",
                 PythonContext.CreateFileUnit(String.IsNullOrEmpty(fileName) ? null : fileName, PythonContext.DefaultEncoding),
-                modOpt, 
+                modOpt,
                 out compiledCode);
             PythonContext.PublishModule("__main__", module);
             Scope = module.Scope;
@@ -570,7 +570,7 @@ namespace IronPython.Hosting {
             try {
                 compiledCode.Run(Scope);
             } catch (SystemExitException pythonSystemExit) {
-                
+
                 // disable introspection when exited:
                 Options.Introspection = false;
 
@@ -580,7 +580,7 @@ namespace IronPython.Hosting {
             return 0;
         }
 
-#endregion
+        #endregion
 
         public override IList<string> GetGlobals(string name) {
             IList<string> res = base.GetGlobals(name);
@@ -606,4 +606,5 @@ namespace IronPython.Hosting {
 
     }
 }
+
 #endif

@@ -148,10 +148,8 @@ namespace IronPython.Runtime {
             }
 
             string package = null;
-            object attribute;
-            PythonDictionary pyGlobals = globals as PythonDictionary;
-            if (pyGlobals != null) {
-                if (pyGlobals._storage.TryGetPackage(out attribute)) {
+            if (globals is PythonDictionary pyGlobals) {
+                if (pyGlobals._storage.TryGetPackage(out object attribute)) {
                     package = attribute as string;
                     if (package == null && attribute != null) {
                         throw PythonOps.ValueError("__package__ set to non-string");
@@ -191,8 +189,16 @@ namespace IronPython.Runtime {
                 PythonList path; // path to search
                 if (TryGetNameAndPath(context, globals, firstName, level, package, out name, out path, out parentModule)) {
                     finalName = name;
+                    var existingOrMetaPathModule = false;
                     // import relative
-                    if (!TryGetExistingOrMetaPathModule(context, name, path, out newmod)) {
+                    if (TryGetExistingModule(context, name, out newmod)) {
+                        existingOrMetaPathModule = true;
+                    } else if (TryLoadMetaPathModule(context, name, path, out newmod)) {
+                        existingOrMetaPathModule = true;
+                        if (parentModule != null && !string.IsNullOrEmpty(firstName)) {
+                            parentModule.__dict__[firstName] = newmod;
+                        }
+                    } else {
                         newmod = ImportFromPath(context, firstName, name, path);
                         if (newmod == null) {
                             // add an indirection entry saying this module does not exist
@@ -201,16 +207,17 @@ namespace IronPython.Runtime {
                         } else if (parentModule != null) {
                             parentModule.__dict__[firstName] = newmod;
                         }
-                        
-                    } else if (firstDot == -1) {
+                    }
+
+                    if (existingOrMetaPathModule && firstDot == -1) {
                         // if we imported before having the assembly
                         // loaded and then loaded the assembly we want
                         // to make the assembly available now.
-
                         if (newmod is NamespaceTracker) {
                             context.ShowCls = true;
                         }
                     }
+
                 }
             }
 

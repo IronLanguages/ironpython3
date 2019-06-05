@@ -24,21 +24,24 @@ namespace IronPython.Runtime {
         private readonly PythonTuple _shape;
         private readonly int _itemsize;
 
+        private int? _storedHash;
+
         // Variable to determine whether this memoryview is aligned
         // with and has the same type as the underlying buffer. This
         // allows us to fast-path by getting the specific item instead
         // of having to convert to and from bytes.
         private readonly bool _matchesBuffer;
 
-        public MemoryView(IBufferProtocol obj) {
-            _buffer = obj;
+        public MemoryView(IBufferProtocol @object) {
+            _buffer = @object;
             _step = 1;
             _format = _buffer.Format;
             _itemsize = (int)_buffer.ItemSize;
             _matchesBuffer = true;
         }
 
-        public MemoryView(MemoryView obj) : this(obj._buffer, obj._start, obj._end, obj._step, obj._format, obj._shape) { }
+        public MemoryView(MemoryView @object) :
+            this(@object._buffer, @object._start, @object._end, @object._step, @object._format, @object._shape) { }
 
         internal MemoryView(IBufferProtocol @object, int start, int? end, int step, string format, PythonTuple shape) {
             _buffer = @object;
@@ -68,11 +71,7 @@ namespace IronPython.Runtime {
 
         public int __len__() {
             CheckBuffer();
-            if (shape[0] is BigInteger b) {
-                return (int)b;
-            }
-
-            return (int)shape[0];
+            return Converter.ConvertToInt32(shape[0]);
         }
 
         public object obj {
@@ -87,6 +86,7 @@ namespace IronPython.Runtime {
         }
 
         public object __enter__() {
+            CheckBuffer();
             return this;
         }
 
@@ -147,18 +147,44 @@ namespace IronPython.Runtime {
         public object suboffsets {
             get {
                 CheckBuffer();
-                return _buffer.SubOffsets;
+                return _buffer.SubOffsets ?? PythonOps.MakeTuple();
             }
         }
 
         public Bytes tobytes() {
             CheckBuffer();
-            return _buffer.ToBytes(_start, _end);
+            byte[] bytes = getByteRange(_start, numberOfElements() * (int)itemsize);
+
+            if (_step == 1) {
+                return Bytes.Make(bytes);
+            }
+
+            // getByteRange() doesn't care about our _step, so if we have one
+            // that isn't 1, we will need to get rid of any bytes we don't care
+            // about and potentially adjust for a reversed memoryview.
+            byte[] stridedBytes = new byte[bytes.Length / (int)itemsize];
+            for (int indexStrided = 0; indexStrided < stridedBytes.Length; indexStrided += (int)itemsize) {
+
+                int indexInBytes = indexStrided * _step;
+
+                for (int j = 0; j < (int)itemsize; j++) {
+                    stridedBytes[indexStrided + j] = bytes[indexInBytes + j];
+                }
+            }
+
+            return Bytes.Make(stridedBytes);
         }
 
         public PythonList tolist() {
             CheckBuffer();
-            return _buffer.ToList(_start, _end);
+            List<object> list = new List<object>();
+
+            int length = numberOfElements();
+            for (int i = 0; i < length; i++) {
+                list.Add(getAtFlatIndex(i));
+            }
+
+            return PythonOps.MakeListFromSequence(list);
         }
 
         public MemoryView cast(object format) {
@@ -220,7 +246,7 @@ namespace IronPython.Runtime {
             if (shapeAsTuple != null) {
                 int lengthGivenShape = 1;
                 for (int i = 0; i < shapeAsTuple.Count; i++) {
-                    lengthGivenShape *= (int)shapeAsTuple[i];
+                    lengthGivenShape *= Converter.ConvertToInt32(shapeAsTuple[i]);
                 }
 
                 if (lengthGivenShape != newLength) {
@@ -390,6 +416,12 @@ namespace IronPython.Runtime {
                     throw PythonOps.NotImplementedError("multi-dimensional sub-views are not implemented");
                 }
 
+                // We expect to get a numeric value when setting a paricular
+                // element, which we will handle by breaking up into bytes
+                if (!(value is int)) {
+                    throw PythonOps.TypeError("TypeError: memoryview: invalid type for format '{0}'", format);
+                }
+
                 setAtFlatIndex(index, value);
             }
         }
@@ -416,8 +448,8 @@ namespace IronPython.Runtime {
                 int start, stop, step;
                 FixSlice(slice, __len__(), out start, out stop, out step);
 
-                int newStart = _start + (start * (int)itemsize);
-                int newEnd = _start + (stop * (int)itemsize);
+                int newStart = _start + start * (int)itemsize;
+                int newEnd = _start + stop * (int)itemsize;
                 int newStep = _step * step;
 
                 List<int> dimensions = new List<int>();
@@ -426,8 +458,9 @@ namespace IronPython.Runtime {
                 // applies to only the first dimension. Therefore, other
                 // dimensions are inherited.
                 dimensions.Add((stop - start) / step);
+
                 for (int i = 1; i < shape.__len__(); i++) {
-                    dimensions.Add((int)shape[i]);
+                    dimensions.Add(Converter.ConvertToInt32(shape[i]));
                 }
 
                 PythonTuple newShape = PythonOps.MakeTupleFromSequence(dimensions);
@@ -472,6 +505,10 @@ namespace IronPython.Runtime {
         }
 
         public int __hash__(CodeContext context) {
+            if (_storedHash != null) {
+                return _storedHash.Value;
+            }
+
             if (!@readonly) {
                 throw PythonOps.ValueError("cannot hash writable memoryview object");
             }
@@ -480,10 +517,16 @@ namespace IronPython.Runtime {
                 throw PythonOps.ValueError("memoryview: hashing is restricted to formats 'B', 'b' or 'c'");
             }
 
-            return tobytes().GetHashCode();
+            _storedHash = tobytes().GetHashCode();
+            return _storedHash.Value;
         }
 
-        public bool __eq__(CodeContext/*!*/ context, [NotNull]MemoryView value) => tobytes().Equals(value.tobytes());
+        public bool __eq__(CodeContext/*!*/ context, [NotNull]MemoryView value) {
+            if (_buffer == null) {
+                return value._buffer == null;
+            }
+            return tobytes().Equals(value.tobytes());
+        }
 
         public bool __eq__(CodeContext/*!*/ context, [NotNull]IBufferProtocol value) => __eq__(context, new MemoryView(value));
 
@@ -498,9 +541,32 @@ namespace IronPython.Runtime {
         [return: MaybeNotImplemented]
         public object __ne__(CodeContext/*!*/ context, object value) => NotImplementedType.Value;
 
+        public bool __lt__(CodeContext/*!*/ context, object value) {
+            throw PythonOps.TypeError("'<' not supported between instances of '{0}' and '{1}'",
+                                      PythonOps.GetPythonTypeName(this), PythonOps.GetPythonTypeName(value));
+        }
+
+        public bool __le__(CodeContext/*!*/ context, object value) {
+            throw PythonOps.TypeError("'<=' not supported between instances of '{0}' and '{1}'",
+                                      PythonOps.GetPythonTypeName(this), PythonOps.GetPythonTypeName(value));
+        }
+
+        public bool __gt__(CodeContext/*!*/ context, object value) {
+            throw PythonOps.TypeError("'>' not supported between instances of '{0}' and '{1}'",
+                                      PythonOps.GetPythonTypeName(this), PythonOps.GetPythonTypeName(value));
+        }
+
+        public bool __ge__(CodeContext/*!*/ context, object value) {
+            throw PythonOps.TypeError("'>=' not supported between instances of '{0}' and '{1}'",
+                                      PythonOps.GetPythonTypeName(this), PythonOps.GetPythonTypeName(value));
+        }
+
         #region ICodeFormattable Members
 
         public string __repr__(CodeContext context) {
+            if (_buffer == null) {
+                return String.Format("<released memory at {0}>", PythonOps.Id(this));
+            }
             return String.Format("<memory at {0}>", PythonOps.Id(this));
         }
 

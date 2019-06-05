@@ -283,6 +283,16 @@ namespace IronPython.Runtime.Operations {
         }
 
         [StaticExtensionMethod]
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull]MemoryView @object) {
+            return __new__(context, cls, @object.__repr__(context));
+        }
+
+        [StaticExtensionMethod]
+        public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull]MemoryView @object, string encoding = "utf-8", string errors = "strict") {
+            return __new__(context, cls, @object.tobytes(), encoding, errors);
+        }
+
+        [StaticExtensionMethod]
         public static object __new__(CodeContext/*!*/ context, PythonType cls, [NotNull][BytesConversion]IList<byte> @object) {
             if (cls == TypeCache.String) {
                 return FastNew(context, @object);

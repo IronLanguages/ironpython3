@@ -182,9 +182,7 @@ class CastTests(unittest.TestCase):
         self.assertRaises(TypeError, lambda: mv.cast('i', (2,2,2)))
         mv.cast('h', (2,2,2))
 
-    # WIP: fails because this[PythonTuple] is not implemented,
-    # and __len__ captures the total number of elements instead
-    # of the first dimension
+    # WIP: fails because this[PythonTuple] is not implemented
     @unittest.expectedFailure
     def test_cast_reshape(self):
         a = array.array('b', range(16))

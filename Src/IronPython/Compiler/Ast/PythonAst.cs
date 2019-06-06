@@ -330,10 +330,8 @@ namespace IronPython.Compiler.Ast {
         }
 
         internal MSAst.Expression ReduceWorker() {
-            var retStmt = _body as ReturnStatement;
-            
-            if (retStmt != null && 
-                (_languageFeatures == ModuleOptions.None || 
+            if (_body is ReturnStatement retStmt &&
+                (_languageFeatures == ModuleOptions.None ||
                 _languageFeatures == (ModuleOptions.ExecOrEvalCode | ModuleOptions.Interpret) ||
                 _languageFeatures == (ModuleOptions.ExecOrEvalCode | ModuleOptions.Interpret | ModuleOptions.LightThrow))) {
                 // for simple eval's we can construct a simple tree which just
@@ -367,8 +365,9 @@ namespace IronPython.Compiler.Ast {
             ReadOnlyCollectionBuilder<MSAst.Expression> block = new ReadOnlyCollectionBuilder<MSAst.Expression>();
             AddInitialiation(block);
 
-            if (IsModule) {
-                block.Add(AssignValue(GetVariableExpression(DocVariable), Ast.Constant(GetDocumentation(_body))));
+            string doc = GetDocumentation(_body);
+            if (doc != null) {
+                block.Add(AssignValue(GetVariableExpression(DocVariable), Ast.Constant(doc)));
             }
 
             if (!(_body is SuiteStatement) && _body.CanThrow) {

@@ -52,6 +52,9 @@ namespace IronPythonTest.Stress {
                 scope = null;
             }
 
+            // free up weak data structures held onto by the Python runtime
+            _pe.Execute("import gc\ngc.collect()");
+
             long finalMemory = GetTotalMemory();
             long memoryUsed = finalMemory - initialMemory;
             const long memoryThreshold = 100000;

@@ -333,6 +333,24 @@ namespace IronPython.Runtime {
             manager.AssemblyLoaded += new EventHandler<AssemblyLoadedEventArgs>(ManagerAssemblyLoaded);
 
             _mainThreadFunctionStack = PythonOps.GetFunctionStack();
+
+            // bootstrap importlib
+            try {
+                var sourceUnit = CreateSourceUnit(new BootstrapStreamContentProvider(), null, DefaultEncoding, SourceCodeKind.File);
+
+                var moduleOptions = ModuleOptions.Initialize | ModuleOptions.Optimized;
+                var scriptCode = GetScriptCode(sourceUnit, "_frozen_importlib", moduleOptions);
+                var scope = scriptCode.CreateScope();
+                var _frozen_importlib = InitializeModule(null, ((PythonScopeExtension)scope.GetExtension(ContextId)).ModuleContext, scriptCode, moduleOptions);
+
+                PythonOps.Invoke(SharedClsContext, _frozen_importlib, "_install", _systemState, GetBuiltinModule("_imp"));
+            } catch { }
+        }
+
+        private sealed class BootstrapStreamContentProvider : StreamContentProvider {
+            public override Stream GetStream() {
+                return typeof(PythonContext).Assembly.GetManifestResourceStream("IronPython.Modules._bootstrap.py");
+            }
         }
 
         private void ManagerAssemblyLoaded(object sender, AssemblyLoadedEventArgs e) {

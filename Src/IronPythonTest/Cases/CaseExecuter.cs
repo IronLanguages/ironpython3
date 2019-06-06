@@ -107,25 +107,12 @@ namespace IronPythonTest.Cases {
 
         public int RunTest(TestInfo testcase) {
             int retryCount = testcase.Options.RetryCount;
-            if (retryCount > 0) {
-                int res = -1;
-                for (int i = 0; i < retryCount; i++) {
-                    try {
-                        res = RunTestImpl(testcase);
-                    } catch (Exception ex) {
-                        res = -1;
-                        if (i == (retryCount - 1)) {
-                            throw ex;
-                        }
-                    }
-
-                    if (res != 0) {
-                        NUnit.Framework.TestContext.Progress.WriteLine($"Test {testcase.Name} failed, retrying again. Retry #{i + 1}");
-                    } else {
-                        break;
-                    }
-                }
-                return res;
+            for (int i = 0; i < retryCount; i++) {
+                try {
+                    var res = RunTestImpl(testcase);
+                    if (res == 0) return res;
+                    NUnit.Framework.TestContext.Progress.WriteLine($"Test {testcase.Name} failed, retrying again. Retry #{i + 1}");
+                } catch { }
             }
 
             return RunTestImpl(testcase);

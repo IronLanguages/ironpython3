@@ -746,10 +746,10 @@ namespace IronPython.Compiler.Ast {
 
         // PythonAst
         public override bool Walk(PythonAst node) {
+            node.DocVariable = DefineName("__doc__");
             if (node.IsModule) {
                 node.NameVariable = DefineName("__name__");
                 node.FileVariable = DefineName("__file__");
-                node.DocVariable = DefineName("__doc__");
 
                 // commonly used module variables that we want defined for optimization purposes
                 DefineName("__path__");

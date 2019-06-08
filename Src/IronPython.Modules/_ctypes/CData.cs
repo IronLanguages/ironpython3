@@ -140,7 +140,7 @@ namespace IronPython.Modules {
                 get { return null; }
             }
 
-            object IBufferProtocol.SubOffsets {
+            PythonTuple IBufferProtocol.SubOffsets {
                 get { return null; }
             }
 

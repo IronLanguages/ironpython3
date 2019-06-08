@@ -10,10 +10,11 @@ using Microsoft.Scripting.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace IronPython.Runtime {
     [PythonType("memoryview")]
-    public sealed class MemoryView : ICodeFormattable {
+    public sealed class MemoryView : ICodeFormattable, IWeakReferenceable {
         private const int MaximumDimensions = 64;
 
         private IBufferProtocol _buffer;
@@ -25,6 +26,7 @@ namespace IronPython.Runtime {
         private readonly int _itemsize;
 
         private int? _storedHash;
+        private WeakRefTracker _tracker;
 
         // Variable to determine whether this memoryview is aligned
         // with and has the same type as the underlying buffer. This
@@ -144,15 +146,19 @@ namespace IronPython.Runtime {
             }
         }
 
-        public object suboffsets {
+        public PythonTuple suboffsets {
             get {
                 CheckBuffer();
-                return _buffer.SubOffsets ?? PythonOps.MakeTuple();
+                return _buffer.SubOffsets ?? PythonTuple.EMPTY;
             }
         }
 
         public Bytes tobytes() {
             CheckBuffer();
+            if (_matchesBuffer && _step == 1) {
+                return _buffer.ToBytes(_start / (int)itemsize, _end / (int)itemsize);
+            }
+
             byte[] bytes = getByteRange(_start, numberOfElements() * (int)itemsize);
 
             if (_step == 1) {
@@ -177,14 +183,15 @@ namespace IronPython.Runtime {
 
         public PythonList tolist() {
             CheckBuffer();
-            List<object> list = new List<object>();
 
             int length = numberOfElements();
+            object[] elements = new object[length];
+
             for (int i = 0; i < length; i++) {
-                list.Add(getAtFlatIndex(i));
+                elements[i] = getAtFlatIndex(i);
             }
 
-            return PythonOps.MakeListFromSequence(list);
+            return PythonList.FromArrayNoCopy(elements);
         }
 
         public MemoryView cast(object format) {
@@ -418,11 +425,12 @@ namespace IronPython.Runtime {
 
                 // We expect to get a numeric value when setting a paricular
                 // element, which we will handle by breaking up into bytes
-                if (!(value is int)) {
+                long valueAsLong = 0;
+                if (!Converter.TryConvertToInt64(value, out valueAsLong)) {
                     throw PythonOps.TypeError("TypeError: memoryview: invalid type for format '{0}'", format);
                 }
 
-                setAtFlatIndex(index, value);
+                setAtFlatIndex(index, valueAsLong);
             }
         }
 
@@ -568,6 +576,22 @@ namespace IronPython.Runtime {
                 return String.Format("<released memory at {0}>", PythonOps.Id(this));
             }
             return String.Format("<memory at {0}>", PythonOps.Id(this));
+        }
+
+        #endregion
+
+        #region IWeakReferenceable Members
+
+        WeakRefTracker IWeakReferenceable.GetWeakRef() {
+            return _tracker;
+        }
+
+        bool IWeakReferenceable.SetWeakRef(WeakRefTracker value) {
+            return Interlocked.CompareExchange(ref _tracker, value, null) == null;
+        }
+
+        void IWeakReferenceable.SetFinalizer(WeakRefTracker value) {
+            _tracker = value;
         }
 
         #endregion

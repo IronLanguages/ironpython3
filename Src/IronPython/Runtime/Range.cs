@@ -100,7 +100,7 @@ namespace IronPython.Runtime {
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
-        public object this[Slice slice] {
+        public object this[[NotNull]Slice slice] {
             get {
                 int ostart, ostop, ostep;
                 slice.indices(_length, out ostart, out ostop, out ostep);

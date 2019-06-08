@@ -6,12 +6,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using IronPython.Runtime;
-using IronPython.Runtime.Operations;
+
 using Microsoft.Scripting;
-using Microsoft.Scripting.Runtime;
-using IronPython.Runtime.Binding;
 using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Runtime;
+
+using IronPython.Runtime;
+using IronPython.Runtime.Binding;
+using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 [assembly: PythonModule("_operator", typeof(IronPython.Modules.PythonOperator))]
@@ -22,6 +24,7 @@ namespace IronPython.Modules {
         public class attrgetter {
             private readonly object[] _names;
             public attrgetter(params object[] attrs) {
+                if (attrs == null || !attrs.All(x => x is string)) throw PythonOps.TypeError("attribute name must be a string");
                 if (attrs.Length == 0) throw PythonOps.TypeError("attrgetter expected 1 arguments, got 0");
 
                 this._names = attrs;
@@ -85,14 +88,15 @@ namespace IronPython.Modules {
             private readonly object[] _args;
             private readonly IDictionary<object, object> _dict;
 
-            public methodcaller(string name, params object[] args) {
-                _name = name;
-                _args = args;
+            public methodcaller(params object[] args) {
+                if (args == null) throw PythonOps.TypeError("TypeError: method name must be a string");
+                if (args.Length == 0) throw PythonOps.TypeError("methodcaller needs at least one argument, the method name");
+                _name = args[0] as string;
+                if (_name == null) throw PythonOps.TypeError("TypeError: method name must be a string");
+                _args = args.Skip(1).ToArray();
             }
 
-            public methodcaller(string name, [ParamDictionary]IDictionary<object, object> kwargs, params object[] args) {
-                _name = name;
-                _args = args;
+            public methodcaller([ParamDictionary]IDictionary<object, object> kwargs, params object[] args) : this(args) {
                 _dict = kwargs;
             }
 

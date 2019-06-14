@@ -182,6 +182,20 @@ class CastTests(unittest.TestCase):
         self.assertRaises(TypeError, lambda: mv.cast('i', (2,2,2)))
         mv.cast('h', (2,2,2))
 
+    def test_cast_q_opcode_cast(self):
+        a = array.array('b', range(8))
+        mv = memoryview(a).cast('q')
+        mv[0] = 9223372036854775807
+        self.assertEqual(a[0], -1)
+        self.assertEqual(a[1], -1)
+        self.assertEqual(a[2], -1)
+        self.assertEqual(a[3], -1)
+        self.assertEqual(a[4], -1)
+        self.assertEqual(a[5], -1)
+        self.assertEqual(a[6], -1)
+        self.assertEqual(a[7], 127)
+        self.assertIs(type(mv[0]), type(9223372036854775807))
+
     # WIP: fails because this[PythonTuple] is not implemented
     @unittest.expectedFailure
     def test_cast_reshape(self):

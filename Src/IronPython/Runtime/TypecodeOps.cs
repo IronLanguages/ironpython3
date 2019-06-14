@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -78,6 +79,12 @@ namespace IronPython.Runtime {
                 case "d":
                     result = BitConverter.ToDouble(bytes, offset);
                     return true;
+                case "q":
+                    result = (BigInteger)(BitConverter.ToInt64(bytes, offset));
+                    return true;
+                case "Q":
+                    result = (BigInteger)(BitConverter.ToUInt64(bytes, offset));
+                    return true;
                 default:
                     result = 0;
                     return false;
@@ -117,6 +124,12 @@ namespace IronPython.Runtime {
                     return true;
                 case "d":
                     result = BitConverter.GetBytes(Convert.ToDouble(obj));
+                    return true;
+                case "q":
+                    result = BitConverter.GetBytes(Convert.ToInt64(obj));
+                    return true;
+                case "Q":
+                    result = BitConverter.GetBytes(Convert.ToUInt64(obj));
                     return true;
                 default:
                     result = null;

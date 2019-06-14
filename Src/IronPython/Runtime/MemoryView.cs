@@ -66,9 +66,9 @@ namespace IronPython.Runtime {
 
         private int numberOfElements() {
             if (_end != null) {
-                return (_end.Value - _start) / ((int)itemsize * _step);
+                return (_end.Value - _start) / (_itemsize * _step);
             }
-            return _buffer.ItemCount * (int)_buffer.ItemSize / ((int)itemsize * _step);
+            return _buffer.ItemCount * (int)_buffer.ItemSize / (_itemsize * _step);
         }
 
         public int __len__() {
@@ -156,10 +156,10 @@ namespace IronPython.Runtime {
         public Bytes tobytes() {
             CheckBuffer();
             if (_matchesBuffer && _step == 1) {
-                return _buffer.ToBytes(_start / (int)itemsize, _end / (int)itemsize);
+                return _buffer.ToBytes(_start / _itemsize, _end / _itemsize);
             }
 
-            byte[] bytes = getByteRange(_start, numberOfElements() * (int)itemsize);
+            byte[] bytes = getByteRange(_start, numberOfElements() * _itemsize);
 
             if (_step == 1) {
                 return Bytes.Make(bytes);
@@ -168,12 +168,12 @@ namespace IronPython.Runtime {
             // getByteRange() doesn't care about our _step, so if we have one
             // that isn't 1, we will need to get rid of any bytes we don't care
             // about and potentially adjust for a reversed memoryview.
-            byte[] stridedBytes = new byte[bytes.Length / (int)itemsize];
-            for (int indexStrided = 0; indexStrided < stridedBytes.Length; indexStrided += (int)itemsize) {
+            byte[] stridedBytes = new byte[bytes.Length / _itemsize];
+            for (int indexStrided = 0; indexStrided < stridedBytes.Length; indexStrided += _itemsize) {
 
                 int indexInBytes = indexStrided * _step;
 
-                for (int j = 0; j < (int)itemsize; j++) {
+                for (int j = 0; j < _itemsize; j++) {
                     stridedBytes[indexStrided + j] = bytes[indexInBytes + j];
                 }
             }
@@ -249,7 +249,7 @@ namespace IronPython.Runtime {
                 throw PythonOps.TypeError("memoryview: length is not a multiple of itemsize");
             }
 
-            int newLength = length * (int)itemsize / newItemsize;
+            int newLength = length * _itemsize / newItemsize;
             if (shapeAsTuple != null) {
                 int lengthGivenShape = 1;
                 for (int i = 0; i < shapeAsTuple.Count; i++) {
@@ -382,8 +382,8 @@ namespace IronPython.Runtime {
                 return _buffer.GetItem((_start / _itemsize) + (index * _step));
             }
 
-            int firstByteIndex = _start + index * (int)itemsize * _step;
-            object result = packBytes(format, getByteRange(firstByteIndex, (int)itemsize), 0, (int)_buffer.ItemSize);
+            int firstByteIndex = _start + index * _itemsize * _step;
+            object result = packBytes(format, getByteRange(firstByteIndex, _itemsize), 0, (int)_buffer.ItemSize);
 
             // TODO: BigInteger should also be merged into an integer once the int/long merge occurs
             if (result is BigInteger || result is double || result is float || result is Bytes) {
@@ -399,7 +399,7 @@ namespace IronPython.Runtime {
                 return;
             }
 
-            int firstByteIndex = _start + index * (int)itemsize * _step;
+            int firstByteIndex = _start + index * _itemsize * _step;
             setByteRange(firstByteIndex, unpackBytes(format, value));
         }
 
@@ -456,8 +456,8 @@ namespace IronPython.Runtime {
                 int start, stop, step;
                 FixSlice(slice, __len__(), out start, out stop, out step);
 
-                int newStart = _start + start * (int)itemsize;
-                int newEnd = _start + stop * (int)itemsize;
+                int newStart = _start + start * _itemsize;
+                int newEnd = _start + stop * _itemsize;
                 int newStep = _step * step;
 
                 List<int> dimensions = new List<int>();

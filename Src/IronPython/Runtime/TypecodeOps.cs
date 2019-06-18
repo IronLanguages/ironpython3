@@ -93,8 +93,8 @@ namespace IronPython.Runtime {
 
         public static bool TryGetBytes(string typecode, object obj, out byte[] result) {
             switch (typecode) {
-                case "c": result =
-                        new[] { (byte)Convert.ToChar(obj) };
+                case "c":
+                    result = new[] { (byte)Convert.ToChar(obj) };
                     return true;
                 case "b":
                     result = new[] { (byte)Convert.ToSByte(obj) };
@@ -123,6 +123,8 @@ namespace IronPython.Runtime {
                     result = BitConverter.GetBytes(Convert.ToSingle(obj));
                     return true;
                 case "d":
+                    double objAsDouble = 0;
+                    Converter.TryConvertToDouble(obj, out objAsDouble);
                     result = BitConverter.GetBytes(Convert.ToDouble(obj));
                     return true;
                 case "q":

@@ -265,12 +265,22 @@ namespace IronPython.Runtime {
         }
 
         private byte[] unpackBytes(string format, object o) {
-            if (TypecodeOps.TryGetBytes(format, o, out byte[] bytes)) {
-                return bytes;
-            } else if (o is Bytes b) {
-                return b._bytes; // CData returns a bytes object for its type
-            } else {
-                throw PythonOps.NotImplementedError("No conversion for type {0} to byte array", PythonOps.GetPythonTypeName(o));
+            try {
+                if (TypecodeOps.TryGetBytes(format, o, out byte[] bytes)) {
+                    return bytes;
+                } else if (o is Bytes b) {
+                    return b._bytes; // CData returns a bytes object for its type
+                } else {
+                    throw PythonOps.NotImplementedError("No conversion for type {0} to byte array", PythonOps.GetPythonTypeName(o));
+                }
+            } catch (OverflowException) {
+                bool valueError = Converter.TryConvertToBigInteger(o, out _);
+
+                if (valueError) {
+                    throw PythonOps.ValueError("memoryview: invalid type for format '{0}'", format);
+                } else {
+                    throw PythonOps.TypeError("memoryview: invalid type for format '{0}'", format);
+                }
             }
         }
 
@@ -385,15 +395,53 @@ namespace IronPython.Runtime {
             int firstByteIndex = _start + index * _itemsize * _step;
             object result = packBytes(format, getByteRange(firstByteIndex, _itemsize), 0, (int)_buffer.ItemSize);
 
-            // TODO: BigInteger should also be merged into an integer once the int/long merge occurs
-            if (result is BigInteger || result is double || result is float || result is Bytes) {
+            // TODO: BigInteger/long/ulong should also be merged into an integer once the int/long merge occurs
+           if (result is BigInteger || result is double || result is float || result is Bytes) {
                 return result;
+            } else if (result is long || result is ulong) {
+                return Converter.ConvertToBigInteger(result);
             } else {
                 return Convert.ToInt32(result);
             }
         }
 
         private void setAtFlatIndex(int index, object value) {
+            switch (format) {
+                case "x": // pad byte
+                case "s": // null-terminated string
+                case "p": // Pascal string
+                    break; // Deprecated?
+                case "d": // double
+                case "f": // float
+                    double convertedValueDouble = 0;
+                    if (!Converter.TryConvertToDouble(value, out convertedValueDouble)) {
+                        throw PythonOps.TypeError("memoryview: invalid type for format '{0}'", format);
+                    }
+                    value = convertedValueDouble;
+                    break;
+                case "P": // pointer
+                case "c": // char
+                case "b": // signed byte
+                case "B": // unsigned byte
+                case "u": // unicode char
+                case "h": // signed short
+                case "H": // unsigned short
+                case "i": // signed int
+                case "I": // unsigned int
+                case "l": // signed long
+                case "L": // unsigned long
+                case "q": // signed long long
+                case "Q": // unsigned long long
+                    long convertedValueInt64 = 0;
+                    if (!PythonOps.IsNumericObject(value) || !Converter.TryConvertToInt64(value, out convertedValueInt64)) {
+                        throw PythonOps.TypeError("memoryview: invalid type for format '{0}'", format);
+                    }
+                    value = convertedValueInt64;
+                    break;
+                default:
+                    break; // This could be a variety of types, let the _buffer decide
+            }
+
             if (_matchesBuffer) {
                 _buffer.SetItem((_start / _itemsize) + (index * _step), value);
                 return;
@@ -423,14 +471,7 @@ namespace IronPython.Runtime {
                     throw PythonOps.NotImplementedError("multi-dimensional sub-views are not implemented");
                 }
 
-                // We expect to get a numeric value when setting a paricular
-                // element, which we will handle by breaking up into bytes
-                long valueAsLong = 0;
-                if (!Converter.TryConvertToInt64(value, out valueAsLong)) {
-                    throw PythonOps.TypeError("TypeError: memoryview: invalid type for format '{0}'", format);
-                }
-
-                setAtFlatIndex(index, valueAsLong);
+                setAtFlatIndex(index, value);
             }
         }
 

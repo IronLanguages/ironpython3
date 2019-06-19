@@ -123,6 +123,20 @@ class MemoryViewTests(unittest.TestCase):
         for x, y in itertools.product((a, mv), repeat=2):
             self.assertFalse(x != y, "{} {}".format(x, y))
 
+    def test_overflow(self):
+        def setitem(m, value):
+            m[0] = value
+        mv = memoryview(array.array('b', range(8)))
+        self.assertRaises(ValueError, lambda: setitem(mv, 128))
+        self.assertRaises(ValueError, lambda: setitem(mv, 129))
+        mv = mv.cast('i')
+        self.assertRaises(ValueError, lambda: setitem(mv, 9223372036854775807))
+        self.assertRaises(ValueError, lambda: setitem(mv, -9223372036854775807))
+        mv = mv.cast('b').cast('I')
+        self.assertRaises(ValueError, lambda: setitem(mv, 9223372036854775807))
+        self.assertRaises(ValueError, lambda: setitem(mv, -1))
+
+
 class CastTests(unittest.TestCase):
     def test_get_int_alignment(self):
         a = array.array('b', range(8))

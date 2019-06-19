@@ -456,10 +456,6 @@ namespace IronPython.Runtime {
 
         private void setAtFlatIndex(int index, object value) {
             switch (format) {
-                case "x": // pad byte
-                case "s": // null-terminated string
-                case "p": // Pascal string
-                    break; // Deprecated?
                 case "d": // double
                 case "f": // float
                     double convertedValueDouble = 0;

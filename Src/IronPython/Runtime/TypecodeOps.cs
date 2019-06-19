@@ -14,9 +14,6 @@ namespace IronPython.Runtime {
                 case "c": // char
                 case "b": // signed byte
                 case "B": // unsigned byte
-                case "x": // pad byte
-                case "s": // null-terminated string
-                case "p": // Pascal string
                     width = 1;
                     return true;
                 case "u": // unicode char

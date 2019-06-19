@@ -265,22 +265,12 @@ namespace IronPython.Runtime {
         }
 
         private byte[] unpackBytes(string format, object o) {
-            try {
-                if (TypecodeOps.TryGetBytes(format, o, out byte[] bytes)) {
-                    return bytes;
-                } else if (o is Bytes b) {
-                    return b._bytes; // CData returns a bytes object for its type
-                } else {
-                    throw PythonOps.NotImplementedError("No conversion for type {0} to byte array", PythonOps.GetPythonTypeName(o));
-                }
-            } catch (OverflowException) {
-                bool valueError = Converter.TryConvertToBigInteger(o, out _);
-
-                if (valueError) {
-                    throw PythonOps.ValueError("memoryview: invalid type for format '{0}'", format);
-                } else {
-                    throw PythonOps.TypeError("memoryview: invalid type for format '{0}'", format);
-                }
+            if (TypecodeOps.TryGetBytes(format, o, out byte[] bytes)) {
+                return bytes;
+            } else if (o is Bytes b) {
+                return b._bytes; // CData returns a bytes object for its type
+            } else {
+                throw PythonOps.NotImplementedError("No conversion for type {0} to byte array", PythonOps.GetPythonTypeName(o));
             }
         }
 
@@ -396,12 +386,71 @@ namespace IronPython.Runtime {
             object result = packBytes(format, getByteRange(firstByteIndex, _itemsize), 0, (int)_buffer.ItemSize);
 
             // TODO: BigInteger/long/ulong should also be merged into an integer once the int/long merge occurs
-           if (result is BigInteger || result is double || result is float || result is Bytes) {
+            if (result is BigInteger || result is double || result is Bytes) {
                 return result;
+            } else if (result is float) {
+                return Converter.ConvertToDouble(result);
             } else if (result is long || result is ulong) {
                 return Converter.ConvertToBigInteger(result);
             } else {
                 return Convert.ToInt32(result);
+            }
+        }
+
+        /// <summary>
+        /// Verifies that the value being set does not overflow the format
+        /// for this MemoryView.
+        /// </summary>
+        /// <param name="value">The value to be set.</param>
+        private void checkNumeric(BigInteger value) {
+            ulong maxValue = 0;
+            long minValue = 0;
+
+            switch (format) {
+                case "c": // char
+                    minValue = char.MinValue;
+                    maxValue = char.MaxValue;
+                    break;
+                case "b": // signed byte
+                    minValue = sbyte.MinValue;
+                    maxValue = (ulong)sbyte.MaxValue;
+                    break;
+                case "B": // unsigned byte
+                    minValue = byte.MinValue;
+                    maxValue = byte.MaxValue;
+                    break;
+                case "u": // unicode char
+                case "h": // signed short
+                    minValue = short.MinValue;
+                    maxValue = (ulong)short.MaxValue;
+                    break;
+                case "H": // unsigned short
+                    minValue = ushort.MinValue;
+                    maxValue = ushort.MaxValue;
+                    break;
+                case "i": // signed int
+                case "l": // signed long
+                    minValue = int.MinValue;
+                    maxValue = int.MaxValue;
+                    break;
+                case "I": // unsigned int
+                case "L": // unsigned long
+                    minValue = uint.MinValue;
+                    maxValue = uint.MaxValue;
+                    break;
+                case "q": // signed long long
+                    minValue = long.MinValue;
+                    maxValue = long.MaxValue;
+                    break;
+                case "P": // pointer
+                case "Q": // unsigned long long
+                    minValue = (long)ulong.MinValue;
+                    maxValue = ulong.MaxValue;
+                    break;
+            }
+
+            if (value < minValue || value > maxValue) {
+               throw PythonOps.ValueError("memoryview: invalid value for format '{0}'", format);
             }
         }
 
@@ -419,7 +468,7 @@ namespace IronPython.Runtime {
                     }
                     value = convertedValueDouble;
                     break;
-                case "P": // pointer
+
                 case "c": // char
                 case "b": // signed byte
                 case "B": // unsigned byte
@@ -431,12 +480,19 @@ namespace IronPython.Runtime {
                 case "l": // signed long
                 case "L": // unsigned long
                 case "q": // signed long long
+                case "P": // pointer
                 case "Q": // unsigned long long
-                    long convertedValueInt64 = 0;
-                    if (!PythonOps.IsNumericObject(value) || !Converter.TryConvertToInt64(value, out convertedValueInt64)) {
+                    BigInteger asBigInt = 0;
+                    if (!Converter.TryConvertToBigInteger(value, out asBigInt)) {
                         throw PythonOps.TypeError("memoryview: invalid type for format '{0}'", format);
                     }
-                    value = convertedValueInt64;
+                    checkNumeric(asBigInt);
+
+                    if (format == "Q") {
+                        value = (ulong)asBigInt;
+                    } else {
+                        value = (long)asBigInt;
+                    }
                     break;
                 default:
                     break; // This could be a variety of types, let the _buffer decide

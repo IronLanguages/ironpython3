@@ -80,10 +80,10 @@ namespace IronPython.Runtime {
                     result = BitConverter.ToDouble(bytes, offset);
                     return true;
                 case "q":
-                    result = (BigInteger)(BitConverter.ToInt64(bytes, offset));
+                    result = (BitConverter.ToInt64(bytes, offset));
                     return true;
                 case "Q":
-                    result = (BigInteger)(BitConverter.ToUInt64(bytes, offset));
+                    result = (BitConverter.ToUInt64(bytes, offset));
                     return true;
                 default:
                     result = 0;
@@ -123,8 +123,6 @@ namespace IronPython.Runtime {
                     result = BitConverter.GetBytes(Convert.ToSingle(obj));
                     return true;
                 case "d":
-                    double objAsDouble = 0;
-                    Converter.TryConvertToDouble(obj, out objAsDouble);
                     result = BitConverter.GetBytes(Convert.ToDouble(obj));
                     return true;
                 case "q":

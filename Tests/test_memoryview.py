@@ -196,6 +196,12 @@ class CastTests(unittest.TestCase):
         self.assertEqual(a[7], 127)
         self.assertIs(type(mv[0]), type(9223372036854775807))
 
+    def test_cast_double(self):
+        a = array.array('b', range(8))
+        mv = memoryview(a).cast('d')
+        mv[0] = 3.4
+        self.assertEqual(mv[0], 3.4)
+
     # WIP: fails because this[PythonTuple] is not implemented
     @unittest.expectedFailure
     def test_cast_reshape(self):

@@ -133,5 +133,62 @@ namespace IronPython.Runtime {
                     return false;
             }
         }
+
+        /// <summary>
+        /// Verifies that the value being set does not overflow the format
+        /// for this MemoryView.
+        /// </summary>
+        /// <param name="value">The value to be set.</param>
+        public static bool CausesOverflow(BigInteger value, string format) {
+            ulong maxValue = 0;
+            long minValue = 0;
+
+            switch (format) {
+                case "c": // char
+                    minValue = char.MinValue;
+                    maxValue = char.MaxValue;
+                    break;
+                case "b": // signed byte
+                    minValue = sbyte.MinValue;
+                    maxValue = (ulong)sbyte.MaxValue;
+                    break;
+                case "B": // unsigned byte
+                    minValue = byte.MinValue;
+                    maxValue = byte.MaxValue;
+                    break;
+                case "u": // unicode char
+                case "h": // signed short
+                    minValue = short.MinValue;
+                    maxValue = (ulong)short.MaxValue;
+                    break;
+                case "H": // unsigned short
+                    minValue = ushort.MinValue;
+                    maxValue = ushort.MaxValue;
+                    break;
+                case "i": // signed int
+                case "l": // signed long
+                    minValue = int.MinValue;
+                    maxValue = int.MaxValue;
+                    break;
+                case "I": // unsigned int
+                case "L": // unsigned long
+                    minValue = uint.MinValue;
+                    maxValue = uint.MaxValue;
+                    break;
+                case "q": // signed long long
+                    minValue = long.MinValue;
+                    maxValue = long.MaxValue;
+                    break;
+                case "P": // pointer
+                case "Q": // unsigned long long
+                    minValue = (long)ulong.MinValue;
+                    maxValue = ulong.MaxValue;
+                    break;
+                default:
+                    return false; // All non-numeric types will not cause overflow.
+            }
+
+            return value < minValue || value > maxValue;
+        }
     }
 }

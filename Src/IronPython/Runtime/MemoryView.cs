@@ -397,63 +397,6 @@ namespace IronPython.Runtime {
             }
         }
 
-        /// <summary>
-        /// Verifies that the value being set does not overflow the format
-        /// for this MemoryView.
-        /// </summary>
-        /// <param name="value">The value to be set.</param>
-        private void checkNumeric(BigInteger value) {
-            ulong maxValue = 0;
-            long minValue = 0;
-
-            switch (format) {
-                case "c": // char
-                    minValue = char.MinValue;
-                    maxValue = char.MaxValue;
-                    break;
-                case "b": // signed byte
-                    minValue = sbyte.MinValue;
-                    maxValue = (ulong)sbyte.MaxValue;
-                    break;
-                case "B": // unsigned byte
-                    minValue = byte.MinValue;
-                    maxValue = byte.MaxValue;
-                    break;
-                case "u": // unicode char
-                case "h": // signed short
-                    minValue = short.MinValue;
-                    maxValue = (ulong)short.MaxValue;
-                    break;
-                case "H": // unsigned short
-                    minValue = ushort.MinValue;
-                    maxValue = ushort.MaxValue;
-                    break;
-                case "i": // signed int
-                case "l": // signed long
-                    minValue = int.MinValue;
-                    maxValue = int.MaxValue;
-                    break;
-                case "I": // unsigned int
-                case "L": // unsigned long
-                    minValue = uint.MinValue;
-                    maxValue = uint.MaxValue;
-                    break;
-                case "q": // signed long long
-                    minValue = long.MinValue;
-                    maxValue = long.MaxValue;
-                    break;
-                case "P": // pointer
-                case "Q": // unsigned long long
-                    minValue = (long)ulong.MinValue;
-                    maxValue = ulong.MaxValue;
-                    break;
-            }
-
-            if (value < minValue || value > maxValue) {
-               throw PythonOps.ValueError("memoryview: invalid value for format '{0}'", format);
-            }
-        }
-
         private void setAtFlatIndex(int index, object value) {
             switch (format) {
                 case "d": // double
@@ -482,7 +425,10 @@ namespace IronPython.Runtime {
                     if (!Converter.TryConvertToBigInteger(value, out asBigInt)) {
                         throw PythonOps.TypeError("memoryview: invalid type for format '{0}'", format);
                     }
-                    checkNumeric(asBigInt);
+
+                    if (TypecodeOps.CausesOverflow(asBigInt, format)) {
+                        throw PythonOps.ValueError("memoryview: invalid value for format '{0}'", format);
+                    }
 
                     if (format == "Q") {
                         value = (ulong)asBigInt;

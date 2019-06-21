@@ -385,16 +385,7 @@ namespace IronPython.Runtime {
             int firstByteIndex = _start + index * _itemsize * _step;
             object result = packBytes(format, getByteRange(firstByteIndex, _itemsize), 0, (int)_buffer.ItemSize);
 
-            // TODO: BigInteger/long/ulong should also be merged into an integer once the int/long merge occurs
-            if (result is BigInteger || result is double || result is Bytes) {
-                return result;
-            } else if (result is float) {
-                return Converter.ConvertToDouble(result);
-            } else if (result is long || result is ulong) {
-                return Converter.ConvertToBigInteger(result);
-            } else {
-                return Convert.ToInt32(result);
-            }
+            return PythonOps.ConvertToPythonPrimitive(result);
         }
 
         private void setAtFlatIndex(int index, object value) {

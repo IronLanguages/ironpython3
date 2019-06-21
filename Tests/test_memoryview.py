@@ -202,7 +202,7 @@ class CastTests(unittest.TestCase):
         self.assertRaises(TypeError, lambda: mv.cast('i', (2,2,2)))
         mv.cast('h', (2,2,2))
 
-    def test_cast_q_opcode_cast(self):
+    def test_cast_q_typecode_cast(self):
         a = array.array('b', range(8))
         mv = memoryview(a).cast('q')
         mv[0] = 9223372036854775807
@@ -215,6 +215,10 @@ class CastTests(unittest.TestCase):
         self.assertEqual(a[6], -1)
         self.assertEqual(a[7], 127)
         self.assertIs(type(mv[0]), type(9223372036854775807))
+        mv = memoryview(a).cast('Q')
+        mv[0] = 18446744073709551615
+        self.assertEqual(mv[0], 18446744073709551615)
+        self.assertIs(type(mv[0]), type(18446744073709551615))
 
     def test_cast_double(self):
         a = array.array('b', range(8))

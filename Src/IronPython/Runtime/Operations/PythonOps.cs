@@ -2681,6 +2681,36 @@ namespace IronPython.Runtime.Operations {
             return res;
         }
 
+        public static object ConvertToPythonPrimitive(object value) {
+            switch (value) {
+                case float f:
+                    return (double)f;
+                case double d:
+                    return d;
+                case byte b:
+                    return (int)b;
+                case char c:
+                    return (int)c;
+                case short s:
+                    return (int)s;
+                case ushort us:
+                    return (int)us;
+                case int i:
+                    return i;
+                case uint ui:
+                    return (BigInteger)ui;
+                case long l:
+                    return (BigInteger)l;
+                case ulong ul:
+                    return (BigInteger)ul;
+                case BigInteger bi:
+                    return bi;
+                case bool b:
+                    return b;
+            }
+            return value;
+        }
+
         public static object ConvertFloatToComplex(object value) {
             if (value == null) {
                 return null;

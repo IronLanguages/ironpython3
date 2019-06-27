@@ -706,7 +706,7 @@ namespace IronPythonTest {
         public class IncrementalTests {
 
             [Test]
-            public void TestIncrementalWithtUtf16() {
+            public void TestIncrementalWithUtf16() {
                 // In UTF-16LE: lone low surrogate (invalid) Lone high surrogate (invalid), surrogate pair: high-low (valid), 
                 var bytes = new byte[] { 0xd8, 0xd9, 0xda, 0xdb, 0xdc, 0xdd, 0xde, 0xdf };
                 Encoding penc = new PythonSurrogatePassEncoding(Encoding.Unicode);

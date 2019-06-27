@@ -142,6 +142,12 @@ class MemoryViewTests(unittest.TestCase):
         self.assertRaises(ValueError, lambda: setitem(mv, 18446744073709551616))
         self.assertRaises(ValueError, lambda: setitem(mv, -1))
 
+    def test_numeric_value_check(self):
+        def setitem(m, value):
+            m[0] = value
+        mv = memoryview(array.array('d', [1.0, 2.0, 3.0]))
+        mv  = mv.cast('b').cast('i')
+        self.assertRaises(TypeError, lambda: setitem(mv, 2.5))
 
 class CastTests(unittest.TestCase):
     def test_get_int_alignment(self):

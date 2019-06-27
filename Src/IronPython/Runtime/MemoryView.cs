@@ -412,19 +412,18 @@ namespace IronPython.Runtime {
                 case "q": // signed long long
                 case "P": // pointer
                 case "Q": // unsigned long long
-                    BigInteger asBigInt = 0;
-                    if (!Converter.TryConvertToBigInteger(value, out asBigInt)) {
+                    if (!PythonOps.IsNumericObject(value)) {
                         throw PythonOps.TypeError("memoryview: invalid type for format '{0}'", format);
                     }
 
-                    if (TypecodeOps.CausesOverflow(asBigInt, format)) {
+                    if (TypecodeOps.CausesOverflow(value, format)) {
                         throw PythonOps.ValueError("memoryview: invalid value for format '{0}'", format);
                     }
 
                     if (format == "Q") {
-                        value = (ulong)asBigInt;
+                        value = Converter.ConvertToUInt64(value);
                     } else {
-                        value = (long)asBigInt;
+                        value = Converter.ConvertToInt64(value);
                     }
                     break;
                 default:

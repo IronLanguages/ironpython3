@@ -135,11 +135,11 @@ namespace IronPython.Runtime {
         }
 
         /// <summary>
-        /// Verifies that the value being set does not overflow the format
-        /// for this MemoryView.
+        /// Verifies that the value being set does not overflow given the
+        /// width/sign of the current format.
         /// </summary>
         /// <param name="value">The value to be set.</param>
-        public static bool CausesOverflow(BigInteger value, string format) {
+        public static bool CausesOverflow(object value, string format) {
             ulong maxValue = 0;
             long minValue = 0;
 
@@ -188,7 +188,7 @@ namespace IronPython.Runtime {
                     return false; // All non-numeric types will not cause overflow.
             }
 
-            return value < minValue || value > maxValue;
+            return PythonOps.Compare(value, minValue) < 0 || PythonOps.Compare(value, maxValue) > 0;
         }
     }
 }

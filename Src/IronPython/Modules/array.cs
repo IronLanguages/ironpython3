@@ -1286,7 +1286,7 @@ namespace IronPython.Modules {
 
             PythonTuple IBufferProtocol.Strides => PythonTuple.MakeTuple(itemsize);
 
-            object IBufferProtocol.SubOffsets => null;
+            PythonTuple IBufferProtocol.SubOffsets => null;
 
             Bytes IBufferProtocol.ToBytes(int start, int? end) {
                 if (start == 0 && end == null) {

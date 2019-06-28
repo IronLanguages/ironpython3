@@ -37,7 +37,7 @@ namespace IronPython.Runtime {
             get;
         }
 
-        object SubOffsets {
+        PythonTuple SubOffsets {
             get;
         }
 

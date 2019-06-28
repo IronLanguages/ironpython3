@@ -1531,7 +1531,7 @@ namespace IronPython.Runtime {
 
         PythonTuple IBufferProtocol.Strides => PythonTuple.MakeTuple(1);
 
-        object IBufferProtocol.SubOffsets => null;
+        PythonTuple IBufferProtocol.SubOffsets => null;
 
         Bytes IBufferProtocol.ToBytes(int start, int? end) {
             if (start == 0 && end == null) {

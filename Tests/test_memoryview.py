@@ -123,6 +123,32 @@ class MemoryViewTests(unittest.TestCase):
         for x, y in itertools.product((a, mv), repeat=2):
             self.assertFalse(x != y, "{} {}".format(x, y))
 
+    def test_overflow(self):
+        def setitem(m, value):
+            m[0] = value
+        mv = memoryview(array.array('b', range(8)))
+        self.assertRaises(ValueError, lambda: setitem(mv, 128))
+        self.assertRaises(ValueError, lambda: setitem(mv, 129))
+        mv = memoryview(array.array('i', range(8)))
+        self.assertRaises(ValueError, lambda: setitem(mv, 9223372036854775807))
+        self.assertRaises(ValueError, lambda: setitem(mv, -9223372036854775807))
+        mv = memoryview(array.array('I', range(8)))
+        self.assertRaises(ValueError, lambda: setitem(mv, 9223372036854775807))
+        self.assertRaises(ValueError, lambda: setitem(mv, -1))
+        mv = mv.cast('b').cast('q')
+        self.assertRaises(ValueError, lambda: setitem(mv, 9223372036854775808))
+        self.assertRaises(ValueError, lambda: setitem(mv, -9223372036854775809))
+        mv = mv.cast('b').cast('Q')
+        self.assertRaises(ValueError, lambda: setitem(mv, 18446744073709551616))
+        self.assertRaises(ValueError, lambda: setitem(mv, -1))
+
+    def test_numeric_value_check(self):
+        def setitem(m, value):
+            m[0] = value
+        mv = memoryview(array.array('d', [1.0, 2.0, 3.0]))
+        mv  = mv.cast('b').cast('i')
+        self.assertRaises(TypeError, lambda: setitem(mv, 2.5))
+
 class CastTests(unittest.TestCase):
     def test_get_int_alignment(self):
         a = array.array('b', range(8))
@@ -182,9 +208,31 @@ class CastTests(unittest.TestCase):
         self.assertRaises(TypeError, lambda: mv.cast('i', (2,2,2)))
         mv.cast('h', (2,2,2))
 
-    # WIP: fails because this[PythonTuple] is not implemented,
-    # and __len__ captures the total number of elements instead
-    # of the first dimension
+    def test_cast_q_typecode_cast(self):
+        a = array.array('b', range(8))
+        mv = memoryview(a).cast('q')
+        mv[0] = 9223372036854775807
+        self.assertEqual(a[0], -1)
+        self.assertEqual(a[1], -1)
+        self.assertEqual(a[2], -1)
+        self.assertEqual(a[3], -1)
+        self.assertEqual(a[4], -1)
+        self.assertEqual(a[5], -1)
+        self.assertEqual(a[6], -1)
+        self.assertEqual(a[7], 127)
+        self.assertIs(type(mv[0]), type(9223372036854775807))
+        mv = memoryview(a).cast('Q')
+        mv[0] = 18446744073709551615
+        self.assertEqual(mv[0], 18446744073709551615)
+        self.assertIs(type(mv[0]), type(18446744073709551615))
+
+    def test_cast_double(self):
+        a = array.array('b', range(8))
+        mv = memoryview(a).cast('d')
+        mv[0] = 3.4
+        self.assertEqual(mv[0], 3.4)
+
+    # WIP: fails because this[PythonTuple] is not implemented
     @unittest.expectedFailure
     def test_cast_reshape(self):
         a = array.array('b', range(16))

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -13,9 +14,6 @@ namespace IronPython.Runtime {
                 case "c": // char
                 case "b": // signed byte
                 case "B": // unsigned byte
-                case "x": // pad byte
-                case "s": // null-terminated string
-                case "p": // Pascal string
                     width = 1;
                     return true;
                 case "u": // unicode char
@@ -78,6 +76,12 @@ namespace IronPython.Runtime {
                 case "d":
                     result = BitConverter.ToDouble(bytes, offset);
                     return true;
+                case "q":
+                    result = (BitConverter.ToInt64(bytes, offset));
+                    return true;
+                case "Q":
+                    result = (BitConverter.ToUInt64(bytes, offset));
+                    return true;
                 default:
                     result = 0;
                     return false;
@@ -86,8 +90,8 @@ namespace IronPython.Runtime {
 
         public static bool TryGetBytes(string typecode, object obj, out byte[] result) {
             switch (typecode) {
-                case "c": result =
-                        new[] { (byte)Convert.ToChar(obj) };
+                case "c":
+                    result = new[] { (byte)Convert.ToChar(obj) };
                     return true;
                 case "b":
                     result = new[] { (byte)Convert.ToSByte(obj) };
@@ -118,9 +122,79 @@ namespace IronPython.Runtime {
                 case "d":
                     result = BitConverter.GetBytes(Convert.ToDouble(obj));
                     return true;
+                case "q":
+                    result = BitConverter.GetBytes(Convert.ToInt64(obj));
+                    return true;
+                case "Q":
+                    result = BitConverter.GetBytes(Convert.ToUInt64(obj));
+                    return true;
                 default:
                     result = null;
                     return false;
+            }
+        }
+
+        /// <summary>
+        /// Verifies that the value being set does not overflow given the
+        /// width/sign of the current format.
+        /// </summary>
+        /// <param name="value">The value to be set.</param>
+        public static bool CausesOverflow(object value, string format) {
+            ulong maxValue = 0;
+            long minValue = 0;
+
+            switch (format) {
+                case "c": // char
+                    minValue = char.MinValue;
+                    maxValue = char.MaxValue;
+                    break;
+                case "b": // signed byte
+                    minValue = sbyte.MinValue;
+                    maxValue = (ulong)sbyte.MaxValue;
+                    break;
+                case "B": // unsigned byte
+                    minValue = byte.MinValue;
+                    maxValue = byte.MaxValue;
+                    break;
+                case "u": // unicode char
+                case "h": // signed short
+                    minValue = short.MinValue;
+                    maxValue = (ulong)short.MaxValue;
+                    break;
+                case "H": // unsigned short
+                    minValue = ushort.MinValue;
+                    maxValue = ushort.MaxValue;
+                    break;
+                case "i": // signed int
+                case "l": // signed long
+                    minValue = int.MinValue;
+                    maxValue = int.MaxValue;
+                    break;
+                case "I": // unsigned int
+                case "L": // unsigned long
+                    minValue = uint.MinValue;
+                    maxValue = uint.MaxValue;
+                    break;
+                case "q": // signed long long
+                    minValue = long.MinValue;
+                    maxValue = long.MaxValue;
+                    break;
+                case "P": // pointer
+                case "Q": // unsigned long long
+                    minValue = (long)ulong.MinValue;
+                    maxValue = ulong.MaxValue;
+                    break;
+                default:
+                    return false; // All non-numeric types will not cause overflow.
+            }
+            switch (value) {
+                case int i:
+                    return i < minValue || (maxValue < int.MaxValue && i > (int)maxValue);
+                case BigInteger bi:
+                    return bi < minValue || bi > maxValue;
+                default:
+                    BigInteger convertedValue = Converter.ConvertToBigInteger(value);
+                    return convertedValue < minValue || convertedValue > maxValue;
             }
         }
     }

@@ -1034,7 +1034,7 @@ namespace IronPython.Runtime {
             get { return PythonTuple.MakeTuple(1); }
         }
 
-        object IBufferProtocol.SubOffsets {
+        PythonTuple IBufferProtocol.SubOffsets {
             get { return null; }
         }
 

@@ -40,6 +40,12 @@ namespace IronPython.Runtime {
             _format = _buffer.Format;
             _itemsize = (int)_buffer.ItemSize;
             _matchesBuffer = true;
+
+            var shape = _buffer.GetShape(_start, _end);
+            if (shape == null) {
+                _shape = null;
+            }
+            _shape = new PythonTuple(shape);
         }
 
         public MemoryView(MemoryView @object) :
@@ -127,15 +133,7 @@ namespace IronPython.Runtime {
         public PythonTuple shape {
             get {
                 CheckBuffer();
-                if (_shape != null) {
-                    return _shape;
-                }
-
-                var shape = _buffer.GetShape(_start, _end);
-                if (shape == null) {
-                    return null;
-                }
-                return new PythonTuple(shape); 
+                return _shape;
             }
         }
 

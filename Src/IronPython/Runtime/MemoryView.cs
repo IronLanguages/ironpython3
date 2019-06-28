@@ -182,6 +182,10 @@ namespace IronPython.Runtime {
         public PythonList tolist() {
             CheckBuffer();
 
+            if (_matchesBuffer && _step == 1) {
+                return _buffer.ToList(_start / _itemsize, _end / _itemsize);
+            }
+
             int length = numberOfElements();
             object[] elements = new object[length];
 

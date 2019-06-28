@@ -187,8 +187,15 @@ namespace IronPython.Runtime {
                 default:
                     return false; // All non-numeric types will not cause overflow.
             }
-
-            return PythonOps.Compare(value, minValue) < 0 || PythonOps.Compare(value, maxValue) > 0;
+            switch (value) {
+                case int i:
+                    return i < minValue || (maxValue < int.MaxValue && i > (int)maxValue);
+                case BigInteger bi:
+                    return bi < minValue || bi > maxValue;
+                default:
+                    BigInteger convertedValue = Converter.ConvertToBigInteger(value);
+                    return convertedValue < minValue || convertedValue > maxValue;
+            }
         }
     }
 }

@@ -45,6 +45,11 @@ namespace IronPython.Modules {
                 }
 
                 _typeCode = type[0];
+
+                if (_typeCode != 'u' && (initializer is string || initializer is Extensible<string>)) {
+                    throw PythonOps.TypeError("cannot use a str to initialize an array with typecode '{0}'", _typeCode);
+                }
+
                 _data = CreateData(_typeCode);
 
                 if (initializer != Missing.Value) extend(initializer);
@@ -58,20 +63,21 @@ namespace IronPython.Modules {
             private static ArrayData CreateData(char typecode) {
                 ArrayData data;
                 switch (typecode) {
-                    case 'c': data = new ArrayData<char>(); break;
                     case 'b': data = new ArrayData<sbyte>(); break;
                     case 'B': data = new ArrayData<byte>(); break;
                     case 'u': data = new ArrayData<char>(); break;
                     case 'h': data = new ArrayData<short>(); break;
                     case 'H': data = new ArrayData<ushort>(); break;
-                    case 'l':
                     case 'i': data = new ArrayData<int>(); break;
-                    case 'L':
                     case 'I': data = new ArrayData<uint>(); break;
+                    case 'l': data = new ArrayData<int>(); break;
+                    case 'L': data = new ArrayData<uint>(); break;
+                    case 'q': data = new ArrayData<long>(); break;
+                    case 'Q': data = new ArrayData<ulong>(); break;
                     case 'f': data = new ArrayData<float>(); break;
                     case 'd': data = new ArrayData<double>(); break;
                     default:
-                        throw PythonOps.ValueError("Bad type code (expected one of 'c', 'b', 'B', 'u', 'H', 'h', 'i', 'I', 'l', 'L', 'f', 'd')");
+                        throw PythonOps.ValueError("bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
                 }
                 return data;
             }
@@ -313,12 +319,8 @@ namespace IronPython.Modules {
             public int itemsize {
                 get {
                     switch (_typeCode) {
-                        case 'c': // char
                         case 'b': // signed byte
                         case 'B': // unsigned byte
-                        case 'x': // pad byte
-                        case 's': // null-terminated string
-                        case 'p': // Pascal string
                             return 1;
                         case 'u': // unicode char
                         case 'h': // signed short
@@ -330,8 +332,6 @@ namespace IronPython.Modules {
                         case 'L': // unsigned long
                         case 'f': // float
                             return 4;
-                        case 'P': // pointer
-                            return IntPtr.Size;
                         case 'q': // signed long long
                         case 'Q': // unsigned long long
                         case 'd': // double
@@ -371,22 +371,23 @@ namespace IronPython.Modules {
             public virtual object this[int index] {
                 get {
                     object val = _data.GetData(PythonOps.FixIndex(index, _data.Length));
+                    // TODO: can we use PythonOps.ConvertToPythonPrimitive here?
                     switch (_typeCode) {
                         case 'b': return (int)(sbyte)val;
                         case 'B': return (int)(byte)val;
-                        case 'c':
                         case 'u': return new string((char)val, 1);
                         case 'h': return (int)(short)val;
                         case 'H': return (int)(ushort)val;
-                        case 'l': return val;
                         case 'i': return val;
+                        case 'I': return (BigInteger)(uint)val;
+                        case 'l': return val;
                         case 'L': return (BigInteger)(uint)val;
-                        case 'I':
-                            return (BigInteger)(uint)val;
+                        case 'q': return (BigInteger)(long)val;
+                        case 'Q': return (BigInteger)(ulong)val;
                         case 'f': return (double)(float)val;
                         case 'd': return val;
                         default:
-                            throw PythonOps.ValueError("Bad type code (expected one of 'c', 'b', 'B', 'u', 'H', 'h', 'i', 'I', 'l', 'L', 'f', 'd')");
+                            throw PythonOps.ValueError("bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
                     }
                 }
                 set {
@@ -791,43 +792,45 @@ namespace IronPython.Modules {
 
             private byte[] ToBytes(int index) {
                 switch(_typeCode) {
-                    case 'c': return new[] { (byte)(char)_data.GetData(index) };
                     case 'b': return new[] { (byte)(sbyte)_data.GetData(index) };
                     case 'B': return new[] { (byte)_data.GetData(index) };
                     case 'u': return BitConverter.GetBytes((char)_data.GetData(index));
                     case 'h': return BitConverter.GetBytes((short)_data.GetData(index));
-                    case 'H': return BitConverter.GetBytes((ushort)_data.GetData(index)); 
-                    case 'l':
-                    case 'i': return BitConverter.GetBytes((int)_data.GetData(index)); 
-                    case 'L':
+                    case 'H': return BitConverter.GetBytes((ushort)_data.GetData(index));
+                    case 'i': return BitConverter.GetBytes((int)_data.GetData(index));
                     case 'I': return BitConverter.GetBytes((uint)_data.GetData(index));
+                    case 'l': return BitConverter.GetBytes((int)_data.GetData(index));
+                    case 'L': return BitConverter.GetBytes((uint)_data.GetData(index));
+                    case 'q': return BitConverter.GetBytes((long)_data.GetData(index));
+                    case 'Q': return BitConverter.GetBytes((ulong)_data.GetData(index));
                     case 'f': return BitConverter.GetBytes((float)_data.GetData(index)); 
                     case 'd': return BitConverter.GetBytes((double)_data.GetData(index)); 
                     default:
-                        throw PythonOps.ValueError("Bad type code (expected one of 'c', 'b', 'B', 'u', 'H', 'h', 'i', 'I', 'l', 'L', 'f', 'd')");
+                        throw PythonOps.ValueError("bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
                 }
             }
 
             private object FromBytes(byte[] bytes) {
                 switch (_typeCode) {
-                    case 'c': return (char)bytes[0];
                     case 'b': return (sbyte)bytes[0];
                     case 'B': return bytes[0];
                     case 'u': return BitConverter.ToChar(bytes, 0);
                     case 'h': return BitConverter.ToInt16(bytes, 0);
                     case 'H': return BitConverter.ToUInt16(bytes, 0);
-                    case 'l':
                     case 'i': return BitConverter.ToInt32(bytes, 0);
-                    case 'L':
                     case 'I': return BitConverter.ToUInt32(bytes, 0);
+                    case 'l': return BitConverter.ToInt32(bytes, 0);
+                    case 'L': return BitConverter.ToInt32(bytes, 0);
+                    case 'q': return BitConverter.ToInt64(bytes, 0);
+                    case 'Q': return BitConverter.ToInt64(bytes, 0);
                     case 'f': return BitConverter.ToSingle(bytes, 0);
                     case 'd': return BitConverter.ToDouble(bytes, 0);
                     default:
-                        throw PythonOps.ValueError("Bad type code (expected one of 'c', 'b', 'B', 'u', 'H', 'h', 'i', 'I', 'l', 'L', 'f', 'd')");
+                        throw PythonOps.ValueError("bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
                 }
             }
 
-            private class ArrayData<T> : ArrayData {
+            private class ArrayData<T> : ArrayData where T : struct {
                 private T[] _data;
                 private int _count;
                 private GCHandle? _dataHandle;
@@ -1021,20 +1024,21 @@ namespace IronPython.Modules {
                 IStructuralEquatable dataTuple;
 
                 switch(_typeCode) {
-                    case 'c': dataTuple = PythonTuple.MakeTuple(((ArrayData<char>)_data).Data); break;
                     case 'b': dataTuple = PythonTuple.MakeTuple(((ArrayData<sbyte>)_data).Data); break;
                     case 'B': dataTuple = PythonTuple.MakeTuple(((ArrayData<byte>)_data).Data); break;
                     case 'u': dataTuple = PythonTuple.MakeTuple(((ArrayData<char>)_data).Data); break;
                     case 'h': dataTuple = PythonTuple.MakeTuple(((ArrayData<short>)_data).Data); break;
                     case 'H': dataTuple = PythonTuple.MakeTuple(((ArrayData<ushort>)_data).Data); break;
-                    case 'l':
                     case 'i': dataTuple = PythonTuple.MakeTuple(((ArrayData<int>)_data).Data); break;
-                    case 'L':
                     case 'I': dataTuple = PythonTuple.MakeTuple(((ArrayData<uint>)_data).Data); break;
+                    case 'l': dataTuple = PythonTuple.MakeTuple(((ArrayData<int>)_data).Data); break;
+                    case 'L': dataTuple = PythonTuple.MakeTuple(((ArrayData<uint>)_data).Data); break;
+                    case 'q': dataTuple = PythonTuple.MakeTuple(((ArrayData<long>)_data).Data); break;
+                    case 'Q': dataTuple = PythonTuple.MakeTuple(((ArrayData<ulong>)_data).Data); break;
                     case 'f': dataTuple = PythonTuple.MakeTuple(((ArrayData<float>)_data).Data); break;
                     case 'd': dataTuple = PythonTuple.MakeTuple(((ArrayData<double>)_data).Data); break;
                     default:
-                        throw PythonOps.ValueError("Bad type code (expected one of 'c', 'b', 'B', 'u', 'H', 'h', 'i', 'I', 'l', 'L', 'f', 'd')");
+                        throw PythonOps.ValueError("bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
                 }
 
                 return dataTuple.GetHashCode(comparer);

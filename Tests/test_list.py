@@ -321,8 +321,8 @@ class ListTest(IronPythonTestCase):
         self.assertEqual(x, [None, "0", "1", "2"])
 
         x = [None]
-        x += Exception()
-        self.assertEqual(x, [None])
+        with self.assertRaises(TypeError):
+            x += Exception() # raises an exception since Python 3.0
 
         #negative cases
         neg_cases = [   ([],    None),

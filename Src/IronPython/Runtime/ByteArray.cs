@@ -524,6 +524,8 @@ namespace IronPython.Runtime {
             }
         }
 
+        public static Bytes maketrans([BytesConversion]IList<byte> from, [BytesConversion]IList<byte> to) => Bytes.maketrans(from, to);
+
         public PythonTuple/*!*/ partition(IList<byte>/*!*/ sep) {
             if (sep == null) {
                 throw PythonOps.TypeError("expected string, got NoneType");
@@ -810,15 +812,15 @@ namespace IronPython.Runtime {
         }
 
 
-        public ByteArray/*!*/ translate([BytesConversion]IList<byte>/*!*/ table, [BytesConversion]IList<byte>/*!*/ deletechars) {
-            if (table == null && deletechars == null) {
+        public ByteArray/*!*/ translate([BytesConversion]IList<byte>/*!*/ table, [BytesConversion]IList<byte>/*!*/ delete) {
+            if (table == null && delete == null) {
                 throw PythonOps.TypeError("expected bytearray or bytes, got NoneType");
-            } else if (deletechars == null) {
+            } else if (delete == null) {
                 throw PythonOps.TypeError("expected bytes or bytearray, got None");
             }
 
             lock (this) {
-                return new ByteArray(_bytes.Translate(table, deletechars));
+                return new ByteArray(_bytes.Translate(table, delete));
             }
         }
 

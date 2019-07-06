@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -16,6 +17,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime;
+using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
@@ -198,15 +200,13 @@ namespace IronPython.Modules {
                     return;
                 }
 
-                string str = iterable as string;
-                if (str != null && _typeCode != 'u') {
-                    fromstring(str);
+                if (iterable is string str && _typeCode != 'u') {
+                    FromUnicode(str);
                     return;
                 }
 
-                Bytes bytes = iterable as Bytes;
-                if (bytes != null) {
-                    fromstring(bytes);
+                if (iterable is Bytes bytes) {
+                    FromBytes(bytes);
                     return;
                 }
 
@@ -232,22 +232,40 @@ namespace IronPython.Modules {
                 extend(items);
             }
 
-            public void fromfile(CodeContext context, PythonIOModule._IOBase f, int n) {
+            public void fromfile(CodeContext/*!*/ context, PythonIOModule._IOBase f, int n) {
                 int bytesNeeded = n * itemsize;
                 Bytes bytes = (Bytes)f.read(context, bytesNeeded);
                 if (bytes.Count < bytesNeeded) throw PythonOps.EofError("file not large enough");
 
-                fromstring(bytes);
+                frombytes(bytes);
             }
 
-            public void fromstring([NotNull]Bytes b) {
-                if ((b.Count % itemsize) != 0) throw PythonOps.ValueError("string length not a multiple of itemsize");
-                
+            public void frombytes([BytesConversion]IList<byte> s) {
+                if ((s.Count % itemsize) != 0) throw PythonOps.ValueError("bytes length not a multiple of itemsize");
+
+                switch(s) {
+                    case Bytes b:
+                        FromBytes(b);
+                        break;
+                    default:
+                        FromStream(new MemoryStream(s.ToArray(), false));
+                        break;
+                }
+            }
+
+            private void FromBytes(Bytes b) {
                 FromStream(new MemoryStream(b._bytes, false));
             }
 
-            public void fromstring([NotNull]string s) {
-                if ((s.Length % itemsize) != 0) throw PythonOps.ValueError("string length not a multiple of itemsize");
+            public void fromstring(CodeContext/*!*/ context, [NotNull]Bytes b) {
+                PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "fromstring() is deprecated. Use frombytes() instead.");
+                if ((b.Count % itemsize) != 0) throw PythonOps.ValueError("bytes length not a multiple of itemsize");
+                FromBytes(b);
+            }
+
+            public void fromstring(CodeContext/*!*/ context, [NotNull]string s) {
+                PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "fromstring() is deprecated. Use frombytes() instead.");
+                if ((s.Length % itemsize) != 0) throw PythonOps.ValueError("bytes length not a multiple of itemsize");
                 byte[] bytes = new byte[s.Length];
                 for (int i = 0; i < bytes.Length; i++) {
                     bytes[i] = checked((byte)s[i]);
@@ -263,7 +281,11 @@ namespace IronPython.Modules {
                 } else if (_typeCode != 'u') {
                     throw PythonOps.ValueError("fromunicode() may only be called on type 'u' arrays");
                 }
-                
+
+                FromUnicode(s);
+            }
+
+            private void FromUnicode(string s) {
                 ArrayData<char> data = (ArrayData<char>)_data;
                 data.EnsureSize(data.Length + s.Length);
                 for (int i = 0; i < s.Length; i++) {
@@ -582,7 +604,10 @@ namespace IronPython.Modules {
                 return Bytes.Make(bytes);
             }
 
-            public Bytes tostring() => tobytes();
+            public Bytes tostring(CodeContext/*!*/ context) {
+                PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "tostring() is deprecated. Use tobytes() instead.");
+                return tobytes();
+            }
 
             public string tounicode(CodeContext/*!*/ context) {
                 if (_typeCode != 'u') throw PythonOps.ValueError("only 'u' arrays can be converted to unicode");

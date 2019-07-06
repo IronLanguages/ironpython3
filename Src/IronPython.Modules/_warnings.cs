@@ -23,11 +23,9 @@ namespace IronPython.Modules {
         public const string __doc__ = "Provides low-level functionality for reporting warnings";
 
         private static readonly object _keyFields = new object();
-        private static readonly string _keyDefaultAction = "default_action";
+        private static readonly string _keyDefaultAction = "_defaultaction";
         private static readonly string _keyFilters = "filters";
-        private static readonly string _keyOnceRegistry = "once_registry";
-
-        public static PythonDictionary MODULE_STATE;
+        private static readonly string _keyOnceRegistry = "_onceregistry";
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
@@ -48,6 +46,8 @@ namespace IronPython.Modules {
         }
 
         #region Public API
+
+        public static void _filters_mutated() { } // TODO: do something with this
 
         public static void warn(CodeContext context, object message, PythonType category=null, int stacklevel=1) {
             PythonContext pContext = context.LanguageContext;
@@ -259,7 +259,6 @@ namespace IronPython.Modules {
                 // invalid file - warning is lost
             }
         }
-
 
         #endregion
     }

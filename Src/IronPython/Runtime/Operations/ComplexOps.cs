@@ -211,6 +211,10 @@ namespace IronPython.Runtime.Operations {
         #endregion
 
         public static string __str__(CodeContext/*!*/ context, Complex x) {
+            return __repr__(context, x);
+        }
+
+        public static string __repr__(CodeContext/*!*/ context, Complex x) {
             if (x.Real != 0) {
                 if (x.Imaginary() < 0 || DoubleOps.IsNegativeZero(x.Imaginary())) {
                     return "(" + FormatComplexValue(context, x.Real) + FormatComplexValue(context, x.Imaginary()) + "j)";
@@ -220,10 +224,6 @@ namespace IronPython.Runtime.Operations {
             }
 
             return FormatComplexValue(context, x.Imaginary()) + "j";
-        }
-
-        public static string __repr__(CodeContext/*!*/ context, Complex x) {
-            return __str__(context, x);
         }
 
         // report the same errors as CPython for these invalid conversions

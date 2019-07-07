@@ -14,9 +14,9 @@ long = type(sys.maxsize + 1)
 class StrTest(IronPythonTestCase):
 
     def test_none(self):
-        self.assertEqual("abc".translate(None), "abc")
-        self.assertEqual("abc".translate(None, 'h'), "abc")
-        self.assertEqual("abc".translate(None, 'c'), "ab")
+        self.assertEqual("abc".translate({}), "abc")
+        self.assertEqual("abc".translate({ord('h'): None}), "abc")
+        self.assertEqual("abc".translate({ord('c'): None}), "ab")
 
         self.assertRaises(TypeError, "abc".replace, "new")
         self.assertRaises(TypeError, "abc".replace, "new", 2)
@@ -425,7 +425,7 @@ class StrTest(IronPythonTestCase):
             self.assertEqual(u"i".ToUpper(CultureInfo("tr-TR")),u"İ")
 
     def test_translate(self):
-        self.assertEqual(u"abcd".translate(None), u"abcd")
+        self.assertEqual(u"abcd".translate({}), u"abcd")
         self.assertEqual(u"abcd".translate({ord('a') : ord('A'), ord('b') : None, ord('d') : u"XY"}) , "AcXY")
         self.assertRaisesMessage(TypeError, "character mapping must be in range(0x%lx)", lambda: 'a'.translate({ord('a') : 65536}))
         self.assertRaisesMessage(TypeError, "character mapping must return integer, None or unicode", lambda: 'a'.translate({ord('a') : 2.0}))

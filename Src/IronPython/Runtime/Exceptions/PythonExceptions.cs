@@ -2,35 +2,29 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq;
-using System.Linq.Expressions;
-
-#if !FEATURE_REMOTING
-using MarshalByRefObject = System.Object;
-#endif
-
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Security;
 using System.Text;
 using System.Threading;
 
 using Microsoft.Scripting;
-using Microsoft.Scripting.Actions;
-using Microsoft.Scripting.Generation;
 using Microsoft.Scripting.Interpreter;
 using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
-using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+
+#if !FEATURE_REMOTING
+using MarshalByRefObject = System.Object;
+#endif
 
 namespace IronPython.Runtime.Exceptions {
     /// <summary>
@@ -167,16 +161,6 @@ namespace IronPython.Runtime.Exceptions {
             /// </summary>
             public virtual object/*!*/ __reduce_ex__(int protocol) {
                 return __reduce__();
-            }
-
-            /// <summary>
-            /// Gets the nth member of the args property
-            /// </summary>            
-            public object this[int index] {
-                [Python3Warning("__getitem__ not supported for exception classes in 3.x; use args attribute")]
-                get {
-                    return ((PythonTuple)args)[index];
-                }
             }
 
             /// <summary>
@@ -364,17 +348,9 @@ namespace IronPython.Runtime.Exceptions {
                 }
             }
 
-            public bool HasCause {
-                get {
-                    return __cause__ != null;
-                }
-            }
+            internal bool HasCause => __cause__ != null;
 
-            public bool IsImplicitException {
-                get {
-                    return (__cause__ != __context__ && __cause__ == null);
-                }
-            }
+            internal bool IsImplicitException => __cause__ == null && __cause__ != __context__;
 
             void IPythonObject.SetPythonType(PythonType/*!*/ newType) {
                 if (_type.IsSystemType || newType.IsSystemType) {

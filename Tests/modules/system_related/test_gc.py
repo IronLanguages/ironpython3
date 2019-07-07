@@ -124,7 +124,7 @@ class GcTest(unittest.TestCase):
                 warnings.simplefilter("always")
                 gc.disable()
 
-            self.assertIn('IronPython has no support for disabling the GC', m[0].message)
+            self.assertEqual('IronPython has no support for disabling the GC', m[0].message.args[0])
         else:
             gc.disable()
             result = gc.isenabled()

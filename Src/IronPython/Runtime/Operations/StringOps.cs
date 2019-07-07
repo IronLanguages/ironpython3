@@ -1175,10 +1175,6 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static string translate(this string self, string table) {
-            return translate(self, table, (string)null);
-        }
-
-        public static string translate(this string self, string table, string deletechars) {
             if (table != null && table.Length != 256) {
                 throw PythonOps.ValueError("translation table must be 256 characters long");
             } else if (self.Length == 0) {
@@ -1189,15 +1185,13 @@ namespace IronPython.Runtime.Operations {
             // char's so we use that instead of a StringBuilder
             List<char> res = new List<char>();
             for (int i = 0; i < self.Length; i++) {
-                if (deletechars == null || !deletechars.Contains(Char.ToString(self[i]))) {
-                    if (table != null) {
-                        int idx = (int)self[i];
-                        if (idx >= 0 && idx < 256) {
-                            res.Add(table[idx]);
-                        }
-                    } else {
-                        res.Add(self[i]);
+                if (table != null) {
+                    int idx = (int)self[i];
+                    if (idx >= 0 && idx < 256) {
+                        res.Add(table[idx]);
                     }
+                } else {
+                    res.Add(self[i]);
                 }
             }
             return new String(res.ToArray());

@@ -6,8 +6,8 @@ Other Language Changes
 =======================
 - [ ] Directories and zip archives containing a \_\_main\_\_.py file can now be executed directly by passing their name to the interpreter. The directory/zipfile is automatically inserted as the first entry in sys.path.
 - [x] The int() type gained a bit_length method that returns the number of bits necessary to represent its argument in binary.
-- [ ] The fields in format() strings can now be automatically numbered.
-- [ ] The string.maketrans() function is deprecated and is replaced by new static methods, bytes.maketrans() and bytearray.maketrans(). This change solves the confusion around which types were supported by the string module. Now, str, bytes, and bytearray each have their own maketrans and translate methods with intermediate translation tables of the appropriate type.
+- [x] The fields in format() strings can now be automatically numbered.
+- [x] The string.maketrans() function is deprecated and is replaced by new static methods, bytes.maketrans() and bytearray.maketrans(). This change solves the confusion around which types were supported by the string module. Now, str, bytes, and bytearray each have their own maketrans and translate methods with intermediate translation tables of the appropriate type.
 - [x] The syntax of the with statement now allows multiple context managers in a single statement.
 - [ ] round(x, n) now returns an integer if x is an integer. Previously it returned a float.
 - [ ] Python now uses David Gay's algorithm for finding the shortest floating point representation that doesn't change its value.

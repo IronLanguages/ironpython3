@@ -617,14 +617,14 @@ namespace IronPython.Runtime {
             return new Bytes(_bytes.Translate(table, null));
         }
 
-        public Bytes/*!*/ translate([BytesConversion]IList<byte> table, [BytesConversion]IList<byte>/*!*/ deletechars) {
-            if (deletechars == null) {
+        public Bytes/*!*/ translate([BytesConversion]IList<byte> table, [BytesConversion]IList<byte>/*!*/ delete) {
+            if (delete == null) {
                 throw PythonOps.TypeError("expected bytes or bytearray, got None");
             } else if (Count == 0) {
                 return this;
             }
 
-            return new Bytes(_bytes.Translate(table, deletechars));
+            return new Bytes(_bytes.Translate(table, delete));
         }
 
         public Bytes/*!*/ upper() {

@@ -18,8 +18,8 @@ Other Language Changes
 - [ ] There is also a new str.format_map() method that extends the capabilities of the existing str.format() method by accepting arbitrary mapping objects. This new method makes it possible to use string formatting with any of Python's many dictionary-like objects such as defaultdict, Shelf, ConfigParser, or dbm. It is also useful with custom dict subclasses that normalize keys before look-up or that supply a \_\_missing\_\_() method for unknown keys.
 - [x] The interpreter can now be started with a quiet option, -q, to prevent the copyright and version information from being displayed in the interactive mode. The option can be introspected using the sys.flags attribute
 - [ ] The hasattr() function works by calling getattr() and detecting whether an exception is raised. This technique allows it to detect methods created dynamically by \_\_getattr\_\_() or \_\_getattribute\_\_() which would otherwise be absent from the class dictionary. Formerly, hasattr would catch any exception, possibly masking genuine errors. Now, hasattr has been tightened to only catch AttributeError and let other exceptions pass through.
-- [ ] The str() of a float or complex number is now the same as its repr(). Previously, the str() form was shorter but that just caused confusion and is no longer needed now that the shortest possible repr() is displayed by default.
-- [ ] memoryview objects now have a release() method and they also now support the context management protocol. This allows timely release of any resources that were acquired when requesting a buffer from the original object.
+- [x] The str() of a float or complex number is now the same as its repr(). Previously, the str() form was shorter but that just caused confusion and is no longer needed now that the shortest possible repr() is displayed by default.
+- [x] memoryview objects now have a release() method and they also now support the context management protocol. This allows timely release of any resources that were acquired when requesting a buffer from the original object.
 - [ ] Previously it was illegal to delete a name from the local namespace if it occurs as a free variable in a nested block. This is now allowed.
 - [ ] The internal structsequence tool now creates subclasses of tuple. This means that C structures like those returned by os.stat(), time.gmtime(), and sys.version_info now work like a named tuple and now work with functions and methods that expect a tuple as an argument. This is a big step forward in making the C structures as flexible as their pure Python counterparts.
 - [ ] Warnings are now easier to control using the PYTHONWARNINGS environment variable as an alternative to using -W at the command line.
@@ -103,14 +103,14 @@ New, Improved, and Deprecated Modules
 
 Porting to Python 3.2
 ============
-- [ ] The configparser module has a number of clean-ups.
-- [ ] The nntplib module was reworked extensively, meaning that its APIs are often incompatible with the 3.1 APIs.
+- [x] The configparser module has a number of clean-ups.
+- [x] The nntplib module was reworked extensively, meaning that its APIs are often incompatible with the 3.1 APIs.
 - [ ] bytearray objects can no longer be used as filenames; instead, they should be converted to bytes.
-- [ ] The array.tostring() and array.fromstring() have been renamed to array.tobytes() and array.frombytes() for clarity. The old names have been deprecated. (See issue 8990.)
-- [ ] The sys.setfilesystemencoding() function was removed because it had a flawed design.
+- [x] The array.tostring() and array.fromstring() have been renamed to array.tobytes() and array.frombytes() for clarity. The old names have been deprecated. (See issue 8990.)
+- [x] The sys.setfilesystemencoding() function was removed because it had a flawed design.
 - [ ] he random.seed() function and method now salt string seeds with an sha512 hash function. To access the previous version of seed in order to reproduce Python 3.1 sequences, set the version argument to 1, random.seed(s, version=1).
 - [ ] The previously deprecated string.maketrans() function has been removed in favor of the static methods bytes.maketrans() and bytearray.maketrans(). This change solves the confusion around which types were supported by the string module. Now, str, bytes, and bytearray each have their own maketrans and translate methods with intermediate translation tables of the appropriate type.
-- [ ] The previously deprecated contextlib.nested() function has been removed in favor of a plain with statement which can accept multiple context managers. The latter technique is faster (because it is built-in), and it does a better job finalizing multiple context managers when one of them raises an exception:
+- [x] The previously deprecated contextlib.nested() function has been removed in favor of a plain with statement which can accept multiple context managers. The latter technique is faster (because it is built-in), and it does a better job finalizing multiple context managers when one of them raises an exception:
 - [ ] struct.pack() now only allows bytes for the s string pack code. Formerly, it would accept text arguments and implicitly encode them to bytes using UTF-8. This was problematic because it made assumptions about the correct encoding and because a variable-length encoding can fail when writing to fixed length segment of a structure. Code such as struct.pack('<6sHHBBB', 'GIF87a', x, y) should be rewritten with to use bytes instead of text, struct.pack('<6sHHBBB', b'GIF87a', x, y).
 - [ ] The xml.etree.ElementTree class now raises an xml.etree.ElementTree.ParseError when a parse fails. Previously it raised an xml.parsers.expat.ExpatError.
 - [ ] The new, longer str() value on floats may break doctests which rely on the old output format.

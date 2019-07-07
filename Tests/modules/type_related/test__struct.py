@@ -232,9 +232,9 @@ class _StructTest(IronPythonTestCase):
         TODO: just a sanity test for now.  Needs far more testing.
         '''
         import array
-        _struct.unpack_from("", array.array("c"))
+        _struct.unpack_from("", array.array("b"))
 
-        self.assertEqual(_struct.unpack_from("", array.array("c")),
+        self.assertEqual(_struct.unpack_from("", array.array("b")),
                 ())
 
 run_test(__name__)

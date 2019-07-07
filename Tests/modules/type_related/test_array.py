@@ -156,14 +156,14 @@ class ArrayTest(unittest.TestCase):
         for x in [  (2**32), (2**32)+1, (2**32)+2 ]:
             self.assertRaises(OverflowError, array.array, 'I', [x])
 
-        #--c
-        a = array.array('c', "stuff")
+        #--u
+        a = array.array('u', "stuff")
         a[1:0] = a
-        b = array.array('c', "stuff"[:1] + "stuff" + "stuff"[1:])
+        b = array.array('u', "stuff"[:1] + "stuff" + "stuff"[1:])
         self.assertEqual(a, b)
 
         #--L
-        a = array.array('L', "\x12\x34\x45\x67")
+        a = array.array('L', b"\x12\x34\x45\x67")
         self.assertEqual(1, len(a))
         self.assertEqual(1732588562, a[0])
 
@@ -173,7 +173,7 @@ class ArrayTest(unittest.TestCase):
         self.assertEqual("array('B', [0, 0])", str(a))
 
         #--b
-        self.assertEqual(array.array('b', 'foo'), array.array('b', [102, 111, 111]))
+        self.assertEqual(array.array('b', b'foo'), array.array('b', [102, 111, 111]))
 
     def test_array___iter__(self):
         '''
@@ -416,24 +416,24 @@ class ArrayTest(unittest.TestCase):
 
 
     def test_cp9348(self):
-        test_cases = {  ('c', "a") : "array('c', 'a')",
-                        ('b', "a") : "array('b', [97])",
-                        ('B', "a") : "array('B', [97])",
+        test_cases = {
+                        ('b', b"a") : "array('b', [97])",
+                        ('B', b"a") : "array('B', [97])",
                         ('u', u"a") : "array('u', u'a')",
-                        ('h', "\x12\x34") : "array('h', [13330])",
-                        ('H', "\x12\x34") : "array('H', [13330])",
-                        ('i', "\x12\x34\x45\x67") : "array('i', [1732588562])",
-                        ('I', "\x12\x34\x45\x67") : "array('I', [1732588562])",
-                        ('I', "\x01\x00\x00\x00") : "array('I', [1])",
-                        ('l', "\x12\x34\x45\x67") : "array('l', [1732588562])",
-                        ('L', "\x12\x34\x45\x67") : "array('L', [1732588562])",
+                        ('h', b"\x12\x34") : "array('h', [13330])",
+                        ('H', b"\x12\x34") : "array('H', [13330])",
+                        ('i', b"\x12\x34\x45\x67") : "array('i', [1732588562])",
+                        ('I', b"\x12\x34\x45\x67") : "array('I', [1732588562])",
+                        ('I', b"\x01\x00\x00\x00") : "array('I', [1])",
+                        ('l', b"\x12\x34\x45\x67") : "array('l', [1732588562])",
+                        ('L', b"\x12\x34\x45\x67") : "array('L', [1732588562])",
                     }
         if not is_cli: #https://github.com/IronLanguages/main/issues/861
-            test_cases[('d', "\x12\x34\x45\x67\x12\x34\x45\x67")] = "array('d', [2.95224853258877e+189])"
-            test_cases[('f', "\x12\x34\x45\x67")] = "array('f', [9.312667248538457e+23])"
+            test_cases[('d', b"\x12\x34\x45\x67\x12\x34\x45\x67")] = "array('d', [2.95224853258877e+189])"
+            test_cases[('f', b"\x12\x34\x45\x67")] = "array('f', [9.312667248538457e+23])"
         else:
-            test_cases[('d', "\x12\x34\x45\x67\x12\x34\x45\x67")] = "array('d', [2.9522485325887698e+189])"
-            test_cases[('f', "\x12\x34\x45\x67")] = "array('f', [9.3126672485384569e+23])"
+            test_cases[('d', b"\x12\x34\x45\x67\x12\x34\x45\x67")] = "array('d', [2.9522485325887698e+189])"
+            test_cases[('f', b"\x12\x34\x45\x67")] = "array('f', [9.3126672485384569e+23])"
 
         for key in test_cases.keys():
             type_code, param = key
@@ -447,7 +447,7 @@ class ArrayTest(unittest.TestCase):
             a[:i] = a
             self.assertEqual(str(a), "array('b')")
 
-        a2 = array.array('b', 'a')
+        a2 = array.array('b', b'a')
         a2[:-1] = a2
         self.assertEqual(str(a2), "array('b', [97, 97])")
         a2[:-(2**64)-1] = a2
@@ -468,8 +468,8 @@ class ArrayTest(unittest.TestCase):
             self.assertEqual(a, array.array('B', [1]*2**8))
 
     def test_gh870(self):
-        string_types = ['c', 'b', 'B', 'u']
-        number_types = ['h', 'H', 'i', 'I', 'I', 'l', 'L']
+        string_types = ['u']
+        number_types = ['b', 'B', 'h', 'H', 'i', 'I', 'I', 'l', 'L', 'q', 'Q']
 
         for typecode in string_types:
             a = array.array(typecode, 'a')
@@ -489,7 +489,7 @@ class ArrayTest(unittest.TestCase):
         moved to other functions throughout this module (TODO).
         '''
         #--Postive
-        a = array.array('b', 'a')
+        a = array.array('b', b'a')
         for i in [  long(0), long(1), long(2), long(3), long(32766), long(32767), long(32768), long(65534), long(65535), long(65536),
                     long(456720545), #http://ironpython.codeplex.com/WorkItem/View.aspx?WorkItemId=24314
                     ]:
@@ -505,25 +505,25 @@ class ArrayTest(unittest.TestCase):
             self.assertRaises(MemoryError,   lambda: a*long(2147483646))
 
         #--Positive
-        a = array.array('b', 'abc')
+        a = array.array('b', b'abc')
         del a[:]
-        self.assertEqual(a, array.array('b', ''))
+        self.assertEqual(a, array.array('b', b''))
 
-        a = array.array('b', 'abc')
+        a = array.array('b', b'abc')
         del a[0:]
-        self.assertEqual(a, array.array('b', ''))
+        self.assertEqual(a, array.array('b', b''))
 
-        a = array.array('b', 'abc')
+        a = array.array('b', b'abc')
         del a[1:1]
-        self.assertEqual(a, array.array('b', 'abc'))
+        self.assertEqual(a, array.array('b', b'abc'))
 
-        a = array.array('b', 'abc')
+        a = array.array('b', b'abc')
         del a[1:4]
-        self.assertEqual(a, array.array('b', 'a'))
+        self.assertEqual(a, array.array('b', b'a'))
 
-        a = array.array('b', 'abc')
+        a = array.array('b', b'abc')
         del a[0:1]
-        self.assertEqual(a, array.array('b', 'bc'))
+        self.assertEqual(a, array.array('b', b'bc'))
 
 
 run_test(__name__)

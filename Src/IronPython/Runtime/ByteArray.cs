@@ -524,7 +524,8 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static Bytes maketrans([BytesConversion]IList<byte> from, [BytesConversion]IList<byte> to) => Bytes.maketrans(from, to);
+        public static Bytes maketrans([BytesConversion]IList<byte> from, [BytesConversion]IList<byte> to)
+            => Bytes.maketrans(from, to);
 
         public PythonTuple/*!*/ partition(IList<byte>/*!*/ sep) {
             if (sep == null) {

@@ -30,7 +30,7 @@ namespace IronPython.Modules {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly PythonType/*!*/ ArrayType = DynamicHelpers.GetPythonTypeFromType(typeof(array));
 
-        public static readonly string typecodes = "cbBuHhiIlLfd";
+        public static readonly string typecodes = "bBuhHiIlLqQfd";
 
         [PythonType]
         public class array : IEnumerable, IWeakReferenceable, ICollection, ICodeFormattable, IList<object>, IStructuralEquatable, IBufferProtocol
@@ -194,8 +194,7 @@ namespace IronPython.Modules {
             }
 
             public void extend(object iterable) {
-                array pa = iterable as array;
-                if (pa != null) {
+                if (iterable is array pa) {
                     if (typecode != pa.typecode) {
                         throw PythonOps.TypeError("cannot extend with different typecode");
                     }
@@ -206,13 +205,13 @@ namespace IronPython.Modules {
                     return;
                 }
 
-                if (iterable is string str && _typeCode != 'u') {
-                    FromUnicode(str);
+                if (iterable is Bytes bytes) {
+                    FromBytes(bytes);
                     return;
                 }
 
-                if (iterable is Bytes bytes) {
-                    FromBytes(bytes);
+                if (_typeCode == 'u' && iterable is string str) {
+                    FromUnicode(str);
                     return;
                 }
 
@@ -249,14 +248,12 @@ namespace IronPython.Modules {
             public void frombytes([BytesConversion]IList<byte> s) {
                 if ((s.Count % itemsize) != 0) throw PythonOps.ValueError("bytes length not a multiple of itemsize");
 
-                switch(s) {
-                    case Bytes b:
-                        FromBytes(b);
-                        break;
-                    default:
-                        FromStream(new MemoryStream(s.ToArray(), false));
-                        break;
+                if (s is Bytes b) {
+                    FromBytes(b);
+                    return;
                 }
+
+                FromStream(new MemoryStream(s.ToArray(), false));
             }
 
             private void FromBytes(Bytes b) {
@@ -371,7 +368,6 @@ namespace IronPython.Modules {
             public virtual object this[int index] {
                 get {
                     object val = _data.GetData(PythonOps.FixIndex(index, _data.Length));
-                    // TODO: can we use PythonOps.ConvertToPythonPrimitive here?
                     switch (_typeCode) {
                         case 'b': return (int)(sbyte)val;
                         case 'B': return (int)(byte)val;

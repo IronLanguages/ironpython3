@@ -124,6 +124,7 @@ namespace IronPython.Compiler.Ast {
                             ).Catch(exception,
                                 Ast.Assign(runElse, AstUtils.Constant(false)),
                                 @catch,
+                                Ast.Call(AstMethods.PopCurrentException),
                                 // restore existing line updated after exception handler completes
                                 PopLineUpdated(lineUpdated),
                                 Ast.Assign(exception, Ast.Constant(null, typeof(Exception))),
@@ -153,6 +154,7 @@ namespace IronPython.Compiler.Ast {
                             AstUtils.Constant(null)
                         ).Catch(exception,
                             @catch,
+                            Ast.Call(AstMethods.PopCurrentException),
                             // restore existing line updated after exception handler completes
                             PopLineUpdated(lineUpdated),
                             Ast.Assign(exception, Ast.Constant(null, typeof(Exception))),

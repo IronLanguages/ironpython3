@@ -2036,6 +2036,15 @@ namespace IronPython.Runtime.Operations {
             RestoreCurrentException(null);
         }
 
+        public static void PopCurrentException() {
+            if (RawException == null) {
+                return;
+            }
+
+            // TODO: Check for Python exceptions only?
+            RawException = RawException.InnerException;
+        }
+
         // Called by code-gen to save it. Codegen just needs to pass this back to RestoreCurrentException.
         public static Exception SaveCurrentException() {
             return RawException;

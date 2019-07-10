@@ -24,6 +24,7 @@ namespace IronPython.Runtime {
         private readonly PythonFunction _function;                  // the function which created the generator
         private readonly MutableTuple _data;                        // the closure data we need to pass into each iteration.  Item000 is the index, Item001 is the current value
         private readonly MutableTuple<int, object> _dataTuple;      // the tuple which has our current index and value
+        private Exception _exceptionContext;                        // the exception being handled in the generator itself
         private GeneratorFlags _flags;                              // Flags capturing various state for the generator
 
         private GeneratorFinalizer _finalizer;                      // finalizer object
@@ -408,6 +409,10 @@ namespace IronPython.Runtime {
 
             RestoreFunctionStack();
 
+            // The generator may be in the process of handling an exception
+            // and therefore the generator needs to save its state
+            RestoreCurrentException(_exceptionContext);
+
             bool ret = false;
             try {
                 // This calls into the delegate that has the real body of the generator.
@@ -423,6 +428,9 @@ namespace IronPython.Runtime {
                     CurrentValue = OperationFailed.Value;
                 }
             } finally {
+                // After the generator has executed the part needed to get the next
+                // value, the exception it is currently handling is going to be clobbered
+                _exceptionContext = SaveCurrentException();
                 // A generator restores the sys.exc_info() status after each yield point.
                 RestoreCurrentException(save);
                 Active = false;

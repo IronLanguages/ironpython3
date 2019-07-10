@@ -75,6 +75,7 @@ namespace IronPython.Compiler.Ast {
             // locals allocated during the body or except blocks.
             MSAst.ParameterExpression lineUpdated = null;
             MSAst.ParameterExpression runElse = null;
+            MSAst.ParameterExpression previousExceptionContext = Ast.Variable(typeof(Exception), "$previousException");
 
             if (_else != null || (_handlers != null && _handlers.Length > 0)) {
                 lineUpdated = Ast.Variable(typeof(bool), "$lineUpdated_try");
@@ -114,6 +115,7 @@ namespace IronPython.Compiler.Ast {
                 result =
                     Ast.Block(
                         Ast.Assign(runElse, AstUtils.Constant(true)),
+                        Ast.Assign(previousExceptionContext, Ast.Call(AstMethods.SaveCurrentException)),
                         // save existing line updated, we could choose to do this only for nested exception handlers.
                         PushLineUpdated(false, lineUpdated),
                         LightExceptions.RewriteExternal(
@@ -124,7 +126,7 @@ namespace IronPython.Compiler.Ast {
                             ).Catch(exception,
                                 Ast.Assign(runElse, AstUtils.Constant(false)),
                                 @catch,
-                                Ast.Call(AstMethods.PopCurrentException),
+                                Ast.Call(AstMethods.RestoreCurrentException, previousExceptionContext),
                                 // restore existing line updated after exception handler completes
                                 PopLineUpdated(lineUpdated),
                                 Ast.Assign(exception, Ast.Constant(null, typeof(Exception))),
@@ -150,13 +152,15 @@ namespace IronPython.Compiler.Ast {
                             GlobalParent.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, GlobalParent.IndexToLocation(_headerIndex))),
                             // save existing line updated
                             PushLineUpdated(false, lineUpdated),
+                            Ast.Assign(previousExceptionContext, Ast.Call(AstMethods.SaveCurrentException)),
                             body,
                             AstUtils.Constant(null)
                         ).Catch(exception,
                             @catch,
-                            Ast.Call(AstMethods.PopCurrentException),
+                            Ast.Call(AstMethods.RestoreCurrentException, previousExceptionContext),
                             // restore existing line updated after exception handler completes
                             PopLineUpdated(lineUpdated),
+
                             Ast.Assign(exception, Ast.Constant(null, typeof(Exception))),
                             AstUtils.Constant(null)
                         )
@@ -166,19 +170,22 @@ namespace IronPython.Compiler.Ast {
             }
             
             return Ast.Block(
-                GetVariables(lineUpdated, runElse), 
+                GetVariables(lineUpdated, runElse, previousExceptionContext),
                 AddFinally(result),
                 AstUtils.Default(typeof(void))
             );
         }
 
-        private static ReadOnlyCollectionBuilder<MSAst.ParameterExpression> GetVariables(MSAst.ParameterExpression lineUpdated, MSAst.ParameterExpression runElse) {
+        private static ReadOnlyCollectionBuilder<MSAst.ParameterExpression> GetVariables(MSAst.ParameterExpression lineUpdated, MSAst.ParameterExpression runElse, MSAst.ParameterExpression previousExceptionContext) {
             var paramList = new ReadOnlyCollectionBuilder<MSAst.ParameterExpression>();
             if(lineUpdated != null) {
                 paramList.Add(lineUpdated);
             }
             if(runElse != null) {
                 paramList.Add(runElse);
+            }
+            if (previousExceptionContext != null) {
+                paramList.Add(previousExceptionContext);
             }
             return paramList;
         }

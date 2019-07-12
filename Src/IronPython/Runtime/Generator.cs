@@ -25,6 +25,7 @@ namespace IronPython.Runtime {
         private readonly MutableTuple _data;                        // the closure data we need to pass into each iteration.  Item000 is the index, Item001 is the current value
         private readonly MutableTuple<int, object> _dataTuple;      // the tuple which has our current index and value
         private Exception _exceptionContext;                        // the exception being handled in the generator itself
+        private bool _iterationStarted;                             // whether next() has been called yet
         private GeneratorFlags _flags;                              // Flags capturing various state for the generator
 
         private GeneratorFinalizer _finalizer;                      // finalizer object
@@ -379,11 +380,18 @@ namespace IronPython.Runtime {
             bool ret = false;
             try {
                 RestoreFunctionStack();
+
+                if (!_iterationStarted) {
+                    _exceptionContext = SaveCurrentException();
+                    _iterationStarted = true;
+                }
+                RestoreCurrentException(_exceptionContext);
                 try {
                     ret = GetNext();
                 } finally {
                     Active = false;
 
+                    _exceptionContext = SaveCurrentException();
                     SaveFunctionStack(!ret);
 
                     if (!ret) {
@@ -411,6 +419,10 @@ namespace IronPython.Runtime {
 
             // The generator may be in the process of handling an exception
             // and therefore the generator needs to save its state
+            if (!_iterationStarted) {
+                _exceptionContext = SaveCurrentException();
+                _iterationStarted = true;
+            }
             RestoreCurrentException(_exceptionContext);
 
             bool ret = false;

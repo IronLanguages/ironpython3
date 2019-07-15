@@ -92,7 +92,7 @@ namespace IronPython.Compiler.Ast {
 
             if (_handlers != null && _handlers.Length > 0) {
                 exception = Ast.Variable(typeof(Exception), "$exception");
-                @catch = TransformHandlers(exception);
+                @catch = TransformHandlers(exception, previousExceptionContext);
             } else {
                 exception = null;
                 @catch = null;
@@ -126,7 +126,6 @@ namespace IronPython.Compiler.Ast {
                             ).Catch(exception,
                                 Ast.Assign(runElse, AstUtils.Constant(false)),
                                 @catch,
-                                Ast.Call(AstMethods.RestoreCurrentException, previousExceptionContext),
                                 // restore existing line updated after exception handler completes
                                 PopLineUpdated(lineUpdated),
                                 Ast.Assign(exception, Ast.Constant(null, typeof(Exception))),
@@ -157,10 +156,8 @@ namespace IronPython.Compiler.Ast {
                             AstUtils.Constant(null)
                         ).Catch(exception,
                             @catch,
-                            Ast.Call(AstMethods.RestoreCurrentException, previousExceptionContext),
                             // restore existing line updated after exception handler completes
                             PopLineUpdated(lineUpdated),
-
                             Ast.Assign(exception, Ast.Constant(null, typeof(Exception))),
                             AstUtils.Constant(null)
                         )
@@ -252,7 +249,7 @@ namespace IronPython.Compiler.Ast {
         /// </summary>
         /// <param name="exception">The variable for the exception in the catch block.</param>
         /// <returns>Null if there are no except handlers. Else the statement to go inside the catch handler</returns>
-        private MSAst.Expression TransformHandlers(MSAst.ParameterExpression exception) {
+        private MSAst.Expression TransformHandlers(MSAst.ParameterExpression exception, MSAst.ParameterExpression previousException) {
             Assert.NotEmpty(_handlers);
 
             MSAst.ParameterExpression extracted = Ast.Variable(typeof(object), "$extracted");
@@ -416,7 +413,11 @@ namespace IronPython.Compiler.Ast {
                         exception
                     )
                 ),
-                body,
+                AstUtils.Try(
+                    body
+                ).Finally(
+                    Ast.Call(AstMethods.RestoreCurrentException, previousException)
+                ),
                 Ast.Assign(extracted, Ast.Constant(null)),
                 AstUtils.Empty()
             );

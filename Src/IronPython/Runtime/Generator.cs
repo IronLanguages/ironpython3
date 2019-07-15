@@ -25,7 +25,6 @@ namespace IronPython.Runtime {
         private readonly MutableTuple _data;                        // the closure data we need to pass into each iteration.  Item000 is the index, Item001 is the current value
         private readonly MutableTuple<int, object> _dataTuple;      // the tuple which has our current index and value
         private Exception _exceptionContext;                        // the exception being handled in the generator itself
-        private bool _iterationStarted;                             // whether next() has been called yet
         private GeneratorFlags _flags;                              // Flags capturing various state for the generator
 
         private GeneratorFinalizer _finalizer;                      // finalizer object
@@ -340,9 +339,23 @@ namespace IronPython.Runtime {
                 return MoveNextWorker();
             } else {
                 Exception save = SaveCurrentException();
+                if (_exceptionContext != null) {
+                    RestoreCurrentException(_exceptionContext);
+                }
+
                 try {
                     return MoveNextWorker();
                 } finally {
+
+                    _exceptionContext = SaveCurrentException();
+
+                    // If we end up in the same exception context we entered in, then that means we
+                    // aren't handling an exception internal to the generator, so we need to adapt
+                    // to what we get.
+                    if (save == _exceptionContext) {
+                        _exceptionContext = null;
+                    }
+                    // A generator restores the sys.exc_info() status after each yield point.
                     RestoreCurrentException(save);
                 }
             }
@@ -380,18 +393,11 @@ namespace IronPython.Runtime {
             bool ret = false;
             try {
                 RestoreFunctionStack();
-
-                if (!_iterationStarted) {
-                    _exceptionContext = SaveCurrentException();
-                    _iterationStarted = true;
-                }
-                RestoreCurrentException(_exceptionContext);
                 try {
                     ret = GetNext();
                 } finally {
                     Active = false;
 
-                    _exceptionContext = SaveCurrentException();
                     SaveFunctionStack(!ret);
 
                     if (!ret) {
@@ -419,11 +425,9 @@ namespace IronPython.Runtime {
 
             // The generator may be in the process of handling an exception
             // and therefore the generator needs to save its state
-            if (!_iterationStarted) {
-                _exceptionContext = SaveCurrentException();
-                _iterationStarted = true;
+            if (_exceptionContext != null) {
+                RestoreCurrentException(_exceptionContext);
             }
-            RestoreCurrentException(_exceptionContext);
 
             bool ret = false;
             try {
@@ -443,13 +447,20 @@ namespace IronPython.Runtime {
                 // After the generator has executed the part needed to get the next
                 // value, the exception it is currently handling is going to be clobbered
                 _exceptionContext = SaveCurrentException();
+
+                // If we end up in the same exception context we entered in, then that means we
+                // aren't handling an exception internal to the generator, so we need to adapt
+                // to what we get.
+                if (save == _exceptionContext) {
+                    _exceptionContext = null;
+                }
                 // A generator restores the sys.exc_info() status after each yield point.
                 RestoreCurrentException(save);
                 Active = false;
 
                 SaveFunctionStack(!ret);
 
-                // If _next() returned false, or did not return (thus leavintg ret assigned to its initial value of false), then 
+                // If _next() returned false, or did not return (thus leaving ret assigned to its initial value of false), then
                 // the body of the generator has exited and the generator is now closed.
                 if (!ret) {
                     Close();

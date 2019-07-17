@@ -136,8 +136,8 @@ def test8():
         raise Exception('@Exception 2')
     except:
         res = next(x)
-        assert '@Exception 1' in res
-        assert '@Exception 2' not in res
+        assert '@Exception 2' in res
+        assert '@Exception 1' not in res
 
 test8()
 
@@ -163,7 +163,6 @@ def test9():
         raise Exception('@Exception 2')
     except:
         res = next(x)
-        print(res)
         assert '@Exception 2' in res
         assert '@Exception 1' not in res
 

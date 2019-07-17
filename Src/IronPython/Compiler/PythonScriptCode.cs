@@ -59,7 +59,7 @@ namespace IronPython.Compiler {
         private object RunWorker(CodeContext ctx) {
             LookupCompilationDelegate target = GetTarget(true);
 
-            Exception e = PythonOps.SaveCurrentException();
+            ExceptionMetadata e = PythonOps.SaveCurrentException();
             PushFrame(ctx, _code);
             try {
                 return target(ctx, _code);

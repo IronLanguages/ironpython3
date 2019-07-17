@@ -17,6 +17,7 @@ using IronPython.Runtime.Binding;
 using MSAst = System.Linq.Expressions;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
@@ -75,7 +76,7 @@ namespace IronPython.Compiler.Ast {
             // locals allocated during the body or except blocks.
             MSAst.ParameterExpression lineUpdated = null;
             MSAst.ParameterExpression runElse = null;
-            MSAst.ParameterExpression previousExceptionContext = Ast.Variable(typeof(Exception), "$previousException");
+            MSAst.ParameterExpression previousExceptionContext = Ast.Variable(typeof(ExceptionMetadata), "$previousException");
 
             if (_else != null || (_handlers != null && _handlers.Length > 0)) {
                 lineUpdated = Ast.Variable(typeof(bool), "$lineUpdated_try");

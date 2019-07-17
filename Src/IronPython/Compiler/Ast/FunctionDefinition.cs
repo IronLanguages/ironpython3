@@ -658,7 +658,7 @@ namespace IronPython.Compiler.Ast {
             if (!IsGenerator && CanSetSysExcInfo) {
                 // need to allocate the exception here so we don't share w/ exceptions made & freed
                 // during the body.
-                extracted = Ast.Parameter(typeof(Exception), "$ex");
+                extracted = Ast.Parameter(typeof(ExceptionMetadata), "$ex");
                 locals.Add(extracted);
             }
 

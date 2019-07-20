@@ -261,10 +261,7 @@ class WithTest(unittest.TestCase):
                             events.append('deep_inner_with')
                             raise Myerr1  #try->(try->(except->(with ->fun ->(try->with->raise))))
                     finally:    #try->(try->(except->(with ->fun ->(try->(with->raise)->Finally))))
-                        if is_cpython: #http://ironpython.codeplex.com/workitem/27990/
-                            self.assertEqual(sys.exc_info()[0], Myerr1)
-                        else:
-                            self.assertEqual(sys.exc_info()[0], ZeroDivisionError)
+                        self.assertEqual(sys.exc_info()[0], Myerr1)
                         events.append('finally')
                         class ClassInFinally:
                             def __enter__(self):

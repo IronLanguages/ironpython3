@@ -94,6 +94,9 @@ namespace IronPython.Compiler.Ast {
             if (_handlers != null && _handlers.Length > 0) {
                 exception = Ast.Variable(typeof(Exception), "$exception");
                 @catch = TransformHandlers(exception, previousExceptionContext);
+            } else if (_finally != null) {
+                exception = Ast.Variable(typeof(Exception), "$exception");
+                @catch = null;
             } else {
                 exception = null;
                 @catch = null;
@@ -116,7 +119,6 @@ namespace IronPython.Compiler.Ast {
                 result =
                     Ast.Block(
                         Ast.Assign(runElse, AstUtils.Constant(true)),
-                        Ast.Assign(previousExceptionContext, Ast.Call(AstMethods.SaveCurrentException)),
                         // save existing line updated, we could choose to do this only for nested exception handlers.
                         PushLineUpdated(false, lineUpdated),
                         LightExceptions.RewriteExternal(
@@ -125,8 +127,17 @@ namespace IronPython.Compiler.Ast {
                                 body,
                                 AstUtils.Constant(null)
                             ).Catch(exception,
+                                // Always set the current exception info when we get an exception
+                                Ast.Call(AstMethods.SetCurrentException, Parent.LocalContext, exception),
                                 Ast.Assign(runElse, AstUtils.Constant(false)),
-                                @catch,
+                                // Inside the exception itself it's possible to throw again,
+                                // and this must be communicated to the finally block
+                                AstUtils.Try(
+                                    @catch
+                                ).Catch(exception,
+                                    Ast.Call(AstMethods.SetCurrentException, Parent.LocalContext, exception),
+                                    Ast.Rethrow()
+                                ),
                                 // restore existing line updated after exception handler completes
                                 PopLineUpdated(lineUpdated),
                                 Ast.Assign(exception, Ast.Constant(null, typeof(Exception))),
@@ -156,7 +167,13 @@ namespace IronPython.Compiler.Ast {
                             body,
                             AstUtils.Constant(null)
                         ).Catch(exception,
-                            @catch,
+                            Ast.Call(AstMethods.SetCurrentException, Parent.LocalContext, exception),
+                            AstUtils.Try(
+                                    @catch
+                            ).Catch(exception,
+                                Ast.Call(AstMethods.SetCurrentException, Parent.LocalContext, exception),
+                                Ast.Rethrow()
+                            ),
                             // restore existing line updated after exception handler completes
                             PopLineUpdated(lineUpdated),
                             Ast.Assign(exception, Ast.Constant(null, typeof(Exception))),
@@ -164,11 +181,17 @@ namespace IronPython.Compiler.Ast {
                         )
                     );
             } else {
-                result = body;
+                result = AstUtils.Try(
+                    body
+                ).Catch(exception,
+                    Ast.Call(AstMethods.SetCurrentException, Parent.LocalContext, exception),
+                    Ast.Rethrow()
+                );
             }
-            
+
             return Ast.Block(
                 GetVariables(lineUpdated, runElse, previousExceptionContext),
+                Ast.Assign(previousExceptionContext, Ast.Call(AstMethods.SaveCurrentException)),
                 AddFinally(result),
                 AstUtils.Default(typeof(void))
             );
@@ -317,6 +340,7 @@ namespace IronPython.Compiler.Ast {
                                     AstUtils.Empty()
                                 ),
                                 Ast.Block(
+                                    Ast.Call(AstMethods.RestoreCurrentException, previousException),
                                     tsh.Target.TransformSet(SourceSpan.None, AstUtils.Constant(null), PythonOperationKind.None),
                                     tsh.Target.TransformDelete()
                                 )
@@ -336,13 +360,16 @@ namespace IronPython.Compiler.Ast {
                                 test,
                                 AstUtils.Constant(null)
                             ),
-                            GlobalParent.AddDebugInfo(
-                                GetTracebackHeader(
-                                    this, 
-                                    exception,
-                                    tsh.Body
+                            Ast.TryFinally(
+                                GlobalParent.AddDebugInfo(
+                                    GetTracebackHeader(
+                                        this, 
+                                        exception,
+                                        tsh.Body
+                                    ),
+                                    new SourceSpan(GlobalParent.IndexToLocation(tsh.StartIndex), GlobalParent.IndexToLocation(tsh.HeaderIndex))
                                 ),
-                                new SourceSpan(GlobalParent.IndexToLocation(tsh.StartIndex), GlobalParent.IndexToLocation(tsh.HeaderIndex))
+                                Ast.Call(AstMethods.RestoreCurrentException, previousException)
                             )
                         );
                     }
@@ -362,10 +389,14 @@ namespace IronPython.Compiler.Ast {
                     //          <body>
                     //  }
 
-                    catchAll = GlobalParent.AddDebugInfo(
-                        GetTracebackHeader(this, exception, tsh.Body),
-                        new SourceSpan(GlobalParent.IndexToLocation(tsh.StartIndex), GlobalParent.IndexToLocation(tsh.HeaderIndex))
-                    );
+                    catchAll =
+                        Ast.TryFinally(
+                            GlobalParent.AddDebugInfo(
+                                GetTracebackHeader(this, exception, tsh.Body),
+                                new SourceSpan(GlobalParent.IndexToLocation(tsh.StartIndex), GlobalParent.IndexToLocation(tsh.HeaderIndex))
+                            ),
+                            Ast.Call(AstMethods.RestoreCurrentException, previousException)
+                        );
                 }
             }
 
@@ -408,17 +439,9 @@ namespace IronPython.Compiler.Ast {
                 args,
                 Ast.Assign(
                     extracted,
-                    Ast.Call(
-                        AstMethods.SetCurrentException,
-                        Parent.LocalContext,
-                        exception
-                    )
+                    Ast.Call(AstMethods.GetCurrentPythonException)
                 ),
-                AstUtils.Try(
-                    body
-                ).Finally(
-                    Ast.Call(AstMethods.RestoreCurrentException, previousException)
-                ),
+                body,
                 Ast.Assign(extracted, Ast.Constant(null)),
                 AstUtils.Empty()
             );

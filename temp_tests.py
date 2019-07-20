@@ -208,6 +208,18 @@ def test12():
 
 test12()
 
+def test13():
+    try:
+        try:
+            ex = Exception()
+            raise ex
+        finally:
+            print(sys.exc_info())
+            assert sys.exc_info()[1] == ex
+    except:
+        pass
+
+test13()
 
 test1()
 test2()
@@ -221,3 +233,4 @@ test9()
 test10()
 test11()
 test12()
+test13()

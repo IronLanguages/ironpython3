@@ -2047,6 +2047,10 @@ namespace IronPython.Runtime.Operations {
             return CurrentException?.RestoreLastException?.Invoke() ?? CurrentException?.Exception;
         }
 
+        public static object GetCurrentPythonException() {
+            return PythonExceptions.ToPython(GetCurrentException());
+        }
+
         // Clear the current exception. Most callers should restore the exception.
         public static void ClearCurrentException() {
             RestoreCurrentException(null);

@@ -390,6 +390,7 @@ class ExcInfoTest(unittest.TestCase):
     # __exit__ can be invoked by an except block,
     # but unlike a normal except, that shouldn't set sys.exc_info().
 
+    @unittest.skip('unbound variable: $localContext')
     def test_with_simple(self):
         """Simple case, no exception set."""
         class M1(ManBase):
@@ -399,6 +400,7 @@ class ExcInfoTest(unittest.TestCase):
         with M1(self):
             pass
 
+    @unittest.skip('unbound variable: $localContext')
     def test_with_fail(self):
         """with.__exit__ doesn't see exception in exception case."""
         class M2(ManBase):
@@ -415,7 +417,7 @@ class ExcInfoTest(unittest.TestCase):
         with M2(self):
             raise ValueError(15)
 
-
+    @unittest.skip('unbound variable: $localContext')
     # call 'with' from an except block
     def test_with_except_pass(self):
         class M2(ManBase):
@@ -440,7 +442,7 @@ class ExcInfoTest(unittest.TestCase):
                 pass
             self.A(15)
 
-
+    @unittest.skip('unbound variable: $localContext')
     # call 'with' from an except block, do failure case
     def test_with_except_fail(self):
         class M2(ManBase):

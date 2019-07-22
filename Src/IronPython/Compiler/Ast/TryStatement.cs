@@ -76,7 +76,7 @@ namespace IronPython.Compiler.Ast {
             // locals allocated during the body or except blocks.
             MSAst.ParameterExpression lineUpdated = null;
             MSAst.ParameterExpression runElse = null;
-            MSAst.ParameterExpression previousExceptionContext = Ast.Variable(typeof(ExceptionMetadata), "$previousException");
+            MSAst.ParameterExpression previousExceptionContext = Ast.Variable(typeof(Exception), "$previousException");
 
             if (_else != null || (_handlers != null && _handlers.Length > 0)) {
                 lineUpdated = Ast.Variable(typeof(bool), "$lineUpdated_try");
@@ -330,11 +330,7 @@ namespace IronPython.Compiler.Ast {
                                 Ast.Block(
                                     tsh.Target.TransformSet(SourceSpan.None, converted, PythonOperationKind.None),
                                     GlobalParent.AddDebugInfo(
-                                        GetTracebackHeader(
-                                            this,
-                                            exception,
-                                            tsh.Body
-                                        ),
+                                        GetTracebackHeader(this, exception, tsh.Body),
                                         new SourceSpan(GlobalParent.IndexToLocation(tsh.StartIndex), GlobalParent.IndexToLocation(tsh.HeaderIndex))
                                     ),
                                     AstUtils.Empty()
@@ -362,16 +358,12 @@ namespace IronPython.Compiler.Ast {
                             ),
                             Ast.TryFinally(
                                 GlobalParent.AddDebugInfo(
-                                    GetTracebackHeader(
-                                        this, 
-                                        exception,
-                                        tsh.Body
-                                    ),
+                                    GetTracebackHeader(this, exception, tsh.Body),
                                     new SourceSpan(GlobalParent.IndexToLocation(tsh.StartIndex), GlobalParent.IndexToLocation(tsh.HeaderIndex))
                                 ),
                                 Ast.Call(AstMethods.RestoreCurrentException, previousException)
                             )
-                        );
+                        ); ;
                     }
 
                     // Add the test to the if statement test cascade

@@ -38,9 +38,9 @@ using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Operations {
 
-    public class ExceptionMetadata {
+    internal class ExceptionState {
         public Exception Exception { get; set; }
-        public Func<Exception> RestoreLastException { get; set; }
+        public ExceptionState PrevException { get; set; }
     }
 
     /// <summary>
@@ -55,7 +55,7 @@ namespace IronPython.Runtime.Operations {
 
         // The "current" exception on this thread that will be returned via sys.exc_info()
         [ThreadStatic]
-        internal static ExceptionMetadata CurrentException;
+        internal static ExceptionState CurrentExceptionState;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly PythonTuple EmptyTuple = PythonTuple.EMPTY;
@@ -2032,19 +2032,16 @@ namespace IronPython.Runtime.Operations {
             }
 #endif
 
-            CurrentException = new ExceptionMetadata { Exception = clrException };
+            RestoreCurrentException(clrException);
             return res;
         }
 
-        public static object SetCurrentExceptionWithCallback(CodeContext/*!*/ context, Func<Exception>/*!*/ callback) {
-            Exception exception = callback.Invoke();
-            object res = SetCurrentException(context, exception);
-            CurrentException.RestoreLastException = callback;
-            return res;
-        }
-
-        public static Exception GetCurrentException() {
-            return CurrentException?.RestoreLastException?.Invoke() ?? CurrentException?.Exception;
+        private static Exception GetCurrentException() {
+            var ex = CurrentExceptionState;
+            while (ex != null && ex.Exception == null) {
+                ex = ex.PrevException;
+            }
+            return ex?.Exception;
         }
 
         public static object GetCurrentPythonException() {
@@ -2057,13 +2054,16 @@ namespace IronPython.Runtime.Operations {
         }
 
         // Called by code-gen to save it. Codegen just needs to pass this back to RestoreCurrentException.
-        public static ExceptionMetadata SaveCurrentException() {
-            return CurrentException;
+        public static Exception SaveCurrentException() {
+            return CurrentExceptionState?.Exception;
         }
 
         // Called at function exit (like popping). Pass value from SaveCurrentException.
-        public static void RestoreCurrentException(ExceptionMetadata clrException) {
-            CurrentException = clrException;
+        public static void RestoreCurrentException(Exception clrException) {
+            if (CurrentExceptionState == null) {
+                CurrentExceptionState = new ExceptionState();
+            }
+            CurrentExceptionState.Exception = clrException;
         }
 
         public static object CheckException(CodeContext/*!*/ context, object exception, object test) {

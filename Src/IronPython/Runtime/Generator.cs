@@ -24,12 +24,11 @@ namespace IronPython.Runtime {
         private readonly PythonFunction _function;                  // the function which created the generator
         private readonly MutableTuple _data;                        // the closure data we need to pass into each iteration.  Item000 is the index, Item001 is the current value
         private readonly MutableTuple<int, object> _dataTuple;      // the tuple which has our current index and value
-        private ExceptionMetadata _exceptionContext;                // the exception being handled in the generator itself
-        private ExceptionMetadata _save;
         private GeneratorFlags _flags;                              // Flags capturing various state for the generator
 
         private GeneratorFinalizer _finalizer;                      // finalizer object
 
+        private ExceptionState _state = new ExceptionState();
 
         /// <summary>
         /// We cache the GeneratorFinalizer of generators that were closed on the user
@@ -58,7 +57,6 @@ namespace IronPython.Runtime {
             _data = data;
             _dataTuple = GetDataTuple();
             State = GeneratorRewriter.NotStarted;
-            _exceptionContext = new ExceptionMetadata { RestoreLastException = RestoreCurrentExceptionCallback };
 
             if (_LastFinalizer == null || (_finalizer = Interlocked.Exchange(ref _LastFinalizer, null)) == null) {
                 _finalizer = new GeneratorFinalizer(this);
@@ -341,17 +339,14 @@ namespace IronPython.Runtime {
             if (!CanSetSysExcInfo) {
                 return MoveNextWorker();
             } else {
-                _save = SaveCurrentException();
-                RestoreCurrentException(_exceptionContext);
-
+                _state.PrevException = PythonOps.CurrentExceptionState;
+                PythonOps.CurrentExceptionState = _state;
                 try {
                     return MoveNextWorker();
                 } finally {
-
-                    _exceptionContext = SaveCurrentException();
-
                     // A generator restores the sys.exc_info() status after each yield point.
-                    RestoreCurrentException(_save);
+                    PythonOps.CurrentExceptionState = _state.PrevException;
+                    _state.PrevException = null;
                 }
             }
         }
@@ -412,15 +407,10 @@ namespace IronPython.Runtime {
             // Generators can not be called re-entrantly.
             CheckSetActive();
 
-            // We need to save/restore the exception info if the generator
-            // includes exception handling blocks.
-            _save = SaveCurrentException();
-
             RestoreFunctionStack();
 
-            // The generator may be in the process of handling an exception
-            // and therefore the generator needs to save its state
-            RestoreCurrentException(_exceptionContext);
+            _state.PrevException = PythonOps.CurrentExceptionState;
+            PythonOps.CurrentExceptionState = _state;
 
             bool ret = false;
             try {
@@ -437,12 +427,9 @@ namespace IronPython.Runtime {
                     CurrentValue = OperationFailed.Value;
                 }
             } finally {
-                // After the generator has executed the part needed to get the next
-                // value, the exception it is currently handling is going to be clobbered
-                _exceptionContext = SaveCurrentException();
+                PythonOps.CurrentExceptionState = _state.PrevException;
+                _state.PrevException = null;
 
-                // A generator restores the sys.exc_info() status after each yield point.
-                RestoreCurrentException(_save);
                 Active = false;
 
                 SaveFunctionStack(!ret);
@@ -457,19 +444,13 @@ namespace IronPython.Runtime {
             return CurrentValue;
         }
 
-        private void RestoreCurrentException(ExceptionMetadata save) {
+        private void RestoreCurrentException(Exception save) {
             if (CanSetSysExcInfo) {
                 PythonOps.RestoreCurrentException(save);
             }
         }
 
-        private Exception RestoreCurrentExceptionCallback() {
-            // TODO: I think it's impossible for the exception we hold here
-            // to be wrong because we always have to enter/exit the generator?
-            return _save?.Exception;
-        }
-
-        private ExceptionMetadata SaveCurrentException() {
+        private Exception SaveCurrentException() {
             if (CanSetSysExcInfo) {
                 return PythonOps.SaveCurrentException();
             }

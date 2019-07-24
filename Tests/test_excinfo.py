@@ -5,9 +5,8 @@
 # Test that sys.exc_info() is properly set.
 
 import sys
+import traceback
 import unittest
-
-#from iptest import is_cli, run_test
 
 # Rules:
 # 1) thread has a current exception
@@ -69,7 +68,7 @@ class ExcInfoTest(unittest.TestCase):
             try:
                 raise ValueError(63)
             except t():  # not matching
-                assert False
+                self.fail()
         try:
             f()
         except:
@@ -119,12 +118,12 @@ class ExcInfoTest(unittest.TestCase):
             self.A(None)
             try:
                 f1()  # throw from a different function
-                assert False
+                self.fail()
             finally:
                 # we should be here via the exceptional path.
                 # but since there's no except block in here, exc_info not set.
                 self.A(20)
-            assert False
+            self.fail()
         try:
             f2()
         except:
@@ -193,7 +192,7 @@ class ExcInfoTest(unittest.TestCase):
                     self.A(15)
                 self.A(None)
             except:
-                assert False
+                self.fail()
             self.A(None)
             try:
                 self.A(None)
@@ -204,7 +203,7 @@ class ExcInfoTest(unittest.TestCase):
                 self.A(20)
             self.A(None)
         except:
-            assert False
+            self.fail()
         self.A(None)
 
 
@@ -246,7 +245,7 @@ class ExcInfoTest(unittest.TestCase):
             except:
                 self.A(22)
                 return  # return from Except, swallows Ex
-            assert False
+            self.fail()
 
         def f2():
             self.A(55)
@@ -375,7 +374,7 @@ class ExcInfoTest(unittest.TestCase):
         try:
             try:
                 g.throw(ValueError(87))
-                assert False
+                self.fail()
             finally:
                 # exceptional path.
                 # The generator throws an exception, causing us
@@ -390,6 +389,7 @@ class ExcInfoTest(unittest.TestCase):
     # __exit__ can be invoked by an except block,
     # but unlike a normal except, that shouldn't set sys.exc_info().
 
+    # https://github.com/IronLanguages/ironpython3/issues/451
     @unittest.skip('unbound variable: $localContext')
     def test_with_simple(self):
         """Simple case, no exception set."""
@@ -400,7 +400,8 @@ class ExcInfoTest(unittest.TestCase):
         with M1(self):
             pass
 
-    @unittest.skip('unbound variable: $localContext')
+    # https://github.com/IronLanguages/ironpython3/issues/451
+    @unittest.skip('unbound variable: $localContext') 
     def test_with_fail(self):
         """with.__exit__ doesn't see exception in exception case."""
         class M2(ManBase):
@@ -417,7 +418,8 @@ class ExcInfoTest(unittest.TestCase):
         with M2(self):
             raise ValueError(15)
 
-    @unittest.skip('unbound variable: $localContext')
+    # https://github.com/IronLanguages/ironpython3/issues/451
+    @unittest.skip('unbound variable: $localContext') 
     # call 'with' from an except block
     def test_with_except_pass(self):
         class M2(ManBase):
@@ -442,6 +444,7 @@ class ExcInfoTest(unittest.TestCase):
                 pass
             self.A(15)
 
+    # https://github.com/IronLanguages/ironpython3/issues/451
     @unittest.skip('unbound variable: $localContext')
     # call 'with' from an except block, do failure case
     def test_with_except_fail(self):
@@ -467,8 +470,149 @@ class ExcInfoTest(unittest.TestCase):
                 raise ValueError(34)
             self.A(15) # TODO: is this a bug?
 
+class ExcInfoGeneratorTest(unittest.TestCase):
+    
+    def test_generator_has_own_exception_exception_context(self):
+        def gen():
+            try:
+                raise Exception
+            except:
+                exc_info = sys.exc_info()
+                yield exc_info
+                yield sys.exc_info()
+            yield sys.exc_info()
+        x = gen()
+        exc_info = next(x)
+        self.assertEqual(sys.exc_info(), (None, None, None))
+        self.assertEqual(next(x), exc_info)
+        self.assertEqual(next(x), (None, None, None))
 
-#run_test(__name__)
+    def test_exception_context_cleared(self):
+        try:
+            try:
+                raise Exception(1)
+            except:
+                pass    
+            raise Exception(2)
+        except Exception as e:
+            self.assertIs(e.__context__, None)
+
+    def test_generator_inherits_exception_context(self):
+        def gen():
+            try:
+                raise Exception
+            except:
+                pass
+            yield sys.exc_info()
+        x = gen()
+        try:
+            raise Exception
+        except:
+            exc_info = sys.exc_info()
+            self.assertEqual(next(x), exc_info)
+
+    def test_generator_inherits_changing_exception_context_1(self):
+        def gen():
+            yield sys.exc_info()
+            try:
+                raise Exception
+            except:
+                pass
+            yield sys.exc_info()
+        x = gen()
+        self.assertEqual(next(x), (None, None, None))
+        try:
+            raise Exception
+        except:
+            exc_info = sys.exc_info()
+            self.assertEqual(next(x), exc_info)
+
+    def test_generator_inherits_changing_exception_context_2(self):
+        def gen():
+            yield sys.exc_info()
+            try:
+                raise Exception
+            except:
+                pass
+            yield sys.exc_info()
+        x = gen()
+        try:
+            raise Exception
+        except:
+            exc_info_1 = sys.exc_info()
+            self.assertEqual(next(x), exc_info_1)
+        try:
+            raise Exception
+        except:
+            exc_info_2 = sys.exc_info()
+            self.assertEqual(next(x), exc_info_2)
+        self.assertNotEqual(exc_info_1, exc_info_2)
+
+    def test_exception_traceback_unchanged_by_inherited_exception(self):
+        def gen():
+            try:
+                raise Exception
+            except:
+                yield traceback.format_exc()
+                yield traceback.format_exc()
+            
+        x = gen()
+        try:
+            raise Exception('@Exception 1')
+        except:
+            self.assertTrue('@Exception 1' in next(x))
+        try:
+            raise Exception('@Exception 2')
+        except:
+            self.assertTrue('@Exception 1' in next(x))
+
+    def test_new_exceptions_inherit_new_exception_contexts_1(self):
+        def gen():
+            try:
+                raise Exception
+            except:
+                yield traceback.format_exc()
+            try:
+                raise Exception
+            except:
+                yield traceback.format_exc()
+            
+        x = gen()
+        try:
+            raise Exception('@Exception 1')
+        except:
+            self.assertIn('@Exception 1', next(x))
+        try:
+            raise Exception('@Exception 2')
+        except:
+            res = next(x)
+            self.assertIn('@Exception 2', res)
+            self.assertNotIn('@Exception 1', res)
+
+    def test_new_exceptions_inherit_new_exception_contexts_2(self):
+        def gen():
+            try:
+                raise Exception
+            except:
+                yield traceback.format_exc()
+            yield "Hello"
+            try:
+                raise Exception
+            except:
+                yield traceback.format_exc()
+            
+        x = gen()
+        try:
+            raise Exception('@Exception 1')
+        except:
+            self.assertIn('@Exception 1', next(x))
+        next(x)
+        try:
+            raise Exception('@Exception 2')
+        except:
+            res = next(x)
+            self.assertIn('@Exception 2', res)
+            self.assertNotIn('@Exception 1', res)
 
 if __name__ == "__main__":
     unittest.main()

@@ -13,11 +13,11 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Binding;
+using IronPython.Runtime.Operations;
 
 using MSAst = System.Linq.Expressions;
 
 using AstUtils = Microsoft.Scripting.Ast.Utils;
-using IronPython.Runtime.Operations;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
@@ -127,17 +127,8 @@ namespace IronPython.Compiler.Ast {
                                 body,
                                 AstUtils.Constant(null)
                             ).Catch(exception,
-                                // Always set the current exception info when we get an exception
-                                Ast.Call(AstMethods.SetCurrentException, Parent.LocalContext, exception),
                                 Ast.Assign(runElse, AstUtils.Constant(false)),
-                                // Inside the exception itself it's possible to throw again,
-                                // and this must be communicated to the finally block
-                                AstUtils.Try(
-                                    @catch
-                                ).Catch(exception,
-                                    Ast.Call(AstMethods.SetCurrentException, Parent.LocalContext, exception),
-                                    Ast.Rethrow()
-                                ),
+                                @catch,
                                 // restore existing line updated after exception handler completes
                                 PopLineUpdated(lineUpdated),
                                 Ast.Assign(exception, Ast.Constant(null, typeof(Exception))),
@@ -167,13 +158,7 @@ namespace IronPython.Compiler.Ast {
                             body,
                             AstUtils.Constant(null)
                         ).Catch(exception,
-                            Ast.Call(AstMethods.SetCurrentException, Parent.LocalContext, exception),
-                            AstUtils.Try(
-                                    @catch
-                            ).Catch(exception,
-                                Ast.Call(AstMethods.SetCurrentException, Parent.LocalContext, exception),
-                                Ast.Rethrow()
-                            ),
+                            @catch,
                             // restore existing line updated after exception handler completes
                             PopLineUpdated(lineUpdated),
                             Ast.Assign(exception, Ast.Constant(null, typeof(Exception))),
@@ -181,6 +166,8 @@ namespace IronPython.Compiler.Ast {
                         )
                     );
             } else {
+                // If the body throws an exception and there's no catch block,
+                // we should still update the current exception
                 result = AstUtils.Try(
                     body
                 ).Catch(exception,
@@ -225,7 +212,8 @@ namespace IronPython.Compiler.Ast {
                 //          from the finally block and leave the existing stack traces cleared.
                 //      3. Returning from the try block: Here we need to run the finally block and not update the
                 //          line numbers.
-                body = AstUtils.Try( // we use a fault to know when we have an exception and when control leaves normally (via
+                body = AstUtils.Try(
+                    // we use a fault to know when we have an exception and when control leaves normally (via
                     // either a return or the body completing successfully).
                     AstUtils.Try(
                         Parent.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, GlobalParent.IndexToLocation(_headerIndex))),
@@ -426,14 +414,25 @@ namespace IronPython.Compiler.Ast {
 
             // Codegen becomes:
             //     extracted = PythonOps.SetCurrentException(exception)
-            //      < dynamic exception analysis >
+            //     try:
+            //         < dynamic exception analysis >
+            //     except exception:
+            //         PythonOps.SetCurrentException(exception)
+            //         raise
             return Ast.Block(
                 args,
                 Ast.Assign(
                     extracted,
-                    Ast.Call(AstMethods.GetCurrentPythonException)
+                    Ast.Call(AstMethods.SetCurrentException, Parent.LocalContext, exception)
                 ),
-                body,
+                // It's possible that the except block itself throws an exception,
+                // so we will need to update the current exception in that case
+                AstUtils.Try(
+                    body
+                ).Catch(exception,
+                        Ast.Call(AstMethods.SetCurrentException, Parent.LocalContext, exception),
+                        Ast.Rethrow()
+                ),
                 Ast.Assign(extracted, Ast.Constant(null)),
                 AstUtils.Empty()
             );

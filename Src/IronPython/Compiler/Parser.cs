@@ -1562,6 +1562,12 @@ namespace IronPython.Compiler {
             Statement ret;
             int end;
 
+            // If this function has a try block, then it can set the current exception.
+            FunctionDefinition current = CurrentFunction;
+            if (current != null) {
+                current.CanSetSysExcInfo = true;
+            }
+
             if (MaybeEat(TokenKind.KeywordFinally)) {
                 finallySuite = ParseFinallySuite(finallySuite);
                 end = finallySuite.EndIndex;
@@ -1627,12 +1633,6 @@ namespace IronPython.Compiler {
         // except_clause: 'except' [expression ['as' identifier]]
         private TryStatementHandler ParseTryStmtHandler() {
             Eat(TokenKind.KeywordExcept);
-
-            // If this function has an except block, then it can set the current exception.
-            FunctionDefinition current = CurrentFunction;
-            if (current != null) {
-                current.CanSetSysExcInfo = true;
-            }
 
             var start = GetStart();
             Expression test = null, target = null;

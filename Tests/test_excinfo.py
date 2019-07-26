@@ -7,6 +7,7 @@
 import sys
 import traceback
 import unittest
+import inspect
 
 # Rules:
 # 1) thread has a current exception
@@ -613,6 +614,100 @@ class ExcInfoGeneratorTest(unittest.TestCase):
             res = next(x)
             self.assertIn('@Exception 2', res)
             self.assertNotIn('@Exception 1', res)
+
+class ExceptionTestLineno(unittest.TestCase):
+    def test_catch_lineno(self):
+        def line_marker(): pass
+        try:
+            raise Exception
+        except:
+            self.assertEqual(sys.exc_info()[2].tb_lineno, line_marker.__code__.co_firstlineno + 2)
+
+    def test_finally_lineno(self):
+        def line_marker(): pass
+        try:
+            try:
+                raise Exception()
+            finally:
+                self.assertEqual(sys.exc_info()[2].tb_lineno, line_marker.__code__.co_firstlineno + 3)
+        except:
+            pass
+
+    def test_except_reraise(self):
+        def line_marker(): pass
+        try:
+            try:
+                raise Exception()
+            except:
+               raise
+        except:
+            self.assertEqual(sys.exc_info()[2].tb_lineno, line_marker.__code__.co_firstlineno + 3)
+
+    def test_finally_reraise(self):
+        def line_marker(): pass
+        try:
+            try:
+                raise Exception()
+            finally:
+               raise
+        except:
+            self.assertEqual(sys.exc_info()[2].tb_lineno, line_marker.__code__.co_firstlineno + 3)
+
+    def test_except_reraise_with_finally(self):
+        def line_marker(): pass
+        try:
+            try:
+                raise Exception()
+            except:
+                raise
+            finally:
+               pass
+        except:
+            self.assertEqual(sys.exc_info()[2].tb_lineno, line_marker.__code__.co_firstlineno + 3)
+
+    def test_everything_reraise(self):
+        def line_marker(): pass
+        try:
+            try:
+                raise Exception()
+            except:
+                raise
+            finally:
+                raise
+        except:
+            self.assertEqual(sys.exc_info()[2].tb_lineno, line_marker.__code__.co_firstlineno + 3)
+
+    def test_catch_miss_finally_reraise(self):
+        def line_marker(): pass
+        try:
+            try:
+                raise Exception()
+            except ValueError:
+                raise
+            finally:
+                raise
+        except:
+            self.assertEqual(sys.exc_info()[2].tb_lineno, line_marker.__code__.co_firstlineno + 3)
+
+    def test_except_new_raise(self):
+        def line_marker(): pass
+        try:
+            try:
+                raise Exception()
+            except:
+               raise Exception()
+        except:
+            self.assertEqual(sys.exc_info()[2].tb_lineno, line_marker.__code__.co_firstlineno + 5)
+
+    def test_finally_new_raise(self):
+        def line_marker(): pass
+        try:
+            try:
+                raise Exception()
+            finally:
+               raise Exception()
+        except:
+            self.assertEqual(sys.exc_info()[2].tb_lineno, line_marker.__code__.co_firstlineno + 5)
 
 if __name__ == "__main__":
     unittest.main()

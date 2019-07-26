@@ -427,6 +427,7 @@ namespace IronPython.Runtime {
                     CurrentValue = OperationFailed.Value;
                 }
             } finally {
+                // A generator restores the sys.exc_info() status after each yield point.
                 PythonOps.CurrentExceptionState = _state.PrevException;
                 _state.PrevException = null;
 

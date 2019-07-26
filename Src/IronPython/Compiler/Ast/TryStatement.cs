@@ -154,7 +154,6 @@ namespace IronPython.Compiler.Ast {
                             GlobalParent.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, GlobalParent.IndexToLocation(_headerIndex))),
                             // save existing line updated
                             PushLineUpdated(false, lineUpdated),
-                            Ast.Assign(previousExceptionContext, Ast.Call(AstMethods.SaveCurrentException)),
                             body,
                             AstUtils.Constant(null)
                         ).Catch(exception,
@@ -351,7 +350,7 @@ namespace IronPython.Compiler.Ast {
                                 ),
                                 Ast.Call(AstMethods.RestoreCurrentException, previousException)
                             )
-                        ); ;
+                        );
                     }
 
                     // Add the test to the if statement test cascade
@@ -430,8 +429,8 @@ namespace IronPython.Compiler.Ast {
                 AstUtils.Try(
                     body
                 ).Catch(exception,
-                        Ast.Call(AstMethods.SetCurrentException, Parent.LocalContext, exception),
-                        Ast.Rethrow()
+                    Ast.Call(AstMethods.SetCurrentException, Parent.LocalContext, exception),
+                    Ast.Rethrow()
                 ),
                 Ast.Assign(extracted, Ast.Constant(null)),
                 AstUtils.Empty()

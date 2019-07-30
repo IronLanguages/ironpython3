@@ -236,9 +236,20 @@ namespace IronPython.Compiler.Ast {
                     // clear the frames incase thae finally throws, and allow line number
                     // updates to proceed
                     UpdateLineUpdated(false),
-                    
+
                     // run the finally code
-                    @finally,
+                    // if the finally block reraises the same exception we have been handling,
+                    // mark it as already updated
+                    AstUtils.Try(
+                        @finally
+                    ).Catch(
+                        locException,
+                        AstUtils.If(
+                            Expression.Equal(locException, tryThrows),
+                            UpdateLineUpdated(true)
+                        ),
+                        Expression.Rethrow()
+                    ),
 
                     // if we took an exception in the try block we have saved the line number.  Otherwise
                     // we have no line number saved and will need to continue saving them if

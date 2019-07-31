@@ -76,7 +76,7 @@ namespace IronPython.Compiler.Ast {
             // locals allocated during the body or except blocks.
             MSAst.ParameterExpression lineUpdated = null;
             MSAst.ParameterExpression runElse = null;
-            MSAst.ParameterExpression previousExceptionContext = Ast.Variable(typeof(Exception), "$previousException");
+            MSAst.ParameterExpression previousExceptionContext = null;
 
             if (_else != null || (_handlers != null && _handlers.Length > 0)) {
                 lineUpdated = Ast.Variable(typeof(bool), "$lineUpdated_try");
@@ -92,6 +92,7 @@ namespace IronPython.Compiler.Ast {
             MSAst.ParameterExpression exception;
 
             if (_handlers != null && _handlers.Length > 0) {
+                previousExceptionContext = Ast.Variable(typeof(Exception), "$previousException");
                 exception = Ast.Variable(typeof(Exception), "$exception");
                 @catch = TransformHandlers(exception, previousExceptionContext);
             } else if (_finally != null) {
@@ -124,6 +125,7 @@ namespace IronPython.Compiler.Ast {
                         LightExceptions.RewriteExternal(
                             AstUtils.Try(
                                 Parent.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, GlobalParent.IndexToLocation(_headerIndex))),
+                                Ast.Assign(previousExceptionContext, Ast.Call(AstMethods.SaveCurrentException)),
                                 body,
                                 AstUtils.Constant(null)
                             ).Catch(exception,
@@ -154,6 +156,7 @@ namespace IronPython.Compiler.Ast {
                             GlobalParent.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, GlobalParent.IndexToLocation(_headerIndex))),
                             // save existing line updated
                             PushLineUpdated(false, lineUpdated),
+                            Ast.Assign(previousExceptionContext, Ast.Call(AstMethods.SaveCurrentException)),
                             body,
                             AstUtils.Constant(null)
                         ).Catch(exception,
@@ -170,7 +173,6 @@ namespace IronPython.Compiler.Ast {
 
             return Ast.Block(
                 GetVariables(lineUpdated, runElse, previousExceptionContext),
-                Ast.Assign(previousExceptionContext, Ast.Call(AstMethods.SaveCurrentException)),
                 AddFinally(result),
                 AstUtils.Default(typeof(void))
             );

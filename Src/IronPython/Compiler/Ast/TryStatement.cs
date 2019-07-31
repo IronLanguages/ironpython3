@@ -165,14 +165,7 @@ namespace IronPython.Compiler.Ast {
                         )
                     );
             } else {
-                // If the body throws an exception and there's no catch block,
-                // we should still update the current exception
-                result = AstUtils.Try(
-                    body
-                ).Catch(exception,
-                    Ast.Call(AstMethods.SetCurrentException, Parent.LocalContext, exception),
-                    Ast.Rethrow()
-                );
+                result = body;
             }
 
             return Ast.Block(
@@ -222,6 +215,10 @@ namespace IronPython.Compiler.Ast {
                     ).Catch(
                         locException,
                         Expression.Block(
+                            // If there was no except block, or the except block threw, then the
+                            // exception has not yet been properly set, so we need to set the
+                            // currently handled exception when we catch it
+                            Ast.Call(AstMethods.SetCurrentException, Parent.LocalContext, locException),
                             Ast.Assign(tryThrows, locException),
                             Expression.Rethrow()
                         )
@@ -426,23 +423,14 @@ namespace IronPython.Compiler.Ast {
             //     extracted = PythonOps.SetCurrentException(exception)
             //     try:
             //         < dynamic exception analysis >
-            //     except exception:
-            //         PythonOps.SetCurrentException(exception)
-            //         raise
+            //     extracted = None
             return Ast.Block(
                 args,
                 Ast.Assign(
                     extracted,
                     Ast.Call(AstMethods.SetCurrentException, Parent.LocalContext, exception)
                 ),
-                // It's possible that the except block itself throws an exception,
-                // so we will need to update the current exception in that case
-                AstUtils.Try(
-                    body
-                ).Catch(exception,
-                    Ast.Call(AstMethods.SetCurrentException, Parent.LocalContext, exception),
-                    Ast.Rethrow()
-                ),
+                body,
                 Ast.Assign(extracted, Ast.Constant(null)),
                 AstUtils.Empty()
             );

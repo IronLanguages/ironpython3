@@ -445,19 +445,6 @@ namespace IronPython.Runtime {
             return CurrentValue;
         }
 
-        private void RestoreCurrentException(Exception save) {
-            if (CanSetSysExcInfo) {
-                PythonOps.RestoreCurrentException(save);
-            }
-        }
-
-        private Exception SaveCurrentException() {
-            if (CanSetSysExcInfo) {
-                return PythonOps.SaveCurrentException();
-            }
-            return null;
-        }
-
         private void CheckSetActive() {
             if (Active) {
                 // A generator could catch this exception and continue executing, so this does

@@ -639,7 +639,7 @@ class ExceptionTestLineno(unittest.TestCase):
             try:
                 raise Exception()
             except:
-               raise
+                raise
         except:
             self.assertEqual(sys.exc_info()[2].tb_lineno, line_marker.__code__.co_firstlineno + 3)
 
@@ -649,7 +649,7 @@ class ExceptionTestLineno(unittest.TestCase):
             try:
                 raise Exception()
             finally:
-               raise
+                raise
         except:
             self.assertEqual(sys.exc_info()[2].tb_lineno, line_marker.__code__.co_firstlineno + 3)
 
@@ -661,7 +661,7 @@ class ExceptionTestLineno(unittest.TestCase):
             except:
                 raise
             finally:
-               pass
+                pass
         except:
             self.assertEqual(sys.exc_info()[2].tb_lineno, line_marker.__code__.co_firstlineno + 3)
 
@@ -695,7 +695,7 @@ class ExceptionTestLineno(unittest.TestCase):
             try:
                 raise Exception()
             except:
-               raise Exception()
+                raise Exception()
         except:
             self.assertEqual(sys.exc_info()[2].tb_lineno, line_marker.__code__.co_firstlineno + 5)
 
@@ -705,7 +705,7 @@ class ExceptionTestLineno(unittest.TestCase):
             try:
                 raise Exception()
             finally:
-               raise Exception()
+                raise Exception()
         except:
             self.assertEqual(sys.exc_info()[2].tb_lineno, line_marker.__code__.co_firstlineno + 5)
 

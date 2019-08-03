@@ -38,6 +38,11 @@ using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime.Operations {
 
+    internal class ExceptionState {
+        public Exception Exception { get; set; }
+        public ExceptionState PrevException { get; set; }
+    }
+
     /// <summary>
     /// Contains functions that are called directly from
     /// generated code to perform low-level runtime functionality.
@@ -50,7 +55,7 @@ namespace IronPython.Runtime.Operations {
 
         // The "current" exception on this thread that will be returned via sys.exc_info()
         [ThreadStatic]
-        internal static Exception RawException;
+        internal static ExceptionState CurrentExceptionState;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly PythonTuple EmptyTuple = PythonTuple.EMPTY;
@@ -2027,8 +2032,16 @@ namespace IronPython.Runtime.Operations {
             }
 #endif
 
-            RawException = clrException;
+            RestoreCurrentException(clrException);
             return res;
+        }
+
+        private static Exception GetCurrentException() {
+            var ex = CurrentExceptionState;
+            while (ex != null && ex.Exception == null) {
+                ex = ex.PrevException;
+            }
+            return ex?.Exception;
         }
 
         // Clear the current exception. Most callers should restore the exception.
@@ -2038,12 +2051,15 @@ namespace IronPython.Runtime.Operations {
 
         // Called by code-gen to save it. Codegen just needs to pass this back to RestoreCurrentException.
         public static Exception SaveCurrentException() {
-            return RawException;
+            return CurrentExceptionState?.Exception;
         }
 
         // Called at function exit (like popping). Pass value from SaveCurrentException.
         public static void RestoreCurrentException(Exception clrException) {
-            RawException = clrException;
+            if (CurrentExceptionState == null) {
+                CurrentExceptionState = new ExceptionState();
+            }
+            CurrentExceptionState.Exception = clrException;
         }
 
         public static object CheckException(CodeContext/*!*/ context, object exception, object test) {
@@ -2142,7 +2158,7 @@ namespace IronPython.Runtime.Operations {
         /// Get an exception tuple for the "current" exception. This is used for sys.exc_info()
         /// </summary>
         public static PythonTuple GetExceptionInfo(CodeContext/*!*/ context) {
-            return GetExceptionInfoLocal(context, RawException);
+            return GetExceptionInfoLocal(context, GetCurrentException());
         }
 
         /// <summary>
@@ -2218,7 +2234,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static PythonExceptions.BaseException GetRawContextException() =>
-            RawException?.GetPythonException() as PythonExceptions.BaseException;
+            GetCurrentException()?.GetPythonException() as PythonExceptions.BaseException;
 
         public static Exception MakeExceptionForGenerator(CodeContext/*!*/ context, object type, object value, object traceback, object cause) {
             Exception e = MakeExceptionWorker(context, type, value, traceback, cause, false, true);

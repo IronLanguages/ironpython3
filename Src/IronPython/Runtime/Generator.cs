@@ -28,6 +28,8 @@ namespace IronPython.Runtime {
 
         private GeneratorFinalizer _finalizer;                      // finalizer object
 
+        private ExceptionState _state = new ExceptionState();
+
         /// <summary>
         /// We cache the GeneratorFinalizer of generators that were closed on the user
         /// thread, and did not get finalized on the finalizer thread. We can then reuse
@@ -337,11 +339,14 @@ namespace IronPython.Runtime {
             if (!CanSetSysExcInfo) {
                 return MoveNextWorker();
             } else {
-                Exception save = SaveCurrentException();
+                _state.PrevException = PythonOps.CurrentExceptionState;
+                PythonOps.CurrentExceptionState = _state;
                 try {
                     return MoveNextWorker();
                 } finally {
-                    RestoreCurrentException(save);
+                    // A generator restores the sys.exc_info() status after each yield point.
+                    PythonOps.CurrentExceptionState = _state.PrevException;
+                    _state.PrevException = null;
                 }
             }
         }
@@ -402,11 +407,10 @@ namespace IronPython.Runtime {
             // Generators can not be called re-entrantly.
             CheckSetActive();
 
-            // We need to save/restore the exception info if the generator
-            // includes exception handling blocks.
-            Exception save = SaveCurrentException();
-
             RestoreFunctionStack();
+
+            _state.PrevException = PythonOps.CurrentExceptionState;
+            PythonOps.CurrentExceptionState = _state;
 
             bool ret = false;
             try {
@@ -424,12 +428,14 @@ namespace IronPython.Runtime {
                 }
             } finally {
                 // A generator restores the sys.exc_info() status after each yield point.
-                RestoreCurrentException(save);
+                PythonOps.CurrentExceptionState = _state.PrevException;
+                _state.PrevException = null;
+
                 Active = false;
 
                 SaveFunctionStack(!ret);
 
-                // If _next() returned false, or did not return (thus leavintg ret assigned to its initial value of false), then 
+                // If _next() returned false, or did not return (thus leaving ret assigned to its initial value of false), then
                 // the body of the generator has exited and the generator is now closed.
                 if (!ret) {
                     Close();
@@ -437,19 +443,6 @@ namespace IronPython.Runtime {
             }
 
             return CurrentValue;
-        }
-
-        private void RestoreCurrentException(Exception save) {
-            if (CanSetSysExcInfo) {
-                PythonOps.RestoreCurrentException(save);
-            }
-        }
-
-        private Exception SaveCurrentException() {
-            if (CanSetSysExcInfo) {
-                return PythonOps.SaveCurrentException();
-            }
-            return null;
         }
 
         private void CheckSetActive() {

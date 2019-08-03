@@ -5,9 +5,9 @@
 # Test that sys.exc_info() is properly set.
 
 import sys
+import traceback
 import unittest
-
-from iptest import is_cli, run_test
+import inspect
 
 # Rules:
 # 1) thread has a current exception
@@ -29,7 +29,7 @@ def E():
     t = sys.exc_info()[1]
     if t == None:
         return None
-    return t[0]
+    return t.args[0]
 
 # a manager class to use 'with' statement
 class ManBase(object):
@@ -56,7 +56,7 @@ class ExcInfoTest(unittest.TestCase):
             raise ValueError(15)
         except:
             self.A(15)
-        self.A(15)  # still valid after exception block, but still in function
+        self.A(None)  # no longer valid after exception block, but still in function
 
 
     # test setting in except params
@@ -69,7 +69,7 @@ class ExcInfoTest(unittest.TestCase):
             try:
                 raise ValueError(63)
             except t():  # not matching
-                Assert(False)
+                self.fail()
         try:
             f()
         except:
@@ -83,18 +83,17 @@ class ExcInfoTest(unittest.TestCase):
                 raise ValueError(81)
             except:
                 self.A(81)
-                # raise a new exception type. exc_info doesn't get updated
-                # until we hit a new except block
+                # raise a new exception type. exc_info gets updated
+                # immediately
                 raise ValueError(43)
             finally:
-                # still using the original exc since we haven't hit a new exc block
-                # yet.
-                self.A(81)
+                # Using the new exception; the old one is no longer active
+                self.A(43)
         try:
             f()
         except:
             self.A(43)
-        self.A(43)
+        self.A(None)
 
     # finally, same function as active except, exception path
 
@@ -106,8 +105,8 @@ class ExcInfoTest(unittest.TestCase):
         except:
             self.A(20)
         finally:
-            self.A(20)  # active from except block
-        self.A(20)  # still active
+            self.A(None)  # Caught by except block already
+        self.A(None)  # Not active
 
 
     # finally doesnt see exc_info when there's no catcher.
@@ -120,17 +119,17 @@ class ExcInfoTest(unittest.TestCase):
             self.A(None)
             try:
                 f1()  # throw from a different function
-                Assert(False)
+                self.fail()
             finally:
                 # we should be here via the exceptional path.
                 # but since there's no except block in here, exc_info not set.
-                self.A(None)
-            Assert(False)
+                self.A(20)
+            self.fail()
         try:
             f2()
         except:
             self.A(20)
-        self.A(20)
+        self.A(None)
 
 
     # Finally w/o an except block does not see the exception.
@@ -140,7 +139,7 @@ class ExcInfoTest(unittest.TestCase):
         try:
             raise ValueError(15)
         finally:
-            self.A(None)  # no except block, so not set.
+            self.A(15)  # no except block, exception still thrown.
 
 
     def test_fin_no_except(self):
@@ -148,7 +147,7 @@ class ExcInfoTest(unittest.TestCase):
             self.helper_fin_no_except()
         except:
             self.A(15)
-        self.A(15)
+        self.A(None)
 
     #
     # inactive except block.
@@ -192,21 +191,21 @@ class ExcInfoTest(unittest.TestCase):
                     raise ValueError(15)
                 except:
                     self.A(15)
-                self.A(15)
+                self.A(None)
             except:
-                Assert(False)
-            self.A(15)
+                self.fail()
+            self.A(None)
             try:
-                self.A(15)
+                self.A(None)
                 # Now raise a new exception. This becomes the current exc_info()
                 # value.
                 raise ValueError(20)
             except:
                 self.A(20)
-            self.A(20)
+            self.A(None)
         except:
-            Assert(False)
-        self.A(20)
+            self.fail()
+        self.A(None)
 
 
     # Child function inherits exc_info() from parent, but can't change parents.
@@ -218,7 +217,7 @@ class ExcInfoTest(unittest.TestCase):
                 raise ValueError(20)
             except:
                 self.A(20)
-            self.A(20)
+            self.A(7)
             # will be restored to 7 on function return
         #
         try:
@@ -238,7 +237,7 @@ class ExcInfoTest(unittest.TestCase):
                 raise ValueError(11)
             except:
                 self.A(11)
-            self.A(11)
+            self.A(55)
 
         def f3b():
             self.A(55)
@@ -247,7 +246,7 @@ class ExcInfoTest(unittest.TestCase):
             except:
                 self.A(22)
                 return  # return from Except, swallows Ex
-            Assert(False)
+            self.fail()
 
         def f2():
             self.A(55)
@@ -275,7 +274,7 @@ class ExcInfoTest(unittest.TestCase):
                 return 7
         finally:
             # still set from the except block
-            self.A(25)
+            self.A(None)
 
     # like test_ex_fin, but when we split into an inner function, it gets reset
 
@@ -296,7 +295,7 @@ class ExcInfoTest(unittest.TestCase):
             try:
                 f()
             finally:
-                self.A(None)  # exc_info reset since thrown from different function
+                self.A(27)  # exc_info not reset because exception is still being thrown
         except:
             self.A(27)
             pass
@@ -319,44 +318,44 @@ class ExcInfoTest(unittest.TestCase):
                 raise ValueError(3)
             except:
                 self.A(3)
-                yield 1  # this will reset exc_info
-                self.A(None)
+                yield 1
+                self.A(3)
                 yield 2
-                self.A(5)  # pick up from caller
+                self.A(3) 
                 try:
                     yield 3  # generator will call next when exc_info=Val(6) here.
                 finally:
                     # We're in the non-exception path of a finally, but still have exc_info set since
                     # generator was called from a catch block.
-                    self.A(6)
+                    self.A(3)
                 yield 4
-                self.A(6)  # still set from generator's caller
-            self.A(6)
+                self.A(3)  # still set from generator's caller
+            self.A(None)
             yield 5
         # call the generator
         g = f()
-        self.assertEqual(g.next(), 1)
+        self.assertEqual(next(g), 1)
         self.A(None)  # generator's exc value shouldn't taint the caller
-        self.assertEqual(g.next(), 2)
+        self.assertEqual(next(g), 2)
         self.A(None)  # clear after returning from yield
         try:
             raise ValueError(5)  # New exception!
         except:
             self.A(5)
             # Now call back into the generator with a new exc_info!
-            self.assertEqual(g.next(), 3)
+            self.assertEqual(next(g), 3)
             self.A(5)
-        self.A(5)
+        self.A(None)
         try:
-            self.A(5)
+            self.A(None)
             raise ValueError(6)  # New exception
         except:
             self.A(6)
             # this will execute a finally in the generator.
-            self.assertEqual(g.next(), 4)
+            self.assertEqual(next(g), 4)
             self.A(6)
-        self.A(6)
-        self.assertEqual(g.next(), 5)
+        self.A(None)
+        self.assertEqual(next(g), 5)
 
 
     # throw out of generator
@@ -371,94 +370,28 @@ class ExcInfoTest(unittest.TestCase):
         
         g = f()
         self.A(None)
-        self.assertEqual(g.next(), 1)
+        self.assertEqual(next(g), 1)
         self.A(None)
         try:
             try:
                 g.throw(ValueError(87))
-                Assert(False)
+                self.fail()
             finally:
                 # exceptional path.
-                # exc_info should have been cleared on exiting generator.
-                self.A(None)
+                # The generator throws an exception, causing us
+                # to receive it
+                self.A(22)
         except:
             self.A(22)
-        self.A(22)
-
-
-    #---------------------------------------------------------------------
-    #
-    # Test sys.exc_clear(), which was added in Python 2.3
-    # This clears the last exception status.
-    #
-    #---------------------------------------------------------------------
-
-    def test_clear_simple(self):
-        """simple case of clear in an except block."""
-        try:
-            raise ValueError(12)
-        except:
-            self.A(12)
-            sys.exc_clear()
-            self.A(None)
         self.A(None)
-
-    def test_clear_nested(self):
-        try:
-            raise ValueError(13)
-        except:
-            try:
-                self.A(13)
-                raise ValueError(54)
-            except:
-                self.A(54)
-                sys.exc_clear()
-                self.A(None)
-            self.A(None)
-        self.A(None)
-
-    def test_clear_nested_func(self):
-        def f():
-            try:
-                self.A(13)
-                raise ValueError(54)
-            except:
-                self.A(54)
-                sys.exc_clear()
-                self.A(None)
-            self.A(None)  # will be restored after func returns
-        #
-        try:
-            raise ValueError(13)
-        except:
-            self.A(13)
-            f()  # calls sys.exc_clear()
-            self.A(13)  # still restored even after clear
-        self.A(13)
-
-
-    # Test clearing when there isn't an active exception (outside except block)
-    def test_clear_no_active_ex(self):
-        self.A(None)
-        sys.exc_clear()
-        self.A(None)
-        try:
-            sys.exc_clear()
-            self.A(None)
-        except:
-            pass
-        try:
-            pass
-        finally:
-            sys.exc_clear()
-            self.A(None)
-        self.A(None)
-
+   
     #========================================================
     # With's Pep (http://www.python.org/dev/peps/pep-0343/) says the
     # __exit__ can be invoked by an except block,
     # but unlike a normal except, that shouldn't set sys.exc_info().
 
+    # https://github.com/IronLanguages/ironpython3/issues/451
+    @unittest.skip('unbound variable: $localContext')
     def test_with_simple(self):
         """Simple case, no exception set."""
         class M1(ManBase):
@@ -468,6 +401,8 @@ class ExcInfoTest(unittest.TestCase):
         with M1(self):
             pass
 
+    # https://github.com/IronLanguages/ironpython3/issues/451
+    @unittest.skip('unbound variable: $localContext') 
     def test_with_fail(self):
         """with.__exit__ doesn't see exception in exception case."""
         class M2(ManBase):
@@ -476,18 +411,16 @@ class ExcInfoTest(unittest.TestCase):
 
             # exit is invoked when 'with' body exits (either via exception, branch)
             def __exit__(self, t, v, tb):
-                self.s.assertEqual(v[0], 15)  # exception passed in as local
-                if is_cli:  # http://ironpython.codeplex.com/workitem/27990
-                    self.s.A(None)  # but sys.exc_info() should not be set!!
-                else:
-                    self.s.A(15)
+                self.s.assertEqual(v.args[0], 15)  # exception passed in as local
+                self.s.A(15)
                 return True  # swallow exception
         #
         # With.__exit__ does not see current exception
         with M2(self):
             raise ValueError(15)
 
-
+    # https://github.com/IronLanguages/ironpython3/issues/451
+    @unittest.skip('unbound variable: $localContext') 
     # call 'with' from an except block
     def test_with_except_pass(self):
         class M2(ManBase):
@@ -512,7 +445,8 @@ class ExcInfoTest(unittest.TestCase):
                 pass
             self.A(15)
 
-
+    # https://github.com/IronLanguages/ironpython3/issues/451
+    @unittest.skip('unbound variable: $localContext')
     # call 'with' from an except block, do failure case
     def test_with_except_fail(self):
         class M2(ManBase):
@@ -523,11 +457,8 @@ class ExcInfoTest(unittest.TestCase):
             # exit is invoked when 'with' body exits (either via exception, branch)
 
             def __exit__(self, t, v, tb):
-                self.s.assertEqual(v[0], 34)  # gets failure from With block
-                if is_cli:  # http://ironpython.codeplex.com/workitem/27990
-                    self.s.A(15)  # gets failure from sys.exc_info() which is from outer except block
-                else:
-                    self.s.A(34)
+                self.s.assertEqual(v.args[0], 34)  # gets failure from With block
+                self.s.A(34)
                 return True  # swallow exception
         #
         # With.__exit__ does not see current exception
@@ -538,10 +469,245 @@ class ExcInfoTest(unittest.TestCase):
             with M2(self):
                 self.A(15)
                 raise ValueError(34)
-            if is_cli:  # http://ironpython.codeplex.com/workitem/27990
-                self.A(15)
-            else:
-                self.A(34)
+            self.A(15) # TODO: is this a bug?
 
+class ExcInfoGeneratorTest(unittest.TestCase):
+    
+    def test_generator_has_own_exception_exception_context(self):
+        def gen():
+            try:
+                raise Exception
+            except:
+                exc_info = sys.exc_info()
+                yield exc_info
+                yield sys.exc_info()
+            yield sys.exc_info()
+        x = gen()
+        exc_info = next(x)
+        self.assertEqual(sys.exc_info(), (None, None, None))
+        self.assertEqual(next(x), exc_info)
+        self.assertEqual(next(x), (None, None, None))
 
-run_test(__name__)
+    def test_exception_context_cleared(self):
+        try:
+            try:
+                raise Exception(1)
+            except:
+                pass    
+            raise Exception(2)
+        except Exception as e:
+            self.assertIs(e.__context__, None)
+
+    def test_generator_inherits_exception_context(self):
+        def gen():
+            try:
+                raise Exception
+            except:
+                pass
+            yield sys.exc_info()
+        x = gen()
+        try:
+            raise Exception
+        except:
+            exc_info = sys.exc_info()
+            self.assertEqual(next(x), exc_info)
+
+    def test_generator_inherits_changing_exception_context_1(self):
+        def gen():
+            yield sys.exc_info()
+            try:
+                raise Exception
+            except:
+                pass
+            yield sys.exc_info()
+        x = gen()
+        self.assertEqual(next(x), (None, None, None))
+        try:
+            raise Exception
+        except:
+            exc_info = sys.exc_info()
+            self.assertEqual(next(x), exc_info)
+
+    def test_generator_inherits_changing_exception_context_2(self):
+        def gen():
+            yield sys.exc_info()
+            try:
+                raise Exception
+            except:
+                pass
+            yield sys.exc_info()
+        x = gen()
+        try:
+            raise Exception
+        except:
+            exc_info_1 = sys.exc_info()
+            self.assertEqual(next(x), exc_info_1)
+        try:
+            raise Exception
+        except:
+            exc_info_2 = sys.exc_info()
+            self.assertEqual(next(x), exc_info_2)
+        self.assertNotEqual(exc_info_1, exc_info_2)
+
+    def test_exception_traceback_unchanged_by_inherited_exception(self):
+        def gen():
+            try:
+                raise Exception
+            except:
+                yield traceback.format_exc()
+                yield traceback.format_exc()
+            
+        x = gen()
+        try:
+            raise Exception('@Exception 1')
+        except:
+            self.assertTrue('@Exception 1' in next(x))
+        try:
+            raise Exception('@Exception 2')
+        except:
+            self.assertTrue('@Exception 1' in next(x))
+
+    def test_new_exceptions_inherit_new_exception_contexts_1(self):
+        def gen():
+            try:
+                raise Exception
+            except:
+                yield traceback.format_exc()
+            try:
+                raise Exception
+            except:
+                yield traceback.format_exc()
+            
+        x = gen()
+        try:
+            raise Exception('@Exception 1')
+        except:
+            self.assertIn('@Exception 1', next(x))
+        try:
+            raise Exception('@Exception 2')
+        except:
+            res = next(x)
+            self.assertIn('@Exception 2', res)
+            self.assertNotIn('@Exception 1', res)
+
+    def test_new_exceptions_inherit_new_exception_contexts_2(self):
+        def gen():
+            try:
+                raise Exception
+            except:
+                yield traceback.format_exc()
+            yield "Hello"
+            try:
+                raise Exception
+            except:
+                yield traceback.format_exc()
+            
+        x = gen()
+        try:
+            raise Exception('@Exception 1')
+        except:
+            self.assertIn('@Exception 1', next(x))
+        next(x)
+        try:
+            raise Exception('@Exception 2')
+        except:
+            res = next(x)
+            self.assertIn('@Exception 2', res)
+            self.assertNotIn('@Exception 1', res)
+
+class ExceptionTestLineno(unittest.TestCase):
+    def test_catch_lineno(self):
+        def line_marker(): pass
+        try:
+            raise Exception
+        except:
+            self.assertEqual(sys.exc_info()[2].tb_lineno, line_marker.__code__.co_firstlineno + 2)
+
+    def test_finally_lineno(self):
+        def line_marker(): pass
+        try:
+            try:
+                raise Exception()
+            finally:
+                self.assertEqual(sys.exc_info()[2].tb_lineno, line_marker.__code__.co_firstlineno + 3)
+        except:
+            pass
+
+    def test_except_reraise(self):
+        def line_marker(): pass
+        try:
+            try:
+                raise Exception()
+            except:
+                raise
+        except:
+            self.assertEqual(sys.exc_info()[2].tb_lineno, line_marker.__code__.co_firstlineno + 3)
+
+    def test_finally_reraise(self):
+        def line_marker(): pass
+        try:
+            try:
+                raise Exception()
+            finally:
+                raise
+        except:
+            self.assertEqual(sys.exc_info()[2].tb_lineno, line_marker.__code__.co_firstlineno + 3)
+
+    def test_except_reraise_with_finally(self):
+        def line_marker(): pass
+        try:
+            try:
+                raise Exception()
+            except:
+                raise
+            finally:
+                pass
+        except:
+            self.assertEqual(sys.exc_info()[2].tb_lineno, line_marker.__code__.co_firstlineno + 3)
+
+    def test_everything_reraise(self):
+        def line_marker(): pass
+        try:
+            try:
+                raise Exception()
+            except:
+                raise
+            finally:
+                raise
+        except:
+            self.assertEqual(sys.exc_info()[2].tb_lineno, line_marker.__code__.co_firstlineno + 3)
+
+    def test_catch_miss_finally_reraise(self):
+        def line_marker(): pass
+        try:
+            try:
+                raise Exception()
+            except ValueError:
+                raise
+            finally:
+                raise
+        except:
+            self.assertEqual(sys.exc_info()[2].tb_lineno, line_marker.__code__.co_firstlineno + 3)
+
+    def test_except_new_raise(self):
+        def line_marker(): pass
+        try:
+            try:
+                raise Exception()
+            except:
+                raise Exception()
+        except:
+            self.assertEqual(sys.exc_info()[2].tb_lineno, line_marker.__code__.co_firstlineno + 5)
+
+    def test_finally_new_raise(self):
+        def line_marker(): pass
+        try:
+            try:
+                raise Exception()
+            finally:
+                raise Exception()
+        except:
+            self.assertEqual(sys.exc_info()[2].tb_lineno, line_marker.__code__.co_firstlineno + 5)
+
+if __name__ == "__main__":
+    unittest.main()

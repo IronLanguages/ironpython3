@@ -654,44 +654,12 @@ namespace IronPython.Compiler.Ast {
                 statements.Add(s1);
             }
 
-            MSAst.ParameterExpression extracted = null;
-            if (!IsGenerator && CanSetSysExcInfo) {
-                // need to allocate the exception here so we don't share w/ exceptions made & freed
-                // during the body.
-                extracted = Ast.Parameter(typeof(Exception), "$ex");
-                locals.Add(extracted);
-            }
-
             if (Body.CanThrow && !(Body is SuiteStatement) && Body.StartIndex != -1) {
                 statements.Add(UpdateLineNumber(GlobalParent.IndexToLocation(Body.StartIndex).Line));
             }
 
             statements.Add(Body);
             MSAst.Expression body = Ast.Block(statements);
-
-            // If this function can modify sys.exc_info() (_canSetSysExcInfo), then it must restore the result on finish.
-            // 
-            // Wrap in 
-            //   $temp = PythonOps.SaveCurrentException()
-            //   <body>
-            //   PythonOps.RestoreCurrentException($temp)
-            // Skip this if we're a generator. For generators, the try finally is handled by the PythonGenerator class 
-            //  before it's invoked. This is because the restoration must occur at every place the function returns from 
-            //  a yield point. That's different than the finally semantics in a generator.
-            if (extracted != null) {
-                MSAst.Expression s = AstUtils.Try(
-                    Ast.Assign(
-                        extracted,
-                        Ast.Call(AstMethods.SaveCurrentException)
-                    ),
-                    body
-                ).Finally(
-                    Ast.Call(
-                        AstMethods.RestoreCurrentException, extracted
-                    )
-                );
-                body = s;
-            }
 
             if (Body.CanThrow && GlobalParent.PyContext.PythonOptions.Frames) {
                 body = AddFrame(LocalContext, Ast.Property(_functionParam, typeof(PythonFunction).GetProperty(nameof(PythonFunction.__code__))), body);
@@ -702,7 +670,6 @@ namespace IronPython.Compiler.Ast {
             body = WrapScopeStatements(body, Body.CanThrow);
             body = Ast.Block(body, AstUtils.Empty());
             body = AddReturnTarget(body);
-
 
             MSAst.Expression bodyStmt = body;
             if (localContext != null) {

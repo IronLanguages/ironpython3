@@ -34,7 +34,7 @@ steps:
     displayName: Install .NET Core 3.0 SDK for build
     inputs:
       packageType: 'sdk'
-      version: '3.0.100-preview6-012264'
+      version: '3.0.100-preview7-012821'
 
   # Install mono when running on Linux
   - ${{ if eq(parameters.os, 'Linux') }}:

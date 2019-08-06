@@ -2,11 +2,9 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
-
 import unittest
 
 from iptest import is_cli, is_netcoreapp, run_test, skipUnlessIronPython
-
 
 # set this flag to True to have the test trace progress
 trace = False
@@ -29,6 +27,12 @@ if is_cli:
     import System.Runtime.InteropServices as Interop
     import System.Diagnostics as Diagnostics
     from System.Reflection.Emit import OpCodes
+
+    try:
+        System.Type.IsByRefLike
+        supportsIsByRefLike = True
+    except AttributeError:
+        supportsIsByRefLike = False
 
 def MakeArray(type, *values):
     a = System.Array.CreateInstance(clr.GetClrType(type), len(values))
@@ -98,7 +102,7 @@ def EmitArg(cg, arg):
     cg.ilg.Emit(OpCodes.Ldarg_0)
 
     TypeCode = System.TypeCode
-    
+
     if arg.IsByRef:
         base = arg.GetElementType()
         if not base.IsValueType:
@@ -140,7 +144,6 @@ def EmitArg(cg, arg):
                 cg.ilg.Emit(OpCodes.Ldind_I8)
             else:
                 raise AssertionError("Unknown type", arg, base, tc)
-            
 
 def EmitTestMethod(tg, name, argType):
     cg = tg.DefineMethod(name, Reflection.MethodAttributes.Public | Reflection.MethodAttributes.Static, str, argType)
@@ -200,13 +203,14 @@ def EmitTestMethod(tg, name, argType):
 def GenerateMethods(ag):
     global counter
     tg = ag.DefineType("Abomination")
-    
+
     system_assembly   = clr.LoadAssemblyByName('System, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089')
     mscorlib_assembly = clr.LoadAssemblyByName('mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089')
 
     for ref in (system_assembly, mscorlib_assembly):
         for t in ref.GetExportedTypes():
             if t.ContainsGenericParameters or t.FullName in skipTypes: continue
+            if supportsIsByRefLike and t.IsByRefLike: continue
 
             if trace: print(counter, t.FullName)
             EmitTestMethod(tg, "Test_%d" % counter, t)
@@ -226,7 +230,6 @@ def TestCalls(t):
         r = getattr(t, n)()
         if trace: print(r)
 
-
 @unittest.skipIf(is_netcoreapp, "TODO: figure out")
 @skipUnlessIronPython()
 class MissingTest(unittest.TestCase):
@@ -235,8 +238,7 @@ class MissingTest(unittest.TestCase):
         ag = CreateAssemblyGenerator(IO.Path.Combine(path, "MissingTest.dll"), "MissingTest")
         t = GenerateMethods(ag)
         TestCalls(t)
-        
-        ag.Save()
 
+        ag.Save()
 
 run_test(__name__)

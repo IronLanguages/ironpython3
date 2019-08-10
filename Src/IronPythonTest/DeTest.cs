@@ -25,7 +25,7 @@ namespace IronPythonTest {
         //public DeTestEnum eshort;
         //public DeTestEnumLong elong;
 #pragma warning disable 169
-        void Init() {
+        private void Init() {
             intVal = 0;
             //stringVal = "Hello";
             //floatVal = 0;

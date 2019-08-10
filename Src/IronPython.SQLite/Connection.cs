@@ -437,10 +437,10 @@ namespace IronPython.SQLite
                     }
                 }
 
-                CodeContext context;
-                string name;
-                object aggregate_class;
-                object instance;
+                private CodeContext context;
+                private string name;
+                private object aggregate_class;
+                private object instance;
             }
 
             [Documentation("Creates a new aggregate. Non-standard.")]

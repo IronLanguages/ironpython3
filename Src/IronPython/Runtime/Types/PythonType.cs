@@ -2629,7 +2629,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return new WeakReferenceProxy(context, this);
         }
 
-        class WeakReferenceProxy : IWeakReferenceable {
+        private class WeakReferenceProxy : IWeakReferenceable {
             private readonly PythonContext context;
             private readonly PythonType type;
 
@@ -2731,7 +2731,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return new Setter<T>(context, name).Target;
         }
 
-        class Setter<T> : FastSetBase<T> {
+        private class Setter<T> : FastSetBase<T> {
             private readonly CodeContext/*!*/ _context;
             private readonly string _name;
 
@@ -2786,7 +2786,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
     }
 
-    enum OptimizedGetKind {
+    internal enum OptimizedGetKind {
         None,
         SlotDict,
         SlotOnly,
@@ -2795,7 +2795,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         UserSlotOnly,
     }
 
-    class UserGetBase : FastGetBase {
+    internal class UserGetBase : FastGetBase {
         internal readonly int _version;
 
         public UserGetBase(PythonGetMemberBinder binder, int version) {
@@ -2807,7 +2807,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
     }
 
-    class ChainedUserGet : UserGetBase {
+    internal class ChainedUserGet : UserGetBase {
         public ChainedUserGet(PythonGetMemberBinder binder, int version, Func<CallSite, object, CodeContext, object> func)
             : base(binder, version) {
             _func = func;
@@ -2820,7 +2820,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
     }
 
-    class GetAttributeDelegates : UserGetBase {
+    internal class GetAttributeDelegates : UserGetBase {
         private readonly string _name;
         private readonly PythonTypeSlot _getAttributeSlot;
         private readonly PythonTypeSlot _getAttrSlot;
@@ -2852,7 +2852,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
     }
 
-    class GetMemberDelegates : UserGetBase {
+    internal class GetMemberDelegates : UserGetBase {
         private readonly string _name;
         private readonly bool _isNoThrow;
         private readonly PythonTypeSlot _slot, _getattrSlot;
@@ -3127,15 +3127,15 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
     }
 
-    enum OptimizedSetKind {
+    internal enum OptimizedSetKind {
         None,
         SetAttr,
         UserSlot,
         SetDict,
         Error
     }
-    
-    class SetMemberDelegates<TValue> : FastSetBase<TValue> {
+
+    internal class SetMemberDelegates<TValue> : FastSetBase<TValue> {
         private readonly string _name;
         private readonly PythonTypeSlot _slot;
         private readonly SlotSetValue _slotFunc;
@@ -3232,7 +3232,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
     }
 
-    class SetMemberKey : IEquatable<SetMemberKey> {
+    internal class SetMemberKey : IEquatable<SetMemberKey> {
         public readonly Type Type;
         public readonly string Name;
 
@@ -3263,7 +3263,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
     }
 
-    abstract class TypeGetBase : FastGetBase {
+    internal abstract class TypeGetBase : FastGetBase {
         private readonly FastGetDelegate[] _delegates;
 
         public TypeGetBase(PythonGetMemberBinder binder, FastGetDelegate[] delegates) {
@@ -3296,9 +3296,9 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
     }
 
-    delegate bool FastGetDelegate(CodeContext context, object self, out object result);
+    internal delegate bool FastGetDelegate(CodeContext context, object self, out object result);
 
-    class TypeGet : TypeGetBase {
+    internal class TypeGet : TypeGetBase {
         private int _version;
 
         public TypeGet(PythonGetMemberBinder binder, FastGetDelegate[] delegates, int version, bool isMeta, bool canOptimize)
@@ -3366,7 +3366,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
     }
 
-    class SystemTypeGet : TypeGetBase {
+    internal class SystemTypeGet : TypeGetBase {
         private readonly PythonType _self;
 
         public SystemTypeGet(PythonGetMemberBinder binder, FastGetDelegate[] delegates, PythonType type, bool isMeta, bool optimizing)

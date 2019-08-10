@@ -8,7 +8,7 @@ using System;
 using System.Dynamic;
 
 namespace IronPython.Runtime.Binding {
-    interface IPythonGetable {
+    internal interface IPythonGetable {
         DynamicMetaObject/*!*/ GetMember(PythonGetMemberBinder/*!*/ member, DynamicMetaObject/*!*/ codeContext);
     }
 }

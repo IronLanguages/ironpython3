@@ -44,7 +44,7 @@ using DependencyObject = System.Windows.DependencyObject;
 
 [assembly: ExtensionType(typeof(IronPythonTest.IFooable), typeof(IronPythonTest.FooableExtensions))]
 namespace IronPythonTest {
-    class Common {
+    internal class Common {
         public static string RootDirectory;
         public static string RuntimeDirectory;
         public static string ScriptTestDirectory;
@@ -136,7 +136,7 @@ namespace IronPythonTest {
 
     public class ClsPart {
         public int Field;
-        int m_property;
+        private int m_property;
         public int Property { get { return m_property; } set { m_property = value; } }
         public event IntIntDelegate Event;
         public int Method(int arg) {
@@ -169,7 +169,7 @@ namespace IronPythonTest {
         // This field is accessed from the test
         internal int Field;
 #pragma warning restore 649
-        int m_property;
+        private int m_property;
         internal int Property { get { return m_property; } set { m_property = value; } }
         internal event IntIntDelegate Event;
         internal int Method(int arg) {
@@ -201,7 +201,7 @@ namespace IronPythonTest {
             _pe.CreateScriptSourceFromString(script, SourceCodeKind.File).Execute(scope);
         }
 
-        static readonly string clspartName = "clsPart";
+        private static readonly string clspartName = "clsPart";
 
 #if FEATURE_REMOTING
         public void ScenarioHostingHelpers() {
@@ -609,7 +609,7 @@ class K(object):
             Assert.AreEqual((object)src.Execute(scope), "Bar Called");
         }
 
-        class MyInvokeMemberBinder : InvokeMemberBinder {
+        private class MyInvokeMemberBinder : InvokeMemberBinder {
             public MyInvokeMemberBinder(string name, CallInfo callInfo)
                 : base(name, false, callInfo) {
             }
@@ -629,7 +629,7 @@ class K(object):
             }
         }
 
-        class MyInvokeBinder : InvokeBinder {
+        private class MyInvokeBinder : InvokeBinder {
             public MyInvokeBinder(CallInfo callInfo)
                 : base(callInfo) {
             }
@@ -646,7 +646,7 @@ class K(object):
             }
         }
 
-        class MyGetIndexBinder : GetIndexBinder {
+        private class MyGetIndexBinder : GetIndexBinder {
             public MyGetIndexBinder(CallInfo args)
                 : base(args) {
             }
@@ -663,7 +663,7 @@ class K(object):
             }
         }
 
-        class MySetIndexBinder : SetIndexBinder {
+        private class MySetIndexBinder : SetIndexBinder {
             public MySetIndexBinder(CallInfo args)
                 : base(args) {
             }
@@ -681,7 +681,7 @@ class K(object):
             }
         }
 
-        class MyGetMemberBinder : GetMemberBinder {
+        private class MyGetMemberBinder : GetMemberBinder {
             public MyGetMemberBinder(string name)
                 : base(name, false) {
             }
@@ -694,8 +694,7 @@ class K(object):
             }
         }
 
-
-        class MyInvokeBinder2 : InvokeBinder {
+        private class MyInvokeBinder2 : InvokeBinder {
             public MyInvokeBinder2(CallInfo args)
                 : base(args) {
             }
@@ -720,7 +719,7 @@ class K(object):
             }
         }
 
-        class MyConvertBinder : ConvertBinder {
+        private class MyConvertBinder : ConvertBinder {
             private object _result;
             public MyConvertBinder(Type type) : this(type, "Converted") {
             }
@@ -738,7 +737,7 @@ class K(object):
             }
         }
 
-        class MyUnaryBinder : UnaryOperationBinder {
+        private class MyUnaryBinder : UnaryOperationBinder {
             public MyUnaryBinder(ExpressionType et)
                 : base(et) {
             }
@@ -1490,7 +1489,7 @@ range = range
             Assert.AreEqual(site.Target(site, (object)scope.GetVariable("TestFunc")), "FallbackInvokeMember");
         }
 
-        class MyDynamicObject : DynamicObject {
+        private class MyDynamicObject : DynamicObject {
             public object Last;
 
             public override bool TryBinaryOperation(BinaryOperationBinder binder, object arg, out object result) {
@@ -1745,14 +1744,14 @@ k = KNew()", SourceCodeKind.Statements);
             Assert.AreEqual(1, (int)x);
         }
 
-        class CustomDictionary : IDictionary<string, object> {
+        private class CustomDictionary : IDictionary<string, object> {
             // Make "customSymbol" always be accessible. This could have been accomplished just by
             // doing SetGlobal. However, this mechanism could be used for other extensibility
             // purposes like getting a callback whenever the symbol is read
             internal static readonly string customSymbol = "customSymbol";
             internal const int customSymbolValue = 100;
 
-            Dictionary<string, object> dict = new Dictionary<string, object>();
+            private Dictionary<string, object> dict = new Dictionary<string, object>();
 
             #region IDictionary<string,object> Members
 
@@ -2411,7 +2410,7 @@ if id(a) == id(b):
             }
         }
 
-        class DictThreadGlobalState {
+        private class DictThreadGlobalState {
             public volatile int DoneCount;
             public bool IsDone;
             public ManualResetEvent Event;
@@ -2422,7 +2421,7 @@ if id(a) == id(b):
             public Func<PythonDictionary> DictMaker;
         }
 
-        class DictThreadTestState {
+        private class DictThreadTestState {
             public Action<PythonDictionary> Action;
             public Action<PythonDictionary> Verify;
             public DictThreadGlobalState GlobalState;

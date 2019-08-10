@@ -29,7 +29,7 @@ namespace IronPython.Runtime.Binding {
     /// as the Python sites.  This ensures the logic we follow for our builtin types and user defined
     /// types is identical and properly conforming to the various protocols.
     /// </summary>
-    static partial class PythonProtocol {
+    internal static partial class PythonProtocol {
 
         #region Conversions
 

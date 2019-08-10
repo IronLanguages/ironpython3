@@ -17,21 +17,22 @@ using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Compiler {
-    interface IPythonVariableExpression  {
+    internal interface IPythonVariableExpression  {
         Expression/*!*/ Assign(Expression/*!*/ value);
         Expression/*!*/ Delete();
         Expression/*!*/ Create();
     }
 
-    interface IPythonGlobalExpression : IPythonVariableExpression {
+    internal interface IPythonGlobalExpression : IPythonVariableExpression {
         Expression/*!*/ RawValue();
     }
+
     /// <summary>
     /// Small reducable node which just fetches the value from a PythonGlobal
     /// object.  The compiler recognizes these on sets and turns them into
     /// assignments on the python global object.
     /// </summary>
-    class PythonGlobalVariableExpression : Expression, IInstructionProvider, IPythonGlobalExpression, ILightExceptionAwareExpression {
+    internal class PythonGlobalVariableExpression : Expression, IInstructionProvider, IPythonGlobalExpression, ILightExceptionAwareExpression {
         private readonly Expression/*!*/ _target;
         private readonly PythonGlobal/*!*/ _global;
         private readonly Ast.PythonVariable/*!*/ _variable;
@@ -143,7 +144,7 @@ namespace IronPython.Compiler {
         #endregion
     }
 
-    class PythonGlobalInstruction : Instruction {
+    internal class PythonGlobalInstruction : Instruction {
         protected readonly PythonGlobal _global;
         public PythonGlobalInstruction(PythonGlobal global) {
             _global = global;
@@ -160,7 +161,7 @@ namespace IronPython.Compiler {
         }
     }
 
-    class PythonLightThrowGlobalInstruction : PythonGlobalInstruction {
+    internal class PythonLightThrowGlobalInstruction : PythonGlobalInstruction {
         public PythonLightThrowGlobalInstruction(PythonGlobal global) : base(global) {
         }
 
@@ -170,7 +171,7 @@ namespace IronPython.Compiler {
         }
     }
 
-    class PythonSetGlobalVariableExpression : Expression, IInstructionProvider {
+    internal class PythonSetGlobalVariableExpression : Expression, IInstructionProvider {
         private readonly PythonGlobalVariableExpression/*!*/ _global;
         private readonly Expression/*!*/ _value;
 
@@ -234,7 +235,7 @@ namespace IronPython.Compiler {
         #endregion
     }
 
-    class PythonRawGlobalValueExpression : Expression {
+    internal class PythonRawGlobalValueExpression : Expression {
         private readonly PythonGlobalVariableExpression/*!*/ _global;
 
         public PythonRawGlobalValueExpression(PythonGlobalVariableExpression/*!*/ global) {
@@ -274,7 +275,7 @@ namespace IronPython.Compiler {
         }
     }
 
-    class PythonSetGlobalInstruction : Instruction {
+    internal class PythonSetGlobalInstruction : Instruction {
         private readonly PythonGlobal _global;
         public PythonSetGlobalInstruction(PythonGlobal global) {
             _global = global;
@@ -292,7 +293,7 @@ namespace IronPython.Compiler {
         }
     }
 
-    class LookupGlobalVariable : Expression, IInstructionProvider, IPythonGlobalExpression, ILightExceptionAwareExpression {
+    internal class LookupGlobalVariable : Expression, IInstructionProvider, IPythonGlobalExpression, ILightExceptionAwareExpression {
         private readonly string/*!*/ _name;
         private readonly bool/*!*/ _isLocal, _lightThrow;
         private readonly Expression/*!*/ _codeContextExpr;
@@ -406,7 +407,7 @@ namespace IronPython.Compiler {
         #endregion
     }
 
-    class LookupGlobalInstruction : Instruction {
+    internal class LookupGlobalInstruction : Instruction {
         private readonly string _name;
         private readonly bool _isLocal, _lightThrow;
         public LookupGlobalInstruction(string name, bool isLocal, bool lightThrow) {

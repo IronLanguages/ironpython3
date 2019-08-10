@@ -28,7 +28,7 @@ namespace IronPythonTest.Stress {
             _pe = _env.GetEngine("py");
         }
 
-        static long GetTotalMemory() {
+        private static long GetTotalMemory() {
             // Critical objects can take upto 3 GCs to be collected
             System.Threading.Thread.Sleep(1000);
             for (int i = 0; i < 3; i++) {

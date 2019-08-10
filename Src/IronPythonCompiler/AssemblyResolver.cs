@@ -8,11 +8,11 @@ using System.Threading.Tasks;
 using IKVM.Reflection;
 
 namespace IronPythonCompiler {
-    class AssemblyResolver {
-        Universe _universe;
-        readonly List<string> _libpaths = new List<string>();
-        Version _mscorlibVersion;
-        Dictionary<string, string> _hintpaths = new Dictionary<string, string>();
+    internal class AssemblyResolver {
+        private Universe _universe;
+        private readonly List<string> _libpaths = new List<string>();
+        private Version _mscorlibVersion;
+        private Dictionary<string, string> _hintpaths = new Dictionary<string, string>();
 
         public AssemblyResolver(Universe universe, bool nostdlib, IEnumerable<string> references, IEnumerable<string> libpaths) {
             _universe = universe;
@@ -53,7 +53,7 @@ namespace IronPythonCompiler {
             _universe.AssemblyResolve += _universe_AssemblyResolve;
         }
 
-        Assembly _universe_AssemblyResolve(object sender, IKVM.Reflection.ResolveEventArgs args) {
+        private Assembly _universe_AssemblyResolve(object sender, IKVM.Reflection.ResolveEventArgs args) {
             AssemblyName name = new AssemblyName(args.Name);
             AssemblyName previousMatch = null;
             int previousMatchLevel = 0;
@@ -95,7 +95,7 @@ namespace IronPythonCompiler {
             return null;
         }
 
-        bool Match(AssemblyName assemblyDef, AssemblyName assemblyRef, ref AssemblyName bestMatch, ref int bestMatchLevel) {
+        private bool Match(AssemblyName assemblyDef, AssemblyName assemblyRef, ref AssemblyName bestMatch, ref int bestMatchLevel) {
             // Match levels:
             //   0 = no match
             //   1 = lower version match (i.e. not a suitable match, but used in error reporting: something was found but the version was too low)
@@ -171,7 +171,7 @@ namespace IronPythonCompiler {
             return true;
         }
 
-        Assembly LoadMscorlib(IEnumerable<string> references) {
+        private Assembly LoadMscorlib(IEnumerable<string> references) {
             if (references != null) {
                 foreach (string r in references) {
                     try {
@@ -189,11 +189,11 @@ namespace IronPythonCompiler {
             return null;
         }
 
-        void AddHintPath(string assemblyName, string path) {
+        private void AddHintPath(string assemblyName, string path) {
             _hintpaths.Add(assemblyName, path);
         }
 
-        IEnumerable<string> FindAssemblyPath(string file) {
+        private IEnumerable<string> FindAssemblyPath(string file) {
             if (Path.IsPathRooted(file)) {
                 if (File.Exists(file)) {
                     yield return file;
@@ -214,7 +214,7 @@ namespace IronPythonCompiler {
             }
         }
 
-        Assembly LoadFile(string path) {
+        private Assembly LoadFile(string path) {
             string ex = null;
             try {
                 using (RawModule module = _universe.OpenRawModule(path)) {
@@ -244,7 +244,7 @@ namespace IronPythonCompiler {
             return null;
         }
 
-        static string CanonicalizePath(string path) {
+        private static string CanonicalizePath(string path) {
             try {
                 FileInfo fi = new FileInfo(path);
                 if (fi.DirectoryName == null) {

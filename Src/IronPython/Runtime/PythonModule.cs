@@ -234,7 +234,7 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        class MetaModule : MetaPythonObject, IPythonGetable {
+        private class MetaModule : MetaPythonObject, IPythonGetable {
             public MetaModule(PythonModule module, Expression self)
                 : base(self, BindingRestrictions.Empty, module) {
             }

@@ -13,7 +13,7 @@ using IronPython.Runtime;
 using IronPython.Compiler;
 
 namespace IronPython.Runtime {
-    class GlobalDictionaryStorage : CustomDictionaryStorage {
+    internal class GlobalDictionaryStorage : CustomDictionaryStorage {
         private readonly Dictionary<string, PythonGlobal/*!*/>/*!*/ _globals;
         private readonly PythonGlobal[] _data;
         private PythonGlobal _path, _package, _builtins, _name;

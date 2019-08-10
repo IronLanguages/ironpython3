@@ -12,6 +12,6 @@ namespace IronPython.Runtime {
     /// __contains__
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-    sealed class DontMapIEnumerableToContainsAttribute : Attribute {
+    internal sealed class DontMapIEnumerableToContainsAttribute : Attribute {
     }
 }

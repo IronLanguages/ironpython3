@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 namespace IronPythonTest {
     public class Tuple {
-        object[] val;
+        private object[] val;
 
         public Tuple(object a) {
             val = new object[] { a };
@@ -98,7 +98,7 @@ namespace IronPythonTest {
     }
 
     public class Indexable {
-        Hashtable ht = new Hashtable();
+        private Hashtable ht = new Hashtable();
 
         public string this[int index] {
             get {
@@ -200,7 +200,7 @@ namespace IronPythonTest {
     }
 
     public class IndexableList : IList {
-        List<object> myList = new List<object>();
+        private List<object> myList = new List<object>();
 
         public object this[string index] {
             get {
@@ -326,7 +326,7 @@ namespace IronPythonTest {
     }
 
     public class MultipleIndexes {
-        Dictionary<object, object> ht = new Dictionary<object, object>();
+        private Dictionary<object, object> ht = new Dictionary<object, object>();
 
         // works like Hashtable indexer--returns null instead of throwing if the key isn't found
         private object GetValue(Tuple t) {
@@ -379,7 +379,7 @@ namespace IronPythonTest {
 
     // TODO: LastIndexOf
     public class UsePythonListAsList {
-        IList<int> list;
+        private IList<int> list;
         public UsePythonListAsList(IList<int> list) {
             this.list = list;
         }
@@ -416,7 +416,7 @@ namespace IronPythonTest {
     }
 
     public class UsePythonListAsArrayList {
-        ArrayList list;
+        private ArrayList list;
         public UsePythonListAsArrayList(ArrayList list) {
             this.list = list;
         }
@@ -482,7 +482,7 @@ namespace IronPythonTest {
             return sum;
         }
 
-        class MyComparer : IComparer {
+        private class MyComparer : IComparer {
             public int Compare(object x, object y) {
                 return string.Compare(x.ToString(), y.ToString());
             }
@@ -490,7 +490,7 @@ namespace IronPythonTest {
     }
 
     public class UsePythonDictAsDictionary {
-        IDictionary<string, int> dict;
+        private IDictionary<string, int> dict;
 
         public UsePythonDictAsDictionary(IDictionary<string, int> dict) {
             this.dict = dict;
@@ -593,7 +593,7 @@ namespace IronPythonTest {
     
 #if !SILVERLIGHT // TODO: this doesn't seem to be used anywhere--remove?
     public class UsePythonDictAsHashtable {
-        Hashtable table;
+        private Hashtable table;
 
         public UsePythonDictAsHashtable(Hashtable table) {
             this.table = table;

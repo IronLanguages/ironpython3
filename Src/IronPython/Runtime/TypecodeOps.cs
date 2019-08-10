@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace IronPython.Runtime {
-    class TypecodeOps {
+    internal class TypecodeOps {
 
         public static bool TryGetTypecodeWidth(string typecode, out int width) {
             switch (typecode) {

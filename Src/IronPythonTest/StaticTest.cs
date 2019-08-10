@@ -21,7 +21,7 @@ namespace IronPythonTest.StaticTest {
 
         public static string Field = "Base.Field";
 
-        static string s_for_property = "Base.Property";
+        private static string s_for_property = "Base.Property";
         public static string Property {
             get { return s_for_property; }
             set { s_for_property = value; }
@@ -42,25 +42,25 @@ namespace IronPythonTest.StaticTest {
     }
 
     public class OverrideAll : Base {
-        public new static string Method_None() { return "OverrideAll.Method_None"; }
-        public new static string Method_OneArg(int arg) { return "OverrideAll.Method_OneArg"; }
+        public static new string Method_None() { return "OverrideAll.Method_None"; }
+        public static new string Method_OneArg(int arg) { return "OverrideAll.Method_OneArg"; }
         public static string Method_Base(OverrideAll arg) { return "OverrideAll.Method_Base"; }
 
         public static string Method_Inheritance1(D arg) { return "OverrideAll.Method_Inheritance1"; }
         public static string Method_Inheritance2(B arg) { return "OverrideAll.Method_Inheritance2"; }
         public static string Method_Inheritance3(D arg1, B arg2) { return "OverrideAll.Method_Inheritance3"; }
 
-        public new static string Field = "OverrideAll.Field";
+        public static new string Field = "OverrideAll.Field";
 
-        static string s_for_property = "OverrideAll.Property";
-        public new static string Property {
+        private static string s_for_property = "OverrideAll.Property";
+        public static new string Property {
             get { return s_for_property; }
             set { s_for_property = value; }
         }
 
-        public new static event MyEventHandler Event;
+        public static new event MyEventHandler Event;
 
-        public new static string TryEvent() {
+        public static new string TryEvent() {
             if (Event == null) {
                 return "Still None here";
             } else {
@@ -87,13 +87,13 @@ namespace IronPythonTest.StaticTest {
     public class GD : GB<string> {
         public static string M1(int arg) { return "GD.M1"; }
         public static string M2<T>(T arg) { return "GD.M2"; }
-        public new static string M3(string arg) { return "GD.M3"; }
+        public static new string M3(string arg) { return "GD.M3"; }
 
         public static string M4(ref int arg) { return "GD.M4"; }
 
         public static string M21(int arg1) { return "GD.M21"; }
         public static string M22(int arg1, int arg2=100) { return "GD.M22"; }
-        public new static string M23(int arg1) { return "GD.M23"; }
+        public static new string M23(int arg1) { return "GD.M23"; }
         public static string M24() { return "GD.M24"; }
         public static string M25(int arg=100) { return "GD.M25"; }
     }

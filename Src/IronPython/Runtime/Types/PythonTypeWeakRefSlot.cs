@@ -9,7 +9,7 @@ using IronPython.Runtime.Operations;
 namespace IronPython.Runtime.Types {
     [PythonType("getset_descriptor")]
     public sealed class PythonTypeWeakRefSlot : PythonTypeSlot, ICodeFormattable {
-        readonly PythonType _type;
+        private readonly PythonType _type;
 
         public PythonTypeWeakRefSlot(PythonType parent) {
             _type = parent;

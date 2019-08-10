@@ -34,7 +34,7 @@ namespace IronPython.Runtime.Types {
     /// generated IL using "ipy.exe -X:SaveAssemblies", and then inspect the
     /// persisted IL using ildasm.
     /// </summary>
-    sealed class NewTypeMaker {
+    internal sealed class NewTypeMaker {
         private Type _baseType;
         private IList<Type> _interfaceTypes;
 
@@ -520,7 +520,7 @@ namespace IronPython.Runtime.Types {
             il.Emit(OpCodes.Ret);
         }
 
-        ILGen GetCCtor() {
+        private ILGen GetCCtor() {
             if (_cctor == null) {
                 ConstructorBuilder cctor = _tg.DefineTypeInitializer();
                 _cctor = new ILGen(cctor.GetILGenerator());

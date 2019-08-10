@@ -16,7 +16,7 @@ using IronPython.Runtime.Operations;
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
 
-    class PythonSetSliceBinder : DynamicMetaObjectBinder, IPythonSite, IExpressionSerializable {
+    internal class PythonSetSliceBinder : DynamicMetaObjectBinder, IPythonSite, IExpressionSerializable {
         private readonly PythonContext/*!*/ _context;
 
         public PythonSetSliceBinder(PythonContext/*!*/ context) {

@@ -23,7 +23,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
-    class ToDiskCompilationMode : CollectableCompilationMode {
+    internal class ToDiskCompilationMode : CollectableCompilationMode {
         public override MSAst.Expression GetConstant(object value) {
             return AstUtils.Constant(value);
         }

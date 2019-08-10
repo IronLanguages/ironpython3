@@ -22,7 +22,7 @@ namespace IronPython.Runtime.Binding {
     using AstUtils = Microsoft.Scripting.Ast.Utils;
     using Microsoft.Scripting.Actions;
 
-    class PythonBinaryOperationBinder : BinaryOperationBinder, IPythonSite, IExpressionSerializable, ILightExceptionBinder {
+    internal class PythonBinaryOperationBinder : BinaryOperationBinder, IPythonSite, IExpressionSerializable, ILightExceptionBinder {
         private readonly PythonContext/*!*/ _context;
         private PythonBinaryOperationBinder _lightThrowBinder;
 
@@ -881,7 +881,7 @@ namespace IronPython.Runtime.Binding {
             return _lightThrowBinder;
         }
 
-        class LightThrowBinder : PythonBinaryOperationBinder {
+        private class LightThrowBinder : PythonBinaryOperationBinder {
             public LightThrowBinder(PythonContext/*!*/ context, ExpressionType operation)
                 : base(context, operation) {
             }

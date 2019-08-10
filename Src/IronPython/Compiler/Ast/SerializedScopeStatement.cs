@@ -16,7 +16,7 @@ namespace IronPython.Compiler.Ast {
     /// <summary>
     /// Fake ScopeStatement for FunctionCode's to hold on to after we have deserialized pre-compiled code.
     /// </summary>
-    class SerializedScopeStatement : ScopeStatement {
+    internal class SerializedScopeStatement : ScopeStatement {
         private readonly string _name;
         private readonly string _filename;
         private readonly FunctionAttributes _flags;

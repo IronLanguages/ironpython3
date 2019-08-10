@@ -200,7 +200,7 @@ namespace IronPython.Compiler {
             return DelayedAssign(variable, value);
         }
 
-        struct GotoRewriteInfo {
+        private struct GotoRewriteInfo {
             public readonly Expression Variable;
             public readonly LabelTarget VoidTarget;
 
@@ -225,7 +225,7 @@ namespace IronPython.Compiler {
             );
         }
 
-        class GotoRewriter : ExpressionVisitor {
+        private class GotoRewriter : ExpressionVisitor {
             private readonly GotoRewriteInfo _gotoInfo;
             private readonly LabelTarget _target;
             private readonly GeneratorRewriter _rewriter;
@@ -980,7 +980,7 @@ namespace IronPython.Compiler {
     /// type can be filled in before the tree is actually generated.  This enables creation of these
     /// nodes before the tuple type is actually known.
     /// </summary>
-    sealed class DelayedTupleExpression : Expression {
+    internal sealed class DelayedTupleExpression : Expression {
         public readonly int Index;
         private readonly StrongBox<Type> _tupleType;
         private readonly StrongBox<ParameterExpression> _tupleExpr;
@@ -1020,7 +1020,7 @@ namespace IronPython.Compiler {
         }
     }
 
-    sealed class DelayedTupleAssign : Expression {
+    internal sealed class DelayedTupleAssign : Expression {
         private readonly Expression _lhs, _rhs;
         
         public DelayedTupleAssign(Expression lhs, Expression rhs) {

@@ -20,7 +20,7 @@ namespace IronPython.Compiler {
     /// object.  Like w/ global variables the compiler recognizes these on 
     /// sets and turns them into assignments on the python global object.
     /// </summary>
-    class ClosureExpression : Expression, IPythonVariableExpression {
+    internal class ClosureExpression : Expression, IPythonVariableExpression {
         private readonly Expression/*!*/ _closureCell;
         private readonly ParameterExpression _parameter;
         private readonly Ast.PythonVariable/*!*/ _variable;
@@ -75,7 +75,7 @@ namespace IronPython.Compiler {
             return Expression.Assign(_closureCell, MakeClosureCellExpression.Instance);
         }
 
-        class MakeClosureCellExpression : Expression, IInstructionProvider {
+        private class MakeClosureCellExpression : Expression, IInstructionProvider {
             private static readonly Expression _call = Expression.Call(Ast.AstMethods.MakeClosureCell);
             public static readonly MakeClosureCellExpression Instance = new MakeClosureCellExpression();
 
@@ -109,7 +109,7 @@ namespace IronPython.Compiler {
 
             #endregion
 
-            class MakeClosureCellInstruction : Instruction {
+            private class MakeClosureCellInstruction : Instruction {
                 public static readonly MakeClosureCellInstruction Instance = new MakeClosureCellInstruction();
 
                 public override int ProducedStack {

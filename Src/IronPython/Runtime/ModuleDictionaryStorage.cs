@@ -16,7 +16,7 @@ namespace IronPython.Runtime {
     /// <summary>
     /// Enables lazy initialization of module dictionaries.
     /// </summary>
-    class ModuleDictionaryStorage : GlobalDictionaryStorage {
+    internal class ModuleDictionaryStorage : GlobalDictionaryStorage {
         private Type/*!*/ _type;
         private bool _cleared;
 

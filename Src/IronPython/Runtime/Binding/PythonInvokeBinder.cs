@@ -28,7 +28,7 @@ namespace IronPython.Runtime.Binding {
     /// 
     /// When a foreign object is encountered the arguments are expanded into normal position/keyword arguments.
     /// </summary>
-    class PythonInvokeBinder : DynamicMetaObjectBinder, IPythonSite, IExpressionSerializable, ILightExceptionBinder {
+    internal class PythonInvokeBinder : DynamicMetaObjectBinder, IPythonSite, IExpressionSerializable, ILightExceptionBinder {
         private readonly PythonContext/*!*/ _context;
         private readonly CallSignature _signature;
         private LightThrowBinder _lightThrowBinder;
@@ -314,7 +314,7 @@ namespace IronPython.Runtime.Binding {
             return this;
         }
 
-        class LightThrowBinder : PythonInvokeBinder {
+        private class LightThrowBinder : PythonInvokeBinder {
             public LightThrowBinder(PythonContext/*!*/ context, CallSignature signature)
                 : base(context, signature) {
             }

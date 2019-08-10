@@ -27,7 +27,7 @@ namespace IronPython.Runtime.Binding {
     using Ast = Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    partial class MetaUserObject : MetaPythonObject, IPythonGetable {
+    internal partial class MetaUserObject : MetaPythonObject, IPythonGetable {
         #region IPythonGetable Members
 
         public DynamicMetaObject GetMember(PythonGetMemberBinder/*!*/ member, DynamicMetaObject/*!*/ codeContext) {
@@ -145,7 +145,7 @@ namespace IronPython.Runtime.Binding {
         /// GetBinder which produces a DynamicMetaObject.  This binder always
         /// successfully produces a DynamicMetaObject which can perform the requested get.
         /// </summary>
-        abstract class MetaGetBinderHelper : GetOrInvokeBinderHelper<DynamicMetaObject> {
+        private abstract class MetaGetBinderHelper : GetOrInvokeBinderHelper<DynamicMetaObject> {
             private readonly DynamicMetaObject _self;
             private readonly GetBindingInfo _bindingInfo;
             protected readonly MetaUserObject _target;
@@ -641,7 +641,7 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        class GetBinderHelper : MetaGetBinderHelper {
+        private class GetBinderHelper : MetaGetBinderHelper {
             private readonly DynamicMetaObjectBinder _binder;
 
             public GetBinderHelper(MetaUserObject target, DynamicMetaObjectBinder binder, DynamicMetaObject codeContext)
@@ -658,7 +658,7 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        class InvokeBinderHelper : MetaGetBinderHelper {
+        private class InvokeBinderHelper : MetaGetBinderHelper {
             private readonly InvokeMemberBinder _binder;
             private readonly DynamicMetaObject[] _args;
 
@@ -1385,7 +1385,7 @@ namespace IronPython.Runtime.Binding {
 
         #region BindingInfo classes
 
-        class MemberBindingInfo {
+        private class MemberBindingInfo {
             public readonly ConditionalBuilder/*!*/ Body;
             public readonly DynamicMetaObject/*!*/[]/*!*/ Args;
             public readonly ValidationInfo/*!*/ Validation;
@@ -1397,7 +1397,7 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        class DeleteBindingInfo : MemberBindingInfo {
+        private class DeleteBindingInfo : MemberBindingInfo {
             public readonly DeleteMemberBinder/*!*/ Action;
 
             public DeleteBindingInfo(DeleteMemberBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args, ConditionalBuilder/*!*/ body, ValidationInfo/*!*/ validation)
@@ -1406,7 +1406,7 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        class SetBindingInfo : MemberBindingInfo {
+        private class SetBindingInfo : MemberBindingInfo {
             public readonly SetMemberBinder/*!*/ Action;
 
             public SetBindingInfo(SetMemberBinder/*!*/ action, DynamicMetaObject/*!*/[]/*!*/ args, ConditionalBuilder/*!*/ body, ValidationInfo/*!*/ validation)
@@ -1415,7 +1415,7 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        class GetBindingInfo : MemberBindingInfo {
+        private class GetBindingInfo : MemberBindingInfo {
             public readonly DynamicMetaObjectBinder/*!*/ Action;
             public readonly ParameterExpression/*!*/ Self, Result;
 

@@ -21,7 +21,7 @@ using IronPython.Runtime.Exceptions;
 using IronPythonTest.Util;
 
 namespace IronPythonTest.Cases {
-    class CaseExecuter {
+    internal class CaseExecuter {
         private static string Executable {
             get {
                 var folder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);

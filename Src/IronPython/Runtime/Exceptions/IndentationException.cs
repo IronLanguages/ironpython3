@@ -13,7 +13,7 @@ namespace IronPython.Runtime.Exceptions {
     /// .NET exception thrown when a Python syntax error is related to incorrect indentation.
     /// </summary>
     [Serializable]
-    class IndentationException : SyntaxErrorException {
+    internal class IndentationException : SyntaxErrorException {
         public IndentationException(string message) : base(message) { }
 
         public IndentationException(string message, Exception innerException) : base(message, innerException) { }

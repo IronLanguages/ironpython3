@@ -17,7 +17,7 @@ namespace IronPython.Runtime.Binding {
     using Ast = Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    partial class MetaPythonObject : DynamicMetaObject {
+    internal partial class MetaPythonObject : DynamicMetaObject {
         public MetaPythonObject(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions)
             : base(expression, restrictions) {
         }

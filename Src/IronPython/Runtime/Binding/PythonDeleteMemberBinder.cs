@@ -17,7 +17,7 @@ namespace IronPython.Runtime.Binding {
     using Ast = Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    class PythonDeleteMemberBinder : DeleteMemberBinder, IPythonSite, IExpressionSerializable {
+    internal class PythonDeleteMemberBinder : DeleteMemberBinder, IPythonSite, IExpressionSerializable {
         private readonly PythonContext/*!*/ _context;
 
         public PythonDeleteMemberBinder(PythonContext/*!*/ context, string/*!*/ name)

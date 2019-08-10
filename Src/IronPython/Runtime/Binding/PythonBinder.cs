@@ -29,7 +29,7 @@ namespace IronPython.Runtime.Binding {
     using Ast = Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    partial class PythonBinder : DefaultBinder {
+    internal partial class PythonBinder : DefaultBinder {
         private PythonContext/*!*/ _context;
         private SlotCache/*!*/ _typeMembers = new SlotCache();
         private SlotCache/*!*/ _resolvedMembers = new SlotCache();
@@ -1013,7 +1013,7 @@ namespace IronPython.Runtime.Binding {
                 return slots;
             }
 
-            class CachedInfoKey : IEquatable<CachedInfoKey> {
+            private class CachedInfoKey : IEquatable<CachedInfoKey> {
                 public readonly Type Type;
                 public readonly bool IsGetMember;
 

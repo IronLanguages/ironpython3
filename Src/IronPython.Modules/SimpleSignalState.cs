@@ -14,7 +14,7 @@ namespace IronPython.Modules {
                 Console.CancelKeyPress += new ConsoleCancelEventHandler(Console_CancelKeyPress);
             }
 
-            void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e) {
+            private void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e) {
                 int pySignal;
                 switch(e.SpecialKey) {
                     case ConsoleSpecialKey.ControlC:

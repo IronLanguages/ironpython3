@@ -9,7 +9,7 @@ using System.Dynamic;
 using Microsoft.Scripting.Actions;
 
 namespace IronPython.Runtime.Binding {
-    interface IPythonConvertible {
+    internal interface IPythonConvertible {
         DynamicMetaObject BindConvert(PythonConversionBinder/*!*/ binder);
     }
 }

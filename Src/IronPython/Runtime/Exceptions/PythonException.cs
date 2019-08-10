@@ -6,7 +6,7 @@ using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime.Exceptions {
     [Serializable]
-    class PythonException : Exception, IPythonAwareException {
+    internal class PythonException : Exception, IPythonAwareException {
         private object _pyExceptionObject;
         private List<DynamicStackFrame> _frames;
         private TraceBack _traceback;
@@ -40,7 +40,7 @@ namespace IronPython.Runtime.Exceptions {
         }
     }
 
-    interface IPythonAwareException {
+    internal interface IPythonAwareException {
         object PythonException {
             get;
             set;

@@ -14,8 +14,8 @@ using Microsoft.Scripting.Utils;
 using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
-namespace IronPython.Compiler {    
-    abstract class RunnableScriptCode : ScriptCode {
+namespace IronPython.Compiler {
+    internal abstract class RunnableScriptCode : ScriptCode {
         internal FunctionCode _code;
         private readonly Compiler.Ast.PythonAst _ast;
 

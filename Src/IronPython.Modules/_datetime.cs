@@ -690,11 +690,11 @@ namespace IronPython.Modules {
 
             // class attributes
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-            public new static readonly datetime max = new datetime(DateTime.MaxValue, 999, null);
+            public static new readonly datetime max = new datetime(DateTime.MaxValue, 999, null);
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-            public new static readonly datetime min = new datetime(DateTime.MinValue, 0, null);
+            public static new readonly datetime min = new datetime(DateTime.MinValue, 0, null);
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-            public new static readonly timedelta resolution = timedelta.resolution;
+            public static new readonly timedelta resolution = timedelta.resolution;
 
 
             private UnifiedDateTime _utcDateTime;
@@ -824,7 +824,7 @@ namespace IronPython.Modules {
             }
 
             
-            public new static object today() {
+            public static new object today() {
                 return new datetime(DateTime.Now, 0, null);
             }           
 
@@ -846,7 +846,7 @@ namespace IronPython.Modules {
                 return new datetime(dt, 0, null);
             }
 
-            public new static datetime fromordinal(int d) {
+            public static new datetime fromordinal(int d) {
                 if (d < 1) {
                     throw PythonOps.ValueError("ordinal must be >= 1");
                 }
@@ -1174,7 +1174,7 @@ namespace IronPython.Modules {
             }
             #endregion
 
-            class UnifiedDateTime {
+            private class UnifiedDateTime {
                 public DateTime DateTime;
                 public int LostMicroseconds;
 
@@ -1491,7 +1491,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            class UnifiedTime {
+            private class UnifiedTime {
                 public TimeSpan TimeSpan;
                 public int LostMicroseconds;
 

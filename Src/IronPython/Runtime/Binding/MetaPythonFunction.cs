@@ -24,7 +24,7 @@ namespace IronPython.Runtime.Binding {
     using Ast = Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    class MetaPythonFunction : MetaPythonObject, IPythonInvokable, IPythonOperable, IPythonConvertible, IInferableInvokable, IConvertibleMetaObject, IPythonGetable {
+    internal class MetaPythonFunction : MetaPythonObject, IPythonInvokable, IPythonOperable, IPythonConvertible, IInferableInvokable, IConvertibleMetaObject, IPythonGetable {
         public MetaPythonFunction(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, PythonFunction/*!*/ value)
             : base(expression, BindingRestrictions.Empty, value) {
             Assert.NotNull(value);
@@ -266,7 +266,7 @@ namespace IronPython.Runtime.Binding {
         /// this (e.g. we have a splatted params list, kw-dict, and defaults) we call a helper which extracts them
         /// in the proper order (first try the list, then the dict, then the defaults).
         /// </summary>
-        class FunctionBinderHelper {
+        private class FunctionBinderHelper {
             private readonly MetaPythonFunction/*!*/ _func;         // the meta object for the function we're calling
             private readonly DynamicMetaObject/*!*/[]/*!*/ _args;          // the arguments for the function
             private readonly DynamicMetaObject/*!*/[]/*!*/ _originalArgs;  // the original arguments for the function

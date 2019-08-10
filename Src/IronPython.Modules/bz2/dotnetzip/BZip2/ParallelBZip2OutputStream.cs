@@ -203,14 +203,13 @@ namespace Ionic.BZip2
         private object eLock = new object(); // for exceptions
         private object outputLock = new object(); // for multi-thread output
         private AutoResetEvent newlyCompressedBlob;
-
-        long totalBytesWrittenIn;
-        long totalBytesWrittenOut;
-        bool leaveOpen;
-        uint combinedCRC;
-        Stream output;
-        BitWriter bw;
-        int blockSize100k;  // 0...9
+        private long totalBytesWrittenIn;
+        private long totalBytesWrittenOut;
+        private bool leaveOpen;
+        private uint combinedCRC;
+        private Stream output;
+        private BitWriter bw;
+        private int blockSize100k;  // 0...9
 
         private TraceBits desiredTrace = TraceBits.Crc | TraceBits.Write;
 
@@ -964,7 +963,7 @@ namespace Ionic.BZip2
 
         // used only when Trace is defined
         [Flags]
-        enum TraceBits : uint
+        private enum TraceBits : uint
         {
             None         = 0,
             Crc          = 1,

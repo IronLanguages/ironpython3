@@ -41,7 +41,7 @@ namespace IronPython.Modules {
             private object _errcheck, _restype = _noResType;
             private IList<object> _argtypes;
             private int _id;
-            
+
             private static int _curId = 0;
             internal static object _noResType = new object();
             // __bool__
@@ -76,7 +76,7 @@ namespace IronPython.Modules {
                         // apply std call name mangling - prepend a _, append @bytes where 
                         // bytes is the number of bytes of the argument list.
                         string mangled = "_" + funcName + "@";
-                        
+
                         for (int i = 0; i < 128 && tmpAddr == IntPtr.Zero; i += 4) {
                             tmpAddr = NativeFunctions.LoadFunction(intPtrHandle, mangled + i);
                         }
@@ -156,7 +156,7 @@ namespace IronPython.Modules {
                 return addr != IntPtr.Zero;
             }
 
-#region Public APIs
+            #region Public APIs
 
             [SpecialName, PropertyMethod]
             public object Geterrcheck() {
@@ -205,7 +205,7 @@ namespace IronPython.Modules {
                     if (_argtypes != null) {
                         return _argtypes;
                     }
-                    
+
                     if (((CFuncPtrType)NativeType)._argtypes != null) {
                         return PythonTuple.MakeTuple(((CFuncPtrType)NativeType)._argtypes);
                     }
@@ -232,10 +232,10 @@ namespace IronPython.Modules {
                     _id = Interlocked.Increment(ref _curId);
                 }
             }
-            
+
             #endregion
 
-#region Internal APIs
+            #region Internal APIs
 
             internal CallingConvention CallingConvention {
                 get {
@@ -269,7 +269,7 @@ namespace IronPython.Modules {
 
             #endregion
 
-#region IDynamicObject Members
+            #region IDynamicObject Members
 
             // needs to be public so that derived base classes can call it.
             [PythonHidden]
@@ -279,7 +279,7 @@ namespace IronPython.Modules {
 
             #endregion
 
-#region MetaObject
+            #region MetaObject
 
             private class Meta : MetaPythonObject {
                 public Meta(Expression parameter, _CFuncPtr func)
@@ -351,8 +351,8 @@ namespace IronPython.Modules {
                 }
 
                 private Expression AddReturnChecks(CodeContext context, DynamicMetaObject[] args, Expression res) {
-                    PythonContext ctx = context.LanguageContext; 
-                    
+                    PythonContext ctx = context.LanguageContext;
+
                     object resType = Value.Getrestype();
                     if (resType != null) {
                         // res type can be callable, a type with _check_retval_, or
@@ -402,7 +402,7 @@ namespace IronPython.Modules {
                             Expression.Call(
                                 typeof(PythonOps).GetMethod(nameof(PythonOps.TypeError)),
                                 Expression.Constant($"this function takes {expected} arguments ({got} given)"),
-                                Expression.NewArrayInit(typeof(object))                                    
+                                Expression.NewArrayInit(typeof(object))
                             ),
                             typeof(object)
                         ),
@@ -493,7 +493,7 @@ namespace IronPython.Modules {
                 private ArgumentMarshaller/*!*/[]/*!*/ GetArgumentMarshallers(DynamicMetaObject/*!*/[]/*!*/ args) {
                     CFuncPtrType funcType = ((CFuncPtrType)Value.NativeType);
                     ArgumentMarshaller[] res = new ArgumentMarshaller[args.Length];
-                    
+
 
                     // first arg is taken by self if we're a com method
                     for (int i = 0; i < args.Length; i++) {
@@ -670,7 +670,7 @@ namespace IronPython.Modules {
 
                 private static SignatureHelper GetCalliSignature(CallingConvention convention, ArgumentMarshaller/*!*/[] sig, Type calliRetType) {
                     SignatureHelper signature = GetMethodSigHelper(convention, calliRetType);
-                    
+
                     foreach (ArgumentMarshaller argMarshaller in sig) {
                         signature.AddArgument(argMarshaller.NativeType);
                     }
@@ -678,14 +678,14 @@ namespace IronPython.Modules {
                     return signature;
                 }
 
-#region Argument Marshalling
+                #region Argument Marshalling
 
                 /// <summary>
                 /// Base class for marshalling arguments from the user provided value to the
                 /// call stub.  This class provides the logic for creating the call stub and
                 /// calling it.
                 /// </summary>
-                abstract class ArgumentMarshaller {
+                private abstract class ArgumentMarshaller {
                     private readonly Expression/*!*/ _argExpr;
 
                     public ArgumentMarshaller(Expression/*!*/ container) {
@@ -731,7 +731,7 @@ namespace IronPython.Modules {
                 /// has no type information or when the user has provided us with
                 /// an explicit cdata instance.
                 /// </summary>
-                class PrimitiveMarshaller : ArgumentMarshaller {
+                private class PrimitiveMarshaller : ArgumentMarshaller {
                     private readonly Type/*!*/ _type;
 
                     private static MethodInfo _bigIntToInt32;
@@ -823,7 +823,7 @@ namespace IronPython.Modules {
                     }
                 }
 
-                class FromParamMarshaller : ArgumentMarshaller {
+                private class FromParamMarshaller : ArgumentMarshaller {
                     public FromParamMarshaller(Expression/*!*/ container)
                         : base(container) {
                     }
@@ -840,7 +840,7 @@ namespace IronPython.Modules {
                 /// <summary>
                 /// Provides marshalling for when the function type provide argument information.
                 /// </summary>
-                class CDataMarshaller : ArgumentMarshaller {
+                private class CDataMarshaller : ArgumentMarshaller {
                     private readonly Type/*!*/ _type;
                     private readonly INativeType/*!*/ _cdataType;
 
@@ -882,7 +882,7 @@ namespace IronPython.Modules {
                 /// Provides marshalling for when the user provides a native argument object
                 /// (usually gotten by byref or pointer) and the function type has no type information.
                 /// </summary>
-                class NativeArgumentMarshaller : ArgumentMarshaller {
+                private class NativeArgumentMarshaller : ArgumentMarshaller {
                     public NativeArgumentMarshaller(Expression/*!*/ container)
                         : base(container) {
                     }
@@ -954,4 +954,5 @@ namespace IronPython.Modules {
         }
     }
 }
+
 #endif

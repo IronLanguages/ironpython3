@@ -306,7 +306,7 @@ namespace IronPython.Modules {
                 return unistr.Normalize(nf);
             }
 
-            void BuildDatabase(StreamReader data) {
+            private void BuildDatabase(StreamReader data) {
                 var sep = new char[] { ';' };
 
                 database = new Dictionary<int, CharInfo>();
@@ -334,7 +334,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            void BuildNameLookup() {
+            private void BuildNameLookup() {
                 nameLookup = database.Where(c => !c.Value.Name.StartsWith("<")).ToDictionary(c => c.Value.Name, c => c.Key);
             }
 
@@ -370,7 +370,7 @@ namespace IronPython.Modules {
         }
     }
 
-    class CharInfo {
+    internal class CharInfo {
         internal CharInfo(string[] info) {
             Name = info[PropertyIndex.Name].ToUpperInvariant();
             General_Category = info[PropertyIndex.General_Category];
@@ -413,7 +413,7 @@ namespace IronPython.Modules {
         internal readonly int Bidi_Mirrored;
         internal readonly string East_Asian_Width;
 
-        static class PropertyIndex {
+        private static class PropertyIndex {
             internal const int Name = 0;
             internal const int General_Category = 1;
             internal const int Canonical_Combining_Class = 2;
@@ -427,7 +427,7 @@ namespace IronPython.Modules {
         }
     }
 
-    class RangeInfo : CharInfo {
+    internal class RangeInfo : CharInfo {
         internal RangeInfo(int first, int last, string[] info)
             : base(info) {
             this.First = first;

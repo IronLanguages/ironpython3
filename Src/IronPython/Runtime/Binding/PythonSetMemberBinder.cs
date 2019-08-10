@@ -18,7 +18,7 @@ namespace IronPython.Runtime.Binding {
     using Ast = Expression;
     using System.Runtime.CompilerServices;
 
-    class PythonSetMemberBinder : SetMemberBinder, IPythonSite, IExpressionSerializable {
+    internal class PythonSetMemberBinder : SetMemberBinder, IPythonSite, IExpressionSerializable {
         private readonly PythonContext/*!*/ _context;
 
         public PythonSetMemberBinder(PythonContext/*!*/ context, string/*!*/ name)

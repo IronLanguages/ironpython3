@@ -19,7 +19,7 @@ namespace IronPython.Runtime.Binding {
     /// false branch of the previous condition and body.  Finally a non-conditional terminating
     /// branch must be added.
     /// </summary>
-    class ConditionalBuilder {
+    internal class ConditionalBuilder {
         private readonly DynamicMetaObjectBinder _action;
         private readonly List<Expression/*!*/>/*!*/ _conditions = new List<Expression>();
         private readonly List<Expression/*!*/>/*!*/ _bodies = new List<Expression>();

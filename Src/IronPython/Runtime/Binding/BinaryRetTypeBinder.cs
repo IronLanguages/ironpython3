@@ -14,8 +14,7 @@ using Microsoft.Scripting.Runtime;
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime.Binding {
-
-    partial class BinaryRetTypeBinder : ComboBinder, IExpressionSerializable {
+    internal partial class BinaryRetTypeBinder : ComboBinder, IExpressionSerializable {
         private readonly DynamicMetaObjectBinder _opBinder;
         private readonly PythonConversionBinder _convBinder;
 

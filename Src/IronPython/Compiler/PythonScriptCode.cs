@@ -21,14 +21,14 @@ using IronPython.Runtime;
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Compiler {
-    
+
     /// <summary>
     /// Represents a script code which can be dynamically bound to execute against
     /// arbitrary Scope objects.  This is used for code when the user runs against
     /// a particular scope as well as for exec and eval code as well.  It is also
     /// used when tracing is enabled.
     /// </summary>
-    class PythonScriptCode : RunnableScriptCode {
+    internal class PythonScriptCode : RunnableScriptCode {
         private CodeContext _defaultContext;
         private LookupCompilationDelegate/*!*/ _target, _tracingTarget; // lazily compiled targets
 

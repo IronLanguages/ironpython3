@@ -18,7 +18,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
 
-    partial class PythonBinder : DefaultBinder {
+    internal partial class PythonBinder : DefaultBinder {
         public DynamicMetaObject Create(CallSignature signature, DynamicMetaObject target, DynamicMetaObject[] args, Expression contextExpression) {
 
             Type t = GetTargetType(target.Value);

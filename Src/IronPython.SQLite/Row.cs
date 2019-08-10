@@ -20,8 +20,8 @@ namespace IronPython.SQLite
         [PythonType]
         public class Row : IEnumerable
         {
-            PythonTuple data;
-            PythonTuple description;
+            private PythonTuple data;
+            private PythonTuple description;
 
             public Row(Cursor cursor, PythonTuple data)
             {

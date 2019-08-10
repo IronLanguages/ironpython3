@@ -7,7 +7,7 @@ namespace IronPython.Runtime.Types {
     /// <summary>
     /// OperatorMapping provides a mapping from DLR operators to their associated .NET methods.
     /// </summary>
-    class OperatorMapping {
+    internal class OperatorMapping {
         private static readonly OperatorMapping[] _infos = MakeOperatorTable(); // table of Operators, names, and alt names for looking up methods.
 
         private readonly PythonOperationKind _operator;

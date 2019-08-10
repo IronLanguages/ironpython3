@@ -16,7 +16,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Actions.Calls;
 
 namespace IronPython.Runtime.Binding {
-    class WarningInfo {
+    internal class WarningInfo {
         private readonly string/*!*/ _message;
         private readonly PythonType/*!*/ _type;
         private readonly Expression _condition;

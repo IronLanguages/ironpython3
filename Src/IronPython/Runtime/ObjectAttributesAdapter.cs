@@ -8,7 +8,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
-    class ObjectAttributesAdapter  : DictionaryStorage {
+    internal class ObjectAttributesAdapter  : DictionaryStorage {
         private readonly object _backing;
         private readonly CodeContext/*!*/ _context;
 

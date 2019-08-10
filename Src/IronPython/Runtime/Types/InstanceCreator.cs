@@ -17,7 +17,7 @@ namespace IronPython.Runtime.Types {
     /// defined types which prepends the type before calling, and one for .NET types which
     /// doesn't prepend the type.
     /// </summary>
-    abstract class InstanceCreator {
+    internal abstract class InstanceCreator {
         protected InstanceCreator(PythonType type) {
             Assert.NotNull(type);
 
@@ -42,7 +42,7 @@ namespace IronPython.Runtime.Types {
         internal abstract object CreateInstance(CodeContext context, object[] args, string[] names);
     }
 
-    class UserInstanceCreator : InstanceCreator {
+    internal class UserInstanceCreator : InstanceCreator {
         private CallSite<Func<CallSite, CodeContext, BuiltinFunction, PythonType, object[], object>> _ctorSite;
         private CallSite<Func<CallSite, CodeContext, BuiltinFunction, PythonType, object>> _ctorSite0;
         private CallSite<Func<CallSite, CodeContext, BuiltinFunction, PythonType, object, object>> _ctorSite1;
@@ -139,7 +139,7 @@ namespace IronPython.Runtime.Types {
         }
     }
 
-    class SystemInstanceCreator : InstanceCreator {
+    internal class SystemInstanceCreator : InstanceCreator {
         private CallSite<Func<CallSite, CodeContext, BuiltinFunction, object[], object>> _ctorSite;
         private CallSite<Func<CallSite, CodeContext, BuiltinFunction, object>> _ctorSite0;
         private CallSite<Func<CallSite, CodeContext, BuiltinFunction, object, object>> _ctorSite1;

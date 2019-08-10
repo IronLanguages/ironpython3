@@ -12,7 +12,7 @@ namespace IronPython.Runtime.Binding {
     /// Interface used to mark objects as being invokable from Python.  These objects support
     /// calling with splatted positional and keyword arguments.
     /// </summary>
-    interface IPythonInvokable {
+    internal interface IPythonInvokable {
         DynamicMetaObject/*!*/ Invoke(PythonInvokeBinder/*!*/ pythonInvoke, Expression/*!*/ codeContext, DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args);
     }
 }

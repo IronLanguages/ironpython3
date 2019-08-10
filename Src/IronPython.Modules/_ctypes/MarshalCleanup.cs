@@ -15,7 +15,7 @@ namespace IronPython.Modules {
         public abstract void Cleanup(ILGenerator/*!*/ generator);
     }
 
-    class StringCleanup : MarshalCleanup {
+    internal class StringCleanup : MarshalCleanup {
         private readonly LocalBuilder/*!*/ _local;
 
         public StringCleanup(LocalBuilder local) {

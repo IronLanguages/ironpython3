@@ -1580,14 +1580,14 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             state.CurType = SumVariantType.Object;
         }
 
-        enum SumVariantType {
+        private enum SumVariantType {
             Double,
             Int,
             BigInt,
             Object
         }
 
-        struct SumState {
+        private struct SumState {
             public double DoubleVal;
             public int IntVal;
             public object ObjectVal;

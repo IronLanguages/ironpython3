@@ -9,7 +9,7 @@ namespace IronPython.Runtime {
     /// Singleton used for dictionaries which contain no items.
     /// </summary>
     [Serializable]
-    class EmptyDictionaryStorage : DictionaryStorage {
+    internal class EmptyDictionaryStorage : DictionaryStorage {
         public static EmptyDictionaryStorage Instance = new EmptyDictionaryStorage();
 
         private EmptyDictionaryStorage() {

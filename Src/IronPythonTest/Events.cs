@@ -35,7 +35,7 @@ namespace IronPythonTest {
             OtherStaticTest(sender, args);
         }
 
-        bool _marker = false;
+        private bool _marker = false;
 
         public bool Marker { 
             get { return _marker; }

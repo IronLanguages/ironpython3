@@ -312,7 +312,7 @@ namespace IronPython.Modules {
                 return res;
             }
 
-            struct DelegateCacheKey : IEquatable<DelegateCacheKey> {
+            private struct DelegateCacheKey : IEquatable<DelegateCacheKey> {
                 private readonly Type[] _types;
                 private readonly CallingConvention _callConv;
 

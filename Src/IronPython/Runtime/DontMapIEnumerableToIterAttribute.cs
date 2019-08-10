@@ -12,6 +12,6 @@ namespace IronPython.Runtime {
     /// __iter__
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-    sealed class DontMapIEnumerableToIterAttribute : Attribute {
+    internal sealed class DontMapIEnumerableToIterAttribute : Attribute {
     }
 }

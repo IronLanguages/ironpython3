@@ -7,7 +7,7 @@ namespace IronPythonTest.Util {
     using OptionStore = Dictionary<string, Dictionary<string, string>>;
 
     public class IniParser {
-        OptionStore options;
+        private OptionStore options;
 
         public IniParser(Stream source) {
             this.options = Parse(new StreamReader(source).ReadLines());
@@ -88,7 +88,7 @@ namespace IronPythonTest.Util {
         }
     }
 
-    static class TextReaderExtensions {
+    internal static class TextReaderExtensions {
         public static IEnumerable<string> ReadLines(this TextReader tr) {
             string line;
             while ((line = tr.ReadLine()) != null) {
@@ -97,9 +97,9 @@ namespace IronPythonTest.Util {
         }
     }
 
-    static class StringExtensions {
-        static HashSet<string> Truthy = new HashSet<string> { "1", "t", "true", "y", "yes" };
-        static HashSet<string> Falsey = new HashSet<string> { "0", "f", "false", "n", "no" };
+    internal static class StringExtensions {
+        private static HashSet<string> Truthy = new HashSet<string> { "1", "t", "true", "y", "yes" };
+        private static HashSet<string> Falsey = new HashSet<string> { "0", "f", "false", "n", "no" };
 
         public static bool AsBool(this string s) {
             if (s == null) {

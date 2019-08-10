@@ -22,7 +22,7 @@ namespace IronPython.Runtime.Binding {
     using Ast = Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    partial class MetaUserObject : MetaPythonObject, IPythonInvokable, IPythonConvertible, IPythonOperable {
+    internal partial class MetaUserObject : MetaPythonObject, IPythonInvokable, IPythonConvertible, IPythonOperable {
         private readonly DynamicMetaObject _baseMetaObject;            // if we're a subtype of MetaObject this is the base class MO
 
         public MetaUserObject(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, DynamicMetaObject baseMetaObject, IPythonObject value)

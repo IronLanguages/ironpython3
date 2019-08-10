@@ -508,18 +508,18 @@ namespace IronPython.Modules {
 
         #region Private Key Parsing
 
-        const int ClassOffset = 6;
-        const int ClassMask = 0xc0;
-        const int ClassUniversal = 0x00 << ClassOffset;
-        const int ClassApplication = 0x01 << ClassOffset;
-        const int ClassContextSpecific = 0x02 << ClassOffset;
-        const int ClassPrivate = 0x03 << ClassOffset;
+        private const int ClassOffset = 6;
+        private const int ClassMask = 0xc0;
+        private const int ClassUniversal = 0x00 << ClassOffset;
+        private const int ClassApplication = 0x01 << ClassOffset;
+        private const int ClassContextSpecific = 0x02 << ClassOffset;
+        private const int ClassPrivate = 0x03 << ClassOffset;
 
-        const int NumberMask = 0x1f;
+        private const int NumberMask = 0x1f;
 
-        const int UnivesalSequence = 0x10;
-        const int UniversalInteger = 0x02;
-        const int UniversalOctetString = 0x04;
+        private const int UnivesalSequence = 0x10;
+        private const int UniversalInteger = 0x02;
+        private const int UniversalOctetString = 0x04;
 
         private static RSACryptoServiceProvider ParsePkcs1DerEncodedPrivateKey(CodeContext context, string filename, byte[] x) {
             // http://tools.ietf.org/html/rfc3447#appendix-A.1.2

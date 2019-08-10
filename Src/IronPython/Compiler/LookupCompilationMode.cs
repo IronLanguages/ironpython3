@@ -18,13 +18,14 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
+
     /// <summary>
     /// Provides globals for when we need to lookup into a dictionary for each global access.
     /// 
     /// This is the slowest form of globals and is only used when we need to run against an
     /// arbitrary dictionary given to us by a user.
     /// </summary>
-    class LookupCompilationMode : CompilationMode {
+    internal class LookupCompilationMode : CompilationMode {
         public LookupCompilationMode() {
         }
 

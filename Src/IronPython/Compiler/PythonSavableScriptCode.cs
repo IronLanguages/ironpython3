@@ -23,7 +23,7 @@ namespace IronPython.Compiler {
     /// A ScriptCode which can be saved to disk.  We only create this when called via
     /// the clr.CompileModules API.  This ScriptCode does not support running.
     /// </summary>
-    class PythonSavableScriptCode : SavableScriptCode, ICustomScriptCodeData {
+    internal class PythonSavableScriptCode : SavableScriptCode, ICustomScriptCodeData {
         private readonly Expression<LookupCompilationDelegate> _code;
         private readonly string[] _names;
         private readonly string _moduleName;

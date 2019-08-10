@@ -11,7 +11,7 @@ namespace IronPython.Runtime.Exceptions {
     /// .NET Exception thrown when a Python syntax error is related to incorrect tabs.
     /// </summary>
     [Serializable]
-    sealed class TabException : IndentationException {
+    internal sealed class TabException : IndentationException {
         public TabException(string message) : base(message) { }
 
         public TabException(string message, Exception innerException) : base(message, innerException) { }

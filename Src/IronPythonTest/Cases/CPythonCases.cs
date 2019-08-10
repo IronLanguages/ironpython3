@@ -36,7 +36,7 @@ namespace IronPythonTest.Cases {
         }
     }
 
-    class StandardCPythonCaseGenerator : CommonCaseGenerator<StandardCPythonCases> {
+    internal class StandardCPythonCaseGenerator : CommonCaseGenerator<StandardCPythonCases> {
         internal static readonly HashSet<string> STDTESTS = new HashSet<String> {
             "test_grammar",
             "test_opcodes",
@@ -57,7 +57,7 @@ namespace IronPythonTest.Cases {
         }
     }
 
-    class AllCPythonCaseGenerator : CommonCaseGenerator<AllCPythonCases> {
+    internal class AllCPythonCaseGenerator : CommonCaseGenerator<AllCPythonCases> {
         protected override IEnumerable<TestInfo> GetTests() {
             var testDir = Path.Combine("Src", "StdLib", "Lib", "test");
             var fullPath = Path.Combine(CaseExecuter.FindRoot(), testDir);
@@ -68,7 +68,7 @@ namespace IronPythonTest.Cases {
         }
     }
 
-    class CTypesCPythonCaseGenerator : CommonCaseGenerator<CTypesCPythonCases> {
+    internal class CTypesCPythonCaseGenerator : CommonCaseGenerator<CTypesCPythonCases> {
         protected override IEnumerable<TestInfo> GetTests() {
             var testDir = Path.Combine("Src", "StdLib", "Lib", "ctypes", "test");
             var fullPath = Path.Combine(CaseExecuter.FindRoot(), testDir);

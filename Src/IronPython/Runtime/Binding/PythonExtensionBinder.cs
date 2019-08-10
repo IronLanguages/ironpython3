@@ -12,7 +12,7 @@ using Microsoft.Scripting.Utils;
 using System.Diagnostics;
 
 namespace IronPython.Runtime.Binding {
-    class PythonExtensionBinder : PythonBinder {
+    internal class PythonExtensionBinder : PythonBinder {
         private readonly ExtensionMethodSet _extMethodSet;
 
         public PythonExtensionBinder(PythonBinder binder, ExtensionMethodSet extensionMethods)

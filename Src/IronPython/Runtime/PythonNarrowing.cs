@@ -8,7 +8,7 @@ namespace IronPython.Runtime {
     /// <summary>
     /// Provides human readable names for how Python maps the various DLR NarrowingLevel's.
     /// </summary>
-    static class PythonNarrowing {
+    internal static class PythonNarrowing {
         /// <summary>
         /// No narrowing conversions are performed
         /// </summary>

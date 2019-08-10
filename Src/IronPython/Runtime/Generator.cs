@@ -615,7 +615,7 @@ namespace IronPython.Runtime {
 
         #endregion
 
-        class GeneratorFinalizer {
+        private class GeneratorFinalizer {
             public PythonGenerator Generator;
             public GeneratorFinalizer(PythonGenerator generator) {
                 Generator = generator;

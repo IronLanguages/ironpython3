@@ -8,7 +8,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
-    class RuntimeVariablesDictionaryStorage : CustomDictionaryStorage {
+    internal class RuntimeVariablesDictionaryStorage : CustomDictionaryStorage {
         private readonly MutableTuple _boxes;
         private readonly string[] _args;
 

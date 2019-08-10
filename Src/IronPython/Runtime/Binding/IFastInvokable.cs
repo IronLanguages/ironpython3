@@ -11,7 +11,7 @@ using Microsoft.Scripting.Actions;
 using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime.Binding {
-    interface IFastInvokable {
+    internal interface IFastInvokable {
         FastBindResult<T> MakeInvokeBinding<T>(CallSite<T> site, PythonInvokeBinder/*!*/ binder, CodeContext/*!*/ context, object[] args) where T : class;
     }
 }

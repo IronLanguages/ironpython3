@@ -26,7 +26,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
-    
+
     /// <summary>
     /// Implements globals which are backed by a static type, followed by an array if the static types' slots become full.  The global
     /// variables are stored in static fields on a type for fast access.  The type also includes fields for constants and call sites
@@ -34,7 +34,7 @@ namespace IronPython.Compiler.Ast {
     /// 
     /// We don't generate any code into the type though - DynamicMethod's are much faster for code gen then normal ref emit.
     /// </summary>
-    partial class UncollectableCompilationMode : CompilationMode {
+    internal partial class UncollectableCompilationMode : CompilationMode {
         private static readonly Dictionary<object/*!*/, ConstantInfo/*!*/>/*!*/ _allConstants = new Dictionary<object/*!*/, ConstantInfo/*!*/>();
         private static readonly Dictionary<Type/*!*/, DelegateCache/*!*/>/*!*/ _delegateCache = new Dictionary<Type/*!*/, DelegateCache/*!*/>();
 
@@ -127,7 +127,7 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        class CodeContextExpression : MSAst.Expression, IInstructionProvider {
+        private class CodeContextExpression : MSAst.Expression, IInstructionProvider {
             private readonly MSAst.Expression _expression;
             public CodeContext Context;
 

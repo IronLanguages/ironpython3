@@ -15,6 +15,6 @@ namespace IronPython.Runtime {
     /// but is not an IPythonObject.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-    sealed class DontMapGetMemberNamesToDirAttribute : Attribute {
+    internal sealed class DontMapGetMemberNamesToDirAttribute : Attribute {
     }
 }

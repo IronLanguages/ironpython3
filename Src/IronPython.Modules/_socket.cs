@@ -2619,7 +2619,7 @@ of bytes written.")]
 
 
         [DllImport("ws2_32.dll", SetLastError = true)]
-        static extern Int32 WSAStartup(Int16 wVersionRequested, out WSAData wsaData);
+        private static extern Int32 WSAStartup(Int16 wVersionRequested, out WSAData wsaData);
         [DllImport("ws2_32.dll", SetLastError = true, CharSet = CharSet.Ansi)]
         private static extern IntPtr getservbyname(string name, string proto);
         [DllImport("ws2_32.dll", SetLastError = true, CharSet = CharSet.Ansi)]
@@ -2627,7 +2627,7 @@ of bytes written.")]
         [DllImport("Ws2_32.dll", SetLastError = true)]
         private static extern Int32 WSAGetLastError();
         [DllImport("ws2_32.dll", SetLastError = true)]
-        static extern Int32 WSACleanup();
+        private static extern Int32 WSACleanup();
 
         private static T PtrToStructure<T>(IntPtr result) {
             return (T)Marshal.PtrToStructure(result, typeof(T));

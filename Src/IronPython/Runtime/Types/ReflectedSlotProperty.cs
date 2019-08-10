@@ -17,7 +17,7 @@ namespace IronPython.Runtime.Types {
     /// __slots__ have storage allocated for them with the type and provide fast get/set access.
     /// </summary>
     [PythonType("member_descriptor")]
-    class ReflectedSlotProperty : PythonTypeDataSlot, ICodeFormattable {
+    internal class ReflectedSlotProperty : PythonTypeDataSlot, ICodeFormattable {
         private readonly string/*!*/ _name, _typeName;
         private readonly int/*!*/ _index;        
 
@@ -123,6 +123,6 @@ namespace IronPython.Runtime.Types {
         }
     }
 
-    delegate object SlotGetValue(object instance);
-    delegate void   SlotSetValue(object instance, object value);
+    internal delegate object SlotGetValue(object instance);
+    internal delegate void   SlotSetValue(object instance, object value);
 }

@@ -25,7 +25,7 @@ namespace IronPython.Runtime.Binding {
     using Ast = Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    class PythonConversionBinder : DynamicMetaObjectBinder, IPythonSite, IExpressionSerializable {
+    internal class PythonConversionBinder : DynamicMetaObjectBinder, IPythonSite, IExpressionSerializable {
         private readonly PythonContext/*!*/ _context;
         private readonly ConversionResultKind/*!*/ _kind;
         private readonly Type _type;
@@ -502,7 +502,8 @@ namespace IronPython.Runtime.Binding {
         public object BigIntegerToComplexObjectConversion(CallSite site, BigInteger value) {
             return (object)BigIntegerOps.ConvertToComplex((BigInteger)value);
         }
-        class IdentityConversion {
+
+        private class IdentityConversion {
             private readonly Type _type;
 
             public IdentityConversion(Type type) {
@@ -517,7 +518,7 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        class IdentityConversion<T> {
+        private class IdentityConversion<T> {
             private readonly Type _type;
 
             public IdentityConversion(Type type) {
@@ -850,7 +851,7 @@ namespace IronPython.Runtime.Binding {
         #endregion
     }
 
-    class CompatConversionBinder : ConvertBinder {
+    internal class CompatConversionBinder : ConvertBinder {
         private readonly PythonConversionBinder _binder;
 
         public CompatConversionBinder(PythonConversionBinder binder, Type toType, bool isExplicit)

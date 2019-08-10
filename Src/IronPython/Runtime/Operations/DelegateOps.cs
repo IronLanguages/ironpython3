@@ -59,7 +59,7 @@ namespace IronPython.Runtime.Operations {
     /// the code gen is not only nice for compilation but it also enables delegates to be added
     /// in C# and removed in Python.
     /// </summary>
-    interface IDelegateConvertible {
+    internal interface IDelegateConvertible {
         Delegate ConvertToDelegate(Type/*!*/ type);
     }
 }

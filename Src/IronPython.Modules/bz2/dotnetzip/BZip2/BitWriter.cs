@@ -88,10 +88,10 @@ namespace Ionic.BZip2
 
     internal class BitWriter
     {
-        uint accumulator;
-        int nAccumulatedBits;
-        Stream output;
-        int totalBytesWrittenOut;
+        private uint accumulator;
+        private int nAccumulatedBits;
+        private Stream output;
+        private int totalBytesWrittenOut;
 
         public BitWriter(Stream s)
         {

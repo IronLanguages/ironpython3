@@ -27,7 +27,7 @@ namespace IronPython.Runtime {
     /// 
     /// Multiple modules which have the same set of extension methods use the same set.
     /// </summary>
-    sealed class ExtensionMethodSet : IEquatable<ExtensionMethodSet> {
+    internal sealed class ExtensionMethodSet : IEquatable<ExtensionMethodSet> {
         private PythonExtensionBinder _extBinder;
         private Dictionary<Assembly, AssemblyLoadInfo>/*!*/ _loadedAssemblies;
         private int _id;
@@ -85,7 +85,7 @@ namespace IronPython.Runtime {
         /// in Types.  When we do that we'll mark the assembly as FullyLoaded so we don't 
         /// have to go through that again if the user adds a namespace.
         /// </summary>
-        sealed class AssemblyLoadInfo : IEquatable<AssemblyLoadInfo> {
+        private sealed class AssemblyLoadInfo : IEquatable<AssemblyLoadInfo> {
             private static IEqualityComparer<HashSet<PythonType>> TypeComparer = CollectionUtils.CreateSetComparer<PythonType>();
             private static IEqualityComparer<HashSet<string>> StringComparer = CollectionUtils.CreateSetComparer<string>();
 

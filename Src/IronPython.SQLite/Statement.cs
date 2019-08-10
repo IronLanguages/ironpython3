@@ -17,7 +17,7 @@ using sqlite3_stmt = Community.CsharpSqlite.Sqlite3.Vdbe;
 
 namespace IronPython.SQLite
 {
-    enum StatementType
+    internal enum StatementType
     {
         Unknown,
         Select,
@@ -36,7 +36,7 @@ namespace IronPython.SQLite
         internal sqlite3_stmt st;
 
         private object current = null, nextRow = null;
-        bool started = false;
+        private bool started = false;
         private string sql;
         private bool bound = false;
         internal bool in_use = false;

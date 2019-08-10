@@ -17,8 +17,8 @@ namespace IronPython.Runtime {
     /// To the end user these modules appear just like any other module.  These modules are
     /// implemented by subclassing the BuiltinPythonModule class.
     /// </summary>
-    class InstancedModuleDictionaryStorage : ModuleDictionaryStorage {
-        BuiltinPythonModule _module;
+    internal class InstancedModuleDictionaryStorage : ModuleDictionaryStorage {
+        private BuiltinPythonModule _module;
 
         public InstancedModuleDictionaryStorage(BuiltinPythonModule/*!*/ moduleInstance, Dictionary<string, PythonGlobal> globalsDict)
             : base(moduleInstance.GetType(), globalsDict) {

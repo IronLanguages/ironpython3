@@ -15,7 +15,7 @@ using Microsoft.Scripting.Utils;
 using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
-    class PythonDocumentationProvider : DocumentationProvider {
+    internal class PythonDocumentationProvider : DocumentationProvider {
         private readonly PythonContext _context;
 
         public PythonDocumentationProvider(PythonContext context) {

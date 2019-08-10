@@ -8,14 +8,14 @@ using System.Threading;
 
 using Microsoft.Scripting.Runtime;
 
-namespace IronPython.Runtime {    
+namespace IronPython.Runtime {
     /// <summary>
     /// Provides storage of IronPython specific data in the DLR Scope ScopeExtension.
     /// 
     /// This enables IronPython to track code compilation flags such as from __future__
     /// flags and import clr flags across multiple executions of user-provided scopes.
     /// </summary>
-    class PythonScopeExtension : ScopeExtension {
+    internal class PythonScopeExtension : ScopeExtension {
         private readonly ModuleContext _modContext;
         private readonly PythonModule _module;
         private Dictionary<object, object> _objectKeys;

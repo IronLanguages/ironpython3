@@ -21,11 +21,11 @@ using IronPython.Runtime.Types;
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
-    
+
     /// <summary>
     /// Common helpers used by the various binding logic.
     /// </summary>
-    static class BindingHelpers {
+    internal static class BindingHelpers {
         /// <summary>
         /// Tries to get the BuiltinFunction for the given name on the type of the provided MetaObject.  
         /// 

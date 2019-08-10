@@ -18,7 +18,7 @@ namespace IronPython.Runtime {
     /// StringFormatter provides Python's % style string formatting services.
     /// </summary>
     internal class StringFormatter {
-        const int UnspecifiedPrecision = -1; // Use the default precision
+        private const int UnspecifiedPrecision = -1; // Use the default precision
 
         private readonly CodeContext/*!*/ _context;
         private object _data;

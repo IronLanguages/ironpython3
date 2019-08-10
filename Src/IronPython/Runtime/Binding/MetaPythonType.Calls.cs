@@ -24,7 +24,7 @@ namespace IronPython.Runtime.Binding {
     using Ast = Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    partial class MetaPythonType : MetaPythonObject, IPythonInvokable {
+    internal partial class MetaPythonType : MetaPythonObject, IPythonInvokable {
 
         #region IPythonInvokable Members
 

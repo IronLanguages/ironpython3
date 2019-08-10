@@ -924,7 +924,7 @@ namespace IronPython.Runtime {
             return finalTarget;
         }
 
-        class TargetUpdaterForCompilation {
+        private class TargetUpdaterForCompilation {
             private readonly PythonContext _context;
             private readonly FunctionCode _code;
 
@@ -1035,7 +1035,7 @@ namespace IronPython.Runtime {
             _handlerLocations = walker.HandlerLocations;
         }
 
-        class TracingWalker : Compiler.Ast.PythonWalker {
+        private class TracingWalker : Compiler.Ast.PythonWalker {
             private bool _inLoop, _inFinally;
             private int _loopId;
             public Dictionary<int, bool> HandlerLocations = new Dictionary<int, bool>();

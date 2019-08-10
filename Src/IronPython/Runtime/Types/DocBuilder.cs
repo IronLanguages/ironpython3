@@ -21,7 +21,7 @@ using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Types {
-    static class DocBuilder {
+    internal static class DocBuilder {
         
         internal static string GetDefaultDocumentation(string methodName) {
             switch (methodName) {
@@ -516,7 +516,7 @@ namespace IronPython.Runtime.Types {
             }
         }
 
-        static string GetXmlDocLocation(Assembly assem) {
+        private static string GetXmlDocLocation(Assembly assem) {
             if (_AssembliesWithoutXmlDoc.Contains(assem)) {
                 return null;
             }

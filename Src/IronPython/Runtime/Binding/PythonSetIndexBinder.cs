@@ -18,7 +18,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
 
-    class PythonSetIndexBinder : SetIndexBinder, IPythonSite, IExpressionSerializable {
+    internal class PythonSetIndexBinder : SetIndexBinder, IPythonSite, IExpressionSerializable {
         private readonly PythonContext/*!*/ _context;
 
         public PythonSetIndexBinder(PythonContext/*!*/ context, int argCount)

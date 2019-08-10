@@ -141,7 +141,7 @@ namespace IronPython.Modules {
         }
 
         [DllImport("advapi32.dll", SetLastError = true)]
-        static extern int RegCreateKeyEx(
+        private static extern int RegCreateKeyEx(
                     SafeRegistryHandle hKey,
                     string lpSubKey,
                     int Reserved,
@@ -153,7 +153,7 @@ namespace IronPython.Modules {
                     out int lpdwDisposition);
 
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        static extern int RegQueryValueEx(
+        private static extern int RegQueryValueEx(
               SafeRegistryHandle hKey,
               string lpValueName,
               IntPtr lpReserved,
@@ -163,7 +163,7 @@ namespace IronPython.Modules {
             );
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
-        static extern int RegEnumKeyEx(
+        private static extern int RegEnumKeyEx(
             SafeRegistryHandle hKey,
             int dwIndex,
             StringBuilder lpName,
@@ -174,7 +174,7 @@ namespace IronPython.Modules {
             IntPtr lpftLastWriteTime);
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
-        static extern int RegSetValueEx(
+        private static extern int RegSetValueEx(
             SafeRegistryHandle hKey,
             string lpValueName,
             int Reserved,
@@ -238,9 +238,9 @@ namespace IronPython.Modules {
             return name.ToString();
         }
 
-        const int ERROR_NO_MORE_ITEMS = 259;
-        const int ERROR_MORE_DATA = 234;
-        const int ERROR_SUCCESS = 0;
+        private const int ERROR_NO_MORE_ITEMS = 259;
+        private const int ERROR_MORE_DATA = 234;
+        private const int ERROR_SUCCESS = 0;
 
         public static PythonTuple EnumValue(object key, int index) {
             HKEYType rootKey = GetRootKey(key);

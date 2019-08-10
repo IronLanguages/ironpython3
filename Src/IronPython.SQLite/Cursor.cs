@@ -27,12 +27,12 @@ namespace IronPython.SQLite
         {
             public const string __doc__ = "SQLite database cursor class.";
 
-            Statement statement;
-            object next_row;
-            bool resultsDone;
-            int last_step_rc;
+            private Statement statement;
+            private object next_row;
+            private bool resultsDone;
+            private int last_step_rc;
 
-            List<object> row_cast_map = new List<object>();
+            private List<object> row_cast_map = new List<object>();
 
             public PythonTuple description { get; private set; }
 

@@ -201,7 +201,7 @@ namespace IronPython.Runtime {
     }
 
     public class IEnumeratorOfTWrapper<T> : IEnumerator<T> {
-        readonly IEnumerator enumerable;
+        private readonly IEnumerator enumerable;
  
         public IEnumeratorOfTWrapper(IEnumerator enumerable) {
             this.enumerable = enumerable;
@@ -251,7 +251,7 @@ namespace IronPython.Runtime {
 
     [PythonType("enumerable_wrapper")]
     public class IEnumerableOfTWrapper<T> : IEnumerable<T>, IEnumerable {
-        IEnumerable enumerable;
+        private IEnumerable enumerable;
 
         public IEnumerableOfTWrapper(IEnumerable enumerable) {
             this.enumerable = enumerable;

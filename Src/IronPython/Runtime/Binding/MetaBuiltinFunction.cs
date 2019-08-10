@@ -24,7 +24,7 @@ namespace IronPython.Runtime.Binding {
     using Ast = Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    class MetaBuiltinFunction : MetaPythonObject, IPythonInvokable, IPythonOperable, IPythonConvertible {
+    internal class MetaBuiltinFunction : MetaPythonObject, IPythonInvokable, IPythonOperable, IPythonConvertible {
         public MetaBuiltinFunction(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, BuiltinFunction/*!*/ value)
             : base(expression, BindingRestrictions.Empty, value) {
             Assert.NotNull(value);

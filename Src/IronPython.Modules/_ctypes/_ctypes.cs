@@ -745,7 +745,7 @@ namespace IronPython.Modules {
             throw PythonOps.TypeError("cannot delete wchar array raw");
         }
 
-        class RefCountInfo {
+        private class RefCountInfo {
             public int RefCount;
             public GCHandle Handle;
         }

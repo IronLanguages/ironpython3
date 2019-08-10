@@ -968,7 +968,7 @@ namespace IronPython.Runtime {
 #endif
     public sealed class DictionaryValueEnumerator : IEnumerator<object> {
         private readonly int _size;
-        DictionaryStorage _dict;
+        private DictionaryStorage _dict;
         private readonly object[] _values;
         private int _pos;
 

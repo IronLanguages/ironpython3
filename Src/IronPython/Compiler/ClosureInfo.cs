@@ -17,7 +17,7 @@ namespace IronPython.Compiler {
     /// Tracking for variables lifted into closure objects. Used to store information in a function
     /// about the outer variables it accesses.
     /// </summary>
-    class ReferenceClosureInfo {
+    internal class ReferenceClosureInfo {
         public readonly PythonVariable/*!*/ Variable;
         public bool IsClosedOver;
 

@@ -65,9 +65,9 @@ namespace Ionic.BZip2
     /// </summary>
     public class BZip2InputStream : System.IO.Stream
     {
-        bool _disposed;
-        bool _leaveOpen;
-        Int64 totalBytesRead;
+        private bool _disposed;
+        private bool _leaveOpen;
+        private Int64 totalBytesRead;
         private int last;
 
         /* for undoing the Burrows-Wheeler transform */
@@ -89,7 +89,7 @@ namespace Ionic.BZip2
         /// <summary>
         ///   Compressor State
         /// </summary>
-        enum CState
+        private enum CState
         {
             EOF = 0,
             START_BLOCK = 1,
@@ -421,8 +421,7 @@ namespace Ionic.BZip2
             }
         }
 
-
-        void init()
+        private void init()
         {
             if (null == this.input)
                 throw new IOException("No input Stream");
@@ -446,8 +445,7 @@ namespace Ionic.BZip2
             SetupBlock();
         }
 
-
-        void CheckMagicChar(char expected, int position)
+        private void CheckMagicChar(char expected, int position)
         {
             int magic = this.input.ReadByte();
             if (magic != (int)expected)
@@ -458,8 +456,7 @@ namespace Ionic.BZip2
             }
         }
 
-
-        void InitBlock()
+        private void InitBlock()
         {
             char magic0 = bsGetUByte();
             char magic1 = bsGetUByte();
@@ -1313,10 +1310,10 @@ namespace Ionic.BZip2
         private sealed class DecompressionState
         {
             // (with blockSize 900k)
-            readonly public bool[] inUse = new bool[256];
-            readonly public byte[] seqToUnseq = new byte[256]; // 256 byte
-            readonly public byte[] selector = new byte[BZip2.MaxSelectors]; // 18002 byte
-            readonly public byte[] selectorMtf = new byte[BZip2.MaxSelectors]; // 18002 byte
+            public readonly bool[] inUse = new bool[256];
+            public readonly byte[] seqToUnseq = new byte[256]; // 256 byte
+            public readonly byte[] selector = new byte[BZip2.MaxSelectors]; // 18002 byte
+            public readonly byte[] selectorMtf = new byte[BZip2.MaxSelectors]; // 18002 byte
 
             /**
              * Freq table collected to save a pass over the data during

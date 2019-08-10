@@ -8,7 +8,7 @@ using System.Diagnostics;
 using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
-    class TwoObjects {
+    internal class TwoObjects {
         internal object obj1;
         internal object obj2;
 
@@ -26,7 +26,7 @@ namespace IronPython.Runtime {
         }
     }
 
-    class CompareUtil {
+    internal class CompareUtil {
         [ThreadStatic]
         private static Stack<object> CmpStack;
 

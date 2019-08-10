@@ -12,7 +12,7 @@ using Microsoft.Scripting.Actions;
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
 
-    static class Binders {
+    internal static class Binders {
         /// <summary>
         /// Backwards compatible Convert for the old sites that need to flow CodeContext
         /// </summary>

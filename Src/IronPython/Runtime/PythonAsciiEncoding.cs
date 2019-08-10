@@ -17,7 +17,7 @@ namespace IronPython.Runtime {
     /// be replaced with versions that will throw exceptions instead though.
     /// </summary>
     [Serializable]
-    sealed class PythonAsciiEncoding : Encoding {
+    internal sealed class PythonAsciiEncoding : Encoding {
         // Singleton (global) instances are readonly, so their fallbacks cannot be accidentally modified unless cloned
         internal static readonly Encoding Instance = MakeNonThrowing();
 
@@ -237,7 +237,7 @@ namespace IronPython.Runtime {
     }
 
 #if FEATURE_ENCODING
-    class NonStrictEncoderFallback : EncoderFallback {
+    internal class NonStrictEncoderFallback : EncoderFallback {
         public override EncoderFallbackBuffer CreateFallbackBuffer() {
             return new NonStrictEncoderFallbackBuffer();
         }
@@ -247,7 +247,7 @@ namespace IronPython.Runtime {
         }
     }
 
-    class NonStrictEncoderFallbackBuffer : EncoderFallbackBuffer {
+    internal class NonStrictEncoderFallbackBuffer : EncoderFallbackBuffer {
         private List<char> _buffer = new List<char>();
         private int _curIndex;
         private int _prevIndex;
@@ -291,7 +291,7 @@ namespace IronPython.Runtime {
         }
     }
 
-    class NonStrictDecoderFallback : DecoderFallback {
+    internal class NonStrictDecoderFallback : DecoderFallback {
         public override DecoderFallbackBuffer CreateFallbackBuffer() {
             return new NonStrictDecoderFallbackBuffer();
         }
@@ -302,7 +302,7 @@ namespace IronPython.Runtime {
     }
 
     // no ctors on DecoderFallbackBuffer in Silverlight
-    class NonStrictDecoderFallbackBuffer : DecoderFallbackBuffer {
+    internal class NonStrictDecoderFallbackBuffer : DecoderFallbackBuffer {
         private List<byte> _bytes = new List<byte>();
         private int _curIndex;
         private int _prevIndex;

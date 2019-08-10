@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime.Binding {
-    class FastSetBase {
+    internal class FastSetBase {
         internal Delegate _func;
         internal int _version;
         internal int _hitCount;
@@ -27,7 +27,7 @@ namespace IronPython.Runtime.Binding {
     /// Base class for all of our fast set delegates.  This holds onto the
     /// delegate and provides the Update and Optimize functions.
     /// </summary>
-    class FastSetBase<TValue> : FastSetBase {
+    internal class FastSetBase<TValue> : FastSetBase {
         public FastSetBase(int version) : base(version) {
         }
 

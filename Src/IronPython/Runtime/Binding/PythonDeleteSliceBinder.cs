@@ -15,7 +15,7 @@ using IronPython.Runtime.Operations;
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
 
-    class PythonDeleteSliceBinder : DynamicMetaObjectBinder, IPythonSite, IExpressionSerializable {
+    internal class PythonDeleteSliceBinder : DynamicMetaObjectBinder, IPythonSite, IExpressionSerializable {
         private readonly PythonContext/*!*/ _context;
 
         public PythonDeleteSliceBinder(PythonContext/*!*/ context) {

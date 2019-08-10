@@ -22,7 +22,7 @@ namespace IronPython.Compiler {
     /// Represents a script code which can be consumed at runtime as-is.  This code has
     /// no external dependencies and is closed over its scope.  
     /// </summary>
-    class RuntimeScriptCode : RunnableScriptCode {
+    internal class RuntimeScriptCode : RunnableScriptCode {
         private readonly CodeContext/*!*/ _optimizedContext;
         private Func<FunctionCode, object> _optimizedTarget;
 

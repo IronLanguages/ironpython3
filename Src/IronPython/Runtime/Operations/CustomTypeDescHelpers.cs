@@ -77,7 +77,7 @@ namespace IronPython.Runtime.Operations {
             return new PropertyDescriptorCollection(GetPropertiesImpl(self, attributes));
         }
 
-        static PropertyDescriptor[] GetPropertiesImpl(object self, Attribute[] attributes) {
+        private static PropertyDescriptor[] GetPropertiesImpl(object self, Attribute[] attributes) {
             IList<object> attrNames = PythonOps.GetAttrNames(DefaultContext.DefaultCLS, self);
             List<PropertyDescriptor> descrs = new List<PropertyDescriptor>();
             if (attrNames != null) {
@@ -150,10 +150,10 @@ namespace IronPython.Runtime.Operations {
 
         #endregion
 
-        class SuperDynamicObjectPropertyDescriptor : PropertyDescriptor {
-            string _name;
-            Type _propertyType;
-            Type _componentType;
+        private class SuperDynamicObjectPropertyDescriptor : PropertyDescriptor {
+            private string _name;
+            private Type _propertyType;
+            private Type _componentType;
             internal SuperDynamicObjectPropertyDescriptor(
                 string name,
                 Type propertyType,
@@ -198,7 +198,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         private class TypeConv : TypeConverter {
-            object convObj;
+            private object convObj;
 
             public TypeConv(object self) {
                 convObj = self;

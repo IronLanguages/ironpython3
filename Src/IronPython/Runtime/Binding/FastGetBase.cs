@@ -15,7 +15,7 @@ namespace IronPython.Runtime.Binding {
     /// Base class for all of our fast get delegates.  This holds onto the
     /// delegate and provides the Update function.
     /// </summary>
-    abstract class FastGetBase {
+    internal abstract class FastGetBase {
         internal Func<CallSite, object, CodeContext, object> _func;
         internal int _hitCount;
 

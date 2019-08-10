@@ -46,7 +46,7 @@ internal sealed class PythonWindowsConsoleHost : ConsoleHost {
     }
 
     [STAThread]
-    static int Main(string[] args) {
+    private static int Main(string[] args) {
         if (args.Length == 0) {
             new PythonWindowsConsoleHost().PrintHelp();
             return 1;

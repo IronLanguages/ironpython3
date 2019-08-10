@@ -25,7 +25,7 @@ namespace IronPython.Runtime.Binding {
     /// CallSignature which supports splatting position and keyword args into
     /// their expanded form.
     /// </summary>
-    class CompatibilityInvokeBinder : InvokeBinder, IPythonSite {
+    internal class CompatibilityInvokeBinder : InvokeBinder, IPythonSite {
         private readonly PythonContext/*!*/ _context;
 
         public CompatibilityInvokeBinder(PythonContext/*!*/ context, CallInfo /*!*/ callInfo)

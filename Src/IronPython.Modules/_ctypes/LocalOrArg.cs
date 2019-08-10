@@ -18,7 +18,7 @@ namespace IronPython.Modules {
         }
     }
 
-    class Local : LocalOrArg {
+    internal class Local : LocalOrArg {
         private readonly LocalBuilder _local;
 
         public Local(LocalBuilder local) {
@@ -34,7 +34,7 @@ namespace IronPython.Modules {
         }
     }
 
-    class Arg : LocalOrArg {
+    internal class Arg : LocalOrArg {
         private readonly int _index;
         private readonly Type _type;
 

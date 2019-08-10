@@ -217,7 +217,7 @@ namespace IronPythonTest.BinderTest {
     public class COtherOverloadConcern {
         // one is private
 #pragma warning disable 169 // unusued method...
-        void M100(Int32 arg) { Flag.Value = 100; }
+        private void M100(Int32 arg) { Flag.Value = 100; }
 #pragma warning restore 169
         public void M100(object arg) { Flag.Value = 200; }
 
@@ -829,11 +829,11 @@ namespace IronPythonTest.BinderTest {
     }
 
     public class PublicEventArgs : EventArgs { }
-    class PrivateEventArgs : PublicEventArgs { }
+    internal class PrivateEventArgs : PublicEventArgs { }
     public delegate IPublicInterface PublicDelegateType(IPublicInterface sender, PublicEventArgs args);
 
     // Private class
-    class PrivateClass : IPublicInterface {
+    internal class PrivateClass : IPublicInterface {
         public IPublicInterface Hello {
             get { return this; }
             set { }
@@ -904,7 +904,7 @@ namespace IronPythonTest.BinderTest {
     public class GenericOnlyConflict<T> { }
     public class GenericOnlyConflict<T1, T2> { }
 
-    class BaseClassNoInterface {
+    internal class BaseClassNoInterface {
         #region I1 Members
 
         public void M() {
@@ -915,10 +915,10 @@ namespace IronPythonTest.BinderTest {
         
     }
 
-    class DerivedClassWithInterface : BaseClassNoInterface, I1 {
+    internal class DerivedClassWithInterface : BaseClassNoInterface, I1 {
     }
 
-    abstract class AbstractClassWithInterface : I1 {
+    internal abstract class AbstractClassWithInterface : I1 {
 
         #region I1 Members
 
@@ -927,7 +927,7 @@ namespace IronPythonTest.BinderTest {
         #endregion
     }
 
-    class DerivedClassWithInterfaceImpl : AbstractClassWithInterface {
+    internal class DerivedClassWithInterfaceImpl : AbstractClassWithInterface {
         #region I1 Members
 
         public override void M() {

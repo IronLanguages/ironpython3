@@ -21,6 +21,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
+
     /// <summary>
     /// A global allocator that puts all of the globals into an array access.  The array is an
     /// array of PythonGlobal objects.  We then just close over the array for any inner functions.
@@ -28,7 +29,7 @@ namespace IronPython.Compiler.Ast {
     /// Once compiled a RuntimeScriptCode is produced which is closed over the entire execution
     /// environment.
     /// </summary>
-    class CollectableCompilationMode : CompilationMode {
+    internal class CollectableCompilationMode : CompilationMode {
 
         public override LightLambdaExpression ReduceAst(PythonAst instance, string name) {
             return Utils.LightLambda<Func<FunctionCode, object>>(

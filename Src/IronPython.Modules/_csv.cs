@@ -393,7 +393,7 @@ The Dialect type records CSV parsing and generation options.")]
 
             #region Parameter Setting
 
-            static int SetInt(string name, object src, bool found, int @default)
+            private static int SetInt(string name, object src, bool found, int @default)
             {
                 int result = @default;
                 if (found)
@@ -408,7 +408,7 @@ The Dialect type records CSV parsing and generation options.")]
                 return result;
             }
 
-            static bool SetBool(string name, object src, bool found, bool @default)
+            private static bool SetBool(string name, object src, bool found, bool @default)
             {
                 bool result = @default;
                 if (found)
@@ -417,7 +417,7 @@ The Dialect type records CSV parsing and generation options.")]
                 return result;
             }
 
-            static string SetChar(string name, object src, bool found, string @default)
+            private static string SetChar(string name, object src, bool found, string @default)
             {
                 string result = @default;
                 if (found)
@@ -447,7 +447,7 @@ The Dialect type records CSV parsing and generation options.")]
                 return result;
             }
 
-            static string SetString(string name, object src, bool found, string @default)
+            private static string SetString(string name, object src, bool found, string @default)
             {
                 string result = @default;
                 if (found)
@@ -651,7 +651,7 @@ in CSV format.")]
                 private StringBuilder _field = new StringBuilder();
                 private IEnumerator _iterator;
 
-                enum State
+                private enum State
                 {
                     StartRecord,
                     StartField,

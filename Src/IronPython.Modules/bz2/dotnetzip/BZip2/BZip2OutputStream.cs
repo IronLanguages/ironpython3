@@ -91,13 +91,13 @@ namespace Ionic.BZip2
     /// </summary>
     public class BZip2OutputStream : System.IO.Stream
     {
-        int totalBytesWrittenIn;
-        bool leaveOpen;
-        BZip2Compressor compressor;
-        uint combinedCRC;
-        Stream output;
-        BitWriter bw;
-        int blockSize100k;  // 0...9
+        private int totalBytesWrittenIn;
+        private bool leaveOpen;
+        private BZip2Compressor compressor;
+        private uint combinedCRC;
+        private Stream output;
+        private BitWriter bw;
+        private int blockSize100k;  // 0...9
 
         private TraceBits desiredTrace = TraceBits.Crc | TraceBits.Write;
 
@@ -277,7 +277,7 @@ namespace Ionic.BZip2
                         this.bw.TotalBytesWrittenOut);
         }
 
-        void Finish()
+        private void Finish()
         {
             // Console.WriteLine("BZip2:Finish");
 
@@ -495,7 +495,7 @@ namespace Ionic.BZip2
 
         // used only when Trace is defined
         [Flags]
-        enum TraceBits : uint
+        private enum TraceBits : uint
         {
             None         = 0,
             Crc          = 1,

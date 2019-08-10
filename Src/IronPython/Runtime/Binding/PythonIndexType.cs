@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace IronPython.Runtime.Binding {
-    enum PythonIndexType {
+    internal enum PythonIndexType {
         GetItem,
         SetItem,
         DeleteItem,

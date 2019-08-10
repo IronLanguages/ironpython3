@@ -22,7 +22,7 @@ using AstUtils = Microsoft.Scripting.Ast.Utils;
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
 
-    class PythonOperationBinder : DynamicMetaObjectBinder, IPythonSite, IExpressionSerializable {
+    internal class PythonOperationBinder : DynamicMetaObjectBinder, IPythonSite, IExpressionSerializable {
         private readonly PythonContext/*!*/ _context;
         private readonly PythonOperationKind _operation;
 

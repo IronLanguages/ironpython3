@@ -12,6 +12,6 @@ namespace IronPython.Runtime {
     /// __len__.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-    sealed class DontMapICollectionToLenAttribute : Attribute {
+    internal sealed class DontMapICollectionToLenAttribute : Attribute {
     }
 }

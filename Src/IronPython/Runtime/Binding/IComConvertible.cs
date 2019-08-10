@@ -15,7 +15,7 @@ namespace IronPython.Runtime.Binding {
     /// COM APIs.  The IronPython binders all call this interface before
     /// doing any COM binding.
     /// </summary>
-    interface IComConvertible {
+    internal interface IComConvertible {
         DynamicMetaObject GetComMetaObject();
     }
 }

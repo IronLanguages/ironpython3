@@ -9,7 +9,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
 
 namespace IronPython.Runtime {
-    abstract class CustomDictionaryStorage : DictionaryStorage {
+    internal abstract class CustomDictionaryStorage : DictionaryStorage {
         private readonly CommonDictionaryStorage/*!*/ _storage = new CommonDictionaryStorage();
 
         public override void Add(ref DictionaryStorage storage, object key, object value) {

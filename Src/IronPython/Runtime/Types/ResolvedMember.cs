@@ -10,7 +10,7 @@ namespace IronPython.Runtime.Types {
     /// <summary>
     /// Couples a MemberGroup and the name which produces the member group together
     /// </summary>
-    class ResolvedMember {
+    internal class ResolvedMember {
         public readonly string/*!*/ Name;
         public readonly MemberGroup/*!*/ Member;
         public static readonly ResolvedMember[]/*!*/ Empty = new ResolvedMember[0];

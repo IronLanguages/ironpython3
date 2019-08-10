@@ -18,7 +18,7 @@ namespace IronPython.Runtime.Binding {
     using Ast = Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    class PythonUnaryOperationBinder : UnaryOperationBinder, IPythonSite, IExpressionSerializable {
+    internal class PythonUnaryOperationBinder : UnaryOperationBinder, IPythonSite, IExpressionSerializable {
         private readonly PythonContext/*!*/ _context;
 
         public PythonUnaryOperationBinder(PythonContext/*!*/ context, ExpressionType operation)

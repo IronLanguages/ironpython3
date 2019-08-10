@@ -26,7 +26,7 @@ namespace IronPython.Runtime.Binding {
     using Ast = Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    class PythonGetMemberBinder : DynamicMetaObjectBinder, IPythonSite, IExpressionSerializable, ILightExceptionBinder {
+    internal class PythonGetMemberBinder : DynamicMetaObjectBinder, IPythonSite, IExpressionSerializable, ILightExceptionBinder {
         private readonly PythonContext/*!*/ _context;
         private readonly GetMemberOptions _options;
         private readonly string _name;
@@ -162,7 +162,7 @@ namespace IronPython.Runtime.Binding {
             return this.LightBind<T>(args, Context.Options.CompilationThreshold);
         }
 
-        class FastErrorGet<TSelfType> : FastGetBase {
+        private class FastErrorGet<TSelfType> : FastGetBase {
             private readonly Type _type;
             private readonly string _name;
             private readonly ExtensionMethodSet _extMethods;
@@ -212,14 +212,14 @@ namespace IronPython.Runtime.Binding {
 
         }
 
-        class BuiltinBase<TSelfType> : FastGetBase {
+        private class BuiltinBase<TSelfType> : FastGetBase {
             public override bool IsValid(PythonType type) {
                 // only used for built-in types, we never become invalid.
                 return true;
             }
         }
 
-        class FastMethodGet<TSelfType> : BuiltinBase<TSelfType> {
+        private class FastMethodGet<TSelfType> : BuiltinBase<TSelfType> {
             private readonly Type _type;
             private readonly BuiltinMethodDescriptor _method;
 
@@ -237,7 +237,7 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        class FastSlotGet<TSelfType> : BuiltinBase<TSelfType> {
+        private class FastSlotGet<TSelfType> : BuiltinBase<TSelfType> {
             private readonly Type _type;
             private readonly PythonTypeSlot _slot;
             private readonly PythonType _owner;
@@ -267,7 +267,7 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        class FastTypeGet<TSelfType> : BuiltinBase<TSelfType> {
+        private class FastTypeGet<TSelfType> : BuiltinBase<TSelfType> {
             private readonly Type _type;
             private readonly object _pyType;
 
@@ -285,7 +285,7 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        class FastPropertyGet<TSelfType> : BuiltinBase<TSelfType> {
+        private class FastPropertyGet<TSelfType> : BuiltinBase<TSelfType> {
             private readonly Type _type;
             private readonly Func<object, object> _propGetter;
 
@@ -449,7 +449,7 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        class PythonModuleDelegate : FastGetBase {
+        private class PythonModuleDelegate : FastGetBase {
             private readonly string _name;
 
             public PythonModuleDelegate(string name) {
@@ -491,7 +491,7 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        class NamespaceTrackerDelegate : FastGetBase {
+        private class NamespaceTrackerDelegate : FastGetBase {
             private readonly string _name;
 
             public NamespaceTrackerDelegate(string name) {
@@ -709,7 +709,7 @@ namespace IronPython.Runtime.Binding {
             return _lightThrowBinder;
         }
 
-        class LightThrowBinder : PythonGetMemberBinder {
+        private class LightThrowBinder : PythonGetMemberBinder {
             public LightThrowBinder(PythonContext/*!*/ context, string/*!*/ name, bool isNoThrow)
                 : base(context, name, isNoThrow) {
             }
@@ -728,7 +728,7 @@ namespace IronPython.Runtime.Binding {
         #endregion
     }
 
-    class CompatibilityGetMember : GetMemberBinder, IPythonSite, IInvokeOnGetBinder {
+    internal class CompatibilityGetMember : GetMemberBinder, IPythonSite, IInvokeOnGetBinder {
         private readonly PythonContext/*!*/ _context;
         private readonly bool _isNoThrow;
 
@@ -785,7 +785,7 @@ namespace IronPython.Runtime.Binding {
     }
 
     [Flags]
-    enum GetMemberOptions {
+    internal enum GetMemberOptions {
         None,
         IsNoThrow = 0x01,
         IsCaseInsensitive = 0x02

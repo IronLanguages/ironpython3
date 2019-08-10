@@ -8,7 +8,7 @@ using System.Text;
 using System.Dynamic;
 
 namespace IronPython.Runtime.Binding {
-    interface IPythonOperable {
+    internal interface IPythonOperable {
         DynamicMetaObject BindOperation(PythonOperationBinder action, DynamicMetaObject[] args);
     }
 }

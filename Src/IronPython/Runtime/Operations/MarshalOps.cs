@@ -501,7 +501,7 @@ namespace IronPython.Runtime.Operations {
                 return enc.GetString (bytes, 0, bytes.Length);
             }
 
-            object ReadInt () {
+            private object ReadInt () {
                 
                 // bytes not present are treated as being -1
                 byte b1 = ReadIntPart ();
@@ -524,7 +524,7 @@ namespace IronPython.Runtime.Operations {
                 return b;
             }
 
-            object ReadFloat () {
+            private object ReadFloat () {
                 return ReadFloatStr ();
             }
 

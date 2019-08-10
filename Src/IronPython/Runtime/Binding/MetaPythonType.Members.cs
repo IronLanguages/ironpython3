@@ -26,7 +26,7 @@ namespace IronPython.Runtime.Binding {
     using Ast = Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    partial class MetaPythonType : MetaPythonObject, IPythonGetable {
+    internal partial class MetaPythonType : MetaPythonObject, IPythonGetable {
 
         #region MetaObject Overrides
 
@@ -247,7 +247,7 @@ namespace IronPython.Runtime.Binding {
         /// <summary>
         /// Provides the normal meta binder binding.
         /// </summary>
-        class MetaGetBinderHelper : GetBinderHelper<DynamicMetaObject> {
+        private class MetaGetBinderHelper : GetBinderHelper<DynamicMetaObject> {
             private readonly DynamicMetaObjectBinder _member;
             private readonly MetaPythonType _type;
             private readonly Expression _codeContext;
@@ -504,7 +504,7 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            class SlotAccessDelegate {
+            private class SlotAccessDelegate {
                 private readonly PythonTypeSlot _slot;
                 private readonly PythonType _owner;
                 private readonly WeakReference _weakOwner;
@@ -571,7 +571,7 @@ namespace IronPython.Runtime.Binding {
                 _gets.Add(new MetaGetAttributeDelegate(_context, pts, metaType, _binder.Name).Target);
             }
 
-            class MetaGetAttributeDelegate {
+            private class MetaGetAttributeDelegate {
                 private readonly string _name;
                 private readonly PythonType _metaType;
                 private readonly WeakReference _weakMetaType;
@@ -647,7 +647,7 @@ namespace IronPython.Runtime.Binding {
                 }
             }
 
-            class ErrorBinder {
+            private class ErrorBinder {
                 private readonly string _name;
 
                 public ErrorBinder(string name) {

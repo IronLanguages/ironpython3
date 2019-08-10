@@ -95,7 +95,7 @@ namespace IronPython.Runtime.Types {
     /// Provides a CustomTracker which handles special fields which have custom
     /// behavior on get/set.
     /// </summary>
-    class CustomAttributeTracker : PythonCustomTracker {
+    internal class CustomAttributeTracker : PythonCustomTracker {
         private readonly PythonTypeSlot/*!*/ _slot;
         private readonly Type/*!*/ _declType;
         private readonly string/*!*/ _name;
@@ -129,7 +129,7 @@ namespace IronPython.Runtime.Types {
         }
     }
 
-    class ClassMethodTracker : PythonCustomTracker {
+    internal class ClassMethodTracker : PythonCustomTracker {
         private MethodTracker/*!*/[]/*!*/ _trackers;
         
         public ClassMethodTracker(MemberGroup/*!*/ group) {
@@ -169,7 +169,7 @@ namespace IronPython.Runtime.Types {
         }
     }
 
-    class OperatorTracker : PythonCustomTracker {
+    internal class OperatorTracker : PythonCustomTracker {
         private MethodTracker/*!*/[]/*!*/ _trackers;
         private bool _reversed;
         private string/*!*/ _name;

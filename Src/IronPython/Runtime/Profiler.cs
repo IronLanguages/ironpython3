@@ -31,12 +31,12 @@ namespace IronPython.Runtime {
         private readonly List<long[,]>/*!*/ _profiles;
         private long[,] _profileData;
 
-        const int _initialSize = 100; // we double each time we run out of space
+        private const int _initialSize = 100; // we double each time we run out of space
 
         // Indexes into profile data
-        const int TimeInBody = 0;
-        const int TimeInChildMethods = 1;
-        const int NumberOfCalls = 2;
+        private const int TimeInBody = 0;
+        private const int TimeInChildMethods = 1;
+        private const int NumberOfCalls = 2;
 
         [MultiRuntimeAware]
         private static readonly object _profileKey = new object();

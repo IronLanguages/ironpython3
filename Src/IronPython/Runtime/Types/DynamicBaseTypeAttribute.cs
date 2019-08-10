@@ -17,6 +17,6 @@ namespace IronPython.Runtime.Types {
     ///     Virtual methods exposed to Python need to support checking the types dictionary for invocations
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple=false, Inherited=true)]
-    sealed class DynamicBaseTypeAttribute : Attribute {
+    internal sealed class DynamicBaseTypeAttribute : Attribute {
     }
 }

@@ -6,7 +6,7 @@ using System.Text;
 
 namespace IronPythonTest.Util {
     public class TestManifest {
-        IniParser manifest;
+        private IniParser manifest;
 
         public TestManifest(Type parent) {
             var file = parent.Assembly.GetManifestResourceStream($"IronPythonTest.Cases.{parent.Name}Manifest.ini");
@@ -30,8 +30,8 @@ namespace IronPythonTest.Util {
     }
 
     public class TestOptions {
-        string testName;
-        IniParser manifest;
+        private string testName;
+        private IniParser manifest;
 
         public TestOptions(IniParser manifest, string testName) {
             this.manifest = manifest;

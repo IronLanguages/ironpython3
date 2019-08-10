@@ -20,7 +20,7 @@ namespace IronPython.Runtime.Binding {
     /// Fallback action for performing a new() on a foreign IDynamicMetaObjectProvider.  used
     /// when call falls back.
     /// </summary>
-    class CreateFallback : CreateInstanceBinder, IPythonSite {
+    internal class CreateFallback : CreateInstanceBinder, IPythonSite {
         private readonly CompatibilityInvokeBinder/*!*/ _fallback;
 
         public CreateFallback(CompatibilityInvokeBinder/*!*/ realFallback, CallInfo /*!*/ callInfo)

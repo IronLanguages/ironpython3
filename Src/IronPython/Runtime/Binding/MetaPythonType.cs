@@ -18,7 +18,7 @@ namespace IronPython.Runtime.Binding {
     using Ast = Expression;
     using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-    partial class MetaPythonType : MetaPythonObject, IPythonConvertible {
+    internal partial class MetaPythonType : MetaPythonObject, IPythonConvertible {
         public MetaPythonType(Expression/*!*/ expression, BindingRestrictions/*!*/ restrictions, PythonType/*!*/ value)
             : base(expression, BindingRestrictions.Empty, value) {
             Assert.NotNull(value);

@@ -100,8 +100,8 @@ namespace Ionic.BZip2
         private int outBlockFillThreshold;
         private CompressionState cstate;
         private readonly Ionic.Crc.CRC32 crc = new Ionic.Crc.CRC32(true);
-        BitWriter bw;
-        int runs;
+        private BitWriter bw;
+        private int runs;
 
         /*
          * The following three vars are used when sorting. If too many long
@@ -160,8 +160,7 @@ namespace Ionic.BZip2
             Reset();
         }
 
-
-        void Reset()
+        private void Reset()
         {
             // initBlock();
             this.crc.Reset();

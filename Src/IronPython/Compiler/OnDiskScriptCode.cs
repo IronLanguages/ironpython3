@@ -18,7 +18,7 @@ namespace IronPython.Compiler {
     /// <summary>
     /// A ScriptCode which has been loaded from an assembly which is saved on disk.
     /// </summary>
-    class OnDiskScriptCode : RunnableScriptCode {
+    internal class OnDiskScriptCode : RunnableScriptCode {
         private readonly LookupCompilationDelegate _target;
         private CodeContext _optimizedContext;
         private readonly string _moduleName;

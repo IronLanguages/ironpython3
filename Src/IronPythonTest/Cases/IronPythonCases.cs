@@ -14,7 +14,7 @@ namespace IronPythonTest.Cases {
         }
     }
 
-    class IronPythonCaseGenerator : CommonCaseGenerator<IronPythonCases> {
+    internal class IronPythonCaseGenerator : CommonCaseGenerator<IronPythonCases> {
         protected override IEnumerable<TestInfo> GetTests() {
             var root = CaseExecuter.FindRoot();
 

@@ -13,7 +13,7 @@ using Microsoft.Scripting.Runtime;
 using System.Runtime.CompilerServices;
 
 namespace IronPython.Runtime.Binding {
-    interface IFastSettable {
+    internal interface IFastSettable {
         T MakeSetBinding<T>(CallSite<T> site, PythonSetMemberBinder/*!*/ binder) where T : class;
     }
 }

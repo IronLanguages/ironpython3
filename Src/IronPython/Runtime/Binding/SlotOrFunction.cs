@@ -30,7 +30,7 @@ namespace IronPython.Runtime.Binding {
     /// 
     /// TODO: We could probably do a specific binding to the object if it's another IDyanmicObject.
     /// </summary>
-    sealed class SlotOrFunction {
+    internal sealed class SlotOrFunction {
         private readonly BindingTarget _function;
         private readonly DynamicMetaObject/*!*/ _target;
         private readonly PythonTypeSlot _slot;

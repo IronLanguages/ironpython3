@@ -581,7 +581,7 @@ namespace IronPython.Compiler.Ast {
         /// know about the tree which gets generated.  For modules we 
         /// immediately have the value because it always comes in as a parameter.
         /// </summary>
-        class DelayedFunctionCode : MSAst.Expression {
+        private class DelayedFunctionCode : MSAst.Expression {
             private MSAst.Expression _funcCode;
 
             public override bool CanReduce {
@@ -776,7 +776,7 @@ namespace IronPython.Compiler.Ast {
         /// Without this extra node profiling would force reduction of the node
         /// and we wouldn't have setup our constant access correctly yet.
         /// </summary>
-        class DelayedProfiling : MSAst.Expression {
+        private class DelayedProfiling : MSAst.Expression {
             private readonly ScopeStatement _ast;
             private readonly MSAst.Expression _body;
             private readonly MSAst.ParameterExpression _tick;

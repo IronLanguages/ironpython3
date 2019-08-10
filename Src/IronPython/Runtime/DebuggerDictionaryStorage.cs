@@ -24,8 +24,7 @@ namespace IronPython.Runtime {
 
             _hidden = new CommonDictionaryStorage();
             foreach (var key in data.Keys) {
-                string strKey = key as string;
-                if (strKey != null && strKey.Length > 0 && strKey[0] == '$') {
+                if (key is string strKey && strKey.Length > 0 && strKey[0] == '$') {
                     _hidden.Add(strKey, null);
                 }
             }

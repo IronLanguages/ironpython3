@@ -31,8 +31,7 @@ namespace IronPython.Runtime {
         }
 
         public override bool Contains(object key) {
-            object dummy;
-            if (key is string && TryGetExtraValue((string)key, out dummy)) {
+            if (key is string && TryGetExtraValue((string)key, out object dummy)) {
                 return dummy != Uninitialized.Instance;
             }
 

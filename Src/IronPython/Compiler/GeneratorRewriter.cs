@@ -35,7 +35,7 @@ namespace IronPython.Compiler {
 
         // The one return label, or more than one if we're in a finally
         private readonly Stack<LabelTarget> _returnLabels = new Stack<LabelTarget>();
-        private ParameterExpression _gotoRouter;
+        private readonly ParameterExpression _gotoRouter;
         private bool _inTryWithFinally;
 
         private readonly List<YieldMarker> _yields = new List<YieldMarker>();
@@ -200,7 +200,7 @@ namespace IronPython.Compiler {
             return DelayedAssign(variable, value);
         }
 
-        private struct GotoRewriteInfo {
+        private readonly struct GotoRewriteInfo {
             public readonly Expression Variable;
             public readonly LabelTarget VoidTarget;
 

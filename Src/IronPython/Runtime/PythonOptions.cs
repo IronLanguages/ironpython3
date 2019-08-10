@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 
 using Microsoft.Scripting;
 
-namespace IronPython {
+namespace IronPython.Runtime {
 
     [Serializable, CLSCompliant(true)]
     public sealed class PythonOptions : LanguageOptions {

@@ -164,8 +164,7 @@ namespace IronPython.Runtime {
                             // a little ugly - we only run callbacks that aren't a part
                             // of cyclic trash.  but classes use a single field for
                             // finalization & GC - and that's always cyclic, so we need to special case it.
-                            InstanceFinalizer fin = ci.Callback as InstanceFinalizer;
-                            if (fin != null) {
+                            if (ci.Callback is InstanceFinalizer fin) {
                                 // Going through PythonCalls / Rules requires the types be public.
                                 // Explicit check so that we can keep InstanceFinalizer internal.
                                 fin.CallDirect(DefaultContext.Default);
@@ -201,21 +200,17 @@ namespace IronPython.Runtime {
     /// this does as well and this will get finalized.  
     /// </summary>
     internal sealed class InstanceFinalizer {
-        private object _instance;
+        private readonly object _instance;
 
         internal InstanceFinalizer(CodeContext/*!*/ context, object inst) {
             Debug.Assert(inst != null);
-
             _instance = inst;
         }
 
         // This corresponds to a __del__ method on a class. 
         // Callers will do a direct invoke so that instanceFinalizer can stay non-public.
         internal object CallDirect(CodeContext context) {
-            object o;
-
-            PythonTypeOps.TryInvokeUnaryOperator(context, _instance, "__del__", out o);
-
+            PythonTypeOps.TryInvokeUnaryOperator(context, _instance, "__del__", out _);
             return null;
         }
     }

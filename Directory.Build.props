@@ -88,8 +88,7 @@
     <BaseOutputPath>$(RootDir)bin\$(Configuration)</BaseOutputPath>
     <OutputPath>$(BaseOutputPath)</OutputPath>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>618;429;219;1717;162;414</WarningsNotAsErrors>
-    <NoWarn>1591;1584;1574;1685;1573</NoWarn>
+    <NoWarn>1573;1591</NoWarn>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <PlatformTarget>AnyCPU</PlatformTarget>

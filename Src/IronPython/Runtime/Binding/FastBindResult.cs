@@ -14,7 +14,7 @@ using Microsoft.Scripting.Runtime;
 namespace IronPython.Runtime.Binding {
     using Ast = Expression;
 
-    internal struct FastBindResult<T> where T : class {
+    internal readonly struct FastBindResult<T> where T : class {
         public readonly T Target;
         public readonly bool ShouldCache;
 

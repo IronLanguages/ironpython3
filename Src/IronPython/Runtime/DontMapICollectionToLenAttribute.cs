@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -12,6 +10,5 @@ namespace IronPython.Runtime {
     /// __len__.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-    internal sealed class DontMapICollectionToLenAttribute : Attribute {
-    }
+    internal sealed class DontMapICollectionToLenAttribute : Attribute { }
 }

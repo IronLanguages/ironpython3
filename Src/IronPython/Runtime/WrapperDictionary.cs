@@ -10,7 +10,7 @@ using Microsoft.Scripting.Actions;
 namespace IronPython.Runtime {
     [Serializable]
     internal class WrapperDictionaryStorage : DictionaryStorage {
-        private TopNamespaceTracker/*!*/ _data;
+        private readonly TopNamespaceTracker/*!*/ _data;
 
         public WrapperDictionaryStorage(TopNamespaceTracker/*!*/ data) {
             _data = data;
@@ -25,8 +25,7 @@ namespace IronPython.Runtime {
         }
 
         public override bool Contains(object key) {
-            string strKey = key as string;
-            if (strKey != null) {
+            if (key is string strKey) {
                 return _data.ContainsKey(strKey);
             }
 
@@ -38,8 +37,7 @@ namespace IronPython.Runtime {
         }
 
         public override bool TryGetValue(object key, out object value) {
-            string strKey = key as string;
-            if (strKey != null) {
+            if (key is string strKey) {
                 return _data.TryGetValue(strKey, out value);
             }
 

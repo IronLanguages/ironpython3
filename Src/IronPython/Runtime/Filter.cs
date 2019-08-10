@@ -5,41 +5,39 @@
 using System.Collections;
 
 using Microsoft.Scripting.Runtime;
+
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 namespace IronPython.Runtime {
 
     [PythonType("filter")]
-    [Documentation(@"filter(function or None, sequence) -> list, tuple, or string
+    [Documentation(@"filter(function or None, iterable) -> filter object
 
-Return those items of sequence for which function(item) is true.  If
-function is None, return the items that are true.  If sequence is a tuple
-or string, return the same type, else return a list.")]
+Return an iterator yielding those items of iterable for which function(item)
+is true. If function is None, return the items that are true.")]
     public class Filter : IEnumerable {
-        private CodeContext _context;
-        private object _function;
-        private object _iterable;
+        private readonly CodeContext _context;
+        private readonly object _function;
+        private readonly object _iterable;
 
         public Filter(CodeContext context, object function, object iterable) {
             _context = context;
             _function = function;
             _iterable = iterable;
 
-            IEnumerator e;
-            if(!PythonOps.TryGetEnumerator(context, iterable, out e)) {
+            if (!PythonOps.TryGetEnumerator(context, iterable, out _)) {
                 throw PythonOps.TypeErrorForNotIterable(iterable);
             }
         }
 
         IEnumerator IEnumerable.GetEnumerator() {
-
             if (_function != null && !PythonOps.IsCallable(_context, _function)) {
                 throw PythonOps.UncallableError(_function);
             }
 
             IEnumerator e = PythonOps.GetEnumerator(_context, _iterable);
-            while(e.MoveNext()) {
+            while (e.MoveNext()) {
                 object o = e.Current;
                 object t = (_function != null) ? PythonCalls.Call(_context, _function, o) : o;
 

@@ -342,11 +342,11 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Encapsulates profiler data to return to clients
         /// </summary>
-        public struct Data {
-            public string Name;
-            public long InclusiveTime;
-            public long ExclusiveTime;
-            public int Calls;
+        public readonly struct Data {
+            public readonly string Name;
+            public readonly long InclusiveTime;
+            public readonly long ExclusiveTime;
+            public readonly int Calls;
 
             public Data(string _name, long _inclusive, long _exclusive, int _calls) {
                 Name = _name;

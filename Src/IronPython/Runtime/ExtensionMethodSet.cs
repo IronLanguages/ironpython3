@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -30,7 +29,7 @@ namespace IronPython.Runtime {
     internal sealed class ExtensionMethodSet : IEquatable<ExtensionMethodSet> {
         private PythonExtensionBinder _extBinder;
         private Dictionary<Assembly, AssemblyLoadInfo>/*!*/ _loadedAssemblies;
-        private int _id;
+        private readonly int _id;
         private static int _curId;
 
         public static readonly ExtensionMethodSet Empty = new ExtensionMethodSet();

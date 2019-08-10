@@ -537,11 +537,10 @@ class RawConfigParser(MutableMapping):
     """ConfigParser that does not do interpolation."""
 
     # Regular expressions for parsing section headers and options
-    # IronPython: https://github.com/IronLanguages/ironpython3/issues/546
     _SECT_TMPL = r"""
-        \[                                 #
+        \[                                 # [
         (?P<header>[^]]+)                  # very permissive!
-        \]                                 #
+        \]                                 # ]
         """
     _OPT_TMPL = r"""
         (?P<option>.*?)                    # very permissive!

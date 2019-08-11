@@ -79,6 +79,7 @@
     <Rule Id="CA3075" Action="Info" />
     <Rule Id="CA5350" Action="None" />
     <Rule Id="CA5351" Action="None" />
+    <Rule Id="CA5359" Action="Info" />
     <Rule Id="CA5366" Action="None" /> <!-- Use XmlReader For DataSet Read Xml -->
     <Rule Id="CA5369" Action="None" /> <!-- Use XmlReader For Deserialize -->
     <Rule Id="CA5371" Action="None" /> <!-- Use XmlReader For Schema Read -->

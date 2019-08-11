@@ -238,9 +238,9 @@ namespace IronPython.Runtime {
                 _curCh = _str[_index++];
                 res = _context.LanguageContext.ConvertToInt32(GetData(_dataIndex++));
             } else {
-                if (Char.IsDigit(_curCh)) {
+                if (char.IsDigit(_curCh)) {
                     res = 0;
-                    while (Char.IsDigit(_curCh) && _index < this._str.Length) {
+                    while (char.IsDigit(_curCh) && _index < this._str.Length) {
                         res = res * 10 + ((int)(_curCh - '0'));
                         _curCh = _str[_index++];
                     }
@@ -258,7 +258,7 @@ namespace IronPython.Runtime {
                 _opts.FieldWidth = fieldWidth;
             }
 
-            if (_opts.FieldWidth == Int32.MaxValue) {
+            if (_opts.FieldWidth == int.MaxValue) {
                 throw PythonOps.MemoryError("not enough memory for field width");
             }
         }
@@ -431,7 +431,7 @@ namespace IronPython.Runtime {
         private char AdjustForG(char type, double v) {
             if (type != 'G' && type != 'g')
                 return type;
-            if (Double.IsNaN(v) || Double.IsInfinity(v))
+            if (double.IsNaN(v) || double.IsInfinity(v))
                 return type;
 
             double absV = Math.Abs(v);
@@ -587,7 +587,7 @@ namespace IronPython.Runtime {
             if (fPos && (_opts.SignChar || _opts.Space)) {
                 // produce [' '|'+']0000digits
                 // first get 0 padded number to field width
-                string res = String.Format(_nfi, "{0:" + format + _opts.FieldWidth.ToString() + "}", val);
+                string res = string.Format(_nfi, "{0:" + format + _opts.FieldWidth.ToString() + "}", val);
 
                 char signOrSpace = _opts.SignChar ? '+' : ' ';
                 // then if we ended up with a leading zero replace it, otherwise
@@ -599,7 +599,7 @@ namespace IronPython.Runtime {
                 }
                 _buf.Append(res);
             } else {
-                string res = String.Format(_nfi, "{0:" + format + _opts.FieldWidth.ToString() + "}", val);
+                string res = string.Format(_nfi, "{0:" + format + _opts.FieldWidth.ToString() + "}", val);
 
                 // Difference: 
                 //   System.String.Format("{0:D3}", -1)      '-001'
@@ -664,7 +664,7 @@ namespace IronPython.Runtime {
                 val = 0.0;
             }
             if (fPos && (_opts.SignChar || _opts.Space)) {
-                string strval = (_opts.SignChar ? "+" : " ") + String.Format(_nfi, "{0:" + format + _opts.Precision + "}", val);
+                string strval = (_opts.SignChar ? "+" : " ") + string.Format(_nfi, "{0:" + format + _opts.Precision + "}", val);
                 strval = adjustExponent(strval);
                 if (strval.Length < _opts.FieldWidth) {
                     _buf.Append(' ', _opts.FieldWidth - strval.Length);
@@ -675,7 +675,7 @@ namespace IronPython.Runtime {
                 _buf.Append(strval);
             } else if (_opts.Precision < 100) {
                 //CLR formatting has a maximum precision of 100.
-                string num = String.Format(_nfi, "{0," + _opts.FieldWidth + ":" + format + _opts.Precision + "}", val);
+                string num = string.Format(_nfi, "{0," + _opts.FieldWidth + ":" + format + _opts.Precision + "}", val);
                 num = adjustExponent(num);
                 if (num.Length < _opts.FieldWidth) {
                     _buf.Append(' ', _opts.FieldWidth - num.Length);
@@ -690,7 +690,7 @@ namespace IronPython.Runtime {
 
         private void AppendNumericDecimal(object val, bool fPos, char format) {
             if (fPos && (_opts.SignChar || _opts.Space)) {
-                string strval = (_opts.SignChar ? "+" : " ") + String.Format(_nfi, "{0:" + format + "}", val);
+                string strval = (_opts.SignChar ? "+" : " ") + string.Format(_nfi, "{0:" + format + "}", val);
                 if (strval.Length < _opts.FieldWidth) {
                     _buf.Append(' ', _opts.FieldWidth - strval.Length);
                 }
@@ -699,7 +699,7 @@ namespace IronPython.Runtime {
                 _buf.AppendFormat(_nfi, "{0," + _opts.FieldWidth + ":" + format + "}", val);
             } else if (_opts.Precision < 100) {
                 //CLR formatting has a maximum precision of 100.
-                _buf.Append(String.Format(_nfi, "{0," + _opts.FieldWidth + ":" + format + _opts.Precision + "}", val));
+                _buf.Append(string.Format(_nfi, "{0," + _opts.FieldWidth + ":" + format + _opts.Precision + "}", val));
             } else {
                 AppendNumericCommon(val, format);
             }
@@ -715,10 +715,10 @@ namespace IronPython.Runtime {
             StringBuilder res = new StringBuilder();
             res.AppendFormat("{0:" + format + "}", val);
             if (res.Length < _opts.Precision) {
-                res.Insert(0, new String('0', _opts.Precision - res.Length));
+                res.Insert(0, new string('0', _opts.Precision - res.Length));
             }
             if (res.Length < _opts.FieldWidth) {
-                res.Insert(0, new String(' ', _opts.FieldWidth - res.Length));
+                res.Insert(0, new string(' ', _opts.FieldWidth - res.Length));
             }
             _buf.Append(res.ToString());
         }
@@ -740,8 +740,8 @@ namespace IronPython.Runtime {
 
         private void AppendLeftAdj(object val, bool fPos, char type) {
             var str = (type == 'e' || type == 'E') ?
-                adjustExponent(String.Format(_nfi, "{0:" + type + _opts.Precision + "}", val)):
-                String.Format(_nfi, "{0:" + type + "}", val);
+                adjustExponent(string.Format(_nfi, "{0:" + type + _opts.Precision + "}", val)):
+                string.Format(_nfi, "{0:" + type + "}", val);
             if (fPos) {
                 if (_opts.SignChar) str = '+' + str;
                 else if (_opts.Space) str = ' ' + str;
@@ -795,7 +795,7 @@ namespace IronPython.Runtime {
             while (val != 0) {
                 int digit = val % radix;
                 if (digit < 10) str.Append((char)((digit) + '0'));
-                else if (Char.IsLower(format)) str.Append((char)((digit - 10) + 'a'));
+                else if (char.IsLower(format)) str.Append((char)((digit - 10) + 'a'));
                 else str.Append((char)((digit - 10) + 'A'));
 
                 val /= radix;
@@ -866,7 +866,7 @@ namespace IronPython.Runtime {
             StringBuilder str = new StringBuilder();
             // use .NETs faster conversion if we can
             if (radix == 16) {
-                AppendNumberReversed(str, Char.IsLower(format) ? val.ToString("x") : val.ToString("X"));
+                AppendNumberReversed(str, char.IsLower(format) ? val.ToString("x") : val.ToString("X"));
             } else if (radix == 10) {
                 AppendNumberReversed(str, val.ToString());
             } else {
@@ -874,7 +874,7 @@ namespace IronPython.Runtime {
                 while (val != 0) {
                     int digit = (int)(val % radix);
                     if (digit < 10) str.Append((char)((digit) + '0'));
-                    else if (Char.IsLower(format)) str.Append((char)((digit - 10) + 'a'));
+                    else if (char.IsLower(format)) str.Append((char)((digit - 10) + 'a'));
                     else str.Append((char)((digit - 10) + 'A'));
 
                     val /= radix;

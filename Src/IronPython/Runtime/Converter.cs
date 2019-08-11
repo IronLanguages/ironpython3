@@ -231,13 +231,13 @@ namespace IronPython.Runtime {
             return false;
         }
 
-        internal static bool TryConvertToChar(object value, out Char result) {
+        internal static bool TryConvertToChar(object value, out char result) {
             object res = _tryCharSite.Target(_tryCharSite, value);
             if (res != null) {
-                result = (Char)res;
+                result = (char)res;
                 return true;
             }
-            result = default(Char);
+            result = default;
             return false;
         }
 
@@ -332,7 +332,7 @@ namespace IronPython.Runtime {
                 }
             }
 
-            index = res.HasValue ? res.Value : 0;
+            index = res ?? default;
             return res.HasValue;
         }
 

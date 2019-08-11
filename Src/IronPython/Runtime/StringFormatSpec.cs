@@ -67,7 +67,7 @@ namespace IronPython.Runtime {
                     case '=':
                     case '^':
                         fill = formatSpec[0];
-                        if (fill == Char.MinValue) {
+                        if (fill == char.MinValue) {
                             fill = ' ';
                         }
                         align = formatSpec[1];
@@ -116,7 +116,7 @@ namespace IronPython.Runtime {
 
             // read width
             if (curOffset != formatSpec.Length &&
-                Char.IsDigit(formatSpec[curOffset])) {
+                char.IsDigit(formatSpec[curOffset])) {
                 width = ParseInt(formatSpec, ref curOffset);
             }
 
@@ -133,7 +133,7 @@ namespace IronPython.Runtime {
                 curOffset++;
 
                 if (curOffset == formatSpec.Length ||
-                    !Char.IsDigit(formatSpec[curOffset])) {
+                    !char.IsDigit(formatSpec[curOffset])) {
                     throw PythonOps.ValueError("Format specifier missing precision");
                 }
 
@@ -323,10 +323,10 @@ namespace IronPython.Runtime {
             int start = curOffset;
             do {
                 curOffset++;
-            } while (curOffset < formatSpec.Length && Char.IsDigit(formatSpec[curOffset]));
+            } while (curOffset < formatSpec.Length && char.IsDigit(formatSpec[curOffset]));
 
             if (start != curOffset) {
-                value = Int32.Parse(formatSpec.Substring(start, curOffset - start));
+                value = int.Parse(formatSpec.Substring(start, curOffset - start));
             }
             return value;
         }

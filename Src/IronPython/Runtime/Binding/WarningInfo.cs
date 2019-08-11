@@ -2,18 +2,14 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
-
-using System;
 using System.Dynamic;
-
-using Microsoft.Scripting.Utils;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
+using System.Linq.Expressions;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Actions.Calls;
+using Microsoft.Scripting.Utils;
+
+using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Binding {
     internal class WarningInfo {
@@ -21,12 +17,7 @@ namespace IronPython.Runtime.Binding {
         private readonly PythonType/*!*/ _type;
         private readonly Expression _condition;
 
-        public WarningInfo(PythonType/*!*/ type, string/*!*/ message) {
-            _message = message;
-            _type = type;
-        }
-
-        public WarningInfo(PythonType/*!*/ type, string/*!*/ message, Expression condition) {
+        public WarningInfo(PythonType/*!*/ type, string/*!*/ message, Expression condition = null) {
             _message = message;
             _type = type;
             _condition = condition;

@@ -34,12 +34,11 @@ namespace IronPython.Runtime {
 
         public void __init__(PythonType type, object obj) {
             if (obj != null) {
-                PythonType dt = obj as PythonType;
                 if (PythonOps.IsInstance(obj, type)) {
                     _thisClass = type;
                     _self = obj;
                     _selfClass = DynamicHelpers.GetPythonType(obj);
-                } else if (dt != null && dt.IsSubclassOf(type)) {
+                } else if (obj is PythonType dt && dt.IsSubclassOf(type)) {
                     _thisClass = type;
                     _selfClass = obj;
                     _self = obj;
@@ -84,10 +83,8 @@ namespace IronPython.Runtime {
         [SpecialName]
         public object GetCustomMember(CodeContext context, string name) {
             // first find where we are in the mro...
-            PythonType mroType = _selfClass as PythonType;
-
             object value;
-            if (mroType != null) { // can be null if the user does super.__new__
+            if (_selfClass is PythonType mroType) { // can be null if the user does super.__new__
                 IList<PythonType> mro = mroType.ResolutionOrder;
 
                 int lookupType;
@@ -140,10 +137,8 @@ namespace IronPython.Runtime {
         }
 
         private bool TryLookupInBase(CodeContext context, PythonType pt, string name, object self, out object value) {
-            PythonTypeSlot dts;
-
             // new-style class, or reflected type, lookup slot
-            if (pt.TryLookupSlot(context, name, out dts) && 
+            if (pt.TryLookupSlot(context, name, out PythonTypeSlot dts) &&
                 dts.TryGetValue(context, self, DescriptorContext, out value)) {
                 return true;
             }

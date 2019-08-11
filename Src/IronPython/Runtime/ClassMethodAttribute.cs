@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -12,6 +10,5 @@ namespace IronPython.Runtime {
     /// the method will then be passed as the first argument.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-    public sealed class ClassMethodAttribute : Attribute {
-    }
+    public sealed class ClassMethodAttribute : Attribute { }
 }

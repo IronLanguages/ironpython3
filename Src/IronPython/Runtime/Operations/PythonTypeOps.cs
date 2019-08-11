@@ -430,10 +430,10 @@ namespace IronPython.Runtime.Operations {
         }
 
 #pragma warning disable 414  // unused fields - they're used by GetHashCode()
-        internal struct BuiltinFunctionKey {
-            private Type DeclaringType;
-            private ReflectionCache.MethodBaseCache Cache;
-            private FunctionType FunctionType;
+        internal readonly struct BuiltinFunctionKey {
+            private readonly Type DeclaringType;
+            private readonly ReflectionCache.MethodBaseCache Cache;
+            private readonly FunctionType FunctionType;
 
             public BuiltinFunctionKey(Type declaringType, ReflectionCache.MethodBaseCache cache, FunctionType funcType) {
                 Cache = cache;

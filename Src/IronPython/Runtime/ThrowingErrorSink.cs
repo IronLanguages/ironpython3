@@ -2,16 +2,15 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Dynamic;
-using IronPython.Runtime.Operations;
 using Microsoft.Scripting;
+
+using IronPython.Runtime.Operations;
 
 namespace IronPython.Runtime {
     internal class ThrowingErrorSink : ErrorSink {
         public static new readonly ThrowingErrorSink/*!*/ Default = new ThrowingErrorSink();
 
-        private ThrowingErrorSink() {
-        }
+        private ThrowingErrorSink() { }
 
         public override void Add(SourceUnit sourceUnit, string message, SourceSpan span, int errorCode, Severity severity) {
             if (severity == Severity.Warning) {

@@ -4,15 +4,11 @@
 
 using System;
 
-namespace IronPython {
+namespace IronPython.Runtime {
     /// <summary>
     /// For IList<byte/> arguments: Marks that the argument is typed to accept a bytes or
     /// bytearray object.  This attribute disallows passing a Python list object and
-    /// auto-applying our generic conversion.  It also enables conversion of a string to
-    /// a IList of byte in IronPython 2.6.
-    /// 
-    /// For string arguments: Marks that the argument is typed to accept a bytes object
-    /// as well. (2.6 only)
+    /// auto-applying our generic conversion.
     /// </summary>
     [AttributeUsage(AttributeTargets.Parameter)]
     public sealed class BytesConversionAttribute : Attribute { }

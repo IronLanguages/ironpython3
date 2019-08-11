@@ -61,8 +61,7 @@ namespace IronPython.Runtime {
         }
 
         public static object get(PythonDictionary self, object key, object defaultValue = null) {
-            object ret;
-            if (self.TryGetValueNoMissing(key, out ret)) return ret;
+            if (self.TryGetValueNoMissing(key, out object ret)) return ret;
             return defaultValue;
         }
 
@@ -92,8 +91,7 @@ namespace IronPython.Runtime {
 
         public static object pop(PythonDictionary self, object key) {
             //??? perf won't match expected Python perf
-            object ret;
-            if (self.TryGetValueNoMissing(key, out ret)) {
+            if (self.TryGetValueNoMissing(key, out object ret)) {
                 self.RemoveDirect(key);
                 return ret;
             } else {
@@ -103,8 +101,7 @@ namespace IronPython.Runtime {
 
         public static object pop(PythonDictionary self, object key, object defaultValue) {
             //??? perf won't match expected Python perf
-            object ret;
-            if (self.TryGetValueNoMissing(key, out ret)) {
+            if (self.TryGetValueNoMissing(key, out object ret)) {
                 self.RemoveDirect(key);
                 return ret;
             } else {
@@ -128,8 +125,7 @@ namespace IronPython.Runtime {
         }
 
         public static object setdefault(PythonDictionary self, object key, object defaultValue) {
-            object ret;
-            if (self.TryGetValueNoMissing(key, out ret)) return ret;
+            if (self.TryGetValueNoMissing(key, out object ret)) return ret;
             self.SetItem(key, defaultValue);
             return defaultValue;
         }
@@ -175,11 +171,9 @@ namespace IronPython.Runtime {
         #region Dictionary Helper APIs
 
         internal static bool TryGetValueVirtual(CodeContext context, PythonDictionary self, object key, ref object DefaultGetItem, out object value) {
-            IPythonObject sdo = self as IPythonObject;
-            if (sdo != null) {
+            if (self is IPythonObject sdo) {
                 Debug.Assert(sdo != null);
                 PythonType myType = sdo.PythonType;
-                object ret;
                 PythonTypeSlot dts;
 
                 if (DefaultGetItem == null) {
@@ -191,7 +185,7 @@ namespace IronPython.Runtime {
 
                 // check and see if it's overridden
                 if (myType.TryLookupSlot(context, "__getitem__", out dts)) {
-                    dts.TryGetValue(context, self, myType, out ret);
+                    dts.TryGetValue(context, self, myType, out object ret);
 
                     if (ret != DefaultGetItem) {
                         // subtype of dict that has overridden __getitem__

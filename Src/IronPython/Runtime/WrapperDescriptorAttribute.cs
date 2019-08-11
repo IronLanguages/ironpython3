@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace IronPython.Runtime {
     /// <summary>
@@ -13,6 +11,5 @@ namespace IronPython.Runtime {
     /// instances of type.  For example type.__bases__.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = true, Inherited = false)]
-    internal sealed class WrapperDescriptorAttribute : Attribute {
-    }
+    internal sealed class WrapperDescriptorAttribute : Attribute { }
 }

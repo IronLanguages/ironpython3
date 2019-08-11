@@ -37,8 +37,7 @@ namespace IronPython.Runtime {
         public void AddNoLock(object key, object value) {
             EnsureData();
 
-            string strKey = key as string;
-            if (strKey != null) {
+            if (key is string strKey) {
                 _data[strKey] = value;
             } else {
                 GetObjectDictionary()[key] = value;
@@ -49,8 +48,7 @@ namespace IronPython.Runtime {
             if (_data == null) return false;
 
             lock (this) {
-                string strKey = key as string;
-                if (strKey != null) {
+                if (key is string strKey) {
                     return _data.ContainsKey(strKey);
                 } else {
                     Dictionary<object, object> dict = TryGetObjectDictionary();
@@ -71,8 +69,7 @@ namespace IronPython.Runtime {
             if (_data == null) return false;
 
             lock (this) {
-                string strKey = key as string;
-                if (strKey != null) {
+                if (key is string strKey) {
                     return _data.Remove(strKey);
                 } else {
                     Dictionary<object, object> dict = TryGetObjectDictionary();
@@ -88,8 +85,7 @@ namespace IronPython.Runtime {
         public override bool TryGetValue(object key, out object value) {
             if (_data != null) {
                 lock (this) {
-                    string strKey = key as string;
-                    if (strKey != null) {
+                    if (key is string strKey) {
                         return _data.TryGetValue(strKey, out value);
                     }
 
@@ -133,7 +129,7 @@ namespace IronPython.Runtime {
             if (_data != null) {
                 lock (this) {
                     foreach (KeyValuePair<string, object> kvp in _data) {
-                        if (String.IsNullOrEmpty(kvp.Key)) continue;
+                        if (string.IsNullOrEmpty(kvp.Key)) continue;
 
                         res.Add(new KeyValuePair<object, object>(kvp.Key, kvp.Value));
                     }
@@ -164,8 +160,7 @@ namespace IronPython.Runtime {
 
         private Dictionary<object, object> TryGetObjectDictionary() {
             if (_data != null) {
-                object dict;
-                if (_data.TryGetValue(string.Empty, out dict)) {
+                if (_data.TryGetValue(string.Empty, out object dict)) {
                     return (Dictionary<object, object>)dict;
                 }
             }
@@ -177,12 +172,11 @@ namespace IronPython.Runtime {
             lock (this) {
                 EnsureData();
 
-                object dict;
-                if (_data.TryGetValue(string.Empty, out dict)) {
+                if (_data.TryGetValue(string.Empty, out object dict)) {
                     return (Dictionary<object, object>)dict;
                 }
 
-                Dictionary<object, object> res = new Dictionary<object, object>();
+                var res = new Dictionary<object, object>();
                 _data[string.Empty] = res;
 
                 return res;

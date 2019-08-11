@@ -745,9 +745,9 @@ namespace IronPython.Compiler.Ast {
             _funcCode = null;
         }
 
-        internal struct ClosureInfo {
-            public PythonVariable Variable;
-            public bool AccessedInScope;
+        internal readonly struct ClosureInfo {
+            public readonly PythonVariable Variable;
+            public readonly bool AccessedInScope;
 
             public ClosureInfo(PythonVariable variable, bool accessedInScope) {
                 Variable = variable;

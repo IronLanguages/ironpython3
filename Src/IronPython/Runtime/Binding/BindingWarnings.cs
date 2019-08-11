@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq.Expressions;
-
 using System;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 
@@ -13,6 +12,7 @@ using IronPython.Runtime.Types;
 
 using Microsoft.Scripting.Actions.Calls;
 using Microsoft.Scripting.Utils;
+
 using AstUtils = Microsoft.Scripting.Ast.Utils;
 
 namespace IronPython.Runtime.Binding {
@@ -27,7 +27,7 @@ namespace IronPython.Runtime.Binding {
             if (os.Length > 0) {
                 info = new WarningInfo(
                     PythonExceptions.DeprecationWarning,
-                    String.Format("{0}.{1} has been obsoleted.  {2}",
+                    string.Format("{0}.{1} has been obsoleted.  {2}",
                         NameConverter.GetTypeName(method.DeclaringType),
                         method.Name,
                         os[0].Message

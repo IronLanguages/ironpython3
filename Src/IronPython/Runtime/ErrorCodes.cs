@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
-namespace IronPython.Hosting {
+namespace IronPython.Runtime {
     public static class ErrorCodes {
         // The error flags
         public const int IncompleteMask = 0x000F;

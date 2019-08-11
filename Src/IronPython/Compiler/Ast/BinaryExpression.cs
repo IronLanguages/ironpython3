@@ -117,17 +117,16 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override MSAst.Expression Reduce() {
-            ConstantExpression leftConst;
             if (!CanEmitWarning(Operator)) {
                 var folded = ConstantFold();
                 if (folded != null) {
                     folded.Parent = Parent;
                     return AstUtils.Convert(folded.Reduce(), typeof(object));
                 }
-            } 
-            
+            }
+
             if (Operator == PythonOperator.Mod &&
-                (leftConst = Left as ConstantExpression) != null &&
+                Left is ConstantExpression leftConst &&
                 leftConst.Value is string) {
 
                 return Expression.Call(

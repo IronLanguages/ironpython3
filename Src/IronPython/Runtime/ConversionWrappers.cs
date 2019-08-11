@@ -117,12 +117,11 @@ namespace IronPython.Runtime {
         }
 
         public bool TryGetValue(K key, out V value) {
-            object outValue;
-            if (self.TryGetValue(key, out outValue)) {
+            if (self.TryGetValue(key, out object outValue)) {
                 value = (V)outValue;
                 return true;
             }
-            value = default(V);
+            value = default;
             return false;
         }
 
@@ -251,7 +250,7 @@ namespace IronPython.Runtime {
 
     [PythonType("enumerable_wrapper")]
     public class IEnumerableOfTWrapper<T> : IEnumerable<T>, IEnumerable {
-        private IEnumerable enumerable;
+        private readonly IEnumerable enumerable;
 
         public IEnumerableOfTWrapper(IEnumerable enumerable) {
             this.enumerable = enumerable;

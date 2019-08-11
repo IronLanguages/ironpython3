@@ -558,7 +558,7 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Encodes all the information about the field name.
         /// </summary>
-        private struct FieldName {
+        private readonly struct FieldName {
             public readonly string/*!*/ ArgumentName;
             public readonly IEnumerable<FieldAccessor>/*!*/ Accessors;
 
@@ -574,7 +574,7 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Encodes a single field accessor (.b or [number] or [str])
         /// </summary>
-        private struct FieldAccessor {
+        private readonly struct FieldAccessor {
             public readonly string AttributeName;
             public readonly bool IsField;
 

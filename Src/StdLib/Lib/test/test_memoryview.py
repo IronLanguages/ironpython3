@@ -73,8 +73,6 @@ class AbstractMemoryTests:
         if hasattr(sys, 'getrefcount'):
             self.assertEqual(sys.getrefcount(b), oldrefcount)
 
-    # TODO: Fails because tuple indexing is unimplemented
-    @unittest.expectedFailure
     def test_setitem_writable(self):
         if not self.rw_type:
             self.skipTest("no writable type to test")

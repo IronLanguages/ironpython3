@@ -487,10 +487,6 @@ namespace IronPython.Runtime {
                 int start, stop, step;
                 FixSlice(slice, __len__(), out start, out stop, out step);
 
-                int newStart = _start + start * _itemsize;
-                int newEnd = _start + stop * _itemsize;
-                int newStep = _step * step;
-
                 List<int> dimensions = new List<int>();
 
                 // When a multidimensional memoryview is sliced, the slice
@@ -498,9 +494,22 @@ namespace IronPython.Runtime {
                 // dimensions are inherited.
                 dimensions.Add((stop - start) / step);
 
+                // In a 1-dimensional memoryview, the difference in bytes
+                // between the position of mv[x] and mv[x + 1] is guaranteed
+                // to be just the size of the data. For multidimensional
+                // memoryviews, we must worry about the width of all the other
+                // dimensions for the difference between mv[(x, y, z...)] and
+                // mv[(x + 1, y, z...)]
+                int firstIndexWidth = _itemsize;
                 for (int i = 1; i < shape.__len__(); i++) {
-                    dimensions.Add(Converter.ConvertToInt32(shape[i]));
+                    int dimensionWidth = Converter.ConvertToInt32(shape[i]);
+                    dimensions.Add(dimensionWidth);
+                    firstIndexWidth *= dimensionWidth;
                 }
+
+                int newStart = _start + start * firstIndexWidth;
+                int newEnd = _start + stop * firstIndexWidth;
+                int newStep = _step * step;
 
                 PythonTuple newShape = PythonOps.MakeTupleFromSequence(dimensions);
 
@@ -541,6 +550,69 @@ namespace IronPython.Runtime {
                 // wrapped iteration is interpreted as empty slice
                 stop = start;
             }
+        }
+
+        public object this[[NotNull]PythonTuple index] {
+            get {
+                CheckBuffer();
+
+                int[] tupleValues = FixTuple(index);
+
+                int actualIndex = 0;
+                for (int i = 0; i < index.Count; i++) {
+                    actualIndex *= (int)shape[i];
+                    actualIndex += PythonOps.FixIndex(tupleValues[i], (int)shape[i]);
+                }
+
+                return getAtFlatIndex(actualIndex);
+            }
+            set {
+                CheckBuffer();
+
+                int[] tupleValues = FixTuple(index);
+
+                int actualIndex = 0;
+                for (int i = 0; i < index.Count; i++) {
+                    actualIndex *= (int)shape[i];
+                    actualIndex += PythonOps.FixIndex(tupleValues[i], (int)shape[i]);
+                }
+
+                setAtFlatIndex(actualIndex, value);
+            }
+        }
+
+        private int[] FixTuple(PythonTuple tuple) {
+            int[] values = new int[tuple.Count];
+
+            bool sawSlice = false;
+            bool sawInt = false;
+            for (int i = 0; i < tuple.Count; i++) {
+                if (tuple[i] is Slice) {
+                    sawSlice = true;
+                } else if (Converter.TryConvertToInt32(tuple[i], out values[i])) {
+                    sawInt = true;
+                } else {
+                    throw PythonOps.TypeError("memoryview: invalid slice key");
+                }
+            }
+
+            if (sawSlice) {
+                if (sawInt) {
+                    throw PythonOps.TypeError("memoryview: invalid slice key");
+                } else {
+                    throw PythonOps.NotImplementedError("multi-dimensional slicing is not implemented");
+                }
+            }
+
+            if (values.Length < ndim) {
+                throw PythonOps.NotImplementedError("sub-views are not implemented");
+            }
+
+            if (values.Length > ndim) {
+                throw PythonOps.TypeError("cannot index {0}-dimension view with {1}-element tuple", ndim, values.Length);
+            }
+
+            return values;
         }
 
         public int __hash__(CodeContext context) {

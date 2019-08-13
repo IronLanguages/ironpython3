@@ -588,9 +588,7 @@ namespace IronPython.Runtime {
             //    it means it's entirely ints or entirely slices
             for (int i = 0; i < tupleLength; i++) {
                 object indexObject = tuple[i];
-                if (indexObject is Slice) {
-                    sawSlice = true;
-                } else if (Converter.TryConvertToInt32(indexObject, out int indexValue)) {
+                if (Converter.TryConvertToInt32(indexObject, out int indexValue)) {
                     sawInt = true;
                     // If we have a "bad" tuple, we no longer care
                     // about the resulting flat index, but still need
@@ -603,7 +601,7 @@ namespace IronPython.Runtime {
                     int dimensionWidth = (int)shape[i];
 
                     // If we have an out of range exception, that will only
-                    // be thrown if the dimensions are correct, so we have to
+                    // be thrown if the tuple length is correct, so we have to
                     // defer throwing to later
                     if (indexValue < -dimensionWidth || indexValue >= dimensionWidth) {
                         firstOutOfRangeIndex = i;
@@ -613,6 +611,8 @@ namespace IronPython.Runtime {
                     flatIndex *= dimensionWidth;
                     // Indexes for tuples have the "wrapping" effect for negative values
                     flatIndex += indexValue < 0 ? indexValue + dimensionWidth : indexValue;
+                } else if (indexObject is Slice) {
+                    sawSlice = true;
                 } else {
                     throw PythonOps.TypeError("memoryview: invalid slice key");
                 }

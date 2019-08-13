@@ -573,8 +573,8 @@ namespace IronPython.Runtime {
             int ndim = (int)this.ndim;
             int firstOutOfRangeIndex = -1;
 
-            bool sawSlice = false;
-            bool sawInt = false;
+            bool allInts = true;
+            bool allSlices = true;
 
             // A few notes about the ordering of operations here:
             // 1) CPython checks the types of the objects in the tuple
@@ -584,12 +584,11 @@ namespace IronPython.Runtime {
             // 2) CPython checks for a multislice tuple, then for all ints,
             //    and throws an invalid slice key otherwise. We again try to
             //    do this in one pass, so we remember whether we've seen an int
-            //    and whether we've seen a slice. If we haven't seen both, we
-            //    it means it's entirely ints or entirely slices
+            //    and whether we've seen a slice
             for (int i = 0; i < tupleLength; i++) {
                 object indexObject = tuple[i];
                 if (Converter.TryConvertToInt32(indexObject, out int indexValue)) {
-                    sawInt = true;
+                    allSlices = false;
                     // If we have a "bad" tuple, we no longer care
                     // about the resulting flat index, but still need
                     // to check the rest of the tuple in case it has a
@@ -603,26 +602,25 @@ namespace IronPython.Runtime {
                     // If we have an out of range exception, that will only
                     // be thrown if the tuple length is correct, so we have to
                     // defer throwing to later
-                    if (indexValue < -dimensionWidth || indexValue >= dimensionWidth) {
+                    if (!PythonOps.TryFixIndex(indexValue, dimensionWidth, out indexValue)) {
                         firstOutOfRangeIndex = i;
                         continue;
                     }
 
                     flatIndex *= dimensionWidth;
-                    // Indexes for tuples have the "wrapping" effect for negative values
-                    flatIndex += indexValue < 0 ? indexValue + dimensionWidth : indexValue;
+                    flatIndex += indexValue;
                 } else if (indexObject is Slice) {
-                    sawSlice = true;
+                    allInts = false;
                 } else {
                     throw PythonOps.TypeError("memoryview: invalid slice key");
                 }
             }
 
-            if (sawSlice) {
-                if (sawInt) {
-                    throw PythonOps.TypeError("memoryview: invalid slice key");
-                } else {
+            if (!allInts) {
+                if (allSlices) {
                     throw PythonOps.NotImplementedError("multi-dimensional slicing is not implemented");
+                } else {
+                    throw PythonOps.TypeError("memoryview: invalid slice key");
                 }
             }
 
@@ -635,7 +633,7 @@ namespace IronPython.Runtime {
             }
 
             if (firstOutOfRangeIndex != -1) {
-                PythonOps.FixIndex((int)tuple[firstOutOfRangeIndex], (int)shape[firstOutOfRangeIndex]);
+                PythonOps.IndexError("index out of bounds on dimension {0}", firstOutOfRangeIndex + 1);
             }
 
             return flatIndex;

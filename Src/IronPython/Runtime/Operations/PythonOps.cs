@@ -1303,6 +1303,20 @@ namespace IronPython.Runtime.Operations {
             return v;
         }
 
+        public static bool TryFixIndex(int v, int len, out int res) {
+            res = 0;
+            if (v < 0) {
+                v += len;
+                if (v < 0) {
+                    return false;
+                }
+            } else if (v >= len) {
+                return false;
+            }
+            res = v;
+            return true;
+        }
+
         public static void InitializeForFinalization(CodeContext/*!*/ context, object newObject) {
             IWeakReferenceable iwr = context.LanguageContext.ConvertToWeakReferenceable(newObject);
             Debug.Assert(iwr != null);

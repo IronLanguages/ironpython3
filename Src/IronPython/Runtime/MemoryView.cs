@@ -555,42 +555,63 @@ namespace IronPython.Runtime {
         public object this[[NotNull]PythonTuple index] {
             get {
                 CheckBuffer();
-
-                int[] tupleValues = FixTuple(index);
-
-                int actualIndex = 0;
-                for (int i = 0; i < index.Count; i++) {
-                    actualIndex *= (int)shape[i];
-                    actualIndex += PythonOps.FixIndex(tupleValues[i], (int)shape[i]);
-                }
-
-                return getAtFlatIndex(actualIndex);
+                return getAtFlatIndex(GetFlatIndex(index));
             }
             set {
                 CheckBuffer();
-
-                int[] tupleValues = FixTuple(index);
-
-                int actualIndex = 0;
-                for (int i = 0; i < index.Count; i++) {
-                    actualIndex *= (int)shape[i];
-                    actualIndex += PythonOps.FixIndex(tupleValues[i], (int)shape[i]);
-                }
-
-                setAtFlatIndex(actualIndex, value);
+                setAtFlatIndex(GetFlatIndex(index), value);
             }
         }
 
-        private int[] FixTuple(PythonTuple tuple) {
-            int[] values = new int[tuple.Count];
+        /// <summary>
+        /// Gets the "flat" index from the access of a tuple as if the
+        /// multidimensional tuple were layed out in contiguous memory.
+        /// </summary>
+        private int GetFlatIndex(PythonTuple tuple) {
+            int flatIndex = 0;
+            int tupleLength = tuple.Count;
+            int ndim = (int)this.ndim;
+            int firstOutOfRangeIndex = -1;
 
             bool sawSlice = false;
             bool sawInt = false;
-            for (int i = 0; i < tuple.Count; i++) {
+
+            // A few notes about the ordering of operations here:
+            // 1) CPython checks the types of the objects in the tuple
+            //    first, then the dimensions, then finally for the range.
+            //    Because we do a range check while we go through the tuple,
+            //    we have to remember that we had something out of range
+            // 2) CPython checks for a multislice tuple, then for all ints,
+            //    and throws an invalid slice key otherwise. We again try to
+            //    do this in one pass, so we remember whether we've seen an int
+            //    and whether we've seen a slice. If we haven't seen both, we
+            //    it means it's entirely ints or entirely slices
+            for (int i = 0; i < tupleLength; i++) {
                 if (tuple[i] is Slice) {
                     sawSlice = true;
-                } else if (Converter.TryConvertToInt32(tuple[i], out values[i])) {
+                } else if (Converter.TryConvertToInt32(tuple[i], out int indexValue)) {
                     sawInt = true;
+                    // If we have a "bad" tuple, we no longer care
+                    // about the resulting flat index, but still need
+                    // to check the rest of the tuple in case it has a
+                    // non-int value
+                    if (i >= ndim || firstOutOfRangeIndex > -1) {
+                        continue;
+                    }
+
+                    int dimensionWidth = (int)shape[i];
+
+                    // If we have an out of range exception, that will only
+                    // be thrown if the dimensions are correct, so we have to
+                    // defer throwing to later
+                    if (indexValue < -dimensionWidth || indexValue >= dimensionWidth) {
+                        firstOutOfRangeIndex = i;
+                        continue;
+                    }
+
+                    flatIndex *= dimensionWidth;
+                    // Indexes for tuples have the "wrapping" effect for negative values
+                    flatIndex += indexValue < 0 ? indexValue + dimensionWidth : indexValue;
                 } else {
                     throw PythonOps.TypeError("memoryview: invalid slice key");
                 }
@@ -604,15 +625,19 @@ namespace IronPython.Runtime {
                 }
             }
 
-            if (values.Length < ndim) {
+            if (tupleLength < ndim) {
                 throw PythonOps.NotImplementedError("sub-views are not implemented");
             }
 
-            if (values.Length > ndim) {
-                throw PythonOps.TypeError("cannot index {0}-dimension view with {1}-element tuple", ndim, values.Length);
+            if (tupleLength > ndim) {
+                throw PythonOps.TypeError("cannot index {0}-dimension view with {1}-element tuple", ndim, tupleLength);
             }
 
-            return values;
+            if (firstOutOfRangeIndex != -1) {
+                PythonOps.FixIndex((int)tuple[firstOutOfRangeIndex], (int)shape[firstOutOfRangeIndex]);
+            }
+
+            return flatIndex;
         }
 
         public int __hash__(CodeContext context) {

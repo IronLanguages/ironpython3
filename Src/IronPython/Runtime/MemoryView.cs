@@ -587,9 +587,10 @@ namespace IronPython.Runtime {
             //    and whether we've seen a slice. If we haven't seen both, we
             //    it means it's entirely ints or entirely slices
             for (int i = 0; i < tupleLength; i++) {
-                if (tuple[i] is Slice) {
+                object indexObject = tuple[i];
+                if (indexObject is Slice) {
                     sawSlice = true;
-                } else if (Converter.TryConvertToInt32(tuple[i], out int indexValue)) {
+                } else if (Converter.TryConvertToInt32(indexObject, out int indexValue)) {
                     sawInt = true;
                     // If we have a "bad" tuple, we no longer care
                     // about the resulting flat index, but still need

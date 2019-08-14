@@ -487,10 +487,6 @@ namespace IronPython.Runtime {
                 int start, stop, step;
                 FixSlice(slice, __len__(), out start, out stop, out step);
 
-                int newStart = _start + start * _itemsize;
-                int newEnd = _start + stop * _itemsize;
-                int newStep = _step * step;
-
                 List<int> dimensions = new List<int>();
 
                 // When a multidimensional memoryview is sliced, the slice
@@ -498,9 +494,22 @@ namespace IronPython.Runtime {
                 // dimensions are inherited.
                 dimensions.Add((stop - start) / step);
 
+                // In a 1-dimensional memoryview, the difference in bytes
+                // between the position of mv[x] and mv[x + 1] is guaranteed
+                // to be just the size of the data. For multidimensional
+                // memoryviews, we must worry about the width of all the other
+                // dimensions for the difference between mv[(x, y, z...)] and
+                // mv[(x + 1, y, z...)]
+                int firstIndexWidth = _itemsize;
                 for (int i = 1; i < shape.__len__(); i++) {
-                    dimensions.Add(Converter.ConvertToInt32(shape[i]));
+                    int dimensionWidth = Converter.ConvertToInt32(shape[i]);
+                    dimensions.Add(dimensionWidth);
+                    firstIndexWidth *= dimensionWidth;
                 }
+
+                int newStart = _start + start * firstIndexWidth;
+                int newEnd = _start + stop * firstIndexWidth;
+                int newStep = _step * step;
 
                 PythonTuple newShape = PythonOps.MakeTupleFromSequence(dimensions);
 
@@ -541,6 +550,93 @@ namespace IronPython.Runtime {
                 // wrapped iteration is interpreted as empty slice
                 stop = start;
             }
+        }
+
+        public object this[[NotNull]PythonTuple index] {
+            get {
+                CheckBuffer();
+                return getAtFlatIndex(GetFlatIndex(index));
+            }
+            set {
+                CheckBuffer();
+                setAtFlatIndex(GetFlatIndex(index), value);
+            }
+        }
+
+        /// <summary>
+        /// Gets the "flat" index from the access of a tuple as if the
+        /// multidimensional tuple were layed out in contiguous memory.
+        /// </summary>
+        private int GetFlatIndex(PythonTuple tuple) {
+            int flatIndex = 0;
+            int tupleLength = tuple.Count;
+            int ndim = (int)this.ndim;
+            int firstOutOfRangeIndex = -1;
+
+            bool allInts = true;
+            bool allSlices = true;
+
+            // A few notes about the ordering of operations here:
+            // 1) CPython checks the types of the objects in the tuple
+            //    first, then the dimensions, then finally for the range.
+            //    Because we do a range check while we go through the tuple,
+            //    we have to remember that we had something out of range
+            // 2) CPython checks for a multislice tuple, then for all ints,
+            //    and throws an invalid slice key otherwise. We again try to
+            //    do this in one pass, so we remember whether we've seen an int
+            //    and whether we've seen a slice
+            for (int i = 0; i < tupleLength; i++) {
+                object indexObject = tuple[i];
+                if (Converter.TryConvertToInt32(indexObject, out int indexValue)) {
+                    allSlices = false;
+                    // If we have a "bad" tuple, we no longer care
+                    // about the resulting flat index, but still need
+                    // to check the rest of the tuple in case it has a
+                    // non-int value
+                    if (i >= ndim || firstOutOfRangeIndex > -1) {
+                        continue;
+                    }
+
+                    int dimensionWidth = (int)shape[i];
+
+                    // If we have an out of range exception, that will only
+                    // be thrown if the tuple length is correct, so we have to
+                    // defer throwing to later
+                    if (!PythonOps.TryFixIndex(indexValue, dimensionWidth, out indexValue)) {
+                        firstOutOfRangeIndex = i;
+                        continue;
+                    }
+
+                    flatIndex *= dimensionWidth;
+                    flatIndex += indexValue;
+                } else if (indexObject is Slice) {
+                    allInts = false;
+                } else {
+                    throw PythonOps.TypeError("memoryview: invalid slice key");
+                }
+            }
+
+            if (!allInts) {
+                if (allSlices) {
+                    throw PythonOps.NotImplementedError("multi-dimensional slicing is not implemented");
+                } else {
+                    throw PythonOps.TypeError("memoryview: invalid slice key");
+                }
+            }
+
+            if (tupleLength < ndim) {
+                throw PythonOps.NotImplementedError("sub-views are not implemented");
+            }
+
+            if (tupleLength > ndim) {
+                throw PythonOps.TypeError("cannot index {0}-dimension view with {1}-element tuple", ndim, tupleLength);
+            }
+
+            if (firstOutOfRangeIndex != -1) {
+                PythonOps.IndexError("index out of bounds on dimension {0}", firstOutOfRangeIndex + 1);
+            }
+
+            return flatIndex;
         }
 
         public int __hash__(CodeContext context) {

@@ -1292,25 +1292,22 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static int FixIndex(int v, int len) {
-            if (v < 0) {
-                v += len;
-                if (v < 0) {
-                    throw PythonOps.IndexError("index out of range: {0}", v - len);
-                }
-            } else if (v >= len) {
+            if (!TryFixIndex(v, len, out int fixedIndex)) {
                 throw PythonOps.IndexError("index out of range: {0}", v);
             }
-            return v;
+            return fixedIndex;  
         }
 
-        public static bool TryFixIndex(int v, int len, out int res) {
+        internal static bool TryFixIndex(int v, int len, out int res) {
             res = 0;
             if (v < 0) {
                 v += len;
                 if (v < 0) {
+                    res = v;
                     return false;
                 }
             } else if (v >= len) {
+                res = v;
                 return false;
             }
             res = v;

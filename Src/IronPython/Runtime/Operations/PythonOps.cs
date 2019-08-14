@@ -1303,11 +1303,9 @@ namespace IronPython.Runtime.Operations {
             if (v < 0) {
                 v += len;
                 if (v < 0) {
-                    res = v;
                     return false;
                 }
             } else if (v >= len) {
-                res = v;
                 return false;
             }
             res = v;

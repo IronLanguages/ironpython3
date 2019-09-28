@@ -279,8 +279,8 @@ namespace IronPython.Runtime {
             }
 
             object res = site.Target(site, value);
-            if (to.IsValueType() && res == null && 
-                (!to.IsGenericType() || to.GetGenericTypeDefinition() != typeof(Nullable<>))) {
+            if (to.IsValueType && res == null && 
+                (!to.IsGenericType || to.GetGenericTypeDefinition() != typeof(Nullable<>))) {
                 throw MakeTypeError(to, value);
             }
             return res;
@@ -556,7 +556,7 @@ namespace IronPython.Runtime {
 #endif
 
         private static bool HasImplicitNumericConversion(Type fromType, Type toType) {
-            if (fromType.IsEnum()) return false;
+            if (fromType.IsEnum) return false;
 
             if (fromType == typeof(BigInteger)) {
                 if (toType == typeof(double)) return true;
@@ -795,7 +795,7 @@ namespace IronPython.Runtime {
 
                 if (toType == typeof(IEnumerator)) {
                     if (IsPythonType(fromType)) return true;
-                } else if (toType.IsGenericType()) {
+                } else if (toType.IsGenericType) {
                     Type genTo = toType.GetGenericTypeDefinition();
                     if (genTo == IEnumerableOfTType) {
                         return IEnumerableOfObjectType.IsAssignableFrom(fromType) ||
@@ -814,7 +814,7 @@ namespace IronPython.Runtime {
                 if (toType == BigIntegerType && HasPythonProtocol(fromType, "__long__")) return true;
             }
 
-            if (toType.IsGenericType()) {
+            if (toType.IsGenericType) {
                 Type genTo = toType.GetGenericTypeDefinition();
                 if (genTo == IListOfTType) {
                     return IListOfObjectType.IsAssignableFrom(fromType);
@@ -828,7 +828,7 @@ namespace IronPython.Runtime {
             }
 
             if (fromType == BigIntegerType && toType == Int64Type) return true;
-            if (toType.IsEnum() && fromType == Enum.GetUnderlyingType(toType)) return true;
+            if (toType.IsEnum && fromType == Enum.GetUnderlyingType(toType)) return true;
 
             return false;
         }
@@ -848,7 +848,7 @@ namespace IronPython.Runtime {
                         return true;
                     }
                 }
-                lookupType = lookupType.GetBaseType();
+                lookupType = lookupType.BaseType;
             }
             return false;
         }
@@ -886,7 +886,7 @@ namespace IronPython.Runtime {
         }
 
         internal static bool IsNumeric(Type t) {
-            if (t.IsEnum()) return false;
+            if (t.IsEnum) return false;
 
             switch (t.GetTypeCode()) {
                 case TypeCode.DateTime:

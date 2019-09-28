@@ -163,7 +163,7 @@ namespace IronPython.Runtime.Types {
         }
 
         internal override void MakeGetExpression(PythonBinder/*!*/ binder, Expression/*!*/ codeContext, DynamicMetaObject instance, DynamicMetaObject/*!*/ owner, ConditionalBuilder/*!*/ builder) {
-            if (!_info.IsPublic || _info.DeclaringType.ContainsGenericParameters()) {
+            if (!_info.IsPublic || _info.DeclaringType.ContainsGenericParameters) {
                 // fallback to reflection
                 base.MakeGetExpression(binder, codeContext, instance, owner, builder);
             } else if (instance == null) {
@@ -198,7 +198,7 @@ namespace IronPython.Runtime.Types {
             PerfTrack.NoteEvent(PerfTrack.Categories.Fields, this);
             if (_info.IsInitOnly || _info.IsLiteral) {
                 throw PythonOps.AttributeErrorForReadonlyAttribute(_info.DeclaringType.Name, _info.Name);
-            } else if (!suppressWarning && instance != null && instance.GetType().IsValueType()) {
+            } else if (!suppressWarning && instance != null && instance.GetType().IsValueType) {
                 PythonOps.Warn(context, PythonExceptions.RuntimeWarning, UpdateValueTypeFieldWarning, _info.Name, _info.DeclaringType.Name);
             }
 

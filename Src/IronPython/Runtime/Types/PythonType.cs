@@ -603,7 +603,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                     throw PythonOps.TypeError("expected one argument to make array type, got {0}", args.Length);
                 }
 
-                if (!UnderlyingSystemType.IsGenericTypeDefinition()) {
+                if (!UnderlyingSystemType.IsGenericTypeDefinition) {
                     throw new InvalidOperationException("MakeGenericType on non-generic type");
                 }
 
@@ -754,7 +754,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         private bool SubclassImpl(PythonType sub) {
-            if (UnderlyingSystemType.IsInterface()) {
+            if (UnderlyingSystemType.IsInterface) {
                 // interfaces aren't in bases, and therefore IsSubclassOf doesn't do this check.
                 if (UnderlyingSystemType.IsAssignableFrom(sub.UnderlyingSystemType)) {
                     return true;
@@ -1055,7 +1055,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// </summary>
         internal Type/*!*/ ExtensionType {
             get {
-                if (!_underlyingSystemType.IsEnum()) {
+                if (!_underlyingSystemType.IsEnum) {
                     switch (_underlyingSystemType.GetTypeCode()) {
                         case TypeCode.String: return typeof(ExtensibleString);
                         case TypeCode.Int32: return typeof(Extensible<int>);
@@ -1117,7 +1117,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
 
             //Python doesn't have value types inheriting from ValueType, but we fake this for interop
-            if (other.UnderlyingSystemType == typeof(ValueType) && UnderlyingSystemType.IsValueType()) {
+            if (other.UnderlyingSystemType == typeof(ValueType) && UnderlyingSystemType.IsValueType) {
                 return true;
             }
 
@@ -1281,7 +1281,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
                 // don't look at interfaces - users can inherit from them, but we resolve members
                 // via methods implemented on types and defined by Python.
-                if (dt.IsSystemType && !dt.UnderlyingSystemType.IsInterface()) {
+                if (dt.IsSystemType && !dt.UnderlyingSystemType.IsInterface) {
                     return PythonBinder.GetBinder(context).TryResolveSlot(context, dt, this, name, out slot);
                 }
 
@@ -1290,7 +1290,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 }
             }
 
-            if (UnderlyingSystemType.IsInterface()) {
+            if (UnderlyingSystemType.IsInterface) {
                 return TypeCache.Object.TryResolveSlot(context, name, out slot);
             }
             
@@ -2307,20 +2307,20 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             List<PythonType> mro = new List<PythonType>();
             mro.Add(this);
 
-            if (_underlyingSystemType.GetBaseType() != null) {
+            if (_underlyingSystemType.BaseType != null) {
                 Type baseType;
                 if (_underlyingSystemType == typeof(bool)) {
                     // bool inherits from int in python
                     baseType = typeof(int);
-                } else if (_underlyingSystemType.GetBaseType() == typeof(ValueType)) {
+                } else if (_underlyingSystemType.BaseType == typeof(ValueType)) {
                     // hide ValueType, it doesn't exist in Python
                     baseType = typeof(object);
                 } else {
-                    baseType = _underlyingSystemType.GetBaseType();
+                    baseType = _underlyingSystemType.BaseType;
                 }
 
                 while (baseType.IsDefined(typeof(PythonHiddenBaseClassAttribute), false)) {
-                    baseType = baseType.GetBaseType();
+                    baseType = baseType.BaseType;
                 }
 
                 _bases = new PythonType[] { GetPythonType(baseType) };
@@ -2333,13 +2333,13 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                     } else if(!curType.IsDefined(typeof(PythonHiddenBaseClassAttribute), false)) {
                         mro.Add(DynamicHelpers.GetPythonTypeFromType(curType));
                     }
-                    curType = curType.GetBaseType();
+                    curType = curType.BaseType;
                 }
 
                 if (!IsPythonType) {
                     AddSystemInterfaces(mro);
                 }
-            } else if (_underlyingSystemType.IsInterface()) {
+            } else if (_underlyingSystemType.IsInterface) {
                 // add interfaces to MRO & create bases list
                 Type[] interfaces = _underlyingSystemType.GetInterfaces();
                 PythonType[] bases = new PythonType[interfaces.Length];
@@ -2434,7 +2434,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             if (hasExplicitIface) {
                 // add any non-colliding interfaces into the MRO
                 foreach (Type t in nonCollidingInterfaces) {
-                    Debug.Assert(t.IsInterface());
+                    Debug.Assert(t.IsInterface);
 
                     mro.Add(DynamicHelpers.GetPythonTypeFromType(t));
                 }
@@ -2454,7 +2454,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                         _underlyingSystemType
                     )
                 );
-            } else if (!_underlyingSystemType.IsAbstract()) {
+            } else if (!_underlyingSystemType.IsAbstract) {
                 BuiltinFunction reflectedCtors = GetConstructors();
                 if (reflectedCtors == null) {
                     return; // no ctors, no __new__

@@ -969,7 +969,7 @@ namespace IronPython.Runtime.Binding {
                     _target.Restrict(Instance.GetType()).Restrictions.Merge(_result.Restrictions)
                 );
                 
-                Debug.Assert(!_result.Expression.Type.IsValueType());
+                Debug.Assert(!_result.Expression.Type.IsValueType);
 
                 return BindingHelpers.AddDynamicTestAndDefer(
                     _info.Action,

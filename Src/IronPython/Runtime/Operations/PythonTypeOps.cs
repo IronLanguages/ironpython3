@@ -318,7 +318,7 @@ namespace IronPython.Runtime.Operations {
         
         internal static MethodBase[] GetConstructors(Type t, bool privateBinding, bool includeProtected = false) {
             MethodBase[] ctors = CompilerHelpers.GetConstructors(t, privateBinding, includeProtected);
-            if (t.IsEnum()) {
+            if (t.IsEnum) {
                 var enumCtor = typeof(PythonTypeOps).GetDeclaredMethods(nameof(CreateEnum)).Single().MakeGenericMethod(t);
                 ctors = ctors.Concat(new[] { enumCtor }).ToArray();
             }
@@ -369,7 +369,7 @@ namespace IronPython.Runtime.Operations {
                 }
             }
             
-            if (type.IsValueType() && !hasDefaultConstructor && type != typeof(void)) {
+            if (type.IsValueType && !hasDefaultConstructor && type != typeof(void)) {
                 try {
                     methods.Add(typeof(ScriptingRuntimeHelpers).GetMethod(nameof(ScriptingRuntimeHelpers.CreateInstance), ReflectionUtils.EmptyTypes).MakeGenericMethod(type));
                 } catch (BadImageFormatException) {
@@ -522,8 +522,8 @@ namespace IronPython.Runtime.Operations {
                 return xType;
             }
 
-            Type xBase = xType.GetBaseType();
-            Type yBase = yType.GetBaseType();
+            Type xBase = xType.BaseType;
+            Type yBase = yType.BaseType;
             if (xBase != null) {
                 Type res = GetCommonBaseType(xBase, yType);
                 if (res != null) {
@@ -884,7 +884,7 @@ namespace IronPython.Runtime.Operations {
             foreach (object baseClass in bases) {               
                 PythonType dt = baseClass as PythonType;
 
-                if (!dt.UnderlyingSystemType.IsInterface()) {
+                if (!dt.UnderlyingSystemType.IsInterface) {
                     return bases;
                 } else {
                     hasInterface = true;
@@ -901,7 +901,7 @@ namespace IronPython.Runtime.Operations {
 
         internal static Type GetFinalSystemType(Type type) {
             while (typeof(IPythonObject).IsAssignableFrom(type) && !type.IsDefined(typeof(DynamicBaseTypeAttribute), false)) {
-                type = type.GetBaseType();
+                type = type.BaseType;
             }
             return type;
         }

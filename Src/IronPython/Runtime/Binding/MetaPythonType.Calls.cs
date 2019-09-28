@@ -109,7 +109,7 @@ namespace IronPython.Runtime.Binding {
                 );
             } else {
                 string msg;
-                if (Value.UnderlyingSystemType.IsAbstract()) {
+                if (Value.UnderlyingSystemType.IsAbstract) {
                     msg = String.Format("Cannot create instances of {0} because it is abstract", Value.Name);
                 }else{
                     msg = String.Format("Cannot create instances of {0} because it has no public constructors", Value.Name);
@@ -146,7 +146,7 @@ namespace IronPython.Runtime.Binding {
 
             if (TooManyArgsForDefaultNew(call, args)) {
                 return MakeIncorrectArgumentsForCallError(call, ai, valInfo);
-            } else if (Value.UnderlyingSystemType.IsGenericTypeDefinition()) {
+            } else if (Value.UnderlyingSystemType.IsGenericTypeDefinition) {
                 return MakeGenericTypeDefinitionError(call, ai, valInfo);
             } else if (Value.HasAbstractMethods(PythonContext.GetPythonContext(call).SharedContext)) {
                 return MakeAbstractInstantiationError(call, ai, valInfo);

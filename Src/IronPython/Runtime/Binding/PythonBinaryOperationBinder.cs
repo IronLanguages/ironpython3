@@ -272,7 +272,7 @@ namespace IronPython.Runtime.Binding {
                     return (T)(object)new Func<CallSite, object, object, object>(TupleAdd);
                 }
 
-            } else if (!t.IsEnum()) {                
+            } else if (!t.IsEnum) {
                 switch (t.GetTypeCode()) {
                     case TypeCode.Double:
                         if(typeof(T) == typeof(Func<CallSite, object, object, object>)) {
@@ -295,7 +295,7 @@ namespace IronPython.Runtime.Binding {
 
         private T BindSubtract<T>(CallSite<T> site, object[] args) where T : class {
             Type t = args[0].GetType();
-            if (!t.IsEnum()) {
+            if (!t.IsEnum) {
                 switch (t.GetTypeCode()) {
                     case TypeCode.Double:
                         if (typeof(T) == typeof(Func<CallSite, object, object, object>)) {
@@ -326,7 +326,7 @@ namespace IronPython.Runtime.Binding {
                 } else if (typeof(T) == typeof(Func<CallSite, object, string, object>)) {
                     return (T)(object)new Func<CallSite, object, string, object>(StringEqual);
                 }
-            } else if (!t.IsEnum() && typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+            } else if (!t.IsEnum && typeof(T) == typeof(Func<CallSite, object, object, object>)) {
                 switch (t.GetTypeCode()) {
                     case TypeCode.Double:
                         return (T)(object)new Func<CallSite, object, object, object>(DoubleEqual);
@@ -347,7 +347,7 @@ namespace IronPython.Runtime.Binding {
                 } else if (typeof(T) == typeof(Func<CallSite, string, object, object>)) {
                     return (T)(object)new Func<CallSite, string, object, object>(StringNotEqual);
                 }
-            } else if (!t.IsEnum() && typeof(T) == typeof(Func<CallSite, object, object, object>)) {
+            } else if (!t.IsEnum && typeof(T) == typeof(Func<CallSite, object, object, object>)) {
                 switch (t.GetTypeCode()) {
                     case TypeCode.Double:
                         return (T)(object)new Func<CallSite, object, object, object>(DoubleNotEqual);

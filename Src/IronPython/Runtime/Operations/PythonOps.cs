@@ -1841,8 +1841,8 @@ namespace IronPython.Runtime.Operations {
             PythonType pt = newmod as PythonType;
 
             if (pt != null &&
-                !pt.UnderlyingSystemType.IsEnum() &&
-                (!pt.UnderlyingSystemType.IsAbstract() || !pt.UnderlyingSystemType.IsSealed())) {
+                !pt.UnderlyingSystemType.IsEnum &&
+                (!pt.UnderlyingSystemType.IsAbstract || !pt.UnderlyingSystemType.IsSealed)) {
                 // from type import * only allowed on static classes (and enums)
                 throw PythonOps.ImportError("no module named {0}", pt.Name);
             }

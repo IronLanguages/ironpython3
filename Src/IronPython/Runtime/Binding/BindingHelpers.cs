@@ -388,7 +388,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         internal static DynamicMetaObject AddPythonBoxing(DynamicMetaObject res) {
-            if (res.Expression.Type.IsValueType()) {
+            if (res.Expression.Type.IsValueType) {
                 // Use Python boxing rules if we're return a value type
                 res = new DynamicMetaObject(
                     AddPythonBoxing(res.Expression),

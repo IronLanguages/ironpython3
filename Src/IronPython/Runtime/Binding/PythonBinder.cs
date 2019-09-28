@@ -68,7 +68,7 @@ namespace IronPython.Runtime.Binding {
             Type exprType = expr.Type;
 
             if (toType == typeof(object)) {
-                if (exprType.IsValueType()) {
+                if (exprType.IsValueType) {
                     return AstUtils.Convert(expr, toType);
                 } else {
                     return expr;
@@ -99,8 +99,8 @@ namespace IronPython.Runtime.Binding {
         }
 
         internal static MethodInfo GetGenericConvertMethod(Type toType) {
-            if (toType.IsValueType()) {
-                if (toType.IsGenericType() && toType.GetGenericTypeDefinition() == typeof(Nullable<>)) {
+            if (toType.IsValueType) {
+                if (toType.IsGenericType && toType.GetGenericTypeDefinition() == typeof(Nullable<>)) {
                     return typeof(Converter).GetMethod(nameof(Converter.ConvertToNullableType));
                 } else {
                     return typeof(Converter).GetMethod(nameof(Converter.ConvertToValueType));
@@ -416,7 +416,7 @@ namespace IronPython.Runtime.Binding {
                     }
                 }
 
-                if (t.IsGenericType()) {
+                if (t.IsGenericType) {
                     // search for generic extensions, e.g. ListOfTOps<T> for List<T>,
                     // we then make a new generic type out of the extension type.
                     Type typeDef = t.GetGenericTypeDefinition();
@@ -822,7 +822,7 @@ namespace IronPython.Runtime.Binding {
             if (attrs.Any()) {
                 lock (_dlrExtensionTypes) {
                     foreach (ExtensionTypeAttribute attr in attrs) {
-                        if (attr.Extends.IsInterface()) {
+                        if (attr.Extends.IsInterface) {
                             _registeredInterfaceExtensions = true;
                         }
 

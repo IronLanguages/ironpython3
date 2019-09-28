@@ -47,7 +47,7 @@ namespace IronPython.Runtime.Binding {
 
         internal static bool IsApplicableExtensionMethod(Type instanceType, Type extensionMethodThisType) {
             
-            if (extensionMethodThisType.ContainsGenericParameters()) {
+            if (extensionMethodThisType.ContainsGenericParameters) {
                 Dictionary<Type, Type> binding = new Dictionary<Type, Type>();
                 
                 if (extensionMethodThisType.IsArray) {

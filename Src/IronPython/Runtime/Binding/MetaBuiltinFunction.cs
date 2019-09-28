@@ -214,7 +214,7 @@ namespace IronPython.Runtime.Binding {
             if (CompilerHelpers.IsStrongBox(instanceValue)) {
                 instance = ReadStrongBoxValue(instance);
                 instanceValue = ((IStrongBox)instanceValue).Value;
-            } else if (!testType.IsEnum()) {
+            } else if (!testType.IsEnum) {
                 // We need to deal w/ wierd types like MarshalByRefObject.  
                 // We could have an MBRO whos DeclaringType is completely different.  
                 // Therefore we special case it here and cast to the declaring type
@@ -222,15 +222,15 @@ namespace IronPython.Runtime.Binding {
                 Type selfType = CompilerHelpers.GetType(Value.BindingSelf);
                 selfType = CompilerHelpers.GetVisibleType(selfType);
 
-                if (selfType == typeof(object) && Value.DeclaringType.IsInterface()) {
+                if (selfType == typeof(object) && Value.DeclaringType.IsInterface) {
                     selfType = Value.DeclaringType;
 
                     Type genericTypeDefinition = null;
                     // the behavior is different on Mono, it sets FullName for the DeclaringType
-                    if (Value.DeclaringType.IsGenericType() &&
+                    if (Value.DeclaringType.IsGenericType &&
                         (ClrModule.IsMono || Value.DeclaringType.FullName == null) &&
-                        Value.DeclaringType.ContainsGenericParameters() &&
-                        !Value.DeclaringType.IsGenericTypeDefinition()) {
+                        Value.DeclaringType.ContainsGenericParameters &&
+                        !Value.DeclaringType.IsGenericTypeDefinition) {
                         // from MSDN: If the current type contains generic type parameters that have not been replaced by 
                         // specific types (that is, the ContainsGenericParameters property returns true), but the type 
                         // is not a generic type definition (that is, the IsGenericTypeDefinition property returns false), 
@@ -249,7 +249,7 @@ namespace IronPython.Runtime.Binding {
                         if (hasOnlyGenerics) {
                             genericTypeDefinition = Value.DeclaringType.GetGenericTypeDefinition();
                         }
-                    } else if (Value.DeclaringType.IsGenericTypeDefinition()) {
+                    } else if (Value.DeclaringType.IsGenericTypeDefinition) {
                         genericTypeDefinition = Value.DeclaringType;
                     }
 
@@ -259,7 +259,7 @@ namespace IronPython.Runtime.Binding {
                         // the concrete selfType.
                         var interfaces = CompilerHelpers.GetType(Value.BindingSelf).GetInterfaces();
                         foreach (var iface in interfaces) {
-                            if (iface.IsGenericType() && iface.GetGenericTypeDefinition() == genericTypeDefinition) {
+                            if (iface.IsGenericType && iface.GetGenericTypeDefinition() == genericTypeDefinition) {
                                 selfType = iface;
                                 break;
                             }
@@ -267,11 +267,11 @@ namespace IronPython.Runtime.Binding {
                     }
                 }
 
-                if (Value.DeclaringType.IsInterface() && selfType.IsValueType()) {
+                if (Value.DeclaringType.IsInterface && selfType.IsValueType) {
                     // explicit interface implementation dispatch on a value type, don't
                     // unbox the value type before the dispatch.
                     instance = AstUtils.Convert(instance, Value.DeclaringType);
-                } else if (selfType.IsValueType()) {
+                } else if (selfType.IsValueType) {
                     // We might be calling a a mutating method (like
                     // Rectangle.Intersect). If so, we want it to mutate
                     // the boxed value directly

@@ -1134,7 +1134,7 @@ namespace IronPython.Runtime.Binding {
                         AstUtils.Constant(0),
                         BindingRestrictions.Combine(types)
                     );
-                } else if (yType.UnderlyingSystemType.IsPrimitive() || yType.UnderlyingSystemType == typeof(BigInteger)) {
+                } else if (yType.UnderlyingSystemType.IsPrimitive || yType.UnderlyingSystemType == typeof(BigInteger)) {
                     return new DynamicMetaObject(
                         AstUtils.Constant(-1),
                         BindingRestrictions.Combine(types)

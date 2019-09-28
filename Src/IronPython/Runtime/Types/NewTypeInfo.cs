@@ -60,11 +60,11 @@ namespace IronPython.Runtime.Types {
 
                 if (curTypeToExtend == null || typeof(BuiltinFunction).IsAssignableFrom(curTypeToExtend) || typeof(PythonFunction).IsAssignableFrom(curTypeToExtend))
                     throw PythonOps.TypeError(typeName + ": {0} is not an acceptable base type", curBasePythonType.Name);
-                if (curTypeToExtend.ContainsGenericParameters())
+                if (curTypeToExtend.ContainsGenericParameters)
                     throw PythonOps.TypeError(typeName + ": cannot inhert from open generic instantiation {0}. Only closed instantiations are supported.", curBasePythonType);
 
                 foreach (Type interfaceType in baseInterfaces) {
-                    if (interfaceType.ContainsGenericParameters())
+                    if (interfaceType.ContainsGenericParameters)
                         throw PythonOps.TypeError(typeName + ": cannot inhert from open generic instantiation {0}. Only closed instantiations are supported.", interfaceType);
 
                     // collecting all the interfaces because we override them all.

@@ -91,7 +91,7 @@ namespace IronPython.Runtime {
                 kind = MemberKind.Method;
             } else if (value is PythonType) {
                 var pt = value as PythonType;
-                if (pt.IsSystemType && pt.UnderlyingSystemType.IsEnum()) {
+                if (pt.IsSystemType && pt.UnderlyingSystemType.IsEnum) {
                     kind = MemberKind.Enum;
                 } else {
                     kind = MemberKind.Class;
@@ -104,7 +104,7 @@ namespace IronPython.Runtime {
                 kind = MemberKind.Event;
             } else if (value is ReflectedField) {
                 kind = MemberKind.Field;
-            } else if (value != null && value.GetType().IsEnum()) {
+            } else if (value != null && value.GetType().IsEnum) {
                 kind = MemberKind.EnumMember;
             } else if (value is PythonType) {
                 kind = MemberKind.Class;

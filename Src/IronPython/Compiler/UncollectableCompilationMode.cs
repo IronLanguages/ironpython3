@@ -55,7 +55,7 @@ namespace IronPython.Compiler.Ast {
             // going to a call site which can be strongly typed.  We need to coordinate 
             // more with whoever consumes the values.
             if (CompilerHelpers.CanEmitConstant(value, CompilerHelpers.GetType(value)) &&
-                !CompilerHelpers.GetType(value).IsValueType()) {
+                !CompilerHelpers.GetType(value).IsValueType) {
                 return Utils.Constant(value);
             }
 
@@ -71,7 +71,7 @@ namespace IronPython.Compiler.Ast {
         }
 
         public override Type GetConstantType(object value) {
-            if (value == null || value.GetType().IsValueType()) {
+            if (value == null || value.GetType().IsValueType) {
                 return typeof(object);
             }
 
@@ -429,7 +429,7 @@ namespace IronPython.Compiler.Ast {
             public override Type/*!*/ Type {
                 get {
                     Type returnType = _value.GetType();
-                    if (!returnType.IsValueType()) {
+                    if (!returnType.IsValueType) {
                         return returnType;
                     } else {
                         return typeof(object);
@@ -444,7 +444,7 @@ namespace IronPython.Compiler.Ast {
             }
 
             public override MSAst.Expression Reduce() {
-                if (_value.GetType().IsValueType()) {
+                if (_value.GetType().IsValueType) {
                     return base.Reduce();
                 } else {
                     return MSAst.Expression.Convert(base.Reduce(), _value.GetType());

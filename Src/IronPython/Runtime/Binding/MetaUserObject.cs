@@ -171,7 +171,7 @@ namespace IronPython.Runtime.Binding {
         #region Conversions
 
         private DynamicMetaObject TryPythonConversion(DynamicMetaObjectBinder conversion, Type type) {
-            if (!type.IsEnum()) {
+            if (!type.IsEnum) {
                 switch (type.GetTypeCode()) {
                     case TypeCode.Object:
                         if (type == typeof(Complex)) {

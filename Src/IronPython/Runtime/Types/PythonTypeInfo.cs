@@ -341,7 +341,7 @@ namespace IronPython.Runtime.Types {
 
                 // Do not map IComparable if this is a primitive builtin type.
                 if (_excludePrimitiveTypes) {
-                    if (type.IsPrimitive() || type == typeof(BigInteger) ||
+                    if (type.IsPrimitive || type == typeof(BigInteger) ||
                         type == typeof(string) || type == typeof(decimal)) {
                         return MemberGroup.EmptyGroup;
                     }
@@ -366,7 +366,7 @@ namespace IronPython.Runtime.Types {
         /// </summary>
         private class OperatorResolver : MemberResolver {
             public override MemberGroup/*!*/ ResolveMember(MemberBinder/*!*/ binder, MemberRequestKind/*!*/ action, Type/*!*/ type, string/*!*/ name) {
-                if (type.IsSealed() && type.IsAbstract()) {
+                if (type.IsSealed && type.IsAbstract) {
                     // static types don't have PythonOperationKind
                     return MemberGroup.EmptyGroup;
                 }
@@ -805,7 +805,7 @@ namespace IronPython.Runtime.Types {
             // __repr__ for normal .NET types is special, if we're a Python type then
             // we'll use one of the built-in reprs (from object or from the type)
             if (!PythonBinder.IsPythonType(type) &&
-                (!type.IsSealed() || !type.IsAbstract())) {     // static types don't get __repr__
+                (!type.IsSealed || !type.IsAbstract)) {     // static types don't get __repr__
                 // check and see if __repr__ has been overridden by the base type.
                 foreach (Type t in binder.GetContributingTypes(type)) {
                     if (t == typeof(ObjectOps) && type != typeof(object)) {
@@ -865,7 +865,7 @@ namespace IronPython.Runtime.Types {
         /// then IValueEquality.GetValueHashCode.
         /// </summary>
         private static MemberGroup/*!*/ HashResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-            if (typeof(IStructuralEquatable).IsAssignableFrom(type) && !type.IsInterface()) {
+            if (typeof(IStructuralEquatable).IsAssignableFrom(type) && !type.IsInterface) {
 
                 // check and see if __hash__ has been overridden by the base type.
                 foreach (Type t in binder.GetContributingTypes(type)) {
@@ -895,7 +895,7 @@ namespace IronPython.Runtime.Types {
         /// TODO: Can we just always fallback to object.__new__?  If not why not?
         /// </summary>
         private static MemberGroup/*!*/ NewResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-            if (type.IsSealed() && type.IsAbstract()) {
+            if (type.IsSealed && type.IsAbstract) {
                 // static types don't have __new__
                 return MemberGroup.EmptyGroup;
             }
@@ -968,7 +968,7 @@ namespace IronPython.Runtime.Types {
                 }
 
                 foreach (Type t in binder.GetInterfaces(type)) {
-                    if (t.IsGenericType() && t.GetGenericTypeDefinition() == typeof(ICollection<>)) {
+                    if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(ICollection<>)) {
                         MethodInfo genMeth = typeof(InstanceOps).GetMethod(nameof(InstanceOps.GenericLengthMethod));
                         return new MemberGroup(
                             MethodTracker.FromMemberInfo(genMeth.MakeGenericMethod(t.GetGenericArguments()), type)
@@ -1054,7 +1054,7 @@ namespace IronPython.Runtime.Types {
 
         private static MemberGroup/*!*/ AllResolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
             // static types are like modules and define __all__.
-            if (type.IsAbstract() && type.IsSealed()) {
+            if (type.IsAbstract && type.IsSealed) {
                 return new MemberGroup(new ExtensionPropertyTracker("__all__", typeof(InstanceOps).GetMethod("Get__all__").MakeGenericMethod(type), null, null, type));
             }
 
@@ -1166,7 +1166,7 @@ namespace IronPython.Runtime.Types {
 
             // search for IDictionary<K, V> first because it's ICollection<KVP<K, V>> and we want to call ContainsKey
             foreach (Type t in intf) {
-                if (t.IsGenericType() && t.GetGenericTypeDefinition() == typeof(IDictionary<,>)) {
+                if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IDictionary<,>)) {
                     if (t.GetGenericArguments()[0] == typeof(object)) {
                         hasObjectContains = true;
                     }
@@ -1182,7 +1182,7 @@ namespace IronPython.Runtime.Types {
             if (containsMembers == null) {
                 // then look for ICollection<T> for generic __contains__ first if we're not an IDictionary<K, V>
                 foreach (Type t in intf) {
-                    if (t.IsGenericType() && t.GetGenericTypeDefinition() == typeof(ICollection<>)) {
+                    if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(ICollection<>)) {
                         if (t.GetGenericArguments()[0] == typeof(object)) {
                             hasObjectContains = true;
                         }
@@ -1232,7 +1232,7 @@ namespace IronPython.Runtime.Types {
         /// </summary>
         private static void GetEnumeratorContains(Type type, IList<Type> intf, ref List<MemberTracker> containsMembers, ref bool hasObjectContains, Type ienumOfT, Type ienum, string name) {
             foreach (Type t in intf) {
-                if (t.IsGenericType() && t.GetGenericTypeDefinition() == ienumOfT) {
+                if (t.IsGenericType && t.GetGenericTypeDefinition() == ienumOfT) {
                     if (t.GetGenericArguments()[0] == typeof(object)) {
                         hasObjectContains = true;
                     }
@@ -1273,7 +1273,7 @@ namespace IronPython.Runtime.Types {
             }
 
             public MemberGroup/*!*/ Resolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-                if (type.IsSealed() && type.IsAbstract()) {
+                if (type.IsSealed && type.IsAbstract) {
                     // static types don't have PythonOperationKind
                     return MemberGroup.EmptyGroup;
                 }
@@ -1300,7 +1300,7 @@ namespace IronPython.Runtime.Types {
             }
 
             public MemberGroup/*!*/ Resolver(MemberBinder/*!*/ binder, Type/*!*/ type) {
-                if (type.IsSealed() && type.IsAbstract()) {
+                if (type.IsSealed && type.IsAbstract) {
                     // static types don't have PythonOperationKind
                     return MemberGroup.EmptyGroup;
                 }
@@ -1470,7 +1470,7 @@ namespace IronPython.Runtime.Types {
                     res.AddRange(Binder.GetExtensionTypesInternal(pt.UnderlyingSystemType));
                 }
 
-                if (t.IsInterface()) {
+                if (t.IsInterface) {
                     foreach (Type iface in t.GetInterfaces()) {
                         res.Add(iface);
                     }
@@ -1493,7 +1493,7 @@ namespace IronPython.Runtime.Types {
             }
 
             public override IList<Type/*!*/>/*!*/ GetInterfaces(Type/*!*/ t) {
-                if (t.IsInterface()) {
+                if (t.IsInterface) {
                     return t.GetInterfaces();
                 }
 

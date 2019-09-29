@@ -68,8 +68,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override bool Equals(object obj) {
-            PythonSetIndexBinder ob = obj as PythonSetIndexBinder;
-            if (ob == null) {
+            if (!(obj is PythonSetIndexBinder ob)) {
                 return false;
             }
 

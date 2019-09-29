@@ -99,8 +99,7 @@ namespace IronPython.Runtime.Types {
         /// </summary>
         private static IEnumerable<PythonType> GetPythonTypes(string typeName, ICollection<object> bases) {
             foreach (object curBaseType in bases) {
-                PythonType curBasePythonType = curBaseType as PythonType;
-                if (curBasePythonType == null) {
+                if (!(curBaseType is PythonType curBasePythonType)) {
                     throw PythonOps.TypeError(typeName + ": unsupported base type for new-style class " + curBaseType);
                 }
 
@@ -149,9 +148,7 @@ namespace IronPython.Runtime.Types {
         }
 
         public override bool Equals(object obj) {
-            NewTypeInfo other = obj as NewTypeInfo;
-            if (other == null) return false;
-
+            if (!(obj is NewTypeInfo other)) return false;
 
             if (_baseType.Equals(other._baseType) &&
                 _interfaceTypes.Count == other._interfaceTypes.Count) {

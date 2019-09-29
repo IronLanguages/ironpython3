@@ -150,8 +150,7 @@ namespace IronPython.Runtime.Types {
         }
 
         public int FindKey(object key) {
-            string strKey = key as string;
-            if (strKey != null) {
+            if (key is string strKey) {
                 return FindKey(strKey);
             }
 

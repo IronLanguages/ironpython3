@@ -32,8 +32,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args) {
-            IPythonOperable op = target as IPythonOperable;
-            if (op != null) {
+            if (target is IPythonOperable op) {
                 DynamicMetaObject res = op.BindOperation(this, ArrayUtils.Insert(target, args));
                 if (res != null) {
                     return res;
@@ -262,8 +261,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override bool Equals(object obj) {
-            PythonOperationBinder ob = obj as PythonOperationBinder;
-            if (ob == null) {
+            if (!(obj is PythonOperationBinder ob)) {
                 return false;
             }
 

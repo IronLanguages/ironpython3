@@ -481,8 +481,7 @@ namespace IronPython.Runtime {
                     int start, stop, step;
                     slice.indices(_size, out start, out stop, out step);
 
-                    PythonList lstVal = value as PythonList;
-                    if (lstVal != null) {
+                    if (value is PythonList lstVal) {
                         SliceNoStep(start, stop, lstVal);
                     } else {
                         SliceNoStep(start, stop, value);
@@ -1380,32 +1379,28 @@ namespace IronPython.Runtime {
 
         [return: MaybeNotImplemented]
         public static object operator >(PythonList self, object other) {
-            PythonList l = other as PythonList;
-            if (l == null) return NotImplementedType.Value;
+            if (!(other is PythonList l)) return NotImplementedType.Value;
 
             return self.CompareTo(l) > 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
         }
 
         [return: MaybeNotImplemented]
         public static object operator <(PythonList self, object other) {
-            PythonList l = other as PythonList;
-            if (l == null) return NotImplementedType.Value;
+            if (!(other is PythonList l)) return NotImplementedType.Value;
 
             return self.CompareTo(l) < 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
         }
 
         [return: MaybeNotImplemented]
         public static object operator >=(PythonList self, object other) {
-            PythonList l = other as PythonList;
-            if (l == null) return NotImplementedType.Value;
+            if (!(other is PythonList l)) return NotImplementedType.Value;
 
             return self.CompareTo(l) >= 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
         }
 
         [return: MaybeNotImplemented]
         public static object operator <=(PythonList self, object other) {
-            PythonList l = other as PythonList;
-            if (l == null) return NotImplementedType.Value;
+            if (!(other is PythonList l)) return NotImplementedType.Value;
 
             return self.CompareTo(l) <= 0 ? ScriptingRuntimeHelpers.True : ScriptingRuntimeHelpers.False;
         }
@@ -1415,8 +1410,7 @@ namespace IronPython.Runtime {
         #region IStructuralComparable Members
 
         int IStructuralComparable.CompareTo(object other, IComparer comparer) {
-            PythonList l = other as PythonList;
-            if (l == null) {
+            if (!(other is PythonList l)) {
                 throw new ValueErrorException("expected List");
             }
 

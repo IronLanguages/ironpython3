@@ -64,8 +64,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override bool Equals(object obj) {
-            CompatibilityInvokeBinder ob = obj as CompatibilityInvokeBinder;
-            if (ob == null) {
+            if (!(obj is CompatibilityInvokeBinder ob)) {
                 return false;
             }
 

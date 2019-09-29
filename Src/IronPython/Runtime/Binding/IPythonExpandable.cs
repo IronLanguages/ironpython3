@@ -158,11 +158,8 @@ namespace IronPython.Runtime.Binding {
             List<string> res = new List<string>(dict.Keys.Count + names.Count);
             res.AddRange(dict.Keys);
             for (int i = 0; i < names.Count; i++) {
-                string name = names[i] as string;
-
-                if (name == null) {
-                    Extensible<string> es = names[i] as Extensible<string>;
-                    if (es == null) {
+                if (!(names[i] is string name)) {
+                    if (!(names[i] is Extensible<string> es)) {
                         continue;
                     }
 

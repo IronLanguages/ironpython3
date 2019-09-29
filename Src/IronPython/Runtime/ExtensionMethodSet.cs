@@ -104,8 +104,7 @@ namespace IronPython.Runtime {
                 return 0;
             }
             public override bool Equals(object obj) {
-                AssemblyLoadInfo asmLoadInfo = obj as AssemblyLoadInfo;
-                if (asmLoadInfo != null) {
+                if (obj is AssemblyLoadInfo asmLoadInfo) {
                     return Equals(asmLoadInfo);
                 }
                 return false;

@@ -66,8 +66,7 @@ namespace IronPython.Runtime {
         #region IComparable Members
 
         int IComparable.CompareTo(object obj) {
-            Slice other = obj as Slice;
-            if (other == null) throw new ValueErrorException("expected slice");
+            if (!(obj is Slice other)) throw new ValueErrorException("expected slice");
             return Compare(other);
         }
 

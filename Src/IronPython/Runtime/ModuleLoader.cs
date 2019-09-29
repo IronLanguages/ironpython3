@@ -29,8 +29,7 @@ namespace IronPython.Runtime {
                 // if we are a module in a package update the parent package w/ our scope.
                 object parent;
                 if (pc.SystemStateModules.TryGetValue(_parentName, out parent)) {
-                    PythonModule s = parent as PythonModule;
-                    if (s != null) {
+                    if (parent is PythonModule s) {
                         s.__dict__[_name] = newContext.ModuleContext.Module;
                     }
                 }

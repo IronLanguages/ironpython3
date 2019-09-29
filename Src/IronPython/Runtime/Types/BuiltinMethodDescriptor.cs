@@ -129,8 +129,7 @@ namespace IronPython.Runtime.Types {
         }
 
         public bool __eq__(object other) {
-            BuiltinMethodDescriptor bmd = other as BuiltinMethodDescriptor;
-            if (bmd == null) {
+            if (!(other is BuiltinMethodDescriptor bmd)) {
                 return false;
             }
             if (PythonOps.Id(__objclass__) != PythonOps.Id(bmd.__objclass__)) {
@@ -140,8 +139,7 @@ namespace IronPython.Runtime.Types {
         }
 
         public int __cmp__(object other) {
-            BuiltinMethodDescriptor bmd = other as BuiltinMethodDescriptor;
-            if (bmd == null) {
+            if (!(other is BuiltinMethodDescriptor bmd)) {
                 throw PythonOps.TypeError("method.__cmp__(x,y) requires y to be a 'instancemethod', not a {0}", PythonTypeOps.GetName(other));
             }
 

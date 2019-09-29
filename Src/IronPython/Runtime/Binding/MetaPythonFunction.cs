@@ -164,8 +164,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         private static DynamicMetaObject FallbackGetMember(DynamicMetaObjectBinder binder, DynamicMetaObject self, DynamicMetaObject codeContext, DynamicMetaObject errorSuggestion) {
-            PythonGetMemberBinder pyGetMem = binder as PythonGetMemberBinder;
-            if (pyGetMem != null) {
+            if (binder is PythonGetMemberBinder pyGetMem) {
                 return pyGetMem.Fallback(self, codeContext, errorSuggestion);
             }
 

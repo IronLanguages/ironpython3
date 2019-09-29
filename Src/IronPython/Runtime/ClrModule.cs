@@ -389,8 +389,7 @@ the assembly object.")]
                 return;
             }
 
-            string strRef = reference as string;
-            if (strRef != null) {
+            if (reference is string strRef) {
                 AddReference(context, strRef);
                 return;
             }

@@ -44,8 +44,7 @@ namespace IronPython.Runtime {
         }
 
         public override bool Remove(ref DictionaryStorage storage, object key) {
-            string strKey = key as string;
-            if (strKey == null) {
+            if (!(key is string strKey)) {
                 return base.Remove(ref storage, key);
             }
 
@@ -221,8 +220,7 @@ namespace IronPython.Runtime {
                 return value != Uninitialized.Instance;
             }
 
-            string strKey = key as string;
-            if(strKey != null) {
+            if(key is string strKey) {
                 return TryGetLazyValue(strKey, out value);
             }
 
@@ -237,8 +235,7 @@ namespace IronPython.Runtime {
                 } else {
                     // member exists, need to remove it from the base class
                     // in case it differs from the member we actually have.
-                    string strKey = kvp.Key as string;
-                    if (strKey != null && GetMember(strKey).Length > 0) {
+                    if (kvp.Key is string strKey && GetMember(strKey).Length > 0) {
                         base.Remove(kvp.Key);
                     }
                 }

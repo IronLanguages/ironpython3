@@ -668,8 +668,7 @@ namespace IronPython.Compiler.Ast {
             if (Variables != null) {
                 foreach (PythonVariable variable in Variables.Values) {
                     if (variable.Kind != VariableKind.Global) {
-                        ClosureExpression closure = GetVariableExpression(variable) as ClosureExpression;
-                        if (closure != null) {
+                        if (GetVariableExpression(variable) is ClosureExpression closure) {
                             init.Add(closure.Create());
                             locals.Add((MSAst.ParameterExpression)closure.ClosureCell);
                         } else if (variable.Kind == VariableKind.Local) {

@@ -1830,8 +1830,7 @@ namespace IronPython.Compiler {
             Expression ret = ParseFactor();
             while (true) {
                 Token t = PeekToken();
-                OperatorToken ot = t as OperatorToken;
-                if (ot == null) return ret;
+                if (!(t is OperatorToken ot)) return ret;
 
                 int prec = ot.Precedence;
                 if (prec >= precedence) {

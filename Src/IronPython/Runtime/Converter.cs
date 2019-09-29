@@ -468,11 +468,9 @@ namespace IronPython.Runtime {
             Type TypeVal = value as Type;
             if (TypeVal != null) return TypeVal;
 
-            PythonType pythonTypeVal = value as PythonType;
-            if (pythonTypeVal != null) return pythonTypeVal.UnderlyingSystemType;
+            if (value is PythonType pythonTypeVal) return pythonTypeVal.UnderlyingSystemType;
 
-            TypeGroup typeCollision = value as TypeGroup;
-            if (typeCollision != null) {
+            if (value is TypeGroup typeCollision) {
                 Type nonGenericType;
                 if (typeCollision.TryGetNonGenericType(out nonGenericType)) {
                     return nonGenericType;

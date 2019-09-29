@@ -1181,13 +1181,11 @@ namespace IronPython.Runtime {
         internal static SetStorage GetFrozenItems(object o) {
             Debug.Assert(!(o is SetStorage));
 
-            FrozenSetCollection frozenset = o as FrozenSetCollection;
-            if (frozenset != null) {
+            if (o is FrozenSetCollection frozenset) {
                 return frozenset._items;
             }
 
-            SetCollection set = o as SetCollection;
-            if (set != null) {
+            if (o is SetCollection set) {
                 return set._items.Clone();
             }
 
@@ -1217,14 +1215,12 @@ namespace IronPython.Runtime {
         public static bool GetItemsIfSet(object o, out SetStorage items) {
             Debug.Assert(!(o is SetStorage));
 
-            FrozenSetCollection frozenset = o as FrozenSetCollection;
-            if (frozenset != null) {
+            if (o is FrozenSetCollection frozenset) {
                 items = frozenset._items;
                 return true;
             }
 
-            SetCollection set = o as SetCollection;
-            if (set != null) {
+            if (o is SetCollection set) {
                 items = set._items;
                 return true;
             }
@@ -1239,8 +1235,7 @@ namespace IronPython.Runtime {
         /// </summary>
         /// <returns>True if o is a set or frozenset, false otherwise</returns>
         internal static bool GetHashableSetIfSet(ref object o) {
-            SetCollection set = o as SetCollection;
-            if (set != null) {
+            if (o is SetCollection set) {
                 if (IsHashable(set)) {
                     return true;
                 }

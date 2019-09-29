@@ -38,8 +38,7 @@ namespace IronPython.Compiler {
         }
 
         protected static CodeContext GetContextForScope(Scope scope, SourceUnit sourceUnit) {
-            var ext = scope.GetExtension(sourceUnit.LanguageContext.ContextId) as PythonScopeExtension;
-            if (ext == null) {
+            if (!(scope.GetExtension(sourceUnit.LanguageContext.ContextId) is PythonScopeExtension ext)) {
                 ext = sourceUnit.LanguageContext.EnsureScopeExtension(scope) as PythonScopeExtension;
             }
 

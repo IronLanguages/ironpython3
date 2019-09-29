@@ -438,8 +438,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         private static string CastString(object o) {
-            string res = o as string;
-            if (res != null) {
+            if (o is string res) {
                 return res;
             }
 
@@ -447,13 +446,11 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static string AsString(object o) {
-            string res = o as string;
-            if (res != null) {
+            if (o is string res) {
                 return res;
             }
 
-            Extensible<string> es = o as Extensible<string>;
-            if (es != null) {
+            if (o is Extensible<string> es) {
                 return es.Value;
             }
 
@@ -1290,13 +1287,11 @@ namespace IronPython.Runtime.Operations {
         [SpecialName]
         [return: MaybeNotImplemented]
         public static object Mod(CodeContext/*!*/ context, object other, string self) {
-            string str = other as string;
-            if (str != null) {
+            if (other is string str) {
                 return new StringFormatter(context, str, self).Format();
             }
 
-            Extensible<string> es = other as Extensible<string>;
-            if (es != null) {
+            if (other is Extensible<string> es) {
                 return new StringFormatter(context, es.Value, self).Format();
             }
 

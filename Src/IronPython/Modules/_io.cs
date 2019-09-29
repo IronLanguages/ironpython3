@@ -210,8 +210,7 @@ namespace IronPython.Modules {
 
                 int count = 0;
                 foreach (object line in this) {
-                    Bytes bytes = line as Bytes;
-                    if (bytes != null) {
+                    if (line is Bytes bytes) {
                         res.AddNoLock(line);
                         count += bytes.Count;
                         if (count >= size) {
@@ -220,8 +219,7 @@ namespace IronPython.Modules {
                         continue;
                     }
 
-                    string str = line as string;
-                    if (str != null) {
+                    if (line is string str) {
                         res.AddNoLock(line);
                         count += str.Length;
                         if (count >= size) {
@@ -300,13 +298,11 @@ namespace IronPython.Modules {
                     return false;
                 }
 
-                Bytes bytes = _current as Bytes;
-                if (bytes != null) {
+                if (_current is Bytes bytes) {
                     return bytes.Count > 0;
                 }
 
-                string str = _current as string;
-                if (str != null) {
+                if (_current is string str) {
                     return str.Length > 0;
                 }
 
@@ -499,8 +495,7 @@ namespace IronPython.Modules {
                 }
 
                 Bytes data = GetBytes(dataObj, "read()");
-                IList<byte> bytes = buf as IList<byte>;
-                if (bytes != null) {
+                if (buf is IList<byte> bytes) {
                     for (int i = 0; i < data.Count; i++) {
                         bytes[i] = data._bytes[i];
                     }
@@ -1741,8 +1736,7 @@ namespace IronPython.Modules {
             public object reader {
                 get { return _reader; }
                 set {
-                    BufferedReader reader = value as BufferedReader;
-                    if (reader == null) {
+                    if (!(value is BufferedReader reader)) {
                         reader = BufferedReader.Create(context, value, DEFAULT_BUFFER_SIZE);
                     }
                     _reader = reader;
@@ -1752,8 +1746,7 @@ namespace IronPython.Modules {
             public object writer {
                 get { return _writer; }
                 set {
-                    BufferedWriter writer = value as BufferedWriter;
-                    if (writer == null) {
+                    if (!(value is BufferedWriter writer)) {
                         writer = BufferedWriter.Create(context, value, DEFAULT_BUFFER_SIZE, null);
                     }
                     _writer = writer;
@@ -1999,8 +1992,7 @@ namespace IronPython.Modules {
             public override object newlines {
                 get {
                     if (_readUniversal && _decoder != null) {
-                        IncrementalNewlineDecoder typedDecoder = _decoder as IncrementalNewlineDecoder;
-                        if (typedDecoder != null) {
+                        if (_decoder is IncrementalNewlineDecoder typedDecoder) {
                             return typedDecoder.newlines;
                         } else {
                             return PythonOps.GetBoundAttr(context, _decoder, "newlines");
@@ -2082,10 +2074,8 @@ namespace IronPython.Modules {
             }
 
             public override BigInteger write(CodeContext/*!*/ context, object s) {
-                string str = s as string;
-                if (str == null) {
-                    Extensible<string> es = s as Extensible<string>;
-                    if (es == null) {
+                if (!(s is string str)) {
+                    if (!(s is Extensible<string> es)) {
                         throw PythonOps.TypeError("must be unicode, not {0}", PythonTypeOps.GetName(s));
                     }
                     str = es.Value;
@@ -2897,8 +2887,7 @@ namespace IronPython.Modules {
                     );
                 }
 
-                string decoded = output as string;
-                if (decoded == null) {
+                if (!(output is string decoded)) {
                     if (output is Extensible<string>) {
                         decoded = ((Extensible<string>)output).Value;
                     } else {
@@ -3073,14 +3062,12 @@ namespace IronPython.Modules {
                 return true;
             }
 
-            Extensible<int> ei = i as Extensible<int>;
-            if (ei != null) {
+            if (i is Extensible<int> ei) {
                 res = ei.Value;
                 return true;
             }
 
-            Extensible<BigInteger> ebi = i as Extensible<BigInteger>;
-            if (ebi != null) {
+            if (i is Extensible<BigInteger> ebi) {
                 res = ebi.Value;
                 return true;
             }
@@ -3131,14 +3118,12 @@ namespace IronPython.Modules {
                 return ((BigInteger)i).AsInt32(out value);
             }
 
-            Extensible<int> ei = i as Extensible<int>;
-            if (ei != null) {
+            if (i is Extensible<int> ei) {
                 value = ei.Value;
                 return true;
             }
 
-            Extensible<BigInteger> ebi = i as Extensible<BigInteger>;
-            if (ebi != null) {
+            if (i is Extensible<BigInteger> ebi) {
                 return ebi.Value.AsInt32(out value);
             }
 
@@ -3152,16 +3137,14 @@ namespace IronPython.Modules {
         private static Bytes GetBytes(object o, string name) {
             if(o == null)
                 return null;
-            
-            Bytes bytes = o as Bytes;
-            if (bytes != null) {
+
+            if (o is Bytes bytes) {
                 return bytes;
             }
 
             string s = o as string;
             if (s == null) {
-                Extensible<string> es = o as Extensible<string>;
-                if (es != null) {
+                if (o is Extensible<string> es) {
                     s = es.Value;
                 }
             }
@@ -3177,8 +3160,7 @@ namespace IronPython.Modules {
         /// Convert most bytearray-like objects into IList of byte
         /// </summary>
         private static IList<byte> GetBytes(object buf) {
-            IList<byte> bytes = buf as IList<byte>;
-            if (bytes != null) {
+            if (buf is IList<byte> bytes) {
                 return bytes;
             }
 
@@ -3192,8 +3174,7 @@ namespace IronPython.Modules {
                 return PythonOps.MakeByteArray(str);
             }
 
-            ArrayModule.array arr = buf as ArrayModule.array;
-            if (arr != null) {
+            if (buf is ArrayModule.array arr) {
                 return arr.ToByteArray();
             }
 

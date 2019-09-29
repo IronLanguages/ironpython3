@@ -35,8 +35,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static object GetPropertyHelper(object prop, object instance, string name) {
-            PythonTypeSlot desc = prop as PythonTypeSlot;
-            if (desc == null) {
+            if (!(prop is PythonTypeSlot desc)) {
                 throw PythonOps.TypeError("Expected property for {0}, but found {1}",
                     name.ToString(), DynamicHelpers.GetPythonType(prop).Name);
             }
@@ -46,8 +45,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static void SetPropertyHelper(object prop, object instance, object newValue, string name) {
-            PythonTypeSlot desc = prop as PythonTypeSlot;
-            if (desc == null) {
+            if (!(prop is PythonTypeSlot desc)) {
                 throw PythonOps.TypeError("Expected settable property for {0}, but found {1}",
                     name.ToString(), DynamicHelpers.GetPythonType(prop).Name);
             }
@@ -95,8 +93,7 @@ namespace IronPython.Runtime.Operations {
 
             // TODO: dt gives us a PythonContext which we should use
             PythonType dt = instance.PythonType;
-            PythonTypeSlot dts = method as PythonTypeSlot;
-            if (dts != null) {
+            if (method is PythonTypeSlot dts) {
                 if (!dts.TryGetValue(DefaultContext.Default, instance, dt, out callable))
                     throw PythonOps.AttributeErrorForMissingAttribute(dt.Name, name);
             }

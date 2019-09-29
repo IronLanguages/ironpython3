@@ -127,8 +127,7 @@ namespace IronPython.Compiler {
         }
 
         private static PythonConstantExpression ExtractConstant(LightExpression<LookupCompilationDelegate> lambda) {
-            var body = lambda.Body as BlockExpression;
-            if (body == null || 
+            if (!(lambda.Body is BlockExpression body) || 
                 body.Expressions.Count != 2 || 
                 !(body.Expressions[0] is DebugInfoExpression) || 
                 body.Expressions[1].NodeType  != ExpressionType.Convert ||

@@ -990,8 +990,7 @@ for k, v in toError.items():
         /// creating a new exception if necessary
         /// </summary>
         internal static Exception ToClr(object pythonException) {
-            PythonExceptions.BaseException pyExcep = pythonException as PythonExceptions.BaseException;
-            if (pyExcep != null) {
+            if (pythonException is BaseException pyExcep) {
                 return pyExcep.GetClrException();
             }
 
@@ -1019,8 +1018,7 @@ for k, v in toError.items():
 #if FEATURE_EXCEPTION_STATE
                 if (clrException is ThreadAbortException ta) {
                     // transform TA w/ our reason into a KeyboardInterrupt exception.
-                    KeyboardInterruptException reason = ta.ExceptionState as KeyboardInterruptException;
-                    if (reason != null) {
+                    if (ta.ExceptionState is KeyboardInterruptException reason) {
                         ta.Data[typeof(KeyboardInterruptException)] = reason;
                         return ToPython(reason);
                     }

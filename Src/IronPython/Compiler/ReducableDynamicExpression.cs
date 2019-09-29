@@ -54,8 +54,7 @@ namespace IronPython.Compiler {
         #region ILightExceptionAwareExpression Members
 
         Expression ILightExceptionAwareExpression.ReduceForLightExceptions() {
-            ILightExceptionBinder binder = Binder as ILightExceptionBinder;
-            if (binder != null) {
+            if (Binder is ILightExceptionBinder binder) {
                 var lightBinder = binder.GetLightExceptionBinder() as DynamicMetaObjectBinder;
                 if (lightBinder != binder) {
                     return DynamicExpression.Dynamic(

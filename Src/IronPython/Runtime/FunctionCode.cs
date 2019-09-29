@@ -584,18 +584,15 @@ namespace IronPython.Runtime {
                 UpdateDelegate(context.LanguageContext, true);
             }
 
-            Func<CodeContext, CodeContext> classTarget = Target as Func<CodeContext, CodeContext>;
-            if (classTarget != null) {
+            if (Target is Func<CodeContext, CodeContext> classTarget) {
                 return classTarget(context);
             }
 
-            LookupCompilationDelegate moduleCode = Target as LookupCompilationDelegate;
-            if (moduleCode != null) {
+            if (Target is LookupCompilationDelegate moduleCode) {
                 return moduleCode(context, this);
             }
 
-            Func<FunctionCode, object> optimizedModuleCode = Target as Func<FunctionCode, object>;
-            if (optimizedModuleCode != null) {
+            if (Target is Func<FunctionCode, object> optimizedModuleCode) {
                 return optimizedModuleCode(this);
             }
 
@@ -814,8 +811,7 @@ namespace IronPython.Runtime {
                 // If the adaptive compiler decides to compile this function, we
                 // want to store the new compiled target. This saves us from going
                 // through the interpreter stub every call.
-                var lightLambda = result.Target as LightLambda;
-                if (lightLambda != null) {
+                if (result.Target is LightLambda lightLambda) {
                     lightLambda.Compile += handler;
                 }
 
@@ -837,8 +833,7 @@ namespace IronPython.Runtime {
                 // If the adaptive compiler decides to compile this function, we
                 // want to store the new compiled target. This saves us from going
                 // through the interpreter stub every call.
-                var lightLambda = result.Target as LightLambda;
-                if (lightLambda != null) {
+                if (result.Target is LightLambda lightLambda) {
                     lightLambda.Compile += handler;
                 }
 

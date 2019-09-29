@@ -45,16 +45,14 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override T BindDelegate<T>(CallSite<T> site, object[] args) {
-            IFastSettable fastSet = args[0] as IFastSettable;
-            if (fastSet != null) {
+            if (args[0] is IFastSettable fastSet) {
                 T res = fastSet.MakeSetBinding<T>(site, this);
                 if (res != null) {
                     return res;
                 }
             }
 
-            IPythonObject ipo = args[0] as IPythonObject;
-            if (ipo != null && !(ipo is IProxyObject)) {
+            if (args[0] is IPythonObject ipo && !(ipo is IProxyObject)) {
                 FastBindResult<T> res = UserTypeOps.MakeSetBinding<T>(Context.SharedContext, site, ipo, args[1], this);
 
                 if (res.Target != null) {
@@ -83,8 +81,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override bool Equals(object obj) {
-            PythonSetMemberBinder ob = obj as PythonSetMemberBinder;
-            if (ob == null) {
+            if (!(obj is PythonSetMemberBinder ob)) {
                 return false;
             }
 

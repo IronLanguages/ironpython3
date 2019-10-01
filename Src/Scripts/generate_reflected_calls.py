@@ -97,17 +97,17 @@ def gen_fast_creation(cw):
         cw.exit_block()
         
         cw.write('')
-        cw.write('if (t.IsEnum()) return SlowCreate(target, pi);')
+        cw.write('if (t.IsEnum) return SlowCreate(target, pi);')
         
         cw.enter_block('switch (t.GetTypeCode())')
         cw.enter_block('case TypeCode.Object:')
         if i == MAX_ARGS-1:
             cw.write('Debug.Assert(pi.Length == %d);' % (MAX_ARGS-1))
-            cw.write('if (t.IsValueType()) goto default;')
+            cw.write('if (t.IsValueType) goto default;')
             cw.write('')
             cw.write('return new FuncCallInstruction<%s>(target);' % (', '.join(get_type_names(i) + ['Object']), ) )
         else:
-            cw.enter_block('if (t != typeof(object) && (IndexIsNotReturnType(%d, target, pi) || t.IsValueType()))' % (i, ))
+            cw.enter_block('if (t != typeof(object) && (IndexIsNotReturnType(%d, target, pi) || t.IsValueType))' % (i, ))
             cw.write("// if we're on the return type relaxed delegates makes it ok to use object")
             cw.write("goto default;")
             cw.exit_block() # if 

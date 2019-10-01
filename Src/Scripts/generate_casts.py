@@ -94,7 +94,7 @@ def generate_type_cast(cw, t):
 
     # enums (only if int cast is valid)
     if valid_cast(Int32, t):
-        cond.condition("if (type.IsEnum())")
+        cond.condition("if (type.IsEnum)")
         cw.write("return (%(to_t)s)ExplicitCastEnumTo%(enum)s(o);", to_t = t, enum = get_enum_type_for(t))
 
     # nullables
@@ -126,7 +126,7 @@ def generate_nullable_type_cast(cw, t):
 
     # enums (only if int cast is valid)
     if valid_cast(Int32, t):
-        cond.condition("if (type.IsEnum())")
+        cond.condition("if (type.IsEnum)")
         cw.write("return (Nullable<%(to_t)s>)ExplicitCastEnumTo%(enum)s(o);", to_t = t, enum = get_enum_type_for(t))
         
     # nullables

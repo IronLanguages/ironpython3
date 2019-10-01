@@ -696,8 +696,7 @@ namespace IronPython.Runtime {
 
             if (_buckets != null) {
                 using (new OrderedLocker(this, into)) {
-                    CommonDictionaryStorage commonInto = into as CommonDictionaryStorage;
-                    if (commonInto != null) {
+                    if (@into is CommonDictionaryStorage commonInto) {
                         CommonCopyTo(commonInto);
                     } else {
                         UncommonCopyTo(ref into);

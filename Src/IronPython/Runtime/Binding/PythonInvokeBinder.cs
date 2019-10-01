@@ -61,9 +61,8 @@ namespace IronPython.Runtime.Binding {
 
         private DynamicMetaObject BindWorker(DynamicMetaObject/*!*/ context, DynamicMetaObject/*!*/ target, DynamicMetaObject/*!*/[]/*!*/ args) {
             // we don't have CodeContext if an IDO falls back to us when we ask them to produce the Call
-            IPythonInvokable icc = target as IPythonInvokable;
 
-            if (icc != null) {
+            if (target is IPythonInvokable icc) {
                 // call it and provide the context
                 return icc.Invoke(
                     this,
@@ -84,8 +83,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override T BindDelegate<T>(CallSite<T> site, object[] args) {
-            IFastInvokable ifi = args[1] as IFastInvokable;
-            if (ifi != null) {
+            if (args[1] is IFastInvokable ifi) {
                 FastBindResult<T> res = ifi.MakeInvokeBinding(site, this, (CodeContext)args[0], ArrayUtils.ShiftLeft(args, 2));
                 if (res.Target != null) {
                     if (res.ShouldCache) {
@@ -130,8 +128,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override bool Equals(object obj) {
-            PythonInvokeBinder ob = obj as PythonInvokeBinder;
-            if (ob == null) {
+            if (!(obj is PythonInvokeBinder ob)) {
                 return false;
             }
 

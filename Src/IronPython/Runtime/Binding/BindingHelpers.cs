@@ -47,8 +47,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         internal static bool IsNoThrow(DynamicMetaObjectBinder action) {
-            PythonGetMemberBinder gmb = action as PythonGetMemberBinder;
-            if (gmb != null) {
+            if (action is PythonGetMemberBinder gmb) {
                 return gmb.IsNoThrow;
             }
 
@@ -84,19 +83,16 @@ namespace IronPython.Runtime.Binding {
         /// <returns></returns>
         internal static CallSignature GetCallSignature(DynamicMetaObjectBinder/*!*/ action) {
             // Python'so own InvokeBinder which has a real sig
-            PythonInvokeBinder pib = action as PythonInvokeBinder;
-            if (pib != null) {
+            if (action is PythonInvokeBinder pib) {
                 return pib.Signature;
             }
 
             // DLR Invoke which has a argument array
-            InvokeBinder iac = action as InvokeBinder;
-            if (iac != null) {
+            if (action is InvokeBinder iac) {
                 return CallInfoToSignature(iac.CallInfo);
             }
 
-            InvokeMemberBinder cla = action as InvokeMemberBinder;
-            if (cla != null) {
+            if (action is InvokeMemberBinder cla) {
                 return CallInfoToSignature(cla.CallInfo);
             }
             
@@ -202,9 +198,7 @@ namespace IronPython.Runtime.Binding {
         }
         
         private static BuiltinFunction TryConvertToBuiltinFunction(object o) {
-            BuiltinMethodDescriptor md = o as BuiltinMethodDescriptor;
-
-            if (md != null) {
+            if (o is BuiltinMethodDescriptor md) {
                 return md.Template;
             }
 
@@ -260,8 +254,7 @@ namespace IronPython.Runtime.Binding {
             Expression typeTest = null;
             for (int i = 0; i < args.Length; i++) {
                 if (args[i].HasValue) {
-                    IPythonObject val = args[i].Value as IPythonObject;
-                    if (val != null) {
+                    if (args[i].Value is IPythonObject val) {
                         Expression test = BindingHelpers.CheckTypeVersion(
                             AstUtils.Convert(args[i].Expression, val.GetType()),
                             val.PythonType.Version
@@ -338,13 +331,11 @@ namespace IronPython.Runtime.Binding {
         /// InvokeBinder.
         /// </summary>
         internal static DynamicMetaObject/*!*/ InvokeFallback(DynamicMetaObjectBinder/*!*/ action, Expression codeContext, DynamicMetaObject target, DynamicMetaObject/*!*/[]/*!*/ args) {
-            InvokeBinder act = action as InvokeBinder;
-            if (act != null) {
+            if (action is InvokeBinder act) {
                 return act.FallbackInvoke(target, args);
             }
 
-            PythonInvokeBinder invoke = action as PythonInvokeBinder;
-            if (invoke != null) {
+            if (action is PythonInvokeBinder invoke) {
                 return invoke.Fallback(codeContext, target, args);
             }
 

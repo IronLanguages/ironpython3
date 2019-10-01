@@ -76,8 +76,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 return LightExceptions.Throw(PythonOps.ImportError("No module named {0}", name));
             }
 
-            PythonModule mod = ret as PythonModule;
-            if (mod != null && from != null) {
+            if (ret is PythonModule mod && from != null) {
                 string strAttrName;
                 for (int i = 0; i < from.Count; i++) {
                     object attrName = from[i];
@@ -447,8 +446,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 "__format__",
                 out res);
 
-            string strRes = res as string;
-            if (strRes == null) {
+            if (!(res is string strRes)) {
                 throw PythonOps.TypeError("{0}.__format__ must return string or unicode, not {1}", PythonTypeOps.GetName(argValue), PythonTypeOps.GetName(res));
             }
 
@@ -733,8 +731,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         [LightThrowing]
         public static object issubclass(CodeContext/*!*/ context, object o, object typeinfo) {
-            PythonTuple pt = typeinfo as PythonTuple;
-            if (pt != null) {
+            if (typeinfo is PythonTuple pt) {
                 // Recursively inspect nested tuple(s)
                 foreach (object subTypeInfo in pt) {
                     try {
@@ -838,8 +835,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:ValidateArgumentsOfPublicMethods")]
         public static object locals(CodeContext/*!*/ context) {
             PythonDictionary dict = context.Dict;
-            ObjectAttributesAdapter adapter = dict._storage as ObjectAttributesAdapter;
-            if (adapter != null) {
+            if (dict._storage is ObjectAttributesAdapter adapter) {
                 // we've wrapped Locals in an PythonDictionary, give the user back the
                 // original object.
                 return adapter.Backing;
@@ -1229,8 +1225,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
             string stringValue = value as string;
             if (stringValue == null) {
-                ExtensibleString es = value as ExtensibleString;
-                if (es != null) stringValue = es.Value;
+                if (value is ExtensibleString es) stringValue = es.Value;
             }
             
             if (stringValue != null) {
@@ -1240,8 +1235,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 return stringValue[0];
             }
 
-            IList<byte> bytes = value as IList<byte>;
-            if (bytes != null) {
+            if (value is IList<byte> bytes) {
                 if (bytes.Count != 1) {
                     throw PythonOps.TypeError("expected a character, but string of length {0} found", bytes.Count);
                 }

@@ -47,8 +47,7 @@ namespace IronPython.Runtime {
         #region ICodeFormattable Members
 
         public virtual string/*!*/ __repr__(CodeContext/*!*/ context) {
-            BuiltinFunction bf = _func as BuiltinFunction;
-            if (bf != null) {
+            if (_func is BuiltinFunction bf) {
                 return String.Format("<method {0} of {1} objects>",
                     PythonOps.Repr(context, bf.Name),
                     PythonOps.Repr(context, DynamicHelpers.GetPythonTypeFromType(bf.DeclaringType).Name));
@@ -61,8 +60,7 @@ namespace IronPython.Runtime {
         #endregion
 
         public override bool Equals(object obj) {
-            ClassMethodDescriptor cmd = obj as ClassMethodDescriptor;
-            if (cmd == null) return false;
+            if (!(obj is ClassMethodDescriptor cmd)) return false;
 
             return cmd._func == _func;
         }

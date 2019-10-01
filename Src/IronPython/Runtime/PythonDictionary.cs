@@ -411,10 +411,9 @@ namespace IronPython.Runtime {
 
             if (cls == TypeCache.Dict) {
                 string str;
-                ICollection ic = o as ICollection;
 
                 // creating our own dict, try and get the ideal size and add w/o locks
-                if (ic != null) {
+                if (o is ICollection ic) {
                     pyDict = new PythonDictionary(new CommonDictionaryStorage(ic.Count));
                 } else if ((str = o as string) != null) {
                     pyDict = new PythonDictionary(str.Length);
@@ -614,12 +613,10 @@ namespace IronPython.Runtime {
         private bool EqualsWorker(object other, IEqualityComparer comparer) {
             if (Object.ReferenceEquals(this, other)) return true;
 
-            IDictionary<object, object> oth = other as IDictionary<object, object>;
-            if (oth == null) return false;
+            if (!(other is IDictionary<object, object> oth)) return false;
             if (oth.Count != Count) return false;
 
-            PythonDictionary pd = other as PythonDictionary;
-            if (pd != null) {
+            if (other is PythonDictionary pd) {
                 return ValueEqualsPythonDict(pd, comparer);
             }
             // we cannot call Compare here and compare against zero because Python defines
@@ -843,9 +840,7 @@ namespace IronPython.Runtime {
         public override void Add(ref DictionaryStorage storage, object key, object value) {
             _storage.Add(key, value);
 
-            string s1 = key as string;
-            string s2 = value as string;
-            if (s1 != null && s2 != null) {
+            if (key is string s1 && value is string s2) {
                 Environment.SetEnvironmentVariable(s1, s2);
             }
         }
@@ -853,8 +848,7 @@ namespace IronPython.Runtime {
         public override bool Remove(ref DictionaryStorage storage, object key) {
             bool res = _storage.Remove(key);
 
-            string s = key as string;
-            if (s != null) {
+            if (key is string s) {
                 Environment.SetEnvironmentVariable(s, string.Empty);
             }
 
@@ -875,8 +869,7 @@ namespace IronPython.Runtime {
 
         public override void Clear(ref DictionaryStorage storage) {
             foreach (var x in GetItems()) {
-                string key = x.Key as string;
-                if (key != null) {
+                if (x.Key is string key) {
                     Environment.SetEnvironmentVariable(key, string.Empty);
                 }
             }

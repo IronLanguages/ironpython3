@@ -522,8 +522,7 @@ namespace IronPython.Modules {
             }
 
             private void CheckSliceAssignType(object value) {
-                array pa = value as array;
-                if (pa == null) {
+                if (!(value is array pa)) {
                     throw PythonOps.TypeError("can only assign array (not \"{0}\") to array slice", PythonTypeOps.GetName(value));
                 } else if (pa != null && pa._typeCode != _typeCode) {
                     throw PythonOps.TypeError("bad argument type for built-in operation");
@@ -1041,8 +1040,7 @@ namespace IronPython.Modules {
             }
 
             bool IStructuralEquatable.Equals(object other, IEqualityComparer comparer) {
-                array pa = other as array;
-                if (pa == null) return false;
+                if (!(other is array pa)) return false;
 
                 if (_data.Length != pa._data.Length) return false;
 
@@ -1142,8 +1140,7 @@ namespace IronPython.Modules {
             #region IRichComparable Members
 
             private bool TryCompare(object other, out int res) {
-                array pa = other as array;
-                if (pa == null || pa.typecode != typecode) {
+                if (!(other is array pa) || pa.typecode != typecode) {
                     res = 0;
                     return false;
                 }

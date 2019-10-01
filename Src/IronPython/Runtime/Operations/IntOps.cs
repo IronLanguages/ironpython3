@@ -78,8 +78,7 @@ namespace IronPython.Runtime.Operations {
                 return ((IConvertible)o).ToInt32(null);
             }
 
-            Extensible<string> es = o as Extensible<string>;
-            if (es != null) {
+            if (o is Extensible<string> es) {
                 // __int__ takes precedence, call it if it's available...
                 object value;
                 if (PythonTypeOps.TryInvokeUnaryOperator(DefaultContext.Default, es, "__int__", out value)) {

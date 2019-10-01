@@ -1031,8 +1031,7 @@ namespace IronPython.Runtime.Binding {
                 #endregion
 
                 public override bool Equals(object obj) {
-                    CachedInfoKey other = obj as CachedInfoKey;
-                    if (other != null) {
+                    if (obj is CachedInfoKey other) {
                         return Equals(other);
                     }
 

@@ -151,8 +151,7 @@ namespace IronPython.Runtime {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public object __closure__ {
             get {
-                var storage = (Context.Dict._storage as RuntimeVariablesDictionaryStorage);
-                if (storage != null) {
+                if (Context.Dict._storage is RuntimeVariablesDictionaryStorage storage) {
                     object[] res = new object[storage.Names.Length];
                     for (int i = 0; i < res.Length; i++) {
                         res[i] = storage.GetCell(i);
@@ -551,8 +550,7 @@ namespace IronPython.Runtime {
 
         [Python3Warning("cell comparisons not supported in 3.x")]
         public int __cmp__(object other) {
-            ClosureCell cc = other as ClosureCell;
-            if (cc == null) throw PythonOps.TypeError("cell.__cmp__(x,y) expected cell, got {0}", PythonTypeOps.GetName(other));
+            if (!(other is ClosureCell cc)) throw PythonOps.TypeError("cell.__cmp__(x,y) expected cell, got {0}", PythonTypeOps.GetName(other));
 
             return PythonOps.Compare(Value, cc.Value);
         }

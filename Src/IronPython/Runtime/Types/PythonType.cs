@@ -330,8 +330,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         [SpecialName, PropertyMethod, WrapperDescriptor]
         public static PythonType Get__base__(CodeContext/*!*/ context, PythonType/*!*/ type) {
             foreach (object typeObj in Get__bases__(context, type)) {
-                PythonType pt = typeObj as PythonType;
-                if (pt != null) {
+                if (typeObj is PythonType pt) {
                     return pt;
                 }
             }
@@ -429,8 +428,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
                 string s = en.Current as string;
 
                 if (s == null) {
-                    Extensible<string> es = en.Current as Extensible<string>;
-                    if (es != null) {
+                    if (en.Current is Extensible<string> es) {
                         s = es.Value;
                     }
                 }
@@ -464,16 +462,14 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         [SpecialName, PropertyMethod, WrapperDescriptor]
         public static void Set__bases__(CodeContext/*!*/ context, PythonType/*!*/ type, object value) {
-            // validate we got a tuple...           
-            PythonTuple t = value as PythonTuple;
-            if (t == null) throw PythonOps.TypeError("expected tuple of types or old-classes, got '{0}'", PythonTypeOps.GetName(value));
+            // validate we got a tuple...
+            if (!(value is PythonTuple t)) throw PythonOps.TypeError("expected tuple of types or old-classes, got '{0}'", PythonTypeOps.GetName(value));
 
             List<PythonType> ldt = new List<PythonType>();
 
             foreach (object o in t) {
                 // gather all the type objects...
-                PythonType adt = o as PythonType;
-                if (adt == null) {
+                if (!(o is PythonType adt)) {
                     throw PythonOps.TypeError("expected tuple of types, got '{0}'", PythonTypeOps.GetName(o));
                 }
                 ldt.Add(adt);
@@ -1323,8 +1319,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             lock (_subtypesLock) {
                 if (pt._subtypes != null) {
                     foreach (WeakReference wr in pt._subtypes) {
-                        PythonType type = wr.Target as PythonType;
-                        if (type != null) {
+                        if (wr.Target is PythonType type) {
                             type._objectNew = null;
 
                             ClearObjectNewInSubclasses(type);
@@ -1338,8 +1333,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             lock (_subtypesLock) {
                 if (pt._subtypes != null) {
                     foreach (WeakReference wr in pt._subtypes) {
-                        PythonType type = wr.Target as PythonType;
-                        if (type != null) {
+                        if (wr.Target is PythonType type) {
                             type._objectInit = null;
 
                             ClearObjectInitInSubclasses(type);
@@ -1395,8 +1389,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         internal static PythonTypeSlot ToTypeSlot(object value) {
-            PythonTypeSlot pts = value as PythonTypeSlot;
-            if (pts != null) {
+            if (value is PythonTypeSlot pts) {
                 return pts;
             }
 
@@ -1604,8 +1597,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// <returns></returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
         internal bool TryGetNonCustomBoundMember(CodeContext context, object instance, string name, out object value) {
-            IPythonObject sdo = instance as IPythonObject;
-            if (sdo != null) {
+            if (instance is IPythonObject sdo) {
                 PythonDictionary iac = sdo.Dict;
                 if (iac != null && iac.TryGetValue(name, out value)) {
                     return true;
@@ -1699,8 +1691,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
 
             // set the attribute on the instance
-            IPythonObject sdo = instance as IPythonObject;
-            if (sdo != null) {
+            if (instance is IPythonObject sdo) {
                 PythonDictionary iac = sdo.Dict;
                 if (iac == null && sdo.PythonType.HasDictionary) {
                     iac = MakeDictionary();
@@ -1740,8 +1731,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
 
             // set the attribute on the instance
-            IPythonObject sdo = instance as IPythonObject;
-            if (sdo != null) {
+            if (instance is IPythonObject sdo) {
                 PythonDictionary dict = sdo.Dict;
                 if (dict == null && sdo.PythonType.HasDictionary) {
                     dict = MakeDictionary();
@@ -1831,8 +1821,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         private static void AddOneMember(Dictionary<string, string> keys, PythonList res, object name) {
-            string strKey = name as string;
-            if (strKey != null) {
+            if (name is string strKey) {
                 keys[strKey] = strKey;
             } else {
                 res.Add(name);
@@ -1843,8 +1832,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// Adds members from a user defined type instance
         /// </summary>
         private static PythonList AddInstanceMembers(object self, Dictionary<string, string> keys, PythonList res) {
-            IPythonObject dyno = self as IPythonObject;
-            if (dyno != null) {
+            if (self is IPythonObject dyno) {
                 PythonDictionary dict = dyno.Dict;
                 if (dict != null) {
                     lock (dict) {
@@ -1894,8 +1882,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             // cannot override mro when inheriting from type
             if (vars.ContainsKey("mro")) {
                 foreach (object o in bases) {
-                    PythonType dt = o as PythonType;
-                    if (dt != null && dt.IsSubclassOf(TypeCache.PythonType)) {
+                    if (o is PythonType dt && dt.IsSubclassOf(TypeCache.PythonType)) {
                         throw new NotImplementedException("Overriding type.mro is not implemented");
                     }
                 }
@@ -2041,8 +2028,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         internal static List<string> SlotsToList(object slots) {
             List<string> res = new List<string>();
-            IList<object> seq = slots as IList<object>;
-            if (seq != null) {
+            if (slots is IList<object> seq) {
                 res = new List<string>(seq.Count);
                 for (int i = 0; i < seq.Count; i++) {
                     res.Add(GetSlotName(seq[i]));
@@ -2742,8 +2728,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
 
             public object Target(CallSite site, object self, T value) {
-                PythonType type = self as PythonType;
-                if (type != null && !type.IsSystemType) {
+                if (self is PythonType type && !type.IsSystemType) {
                     type.SetCustomMember(_context, _name, value);
                     return value;
                 }
@@ -2840,8 +2825,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         public object GetAttribute(CallSite site, object self, CodeContext context) {
-            IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version) {
+            if (self is IPythonObject ipo && ipo.PythonType.Version == _version) {
                 if (_isNoThrow) {
                     return UserTypeOps.GetAttributeNoThrow(context, self, _name, _getAttributeSlot, _getAttrSlot, _storage);
                 }
@@ -2940,8 +2924,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         public object SlotDictOptimized(CallSite site, object self, CodeContext context) {
-            IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
+            if (self is IPythonObject ipo && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
                 _hitCount++;
 
                 object res;
@@ -2967,8 +2950,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
 
         public object SlotOnly(CallSite site, object self, CodeContext context) {
-            IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
+            if (self is IPythonObject ipo && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
                 _hitCount++;
 
                 object res;
@@ -2987,8 +2969,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         public object UserSlotDict(CallSite site, object self, CodeContext context) {
-            IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
+            if (self is IPythonObject ipo && ipo.PythonType.Version == _version && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
                 object res;
                 if (ipo.Dict != null && ipo.Dict.TryGetValue(_name, out res)) {
                     return res;
@@ -3001,8 +2982,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         public object UserSlotDictOptimized(CallSite site, object self, CodeContext context) {
-            IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
+            if (self is IPythonObject ipo && ipo.PythonType.Version == _version && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
                 object res;
                 PythonDictionary dict = ipo.Dict;
 
@@ -3017,8 +2997,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         public object UserSlotOnly(CallSite site, object self, CodeContext context) {
-            IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
+            if (self is IPythonObject ipo && ipo.PythonType.Version == _version && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
                 return ((PythonTypeUserDescriptorSlot)_slot).GetValue(context, self, ipo.PythonType);
             }
 
@@ -3026,8 +3005,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         public object UserSlotDictGetAttr(CallSite site, object self, CodeContext context) {
-            IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
+            if (self is IPythonObject ipo && ipo.PythonType.Version == _version && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
                 object res;
                 if (ipo.Dict != null && ipo.Dict.TryGetValue(_name, out res)) {
                     return res;
@@ -3049,8 +3027,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         public object UserSlotDictGetAttrOptimized(CallSite site, object self, CodeContext context) {
-            IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
+            if (self is IPythonObject ipo && ipo.PythonType.Version == _version && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
                 object res;
                 PythonDictionary dict = ipo.Dict;
 
@@ -3074,8 +3051,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         public object UserSlotOnlyGetAttr(CallSite site, object self, CodeContext context) {
-            IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
+            if (self is IPythonObject ipo && ipo.PythonType.Version == _version && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
                 try {
                     return ((PythonTypeUserDescriptorSlot)_slot).GetValue(context, self, ipo.PythonType);
                 } catch (MissingMemberException) {
@@ -3093,8 +3069,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         public object UserSlot(CallSite site, object self, CodeContext context) {
-            IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
+            if (self is IPythonObject ipo && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite && (object)context.ModuleContext.ExtensionMethods == (object)_extMethods) {
                 object res = _slotFunc(self);
                 if (res != Uninitialized.Instance) {
                     return res;
@@ -3167,8 +3142,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         public object SetAttr(CallSite site, object self, TValue value) {
-            IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite) {
+            if (self is IPythonObject ipo && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite) {
                 _hitCount++;
 
                 object res;
@@ -3183,8 +3157,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         public object SetDictOptimized(CallSite site, object self, TValue value) {
-            IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite) {
+            if (self is IPythonObject ipo && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite) {
                 _hitCount++;
 
                 return UserTypeOps.SetDictionaryValueOptimized(ipo, _name, value, _keysVersion, _index);
@@ -3195,8 +3168,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
         
         public object SetDict(CallSite site, object self, TValue value) {
-            IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite) {
+            if (self is IPythonObject ipo && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite) {
                 _hitCount++;
 
                 UserTypeOps.SetDictionaryValue(ipo, _name, value);
@@ -3207,8 +3179,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         public object Error(CallSite site, object self, TValue value) {
-            IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version) {
+            if (self is IPythonObject ipo && ipo.PythonType.Version == _version) {
                 return TypeError(ipo);
             }
 
@@ -3216,8 +3187,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         public object UserSlot(CallSite site, object self, TValue value) {
-            IPythonObject ipo = self as IPythonObject;
-            if (ipo != null && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite) {
+            if (self is IPythonObject ipo && ipo.PythonType.Version == _version && ShouldUseNonOptimizedSite) {
                 _hitCount++;
 
                 _slotFunc(self, value);
@@ -3250,8 +3220,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         #endregion
 
         public override bool Equals(object obj) {
-            SetMemberKey other = obj as SetMemberKey;
-            if (other == null) {
+            if (!(obj is SetMemberKey other)) {
                 return false;
             }
 
@@ -3320,9 +3289,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         public object Target(CallSite site, object self, CodeContext context) {
-            PythonType pt = self as PythonType;
-
-            if (pt != null && pt.Version == _version) {
+            if (self is PythonType pt && pt.Version == _version) {
                 return RunDelegatesNoOptimize(self, context);
             }
 
@@ -3330,8 +3297,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         public object MetaOnlyTarget(CallSite site, object self, CodeContext context) {
-            PythonType pt = self as PythonType;
-            if (pt != null && PythonOps.CheckTypeVersion(pt, _version)) {
+            if (self is PythonType pt && PythonOps.CheckTypeVersion(pt, _version)) {
                 return RunDelegatesNoOptimize(self, context);
             }
 
@@ -3339,9 +3305,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         public object TargetOptimizing(CallSite site, object self, CodeContext context) {
-            PythonType pt = self as PythonType;
-
-            if (pt != null && pt.Version == _version && ShouldUseNonOptimizedSite) {
+            if (self is PythonType pt && pt.Version == _version && ShouldUseNonOptimizedSite) {
                 return RunDelegates(self, context);
             }
 
@@ -3349,8 +3313,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         public object MetaOnlyTargetOptimizing(CallSite site, object self, CodeContext context) {
-            PythonType pt = self as PythonType;
-            if (pt != null && PythonOps.CheckTypeVersion(pt, _version) && ShouldUseNonOptimizedSite) {
+            if (self is PythonType pt && PythonOps.CheckTypeVersion(pt, _version) && ShouldUseNonOptimizedSite) {
                 return RunDelegates(self, context);
             }
 
@@ -3444,8 +3407,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         }
 
         public override bool Equals(object obj) {
-            CachedGetKey cachedKey = obj as CachedGetKey;
-            if (cachedKey == null) {
+            if (!(obj is CachedGetKey cachedKey)) {
                 return false;
             }
 
@@ -3474,8 +3436,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         #region IEquatable<CachedGetKey> Members
 
         public override bool Equals(CachedGetKey other) {
-            var obj = other as CachedGetIdIntExtensionMethod;
-            if (obj == null) {
+            if (!(other is CachedGetIdIntExtensionMethod obj)) {
                 return false;
             }
             return obj._id == _id && obj.Name == Name;
@@ -3495,8 +3456,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         #region IEquatable<CachedGetKey> Members
 
         public override bool Equals(CachedGetKey other) {
-            var obj = other as CachedGetIdWeakRefExtensionMethod;
-            if (obj == null) {
+            if (!(other is CachedGetIdWeakRefExtensionMethod obj)) {
                 return false;
             }
             return obj._extMethodSet.Target == _extMethodSet.Target && 

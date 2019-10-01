@@ -310,8 +310,7 @@ namespace IronPython.Runtime {
 
             public override IEnumerable<string> GetDynamicMemberNames() {
                 foreach (object o in ((PythonModule)Value).__dict__.Keys) {
-                    string str = o as string;
-                    if (str != null) {
+                    if (o is string str) {
                         yield return str;
                     }
                 }
@@ -347,8 +346,7 @@ namespace IronPython.Runtime {
         IList<string> IMembersList.GetMemberNames() {
             List<string> res = new List<string>(__dict__.Keys.Count);
             foreach (object o in __dict__.Keys) {
-                string strKey = o as string;
-                if (strKey != null) {
+                if (o is string strKey) {
                     res.Add(strKey);
                 }
             }

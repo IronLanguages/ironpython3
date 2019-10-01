@@ -206,11 +206,9 @@ namespace IronPython.Runtime.Types {
         }
 
         private bool ShouldSetOrDelete(PythonType type) {
-            PythonType dt = type as PythonType;
-
             // statics must be assigned through their type, not a derived type.  Non-statics can
             // be assigned through their instances.
-            return (dt != null && _info.DeclaringType == dt.UnderlyingSystemType) || !_info.IsStatic || _info.IsLiteral || _info.IsInitOnly;
+            return (type is PythonType dt && _info.DeclaringType == dt.UnderlyingSystemType) || !_info.IsStatic || _info.IsLiteral || _info.IsInitOnly;
         }
 
         #endregion

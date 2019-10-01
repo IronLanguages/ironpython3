@@ -45,14 +45,10 @@ namespace IronPython.Runtime.Types {
 
         internal override bool TrySetValue(CodeContext/*!*/ context, object instance, PythonType owner, object value) {
             Assert.NotNull(context);
-            BoundEvent et = value as BoundEvent;
 
-            if (et == null || EventInfosDiffer(et)) {
-                BadEventChange bea = value as BadEventChange;
-
-                if (bea != null) {
-                    PythonType dt = bea.Owner as PythonType;
-                    if (dt != null) {
+            if (!(value is BoundEvent et) || EventInfosDiffer(et)) {
+                if (value is BadEventChange bea) {
+                    if (bea.Owner is PythonType dt) {
                         if (bea.Instance == null) {
                             throw new MissingMemberException(String.Format("attribute '{1}' of '{0}' object is read-only", dt.Name, _tracker.Name));
                         } else {

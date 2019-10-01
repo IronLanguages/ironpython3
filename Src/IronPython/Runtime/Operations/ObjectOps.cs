@@ -348,8 +348,7 @@ namespace IronPython.Runtime.Operations {
             if (hasGetState) {
                 state = PythonOps.CallWithContext(context, getState);
             } else {
-                IPythonObject ipo = self as IPythonObject;
-                if (ipo != null) {
+                if (self is IPythonObject ipo) {
                     state = ipo.Dict;
                 } else if (!PythonOps.TryGetBoundAttr(context, self, "__dict__", out state)) {
                     state = null;
@@ -392,8 +391,7 @@ namespace IronPython.Runtime.Operations {
             object getNewArgsCallable;
             if (PythonOps.TryGetBoundAttr(context, myType, "__getnewargs__", out getNewArgsCallable)) {
                 // TypeError will bubble up if __getnewargs__ isn't callable
-                PythonTuple newArgs = PythonOps.CallWithContext(context, getNewArgsCallable, self) as PythonTuple;
-                if (newArgs == null) {
+                if (!(PythonOps.CallWithContext(context, getNewArgsCallable, self) is PythonTuple newArgs)) {
                     throw PythonOps.TypeError("__getnewargs__ should return a tuple");
                 }
                 funcArgs = new object[1 + newArgs.Count];
@@ -408,8 +406,7 @@ namespace IronPython.Runtime.Operations {
                     "__getstate__",
                     out state)) {
                 object dict;
-                IPythonObject ipo = self as IPythonObject;
-                if (ipo != null) {
+                if (self is IPythonObject ipo) {
                     dict = ipo.Dict;
                 } else if (!PythonOps.TryGetBoundAttr(context, self, "__dict__", out dict)) {
                     dict = null;

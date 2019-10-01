@@ -20,8 +20,7 @@ namespace IronPython.Runtime {
         }
 
         public override void Add(ref DictionaryStorage storage, object key, object value) {
-            string strkey = key as string;
-            if (strkey != null) {
+            if (key is string strkey) {
                 if (strkey == "__import__") {
                     _import = value;
                 }
@@ -35,8 +34,7 @@ namespace IronPython.Runtime {
         }
 
         public override bool Remove(ref DictionaryStorage storage, object key) {
-            string strkey = key as string;
-            if (strkey != null) {
+            if (key is string strkey) {
                 if (strkey == "__import__") {
                     _import = null;
                 }

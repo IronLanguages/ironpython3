@@ -897,8 +897,7 @@ namespace IronPython.Runtime {
                 return _empty;
             } else {
                 object res = ((PythonType)cls).CreateInstance(context);
-                FrozenSetCollection fs = res as FrozenSetCollection;
-                if (fs == null) {
+                if (!(res is FrozenSetCollection fs)) {
                     throw PythonOps.TypeError("{0} is not a subclass of frozenset", res);
                 }
 
@@ -911,8 +910,7 @@ namespace IronPython.Runtime {
                 return Make(TypeCache.FrozenSet, set);
             } else {
                 object res = ((PythonType)cls).CreateInstance(context, set);
-                FrozenSetCollection fs = res as FrozenSetCollection;
-                if (fs == null) {
+                if (!(res is FrozenSetCollection fs)) {
                     throw PythonOps.TypeError("{0} is not a subclass of frozenset", res);
                 }
 
@@ -968,8 +966,7 @@ namespace IronPython.Runtime {
         }
 
         internal static FrozenSetCollection Make(PythonType/*!*/ cls, object set) {
-            FrozenSetCollection fs = set as FrozenSetCollection;
-            if (fs != null && cls == TypeCache.FrozenSet) {
+            if (set is FrozenSetCollection fs && cls == TypeCache.FrozenSet) {
                 // constructing frozen set from frozen set, we return the original
                 return fs;
             }

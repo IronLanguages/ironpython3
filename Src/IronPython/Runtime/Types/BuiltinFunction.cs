@@ -411,11 +411,9 @@ namespace IronPython.Runtime.Types {
                 );
             } else if (target.Overload != null) {
                 // Add profiling information for this builtin function, if applicable
-                IPythonSite pythonSite = (call as IPythonSite);
-                if (pythonSite != null) {
+                if (call is IPythonSite pythonSite) {
                     var pc = pythonSite.Context;
-                    var po = pc.Options as PythonOptions;
-                    if (po != null && po.EnableProfiler) {
+                    if (pc.Options is PythonOptions po && po.EnableProfiler) {
                         Profiler profiler = Profiler.GetProfiler(pc);
                         res = new DynamicMetaObject(
                             profiler.AddProfiling(res.Expression, target.Overload.ReflectionInfo),
@@ -767,8 +765,7 @@ namespace IronPython.Runtime.Types {
             }
 
             public override bool Equals(object obj) {
-                TypeList tl = obj as TypeList;
-                if (tl == null || _types.Length != tl._types.Length) return false;
+                if (!(obj is TypeList tl) || _types.Length != tl._types.Length) return false;
 
                 for (int i = 0; i < _types.Length; i++) {
                     if (_types[i] != tl._types[i]) return false;

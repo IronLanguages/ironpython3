@@ -132,8 +132,7 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
         // exec_prefix and executable are set by PythonContext and updated on each reload
 
         public static string intern(object o) {
-            string s = o as string;
-            if (s == null) {
+            if (!(o is string s)) {
                 throw PythonOps.TypeError("intern: argument must be string");
             }
             return string.Intern(s);
@@ -589,10 +588,9 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
 
             // add zipimport to the path hooks for importing from zip files.
             try {
-                PythonModule zipimport = Importer.ImportModule(
+                if (Importer.ImportModule(
                     context.SharedClsContext, context.SharedClsContext.GlobalDict,
-                    "zipimport", false, 0) as PythonModule;
-                if (zipimport != null) {
+                    "zipimport", false, 0) is PythonModule zipimport) {
                     object zipimporter = PythonOps.GetBoundAttr(
                         context.SharedClsContext, zipimport, "zipimporter");
                     if (dict["path_hooks"] is PythonList path_hooks && zipimporter != null) {

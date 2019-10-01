@@ -81,8 +81,7 @@ namespace IronPython.Hosting {
         }
 
         public ScriptScope/*!*/ ImportModule(ScriptEngine/*!*/ engine, string/*!*/ name) {
-            PythonModule module = Importer.ImportModule(_context.SharedClsContext, _context.SharedClsContext.GlobalDict, name, false, 0) as PythonModule;
-            if (module != null) {
+            if (Importer.ImportModule(_context.SharedClsContext, _context.SharedClsContext.GlobalDict, name, false, 0) is PythonModule module) {
                 return HostingHelpers.CreateScriptScope(engine, module.Scope);
             }
 
@@ -91,12 +90,9 @@ namespace IronPython.Hosting {
 
         public string[] GetModuleFilenames() {
             List<string> res = new List<string>();
-            PythonDictionary dict = (object)_engine.GetSysModule().GetVariable("modules") as PythonDictionary;
-            if (dict != null) {
+            if ((object)_engine.GetSysModule().GetVariable("modules") is PythonDictionary dict) {
                 foreach (var kvp in dict) {
-                    string key = kvp.Key as string;
-                    PythonModule module = kvp.Value as PythonModule;
-                    if (key != null && module != null) {
+                    if (kvp.Key is string key && kvp.Value is PythonModule module) {
                         var modDict = module.Get__dict__();
                         object file;
                         if (modDict.TryGetValue("__file__", out file) && file != null) {

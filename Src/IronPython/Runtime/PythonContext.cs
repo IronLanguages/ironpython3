@@ -523,8 +523,7 @@ namespace IronPython.Runtime {
             }
 
             public int Hasher(object o, ref HashDelegate dlg) {
-                IPythonObject ipo = o as IPythonObject;
-                if (ipo != null && ipo.PythonType == _pt) {
+                if (o is IPythonObject ipo && ipo.PythonType == _pt) {
                     return _pt.Hash(o);
                 }
 
@@ -752,8 +751,7 @@ namespace IronPython.Runtime {
         internal PythonModule GetModuleByPath(string/*!*/ path) {
             Assert.NotNull(path);
             foreach (object moduleObj in SystemStateModules.Values) {
-                PythonModule module = moduleObj as PythonModule;
-                if (module != null) {
+                if (moduleObj is PythonModule module) {
                     if (DomainManager.Platform.PathComparer.Compare(module.GetFile(), path) == 0) {
                         return module;
                     }
@@ -1413,8 +1411,7 @@ namespace IronPython.Runtime {
         public override string FormatException(Exception exception) {
             ContractUtils.RequiresNotNull(exception, nameof(exception));
 
-            SyntaxErrorException syntax_error = exception as SyntaxErrorException;
-            if (syntax_error != null) {
+            if (exception is SyntaxErrorException syntax_error) {
                 return FormatPythonSyntaxError(syntax_error);
             }
 
@@ -1423,8 +1420,7 @@ namespace IronPython.Runtime {
             object pythonEx = PythonExceptions.ToPython(exception);
 
             if (exception.InnerException != null) {
-                var pythonInnerException = exception.InnerException.GetPythonException() as PythonExceptions.BaseException;
-                if (pythonInnerException != null) {
+                if (exception.InnerException.GetPythonException() is PythonExceptions.BaseException pythonInnerException) {
                     // add the nested/chained exception
                     result.AppendLine(FormatException(exception.InnerException));
                     result.AppendLine();
@@ -1532,8 +1528,7 @@ namespace IronPython.Runtime {
 
             // dump the python exception.
             if (pythonException != null) {
-                string str = pythonException as string;
-                if (str != null) {
+                if (pythonException is string str) {
                     result += str;
                 } else {
                     result += GetPythonExceptionClassName(pythonException);
@@ -2152,14 +2147,12 @@ namespace IronPython.Runtime {
         }
 
         internal bool TryConvertToWeakReferenceable(object obj, out IWeakReferenceable weakref) {
-            IWeakReferenceableByProxy iwrp = obj as IWeakReferenceableByProxy;
-            if (iwrp != null) {
+            if (obj is IWeakReferenceableByProxy iwrp) {
                 weakref = iwrp.GetWeakRefProxy(this);
                 return true;
             }
 
-            IWeakReferenceable iwr = obj as IWeakReferenceable;
-            if (iwr != null) {
+            if (obj is IWeakReferenceable iwr) {
                 weakref = iwr;
                 return true;
             }
@@ -3943,8 +3936,7 @@ namespace IronPython.Runtime {
             }
 
             public override bool Equals(object obj) {
-                OperationRetTypeKey<T> other = obj as OperationRetTypeKey<T>;
-                if (other != null) {
+                if (obj is OperationRetTypeKey<T> other) {
                     return Equals(other);
                 }
 
@@ -3956,8 +3948,7 @@ namespace IronPython.Runtime {
         /// Gets a PythonContext given a DynamicMetaObjectBinder.
         /// </summary>
         public static PythonContext/*!*/ GetPythonContext(DynamicMetaObjectBinder/*!*/ action) {
-            IPythonSite pySite = action as IPythonSite;
-            if (pySite != null) {
+            if (action is IPythonSite pySite) {
                 return pySite.Context;
             }
 
@@ -3995,8 +3986,7 @@ namespace IronPython.Runtime {
                 return Operations.ConvertTo<T>(res);
             }
 
-            StringDictionaryExpando dictStorage = scope.Storage as StringDictionaryExpando;
-            if (dictStorage != null && dictStorage.Dictionary.TryGetValue(name, out res)) {
+            if (scope.Storage is StringDictionaryExpando dictStorage && dictStorage.Dictionary.TryGetValue(name, out res)) {
                 return Operations.ConvertTo<T>(res);
             }
 
@@ -4010,8 +4000,7 @@ namespace IronPython.Runtime {
                 return res;
             }
 
-            StringDictionaryExpando dictStorage = scope.Storage as StringDictionaryExpando;
-            if (dictStorage != null && dictStorage.Dictionary.TryGetValue(name, out res)) {
+            if (scope.Storage is StringDictionaryExpando dictStorage && dictStorage.Dictionary.TryGetValue(name, out res)) {
                 return res;
             }
 
@@ -4019,14 +4008,12 @@ namespace IronPython.Runtime {
         }
 
         public override void ScopeSetVariable(Scope scope, string name, object value) {
-            var storage = scope.Storage as ScopeStorage;
-            if (storage != null) {
+            if (scope.Storage is ScopeStorage storage) {
                 storage.SetValue(name, false, value);
                 return;
             }
 
-            StringDictionaryExpando dictStorage = scope.Storage as StringDictionaryExpando;
-            if (dictStorage != null) {
+            if (scope.Storage is StringDictionaryExpando dictStorage) {
                 dictStorage.Dictionary[name] = value;
                 return;
             }
@@ -4035,13 +4022,11 @@ namespace IronPython.Runtime {
         }
 
         public override bool ScopeTryGetVariable(Scope scope, string name, out dynamic value) {
-            var storage = scope.Storage as ScopeStorage;
-            if (storage != null && storage.TryGetValue(name, false, out value)) {
+            if (scope.Storage is ScopeStorage storage && storage.TryGetValue(name, false, out value)) {
                 return true;
             }
 
-            StringDictionaryExpando dictStorage = scope.Storage as StringDictionaryExpando;
-            if (dictStorage != null && dictStorage.Dictionary.TryGetValue(name, out value)) {
+            if (scope.Storage is StringDictionaryExpando dictStorage && dictStorage.Dictionary.TryGetValue(name, out value)) {
                 return true;
             }
 

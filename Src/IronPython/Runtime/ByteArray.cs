@@ -1095,8 +1095,7 @@ namespace IronPython.Runtime {
                 //      integers, longs, etc... - fill in an array of 0 bytes
                 //      list of bytes, indexables, etc...
 
-                IList<byte> list = value as IList<byte>;
-                if (list == null) {
+                if (!(value is IList<byte> list)) {
                     IEnumerator ie = PythonOps.GetEnumerator(value);
                     list = new List<byte>();
                     while (ie.MoveNext()) {
@@ -1304,8 +1303,7 @@ namespace IronPython.Runtime {
         }
 
         internal static IList<byte>/*!*/ GetBytes(object/*!*/ value) {
-            ListGenericWrapper<byte> genWrapper = value as ListGenericWrapper<byte>;
-            if (genWrapper == null && value is IList<byte>) {
+            if (!(value is ListGenericWrapper<byte> genWrapper) && value is IList<byte>) {
                 return (IList<byte>)value;
             }
 

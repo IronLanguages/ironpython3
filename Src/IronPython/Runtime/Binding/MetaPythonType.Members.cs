@@ -736,16 +736,14 @@ namespace IronPython.Runtime.Binding {
         }
 
         private static bool IsProtectedSetter(MemberTracker mt) {
-            PropertyTracker pt = mt as PropertyTracker;
-            if (pt != null) {
+            if (mt is PropertyTracker pt) {
                 MethodInfo mi = pt.GetSetMethod(true);
                 if (mi != null && mi.IsProtected()) {
                     return true;
                 }
             }
 
-            FieldTracker ft = mt as FieldTracker;
-            if (ft != null) {
+            if (mt is FieldTracker ft) {
                 return ft.Field.IsProtected();
             }
 

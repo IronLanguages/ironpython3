@@ -139,8 +139,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         private DynamicMetaObject InvokeFallback(DynamicMetaObjectBinder action, Expression codeContext, DynamicMetaObject/*!*/[] args) {
-            InvokeBinder ib = action as InvokeBinder;
-            if (ib != null) {
+            if (action is InvokeBinder ib) {
                 if (_baseMetaObject != null) {
                     return _baseMetaObject.BindInvoke(ib, args);
                 }
@@ -148,10 +147,8 @@ namespace IronPython.Runtime.Binding {
                 return ib.FallbackInvoke(Restrict(this.GetLimitType()), args);
             }
 
-            PythonInvokeBinder pib = action as PythonInvokeBinder;
-            if (pib != null) {
-                IPythonInvokable ipi = _baseMetaObject as IPythonInvokable;
-                if (ipi != null) {
+            if (action is PythonInvokeBinder pib) {
+                if (_baseMetaObject is IPythonInvokable ipi) {
                     return ipi.Invoke(pib, codeContext, this, args);
                 }
 
@@ -307,8 +304,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         private static ConversionResultKind GetResultKind(DynamicMetaObjectBinder convertToAction) {
-            PythonConversionBinder cb = convertToAction as PythonConversionBinder;
-            if (cb != null) {
+            if (convertToAction is PythonConversionBinder cb) {
                 return cb.ResultKind;
             }
 
@@ -320,8 +316,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         private Expression ConversionFallback(DynamicMetaObjectBinder/*!*/ convertToAction) {
-            PythonConversionBinder cb = convertToAction as PythonConversionBinder;
-            if (cb != null) {
+            if (convertToAction is PythonConversionBinder cb) {
                 return GetConversionFailedReturnValue(cb, this).Expression;
             }
 
@@ -377,16 +372,13 @@ namespace IronPython.Runtime.Binding {
         /// </summary>
         private DynamicMetaObject/*!*/ Fallback(DynamicMetaObjectBinder/*!*/ action, DynamicMetaObject codeContext) {
             if (_baseMetaObject != null) {
-                IPythonGetable ipyget = _baseMetaObject as IPythonGetable;
-                if (ipyget != null) {
-                    PythonGetMemberBinder gmb = action as PythonGetMemberBinder;
-                    if (gmb != null) {
+                if (_baseMetaObject is IPythonGetable ipyget) {
+                    if (action is PythonGetMemberBinder gmb) {
                         return ipyget.GetMember(gmb, codeContext);
                     }
                 }
 
-                GetMemberBinder gma = action as GetMemberBinder;
-                if (gma != null) {
+                if (action is GetMemberBinder gma) {
                     return _baseMetaObject.BindGetMember(gma);
                 }
 

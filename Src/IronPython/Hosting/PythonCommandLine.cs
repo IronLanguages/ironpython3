@@ -409,8 +409,7 @@ namespace IronPython.Hosting {
             } catch (ThreadAbortException) {
 #else
             } catch (ThreadAbortException tae) {
-                KeyboardInterruptException pki = tae.ExceptionState as KeyboardInterruptException;
-                if (pki != null) {
+                if (tae.ExceptionState is KeyboardInterruptException pki) {
                     Thread.ResetAbort();
                 }
 #endif
@@ -585,8 +584,7 @@ namespace IronPython.Hosting {
         public override IList<string> GetGlobals(string name) {
             IList<string> res = base.GetGlobals(name);
             foreach (object builtinName in PythonContext.BuiltinModuleInstance.__dict__.Keys) {
-                string strName = builtinName as string;
-                if (strName != null && strName.StartsWith(name)) {
+                if (builtinName is string strName && strName.StartsWith(name)) {
                     res.Add(strName);
                 }
             }

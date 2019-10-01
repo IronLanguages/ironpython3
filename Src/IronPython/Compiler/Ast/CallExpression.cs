@@ -34,8 +34,7 @@ namespace IronPython.Compiler.Ast {
         internal IList<Arg> ImplicitArgs { get; } = new List<Arg>();
 
         public bool NeedsLocalsDictionary() {
-            NameExpression nameExpr = Target as NameExpression;
-            if (nameExpr == null) return false;
+            if (!(Target is NameExpression nameExpr)) return false;
 
             if (Args.Length == 0) {
                 if (nameExpr.Name == "locals") return true;

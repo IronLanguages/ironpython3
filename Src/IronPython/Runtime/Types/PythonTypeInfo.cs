@@ -568,8 +568,7 @@ namespace IronPython.Runtime.Types {
                         .ToArray());
 
                     for (int i = 0; i < res.Count; i++) {
-                        MethodTracker meth = res[i] as MethodTracker;                        
-                        if (meth == null) {
+                        if (!(res[i] is MethodTracker meth)) {
                             continue;
                         }
 
@@ -1094,8 +1093,7 @@ namespace IronPython.Runtime.Types {
             }
 
             internal override bool TrySetValue(CodeContext context, object instance, PythonType owner, object value) {
-                IPythonObject obj = instance as IPythonObject;
-                if (obj == null || !obj.PythonType.HasDictionary) {
+                if (!(instance is IPythonObject obj) || !obj.PythonType.HasDictionary) {
                     return false;
                 }
 

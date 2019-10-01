@@ -759,10 +759,9 @@ namespace IronPython.Runtime.Operations {
                 if ((getter != null && PythonHiddenAttribute.IsHidden(getter, true)) ||
                     (setter != null && PythonHiddenAttribute.IsHidden(setter, true))) {
                     nt = NameType.Property;
-                }                
+                }
 
-                ExtensionPropertyTracker ept = pt as ExtensionPropertyTracker;
-                if (ept == null) {
+                if (!(pt is ExtensionPropertyTracker ept)) {
                     ReflectedPropertyTracker rpt = pt as ReflectedPropertyTracker;
                     Debug.Assert(rpt != null);
 

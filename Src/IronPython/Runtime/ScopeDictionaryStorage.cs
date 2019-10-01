@@ -27,8 +27,7 @@ namespace IronPython.Runtime {
         }
 
         public override void Add(ref DictionaryStorage storage, object key, object value) {
-            string strKey = key as string;
-            if (strKey != null) {
+            if (key is string strKey) {
                 PythonOps.ScopeSetMember(_context.SharedContext, _scope, strKey, value);
             } else {
                 PythonScopeExtension ext = (PythonScopeExtension)_context.EnsureScopeExtension(_scope);
@@ -46,8 +45,7 @@ namespace IronPython.Runtime {
         }
 
         private bool Remove(object key) {
-            string strKey = key as string;
-            if (strKey != null) {
+            if (key is string strKey) {
                 if (Contains(key)) {
                     return PythonOps.ScopeDeleteMember(_context.SharedContext, Scope, strKey);
                 }
@@ -61,8 +59,7 @@ namespace IronPython.Runtime {
         }
 
         public override bool TryGetValue(object key, out object value) {
-            string strKey = key as string;
-            if (strKey != null) {
+            if (key is string strKey) {
                 return PythonOps.ScopeTryGetMember(_context.SharedContext, _scope, strKey, out value);
             } else {
                 PythonScopeExtension ext = (PythonScopeExtension)_context.EnsureScopeExtension(_scope);

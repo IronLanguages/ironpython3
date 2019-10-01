@@ -2895,8 +2895,7 @@ namespace IronPython.Modules
             internal expr TryTrimTrivialUnaryOp() {
                 // in case of +constant or -constant returns underlying Num
                 // representation, otherwise unmodified itself
-                var num = operand as Num;
-                if (null == num) {
+                if (!(operand is Num num)) {
                     return this;
                 }
                 if (op is UAdd) {

@@ -110,13 +110,11 @@ namespace IronPython.Runtime {
                 return false;
             }
 
-            PythonModule builtinsScope = builtins as PythonModule;
-            if (builtinsScope != null && builtinsScope.__dict__.TryGetValue(name, out value)) {
+            if (builtins is PythonModule builtinsScope && builtinsScope.__dict__.TryGetValue(name, out value)) {
                 return true;
             }
 
-            PythonDictionary dict = builtins as PythonDictionary;
-            if (dict != null && dict.TryGetValue(name, out value)) {
+            if (builtins is PythonDictionary dict && dict.TryGetValue(name, out value)) {
                 return true;
             }
 
@@ -194,8 +192,7 @@ namespace IronPython.Runtime {
         internal PythonDictionary GetBuiltinsDict() {
             object builtins;
             if (GlobalDict._storage.TryGetBuiltins(out builtins)) {
-                PythonModule builtinsScope = builtins as PythonModule;
-                if (builtinsScope != null) {
+                if (builtins is PythonModule builtinsScope) {
                     return builtinsScope.__dict__;
                 }
 

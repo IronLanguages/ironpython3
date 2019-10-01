@@ -104,8 +104,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         private object TupleIndex(CallSite site, object target, object index) {
-            PythonTuple lst = target as PythonTuple;
-            if (lst != null && index != null && index.GetType() == typeof(int)) {
+            if (target is PythonTuple lst && index != null && index.GetType() == typeof(int)) {
                 return lst[(int)index];
             }
             
@@ -113,8 +112,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         private object TupleIndex(CallSite site, object target, int index) {
-            PythonTuple lst = target as PythonTuple;
-            if (lst != null) {
+            if (target is PythonTuple lst) {
                 return lst[index];
             }
 
@@ -130,8 +128,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         private object StringIndex(CallSite site, object target, object index) {
-            string str = target as string;
-            if (str != null && index != null && index.GetType() == typeof(int)) {
+            if (target is string str && index != null && index.GetType() == typeof(int)) {
                 return StringOps.GetItem(str, (int)index);
             }
 
@@ -139,8 +136,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         private object StringIndex(CallSite site, object target, int index) {
-            string str = target as string;
-            if (str != null) {
+            if (target is string str) {
                 return StringOps.GetItem(str, index);
             }
 
@@ -152,8 +148,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         public override bool Equals(object obj) {
-            PythonGetIndexBinder ob = obj as PythonGetIndexBinder;
-            if (ob == null) {
+            if (!(obj is PythonGetIndexBinder ob)) {
                 return false;
             }
 

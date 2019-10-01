@@ -18,8 +18,7 @@ namespace IronPython.Runtime.Operations {
         public static object __new__(CodeContext context, PythonType type, object function) {
             if (type == null) throw PythonOps.TypeError("expected type for 1st param, got null");
 
-            IDelegateConvertible dlgConv = function as IDelegateConvertible;
-            if (dlgConv != null) {
+            if (function is IDelegateConvertible dlgConv) {
                 Delegate res = dlgConv.ConvertToDelegate(type.UnderlyingSystemType);
                 if (res != null) {
                     return res;

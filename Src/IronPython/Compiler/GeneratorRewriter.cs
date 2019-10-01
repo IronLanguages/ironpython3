@@ -582,13 +582,11 @@ namespace IronPython.Compiler {
         }
 
         protected override Expression VisitExtension(Expression node) {
-            var yield = node as YieldExpression;
-            if (yield != null) {
+            if (node is YieldExpression yield) {
                 return VisitYield(yield);
             }
 
-            var ffc = node as FinallyFlowControlExpression;
-            if (ffc != null) {
+            if (node is FinallyFlowControlExpression ffc) {
                 return Visit(node.ReduceExtensions());
             }
 

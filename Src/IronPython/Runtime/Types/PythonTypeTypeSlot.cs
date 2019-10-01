@@ -32,13 +32,11 @@ namespace IronPython.Runtime.Types {
         internal override bool TrySetValue(CodeContext context, object instance, PythonType owner, object value) {
             if (instance == null) return false;
 
-            IPythonObject sdo = instance as IPythonObject;
-            if (sdo == null) {
+            if (!(instance is IPythonObject sdo)) {
                 throw PythonOps.TypeError("__class__ assignment: only for user defined types");
             }
 
-            PythonType dt = value as PythonType;
-            if (dt == null) throw PythonOps.TypeError("__class__ must be set to new-style class, not '{0}' object", DynamicHelpers.GetPythonType(value).Name);
+            if (!(value is PythonType dt)) throw PythonOps.TypeError("__class__ must be set to new-style class, not '{0}' object", DynamicHelpers.GetPythonType(value).Name);
 
             if(dt.UnderlyingSystemType != DynamicHelpers.GetPythonType(instance).UnderlyingSystemType)
                 throw PythonOps.TypeErrorForIncompatibleObjectLayout("__class__ assignment", DynamicHelpers.GetPythonType(instance), dt.UnderlyingSystemType);

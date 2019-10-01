@@ -82,8 +82,7 @@ namespace IronPython.Runtime.Operations {
             List<PropertyDescriptor> descrs = new List<PropertyDescriptor>();
             if (attrNames != null) {
                 foreach (object o in attrNames) {
-                    string s = o as string;
-                    if (s == null) continue;
+                    if (!(o is string s)) continue;
 
                     PythonTypeSlot attrSlot;
                     PythonType dt = DynamicHelpers.GetPythonType(self);
@@ -126,8 +125,7 @@ namespace IronPython.Runtime.Operations {
                 if ((rp = attrSlot as ReflectedProperty) != null && rp.Info != null) {
                     include &= rp.Info.IsDefined(attr.GetType(), true);
                 } else if (attr.GetType() == typeof(BrowsableAttribute)) {
-                    PythonTypeUserDescriptorSlot userSlot = attrSlot as PythonTypeUserDescriptorSlot;
-                    if (userSlot == null) {
+                    if (!(attrSlot is PythonTypeUserDescriptorSlot userSlot)) {
                         if (!(attrSlot is PythonProperty)) {
                             include = false;
                         }

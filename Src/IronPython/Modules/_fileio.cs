@@ -415,8 +415,7 @@ namespace IronPython.Modules {
                     return readinto(bytes);
                 }
 
-                ArrayModule.array arr = buf as ArrayModule.array;
-                if (arr != null) {
+                if (buf is ArrayModule.array arr) {
                     return readinto(bytes);
                 };
 
@@ -536,23 +535,19 @@ namespace IronPython.Modules {
                 + "The number of bytes actually written is returned."
                 )]
             public override BigInteger write(CodeContext/*!*/ context, object b) {
-                byte[] bArray = b as byte[];
-                if (bArray != null) {
+                if (b is byte[] bArray) {
                     return write(bArray);
                 }
 
-                Bytes bBytes = b as Bytes;
-                if (bBytes != null) {
+                if (b is Bytes bBytes) {
                     return write(bBytes);
                 }
 
-                ArrayModule.array bPythonArray = b as ArrayModule.array;
-                if (bPythonArray != null) {
+                if (b is ArrayModule.array bPythonArray) {
                     return write(bPythonArray.ToByteArray());
                 }
 
-                ICollection<byte> bCollection = b as ICollection<byte>;
-                if (bCollection != null) {
+                if (b is ICollection<byte> bCollection) {
                     return write(bCollection);
                 }
 

@@ -54,8 +54,7 @@ namespace IronPython.Runtime.Binding {
         }
 
         private static Type GetTargetType(object target) {
-            TypeTracker tt = target as TypeTracker;
-            if (tt != null) {
+            if (target is TypeTracker tt) {
                 return tt.Type;
             }
             return target as Type;

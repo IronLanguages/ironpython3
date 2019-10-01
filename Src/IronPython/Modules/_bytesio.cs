@@ -177,13 +177,11 @@ namespace IronPython.Modules {
             }
 
             public override BigInteger readinto(CodeContext/*!*/ context, object buf) {
-                ByteArray bytes = buf as ByteArray;
-                if (bytes != null) {
+                if (buf is ByteArray bytes) {
                     return readinto(bytes);
                 }
 
-                ArrayModule.array array = buf as ArrayModule.array;
-                if (array != null) {
+                if (buf is ArrayModule.array array) {
                     return readinto(array);
                 }
 

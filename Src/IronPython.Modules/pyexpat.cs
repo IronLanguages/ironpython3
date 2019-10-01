@@ -502,7 +502,8 @@ namespace IronPython.Modules {
                 if (buffer_text) {
                     text_buffer.Append(text);
                     while (text_buffer.Length >= _buffer_size) {
-                        text = text_buffer.Remove(0, _buffer_size).ToString();
+                        text = text_buffer.ToString(0, _buffer_size);
+                        text_buffer.Remove(0, _buffer_size);
                         CharacterDataHandler?.Invoke(text);
                     }
                 } else {

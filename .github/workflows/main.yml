@@ -1,0 +1,41 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+
+    steps:
+    - name: Install tools
+      if: matrix.os == 'ubuntu-latest'
+      run: sudo apt-get -yq install mono-vbnc dos2unix
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+    - uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '3.0.100'
+    - name: Build
+      run: pwsh make.ps1
+    - name: Package
+      run: pwsh make.ps1 package
+    - uses: actions/upload-artifact@master
+      with:
+        name: packages
+        path: Package/Release/Packages
+    - name: Test
+      run: |
+        Write-Host ${env:DOTNET_ROOT}
+        ./make.ps1 -frameworks net45,netcoreapp3.0 test-all
+      env:
+        # Work around https://github.com/actions/setup-dotnet/issues/29
+        DOTNET_ROOT: ${{ runner.tool_cache }}/dncs/3.0.100/x64
+      shell: pwsh
+      # TODO: figure out how to also test on netcoreapp2.1

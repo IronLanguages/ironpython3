@@ -11,15 +11,16 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
+
+using Microsoft.Scripting;
+using Microsoft.Scripting.Hosting.Shell;
+using Microsoft.Scripting.Runtime;
+
 using IronPython.Compiler;
 using IronPython.Modules;
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
-using Microsoft.Scripting;
-using Microsoft.Scripting.Hosting.Shell;
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
 
 namespace IronPython.Hosting {
     /// <summary>
@@ -524,7 +525,7 @@ namespace IronPython.Hosting {
                 try {
                     result = RunFileWorker(fileName);
                 } catch (Exception e) {
-                    Console.WriteLine(Language.FormatException(e), Style.Error);
+                    UnhandledException(e);
                 }
             } else {
                 result = RunFileWorker(fileName);

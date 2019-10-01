@@ -202,7 +202,7 @@ namespace IronPython.Runtime.Operations {
             FieldInfo[] fields = t.GetFields(System.Reflection.BindingFlags.FlattenHierarchy | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
             int res = 0;
             foreach (FieldInfo fi in fields) {
-                if (fi.FieldType.IsClass() || fi.FieldType.IsInterface) {
+                if (fi.FieldType.IsClass || fi.FieldType.IsInterface) {
                     res += AdjustPointerSize(4);
                 } else if (fi.FieldType.IsPrimitive) {
                     return System.Runtime.InteropServices.Marshal.SizeOf(fi.FieldType);

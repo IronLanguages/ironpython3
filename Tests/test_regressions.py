@@ -1427,7 +1427,7 @@ class C:
 
         import xml.etree.ElementTree as ET
         for count in range(buffer_size - 100, buffer_size + 100):
-            txt = '<Data>' + '1'*count + '</Data>'
+            txt = b'<Data>' + b'1'*count + b'</Data>'
             result = ET.tostring(ET.fromstring(txt))
             self.assertEqual(txt, result)
 

@@ -192,9 +192,7 @@ class CodecTest(IronPythonTestCase):
         TODO: test that functions passed in are actually used
         '''
         #sanity check - basically just ensure that functions can be registered
-        def garbage_func0(): pass
         def garbage_func1(param1): pass
-        codecs.register(garbage_func0)
         codecs.register(garbage_func1)
 
         #negative cases

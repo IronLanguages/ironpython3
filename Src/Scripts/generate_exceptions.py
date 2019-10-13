@@ -1,17 +1,6 @@
-#####################################################################################
-#
-#  Copyright (c) Microsoft Corporation. All rights reserved.
-#
-# This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
-# copy of the license can be found in the License.html file at the root of this distribution. If 
-# you cannot locate the  Apache License, Version 2.0, please send an email to 
-# ironpy@microsoft.com. By using this source code in any fashion, you are agreeing to be bound
-# by the terms of the Apache License, Version 2.0.
-#
-# You must not remove this notice, or any other, from this software.
-#
-#
-#####################################################################################
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the Apache 2.0 License.
+# See the LICENSE file in the project root for more information.
 
 from generate import generate
 import System
@@ -22,7 +11,7 @@ import builtins
 
 pythonExcs = ['ImportError', 'RuntimeError', 'UnicodeTranslateError', 'PendingDeprecationWarning',
               'LookupError', 'OSError', 'DeprecationWarning', 'UnicodeError', 'FloatingPointError', 'ReferenceError',
-              'FutureWarning', 'AssertionError', 'RuntimeWarning', 'ImportWarning', 'UserWarning', 'SyntaxWarning', 
+              'FutureWarning', 'AssertionError', 'RuntimeWarning', 'ImportWarning', 'UserWarning', 'SyntaxWarning',
               'UnicodeWarning', 'StopIteration', 'BytesWarning', 'BufferError', 'ResourceWarning', 'FileExistsError',
               'BlockingIOError', 'NotADirectoryError', 'InterruptedError', 'ChildProcessError', 'IsADirectoryError',
               'ProcessLookupError', 'ConnectionError', 'ConnectionAbortedError', 'BrokenPipeError',
@@ -39,15 +28,15 @@ class ExceptionInfo(object):
         self.baseMapping = baseMapping
         for child in subclasses:
             child.parent = self
-    
+
     @property
     def ConcreteParent(self):
         while not self.parent.fields:
             self = self.parent
             if self.parent == None: return exceptionHierarchy
-        
+
         return self.parent
-        
+
     @property
     def PythonType(self):
         if not self.parent:
@@ -55,7 +44,7 @@ class ExceptionInfo(object):
         else:
             return self.name
 
-    @property 
+    @property
     def ClrType(self):
         if not self.parent:
             return 'BaseException'
@@ -63,7 +52,7 @@ class ExceptionInfo(object):
             return '_' + self.name
         else:
             return self.name
-    
+
     @property
     def ExceptionMappingName(self):
         if self.baseMapping:
@@ -73,7 +62,7 @@ class ExceptionInfo(object):
     @property
     def DotNetExceptionName(self):
         return self.clrException[self.clrException.rfind('.')+1:]
-    
+
     @property
     def InternalPythonType(self):
         if not self.parent:
@@ -82,7 +71,7 @@ class ExceptionInfo(object):
             return 'PythonExceptions.' + self.name
 
     def MakeNewException(self):
-        if self.fields or self.name == 'BaseException':        
+        if self.fields or self.name == 'BaseException':
             return 'new PythonExceptions._%s()' % (self.name)
         else:
             return 'new PythonExceptions.%s(PythonExceptions.%s)' % (self.ConcreteParent.ClrType, self.name)
@@ -143,8 +132,8 @@ exceptionHierarchy = ExceptionInfo('BaseException', 'IronPython.Runtime.Exceptio
                     ExceptionInfo('IndentationError', 'IronPython.Runtime.Exceptions.IndentationException', None, (), (
                          ExceptionInfo('TabError', 'IronPython.Runtime.Exceptions.TabException', None, (), ()),
                              ),
-                         ),                                    
-                    ),                                
+                         ),
+                    ),
                 ),
                 ExceptionInfo('SystemError', 'System.SystemException', None, (), ()),
                 ExceptionInfo('TypeError', 'IronPython.Runtime.Exceptions.TypeErrorException', None, (), (), baseMapping = 'Microsoft.Scripting.ArgumentTypeException'),
@@ -170,8 +159,8 @@ exceptionHierarchy = ExceptionInfo('BaseException', 'IronPython.Runtime.Exceptio
                         ExceptionInfo('BytesWarning', 'IronPython.Runtime.Exceptions.BytesWarningException', None, (), ()),
                         ExceptionInfo('ResourceWarning', 'IronPython.Runtime.Exceptions.ResourceWarningException', None, (), ()),
                     ),
-                ),                
-            ),      
+                ),
+            ),
         ),
     )
 )
@@ -194,7 +183,7 @@ def get_all_exceps(l, curHierarchy):
             if e.clrException == exception.clrException:
                 found = True
                 break
-        
+
         if not found:
             l.append(exception)
     for exception in curHierarchy.subclasses:
@@ -208,12 +197,12 @@ sysdll = clr.LoadAssemblyByPartialName('System')
 
 def get_type(name):
     if name.startswith('IronPython'):            return ip.GetType(name)
-    if name.startswith('Microsoft.Scripting'):   
+    if name.startswith('Microsoft.Scripting'):
         res = ms.GetType(name)
         return res if res is not None else md.GetType(name)
 
     if name.startswith('System.ComponentModel'): return sysdll.GetType(name)
-    
+
     return System.Type.GetType(name)
 
 
@@ -223,49 +212,49 @@ def exception_distance(a):
         a = a.BaseType
         distance += 1
     return distance
-     
+
 def get_compare_name(ex_info):
     return ex_info.baseMapping or ex_info.clrException
 
 def compare_exceptions(a, b):
     a, b = get_compare_name(a), get_compare_name(b)
-    
+
     ta = get_type(a)
     tb = get_type(b)
-    
+
     if ta == None:
         raise Exception("Exception class not found %s " % a)
 
     if tb == None:
         raise Exception("Exception class not found %s " % b)
-    
+
     if ta.IsSubclassOf(tb): return -1
     if tb.IsSubclassOf(ta): return 1
-    
+
     da = exception_distance(ta)
     db = exception_distance(tb)
-    
+
     # put exceptions further from System.Exception 1st, those further later...
     if da != db: return db - da
-    
+
     def cmp(a, b):
         return (a > b) - (a < b)
 
     return cmp(ta.Name, tb.Name)
-    
+
 def gen_topython_helper(cw):
     cw.enter_block("private static BaseException/*!*/ ToPythonHelper(System.Exception clrException)")
-    
+
     allExceps = get_all_exceps([], exceptionHierarchy)
     allExceps.sort(key=functools.cmp_to_key(compare_exceptions))
-    
+
     for x in allExceps:
         cw.writeline('if (clrException is %s) return %s;' % (x.ExceptionMappingName, x.MakeNewException()))
 
-    cw.writeline('return new BaseException(Exception);')    
+    cw.writeline('return new BaseException(Exception);')
     cw.exit_block()
 
-        
+
 def get_clr_name(e):
     return e.replace('Error', '') + 'Exception'
 
@@ -284,7 +273,7 @@ public class %(name)s : %(supername)s, IPythonAwareException {
     private object _pyExceptionObject;
     private List<DynamicStackFrame> _frames;
     private TraceBack _traceback;
-    
+
     public %(name)s() : base() { }
     public %(name)s(string msg) : base(msg) { }
     public %(name)s(string message, Exception innerException)
@@ -292,7 +281,7 @@ public class %(name)s : %(supername)s, IPythonAwareException {
     }
 #if FEATURE_SERIALIZATION
     protected %(name)s(SerializationInfo info, StreamingContext context) : base(info, context) { }
-    
+
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase")]
     public override void GetObjectData(SerializationInfo info, StreamingContext context) {
         info.AddValue("frames", _frames);
@@ -302,22 +291,22 @@ public class %(name)s : %(supername)s, IPythonAwareException {
 #endif
 
     object IPythonAwareException.PythonException {
-        get { 
+        get {
             if (_pyExceptionObject == null) {
                 var newEx = %(make_new_exception)s;
                 newEx.InitializeFromClr(this);
                 _pyExceptionObject = newEx;
             }
-            return _pyExceptionObject; 
+            return _pyExceptionObject;
         }
         set { _pyExceptionObject = value; }
     }
-    
+
     List<DynamicStackFrame> IPythonAwareException.Frames {
         get { return _frames; }
         set { _frames = value; }
     }
-    
+
     TraceBack IPythonAwareException.TraceBack {
         get { return _traceback; }
         set { _traceback = value; }
@@ -360,18 +349,13 @@ def gen_one_new_exception(cw, exception, parent):
             cw.enter_block('public partial class _%s : _%s' % (exception.name, exception.ConcreteParent.name))
         else:
             cw.enter_block('public partial class _%s : %s' % (exception.name, exception.ConcreteParent.name))
-                
+
         cw.writeline('public _%s() : base(%s) { }' % (exception.name, exception.name))
         cw.writeline('public _%s(PythonType type) : base(type) { }' % (exception.name, ))
         cw.writeline('')
-        
-        cw.enter_block('public new static object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args)')
-        cw.writeline('return Activator.CreateInstance(cls.UnderlyingSystemType, cls);')
-        cw.exit_block()
-        cw.writeline('')
 
-        if exception.args:        
-            argstr = ', '.join(['object ' + fix_object(x) for x in exception.args])             
+        if exception.args:
+            argstr = ', '.join(['object ' + fix_object(x) for x in exception.args])
             cw.enter_block('public void __init__(%s)' % (argstr))
             for arg in exception.args:
                 cw.writeline('this.%s = %s;' % (fix_object(arg), fix_object(arg)))
@@ -385,11 +369,11 @@ def gen_one_new_exception(cw, exception, parent):
             cw.writeline('__init__(' + ', '.join(["args[" + str(i) + "]" for i in range(len(exception.args))]) + ');')
             cw.exit_block()
             cw.writeline('')
-        
+
         for field in exception.fields:
             cw.writeline('public object %s { get; set; }' % fix_object(field))
             cw.writeline('')
-        
+
         cw.exit_block()
         cw.writeline('')
 
@@ -405,22 +389,22 @@ def gen_one_new_exception(cw, exception, parent):
         cw.exit_block()
         cw.exit_block()
         cw.writeline()
-        
+
     for child in exception.subclasses:
         gen_one_new_exception(cw, child, exception)
-            
+
 def newstyle_gen(cw):
     for child in exceptionHierarchy.subclasses:
         gen_one_new_exception(cw, child, exceptionHierarchy)
-        
+
 def gen_one_exception_module_entry(cw, exception, parent):
     cw.write("public static PythonType %s = %s;" % (exception.name, exception.InternalPythonType))
     for child in exception.subclasses:
         gen_one_exception_module_entry(cw, child, exception)
-        
+
 def module_gen(cw):
     cw.write("public static object BaseException = DynamicHelpers.GetPythonTypeFromType(typeof(PythonExceptions.BaseException));")
-    
+
     for child in exceptionHierarchy.subclasses:
         gen_one_exception_module_entry(cw, child, exceptionHierarchy)
 

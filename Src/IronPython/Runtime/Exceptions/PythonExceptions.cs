@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 
@@ -517,6 +518,18 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         public partial class _OSError {
+            public static new object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
+                if (cls == OSError && args.Length >= 1 && args[0] is int errno) {
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                        if (args.Length >= 4 && args[3] is int winerror) {
+                            errno = WinErrorToErrno(winerror);
+                        }
+                    }
+                    cls = ErrnoToPythonType((Error)errno);
+                }
+                return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
+            }
+
             public override void __init__(params object[] args) {
                 if (args.Length >= 2 && args.Length <= 5) {
                     errno = args[0];
@@ -533,8 +546,88 @@ namespace IronPython.Runtime.Exceptions {
                     if (args.Length >= 5) {
                         filename2 = args[4];
                     }
+                    args = new object[] { errno, strerror };
                 }
                 base.__init__(args);
+            }
+
+            private enum Error {
+                EPERM = 1,
+                ENOENT = 2,
+                ESRCH = 3,
+                EINTR = 4,
+                ECHILD = 10,
+                EAGAIN = 11,
+                EACCES = 13,
+                EEXIST = 17,
+                ENOTDIR = 20,
+                EISDIR = 21,
+                EPIPE = 32,
+                // Linux
+                ECONNABORTED = 103,
+                ECONNRESET = 104,
+                ESHUTDOWN = 108,
+                ETIMEDOUT = 110,
+                ECONNREFUSED = 111,
+                EALREADY = 114,
+                EINPROGRESS = 115,
+                // Windows
+                WSAEWOULDBLOCK = 10035,
+                WSAEINPROGRESS = 10036,
+                WSAEALREADY = 10037,
+                WSAECONNABORTED = 10053,
+                WSAECONNRESET = 10054,
+                WSAESHUTDOWN = 10058,
+                WSAETIMEDOUT = 10060,
+                WSAECONNREFUSED = 10061,
+            }
+
+            private static PythonType ErrnoToPythonType(Error errno) {
+                var res = errno switch
+                {
+                    Error.EPERM => PermissionError,
+                    Error.ENOENT => FileNotFoundError,
+                    Error.ESRCH => ProcessLookupError,
+                    Error.EINTR => InterruptedError,
+                    Error.ECHILD => ChildProcessError,
+                    Error.EAGAIN => BlockingIOError,
+                    Error.EACCES => PermissionError,
+                    Error.EEXIST => FileExistsError,
+                    Error.ENOTDIR => NotADirectoryError,
+                    Error.EISDIR => IsADirectoryError,
+                    Error.EPIPE => BrokenPipeError,
+                    _ => null
+                };
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                    res ??= errno switch
+                    {
+                        // Windows
+                        Error.WSAEWOULDBLOCK => BlockingIOError,
+                        Error.WSAEINPROGRESS => BlockingIOError,
+                        Error.WSAEALREADY => BlockingIOError,
+                        Error.WSAECONNABORTED => ConnectionAbortedError,
+                        Error.WSAECONNRESET => ConnectionResetError,
+                        Error.WSAESHUTDOWN => BrokenPipeError,
+                        Error.WSAETIMEDOUT => TimeoutError,
+                        Error.WSAECONNREFUSED => ConnectionRefusedError,
+                        _ => null
+                    };
+                } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                    // TODO: verify that these are the same on OSX
+                    res ??= errno switch
+                    {
+                        // Linux
+                        Error.ECONNABORTED => ConnectionAbortedError,
+                        Error.ECONNRESET => ConnectionResetError,
+                        Error.ESHUTDOWN => BrokenPipeError,
+                        Error.ETIMEDOUT => TimeoutError,
+                        Error.ECONNREFUSED => ConnectionRefusedError,
+                        Error.EALREADY => BlockingIOError,
+                        Error.EINPROGRESS => BlockingIOError,
+                        _ => null
+                    };
+                }
+                return res ?? OSError;
             }
 
             /*

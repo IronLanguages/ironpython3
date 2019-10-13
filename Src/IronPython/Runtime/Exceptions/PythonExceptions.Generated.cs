@@ -41,10 +41,6 @@ namespace IronPython.Runtime.Exceptions {
             public _SystemExit() : base(SystemExit) { }
             public _SystemExit(PythonType type) : base(type) { }
 
-            public new static object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
-                return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
-            }
-
             public object code { get; set; }
 
         }
@@ -97,10 +93,6 @@ namespace IronPython.Runtime.Exceptions {
         public partial class _StopIteration : BaseException {
             public _StopIteration() : base(StopIteration) { }
             public _StopIteration(PythonType type) : base(type) { }
-
-            public new static object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
-                return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
-            }
 
             public object value { get; set; }
 
@@ -199,10 +191,6 @@ namespace IronPython.Runtime.Exceptions {
             public _OSError() : base(OSError) { }
             public _OSError(PythonType type) : base(type) { }
 
-            public new static object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
-                return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
-            }
-
             public object errno { get; set; }
 
             public object strerror { get; set; }
@@ -230,10 +218,6 @@ namespace IronPython.Runtime.Exceptions {
         public partial class _BlockingIOError : _OSError {
             public _BlockingIOError() : base(BlockingIOError) { }
             public _BlockingIOError(PythonType type) : base(type) { }
-
-            public new static object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
-                return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
-            }
 
             public object characters_written { get; set; }
 
@@ -420,10 +404,6 @@ namespace IronPython.Runtime.Exceptions {
             public _ImportError() : base(ImportError) { }
             public _ImportError(PythonType type) : base(type) { }
 
-            public new static object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
-                return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
-            }
-
             public object name { get; set; }
 
             public object path { get; set; }
@@ -545,10 +525,6 @@ namespace IronPython.Runtime.Exceptions {
             public _SyntaxError() : base(SyntaxError) { }
             public _SyntaxError(PythonType type) : base(type) { }
 
-            public new static object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
-                return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
-            }
-
             public object text { get; set; }
 
             public object print_file_and_line { get; set; }
@@ -645,10 +621,6 @@ namespace IronPython.Runtime.Exceptions {
             public _UnicodeDecodeError() : base(UnicodeDecodeError) { }
             public _UnicodeDecodeError(PythonType type) : base(type) { }
 
-            public new static object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
-                return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
-            }
-
             public void __init__(object encoding, object @object, object start, object end, object reason) {
                 this.encoding = encoding;
                 this.@object = @object;
@@ -693,10 +665,6 @@ namespace IronPython.Runtime.Exceptions {
             public _UnicodeEncodeError() : base(UnicodeEncodeError) { }
             public _UnicodeEncodeError(PythonType type) : base(type) { }
 
-            public new static object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
-                return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
-            }
-
             public void __init__(object encoding, object @object, object start, object end, object reason) {
                 this.encoding = encoding;
                 this.@object = @object;
@@ -740,10 +708,6 @@ namespace IronPython.Runtime.Exceptions {
         public partial class _UnicodeTranslateError : BaseException {
             public _UnicodeTranslateError() : base(UnicodeTranslateError) { }
             public _UnicodeTranslateError(PythonType type) : base(type) { }
-
-            public new static object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
-                return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
-            }
 
             public object start { get; set; }
 

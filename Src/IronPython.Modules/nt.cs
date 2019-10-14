@@ -58,6 +58,24 @@ namespace IronPython.Modules {
 
         #region Public API Surface
 
+        [DllImport("kernel32.dll", EntryPoint = "GetFinalPathNameByHandleW", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern int GetFinalPathNameByHandle([In] SafeFileHandle hFile, [Out] StringBuilder lpszFilePath, [In] int cchFilePath, [In] int dwFlags);
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        public static string _getfinalpathname(string path) {
+            var hFile = CreateFile(path, 0, 0, IntPtr.Zero, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, IntPtr.Zero);
+            if (hFile.IsInvalid) {
+                throw GetLastWin32Error(path);
+            }
+
+            const int MAX_PATH_LEN = 10000;
+            StringBuilder sb = new StringBuilder(MAX_PATH_LEN);
+            if (GetFinalPathNameByHandle(hFile, sb, MAX_PATH_LEN, 0) == 0) {
+                throw GetLastWin32Error(path);
+            }
+            return sb.ToString();
+        }
+
 #if FEATURE_PROCESS
         public static void abort() {
             System.Environment.FailFast("IronPython os.abort");
@@ -591,6 +609,28 @@ namespace IronPython.Modules {
                 Directory.Move(src, dst);
             } catch (Exception e) {
                 throw ToPythonException(e);
+            }
+        }
+
+        private const uint MOVEFILE_REPLACE_EXISTING = 0x01;
+
+        [DllImport("kernel32.dll", EntryPoint = "MoveFileExW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
+        private static extern bool MoveFileEx(string src, string dst, uint flags);
+
+        private static void replaceUnix(string src, string dst) {
+            if (Mono.Unix.Native.Syscall.rename(src, dst) == 0) return;
+            throw GetLastUnixError(src, dst);
+        }
+
+        public static void replace(string src, string dst) {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                if (!MoveFileEx(src, dst, MOVEFILE_REPLACE_EXISTING)) {
+                    throw GetLastWin32Error(src, dst);
+                }
+            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                replaceUnix(src, dst);
+            } else {
+                throw new NotImplementedException();
             }
         }
 

@@ -92,7 +92,7 @@ exceptionHierarchy = ExceptionInfo('BaseException', 'IronPython.Runtime.Exceptio
                 ExceptionInfo('AssertionError', 'IronPython.Runtime.Exceptions.AssertionException', None, (), ()),
                 ExceptionInfo('AttributeError', 'IronPython.Runtime.Exceptions.AttributeErrorException', None, (), (), baseMapping = 'System.MissingMemberException'),
                 ExceptionInfo('BufferError', 'IronPython.Runtime.Exceptions.BufferException', None, (), ()),
-                ExceptionInfo('OSError', 'IronPython.Runtime.Exceptions.OSException', None, ('errno', 'strerror', 'filename', 'winerror', 'filename2'), (
+                ExceptionInfo('OSError', 'IronPython.Runtime.Exceptions.OSException', None, ('errno', 'strerror'), (
                     ExceptionInfo('BlockingIOError', 'IronPython.Runtime.Exceptions.BlockingIOException', None, ('characters_written', ), ()),
                     ExceptionInfo('FileExistsError', 'IronPython.Runtime.Exceptions.FileExistsException', None, (), ()),
                     ExceptionInfo('FileNotFoundError', 'System.IO.FileNotFoundException', None, (), ()),

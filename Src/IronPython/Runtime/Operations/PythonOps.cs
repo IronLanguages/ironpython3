@@ -3680,6 +3680,18 @@ namespace IronPython.Runtime.Operations {
             return OSError(format, args);
         }
 
+        internal static Exception OSError(int errno, string strerror, string filename = null, int? winerror = null, string filename2 = null) {
+            if (filename2 != null) {
+                return PythonExceptions.CreateThrowable(PythonExceptions.OSError, errno, strerror, filename, winerror, filename2);
+            } else if (winerror != null) {
+                return PythonExceptions.CreateThrowable(PythonExceptions.OSError, errno, strerror, filename, winerror);
+            } else if (filename != null) {
+                return PythonExceptions.CreateThrowable(PythonExceptions.OSError, errno, strerror, filename);
+            } else {
+                return PythonExceptions.CreateThrowable(PythonExceptions.OSError, errno, strerror);
+            }
+        }
+
         public static Exception EofError(string format, params object[] args) {
             return new EndOfStreamException(string.Format(format, args));
         }

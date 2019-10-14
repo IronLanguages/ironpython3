@@ -194,13 +194,6 @@ namespace IronPython.Runtime.Exceptions {
             public object errno { get; set; }
 
             public object strerror { get; set; }
-
-            public object filename { get; set; }
-
-            public object winerror { get; set; }
-
-            public object filename2 { get; set; }
-
         }
 
         [MultiRuntimeAware]

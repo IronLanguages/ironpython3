@@ -530,21 +530,42 @@ namespace IronPython.Runtime.Exceptions {
                 return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
             }
 
+            private static readonly object Undefined = new object();
+
+            private object _filename = Undefined;
+            public object filename {
+                get { return ReferenceEquals(_filename, Undefined) ? null : _filename; }
+                set { _filename = value; }
+            }
+
+            // TODO: hide property on Unix
+            private object _winerror = Undefined;
+            public object winerror {
+                get { return ReferenceEquals(_winerror, Undefined) ? null : _winerror; }
+                set { _winerror = value; }
+            }
+
+            private object _filename2 = Undefined;
+            public object filename2 {
+                get { return ReferenceEquals(_filename2, Undefined) ? null : _filename2; }
+                set { _filename2 = value; }
+            }
+
             public override void __init__(params object[] args) {
                 if (args.Length >= 2 && args.Length <= 5) {
                     errno = args[0];
                     strerror = args[1];
                     if (args.Length >= 3) {
-                        filename = args[2];
+                        filename = args[2] ?? Undefined;
                     }
                     if (args.Length >= 4) {
-                        winerror = args[3];
+                        winerror = args[3] ?? Undefined;
                         if (winerror is int) {
                             errno = WinErrorToErrno((int)winerror);
                         }
                     }
                     if (args.Length >= 5) {
-                        filename2 = args[4];
+                        filename2 = args[4] ?? Undefined;
                     }
                     args = new object[] { errno, strerror };
                 }
@@ -862,17 +883,29 @@ for k, v in toError.items():
                 return errno;
             }
 
-            public override string ToString() {
-                // TODO: this should probably be based on args length
-                // TODO: report WinError ISO Errno if available and running on Windows
+            public string/*!*/ __str__(CodeContext/*!*/ context) {
                 if (errno != null && strerror != null) {
-                    if (filename != null) {
-                        return string.Format("[Errno {0}] {1}: '{2}'", errno, strerror, filename);
+                    var sb = new StringBuilder();
+                    sb.Append("[");
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !ReferenceEquals(_winerror, Undefined)) {
+                        sb.Append("WinError ");
+                        sb.Append(PythonOps.Repr(context, winerror));
                     } else {
-                        return string.Format("[Errno {0}] {1}", errno, strerror);
+                        sb.Append("Errno ");
+                        sb.Append(PythonOps.Repr(context, errno));
                     }
+                    sb.Append("] ");
+                    sb.Append(strerror);
+                    if (!ReferenceEquals(_filename, Undefined)) {
+                        sb.Append(": ");
+                        sb.Append(PythonOps.Repr(context, filename));
+                        if (!ReferenceEquals(_filename2, Undefined)) {
+                            sb.Append(" -> ");
+                            sb.Append(PythonOps.Repr(context, filename2));
+                        }
+                    }
+                    return sb.ToString();
                 }
-
                 return base.ToString();
             }
         }
@@ -959,7 +992,7 @@ for k, v in toError.items():
                         endIdx += ex.Index;
                         inputString = s;
                     }
-                    if (ex.CharUnknownHigh != default(char) || ex.CharUnknownLow != default(char) ) {
+                    if (ex.CharUnknownHigh != default(char) || ex.CharUnknownLow != default(char)) {
                         endIdx++;
                         if (inputString == null) inputString = new string(new[] { ex.CharUnknownHigh, ex.CharUnknownLow });
                     } else if (ex.CharUnknown != default(char)) {
@@ -1033,6 +1066,8 @@ for k, v in toError.items():
             BaseException be;
             if (type.UnderlyingSystemType == typeof(BaseException)) {
                 be = new BaseException(type);
+            } else if (type == OSError) {
+                be = (BaseException)_OSError.__new__(type, null, args);
             } else {
                 be = (BaseException)Activator.CreateInstance(type.UnderlyingSystemType, type);
             }

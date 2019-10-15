@@ -388,7 +388,14 @@ namespace IronPython.Modules {
         }
 #endif
 
-        public static PythonList listdir(CodeContext/*!*/ context, [NotNull]string path) {
+        public static PythonList listdir(CodeContext/*!*/ context, [BytesConversion][NotNull]IList<byte> path)
+            => listdir(context, PythonOps.MakeString(path));
+
+        public static PythonList listdir(CodeContext/*!*/ context, string path = null) {
+            if (path == null) {
+                path = getcwd(context);
+            }
+
             if (path == string.Empty) {
                 throw PythonOps.OSError(PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, "The system cannot find the path specified", path, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND);
             }
@@ -801,7 +808,7 @@ namespace IronPython.Modules {
 #endif
 
         [PythonType]
-        public class stat_result : PythonTuple {
+        public sealed class stat_result : PythonTuple {
             public const int n_fields = 16;
             public const int n_sequence_fields = 10;
             public const int n_unnamed_fields = 3;
@@ -865,9 +872,13 @@ namespace IronPython.Modules {
                 }
             }
 
-            public stat_result(CodeContext/*!*/ context, IEnumerable<object> statResult, [DefaultParameterValue(null)]PythonDictionary dict)
-                : this(statResult.ToArray(), dict) { }
+            public static stat_result __new__(CodeContext context, PythonType cls, IEnumerable<object> sequence, PythonDictionary dict = null) {
+                return new stat_result(sequence, dict);
+            }
 
+            public stat_result(IEnumerable<object> sequence, PythonDictionary dict = null)
+                : this(sequence.ToArray(), dict) { }
+ 
             private static bool TryGetDictValue(PythonDictionary dict, string name, out object value) {
                 value = null;
                 return dict != null && dict.TryGetValue(name, out value);
@@ -1481,7 +1492,7 @@ the 'status' value."),
             bool isWindowsError = false;
             if (e is Win32Exception winExcep) {
                 errorCode = winExcep.NativeErrorCode;
-                message = GetFormattedExceptionMessage(e, errorCode);
+                message = e.Message;
                 isWindowsError = true;
             } else if (e is UnauthorizedAccessException unauth) {
                 errorCode = PythonExceptions._OSError.ERROR_ACCESS_DENIED;
@@ -1501,7 +1512,7 @@ the 'status' value."),
                     pe = IOExceptionToPythonException(ioe, errorCode, filename);
                     if (pe != null) return pe;
 
-                    message = GetFormattedExceptionMessage(e, errorCode);
+                    message = e.Message;
                     isWindowsError = true;
                 }
             }
@@ -1511,10 +1522,6 @@ the 'status' value."),
             }
 
             return PythonExceptions.CreateThrowable(PythonExceptions.OSError, errorCode, message);
-        }
-
-        private static string GetFormattedExceptionMessage(Exception e, int hr) {
-            return "[WinError " + hr.ToString() + "] " + e.Message;
         }
 
         private static Exception IOExceptionToPythonException(IOException ioe, int error, string filename) {

@@ -284,7 +284,7 @@ namespace IronPythonTest.Cases {
                     try {
                         return engine.Operations.ConvertTo<int>(compiledCode.Execute(scope) ?? 0);
                     } catch (SystemExitException ex) {
-                        return ex.GetExitCode(out object _);
+                        return ex.GetExitCode(out _);
                     }
                 });
                 if (!task.Wait(testcase.Options.Timeout)) {

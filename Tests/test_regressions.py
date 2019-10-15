@@ -18,7 +18,7 @@ import os
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_netcoreapp, is_cli, is_posix, run_test, skipUnlessIronPython, stdout_trapper
+from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, is_posix, run_test, skipUnlessIronPython, stdout_trapper
 
 class RegressionTest(IronPythonTestCase):
 
@@ -467,6 +467,7 @@ with open(r"%s", "w") as f:
         else:
             self.assertEqual('abc'.ljust(-2147483649), 'abc')
 
+    @unittest.skipIf(is_mono, "https://github.com/mono/mono/issues/17192")
     @skipUnlessIronPython()
     def test_help_dir_cp11833(self):
         import System

@@ -1720,14 +1720,9 @@ namespace IronPython.Runtime.Operations {
 #endif
 
         internal static string DoDecode(CodeContext context, IList<byte> s, string errors, string encoding, Encoding e)
-            => DoDecode(context, s, errors, encoding, e, true, true, out _);
+            => DoDecode(context, s, errors, encoding, e, true, out _);
 
-        internal static string DoDecode(CodeContext context, IList<byte> s, string errors, string encoding, Encoding e, bool final, out int numBytes)
-            => DoDecode(context, s, errors, encoding, e, true, final, out numBytes);
-
-        // If the beginning of input s is the same as the preamble in Encoding e, those bytes are never decoded or passed to output.
-        // However, if discountPreamble is false, the number of those bytes is included in total numBytes reported.
-        internal static string DoDecode(CodeContext context, IList<byte> s, string errors, string encoding, Encoding e, bool discountPreamble, bool final, out int numBytes) {
+        internal static string DoDecode(CodeContext context, IList<byte> s, string errors, string encoding, Encoding e, bool final, out int numBytes) {
             byte[] bytes = s as byte[] ?? ((s is Bytes b) ? b.GetUnsafeByteArray() : s.ToArray());
             int start = GetStartingOffset(e, bytes);
             int length = bytes.Length - start;
@@ -1767,7 +1762,7 @@ namespace IronPython.Runtime.Operations {
                 throw;
             }
 
-            numBytes = bytes.Length - (discountPreamble ? start : 0);
+            numBytes = bytes.Length;
 #if FEATURE_ENCODING
             if (e.DecoderFallback is ExceptionFallBack fallback) {
                 byte[] badBytes = fallback.buffer.badBytes;

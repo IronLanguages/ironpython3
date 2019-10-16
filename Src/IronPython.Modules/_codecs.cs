@@ -414,30 +414,25 @@ namespace IronPython.Modules {
         public static PythonTuple utf_32_encode(CodeContext context, string input, string errors = "strict")
             => DoEncode(context, "utf-32", Utf32LeBomEncoding, input, errors, includePreamble: true).ToPythonTuple();
 
-        public static PythonTuple utf_32_ex_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors, int byteorder = 0, bool final = false) {
+        public static PythonTuple utf_32_ex_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict", int byteorder = 0, bool final = false) {
 
-            object output;
-            object numBytes;
+            Tuple<string, int> res;
 
             if (byteorder != 0) {
-                var res = (byteorder > 0) ?
-                    utf_32_be_decode(context, input, errors, final)
+                res = (byteorder > 0) ?
+                    DoDecode(context, "utf-32-be", Utf32BeEncoding, input, errors, final)
                 :
-                    utf_32_le_decode(context, input, errors, final);
-                output = res[0];
-                numBytes = res[1];
+                    DoDecode(context, "utf-32-le", Utf32LeEncoding, input, errors, final);
 
             } else {
                 byteorder = Utf32DetectByteorder(input);
-                var res = (byteorder > 0) ?
+                res = (byteorder > 0) ?
                     DoDecode(context, "utf-32-be", Utf32BeBomEncoding, input, errors, final)
                 :
                     DoDecode(context, "utf-32-le", Utf32LeBomEncoding, input, errors, final);
-                output = res.Item1;
-                numBytes = res.Item2;
             }
 
-            return PythonTuple.MakeTuple(output, numBytes, byteorder);
+            return PythonTuple.MakeTuple(res.Item1, res.Item2, byteorder);
         }
 
         private static int Utf32DetectByteorder(IList<byte> input) {
@@ -517,7 +512,7 @@ namespace IronPython.Modules {
         #region Private implementation
 
         private static Tuple<string, int> DoDecode(CodeContext context, string encodingName, Encoding encoding, [BytesConversion]IList<byte> input, string errors, bool final) {
-            var decoded = StringOps.DoDecode(context, input, errors, encodingName, encoding, discountPreamble: false, final, out int numBytes);
+            var decoded = StringOps.DoDecode(context, input, errors, encodingName, encoding, final, out int numBytes);
             return Tuple.Create(decoded, numBytes);
         }
 

@@ -169,20 +169,20 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF32LETest('test_readline'))
         suite.addTest(test.test_codecs.UTF32LETest('test_readlinequeue'))
         suite.addTest(test.test_codecs.UTF32LETest('test_simple'))
-        #suite.addTest(test.test_codecs.UTF32Test('test_badbom')) # TypeError: expected str, got bytes
-        #suite.addTest(test.test_codecs.UTF32Test('test_bug1098990_a')) # TypeError: expected str, got bytes
-        #suite.addTest(test.test_codecs.UTF32Test('test_bug1098990_b'))# TypeError: expected str, got bytes
-        #suite.addTest(test.test_codecs.UTF32Test('test_bug1175396')) # TypeError: expected str, got bytes
-        #suite.addTest(test.test_codecs.UTF32Test('test_decoder_state')) # TypeError: expected str, got bytes
+        #suite.addTest(test.test_codecs.UTF32Test('test_badbom')) # AssertionError: UnicodeError not raised by read; 'strict' error handler in non-final case is too lax
+        suite.addTest(test.test_codecs.UTF32Test('test_bug1098990_a'))
+        suite.addTest(test.test_codecs.UTF32Test('test_bug1098990_b'))
+        suite.addTest(test.test_codecs.UTF32Test('test_bug1175396'))
+        #suite.addTest(test.test_codecs.UTF32Test('test_decoder_state')) # UnicodeError: UTF-32 stream does not start with BOM
         suite.addTest(test.test_codecs.UTF32Test('test_errors'))
         suite.addTest(test.test_codecs.UTF32Test('test_handlers'))
-        #suite.addTest(test.test_codecs.UTF32Test('test_issue8941')) # AssertionError: '\ud800\udc00\ud800\udc00\ud800\udc00\ud80[12243 chars]dc00' != 'ĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀ[979 chars]ĀĀĀĀ'
+        suite.addTest(test.test_codecs.UTF32Test('test_issue8941'))
         suite.addTest(test.test_codecs.UTF32Test('test_lone_surrogates'))
-        #suite.addTest(test.test_codecs.UTF32Test('test_mixed_readline_and_read')) # TypeError: expected str, got bytes
-        #suite.addTest(test.test_codecs.UTF32Test('test_only_one_bom')) # TypeError: expected str, got bytes
-        #suite.addTest(test.test_codecs.UTF32Test('test_partial')) # TypeError: expected str, got bytes
-        #suite.addTest(test.test_codecs.UTF32Test('test_readline')) # TypeError: expected str, got bytes
-        #suite.addTest(test.test_codecs.UTF32Test('test_readlinequeue')) # TypeError: expected str, got bytes
+        suite.addTest(test.test_codecs.UTF32Test('test_mixed_readline_and_read'))
+        suite.addTest(test.test_codecs.UTF32Test('test_only_one_bom'))
+        #suite.addTest(test.test_codecs.UTF32Test('test_partial')) # UnicodeError: UTF-32 stream does not start with BOM
+        suite.addTest(test.test_codecs.UTF32Test('test_readline'))
+        suite.addTest(test.test_codecs.UTF32Test('test_readlinequeue'))
         suite.addTest(test.test_codecs.UTF7Test('test_ascii'))
         suite.addTest(test.test_codecs.UTF7Test('test_bug1098990_a'))
         suite.addTest(test.test_codecs.UTF7Test('test_bug1098990_b'))

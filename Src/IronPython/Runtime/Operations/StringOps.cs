@@ -1780,18 +1780,7 @@ namespace IronPython.Runtime.Operations {
         /// </summary>
         private static int GetStartingOffset(Encoding e, byte[] bytes) {
             byte[] preamble = e.GetPreamble();
-
-            if (preamble.Length != 0 && bytes.Length >= preamble.Length) {
-                for (int i = 0; i < preamble.Length; i++) {
-                    if (bytes[i] != preamble[i]) {
-                        return 0;
-                    }
-                }
-
-                return preamble.Length;
-            }
-
-            return 0;
+            return bytes.StartsWith(preamble) ? preamble.Length : 0;
         }
 
         internal static Bytes RawEncode(CodeContext/*!*/ context, string s, string encoding, string errors) {

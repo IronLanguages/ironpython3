@@ -436,34 +436,8 @@ namespace IronPython.Modules {
         }
 
         private static int Utf32DetectByteorder(IList<byte> input) {
-            byte[] lePre = BOM_UTF32_LE;
-            if (input.Count > lePre.Length) {
-                bool match = true;
-                for (int i = 0; i < lePre.Length; i++) {
-                    if (input[i] != lePre[i]) {
-                        match = false;
-                        break;
-                    }
-                }
-                if (match) {
-                    return -1;
-                }
-            }
-
-            byte[] bePre = BOM_UTF32_BE;
-            if (input.Count > bePre.Length) {
-                bool match = true;
-                for (int i = 0; i < bePre.Length; i++) {
-                    if (input[i] != bePre[i]) {
-                        match = false;
-                        break;
-                    }
-                }
-                if (match) {
-                    return 1;
-                }
-            }
-
+            if (input.StartsWith(BOM_UTF32_LE)) return -1;
+            if (input.StartsWith(BOM_UTF32_BE)) return 1;
             return 0;
         }
 

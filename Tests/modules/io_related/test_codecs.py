@@ -300,6 +300,17 @@ class CodecTest(IronPythonTestCase):
         self.assertEqual(num_processed, 4 * 4)
         self.assertGreater(detected, order)
 
+        # When only BOM present, and no order given: the decoded string is empty but the UTF-32 variant is detected
+        string, num_processed, detected = codecs.utf_32_ex_decode(codecs.BOM_UTF32_LE, 'strict', order)
+        self.assertEqual(string, "")
+        self.assertEqual(num_processed, 4)
+        self.assertLess(detected, order)
+
+        string, num_processed, detected = codecs.utf_32_ex_decode(codecs.BOM_UTF32_BE, 'strict', order)
+        self.assertEqual(string, "")
+        self.assertEqual(num_processed, 4)
+        self.assertGreater(detected, order)
+
         # When no BOM, and no order given: on little-endian systems, UTF-32 defaults to UTF-32-LE, but no BOM detection
         string, num_processed, detected = codecs.utf_32_ex_decode(abc_le, 'strict', order)
         self.assertEqual(string, 'abc')

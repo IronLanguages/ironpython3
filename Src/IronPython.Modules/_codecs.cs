@@ -307,71 +307,78 @@ namespace IronPython.Modules {
 
         #endregion
 
-        #region Utf-16 Big Endian Functions
-
-        public static PythonTuple utf_16_be_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict", bool final = false)
-            => DoDecode(context, "utf-16-be", Encoding.BigEndianUnicode, input, errors, final).ToPythonTuple();
-
-        public static PythonTuple utf_16_be_encode(CodeContext context, string input, string errors = "strict")
-            => DoEncode(context, "utf-16-be", Encoding.BigEndianUnicode, input, errors).ToPythonTuple();
-
-        #endregion
-
         #region Utf-16 Functions
 
-        public static PythonTuple utf_16_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict", bool final = false)
-            => DoDecode(context, "utf-16", Encoding.Unicode, input, errors, final).ToPythonTuple();
+        public static PythonTuple utf_16_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict", bool final = false) {
+            PythonTuple res = utf_16_ex_decode(context, input, errors, 0, final);
+            return PythonTuple.MakeTuple(res[0], res[1]);
+        }
 
         public static PythonTuple utf_16_encode(CodeContext context, string input, string errors = "strict")
-            => DoEncode(context, "utf-16", Encoding.Unicode, input, errors, true).ToPythonTuple();
+            => DoEncode(context, "utf-16", Utf16LeBomEncoding, input, errors, true).ToPythonTuple();
 
         #endregion
 
-        public static PythonTuple utf_16_ex_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict")
-            => utf_16_ex_decode(context, input, errors, null, null);
+        public static PythonTuple utf_16_ex_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict", int byteorder = 0, bool final = false) {
 
-        public static PythonTuple utf_16_ex_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors, object unknown1, object unknown2) {
-            byte[] lePre = Encoding.Unicode.GetPreamble();
-            byte[] bePre = Encoding.BigEndianUnicode.GetPreamble();
+            Tuple<string, int> res;
 
-            bool match = true;
-            if (input.Count > lePre.Length) {
-                for (int i = 0; i < lePre.Length; i++) {
-                    if (input[i] != lePre[i]) {
-                        match = false;
-                        break;
-                    }
-                }
-                if (match) {
-                    return PythonTuple.MakeTuple(string.Empty, lePre.Length, -1);
-                }
-                match = true;
+            if (byteorder != 0) {
+                res = (byteorder > 0) ?
+                    DoDecode(context, "utf-16-be", Utf16BeEncoding, input, errors, final)
+                :
+                    DoDecode(context, "utf-16-le", Utf16LeEncoding, input, errors, final);
+
+            } else {
+                byteorder = Utf16DetectByteorder(input);
+                res = (byteorder > 0) ?
+                    DoDecode(context, "utf-16-be", Utf16BeBomEncoding, input, errors, final)
+                :
+                    DoDecode(context, "utf-16-le", Utf16LeBomEncoding, input, errors, final);
             }
 
-            if (input.Count > bePre.Length) {
-                for (int i = 0; i < bePre.Length; i++) {
-                    if (input[i] != bePre[i]) {
-                        match = false;
-                        break;
-                    }
-                }
+            return PythonTuple.MakeTuple(res.Item1, res.Item2, byteorder);
+        }
 
-                if (match) {
-                    return PythonTuple.MakeTuple(string.Empty, bePre.Length, 1);
-                }
-            }
-
-            PythonTuple res = utf_16_decode(context, input, errors, false);
-            return PythonTuple.MakeTuple(res[0], res[1], 0);
+        private static int Utf16DetectByteorder(IList<byte> input) {
+            if (input.StartsWith(BOM_UTF16_LE)) return -1;
+            if (input.StartsWith(BOM_UTF16_BE)) return 1;
+            return 0;
         }
 
         #region Utf-16 Le Functions
 
+        private static Encoding Utf16LeEncoding => _utf16LeEncoding ??= new UnicodeEncoding(bigEndian: false, byteOrderMark: false);
+        private static Encoding _utf16LeEncoding = null;
+
+        private static Encoding Utf16LeBomEncoding => Encoding.Unicode; // same as new UnicodeEncoding(bigEndian: false, byteOrderMark: true);
+
+        private static byte[] BOM_UTF16_LE => _bom_utf16_le ??= Utf16LeBomEncoding.GetPreamble();
+        private static byte[] _bom_utf16_le = null;
+
         public static PythonTuple utf_16_le_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict", bool final = false)
-            => DoDecode(context, "utf-16-le", Encoding.Unicode, input, errors, final).ToPythonTuple();
+            => DoDecode(context, "utf-16-le", Utf16LeEncoding, input, errors, final).ToPythonTuple();
 
         public static PythonTuple utf_16_le_encode(CodeContext context, string input, string errors = "strict")
-            => DoEncode(context, "utf-16-le", Encoding.Unicode, input, errors).ToPythonTuple();
+            => DoEncode(context, "utf-16-le", Utf16LeEncoding, input, errors).ToPythonTuple();
+
+        #endregion
+
+        #region Utf-16 Be Functions
+
+        private static Encoding Utf16BeEncoding => _utf16BeEncoding ??= new UnicodeEncoding(bigEndian: true, byteOrderMark: false);
+        private static Encoding _utf16BeEncoding = null;
+
+        private static Encoding Utf16BeBomEncoding => Encoding.BigEndianUnicode; // same as new UnicodeEncoding(bigEndian: true, byteOrderMark: true);
+
+        private static byte[] BOM_UTF16_BE => _bom_utf16_be ??= Utf16BeBomEncoding.GetPreamble();
+        private static byte[] _bom_utf16_be = null;
+
+        public static PythonTuple utf_16_be_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict", bool final = false)
+            => DoDecode(context, "utf-16-be", Utf16BeEncoding, input, errors, final).ToPythonTuple();
+
+        public static PythonTuple utf_16_be_encode(CodeContext context, string input, string errors = "strict")
+            => DoEncode(context, "utf-16-be", Utf16BeEncoding, input, errors).ToPythonTuple();
 
         #endregion
 
@@ -448,8 +455,7 @@ namespace IronPython.Modules {
         private static Encoding Utf32LeEncoding => _utf32LeEncoding ??= new UTF32Encoding(bigEndian: false, byteOrderMark: false);
         private static Encoding _utf32LeEncoding = null;
 
-        private static Encoding Utf32LeBomEncoding => _utf32LeBomEncoding ??= new UTF32Encoding(bigEndian: false, byteOrderMark: true);
-        private static Encoding _utf32LeBomEncoding = null;
+        private static Encoding Utf32LeBomEncoding => Encoding.UTF32; // same as new UTF32Encoding(bigEndian: false, byteOrderMark: true);
 
         private static byte[] BOM_UTF32_LE => _bom_utf32_le ??= Utf32LeBomEncoding.GetPreamble();
         private static byte[] _bom_utf32_le = null;

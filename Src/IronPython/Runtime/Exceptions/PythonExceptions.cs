@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 
@@ -517,24 +518,137 @@ namespace IronPython.Runtime.Exceptions {
         }
 
         public partial class _OSError {
+            public static new object __new__(PythonType cls, [ParamDictionary]IDictionary<object, object> kwArgs, params object[] args) {
+                if (cls == OSError && args.Length >= 1 && args[0] is int errno) {
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                        if (args.Length >= 4 && args[3] is int winerror) {
+                            errno = WinErrorToErrno(winerror);
+                        }
+                    }
+                    cls = ErrnoToPythonType((Error)errno);
+                }
+                return Activator.CreateInstance(cls.UnderlyingSystemType, cls);
+            }
+
+            private static readonly object Undefined = new object();
+
+            private object _filename = Undefined;
+            public object filename {
+                get { return ReferenceEquals(_filename, Undefined) ? null : _filename; }
+                set { _filename = value; }
+            }
+
+            // TODO: hide property on Unix
+            private object _winerror = Undefined;
+            public object winerror {
+                get { return ReferenceEquals(_winerror, Undefined) ? null : _winerror; }
+                set { _winerror = value; }
+            }
+
+            private object _filename2 = Undefined;
+            public object filename2 {
+                get { return ReferenceEquals(_filename2, Undefined) ? null : _filename2; }
+                set { _filename2 = value; }
+            }
+
             public override void __init__(params object[] args) {
                 if (args.Length >= 2 && args.Length <= 5) {
                     errno = args[0];
                     strerror = args[1];
                     if (args.Length >= 3) {
-                        filename = args[2];
+                        filename = args[2] ?? Undefined;
                     }
                     if (args.Length >= 4) {
-                        winerror = args[3];
+                        winerror = args[3] ?? Undefined;
                         if (winerror is int) {
                             errno = WinErrorToErrno((int)winerror);
                         }
                     }
                     if (args.Length >= 5) {
-                        filename2 = args[4];
+                        filename2 = args[4] ?? Undefined;
                     }
+                    args = new object[] { errno, strerror };
                 }
                 base.__init__(args);
+            }
+
+            private enum Error {
+                EPERM = 1,
+                ENOENT = 2,
+                ESRCH = 3,
+                EINTR = 4,
+                ECHILD = 10,
+                EAGAIN = 11,
+                EACCES = 13,
+                EEXIST = 17,
+                ENOTDIR = 20,
+                EISDIR = 21,
+                EPIPE = 32,
+                // Linux
+                ECONNABORTED = 103,
+                ECONNRESET = 104,
+                ESHUTDOWN = 108,
+                ETIMEDOUT = 110,
+                ECONNREFUSED = 111,
+                EALREADY = 114,
+                EINPROGRESS = 115,
+                // Windows
+                WSAEWOULDBLOCK = 10035,
+                WSAEINPROGRESS = 10036,
+                WSAEALREADY = 10037,
+                WSAECONNABORTED = 10053,
+                WSAECONNRESET = 10054,
+                WSAESHUTDOWN = 10058,
+                WSAETIMEDOUT = 10060,
+                WSAECONNREFUSED = 10061,
+            }
+
+            private static PythonType ErrnoToPythonType(Error errno) {
+                var res = errno switch
+                {
+                    Error.EPERM => PermissionError,
+                    Error.ENOENT => FileNotFoundError,
+                    Error.ESRCH => ProcessLookupError,
+                    Error.EINTR => InterruptedError,
+                    Error.ECHILD => ChildProcessError,
+                    Error.EAGAIN => BlockingIOError,
+                    Error.EACCES => PermissionError,
+                    Error.EEXIST => FileExistsError,
+                    Error.ENOTDIR => NotADirectoryError,
+                    Error.EISDIR => IsADirectoryError,
+                    Error.EPIPE => BrokenPipeError,
+                    _ => null
+                };
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                    res ??= errno switch
+                    {
+                        // Windows
+                        Error.WSAEWOULDBLOCK => BlockingIOError,
+                        Error.WSAEINPROGRESS => BlockingIOError,
+                        Error.WSAEALREADY => BlockingIOError,
+                        Error.WSAECONNABORTED => ConnectionAbortedError,
+                        Error.WSAECONNRESET => ConnectionResetError,
+                        Error.WSAESHUTDOWN => BrokenPipeError,
+                        Error.WSAETIMEDOUT => TimeoutError,
+                        Error.WSAECONNREFUSED => ConnectionRefusedError,
+                        _ => null
+                    };
+                } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                    // TODO: verify that these are the same on OSX
+                    res ??= errno switch
+                    {
+                        // Linux
+                        Error.ECONNABORTED => ConnectionAbortedError,
+                        Error.ECONNRESET => ConnectionResetError,
+                        Error.ESHUTDOWN => BrokenPipeError,
+                        Error.ETIMEDOUT => TimeoutError,
+                        Error.ECONNREFUSED => ConnectionRefusedError,
+                        Error.EALREADY => BlockingIOError,
+                        Error.EINPROGRESS => BlockingIOError,
+                        _ => null
+                    };
+                }
+                return res ?? OSError;
             }
 
             /*
@@ -769,17 +883,29 @@ for k, v in toError.items():
                 return errno;
             }
 
-            public override string ToString() {
-                // TODO: this should probably be based on args length
-                // TODO: report WinError ISO Errno if available and running on Windows
+            public string/*!*/ __str__(CodeContext/*!*/ context) {
                 if (errno != null && strerror != null) {
-                    if (filename != null) {
-                        return string.Format("[Errno {0}] {1}: '{2}'", errno, strerror, filename);
+                    var sb = new StringBuilder();
+                    sb.Append("[");
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !ReferenceEquals(_winerror, Undefined)) {
+                        sb.Append("WinError ");
+                        sb.Append(PythonOps.Repr(context, winerror));
                     } else {
-                        return string.Format("[Errno {0}] {1}", errno, strerror);
+                        sb.Append("Errno ");
+                        sb.Append(PythonOps.Repr(context, errno));
                     }
+                    sb.Append("] ");
+                    sb.Append(strerror);
+                    if (!ReferenceEquals(_filename, Undefined)) {
+                        sb.Append(": ");
+                        sb.Append(PythonOps.Repr(context, filename));
+                        if (!ReferenceEquals(_filename2, Undefined)) {
+                            sb.Append(" -> ");
+                            sb.Append(PythonOps.Repr(context, filename2));
+                        }
+                    }
+                    return sb.ToString();
                 }
-
                 return base.ToString();
             }
         }
@@ -866,7 +992,7 @@ for k, v in toError.items():
                         endIdx += ex.Index;
                         inputString = s;
                     }
-                    if (ex.CharUnknownHigh != default(char) || ex.CharUnknownLow != default(char) ) {
+                    if (ex.CharUnknownHigh != default(char) || ex.CharUnknownLow != default(char)) {
                         endIdx++;
                         if (inputString == null) inputString = new string(new[] { ex.CharUnknownHigh, ex.CharUnknownLow });
                     } else if (ex.CharUnknown != default(char)) {
@@ -940,6 +1066,8 @@ for k, v in toError.items():
             BaseException be;
             if (type.UnderlyingSystemType == typeof(BaseException)) {
                 be = new BaseException(type);
+            } else if (type == OSError) {
+                be = (BaseException)_OSError.__new__(type, null, args);
             } else {
                 be = (BaseException)Activator.CreateInstance(type.UnderlyingSystemType, type);
             }

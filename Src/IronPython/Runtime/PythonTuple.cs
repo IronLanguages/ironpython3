@@ -201,6 +201,12 @@ namespace IronPython.Runtime {
         #endregion
 
         #region binary operators
+
+        public static PythonTuple operator +([NotNull]PythonTuple x, object y) {
+            if (y is PythonTuple t) return x + t;
+            throw PythonOps.TypeError($"can only concatenate tuple (not \"{PythonTypeOps.GetName(y)}\") to tuple");
+        }
+
         public static PythonTuple operator +([NotNull]PythonTuple x, [NotNull]PythonTuple y) {
             return MakeTuple(ArrayOps.Add(x._data, x._data.Length, y._data, y._data.Length));
         }

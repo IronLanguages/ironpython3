@@ -1191,6 +1191,8 @@ namespace IronPython.Modules {
             private void FlushNoLock(CodeContext/*!*/ context) {
                 _checkClosed("flush of closed file");
 
+                if (_writeBuf == null) return; // finalizer can call flush without this being initialized
+
                 int count = 0;
                 try {
                     while (_writeBuf.Count > 0) {

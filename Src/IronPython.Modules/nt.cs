@@ -15,6 +15,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Runtime;
@@ -56,6 +57,24 @@ namespace IronPython.Modules {
         }
 
         #region Public API Surface
+
+        [DllImport("kernel32.dll", EntryPoint = "GetFinalPathNameByHandleW", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern int GetFinalPathNameByHandle([In] SafeFileHandle hFile, [Out] StringBuilder lpszFilePath, [In] int cchFilePath, [In] int dwFlags);
+
+        [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
+        public static string _getfinalpathname(string path) {
+            var hFile = CreateFile(path, 0, 0, IntPtr.Zero, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, IntPtr.Zero);
+            if (hFile.IsInvalid) {
+                throw GetLastWin32Error(path);
+            }
+
+            const int MAX_PATH_LEN = 10000;
+            StringBuilder sb = new StringBuilder(MAX_PATH_LEN);
+            if (GetFinalPathNameByHandle(hFile, sb, MAX_PATH_LEN, 0) == 0) {
+                throw GetLastWin32Error(path);
+            }
+            return sb.ToString();
+        }
 
 #if FEATURE_PROCESS
         public static void abort() {
@@ -106,7 +125,7 @@ namespace IronPython.Modules {
 
         public static void chdir([NotNull]string path) {
             if (String.IsNullOrEmpty(path)) {
-                throw PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_INVALID_NAME, "Path cannot be an empty string", null, PythonExceptions._OSError.ERROR_INVALID_NAME);
+                throw PythonOps.OSError(PythonExceptions._OSError.ERROR_INVALID_NAME, "Path cannot be an empty string", path, PythonExceptions._OSError.ERROR_INVALID_NAME);
             }
 
             try {
@@ -119,8 +138,7 @@ namespace IronPython.Modules {
         // Isolate Mono.Unix from the rest of the method so that we don't try to load the Mono.Posix assembly on Windows.
         private static void chmodUnix(string path, int mode) {
             if (Mono.Unix.Native.Syscall.chmod(path, Mono.Unix.Native.NativeConvert.ToFilePermissions((uint)mode)) == 0) return;
-            var error = Marshal.GetLastWin32Error();
-            throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, error, strerror(error));
+            throw GetLastUnixError(path);
         }
 
         public static void chmod(string path, int mode, [ParamDictionary]IDictionary<string, object> dict) {
@@ -165,7 +183,7 @@ namespace IronPython.Modules {
             } else {
                 Stream stream = fileManager.GetObjectFromId(fd) as Stream;
                 if (stream == null) {
-                    throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+                    throw PythonOps.OSError(9, "Bad file descriptor");
                 }
                 fileManager.CloseIfLast(fd, stream);
             }
@@ -200,7 +218,7 @@ namespace IronPython.Modules {
             } else {
                 Stream stream = pythonContext.FileManager.GetObjectFromId(fd) as Stream;
                 if (stream == null) {
-                    throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+                    throw PythonOps.OSError(9, "Bad file descriptor");
                 }
                 return pythonContext.FileManager.AddToStrongMapping(stream);
             }
@@ -211,11 +229,11 @@ namespace IronPython.Modules {
             PythonContext pythonContext = context.LanguageContext;
 
             if (!IsValidFd(context, fd)) {
-                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+                throw PythonOps.OSError(9, "Bad file descriptor");
             }
 
             if (!pythonContext.FileManager.ValidateFdRange(fd2)) {
-                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+                throw PythonOps.OSError(9, "Bad file descriptor");
             }
 
             bool fd2Valid = IsValidFd(context, fd2);
@@ -224,7 +242,7 @@ namespace IronPython.Modules {
                 if (fd2Valid) {
                     return fd2;
                 }
-                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+                throw PythonOps.OSError(9, "Bad file descriptor");
             }
 
             if (fd2Valid) {
@@ -236,7 +254,7 @@ namespace IronPython.Modules {
             }
             var stream = pythonContext.FileManager.GetObjectFromId(fd) as Stream;
             if (stream == null) {
-                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+                throw PythonOps.OSError(9, "Bad file descriptor");
             }
             return pythonContext.FileManager.AddToStrongMapping(stream, fd2);
         }
@@ -264,7 +282,7 @@ namespace IronPython.Modules {
             if (pythonContext.FileManager.TryGetFileFromId(pythonContext, fd, out PythonIOModule.FileIO file) && file.name is string strName) {
                 return file.IsConsole ? new stat_result(8192) : lstat(strName);
             }
-            throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+            throw PythonOps.OSError(9, "Bad file descriptor");
         }
 
         public static void fsync(CodeContext context, int fd) {
@@ -273,7 +291,7 @@ namespace IronPython.Modules {
             try {
                 pf.flush(context);
             } catch (Exception ex) when (ex is ValueErrorException || ex is IOException) {
-                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 9, "Bad file descriptor");
+                throw PythonOps.OSError(9, "Bad file descriptor");
             }
         }
 
@@ -370,9 +388,16 @@ namespace IronPython.Modules {
         }
 #endif
 
-        public static PythonList listdir(CodeContext/*!*/ context, [NotNull]string path) {
-            if (path == String.Empty) {
-                throw PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, "The system cannot find the path specified: ''", null, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND);
+        public static PythonList listdir(CodeContext/*!*/ context, [BytesConversion][NotNull]IList<byte> path)
+            => listdir(context, PythonOps.MakeString(path));
+
+        public static PythonList listdir(CodeContext/*!*/ context, string path = null) {
+            if (path == null) {
+                path = getcwd(context);
+            }
+
+            if (path == string.Empty) {
+                throw PythonOps.OSError(PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, "The system cannot find the path specified", path, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND);
             }
 
             PythonList ret = PythonOps.MakeList();
@@ -409,18 +434,14 @@ namespace IronPython.Modules {
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         public static void symlink(string source, string link_name) {
-            int result = Mono.Unix.Native.Syscall.symlink(source, link_name);
-            if (result != 0) {
-                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, 0, source, link_name);
-            }
+            if (Mono.Unix.Native.Syscall.symlink(source, link_name) == 0) return;
+            throw GetLastUnixError(source, link_name);
         }
 
         [PythonType("uname_result"), PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         public class uname_result : PythonTuple {
             public uname_result(string sysname, string nodename, string release, string version, string machine) :
-                base(new object[] { sysname, nodename, release, version, machine }) {
-                
-            }
+                base(new object[] { sysname, nodename, release, version, machine }) { }
 
             public string sysname => (string)this[0];
 
@@ -578,7 +599,7 @@ namespace IronPython.Modules {
 
         public static Bytes read(CodeContext/*!*/ context, int fd, int buffersize) {
             if (buffersize < 0) {
-                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, PythonErrorNumber.EINVAL, "Invalid argument");
+                throw PythonOps.OSError(PythonErrorNumber.EINVAL, "Invalid argument");
             }
 
             try {
@@ -595,6 +616,28 @@ namespace IronPython.Modules {
                 Directory.Move(src, dst);
             } catch (Exception e) {
                 throw ToPythonException(e);
+            }
+        }
+
+        private const uint MOVEFILE_REPLACE_EXISTING = 0x01;
+
+        [DllImport("kernel32.dll", EntryPoint = "MoveFileExW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
+        private static extern bool MoveFileEx(string src, string dst, uint flags);
+
+        private static void replaceUnix(string src, string dst) {
+            if (Mono.Unix.Native.Syscall.rename(src, dst) == 0) return;
+            throw GetLastUnixError(src, dst);
+        }
+
+        public static void replace(string src, string dst) {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                if (!MoveFileEx(src, dst, MOVEFILE_REPLACE_EXISTING)) {
+                    throw GetLastWin32Error(src, dst);
+                }
+            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                replaceUnix(src, dst);
+            } else {
+                throw new NotImplementedException();
             }
         }
 
@@ -765,7 +808,7 @@ namespace IronPython.Modules {
 #endif
 
         [PythonType]
-        public class stat_result : PythonTuple {
+        public sealed class stat_result : PythonTuple {
             public const int n_fields = 16;
             public const int n_sequence_fields = 10;
             public const int n_unnamed_fields = 3;
@@ -787,8 +830,7 @@ namespace IronPython.Modules {
             private stat_result(object[] statResult, PythonDictionary dict) : base(statResult.Take(n_sequence_fields).ToArray()) {
                 if (statResult.Length < n_sequence_fields) {
                     throw PythonOps.TypeError($"os.stat_result() takes an at least {n_sequence_fields}-sequence ({statResult.Length}-sequence given)");
-                }
-                else if (statResult.Length > n_fields) {
+                } else if (statResult.Length > n_fields) {
                     throw PythonOps.TypeError($"os.stat_result() takes an at least {n_sequence_fields}-sequence ({statResult.Length}-sequence given)");
                 }
 
@@ -830,9 +872,13 @@ namespace IronPython.Modules {
                 }
             }
 
-            public stat_result(CodeContext/*!*/ context, IEnumerable<object> statResult, [DefaultParameterValue(null)]PythonDictionary dict)
-                : this(statResult.ToArray(), dict) { }
+            public static stat_result __new__(CodeContext context, PythonType cls, IEnumerable<object> sequence, PythonDictionary dict = null) {
+                return new stat_result(sequence, dict);
+            }
 
+            public stat_result(IEnumerable<object> sequence, PythonDictionary dict = null)
+                : this(sequence.ToArray(), dict) { }
+ 
             private static bool TryGetDictValue(PythonDictionary dict, string name, out object value) {
                 value = null;
                 return dict != null && dict.TryGetValue(name, out value);
@@ -896,8 +942,7 @@ namespace IronPython.Modules {
             if (Mono.Unix.Native.Syscall.stat(path, out Mono.Unix.Native.Stat buf) == 0) {
                 return new stat_result(buf);
             }
-            var error = Marshal.GetLastWin32Error();
-            return LightExceptions.Throw(PythonExceptions.CreateThrowable(PythonExceptions.OSError, error, strerror(error)));
+            return LightExceptions.Throw(GetLastUnixError(path));
         }
 
         private const int OPEN_EXISTING = 3;
@@ -969,7 +1014,7 @@ namespace IronPython.Modules {
                             mode |= S_IEXEC;
                         }
                     } else {
-                        return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND, "file does not exist: " + path, null, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND));
+                        return LightExceptions.Throw(PythonOps.OSError(0, "file does not exist", path, PythonExceptions._OSError.ERROR_PATH_NOT_FOUND));
                     }
 
                     mode |= S_IREAD;
@@ -995,7 +1040,7 @@ namespace IronPython.Modules {
 
                     return new stat_result(mode, fileIdx, size, st_atime_ns, st_mtime_ns, st_ctime_ns);
                 } catch (ArgumentException) {
-                    return LightExceptions.Throw(PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_INVALID_NAME, "The path is invalid: " + path, null, PythonExceptions._OSError.ERROR_INVALID_NAME));
+                    return LightExceptions.Throw(PythonOps.OSError(0, "The path is invalid", path, PythonExceptions._OSError.ERROR_INVALID_NAME));
                 } catch (Exception e) {
                     return LightExceptions.Throw(ToPythonException(e, path));
                 }
@@ -1059,8 +1104,6 @@ namespace IronPython.Modules {
             }
         }
 
-        private static PythonType WindowsError => PythonExceptions.OSError;
-
 #if FEATURE_PROCESS
         [Documentation("system(command) -> int\nExecute the command (a string) in a subshell.")]
         public static int system(string command) {
@@ -1108,7 +1151,7 @@ namespace IronPython.Modules {
             if (path == null) {
                 throw new ArgumentNullException(nameof(path));
             } else if (path.IndexOfAny(Path.GetInvalidPathChars()) != -1 || Path.GetFileName(path).IndexOfAny(Path.GetInvalidFileNameChars()) != -1) {
-                throw PythonExceptions.CreateThrowable(WindowsError, PythonExceptions._OSError.ERROR_INVALID_NAME, "The filename, directory name, or volume label syntax is incorrect", path, PythonExceptions._OSError.ERROR_INVALID_NAME);
+                throw PythonOps.OSError(PythonExceptions._OSError.ERROR_INVALID_NAME, "The filename, directory name, or volume label syntax is incorrect", path, PythonExceptions._OSError.ERROR_INVALID_NAME);
             }
 
             bool existing = File.Exists(path); // will return false also on access denied
@@ -1118,7 +1161,7 @@ namespace IronPython.Modules {
                 throw ToPythonException(e, path);
             }
             if (!existing) { // file was not existing in the first place
-                throw PythonExceptions.CreateThrowable(PythonExceptions.FileNotFoundError, PythonExceptions._OSError.ERROR_FILE_NOT_FOUND, "The system cannot find the file specified", path, PythonExceptions._OSError.ERROR_FILE_NOT_FOUND);
+                throw PythonOps.OSError(PythonExceptions._OSError.ERROR_FILE_NOT_FOUND, "The system cannot find the file specified", path, PythonExceptions._OSError.ERROR_FILE_NOT_FOUND);
             }
         }
 #endif
@@ -1176,8 +1219,7 @@ namespace IronPython.Modules {
             utime.tv_nsec = utime_ns % 1_000_000_000;
 
             if (Mono.Unix.Native.Syscall.utimensat(Mono.Unix.Native.Syscall.AT_FDCWD, path, new[] { atime, utime }, 0) == 0) return;
-            var error = Marshal.GetLastWin32Error();
-            throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, error, strerror(error));
+            throw GetLastUnixError(path);
         }
 
         public static void utime(string path, [ParamDictionary]IDictionary<string, object> dict)
@@ -1246,7 +1288,7 @@ namespace IronPython.Modules {
             Process process;
             lock (_processToIdMapping) {
                 if (!_processToIdMapping.TryGetValue(pid, out process)) {
-                    throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, PythonErrorNumber.ECHILD, "No child processes");
+                    throw PythonOps.OSError(PythonErrorNumber.ECHILD, "No child processes");
                 }
             }
 
@@ -1276,19 +1318,13 @@ namespace IronPython.Modules {
 
 #if FEATURE_PROCESS
 
-        [DllImport("libc", SetLastError = true, EntryPoint = "kill")]
-        private static extern int sys_kill(int pid, int sig);
-
-
         [Documentation(@"Send signal sig to the process pid. Constants for the specific signals available on the host platform 
 are defined in the signal module.")]
         public static void kill(CodeContext/*!*/ context, int pid, int sig) {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
                 RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                if (sys_kill(pid, sig) == 0) return;
-
-                var error = Marshal.GetLastWin32Error();
-                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, error, strerror(error));
+                if (Mono.Unix.Native.Syscall.kill(pid, Mono.Unix.Native.NativeConvert.ToSignum(sig)) == 0) return;
+                throw GetLastUnixError();
             } else {
                 if (PythonSignal.NativeSignal.GenerateConsoleCtrlEvent((uint)sig, (uint)pid)) return;
 
@@ -1330,7 +1366,6 @@ are defined in the signal module.")]
         public const int P_DETACH = 4;
 
         public const int TMP_MAX = 32767;
-
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Windows)]
         public const int WNOHANG = 1;
@@ -1438,12 +1473,8 @@ the 'status' value."),
 
         #region Private implementation details
 
-        private static Exception ToPythonException(Exception e) {
-            return ToPythonException(e, null);
-        }
-
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Interoperability", "CA1404:CallGetLastErrorImmediatelyAfterPInvoke")]
-        private static Exception ToPythonException(Exception e, string filename) {
+        private static Exception ToPythonException(Exception e, string filename = null) {
             if (e is IPythonAwareException) {
                 return e;
             }
@@ -1461,11 +1492,11 @@ the 'status' value."),
             bool isWindowsError = false;
             if (e is Win32Exception winExcep) {
                 errorCode = winExcep.NativeErrorCode;
-                message = GetFormattedExceptionMessage(e, errorCode);
+                message = e.Message;
                 isWindowsError = true;
             } else if (e is UnauthorizedAccessException unauth) {
                 errorCode = PythonExceptions._OSError.ERROR_ACCESS_DENIED;
-                return PythonExceptions.CreateThrowable(PythonExceptions.PermissionError, errorCode, "Access is denied", filename, errorCode);
+                return PythonOps.OSError(errorCode, "Access is denied", filename, errorCode);
             } else {
                 var ioe = e as IOException;
                 Exception pe = IOExceptionToPythonException(ioe, error, filename);
@@ -1481,20 +1512,16 @@ the 'status' value."),
                     pe = IOExceptionToPythonException(ioe, errorCode, filename);
                     if (pe != null) return pe;
 
-                    message = GetFormattedExceptionMessage(e, errorCode);
+                    message = e.Message;
                     isWindowsError = true;
                 }
             }
 
             if (isWindowsError) {
-                return PythonExceptions.CreateThrowable(WindowsError, errorCode, message, null, errorCode);
+                return PythonOps.OSError(errorCode, message, null, errorCode);
             }
 
             return PythonExceptions.CreateThrowable(PythonExceptions.OSError, errorCode, message);
-        }
-
-        private static string GetFormattedExceptionMessage(Exception e, int hr) {
-            return "[WinError " + hr.ToString() + "] " + e.Message;
         }
 
         private static Exception IOExceptionToPythonException(IOException ioe, int error, string filename) {
@@ -1640,8 +1667,49 @@ the 'status' value."),
 #endif
 
         private static Exception DirectoryExists() {
-            return PythonExceptions.CreateThrowable(PythonExceptions.FileExistsError, PythonExceptions._OSError.ERROR_ALREADY_EXISTS, "directory already exists", null, PythonExceptions._OSError.ERROR_ALREADY_EXISTS);
+            return PythonOps.OSError(PythonExceptions._OSError.ERROR_ALREADY_EXISTS, "directory already exists", null, PythonExceptions._OSError.ERROR_ALREADY_EXISTS);
         }
+
+#if FEATURE_NATIVE
+
+        private static Exception GetLastUnixError(string filename = null, string filename2 = null) {
+            var error = Mono.Unix.Native.Syscall.GetLastError();
+            var msg = Mono.Unix.Native.Stdlib.strerror(error);
+            return PythonOps.OSError((int)error, msg, filename, null, filename2);
+        }
+
+        [DllImport("kernel32.dll", EntryPoint = "FormatMessageW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = true)]
+        private static extern int FormatMessage(int dwFlags, IntPtr lpSource,
+                    int dwMessageId, int dwLanguageId, [Out]StringBuilder lpBuffer,
+                    int nSize, IntPtr arguments);
+
+        private const int FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
+        private const int FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
+        private const int ERROR_INSUFFICIENT_BUFFER = 0x7A;
+
+        // Gets an error message for a Win32 error code.
+        internal static string GetMessage(int errorCode) {
+            var buf = new StringBuilder(256);
+            int msgLen = 0;
+            int lastError = ERROR_INSUFFICIENT_BUFFER;
+            while (msgLen == 0 && lastError == ERROR_INSUFFICIENT_BUFFER) {
+                msgLen = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, IntPtr.Zero, errorCode, 0, buf, buf.Capacity, IntPtr.Zero);
+                if (msgLen == 0) {
+                    lastError = Marshal.GetLastWin32Error();
+                    if (lastError == ERROR_INSUFFICIENT_BUFFER)
+                        buf.Capacity *= 2;
+                }
+            }
+            return buf.ToString().TrimEnd('\r', '\n', '.');
+        }
+
+        private static Exception GetLastWin32Error(string filename = null, string filename2 = null) {
+            var error = Marshal.GetLastWin32Error();
+            var msg = GetMessage(error);
+            return PythonOps.OSError(0, msg, filename, error, filename2);
+        }
+
+#endif
 
         #endregion
     }

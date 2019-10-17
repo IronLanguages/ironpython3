@@ -1719,12 +1719,13 @@ namespace IronPython.Runtime.Operations {
         private static DecoderFallback ReplacementFallback = new DecoderReplacementFallback("\ufffd");
 #endif
 
-        internal static string DoDecode(CodeContext context, IList<byte> s, string errors, string encoding, Encoding e) => DoDecode(context, s, errors, encoding, e, true, out _);
+        internal static string DoDecode(CodeContext context, IList<byte> s, string errors, string encoding, Encoding e)
+            => DoDecode(context, s, errors, encoding, e, true, out _);
 
         internal static string DoDecode(CodeContext context, IList<byte> s, string errors, string encoding, Encoding e, bool final, out int numBytes) {
             byte[] bytes = s as byte[] ?? ((s is Bytes b) ? b.GetUnsafeByteArray() : s.ToArray());
             int start = GetStartingOffset(e, bytes);
-            numBytes = bytes.Length - start;
+            int length = bytes.Length - start;
 
 #if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
@@ -1737,7 +1738,7 @@ namespace IronPython.Runtime.Operations {
             switch (errors) {
                 case "backslashreplace":
                 case "xmlcharrefreplace":
-                case "strict": e = final ? setFallback(e, DecoderFallback.ExceptionFallback) : setFallback(e, new ExceptionFallBack(numBytes, e is UTF8Encoding)); break;
+                case "strict": e = final ? setFallback(e, DecoderFallback.ExceptionFallback) : setFallback(e, new ExceptionFallBack(length, e is UTF8Encoding)); break;
                 case "replace": e = setFallback(e, ReplacementFallback); break;
                 case "ignore": e = setFallback(e, new PythonDecoderFallback()); break;
                 case "surrogateescape": e =  new PythonSurrogateEscapeEncoding(e); break;
@@ -1751,16 +1752,17 @@ namespace IronPython.Runtime.Operations {
 
             string decoded;
             try {
-                decoded = e.GetString(bytes, start, numBytes);
+                decoded = e.GetString(bytes, start, length);
             } catch (DecoderFallbackException ex) {
-                // augmenting the caught exception ISO greating UnicodeDecodeError to preserve the stack trace
+                // augmenting the caught exception instead of creating UnicodeDecodeError to preserve the stack trace
                 ex.Data["encoding"] = encoding;
-                byte[] inputBytes = new byte[numBytes];
-                Array.Copy(bytes, start, inputBytes, 0, numBytes);
+                byte[] inputBytes = new byte[length];
+                Array.Copy(bytes, start, inputBytes, 0, length);
                 ex.Data["object"] = Bytes.Make(inputBytes);
                 throw;
             }
 
+            numBytes = bytes.Length;
 #if FEATURE_ENCODING
             if (e.DecoderFallback is ExceptionFallBack fallback) {
                 byte[] badBytes = fallback.buffer.badBytes;
@@ -1778,18 +1780,7 @@ namespace IronPython.Runtime.Operations {
         /// </summary>
         private static int GetStartingOffset(Encoding e, byte[] bytes) {
             byte[] preamble = e.GetPreamble();
-
-            if (preamble.Length != 0 && bytes.Length >= preamble.Length) {
-                for (int i = 0; i < preamble.Length; i++) {
-                    if (bytes[i] != preamble[i]) {
-                        return 0;
-                    }
-                }
-
-                return preamble.Length;
-            }
-
-            return 0;
+            return bytes.StartsWith(preamble) ? preamble.Length : 0;
         }
 
         internal static Bytes RawEncode(CodeContext/*!*/ context, string s, string encoding, string errors) {

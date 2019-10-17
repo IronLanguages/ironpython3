@@ -406,63 +406,78 @@ namespace IronPython.Modules {
 
         #region Utf-32 Functions
 
-        public static PythonTuple utf_32_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict", bool final = false)
-            => DoDecode(context, "utf-32", Encoding.UTF32, input, errors, final).ToPythonTuple();
+        public static PythonTuple utf_32_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict", bool final = false) {
+            PythonTuple res = utf_32_ex_decode(context, input, errors, 0, final);
+            return PythonTuple.MakeTuple(res[0], res[1]);
+        }
 
         public static PythonTuple utf_32_encode(CodeContext context, string input, string errors = "strict")
-            => DoEncode(context, "utf-32", Encoding.UTF32, input, errors, true).ToPythonTuple();
+            => DoEncode(context, "utf-32", Utf32LeBomEncoding, input, errors, includePreamble: true).ToPythonTuple();
+
+        public static PythonTuple utf_32_ex_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict", int byteorder = 0, bool final = false) {
+
+            Tuple<string, int> res;
+
+            if (byteorder != 0) {
+                res = (byteorder > 0) ?
+                    DoDecode(context, "utf-32-be", Utf32BeEncoding, input, errors, final)
+                :
+                    DoDecode(context, "utf-32-le", Utf32LeEncoding, input, errors, final);
+
+            } else {
+                byteorder = Utf32DetectByteorder(input);
+                res = (byteorder > 0) ?
+                    DoDecode(context, "utf-32-be", Utf32BeBomEncoding, input, errors, final)
+                :
+                    DoDecode(context, "utf-32-le", Utf32LeBomEncoding, input, errors, final);
+            }
+
+            return PythonTuple.MakeTuple(res.Item1, res.Item2, byteorder);
+        }
+
+        private static int Utf32DetectByteorder(IList<byte> input) {
+            if (input.StartsWith(BOM_UTF32_LE)) return -1;
+            if (input.StartsWith(BOM_UTF32_BE)) return 1;
+            return 0;
+        }
 
         #endregion
 
-        public static PythonTuple utf_32_ex_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict")
-            => utf_32_ex_decode(context, input, errors, null, null);
-
-        public static PythonTuple utf_32_ex_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors, object byteorder, object final) {
-            byte[] lePre = Encoding.UTF32.GetPreamble();
-
-            string instr = Converter.ConvertToString(input);
-            bool match = true;
-            if (instr.Length > lePre.Length) {
-                for (int i = 0; i < lePre.Length; i++) {
-                    if ((byte)instr[i] != lePre[i]) {
-                        match = false;
-                        break;
-                    }
-                }
-                if (match) {
-                    return PythonTuple.MakeTuple(string.Empty, lePre.Length, -1);
-                }
-            }
-
-            PythonTuple res = utf_32_decode(context, input, errors) as PythonTuple;
-            return PythonTuple.MakeTuple(res[0], res[1], 0);
-        }
-
         #region Utf-32 Le Functions
 
+        private static Encoding Utf32LeEncoding => _utf32LeEncoding ??= new UTF32Encoding(bigEndian: false, byteOrderMark: false);
+        private static Encoding _utf32LeEncoding = null;
+
+        private static Encoding Utf32LeBomEncoding => _utf32LeBomEncoding ??= new UTF32Encoding(bigEndian: false, byteOrderMark: true);
+        private static Encoding _utf32LeBomEncoding = null;
+
+        private static byte[] BOM_UTF32_LE => _bom_utf32_le ??= Utf32LeBomEncoding.GetPreamble();
+        private static byte[] _bom_utf32_le = null;
+
         public static PythonTuple utf_32_le_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict", bool final = false)
-            => DoDecode(context, "utf-32-le", Encoding.UTF32, input, errors, final).ToPythonTuple();
+            => DoDecode(context, "utf-32-le", Utf32LeEncoding, input, errors, final).ToPythonTuple();
 
         public static PythonTuple utf_32_le_encode(CodeContext context, string input, string errors = "strict")
-            => DoEncode(context, "utf-32-le", Encoding.UTF32, input, errors).ToPythonTuple();
+            => DoEncode(context, "utf-32-le", Utf32LeEncoding, input, errors).ToPythonTuple();
 
         #endregion
 
         #region Utf-32 Be Functions
 
-        private static Encoding utf32BeEncoding = null;
-        private static Encoding UTF32BE {
-            get {
-                if (utf32BeEncoding == null) utf32BeEncoding = new UTF32Encoding(true, true);
-                return utf32BeEncoding;
-            }
-        }
+        private static Encoding Utf32BeEncoding => _utf32BeEncoding ??= new UTF32Encoding(bigEndian: true, byteOrderMark: false);
+        private static Encoding _utf32BeEncoding = null;
+
+        private static Encoding Utf32BeBomEncoding => _utf32BeBomEncoding ??= new UTF32Encoding(bigEndian: true, byteOrderMark: true);
+        private static Encoding _utf32BeBomEncoding = null;
+
+        private static byte[] BOM_UTF32_BE => _bom_utf32_be ??= Utf32BeBomEncoding.GetPreamble();
+        private static byte[] _bom_utf32_be = null;
 
         public static PythonTuple utf_32_be_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict", bool final = false)
-            => DoDecode(context, "utf-32-be", UTF32BE, input, errors, final).ToPythonTuple();
+            => DoDecode(context, "utf-32-be", Utf32BeEncoding, input, errors, final).ToPythonTuple();
 
         public static PythonTuple utf_32_be_encode(CodeContext context, string input, string errors = "strict")
-            => DoEncode(context, "utf-32-be", UTF32BE, input, errors).ToPythonTuple();
+            => DoEncode(context, "utf-32-be", Utf32BeEncoding, input, errors).ToPythonTuple();
 
         #endregion
 

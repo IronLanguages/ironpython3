@@ -86,16 +86,16 @@ class CodecTest(IronPythonTestCase):
 
     def test_utf_16_ex_decode(self):
         #sanity
-        new_str, size, zero = codecs.utf_16_ex_decode(b"abc")
+        new_str, num_processed, zero = codecs.utf_16_ex_decode(b"abc")
         self.assertEqual(new_str, '\u6261')
-        self.assertEqual(size, 2)
+        self.assertEqual(num_processed, 2)
         self.assertEqual(zero, 0)
 
     def test_charmap_decode(self):
         #Sanity
-        new_str, size = codecs.charmap_decode(b"abc")
+        new_str, num_processed = codecs.charmap_decode(b"abc")
         self.assertEqual(new_str, 'abc')
-        self.assertEqual(size, 3)
+        self.assertEqual(num_processed, 3)
         self.assertEqual(codecs.charmap_decode(b"a", 'strict', {ord('a') : 'a'})[0], 'a')
         self.assertEqual(codecs.charmap_decode(b"a", "replace", {})[0], '\ufffd')
         self.assertEqual(codecs.charmap_decode(b"a", "replace", {ord('a'): None})[0], '\ufffd')
@@ -125,51 +125,51 @@ class CodecTest(IronPythonTestCase):
 
     def test_raw_unicode_escape_decode(self):
         #sanity
-        new_str, size = codecs.raw_unicode_escape_decode("abc")
+        new_str, num_processed = codecs.raw_unicode_escape_decode("abc")
         self.assertEqual(new_str, 'abc')
-        self.assertEqual(size, 3)
+        self.assertEqual(num_processed, 3)
 
     def test_raw_unicode_escape_encode(self):
         #sanity
-        new_str, size = codecs.raw_unicode_escape_encode("abc")
+        new_str, num_processed = codecs.raw_unicode_escape_encode("abc")
         self.assertEqual(new_str, b'abc')
-        self.assertEqual(size, 3)
+        self.assertEqual(num_processed, 3)
 
     def test_utf_7_decode(self):
         #sanity
-        new_str, size = codecs.utf_7_decode(b"abc")
+        new_str, num_processed = codecs.utf_7_decode(b"abc")
         self.assertEqual(new_str, 'abc')
-        self.assertEqual(size, 3)
+        self.assertEqual(num_processed, 3)
 
     def test_utf_7_encode(self):
         #sanity
-        new_str, size = codecs.utf_7_encode("abc")
+        new_str, num_processed = codecs.utf_7_encode("abc")
         self.assertEqual(new_str, b'abc')
-        self.assertEqual(size, 3)
+        self.assertEqual(num_processed, 3)
 
     def test_ascii_decode(self):
         #sanity
-        new_str, size = codecs.ascii_decode(b"abc")
+        new_str, num_processed = codecs.ascii_decode(b"abc")
         self.assertEqual(new_str, 'abc')
-        self.assertEqual(size, 3)
+        self.assertEqual(num_processed, 3)
 
     def test_ascii_encode(self):
         #sanity
-        new_str, size = codecs.ascii_encode("abc")
+        new_str, num_processed = codecs.ascii_encode("abc")
         self.assertEqual(new_str, b'abc')
-        self.assertEqual(size, 3)
+        self.assertEqual(num_processed, 3)
 
     def test_latin_1_decode(self):
         #sanity
-        new_str, size = codecs.latin_1_decode(b"abc")
+        new_str, num_processed = codecs.latin_1_decode(b"abc")
         self.assertEqual(new_str, 'abc')
-        self.assertEqual(size, 3)
+        self.assertEqual(num_processed, 3)
 
     def test_latin_1_encode(self):
         #sanity
-        new_str, size = codecs.latin_1_encode("abc")
+        new_str, num_processed = codecs.latin_1_encode("abc")
         self.assertEqual(new_str, b'abc')
-        self.assertEqual(size, 3)
+        self.assertEqual(num_processed, 3)
 
         # so many ways to express latin 1...
         for x in ['iso-8859-1', 'iso8859-1', '8859', 'cp819', 'latin', 'latin1', 'L1']:
@@ -218,43 +218,173 @@ class CodecTest(IronPythonTestCase):
 
     def test_utf_16_be_decode(self):
         #sanity
-        new_str, size = codecs.utf_16_be_decode(b"abc")
+        new_str, num_processed = codecs.utf_16_be_decode(b"abc")
         self.assertEqual(new_str, '\u6162')
-        self.assertEqual(size, 2)
+        self.assertEqual(num_processed, 2)
 
     def test_utf_16_be_encode(self):
         #sanity
-        new_str, size = codecs.utf_16_be_encode("abc")
+        new_str, num_processed = codecs.utf_16_be_encode("abc")
         self.assertEqual(new_str, b'\x00a\x00b\x00c')
-        self.assertEqual(size, 3)
-
-    def test_utf_16_decode(self):
-        #sanity
-        new_str, size = codecs.utf_16_decode(b"abc")
-        self.assertEqual(new_str, '\u6261')
-        self.assertEqual(size, 2)
+        self.assertEqual(num_processed, 3)
 
     def test_utf_16_le_decode(self):
         #sanity
-        new_str, size = codecs.utf_16_le_decode(b"abc")
+        new_str, num_processed = codecs.utf_16_le_decode(b"abc")
         self.assertEqual(new_str, '\u6261')
-        self.assertEqual(size, 2)
+        self.assertEqual(num_processed, 2)
 
     def test_utf_16_le_encode(self):
         #sanity
-        new_str, size = codecs.utf_16_le_encode("abc")
+        new_str, num_processed = codecs.utf_16_le_encode("abc")
         self.assertEqual(new_str, b'a\x00b\x00c\x00')
-        self.assertEqual(size, 3)
+        self.assertEqual(num_processed, 3)
 
-    def test_utf_16_le_str_encode(self):
-        for x in ('utf_16_le', 'UTF-16LE', 'utf-16le'):
+    def test_utf_16_decode(self):
+        #sanity
+        new_str, num_processed = codecs.utf_16_decode(b"abc")
+        self.assertEqual(new_str, '\u6261')
+        self.assertEqual(num_processed, 2)
+
+    def test_utf_16_encode(self):
+        #Sanity
+        self.assertEqual(codecs.utf_16_encode("abc"), (b'\xff\xfea\x00b\x00c\x00', 3))
+
+    def test_utf_16_le_encode_alias(self):
+        for x in ('utf_16_le', 'UTF-16LE', 'utf-16le', 'utf-16-le'):
             self.assertEqual('abc'.encode(x), b'a\x00b\x00c\x00')
+
+    def test_utf_32_be_decode(self):
+        string, num_processed = codecs.utf_32_be_decode(b'\0\0\0a\0\0\0b\0\0\0c')
+        self.assertEqual(string, "abc")
+        self.assertEqual(num_processed, 3 * 4)
+
+        string, num_processed = codecs.utf_32_be_decode(codecs.BOM_UTF32_BE + b'\0\0\0a\0\0\0b\0\0\0c')
+        self.assertEqual(string, "\uFEFFabc")
+        self.assertEqual(num_processed, 4 * 4)
+
+    def test_utf_32_be_encode(self):
+        data, num_processed = codecs.utf_32_be_encode("abc")
+        self.assertEqual(data, b'\0\0\0a\0\0\0b\0\0\0c')
+        self.assertEqual(num_processed, 3)
+
+    def test_utf_32_le_decode(self):
+        string, num_processed = codecs.utf_32_le_decode(b'a\0\0\0b\0\0\0c\0\0\0')
+        self.assertEqual(string, "abc")
+        self.assertEqual(num_processed, 3 * 4)
+
+        string, num_processed = codecs.utf_32_le_decode(codecs.BOM_UTF32_LE + b'a\0\0\0b\0\0\0c\0\0\0')
+        self.assertEqual(string, "\uFEFFabc")
+        self.assertEqual(num_processed, 4 * 4)
+
+    def test_utf_32_le_encode(self):
+        data, num_processed = codecs.utf_32_le_encode("abc")
+        self.assertEqual(data, b'a\0\0\0b\0\0\0c\0\0\0')
+        self.assertEqual(num_processed, 3)
+
+    def test_utf_32_ex_decode(self):
+        abc_le = b'a\0\0\0b\0\0\0c\0\0\0'
+        abc_be = b'\0\0\0a\0\0\0b\0\0\0c'
+        bom_abc_le = codecs.BOM_UTF32_LE + abc_le
+        bom_abc_be = codecs.BOM_UTF32_BE + abc_be
+
+        order = 0
+        # When BOM present, and no order given: BOM is removed and the proper UTF-32 variant is automatically detected and used
+        string, num_processed, detected = codecs.utf_32_ex_decode(bom_abc_le, 'strict', order)
+        self.assertEqual(string, "abc")
+        self.assertEqual(num_processed, 4 * 4)
+        self.assertLess(detected, order)
+
+        string, num_processed, detected = codecs.utf_32_ex_decode(bom_abc_be, 'strict', order)
+        self.assertEqual(string, "abc")
+        self.assertEqual(num_processed, 4 * 4)
+        self.assertGreater(detected, order)
+
+        # When only BOM present, and no order given: the decoded string is empty but the UTF-32 variant is detected
+        string, num_processed, detected = codecs.utf_32_ex_decode(codecs.BOM_UTF32_LE, 'strict', order)
+        self.assertEqual(string, "")
+        self.assertEqual(num_processed, 4)
+        self.assertLess(detected, order)
+
+        string, num_processed, detected = codecs.utf_32_ex_decode(codecs.BOM_UTF32_BE, 'strict', order)
+        self.assertEqual(string, "")
+        self.assertEqual(num_processed, 4)
+        self.assertGreater(detected, order)
+
+        # When no BOM, and no order given: on little-endian systems, UTF-32 defaults to UTF-32-LE, but no BOM detection
+        string, num_processed, detected = codecs.utf_32_ex_decode(abc_le, 'strict', order)
+        self.assertEqual(string, 'abc')
+        self.assertEqual(num_processed, 3 * 4)
+        self.assertEqual(detected, order)
+
+        with self.assertRaises(UnicodeDecodeError):
+            codecs.utf_32_ex_decode(abc_be, 'strict', order)
+
+        # When BOM present, and order given: BOM must match order and is passed to output
+        for order in [1, 42]:
+            string, num_processed, detected = codecs.utf_32_ex_decode(bom_abc_be, 'strict', order)
+            self.assertEqual(string, "\uFEFFabc")
+            self.assertEqual(num_processed, 4 * 4)
+            self.assertEqual(detected, order)
+
+            with self.assertRaises(UnicodeDecodeError):
+                codecs.utf_32_ex_decode(bom_abc_be, 'strict', -order)
+
+            string, num_processed, detected = codecs.utf_32_ex_decode(bom_abc_le, 'strict', -order)
+            self.assertEqual(string, "\uFEFFabc")
+            self.assertEqual(num_processed, 4 * 4)
+            self.assertEqual(detected, -order)
+
+            with self.assertRaises(UnicodeDecodeError):
+                codecs.utf_32_ex_decode(bom_abc_le, 'strict', order)
+
+        # When no BOM, and order given: on little-endian systems, UTF-32 defaults to UTF-32-LE
+        for order in [1, 42]:
+            string, num_processed, detected = codecs.utf_32_ex_decode(abc_be, 'strict', order)
+            self.assertEqual(string, "abc")
+            self.assertEqual(num_processed, 3 * 4)
+            self.assertEqual(detected, order)
+
+            with self.assertRaises(UnicodeDecodeError):
+                codecs.utf_32_ex_decode(abc_be, 'strict', -order)
+
+            string, num_processed, detected = codecs.utf_32_ex_decode(abc_le, 'strict', -order)
+            self.assertEqual(string, "abc")
+            self.assertEqual(num_processed, 3 * 4)
+            self.assertEqual(detected, -order)
+
+            with self.assertRaises(UnicodeDecodeError):
+                codecs.utf_32_ex_decode(abc_le, 'strict', order)
+
+    def test_utf_32_decode(self):
+        # When BOM present: it is removed and the proper UTF-32 variant is automatically selected
+        string, num_processed = codecs.utf_32_decode(codecs.BOM_UTF32_LE + b'a\0\0\0b\0\0\0c\0\0\0')
+        self.assertEqual(string, "abc")
+        self.assertEqual(num_processed, 4 * 4)
+
+        string, num_processed = codecs.utf_32_decode(codecs.BOM_UTF32_BE + b'\0\0\0a\0\0\0b\0\0\0c')
+        self.assertEqual(string, "abc")
+        self.assertEqual(num_processed, 4 * 4)
+
+        # When no BOM: on little-endian systems, UTF-32 defaults to UTF-32-LE
+        string, num_processed = codecs.utf_32_decode(b'a\0\0\0b\0\0\0c\0\0\0')
+        self.assertEqual(string, 'abc')
+        self.assertEqual(num_processed, 3 * 4)
+
+        with self.assertRaises(UnicodeDecodeError):
+            codecs.utf_32_decode(b'\0\0\0a\0\0\0b\0\0\0c')
+
+    def test_utf_32_encode(self):
+        # On little-endian systems, UTF-32 encodes in UTF-32-LE prefixed with BOM
+        data, num_processed = codecs.utf_32_encode("abc")
+        self.assertEqual(data, codecs.BOM_UTF32 + b'a\0\0\0b\0\0\0c\0\0\0')
+        self.assertEqual(num_processed, 3)
 
     def test_utf_8_decode(self):
         #sanity
-        new_str, size = codecs.utf_8_decode(b"abc")
+        new_str, num_processed = codecs.utf_8_decode(b"abc")
         self.assertEqual(new_str, 'abc')
-        self.assertEqual(size, 3)
+        self.assertEqual(num_processed, 3)
 
     def test_cp34951(self):
         def internal_cp34951(sample1, preamble, bom_len):
@@ -272,9 +402,9 @@ class CodecTest(IronPythonTestCase):
 
     def test_utf_8_encode(self):
         #sanity
-        new_str, size = codecs.utf_8_encode("abc")
+        new_str, num_processed = codecs.utf_8_encode("abc")
         self.assertEqual(new_str, b'abc')
-        self.assertEqual(size, 3)
+        self.assertEqual(num_processed, 3)
 
     def test_charmap_encode(self):
         #Sanity
@@ -331,10 +461,6 @@ class CodecTest(IronPythonTestCase):
     @skipUnlessIronPython()
     def test_unicode_escape_encode(self):
         self.assertRaises(NotImplementedError, codecs.unicode_escape_encode, "abc")
-
-    def test_utf_16_encode(self):
-        #Sanity
-        self.assertEqual(codecs.utf_16_encode("abc"), (b'\xff\xfea\x00b\x00c\x00', 3))
 
     def test_misc_encodings(self):
         self.assertEqual('abc'.encode('utf-16'), b'\xff\xfea\x00b\x00c\x00')

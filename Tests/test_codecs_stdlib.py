@@ -114,7 +114,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF16BETest('test_bug1098990_a'))
         suite.addTest(test.test_codecs.UTF16BETest('test_bug1098990_b'))
         suite.addTest(test.test_codecs.UTF16BETest('test_bug1175396'))
-        #suite.addTest(test.test_codecs.UTF16BETest('test_errors')) # AssertionError: '��' != '�'
+        #suite.addTest(test.test_codecs.UTF16BETest('test_errors')) # AssertionError: '��' != '�' when decoding b'\xd8\x00\xdc' w/ replace
         suite.addTest(test.test_codecs.UTF16BETest('test_lone_surrogates'))
         suite.addTest(test.test_codecs.UTF16BETest('test_mixed_readline_and_read'))
         suite.addTest(test.test_codecs.UTF16BETest('test_nonbmp'))
@@ -122,11 +122,11 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF16BETest('test_readline'))
         suite.addTest(test.test_codecs.UTF16BETest('test_readlinequeue'))
         suite.addTest(test.test_codecs.UTF16ExTest('test_bad_args'))
-        #suite.addTest(test.test_codecs.UTF16ExTest('test_errors')) # AssertionError: UnicodeDecodeError not raised by utf_16_ex_decode
+        suite.addTest(test.test_codecs.UTF16ExTest('test_errors'))
         suite.addTest(test.test_codecs.UTF16LETest('test_bug1098990_a'))
         suite.addTest(test.test_codecs.UTF16LETest('test_bug1098990_b'))
         suite.addTest(test.test_codecs.UTF16LETest('test_bug1175396'))
-        #suite.addTest(test.test_codecs.UTF16LETest('test_errors')) # AssertionError: '��' != '�'
+        #suite.addTest(test.test_codecs.UTF16LETest('test_errors')) # AssertionError: '��' != '�' when decoding b'\x00\xd8A' w/ replace
         suite.addTest(test.test_codecs.UTF16LETest('test_lone_surrogates'))
         suite.addTest(test.test_codecs.UTF16LETest('test_mixed_readline_and_read'))
         suite.addTest(test.test_codecs.UTF16LETest('test_nonbmp'))
@@ -137,8 +137,8 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF16Test('test_bug1098990_a'))
         suite.addTest(test.test_codecs.UTF16Test('test_bug1098990_b'))
         suite.addTest(test.test_codecs.UTF16Test('test_bug1175396'))
-        #suite.addTest(test.test_codecs.UTF16Test('test_bug691291')) # PermissionError: [Errno 13] The process cannot access the file because it is being used by another process
-        #suite.addTest(test.test_codecs.UTF16Test('test_decoder_state')) # AssertionError: 'spamspam' != ''
+        #suite.addTest(test.test_codecs.UTF16Test('test_bug691291')) # AssertionError: filter ('', DeprecationWarning) did not catch any warning
+        suite.addTest(test.test_codecs.UTF16Test('test_decoder_state'))
         suite.addTest(test.test_codecs.UTF16Test('test_errors'))
         suite.addTest(test.test_codecs.UTF16Test('test_handlers'))
         suite.addTest(test.test_codecs.UTF16Test('test_lone_surrogates'))
@@ -173,14 +173,14 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF32Test('test_bug1098990_a'))
         suite.addTest(test.test_codecs.UTF32Test('test_bug1098990_b'))
         suite.addTest(test.test_codecs.UTF32Test('test_bug1175396'))
-        #suite.addTest(test.test_codecs.UTF32Test('test_decoder_state')) # UnicodeError: UTF-32 stream does not start with BOM
+        suite.addTest(test.test_codecs.UTF32Test('test_decoder_state'))
         suite.addTest(test.test_codecs.UTF32Test('test_errors'))
         suite.addTest(test.test_codecs.UTF32Test('test_handlers'))
         suite.addTest(test.test_codecs.UTF32Test('test_issue8941'))
         suite.addTest(test.test_codecs.UTF32Test('test_lone_surrogates'))
         suite.addTest(test.test_codecs.UTF32Test('test_mixed_readline_and_read'))
         suite.addTest(test.test_codecs.UTF32Test('test_only_one_bom'))
-        #suite.addTest(test.test_codecs.UTF32Test('test_partial')) # UnicodeError: UTF-32 stream does not start with BOM
+        suite.addTest(test.test_codecs.UTF32Test('test_partial'))
         suite.addTest(test.test_codecs.UTF32Test('test_readline'))
         suite.addTest(test.test_codecs.UTF32Test('test_readlinequeue'))
         suite.addTest(test.test_codecs.UTF7Test('test_ascii'))

@@ -748,7 +748,7 @@ namespace IronPython.Modules {
                 }
             }
 
-            private Bytes ReadNoLock(CodeContext/*!*/ context, int length) {
+            private Bytes ReadNoLock(CodeContext/*!*/ context, int length, bool read1 = false) {
                 if (length == 0) {
                     return Bytes.Empty;
                 }
@@ -777,13 +777,14 @@ namespace IronPython.Modules {
                         }
                         chunks.Add(chunk); 
                         count += chunk.Count;
+                        if (read1) break;
                     }
 
                     GC.KeepAlive(this);
                     return Bytes.Concat(chunks, count);
                 }
 
-                if (length < _readBuf.Count - _readBufPos) {
+                if (length <= _readBuf.Count - _readBufPos) {
                     // requested data is already buffered
                     byte[] res = new byte[length];
                     Array.Copy(_readBuf._bytes, _readBufPos, res, 0, length);
@@ -828,6 +829,7 @@ namespace IronPython.Modules {
                             remaining = 0;
                             break;
                         }
+                        if (read1) break;
                     }
                     GC.KeepAlive(this);
                     return Bytes.Concat(chunks, length - remaining);
@@ -876,8 +878,8 @@ namespace IronPython.Modules {
                 }
 
                 lock (this) {
-                    PeekNoLock(context, 1);
-                    return ReadNoLock(context, Math.Min(length, _readBuf.Count - _readBufPos));
+                    int bufLen = _readBuf.Count - _readBufPos;
+                    return ReadNoLock(context, bufLen > 0 ? Math.Min(length, bufLen) : length, read1: true);
                 }
             }
 
@@ -2760,6 +2762,7 @@ namespace IronPython.Modules {
                 if (writing || appending) {
                     throw PythonOps.ValueError("can't use U and writing mode at once");
                 }
+                PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "'U' mode is deprecated");
                 reading = true;
             }
             if (text && binary) {

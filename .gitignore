@@ -102,3 +102,5 @@ launchSettings.json
 *.o
 /Src/ctypes_test/*.pyd
 /Src/ctypes_test/*.pyd
+/Src/StdLib/Lib/__pycache__
+/Tests/modules/misc/test_data.gz

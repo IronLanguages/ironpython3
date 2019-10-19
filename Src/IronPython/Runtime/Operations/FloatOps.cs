@@ -400,7 +400,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static double Power(double x, double y) {
+        public static object Power(double x, double y) {
             if (x == 1.0 || y == 0.0) {
                 return 1.0;
             } else if (double.IsNaN(x) || double.IsNaN(y)) {
@@ -440,7 +440,8 @@ namespace IronPython.Runtime.Operations {
                     return y > 0 ? double.PositiveInfinity : 0.0;
                 }
             } else if (x < 0 && (Math.Floor(y) != y)) {
-                throw PythonOps.ValueError("negative number cannot be raised to fraction");
+                // the return value is complex when x is negative and y is fractional. 
+                return ComplexOps.Power(x, y);
             }
 
             return PythonOps.CheckMath(x, y, Math.Pow(x, y));
@@ -1072,8 +1073,9 @@ namespace IronPython.Runtime.Operations {
         }
 
         [SpecialName]
-        public static float Power(float x, float y) {
-            return (float)DoubleOps.Power(x, y);
+        public static object Power(float x, float y) {
+            // the return value is complex when x is negative and y is fractional. 
+            return DoubleOps.Power(x, y);
         }
 
         [StaticExtensionMethod]

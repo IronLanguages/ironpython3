@@ -7,6 +7,8 @@ import shutil
 import tempfile
 import unittest
 
+from iptest import is_mono, is_osx
+
 class ShutilTest(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.mkdtemp()
@@ -62,10 +64,18 @@ class ShutilTest(unittest.TestCase):
         to_stat = os.stat(to_filename)
 
         self.assertEqual(from_stat.st_mode, to_stat.st_mode)
-        self.assertEqual(from_stat.st_atime, to_stat.st_atime)
-        self.assertEqual(from_stat.st_mtime, to_stat.st_mtime)
-        self.assertEqual(from_stat.st_atime_ns, to_stat.st_atime_ns)
-        self.assertEqual(from_stat.st_mtime_ns, to_stat.st_mtime_ns)
+        if is_mono and is_osx and from_stat.st_atime_ns != to_stat.st_atime_ns:
+            self.assertEqual(to_stat.st_atime, to_stat.st_atime_ns / 1e9)
+            self.assertEqual(to_stat.st_mtime, to_stat.st_mtime_ns / 1e9)
+            self.assertEqual(from_stat.st_atime_ns // 1000, to_stat.st_atime_ns // 1000)
+            self.assertEqual(from_stat.st_mtime_ns // 1000, to_stat.st_mtime_ns // 1000)
+            self.assertNotEqual(from_stat.st_atime_ns, to_stat.st_atime_ns)
+            self.assertNotEqual(from_stat.st_mtime_ns, to_stat.st_mtime_ns)
+        else:
+            self.assertEqual(from_stat.st_atime, to_stat.st_atime)
+            self.assertEqual(from_stat.st_mtime, to_stat.st_mtime)
+            self.assertEqual(from_stat.st_atime_ns, to_stat.st_atime_ns)
+            self.assertEqual(from_stat.st_mtime_ns, to_stat.st_mtime_ns)
 
     def test_copy(self):
         # TODO: implement me!

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -375,15 +376,21 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             return (remainder ^ 0xffffffff);
         }
 
-        public static string b2a_hex(string data) {
-            StringBuilder sb = new StringBuilder(data.Length * 2);
-            for (int i = 0; i < data.Length; i++) {
-                sb.AppendFormat("{0:x2}", (int)data[i]);
+        public static Bytes b2a_hex([BytesConversion]IList<byte> data) {
+            using (var stream = new MemoryStream(data.Count * 2)) {
+                foreach (var b in data) {
+                    stream.WriteByte(ToAscii(b >> 4));
+                    stream.WriteByte(ToAscii(b & 0xf));
+                }
+                return Bytes.Make(stream.ToArray());
             }
-            return sb.ToString();
+
+            static byte ToAscii(int b) {
+                return (byte)(b < 10 ? '0' + b : 'a' + (b - 10));
+            }
         }
 
-        public static string hexlify(string data) {
+        public static Bytes hexlify([BytesConversion]IList<byte> data) {
             return b2a_hex(data);
         }
 

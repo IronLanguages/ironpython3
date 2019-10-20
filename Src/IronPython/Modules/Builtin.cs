@@ -1424,6 +1424,24 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             throw PythonOps.TypeError("'float' object cannot be interpreted as an integer");
         }
 
+        public static object round(CodeContext/*!*/ context, object number) {
+            if (!PythonOps.TryGetBoundAttr(context, number, "__round__", out var func)) {
+                var pythonType = DynamicHelpers.GetPythonType(number);
+                throw PythonOps.TypeError("type {0} doesn't define __round__ method", pythonType.Name);
+            }
+
+            throw PythonOps.TypeError("__round__() missing 1 required positional argument: 'ndigits'");
+        }
+
+        public static object round(CodeContext/*!*/ context, object number, object ndigits) {
+            if (!PythonOps.TryGetBoundAttr(context, number, "__round__", out var func)) {
+                var pythonType = DynamicHelpers.GetPythonType(number);
+                throw PythonOps.TypeError("type {0} doesn't define __round__ method", pythonType.Name);
+            }
+
+            return PythonOps.CallWithContextAndThis(context, func, number, ndigits);
+        }
+
         public static void setattr(CodeContext/*!*/ context, object o, string name, object val) {
             PythonOps.SetAttr(context, o, name, val);
         }

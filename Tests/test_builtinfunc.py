@@ -730,6 +730,15 @@ class BuiltinsTest2(IronPythonTestCase):
         self.assertTrue(type(l) == type(i))
         self.assertTrue(i == l)
 
+    class Roundable:    
+        def __round__(self, ndigits):
+            if ndigits == 3: return "circle"
+            else: return "ellipse"
+
+    class NotRoundable:
+        def dummy(self):
+            pass
+
     def test_round(self):
         self.assertEqual(round(number=3.4), 3.0)
         self.assertEqual(round(number=3.125, ndigits=3), 3.125)
@@ -751,7 +760,72 @@ class BuiltinsTest2(IronPythonTestCase):
         except TypeError as err:
             self.assertEqual("'float' object cannot be interpreted as an integer", str(err))
         else:
-            self.assertUnreachable()            
+            self.assertUnreachable()
+
+        # type implements __round__
+        # correct number of arguments
+        roundable = self.Roundable()
+        self.assertEqual(round(roundable, 3), "circle")
+        self.assertEqual(round(number=roundable, ndigits=3), "circle")
+        self.assertEqual(round(roundable, 2), "ellipse")
+        self.assertEqual(round(number=roundable, ndigits=2), "ellipse")
+
+        # too few arguments
+        try:
+            round(roundable)
+            self.assertUnreachable()
+        except TypeError as err:
+            self.assertEqual("__round__() missing 1 required positional argument: 'ndigits'", str(err))
+        else:
+            self.assertUnreachable()
+
+        # too many arguments
+        try:
+            round(roundable, 1, 2)
+            self.assertUnreachable()
+        except TypeError as err:
+            self.assertEqual("round() takes at most 2 arguments (3 given)", str(err))
+        else:
+            self.assertUnreachable()
+
+        # type does not implement __round__
+        # too few arguments
+        try:
+            round(self.NotRoundable())
+            self.assertUnreachable()
+        except TypeError as err:
+            self.assertEqual("type NotRoundable doesn't define __round__ method", str(err))
+        else:
+            self.assertUnreachable()
+
+        # correct number of arguments
+        try:
+            round(self.NotRoundable(), 1)
+            self.assertUnreachable()
+        except TypeError as err:
+            self.assertEqual("type NotRoundable doesn't define __round__ method", str(err))
+        else:
+            self.assertUnreachable()
+
+        try:
+            round(number=self.NotRoundable(), ndigits=1)
+            self.assertUnreachable()
+        except TypeError as err:
+            self.assertEqual("type NotRoundable doesn't define __round__ method", str(err))
+        else:
+            self.assertUnreachable()
+
+        # too many arguments
+        try:
+            round(self.NotRoundable(), 1, 2)
+            self.assertUnreachable()
+        except TypeError as err:
+            self.assertEqual("round() takes at most 2 arguments (3 given)", str(err))
+        else:
+            self.assertUnreachable()
+
+        # self.assertEqual(round(3, 0), 3)
+        # self.assertEqual(round(35, 1), 4)
 
     def test_cp16000(self):
         class K(object):

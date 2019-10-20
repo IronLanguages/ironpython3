@@ -33,8 +33,12 @@
     </PackageReference>
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(IsFullFramework)' == 'false' ">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' or '$(TargetFramework)' == 'netstandard2.0' ">
     <PackageReference Include="Microsoft.Win32.Registry" Version="4.5.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.0' ">
+    <PackageReference Include="Microsoft.Win32.Registry" Version="4.6.0" />
   </ItemGroup>
 
   <Import Project="$(AfterTargetFiles)" />

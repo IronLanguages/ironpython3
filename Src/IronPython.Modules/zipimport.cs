@@ -579,7 +579,7 @@ contain the module, but has no source for it.")]
                 if ((prefix.Length + name.Length + 13) >= MAXPATHLEN) {
                     throw MakeError(context, "path to long");
                 }
-                return (prefix + name).Replace('.', Path.DirectorySeparatorChar);
+                return prefix + name.Replace('.', Path.DirectorySeparatorChar);
             }
 
             /// <summary>

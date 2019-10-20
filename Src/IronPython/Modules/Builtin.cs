@@ -1403,11 +1403,12 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
         
         public static double round(double number) {
-            return MathUtils.RoundAwayFromZero(number);
+            // as of Python 3 rounding is to the nearest even number, not away from zero
+            return MathUtils.RoundToEven(number);
         }
 
         public static double round(double number, int ndigits) {
-            return PythonOps.CheckMath(number, MathUtils.RoundAwayFromZero(number, ndigits));
+            return PythonOps.CheckMath(number, MathUtils.RoundToEven(number, ndigits));
         }
 
         public static double round(double number, BigInteger ndigits) {
@@ -1420,7 +1421,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static double round(double number, double ndigits) {
-            throw PythonOps.TypeError("'float' object cannot be interpreted as an index");
+            throw PythonOps.TypeError("'float' object cannot be interpreted as an integer");
         }
 
         public static void setattr(CodeContext/*!*/ context, object o, string name, object val) {

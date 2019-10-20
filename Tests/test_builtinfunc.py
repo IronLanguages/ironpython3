@@ -735,6 +735,24 @@ class BuiltinsTest2(IronPythonTestCase):
         self.assertEqual(round(number=3.125, ndigits=3), 3.125)
         self.assertEqual(round(number=3.125, ndigits=0), 3)
 
+        # rounds to even as of Python 3.0
+        self.assertEqual(round(number=2.5), 2)
+        self.assertEqual(round(number=3.5), 4)
+
+        self.assertEqual(round(number=2.5, ndigits=0), 2)
+        self.assertEqual(round(number=3.5, ndigits=0), 4)
+
+        self.assertEqual(round(number=25.0, ndigits=-1), 20)
+        self.assertEqual(round(number=35.0, ndigits=-1), 40)
+
+        try:
+            round(number=2.5, ndigits=1.1)
+            self.assertUnreachable()
+        except TypeError as err:
+            self.assertEqual("'float' object cannot be interpreted as an integer", str(err))
+        else:
+            self.assertUnreachable()            
+
     def test_cp16000(self):
         class K(object):
             FOO = 39

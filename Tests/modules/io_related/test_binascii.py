@@ -25,7 +25,7 @@ class BinasciiTest(unittest.TestCase):
 
     def test_zeros(self):
         """verify zeros don't show up as being only a single character"""
-        self.assertEqual(binascii.b2a_hex('\x00\x00\x10\x00'), '00001000')
+        self.assertEqual(binascii.b2a_hex(b'\x00\x00\x10\x00'), b'00001000')
 
     @skipUnlessIronPython()
     def test_not_implemented(self):

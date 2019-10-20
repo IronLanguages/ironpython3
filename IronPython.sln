@@ -56,6 +56,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{60836ADE
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ClrAssembly", "Src\DLR\Tests\ClrAssembly\ClrAssembly.csproj", "{BEE737B9-18D5-48D9-8672-9A896213C98B}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Package", "Package", "{CE610DDE-D1DB-44D8-BAE9-BAAB00DA98F0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "nuget", "nuget", "{EE77D917-27F7-4E54-B72F-C8CEE4AEDCAA}"
+	ProjectSection(SolutionItems) = preProject
+		Package\nuget\IronPython.nuspec = Package\nuget\IronPython.nuspec
+		Package\nuget\IronPython.StdLib.nuspec = Package\nuget\IronPython.StdLib.nuspec
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -121,6 +129,8 @@ Global
 		{ACDD9B9E-8FE6-439C-9521-1CCBA47F6143} = {AC38EFB1-820D-4E90-BF40-BEF3AC825542}
 		{60836ADE-CAB7-4587-B6FB-8C4FEB872752} = {AC38EFB1-820D-4E90-BF40-BEF3AC825542}
 		{BEE737B9-18D5-48D9-8672-9A896213C98B} = {60836ADE-CAB7-4587-B6FB-8C4FEB872752}
+		{CE610DDE-D1DB-44D8-BAE9-BAAB00DA98F0} = {3A14D070-628F-44EF-92DD-47C8BE5C33CD}
+		{EE77D917-27F7-4E54-B72F-C8CEE4AEDCAA} = {CE610DDE-D1DB-44D8-BAE9-BAAB00DA98F0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {981EA700-AB4F-462F-96D7-F35FAAAA7E89}

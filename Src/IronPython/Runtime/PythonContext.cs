@@ -1881,7 +1881,7 @@ namespace IronPython.Runtime {
         }
 
         internal void SetHostVariables(string prefix, string executable, string versionString) {
-            _initialVersionString = !string.IsNullOrEmpty(versionString) ? versionString : GetVersionString();
+            _initialVersionString = string.IsNullOrEmpty(versionString) ? null : versionString;
             _initialExecutable = executable ?? "";
             _initialPrefix = prefix;
 
@@ -1910,7 +1910,7 @@ namespace IronPython.Runtime {
             dict["implementation"] = implementation;
             dict["version_info"] = implementation.version;
             dict["hexversion"] = implementation.hexversion;
-            dict["version"] = _initialVersionString;
+            dict["version"] = _initialVersionString ?? GetVersionString();
         }
 
         internal static string GetVersionString() {

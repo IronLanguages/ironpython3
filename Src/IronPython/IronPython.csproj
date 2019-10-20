@@ -57,8 +57,8 @@
     </PackageReference>
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(IsFullFramework)' == 'false' ">
-    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.5.1" />
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.1' or '$(TargetFramework)' == 'netstandard2.0' ">
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.6.0" />
   </ItemGroup>
 
   <Import Project="$(AfterTargetFiles)" />

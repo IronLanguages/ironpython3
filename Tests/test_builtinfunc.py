@@ -859,6 +859,7 @@ class BuiltinsTest2(IronPythonTestCase):
         self.assertEqualAndCheckType(round(111111111111111111111111111251, -2), 111111111111111111111111111300, long)
 
         self.assertEqualAndCheckType(round(111111111111111111111111111111, -111111111111111111111111111111), 0, long)
+        self.assertEqualAndCheckType(round(-111111111111111111111111111111, -111111111111111111111111111111), 0, long)
 
         try:
             round(number=2, ndigits=1.1)

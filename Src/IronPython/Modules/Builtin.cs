@@ -1404,11 +1404,11 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         
         public static double round(double number) {
             // as of Python 3 rounding is to the nearest even number, not away from zero
-            return MathUtils.RoundToEven(number);
+            return MathUtils.Round(number, 0, MidpointRounding.ToEven);
         }
 
         public static double round(double number, int ndigits) {
-            return PythonOps.CheckMath(number, MathUtils.RoundToEven(number, ndigits));
+            return PythonOps.CheckMath(number, MathUtils.Round(number, ndigits, MidpointRounding.ToEven));
         }
 
         public static double round(double number, BigInteger ndigits) {

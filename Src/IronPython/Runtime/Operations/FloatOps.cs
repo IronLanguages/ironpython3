@@ -864,7 +864,7 @@ namespace IronPython.Runtime.Operations {
                         // only have as single digit avoid exponents.
                         if (digitCnt > spec.Precision.Value && digitCnt != 1) {
                             // first round off the decimal value
-                            self = MathUtils.RoundAwayFromZero(self, 0);
+                            self = MathUtils.Round(self, 0 , MidpointRounding.ToEven);
 
                             // then remove any insignificant digits
                             double pow = Math.Pow(10, digitCnt - Math.Max(spec.Precision.Value, 1));
@@ -879,7 +879,7 @@ namespace IronPython.Runtime.Operations {
                             // round to match CPython's behavior
                             int decimalPoints = Math.Max(spec.Precision.Value - digitCnt, 0);
 
-                            self = MathUtils.RoundAwayFromZero(self, decimalPoints);
+                            self = MathUtils.Round(self, decimalPoints, MidpointRounding.ToEven);
                             digits = self.ToString("0.0" + new string('#', decimalPoints));
                         }
                     } else {
@@ -909,7 +909,7 @@ namespace IronPython.Runtime.Operations {
                         // only have as single digit avoid exponents.
                         if (digitCnt > precision && digitCnt != 1) {
                             // first round off the decimal value
-                            self = MathUtils.RoundAwayFromZero(self, 0);
+                            self = MathUtils.Round(self, 0, MidpointRounding.ToEven);
 
                             // then remove any insignificant digits
                             double pow = Math.Pow(10, digitCnt - Math.Max(precision, 1));
@@ -945,7 +945,7 @@ namespace IronPython.Runtime.Operations {
                             }
                             int decimalPoints = Math.Max(precision - digitCnt, 0);
 
-                            self = MathUtils.RoundAwayFromZero(self, decimalPoints);
+                            self = MathUtils.Round(self, decimalPoints, MidpointRounding.ToEven);
 
                             if (spec.Type == 'n' && context.LanguageContext.NumericCulture != PythonContext.CCulture) {
                                 if (digitCnt != precision && (self % 1) != 0) {

@@ -682,6 +682,11 @@ class UTF16LETest(ReadTest, unittest.TestCase):
             (b'\x00\xd8A\x00', '\ufffdA'),
             (b'\x00\xdcA\x00', '\ufffdA'),
         ]
+        if sys.implementation.name == 'ironpython':
+            # IronPython's strings are in the UTF-16 form thus decoding
+            # a surrogate pair always results in two characters. Consequently,
+            # decoding a broken surrogate pair results in TWO U+FFFD
+            tests[4] = (b'\x00\xd8A', '\ufffd\ufffd')
         for raw, expected in tests:
             self.assertRaises(UnicodeDecodeError, codecs.utf_16_le_decode,
                               raw, 'strict', True)
@@ -726,6 +731,11 @@ class UTF16BETest(ReadTest, unittest.TestCase):
             (b'\xd8\x00\x00A', '\ufffdA'),
             (b'\xdc\x00\x00A', '\ufffdA'),
         ]
+        if sys.implementation.name == 'ironpython':
+            # IronPython's strings are in the UTF-16 form thus decoding
+            # a surrogate pair always results in two characters. Consequently,
+            # decoding a broken surrogate pair results in TWO U+FFFD
+            tests[4] = (b'\xd8\x00\xdc', '\ufffd\ufffd')
         for raw, expected in tests:
             self.assertRaises(UnicodeDecodeError, codecs.utf_16_be_decode,
                               raw, 'strict', True)

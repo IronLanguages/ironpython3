@@ -739,6 +739,10 @@ class BuiltinsTest2(IronPythonTestCase):
         def dummy(self):
             pass
 
+    def assertEqualAndCheckType(self, actual, expected, expectedType):
+        self.assertEqual(actual, expected)
+        self.assertIsInstance(actual, expectedType, msg="Type: {0}".format(type(actual)))
+
     def test_round(self):
         self.assertEqual(round(number=3.4), 3.0)
         self.assertEqual(round(number=3.125, ndigits=3), 3.125)
@@ -823,9 +827,54 @@ class BuiltinsTest2(IronPythonTestCase):
             self.assertEqual("round() takes at most 2 arguments (3 given)", str(err))
         else:
             self.assertUnreachable()
+        
+        self.assertEqualAndCheckType(round(3), 3, int)
+        self.assertEqualAndCheckType(round(3, 0), 3, int)
+        self.assertEqualAndCheckType(round(3, 1), 3, int)
 
-        # self.assertEqual(round(3, 0), 3)
-        # self.assertEqual(round(35, 1), 4)
+        self.assertEqualAndCheckType(round(24, -1), 20, int)
+        self.assertEqualAndCheckType(round(25, -1), 20, int)
+        self.assertEqualAndCheckType(round(26, -1), 30, int)
+
+        self.assertEqualAndCheckType(round(249, -2), 200, int)
+        self.assertEqualAndCheckType(round(250, -2), 200, int)
+        self.assertEqualAndCheckType(round(251, -2), 300, int)
+
+        self.assertEqualAndCheckType(round(2147483647, -3), 2147484000, long)
+
+        self.assertEqualAndCheckType(
+            round(111111111111111111111111111111, 111111111111111111111111111111), 
+            111111111111111111111111111111, 
+            long)
+
+        self.assertEqualAndCheckType(round(111111111111111111111111111111, 0), 111111111111111111111111111111, long)
+        self.assertEqualAndCheckType(round(111111111111111111111111111111, -2), 111111111111111111111111111100, long)
+
+        self.assertEqualAndCheckType(round(111111111111111111111111111124, -1), 111111111111111111111111111120, long)
+        self.assertEqualAndCheckType(round(111111111111111111111111111125, -1), 111111111111111111111111111120, long)
+        self.assertEqualAndCheckType(round(111111111111111111111111111126, -1), 111111111111111111111111111130, long)
+
+        self.assertEqualAndCheckType(round(111111111111111111111111111249, -2), 111111111111111111111111111200, long)
+        self.assertEqualAndCheckType(round(111111111111111111111111111250, -2), 111111111111111111111111111200, long)
+        self.assertEqualAndCheckType(round(111111111111111111111111111251, -2), 111111111111111111111111111300, long)
+
+        self.assertEqualAndCheckType(round(111111111111111111111111111111, -111111111111111111111111111111), 0, long)
+
+        try:
+            round(number=2, ndigits=1.1)
+            self.assertUnreachable()
+        except TypeError as err:
+            self.assertEqual("'float' object cannot be interpreted as an integer", str(err))
+        else:
+            self.assertUnreachable()
+
+        try:
+            round(number=111111111111111111111111111111, ndigits=1.1)
+            self.assertUnreachable()
+        except TypeError as err:
+            self.assertEqual("'float' object cannot be interpreted as an integer", str(err))
+        else:
+            self.assertUnreachable()       
 
     def test_cp16000(self):
         class K(object):

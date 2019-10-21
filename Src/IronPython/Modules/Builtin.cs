@@ -1424,6 +1424,68 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             throw PythonOps.TypeError("'float' object cannot be interpreted as an integer");
         }
 
+        public static int round(int number) {
+            return number;
+        }
+
+        public static object round(int number, BigInteger ndigits) {
+            var result = round(new BigInteger(number), ndigits);
+            if (result.AsInt32(out var ret)) {
+                return ret;
+            }
+
+            // this path can be hit when number is close to int.MaxValue and ndigits is negative,
+            // causing number to be rounded up and over int.MaxValue
+            return result;
+        }
+
+        public static object round(int number, int ndigits) {
+            return round(number, new BigInteger(ndigits));
+        }
+
+        public static double round(int number, double ndigits) {
+            throw PythonOps.TypeError("'float' object cannot be interpreted as an integer");
+        }
+
+        public static BigInteger round(BigInteger number) {
+            return number;
+        }
+
+        public static BigInteger round(BigInteger number, int ndigits) {
+            return round(number, new BigInteger(ndigits));
+        }
+
+        public static BigInteger round(BigInteger number, BigInteger ndigits) {
+            // as of Python 3 rounding is to the nearest even number, not away from zero
+            if (ndigits >= 0) {
+
+                return number;
+            }
+
+            if (!ndigits.AsInt32(out var intNDigits)) {
+                // probably the best course of action. anyone trying this is in for trouble anyway.
+                return BigInteger.Zero;
+            }
+
+            // see https://bugs.python.org/issue4707#msg78141
+            var i = BigInteger.Pow(10, -intNDigits);
+            var r = number % (2 * i);
+            var o = i / 2;
+            number -= r;
+
+            if (r <= o) {
+                return number;
+            } else if (r < 3 * o) {
+                return number + i;
+            } else {
+                return number + 2 * i;
+            }
+        }
+
+        public static double round(BigInteger number, double ndigits) {
+            throw PythonOps.TypeError("'float' object cannot be interpreted as an integer");
+        }
+
         public static object round(CodeContext/*!*/ context, object number) {
             if (!PythonOps.TryGetBoundAttr(context, number, "__round__", out var func)) {
                 var pythonType = DynamicHelpers.GetPythonType(number);

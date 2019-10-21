@@ -310,12 +310,12 @@ class MathTest(IronPythonTestCase):
         self.assertTrue(round(-5.5) == (-6.0))
         self.assertTrue(round(-5.0) == (-5.0))
 
-        self.assertTrue(round(-4.5) == (-5.0))
-        self.assertTrue(round(-2.5) == (-3.0))
-        self.assertTrue(round(-0.5) == (-1.0))
-        self.assertTrue(round(0.5) == (1.0))
-        self.assertTrue(round(2.5) == (3.0))
-        self.assertTrue(round(4.5) == (5.0))
+        self.assertTrue(round(-4.5) == (-4.0))
+        self.assertTrue(round(-2.5) == (-2.0))
+        self.assertTrue(round(-0.5) == (-0.0))
+        self.assertTrue(round(0.5) == (0.0))
+        self.assertTrue(round(2.5) == (2.0))
+        self.assertTrue(round(4.5) == (4.0))
 
         self.assertTrue(round(-4.0) == (-4.0))
         self.assertTrue(round(-3.5) == (-4.0))

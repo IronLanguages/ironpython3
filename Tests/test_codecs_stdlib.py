@@ -114,7 +114,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF16BETest('test_bug1098990_a'))
         suite.addTest(test.test_codecs.UTF16BETest('test_bug1098990_b'))
         suite.addTest(test.test_codecs.UTF16BETest('test_bug1175396'))
-        #suite.addTest(test.test_codecs.UTF16BETest('test_errors')) # AssertionError: '��' != '�' when decoding b'\xd8\x00\xdc' w/ replace
+        suite.addTest(test.test_codecs.UTF16BETest('test_errors'))
         suite.addTest(test.test_codecs.UTF16BETest('test_lone_surrogates'))
         suite.addTest(test.test_codecs.UTF16BETest('test_mixed_readline_and_read'))
         suite.addTest(test.test_codecs.UTF16BETest('test_nonbmp'))
@@ -126,7 +126,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF16LETest('test_bug1098990_a'))
         suite.addTest(test.test_codecs.UTF16LETest('test_bug1098990_b'))
         suite.addTest(test.test_codecs.UTF16LETest('test_bug1175396'))
-        #suite.addTest(test.test_codecs.UTF16LETest('test_errors')) # AssertionError: '��' != '�' when decoding b'\x00\xd8A' w/ replace
+        suite.addTest(test.test_codecs.UTF16LETest('test_errors'))
         suite.addTest(test.test_codecs.UTF16LETest('test_lone_surrogates'))
         suite.addTest(test.test_codecs.UTF16LETest('test_mixed_readline_and_read'))
         suite.addTest(test.test_codecs.UTF16LETest('test_nonbmp'))

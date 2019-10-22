@@ -1019,16 +1019,20 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static double __round__(double self) {
-            return __round__(self, 0);
-        }
-
-        public static double __round__(double self, int ndigits) {
             if (double.IsNaN(self)) {
                 throw PythonOps.ValueError("cannot convert float NaN to integer");
             }
 
             if (double.IsInfinity(self)) {
                 throw PythonOps.OverflowError("cannot convert float infinity to integer");
+            }
+
+            return __round__(self, 0);
+        }
+
+        public static double __round__(double self, int ndigits) {
+            if (double.IsNaN(self) || double.IsInfinity(self)) {
+                return self;
             }
 
             var result = MathUtils.Round(self, ndigits, MidpointRounding.ToEven);

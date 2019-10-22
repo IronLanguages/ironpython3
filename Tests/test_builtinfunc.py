@@ -911,23 +911,7 @@ class BuiltinsTest2(IronPythonTestCase):
             self.assertUnreachable()
 
         try:
-            round(float('nan'), 1)
-            self.assertUnreachable()
-        except ValueError as err:
-            self.assertEqual("cannot convert float NaN to integer", str(err))
-        else:
-            self.assertUnreachable()
-
-        try:
             round(float('inf'))
-            self.assertUnreachable()
-        except OverflowError as err:
-            self.assertEqual("cannot convert float infinity to integer", str(err))
-        else:
-            self.assertUnreachable()
-
-        try:
-            round(float('inf'), 1)
             self.assertUnreachable()
         except OverflowError as err:
             self.assertEqual("cannot convert float infinity to integer", str(err))
@@ -943,20 +927,30 @@ class BuiltinsTest2(IronPythonTestCase):
             self.assertUnreachable()
 
         try:
-            round(float('-inf'), 1)
-            self.assertUnreachable()
-        except OverflowError as err:
-            self.assertEqual("cannot convert float infinity to integer", str(err))
-        else:
-            self.assertUnreachable()
-
-        try:
             round(sys.float_info.max, -307)
             self.assertUnreachable()
         except OverflowError as err:
             self.assertEqual("rounded value too large to represent", str(err))
         else:
             self.assertUnreachable()
+
+        actual = round(float('inf'), 1)
+        self.assertTrue(math.isinf(actual) and actual > 0)
+
+        actual = round(float('-inf'), 1)
+        self.assertTrue(math.isinf(actual) and actual < 0)
+
+        actual = round(float('inf'), -1)
+        self.assertTrue(math.isinf(actual) and actual > 0)
+
+        actual = round(float('-inf'), -1)
+        self.assertTrue(math.isinf(actual) and actual < 0)
+
+        actual = round(float('nan'), 1)
+        self.assertTrue(math.isnan(actual))
+
+        actual = round(float('nan'), -1)
+        self.assertTrue(math.isnan(actual))
         
         actual = round(float('inf'), 354250895282439122322875506826024599142533926918074193061745122574500)
         self.assertTrue(math.isinf(actual) and actual > 0)

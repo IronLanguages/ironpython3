@@ -730,10 +730,14 @@ class BuiltinsTest2(IronPythonTestCase):
         self.assertTrue(type(l) == type(i))
         self.assertTrue(i == l)
 
-    class Roundable:    
+    class Roundable:
         def __round__(self, ndigits):
             if ndigits == 3: return "circle"
             else: return "ellipse"
+
+    class ParameterlessRoundable:
+        def __round__(self):
+            return "sphere"
 
     class NotRoundable:
         def dummy(self):
@@ -773,13 +777,14 @@ class BuiltinsTest2(IronPythonTestCase):
         self.assertEqual(round(number=roundable, ndigits=3), "circle")
         self.assertEqual(round(roundable, 2), "ellipse")
         self.assertEqual(round(number=roundable, ndigits=2), "ellipse")
+        self.assertEqual(round(self.ParameterlessRoundable()), "sphere")
 
         # too few arguments
         try:
             round(roundable)
             self.assertUnreachable()
         except TypeError as err:
-            self.assertEqual("__round__() missing 1 required positional argument: 'ndigits'", str(err))
+            self.assertEqual("__round__() takes exactly 2 arguments (2 given)", str(err))
         else:
             self.assertUnreachable()
 

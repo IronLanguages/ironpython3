@@ -1017,6 +1017,29 @@ namespace IronPython.Runtime.Operations {
                     throw PythonOps.ValueError("__setformat__() argument 1 must be 'double' or 'float'");
             }
         }
+
+        public static double __round__(double self) {
+            // as of Python 3 rounding is to the nearest even number, not away from zero
+            return MathUtils.Round(self, 0, MidpointRounding.ToEven);
+        }
+
+        public static double __round__(double self, int ndigits) {
+            return PythonOps.CheckMath(self, MathUtils.Round(self, ndigits, MidpointRounding.ToEven));
+        }
+
+        public static double __round__(double self, BigInteger ndigits) {
+            int n;
+            if (ndigits.AsInt32(out n)) {
+                return __round__(self, n);
+            }
+
+            return ndigits > 0 ? self : 0.0;
+        }
+
+        public static double __round__(double self, object ndigits) {
+            var pythonType = DynamicHelpers.GetPythonType(ndigits);
+            throw PythonOps.TypeError($"'{pythonType.Name}' object cannot be interpreted as an integer");
+        }
     }
 
     internal enum FloatFormat {

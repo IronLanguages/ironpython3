@@ -551,6 +551,30 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
+        public static int __round__(int number) {
+            return number;
+        }
+
+        public static object __round__(int number, BigInteger ndigits) {
+            var result = BigIntegerOps.__round__(new BigInteger(number), ndigits);
+            if (result.AsInt32(out var ret)) {
+                return ret;
+            }
+
+            // this path can be hit when number is close to int.MaxValue and ndigits is negative,
+            // causing number to be rounded up and over int.MaxValue
+            return result;
+        }
+
+        public static object __round__(int number, int ndigits) {
+            return __round__(number, new BigInteger(ndigits));
+        }
+
+        public static double __round__(int number, object ndigits) {
+            var pythonType = DynamicHelpers.GetPythonType(ndigits);
+            throw PythonOps.TypeError($"'{pythonType.Name}' object cannot be interpreted as an integer");
+        }
+
         private static string ToHex(int self, bool lowercase) {
             string digits;
             if (self != Int32.MinValue) {

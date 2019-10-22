@@ -304,6 +304,10 @@ class MathTest(IronPythonTestCase):
 
         self.assertTrue(0xabcdef01 + (0xabcdef01<<32)+(0xabcdef01<<64) == 0xabcdef01abcdef01abcdef01)
 
+    def assertEqualAndCheckType(self, actual, expected, expectedType):
+        self.assertEqual(actual, expected)
+        self.assertIsInstance(actual, expectedType, msg="Type: {0}".format(type(actual)))
+
     def test_rounding(self):
         self.assertTrue(round(-5.5489) == (-6.0))
         self.assertTrue(round(5.5519) == (6.0))
@@ -403,6 +407,24 @@ class MathTest(IronPythonTestCase):
         for i in range(-12, -309, -1):
             self.assertTrue(round(7182930456.0, i) == 0.0)
             self.assertTrue(round(-7182930456.0, i) == 0.0)
+
+        self.assertEqualAndCheckType((2.4).__round__(), 2.0, float)
+        self.assertEqualAndCheckType((2.5).__round__(), 2.0, float)
+        self.assertEqualAndCheckType((2.6).__round__(), 3.0, float)
+        self.assertEqualAndCheckType((2.54).__round__(1), 2.5, float)
+        self.assertEqualAndCheckType((2.55).__round__(1), 2.6, float)
+        self.assertEqualAndCheckType((2.56).__round__(1), 2.6, float)
+        self.assertEqualAndCheckType((24.0).__round__(-1), 20.0, float)
+        self.assertEqualAndCheckType((25.0).__round__(-1), 20.0, float)
+        self.assertEqualAndCheckType((26.0).__round__(-1), 30.0, float)
+
+        self.assertEqualAndCheckType((1).__round__(), 1, int)
+        self.assertEqualAndCheckType((1).__round__(1), 1, int)
+        self.assertEqualAndCheckType((1).__round__(-1), 0, int)
+
+        self.assertEqualAndCheckType(long(1).__round__(), 1, long)
+        self.assertEqualAndCheckType(long(1).__round__(1), 1, long)
+        self.assertEqualAndCheckType(long(1).__round__(-1), 0, long)
 
     def test_other(self):
         x = ('a', 'b', 'c')

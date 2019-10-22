@@ -1001,7 +1001,6 @@ namespace IronPython.Runtime.Operations {
         public static BigInteger __round__(BigInteger number, BigInteger ndigits) {
             // as of Python 3 rounding is to the nearest even number, not away from zero
             if (ndigits >= 0) {
-
                 return number;
             }
 

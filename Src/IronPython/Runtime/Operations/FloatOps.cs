@@ -1020,23 +1020,40 @@ namespace IronPython.Runtime.Operations {
 
         public static double __round__(double self) {
             // as of Python 3 rounding is to the nearest even number, not away from zero
-            return MathUtils.Round(self, 0, MidpointRounding.ToEven);
+            return __round__(self, 0);
         }
 
         public static double __round__(double self, int ndigits) {
-            return PythonOps.CheckMath(self, MathUtils.Round(self, ndigits, MidpointRounding.ToEven));
+            if (double.IsNaN(self)) {
+                throw PythonOps.ValueError("cannot convert float NaN to integer");
+            }
+
+            if (double.IsNegativeInfinity(self) || double.IsPositiveInfinity(self)) {
+                throw PythonOps.OverflowError("cannot convert float infinity to integer");
+            }
+
+            var result = MathUtils.Round(self, ndigits, MidpointRounding.ToEven);
+            
+            if (double.IsNegativeInfinity(result) || double.IsPositiveInfinity(result)) {
+                throw PythonOps.OverflowError("rounded value too large to represent");
+            }
+
+            return result;
         }
 
         public static double __round__(double self, BigInteger ndigits) {
-            int n;
-            if (ndigits.AsInt32(out n)) {
+            if (ndigits.AsInt32(out var n)) {
                 return __round__(self, n);
+            }
+
+            if (double.IsNaN(self) || double.IsNegativeInfinity(self) || double.IsPositiveInfinity(self)) {
+                return self;
             }
 
             return ndigits > 0 ? self : 0.0;
         }
 
-        public static double __round__(double self, object ndigits) {
+        public static double __round__(CodeContext /*!*/ context, double self, object ndigits) {
             var pythonType = DynamicHelpers.GetPythonType(ndigits);
             throw PythonOps.TypeError($"'{pythonType.Name}' object cannot be interpreted as an integer");
         }

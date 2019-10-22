@@ -1403,6 +1403,19 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object round(CodeContext/*!*/ context, object number) {
+            // performance optimization for common cases
+            if (number is double d) {
+                return DoubleOps.__round__(d);
+            }
+
+            if (number is int i) {
+                return Int32Ops.__round__(i);
+            }
+
+            if (number is BigInteger bi) {
+                return BigIntegerOps.__round__(bi);
+            }
+
             if (!PythonOps.TryGetBoundAttr(context, number, "__round__", out var func)) {
                 var pythonType = DynamicHelpers.GetPythonType(number);
                 throw PythonOps.TypeError("type {0} doesn't define __round__ method", pythonType.Name);
@@ -1412,6 +1425,35 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
         }
 
         public static object round(CodeContext/*!*/ context, object number, object ndigits) {
+            // performance optimization for common cases
+            if (ndigits is int ndi) {
+                if (number is double d) {
+                    return DoubleOps.__round__(d, ndi);
+                }
+
+                if (number is int i) {
+                    return Int32Ops.__round__(i, ndi);
+                }
+
+                if (number is BigInteger bi) {
+                    return BigIntegerOps.__round__(bi, ndi);
+                }
+            }
+
+            if (ndigits is BigInteger ndbi) {
+                if (number is double d) {
+                    return DoubleOps.__round__(d, ndbi);
+                }
+
+                if (number is int i) {
+                    return Int32Ops.__round__(i, ndbi);
+                }
+
+                if (number is BigInteger bi) {
+                    return BigIntegerOps.__round__(bi, ndbi);
+                }
+            }
+
             if (!PythonOps.TryGetBoundAttr(context, number, "__round__", out var func)) {
                 var pythonType = DynamicHelpers.GetPythonType(number);
                 throw PythonOps.TypeError("type {0} doesn't define __round__ method", pythonType.Name);

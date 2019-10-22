@@ -1401,26 +1401,65 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 return DynamicHelpers.GetPythonTypeFromType(typeof(ReversedEnumerator));
             }
         }
-        
-        public static double round(double number) {
-            return MathUtils.RoundAwayFromZero(number);
-        }
 
-        public static double round(double number, int ndigits) {
-            return PythonOps.CheckMath(number, MathUtils.RoundAwayFromZero(number, ndigits));
-        }
-
-        public static double round(double number, BigInteger ndigits) {
-            int n;
-            if (ndigits.AsInt32(out n)) {
-                return round(number, n);
+        public static object round(CodeContext/*!*/ context, object number) {
+            // performance optimization for common cases
+            if (number is double d) {
+                return DoubleOps.__round__(d);
             }
 
-            return ndigits > 0 ? number : 0.0;
+            if (number is int i) {
+                return Int32Ops.__round__(i);
+            }
+
+            if (number is BigInteger bi) {
+                return BigIntegerOps.__round__(bi);
+            }
+
+            if (!PythonOps.TryGetBoundAttr(context, number, "__round__", out var func)) {
+                var pythonType = DynamicHelpers.GetPythonType(number);
+                throw PythonOps.TypeError("type {0} doesn't define __round__ method", pythonType.Name);
+            }
+
+            return PythonOps.CallWithContextAndThis(context, func, number);
         }
 
-        public static double round(double number, double ndigits) {
-            throw PythonOps.TypeError("'float' object cannot be interpreted as an index");
+        public static object round(CodeContext/*!*/ context, object number, object ndigits) {
+            // performance optimization for common cases
+            if (ndigits is int ndi) {
+                if (number is double d) {
+                    return DoubleOps.__round__(d, ndi);
+                }
+
+                if (number is int i) {
+                    return Int32Ops.__round__(i, ndi);
+                }
+
+                if (number is BigInteger bi) {
+                    return BigIntegerOps.__round__(bi, ndi);
+                }
+            }
+
+            if (ndigits is BigInteger ndbi) {
+                if (number is double d) {
+                    return DoubleOps.__round__(d, ndbi);
+                }
+
+                if (number is int i) {
+                    return Int32Ops.__round__(i, ndbi);
+                }
+
+                if (number is BigInteger bi) {
+                    return BigIntegerOps.__round__(bi, ndbi);
+                }
+            }
+
+            if (!PythonOps.TryGetBoundAttr(context, number, "__round__", out var func)) {
+                var pythonType = DynamicHelpers.GetPythonType(number);
+                throw PythonOps.TypeError("type {0} doesn't define __round__ method", pythonType.Name);
+            }
+
+            return PythonOps.CallWithContextAndThis(context, func, number, ndigits);
         }
 
         public static void setattr(CodeContext/*!*/ context, object o, string name, object val) {

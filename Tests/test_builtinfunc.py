@@ -3,6 +3,7 @@
 # See the LICENSE file in the project root for more information.
 
 import sys
+import math
 import unittest
 
 #-----------------------------------------------------------------------------------
@@ -730,10 +731,257 @@ class BuiltinsTest2(IronPythonTestCase):
         self.assertTrue(type(l) == type(i))
         self.assertTrue(i == l)
 
+    class Roundable:
+        def __round__(self, ndigits):
+            if ndigits == 3: return "circle"
+            else: return "ellipse"
+
+    class ParameterlessRoundable:
+        def __round__(self):
+            return "sphere"
+
+    class NotRoundable:
+        def dummy(self):
+            pass
+
+    class IntIndex:
+        def __init__(self, index):
+            self.index = index
+
+        def __index__(self):
+            return self.index
+    
+    class LongIndex:
+        def __init__(self, index):
+            self.index = index
+
+        def __index__(self):
+            return long(self.index)
+
+    class NonIntegralIndex:
+        def __index__(self):
+            return "bad"
+
+    def assertEqualAndCheckType(self, actual, expected, expectedType):
+        self.assertEqual(actual, expected)
+        self.assertIsInstance(actual, expectedType, msg="Type: {0}".format(type(actual)))
+
     def test_round(self):
         self.assertEqual(round(number=3.4), 3.0)
         self.assertEqual(round(number=3.125, ndigits=3), 3.125)
         self.assertEqual(round(number=3.125, ndigits=0), 3)
+
+        # rounds to even as of Python 3.0
+        self.assertEqual(round(number=2.5), 2)
+        self.assertEqual(round(number=3.5), 4)
+
+        self.assertEqual(round(number=2.5, ndigits=0), 2)
+        self.assertEqual(round(number=3.5, ndigits=0), 4)
+
+        self.assertEqual(round(number=25.0, ndigits=-1), 20)
+        self.assertEqual(round(number=35.0, ndigits=-1), 40)
+
+        try:
+            round(number=2.5, ndigits=1.1)
+            self.assertUnreachable()
+        except TypeError as err:
+            self.assertEqual("'float' object cannot be interpreted as an integer", str(err))
+        else:
+            self.assertUnreachable()
+
+        # type implements __round__
+        # correct number of arguments
+        roundable = self.Roundable()
+        self.assertEqual(round(roundable, 3), "circle")
+        self.assertEqual(round(number=roundable, ndigits=3), "circle")
+        self.assertEqual(round(roundable, 2), "ellipse")
+        self.assertEqual(round(number=roundable, ndigits=2), "ellipse")
+        self.assertEqual(round(number=roundable, ndigits="blah"), "ellipse")
+        self.assertEqual(round(self.ParameterlessRoundable()), "sphere")
+
+        # too few arguments
+        try:
+            round(roundable)
+            self.assertUnreachable()
+        except TypeError as err:
+            self.assertEqual("__round__() takes exactly 2 arguments (2 given)", str(err))
+        else:
+            self.assertUnreachable()
+
+        # too many arguments
+        try:
+            round(roundable, 1, 2)
+            self.assertUnreachable()
+        except TypeError as err:
+            self.assertEqual("round() takes at most 2 arguments (3 given)", str(err))
+        else:
+            self.assertUnreachable()
+
+        # type does not implement __round__
+        # too few arguments
+        try:
+            round(self.NotRoundable())
+            self.assertUnreachable()
+        except TypeError as err:
+            self.assertEqual("type NotRoundable doesn't define __round__ method", str(err))
+        else:
+            self.assertUnreachable()
+
+        # correct number of arguments
+        try:
+            round(self.NotRoundable(), 1)
+            self.assertUnreachable()
+        except TypeError as err:
+            self.assertEqual("type NotRoundable doesn't define __round__ method", str(err))
+        else:
+            self.assertUnreachable()
+
+        try:
+            round(number=self.NotRoundable(), ndigits=1)
+            self.assertUnreachable()
+        except TypeError as err:
+            self.assertEqual("type NotRoundable doesn't define __round__ method", str(err))
+        else:
+            self.assertUnreachable()
+
+        # too many arguments
+        try:
+            round(self.NotRoundable(), 1, 2)
+            self.assertUnreachable()
+        except TypeError as err:
+            self.assertEqual("round() takes at most 2 arguments (3 given)", str(err))
+        else:
+            self.assertUnreachable()
+        
+        self.assertEqualAndCheckType(round(3), 3, int)
+        self.assertEqualAndCheckType(round(3, 0), 3, int)
+        self.assertEqualAndCheckType(round(3, 1), 3, int)
+
+        self.assertEqualAndCheckType(round(24, -1), 20, int)
+        self.assertEqualAndCheckType(round(25, -1), 20, int)
+        self.assertEqualAndCheckType(round(26, -1), 30, int)
+
+        self.assertEqualAndCheckType(round(249, -2), 200, int)
+        self.assertEqualAndCheckType(round(250, -2), 200, int)
+        self.assertEqualAndCheckType(round(251, -2), 300, int)
+
+        self.assertEqualAndCheckType(round(2147483647, -3), 2147484000, long)
+
+        self.assertEqualAndCheckType(
+            round(111111111111111111111111111111, 111111111111111111111111111111), 
+            111111111111111111111111111111, 
+            long)
+
+        self.assertEqualAndCheckType(round(111111111111111111111111111111, 0), 111111111111111111111111111111, long)
+        self.assertEqualAndCheckType(round(111111111111111111111111111111, -2), 111111111111111111111111111100, long)
+
+        self.assertEqualAndCheckType(round(111111111111111111111111111124, -1), 111111111111111111111111111120, long)
+        self.assertEqualAndCheckType(round(111111111111111111111111111125, -1), 111111111111111111111111111120, long)
+        self.assertEqualAndCheckType(round(111111111111111111111111111126, -1), 111111111111111111111111111130, long)
+
+        self.assertEqualAndCheckType(round(111111111111111111111111111249, -2), 111111111111111111111111111200, long)
+        self.assertEqualAndCheckType(round(111111111111111111111111111250, -2), 111111111111111111111111111200, long)
+        self.assertEqualAndCheckType(round(111111111111111111111111111251, -2), 111111111111111111111111111300, long)
+
+        self.assertEqualAndCheckType(round(111111111111111111111111111111, -111111111111111111111111111111), 0, long)
+        self.assertEqualAndCheckType(round(-111111111111111111111111111111, -111111111111111111111111111111), 0, long)
+
+        try:
+            round(number=2, ndigits=1.1)
+            self.assertUnreachable()
+        except TypeError as err:
+            self.assertEqual("'float' object cannot be interpreted as an integer", str(err))
+        else:
+            self.assertUnreachable()
+
+        try:
+            round(number=111111111111111111111111111111, ndigits=1.1)
+            self.assertUnreachable()
+        except TypeError as err:
+            self.assertEqual("'float' object cannot be interpreted as an integer", str(err))
+        else:
+            self.assertUnreachable()
+
+        try:
+            round(float('nan'))
+            self.assertUnreachable()
+        except ValueError as err:
+            self.assertEqual("cannot convert float NaN to integer", str(err))
+        else:
+            self.assertUnreachable()
+
+        try:
+            round(float('inf'))
+            self.assertUnreachable()
+        except OverflowError as err:
+            self.assertEqual("cannot convert float infinity to integer", str(err))
+        else:
+            self.assertUnreachable()
+
+        try:
+            round(float('-inf'))
+            self.assertUnreachable()
+        except OverflowError as err:
+            self.assertEqual("cannot convert float infinity to integer", str(err))
+        else:
+            self.assertUnreachable()
+
+        try:
+            round(sys.float_info.max, -307)
+            self.assertUnreachable()
+        except OverflowError as err:
+            self.assertEqual("rounded value too large to represent", str(err))
+        else:
+            self.assertUnreachable()
+
+        actual = round(float('inf'), 1)
+        self.assertTrue(math.isinf(actual) and actual > 0)
+
+        actual = round(float('-inf'), 1)
+        self.assertTrue(math.isinf(actual) and actual < 0)
+
+        actual = round(float('inf'), -1)
+        self.assertTrue(math.isinf(actual) and actual > 0)
+
+        actual = round(float('-inf'), -1)
+        self.assertTrue(math.isinf(actual) and actual < 0)
+
+        actual = round(float('nan'), 1)
+        self.assertTrue(math.isnan(actual))
+
+        actual = round(float('nan'), -1)
+        self.assertTrue(math.isnan(actual))
+        
+        actual = round(float('inf'), 354250895282439122322875506826024599142533926918074193061745122574500)
+        self.assertTrue(math.isinf(actual) and actual > 0)
+
+        actual = round(float('-inf'), 354250895282439122322875506826024599142533926918074193061745122574500)
+        self.assertTrue(math.isinf(actual) and actual < 0)
+
+        actual = round(float('inf'), -354250895282439122322875506826024599142533926918074193061745122574500)
+        self.assertTrue(math.isinf(actual) and actual > 0)
+
+        actual = round(float('-inf'), -354250895282439122322875506826024599142533926918074193061745122574500)
+        self.assertTrue(math.isinf(actual) and actual < 0)
+
+        actual = round(float('nan'), 354250895282439122322875506826024599142533926918074193061745122574500)
+        self.assertTrue(math.isnan(actual))
+
+        actual = round(float('nan'), -354250895282439122322875506826024599142533926918074193061745122574500)
+        self.assertTrue(math.isnan(actual))
+
+        self.assertEqual(round(3.55, self.IntIndex(1)), 3.6)
+        self.assertEqual(round(35, self.IntIndex(-1)), 40)
+        self.assertEqual(round(35.555, self.LongIndex(2)), 35.56)
+        self.assertEqual(round(355, self.LongIndex(-2)), 400)
+
+        try:
+            round(5.5, self.NonIntegralIndex())
+            self.assertUnreachable()
+        except TypeError as err:
+            self.assertEqual("__index__ returned non-int (type str)", str(err))
+        else:
+            self.assertUnreachable()
 
     def test_cp16000(self):
         class K(object):

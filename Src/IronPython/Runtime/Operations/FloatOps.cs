@@ -864,7 +864,7 @@ namespace IronPython.Runtime.Operations {
                         // only have as single digit avoid exponents.
                         if (digitCnt > spec.Precision.Value && digitCnt != 1) {
                             // first round off the decimal value
-                            self = MathUtils.RoundAwayFromZero(self, 0);
+                            self = MathUtils.Round(self, 0 , MidpointRounding.ToEven);
 
                             // then remove any insignificant digits
                             double pow = Math.Pow(10, digitCnt - Math.Max(spec.Precision.Value, 1));
@@ -879,7 +879,7 @@ namespace IronPython.Runtime.Operations {
                             // round to match CPython's behavior
                             int decimalPoints = Math.Max(spec.Precision.Value - digitCnt, 0);
 
-                            self = MathUtils.RoundAwayFromZero(self, decimalPoints);
+                            self = MathUtils.Round(self, decimalPoints, MidpointRounding.ToEven);
                             digits = self.ToString("0.0" + new string('#', decimalPoints));
                         }
                     } else {
@@ -909,7 +909,7 @@ namespace IronPython.Runtime.Operations {
                         // only have as single digit avoid exponents.
                         if (digitCnt > precision && digitCnt != 1) {
                             // first round off the decimal value
-                            self = MathUtils.RoundAwayFromZero(self, 0);
+                            self = MathUtils.Round(self, 0, MidpointRounding.ToEven);
 
                             // then remove any insignificant digits
                             double pow = Math.Pow(10, digitCnt - Math.Max(precision, 1));
@@ -945,7 +945,7 @@ namespace IronPython.Runtime.Operations {
                             }
                             int decimalPoints = Math.Max(precision - digitCnt, 0);
 
-                            self = MathUtils.RoundAwayFromZero(self, decimalPoints);
+                            self = MathUtils.Round(self, decimalPoints, MidpointRounding.ToEven);
 
                             if (spec.Type == 'n' && context.LanguageContext.NumericCulture != PythonContext.CCulture) {
                                 if (digitCnt != precision && (self % 1) != 0) {
@@ -1016,6 +1016,60 @@ namespace IronPython.Runtime.Operations {
                 default:
                     throw PythonOps.ValueError("__setformat__() argument 1 must be 'double' or 'float'");
             }
+        }
+
+        public static double __round__(double self) {
+            if (double.IsNaN(self)) {
+                throw PythonOps.ValueError("cannot convert float NaN to integer");
+            }
+
+            if (double.IsInfinity(self)) {
+                throw PythonOps.OverflowError("cannot convert float infinity to integer");
+            }
+
+            return __round__(self, 0);
+        }
+
+        public static double __round__(double self, int ndigits) {
+            if (double.IsNaN(self) || double.IsInfinity(self)) {
+                return self;
+            }
+
+            var result = MathUtils.Round(self, ndigits, MidpointRounding.ToEven);
+            
+            if (double.IsInfinity(result)) {
+                throw PythonOps.OverflowError("rounded value too large to represent");
+            }
+
+            return result;
+        }
+
+        public static double __round__(double self, BigInteger ndigits) {
+            if (ndigits.AsInt32(out var n)) {
+                return __round__(self, n);
+            }
+
+            if (double.IsNaN(self) || double.IsInfinity(self)) {
+                return self;
+            }
+
+            return ndigits > 0 ? self : 0.0;
+        }
+
+        public static double __round__(double self, object ndigits) {
+            var index = PythonOps.Index(ndigits);
+            switch (index)
+            {
+                case int i:
+                    return __round__(self, i);
+
+                case BigInteger bi:
+                    return __round__(self, bi);
+            }
+
+            throw PythonOps.RuntimeError(
+                "Unreachable code was reached. "
+                + "PythonOps.Index is guaranteed to either throw or return an integral value.");
         }
     }
 

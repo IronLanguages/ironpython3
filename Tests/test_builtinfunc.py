@@ -744,6 +744,24 @@ class BuiltinsTest2(IronPythonTestCase):
         def dummy(self):
             pass
 
+    class IntIndex:
+        def __init__(self, index):
+            self.index = index
+
+        def __index__(self):
+            return self.index
+    
+    class LongIndex:
+        def __init__(self, index):
+            self.index = index
+
+        def __index__(self):
+            return long(self.index)
+
+    class NonIntegralIndex:
+        def __index__(self):
+            return "bad"
+
     def assertEqualAndCheckType(self, actual, expected, expectedType):
         self.assertEqual(actual, expected)
         self.assertIsInstance(actual, expectedType, msg="Type: {0}".format(type(actual)))
@@ -763,13 +781,13 @@ class BuiltinsTest2(IronPythonTestCase):
         self.assertEqual(round(number=25.0, ndigits=-1), 20)
         self.assertEqual(round(number=35.0, ndigits=-1), 40)
 
-        # try:
-        #     round(number=2.5, ndigits=1.1)
-        #     self.assertUnreachable()
-        # except TypeError as err:
-        #     self.assertEqual("'float' object cannot be interpreted as an integer", str(err))
-        # else:
-        #     self.assertUnreachable()
+        try:
+            round(number=2.5, ndigits=1.1)
+            self.assertUnreachable()
+        except TypeError as err:
+            self.assertEqual("'float' object cannot be interpreted as an integer", str(err))
+        else:
+            self.assertUnreachable()
 
         # type implements __round__
         # correct number of arguments
@@ -778,6 +796,7 @@ class BuiltinsTest2(IronPythonTestCase):
         self.assertEqual(round(number=roundable, ndigits=3), "circle")
         self.assertEqual(round(roundable, 2), "ellipse")
         self.assertEqual(round(number=roundable, ndigits=2), "ellipse")
+        self.assertEqual(round(number=roundable, ndigits="blah"), "ellipse")
         self.assertEqual(round(self.ParameterlessRoundable()), "sphere")
 
         # too few arguments
@@ -892,6 +911,14 @@ class BuiltinsTest2(IronPythonTestCase):
             self.assertUnreachable()
 
         try:
+            round(float('nan'), 1)
+            self.assertUnreachable()
+        except ValueError as err:
+            self.assertEqual("cannot convert float NaN to integer", str(err))
+        else:
+            self.assertUnreachable()
+
+        try:
             round(float('inf'))
             self.assertUnreachable()
         except OverflowError as err:
@@ -900,7 +927,23 @@ class BuiltinsTest2(IronPythonTestCase):
             self.assertUnreachable()
 
         try:
+            round(float('inf'), 1)
+            self.assertUnreachable()
+        except OverflowError as err:
+            self.assertEqual("cannot convert float infinity to integer", str(err))
+        else:
+            self.assertUnreachable()
+
+        try:
             round(float('-inf'))
+            self.assertUnreachable()
+        except OverflowError as err:
+            self.assertEqual("cannot convert float infinity to integer", str(err))
+        else:
+            self.assertUnreachable()
+
+        try:
+            round(float('-inf'), 1)
             self.assertUnreachable()
         except OverflowError as err:
             self.assertEqual("cannot convert float infinity to integer", str(err))
@@ -932,6 +975,19 @@ class BuiltinsTest2(IronPythonTestCase):
 
         actual = round(float('nan'), -354250895282439122322875506826024599142533926918074193061745122574500)
         self.assertTrue(math.isnan(actual))
+
+        self.assertEqual(round(3.55, self.IntIndex(1)), 3.6)
+        self.assertEqual(round(35, self.IntIndex(-1)), 40)
+        self.assertEqual(round(35.555, self.LongIndex(2)), 35.56)
+        self.assertEqual(round(355, self.LongIndex(-2)), 400)
+
+        try:
+            round(5.5, self.NonIntegralIndex())
+            self.assertUnreachable()
+        except TypeError as err:
+            self.assertEqual("__index__ returned non-int (type str)", str(err))
+        else:
+            self.assertUnreachable()
 
     def test_cp16000(self):
         class K(object):

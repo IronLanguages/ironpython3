@@ -551,8 +551,8 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        public static int __round__(int number) {
-            return number;
+        public static int __round__(int self) {
+            return self;
         }
 
         public static object __round__(int number, BigInteger ndigits) {
@@ -566,13 +566,19 @@ namespace IronPython.Runtime.Operations {
             return result;
         }
 
-        public static object __round__(int number, int ndigits) {
-            return __round__(number, new BigInteger(ndigits));
-        }
+        public static object __round__(int self, object ndigits) {
+            var index = PythonOps.Index(ndigits);
+            switch (index) {
+                case int i:
+                    return __round__(self, i);
 
-        public static double __round__(int number, object ndigits) {
-            var pythonType = DynamicHelpers.GetPythonType(ndigits);
-            throw PythonOps.TypeError($"'{pythonType.Name}' object cannot be interpreted as an integer");
+                case BigInteger bi:
+                    return __round__(self, bi);
+            }
+
+            throw PythonOps.RuntimeError(
+                "Unreachable code was reached. "
+                + "PythonOps.Index is guaranteed to either throw or return an integral value.");
         }
 
         private static string ToHex(int self, bool lowercase) {

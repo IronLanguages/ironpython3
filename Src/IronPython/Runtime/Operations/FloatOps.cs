@@ -1019,7 +1019,6 @@ namespace IronPython.Runtime.Operations {
         }
 
         public static double __round__(double self) {
-            // as of Python 3 rounding is to the nearest even number, not away from zero
             return __round__(self, 0);
         }
 
@@ -1028,13 +1027,13 @@ namespace IronPython.Runtime.Operations {
                 throw PythonOps.ValueError("cannot convert float NaN to integer");
             }
 
-            if (double.IsNegativeInfinity(self) || double.IsPositiveInfinity(self)) {
+            if (double.IsInfinity(self)) {
                 throw PythonOps.OverflowError("cannot convert float infinity to integer");
             }
 
             var result = MathUtils.Round(self, ndigits, MidpointRounding.ToEven);
             
-            if (double.IsNegativeInfinity(result) || double.IsPositiveInfinity(result)) {
+            if (double.IsInfinity(result)) {
                 throw PythonOps.OverflowError("rounded value too large to represent");
             }
 
@@ -1046,16 +1045,27 @@ namespace IronPython.Runtime.Operations {
                 return __round__(self, n);
             }
 
-            if (double.IsNaN(self) || double.IsNegativeInfinity(self) || double.IsPositiveInfinity(self)) {
+            if (double.IsNaN(self) || double.IsInfinity(self)) {
                 return self;
             }
 
             return ndigits > 0 ? self : 0.0;
         }
 
-        public static double __round__(CodeContext /*!*/ context, double self, object ndigits) {
-            var pythonType = DynamicHelpers.GetPythonType(ndigits);
-            throw PythonOps.TypeError($"'{pythonType.Name}' object cannot be interpreted as an integer");
+        public static double __round__(double self, object ndigits) {
+            var index = PythonOps.Index(ndigits);
+            switch (index)
+            {
+                case int i:
+                    return __round__(self, i);
+
+                case BigInteger bi:
+                    return __round__(self, bi);
+            }
+
+            throw PythonOps.RuntimeError(
+                "Unreachable code was reached. "
+                + "PythonOps.Index is guaranteed to either throw or return an integral value.");
         }
     }
 

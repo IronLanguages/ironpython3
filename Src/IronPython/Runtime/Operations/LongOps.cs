@@ -994,14 +994,10 @@ namespace IronPython.Runtime.Operations {
             return number;
         }
 
-        public static BigInteger __round__(BigInteger number, int ndigits) {
-            return __round__(number, new BigInteger(ndigits));
-        }
-
-        public static BigInteger __round__(BigInteger number, BigInteger ndigits) {
+        public static BigInteger __round__(BigInteger self, BigInteger ndigits) {
             // as of Python 3 rounding is to the nearest even number, not away from zero
             if (ndigits >= 0) {
-                return number;
+                return self;
             }
 
             if (!ndigits.AsInt32(out var intNDigits)) {
@@ -1011,22 +1007,32 @@ namespace IronPython.Runtime.Operations {
 
             // see https://bugs.python.org/issue4707#msg78141
             var i = BigInteger.Pow(10, -intNDigits);
-            var r = number % (2 * i);
+            var r = self % (2 * i);
             var o = i / 2;
-            number -= r;
+            self -= r;
 
             if (r <= o) {
-                return number;
+                return self;
             } else if (r < 3 * o) {
-                return number + i;
+                return self + i;
             } else {
-                return number + 2 * i;
+                return self + 2 * i;
             }
         }
 
-        public static double __round__(BigInteger number, object ndigits) {
-            var pythonType = DynamicHelpers.GetPythonType(ndigits);
-            throw PythonOps.TypeError($"'{pythonType.Name}' object cannot be interpreted as an integer");
+        public static BigInteger __round__(BigInteger self, object ndigits) {
+            var index = PythonOps.Index(ndigits);
+            switch (index) {
+                case int i:
+                    return __round__(self, i);
+
+                case BigInteger bi:
+                    return __round__(self, bi);
+            }
+
+            throw PythonOps.RuntimeError(
+                "Unreachable code was reached. "
+                + "PythonOps.Index is guaranteed to either throw or return an integral value.");
         }
 
         internal static string AbsToHex(BigInteger val, bool lowercase) {

@@ -523,21 +523,15 @@ namespace IronPython.Runtime {
 
         #region ICodeFormattable Members
 
-        public string/*!*/ __repr__(CodeContext/*!*/ context) {
-            return String.Format("<cell at {0}: {1}>",
-                IdDispenser.GetId(this),
-                GetContentsRepr()
-                );
-        }
+        public string/*!*/ __repr__(CodeContext/*!*/ context)
+            => $"<cell at 0x{IdDispenser.GetId(this):X}: {GetContentsRepr()}>";
 
         private string GetContentsRepr() {
             if (Value == Uninitialized.Instance) {
                 return "empty";
             }
 
-            return String.Format("{0} object at {1}",
-                PythonTypeOps.GetName(Value),
-                IdDispenser.GetId(Value));
+            return $"{PythonTypeOps.GetName(Value)} object at 0x{IdDispenser.GetId(Value):X}";
         }
 
         #endregion

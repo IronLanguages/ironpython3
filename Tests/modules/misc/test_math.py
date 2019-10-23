@@ -2,6 +2,7 @@
 # The .NET Foundation licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information.
 
+import sys
 import itertools
 import math
 import unittest
@@ -309,32 +310,32 @@ class MathTest(IronPythonTestCase):
         self.assertIsInstance(actual, expectedType, msg="Type: {0}".format(type(actual)))
 
     def test_rounding(self):
-        self.assertTrue(round(-5.5489) == (-6.0))
-        self.assertTrue(round(5.5519) == (6.0))
-        self.assertTrue(round(-5.5) == (-6.0))
-        self.assertTrue(round(-5.0) == (-5.0))
+        self.assertTrue(round(-5.5489) == (-6))
+        self.assertTrue(round(5.5519) == (6))
+        self.assertTrue(round(-5.5) == (-6))
+        self.assertTrue(round(-5.0) == (-5))
 
-        self.assertTrue(round(-4.5) == (-4.0))
-        self.assertTrue(round(-2.5) == (-2.0))
-        self.assertTrue(round(-0.5) == (-0.0))
-        self.assertTrue(round(0.5) == (0.0))
-        self.assertTrue(round(2.5) == (2.0))
-        self.assertTrue(round(4.5) == (4.0))
+        self.assertTrue(round(-4.5) == (-4))
+        self.assertTrue(round(-2.5) == (-2))
+        self.assertTrue(round(-0.5) == (-0))
+        self.assertTrue(round(0.5) == (0))
+        self.assertTrue(round(2.5) == (2))
+        self.assertTrue(round(4.5) == (4))
 
-        self.assertTrue(round(-4.0) == (-4.0))
-        self.assertTrue(round(-3.5) == (-4.0))
-        self.assertTrue(round(-3.0) == (-3.0))
-        self.assertTrue(round(-2.0) == (-2.0))
-        self.assertTrue(round(-1.5) == (-2.0))
-        self.assertTrue(round(-1.0) == (-1.0))
-        self.assertTrue(round(0.0) == (0.0))
-        self.assertTrue(round(1.0) == (1.0))
-        self.assertTrue(round(1.5) == (2.0))
-        self.assertTrue(round(2.0) == (2.0))
-        self.assertTrue(round(3.0) == (3.0))
-        self.assertTrue(round(3.5) == (4.0))
-        self.assertTrue(round(4.0) == (4.0))
-        self.assertTrue(round(5.0) == (5.0))
+        self.assertTrue(round(-4.0) == (-4))
+        self.assertTrue(round(-3.5) == (-4))
+        self.assertTrue(round(-3.0) == (-3))
+        self.assertTrue(round(-2.0) == (-2))
+        self.assertTrue(round(-1.5) == (-2))
+        self.assertTrue(round(-1.0) == (-1))
+        self.assertTrue(round(0.0) == (0))
+        self.assertTrue(round(1.0) == (1))
+        self.assertTrue(round(1.5) == (2))
+        self.assertTrue(round(2.0) == (2))
+        self.assertTrue(round(3.0) == (3))
+        self.assertTrue(round(3.5) == (4))
+        self.assertTrue(round(4.0) == (4))
+        self.assertTrue(round(5.0) == (5))
 
         # two parameter round overload
         self.assertTrue(round(-4.0, 0) == (-4.0))
@@ -408,9 +409,19 @@ class MathTest(IronPythonTestCase):
             self.assertTrue(round(7182930456.0, i) == 0.0)
             self.assertTrue(round(-7182930456.0, i) == 0.0)
 
-        self.assertEqualAndCheckType((2.4).__round__(), 2.0, float)
-        self.assertEqualAndCheckType((2.5).__round__(), 2.0, float)
-        self.assertEqualAndCheckType((2.6).__round__(), 3.0, float)
+        self.assertEqualAndCheckType((2.4).__round__(), 2, int)
+        self.assertEqualAndCheckType((2.5).__round__(), 2, int)
+        self.assertEqualAndCheckType((2.6).__round__(), 3, int)
+        self.assertEqualAndCheckType((-2.4).__round__(), -2, int)
+        self.assertEqualAndCheckType((-2.5).__round__(), -2, int)
+        self.assertEqualAndCheckType((-2.6).__round__(), -3, int)
+        self.assertEqualAndCheckType(sys.float_info.max.__round__(), long(sys.float_info.max), long)
+        self.assertEqualAndCheckType(-sys.float_info.max.__round__(), long(-sys.float_info.max), long)
+        self.assertEqualAndCheckType(round(88.3), 88, int)
+        self.assertEqualAndCheckType(round(-88.3), -88, int)
+        self.assertEqualAndCheckType(round(2.1123E25), 21122999999999999263899648, long)
+        self.assertEqualAndCheckType(round(-2.1123E25), -21122999999999999263899648, long)
+
         self.assertEqualAndCheckType((2.54).__round__(1), 2.5, float)
         self.assertEqualAndCheckType((2.55).__round__(1), 2.6, float)
         self.assertEqualAndCheckType((2.56).__round__(1), 2.6, float)

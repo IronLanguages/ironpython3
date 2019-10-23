@@ -1018,7 +1018,7 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        public static double __round__(double self) {
+        public static object __round__(double self) {
             if (double.IsNaN(self)) {
                 throw PythonOps.ValueError("cannot convert float NaN to integer");
             }
@@ -1027,7 +1027,12 @@ namespace IronPython.Runtime.Operations {
                 throw PythonOps.OverflowError("cannot convert float infinity to integer");
             }
 
-            return __round__(self, 0);
+            var result = new BigInteger(__round__(self, 0));
+            if (result.AsInt32(out var intResult)) {
+                return intResult;
+            }
+
+            return result;
         }
 
         public static double __round__(double self, int ndigits) {

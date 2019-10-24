@@ -20,6 +20,7 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 namespace IronPython.Compiler {
+    using IronPython.Modules;
 
     public class Parser : IDisposable { // TODO: remove IDisposable
         // immutable properties:
@@ -1946,6 +1947,8 @@ namespace IronPython.Compiler {
                     ret = new ConstantExpression(cv);
                     ret.SetLoc(_globalParent, start, GetEnd());
                     return ret;
+                case TokenKind.Multiply:
+                    return ParseTestListStarExpr();
                 default:
                     ReportSyntaxError(_lookahead.Token, _lookahead.Span, ErrorCodes.SyntaxError, _allowIncomplete || _tokenizer.EndContinues);
 
@@ -2716,6 +2719,24 @@ namespace IronPython.Compiler {
             var oEnd = GetEnd();
             int grouping = _tokenizer.GroupingLevel;
 
+            Expression[] UnpackImplicitTuples(List<Expression> items) {
+                var unpacked = new List<Expression>(items.Count);
+                for (var index = 0; index < items.Count; index++) {
+                    var item = items[index];
+
+                    if (item is TupleExpression tuple &&
+                        (tuple.Items.Count > 0 && tuple.Items[0].StartIndex == tuple.StartIndex)) {
+                        // the tuple has been created implicitly, but this is wrong so unpack the tuple.
+                        unpacked.AddRange(tuple.Items);
+                    } else {
+                        // the tuple has been declared explicitly.
+                        unpacked.Add(item);
+                    }
+                }
+
+                return unpacked.ToArray();
+            }
+
             Expression ret;
             if (MaybeEat(TokenKind.RightBracket)) {
                 ret = new ListExpression();
@@ -2724,16 +2745,19 @@ namespace IronPython.Compiler {
                 try {
                     _allowIncomplete = true;
                     Expression t0 = ParseTest();
+
                     if (MaybeEat(TokenKind.Comma)) {
-                        List<Expression> l = ParseTestList(out _);
+                        var items = new List<Expression> { t0 };
+                        var tail = ParseTestList(out _);
                         Eat(TokenKind.RightBracket);
-                        l.Insert(0, t0);
-                        ret = new ListExpression(l.ToArray());
+                        items.AddRange(tail);
+                        ret = new ListExpression(UnpackImplicitTuples(items));
                     } else if (PeekToken(Tokens.KeywordForToken)) {
                         ret = FinishListComp(t0);
                     } else {
                         Eat(TokenKind.RightBracket);
-                        ret = new ListExpression(t0);
+                        var items = new List<Expression> { t0 };
+                        ret = new ListExpression(UnpackImplicitTuples(items));
                     }
                 } finally {
                     _allowIncomplete = prevAllow;

@@ -6,14 +6,36 @@ class UnpackTest(unittest.TestCase):
             func()
         self.assertEqual(context.exception.msg, expectedMessage, "Error raised, but wrong message")
         self.assertEqual(context.exception.lineno, lineno, "Error raised, but on the wrong line")
+
+    def test_unpack_into_exprlist_1(self):
+        *a, = range(2)
+        self.assertEqual(a, [0, 1])
+
+    def test_unpack_into_exprlist_2(self):
+        *a, b, c = range(6)
+        self.assertEqual(a, [0, 1, 2, 3])
+        self.assertEqual(b, 4)
+        self.assertEqual(c, 5)
+    
+    def test_unpack_into_exprlist_3(self):
+        a, *b, c = range(6)
+        self.assertEqual(a, 0)
+        self.assertEqual(b, [1, 2, 3, 4])
+        self.assertEqual(c, 5)
+
+    def test_unpack_into_exprlist_4(self):
+        a, b, *c = range(6)
+        self.assertEqual(a, 0)
+        self.assertEqual(b, 1)
+        self.assertEqual(c, [2, 3, 4, 5])
         
     def test_unpack_into_list_1(self):
         [*a] = range(2)
-        self.assertSequenceEqual(a, range(2))
+        self.assertEqual(a, [0, 1])
 
     def test_unpack_into_list_2(self):
         [*a, b] = range(2)
-        self.assertSequenceEqual(a, [0])
+        self.assertEqual(a, [0])
         self.assertEqual(b, 1)
 
     def test_unpack_into_list_3(self):
@@ -21,6 +43,33 @@ class UnpackTest(unittest.TestCase):
         self.assertEqual(a, 0)
         self.assertEqual(b, [1, 2, 3])
         self.assertEqual(c, 4)
+
+    def test_unpack_into_for_target_1(self):
+        index = 0
+        for a, *b in enumerate(range(3)):
+            self.assertEqual(a, index)
+            self.assertEqual(b, [index])
+            index = index + 1
+
+    def test_unpack_into_for_target_2(self):
+        index = 0
+        for *a, b in enumerate(range(3)):
+            self.assertEqual(b, index)
+            self.assertEqual(a, [index])
+            index = index + 1
+    
+    def test_unpack_into_for_target_3(self):
+        index = 0
+        expected_a = [1, 4]
+        expected_b = [[2], [8, 3]]
+        expected_c = [3, 1]
+
+        for a, *b, c in [(1, 2, 3), (4, 8, 3, 1)]:
+            self.assertEqual(a, expected_a[index])
+            self.assertEqual(b, expected_b[index])
+            self.assertEqual(c, expected_c[index])
+            index = index + 1
+
 
 def test_main():
     test.support.run_unittest(UnpackTest)

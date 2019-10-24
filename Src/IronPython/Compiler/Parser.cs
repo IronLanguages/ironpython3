@@ -20,7 +20,17 @@ using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
 namespace IronPython.Compiler {
-    using IronPython.Modules;
+    // this file is your friend (check the python version that is being developed against)
+    // https://raw.githubusercontent.com/python/cpython/v3.4.10/Grammar/Grammar
+    // the parser itself should match the grammar rules in this file. the closer it is, the easier it is to add new
+    // features and fix bugs since the code flow can be read alongside the rules in the file.
+    //
+    // it's not entirely clear whether there is a name for the syntax used in this file, however i found this helpful
+    // http://matt.might.net/articles/grammars-bnf-ebnf/
+    //   '|' is or rather than '/'
+    //   * means repetition of 0 or more
+    //   # starts a comment
+    // that's probably about all you need to know to get stuck in.
 
     public class Parser : IDisposable { // TODO: remove IDisposable
         // immutable properties:
@@ -1895,7 +1905,7 @@ namespace IronPython.Compiler {
 
         // power: atom trailer* ['**' factor]
         private Expression ParsePower() {
-            Expression ret = ParsePrimary();
+            Expression ret = this.ParseAtom();
             ret = AddTrailers(ret);
             if (MaybeEat(TokenKind.Power)) {
                 var start = ret.StartIndex;
@@ -1905,16 +1915,12 @@ namespace IronPython.Compiler {
             return ret;
         }
 
-        // primary: atom | attributeref | subscription | slicing | call 
-        // atom:    identifier | literal | enclosure 
-        // enclosure: 
-        //      parenth_form | 
-        //      list_display | 
-        //      generator_expression | 
-        //      dict_display | 
-        //      string_conversion | 
-        //      yield_atom 
-        private Expression ParsePrimary() {
+        //atom: ('(' [yield_expr|testlist_comp] ')' |
+        //  '[' [testlist_comp] ']' |
+        //  '{' [dictorsetmaker] '}' |
+        //  NAME | NUMBER | STRING+ | '...' | 'None' | 'True' | 'False')
+        //        ^^^^^^^^^^^^^^^^^^^^ CONSTANT ^^^^^^^^^^^^^^^^^^^^^^^
+        private Expression ParseAtom() {
             Token t = PeekToken();
             Expression ret;
             switch (t.Kind) {
@@ -1947,8 +1953,6 @@ namespace IronPython.Compiler {
                     ret = new ConstantExpression(cv);
                     ret.SetLoc(_globalParent, start, GetEnd());
                     return ret;
-                case TokenKind.Multiply:
-                    return ParseTestListStarExpr();
                 default:
                     ReportSyntaxError(_lookahead.Token, _lookahead.Span, ErrorCodes.SyntaxError, _allowIncomplete || _tokenizer.EndContinues);
 
@@ -2133,23 +2137,23 @@ namespace IronPython.Compiler {
         }
 
         // exprlist: (expr|star_expr) (',' (expr|star_expr))* [',']
-        // TODO: handle star_expr
         private List<Expression> ParseExprList(out bool trailingComma) {
-            List<Expression> l = new List<Expression>();
-            trailingComma = false;
+            var expressions = new List<Expression>();
             while (true) {
-                Expression e = ParseExpr();
-                l.Add(e);
-                if (!MaybeEat(TokenKind.Comma)) {
+                expressions.Add(this.PeekToken(TokenKind.Multiply) ? this.ParseStarExpr() : this.ParseExpr());
+
+                if (!this.MaybeEat(TokenKind.Comma)) {
                     trailingComma = false;
                     break;
                 }
-                if (NeverTestToken(PeekToken())) {
+
+                if (NeverTestToken(this.PeekToken()) && !this.PeekToken(TokenKind.Multiply)) {
                     trailingComma = true;
                     break;
                 }
             }
-            return l;
+
+            return expressions;
         }
 
         // arglist:
@@ -2321,50 +2325,60 @@ namespace IronPython.Compiler {
             }
         }
 
+        // star_expr
+        private Expression ParseStarExpr() {
+            Eat(TokenKind.Multiply);
+            var start = GetStart();
+            var expr = new StarredExpression(ParseExpr());
+            expr.SetLoc(_globalParent, start, GetEnd());
+            return expr;
+        }
+
         // testlist_star_expr: (test|star_expr) (',' (test|star_expr))* [',']
         private Expression ParseTestListStarExpr() {
-            if (MaybeEat(TokenKind.Multiply)) {
-                var start = GetStart();
-                var expr = new StarredExpression(ParseTest());
-                expr.SetLoc(_globalParent, start, GetEnd());
-                if (!MaybeEat(TokenKind.Comma)) {
-                    return expr;
-                }
+            Expression expr;
 
-                return ParseTestListStarExpr(expr);
+            // (test|star_expr)
+            if (this.PeekToken(TokenKind.Multiply)) {
+                expr = ParseStarExpr();
             }
-            if (!NeverTestToken(PeekToken())) {
-                var expr = ParseTest();
-                if (!MaybeEat(TokenKind.Comma)) {
-                    return expr;
-                }
-
-                return ParseTestListStarExpr(expr);
+            else if (!NeverTestToken(PeekToken())) {
+                expr = ParseTest();
             } else {
+                // instructed to parse a testlist_star_expr, but it contains no elements, when it must contain at
+                // least 1.
                 return ParseTestListError();
             }
 
-            Expression ParseTestListStarExpr(Expression expr) {
-                List<Expression> l = new List<Expression>();
-                l.Add(expr);
+            if (!MaybeEat(TokenKind.Comma)) {
+                // there is no comma so that is the end of the list.
+                return expr;
+            }
+
+            // the presence of a comma indicates that the list may contain more elements
+            return ParseTestListStarExprTail();
+
+            Expression ParseTestListStarExprTail() {
+                var expressions = new List<Expression> { expr };
 
                 bool trailingComma = true;
                 while (true) {
-                    if (MaybeEat(TokenKind.Multiply)) {
-                        var start = GetStart();
-                        var sExpr = new StarredExpression(ParseTest());
-                        sExpr.SetLoc(_globalParent, start, GetEnd());
-                        l.Add(sExpr);
+                    if (this.PeekToken(TokenKind.Multiply)) {
+                        expressions.Add(ParseStarExpr());
+                    } else if (!NeverTestToken(PeekToken())) {
+                        expressions.Add(ParseTest());
                     } else {
-                        if (NeverTestToken(PeekToken())) break;
-                        l.Add(ParseTest());
+                        // no element
+                        break;
                     }
+
                     if (!MaybeEat(TokenKind.Comma)) {
                         trailingComma = false;
                         break;
                     }
                 }
-                return MakeTupleOrExpr(l, trailingComma);
+
+                return MakeTupleOrExpr(expressions, trailingComma);
             }
         }
 
@@ -2713,52 +2727,51 @@ namespace IronPython.Compiler {
             return ret;
         }
 
-        // listmaker: expression ( list_for | (',' expression)* [','] )
+        // testlist_comp: (test|star_expr) ( comp_for | (',' (test|star_expr))* [','] )
         private Expression FinishListValue() {
+
             var oStart = GetStart();
             var oEnd = GetEnd();
-            int grouping = _tokenizer.GroupingLevel;
-
-            Expression[] UnpackImplicitTuples(List<Expression> items) {
-                var unpacked = new List<Expression>(items.Count);
-                for (var index = 0; index < items.Count; index++) {
-                    var item = items[index];
-
-                    if (item is TupleExpression tuple &&
-                        (tuple.Items.Count > 0 && tuple.Items[0].StartIndex == tuple.StartIndex)) {
-                        // the tuple has been created implicitly, but this is wrong so unpack the tuple.
-                        unpacked.AddRange(tuple.Items);
-                    } else {
-                        // the tuple has been declared explicitly.
-                        unpacked.Add(item);
-                    }
-                }
-
-                return unpacked.ToArray();
-            }
+            var grouping = _tokenizer.GroupingLevel;
 
             Expression ret;
             if (MaybeEat(TokenKind.RightBracket)) {
                 ret = new ListExpression();
-            } else {
-                bool prevAllow = _allowIncomplete;
+            }
+            else
+            {
+                var prevAllow = _allowIncomplete;
                 try {
                     _allowIncomplete = true;
-                    Expression t0 = ParseTest();
 
-                    if (MaybeEat(TokenKind.Comma)) {
-                        var items = new List<Expression> { t0 };
-                        var tail = ParseTestList(out _);
-                        Eat(TokenKind.RightBracket);
-                        items.AddRange(tail);
-                        ret = new ListExpression(UnpackImplicitTuples(items));
-                    } else if (PeekToken(Tokens.KeywordForToken)) {
-                        ret = FinishListComp(t0);
+                    // (test|star_expr)
+                    var expr = PeekToken(TokenKind.Multiply) ? ParseStarExpr() : ParseTest();
+
+                    // (comp_for | (',' (test|star_expr))* [','] )
+
+                    // comp_for
+                    if (PeekToken(Tokens.KeywordForToken)) {
+                        // although it's calling ParseCompIter(), because the peek token is a FOR it is going to
+                        // do the right thing.
+                        ret = new ListComprehension(expr, ParseCompIter());
                     } else {
-                        Eat(TokenKind.RightBracket);
-                        var items = new List<Expression> { t0 };
-                        ret = new ListExpression(UnpackImplicitTuples(items));
+                        // (',' (test|star_expr))* [',']
+                        var items = new List<Expression> { expr };
+                        while (MaybeEat(TokenKind.Comma)) {
+                            if (PeekToken(TokenKind.Multiply)) {
+                                items.Add(ParseStarExpr());
+                            } else if (!NeverTestToken(PeekToken())) {
+                                items.Add(ParseTest());
+                            } else {
+                                // prevents the case of ','*
+                                break;
+                            }
+                        }
+
+                        ret = new ListExpression(items.ToArray());
                     }
+
+                    Eat(TokenKind.RightBracket);
                 } finally {
                     _allowIncomplete = prevAllow;
                 }
@@ -2775,13 +2788,6 @@ namespace IronPython.Compiler {
 
             ret.SetLoc(_globalParent, oStart, cEnd);
             return ret;
-        }
-
-        // list_iter ']'
-        private ListComprehension FinishListComp(Expression item) {
-            ComprehensionIterator[] iters = ParseCompIter();
-            Eat(TokenKind.RightBracket);
-            return new ListComprehension(item, iters);
         }
 
         // comp_if: 'if' test_nocond [comp_iter]

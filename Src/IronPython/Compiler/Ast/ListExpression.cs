@@ -39,16 +39,5 @@ namespace IronPython.Compiler.Ast {
             }
             walker.PostWalk(this);
         }
-
-        internal override string CheckAssign() {
-            var starCount = 0;
-            foreach (var item in Items) {
-                if (item is StarredExpression && ++starCount > 1) {
-                    return "two starred expressions in assignment";
-                }
-            }
-
-            return null;
-        }
     }
 }

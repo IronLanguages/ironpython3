@@ -25,28 +25,11 @@ namespace IronPython.Compiler.Ast {
 
         internal override string CheckAssign() {
             if (Items.Count == 0) {
+                //  TODO: remove this when we get to 3.6
                 return "can't assign to ()";
             }
 
-            var starCount = 0;
-            foreach (Expression item in Items) {
-                if (item.CheckAssign() != null) {
-                    // we don't return the same message here as CPython doesn't seem to either, 
-                    // for example ((yield a), 2,3) = (2,3,4) gives a different error than
-                    // a = yield 3 = yield 4.
-                    return "can't assign to " + item.NodeName;
-                }
-
-                if (item is StarredExpression && ++starCount > 1) {
-                    return "two starred expressions in assignment";
-                }
-            }
-
-            if (Items.Count > 256 && starCount > 0) {
-                return "too many expressions in star-unpacking assignment";
-            }
-
-            return null;
+            return base.CheckAssign();
         }
 
         internal override string CheckDelete() {

@@ -1,9 +1,9 @@
 import test.support, unittest
 
 class UnpackTest(unittest.TestCase):
-    def assertRaisesSyntaxError(self, func, expectedMessage, lineno):
+    def assertRaisesSyntaxError(self, body, expectedMessage, lineno = 1):
         with self.assertRaises(SyntaxError) as context:
-            func()
+            exec(body)
         self.assertEqual(context.exception.msg, expectedMessage, "Error raised, but wrong message")
         self.assertEqual(context.exception.lineno, lineno, "Error raised, but on the wrong line")
 
@@ -83,15 +83,36 @@ class UnpackTest(unittest.TestCase):
             index = index + 1
 
     def test_too_many_starred_assignments(self):
-        self.assertRaisesSyntaxError(lambda: exec("*x, *k = range(5)"), "two starred expressions in assignment", 1)
-        self.assertRaisesSyntaxError(lambda: exec("*x, *k, *r = range(5)"), "two starred expressions in assignment", 1)
-        self.assertRaisesSyntaxError(lambda: exec("v, *x, n, *k = range(5)"), "two starred expressions in assignment", 1)
-        self.assertRaisesSyntaxError(lambda: exec("h, t, *g, s, *x, m, *k = range(5)"), "two starred expressions in assignment", 1)
+        self.assertRaisesSyntaxError("*x, *k = range(5)", "two starred expressions in assignment")
+        self.assertRaisesSyntaxError("*x, *k, *r = range(5)", "two starred expressions in assignment")
+        self.assertRaisesSyntaxError("v, *x, n, *k = range(5)", "two starred expressions in assignment")
+        self.assertRaisesSyntaxError("h, t, *g, s, *x, m, *k = range(5)", "two starred expressions in assignment")
 
-        self.assertRaisesSyntaxError(lambda: exec("[*x, *k] = range(5)"), "two starred expressions in assignment", 1)
-        self.assertRaisesSyntaxError(lambda: exec("[*x, *k, *r] = range(5)"), "two starred expressions in assignment", 1)
-        self.assertRaisesSyntaxError(lambda: exec("[v, *x, n, *k] = range(5)"), "two starred expressions in assignment", 1)
-        self.assertRaisesSyntaxError(lambda: exec("[h, t, *g, s, *x, m, *k] = range(5)"), "two starred expressions in assignment", 1)
+        self.assertRaisesSyntaxError("[*x, *k] = range(5)", "two starred expressions in assignment")
+        self.assertRaisesSyntaxError("[*x, *k, *r] = range(5)", "two starred expressions in assignment")
+        self.assertRaisesSyntaxError("[v, *x, n, *k] = range(5)", "two starred expressions in assignment")
+        self.assertRaisesSyntaxError("[h, t, *g, s, *x, m, *k] = range(5)", "two starred expressions in assignment")
+
+    def test_assignment_to_unassignable_targets(self):
+        self.assertRaisesSyntaxError('[x, y, "a", z] = range(4)', "can't assign to literal")
+        self.assertRaisesSyntaxError('[x, y, a + 1, z] = range(4)', "can't assign to operator")
+
+        self.assertRaisesSyntaxError('(x, y, "a", z) = range(4)', "can't assign to literal")
+        self.assertRaisesSyntaxError('(x, y, a + 1, z) = range(4)', "can't assign to operator")
+
+        self.assertRaisesSyntaxError('x, y, "a", z = range(4)', "can't assign to literal")
+        self.assertRaisesSyntaxError('x, y, a + 1, z = range(4)', "can't assign to operator")
+
+    def test_too_many_expressions_in_star_unpack(self):
+        body = ", ".join("a%d" % i for i in range(1<<8)) + ", *rest = range(1<<8 + 1)"
+        self.assertRaisesSyntaxError(body, "too many expressions in star-unpacking assignment")
+
+        body = "[" + ", ".join("a%d" % i for i in range(1<<8)) + ", *rest] = range(1<<8 + 1)"
+        self.assertRaisesSyntaxError(body, "too many expressions in star-unpacking assignment")
+
+    def test_assign_to_empty(self):
+        self.assertRaisesSyntaxError('() = []', "can't assign to ()")
+        [] = () # OK
 
 def test_main():
     test.support.run_unittest(UnpackTest)

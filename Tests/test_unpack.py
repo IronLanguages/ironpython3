@@ -28,6 +28,18 @@ class UnpackTest(unittest.TestCase):
         self.assertEqual(a, 0)
         self.assertEqual(b, 1)
         self.assertEqual(c, [2, 3, 4, 5])
+
+    def test_unpack_into_exprlist_5(self):
+        a, b, *c, d = e, *f, g, h = range(6)
+        self.assertEqual(a, 0)
+        self.assertEqual(b, 1)
+        self.assertEqual(c, [2, 3, 4])
+        self.assertEqual(d, 5)
+
+        self.assertEqual(e, 0)
+        self.assertEqual(f, [1, 2, 3])
+        self.assertEqual(g, 4)
+        self.assertEqual(h, 5)
         
     def test_unpack_into_list_1(self):
         [*a] = range(2)
@@ -70,6 +82,16 @@ class UnpackTest(unittest.TestCase):
             self.assertEqual(c, expected_c[index])
             index = index + 1
 
+    def test_too_many_starred_assignments(self):
+        self.assertRaisesSyntaxError(lambda: exec("*x, *k = range(5)"), "two starred expressions in assignment", 1)
+        self.assertRaisesSyntaxError(lambda: exec("*x, *k, *r = range(5)"), "two starred expressions in assignment", 1)
+        self.assertRaisesSyntaxError(lambda: exec("v, *x, n, *k = range(5)"), "two starred expressions in assignment", 1)
+        self.assertRaisesSyntaxError(lambda: exec("h, t, *g, s, *x, m, *k = range(5)"), "two starred expressions in assignment", 1)
+
+        self.assertRaisesSyntaxError(lambda: exec("[*x, *k] = range(5)"), "two starred expressions in assignment", 1)
+        self.assertRaisesSyntaxError(lambda: exec("[*x, *k, *r] = range(5)"), "two starred expressions in assignment", 1)
+        self.assertRaisesSyntaxError(lambda: exec("[v, *x, n, *k] = range(5)"), "two starred expressions in assignment", 1)
+        self.assertRaisesSyntaxError(lambda: exec("[h, t, *g, s, *x, m, *k] = range(5)"), "two starred expressions in assignment", 1)
 
 def test_main():
     test.support.run_unittest(UnpackTest)

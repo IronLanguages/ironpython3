@@ -624,45 +624,31 @@ namespace IronPython.Compiler {
         }
 
         private Statement FinishAssignments(Expression right) {
-            List<Expression> left = null;
-            Expression singleLeft = null;
+            var left = new List<Expression>();
 
             while (MaybeEat(TokenKind.Assign)) {
-                string assignError = right.CheckAssign();
-                if (assignError != null) {
+                if (right.CheckAssign() is { } assignError) {
                     ReportSyntaxError(right.StartIndex, right.EndIndex, assignError, ErrorCodes.SyntaxError | ErrorCodes.NoCaret);
                 }
 
-                if (singleLeft == null) {
-                    singleLeft = right;
-                } else {
-                    if (left == null) {
-                        left = new List<Expression>();
-                        left.Add(singleLeft);
-                    }
-                    left.Add(right);
+                if (right is StarredExpression) {
+                    ReportSyntaxError(right.StartIndex, right.EndIndex, "starred assignment target must be in a list or tuple");
                 }
 
-                if (MaybeEat(TokenKind.KeywordYield)) {
-                    right = ParseYieldExpression();
-                } else {
-                    right = ParseTestListStarExpr();
-                }
+                left.Add(right);
+                right = MaybeEat(TokenKind.KeywordYield) ? ParseYieldExpression() : ParseTestListStarExpr();
             }
 
-            if (left != null) {
-                Debug.Assert(left.Count > 0);
+            CheckNotAssignmentTargetOnly(right);
 
-                AssignmentStatement assign = new AssignmentStatement(left.ToArray(), right);
-                assign.SetLoc(_globalParent, left[0].StartIndex, right.EndIndex);
-                return assign;
-            } else {
-                Debug.Assert(singleLeft != null);
+            var target = left.ToArray();
 
-                AssignmentStatement assign = new AssignmentStatement(new[] { singleLeft }, right);
-                assign.SetLoc(_globalParent, singleLeft.StartIndex, right.EndIndex);
-                return assign;
-            }
+            Debug.Assert(target.Length > 0);
+            Debug.Assert(target[0] != null);
+
+            var assign = new AssignmentStatement(target, right);
+            assign.SetLoc(_globalParent, target[0].StartIndex, right.EndIndex);
+            return assign;
         }
 
         // expr_stmt: testlist_star_expr (augassign (yield_expr|testlist) | ('=' (yield_expr|testlist_star_expr))*)
@@ -675,31 +661,60 @@ namespace IronPython.Compiler {
 
             if (PeekToken(TokenKind.Assign)) {
                 return FinishAssignments(ret);
-            } else {
-                PythonOperator op = GetAssignOperator(PeekToken());
-                if (op != PythonOperator.None) {
-                    NextToken();
-                    Expression rhs;
+            }
 
-                    if (MaybeEat(TokenKind.KeywordYield)) {
-                        rhs = ParseYieldExpression();
-                    } else {
-                        rhs = ParseTestList();
-                    }
+            PythonOperator op = GetAssignOperator(PeekToken());
+            if (op != PythonOperator.None) {
+                NextToken();
+                Expression rhs;
 
-                    string assignError = ret.CheckAugmentedAssign();
-                    if (assignError != null) {
-                        ReportSyntaxError(assignError);
-                    }
-
-                    AugmentedAssignStatement aug = new AugmentedAssignStatement(op, ret, rhs);
-                    aug.SetLoc(_globalParent, ret.StartIndex, GetEnd());
-                    return aug;
+                if (MaybeEat(TokenKind.KeywordYield)) {
+                    rhs = ParseYieldExpression();
                 } else {
-                    Statement stmt = new ExpressionStatement(ret);
-                    stmt.SetLoc(_globalParent, ret.IndexSpan);
-                    return stmt;
+                    rhs = ParseTestList();
                 }
+
+                string assignError = ret.CheckAugmentedAssign();
+                if (assignError != null) {
+                    ReportSyntaxError(assignError);
+                }
+
+                AugmentedAssignStatement aug = new AugmentedAssignStatement(op, ret, rhs);
+                aug.SetLoc(_globalParent, ret.StartIndex, GetEnd());
+                return aug;
+            }
+
+            CheckNotAssignmentTargetOnly(ret);
+
+            Statement stmt = new ExpressionStatement(ret);
+            stmt.SetLoc(_globalParent, ret.IndexSpan);
+            return stmt;
+        }
+
+        private void CheckNotAssignmentTargetOnly(Expression expr) {
+            switch (expr)
+            {
+                case SequenceExpression sequence: {
+                    foreach (var expression in sequence.Items)
+                    {
+                        if (expression is StarredExpression starred)
+                        {
+                            ReportSyntaxError(
+                                starred.StartIndex,
+                                starred.EndIndex,
+                                "can use starred expression only as assignment target");
+                        }
+                    }
+
+                    break;
+                }
+                case StarredExpression starred:
+                    ReportSyntaxError(
+                        starred.StartIndex,
+                        starred.EndIndex,
+                        "can use starred expression only as assignment target");
+
+                    break;
             }
         }
 
@@ -1905,7 +1920,7 @@ namespace IronPython.Compiler {
 
         // power: atom trailer* ['**' factor]
         private Expression ParsePower() {
-            Expression ret = this.ParseAtom();
+            Expression ret = ParseAtom();
             ret = AddTrailers(ret);
             if (MaybeEat(TokenKind.Power)) {
                 var start = ret.StartIndex;
@@ -2140,14 +2155,14 @@ namespace IronPython.Compiler {
         private List<Expression> ParseExprList(out bool trailingComma) {
             var expressions = new List<Expression>();
             while (true) {
-                expressions.Add(this.PeekToken(TokenKind.Multiply) ? this.ParseStarExpr() : this.ParseExpr());
+                expressions.Add(PeekToken(TokenKind.Multiply) ? ParseStarExpr() : ParseExpr());
 
-                if (!this.MaybeEat(TokenKind.Comma)) {
+                if (!MaybeEat(TokenKind.Comma)) {
                     trailingComma = false;
                     break;
                 }
 
-                if (NeverTestToken(this.PeekToken()) && !this.PeekToken(TokenKind.Multiply)) {
+                if (NeverTestToken(PeekToken()) && !PeekToken(TokenKind.Multiply)) {
                     trailingComma = true;
                     break;
                 }
@@ -2339,7 +2354,7 @@ namespace IronPython.Compiler {
             Expression expr;
 
             // (test|star_expr)
-            if (this.PeekToken(TokenKind.Multiply)) {
+            if (PeekToken(TokenKind.Multiply)) {
                 expr = ParseStarExpr();
             }
             else if (!NeverTestToken(PeekToken())) {
@@ -2363,7 +2378,7 @@ namespace IronPython.Compiler {
 
                 bool trailingComma = true;
                 while (true) {
-                    if (this.PeekToken(TokenKind.Multiply)) {
+                    if (PeekToken(TokenKind.Multiply)) {
                         expressions.Add(ParseStarExpr());
                     } else if (!NeverTestToken(PeekToken())) {
                         expressions.Add(ParseTest());

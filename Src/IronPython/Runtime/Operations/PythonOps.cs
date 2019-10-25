@@ -3812,7 +3812,7 @@ namespace IronPython.Runtime.Operations {
             }
             else {
                 Debug.Assert(right < left + argcntafter);
-                return ValueError("not enough values to unpack (expected at least {0}, got {1})", left + argcntafter, right);
+                return ValueError($"need more than {right} values to unpack");
             }
         }
 

@@ -312,31 +312,29 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
 
         [PythonHidden, PythonType("flags"), DontMapIEnumerableToIter]
         public sealed class SysFlags : PythonTuple {
-            internal SysFlags() : base(new object[n_fields] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }) { }
+            internal SysFlags() : base(new object[n_fields] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }) { }
 
             private const int INDEX_DEBUG = 0;
-            private const int INDEX_PY3K_WARNING = 1;
-            private const int INDEX_INSPECT = 2;
-            private const int INDEX_INTERACTIVE = 3;
-            private const int INDEX_OPTIMIZE = 4;
-            private const int INDEX_DONT_WRITE_BYTECODE = 5;
-            private const int INDEX_NO_USER_SITE = 6;
-            private const int INDEX_NO_SITE = 7;
-            private const int INDEX_IGNORE_ENVIRONMENT = 8;
-            private const int INDEX_TABCHECK = 9;
-            private const int INDEX_VERBOSE = 10;
-            private const int INDEX_UNICODE = 11;
-            private const int INDEX_BYTES_WARNING = 12;
-            private const int INDEX_QUIET = 13;
+            private const int INDEX_INSPECT = 1;
+            private const int INDEX_INTERACTIVE = 2;
+            private const int INDEX_OPTIMIZE = 3;
+            private const int INDEX_DONT_WRITE_BYTECODE = 4;
+            private const int INDEX_NO_USER_SITE = 5;
+            private const int INDEX_NO_SITE = 6;
+            private const int INDEX_IGNORE_ENVIRONMENT = 7;
+            private const int INDEX_TABCHECK = 8;
+            private const int INDEX_VERBOSE = 9;
+            private const int INDEX_UNICODE = 10;
+            private const int INDEX_BYTES_WARNING = 11;
+            private const int INDEX_QUIET = 12;
 
-            public const int n_fields = 14;
-            public const int n_sequence_fields = 14;
+            public const int n_fields = 13;
+            public const int n_sequence_fields = 13;
             public const int n_unnamed_fields = 0;
 
             public override string __repr__(CodeContext context) {
                 var fields = new string[n_fields] {
                     $"{nameof(debug)}={debug}",
-                    $"{nameof(py3k_warning)}={py3k_warning}",
                     $"{nameof(inspect)}={inspect}",
                     $"{nameof(interactive)}={interactive}",
                     $"{nameof(optimize)}={optimize}",
@@ -356,73 +354,68 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             #region sys.flags API
 
             public int debug {
-                get { return (int)_data[INDEX_DEBUG]; }
-                internal set { _data[INDEX_DEBUG] = value; }
-            }
-
-            public int py3k_warning {
-                get { return (int)_data[INDEX_PY3K_WARNING]; }
-                internal set { _data[INDEX_PY3K_WARNING] = value; }
+                get => (int)_data[INDEX_DEBUG];
+                internal set => _data[INDEX_DEBUG] = value;
             }
 
             public int inspect {
-                get { return (int)_data[INDEX_INSPECT]; }
-                internal set { _data[INDEX_INSPECT] = value; }
+                get => (int)_data[INDEX_INSPECT];
+                internal set => _data[INDEX_INSPECT] = value;
             }
 
             public int interactive {
-                get { return (int)_data[INDEX_INTERACTIVE]; }
-                internal set { _data[INDEX_INTERACTIVE] = value; }
+                get => (int)_data[INDEX_INTERACTIVE];
+                internal set => _data[INDEX_INTERACTIVE] = value;
             }
 
             public int optimize {
-                get { return (int)_data[INDEX_OPTIMIZE]; }
-                internal set { _data[INDEX_OPTIMIZE] = value; }
+                get => (int)_data[INDEX_OPTIMIZE];
+                internal set => _data[INDEX_OPTIMIZE] = value;
             }
 
             public int dont_write_bytecode {
-                get { return (int)_data[INDEX_DONT_WRITE_BYTECODE]; }
-                internal set { _data[INDEX_DONT_WRITE_BYTECODE] = value; }
+                get => (int)_data[INDEX_DONT_WRITE_BYTECODE];
+                internal set => _data[INDEX_DONT_WRITE_BYTECODE] = value;
             }
 
             public int no_user_site {
-                get { return (int)_data[INDEX_NO_USER_SITE]; }
-                internal set { _data[INDEX_NO_USER_SITE] = value; }
+                get => (int)_data[INDEX_NO_USER_SITE];
+                internal set => _data[INDEX_NO_USER_SITE] = value;
             }
 
             public int no_site {
-                get { return (int)_data[INDEX_NO_SITE]; }
-                internal set { _data[INDEX_NO_SITE] = value; }
+                get => (int)_data[INDEX_NO_SITE];
+                internal set => _data[INDEX_NO_SITE] = value;
             }
 
             public int ignore_environment {
-                get { return (int)_data[INDEX_IGNORE_ENVIRONMENT]; }
-                internal set { _data[INDEX_IGNORE_ENVIRONMENT] = value; }
+                get => (int)_data[INDEX_IGNORE_ENVIRONMENT];
+                internal set => _data[INDEX_IGNORE_ENVIRONMENT] = value;
             }
 
             public int tabcheck {
-                get { return (int)_data[INDEX_TABCHECK]; }
-                internal set { _data[INDEX_TABCHECK] = value; }
+                get => (int)_data[INDEX_TABCHECK];
+                internal set => _data[INDEX_TABCHECK] = value;
             }
 
             public int verbose {
-                get { return (int)_data[INDEX_VERBOSE]; }
-                internal set { _data[INDEX_VERBOSE] = value; }
+                get => (int)_data[INDEX_VERBOSE];
+                internal set => _data[INDEX_VERBOSE] = value;
             }
 
             public int unicode {
-                get { return (int)_data[INDEX_UNICODE]; }
-                internal set { _data[INDEX_UNICODE] = value; }
+                get => (int)_data[INDEX_UNICODE];
+                internal set => _data[INDEX_UNICODE] = value;
             }
 
             public int bytes_warning {
-                get { return (int)_data[INDEX_BYTES_WARNING]; }
-                internal set { _data[INDEX_BYTES_WARNING] = value; }
+                get => (int)_data[INDEX_BYTES_WARNING];
+                internal set => _data[INDEX_BYTES_WARNING] = value;
             }
 
             public int quiet {
-                get { return (int)_data[INDEX_QUIET]; }
-                internal set { _data[INDEX_QUIET] = value; }
+                get => (int)_data[INDEX_QUIET];
+                internal set => _data[INDEX_QUIET] = value;
             }
 
             #endregion

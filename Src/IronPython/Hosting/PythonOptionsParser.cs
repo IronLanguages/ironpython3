@@ -243,7 +243,6 @@ namespace IronPython.Hosting {
                 { "-t",                     "Issue warnings about inconsistent tab usage" },
                 { "-tt",                    "Issue errors for inconsistent tab usage" },
                 { "-W arg",                 "Warning control (arg is action:message:category:module:lineno) also IRONPYTHONWARNINGS=arg" },
-                { "-3",                     "Warn about Python 3.x incompatibilities" },
                 { "-q",                     "don't print version and copyright messages on interactive startup" },
 
                 { "-X:NoFrames",            "Disable sys._getframe support, can improve execution speed" },

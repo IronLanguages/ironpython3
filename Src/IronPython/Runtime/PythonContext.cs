@@ -816,8 +816,6 @@ namespace IronPython.Runtime {
             SysModule.SysFlags flags = new SysModule.SysFlags();
             SetSystemStateValue("flags", flags);
             flags.debug = _options.Debug ? 1 : 0;
-            flags.py3k_warning = _options.WarnPython30 ? 1 : 0;
-            SetSystemStateValue("py3kwarning", _options.WarnPython30);
             flags.inspect = flags.interactive = _options.Inspect ? 1 : 0;
             if (_options.StripDocStrings) {
                 flags.optimize = 2;

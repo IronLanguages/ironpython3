@@ -107,10 +107,6 @@ namespace IronPython.Hosting {
                     _warningFilters.Add(PopNextArg());
                     break;
 
-                case "-3":
-                    LanguageSetup.Options["WarnPy3k"] = ScriptingRuntimeHelpers.True;
-                    break;
-
                 case "-q":
                     LanguageSetup.Options["Quiet"] = ScriptingRuntimeHelpers.True;
                     break;

@@ -628,17 +628,12 @@ namespace IronPython.Runtime.Operations {
             if (x == null) return -1;
             if (y == null) return 1;
 
-            string name1, name2;
             int diff;
 
             if (DynamicHelpers.GetPythonType(x) != DynamicHelpers.GetPythonType(y)) {
-                if (shouldWarn && context.LanguageContext.PythonOptions.WarnPython30) {
-                    PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "comparing unequal types not supported in 3.x");
-                }
-
-                name1 = PythonTypeOps.GetName(x);
-                name2 = PythonTypeOps.GetName(y);
-                diff = String.CompareOrdinal(name1, name2);
+                string name1 = PythonTypeOps.GetName(x);
+                string name2 = PythonTypeOps.GetName(y);
+                diff = string.CompareOrdinal(name1, name2);
                 if (diff == 0) {
                     // if the types are different but have the same name compare based upon their types. 
                     diff = (int)(IdDispenser.GetId(DynamicHelpers.GetPythonType(x)) - IdDispenser.GetId(DynamicHelpers.GetPythonType(y)));

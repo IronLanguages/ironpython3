@@ -33,11 +33,6 @@ namespace IronPython.Runtime {
         /// </summary>
         public ReadOnlyCollection<string>/*!*/ WarningFilters { get; }
 
-        /// <summary>
-        /// Enables warnings related to Python 3.0 features.
-        /// </summary>
-        public bool WarnPython30 { get; }
-
         public bool BytesWarning { get; }
 
         /// <summary>
@@ -135,7 +130,6 @@ namespace IronPython.Runtime {
             Arguments = GetStringCollectionOption(options, "Arguments") ?? EmptyStringCollection;
             WarningFilters = GetStringCollectionOption(options, "WarningFilters", ';', ',') ?? EmptyStringCollection;
 
-            WarnPython30 = GetOption(options, "WarnPy3k", false);
             BytesWarning = GetOption(options, "BytesWarning", false);
             Debug = GetOption(options, "Debug", false);
             Inspect = GetOption(options, "Inspect", false);

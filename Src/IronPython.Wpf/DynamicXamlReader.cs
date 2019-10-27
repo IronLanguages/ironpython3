@@ -81,7 +81,7 @@ namespace Microsoft.Internal.Scripting.Runtime {
             return myWriter.Result;
         }
 
-        class DynamicWriter : XamlObjectWriter {
+        private class DynamicWriter : XamlObjectWriter {
             private readonly object _scope;
             private readonly DynamicOperations _operations;
             private readonly Stack<bool> _nameStack = new Stack<bool>();
@@ -111,13 +111,13 @@ namespace Microsoft.Internal.Scripting.Runtime {
 
             private static MethodInfo Dummy = new Action<object, object>(Adder).Method;
 
-            class DynamicEventMember : XamlMember {
+            private class DynamicEventMember : XamlMember {
                 public DynamicEventMember(DynamicWriter writer, EventInfo eventInfo, XamlSchemaContext ctx)
                     : base(eventInfo.Name, Dummy, ctx, new DynamicEventInvoker(eventInfo, writer)) {
                 }
             }
 
-            class DynamicEventInvoker : XamlMemberInvoker {
+            private class DynamicEventInvoker : XamlMemberInvoker {
                 private readonly DynamicWriter _writer;
                 private readonly EventInfo _info;
 

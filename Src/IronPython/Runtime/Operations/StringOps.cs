@@ -1720,12 +1720,13 @@ namespace IronPython.Runtime.Operations {
 #endif
 
         internal static string DoDecode(CodeContext context, IList<byte> s, string errors, string encoding, Encoding e)
-            => DoDecode(context, s, errors, encoding, e, true, out _);
+            => DoDecode(context, s, errors, encoding, e, -1, out _);
 
-        internal static string DoDecode(CodeContext context, IList<byte> s, string errors, string encoding, Encoding e, bool final, out int numBytes) {
+        internal static string DoDecode(CodeContext context, IList<byte> s, string errors, string encoding, Encoding e, int numBytes, out int numConsumed) {
             byte[] bytes = s as byte[] ?? ((s is Bytes b) ? b.GetUnsafeByteArray() : s.ToArray());
+            int length = numBytes >= 0 ? numBytes : bytes.Length;
             int start = GetStartingOffset(e, bytes);
-            int length = bytes.Length - start;
+            length -= start;
 
 #if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
@@ -1738,7 +1739,7 @@ namespace IronPython.Runtime.Operations {
             switch (errors) {
                 case "backslashreplace":
                 case "xmlcharrefreplace":
-                case "strict": e = final ? setFallback(e, DecoderFallback.ExceptionFallback) : setFallback(e, new ExceptionFallBack(length, e is UTF8Encoding)); break;
+                case "strict": e = setFallback(e, new ExceptionFallback(e is UTF8Encoding)); break;
                 case "replace": e = setFallback(e, ReplacementFallback); break;
                 case "ignore": e = setFallback(e, new PythonDecoderFallback()); break;
                 case "surrogateescape": e =  new PythonSurrogateEscapeEncoding(e); break;
@@ -1762,15 +1763,7 @@ namespace IronPython.Runtime.Operations {
                 throw;
             }
 
-            numBytes = bytes.Length;
-#if FEATURE_ENCODING
-            if (e.DecoderFallback is ExceptionFallBack fallback) {
-                byte[] badBytes = fallback.buffer.badBytes;
-                if (badBytes != null) {
-                    numBytes -= badBytes.Length;
-                }
-            }
-#endif
+            numConsumed = start + length;
 
             return decoded;
         }
@@ -2604,67 +2597,31 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        private class ExceptionFallBack : DecoderFallback {
-            internal ExceptionFallbackBuffer buffer;
+        // This is an equivalent of System.Text.DecoderExceptionFallback
+        // except for the custom error message and a workaround for a UTF-8 bug.
+        // It is **not** suitable for use if the following Encoding methods are being employed:
+        // * GetChars(Byte[], Int32, Int32, Char[], Int32)
+        // * GetChars(Byte*, Int32, Char*, Int32)
+        private class ExceptionFallback : DecoderFallback {
+            private bool _isUtf8;
 
-            #region check for Utf8 Fallback issue
-
-            private static bool isUtf8Bugged;
-
-            private class TestUtf8DecoderFallBack : DecoderFallback {
-                public override int MaxCharCount => 0;
-
-                public override DecoderFallbackBuffer CreateFallbackBuffer() => new TestUtf8DecoderFallbackBuffer();
+            public ExceptionFallback(bool isUtf8 = false) {
+                _isUtf8 = isUtf8;
             }
 
-            private class TestUtf8DecoderFallbackBuffer : DecoderFallbackBuffer {
-                public override int Remaining => 0;
-
-                public override bool Fallback(byte[] bytesUnknown, int index) {
-                    if (index < 0) throw new Exception();
-                    return false;
-                }
-
-                public override char GetNextChar() => (char)0;
-
-                public override bool MovePrevious() => false;
-            }
-
-            static ExceptionFallBack() {
-                var e = (Encoding)Encoding.UTF8.Clone();
-                e.DecoderFallback = new TestUtf8DecoderFallBack();
-                try { e.GetString(new byte[] { 255 }); } catch { isUtf8Bugged = true; }
-            }
-
-            #endregion
-
-            public ExceptionFallBack(int length, bool isUtf8 = false) {
-                buffer = isUtf8 && isUtf8Bugged ? new ExceptionFallbackBufferUtf8DotNet(length) : new ExceptionFallbackBuffer(length);
-            }
-
-            public override DecoderFallbackBuffer CreateFallbackBuffer() => buffer;
+            public override DecoderFallbackBuffer CreateFallbackBuffer()
+                => _isUtf8 && PythonEncoding.HasBugCorefx29898 ? new ExceptionFallbackBufferUtf8DotNet() : new ExceptionFallbackBuffer();
 
             public override int MaxCharCount => 0;
         }
 
         private class ExceptionFallbackBuffer : DecoderFallbackBuffer {
-            private readonly int length;
-            internal byte[] badBytes;
-
-            public ExceptionFallbackBuffer(int length) {
-                this.length = length;
-            }
 
             public override bool Fallback(byte[] bytesUnknown, int index) {
-                if (index > 0 && index + bytesUnknown.Length != length) {
-                    throw PythonOps.UnicodeDecodeError($"failed to decode bytes at index: {index}", bytesUnknown, index);
-                }
-                // just some bad bytes at the end
-                badBytes = bytesUnknown;
-                return false;
+                throw PythonOps.UnicodeDecodeError($"invaild bytes at index: {index}", bytesUnknown, index);
             }
 
-            public override char GetNextChar() => (char)0;
+            public override char GetNextChar() => '\0';
 
             public override bool MovePrevious() => false;
 
@@ -2674,23 +2631,17 @@ namespace IronPython.Runtime.Operations {
         // This class can be removed as soon as workaround for utf8 encoding in .net is
         // no longer necessary.
         private class ExceptionFallbackBufferUtf8DotNet : ExceptionFallbackBuffer {
-            private bool ignoreNext = false;
-
-            public ExceptionFallbackBufferUtf8DotNet(int length) : base(length) { }
 
             public override bool Fallback(byte[] bytesUnknown, int index) {
-                // In case of dot net and utf-8 value of index does not conform to documentation provided by
+                // In case of .NET and utf-8 value of index does not conform to documentation provided by
                 // Microsoft http://msdn.microsoft.com/en-us/library/bdftay9c%28v=vs.100%29.aspx
                 // The value of index is mysteriously decreased by the size of bytesUnknown
+                // This only happends for GetCharCount calls, the actual decoding by GetChars works fine,
+                // however many GetChar overloads call GetCharCount implictly before starting decoding.
                 // Tested on Windows 7 64, .NET 4.0.30319.18408, all recommended patches as of 06.02.2014
-                if (ignoreNext) {
-                    // dot net sometimes calls second time after this method returns false
-                    // if this is the case, do nothing
-                    return false;
-                }
-                // adjust index
+                // Bug also present in .NET Core 2.1, 2.2, but fixed in 3.0
+
                 index = index + bytesUnknown.Length;
-                ignoreNext = true;
                 return base.Fallback(bytesUnknown, index);
             }
         }

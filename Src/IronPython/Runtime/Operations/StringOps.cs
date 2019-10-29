@@ -1720,13 +1720,12 @@ namespace IronPython.Runtime.Operations {
 #endif
 
         internal static string DoDecode(CodeContext context, IList<byte> s, string errors, string encoding, Encoding e)
-            => DoDecode(context, s, errors, encoding, e, -1, out _);
+            => DoDecode(context, s, errors, encoding, e, s.Count, out _);
 
         internal static string DoDecode(CodeContext context, IList<byte> s, string errors, string encoding, Encoding e, int numBytes, out int numConsumed) {
             byte[] bytes = s as byte[] ?? ((s is Bytes b) ? b.GetUnsafeByteArray() : s.ToArray());
-            int length = numBytes >= 0 ? numBytes : bytes.Length;
             int start = GetStartingOffset(e, bytes);
-            length -= start;
+            int length = numBytes - start;
 
 #if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions
@@ -2618,7 +2617,7 @@ namespace IronPython.Runtime.Operations {
         private class ExceptionFallbackBuffer : DecoderFallbackBuffer {
 
             public override bool Fallback(byte[] bytesUnknown, int index) {
-                throw PythonOps.UnicodeDecodeError($"invaild bytes at index: {index}", bytesUnknown, index);
+                throw PythonOps.UnicodeDecodeError($"invalid bytes at index: {index}", bytesUnknown, index);
             }
 
             public override char GetNextChar() => '\0';

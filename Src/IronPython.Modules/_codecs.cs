@@ -23,8 +23,6 @@ namespace IronPython.Modules {
         internal const int StreamReaderIndex = 2;
         internal const int StreamWriterIndex = 3;
 
-        internal const int AllBytes = -1;
-
         private static Encoding MbcsEncoding;
 
         static PythonCodecs() {
@@ -50,7 +48,7 @@ namespace IronPython.Modules {
         #region ASCII Encoding
 
         public static PythonTuple ascii_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict")
-            => DoDecode(context, "ascii", PythonAsciiEncoding.Instance, input, errors, numBytes: AllBytes).ToPythonTuple();
+            => DoDecode(context, "ascii", PythonAsciiEncoding.Instance, input, errors, input.Count).ToPythonTuple();
 
         public static PythonTuple ascii_encode(CodeContext context, string input, string errors = "strict")
             => DoEncode(context, "ascii", PythonAsciiEncoding.Instance, input, errors).ToPythonTuple();
@@ -261,7 +259,7 @@ namespace IronPython.Modules {
         #region Latin-1 Functions
 
         public static PythonTuple latin_1_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict")
-            => DoDecode(context, "latin-1", Encoding.GetEncoding("iso-8859-1"), input, errors, numBytes: AllBytes).ToPythonTuple();
+            => DoDecode(context, "latin-1", Encoding.GetEncoding("iso-8859-1"), input, errors, input.Count).ToPythonTuple();
 
         public static PythonTuple latin_1_encode(CodeContext context, string input, string errors = "strict")
             => DoEncode(context, "latin-1", Encoding.GetEncoding("iso-8859-1"), input, errors).ToPythonTuple();
@@ -273,7 +271,7 @@ namespace IronPython.Modules {
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static PythonTuple mbcs_decode(CodeContext/*!*/ context, [BytesConversion]IList<byte> input, string errors = "strict", bool final = false)
-            => DoDecode(context, "mbcs", MbcsEncoding, input, errors, numBytes: AllBytes).ToPythonTuple();
+            => DoDecode(context, "mbcs", MbcsEncoding, input, errors, input.Count).ToPythonTuple();
 
         [PythonHidden(PlatformsAttribute.PlatformFamily.Unix)]
         public static PythonTuple mbcs_encode(CodeContext/*!*/ context, string input, string errors = "strict")
@@ -316,7 +314,7 @@ namespace IronPython.Modules {
         public static PythonTuple unicode_escape_encode(string input) => throw PythonOps.NotImplementedError("unicode_escape_encode");
 
         public static PythonTuple unicode_internal_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict")
-            => DoDecode(context, "unicode-internal", Encoding.Unicode, input, errors, numBytes: AllBytes).ToPythonTuple();
+            => DoDecode(context, "unicode-internal", Encoding.Unicode, input, errors, input.Count).ToPythonTuple();
 
         public static PythonTuple unicode_internal_encode(CodeContext context, string input, string errors = "strict")
             => DoEncode(context, "unicode-internal", Encoding.Unicode, input, errors, false).ToPythonTuple();
@@ -423,13 +421,11 @@ namespace IronPython.Modules {
             => DoEncode(context, "utf-7", Encoding.UTF7, input, errors).ToPythonTuple();
 
         private static int NumEligibleUtf7Bytes(IList<byte> input, bool final) {
-            byte[] bytes = input as byte[] ?? ((input is Bytes bt) ? bt.GetUnsafeByteArray() : input.ToArray());
-            int numBytes = bytes.Length;
-
+            int numBytes = input.Count;
             if (!final) {
                 int blockStart = -1;
                 for (int i = 0; i < numBytes; i++) {
-                    char c = (char)bytes[i]; // to ASCII
+                    char c = (char)input[i]; // to ASCII
                     if (blockStart < 0 && c == '+') {
                         blockStart = i;
                     } else if (blockStart >= 0 && !char.IsLetterOrDigit(c) && c != '+' && c != '/' && !char.IsWhiteSpace(c)) {
@@ -459,8 +455,8 @@ namespace IronPython.Modules {
         private static int NumEligibleUtf8Bytes(IList<byte> input, bool final) {
             int numBytes = input.Count;
             if (!final) {
-                // scan for incomplete but vaild sequence at the end
-                for (int i = 1; i < 4; i++) { // 4 is the max length of a vaild sequence
+                // scan for incomplete but valid sequence at the end
+                for (int i = 1; i < 4; i++) { // 4 is the max length of a valid sequence
                     int pos = numBytes - i;
                     if (pos < 0) break;
 
@@ -473,7 +469,7 @@ namespace IronPython.Modules {
                             if (b < 0b11110100) return pos; // chars up to U+FFFFF
                             if ((b == 0b11110100) && (i == 1 || input[numBytes - i + 1] < 0x90)) return pos; // U+100000 to U+10FFFF
                         }
-                        return numBytes; // invalid sequence or vaild but complete
+                        return numBytes; // invalid sequence or valid but complete
                     }
                     // else continuation byte (0b10xxxxxx) hence continue scanning
                 }

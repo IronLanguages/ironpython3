@@ -227,7 +227,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UnicodeInternalTest('test_bug1251300'))
         suite.addTest(test.test_codecs.UnicodeInternalTest('test_decode_callback'))
         suite.addTest(test.test_codecs.UnicodeInternalTest('test_decode_error_attributes'))
-        #suite.addTest(test.test_codecs.UnicodeInternalTest('test_encode_length')) # AssertionError: filter ('unicode_internal codec has been deprecated', DeprecationWarning) did not catch any warning
+        suite.addTest(test.test_codecs.UnicodeInternalTest('test_encode_length'))
         suite.addTest(test.test_codecs.WithStmtTest('test_encodedfile'))
         suite.addTest(test.test_codecs.WithStmtTest('test_streamreaderwriter'))
         return suite

@@ -11,6 +11,7 @@ using System.Text;
 using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
+using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 
 [assembly: PythonModule("_codecs", typeof(IronPython.Modules.PythonCodecs))]
@@ -313,14 +314,20 @@ namespace IronPython.Modules {
 
         public static PythonTuple unicode_escape_encode(string input) => throw PythonOps.NotImplementedError("unicode_escape_encode");
 
-        public static PythonTuple unicode_internal_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict")
-            => DoDecode(context, "unicode-internal", Encoding.Unicode, input, errors, input.Count).ToPythonTuple();
+        public static PythonTuple unicode_internal_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict") {
+            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "unicode_internal codec has been deprecated");
+            return DoDecode(context, "unicode-internal", Encoding.Unicode, input, errors, input.Count).ToPythonTuple();
+        }
 
-        public static PythonTuple unicode_internal_encode(CodeContext context, string input, string errors = "strict")
-            => DoEncode(context, "unicode-internal", Encoding.Unicode, input, errors, false).ToPythonTuple();
+        public static PythonTuple unicode_internal_encode(CodeContext context, string input, string errors = "strict") {
+            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "unicode_internal codec has been deprecated");
+            return DoEncode(context, "unicode-internal", Encoding.Unicode, input, errors, false).ToPythonTuple();
+        }
 
-        public static PythonTuple unicode_internal_encode([BytesConversion]IList<byte> input, string errors = "strict")
-            => PythonTuple.MakeTuple(new Bytes(input), input.Count);
+        public static PythonTuple unicode_internal_encode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict") {
+            PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "unicode_internal codec has been deprecated");
+            return PythonTuple.MakeTuple(new Bytes(input), input.Count);
+        }
 
         #endregion
 

@@ -432,10 +432,10 @@ namespace IronPython.Modules {
             if (!final) {
                 int blockStart = -1;
                 for (int i = 0; i < numBytes; i++) {
-                    char c = (char)input[i]; // to ASCII
-                    if (blockStart < 0 && c == '+') {
+                    byte b = input[i];
+                    if (blockStart < 0 && b == '+') {
                         blockStart = i;
-                    } else if (blockStart >= 0 && !char.IsLetterOrDigit(c) && c != '+' && c != '/' && !char.IsWhiteSpace(c)) {
+                    } else if (blockStart >= 0 && !b.IsLetter() && !b.IsDigit() && b != '+' && b != '/' && !b.IsWhiteSpace()) {
                         blockStart = -1;
                     }
                 }

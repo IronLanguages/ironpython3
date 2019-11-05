@@ -50,7 +50,12 @@ namespace IronPython.Runtime {
                         if (isUniEscape) {
                             if (TryParseInt(text, i, len, max, out val, out int consumed)) {
                                 if (val < 0 || val > 0x10ffff) {
-                                    throw PythonExceptions.CreateThrowable(PythonExceptions.UnicodeDecodeError, isRaw ? "rawunicodeescape" : "unicodeescape", Bytes.Empty, i - start - 2, i - start + consumed, "\\Uxxxxxxxx out of range");
+                                    throw PythonExceptions.CreateThrowable(
+                                        PythonExceptions.UnicodeDecodeError,
+                                        isRaw ? "rawunicodeescape" : "unicodeescape",
+                                        PythonOps.MakeBytes(new String(text)),
+                                        i - start - 2, i - start + consumed,
+                                        "\\Uxxxxxxxx out of range");
                                 }
 
                                 if (val < 0x010000) {
@@ -60,7 +65,13 @@ namespace IronPython.Runtime {
                                 }
                                 i += len;
                             } else {
-                                throw PythonExceptions.CreateThrowable(PythonExceptions.UnicodeDecodeError, isRaw ? "rawunicodeescape" : "unicodeescape", Bytes.Empty, i - start - 2, i - start + consumed, @"truncated \uXXXX escape");
+                                throw PythonExceptions.CreateThrowable(
+                                    PythonExceptions.UnicodeDecodeError,
+                                    isRaw ? "rawunicodeescape" : "unicodeescape",
+                                    PythonOps.MakeBytes(new String(text)),
+                                    i - start - 2,
+                                    i - start + consumed,
+                                    @"truncated \uXXXX escape");
                             }
                         } else {
                             buf.Append('\\');

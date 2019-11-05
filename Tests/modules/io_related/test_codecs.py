@@ -135,12 +135,13 @@ class CodecTest(IronPythonTestCase):
 
     def test_raw_unicode_escape_decode_errors(self):
         with self.assertRaises(UnicodeDecodeError) as cm:
-            codecs.raw_unicode_escape_decode("abc\\u20xyz")
+            codecs.raw_unicode_escape_decode("abc\\u20xyz\xff") # as Latin-1
 
         self.assertEquals(cm.exception.encoding, 'rawunicodeescape')
         self.assertTrue(cm.exception.reason.startswith("truncated \\uXXXX"))
         self.assertEquals(cm.exception.start, 3)
         self.assertEquals(cm.exception.end, 7)
+        self.assertEquals(cm.exception.object, b"abc\\u20xyz\xc3\xbf") # in UTF-8
 
         with self.assertRaises(UnicodeDecodeError) as cm:
             codecs.raw_unicode_escape_decode("abc\\U0001F44xyz")
@@ -152,6 +153,7 @@ class CodecTest(IronPythonTestCase):
             self.assertEquals(cm.exception.reason, "truncated \\UXXXXXXXX sequence")
         self.assertEquals(cm.exception.start, 3)
         self.assertEquals(cm.exception.end, 12)
+        self.assertEquals(cm.exception.object, b"abc\\U0001F44xyz")
 
         with self.assertRaises(UnicodeDecodeError) as cm:
             codecs.raw_unicode_escape_decode("abc\\U00110011xyz")
@@ -159,6 +161,7 @@ class CodecTest(IronPythonTestCase):
         self.assertTrue(cm.exception.reason.startswith("\\Uxxxxxxxx out of range"))
         self.assertEquals(cm.exception.start, 3)
         self.assertEquals(cm.exception.end, 13)
+        self.assertEquals(cm.exception.object, b"abc\\U00110011xyz")
 
     def test_raw_unicode_escape_encode(self):
         #sanity

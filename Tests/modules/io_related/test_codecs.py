@@ -117,10 +117,48 @@ class CodecTest(IronPythonTestCase):
         self.assertEqual(new_str, b'abc')
 
     def test_raw_unicode_escape_decode(self):
-        #sanity
         new_str, num_processed = codecs.raw_unicode_escape_decode("abc")
-        self.assertEqual(new_str, 'abc')
+        self.assertEqual(new_str, "abc")
         self.assertEqual(num_processed, 3)
+
+        new_str, num_processed = codecs.raw_unicode_escape_decode(b"abc")
+        self.assertEqual(new_str, "abc")
+        self.assertEqual(num_processed, 3)
+
+        new_str, num_processed = codecs.raw_unicode_escape_decode("abc\\u20ACxyz")
+        self.assertEqual(new_str, "abc€xyz")
+        self.assertEqual(num_processed, 12)
+
+        new_str, num_processed = codecs.raw_unicode_escape_decode("abc\\U0001F40Dxyz")
+        self.assertEqual(new_str, "abc🐍xyz")
+        self.assertEqual(num_processed, 16)
+
+    def test_raw_unicode_escape_decode_errors(self):
+        with self.assertRaises(UnicodeDecodeError) as cm:
+            codecs.raw_unicode_escape_decode("abc\\u20xyz")
+
+        self.assertEquals(cm.exception.encoding, 'rawunicodeescape')
+        self.assertTrue(cm.exception.reason.startswith("truncated \\uXXXX"))
+        self.assertEquals(cm.exception.start, 3)
+        self.assertEquals(cm.exception.end, 7)
+
+        with self.assertRaises(UnicodeDecodeError) as cm:
+            codecs.raw_unicode_escape_decode("abc\\U0001F44xyz")
+
+        self.assertEquals(cm.exception.encoding, 'rawunicodeescape')
+        if sys.version_info < (3, 6):
+            self.assertTrue(cm.exception.reason.startswith("truncated \\uXXXX"))
+        else:
+            self.assertEquals(cm.exception.reason, "truncated \\UXXXXXXXX sequence")
+        self.assertEquals(cm.exception.start, 3)
+        self.assertEquals(cm.exception.end, 12)
+
+        with self.assertRaises(UnicodeDecodeError) as cm:
+            codecs.raw_unicode_escape_decode("abc\\U00110011xyz")
+
+        self.assertTrue(cm.exception.reason.startswith("\\Uxxxxxxxx out of range"))
+        self.assertEquals(cm.exception.start, 3)
+        self.assertEquals(cm.exception.end, 13)
 
     def test_raw_unicode_escape_encode(self):
         #sanity
@@ -303,6 +341,8 @@ class CodecTest(IronPythonTestCase):
             res = codecs.utf_16_be_decode(b[:i], 'replace')
             self.assertEqual(res, expected[i])
 
+        self.assertRaises(UnicodeDecodeError, codecs.utf_16_be_decode, b"\x41\x00\xd8\x00\xd8\x00", 'strict', False)
+
     def test_utf_16_be_encode(self):
         data, num_processed = codecs.utf_16_be_encode("abc")
         self.assertEqual(data, b'\0a\0b\0c')
@@ -345,6 +385,8 @@ class CodecTest(IronPythonTestCase):
         for i in range(len(b) + 1):
             res = codecs.utf_16_le_decode(b[:i], 'replace')
             self.assertEqual(res, expected[i])
+
+        self.assertRaises(UnicodeDecodeError, codecs.utf_16_le_decode, b"\x00\x41\x00\xd8\x00\xd8", 'strict', False)
 
     def test_utf_16_le_encode(self):
         data, num_processed = codecs.utf_16_le_encode("abc")

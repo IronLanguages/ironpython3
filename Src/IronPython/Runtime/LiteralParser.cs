@@ -48,9 +48,9 @@ namespace IronPython.Runtime {
                         int len = (ch == 'u') ? 4 : 8;
                         int max = 16;
                         if (isUniEscape) {
-                            if (TryParseInt(text, i, len, max, out val)) {
+                            if (TryParseInt(text, i, len, max, out val, out int consumed)) {
                                 if (val < 0 || val > 0x10ffff) {
-                                    throw PythonExceptions.CreateThrowable(PythonExceptions.UnicodeDecodeError, isRaw ? "rawunicodeescape" : "unicodeescape", Bytes.Empty, i - start - 2, i - start + len - 1, "illegal Unicode character");
+                                    throw PythonExceptions.CreateThrowable(PythonExceptions.UnicodeDecodeError, isRaw ? "rawunicodeescape" : "unicodeescape", Bytes.Empty, i - start - 2, i - start + consumed, "\\Uxxxxxxxx out of range");
                                 }
 
                                 if (val < 0x010000) {
@@ -60,7 +60,7 @@ namespace IronPython.Runtime {
                                 }
                                 i += len;
                             } else {
-                                throw PythonExceptions.CreateThrowable(PythonExceptions.UnicodeDecodeError, isRaw ? "rawunicodeescape" : "unicodeescape", Bytes.Empty, i - start - 2, i - start - 1, @"truncated \uXXXX escape");
+                                throw PythonExceptions.CreateThrowable(PythonExceptions.UnicodeDecodeError, isRaw ? "rawunicodeescape" : "unicodeescape", Bytes.Empty, i - start - 2, i - start + consumed, @"truncated \uXXXX escape");
                             }
                         } else {
                             buf.Append('\\');
@@ -117,7 +117,7 @@ namespace IronPython.Runtime {
                                 }
                                 continue;
                             case 'x': //hex
-                                if (!TryParseInt(text, i, 2, 16, out val)) {
+                                if (!TryParseInt(text, i, 2, 16, out val, out int _)) {
                                     goto default;
                                 }
                                 buf.Append((char)val);
@@ -202,7 +202,7 @@ namespace IronPython.Runtime {
                         case '\r': if (i < l && text[i] == '\n') i++; continue;
                         case '\n': continue;
                         case 'x': //hex
-                            if (!TryParseInt(text, i, 2, 16, out val)) {
+                            if (!TryParseInt(text, i, 2, 16, out val, out int _)) {
                                 goto default;
                             }
                             buf.Add((byte)val);
@@ -322,9 +322,10 @@ namespace IronPython.Runtime {
             return true;
         }
 
-        private static bool TryParseInt(char[] text, int start, int length, int b, out int value) {
+        private static bool TryParseInt(char[] text, int start, int length, int b, out int value, out int consumed) {
             value = 0;
             if (start + length > text.Length) {
+                consumed = 0;
                 return false;
             }
             for (int i = start, end = start + length; i < end; i++) {
@@ -332,9 +333,11 @@ namespace IronPython.Runtime {
                 if (HexValue(text[i], out onechar) && onechar < b) {
                     value = value * b + onechar;
                 } else {
+                    consumed = i - start;
                     return false;
                 }
             }
+            consumed = length;
             return true;
         }
 

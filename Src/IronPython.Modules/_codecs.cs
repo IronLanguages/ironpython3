@@ -283,8 +283,11 @@ namespace IronPython.Modules {
 
         #region Raw Unicode Escape Encoding Functions
 
-        public static PythonTuple raw_unicode_escape_decode(CodeContext/*!*/ context, string input, string errors = "strict")
-            => raw_unicode_escape_decode(context, DoEncode(context, "utf-8", Encoding.UTF8, input, "strict").Item1, errors);
+        public static PythonTuple raw_unicode_escape_decode(CodeContext/*!*/ context, string input, string errors = "strict") {
+            // Encoding with UTF-8 is probably a bug or at least a mistake, as it mutilates non-ASCII characters,
+            // but this is what CPython does. Probably encoding with "raw-unicode-escape" would be more reasonable.
+            return raw_unicode_escape_decode(context, DoEncode(context, "utf-8", Encoding.UTF8, input, "strict").Item1, errors);
+        }
 
         public static PythonTuple raw_unicode_escape_decode(CodeContext/*!*/ context, [BytesConversion]IList<byte> input, string errors = "strict") {
             return PythonTuple.MakeTuple(

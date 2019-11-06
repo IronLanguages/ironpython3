@@ -3403,9 +3403,16 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static string MakeString(this IList<byte> bytes, int maxBytes) {
+            return MakeString(bytes, 0, maxBytes);
+        }
+
+        internal static string MakeString(this IList<byte> bytes, int startIdx, int maxBytes) {
+            Debug.Assert(startIdx >= 0);
+
             int bytesToCopy = Math.Min(bytes.Count, maxBytes);
             StringBuilder b = new StringBuilder(bytesToCopy);
-            for (int i = 0; i < bytesToCopy; i++) {
+            int endIdx = startIdx + bytesToCopy;
+            for (int i = startIdx; i < endIdx; i++) {
                 b.Append((char)bytes[i]);
             }
             return b.ToString();

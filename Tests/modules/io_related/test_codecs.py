@@ -135,13 +135,13 @@ class CodecTest(IronPythonTestCase):
 
     def test_raw_unicode_escape_decode_errors(self):
         with self.assertRaises(UnicodeDecodeError) as cm:
-            codecs.raw_unicode_escape_decode("abc\\u20xyz\xff") # as Latin-1
+            codecs.raw_unicode_escape_decode("abc\\u20klm\xffxyz\u20ac") # Unicode string
 
         self.assertEquals(cm.exception.encoding, 'rawunicodeescape')
         self.assertTrue(cm.exception.reason.startswith("truncated \\uXXXX"))
         self.assertEquals(cm.exception.start, 3)
         self.assertEquals(cm.exception.end, 7)
-        self.assertEquals(cm.exception.object, b"abc\\u20xyz\xc3\xbf") # in UTF-8
+        self.assertEquals(cm.exception.object, b"abc\\u20klm\xc3\xbfxyz\xe2\x82\xac") # in UTF-8
 
         with self.assertRaises(UnicodeDecodeError) as cm:
             codecs.raw_unicode_escape_decode("abc\\U0001F44xyz")

@@ -30,9 +30,7 @@ namespace IronPython.Modules {
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
             PythonList defaultFilters = new PythonList();
-            if (!context.PythonOptions.WarnPython30) {
-                defaultFilters.AddNoLock(PythonTuple.MakeTuple("ignore", null, PythonExceptions.DeprecationWarning, null, 0));
-            }
+            defaultFilters.AddNoLock(PythonTuple.MakeTuple("ignore", null, PythonExceptions.DeprecationWarning, null, 0));
             defaultFilters.AddNoLock(PythonTuple.MakeTuple("ignore", null, PythonExceptions.PendingDeprecationWarning, null, 0));
             defaultFilters.AddNoLock(PythonTuple.MakeTuple("ignore", null, PythonExceptions.ImportWarning, null, 0));
             defaultFilters.AddNoLock(PythonTuple.MakeTuple("ignore", null, PythonExceptions.BytesWarning, null, 0));

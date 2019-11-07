@@ -383,7 +383,7 @@ namespace IronPython.Runtime.Operations {
         // Structural Comparison Helpers
 
         private static int StructuralCompare(CodeContext/*!*/ context, IStructuralComparable x, object y) {
-            return x.CompareTo(y, context.LanguageContext.GetComparer(null, null));
+            return x.CompareTo(y, context.LanguageContext.GetComparer(null));
         }
 
         public static bool StructuralComparableEquality<T>(CodeContext/*!*/ context, T x, [NotNull]T y)

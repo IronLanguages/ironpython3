@@ -37,18 +37,6 @@ namespace IronPython.Runtime.Binding {
                 return true;
             }
 
-            if (context.PythonOptions.WarnPython30) {
-                Python3WarningAttribute[] py3kwarnings = (Python3WarningAttribute[])method.ReflectionInfo.GetCustomAttributes(typeof(Python3WarningAttribute), true);
-                if (py3kwarnings.Length > 0) {
-                    info = new WarningInfo(
-                        PythonExceptions.DeprecationWarning,
-                        py3kwarnings[0].Message
-                    );
-
-                    return true;
-                }
-            }
-
 #if FEATURE_APARTMENTSTATE
             // no apartment states on Silverlight
             if (method.DeclaringType == typeof(Thread)) {

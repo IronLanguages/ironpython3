@@ -118,7 +118,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF16BETest('test_lone_surrogates'))
         suite.addTest(test.test_codecs.UTF16BETest('test_mixed_readline_and_read'))
         suite.addTest(test.test_codecs.UTF16BETest('test_nonbmp'))
-        #suite.addTest(test.test_codecs.UTF16BETest('test_partial')) # AssertionError: '\x00ÿĀ\uffff' != '\x00ÿĀ\uffff\ud800\udc00'
+        suite.addTest(test.test_codecs.UTF16BETest('test_partial'))
         suite.addTest(test.test_codecs.UTF16BETest('test_readline'))
         suite.addTest(test.test_codecs.UTF16BETest('test_readlinequeue'))
         suite.addTest(test.test_codecs.UTF16ExTest('test_bad_args'))
@@ -130,21 +130,21 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF16LETest('test_lone_surrogates'))
         suite.addTest(test.test_codecs.UTF16LETest('test_mixed_readline_and_read'))
         suite.addTest(test.test_codecs.UTF16LETest('test_nonbmp'))
-        #suite.addTest(test.test_codecs.UTF16LETest('test_partial')) # AssertionError: '\x00ÿĀ\uffff' != '\x00ÿĀ\uffff\ud800\udc00'
+        suite.addTest(test.test_codecs.UTF16LETest('test_partial'))
         suite.addTest(test.test_codecs.UTF16LETest('test_readline'))
         suite.addTest(test.test_codecs.UTF16LETest('test_readlinequeue'))
         suite.addTest(test.test_codecs.UTF16Test('test_badbom'))
         suite.addTest(test.test_codecs.UTF16Test('test_bug1098990_a'))
         suite.addTest(test.test_codecs.UTF16Test('test_bug1098990_b'))
         suite.addTest(test.test_codecs.UTF16Test('test_bug1175396'))
-        #suite.addTest(test.test_codecs.UTF16Test('test_bug691291')) # AssertionError: filter ('', DeprecationWarning) did not catch any warning
+        suite.addTest(test.test_codecs.UTF16Test('test_bug691291'))
         suite.addTest(test.test_codecs.UTF16Test('test_decoder_state'))
         suite.addTest(test.test_codecs.UTF16Test('test_errors'))
         suite.addTest(test.test_codecs.UTF16Test('test_handlers'))
         suite.addTest(test.test_codecs.UTF16Test('test_lone_surrogates'))
         suite.addTest(test.test_codecs.UTF16Test('test_mixed_readline_and_read'))
         suite.addTest(test.test_codecs.UTF16Test('test_only_one_bom'))
-        #suite.addTest(test.test_codecs.UTF16Test('test_partial')) # AssertionError: '\x00ÿĀ\uffff' != '\x00ÿĀ\uffff\ud800\udc00'
+        suite.addTest(test.test_codecs.UTF16Test('test_partial'))
         suite.addTest(test.test_codecs.UTF16Test('test_readline'))
         suite.addTest(test.test_codecs.UTF16Test('test_readlinequeue'))
         suite.addTest(test.test_codecs.UTF32BETest('test_bug1098990_a'))
@@ -169,7 +169,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF32LETest('test_readline'))
         suite.addTest(test.test_codecs.UTF32LETest('test_readlinequeue'))
         suite.addTest(test.test_codecs.UTF32LETest('test_simple'))
-        #suite.addTest(test.test_codecs.UTF32Test('test_badbom')) # AssertionError: UnicodeError not raised by read; 'strict' error handler in non-final case is too lax
+        suite.addTest(test.test_codecs.UTF32Test('test_badbom'))
         suite.addTest(test.test_codecs.UTF32Test('test_bug1098990_a'))
         suite.addTest(test.test_codecs.UTF32Test('test_bug1098990_b'))
         suite.addTest(test.test_codecs.UTF32Test('test_bug1175396'))
@@ -191,8 +191,8 @@ def load_tests(loader, standard_tests, pattern):
         #suite.addTest(test.test_codecs.UTF7Test('test_lone_surrogates')) # UnicodeEncodeError: 'utf_8' codec can't encode character '\ud801' in position 503: Unable to translate Unicode character \uD801 at index 503 to specified code page.
         suite.addTest(test.test_codecs.UTF7Test('test_mixed_readline_and_read'))
         suite.addTest(test.test_codecs.UTF7Test('test_nonbmp'))
-        #suite.addTest(test.test_codecs.UTF7Test('test_partial')) # AssertionError: 'a-' != 'a+'
-        #suite.addTest(test.test_codecs.UTF7Test('test_readline')) # AssertionError: 'foo\n|bar\r\n|baz\r|spamg-eggs' != 'foo\n|bar\r\n|baz\r|spam\u2028|eggs'
+        suite.addTest(test.test_codecs.UTF7Test('test_partial'))
+        suite.addTest(test.test_codecs.UTF7Test('test_readline'))
         suite.addTest(test.test_codecs.UTF7Test('test_readlinequeue'))
         suite.addTest(test.test_codecs.UTF8SigTest('test_bom'))
         suite.addTest(test.test_codecs.UTF8SigTest('test_bug1098990_a'))
@@ -227,7 +227,7 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UnicodeInternalTest('test_bug1251300'))
         suite.addTest(test.test_codecs.UnicodeInternalTest('test_decode_callback'))
         suite.addTest(test.test_codecs.UnicodeInternalTest('test_decode_error_attributes'))
-        #suite.addTest(test.test_codecs.UnicodeInternalTest('test_encode_length')) # AssertionError: filter ('unicode_internal codec has been deprecated', DeprecationWarning) did not catch any warning
+        suite.addTest(test.test_codecs.UnicodeInternalTest('test_encode_length'))
         suite.addTest(test.test_codecs.WithStmtTest('test_encodedfile'))
         suite.addTest(test.test_codecs.WithStmtTest('test_streamreaderwriter'))
         return suite

@@ -22,7 +22,7 @@ namespace IronPython.Runtime {
 
             if (isRaw && !isUniEscape && !normalizeLineEndings) return new String(text, start, length);
 
-            string result = DoParseString(text, null, start, length, isRaw, isUniEscape, normalizeLineEndings);
+            string result = DoParseString(text, start, length, isRaw, isUniEscape, normalizeLineEndings);
 
             return result ?? new String(text, start, length);
         }
@@ -30,12 +30,12 @@ namespace IronPython.Runtime {
         public static string ParseString(byte[] bytes, int start, int length, bool isRaw) {
             Debug.Assert(bytes != null);
 
-            string result = DoParseString(bytes, bytes, start, length, isRaw, isUniEscape: true, normalizeLineEndings: false);
+            string result = DoParseString(bytes, start, length, isRaw, isUniEscape: true, normalizeLineEndings: false);
 
             return result ?? bytes.MakeString(start, length);
         }
 
-        private static string DoParseString<T>(T[] data, byte[] byteData, int start, int length, bool isRaw, bool isUniEscape, bool normalizeLineEndings) {
+        private static string DoParseString<T>(T[] data, int start, int length, bool isRaw, bool isUniEscape, bool normalizeLineEndings) {
             StringBuilder buf = null;
             int i = start;
             int l = start + length;
@@ -64,7 +64,7 @@ namespace IronPython.Runtime {
                                     throw PythonExceptions.CreateThrowable(
                                         PythonExceptions.UnicodeDecodeError,
                                         isRaw ? "rawunicodeescape" : "unicodeescape",
-                                        byteData != null ? new Bytes(byteData) : Bytes.Empty,
+                                        data is byte[] byteData ? new Bytes(byteData) : Bytes.Empty,
                                         i - start - 2, i - start + consumed,
                                         "\\Uxxxxxxxx out of range");
                                 }
@@ -79,7 +79,7 @@ namespace IronPython.Runtime {
                                 throw PythonExceptions.CreateThrowable(
                                     PythonExceptions.UnicodeDecodeError,
                                     isRaw ? "rawunicodeescape" : "unicodeescape",
-                                    byteData != null ? new Bytes(byteData) : Bytes.Empty,
+                                    data is byte[] byteData ? new Bytes(byteData) : Bytes.Empty,
                                     i - start - 2,
                                     i - start + consumed,
                                     @"truncated \uXXXX escape");
@@ -188,19 +188,23 @@ namespace IronPython.Runtime {
             return buf?.ToString();
         }
 
-        private static void StringBuilderInit(ref StringBuilder sb, char[] data, int start, int count, int capacity) {
-            if (sb != null) return;
-
-            sb = new StringBuilder(capacity);
-            sb.Append(data, start, count);
-        }
-
         private static void StringBuilderInit<T>(ref StringBuilder sb, T[] data, int start, int count, int capacity) {
             if (sb != null) return;
 
             sb = new StringBuilder(capacity);
-            for (int i = start; i < start + count; i++) {
-                sb.Append(Convert.ToChar(data[i]));
+            switch (data) {
+                case char[] text:
+                    sb.Append(text, start, count);
+                    break;
+
+                case byte[] bytes:
+                    for (int i = start; i < start + count; i++) {
+                        sb.Append((char)bytes[i]);
+                    }
+                    break;
+
+                default:
+                    throw new NotImplementedException("Only byte and char arrays supported");
             }
         }
 

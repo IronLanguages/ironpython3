@@ -624,7 +624,8 @@ namespace IronPython.Compiler {
         }
 
         private Statement FinishAssignments(Expression right) {
-            var left = new List<Expression>();
+            List<Expression> left = null;
+            Expression singleLeft = null;
 
             while (MaybeEat(TokenKind.Assign)) {
                 if (right.CheckAssign() is { } assignError) {
@@ -635,13 +636,22 @@ namespace IronPython.Compiler {
                     ReportSyntaxError(right.StartIndex, right.EndIndex, "starred assignment target must be in a list or tuple");
                 }
 
-                left.Add(right);
+                if (singleLeft == null) {
+                    singleLeft = right;
+                } else {
+                    if (left == null) {
+                        left = new List<Expression> { singleLeft };
+                    }
+
+                    left.Add(right);
+                }
+
                 right = MaybeEat(TokenKind.KeywordYield) ? ParseYieldExpression() : ParseTestListStarExpr();
             }
 
             CheckNotAssignmentTargetOnly(right);
 
-            var target = left.ToArray();
+            var target = left?.ToArray() ?? new [] { singleLeft };
 
             Debug.Assert(target.Length > 0);
             Debug.Assert(target[0] != null);
@@ -2340,7 +2350,7 @@ namespace IronPython.Compiler {
             }
         }
 
-        // star_expr
+        // star_expr: ' * ' expr
         private Expression ParseStarExpr() {
             Eat(TokenKind.Multiply);
             var start = GetStart();
@@ -2371,30 +2381,26 @@ namespace IronPython.Compiler {
             }
 
             // the presence of a comma indicates that the list may contain more elements
-            return ParseTestListStarExprTail();
+            var expressions = new List<Expression> { expr };
 
-            Expression ParseTestListStarExprTail() {
-                var expressions = new List<Expression> { expr };
-
-                bool trailingComma = true;
-                while (true) {
-                    if (PeekToken(TokenKind.Multiply)) {
-                        expressions.Add(ParseStarExpr());
-                    } else if (!NeverTestToken(PeekToken())) {
-                        expressions.Add(ParseTest());
-                    } else {
-                        // no element
-                        break;
-                    }
-
-                    if (!MaybeEat(TokenKind.Comma)) {
-                        trailingComma = false;
-                        break;
-                    }
+            var trailingComma = true;
+            while (true) {
+                if (PeekToken(TokenKind.Multiply)) {
+                    expressions.Add(ParseStarExpr());
+                } else if (!NeverTestToken(PeekToken())) {
+                    expressions.Add(ParseTest());
+                } else {
+                    // no element
+                    break;
                 }
 
-                return MakeTupleOrExpr(expressions, trailingComma);
+                if (!MaybeEat(TokenKind.Comma)) {
+                    trailingComma = false;
+                    break;
+                }
             }
+
+            return MakeTupleOrExpr(expressions, trailingComma);
         }
 
         private Expression ParseTestListError() {
@@ -2413,21 +2419,26 @@ namespace IronPython.Compiler {
         private Expression FinishExpressionListAsExpr(Expression expr) {
             var start = GetStart();
             bool trailingComma = true;
-            List<Expression> l = new List<Expression>();
-            l.Add(expr);
+            var expressions = new List<Expression> { expr };
 
             while (true) {
-                if (NeverTestToken(PeekToken())) break;
-                expr = ParseTest();
-                l.Add(expr);
+                if (PeekToken(TokenKind.Multiply)) {
+                    expr = ParseStarExpr();
+                }
+                else if (!NeverTestToken(PeekToken())) {
+                    expr = ParseTest();
+                } else {
+                    break;
+                }
+
+                expressions.Add(expr);
                 if (!MaybeEat(TokenKind.Comma)) {
                     trailingComma = false;
                     break;
                 }
-                trailingComma = true;
             }
 
-            Expression ret = MakeTupleOrExpr(l, trailingComma);
+            Expression ret = MakeTupleOrExpr(expressions, trailingComma);
             ret.SetLoc(_globalParent, start, GetEnd());
             return ret;
         }
@@ -2455,7 +2466,7 @@ namespace IronPython.Compiler {
                 try {
                     _allowIncomplete = true;
 
-                    Expression expr = ParseTest();
+                    var expr = PeekToken(TokenKind.Multiply) ? ParseStarExpr() : ParseTest();
                     if (MaybeEat(TokenKind.Comma)) {
                         // "(" expression "," ...
                         ret = FinishExpressionListAsExpr(expr);
@@ -2744,7 +2755,6 @@ namespace IronPython.Compiler {
 
         // testlist_comp: (test|star_expr) ( comp_for | (',' (test|star_expr))* [','] )
         private Expression FinishListValue() {
-
             var oStart = GetStart();
             var oEnd = GetEnd();
             var grouping = _tokenizer.GroupingLevel;
@@ -2752,9 +2762,7 @@ namespace IronPython.Compiler {
             Expression ret;
             if (MaybeEat(TokenKind.RightBracket)) {
                 ret = new ListExpression();
-            }
-            else
-            {
+            } else {
                 var prevAllow = _allowIncomplete;
                 try {
                     _allowIncomplete = true;
@@ -2796,8 +2804,8 @@ namespace IronPython.Compiler {
             var cEnd = GetEnd();
 
             _sink?.MatchPair(
-                new SourceSpan(_tokenizer.IndexToLocation(oStart), _tokenizer.IndexToLocation(oEnd)), 
-                new SourceSpan(_tokenizer.IndexToLocation(cStart), _tokenizer.IndexToLocation(cEnd)), 
+                new SourceSpan(_tokenizer.IndexToLocation(oStart), _tokenizer.IndexToLocation(oEnd)),
+                new SourceSpan(_tokenizer.IndexToLocation(cStart), _tokenizer.IndexToLocation(cEnd)),
                 grouping
             );
 

@@ -138,11 +138,11 @@ namespace IronPython.Compiler.Ast {
         internal override string CheckAssign() {
             var starCount = 0;
             foreach (var item in Items) {
-                if (item.CheckAssign() != null) {
+                if (item.CheckAssign() is { } checkAssign) {
                     // we don't return the same message here as CPython doesn't seem to either, 
                     // for example ((yield a), 2,3) = (2,3,4) gives a different error than
                     // a = yield 3 = yield 4.
-                    return "can't assign to " + item.NodeName;
+                    return checkAssign;
                 }
 
                 if (item is StarredExpression && ++starCount > 1) {

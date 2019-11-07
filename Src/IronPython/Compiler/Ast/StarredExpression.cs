@@ -26,7 +26,7 @@ namespace IronPython.Compiler.Ast {
 
         internal override string CheckAssign() => Value.CheckAssign();
 
-        internal override string CheckDelete() => Value.CheckDelete();
+        internal override string CheckDelete() => "can use starred expression only as assignment target";
 
         internal override MSAst.Expression TransformDelete() => Value.TransformDelete();
 

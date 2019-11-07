@@ -114,6 +114,74 @@ class UnpackTest(unittest.TestCase):
         self.assertRaisesSyntaxError('() = []', "can't assign to ()")
         [] = () # OK
 
+    def test_assign_trailing_comma_list_to_list(self):
+        [a, *b,] = [1, 2, 3]
+        self.assertEqual(a, 1)
+        self.assertEqual(b, [2, 3])
+
+        [c, *d] = [1, 2, 3,]
+        self.assertEqual(c, 1)
+        self.assertEqual(d, [2, 3])
+
+        [e, *f,] = [1, 2, 3,]
+        self.assertEqual(e, 1)
+        self.assertEqual(f, [2, 3])
+
+    def test_assign_trailing_comma_list_to_tuple(self):
+        (a, *b,) = [1, 2, 3]
+        self.assertEqual(a, 1)
+        self.assertEqual(b, [2, 3])
+
+        (c, *d) = [1, 2, 3,]
+        self.assertEqual(c, 1)
+        self.assertEqual(d, [2, 3])
+
+        (e, *f,) = [1, 2, 3,]
+        self.assertEqual(e, 1)
+        self.assertEqual(f, [2, 3])
+
+    def test_assign_trailing_comma_tuple_to_list(self):
+        [a, *b,] = (1, 2, 3)
+        self.assertEqual(a, 1)
+        self.assertEqual(b, [2, 3])
+
+        [c, *d] = (1, 2, 3,)
+        self.assertEqual(c, 1)
+        self.assertEqual(d, [2, 3])
+
+        [e, *f,] = (1, 2, 3,)
+        self.assertEqual(e, 1)
+        self.assertEqual(f, [2, 3])
+
+    def test_assign_trailing_comma_tuple_to_tuple(self):
+        (a, *b,) = (1, 2, 3)
+        self.assertEqual(a, 1)
+        self.assertEqual(b, [2, 3])
+
+        (c, *d) = (1, 2, 3,)
+        self.assertEqual(c, 1)
+        self.assertEqual(d, [2, 3])
+
+        (e, *f,) = (1, 2, 3,)
+        self.assertEqual(e, 1)
+        self.assertEqual(f, [2, 3])
+
+    def test_assign_multiple_trailing_commas_fails(self):
+        self.assertRaisesSyntaxError('[a, *b,,] = [1, 2, 3]', "invalid syntax")
+        self.assertRaisesSyntaxError('(a, *b,,) = [1, 2, 3]', "invalid syntax")
+        self.assertRaisesSyntaxError('[a, *b] = [1, 2, 3,,]', "invalid syntax")
+        self.assertRaisesSyntaxError('(a, *b) = [1, 2, 3,,]', "invalid syntax")
+
+        self.assertRaisesSyntaxError('[a, *b,,] = (1, 2, 3)', "invalid syntax")
+        self.assertRaisesSyntaxError('(a, *b,,) = (1, 2, 3)', "invalid syntax")
+        self.assertRaisesSyntaxError('[a, *b] = (1, 2, 3,,)', "invalid syntax")
+        self.assertRaisesSyntaxError('(a, *b) = (1, 2, 3,,)', "invalid syntax")
+
+    def test_delete_star_fails(self):
+        self.assertRaisesSyntaxError('del *a', "can use starred expression only as assignment target")
+        self.assertRaisesSyntaxError('del *a, b', "can use starred expression only as assignment target")
+        self.assertRaisesSyntaxError('del b, *a', "can use starred expression only as assignment target")
+        
 def test_main():
     test.support.run_unittest(UnpackTest)
 

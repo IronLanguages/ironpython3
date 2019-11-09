@@ -87,10 +87,7 @@ a signed integer.")]
             if(baseValue < int.MinValue || baseValue > uint.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(baseValue));
 
-            if(baseValue >= 0 && baseValue <= uint.MaxValue)
-                return IronPython.Modules.PythonBinaryAscii.crc32(data.ToArray(), (uint)baseValue);
-            else
-                return IronPython.Modules.PythonBinaryAscii.crc32(data.ToArray(), (int)baseValue);
+            return IronPython.Modules.PythonBinaryAscii.crc32(data, 0, data.Count, (uint)baseValue);
         }
 
         [Documentation(@"compress(string[, level]) -- Returned compressed string.

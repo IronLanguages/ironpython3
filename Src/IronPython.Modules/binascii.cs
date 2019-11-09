@@ -5,24 +5,21 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
+
+using Microsoft.Scripting.Runtime;
 
 using IronPython.Runtime;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 
-using Microsoft.Scripting.Runtime;
-
 [assembly: PythonModule("binascii", typeof(IronPython.Modules.PythonBinaryAscii))]
 namespace IronPython.Modules {
     public static class PythonBinaryAscii {
         public const string __doc__ = "Provides functions for converting between binary data encoded in various formats and ASCII.";
-
-        private const int MAXLINESIZE = 76;
 
         private static readonly object _ErrorKey = new object();
         private static readonly object _IncompleteKey = new object();
@@ -40,123 +37,147 @@ namespace IronPython.Modules {
             context.EnsureModuleException(_IncompleteKey, dict, "Incomplete", "binascii");
         }
 
-        private static int UuDecFunc(char val) {
-            if (val > 32 && val < 96) return val - 32;
-            switch (val) {
-                case '\n':
-                case '\r':
-                case (char)32:
-                case (char)96:
-                    return EmptyByte;
-                default:
-                    return InvalidByte;
-            }
-        }
+        #region uu
 
-        public static Bytes a2b_uu(CodeContext/*!*/ context, string data) {
-            if (data == null) throw PythonOps.TypeError("expected string, got NoneType");
-            if (data.Length < 1) return Bytes.Make(new byte[32]);
+        public static Bytes a2b_uu(CodeContext/*!*/ context, [NotNull]IBufferProtocol data)
+            => a2b_uu_impl(context, data.tobytes());
+
+        public static Bytes a2b_uu(CodeContext/*!*/ context, [NotNull]MemoryView data)
+            => a2b_uu_impl(context, data.tobytes());
+
+        public static Bytes a2b_uu(CodeContext/*!*/ context, [NotNull]string data)
+            => a2b_uu_impl(context, data.tobytes());
+
+        private static Bytes a2b_uu_impl(CodeContext/*!*/ context, IList<byte> data) {
+            if (data.Count < 1) return Bytes.Make(new byte[32]);
 
             int lenDec = (data[0] + 32) % 64; // decoded length in bytes
             int lenEnc = (lenDec * 4 + 2) / 3; // encoded length in 6-bit chunks
-            string suffix = null;
-            if (data.Length - 1 > lenEnc) {
+            List<byte> suffix = null;
+            if (data.Count - 1 > lenEnc) {
                 suffix = data.Substring(1 + lenEnc);
                 data = data.Substring(1, lenEnc);
             } else {
                 data = data.Substring(1);
             }
 
-            StringBuilder res = DecodeWorker(context, data, true, UuDecFunc);
+            using MemoryStream res = DecodeWorker(context, data, true, UuDecFunc);
             if (suffix == null) {
-                res.Append((char)0, lenDec - res.Length);
+                var pad = new byte[lenDec - res.Length];
+                res.Write(pad, 0, pad.Length);
             } else {
                 ProcessSuffix(context, suffix, UuDecFunc);
             }
-            
-            return PythonOps.MakeBytes(res.ToString());
+
+            return Bytes.Make(res.ToArray());
+
+            static int UuDecFunc(byte val) {
+                if (val > 32 && val < 96) return val - 32;
+                switch (val) {
+                    case (byte)'\n':
+                    case (byte)'\r':
+                    case 32:
+                    case 96:
+                        return EmptyByte;
+                    default:
+                        return InvalidByte;
+                }
+            }
         }
 
-        public static Bytes a2b_uu(CodeContext/*!*/ context, [BytesConversion]IList<byte> data)
-            => a2b_uu(context, PythonOps.MakeString(data));
+        public static Bytes b2a_uu(CodeContext/*!*/ context, [NotNull]IBufferProtocol data)
+            => b2a_uu_impl(context, data.tobytes());
 
-        public static Bytes b2a_uu(CodeContext/*!*/ context, [BytesConversion]IList<byte> data) {
-            if (data == null) throw PythonOps.TypeError("expected string, got NoneType");
+        public static Bytes b2a_uu(CodeContext/*!*/ context, [NotNull]MemoryView data)
+            => b2a_uu_impl(context, data.tobytes());
+
+        private static Bytes b2a_uu_impl(CodeContext/*!*/ context, IList<byte> data) {
             if (data.Count > 45) throw Error(context, "At most 45 bytes at once");
 
-            StringBuilder res = EncodeWorker(data, ' ', delegate(int val) {
-                return (char)(32 + (val % 64));
-            });
-
-            res.Insert(0, ((char)(32 + data.Count)).ToString());
-
-            res.Append('\n');
-            return PythonOps.MakeBytes(res.ToString());
+            using var res = new MemoryStream();
+            res.WriteByte((byte)(32 + data.Count));
+            res.EncodeData(data, (byte)' ', (int val) => (byte)(32 + val % 64));
+            res.WriteByte((byte)'\n');
+            return Bytes.Make(res.ToArray());
         }
 
-        private static int Base64DecFunc(char val) {
-            if (val >= 'A' && val <= 'Z') return val - 'A';
-            if (val >= 'a' && val <= 'z') return val - 'a' + 26;
-            if (val >= '0' && val <= '9') return val - '0' + 52;
-            switch (val) {
-                case '+':
-                    return 62;
-                case '/':
-                    return 63;
-                case '=':
-                    return PadByte;
-                default:
-                    return IgnoreByte;
-            }
-        }
+        #endregion
 
-        public static Bytes a2b_base64(CodeContext/*!*/ context, string data) {
-            if (data == null) throw PythonOps.TypeError("expected string, got NoneType");
+        #region base64
+
+        public static Bytes a2b_base64(CodeContext/*!*/ context, [NotNull]IBufferProtocol data)
+            => a2b_base64_impl(context, data.tobytes());
+
+        public static Bytes a2b_base64(CodeContext/*!*/ context, [NotNull]MemoryView data)
+            => a2b_base64_impl(context, data.tobytes());
+
+        public static Bytes a2b_base64(CodeContext/*!*/ context, [NotNull]string data)
+            => a2b_base64_impl(context, data.tobytes());
+
+        private static Bytes a2b_base64_impl(CodeContext/*!*/ context, IList<byte> data) {
             data = RemovePrefix(context, data, Base64DecFunc);
-            if (data.Length == 0) return Bytes.Empty;
-
-            StringBuilder res = DecodeWorker(context, data, false, Base64DecFunc);
-            return PythonOps.MakeBytes(res.ToString());
-        }
-
-        public static Bytes a2b_base64(CodeContext/*!*/ context, [BytesConversion]IList<byte> data)
-            => a2b_base64(context, PythonOps.MakeString(data));
-
-        public static Bytes b2a_base64([BytesConversion]IList<byte> data) {
-            if (data == null) throw PythonOps.TypeError("expected string, got NoneType");
             if (data.Count == 0) return Bytes.Empty;
+            using MemoryStream res = DecodeWorker(context, data, false, Base64DecFunc);
+            return Bytes.Make(res.ToArray());
 
-            StringBuilder res = EncodeWorker(data, '=', EncodeValue);
-            res.Append('\n');
-            return PythonOps.MakeBytes(res.ToString());
-        }
-
-        private static char EncodeValue(int val) {
-            if (val < 26) return (char)('A' + val);
-            if (val < 52) return (char)('a' + val - 26);
-            if (val < 62) return (char)('0' + val - 52);
-            switch (val) {
-                case 62:
-                    return '+';
-                case 63:
-                    return '/';
-                default:
-                    throw new InvalidOperationException(string.Format("Bad int val: {0}", val));
+            static int Base64DecFunc(byte val) {
+                if (val >= 'A' && val <= 'Z') return val - 'A';
+                if (val >= 'a' && val <= 'z') return val - 'a' + 26;
+                if (val >= '0' && val <= '9') return val - '0' + 52;
+                switch (val) {
+                    case (byte)'+':
+                        return 62;
+                    case (byte)'/':
+                        return 63;
+                    case (byte)'=':
+                        return PadByte;
+                    default:
+                        return IgnoreByte;
+                }
             }
         }
+
+        public static Bytes b2a_base64([NotNull]IBufferProtocol data)
+            => b2a_base64_impl(data.tobytes());
+
+        public static Bytes b2a_base64([NotNull]MemoryView data)
+            => b2a_base64_impl(data.tobytes());
+
+        private static Bytes b2a_base64_impl(IList<byte> data) {
+            if (data.Count == 0) return Bytes.Empty;
+            using var res = new MemoryStream();
+            res.EncodeData(data, (byte)'=', EncodeValue);
+            res.WriteByte((byte)'\n');
+            return Bytes.Make(res.ToArray());
+
+            static byte EncodeValue(int val) {
+                if (val < 26) return (byte)('A' + val);
+                if (val < 52) return (byte)('a' + val - 26);
+                if (val < 62) return (byte)('0' + val - 52);
+                switch (val) {
+                    case 62:
+                        return (byte)'+';
+                    case 63:
+                        return (byte)'/';
+                    default:
+                        throw new InvalidOperationException(string.Format("Bad int val: {0}", val));
+                }
+            }
+        }
+
+        #endregion
+
+        #region qp
+
+        private const int MAXLINESIZE = 76;
 
         public static object a2b_qp(object data) {
             throw new NotImplementedException();
         }
+
         [LightThrowing]
         public static object a2b_qp(object data, object header) {
             return LightExceptions.Throw(new NotImplementedException());
-        }
-
-        private static void to_hex(char ch, StringBuilder s, int index) {
-            int uvalue = ch, uvalue2 = ch / 16;
-            s.Append("0123456789ABCDEF"[uvalue2 % 16]);
-            s.Append("0123456789ABCDEF"[uvalue % 16]);
         }
 
         [Documentation(@"b2a_qp(data, quotetabs=0, istext=1, header=0) -> s; 
@@ -290,7 +311,18 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             }
 
             return odata.ToString();
+
+            static void to_hex(char ch, StringBuilder s, int index) {
+                int uvalue = ch, uvalue2 = ch / 16;
+                s.Append("0123456789ABCDEF"[uvalue2 % 16]);
+                s.Append("0123456789ABCDEF"[uvalue % 16]);
+            }
         }
+
+        #endregion
+
+        #region hqx
+
         public static object a2b_hqx(object data) {
             throw new NotImplementedException();
         }
@@ -339,7 +371,13 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0x0ed1, 0x1ef0,
         };
 
-        public static int crc_hqx([BytesConversion]IList<byte> data, int crc) {
+        public static int crc_hqx([NotNull]IBufferProtocol data, int crc)
+            => crc_hqx_impl(data.tobytes(), crc);
+
+        public static int crc_hqx([NotNull]MemoryView data, int crc)
+            => crc_hqx_impl(data.tobytes(), crc);
+
+        private static int crc_hqx_impl(IList<byte> data, int crc) {
             crc &= 0xffff;
             foreach (var b in data) {
                 crc = ((crc << 8) & 0xff00) ^ crctab_hqx[(crc >> 8) ^ b];
@@ -347,21 +385,24 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             return crc;
         }
 
-        [Documentation("crc32(string[, value]) -> string\n\nComputes a CRC (Cyclic Redundancy Check) checksum of string.")]
-        public static BigInteger crc32([BytesConversion]IList<byte> buffer, int baseValue=0) {
-            byte[] data = buffer as byte[] ?? (buffer is Bytes b ? b.GetUnsafeByteArray() : buffer.ToArray());
-            uint result = crc32(data, 0, data.Length, unchecked((uint)baseValue));
-            return result;
-        }
+        #endregion
+
+        #region crc32
 
         [Documentation("crc32(string[, value]) -> string\n\nComputes a CRC (Cyclic Redundancy Check) checksum of string.")]
-        public static BigInteger crc32([BytesConversion]IList<byte> buffer, uint baseValue) {
-            byte[] data = buffer as byte[] ?? (buffer is Bytes b ? b.GetUnsafeByteArray() : buffer.ToArray());
-            uint result = crc32(data, 0, data.Length, baseValue);
-            return result;
+        public static object crc32([NotNull]IBufferProtocol data, uint crc = 0)
+            => crc32_impl(data.tobytes(), crc);
+
+        public static object crc32([NotNull]MemoryView data, uint crc = 0)
+            => crc32_impl(data.tobytes(), crc);
+
+        private static object crc32_impl(IList<byte> bytes, uint crc) {
+            var res = crc32(bytes, 0, bytes.Count, crc);
+            if (res <= int.MaxValue) return (int)res;
+            return (BigInteger)res;
         }
 
-        internal static uint crc32(byte[] buffer, int offset, int count, uint baseValue) {
+        internal static uint crc32(IList<byte> buffer, int offset, int count, uint baseValue) {
             uint remainder = (baseValue ^ 0xffffffff);
             for (int i = offset; i < offset + count; i++) {
                 remainder ^= buffer[i];
@@ -376,91 +417,85 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             return (remainder ^ 0xffffffff);
         }
 
-        public static Bytes b2a_hex([BytesConversion]IList<byte> data) {
-            using (var stream = new MemoryStream(data.Count * 2)) {
-                foreach (var b in data) {
-                    stream.WriteByte(ToAscii(b >> 4));
-                    stream.WriteByte(ToAscii(b & 0xf));
-                }
-                return Bytes.Make(stream.ToArray());
+        #endregion
+
+        #region hex
+
+        public static Bytes b2a_hex([NotNull]IBufferProtocol data)
+            => b2a_hex_impl(data.tobytes());
+
+        public static Bytes b2a_hex([NotNull]MemoryView data)
+            => b2a_hex_impl(data.tobytes());
+
+        private static Bytes b2a_hex_impl(IList<byte> data) {
+            byte[] res = new byte[data.Count * 2];
+            for (var i = 0; i < data.Count; i++) {
+                var b = data[i];
+                res[2 * i] = ToAscii(b >> 4);
+                res[2 * i + 1] = ToAscii(b & 0xf);
             }
+            return Bytes.Make(res);
 
             static byte ToAscii(int b) {
                 return (byte)(b < 10 ? '0' + b : 'a' + (b - 10));
             }
         }
 
-        public static Bytes hexlify([BytesConversion]IList<byte> data) {
-            return b2a_hex(data);
-        }
+        public static Bytes hexlify([NotNull]IBufferProtocol data)
+            => b2a_hex_impl(data.tobytes());
 
-        public static Bytes hexlify(MemoryView data) {
-            return hexlify(data.tobytes());
-        }
+        public static Bytes hexlify([NotNull]MemoryView data)
+            => b2a_hex_impl(data.tobytes());
 
-        public static Bytes hexlify(Bytes data) {
-            byte[] res = new byte[data.Count * 2];
-            for (int i = 0; i < data.Count; i++) {
+        public static Bytes a2b_hex(CodeContext/*!*/ context, [NotNull]IBufferProtocol data)
+            => a2b_hex_impl(context, data.tobytes());
 
-                res[i * 2] = ToHex(data._bytes[i] >> 4);
-                res[(i * 2) + 1] = ToHex(data._bytes[i] & 0x0F);
+        public static Bytes a2b_hex(CodeContext/*!*/ context, [NotNull]MemoryView data)
+            => a2b_hex_impl(context, data.tobytes());
+
+        public static Bytes a2b_hex(CodeContext/*!*/ context, [NotNull]string data)
+            => a2b_hex_impl(context, data.tobytes());
+
+        private static Bytes a2b_hex_impl(CodeContext/*!*/ context, IList<byte> data) {
+            if ((data.Count & 0x01) != 0) throw Error(context, "Odd-length string");
+
+            byte[] res = new byte[data.Count / 2];
+            for (int i = 0; i < res.Length; i++) {
+                var b1 = ParseHex(context, data[2 * i]);
+                var b2 = ParseHex(context, data[2 * i + 1]);
+                res[i] = (byte)(b1 * 16 + b2);
             }
-
             return Bytes.Make(res);
-        }
 
-        public static Bytes hexlify(ByteArray data) {
-            byte[] res = new byte[data.Count * 2];
-            for (int i = 0; i < data.Count; i++) {
-                res[i * 2] = ToHex(data._bytes[i] >> 4);
-                res[(i * 2) + 1] = ToHex(data._bytes[i] & 0x0F);
+            static byte ParseHex(CodeContext/*!*/ context, byte b) {
+                if (b.IsDigit()) {
+                    return (byte)(b - '0');
+                } else if (b >= 'A' && b <= 'F') {
+                    return (byte)(b - 'A' + 10);
+                } else if (b >= 'a' && b <= 'f') {
+                    return (byte)(b - 'a' + 10);
+                } else {
+                    throw Error(context, "Non-hexadecimal digit found");
+                }
             }
-            return Bytes.Make(res);
         }
 
-        private static byte ToHex(int p) {
-            if (p >= 10) {
-                return (byte)('a' + p - 10);
-            }
-
-            return (byte)('0' + p);
-        }
-
-
-        public static Bytes a2b_hex(CodeContext/*!*/ context, string data) {
-            if (data == null) throw PythonOps.TypeError("expected string, got NoneType");
-            if ((data.Length & 0x01) != 0) throw PythonOps.TypeError("Odd-length string");
-            StringBuilder res = new StringBuilder(data.Length / 2);
-
-            for (int i = 0; i < data.Length; i += 2) {
-                byte b1, b2;
-                if (char.IsDigit(data[i])) b1 = (byte)(data[i] - '0');
-                else b1 = (byte)(char.ToUpper(data[i]) - 'A' + 10);
-
-                if (char.IsDigit(data[i + 1])) b2 = (byte)(data[i + 1] - '0');
-                else b2 = (byte)(char.ToUpper(data[i + 1]) - 'A' + 10);
-
-                res.Append((char)(b1 * 16 + b2));
-            }
-            return PythonOps.MakeBytes(res.ToString());
-        }
-        public static Bytes a2b_hex(CodeContext/*!*/ context, [BytesConversion]IList<byte> data)
-            => a2b_hex(context, PythonOps.MakeString(data));
-
-        public static Bytes unhexlify(CodeContext/*!*/ context, string hexstr)
+        public static Bytes unhexlify(CodeContext/*!*/ context, [NotNull]IBufferProtocol hexstr)
             => a2b_hex(context, hexstr);
 
-        public static Bytes unhexlify(CodeContext/*!*/ context, [BytesConversion]IList<byte> hexstr)
+        public static Bytes unhexlify(CodeContext/*!*/ context, [NotNull]MemoryView hexstr)
             => a2b_hex(context, hexstr);
+
+        public static Bytes unhexlify(CodeContext/*!*/ context, [NotNull]string hexstr)
+            => a2b_hex(context, hexstr);
+
+        #endregion
 
         #region Private implementation
 
-        private delegate char EncodeChar(int val);
-        private delegate int DecodeByte(char val);
+        private delegate int DecodeByte(byte val);
 
-        private static StringBuilder EncodeWorker(IList<byte> data, char empty, EncodeChar encFunc) {
-            StringBuilder res = new StringBuilder();
-
+        private static void EncodeData(this MemoryStream res, IList<byte> data, byte empty, Func<int, byte> encFunc) {
             int bits;
             for (int i = 0; i < data.Count; i += 3) {
                 switch (data.Count - i) {
@@ -468,33 +503,32 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
                         // only one char, emit 2 bytes &
                         // padding
                         bits = (data[i] & 0xff) << 16;
-                        res.Append(encFunc((bits >> 18) & 0x3f));
-                        res.Append(encFunc((bits >> 12) & 0x3f));
-                        res.Append(empty);
-                        res.Append(empty);
+                        res.WriteByte(encFunc((bits >> 18) & 0x3f));
+                        res.WriteByte(encFunc((bits >> 12) & 0x3f));
+                        res.WriteByte(empty);
+                        res.WriteByte(empty);
                         break;
                     case 2:
                         // only two chars, emit 3 bytes &
                         // padding
                         bits = ((data[i] & 0xff) << 16) | ((data[i + 1] & 0xff) << 8);
-                        res.Append(encFunc((bits >> 18) & 0x3f));
-                        res.Append(encFunc((bits >> 12) & 0x3f));
-                        res.Append(encFunc((bits >> 6) & 0x3f));
-                        res.Append(empty);
+                        res.WriteByte(encFunc((bits >> 18) & 0x3f));
+                        res.WriteByte(encFunc((bits >> 12) & 0x3f));
+                        res.WriteByte(encFunc((bits >> 6) & 0x3f));
+                        res.WriteByte(empty);
                         break;
                     default:
                         // got all 3 bytes, just emit it.
                         bits = ((data[i] & 0xff) << 16) |
                             ((data[i + 1] & 0xff) << 8) |
                             ((data[i + 2] & 0xff));
-                        res.Append(encFunc((bits >> 18) & 0x3f));
-                        res.Append(encFunc((bits >> 12) & 0x3f));
-                        res.Append(encFunc((bits >> 6) & 0x3f));
-                        res.Append(encFunc(bits & 0x3f));
+                        res.WriteByte(encFunc((bits >> 18) & 0x3f));
+                        res.WriteByte(encFunc((bits >> 12) & 0x3f));
+                        res.WriteByte(encFunc((bits >> 6) & 0x3f));
+                        res.WriteByte(encFunc(bits & 0x3f));
                         break;
                 }
             }
-            return res;
         }
 
         private const int IgnoreByte = -1; // skip this byte
@@ -503,9 +537,9 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
         private const int InvalidByte = -4; // raise exception for illegal byte
         private const int NoMoreBytes = -5; // signals end of stream
 
-        private static int NextVal(CodeContext/*!*/ context, string data, ref int index, DecodeByte decFunc) {
+        private static int NextVal(CodeContext/*!*/ context, IList<byte> data, ref int index, DecodeByte decFunc) {
             int res;
-            while (index < data.Length) {
+            while (index < data.Count) {
                 res = decFunc(data[index++]);
                 switch (res) {
                     case EmptyByte:
@@ -522,7 +556,7 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             return NoMoreBytes;
         }
 
-        private static int CountPadBytes(CodeContext/*!*/ context, string data, int bound, ref int index, DecodeByte decFunc) {
+        private static int CountPadBytes(CodeContext/*!*/ context, IList<byte> data, int bound, ref int index, DecodeByte decFunc) {
             int res = PadByte;
             int count = 0;
             while ((bound < 0 || count < bound) &&
@@ -536,7 +570,7 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             return count;
         }
 
-        private static int GetVal(CodeContext/*!*/ context, string data, int align, bool bounded, ref int index, DecodeByte decFunc) {
+        private static int GetVal(CodeContext/*!*/ context, IList<byte> data, int align, bool bounded, ref int index, DecodeByte decFunc) {
             int res;
             while (true) {
                 res = NextVal(context, data, ref index, decFunc);
@@ -570,11 +604,11 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             }
         }
 
-        private static StringBuilder DecodeWorker(CodeContext/*!*/ context, string data, bool bounded, DecodeByte decFunc) {
-            StringBuilder res = new StringBuilder();
+        private static MemoryStream DecodeWorker(CodeContext/*!*/ context, IList<byte> data, bool bounded, DecodeByte decFunc) {
+            var res = new MemoryStream();
 
             int i = 0;
-            while (i < data.Length) {
+            while (i < data.Count) {
                 int intVal;
 
                 int val0 = GetVal(context, data, 0, bounded, ref i, decFunc);
@@ -588,7 +622,7 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
                     // 2 byte partial
                     intVal = (val0 << 18) | (val1 << 12);
 
-                    res.Append((char)((intVal >> 16) & 0xff));
+                    res.WriteByte((byte)((intVal >> 16) & 0xff));
                     break;
                 }
 
@@ -597,24 +631,24 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
                     // 3 byte partial
                     intVal = (val0 << 18) | (val1 << 12) | (val2 << 6);
 
-                    res.Append((char)((intVal >> 16) & 0xff));
-                    res.Append((char)((intVal >> 8) & 0xff));
+                    res.WriteByte((byte)((intVal >> 16) & 0xff));
+                    res.WriteByte((byte)((intVal >> 8) & 0xff));
                     break;
                 }
 
                 // full 4-bytes
                 intVal = (val0 << 18) | (val1 << 12) | (val2 << 6) | (val3);
-                res.Append((char)((intVal >> 16) & 0xff));
-                res.Append((char)((intVal >> 8) & 0xff));
-                res.Append((char)(intVal & 0xff));
+                res.WriteByte((byte)((intVal >> 16) & 0xff));
+                res.WriteByte((byte)((intVal >> 8) & 0xff));
+                res.WriteByte((byte)(intVal & 0xff));
             }
 
             return res;
         }
 
-        private static string RemovePrefix(CodeContext/*!*/ context, string data, DecodeByte decFunc) {
+        private static IList<byte> RemovePrefix(CodeContext/*!*/ context, IList<byte> data, DecodeByte decFunc) {
             int count = 0;
-            while (count < data.Length) {
+            while (count < data.Count) {
                 int current = decFunc(data[count]);
                 if (current == InvalidByte) {
                     throw Error(context, "Illegal char");
@@ -625,14 +659,29 @@ both encoded.  When quotetabs is set, space and tabs are encoded.")]
             return count == 0 ? data : data.Substring(count);
         }
 
-        private static void ProcessSuffix(CodeContext/*!*/ context, string data, DecodeByte decFunc) {
-            for (int i = 0; i < data.Length; i++) {
+        private static void ProcessSuffix(CodeContext/*!*/ context, IList<byte> data, DecodeByte decFunc) {
+            for (int i = 0; i < data.Count; i++) {
                 int current = decFunc(data[i]);
                 if (current >= 0 || current == InvalidByte) {
                     throw Error(context, "Trailing garbage");
                 }
             }
         }
+
+        private static byte[] tobytes(this string s) {
+            byte[] ret = new byte[s.Length];
+            for (int i = 0; i < s.Length; i++) {
+                if (s[i] < 0x80) {
+                    ret[i] = (byte)s[i];
+                } else {
+                    throw PythonOps.ValueError("string argument should contain only ASCII characters");
+                }
+            }
+            return ret;
+        }
+
+        private static IList<byte> tobytes(this IBufferProtocol buffer)
+            => buffer as IList<byte> ?? buffer.ToBytes(0, null);
 
         #endregion
     }

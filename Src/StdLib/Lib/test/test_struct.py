@@ -591,6 +591,7 @@ class StructTest(unittest.TestCase):
         self.check_sizeof('0c', 0)
 
 
+@unittest.skipIf(sys.implementation.name == "ironpython", "not implemented")
 class UnpackIteratorTest(unittest.TestCase):
     """
     Tests for iterative unpacking (struct.Struct.iter_unpack).

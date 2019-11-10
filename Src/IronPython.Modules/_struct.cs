@@ -7,8 +7,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 
 using Microsoft.Scripting;
@@ -41,7 +39,7 @@ namespace IronPython.Modules {
             private int _encodingSize = -1;         // the number of bytes read/produced by the format
             private WeakRefTracker _tracker;        // storage for weak proxy's
 
-            private void Initialize(Struct s) {
+            private void InitializeFrom(Struct s) {
                 format = s.format;
                 _formats = s._formats;
                 _isStandardized = s._isStandardized;
@@ -74,11 +72,7 @@ namespace IronPython.Modules {
                 lock (_cache) {
                     gotIt = _cache.TryGetValue(format, out s);
                 }
-                if (gotIt) {
-                    Initialize(s);
-                } else {
-                    Compile(context, format);
-                }
+                InitializeFrom(gotIt ? s : CompileAndCache(context, format));
             }
 
             #endregion
@@ -95,41 +89,39 @@ namespace IronPython.Modules {
                 }
 
                 int curObj = 0;
-                StringBuilder res = new StringBuilder(_encodingSize);
+                var buffer = new byte[_encodingSize];
+                using var res = new MemoryStream(buffer);
 
-                for (int i = 0; i < _formats.Length; i++) {
-                    Format curFormat = _formats[i];
+                foreach (Format curFormat in _formats) {
                     if (!_isStandardized) {
                         // In native mode, align to {size}-byte boundaries
                         int nativeSize = curFormat.NativeSize;
 
-                        int alignLength = Align(res.Length, nativeSize);
-                        int padLength = alignLength - res.Length;
-                        for (int j = 0; j < padLength; j++) {
-                            res.Append('\0');
-                        }
+                        int alignLength = Align((int)res.Position, nativeSize);
+                        int padLength = alignLength - (int)res.Position;
+                        res.WriteByteCount((byte)'\0', padLength);
                     }
 
                     switch (curFormat.Type) {
                         case FormatType.PadByte:
-                            res.Append('\0', curFormat.Count);
+                            res.WriteByteCount((byte)'\0', curFormat.Count);
                             break;
                         case FormatType.Bool:
-                            res.Append(GetBoolValue(context, curObj++, values) ? (char)1 : '\0');
+                            res.WriteByte((byte)(GetBoolValue(context, curObj++, values) ? 1 : 0));
                             break;
                         case FormatType.Char:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                res.Append(GetCharValue(context, curObj++, values));
+                                res.WriteByte((byte)GetCharValue(context, curObj++, values));
                             }
                             break;
                         case FormatType.SignedChar:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                res.Append((char)(byte)GetSByteValue(context, curObj++, values));
+                                res.WriteByte((byte)GetSByteValue(context, curObj++, values));
                             }
                             break;
                         case FormatType.UnsignedChar:
                             for (int j = 0; j < curFormat.Count; j++) {
-                                res.Append((char)GetByteValue(context, curObj++, values));
+                                res.WriteByte(GetByteValue(context, curObj++, values));
                             }
                             break;
                         case FormatType.Short:
@@ -188,12 +180,10 @@ namespace IronPython.Modules {
                         case FormatType.PascalString:
                             WritePascalString(res, curFormat.Count - 1, GetStringValue(context, curObj++, values));
                             break;
-                        default:
-                            throw Error(context, "bad format string");
                     }
                 }
 
-                return PythonOps.MakeBytes(res.ToString());
+                return Bytes.Make(buffer);
             }
 
             [Documentation("Stores the deserialized data into the provided array")]
@@ -239,9 +229,7 @@ namespace IronPython.Modules {
                 var res = new object[_encodingCount];
                 var res_idx = 0;
 
-                for (int i = 0; i < _formats.Length; i++) {
-                    Format curFormat = _formats[i];
-
+                foreach (Format curFormat in _formats) {
                     if (!_isStandardized) {
                         // In native mode, align to {size}-byte boundaries
                         int nativeSize = curFormat.NativeSize;
@@ -385,7 +373,7 @@ namespace IronPython.Modules {
 
             #region Implementation Details
 
-            private void Compile(CodeContext/*!*/ context, string/*!*/ fmt) {
+            private static Struct CompileAndCache(CodeContext/*!*/ context, string/*!*/ fmt) {
                 List<Format> res = new List<Format>();
                 int count = 1;
                 bool fLittleEndian = BitConverter.IsLittleEndian;
@@ -495,34 +483,45 @@ namespace IronPython.Modules {
                                 break;
                             }
 
-                            throw Error(context, "bad format string");
+                            throw Error(context, "bad char in struct format");
                     }
                 }
 
                 // store the new formats
-                _formats = res.ToArray();
-                _isStandardized = fStandardized;
-                _isLittleEndian = fLittleEndian;
-                _encodingSize = _encodingCount = 0;
-                for (int i = 0; i < _formats.Length; i++) {
-                    if (_formats[i].Type != FormatType.PadByte) {
-                        if (_formats[i].Type != FormatType.CString && _formats[i].Type != FormatType.PascalString) {
-                            _encodingCount += _formats[i].Count;
+                var s = new Struct() {
+                    _formats = res.ToArray(),
+                    _isStandardized = fStandardized,
+                    _isLittleEndian = fLittleEndian,
+                };
+                s.InitCountAndSize();
+
+                lock (_cache) {
+                    _cache.Add(fmt, s);
+                }
+                return s;
+            }
+
+            private void InitCountAndSize() {
+                var encodingCount = 0;
+                var encodingSize = 0;
+                foreach (Format format in _formats) {
+                    if (format.Type != FormatType.PadByte) {
+                        if (format.Type != FormatType.CString && format.Type != FormatType.PascalString) {
+                            encodingCount += format.Count;
                         } else {
-                            _encodingCount++;
+                            encodingCount++;
                         }
                     }
 
                     if (!_isStandardized) {
                         // In native mode, align to {size}-byte boundaries
-                        _encodingSize = Align(_encodingSize, _formats[i].NativeSize);
+                        encodingSize = Align(encodingSize, format.NativeSize);
                     }
 
-                    _encodingSize += GetNativeSize(_formats[i].Type) * _formats[i].Count;
+                    encodingSize += GetNativeSize(format.Type) * format.Count;
                 }
-                lock (_cache) {
-                    _cache.Add(fmt, this);
-                }
+                _encodingCount = encodingCount;
+                _encodingSize = encodingSize;
             }
 
             #endregion
@@ -546,8 +545,6 @@ namespace IronPython.Modules {
         /// Enum which specifies the format type for a compiled struct
         /// </summary>
         private enum FormatType {
-            None,
-
             PadByte,
             Bool,
             Char,
@@ -603,20 +600,16 @@ namespace IronPython.Modules {
         /// <summary>
         /// Struct used to store the format and the number of times it should be repeated.
         /// </summary>
-        private struct Format {
-            public FormatType Type;
-            public int Count;
+        private readonly struct Format {
+            public readonly FormatType Type;
+            public readonly int Count;
 
             public Format(FormatType type, int count) {
                 Type = type;
                 Count = count;
             }
 
-            public int NativeSize {
-                get {
-                    return GetNativeSize(Type);
-                }
-            }
+            public int NativeSize => GetNativeSize(Type);
         }
 
         #endregion
@@ -698,162 +691,159 @@ namespace IronPython.Modules {
 
         #region Write Helpers
 
-        private static void WriteShort(StringBuilder res, bool fLittleEndian, short val) {
-            if (fLittleEndian) {
-                res.Append((char)(val & 0xff));
-                res.Append((char)((val >> 8) & 0xff));
-            } else {
-                res.Append((char)((val >> 8) & 0xff));
-                res.Append((char)(val & 0xff));
+        private static void WriteByteCount(this MemoryStream stream, byte value, int repeatCount) {
+            while (repeatCount > 0) {
+                stream.WriteByte(value);
+                --repeatCount;
             }
         }
 
-        private static void WriteUShort(StringBuilder res, bool fLittleEndian, ushort val) {
+        private static void WriteShort(this MemoryStream res, bool fLittleEndian, short val) {
             if (fLittleEndian) {
-                res.Append((char)(val & 0xff));
-                res.Append((char)((val >> 8) & 0xff));
+                res.WriteByte((byte)(val & 0xff));
+                res.WriteByte((byte)((val >> 8) & 0xff));
             } else {
-                res.Append((char)((val >> 8) & 0xff));
-                res.Append((char)(val & 0xff));
+                res.WriteByte((byte)((val >> 8) & 0xff));
+                res.WriteByte((byte)(val & 0xff));
             }
         }
 
-        private static void WriteInt(StringBuilder res, bool fLittleEndian, int val) {
+        private static void WriteUShort(this MemoryStream res, bool fLittleEndian, ushort val) {
             if (fLittleEndian) {
-                res.Append((char)(val & 0xff));
-                res.Append((char)((val >> 8) & 0xff));
-                res.Append((char)((val >> 16) & 0xff));
-                res.Append((char)((val >> 24) & 0xff));
+                res.WriteByte((byte)(val & 0xff));
+                res.WriteByte((byte)((val >> 8) & 0xff));
             } else {
-                res.Append((char)((val >> 24) & 0xff));
-                res.Append((char)((val >> 16) & 0xff));
-                res.Append((char)((val >> 8) & 0xff));
-                res.Append((char)(val & 0xff));
+                res.WriteByte((byte)((val >> 8) & 0xff));
+                res.WriteByte((byte)(val & 0xff));
             }
         }
 
-        private static void WriteUInt(StringBuilder res, bool fLittleEndian, uint val) {
+        private static void WriteInt(this MemoryStream res, bool fLittleEndian, int val) {
             if (fLittleEndian) {
-                res.Append((char)(val & 0xff));
-                res.Append((char)((val >> 8) & 0xff));
-                res.Append((char)((val >> 16) & 0xff));
-                res.Append((char)((val >> 24) & 0xff));
+                res.WriteByte((byte)(val & 0xff));
+                res.WriteByte((byte)((val >> 8) & 0xff));
+                res.WriteByte((byte)((val >> 16) & 0xff));
+                res.WriteByte((byte)((val >> 24) & 0xff));
             } else {
-                res.Append((char)((val >> 24) & 0xff));
-                res.Append((char)((val >> 16) & 0xff));
-                res.Append((char)((val >> 8) & 0xff));
-                res.Append((char)(val & 0xff));
+                res.WriteByte((byte)((val >> 24) & 0xff));
+                res.WriteByte((byte)((val >> 16) & 0xff));
+                res.WriteByte((byte)((val >> 8) & 0xff));
+                res.WriteByte((byte)(val & 0xff));
             }
         }
 
-        private static void WritePointer(StringBuilder res, bool fLittleEndian, IntPtr val) {
+        private static void WriteUInt(this MemoryStream res, bool fLittleEndian, uint val) {
+            if (fLittleEndian) {
+                res.WriteByte((byte)(val & 0xff));
+                res.WriteByte((byte)((val >> 8) & 0xff));
+                res.WriteByte((byte)((val >> 16) & 0xff));
+                res.WriteByte((byte)((val >> 24) & 0xff));
+            } else {
+                res.WriteByte((byte)((val >> 24) & 0xff));
+                res.WriteByte((byte)((val >> 16) & 0xff));
+                res.WriteByte((byte)((val >> 8) & 0xff));
+                res.WriteByte((byte)(val & 0xff));
+            }
+        }
+
+        private static void WritePointer(this MemoryStream res, bool fLittleEndian, IntPtr val) {
             if (IntPtr.Size == 4) {
-                WriteInt(res, fLittleEndian, val.ToInt32());
+                res.WriteInt(fLittleEndian, val.ToInt32());
             } else {
-                WriteLong(res, fLittleEndian, val.ToInt64());
+                res.WriteLong(fLittleEndian, val.ToInt64());
             }
         }
 
-        private static void WriteFloat(StringBuilder res, bool fLittleEndian, float val) {
+        private static void WriteFloat(this MemoryStream res, bool fLittleEndian, float val) {
             byte[] bytes = BitConverter.GetBytes(val);
-            if (fLittleEndian) {
-                res.Append((char)bytes[0]);
-                res.Append((char)bytes[1]);
-                res.Append((char)bytes[2]);
-                res.Append((char)bytes[3]);
+            if (BitConverter.IsLittleEndian == fLittleEndian) {
+                res.Write(bytes, 0, bytes.Length);
             } else {
-                res.Append((char)bytes[3]);
-                res.Append((char)bytes[2]);
-                res.Append((char)bytes[1]);
-                res.Append((char)bytes[0]);
+                res.WriteByte(bytes[3]);
+                res.WriteByte(bytes[2]);
+                res.WriteByte(bytes[1]);
+                res.WriteByte(bytes[0]);
             }
         }
 
-        private static void WriteLong(StringBuilder res, bool fLittleEndian, long val) {
+        private static void WriteLong(this MemoryStream res, bool fLittleEndian, long val) {
             if (fLittleEndian) {
-                res.Append((char)(val & 0xff));
-                res.Append((char)((val >> 8) & 0xff));
-                res.Append((char)((val >> 16) & 0xff));
-                res.Append((char)((val >> 24) & 0xff));
-                res.Append((char)((val >> 32) & 0xff));
-                res.Append((char)((val >> 40) & 0xff));
-                res.Append((char)((val >> 48) & 0xff));
-                res.Append((char)((val >> 56) & 0xff));
+                res.WriteByte((byte)(val & 0xff));
+                res.WriteByte((byte)((val >> 8) & 0xff));
+                res.WriteByte((byte)((val >> 16) & 0xff));
+                res.WriteByte((byte)((val >> 24) & 0xff));
+                res.WriteByte((byte)((val >> 32) & 0xff));
+                res.WriteByte((byte)((val >> 40) & 0xff));
+                res.WriteByte((byte)((val >> 48) & 0xff));
+                res.WriteByte((byte)((val >> 56) & 0xff));
             } else {
-                res.Append((char)((val >> 56) & 0xff));
-                res.Append((char)((val >> 48) & 0xff));
-                res.Append((char)((val >> 40) & 0xff));
-                res.Append((char)((val >> 32) & 0xff));
-                res.Append((char)((val >> 24) & 0xff));
-                res.Append((char)((val >> 16) & 0xff));
-                res.Append((char)((val >> 8) & 0xff));
-                res.Append((char)(val & 0xff));
+                res.WriteByte((byte)((val >> 56) & 0xff));
+                res.WriteByte((byte)((val >> 48) & 0xff));
+                res.WriteByte((byte)((val >> 40) & 0xff));
+                res.WriteByte((byte)((val >> 32) & 0xff));
+                res.WriteByte((byte)((val >> 24) & 0xff));
+                res.WriteByte((byte)((val >> 16) & 0xff));
+                res.WriteByte((byte)((val >> 8) & 0xff));
+                res.WriteByte((byte)(val & 0xff));
             }
         }
 
-        private static void WriteULong(StringBuilder res, bool fLittleEndian, ulong val) {
+        private static void WriteULong(this MemoryStream res, bool fLittleEndian, ulong val) {
             if (fLittleEndian) {
-                res.Append((char)(val & 0xff));
-                res.Append((char)((val >> 8) & 0xff));
-                res.Append((char)((val >> 16) & 0xff));
-                res.Append((char)((val >> 24) & 0xff));
-                res.Append((char)((val >> 32) & 0xff));
-                res.Append((char)((val >> 40) & 0xff));
-                res.Append((char)((val >> 48) & 0xff));
-                res.Append((char)((val >> 56) & 0xff));
+                res.WriteByte((byte)(val & 0xff));
+                res.WriteByte((byte)((val >> 8) & 0xff));
+                res.WriteByte((byte)((val >> 16) & 0xff));
+                res.WriteByte((byte)((val >> 24) & 0xff));
+                res.WriteByte((byte)((val >> 32) & 0xff));
+                res.WriteByte((byte)((val >> 40) & 0xff));
+                res.WriteByte((byte)((val >> 48) & 0xff));
+                res.WriteByte((byte)((val >> 56) & 0xff));
             } else {
-                res.Append((char)((val >> 56) & 0xff));
-                res.Append((char)((val >> 48) & 0xff));
-                res.Append((char)((val >> 40) & 0xff));
-                res.Append((char)((val >> 32) & 0xff));
-                res.Append((char)((val >> 24) & 0xff));
-                res.Append((char)((val >> 16) & 0xff));
-                res.Append((char)((val >> 8) & 0xff));
-                res.Append((char)(val & 0xff));
+                res.WriteByte((byte)((val >> 56) & 0xff));
+                res.WriteByte((byte)((val >> 48) & 0xff));
+                res.WriteByte((byte)((val >> 40) & 0xff));
+                res.WriteByte((byte)((val >> 32) & 0xff));
+                res.WriteByte((byte)((val >> 24) & 0xff));
+                res.WriteByte((byte)((val >> 16) & 0xff));
+                res.WriteByte((byte)((val >> 8) & 0xff));
+                res.WriteByte((byte)(val & 0xff));
             }
         }
 
-        private static void WriteDouble(StringBuilder res, bool fLittleEndian, double val) {
+        private static void WriteDouble(this MemoryStream res, bool fLittleEndian, double val) {
             byte[] bytes = BitConverter.GetBytes(val);
-            if (fLittleEndian) {
-                res.Append((char)bytes[0]);
-                res.Append((char)bytes[1]);
-                res.Append((char)bytes[2]);
-                res.Append((char)bytes[3]);
-                res.Append((char)bytes[4]);
-                res.Append((char)bytes[5]);
-                res.Append((char)bytes[6]);
-                res.Append((char)bytes[7]);
+            if (BitConverter.IsLittleEndian == fLittleEndian) {
+                res.Write(bytes, 0, bytes.Length);
             } else {
-                res.Append((char)bytes[7]);
-                res.Append((char)bytes[6]);
-                res.Append((char)bytes[5]);
-                res.Append((char)bytes[4]);
-                res.Append((char)bytes[3]);
-                res.Append((char)bytes[2]);
-                res.Append((char)bytes[1]);
-                res.Append((char)bytes[0]);
+                res.WriteByte(bytes[7]);
+                res.WriteByte(bytes[6]);
+                res.WriteByte(bytes[5]);
+                res.WriteByte(bytes[4]);
+                res.WriteByte(bytes[3]);
+                res.WriteByte(bytes[2]);
+                res.WriteByte(bytes[1]);
+                res.WriteByte(bytes[0]);
             }
         }
 
-        private static void WriteString(StringBuilder res, int len,  IList<byte> val) {
+        private static void WriteString(this MemoryStream res, int len, IList<byte> val) {
             for (int i = 0; i < val.Count && i < len; i++) {
-                res.Append((char)val[i]);
+                res.WriteByte(val[i]);
             }
             for (int i = val.Count; i < len; i++) {
-                res.Append('\0');
+                res.WriteByte(0);
             }
         }
 
-        private static void WritePascalString(StringBuilder res, int len, IList<byte> val) {
-            int lenByte = Math.Min(255, Math.Min(val.Count, len));
-            res.Append((char)lenByte);
+        private static void WritePascalString(this MemoryStream res, int len, IList<byte> val) {
+            byte lenByte = (byte)Math.Min(255, Math.Min(val.Count, len));
+            res.WriteByte(lenByte);
 
             for (int i = 0; i < val.Count && i < len; i++) {
-                res.Append((char)val[i]);
+                res.WriteByte(val[i]);
             }
             for (int i = val.Count; i < len; i++) {
-                res.Append('\0');
+                res.WriteByte(0);
             }
         }
         #endregion
@@ -1151,7 +1141,7 @@ namespace IronPython.Modules {
         }
 
         internal static Bytes CreateString(CodeContext/*!*/ context, ref int index, int count, IList<byte> data) {
-            MemoryStream res = new MemoryStream();
+            using var res = new MemoryStream();
             for (int i = 0; i < count; i++) {
                 res.WriteByte(ReadData(context, ref index, data));
             }
@@ -1161,7 +1151,7 @@ namespace IronPython.Modules {
 
         internal static Bytes CreatePascalString(CodeContext/*!*/ context, ref int index, int count, IList<byte> data) {
             int realLen = (int)ReadData(context, ref index, data);
-            MemoryStream res = new MemoryStream();
+            using var res = new MemoryStream();
             for (int i = 0; i < realLen; i++) {
                 res.WriteByte(ReadData(context, ref index, data));
             }

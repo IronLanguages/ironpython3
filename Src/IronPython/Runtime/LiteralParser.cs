@@ -35,13 +35,13 @@ namespace IronPython.Runtime {
             return result ?? bytes.MakeString(start, length);
         }
 
-        private static string DoParseString<T>(T[] data, int start, int length, bool isRaw, bool isUniEscape, bool normalizeLineEndings) {
+        private static string DoParseString<T>(T[] data, int start, int length, bool isRaw, bool isUniEscape, bool normalizeLineEndings) where T : IConvertible {
             StringBuilder buf = null;
             int i = start;
             int l = start + length;
             int val;
             while (i < l) {
-                char ch = Convert.ToChar(data[i++]);
+                char ch = data[i++].ToChar(null);
                 if ((!isRaw || isUniEscape) && ch == '\\') {
                     StringBuilderInit(ref buf, data, start, i - start - 1, length);
 
@@ -53,7 +53,7 @@ namespace IronPython.Runtime {
                             throw PythonOps.ValueError("Trailing \\ in string");
                         }
                     }
-                    ch = Convert.ToChar(data[i++]);
+                    ch = data[i++].ToChar(null);
 
                     if (ch == 'u' || ch == 'U') {
                         int len = (ch == 'u') ? 4 : 8;
@@ -105,16 +105,16 @@ namespace IronPython.Runtime {
                             case '\\': buf.Append('\\'); continue;
                             case '\'': buf.Append('\''); continue;
                             case '\"': buf.Append('\"'); continue;
-                            case '\r': if (i < l && Convert.ToChar(data[i]) == '\n') i++; continue;
+                            case '\r': if (i < l && data[i].ToChar(null) == '\n') i++; continue;
                             case '\n': continue;
                             case 'N': {
                                     IronPython.Modules.unicodedata.PerformModuleReload(null, null);
-                                    if (i < l && Convert.ToChar(data[i]) == '{') {
+                                    if (i < l && data[i].ToChar(null) == '{') {
                                         i++;
                                         StringBuilder namebuf = new StringBuilder();
                                         bool namecomplete = false;
                                         while (i < l) {
-                                            char namech = Convert.ToChar(data[i++]);
+                                            char namech = data[i++].ToChar(null);
                                             if (namech != '}') {
                                                 namebuf.Append(namech);
                                             } else {
@@ -155,10 +155,10 @@ namespace IronPython.Runtime {
                             case '7': {
                                     int onechar;
                                     val = ch - '0';
-                                    if (i < l && HexValue(Convert.ToChar(data[i]), out onechar) && onechar < 8) {
+                                    if (i < l && HexValue(data[i].ToChar(null), out onechar) && onechar < 8) {
                                         val = val * 8 + onechar;
                                         i++;
-                                        if (i < l && HexValue(Convert.ToChar(data[i]), out onechar) && onechar < 8) {
+                                        if (i < l && HexValue(data[i].ToChar(null), out onechar) && onechar < 8) {
                                             val = val * 8 + onechar;
                                             i++;
                                         }
@@ -177,7 +177,7 @@ namespace IronPython.Runtime {
                     StringBuilderInit(ref buf, data, start, i - start - 1, length);
 
                     // normalize line endings
-                    if (i < data.Length && Convert.ToChar(data[i]) == '\n') {
+                    if (i < data.Length && data[i].ToChar(null) == '\n') {
                         i++;
                     }
                     buf.Append('\n');
@@ -357,14 +357,14 @@ namespace IronPython.Runtime {
             return true;
         }
 
-        private static bool TryParseInt<T>(T[] text, int start, int length, int b, out int value, out int consumed) {
+        private static bool TryParseInt<T>(T[] text, int start, int length, int b, out int value, out int consumed) where T : IConvertible {
             value = 0;
             if (start + length > text.Length) {
                 consumed = 0;
                 return false;
             }
             for (int i = start, end = start + length; i < end; i++) {
-                if (HexValue(Convert.ToChar(text[i]), out int onechar) && onechar < b) {
+                if (HexValue(text[i].ToChar(null), out int onechar) && onechar < b) {
                     value = value * b + onechar;
                 } else {
                     consumed = i - start;

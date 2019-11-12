@@ -2204,6 +2204,66 @@ namespace IronPython.Runtime.Operations {
 
         #endregion
 
+        #region UnicodeEscapeEncoding
+
+#if FEATURE_ENCODING
+
+        private class UnicodeEscapeEncoding : Encoding {
+            private bool _raw;
+
+            public UnicodeEscapeEncoding(bool raw) {
+                _raw = raw;
+            }
+
+            public override int GetByteCount(char[] chars, int index, int count) {
+                return EscapeEncode(chars, index, count).Length;
+            }
+
+            private string EscapeEncode(char[] chars, int index, int count) {
+                if (_raw) {
+                    return RawUnicodeEscapeEncode(new string(chars, index, count));
+                }
+
+                return ReprEncode(new string(chars, index, count));
+            }
+
+            public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex) {
+                if (_raw) {
+                    string res = RawUnicodeEscapeEncode(new string(chars, charIndex, charCount));
+                    for (int i = 0; i < res.Length; i++) {
+                        bytes[i + byteIndex] = _raw ? (byte)res[i] : (byte)chars[i];
+                    }
+                    return res.Length;
+                } else {
+                    string res = ReprEncode(new string(chars, charIndex, charCount));
+                    for (int i = 0; i < res.Length; i++) {
+                        bytes[i + byteIndex] = (byte)res[i];
+                    }
+                    return res.Length;
+                }
+            }
+
+            public override int GetCharCount(byte[] bytes, int index, int count)
+                => LiteralParser.ParseString(bytes, index, count, _raw).Length;
+
+            public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) {
+                string res = LiteralParser.ParseString(bytes, byteIndex, byteCount, _raw);
+
+                for (int i = 0; i < res.Length; i++) {
+                    chars[i + charIndex] = (char)res[i];
+                }
+                return res.Length;
+            }
+
+            public override int GetMaxByteCount(int charCount) => charCount * 5;
+
+            public override int GetMaxCharCount(int byteCount) => byteCount;
+        }
+
+#endif
+
+        #endregion
+
         #region  Unicode Encode/Decode Fallback Support
 
 #if FEATURE_ENCODING
@@ -2526,73 +2586,6 @@ namespace IronPython.Runtime.Operations {
 
             public override int MaxCharCount {
                 get { throw new NotImplementedException(); }
-            }
-        }
-
-        private class UnicodeEscapeEncoding : Encoding {
-            private bool _raw;
-
-            public UnicodeEscapeEncoding(bool raw) {
-                _raw = raw;
-            }
-
-            public override int GetByteCount(char[] chars, int index, int count) {
-                return EscapeEncode(chars, index, count).Length;
-            }
-
-            private string EscapeEncode(char[] chars, int index, int count) {
-                if (_raw) {
-                    return RawUnicodeEscapeEncode(new string(chars, index, count));
-                }
-
-                return ReprEncode(new string(chars, index, count));
-            }
-
-            public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex) {
-                if (_raw) {
-                    string res = RawUnicodeEscapeEncode(new string(chars, charIndex, charCount));
-                    for (int i = 0; i < res.Length; i++) {
-                        bytes[i + byteIndex] = _raw ? (byte)res[i] : (byte)chars[i];
-                    }
-                    return res.Length;
-                } else {
-                    string res = ReprEncode(new string(chars, charIndex, charCount));
-                    for (int i = 0; i < res.Length; i++) {
-                        bytes[i + byteIndex] = (byte)res[i];
-                    }
-                    return res.Length;
-                }
-            }
-
-            public override int GetCharCount(byte[] bytes, int index, int count) {
-                char[] tmpChars = new char[count];
-                for (int i = 0; i < count; i++) {
-                    tmpChars[i] = (char)bytes[i + index];
-                }
-
-                return LiteralParser.ParseString(tmpChars, 0, tmpChars.Length, _raw, true, false).Length;
-            }
-
-            public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) {
-                char[] tmpChars = new char[byteCount];
-                for (int i = 0; i < byteCount; i++) {
-                    tmpChars[i] = (char)bytes[i + byteIndex];
-                }
-
-                string res = LiteralParser.ParseString(tmpChars, 0, tmpChars.Length, _raw, true, false);
-                for (int i = 0; i < res.Length; i++) {
-                    chars[i + charIndex] = (char)res[i];
-                }
-
-                return res.Length;
-            }
-
-            public override int GetMaxByteCount(int charCount) {
-                return charCount * 5;
-            }
-
-            public override int GetMaxCharCount(int byteCount) {
-                return byteCount;
             }
         }
 

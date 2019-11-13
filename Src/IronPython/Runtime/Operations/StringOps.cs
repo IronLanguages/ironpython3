@@ -2243,6 +2243,9 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
+            public override string GetString(byte[] bytes, int index, int count)
+                => LiteralParser.ParseString(bytes, index, count, _raw);
+
             public override int GetCharCount(byte[] bytes, int index, int count)
                 => LiteralParser.ParseString(bytes, index, count, _raw).Length;
 
@@ -2250,7 +2253,7 @@ namespace IronPython.Runtime.Operations {
                 string res = LiteralParser.ParseString(bytes, byteIndex, byteCount, _raw);
 
                 for (int i = 0; i < res.Length; i++) {
-                    chars[i + charIndex] = (char)res[i];
+                    chars[i + charIndex] = res[i];
                 }
                 return res.Length;
             }

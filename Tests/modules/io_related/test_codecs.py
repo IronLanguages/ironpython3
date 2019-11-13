@@ -21,7 +21,7 @@ import subprocess
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_mono, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_cpython, is_mono, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
 from iptest.misc_util import ip_supported_encodings
 
 class CodecTest(IronPythonTestCase):
@@ -129,9 +129,9 @@ class CodecTest(IronPythonTestCase):
         self.assertEqual(new_str, "abc€xyz")
         self.assertEqual(num_processed, 12)
 
-        new_str, num_processed = codecs.raw_unicode_escape_decode("abc\\U0001F40Dxyz")
-        self.assertEqual(new_str, "abc🐍xyz")
-        self.assertEqual(num_processed, 16)
+        new_str, num_processed = codecs.raw_unicode_escape_decode("abc\\U0001F40Dxyz\\")
+        self.assertEqual(new_str, "abc🐍xyz\\")
+        self.assertEqual(num_processed, 17)
 
     def test_raw_unicode_escape_decode_errors(self):
         with self.assertRaises(UnicodeDecodeError) as cm:
@@ -147,10 +147,10 @@ class CodecTest(IronPythonTestCase):
             codecs.raw_unicode_escape_decode("abc\\U0001F44xyz")
 
         self.assertEquals(cm.exception.encoding, 'rawunicodeescape')
-        if sys.version_info < (3, 6):
-            self.assertTrue(cm.exception.reason.startswith("truncated \\uXXXX"))
+        if is_cpython and sys.version_info < (3, 6):
+            self.assertEquals(cm.exception.reason, "truncated \\uXXXX")
         else:
-            self.assertEquals(cm.exception.reason, "truncated \\UXXXXXXXX sequence")
+            self.assertEquals(cm.exception.reason, "truncated \\UXXXXXXXX escape")
         self.assertEquals(cm.exception.start, 3)
         self.assertEquals(cm.exception.end, 12)
         self.assertEquals(cm.exception.object, b"abc\\U0001F44xyz")
@@ -158,7 +158,8 @@ class CodecTest(IronPythonTestCase):
         with self.assertRaises(UnicodeDecodeError) as cm:
             codecs.raw_unicode_escape_decode("abc\\U00110011xyz")
 
-        self.assertTrue(cm.exception.reason.startswith("\\Uxxxxxxxx out of range"))
+        self.assertEquals(cm.exception.encoding, 'rawunicodeescape')
+        self.assertEquals(cm.exception.reason, "\\Uxxxxxxxx out of range")
         self.assertEquals(cm.exception.start, 3)
         self.assertEquals(cm.exception.end, 13)
         self.assertEquals(cm.exception.object, b"abc\\U00110011xyz")
@@ -168,6 +169,136 @@ class CodecTest(IronPythonTestCase):
         new_str, num_processed = codecs.raw_unicode_escape_encode("abc")
         self.assertEqual(new_str, b'abc')
         self.assertEqual(num_processed, 3)
+
+    def test_unicode_escape_decode(self):
+        new_str, num_processed = codecs.unicode_escape_decode("abc")
+        self.assertEqual(new_str, "abc")
+        self.assertEqual(num_processed, 3)
+
+        new_str, num_processed = codecs.unicode_escape_decode(b"abc")
+        self.assertEqual(new_str, "abc")
+        self.assertEqual(num_processed, 3)
+
+        new_str, num_processed = codecs.unicode_escape_decode("abc\\u20ACxyz")
+        self.assertEqual(new_str, "abc€xyz")
+        self.assertEqual(num_processed, 12)
+
+        new_str, num_processed = codecs.unicode_escape_decode("abc\\U0001F40Dxyz")
+        self.assertEqual(new_str, "abc🐍xyz")
+        self.assertEqual(num_processed, 16)
+
+        new_str, num_processed = codecs.unicode_escape_decode("=\\u20AC=\\15\\n=\\xFF=\\\\\\=\\N{euro sign}=")
+        self.assertEqual(new_str, "=€=\r\n=ÿ=\\\\=€=")
+        self.assertEqual(num_processed, 37)
+
+        new_str, num_processed = codecs.unicode_escape_decode("\\\n")
+        self.assertEqual(new_str, "")
+        self.assertEqual(num_processed, 2)
+
+        new_str, num_processed = codecs.unicode_escape_decode("\\\r\\\n")
+        self.assertEqual(new_str, "\\\r")
+        self.assertEqual(num_processed, 4)
+
+
+    def test_unicode_escape_decode_errors(self):
+        with self.assertRaises(UnicodeDecodeError) as cm:
+            codecs.unicode_escape_decode("abc\\xyz")
+
+        self.assertEquals(cm.exception.encoding, 'unicodeescape')
+        self.assertEquals(cm.exception.reason, "truncated \\xXX escape")
+        self.assertEquals(cm.exception.start, 3)
+        self.assertEquals(cm.exception.end, 5)
+        self.assertEquals(cm.exception.object, b"abc\\xyz")
+
+        with self.assertRaises(UnicodeDecodeError) as cm:
+            codecs.unicode_escape_decode("abc\\u20klm\xffxyz\u20ac") # Unicode string
+
+        self.assertEquals(cm.exception.encoding, 'unicodeescape')
+        self.assertTrue(cm.exception.reason.startswith("truncated \\uXXXX"))
+        self.assertEquals(cm.exception.start, 3)
+        self.assertEquals(cm.exception.end, 7)
+        self.assertEquals(cm.exception.object, b"abc\\u20klm\xc3\xbfxyz\xe2\x82\xac") # in UTF-8
+
+        with self.assertRaises(UnicodeDecodeError) as cm:
+            codecs.unicode_escape_decode("abc\\U0001F44xyz")
+
+        self.assertEquals(cm.exception.encoding, 'unicodeescape')
+        self.assertEquals(cm.exception.reason, "truncated \\UXXXXXXXX escape")
+        self.assertEquals(cm.exception.start, 3)
+        self.assertEquals(cm.exception.end, 12)
+        self.assertEquals(cm.exception.object, b"abc\\U0001F44xyz")
+
+        with self.assertRaises(UnicodeDecodeError) as cm:
+            codecs.unicode_escape_decode("abc\\U00110011xyz")
+
+        self.assertEquals(cm.exception.encoding, 'unicodeescape')
+        self.assertEquals(cm.exception.reason, "illegal Unicode character")
+        self.assertEquals(cm.exception.start, 3)
+        self.assertEquals(cm.exception.end, 13)
+        self.assertEquals(cm.exception.object, b"abc\\U00110011xyz")
+
+        with self.assertRaises(UnicodeDecodeError) as cm:
+            codecs.unicode_escape_decode("abc\\N{EURO}xyz")
+
+        self.assertEquals(cm.exception.encoding, 'unicodeescape')
+        self.assertEquals(cm.exception.reason, "unknown Unicode character name")
+        self.assertEquals(cm.exception.start, 3)
+        self.assertEquals(cm.exception.end, 11)
+        self.assertEquals(cm.exception.object, b"abc\\N{EURO}xyz")
+
+        with self.assertRaises(UnicodeDecodeError) as cm:
+            codecs.unicode_escape_decode("abc\\Nxyz")
+
+        self.assertEquals(cm.exception.encoding, 'unicodeescape')
+        self.assertEquals(cm.exception.reason, "malformed \\N character escape")
+        self.assertEquals(cm.exception.start, 3)
+        self.assertEquals(cm.exception.end, 5)
+        self.assertEquals(cm.exception.object, b"abc\\Nxyz")
+
+        with self.assertRaises(UnicodeDecodeError) as cm:
+            codecs.unicode_escape_decode("abc\\N")
+
+        self.assertEquals(cm.exception.encoding, 'unicodeescape')
+        self.assertEquals(cm.exception.reason, "malformed \\N character escape")
+        self.assertEquals(cm.exception.start, 3)
+        self.assertEquals(cm.exception.end, 5)
+        self.assertEquals(cm.exception.object, b"abc\\N")
+
+        with self.assertRaises(UnicodeDecodeError) as cm:
+            codecs.unicode_escape_decode("abc\\N{xyz")
+
+        self.assertEquals(cm.exception.encoding, 'unicodeescape')
+        self.assertEquals(cm.exception.reason, "malformed \\N character escape")
+        self.assertEquals(cm.exception.start, 3)
+        self.assertEquals(cm.exception.end, 9)
+        self.assertEquals(cm.exception.object, b"abc\\N{xyz")
+
+        with self.assertRaises(UnicodeDecodeError) as cm:
+            codecs.unicode_escape_decode("abc\\N{")
+
+        self.assertEquals(cm.exception.encoding, 'unicodeescape')
+        self.assertEquals(cm.exception.reason, "malformed \\N character escape")
+        self.assertEquals(cm.exception.start, 3)
+        self.assertEquals(cm.exception.end, 6)
+        self.assertEquals(cm.exception.object, b"abc\\N{")
+
+        with self.assertRaises(UnicodeDecodeError) as cm:
+            codecs.unicode_escape_decode("abc\\N{}xyz")
+
+        self.assertEquals(cm.exception.encoding, 'unicodeescape')
+        self.assertEquals(cm.exception.reason, "malformed \\N character escape")
+        self.assertEquals(cm.exception.start, 3)
+        self.assertEquals(cm.exception.end, 6)
+        self.assertEquals(cm.exception.object, b"abc\\N{}xyz")
+
+        with self.assertRaises(UnicodeDecodeError) as cm:
+            codecs.unicode_escape_decode("abc\\N{}")
+
+        self.assertEquals(cm.exception.encoding, 'unicodeescape')
+        self.assertEquals(cm.exception.reason, "malformed \\N character escape")
+        self.assertEquals(cm.exception.start, 3)
+        self.assertEquals(cm.exception.end, 6)
+        self.assertEquals(cm.exception.object, b"abc\\N{}")
 
     def test_utf_7_decode(self):
         #sanity
@@ -675,10 +806,6 @@ class CodecTest(IronPythonTestCase):
 
         self.assertEqual(codecs.mbcs_encode(uinvalid, 'replace'), (b'?'*len(uinvalid), len(uinvalid)))
         self.assertEqual(codecs.mbcs_encode(uinvalid, 'ignore'), (b'', len(uinvalid)))
-
-    @skipUnlessIronPython()
-    def test_unicode_escape_decode(self):
-        self.assertRaises(NotImplementedError, codecs.unicode_escape_decode, "abc")
 
     @skipUnlessIronPython()
     def test_unicode_escape_encode(self):

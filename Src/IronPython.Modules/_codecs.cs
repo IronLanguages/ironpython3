@@ -305,17 +305,32 @@ namespace IronPython.Modules {
 
         #endregion
 
+        #region Unicode Escape Encoding Functions
+
+        public static PythonTuple unicode_escape_decode(CodeContext/*!*/ context, string input, string errors = "strict") {
+            // Encoding with UTF-8 is probably a bug or at least a mistake, as it mutilates non-ASCII characters,
+            // but this is what CPython does. Probably encoding with "unicode-escape" would be more reasonable.
+            return unicode_escape_decode(context, DoEncode(context, "utf-8", Encoding.UTF8, input, "strict").Item1, errors);
+        }
+
+        public static PythonTuple unicode_escape_decode(CodeContext/*!*/ context, [BytesConversion]IList<byte> input, string errors = "strict") {
+            return PythonTuple.MakeTuple(
+                StringOps.RawDecode(context, input, "unicode-escape", errors),
+                input.Count
+            );
+        }
+
+        public static PythonTuple unicode_escape_encode(string input) => throw PythonOps.NotImplementedError("unicode_escape_encode");
+
+        #endregion
+
         public static PythonTuple readbuffer_encode(CodeContext/*!*/ context, string input, string errors = null)
             => readbuffer_encode(DoEncode(context, "utf-8", Encoding.UTF8, input, "strict").Item1, errors);
 
         public static PythonTuple readbuffer_encode([BytesConversion]IList<byte> input, string errors = null)
             => PythonTuple.MakeTuple(new Bytes(input), input.Count);
 
-        #region Unicode Escape Encoding Functions
-
-        public static PythonTuple unicode_escape_decode(string input) => throw PythonOps.NotImplementedError("unicode_escape_decode");
-
-        public static PythonTuple unicode_escape_encode(string input) => throw PythonOps.NotImplementedError("unicode_escape_encode");
+        #region Unicode Internal Encoding Functions
 
         public static PythonTuple unicode_internal_decode(CodeContext context, [BytesConversion]IList<byte> input, string errors = "strict") {
             PythonOps.Warn(context, PythonExceptions.DeprecationWarning, "unicode_internal codec has been deprecated");

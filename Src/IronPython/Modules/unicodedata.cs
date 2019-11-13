@@ -137,7 +137,7 @@ namespace IronPython.Modules {
             public string unidata_version { get; private set; }
 
             public string lookup(string name) {
-                return char.ConvertFromUtf32(nameLookup[name]);
+                return char.ConvertFromUtf32(nameLookup[name.ToUpperInvariant()]);
             }
 
             public string name(char unichr, string @default) {

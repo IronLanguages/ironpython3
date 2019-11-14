@@ -489,6 +489,7 @@ namespace IronPython.Modules {
 
                 // store the new formats
                 var s = new Struct() {
+                    format = fmt,
                     _formats = res.ToArray(),
                     _isStandardized = fStandardized,
                     _isLittleEndian = fLittleEndian,

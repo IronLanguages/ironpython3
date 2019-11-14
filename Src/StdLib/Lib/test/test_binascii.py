@@ -4,12 +4,23 @@ from test import support
 import unittest
 import binascii
 import array
+import sys
 
 # Note: "*_hex" functions are aliases for "(un)hexlify"
 b2a_functions = ['b2a_base64', 'b2a_hex', 'b2a_hqx', 'b2a_qp', 'b2a_uu',
                  'hexlify', 'rlecode_hqx']
 a2b_functions = ['a2b_base64', 'a2b_hex', 'a2b_hqx', 'a2b_qp', 'a2b_uu',
                  'unhexlify', 'rledecode_hqx']
+
+if sys.implementation.name == "ironpython":
+    # these are not yet implemented in IronPython
+    b2a_functions.remove('b2a_qp')
+    b2a_functions.remove('b2a_hqx')
+    b2a_functions.remove('rlecode_hqx')
+    a2b_functions.remove('a2b_qp')
+    a2b_functions.remove('a2b_hqx')
+    a2b_functions.remove('rledecode_hqx')
+    
 all_functions = a2b_functions + b2a_functions + ['crc32', 'crc_hqx']
 
 
@@ -155,6 +166,7 @@ class BinASCIITest(unittest.TestCase):
 
         self.assertRaises(TypeError, binascii.crc32)
 
+    @unittest.skipIf(sys.implementation.name == "ironpython", "TODO: not implemented")
     def test_hqx(self):
         # Perform binhex4 style RLE-compression
         # Then calculate the hexbin4 binary-to-ASCII translation
@@ -178,6 +190,7 @@ class BinASCIITest(unittest.TestCase):
         self.assertEqual(binascii.hexlify(self.type2test(s)), t)
         self.assertEqual(binascii.unhexlify(self.type2test(t)), u)
 
+    @unittest.skipIf(sys.implementation.name == "ironpython", "TODO: not implemented")
     def test_qp(self):
         binascii.a2b_qp(data=b"", header=False)  # Keyword arguments allowed
 
@@ -228,6 +241,7 @@ class BinASCIITest(unittest.TestCase):
     def test_unicode_b2a(self):
         # Unicode strings are not accepted by b2a_* functions.
         for func in set(all_functions) - set(a2b_functions) | {'rledecode_hqx'}:
+            if sys.implementation.name == "ironpython" and func == 'rledecode_hqx': continue
             try:
                 self.assertRaises(TypeError, getattr(binascii, func), "test")
             except Exception as err:

@@ -137,7 +137,7 @@ namespace IronPython.Modules {
             public string unidata_version { get; private set; }
 
             public string lookup(string name) {
-                return char.ConvertFromUtf32(nameLookup[name.ToUpperInvariant()]);
+                return char.ConvertFromUtf32(nameLookup[name]);
             }
 
             public string name(char unichr, string @default) {
@@ -335,7 +335,7 @@ namespace IronPython.Modules {
             }
 
             private void BuildNameLookup() {
-                nameLookup = database.Where(c => !c.Value.Name.StartsWith("<")).ToDictionary(c => c.Value.Name, c => c.Key);
+                nameLookup = database.Where(c => !c.Value.Name.StartsWith("<")).ToDictionary(c => c.Value.Name, c => c.Key, StringComparer.OrdinalIgnoreCase);
             }
 
             private bool TryGetInfo(char unichr, out CharInfo charInfo) {

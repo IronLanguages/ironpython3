@@ -218,11 +218,11 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.UTF8Test('test_readline'))
         suite.addTest(test.test_codecs.UTF8Test('test_readlinequeue'))
         #suite.addTest(test.test_codecs.UTF8Test('test_surrogatepass_handler')) # LookupError: unknown error handler name 'surrogatepass'
-        #suite.addTest(test.test_codecs.UnicodeEscapeTest('test_decode_errors')) # TypeError: expected str, got bytes
+        #suite.addTest(test.test_codecs.UnicodeEscapeTest('test_decode_errors')) # 'ignore' error handler not implemented
         #suite.addTest(test.test_codecs.UnicodeEscapeTest('test_empty')) # NotImplementedError: unicode_escape_encode
-        #suite.addTest(test.test_codecs.UnicodeEscapeTest('test_escape_decode')) # TypeError: expected str, got bytes
+        suite.addTest(test.test_codecs.UnicodeEscapeTest('test_escape_decode'))
         #suite.addTest(test.test_codecs.UnicodeEscapeTest('test_escape_encode')) # NotImplementedError: unicode_escape_encode
-        #suite.addTest(test.test_codecs.UnicodeEscapeTest('test_raw_decode')) # TypeError: expected str, got bytes
+        suite.addTest(test.test_codecs.UnicodeEscapeTest('test_raw_decode'))
         #suite.addTest(test.test_codecs.UnicodeEscapeTest('test_raw_encode')) # NotImplementedError: unicode_escape_encode
         suite.addTest(test.test_codecs.UnicodeInternalTest('test_bug1251300'))
         suite.addTest(test.test_codecs.UnicodeInternalTest('test_decode_callback'))

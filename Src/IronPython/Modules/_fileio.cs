@@ -526,10 +526,6 @@ namespace IronPython.Modules {
                 return len;
             }
 
-            private BigInteger write([NotNull]string s) {
-                return write(s.MakeByteArray());
-            }
-
             [Documentation("write(b: bytes) -> int.  Write bytes b to file, return number written.\n\n"
                 + "Only makes one system call, so not all the data may be written.\n"
                 + "The number of bytes actually written is returned."

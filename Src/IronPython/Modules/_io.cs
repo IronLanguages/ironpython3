@@ -2908,7 +2908,7 @@ namespace IronPython.Modules {
                     return DecodeWorker(context, input, final);
                 }
 
-                return decode(context, new Bytes(input.MakeByteArray()), final);
+                return decode(context, Bytes.Make(input.MakeByteArray()), final);
             }
 
             private string DecodeWorker(CodeContext/*!*/ context, string decoded, bool final) {
@@ -3155,7 +3155,7 @@ namespace IronPython.Modules {
             }
 
             if (s != null) {
-                return PythonOps.MakeBytes(s.MakeByteArray());
+                return Bytes.Make(s.MakeByteArray());
             }
 
             throw PythonOps.TypeError("'" + name + "' should have returned bytes");

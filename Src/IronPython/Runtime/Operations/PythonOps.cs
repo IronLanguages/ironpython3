@@ -3369,11 +3369,10 @@ namespace IronPython.Runtime.Operations {
             return DoubleOps.Compare(self, other);
         }
 
+        [Obsolete("Use Bytes(IList<byte>) instead.")]
         public static Bytes MakeBytes(byte[] bytes) {
             return new Bytes(bytes);
         }
-
-        internal static Bytes MakeBytes(string s) => Bytes.Make(MakeByteArray(s));
 
         public static byte[] MakeByteArray(this string s) {
             byte[] ret = new byte[s.Length];

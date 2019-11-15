@@ -272,8 +272,6 @@ namespace IronPython.Modules {
 
         public static object XMLParserType { get; } = DynamicHelpers.GetPythonTypeFromType(typeof(xmlparser));
 
-        private static Encoding utf8Encoding;
-
         [PythonType, PythonHidden]
         public class xmlparser {
             private readonly StringBuilder text_buffer = new StringBuilder();
@@ -584,8 +582,7 @@ namespace IronPython.Modules {
 
             public void Parse(CodeContext context, string data, bool isfinal = false) {
                 // CPython converts to UTF-8 via PyUnicode_AsUTF8AndSize
-                if (utf8Encoding == null) utf8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
-                Parse(context, utf8Encoding.GetBytes(data), isfinal);
+                Parse(context, StringOps.DoEncodeUtf8(context, data), isfinal);
             }
 
             public void Parse(CodeContext context, [BytesConversion]IList<byte> data, bool isfinal = false) {

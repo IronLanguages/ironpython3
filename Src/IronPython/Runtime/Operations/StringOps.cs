@@ -1789,6 +1789,9 @@ namespace IronPython.Runtime.Operations {
             throw PythonOps.LookupError("unknown encoding: {0}", encoding);
         }
 
+        internal static Bytes DoEncodeUtf8(CodeContext context, string s)
+            => RawEncode(context, s, "utf-8", "strict");
+
         internal static Bytes DoEncode(CodeContext context, string s, string errors, string encoding, Encoding e, bool includePreamble) {
 #if FEATURE_ENCODING
             // CLR's encoder exceptions have a 1-1 mapping w/ Python's encoder exceptions

@@ -1868,7 +1868,7 @@ namespace IronPython.Runtime.Operations {
 #if NETCOREAPP || NETSTANDARD
                 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
                 // TODO: add more encodings
-                d["cp1252"] = d["windows-1252"] = makeEncodingProxy(() => Encoding.GetEncoding(1252));
+                d["cp1252"] = d["windows_1252"] = makeEncodingProxy(() => Encoding.GetEncoding(1252));
                 d["iso8859_15"] = d["iso_8859_15"] = d["latin9"] = d["l9"] = makeEncodingProxy(() => Encoding.GetEncoding(28605));
 #endif
                 EncodingInfo[] encs = Encoding.GetEncodings();
@@ -1911,8 +1911,6 @@ namespace IronPython.Runtime.Operations {
 
                     // publish under normalized name (all lower cases, -s replaced with _s)
                     d[normalizedName] = //...
-                    // publish under Windows code page as well...
-                    d["windows_" + encInfo.GetEncoding().WindowsCodePage.ToString()] = //...
                     // publish under code page number as well...
                     d["cp" + encInfo.CodePage.ToString()] = d[encInfo.CodePage.ToString()] = makeEncodingProxy(encInfo.GetEncoding);
                 }

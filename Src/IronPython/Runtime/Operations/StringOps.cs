@@ -1868,7 +1868,7 @@ namespace IronPython.Runtime.Operations {
 #if NETCOREAPP || NETSTANDARD
                 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
                 // TODO: add more encodings
-                d["cp1252"] = d["windows-1252"] = makeEncodingProxy(() => Encoding.GetEncoding(1252));
+                d["cp1252"] = d["windows_1252"] = makeEncodingProxy(() => Encoding.GetEncoding(1252));
                 d["iso8859_15"] = d["iso_8859_15"] = d["latin9"] = d["l9"] = makeEncodingProxy(() => Encoding.GetEncoding(28605));
 #endif
                 EncodingInfo[] encs = Encoding.GetEncodings();
@@ -1883,7 +1883,7 @@ namespace IronPython.Runtime.Operations {
                             d["cp" + encInfo.CodePage.ToString()] = d["us_ascii"] = d["us"] = d["ascii"] = d["646"] = makeEncodingProxy(() => PythonAsciiEncoding.Instance);
                             continue;
                         case "utf_7":
-                            d["cp" + encInfo.CodePage.ToString()] = d["utf_7"] = d["u7"] = d["unicode-1-1-utf-7"] = makeEncodingProxy(() => new UTF7Encoding(allowOptionals: true));
+                            d["cp" + encInfo.CodePage.ToString()] = d["utf_7"] = d["u7"] = d["unicode_1_1_utf_7"] = makeEncodingProxy(() => new UTF7Encoding(allowOptionals: true));
                             continue;
                         case "utf_8":
                             d["cp" + encInfo.CodePage.ToString()] = d["utf_8"] = d["utf8"] = d["u8"] = makeEncodingProxy(() => new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
@@ -1911,8 +1911,6 @@ namespace IronPython.Runtime.Operations {
 
                     // publish under normalized name (all lower cases, -s replaced with _s)
                     d[normalizedName] = //...
-                    // publish under Windows code page as well...
-                    d["windows-" + encInfo.GetEncoding().WindowsCodePage.ToString()] = //...
                     // publish under code page number as well...
                     d["cp" + encInfo.CodePage.ToString()] = d[encInfo.CodePage.ToString()] = makeEncodingProxy(encInfo.GetEncoding);
                 }
@@ -1921,9 +1919,11 @@ namespace IronPython.Runtime.Operations {
                 d["unicode_escape"] = makeEncodingProxy(() => new UnicodeEscapeEncoding(false));
 
 #if DEBUG
-                // all codecs should be stored in lowercase because we only look up from lowercase strings
                 foreach (KeyValuePair<string, Lazy<Encoding>> kvp in d) {
+                    // all codecs should be stored in lowercase because we only look up from lowercase strings
                     Debug.Assert(kvp.Key.ToLower(CultureInfo.InvariantCulture) == kvp.Key);
+                    // all codec names should use underscores instead of dashes to match lookup values
+                    Debug.Assert(kvp.Key.IndexOf('-') < 0);
                 }
 #endif
                 return d;

@@ -1434,10 +1434,6 @@ namespace IronPython.Runtime.Operations {
             return b.ToString();
         }
 
-        internal static string ReprEncode(string s) {
-            return ReprEncode(s, (char)0);
-        }
-
         internal static bool TryGetEncoding(string name, out Encoding encoding) {
 #if FEATURE_ENCODING
             encoding = null;
@@ -1493,24 +1489,6 @@ namespace IronPython.Runtime.Operations {
                 default: encoding = null; return false;
             }
 #endif
-        }
-
-        internal static string RawUnicodeEscapeEncode(string s) {
-            // in the common case we don't need to encode anything, so we
-            // lazily create the StringBuilder only if necessary.
-            StringBuilder b = null;
-            for (int i = 0; i < s.Length; i++) {
-                char ch = s[i];
-                if (ch > 0xff) {
-                    ReprInit(ref b, s, i);
-                    b.AppendFormat("\\u{0:x4}", (int)ch);
-                } else if (b != null) {
-                    b.Append(ch);
-                }
-            }
-
-            if (b == null) return s;
-            return b.ToString();
         }
 
         #endregion
@@ -1577,19 +1555,23 @@ namespace IronPython.Runtime.Operations {
             // in the common case we don't need to encode anything, so we
             // lazily create the StringBuilder only if necessary.
             StringBuilder b = null;
-            for (int i = 0; i < s.Length; i++) {
-                char ch = s[i];
-                if (ch <= 0x1f || ch == 0x7f) {
-                    ReprInit(ref b, s, i);
+            int start = 0;
+            int count = s.Length;
+            int i = start;
+            while (i < s.Length) {
+                char ch = s[i++];
+                if (ch <= 0x1F || ch == 0x7F) {
+                    StringBuilderInit(ref b, s, start, i - 1);
                     b.AppendFormat("\\x{0:x2}", (int)ch);
-                } else if (ch > 0x7f) {
-                    ReprInit(ref b, s, i);
-                    if (ch < 0x100) {
-                        b.AppendFormat("\\x{0:x2}", (int)ch);
-                    } else {
+                } else if (ch > 0x7F) {
+                    StringBuilderInit(ref b, s, 0, i - 1);
+                    if ((ch & 0xFC00) == 0xD800 && i < count && (s[i] & 0xFC00) == 0xDC00) {
+                        b.AppendFormat("\\U{0:x8}", char.ConvertToUtf32(ch, s[i++]));
+                    } else if (ch > 0xFF) {
                         b.AppendFormat("\\u{0:x4}", (int)ch);
+                    } else {
+                        b.AppendFormat("\\x{0:x2}", (int)ch);
                     }
-                    // TODO: support "wide" unicode
                 } else {
                     b?.Append(ch);
                 }
@@ -1600,31 +1582,37 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static string ReprEncode(string s, char quote) {
+            return ReprEncode(s, 0, s.Length, isUniEscape: false, quote);
+        }
+
+        private static string ReprEncode(string s, int start, int count, bool isUniEscape, char quote = default) {
             // in the common case we don't need to encode anything, so we
             // lazily create the StringBuilder only if necessary.
             StringBuilder b = null;
-            for (int i = 0; i < s.Length; i++) {
-                char ch = s[i];
+            int i = start;
+            while (i < count) {
+                char ch = s[i++];
                 switch (ch) {
-                    case '\\': ReprInit(ref b, s, i); b.Append("\\\\"); break;
-                    case '\t': ReprInit(ref b, s, i); b.Append("\\t"); break;
-                    case '\n': ReprInit(ref b, s, i); b.Append("\\n"); break;
-                    case '\r': ReprInit(ref b, s, i); b.Append("\\r"); break;
+                    case '\\': StringBuilderInit(ref b, s, start, i - 1); b.Append("\\\\"); break;
+                    case '\t': StringBuilderInit(ref b, s, start, i - 1); b.Append("\\t"); break;
+                    case '\n': StringBuilderInit(ref b, s, start, i - 1); b.Append("\\n"); break;
+                    case '\r': StringBuilderInit(ref b, s, start, i - 1); b.Append("\\r"); break;
                     default:
-                        if (quote != 0 && ch == quote) {
-                            ReprInit(ref b, s, i);
+                        if (quote != default && ch == quote) {
+                            StringBuilderInit(ref b, s, start, i - 1);
                             b.Append('\\'); b.Append(ch);
-                        } else if (ch <= 0x1f || ch == 0x7f) {
-                            ReprInit(ref b, s, i);
+                        } else if (ch <= 0x1F || ch == 0x7F) {
+                            StringBuilderInit(ref b, s, start, i - 1);
                             b.AppendFormat("\\x{0:x2}", (int)ch);
-                        } else if (ch > 0x7f && !IsPrintable(ch)) {
-                            ReprInit(ref b, s, i);
-                            if (ch < 0x100) {
-                                b.AppendFormat("\\x{0:x2}", (int)ch);
-                            } else {
+                        } else if (ch > 0x7F && (isUniEscape || !IsPrintable(ch))) {
+                            StringBuilderInit(ref b, s, start, i - 1);
+                            if ((ch & 0xFC00) == 0xD800 && i < count && (s[i] & 0xFC00) == 0xDC00) {
+                                b.AppendFormat("\\U{0:x8}", char.ConvertToUtf32(ch, s[i++]));
+                            } else if (ch > 0xFF) {
                                 b.AppendFormat("\\u{0:x4}", (int)ch);
+                            } else {
+                                b.AppendFormat("\\x{0:x2}", (int)ch);
                             }
-                            // TODO: support "wide" unicode
                         } else {
                             b?.Append(ch);
                         }
@@ -1633,14 +1621,35 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            if (b == null) return s;
-            return b.ToString();
+            return b?.ToString() ?? s;
         }
 
-        private static void ReprInit(ref StringBuilder sb, string s, int c) {
+        private static string RawUnicodeEscapeEncode(string s, int start, int count) {
+            // in the common case we don't need to encode anything, so we
+            // lazily create the StringBuilder only if necessary.
+            StringBuilder b = null;
+            int i = start;
+            while (i < count) {
+                char ch = s[i++];
+                if ((ch & 0xFC00) == 0xD800 && i < count && (s[i] & 0xFC00) == 0xDC00) {
+                    StringBuilderInit(ref b, s, start, i - 1);
+                    b.AppendFormat("\\U{0:x8}", char.ConvertToUtf32(ch, s[i++]));
+                } else if (ch > 0xFF) {
+                    StringBuilderInit(ref b, s, start, i - 1);
+                    b.AppendFormat("\\u{0:x4}", (int)ch);
+                } else {
+                    b?.Append(ch);
+                }
+            }
+
+            return b?.ToString() ?? s;
+        }
+
+        private static void StringBuilderInit(ref StringBuilder sb, string s, int start, int end) {
             if (sb != null) return;
 
-            sb = new StringBuilder(s, 0, c, s.Length);
+            sb = new StringBuilder(s.Length);
+            sb.Append(s, start, end - start);
         }
 
         private static bool IsSign(char ch) {
@@ -2209,39 +2218,36 @@ namespace IronPython.Runtime.Operations {
 #if FEATURE_ENCODING
 
         private class UnicodeEscapeEncoding : Encoding {
-            private bool _raw;
+            private readonly bool _raw;
 
             public UnicodeEscapeEncoding(bool raw) {
                 _raw = raw;
             }
 
-            public override int GetByteCount(char[] chars, int index, int count) {
-                return EscapeEncode(chars, index, count).Length;
+            private string EscapeEncode(string s, int index, int count) {
+                return _raw ?
+                    RawUnicodeEscapeEncode(s, index, count)
+                :
+                    ReprEncode(s, index, count, isUniEscape: true);
             }
 
-            private string EscapeEncode(char[] chars, int index, int count) {
-                if (_raw) {
-                    return RawUnicodeEscapeEncode(new string(chars, index, count));
+            public override int GetByteCount(string s)
+                => EscapeEncode(s, 0, s.Length).Length;
+
+            public override int GetByteCount(char[] chars, int index, int count)
+                => EscapeEncode(new string(chars), index, count).Length;
+
+            public override int GetBytes(string s, int charIndex, int charCount, byte[] bytes, int byteIndex) {
+                string res = EscapeEncode(s, charIndex, charCount);
+
+                for (int i = 0; i < res.Length; i++) {
+                    bytes[i + byteIndex] = (byte)res[i];
                 }
-
-                return ReprEncode(new string(chars, index, count));
+                return res.Length;
             }
 
-            public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex) {
-                if (_raw) {
-                    string res = RawUnicodeEscapeEncode(new string(chars, charIndex, charCount));
-                    for (int i = 0; i < res.Length; i++) {
-                        bytes[i + byteIndex] = _raw ? (byte)res[i] : (byte)chars[i];
-                    }
-                    return res.Length;
-                } else {
-                    string res = ReprEncode(new string(chars, charIndex, charCount));
-                    for (int i = 0; i < res.Length; i++) {
-                        bytes[i + byteIndex] = (byte)res[i];
-                    }
-                    return res.Length;
-                }
-            }
+            public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
+                => GetBytes(new string(chars), charIndex, charCount, bytes, byteIndex);
 
             public override string GetString(byte[] bytes, int index, int count)
                 => LiteralParser.ParseString(bytes, index, count, _raw);

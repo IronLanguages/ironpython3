@@ -320,7 +320,12 @@ namespace IronPython.Modules {
             );
         }
 
-        public static PythonTuple unicode_escape_encode(string input) => throw PythonOps.NotImplementedError("unicode_escape_encode");
+        public static PythonTuple unicode_escape_encode(CodeContext/*!*/ context, string input, string errors = "strict") {
+            return PythonTuple.MakeTuple(
+                StringOps.RawEncode(context, input, "unicode-escape", errors),
+                input.Length
+            );
+        }
 
         #endregion
 

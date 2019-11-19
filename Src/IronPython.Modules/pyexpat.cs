@@ -580,8 +580,23 @@ namespace IronPython.Modules {
 
             private MemoryStream buffer = new MemoryStream();
 
-            public void Parse(CodeContext context, string data, bool isfinal = false)
-                => Parse(context, PythonOps.MakeBytes(data), isfinal);
+
+            private Encoder _encoder;
+
+            public void Parse(CodeContext context, string data, bool isfinal = false) {
+                // CPython converts to UTF-8 via PyUnicode_AsUTF8AndSize
+                _encoder ??= context.LanguageContext.DefaultEncoding.GetEncoder();
+#if NETCOREAPP
+                var chars = data.AsSpan();
+                byte[] bytes = new byte[_encoder.GetByteCount(chars, flush: isfinal)];
+                _encoder.GetBytes(chars, bytes.AsSpan(), flush: isfinal);
+#else
+                var chars = data.ToCharArray();
+                byte[] bytes = new byte[_encoder.GetByteCount(chars, 0, chars.Length, flush: isfinal)];
+                _encoder.GetBytes(chars, 0, chars.Length, bytes, 0, flush: isfinal);
+#endif
+                Parse(context, bytes, isfinal);
+            }
 
             public void Parse(CodeContext context, [BytesConversion]IList<byte> data, bool isfinal = false) {
                 CheckParsingDone(context);

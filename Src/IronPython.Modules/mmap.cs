@@ -5,10 +5,12 @@
 #if FEATURE_MMAP
 
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -54,28 +56,6 @@ namespace IronPython.Modules {
 
         public static readonly string __doc__ = null;
 
-        private static readonly object _mmapErrorKey = new object();
-
-        [SpecialName]
-        public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
-            context.EnsureModuleException(_mmapErrorKey, PythonExceptions.OSError, dict, "error", "mmap");
-        }
-
-        private static Exception Error(CodeContext/*!*/ context, string/*!*/ message) {
-            return PythonExceptions.CreateThrowable(
-                (PythonType)context.LanguageContext.GetModuleState(_mmapErrorKey),
-                message
-            );
-        }
-
-        private static Exception Error(CodeContext/*!*/ context, int errno, string/*!*/ message) {
-            return PythonExceptions.CreateThrowable(
-                (PythonType)context.LanguageContext.GetModuleState(_mmapErrorKey),
-                errno,
-                message
-            );
-        }
-
         private static string FormatError(int errorCode) {
             return new Win32Exception(errorCode).Message;
         }
@@ -83,6 +63,8 @@ namespace IronPython.Modules {
         private static Exception WindowsError(int code) {
             return PythonExceptions.CreateThrowable(PythonExceptions.OSError, code, FormatError(code));
         }
+
+        public static PythonType error => PythonExceptions.OSError;
 
         public static PythonType mmap {
             get {
@@ -101,7 +83,7 @@ namespace IronPython.Modules {
         }
 
         [PythonType("mmap.mmap"), PythonHidden]
-        public class MmapDefault {
+        public class MmapDefault : IWeakReferenceable {
             private MemoryMappedFile _file;
             private MemoryMappedViewAccessor _view;
             private long _position;
@@ -169,7 +151,7 @@ namespace IronPython.Modules {
                             throw WindowsError(PythonExceptions._OSError.ERROR_INVALID_HANDLE);
                         }
                     } else {
-                        throw Error(context, PythonExceptions._OSError.ERROR_INVALID_BLOCK, "Bad file descriptor");
+                        throw PythonOps.OSError(PythonExceptions._OSError.ERROR_INVALID_BLOCK, "Bad file descriptor");
                     }
 
                     if (_fileAccess == MemoryMappedFileAccess.ReadWrite && !_sourceStream.CanWrite) {
@@ -223,24 +205,21 @@ namespace IronPython.Modules {
                 }
             }
 
-            public string this[long index] {
+            public int this[long index] {
                 get {
                     using (new MmapLocker(this)) {
                         CheckIndex(index);
 
-                        return ((char)_view.ReadByte(index)).ToString();
+                        return _view.ReadByte(index);
                     }
                 }
 
                 set {
                     using (new MmapLocker(this)) {
-                        if (value == null || value.Length != 1) {
-                            throw PythonOps.IndexError("mmap assignment must be a single-character string");
-                        }
                         EnsureWritable();
                         CheckIndex(index);
 
-                        _view.Write(index, (byte)value[0]);
+                        _view.Write(index, (byte)value);
                     }
                 }
             }
@@ -319,6 +298,16 @@ namespace IronPython.Modules {
                 }
             }
 
+            public object __enter__() {
+                return this;
+            }
+
+            public void __exit__(CodeContext/*!*/ context, params object[] excinfo) {
+                close();
+            }
+
+            public bool closed => _isClosed;
+
             public void close() {
                 if (!_isClosed) {
                     lock (this) {
@@ -341,42 +330,41 @@ namespace IronPython.Modules {
                 }
             }
 
-            public object find([NotNull]string/*!*/ s) {
+            public object find([NotNull]Bytes/*!*/ s) {
                 using (new MmapLocker(this)) {
                     return FindWorker(s, Position, _view.Capacity);
                 }
             }
 
-            public object find([NotNull]string/*!*/ s, long start) {
+            public object find([NotNull]Bytes/*!*/ s, long start) {
                 using (new MmapLocker(this)) {
                     return FindWorker(s, start, _view.Capacity);
                 }
             }
 
-            public object find([NotNull]string/*!*/ s, long start, long end) {
+            public object find([NotNull]Bytes/*!*/ s, long start, long end) {
                 using (new MmapLocker(this)) {
                     return FindWorker(s, start, end);
                 }
             }
 
-            private object FindWorker(string/*!*/ s, long start, long end) {
+            private object FindWorker(IList<byte>/*!*/ s, long start, long end) {
                 ContractUtils.RequiresNotNull(s, nameof(s));
 
                 start = PythonOps.FixSliceIndex(start, _view.Capacity);
                 end = PythonOps.FixSliceIndex(end, _view.Capacity);
 
-                if (s == "") {
+                if (s.Count == 0) {
                     return start <= end ? ReturnLong(start) : -1;
                 }
 
                 long findLength = end - start;
-                if (s.Length > findLength) {
+                if (s.Count > findLength) {
                     return -1;
                 }
 
                 int index = -1;
-                int bufferLength = Math.Max(s.Length, PAGESIZE);
-                CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
+                int bufferLength = Math.Max(s.Count, PAGESIZE);
 
                 if (findLength <= bufferLength * 2) {
                     // In this case, the search area is not significantly larger than s, so we only need to
@@ -384,8 +372,7 @@ namespace IronPython.Modules {
                     byte[] buffer = new byte[findLength];
                     _view.ReadArray(start, buffer, 0, (int)findLength);
 
-                    string findString = PythonOps.MakeString(buffer);
-                    index = c.IndexOf(findString, s, CompareOptions.Ordinal);
+                    index = buffer.IndexOf(s);
                 } else {
                     // We're matching s against a significantly larger file, so we partition the stream into
                     // sections twice the length of s and search each segment. Because a match could exist on a
@@ -401,8 +388,8 @@ namespace IronPython.Modules {
                     findLength -= bufferLength * 2;
 
                     while (findLength > 0 && bytesRead > 0) {
-                        string findString = GetString(buffer0, buffer1, bytesRead);
-                        index = c.IndexOf(findString, s, CompareOptions.Ordinal);
+                        var combinedBuffer = CombineBytes(buffer0, buffer1, bytesRead);
+                        index = combinedBuffer.IndexOf(s);
 
                         if (index != -1) {
                             return ReturnLong(start - 2 * bufferLength + index);
@@ -498,7 +485,9 @@ namespace IronPython.Modules {
                 _view.WriteArray(dest, buffer, 0, count);
             }
 
-            public string read(int len) {
+            public Bytes read() => read(-1);
+
+            public Bytes read(int len) {
                 using (new MmapLocker(this)) {
                     long pos = Position;
 
@@ -509,18 +498,24 @@ namespace IronPython.Modules {
                     }
 
                     if (len == 0) {
-                        return "";
+                        return Bytes.Empty;
                     }
 
                     byte[] buffer = new byte[len];
                     len = _view.ReadArray(pos, buffer, 0, len);
                     Position = pos + len;
 
-                    return buffer.MakeString(len);
+                    return Bytes.Make(buffer);
                 }
             }
 
-            public string read_byte() {
+            public Bytes read(object n) {
+                // this overload is needed to prevent cast of double to int - https://github.com/IronLanguages/ironpython2/issues/547
+                if (n is null) return read(-1);
+                throw PythonOps.TypeError( $"integer argument expected, got {PythonOps.GetPythonTypeName(n)}");
+            }
+
+            public int read_byte() {
                 using (new MmapLocker(this)) {
                     long pos = Position;
 
@@ -531,7 +526,7 @@ namespace IronPython.Modules {
                     byte res = _view.ReadByte(pos);
                     Position = pos + 1;
 
-                    return ((char)res).ToString();
+                    return res;
                 }
             }
 
@@ -611,41 +606,41 @@ namespace IronPython.Modules {
                 }
             }
 
-            public object rfind([NotNull]string/*!*/ s) {
+            public object rfind([NotNull]Bytes/*!*/ s) {
                 using (new MmapLocker(this)) {
                     return RFindWorker(s, Position, _view.Capacity);
                 }
             }
 
-            public object rfind([NotNull]string/*!*/ s, long start) {
+            public object rfind([NotNull]Bytes/*!*/ s, long start) {
                 using (new MmapLocker(this)) {
                     return RFindWorker(s, start, _view.Capacity);
                 }
             }
 
-            public object rfind([NotNull]string/*!*/ s, long start, long end) {
+            public object rfind([NotNull]Bytes/*!*/ s, long start, long end) {
                 using (new MmapLocker(this)) {
                     return RFindWorker(s, start, end);
                 }
             }
 
-            private object RFindWorker(string/*!*/ s, long start, long end) {
+            private object RFindWorker(IList<byte>/*!*/ s, long start, long end) {
                 ContractUtils.RequiresNotNull(s, nameof(s));
 
                 start = PythonOps.FixSliceIndex(start, _view.Capacity);
                 end = PythonOps.FixSliceIndex(end, _view.Capacity);
 
-                if (s == "") {
+                if (s.Count == 0) {
                     return start <= end ? ReturnLong(start) : -1;
                 }
 
                 long findLength = end - start;
-                if (s.Length > findLength) {
+                if (s.Count > findLength) {
                     return -1;
                 }
 
                 int index = -1;
-                int bufferLength = Math.Max(s.Length, PAGESIZE);
+                int bufferLength = Math.Max(s.Count, PAGESIZE);
                 CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
 
                 if (findLength <= bufferLength * 2) {
@@ -655,8 +650,7 @@ namespace IronPython.Modules {
 
                     findLength = _view.ReadArray(start, buffer, 0, (int)findLength);
 
-                    string findString = PythonOps.MakeString(buffer);
-                    index = c.LastIndexOf(findString, s, CompareOptions.Ordinal);
+                    index = buffer.LastIndexOf(s, buffer.Length, buffer.Length);
                 } else {
                     // We're matching s against a significantly larger file, so we partition the stream into
                     // sections twice the length of s and search each segment. Because a match could exist on a
@@ -677,8 +671,8 @@ namespace IronPython.Modules {
                     int bytesRead = _view.ReadArray(start + bufferLength, buffer1, 0, remainder);
 
                     while (findLength >= 0) {
-                        string findString = GetString(buffer0, buffer1, bytesRead);
-                        index = c.LastIndexOf(findString, s, CompareOptions.Ordinal);
+                        var combinedBuffer = CombineBytes(buffer0, buffer1, bytesRead);
+                        index = combinedBuffer.LastIndexOf(s, combinedBuffer.Length, combinedBuffer.Length);
 
                         if (index != -1) {
                             return ReturnLong(index + start);
@@ -730,28 +724,27 @@ namespace IronPython.Modules {
                 }
             }
 
-            public void write(string s) {
+            public void write([BytesConversion]IList<byte> s) {
                 using (new MmapLocker(this)) {
                     EnsureWritable();
 
                     long pos = Position;
 
-                    if (_view.Capacity - pos < s.Length) {
+                    if (_view.Capacity - pos < s.Count) {
                         throw PythonOps.ValueError("data out of range");
                     }
 
-                    byte[] data = s.MakeByteArray();
-                    _view.WriteArray(pos, data, 0, s.Length);
+                    byte[] data = s as byte[] ?? (s is Bytes b ? b.GetUnsafeByteArray() : s.ToArray());
+                    _view.WriteArray(pos, data, 0, s.Count);
 
-                    Position = pos + s.Length;
+                    Position = pos + s.Count;
                 }
             }
 
-            public void write_byte(string s) {
+            public void write_byte(int s) {
+                if (s < byte.MinValue || s > byte.MaxValue) throw PythonOps.OverflowError("unsigned byte integer is less than minimum");
+
                 using (new MmapLocker(this)) {
-                    if (s.Length != 1) {
-                        throw PythonOps.TypeError("write_byte() argument 1 must be char, not str");
-                    }
                     EnsureWritable();
 
                     long pos = Position;
@@ -759,7 +752,7 @@ namespace IronPython.Modules {
                         throw PythonOps.ValueError("write byte out of range");
                     }
 
-                    _view.Write(pos, (byte)s[0]);
+                    _view.Write(pos, (byte)s);
                     Position = pos + 1;
                 }
             }
@@ -817,15 +810,12 @@ namespace IronPython.Modules {
                 return (BigInteger)l;
             }
 
-            private static string GetString(byte[] buffer0, byte[] buffer1, int length1) {
-                StringBuilder sb = new StringBuilder(buffer0.Length + length1);
-                foreach (byte b in buffer0) {
-                    sb.Append((char)b);
-                }
-                for (int i = 0; i < length1; i++) {
-                    sb.Append((char)buffer1[i]);
-                }
-                return sb.ToString();
+            private static byte[] CombineBytes(byte[] buffer0, byte[] buffer1, int length1) {
+                if (length1 == 0) return buffer0;
+                var res = new byte[buffer0.Length + length1];
+                buffer0.CopyTo(res, 0);
+                Array.Copy(buffer1, 0, res, buffer0.Length, length1);
+                return res;
             }
 
             internal Bytes GetSearchString() {
@@ -860,6 +850,24 @@ namespace IronPython.Modules {
                 }
 
                 #endregion
+            }
+
+            #endregion
+
+            #region IWeakReferenceable Members
+
+            private WeakRefTracker _tracker;
+
+            WeakRefTracker IWeakReferenceable.GetWeakRef() {
+                return _tracker;
+            }
+
+            bool IWeakReferenceable.SetWeakRef(WeakRefTracker value) {
+                return Interlocked.CompareExchange(ref _tracker, value, null) == null;
+            }
+
+            void IWeakReferenceable.SetFinalizer(WeakRefTracker value) {
+                _tracker = value;
             }
 
             #endregion

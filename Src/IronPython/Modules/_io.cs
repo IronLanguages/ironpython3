@@ -1199,10 +1199,11 @@ namespace IronPython.Modules {
                 try {
                     while (_writeBuf.Count > 0) {
                         object writtenObj;
+                        var bytes = Bytes.Make(_writeBuf.ToArray());
                         if (_rawIO != null) {
-                            writtenObj = _rawIO.write(context, _writeBuf);
+                            writtenObj = _rawIO.write(context, bytes);
                         } else {
-                            writtenObj = PythonOps.Invoke(context, _raw, "write", _writeBuf);
+                            writtenObj = PythonOps.Invoke(context, _raw, "write", bytes);
                         }
 
                         int written = GetInt(writtenObj, "write() should return integer");
@@ -1607,7 +1608,8 @@ namespace IronPython.Modules {
                 int count = 0;
                 try {
                     while (_writeBuf.Count > 0) {
-                        int written = (int)_inner.write(context, _writeBuf);
+                        var bytes = Bytes.Make(_writeBuf.ToArray());
+                        int written = (int)_inner.write(context, bytes);
                         if (written > _writeBuf.Count || written < 0) {
                             throw PythonOps.IOError("write() returned incorrect number of bytes");
                         }
@@ -2094,11 +2096,11 @@ namespace IronPython.Modules {
                     str = str.Replace("\n", _writeNL);
                 }
 
-                str = PythonOps.MakeString(StringOps.encode(context, str, _encoding, _errors));
+                var bytes = StringOps.encode(context, str, _encoding, _errors);
                 if (_bufferTyped != null) {
-                    _bufferTyped.write(context, str);
+                    _bufferTyped.write(context, bytes);
                 } else {
-                    PythonOps.Invoke(context, _buffer, "write", str);
+                    PythonOps.Invoke(context, _buffer, "write", bytes);
                 }
 
                 if (_line_buffering && (hasLF || str.Contains("\r"))) {
@@ -3167,16 +3169,6 @@ namespace IronPython.Modules {
         private static IList<byte> GetBytes(object buf) {
             if (buf is IList<byte> bytes) {
                 return bytes;
-            }
-
-            string str = buf as string;
-            if (str == null) {
-                if (buf is Extensible<string>) {
-                    str = ((Extensible<string>)buf).Value;
-                }
-            }
-            if (str != null) {
-                return PythonOps.MakeByteArray(str);
             }
 
             if (buf is ArrayModule.array arr) {

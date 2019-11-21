@@ -462,7 +462,7 @@ class SocketMakefileTest(IronPythonTestCase):
         port = 50008
 
         _thread.start_new_thread(echoer, (port, ))
-        time.sleep(0)
+        time.sleep(1)
         s = socket.socket()
         s.connect(('localhost', port))
         f1 = s.makefile('r')

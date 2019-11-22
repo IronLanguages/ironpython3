@@ -182,7 +182,7 @@ namespace IronPython.Runtime.Operations {
             return -1;
         }
 
-        internal static int IndexOf(this IList<byte>/*!*/ bytes, IList<byte>/*!*/ sub, int start) {
+        internal static int IndexOf(this IList<byte>/*!*/ bytes, IList<byte>/*!*/ sub, int start = 0) {
             return IndexOf(bytes, sub, start, bytes.Count - start);
         }
 

@@ -376,6 +376,7 @@ import _socket
 HOST = 'localhost'
 PORT = 50007
 s = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
+s.setsockopt(_socket.SOL_SOCKET, _socket.SO_REUSEADDR, 1) # prevents an "Address already in use" error when the socket is in a TIME_WAIT state
 s.bind((HOST, PORT))
 
 try:
@@ -454,6 +455,7 @@ class SocketMakefileTest(IronPythonTestCase):
 
         def echoer(port):
             s = socket.socket()
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # prevents an "Address already in use" error when the socket is in a TIME_WAIT state
             s.bind(('localhost', port))
             s.listen(5)
             (s2, ignore) = s.accept()
@@ -487,6 +489,7 @@ import socket as _socket
 HOST = 'localhost'
 PORT = 50007
 s = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
+s.setsockopt(_socket.SOL_SOCKET, _socket.SO_REUSEADDR, 1) # prevents an "Address already in use" error when the socket is in a TIME_WAIT state
 s.bind((HOST, PORT))
 
 try:

@@ -516,7 +516,9 @@ namespace IronPython.Modules {
                     throw MakeRecvException(e, SocketError.InvalidArgument);
                 }
 
-                string data = PythonOps.MakeString(buffer, bytesRead);
+                var bytes = new byte[bytesRead];
+                Array.Copy(buffer, 0, bytes, 0, bytes.Length);
+                var data = Bytes.Make(bytes);
                 PythonTuple remoteAddress = EndPointToTuple((IPEndPoint)remoteEP);
                 return PythonTuple.MakeTuple(data, remoteAddress);
             }
@@ -616,30 +618,6 @@ namespace IronPython.Modules {
                 }
                 else
                     return MakeException(_context, e);
-            }
-
-            [Documentation("send(string[, flags]) -> bytes_sent\n\n"
-                + "Send data to the remote socket. The socket must be connected to a remote\n"
-                + "socket (by calling either connect() or accept(). Returns the number of bytes\n"
-                + "sent to the remote socket.\n"
-                + "\n"
-                + "Note that the successful completion of a send() call does not mean that all of\n"
-                + "the data was sent. The caller must keep track of the number of bytes sent and\n"
-                + "retry the operation until all of the data has been sent.\n"
-                + "\n"
-                + "Also note that there is no guarantee that the data you send will appear on the\n"
-                + "network immediately. To increase network efficiency, the underlying system may\n"
-                + "delay transmission until a significant amount of outgoing data is collected. A\n"
-                + "successful completion of the Send method means that the underlying system has\n"
-                + "had room to buffer your data for a network send"
-                )]
-            public int send(string data, int flags=0) {
-                byte[] buffer = data.MakeByteArray();
-                try {
-                    return _socket.Send(buffer, (SocketFlags)flags);
-                } catch (Exception e) {
-                    throw MakeException(_context, e);
-                }
             }
 
             [Documentation("send(string[, flags]) -> bytes_sent\n\n"
@@ -1674,14 +1652,14 @@ namespace IronPython.Modules {
             + "\n"
             + "inet_ntop() supports IPv4 and IPv6."
             )]
-        public static string inet_ntop(CodeContext/*!*/ context, int addressFamily, string packedIP) {
+        public static string inet_ntop(CodeContext/*!*/ context, int addressFamily, Bytes packedIP) {
             if (!(
-                (packedIP.Length == IPv4AddrBytes && addressFamily == (int)AddressFamily.InterNetwork)
-                || (packedIP.Length == IPv6AddrBytes && addressFamily == (int)AddressFamily.InterNetworkV6)
+                (packedIP.Count == IPv4AddrBytes && addressFamily == (int)AddressFamily.InterNetwork)
+                || (packedIP.Count == IPv6AddrBytes && addressFamily == (int)AddressFamily.InterNetworkV6)
             )) {
-                throw PythonExceptions.CreateThrowable(error(context), "invalid length of packed IP address string");
+                throw PythonOps.ValueError("invalid length of packed IP address string");
             }
-            byte[] ipBytes = packedIP.MakeByteArray();
+            byte[] ipBytes = packedIP.GetUnsafeByteArray();
             if (addressFamily == (int)AddressFamily.InterNetworkV6) {
                 return IPv6BytesToColonHex(ipBytes);
             }
@@ -1711,7 +1689,7 @@ namespace IronPython.Modules {
             + "\n"
             + "inet_ntoa() supports only IPv4."
             )]
-        public static string inet_ntoa(CodeContext/*!*/ context, string packedIP) {
+        public static string inet_ntoa(CodeContext/*!*/ context, Bytes packedIP) {
             return inet_ntop(context, (int)AddressFamily.InterNetwork, packedIP);
         }
 

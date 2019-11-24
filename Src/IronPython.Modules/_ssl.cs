@@ -684,7 +684,7 @@ namespace IronPython.Modules {
         public const int SSL_ERROR_ZERO_RETURN = 6;
         public const int SSL_ERROR_WANT_CONNECT = 7;
         public const int SSL_ERROR_EOF = 8;
-        public const int SSL_ERROR_INVALID_ERROR_CODE = 9;
+        public const int SSL_ERROR_INVALID_ERROR_CODE = 10;
 
         public const int VERIFY_DEFAULT = 0;
         public const int VERIFY_CRL_CHECK_LEAF = 0x4; // from openssl/x509_vfy.h

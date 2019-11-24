@@ -2513,18 +2513,6 @@ Read up to len bytes from the SSL socket.")]
 
 Writes the string s into the SSL object.  Returns the number
 of bytes written.")]
-            public int write(CodeContext/*!*/ context, string data) {
-                EnsureSslStream(true);
-
-                byte[] buffer = data.MakeByteArray();
-                try {
-                    _sslStream.Write(buffer);
-                    return buffer.Length;
-                } catch (Exception e) {
-                    throw PythonSocket.MakeException(context, e);
-                }
-            }
-
             public int write(CodeContext/*!*/ context, Bytes data) {
                 EnsureSslStream(true);
 

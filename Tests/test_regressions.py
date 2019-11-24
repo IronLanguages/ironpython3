@@ -670,7 +670,6 @@ class C:
         self.assertTrue(is_complete)
         self.assertEqual(Flag.Value, 32)
 
-    @unittest.skipIf(is_posix, "mono's GC behaves differently so we get another print when GC occurs")
     def test_cp23914(self):
         class C(object):
             def __init__(self,x,y,z):
@@ -769,8 +768,12 @@ class C:
             f = ConstructReal(1.0)
             del f
 
-        self.assertEqual(trapper.messages[0:3],
-                ['real new', 'stub new', 'stub init']) #'real del']) => CLR GC
+            # ensure __del__ is called
+            import gc
+            gc.collect()
+
+        self.assertEqual(trapper.messages,
+                ['real new', 'stub new', 'stub init', 'real del'])
 
     def test_cp24677(self):
         class SomeError(Exception):

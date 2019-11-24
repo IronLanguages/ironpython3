@@ -11,7 +11,7 @@ import os
 import socket
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_netcoreapp, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_netcoreapp, retryOnFailure, run_test, skipUnlessIronPython
 
 SSL_URL      = "www.microsoft.com"
 SSL_ISSUER   = "CN=Microsoft IT TLS CA 5, OU=Microsoft IT, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"
@@ -169,14 +169,14 @@ for documentation."""
 
         #Incompat, but a good one at that
         if is_cli:
-            self.assertTrue("Returns a string that describes the issuer of the server's certificate" in ssl_s.issuer.__doc__)
+            self.assertIn("Returns a string that describes the issuer of the server's certificate", ssl_s.issuer.__doc__)
         else:
             self.assertEqual(ssl_s.issuer.__doc__, None)
 
         issuer = ssl_s.issuer()
         #If we can get the issuer once, we should be able to do it again
         self.assertEqual(issuer, ssl_s.issuer())
-        self.assertTrue(SSL_ISSUER in issuer)
+        self.assertIn(SSL_ISSUER, issuer)
 
         #--Negative
         self.assertRaisesMessage(TypeError, "issuer() takes no arguments (1 given)",
@@ -200,14 +200,14 @@ for documentation."""
 
         if is_cli:
             #Incompat, but a good one at that
-            self.assertTrue("Returns a string that describes the issuer of the server's certificate" in ssl_s.issuer.__doc__)
+            self.assertIn("Returns a string that describes the issuer of the server's certificate", ssl_s.issuer.__doc__)
         else:
             self.assertEqual(ssl_s.server.__doc__, None)
 
         server = ssl_s.server()
         #If we can get the server once, we should be able to do it again
         self.assertEqual(server, ssl_s.server())
-        self.assertTrue(SSL_SERVER in server)
+        self.assertIn(SSL_SERVER, server)
 
         #--Negative
         self.assertRaisesMessage(TypeError, "server() takes no arguments (1 given)",
@@ -221,6 +221,7 @@ for documentation."""
         ssl_s.shutdown()
         s.close()
 
+    @retryOnFailure
     def test_SSLType_read_and_write(self):
         #--Positive
         s = socket.socket(socket.AF_INET)
@@ -228,8 +229,8 @@ for documentation."""
         ssl_s = _ssl.sslwrap(s, False)
         ssl_s.do_handshake()
 
-        self.assertTrue("Writes the string s into the SSL object." in ssl_s.write.__doc__)
-        self.assertTrue("Read up to len bytes from the SSL socket." in ssl_s.read.__doc__)
+        self.assertIn("Writes the string s into the SSL object.", ssl_s.write.__doc__)
+        self.assertIn("Read up to len bytes from the SSL socket.", ssl_s.read.__doc__)
 
         #Write
         self.assertEqual(ssl_s.write(SSL_REQUEST),
@@ -239,7 +240,7 @@ for documentation."""
         self.assertEqual(ssl_s.read(4).lower(), b"http")
 
         response = ssl_s.read(5000)
-        self.assertTrue(SSL_RESPONSE in response)
+        self.assertIn(SSL_RESPONSE, response)
 
         #Cleanup
         ssl_s.shutdown()

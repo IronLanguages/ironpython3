@@ -1799,7 +1799,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static Bytes DoEncodeUtf8(CodeContext context, string s)
-            => RawEncode(context, s, "utf-8", "strict");
+            => DoEncode(context, s, "strict", "utf-8", Encoding.UTF8, includePreamble: false);
 
         internal static Bytes DoEncode(CodeContext context, string s, string errors, string encoding, Encoding e, bool includePreamble) {
 #if FEATURE_ENCODING

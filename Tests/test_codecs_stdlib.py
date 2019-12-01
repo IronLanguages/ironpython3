@@ -59,8 +59,8 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.CodecsModuleTest('test_undefined'))
         suite.addTest(test.test_codecs.EncodedFileTest('test_basic'))
         suite.addTest(test.test_codecs.EscapeDecodeTest('test_empty'))
-        #suite.addTest(test.test_codecs.EscapeDecodeTest('test_errors')) # unknown error handling code: ignore
-        suite.addTest(test.test_codecs.EscapeDecodeTest('test_escape')) # (b'[\\"]', 4) != (b'["]', 4)
+        suite.addTest(test.test_codecs.EscapeDecodeTest('test_errors'))
+        suite.addTest(test.test_codecs.EscapeDecodeTest('test_escape'))
         suite.addTest(test.test_codecs.EscapeDecodeTest('test_raw'))
         suite.addTest(test.test_codecs.ExceptionChainingTest('test_codec_lookup_failure_not_wrapped'))
         suite.addTest(test.test_codecs.ExceptionChainingTest('test_init_override_is_not_wrapped'))

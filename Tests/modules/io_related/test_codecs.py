@@ -61,9 +61,9 @@ class CodecTest(IronPythonTestCase):
         self.assertEquals(codecs.escape_decode(b"ab\\\rc"), (b"ab\\\rc", 5))
         self.assertEquals(codecs.escape_decode(b"ab\\\r\\\nc"), (b"ab\\\rc", 7))
 
-    @unittest.skipIf(is_cli, "TODO")
     def test_escape_decode_errors(self):
-        self.assertEqual(b"abc", codecs.escape_decode("abc", None)[0])
+        self.assertEqual(codecs.escape_decode("abc", None), (b"abc", 3))
+
         self.assertEqual(b"?", codecs.escape_decode("\\x", 'replace')[0])
         self.assertEqual(b"?", codecs.escape_decode("\\x2", 'replace')[0])
         self.assertEqual(b"?I", codecs.escape_decode("\\xI", 'replace')[0])
@@ -71,7 +71,6 @@ class CodecTest(IronPythonTestCase):
         self.assertEqual(b"?I", codecs.escape_decode("\\x1I", 'replace')[0])
         self.assertEqual(b"?I1", codecs.escape_decode("\\xI1", 'replace')[0])
 
-        self.assertEqual(b"abc", codecs.escape_decode("abc", None)[0])
         self.assertEqual(b"abc", codecs.escape_decode("abc\\x", 'ignore')[0])
         self.assertEqual(b"abc", codecs.escape_decode("abc\\x2", 'ignore')[0])
         self.assertEqual(b"abcI", codecs.escape_decode("abc\\xI", 'ignore')[0])
@@ -79,6 +78,7 @@ class CodecTest(IronPythonTestCase):
         self.assertEqual(b"abcI", codecs.escape_decode("abc\\x1I", 'ignore')[0])
         self.assertEqual(b"abcI1", codecs.escape_decode("abc\\xI1", 'ignore')[0])
 
+        self.assertRaisesRegex(ValueError, r"Trailing \\ in string", codecs.escape_decode, b"\\", None)
         self.assertRaisesRegex(ValueError, r"Trailing \\ in string", codecs.escape_decode, b"\\", 'strict')
         self.assertRaisesRegex(ValueError, r"Trailing \\ in string", codecs.escape_decode, b"\\", 'replace')
         self.assertRaisesRegex(ValueError, r"Trailing \\ in string", codecs.escape_decode, b"\\", 'ignore')
@@ -88,9 +88,12 @@ class CodecTest(IronPythonTestCase):
         self.assertRaisesRegex(ValueError, r"invalid \\x escape at position 3", codecs.escape_decode, b"abc\\x1i")
         self.assertRaisesRegex(ValueError, r"invalid \\x escape at position 3", codecs.escape_decode, b"abc\\xii", 'strict')
         self.assertRaisesRegex(ValueError, r"invalid \\x escape at position 3", codecs.escape_decode, b"abc\\x1i", 'strict')
+        self.assertRaisesRegex(ValueError, r"invalid \\x escape at position 3", codecs.escape_decode, b"abc\\xii", None)
+        self.assertRaisesRegex(ValueError, r"invalid \\x escape at position 3", codecs.escape_decode, b"abc\\x1i", None)
 
-        self.assertRaisesRegex(ValueError, "decoding error; unknown error handling code: non-existent", codecs.escape_decode, b"abc\\xii", 'non-existent')
-        self.assertRaisesRegex(ValueError, "decoding error; unknown error handling code: non-existent", codecs.escape_decode, b"abc\\x1i", 'non-existent')
+        for errors in ['backslashreplace', 'xmlcharrefreplace', 'namereplace', 'surrogateescape', 'surrogatepass', 'non-existent', '']:
+            self.assertRaisesRegex(ValueError, "decoding error; unknown error handling code: " + errors, codecs.escape_decode, b"abc\\xii", errors)
+            self.assertRaisesRegex(ValueError, "decoding error; unknown error handling code: " + errors, codecs.escape_decode, b"abc\\x1i", errors)
 
     def test_escape_encode(self):
         #sanity checks

@@ -234,7 +234,9 @@ namespace IronPython.Runtime {
             }
         }
 
-        internal static List<byte> ParseBytes<T>(IList<T> data, int start, int length, bool isRaw, bool normalizeLineEndings) where T : IConvertible {
+        internal delegate IReadOnlyList<byte> ParseBytesErrorHandler<T>(IList<T> data, int start, int end);
+
+        internal static List<byte> ParseBytes<T>(IList<T> data, int start, int length, bool isRaw, bool normalizeLineEndings, ParseBytesErrorHandler<T> errorHandler = null) where T : IConvertible {
             Debug.Assert(data != null);
             Debug.Assert(start + length <= data.Count);
 
@@ -270,11 +272,21 @@ namespace IronPython.Runtime {
                             }
                             continue;
                         case 'x': //hex
-                            if (!TryParseInt(data, i, 2, 16, out val, out int _)) {
-                                throw PythonOps.ValueError("invalid \\x escape at position {0}", i - start - 2);
+                            if (!TryParseInt(data, i, 2, 16, out val, out int consumed)) {
+                                int pos = i - start - 2;
+                                if (errorHandler == null) {
+                                    throw PythonOps.ValueError("invalid \\x escape at position {0}", pos);
+                                }
+                                var substitute = errorHandler(data, pos, pos + consumed);
+                                if (substitute != null) {
+                                    foreach (var sc in substitute) {
+                                        buf.Add(sc);
+                                    }
+                                }
+                            } else {
+                                buf.Add((byte)val);
                             }
-                            buf.Add((byte)val);
-                            i += 2;
+                            i += consumed;
                             continue;
                         case '0':
                         case '1':
@@ -391,12 +403,8 @@ namespace IronPython.Runtime {
 
         private static bool TryParseInt<T>(IList<T> text, int start, int length, int b, out int value, out int consumed) where T : IConvertible {
             value = 0;
-            if (start + length > text.Count) {
-                consumed = 0;
-                return false;
-            }
             for (int i = start, end = start + length; i < end; i++) {
-                if (HexValue(text[i].ToChar(null), out int onechar) && onechar < b) {
+                if (i < text.Count && HexValue(text[i].ToChar(null), out int onechar) && onechar < b) {
                     value = value * b + onechar;
                 } else {
                     consumed = i - start;

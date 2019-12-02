@@ -279,9 +279,7 @@ namespace IronPython.Runtime {
                                 }
                                 var substitute = errorHandler(data, pos, pos + consumed);
                                 if (substitute != null) {
-                                    foreach (var sc in substitute) {
-                                        buf.Add(sc);
-                                    }
+                                    buf.AddRange(substitute);
                                 }
                             } else {
                                 buf.Add((byte)val);

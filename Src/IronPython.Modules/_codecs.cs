@@ -198,25 +198,25 @@ namespace IronPython.Modules {
         }
         private static byte[] _replacementMarker;
 
-        public static PythonTuple/*!*/ escape_encode([BytesConversion]IList<byte> text, string errors = "strict") {
-            StringBuilder res = new StringBuilder();
-            for (int i = 0; i < text.Count; i++) {
-                switch (text[i]) {
-                    case (byte)'\n': res.Append("\\n"); break;
-                    case (byte)'\r': res.Append("\\r"); break;
-                    case (byte)'\t': res.Append("\\t"); break;
-                    case (byte)'\\': res.Append("\\\\"); break;
-                    case (byte)'\'': res.Append("\\'"); break;
+        public static PythonTuple/*!*/ escape_encode([BytesConversion]IList<byte> data, string errors = "strict") {
+            List<byte> buf = new List<byte>(data.Count);
+            foreach (byte b in data) {
+                switch (b) {
+                    case (byte)'\n': buf.Add((byte)'\\'); buf.Add((byte)'n'); break;
+                    case (byte)'\r': buf.Add((byte)'\\'); buf.Add((byte)'r'); break;
+                    case (byte)'\t': buf.Add((byte)'\\'); buf.Add((byte)'t'); break;
+                    case (byte)'\\': buf.Add((byte)'\\'); buf.Add((byte)'\\'); break;
+                    case (byte)'\'': buf.Add((byte)'\\'); buf.Add((byte)'\''); break;
                     default:
-                        if (text[i] < 0x20 || text[i] >= 0x7f) {
-                            res.AppendFormat("\\x{0:x2}", text[i]);
+                        if (b < 0x20 || b >= 0x7f) {
+                            buf.AddRange($"\\x{b:x2}".Select(c => (byte)c));
                         } else {
-                            res.Append((char)text[i]);
+                            buf.Add(b);
                         }
                         break;
                 }
             }
-            return PythonTuple.MakeTuple(Bytes.Make(res.ToString().MakeByteArray()), text.Count);
+            return PythonTuple.MakeTuple(Bytes.Make(buf.ToArray()), data.Count);
         }
 
         #endregion

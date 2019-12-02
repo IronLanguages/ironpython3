@@ -175,21 +175,25 @@ namespace IronPython.Modules {
             => escape_decode(StringOps.DoEncodeUtf8(context, data), errors);
 
         public static PythonTuple escape_decode([BytesConversion]IList<byte> data, string errors = "strict") {
-            Func<int, IReadOnlyList<byte>> eh = null;
-            var res = LiteralParser.ParseBytes(data, 0, data.Count, isRaw: false, normalizeLineEndings: false,
-                errorHandler: (errors != null ? errorHandler : (LiteralParser.ParseBytesErrorHandler<byte>)null));
+            var res = LiteralParser.ParseBytes(data, 0, data.Count, isRaw: false, normalizeLineEndings: false, getErrorHandler(errors));
 
             return PythonTuple.MakeTuple(Bytes.Make(res.ToArray()), data.Count);
 
-            IReadOnlyList<byte> errorHandler(IList<byte> data, int start, int end) {
-                eh ??= errors switch
-                {
-                    "strict" => idx => throw PythonOps.ValueError("invalid \\x escape at position {0}", idx),
-                    "replace" => idx => _replacementMarker ??= new[] { (byte)'?' },
-                    "ignore" => idx => null,
-                    _ => idx => throw PythonOps.ValueError("decoding error; unknown error handling code: " + errors),
-                };
-                return eh(start);
+            LiteralParser.ParseBytesErrorHandler<byte> getErrorHandler(string errors) {
+                if (errors == null) return null;
+                Func<int, IReadOnlyList<byte>> eh = null;
+                return errorHandler;
+
+                IReadOnlyList<byte> errorHandler(IList<byte> data, int start, int end) {
+                    eh ??= errors switch
+                    {
+                        "strict" => idx => throw PythonOps.ValueError("invalid \\x escape at position {0}", idx),
+                        "replace" => idx => _replacementMarker ??= new[] { (byte)'?' },
+                        "ignore" => idx => null,
+                        _ => idx => throw PythonOps.ValueError("decoding error; unknown error handling code: " + errors),
+                    };
+                    return eh(start);
+                }
             }
         }
         private static byte[] _replacementMarker;

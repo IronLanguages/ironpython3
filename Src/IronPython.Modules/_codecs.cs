@@ -172,67 +172,31 @@ namespace IronPython.Modules {
         #region Escape Encoding
 
         public static PythonTuple escape_decode(CodeContext/*!*/ context, string data, string errors = "strict")
-            => escape_decode(DoEncode(context, "utf-8", Encoding.UTF8, data, "strict").Item1, errors);
+            => escape_decode(StringOps.DoEncodeUtf8(context, data), errors);
 
         public static PythonTuple escape_decode([BytesConversion]IList<byte> data, string errors = "strict") {
-            var res = new StringBuilder();
-            for (int i = 0; i < data.Count; i++) {
-                if (data[i] == '\\') {
-                    if (i == data.Count - 1) throw PythonOps.ValueError("\\ at end of string");
+            var res = LiteralParser.ParseBytes(data, 0, data.Count, isRaw: false, normalizeLineEndings: false, getErrorHandler(errors));
 
-                    switch ((char)data[++i]) {
-                        case 'a': res.Append((char)0x07); break;
-                        case 'b': res.Append((char)0x08); break;
-                        case 't': res.Append('\t'); break;
-                        case 'n': res.Append('\n'); break;
-                        case 'r': res.Append('\r'); break;
-                        case '\\': res.Append('\\'); break;
-                        case 'f': res.Append((char)0x0c); break;
-                        case 'v': res.Append((char)0x0b); break;
-                        case '\n': break;
-                        case 'x':
-                            if (++i < data.Count && CharToInt((char)data[i], out int dig1)
-                                    && ++i < data.Count && CharToInt((char)data[i], out int dig2)) {
-                                res.Append((char)(dig1 * 16 + dig2));
-                            } else {
-                                switch (errors) {
-                                    case "strict":
-                                        throw PythonOps.ValueError("invalid \\x escape at position {0}", i);
-                                    case "replace":
-                                        res.Append("?");
-                                        i--;
-                                        break;
-                                    default:
-                                        throw PythonOps.ValueError("decoding error; unknown error handling code: " + errors);
-                                }
-                            }
-                            break;
-                        default:
-                            res.Append("\\" + (char)data[i]);
-                            break;
-                    }
-                } else {
-                    res.Append((char)data[i]);
+            return PythonTuple.MakeTuple(Bytes.Make(res.ToArray()), data.Count);
+
+            LiteralParser.ParseBytesErrorHandler<byte> getErrorHandler(string errors) {
+                if (errors == null) return null;
+                Func<int, IReadOnlyList<byte>> eh = null;
+                return errorHandler;
+
+                IReadOnlyList<byte> errorHandler(IList<byte> data, int start, int end) {
+                    eh ??= errors switch
+                    {
+                        "strict" => idx => throw PythonOps.ValueError("invalid \\x escape at position {0}", idx),
+                        "replace" => idx => _replacementMarker ??= new[] { (byte)'?' },
+                        "ignore" => idx => null,
+                        _ => idx => throw PythonOps.ValueError("decoding error; unknown error handling code: " + errors),
+                    };
+                    return eh(start);
                 }
-
             }
-            return PythonTuple.MakeTuple(Bytes.Make(res.ToString().MakeByteArray()), data.Count);
         }
-
-        private static bool CharToInt(char ch, out int val) {
-            if (char.IsDigit(ch)) {
-                val = ch - '0';
-                return true;
-            }
-            ch = char.ToUpper(ch);
-            if (ch >= 'A' && ch <= 'F') {
-                val = ch - 'A' + 10;
-                return true;
-            }
-
-            val = 0;
-            return false;
-        }
+        private static byte[] _replacementMarker;
 
         public static PythonTuple/*!*/ escape_encode([BytesConversion]IList<byte> text, string errors = "strict") {
             StringBuilder res = new StringBuilder();

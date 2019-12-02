@@ -234,9 +234,11 @@ namespace IronPython.Runtime {
             }
         }
 
-        internal static List<byte> ParseBytes(char[] text, int start, int length, bool isRaw, bool normalizeLineEndings) {
-            Debug.Assert(text != null);
-            Debug.Assert(start + length <= text.Length);
+        internal delegate IReadOnlyList<byte> ParseBytesErrorHandler<T>(IList<T> data, int start, int end);
+
+        internal static List<byte> ParseBytes<T>(IList<T> data, int start, int length, bool isRaw, bool normalizeLineEndings, ParseBytesErrorHandler<T> errorHandler = null) where T : IConvertible {
+            Debug.Assert(data != null);
+            Debug.Assert(start + length <= data.Count);
 
             List<byte> buf = new List<byte>(length);
 
@@ -244,12 +246,12 @@ namespace IronPython.Runtime {
             int l = start + length;
             int val;
             while (i < l) {
-                char ch = text[i++];
+                char ch = data[i++].ToChar(null);
                 if (!isRaw && ch == '\\') {
                     if (i >= l) {
                         throw PythonOps.ValueError("Trailing \\ in string");
                     }
-                    ch = text[i++];
+                    ch = data[i++].ToChar(null);
                     switch (ch) {
                         case 'a': buf.Add((byte)'\a'); continue;
                         case 'b': buf.Add((byte)'\b'); continue;
@@ -265,16 +267,24 @@ namespace IronPython.Runtime {
                         case '\r':
                             if (!normalizeLineEndings) {
                                 goto default;
-                            } else if (i < l && text[i] == '\n') {
+                            } else if (i < l && data[i].ToChar(null) == '\n') {
                                 i++;
                             }
                             continue;
                         case 'x': //hex
-                            if (!TryParseInt(text, i, 2, 16, out val, out int _)) {
-                                throw PythonOps.ValueError("invalid \\x escape at position {0}", i - start - 2);
+                            if (!TryParseInt(data, i, 2, 16, out val, out int consumed)) {
+                                int pos = i - start - 2;
+                                if (errorHandler == null) {
+                                    throw PythonOps.ValueError("invalid \\x escape at position {0}", pos);
+                                }
+                                var substitute = errorHandler(data, pos, pos + consumed);
+                                if (substitute != null) {
+                                    buf.AddRange(substitute);
+                                }
+                            } else {
+                                buf.Add((byte)val);
                             }
-                            buf.Add((byte)val);
-                            i += 2;
+                            i += consumed;
                             continue;
                         case '0':
                         case '1':
@@ -285,10 +295,10 @@ namespace IronPython.Runtime {
                         case '6':
                         case '7': {
                                 val = ch - '0';
-                                if (i < l && HexValue(text[i], out int onechar) && onechar < 8) {
+                                if (i < l && HexValue(data[i].ToChar(null), out int onechar) && onechar < 8) {
                                     val = val * 8 + onechar;
                                     i++;
-                                    if (i < l && HexValue(text[i], out onechar) && onechar < 8) {
+                                    if (i < l && HexValue(data[i].ToChar(null), out onechar) && onechar < 8) {
                                         val = val * 8 + onechar;
                                         i++;
                                     }
@@ -304,7 +314,7 @@ namespace IronPython.Runtime {
                     }
                 } else if (ch == '\r' && normalizeLineEndings) {
                     // normalize line endings
-                    if (i < l && text[i] == '\n') {
+                    if (i < l && data[i].ToChar(null) == '\n') {
                         i++;
                     }
                     buf.Add((byte)'\n');
@@ -389,14 +399,10 @@ namespace IronPython.Runtime {
             return true;
         }
 
-        private static bool TryParseInt<T>(T[] text, int start, int length, int b, out int value, out int consumed) where T : IConvertible {
+        private static bool TryParseInt<T>(IList<T> text, int start, int length, int b, out int value, out int consumed) where T : IConvertible {
             value = 0;
-            if (start + length > text.Length) {
-                consumed = 0;
-                return false;
-            }
             for (int i = start, end = start + length; i < end; i++) {
-                if (HexValue(text[i].ToChar(null), out int onechar) && onechar < b) {
+                if (i < text.Count && HexValue(text[i].ToChar(null), out int onechar) && onechar < b) {
                     value = value * b + onechar;
                 } else {
                     consumed = i - start;

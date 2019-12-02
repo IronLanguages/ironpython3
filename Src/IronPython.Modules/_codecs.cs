@@ -175,22 +175,21 @@ namespace IronPython.Modules {
             => escape_decode(StringOps.DoEncodeUtf8(context, data), errors);
 
         public static PythonTuple escape_decode([BytesConversion]IList<byte> data, string errors = "strict") {
-            var res = LiteralParser.ParseBytes(data, 0, data.Count, isRaw: false, normalizeLineEndings: false, errorHandler);
+            Func<int, IReadOnlyList<byte>> eh = null;
+            var res = LiteralParser.ParseBytes(data, 0, data.Count, isRaw: false, normalizeLineEndings: false,
+                errorHandler: (errors != null ? errorHandler : (LiteralParser.ParseBytesErrorHandler<byte>)null));
 
             return PythonTuple.MakeTuple(Bytes.Make(res.ToArray()), data.Count);
 
             IReadOnlyList<byte> errorHandler(IList<byte> data, int start, int end) {
-                switch (errors) {
-                    case null:
-                    case "strict":
-                        throw PythonOps.ValueError("invalid \\x escape at position {0}", start);
-                    case "replace":
-                        return _replacementMarker ??= new[] { (byte)'?' };
-                    case "ignore":
-                        return null; ;
-                    default:
-                        throw PythonOps.ValueError("decoding error; unknown error handling code: " + errors);
-                }
+                eh ??= errors switch
+                {
+                    "strict" => idx => throw PythonOps.ValueError("invalid \\x escape at position {0}", idx),
+                    "replace" => idx => _replacementMarker ??= new[] { (byte)'?' },
+                    "ignore" => idx => null,
+                    _ => idx => throw PythonOps.ValueError("decoding error; unknown error handling code: " + errors),
+                };
+                return eh(start);
             }
         }
         private static byte[] _replacementMarker;

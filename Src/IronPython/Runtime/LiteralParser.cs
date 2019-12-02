@@ -251,7 +251,7 @@ namespace IronPython.Runtime {
                     if (i >= l) {
                         throw PythonOps.ValueError("Trailing \\ in string");
                     }
-                    ch = data[i++].ToChar(null); ;
+                    ch = data[i++].ToChar(null);
                     switch (ch) {
                         case 'a': buf.Add((byte)'\a'); continue;
                         case 'b': buf.Add((byte)'\b'); continue;

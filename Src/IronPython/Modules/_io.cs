@@ -494,10 +494,10 @@ namespace IronPython.Modules {
                     return BigInteger.Zero;
                 }
 
-                IList<byte> data = GetBytes(dataObj, "read()");
+                Bytes data = GetBytes(dataObj, "read()");
                 if (buf is IList<byte> bytes) {
                     for (int i = 0; i < data.Count; i++) {
-                        bytes[i] = data[i];
+                        bytes[i] = ((IList<byte>)data)[i];
                     }
                     GC.KeepAlive(this);
                     return data.Count;

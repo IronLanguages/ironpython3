@@ -184,7 +184,7 @@ namespace IronPython.Modules {
                     var cabuf = cadata as IBufferProtocol;
                     if (cabuf != null) {
                         int pos = 0;
-                        byte[] contents = cabuf.ToBytes(0, null).ToByteArray();
+                        byte[] contents = cabuf.ToBytes(0, null).ToArray();
                         while(pos < contents.Length) {
                             byte[] curr = new byte[contents.Length - pos];
                             Array.Copy(contents, pos, curr, 0, contents.Length - pos);

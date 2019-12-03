@@ -270,7 +270,7 @@ namespace IronPython.Runtime {
             if (TypecodeOps.TryGetBytes(format, o, out byte[] bytes)) {
                 return bytes;
             } else if (o is Bytes b) {
-                return b.GetUnsafeByteArray(); // CData returns a bytes object for its type
+                return b.UnsafeByteArray; // CData returns a bytes object for its type
             } else {
                 throw PythonOps.NotImplementedError("No conversion for type {0} to byte array", PythonOps.GetPythonTypeName(o));
             }

@@ -271,7 +271,7 @@ namespace IronPython.Modules {
                             return;
                         }
 
-                        byte[] data = value.GetUnsafeByteArray();
+                        byte[] data = value.UnsafeByteArray;
 
                         if (step == 1) {
                             _view.WriteArray(start, data, 0, value.Count);
@@ -734,7 +734,7 @@ namespace IronPython.Modules {
                         throw PythonOps.ValueError("data out of range");
                     }
 
-                    byte[] data = s as byte[] ?? (s is Bytes b ? b.GetUnsafeByteArray() : s.ToArray());
+                    byte[] data = s as byte[] ?? (s is Bytes b ? b.UnsafeByteArray : s.ToArray());
                     _view.WriteArray(pos, data, 0, s.Count);
 
                     Position = pos + s.Count;

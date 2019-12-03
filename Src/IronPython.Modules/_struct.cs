@@ -194,7 +194,7 @@ namespace IronPython.Modules {
                     throw Error(context, $"pack_into requires a buffer of at least {size} bytes");
                 }
 
-                var data = pack(context, args).GetUnsafeByteArray();
+                var data = pack(context, args).UnsafeByteArray;
 
                 for (int i = 0; i < data.Length; i++) {
                     existing[i + offset] = data[i];
@@ -211,7 +211,7 @@ namespace IronPython.Modules {
                     throw Error(context, $"pack_into requires a buffer of at least {size} bytes");
                 }
 
-                var data = pack(context, args).GetUnsafeByteArray();
+                var data = pack(context, args).UnsafeByteArray;
 
                 for (int i = 0; i < data.Length; i++) {
                     existing[i + offset] = data[i];

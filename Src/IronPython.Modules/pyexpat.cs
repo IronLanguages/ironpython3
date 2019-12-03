@@ -605,7 +605,7 @@ namespace IronPython.Modules {
                     byte[] bytes;
                     switch (data) {
                         case Bytes b:
-                            bytes = b.GetUnsafeByteArray();
+                            bytes = b.UnsafeByteArray;
                             break;
                         case byte[] b:
                             bytes = b;
@@ -637,7 +637,7 @@ namespace IronPython.Modules {
 
                 object readResult = PythonOps.CallWithContext(context, _readMethod);
                 if (readResult is Bytes b) {
-                    using (var stream = new MemoryStream(b.GetUnsafeByteArray())) {
+                    using (var stream = new MemoryStream(b.UnsafeByteArray)) {
                         var settings = new XmlReaderSettings() { DtdProcessing = DtdProcessing.Parse, XmlResolver = null };
                         using (xmlReader = XmlReader.Create(stream, settings)) {
                             parse(context);

@@ -1732,7 +1732,7 @@ namespace IronPython.Runtime.Operations {
             => DoDecode(context, s, errors, encoding, e, s.Count, out _);
 
         internal static string DoDecode(CodeContext context, IList<byte> s, string errors, string encoding, Encoding e, int numBytes, out int numConsumed) {
-            byte[] bytes = s as byte[] ?? ((s is Bytes b) ? b.GetUnsafeByteArray() : s.ToArray());
+            byte[] bytes = s as byte[] ?? ((s is Bytes b) ? b.UnsafeByteArray : s.ToArray());
             int start = GetStartingOffset(e, bytes);
             int length = numBytes - start;
 

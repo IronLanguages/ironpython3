@@ -159,13 +159,13 @@ namespace IronPython.Modules {
                     // So we feed it with a fake one (cp34892)
                     return FakeZeroLength;
                 }
-                return bytes.GetUnsafeByteArray();
+                return bytes.UnsafeByteArray;
             }
             return null;
         }
 
         public static byte[] GetBytes(Bytes bytes) {
-            return bytes.GetUnsafeByteArray();
+            return bytes.UnsafeByteArray;
         }
 
         public static CTypes._Array TryCheckWCharArray(object o) {

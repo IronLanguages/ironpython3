@@ -257,7 +257,7 @@ namespace IronPython.Modules {
             }
 
             private void FromBytes(Bytes b) {
-                FromStream(new MemoryStream(b.GetUnsafeByteArray(), false));
+                FromStream(new MemoryStream(b.UnsafeByteArray, false));
             }
 
             public void fromstring(CodeContext/*!*/ context, [NotNull]Bytes b) {

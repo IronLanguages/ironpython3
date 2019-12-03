@@ -55,7 +55,7 @@ namespace IronPython.Runtime {
         }
 
         public Bytes(CodeContext/*!*/ context, [NotNull]string/*!*/ unicode, [NotNull]string/*!*/ encoding) {
-            _bytes = StringOps.encode(context, unicode, encoding, "strict").GetUnsafeByteArray();
+            _bytes = StringOps.encode(context, unicode, encoding, "strict").UnsafeByteArray;
         }
         
         internal static Bytes Make(byte[] bytes) {
@@ -808,29 +808,16 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Returns a copy of the internal byte array.
         /// </summary>
-        /// <returns>
-        /// System.Byte[]
-        /// </returns>
         [PythonHidden]
-        public byte[] ToByteArray() {
-            byte[] res = null;
-            if(_bytes != null) {
-                res = new byte[_bytes.Length];
-                _bytes.CopyTo(res, 0);
-            }
-            return res;
-        }
+        public byte[] ToArray() => _bytes.ToArray();
 
         /// <summary>
         /// This method returns the underlying byte array directly.
         /// It should be used sparingly!
         /// </summary>
-        /// <returns>
-        /// System.Byte[]
-        /// </returns>
-        [PythonHidden]
-        public byte[] GetUnsafeByteArray() {
-            return _bytes;
+        public byte[] UnsafeByteArray {
+            [PythonHidden]
+            get => _bytes;
         }
 
         #endregion

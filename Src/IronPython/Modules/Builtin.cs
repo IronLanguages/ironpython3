@@ -218,7 +218,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             // TODO: implement optimize
             var sourceCodeKind = ValidateCompileMode(mode);
 
-            byte[] bytes = source as byte[] ?? ((source is Bytes b) ? b.GetUnsafeByteArray() : source.ToArray());
+            byte[] bytes = source as byte[] ?? ((source is Bytes b) ? b.UnsafeByteArray : source.ToArray());
             var contentProvider = new MemoryStreamContentProvider(context.LanguageContext, bytes, filename);
             var sourceUnit = context.LanguageContext.CreateSourceUnit(contentProvider, filename, sourceCodeKind);
 
@@ -340,7 +340,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
                 throw PythonOps.TypeError("locals must be mapping");
             }
 
-            byte[] bytes = expression as byte[] ?? ((expression is Bytes b) ? b.GetUnsafeByteArray() : expression.ToArray());
+            byte[] bytes = expression as byte[] ?? ((expression is Bytes b) ? b.UnsafeByteArray : expression.ToArray());
 
             // Count number of whitespace characters to skip at the beginning.
             // It assumes an ASCII compatible encoding (like UTF-8 or Latin-1) but excludes UTF-16 or UTF-32.
@@ -413,7 +413,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         [Documentation("")] // provided by first overload
         public static void exec(CodeContext/*!*/ context, [BytesConversion, NotNull]IList<byte> code, PythonDictionary globals = null, object locals = null) {
-            byte[] bytes = code as byte[] ?? ((code is Bytes b) ? b.GetUnsafeByteArray() : code.ToArray());
+            byte[] bytes = code as byte[] ?? ((code is Bytes b) ? b.UnsafeByteArray : code.ToArray());
             SourceUnit source = context.LanguageContext.CreateSourceUnit(
                 new MemoryStreamContentProvider(context.LanguageContext, bytes, "<string>"),
                 "<string>",

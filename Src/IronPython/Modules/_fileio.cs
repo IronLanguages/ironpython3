@@ -511,7 +511,7 @@ namespace IronPython.Modules {
             }
 
             private BigInteger write([NotNull]Bytes b) {
-                return write(b._bytes);
+                return write(b.GetUnsafeByteArray());
             }
 
             private BigInteger write([NotNull]ICollection<byte> b) {

@@ -21,8 +21,8 @@ using IronPython.Runtime.Types;
 namespace IronPython.Runtime {
     [PythonType("bytes"), Serializable]
     public class Bytes : IList<byte>, IEquatable<Bytes>, ICodeFormattable, IExpressionSerializable, IBufferProtocol {
-        internal byte[]/*!*/ _bytes;
-        internal static Bytes/*!*/ Empty = new Bytes();
+        private readonly byte[]/*!*/ _bytes;
+        internal static readonly Bytes/*!*/ Empty = new Bytes();
 
         public Bytes() {
             _bytes = new byte[0];

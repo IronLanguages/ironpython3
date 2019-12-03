@@ -181,7 +181,7 @@ namespace IronPython.Modules {
 
                     res.Add(curBytes);
                     count += curBytes.Count;
-                    if (curBytes._bytes[curBytes.Count - 1] == (byte)'\n') {
+                    if (((IList<byte>)curBytes)[curBytes.Count - 1] == (byte)'\n') {
                         break;
                     }
                 }
@@ -494,10 +494,10 @@ namespace IronPython.Modules {
                     return BigInteger.Zero;
                 }
 
-                Bytes data = GetBytes(dataObj, "read()");
+                IList<byte> data = GetBytes(dataObj, "read()");
                 if (buf is IList<byte> bytes) {
                     for (int i = 0; i < data.Count; i++) {
-                        bytes[i] = data._bytes[i];
+                        bytes[i] = data[i];
                     }
                     GC.KeepAlive(this);
                     return data.Count;
@@ -787,7 +787,7 @@ namespace IronPython.Modules {
                 if (length <= _readBuf.Count - _readBufPos) {
                     // requested data is already buffered
                     byte[] res = new byte[length];
-                    Array.Copy(_readBuf._bytes, _readBufPos, res, 0, length);
+                    Array.Copy(_readBuf.GetUnsafeByteArray(), _readBufPos, res, 0, length);
                     _readBufPos += length;
                     if (_readBufPos == _readBuf.Count) {
                         ResetReadBuf();
@@ -823,7 +823,7 @@ namespace IronPython.Modules {
                             chunks.Add(ResetReadBuf());
                         } else {
                             byte[] bytes = new byte[remaining];
-                            Array.Copy(_readBuf._bytes, 0, bytes, 0, remaining);
+                            Array.Copy(_readBuf.GetUnsafeByteArray(), 0, bytes, 0, remaining);
                             chunks.Add(Bytes.Make(bytes));
                             _readBufPos = remaining;
                             remaining = 0;
@@ -853,7 +853,7 @@ namespace IronPython.Modules {
                 byte[] bytes = new byte[length];
 
                 if (length <= bufLen) {
-                    Array.Copy(_readBuf._bytes, _readBufPos, bytes, 0, length);
+                    Array.Copy(_readBuf.GetUnsafeByteArray(), _readBufPos, bytes, 0, length);
                     return Bytes.Make(bytes);
                 }
 
@@ -950,7 +950,7 @@ namespace IronPython.Modules {
                     res = _readBuf;
                 } else {
                     byte[] bytes = new byte[_readBuf.Count - _readBufPos];
-                    Array.Copy(_readBuf._bytes, _readBufPos, bytes, 0, bytes.Length);
+                    Array.Copy(_readBuf.GetUnsafeByteArray(), _readBufPos, bytes, 0, bytes.Length);
                     res = Bytes.Make(bytes);
                     _readBufPos = 0;
                 }
@@ -1454,7 +1454,7 @@ namespace IronPython.Modules {
                 if (length < _readBuf.Count - _readBufPos) {
                     // requested data is already buffered
                     byte[] res = new byte[length];
-                    Array.Copy(_readBuf._bytes, _readBufPos, res, 0, length);
+                    Array.Copy(_readBuf.GetUnsafeByteArray(), _readBufPos, res, 0, length);
                     _readBufPos += length;
                     if (_readBufPos == _readBuf.Count) {
                         ResetReadBuf();
@@ -1480,7 +1480,7 @@ namespace IronPython.Modules {
                             chunks.Add(ResetReadBuf());
                         } else {
                             byte[] bytes = new byte[remaining];
-                            Array.Copy(_readBuf._bytes, 0, bytes, 0, remaining);
+                            Array.Copy(_readBuf.GetUnsafeByteArray(), 0, bytes, 0, remaining);
                             chunks.Add(Bytes.Make(bytes));
                             _readBufPos = remaining;
                             remaining = 0;
@@ -1510,7 +1510,7 @@ namespace IronPython.Modules {
                 byte[] bytes = new byte[length];
 
                 if (length <= bufLen) {
-                    Array.Copy(_readBuf._bytes, _readBufPos, bytes, 0, length);
+                    Array.Copy(_readBuf.GetUnsafeByteArray(), _readBufPos, bytes, 0, length);
                     return Bytes.Make(bytes);
                 }
 
@@ -1542,7 +1542,7 @@ namespace IronPython.Modules {
                     res = _readBuf;
                 } else {
                     byte[] bytes = new byte[_readBuf.Count - _readBufPos];
-                    Array.Copy(_readBuf._bytes, _readBufPos, bytes, 0, bytes.Length);
+                    Array.Copy(_readBuf.GetUnsafeByteArray(), _readBufPos, bytes, 0, bytes.Length);
                     res = Bytes.Make(bytes);
                     _readBufPos = 0;
                 }
@@ -2175,8 +2175,8 @@ namespace IronPython.Modules {
                     // safe position for snapshotting, i.e. a position in the file where the
                     // decoder's buffer is empty, allowing seek() to safely start advancing from
                     // there.
-                    foreach (byte nextByte in _nextInput._bytes) {
-                        Bytes next = new Bytes(new byte[] { nextByte });
+                    foreach (byte nextByte in _nextInput) {
+                        Bytes next = Bytes.FromByte(nextByte);
                         bytesFed++;
                         if (typedDecoder != null) {
                             charsDecoded += typedDecoder.decode(context, next, false).Length;

@@ -5,6 +5,7 @@
 #if FEATURE_CTYPES
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -153,18 +154,18 @@ namespace IronPython.Modules {
 
         public static byte[] TryCheckBytes(object o) {
             if (o is Bytes bytes) {
-                if (bytes._bytes.Length == 0) {
+                if (bytes.Count == 0) {
                     // OpCodes.Ldelema refuses to get address of empty array
                     // So we feed it with a fake one (cp34892)
                     return FakeZeroLength;
                 }
-                return bytes._bytes;
+                return bytes.GetUnsafeByteArray();
             }
             return null;
         }
 
         public static byte[] GetBytes(Bytes bytes) {
-            return bytes._bytes;
+            return bytes.GetUnsafeByteArray();
         }
 
         public static CTypes._Array TryCheckWCharArray(object o) {
@@ -600,7 +601,7 @@ namespace IronPython.Modules {
             }
 
             if(value is Bytes bytesVal && bytesVal.Count == 1) {
-                return bytesVal._bytes[0];
+                return ((IList<byte>)bytesVal)[0];
             }
 
             if (PythonOps.TryGetBoundAttr(value, "_as_parameter_", out object asParam)) {

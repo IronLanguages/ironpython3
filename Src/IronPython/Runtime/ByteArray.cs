@@ -1478,7 +1478,7 @@ namespace IronPython.Runtime {
 
             lock (this) {
                 for (int i = 0; i < Count; i++) {
-                    if (_bytes[i] != other._bytes[i]) {
+                    if (_bytes[i] != ((IList<byte>)other)[i]) {
                         return false;
                     }
                 }

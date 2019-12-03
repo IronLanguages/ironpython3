@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System.Collections.Generic;
 using System.Numerics;
 
@@ -11,35 +13,21 @@ namespace IronPython.Runtime {
         void SetItem(int index, object value);
         void SetSlice(Slice index, object value);
 
-        int ItemCount {
-            get;
-        }
+        int ItemCount { get; }
 
-        string Format {
-            get;
-        }
+        string Format { get; }
 
-        BigInteger ItemSize {
-            get;
-        }
+        BigInteger ItemSize { get; }
 
-        BigInteger NumberDimensions {
-            get;
-        }
+        BigInteger NumberDimensions { get; }
 
-        bool ReadOnly {
-            get;
-        }
+        bool ReadOnly { get; }
 
-        IList<BigInteger> GetShape(int start, int ?end);
+        IList<BigInteger> GetShape(int start, int? end);
 
-        PythonTuple Strides {
-            get;
-        }
+        PythonTuple Strides { get; }
 
-        PythonTuple SubOffsets {
-            get;
-        }
+        PythonTuple? SubOffsets { get; }
 
         Bytes ToBytes(int start, int? end);
 

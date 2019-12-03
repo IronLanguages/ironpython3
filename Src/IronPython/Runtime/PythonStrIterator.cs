@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System.Collections;
 using System.Collections.Generic;
 
@@ -15,11 +17,11 @@ namespace IronPython.Runtime {
     // note: any changes in how this iterator works should also be applied in the
     //       optimized overloads of Builtins.map()
     [PythonType("str_iterator")]
-    public class PythonStrIterator : IEnumerable, IEnumerator<string> {
+    public sealed class PythonStrIterator : IEnumerable, IEnumerator<string> {
         private readonly string/*!*/ _s;
         private int _index;
 
-        public PythonStrIterator(string s) {
+        internal PythonStrIterator(string s) {
             Assert.NotNull(s);
 
             _index = -1;

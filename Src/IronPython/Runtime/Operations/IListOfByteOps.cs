@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -29,24 +31,6 @@ namespace IronPython.Runtime.Operations {
             }
 
             return self.Count > other.Count ? +1 : -1;
-        }
-
-        internal static int Compare(this IList<byte>/*!*/ self, string other) {
-            for (int i = 0; i < self.Count && i < other.Length; i++) {
-                if ((char)self[i] != other[i]) {
-                    if ((char)self[i] > other[i]) {
-                        return 1;
-                    } else {
-                        return -1;
-                    }
-                }
-            }
-
-            if (self.Count == other.Length) {
-                return 0;
-            }
-
-            return self.Count > other.Length ? +1 : -1;
         }
 
         internal static bool EndsWith(this IList<byte>/*!*/ self, IList<byte>/*!*/ suffix) {
@@ -101,7 +85,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static bool EndsWith(this IList<byte>/*!*/ bytes, PythonTuple/*!*/ suffix) {
-            foreach (object obj in suffix) {
+            foreach (object? obj in suffix) {
                 if (bytes.EndsWith(ByteOps.CoerceBytes(obj))) {
                     return true;
                 }
@@ -119,7 +103,7 @@ namespace IronPython.Runtime.Operations {
                     start = 0;
                 }
             }
-            foreach (object obj in suffix) {
+            foreach (object? obj in suffix) {
                 if (bytes.Substring(start).EndsWith(ByteOps.CoerceBytes(obj))) {
                     return true;
                 }
@@ -149,7 +133,7 @@ namespace IronPython.Runtime.Operations {
                 return false;
             }
 
-            foreach (object obj in suffix) {
+            foreach (object? obj in suffix) {
                 if (bytes.Substring(start, end - start).EndsWith(ByteOps.CoerceBytes(obj))) {
                     return true;
                 }
@@ -254,7 +238,7 @@ namespace IronPython.Runtime.Operations {
             return foundUpper;
         }
 
-        internal static List<byte> Title(this IList<byte>/*!*/ self) {
+        internal static List<byte>? Title(this IList<byte>/*!*/ self) {
             if (self.Count == 0) {
                 return null;
             }
@@ -304,10 +288,10 @@ namespace IronPython.Runtime.Operations {
             return -1;
         }
 
-        internal static List<byte>/*!*/[]/*!*/ Split(this IList<byte>/*!*/ str, IList<byte>/*!*/ separators, int maxComponents, StringSplitOptions options) {
+        internal static List<byte>/*!*/[]/*!*/ Split(this IList<byte>/*!*/ str, IList<byte>? separators, int maxComponents, StringSplitOptions options) {
             ContractUtils.RequiresNotNull(str, nameof(str));
             bool keep_empty = (options & StringSplitOptions.RemoveEmptyEntries) != StringSplitOptions.RemoveEmptyEntries;
-            
+
             if (separators == null) {
                 Debug.Assert(!keep_empty);
                 return SplitOnWhiteSpace(str, maxComponents);
@@ -342,7 +326,7 @@ namespace IronPython.Runtime.Operations {
 
         internal static List<byte>/*!*/[]/*!*/ SplitOnWhiteSpace(this IList<byte>/*!*/ str, int maxComponents) {
             ContractUtils.RequiresNotNull(str, nameof(str));
-            
+
 
             List<List<byte>> result = new List<List<byte>>(maxComponents == Int32.MaxValue ? 1 : maxComponents + 1);
 
@@ -408,8 +392,8 @@ namespace IronPython.Runtime.Operations {
 
             if (count < 0) {
                 count = bytes.Count + 1;
-            } 
-            
+            }
+
             if (old.Count == 0) {
                 return ReplaceEmpty(bytes, @new, count);
             }
@@ -471,21 +455,21 @@ namespace IronPython.Runtime.Operations {
             return bytes.LastIndexOf(sub, iEnd, iEnd - iStart);
         }
 
-        internal static PythonList/*!*/ RightSplit(this IList<byte>/*!*/ bytes, IList<byte>/*!*/ sep, int maxsplit, Func<IList<byte>/*!*/, IList<byte>>/*!*/ ctor) {
+        internal static PythonList/*!*/ RightSplit(this IList<byte>/*!*/ bytes, IList<byte>? sep, int maxsplit, Func<IList<byte>/*!*/, IList<byte>>/*!*/ ctor) {
             //  rsplit works like split but needs to split from the right;
             //  reverse the original string (and the sep), split, reverse 
             //  the split list and finally reverse each element of the list
             IList<byte> reversed = bytes.ReverseBytes();
             sep = sep?.ReverseBytes();
 
-            PythonList temp = null, ret = null;
+            PythonList temp, ret;
             temp = ctor(reversed).Split(sep, maxsplit, x => ctor(x));
             temp.reverse();
             int resultlen = temp.__len__();
             if (resultlen != 0) {
                 ret = new PythonList(resultlen);
-                foreach (IList<byte> s in temp)
-                    ret.AddNoLock(ctor(s.ReverseBytes()));
+                foreach (IList<byte>? s in temp)
+                    ret.AddNoLock(ctor(s!.ReverseBytes()));
             } else {
                 ret = temp;
             }
@@ -542,7 +526,7 @@ namespace IronPython.Runtime.Operations {
             return res;
         }
 
-        internal static List<byte> TryCenter(this IList<byte>/*!*/ bytes, int width, int fillchar) {
+        internal static List<byte>? TryCenter(this IList<byte>/*!*/ bytes, int width, int fillchar) {
             int spaces = width - bytes.Count;
             if (spaces <= 0) {
                 return null;
@@ -589,7 +573,7 @@ namespace IronPython.Runtime.Operations {
             return count;
         }
 
-        internal static List<byte>/*!*/ ExpandTabs(this IList<byte>/*!*/ bytes, int tabsize) {            
+        internal static List<byte>/*!*/ ExpandTabs(this IList<byte>/*!*/ bytes, int tabsize) {
             List<byte> ret = new List<byte>(bytes.Count * 2);
 
             int col = 0;
@@ -694,7 +678,7 @@ namespace IronPython.Runtime.Operations {
             return res;
         }
 
-        internal static List<byte>/*!*/ Translate(this IList<byte>/*!*/ bytes, IList<byte> table, IList<byte> deletechars) {
+        internal static List<byte>/*!*/ Translate(this IList<byte>/*!*/ bytes, IList<byte>? table, IList<byte>? deletechars) {
             List<byte> res = new List<byte>();
             for (int i = 0; i < bytes.Count; i++) {
                 if (deletechars == null || !deletechars.Contains(bytes[i])) {
@@ -708,7 +692,7 @@ namespace IronPython.Runtime.Operations {
             return res;
         }
 
-        internal static List<byte> RightStrip(this IList<byte>/*!*/ bytes) {
+        internal static List<byte>? RightStrip(this IList<byte>/*!*/ bytes) {
             int i;
             for (i = bytes.Count - 1; i >= 0; i--) {
                 if (!bytes[i].IsWhiteSpace()) {
@@ -728,7 +712,7 @@ namespace IronPython.Runtime.Operations {
             return res;
         }
 
-        internal static List<byte> RightStrip(this IList<byte>/*!*/ bytes, IList<byte> chars) {
+        internal static List<byte>? RightStrip(this IList<byte>/*!*/ bytes, IList<byte> chars) {
             int i;
             for (i = bytes.Count - 1; i >= 0; i--) {
                 if (!chars.Contains(bytes[i])) {
@@ -777,7 +761,7 @@ namespace IronPython.Runtime.Operations {
             return ret;
         }
 
-        internal static List<byte> LeftStrip(this IList<byte>/*!*/ bytes) {
+        internal static List<byte>? LeftStrip(this IList<byte>/*!*/ bytes) {
             int i;
             for (i = 0; i < bytes.Count; i++) {
                 if (!bytes[i].IsWhiteSpace()) {
@@ -796,7 +780,7 @@ namespace IronPython.Runtime.Operations {
             return res;
         }
 
-        internal static List<byte> LeftStrip(this IList<byte>/*!*/ bytes, IList<byte> chars) {
+        internal static List<byte>? LeftStrip(this IList<byte>/*!*/ bytes, IList<byte> chars) {
             int i;
             for (i = 0; i < bytes.Count; i++) {
                 if (!chars.Contains(bytes[i])) {
@@ -814,9 +798,9 @@ namespace IronPython.Runtime.Operations {
             }
             return res;
         }
-        
-        internal static PythonList/*!*/ Split(this IList<byte>/*!*/ bytes, IList<byte> sep, int maxsplit, Func<List<byte>/*!*/, object>/*!*/ ctor) {
-            Debug.Assert(ctor != null);
+
+        internal static PythonList/*!*/ Split(this IList<byte>/*!*/ bytes, IList<byte>? sep, int maxsplit, Func<List<byte>/*!*/, IList<byte>>/*!*/ ctor) {
+            //Debug.Assert(ctor != null);
 
             if (sep == null) {
                 if (maxsplit == 0) {
@@ -826,7 +810,7 @@ namespace IronPython.Runtime.Operations {
                     return result;
                 }
 
-                return SplitInternal(bytes, (byte[])null, maxsplit, ctor);
+                return SplitInternal(bytes, null, maxsplit, ctor);
             }
 
             if (sep.Count == 0) {
@@ -838,37 +822,17 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        internal static PythonList/*!*/ SplitInternal(IList<byte>/*!*/ bytes, byte[] seps, int maxsplit, Func<List<byte>/*!*/, object>/*!*/ ctor) {
-            Debug.Assert(ctor != null);
-
-            if (bytes.Count == 0) {
-                return SplitEmptyString(seps != null, ctor);
-            } else {
-                List<byte>[] r = null;
-                //  If the optional second argument sep is absent or None, the words are separated 
-                //  by arbitrary strings of whitespace characters (space, tab, newline, return, formfeed);
-
-                r = bytes.Split(seps, (maxsplit < 0) ? Int32.MaxValue : maxsplit + 1,
-                    GetStringSplitOptions(seps));
-
-                PythonList ret = PythonOps.MakeEmptyList(r.Length);
-                foreach (List<byte> s in r) {
-                    ret.AddNoLock(ctor(s));
-                }
-                return ret;
-            }
-        }
-
-        private static StringSplitOptions GetStringSplitOptions(IList<byte> seps) {
+        private static StringSplitOptions GetStringSplitOptions(IList<byte>? seps) {
             return (seps == null) ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None;
         }
 
-        internal static PythonList/*!*/ SplitInternal(this IList<byte>/*!*/ bytes, IList<byte>/*!*/ separator, int maxsplit, Func<List<byte>/*!*/, object>/*!*/ ctor) {
-            Debug.Assert(ctor != null);
-
+        internal static PythonList/*!*/ SplitInternal(this IList<byte>/*!*/ bytes, IList<byte>? separator, int maxsplit, Func<List<byte>/*!*/, IList<byte>>/*!*/ ctor) {
             if (bytes.Count == 0) {
                 return SplitEmptyString(separator != null, ctor);
             }
+
+            //  If the optional second argument sep is absent or None, the words are separated 
+            //  by arbitrary strings of whitespace characters (space, tab, newline, return, formfeed);
 
             List<byte>[] r = bytes.Split(separator, (maxsplit < 0) ? Int32.MaxValue : maxsplit + 1, GetStringSplitOptions(separator));
 
@@ -877,21 +841,18 @@ namespace IronPython.Runtime.Operations {
                 ret.AddNoLock(ctor(s));
             }
             return ret;
-        }
 
-        private static PythonList/*!*/ SplitEmptyString(bool separators, Func<List<byte>/*!*/, object>/*!*/ ctor) {
-            Debug.Assert(ctor != null);
-
-            PythonList ret = PythonOps.MakeEmptyList(1);
-            if (separators) {
-                ret.AddNoLock(ctor(new List<byte>(0)));
+            static PythonList/*!*/ SplitEmptyString(bool separators, Func<List<byte>/*!*/, object>/*!*/ ctor) {
+                PythonList ret = PythonOps.MakeEmptyList(1);
+                if (separators) {
+                    ret.AddNoLock(ctor(new List<byte>(0)));
+                }
+                return ret;
             }
-            return ret;
         }
 
-        internal static List<byte> Strip(this IList<byte>/*!*/ bytes) {
+        internal static List<byte>? Strip(this IList<byte>/*!*/ bytes) {
             int start;
-
             for (start = 0; start < bytes.Count; start++) {
                 if (!bytes[start].IsWhiteSpace()) {
                     break;
@@ -917,9 +878,8 @@ namespace IronPython.Runtime.Operations {
             return res;
         }
 
-        internal static List<byte> Strip(this IList<byte>/*!*/ bytes, IList<byte> chars) {
+        internal static List<byte>? Strip(this IList<byte>/*!*/ bytes, IList<byte> chars) {
             int start;
-
             for (start = 0; start < bytes.Count; start++) {
                 if (!chars.Contains(bytes[start])) {
                     break;
@@ -945,7 +905,7 @@ namespace IronPython.Runtime.Operations {
             return res;
         }
 
-        internal static List<byte> Slice(this IList<byte>/*!*/ bytes, Slice/*!*/ slice) {
+        internal static List<byte>? Slice(this IList<byte>/*!*/ bytes, Slice?/*!*/ slice) {
             if (slice == null) {
                 throw PythonOps.TypeError("indices must be slices or integers");
             }
@@ -1010,7 +970,7 @@ namespace IronPython.Runtime.Operations {
             }
             if (end < start) return false;
 
-            foreach (object obj in prefix) {
+            foreach (object? obj in prefix) {
                 if (bytes.Substring(start, end - start).StartsWith(ByteOps.CoerceBytes(obj))) {
                     return true;
                 }
@@ -1027,7 +987,7 @@ namespace IronPython.Runtime.Operations {
                     start = 0;
                 }
             }
-            foreach (object obj in prefix) {
+            foreach (object? obj in prefix) {
                 if (bytes.Substring(start).StartsWith(ByteOps.CoerceBytes(obj))) {
                     return true;
                 }
@@ -1036,7 +996,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static bool StartsWith(this IList<byte>/*!*/ bytes, PythonTuple/*!*/ prefix) {
-            foreach (object obj in prefix) {
+            foreach (object? obj in prefix) {
                 if (bytes.StartsWith(ByteOps.CoerceBytes(obj))) {
                     return true;
                 }
@@ -1123,7 +1083,7 @@ namespace IronPython.Runtime.Operations {
                 return -1;
             }
 
-            
+
             int iStart;
             if (start != null) {
                 iStart = PythonOps.FixSliceIndex(start.Value, bytes.Count);
@@ -1168,9 +1128,7 @@ namespace IronPython.Runtime.Operations {
             return start != null ? PythonOps.FixSliceIndex(start.Value, bytes.Count) : 0;
         }
 
-        internal static byte ToByte(this string/*!*/ self, string name, int pos) {
-            Debug.Assert(self != null);
-
+        internal static byte ToByte(this string/*!*/ self, string/*!*/ name, int pos) {
             if (self.Length != 1 || self[0] >= 256) {
                 throw PythonOps.TypeError(name + "() argument " + pos + " must be char < 256, not string");
             }
@@ -1191,7 +1149,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static List<byte>/*!*/ FromHex(string/*!*/ @string) {
-            if(@string == null) {
+            if (@string == null) {
                 throw PythonOps.TypeError("expected str, got NoneType");
             }
 

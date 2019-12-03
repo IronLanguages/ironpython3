@@ -57,21 +57,20 @@ namespace IronPython.Runtime {
         public Bytes(CodeContext/*!*/ context, [NotNull]string/*!*/ unicode, [NotNull]string/*!*/ encoding) {
             _bytes = StringOps.encode(context, unicode, encoding, "strict").UnsafeByteArray;
         }
-        
+
+        private static readonly Bytes[] oneByteBytes = Enumerable.Range(0, 256).Select(i => new Bytes(new byte[] { (byte)i })).ToArray();
+
+        internal static Bytes FromByte(byte b) {
+            return oneByteBytes[b];
+        }
+
         internal static Bytes Make(byte[] bytes) {
             return new Bytes(bytes);
         }
 
-        private static readonly Bytes[] oneByteBytes = new Bytes[256];
-
-        static Bytes() {
-            for (var i = 0; i < 256; i++) {
-                oneByteBytes[i] = new Bytes(new byte[] { (byte)i });
-            }
-        }
-
-        internal static Bytes FromByte(byte b) {
-            return oneByteBytes[b];
+        internal byte[] UnsafeByteArray {
+            [PythonHidden]
+            get => _bytes;
         }
 
         #region Public Python API surface
@@ -803,21 +802,6 @@ namespace IronPython.Runtime {
             set {
                 this[Converter.ConvertToIndex(index)] = value;
             }
-        }
-
-        /// <summary>
-        /// Returns a copy of the internal byte array.
-        /// </summary>
-        [PythonHidden]
-        public byte[] ToArray() => _bytes.ToArray();
-
-        /// <summary>
-        /// This method returns the underlying byte array directly.
-        /// It should be used sparingly!
-        /// </summary>
-        public byte[] UnsafeByteArray {
-            [PythonHidden]
-            get => _bytes;
         }
 
         #endregion

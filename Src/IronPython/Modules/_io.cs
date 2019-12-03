@@ -421,7 +421,7 @@ namespace IronPython.Modules {
                 ByteArray arr = new ByteArray(new byte[sizeInt]);
                 sizeInt = (int)readinto(context, arr);
 
-                List<byte> res = arr._bytes;
+                List<byte> res = arr.UnsafeByteList;
                 if (sizeInt < res.Count) {
                     res.RemoveRange(sizeInt, res.Count - sizeInt);
                 }

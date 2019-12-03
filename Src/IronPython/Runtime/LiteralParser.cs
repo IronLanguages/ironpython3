@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
 using System.Numerics;
 using System.Text;
 
@@ -17,7 +18,9 @@ using Microsoft.Scripting.Utils;
 
 namespace IronPython.Runtime {
     public static class LiteralParser {
-        public static string ParseString(char[] text, int start, int length, bool isRaw, bool isUniEscape, bool normalizeLineEndings) {
+        internal delegate IReadOnlyList<char> ParseStringErrorHandler<T>(IList<T> data, int start, int end);
+
+        internal static string ParseString(char[] text, int start, int length, bool isRaw, bool isUniEscape, bool normalizeLineEndings) {
             Debug.Assert(text != null);
             Debug.Assert(start + length <= text.Length);
 
@@ -28,16 +31,17 @@ namespace IronPython.Runtime {
             return result ?? new string(text, start, length);
         }
 
-        public static string ParseString(byte[] bytes, int start, int length, bool isRaw) {
+        internal static string ParseString(byte[] bytes, int start, int length, bool isRaw, ParseStringErrorHandler<byte> errorHandler) {
             Debug.Assert(bytes != null);
             Debug.Assert(start + length <= bytes.Length);
 
-            string result = DoParseString(bytes, start, length, isRaw, isUniEscape: true, normalizeLineEndings: false);
+            string result = DoParseString(bytes, start, length, isRaw, isUniEscape: true, normalizeLineEndings: false, errorHandler);
 
             return result ?? bytes.MakeString(start, length);
         }
 
-        private static string DoParseString<T>(T[] data, int start, int length, bool isRaw, bool isUniEscape, bool normalizeLineEndings) where T : IConvertible {
+        private static string DoParseString<T>(T[] data, int start, int length, bool isRaw, bool isUniEscape, bool normalizeLineEndings, ParseStringErrorHandler<T> errorHandler = default) where T : IConvertible {
+            Bytes bytesData = null;
             StringBuilder buf = null;
             int i = start;
             int l = start + length;
@@ -45,15 +49,15 @@ namespace IronPython.Runtime {
             while (i < l) {
                 char ch = data[i++].ToChar(null);
                 if ((!isRaw || isUniEscape) && ch == '\\') {
-                    StringBuilderInit(ref buf, data, start, i - start - 1, length);
+                    StringBuilderInit(ref buf, data, start, i - 1, length);
 
                     if (i >= l) {
                         if (isRaw) {
                             buf.Append('\\');
-                            break;
                         } else {
-                            throw PythonOps.ValueError("Trailing \\ in string");
+                            handleError(i - start - 1, i - start, "\\ at end of string");
                         }
+                        break;
                     }
                     ch = data[i++].ToChar(null);
 
@@ -62,29 +66,16 @@ namespace IronPython.Runtime {
                         int max = 16;
                         if (TryParseInt(data, i, len, max, out val, out int consumed)) {
                             if (val < 0 || val > 0x10ffff) {
-                                throw PythonExceptions.CreateThrowable(
-                                    PythonExceptions.UnicodeDecodeError,
-                                    isRaw ? "rawunicodeescape" : "unicodeescape",
-                                    data is byte[] byteData ? new Bytes(byteData) : Bytes.Empty,
-                                    i - start - 2, i - start + consumed,
-                                    isRaw ? "\\Uxxxxxxxx out of range" : "illegal Unicode character");
-                            }
-
-                            if (val < 0x010000) {
+                                handleError(i - start - 2, i - start + consumed, isRaw ? @"\Uxxxxxxxx out of range" : "illegal Unicode character");
+                            } else if (val < 0x010000) {
                                 buf.Append((char)val);
                             } else {
                                 buf.Append(char.ConvertFromUtf32(val));
                             }
-                            i += len;
                         } else {
-                            throw PythonExceptions.CreateThrowable(
-                                PythonExceptions.UnicodeDecodeError,
-                                isRaw ? "rawunicodeescape" : "unicodeescape",
-                                data is byte[] byteData ? new Bytes(byteData) : Bytes.Empty,
-                                i - start - 2,
-                                i - start + consumed,
-                                ch == 'u' ? @"truncated \uXXXX escape" : @"truncated \UXXXXXXXX escape");
+                            handleError(i - start - 2, i - start + consumed, ch == 'u' ? @"truncated \uXXXX escape" : @"truncated \UXXXXXXXX escape");
                         }
+                        i += consumed;
                     } else {
                         if (isRaw) {
                             buf.Append('\\');
@@ -112,10 +103,12 @@ namespace IronPython.Runtime {
                                 continue;
                             case 'N': {
                                     IronPython.Modules.unicodedata.PerformModuleReload(null, null);
+                                    StringBuilder namebuf = new StringBuilder();
+                                    bool namestarted = false;
+                                    bool namecomplete = false;
                                     if (i < l && data[i].ToChar(null) == '{') {
+                                        namestarted = true;
                                         i++;
-                                        StringBuilder namebuf = new StringBuilder();
-                                        bool namecomplete = false;
                                         while (i < l) {
                                             char namech = data[i++].ToChar(null);
                                             if (namech != '}') {
@@ -125,52 +118,33 @@ namespace IronPython.Runtime {
                                                 break;
                                             }
                                         }
-
-                                        if (!namecomplete || namebuf.Length == 0)
-                                            throw PythonExceptions.CreateThrowable(
-                                                PythonExceptions.UnicodeDecodeError,
-                                                "unicodeescape",
-                                                data is byte[] byteData ? new Bytes(byteData) : Bytes.Empty,
-                                                i - start - 3 - namebuf.Length - (namecomplete ? 1 : 0), // 3 for \N{ and 1 for }
-                                                i - start - (namecomplete ? 1 : 0), // 1 for }
-                                                @"malformed \N character escape");
-
+                                    }
+                                    if (!namecomplete || namebuf.Length == 0) {
+                                        handleError(i - start - 2 - (namestarted ? 1 : 0) - namebuf.Length - (namecomplete ? 1 : 0), // 2 for \N  and 1 for { and 1 for }
+                                                    i - start - (namecomplete ? 1 : 0), // 1 for }
+                                                    @"malformed \N character escape");
+                                        if (namecomplete) {
+                                            buf.Append('}');
+                                        }
+                                    } else {
                                         try {
                                             string uval = IronPython.Modules.unicodedata.lookup(namebuf.ToString());
                                             buf.Append(uval);
                                         } catch (KeyNotFoundException) {
-                                            throw PythonExceptions.CreateThrowable(
-                                                PythonExceptions.UnicodeDecodeError,
-                                                "unicodeescape",
-                                                data is byte[] byteData ? new Bytes(byteData) : Bytes.Empty,
-                                                i - start - 4 - namebuf.Length, // 4 for \N{}
-                                                i - start,
-                                                "unknown Unicode character name");
+                                            handleError(i - start - 4 - namebuf.Length, // 4 for \N{}
+                                                        i - start,
+                                                        "unknown Unicode character name");
                                         }
-
-                                    } else {
-                                        throw PythonExceptions.CreateThrowable(
-                                            PythonExceptions.UnicodeDecodeError,
-                                            "unicodeescape",
-                                            data is byte[] byteData ? new Bytes(byteData) : Bytes.Empty,
-                                            i - start - 2, // 2 for \N
-                                            i - start,
-                                            @"malformed \N character escape");
                                     }
                                 }
                                 continue;
                             case 'x': //hex
                                 if (!TryParseInt(data, i, 2, 16, out val, out int consumed)) {
-                                    throw PythonExceptions.CreateThrowable(
-                                        PythonExceptions.UnicodeDecodeError,
-                                        "unicodeescape",
-                                        data is byte[] byteData ? new Bytes(byteData) : Bytes.Empty,
-                                        i - start - 2,
-                                        i - start + consumed,
-                                        @"truncated \xXX escape");
+                                    handleError(i - start - 2, i - start + consumed, @"truncated \xXX escape");
+                                } else {
+                                    buf.Append((char)val);
                                 }
-                                buf.Append((char)val);
-                                i += 2;
+                                i += consumed;
                                 continue;
                             case '0':
                             case '1':
@@ -200,7 +174,7 @@ namespace IronPython.Runtime {
                         }
                     }
                 } else if (ch == '\r' && normalizeLineEndings) {
-                    StringBuilderInit(ref buf, data, start, i - start - 1, length);
+                    StringBuilderInit(ref buf, data, start, i - 1, length);
 
                     // normalize line endings
                     if (i < l && data[i].ToChar(null) == '\n') {
@@ -212,19 +186,31 @@ namespace IronPython.Runtime {
                 }
             }
             return buf?.ToString();
+
+            void handleError(int start, int end, string reason) {
+                bytesData ??= data is byte[] ba ? new Bytes(ba) : Bytes.Empty;
+
+                if (errorHandler == null || start >= bytesData.Count) {
+                    throw PythonExceptions.CreateThrowable(PythonExceptions.UnicodeDecodeError, isRaw ? "rawunicodeescape" : "unicodeescape", bytesData, start, end, reason);
+                }
+                var substitute = errorHandler(data, start, end);
+                if (substitute != null) {
+                    buf.Append(substitute.ToArray());
+                }
+            }
         }
 
-        private static void StringBuilderInit<T>(ref StringBuilder sb, T[] data, int start, int count, int capacity) {
+        private static void StringBuilderInit<T>(ref StringBuilder sb, T[] data, int start, int end, int capacity) {
             if (sb != null) return;
 
             sb = new StringBuilder(capacity);
             switch (data) {
                 case char[] text:
-                    sb.Append(text, start, count);
+                    sb.Append(text, start, end - start);
                     break;
 
                 case byte[] bytes:
-                    for (int i = start; i < start + count; i++) {
+                    for (int i = start; i < end; i++) {
                         sb.Append((char)bytes[i]);
                     }
                     break;
@@ -236,7 +222,7 @@ namespace IronPython.Runtime {
 
         internal delegate IReadOnlyList<byte> ParseBytesErrorHandler<T>(IList<T> data, int start, int end);
 
-        internal static List<byte> ParseBytes<T>(IList<T> data, int start, int length, bool isRaw, bool normalizeLineEndings, ParseBytesErrorHandler<T> errorHandler = null) where T : IConvertible {
+        internal static List<byte> ParseBytes<T>(IList<T> data, int start, int length, bool isRaw, bool normalizeLineEndings, ParseBytesErrorHandler<T> errorHandler = default) where T : IConvertible {
             Debug.Assert(data != null);
             Debug.Assert(start + length <= data.Count);
 
@@ -275,7 +261,7 @@ namespace IronPython.Runtime {
                             if (!TryParseInt(data, i, 2, 16, out val, out int consumed)) {
                                 int pos = i - start - 2;
                                 if (errorHandler == null) {
-                                    throw PythonOps.ValueError("invalid \\x escape at position {0}", pos);
+                                    throw PythonOps.ValueError(@"invalid \x escape at position {0}", pos);
                                 }
                                 var substitute = errorHandler(data, pos, pos + consumed);
                                 if (substitute != null) {

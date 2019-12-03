@@ -1577,8 +1577,7 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            if (b == null) return s;
-            return b.ToString();
+            return b?.ToString() ?? s;
         }
 
         internal static string ReprEncode(string s, char quote) {
@@ -2253,13 +2252,13 @@ namespace IronPython.Runtime.Operations {
                 => GetBytes(new string(chars), charIndex, charCount, bytes, byteIndex);
 
             public override string GetString(byte[] bytes, int index, int count)
-                => LiteralParser.ParseString(bytes, index, count, _raw);
+                => LiteralParser.ParseString(bytes, index, count, _raw, GetErrorHandler());
 
             public override int GetCharCount(byte[] bytes, int index, int count)
-                => LiteralParser.ParseString(bytes, index, count, _raw).Length;
+                => LiteralParser.ParseString(bytes, index, count, _raw, GetErrorHandler()).Length;
 
             public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) {
-                string res = LiteralParser.ParseString(bytes, byteIndex, byteCount, _raw);
+                string res = LiteralParser.ParseString(bytes, byteIndex, byteCount, _raw, GetErrorHandler());
 
                 for (int i = 0; i < res.Length; i++) {
                     chars[i + charIndex] = res[i];
@@ -2270,6 +2269,32 @@ namespace IronPython.Runtime.Operations {
             public override int GetMaxByteCount(int charCount) => charCount * 5;
 
             public override int GetMaxCharCount(int byteCount) => byteCount;
+
+            private LiteralParser.ParseStringErrorHandler<byte> GetErrorHandler() {
+                // For 'strict' handler, the default error handler of LiteralParser.DoParseString
+                // offers better error reporting, so use that one.
+                if (DecoderFallback is ExceptionFallback) return default;
+
+                DecoderFallbackBuffer fbuf = null;
+
+                return delegate (IList<byte> data, int start, int end) {
+                    fbuf ??= DecoderFallback.CreateFallbackBuffer();
+
+                    byte[] bytesUnknown = new byte[end - start];
+                    for (int i = start, j = 0; i < end; i++, j++) {
+                        bytesUnknown[j] = data[i];
+                    }
+
+                    fbuf.Fallback(bytesUnknown, start);
+                    if (fbuf.Remaining == 0) return null;
+
+                    var fallback = new List<char>(fbuf.Remaining);
+                    while (fbuf.Remaining > 0) {
+                        fallback.Add(fbuf.GetNextChar());
+                    }
+                    return fallback;
+                };
+            }
         }
 
 #endif
@@ -2289,13 +2314,14 @@ namespace IronPython.Runtime.Operations {
         /// When we do the replacement we call the provided handler w/ a UnicodeEncodeError or UnicodeDecodeError
         /// object which contains:
         ///         encoding    (string, the encoding the user requested)
-        ///         end         (the end of the invalid characters)
-        ///         object      (the original string being decoded)
-        ///         reason      (the error, e.g. 'unexpected byte code', not sure of others)
+        ///         object      (the original string or bytes being encoded/decoded)
         ///         start       (the start of the invalid sequence)
-        ///         
-        /// The decoder returns a tuple of (unicode, int) where unicode is the replacement string
-        /// and int is an index where encoding should continue.
+        ///         end         (the exclusive end of the invalid sequence)
+        ///         reason      (the error message, e.g. 'unexpected byte code', not sure of others)
+        /// 
+        /// The decoder returns a tuple of (str, int) where str is the replacement string
+        /// and int is an index where encoding/decoding should continue.
+        /// TODO: returned int is currently ignored, assumed to be equal to end (i.e. the index is not adjusted).
 
         private class PythonEncoderFallbackBuffer : EncoderFallbackBuffer {
             private readonly string _encoding;

@@ -179,21 +179,21 @@ namespace IronPython.Modules {
 
             return PythonTuple.MakeTuple(Bytes.Make(res.ToArray()), data.Count);
 
-            LiteralParser.ParseBytesErrorHandler<byte> getErrorHandler(string errors) {
-                if (errors == null) return null;
-                Func<int, IReadOnlyList<byte>> eh = null;
-                return errorHandler;
+            static LiteralParser.ParseBytesErrorHandler<byte> getErrorHandler(string errors) {
+                if (errors == null) return default;
 
-                IReadOnlyList<byte> errorHandler(IList<byte> data, int start, int end) {
+                Func<int, IReadOnlyList<byte>> eh = null;
+
+                return delegate (IList<byte> data, int start, int end) {
                     eh ??= errors switch
                     {
-                        "strict" => idx => throw PythonOps.ValueError("invalid \\x escape at position {0}", idx),
+                        "strict" => idx => throw PythonOps.ValueError(@"invalid \x escape at position {0}", idx),
                         "replace" => idx => _replacementMarker ??= new[] { (byte)'?' },
                         "ignore" => idx => null,
                         _ => idx => throw PythonOps.ValueError("decoding error; unknown error handling code: " + errors),
                     };
                     return eh(start);
-                }
+                };
             }
         }
         private static byte[] _replacementMarker;
@@ -209,7 +209,7 @@ namespace IronPython.Modules {
                     case (byte)'\'': buf.Add((byte)'\\'); buf.Add((byte)'\''); break;
                     default:
                         if (b < 0x20 || b >= 0x7f) {
-                            buf.AddRange($"\\x{b:x2}".Select(c => (byte)c));
+                            buf.AddRange($"\\x{b:x2}".Select(c => unchecked((byte)c)));
                         } else {
                             buf.Add(b);
                         }

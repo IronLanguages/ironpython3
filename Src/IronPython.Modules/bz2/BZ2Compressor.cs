@@ -52,7 +52,7 @@ and return what is left in the internal buffers.
 
                 this.bz2Output.Write(bytes, 0, bytes.Length);
 
-                return new Bytes(this.GetLatestData());
+                return Bytes.Make(this.GetLatestData());
             }
 
             [Documentation(@"flush() -> string
@@ -63,7 +63,7 @@ You must not use the compressor object after calling this method.
             public Bytes flush() {
                 this.bz2Output.Close();
 
-                return new Bytes(this.GetLatestData());
+                return Bytes.Make(this.GetLatestData());
             }
 
             /// <summary>

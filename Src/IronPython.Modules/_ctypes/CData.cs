@@ -96,7 +96,7 @@ namespace IronPython.Modules {
             #region IBufferProtocol Members
 
             object IBufferProtocol.GetItem(int index) {
-                return new Bytes(GetBytes(index, NativeType.Size));
+                return Bytes.Make(GetBytes(index, NativeType.Size));
             }
 
             void IBufferProtocol.SetItem(int index, object value) {
@@ -145,7 +145,7 @@ namespace IronPython.Modules {
             }
 
             Bytes IBufferProtocol.ToBytes(int start, int? end) {
-                return new Bytes(GetBytes(start, NativeType.Size));
+                return Bytes.Make(GetBytes(start, NativeType.Size));
             }
 
             PythonList IBufferProtocol.ToList(int start, int? end) {

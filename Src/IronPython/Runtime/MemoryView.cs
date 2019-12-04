@@ -284,7 +284,7 @@ namespace IronPython.Runtime {
                 for (int i = 0; i < obj.Length; i++) {
                     obj[i] = bytes[offset + i];
                 }
-                return new Bytes(obj);
+                return Bytes.Make(obj);
             }
         }
 

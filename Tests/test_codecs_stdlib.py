@@ -82,9 +82,9 @@ def load_tests(loader, standard_tests, pattern):
         #suite.addTest(test.test_codecs.NameprepTest('test_nameprep')) # Invalid Unicode code point found at index 0
         #suite.addTest(test.test_codecs.PunycodeTest('test_decode')) # 'Array[Byte]' object has no attribute 'rfind'
         suite.addTest(test.test_codecs.PunycodeTest('test_encode'))
-        #suite.addTest(test.test_codecs.RawUnicodeEscapeTest('test_decode_errors')) # UnicodeDecodeError: 'rawunicodeescape' codec can't decode bytes in position 1-1: truncated \uXXXX escape
+        suite.addTest(test.test_codecs.RawUnicodeEscapeTest('test_decode_errors'))
         suite.addTest(test.test_codecs.RawUnicodeEscapeTest('test_empty'))
-        #suite.addTest(test.test_codecs.RawUnicodeEscapeTest('test_escape_encode')) # (b'\\ud834\\udd20', 2) != (b'\\U0001d120', 2)
+        suite.addTest(test.test_codecs.RawUnicodeEscapeTest('test_escape_encode'))
         suite.addTest(test.test_codecs.RawUnicodeEscapeTest('test_raw_decode'))
         suite.addTest(test.test_codecs.RawUnicodeEscapeTest('test_raw_encode'))
         #suite.addTest(test.test_codecs.ReadBufferTest('test_array')) # TypeError: Specified cast is not valid

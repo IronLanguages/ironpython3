@@ -738,28 +738,28 @@ namespace IronPython.Runtime {
 
         public static bool operator >(Bytes/*!*/ x, Bytes/*!*/ y) {
             if (y == null) {
-                return true;
+                throw PythonOps.TypeErrorForBinaryOp(">", x, y);
             }
             return x._bytes.Compare(y._bytes) > 0;
         }
 
         public static bool operator <(Bytes/*!*/ x, Bytes/*!*/ y) {
             if (y == null) {
-                return false;
+                throw PythonOps.TypeErrorForBinaryOp("<", x, y);
             }
             return x._bytes.Compare(y._bytes) < 0;
         }
 
         public static bool operator >=(Bytes/*!*/ x, Bytes/*!*/ y) {
             if (y == null) {
-                return true;
+                throw PythonOps.TypeErrorForBinaryOp(">=", x, y);
             }
             return x._bytes.Compare(y._bytes) >= 0;
         }
 
         public static bool operator <=(Bytes/*!*/ x, Bytes/*!*/ y) {
             if (y == null) {
-                return false;
+                throw PythonOps.TypeErrorForBinaryOp("<=", x, y);
             }
             return x._bytes.Compare(y._bytes) <= 0;
         }

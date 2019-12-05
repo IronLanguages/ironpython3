@@ -586,10 +586,6 @@ class NtTest(IronPythonTestCase):
         self.assertEqual(x + x, tuple(range(10))*2)
 
         #> (list/object)
-        if is_cli:
-            self.assertTrue(nt.stat_result(range(10)) > None)
-            self.assertTrue(nt.stat_result(range(10)) > 1)
-            self.assertTrue(nt.stat_result(range(10)) > range(10))
         self.assertTrue(nt.stat_result([1 for x in range(10)]) > nt.stat_result(range(10)))
         self.assertTrue(not nt.stat_result(range(10)) > nt.stat_result(range(10)))
         self.assertTrue(not nt.stat_result(range(10)) > nt.stat_result(range(11)))
@@ -597,10 +593,6 @@ class NtTest(IronPythonTestCase):
         self.assertTrue(not nt.stat_result(range(11)) > nt.stat_result(range(10)))
 
         #< (list/object)
-        if is_cli:
-            self.assertTrue(not nt.stat_result(range(10)) < None)
-            self.assertTrue(not nt.stat_result(range(10)) < 1)
-            self.assertTrue(not nt.stat_result(range(10)) < range(10))
         self.assertTrue(not nt.stat_result([1 for x in range(10)]) < nt.stat_result(range(10)))
         self.assertTrue(not nt.stat_result(range(10)) < nt.stat_result(range(10)))
         self.assertTrue(not nt.stat_result(range(10)) < nt.stat_result(range(11)))
@@ -608,10 +600,6 @@ class NtTest(IronPythonTestCase):
         self.assertTrue(not nt.stat_result(range(11)) < nt.stat_result(range(10)))
 
         #>= (list/object)
-        if is_cli:
-            self.assertTrue(nt.stat_result(range(10)) >= None)
-            self.assertTrue(nt.stat_result(range(10)) >= 1)
-            self.assertTrue(nt.stat_result(range(10)) >= range(10))
         self.assertTrue(nt.stat_result([1 for x in range(10)]) >= nt.stat_result(range(10)))
         self.assertTrue(nt.stat_result(range(10)) >= nt.stat_result(range(10)))
         self.assertTrue(nt.stat_result(range(10)) >= nt.stat_result(range(11)))
@@ -619,10 +607,6 @@ class NtTest(IronPythonTestCase):
         self.assertTrue(nt.stat_result(range(11)) >= nt.stat_result(range(10)))
 
         #<= (list/object)
-        if is_cli:
-            self.assertTrue(not nt.stat_result(range(10)) <= None)
-            self.assertTrue(not nt.stat_result(range(10)) <= 1)
-            self.assertTrue(not nt.stat_result(range(10)) <= range(10))
         self.assertTrue(not nt.stat_result([1 for x in range(10)]) <= nt.stat_result(range(10)))
         self.assertTrue(nt.stat_result(range(10)) <= nt.stat_result(range(10)))
         self.assertTrue(nt.stat_result(range(10)) <= nt.stat_result(range(11)))

@@ -472,23 +472,13 @@ class DictTest(IronPythonTestCase):
         self.load_iron_python_test()
         from IronPythonTest import DictConversion
         class MyDict(dict): pass
-        class KOld: pass
-        class KNew(object): pass
-        class KOldDerived(KOld): pass
-        class KNewDerived(KNew): pass
 
         test_dicts = [
                         {},
                         {1:100},
-                        {None:None},
                         {object:object},
                         {1:100, 2:200},
                         {1:100, 2:200, 3:300, 4:400},
-                        MyDict.__dict__,
-                        KOld.__dict__,
-                        KNew.__dict__,
-                        KOldDerived.__dict__,
-                        KNewDerived.__dict__,
                         ]
 
         for temp_dict in test_dicts:

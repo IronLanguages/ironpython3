@@ -1286,12 +1286,17 @@ namespace IronPython.Runtime.Binding {
         }
 
         private static Expression/*!*/ MakeFallbackCompare(DynamicMetaObjectBinder/*!*/ binder, PythonOperationKind op, DynamicMetaObject[] types) {
-            return Ast.Call(
-                GetComparisonFallbackMethod(op),
-                PythonContext.GetCodeContext(binder),
-                AstUtils.Convert(types[0].Expression, typeof(object)),
-                AstUtils.Convert(types[1].Expression, typeof(object))
-            );
+            if (op == PythonOperationKind.Equal || op == PythonOperationKind.NotEqual ||
+                    op == PythonOperationKind.Compare) {
+                return Ast.Call(
+                    GetComparisonFallbackMethod(op),
+                    PythonContext.GetCodeContext(binder),
+                    AstUtils.Convert(types[0].Expression, typeof(object)),
+                    AstUtils.Convert(types[1].Expression, typeof(object))
+                );
+            }
+
+            return MakeBinaryThrow(binder, op, types).Expression;
         }
 
         private static Expression GetCompareTest(PythonOperationKind op, Expression expr, bool reverse) {
@@ -1881,10 +1886,6 @@ namespace IronPython.Runtime.Binding {
             switch (op) {
                 case PythonOperationKind.Equal: name = nameof(PythonOps.CompareTypesEqual); break;
                 case PythonOperationKind.NotEqual: name = nameof(PythonOps.CompareTypesNotEqual); break;
-                case PythonOperationKind.GreaterThan: name = nameof(PythonOps.CompareTypesGreaterThan); break;
-                case PythonOperationKind.LessThan: name = nameof(PythonOps.CompareTypesLessThan); break;
-                case PythonOperationKind.GreaterThanOrEqual: name = nameof(PythonOps.CompareTypesGreaterThanOrEqual); break;
-                case PythonOperationKind.LessThanOrEqual: name = nameof(PythonOps.CompareTypesLessThanOrEqual); break;
                 case PythonOperationKind.Compare: name = nameof(PythonOps.CompareTypes); break;
                 default: throw new InvalidOperationException();
             }
@@ -1990,7 +1991,7 @@ namespace IronPython.Runtime.Binding {
                     action.Throw(
                         Ast.Call(
                             typeof(PythonOps).GetMethod(nameof(PythonOps.TypeErrorForBinaryOp)),
-                            AstUtils.Constant(Symbols.OperatorToSymbol(op)),
+                            AstUtils.Constant(GetOperatorDisplay(op)),
                             AstUtils.Convert(args[0].Expression, typeof(object)),
                             AstUtils.Convert(args[1].Expression, typeof(object))
                         ),

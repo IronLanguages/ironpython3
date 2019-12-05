@@ -159,8 +159,15 @@ def %s(self, *args, **kwargs):
                 self.assertEqual(eval('x ' + op + ' 3'), op == '!='); self.assertEqual(called, None)
                 self.assertEqual(eval('3 ' + op + ' x'), op == '!='); self.assertEqual(called, None)
             else:
-                res1, res2 = eval('x ' + op + ' 3'), eval('3 ' + op + ' x')
-                self.assertEqual(called, None)
-                self.assertTrue((res1 == True and res2 == False) or (res1 == False and res2 == True))
+                try:
+                    eval('x ' + op + ' 3')
+                    self.assertUnreachable()
+                except TypeError:
+                    pass
+                try:
+                    eval('3 ' + op + ' x')
+                    self.assertUnreachable()
+                except TypeError:
+                    pass
 
 run_test(__name__)

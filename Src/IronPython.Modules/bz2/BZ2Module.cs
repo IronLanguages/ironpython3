@@ -29,7 +29,7 @@ namespace IronPython.Modules.Bz2 {
 
             Bytes bytesP = bytes as Bytes;
             if (bytesP != null) {
-                return bytesP.GetUnsafeByteArray();
+                return bytesP.UnsafeByteArray;
             }
 
             return bytes.ToArray();

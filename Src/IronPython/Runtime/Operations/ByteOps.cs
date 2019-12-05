@@ -89,7 +89,7 @@ namespace IronPython.Runtime.Operations {
 
         internal static IList<byte> CoerceBytes(object obj) {
             if (!(obj is IList<byte> ret)) {
-                throw PythonOps.TypeError("expected string, got {0} Type", PythonTypeOps.GetName(obj));
+                throw PythonOps.TypeError("a bytes-like object is required, not '{0}'", PythonTypeOps.GetName(obj));
             }
             return ret;
         }

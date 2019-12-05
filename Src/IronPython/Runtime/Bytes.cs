@@ -21,8 +21,8 @@ using IronPython.Runtime.Types;
 namespace IronPython.Runtime {
     [PythonType("bytes"), Serializable]
     public class Bytes : IList<byte>, IEquatable<Bytes>, ICodeFormattable, IExpressionSerializable, IBufferProtocol {
-        internal byte[]/*!*/ _bytes;
-        internal static Bytes/*!*/ Empty = new Bytes();
+        private readonly byte[]/*!*/ _bytes;
+        internal static readonly Bytes/*!*/ Empty = new Bytes();
 
         public Bytes() {
             _bytes = new byte[0];
@@ -55,23 +55,22 @@ namespace IronPython.Runtime {
         }
 
         public Bytes(CodeContext/*!*/ context, [NotNull]string/*!*/ unicode, [NotNull]string/*!*/ encoding) {
-            _bytes = StringOps.encode(context, unicode, encoding, "strict").GetUnsafeByteArray();
+            _bytes = StringOps.encode(context, unicode, encoding, "strict").UnsafeByteArray;
         }
-        
+
+        private static readonly Bytes[] oneByteBytes = Enumerable.Range(0, 256).Select(i => new Bytes(new byte[] { (byte)i })).ToArray();
+
+        internal static Bytes FromByte(byte b) {
+            return oneByteBytes[b];
+        }
+
         internal static Bytes Make(byte[] bytes) {
             return new Bytes(bytes);
         }
 
-        private static readonly Bytes[] oneByteBytes = new Bytes[256];
-
-        static Bytes() {
-            for (var i = 0; i < 256; i++) {
-                oneByteBytes[i] = new Bytes(new byte[] { (byte)i });
-            }
-        }
-
-        internal static Bytes FromByte(byte b) {
-            return oneByteBytes[b];
+        internal byte[] UnsafeByteArray {
+            [PythonHidden]
+            get => _bytes;
         }
 
         #region Public Python API surface
@@ -803,34 +802,6 @@ namespace IronPython.Runtime {
             set {
                 this[Converter.ConvertToIndex(index)] = value;
             }
-        }
-
-        /// <summary>
-        /// Returns a copy of the internal byte array.
-        /// </summary>
-        /// <returns>
-        /// System.Byte[]
-        /// </returns>
-        [PythonHidden]
-        public byte[] ToByteArray() {
-            byte[] res = null;
-            if(_bytes != null) {
-                res = new byte[_bytes.Length];
-                _bytes.CopyTo(res, 0);
-            }
-            return res;
-        }
-
-        /// <summary>
-        /// This method returns the underlying byte array directly.
-        /// It should be used sparingly!
-        /// </summary>
-        /// <returns>
-        /// System.Byte[]
-        /// </returns>
-        [PythonHidden]
-        public byte[] GetUnsafeByteArray() {
-            return _bytes;
         }
 
         #endregion

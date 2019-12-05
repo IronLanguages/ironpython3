@@ -34,17 +34,17 @@ namespace IronPython.Runtime {
     /// </summary>
     [PythonType("bytearray")]
     public class ByteArray : IList<byte>, ICodeFormattable, IBufferProtocol {
-        internal List<byte>/*!*/ _bytes;
+        private List<byte>/*!*/ _bytes;
 
         public ByteArray() {
             _bytes = new List<byte>(0);
         }
 
-        internal ByteArray(List<byte> bytes) {
+        private ByteArray(List<byte> bytes) {
             _bytes = bytes;
         }
 
-        internal ByteArray(byte[] bytes) {
+        internal ByteArray(IEnumerable<byte> bytes) {
             _bytes = new List<byte>(bytes);
         }
 
@@ -77,6 +77,15 @@ namespace IronPython.Runtime {
 
         public void __init__(CodeContext/*!*/ context, [NotNull]string source, [NotNull]string encoding, [NotNull]string errors = "strict") {
             _bytes = new List<byte>(StringOps.encode(context, source, encoding, errors));
+        }
+
+        internal static ByteArray Make(List<byte> bytes) {
+            return new ByteArray(bytes);
+        }
+
+        internal List<byte> UnsafeByteList {
+            [PythonHidden]
+            get => _bytes;
         }
 
         #region Public Mutable Sequence API
@@ -1478,7 +1487,7 @@ namespace IronPython.Runtime {
 
             lock (this) {
                 for (int i = 0; i < Count; i++) {
-                    if (_bytes[i] != other._bytes[i]) {
+                    if (_bytes[i] != ((IList<byte>)other)[i]) {
                         return false;
                     }
                 }

@@ -724,7 +724,7 @@ namespace IronPython.Modules {
             }
 
             public datetime([NotNull]Bytes bytes) {
-                var byteArray = bytes._bytes;
+                var byteArray = bytes.UnsafeByteArray;
                 if (byteArray.Length != 10) {
                     throw PythonOps.TypeError("an integer is required");
                 }

@@ -537,7 +537,7 @@ namespace IronPython.Runtime.Operations {
 
             if (!bytes.Any()) return 0;
 
-            byte[] bytesArr = bytes as byte[] ?? ((bytes is Bytes) ? ((Bytes)bytes)._bytes : bytes.ToArray());
+            byte[] bytesArr = bytes as byte[] ?? ((bytes is Bytes) ? ((Bytes)bytes).UnsafeByteArray : bytes.ToArray());
 
             if (isLittle) {
                 bool msbSet = (bytesArr[bytesArr.Length - 1] & 0x80) == 0x80;

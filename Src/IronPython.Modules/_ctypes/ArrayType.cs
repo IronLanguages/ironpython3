@@ -131,7 +131,7 @@ namespace IronPython.Modules {
                 _Array res = (_Array)CreateInstance(context);
                 res._memHolder = new MemoryHolder(((INativeType)this).Size);
                 for (int i = 0; i < ((INativeType)this).Size; i++) {
-                    res._memHolder.WriteByte(i, array._bytes[i]);
+                    res._memHolder.WriteByte(i, ((IList<byte>)array)[i]);
                 }
                 return res;
             }

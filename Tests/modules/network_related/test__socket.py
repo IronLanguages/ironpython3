@@ -330,9 +330,9 @@ class SocketTest(IronPythonTestCase):
         '''Tests _socket.gethostbyname_ex'''
         #sanity
         joe = _socket.gethostbyname_ex("localhost")[2]
-        self.assertTrue("127.0.0.1" in joe)
+        self.assertIn("127.0.0.1" , joe)
         joe = _socket.gethostbyname_ex("127.0.0.1")[2]
-        self.assertTrue("127.0.0.1" in joe)
+        self.assertIn("127.0.0.1", joe)
 
         #negative
         self.assertRaises(_socket.gaierror, _socket.gethostbyname_ex, "should never work")
@@ -474,7 +474,7 @@ class SocketMakefileTest(IronPythonTestCase):
         f2.write(test_msg)
         f2.flush()
         str = f1.readline()
-        self.assertTrue(str==test_msg)
+        self.assertEqual(str, test_msg)
 
     def test_cp7451(self):
         global HAS_EXITED

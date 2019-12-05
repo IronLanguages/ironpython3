@@ -9,6 +9,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Net.Security;
@@ -471,7 +472,7 @@ namespace IronPython.Modules {
                 )]
             public int recv_into(MemoryView buffer, int nbytes=0, int flags=0) {
                 int bytesRead;
-                byte[] byteBuffer = buffer.tobytes().ToByteArray();
+                byte[] byteBuffer = buffer.tobytes().ToArray();
                 try {
                     bytesRead = _socket.Receive(byteBuffer, (SocketFlags)flags);
                 }
@@ -556,7 +557,7 @@ namespace IronPython.Modules {
             public PythonTuple recvfrom_into(MemoryView buffer, int nbytes=0, int flags=0){
                 
                 int bytesRead;
-                byte[] byteBuffer = buffer.tobytes().ToByteArray();
+                byte[] byteBuffer = buffer.tobytes().ToArray();
                 IPEndPoint remoteIPEP = new IPEndPoint(IPAddress.Any, 0);
                 EndPoint remoteEP = remoteIPEP;
 
@@ -636,7 +637,7 @@ namespace IronPython.Modules {
                 + "had room to buffer your data for a network send"
                 )]
             public int send(Bytes data, int flags=0) {
-                byte[] buffer = data.GetUnsafeByteArray();
+                byte[] buffer = data.UnsafeByteArray;
                 try {
                     return _socket.Send(buffer, (SocketFlags)flags);
                 } catch (Exception e) {
@@ -693,11 +694,11 @@ namespace IronPython.Modules {
                 + "had room to buffer your data for a network send"
                 )]
             public void sendall(Bytes data, int flags=0) {
-                sendallWorker(data.GetUnsafeByteArray(), flags);
+                sendallWorker(data.UnsafeByteArray, flags);
             }
 
             public void sendall(MemoryView data, int flags = 0) {
-                sendallWorker(data.tobytes().GetUnsafeByteArray(), flags);
+                sendallWorker(data.tobytes().UnsafeByteArray, flags);
             }
 
             private void sendallWorker(byte[] buffer, int flags) {
@@ -757,7 +758,7 @@ namespace IronPython.Modules {
                 + "had room to buffer your data for a network send"
                 )]
             public int sendto(Bytes data, int flags, PythonTuple address) {
-                byte[] buffer = data.GetUnsafeByteArray();
+                byte[] buffer = data.UnsafeByteArray;
                 EndPoint remoteEP = TupleToEndPoint(_context, address, _socket.AddressFamily, out _hostName);
                 try {
                     return _socket.SendTo(buffer, (SocketFlags)flags, remoteEP);
@@ -1659,7 +1660,7 @@ namespace IronPython.Modules {
             )) {
                 throw PythonOps.ValueError("invalid length of packed IP address string");
             }
-            byte[] ipBytes = packedIP.GetUnsafeByteArray();
+            byte[] ipBytes = packedIP.UnsafeByteArray;
             if (addressFamily == (int)AddressFamily.InterNetworkV6) {
                 return IPv6BytesToColonHex(ipBytes);
             }
@@ -2516,7 +2517,7 @@ of bytes written.")]
             public int write(CodeContext/*!*/ context, Bytes data) {
                 EnsureSslStream(true);
 
-                byte[] buffer = data.GetUnsafeByteArray();
+                byte[] buffer = data.UnsafeByteArray;
                 try {
                     _sslStream.Write(buffer);
                     return buffer.Length;

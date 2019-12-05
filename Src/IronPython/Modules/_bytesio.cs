@@ -482,7 +482,7 @@ namespace IronPython.Modules {
                     case byte[] b:
                         return DoWrite(b);
                     case Bytes b:
-                        return DoWrite(b.GetUnsafeByteArray());
+                        return DoWrite(b.UnsafeByteArray);
                     case ArrayModule.array a:
                         return DoWrite(a.ToByteArray()); // as byte[]
                     case ICollection<byte> c:
@@ -491,7 +491,7 @@ namespace IronPython.Modules {
                         // TODO Remove this when we move to 3.x
                         return DoWrite(s);
                     case MemoryView mv:
-                        return DoWrite(mv.tobytes().GetUnsafeByteArray());
+                        return DoWrite(mv.tobytes().UnsafeByteArray);
                 }
 
                 throw PythonOps.TypeError("expected a readable buffer object");

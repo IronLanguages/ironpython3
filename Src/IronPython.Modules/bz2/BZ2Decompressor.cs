@@ -40,7 +40,7 @@ decompress() function instead.
 
                     Array.Copy(buffer, this.lastSuccessfulPosition, unused, 0, unusedCount);
                     
-                    return new Bytes(unused);
+                    return Bytes.Make(unused);
                 }
             }
 

@@ -188,9 +188,13 @@ namespace IronPython.Runtime {
             return buf?.ToString();
 
             void handleError(int start, int end, string reason) {
-                bytesData ??= data is byte[] ba ? new Bytes(ba) : Bytes.Empty;
+                if (bytesData == null) {
+                    var ba = data as byte[];
+                    if (ba == null) throw new NotImplementedException("Error handler for non byte[] data not supported");
+                    bytesData = new Bytes(ba);
+                }
 
-                if (errorHandler == null || start >= bytesData.Count) {
+                if (errorHandler == null) {
                     throw PythonExceptions.CreateThrowable(PythonExceptions.UnicodeDecodeError, isRaw ? "rawunicodeescape" : "unicodeescape", bytesData, start, end, reason);
                 }
                 var substitute = errorHandler(data, start, end);

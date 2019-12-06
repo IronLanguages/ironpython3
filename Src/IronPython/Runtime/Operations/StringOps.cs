@@ -2379,7 +2379,7 @@ namespace IronPython.Runtime.Operations {
                     // call the user function...
                     object res = PythonCalls.Call(_function, exObj);
 
-                    string replacement = CheckReplacementTuple(res, "encoding");
+                    string replacement = CheckReplacementTuple(res, "encoding", index + length);
 
                     // finally process the user's request.
                     _buffer = replacement;
@@ -2465,7 +2465,7 @@ namespace IronPython.Runtime.Operations {
                     // call the user function...
                     object res = PythonCalls.Call(_function, exObj);
 
-                    string replacement = CheckReplacementTuple(res, "decoding");
+                    string replacement = CheckReplacementTuple(res, "decoding", index + bytesUnknown.Length);
 
                     // finally process the user's request.
                     _buffer = replacement;
@@ -2504,11 +2504,12 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        private static string CheckReplacementTuple(object res, string encodeOrDecode) {
+        private static string CheckReplacementTuple(object res, string encodeOrDecode, int cursorPos) {
             // verify the result is sane...
             if (res is PythonTuple tres && tres.__len__() == 2
                     && Converter.TryConvertToString(tres[0], out string replacement)
-                    && Converter.TryConvertToInt32(tres[1], out _)) {
+                    && Converter.TryConvertToInt32(tres[1], out int newPos)) {
+                if (newPos != cursorPos) throw new NotImplementedException($"Moving {encodeOrDecode} cursor not implemented yet");
                 return replacement;
             }
 

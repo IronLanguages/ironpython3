@@ -207,6 +207,14 @@ class CodecTest(IronPythonTestCase):
         self.assertEquals(cm.exception.end, 13)
         self.assertEquals(cm.exception.object, b"abc\\U00110011xyz")
 
+        new_str, num_processed = codecs.raw_unicode_escape_decode(b"abc\\u20klm\\U0001F44nop\\U00110011xyz",'ignore')
+        self.assertEqual(new_str, "abcklmnopxyz")
+        self.assertEqual(num_processed, 35)
+
+        new_str, num_processed = codecs.raw_unicode_escape_decode(b"abc\\u20klm\\U0001F44nop\\U00110011xyz",'replace')
+        self.assertEqual(new_str, "abc\uFFFDklm\uFFFDnop\uFFFDxyz")
+        self.assertEqual(num_processed, 35)
+
     def test_raw_unicode_escape_encode(self):
         new_str, num_processed = codecs.raw_unicode_escape_encode("abc")
         self.assertEqual(new_str, b'abc')
@@ -260,7 +268,6 @@ class CodecTest(IronPythonTestCase):
         self.assertEqual(new_str, "\\\r")
         self.assertEqual(num_processed, 4)
 
-
     def test_unicode_escape_decode_errors(self):
         def check(data, msg, start, end, ex_data):
             with self.assertRaises(UnicodeDecodeError) as cm:
@@ -274,6 +281,7 @@ class CodecTest(IronPythonTestCase):
 
         test_data = [
             ("abc\\xyz", "truncated \\xXX escape", 3, 5, b"abc\\xyz"), # str to bytes
+            ("abc\\x0xyz", "truncated \\xXX escape", 3, 6, b"abc\\x0xyz"),
             ("abc\\u20klm\xffxyz\u20ac", "truncated \\uXXXX escape", 3, 7, b"abc\\u20klm\xc3\xbfxyz\xe2\x82\xac"), # Unicode to UTF-8
             ("abc\\U0001F44xyz", "truncated \\UXXXXXXXX escape", 3, 12, b"abc\\U0001F44xyz"),
             ("abc\\U00110011xyz", "illegal Unicode character", 3, 13, b"abc\\U00110011xyz"),
@@ -284,10 +292,51 @@ class CodecTest(IronPythonTestCase):
             ("abc\\N{", "malformed \\N character escape", 3, 6, b"abc\\N{"),
             ("abc\\N{}xyz", "malformed \\N character escape", 3, 6, b"abc\\N{}xyz"),
             ("abc\\N{}", "malformed \\N character escape", 3, 6, b"abc\\N{}"),
+            ("abc\\", "\\ at end of string", 3, 4, b"abc\\"),
         ]
 
         for params in test_data:
             check(*params)
+
+    def test_unicode_escape_decode_errors_ignore(self):
+        test_data = [
+            (b"abc\\xyz", "abcyz"),
+            (b"abc\\x0xyz", "abcxyz"),
+            (b"abc\\u20klm\xffxyz", "abcklm\xffxyz"),
+            (b"abc\\U0001F44xyz", "abcxyz"),
+            (b"abc\\U00110011xyz", "abcxyz"),
+            (b"abc\\N{EURO}xyz", "abcxyz"),
+            (b"abc\\Nxyz", "abcxyz"),
+            (b"abc\\N", "abc"),
+            (b"abc\\N{xyz", "abc"),
+            (b"abc\\N{", "abc"),
+            (b"abc\\N{}xyz", "abc}xyz"),
+            (b"abc\\N{}", "abc}"),
+            (b"abc\\", "abc"),
+        ]
+
+        for sample in test_data:
+            self.assertEqual(codecs.unicode_escape_decode(sample[0], 'ignore')[0], sample[1])
+
+    def test_unicode_escape_decode_errors_replace(self):
+        test_data = [
+            (b"abc\\xyz", "abc�yz"),
+            (b"abc\\x0xyz", "abc�xyz"),
+            (b"abc\\u20klm\xffxyz", "abc�klm\xffxyz"),
+            (b"abc\\U0001F44xyz", "abc�xyz"),
+            (b"abc\\U00110011xyz", "abc�xyz"),
+            (b"abc\\N{EURO}xyz", "abc�xyz"),
+            (b"abc\\Nxyz", "abc�xyz"),
+            (b"abc\\N", "abc�"),
+            (b"abc\\N{xyz", "abc�"),
+            (b"abc\\N{", "abc�"),
+            (b"abc\\N{}xyz", "abc�}xyz"),
+            (b"abc\\N{}", "abc�}"),
+            (b"abc\\", "abc�"),
+        ]
+
+        for sample in test_data:
+            self.assertEqual(codecs.unicode_escape_decode(sample[0], 'replace')[0], sample[1])
 
     def test_unicode_escape_encode(self):
         new_str, num_processed = codecs.unicode_escape_encode("\\a\tbc\r\n")

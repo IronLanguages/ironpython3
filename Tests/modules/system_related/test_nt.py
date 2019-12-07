@@ -591,6 +591,9 @@ class NtTest(IronPythonTestCase):
         self.assertTrue(not nt.stat_result(range(10)) > nt.stat_result(range(11)))
         self.assertTrue(not nt.stat_result(range(10)) > nt.stat_result([1 for x in range(10)]))
         self.assertTrue(not nt.stat_result(range(11)) > nt.stat_result(range(10)))
+        self.assertRaises(TypeError, lambda: nt.stat_result(range(10)) > None)
+        self.assertRaises(TypeError, lambda: nt.stat_result(range(10)) > 1)
+        self.assertRaises(TypeError, lambda: nt.stat_result(range(10)) > range(10))
 
         #< (list/object)
         self.assertTrue(not nt.stat_result([1 for x in range(10)]) < nt.stat_result(range(10)))
@@ -598,6 +601,9 @@ class NtTest(IronPythonTestCase):
         self.assertTrue(not nt.stat_result(range(10)) < nt.stat_result(range(11)))
         self.assertTrue(nt.stat_result(range(10)) < nt.stat_result([1 for x in range(10)]))
         self.assertTrue(not nt.stat_result(range(11)) < nt.stat_result(range(10)))
+        self.assertRaises(TypeError, lambda: nt.stat_result(range(10)) < None)
+        self.assertRaises(TypeError, lambda: nt.stat_result(range(10)) < 1)
+        self.assertRaises(TypeError, lambda: nt.stat_result(range(10)) < range(10))
 
         #>= (list/object)
         self.assertTrue(nt.stat_result([1 for x in range(10)]) >= nt.stat_result(range(10)))
@@ -605,6 +611,9 @@ class NtTest(IronPythonTestCase):
         self.assertTrue(nt.stat_result(range(10)) >= nt.stat_result(range(11)))
         self.assertTrue(not nt.stat_result(range(10)) >= nt.stat_result([1 for x in range(10)]))
         self.assertTrue(nt.stat_result(range(11)) >= nt.stat_result(range(10)))
+        self.assertRaises(TypeError, lambda: nt.stat_result(range(10)) >= None)
+        self.assertRaises(TypeError, lambda: nt.stat_result(range(10)) >= 1)
+        self.assertRaises(TypeError, lambda: nt.stat_result(range(10)) >= range(10))
 
         #<= (list/object)
         self.assertTrue(not nt.stat_result([1 for x in range(10)]) <= nt.stat_result(range(10)))
@@ -612,6 +621,9 @@ class NtTest(IronPythonTestCase):
         self.assertTrue(nt.stat_result(range(10)) <= nt.stat_result(range(11)))
         self.assertTrue(nt.stat_result(range(10)) <= nt.stat_result([1 for x in range(10)]))
         self.assertTrue(nt.stat_result(range(11)) <= nt.stat_result(range(10)))
+        self.assertRaises(TypeError, lambda: nt.stat_result(range(10)) <= None)
+        self.assertRaises(TypeError, lambda: nt.stat_result(range(10)) <= 1)
+        self.assertRaises(TypeError, lambda: nt.stat_result(range(10)) <= range(10))
 
         #* (size/stat_result)
         x = nt.stat_result(range(10))

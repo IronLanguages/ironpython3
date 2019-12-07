@@ -140,6 +140,7 @@ class _WeakrefTest(IronPythonTestCase):
         self.assertTrue(not x==3)
         self.assertRaises(ReferenceError, lambda: x==y)
 
+    @unittest.expectedFailure
     def test_equals(self):
         global called
         class C:
@@ -155,19 +156,6 @@ def %s(self, *args, **kwargs):
         x = _weakref.proxy(a)
         for op in ('==', '>', '<', '>=', '<=', '!='):
             self.assertEqual(eval('a ' + op + ' 3'), True);  self.assertEqual(called, op); called = None
-            if op == '==' or op == '!=':
-                self.assertEqual(eval('x ' + op + ' 3'), op == '!='); self.assertEqual(called, None)
-                self.assertEqual(eval('3 ' + op + ' x'), op == '!='); self.assertEqual(called, None)
-            else:
-                try:
-                    eval('x ' + op + ' 3')
-                    self.assertUnreachable()
-                except TypeError:
-                    pass
-                try:
-                    eval('3 ' + op + ' x')
-                    self.assertUnreachable()
-                except TypeError:
-                    pass
+            self.assertEqual(eval('x ' + op + ' 3'), True);  self.assertEqual(called, op); called = None
 
 run_test(__name__)

@@ -1297,6 +1297,17 @@ namespace IronPython.Runtime.Binding {
             }
 
             return MakeBinaryThrow(binder, op, types).Expression;
+
+            static MethodInfo/*!*/ GetComparisonFallbackMethod(PythonOperationKind op) {
+                string name;
+                switch (op) {
+                    case PythonOperationKind.Equal: name = nameof(PythonOps.CompareTypesEqual); break;
+                    case PythonOperationKind.NotEqual: name = nameof(PythonOps.CompareTypesNotEqual); break;
+                    case PythonOperationKind.Compare: name = nameof(PythonOps.CompareTypes); break;
+                    default: throw new InvalidOperationException();
+                }
+                return typeof(PythonOps).GetMethod(name);
+            }
         }
 
         private static Expression GetCompareTest(PythonOperationKind op, Expression expr, bool reverse) {
@@ -1879,17 +1890,6 @@ namespace IronPython.Runtime.Binding {
             }
 
             return BindingHelpers.AddPythonBoxing(res);
-        }
-
-        private static MethodInfo/*!*/ GetComparisonFallbackMethod(PythonOperationKind op) {
-            string name;
-            switch (op) {
-                case PythonOperationKind.Equal: name = nameof(PythonOps.CompareTypesEqual); break;
-                case PythonOperationKind.NotEqual: name = nameof(PythonOps.CompareTypesNotEqual); break;
-                case PythonOperationKind.Compare: name = nameof(PythonOps.CompareTypes); break;
-                default: throw new InvalidOperationException();
-            }
-            return typeof(PythonOps).GetMethod(name);
         }
 
         internal static Expression/*!*/ CheckMissing(Expression/*!*/ toCheck) {

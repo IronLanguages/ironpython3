@@ -1869,8 +1869,8 @@ namespace IronPython.Runtime.Operations {
         }
 
 #if FEATURE_ENCODING
-        private static class CodecsInfo {
-            public static readonly Dictionary<string, Lazy<Encoding>> Codecs = MakeCodecsDict();
+        internal static class CodecsInfo {
+            internal static readonly Dictionary<string, Lazy<Encoding>> Codecs = MakeCodecsDict();
 
             private static Dictionary<string, Lazy<Encoding>> MakeCodecsDict() {
                 Dictionary<string, Lazy<Encoding>> d = new Dictionary<string, Lazy<Encoding>>();
@@ -1937,6 +1937,23 @@ namespace IronPython.Runtime.Operations {
                     Debug.Assert(kvp.Key.IndexOf('-') < 0);
                 }
 #endif
+                return d;
+            }
+
+            internal static readonly Lazy<Dictionary<string, object>> ErrorHandlers = new Lazy<Dictionary<string, object>>(MakeErrorHandlersDict);
+
+            private delegate object ErrorHandler(object unicodeError);
+
+            private static Dictionary<string, object> MakeErrorHandlersDict() {
+                var d = new Dictionary<string, object>();
+
+                d["strict"] = new ErrorHandler(StrictErrors);
+                // TODO: Implement remaining error handlers
+                d["ignore"] = new ErrorHandler(StrictErrors);
+                d["replace"] = new ErrorHandler(StrictErrors);
+                d["xmlcharrefreplace"] = new ErrorHandler(StrictErrors);
+                d["backslashreplace"] = new ErrorHandler(StrictErrors);
+
                 return d;
             }
         }
@@ -2677,6 +2694,16 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
+        private static object StrictErrors(object unicodeError) {
+            if (unicodeError is PythonExceptions.BaseException be) {
+                unicodeError = be.GetClrException();
+            }
+            switch (unicodeError) {
+                case DecoderFallbackException dfe: throw dfe;
+                case EncoderFallbackException efe: throw efe;
+                default: throw PythonOps.TypeError("codec must pass exception instance");
+            }
+        }
 #endif
 
         #endregion

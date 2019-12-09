@@ -70,11 +70,7 @@ namespace IronPythonTest {
         public static IList<object> ToIDictionary(IDictionary dict) {
             List<object> res = new List<object>();
             foreach (DictionaryEntry de in dict) {
-                res.Add(PythonTuple.MakeTuple(de.Key));
-            }
-
-            foreach (DictionaryEntry de in dict) {
-                res.Add(PythonTuple.MakeTuple(de.Value));
+                res.Add(PythonTuple.MakeTuple(de.Key, de.Value));
             }
 
             return res;

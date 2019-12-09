@@ -140,6 +140,7 @@ class _WeakrefTest(IronPythonTestCase):
         self.assertTrue(not x==3)
         self.assertRaises(ReferenceError, lambda: x==y)
 
+    # https://github.com/IronLanguages/ironpython3/issues/697
     @unittest.expectedFailure
     def test_equals(self):
         global called

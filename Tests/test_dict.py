@@ -492,8 +492,7 @@ class DictTest(IronPythonTestCase):
                         ]
 
         for temp_dict in test_dicts:
-            expected = list((key,) for key in temp_dict.keys()) + \
-                       list((val,) for val in temp_dict.values())
+            expected = list((key, temp_dict[key]) for key in temp_dict.keys())
             expected.sort()
 
             to_idict = list(DictConversion.ToIDictionary(temp_dict))

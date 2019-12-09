@@ -339,8 +339,6 @@ class BuiltinsTest2(IronPythonTestCase):
         self.assertTrue(max((), default=1) == 1)
         self.assertTrue(max([], default=None) is None)
 
-        self.assertEqual(max((1,2), None), (1, 2))
-
         self.assertEqual(max(1, 2, 3.0), 3.0)
         self.assertEqual(max(1, 2.0, 3), 3)
         self.assertEqual(max(1.0, 2, 3), 3)
@@ -348,6 +346,7 @@ class BuiltinsTest2(IronPythonTestCase):
         self.assertRaises(TypeError, max)
         self.assertRaises(TypeError, max, 42)
         self.assertRaises(ValueError, max, ())
+        self.assertRaises(TypeError, max, (1, 2), None)
         class BadSeq:
             def __getitem__(self, index):
                 raise ValueError

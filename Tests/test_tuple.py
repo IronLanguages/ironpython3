@@ -155,21 +155,21 @@ class TupleTest(IronPythonTestCase):
 
 
     def test_compare_to_none(self):
-        self.assertTrue((None,) > None)
-        self.assertTrue(not None >= (None,))
+        self.assertRaises(TypeError, lambda: (None,) > None)
+        self.assertRaises(TypeError, lambda: not None >= (None,))
         self.assertTrue((None,)==(None,))
 
-        self.assertEqual(tuple() > None, True)
-        self.assertEqual(tuple() < None, False)
-        self.assertEqual(tuple() >= None, True)
-        self.assertEqual(tuple() <= None, False)
+        self.assertRaises(TypeError, lambda: tuple() > None)
+        self.assertRaises(TypeError, lambda: tuple() < None)
+        self.assertRaises(TypeError, lambda: tuple() >= None)
+        self.assertRaises(TypeError, lambda: tuple() <= None)
         self.assertTrue(    tuple() != None)
         self.assertTrue(not tuple() == None)
 
-        self.assertEqual(None < tuple(), True)
-        self.assertEqual(None > tuple(), False)
-        self.assertEqual(None <= tuple(), True)
-        self.assertEqual(None >= tuple(), False)
+        self.assertRaises(TypeError, lambda: None < tuple())
+        self.assertRaises(TypeError, lambda: None > tuple())
+        self.assertRaises(TypeError, lambda: None <= tuple())
+        self.assertRaises(TypeError, lambda: None >= tuple())
         self.assertTrue(    None != tuple())
         self.assertTrue(not None == tuple())
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+using IronPython.Runtime;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -69,11 +70,7 @@ namespace IronPythonTest {
         public static IList<object> ToIDictionary(IDictionary dict) {
             List<object> res = new List<object>();
             foreach (DictionaryEntry de in dict) {
-                res.Add(de.Key);
-            }
-
-            foreach (DictionaryEntry de in dict) {
-                res.Add(de.Value);
+                res.Add(PythonTuple.MakeTuple(de.Key, de.Value));
             }
 
             return res;

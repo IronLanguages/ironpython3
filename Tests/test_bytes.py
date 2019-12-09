@@ -1047,14 +1047,14 @@ class BytesTest(IronPythonTestCase):
 
                 self.assertEqual(testType(ab) == [], False)
 
-                self.assertEqual(testType(a) > None, True)
-                self.assertEqual(testType(a) < None, False)
-                self.assertEqual(testType(a) <= None, False)
-                self.assertEqual(testType(a) >= None, True)
-                self.assertEqual(None > testType(a), False)
-                self.assertEqual(None < testType(a), True)
-                self.assertEqual(None <= testType(a), True)
-                self.assertEqual(None >= testType(a), False)
+                self.assertRaises(TypeError, lambda: testType(a) > None)
+                self.assertRaises(TypeError, lambda: testType(a) < None)
+                self.assertRaises(TypeError, lambda: testType(a) <= None)
+                self.assertRaises(TypeError, lambda: testType(a) >= None)
+                self.assertRaises(TypeError, lambda: None > testType(a))
+                self.assertRaises(TypeError, lambda: None < testType(a))
+                self.assertRaises(TypeError, lambda: None <= testType(a))
+                self.assertRaises(TypeError, lambda: None >= testType(a))
 
 
     def test_bytearray(self):

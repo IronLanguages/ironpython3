@@ -56,7 +56,7 @@ class AttrTest(IronPythonTestCase):
             CheckDictionary(mod.__dict__)
 
             mod.__dict__[1] = '1'
-            self.assertEqual(dir(mod).__contains__(1), True)
+            self.assertRaises(TypeError, lambda: dir(mod).__contains__(1))
             del mod.__dict__[1]
 
             # Try to replace __dict__

@@ -607,22 +607,6 @@ namespace IronPython.Runtime.Operations {
             return PythonOps.CompareTypesWorker(context, false, x, y) != 0;
         }
 
-        public static bool CompareTypesGreaterThan(CodeContext/*!*/ context, object x, object y) {
-            return PythonOps.CompareTypes(context, x, y) > 0;
-        }
-
-        public static bool CompareTypesLessThan(CodeContext/*!*/ context, object x, object y) {
-            return PythonOps.CompareTypes(context, x, y) < 0;
-        }
-
-        public static bool CompareTypesGreaterThanOrEqual(CodeContext/*!*/ context, object x, object y) {
-            return PythonOps.CompareTypes(context, x, y) >= 0;
-        }
-
-        public static bool CompareTypesLessThanOrEqual(CodeContext/*!*/ context, object x, object y) {
-            return PythonOps.CompareTypes(context, x, y) <= 0;
-        }
-
         public static int CompareTypesWorker(CodeContext/*!*/ context, bool shouldWarn, object x, object y) {
             if (x == null && y == null) return 0;
             if (x == null) return -1;

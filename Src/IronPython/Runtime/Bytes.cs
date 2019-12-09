@@ -735,31 +735,19 @@ namespace IronPython.Runtime {
             throw PythonOps.TypeErrorForUnIndexableObject(count);
         }
 
-        public static bool operator >(Bytes/*!*/ x, Bytes/*!*/ y) {
-            if (y == null) {
-                return true;
-            }
+        public static bool operator >([NotNull]Bytes/*!*/ x, [NotNull]Bytes/*!*/ y) {
             return x._bytes.Compare(y._bytes) > 0;
         }
 
-        public static bool operator <(Bytes/*!*/ x, Bytes/*!*/ y) {
-            if (y == null) {
-                return false;
-            }
+        public static bool operator <([NotNull]Bytes/*!*/ x, [NotNull]Bytes/*!*/ y) {
             return x._bytes.Compare(y._bytes) < 0;
         }
 
-        public static bool operator >=(Bytes/*!*/ x, Bytes/*!*/ y) {
-            if (y == null) {
-                return true;
-            }
+        public static bool operator >=([NotNull]Bytes/*!*/ x, [NotNull]Bytes/*!*/ y) {
             return x._bytes.Compare(y._bytes) >= 0;
         }
 
-        public static bool operator <=(Bytes/*!*/ x, Bytes/*!*/ y) {
-            if (y == null) {
-                return false;
-            }
+        public static bool operator <=([NotNull]Bytes/*!*/ x, [NotNull]Bytes/*!*/ y) {
             return x._bytes.Compare(y._bytes) <= 0;
         }
 

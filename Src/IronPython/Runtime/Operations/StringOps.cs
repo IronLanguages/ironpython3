@@ -1940,19 +1940,22 @@ namespace IronPython.Runtime.Operations {
                 return d;
             }
 
-            internal static readonly Lazy<Dictionary<string, object>> ErrorHandlers = new Lazy<Dictionary<string, object>>(MakeErrorHandlersDict);
-
-            private delegate object ErrorHandler(object unicodeError);
-
-            private static Dictionary<string, object> MakeErrorHandlersDict() {
+            internal static Dictionary<string, object> MakeErrorHandlersDict() {
                 var d = new Dictionary<string, object>();
 
-                d["strict"] = new ErrorHandler(StrictErrors);
+                d["strict"] = BuiltinFunction.MakeFunction(
+                    "strict_errors", 
+                    ReflectionUtils.GetMethodInfos(typeof(StringOps).GetMember(nameof(StrictErrors), BindingFlags.Static | BindingFlags.NonPublic)), 
+                    typeof(StringOps));
+
                 // TODO: Implement remaining error handlers
-                d["ignore"] = new ErrorHandler(StrictErrors);
-                d["replace"] = new ErrorHandler(StrictErrors);
-                d["xmlcharrefreplace"] = new ErrorHandler(StrictErrors);
-                d["backslashreplace"] = new ErrorHandler(StrictErrors);
+                d["ignore"] = null;
+
+                d["replace"] = null;
+
+                d["xmlcharrefreplace"] = null;
+
+                d["backslashreplace"] = null;
 
                 return d;
             }

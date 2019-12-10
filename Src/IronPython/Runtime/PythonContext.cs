@@ -1888,7 +1888,7 @@ namespace IronPython.Runtime {
             get {
                 if (_errorHandlers == null) {
 #if FEATURE_ENCODING
-                    _errorHandlers = StringOps.CodecsInfo.ErrorHandlers.Value;
+                    Interlocked.CompareExchange(ref _errorHandlers, StringOps.CodecsInfo.MakeErrorHandlersDict(), null);
 #else
                     Interlocked.CompareExchange(ref _errorHandlers, new Dictionary<string, object>(), null);
 #endif

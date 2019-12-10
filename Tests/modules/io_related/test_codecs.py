@@ -471,6 +471,7 @@ class CodecTest(IronPythonTestCase):
         self.assertRaisesRegex(TypeError, "codec must pass exception instance", strict, None)
         self.assertRaisesRegex(TypeError, "\w+\(\) takes exactly (one|1) argument \(0 given\)", strict)
         self.assertRaisesRegex(TypeError, "\w+\(\) takes exactly (one|1) argument \(2 given\)", strict, ude, uee)
+        self.assertRaises(LookupError, codecs.lookup_error, "STRICT")
 
         return # TODO: Implement remaining error handlers
 

@@ -1236,87 +1236,12 @@ namespace IronPython.Runtime.Operations {
 
         #region Conversion and Enumeration
 
-        [PythonType("bytes_iterator")]
-        private class PythonBytesEnumerator<T> : IEnumerable, IEnumerator<T> {
-            private readonly IList<byte>/*!*/ _bytes;
-            private readonly Func<byte, T>/*!*/ _conversion;
-            private int _index;
-
-            public PythonBytesEnumerator(IList<byte> bytes, Func<byte, T> conversion) {
-                Assert.NotNull(bytes);
-                Assert.NotNull(conversion);
-
-                _bytes = bytes;
-                _conversion = conversion;
-                _index = -1;
-            }
-
-            #region IEnumerator<T> Members
-
-            public T Current {
-                get {
-                    if (_index < 0) {
-                        throw PythonOps.SystemError("Enumeration has not started. Call MoveNext.");
-                    } else if (_index >= _bytes.Count) {
-                        throw PythonOps.SystemError("Enumeration already finished.");
-                    }
-                    return _conversion(_bytes[_index]);
-                }
-            }
-
-            #endregion
-
-            #region IDisposable Members
-
-            public void Dispose() { }
-
-            #endregion
-
-            #region IEnumerator Members
-
-            object IEnumerator.Current {
-                get {
-                    return ((IEnumerator<T>)this).Current;
-                }
-            }
-
-            public bool MoveNext() {
-                if (_index >= _bytes.Count) {
-                    return false;
-                }
-                _index++;
-                return _index != _bytes.Count;
-            }
-
-            public void Reset() {
-                _index = -1;
-            }
-
-            #endregion
-
-            #region IEnumerable Members
-
-            public IEnumerator GetEnumerator() {
-                return this;
-            }
-
-            #endregion
-        }
-
         internal static IEnumerable BytesEnumerable(IList<byte> bytes) {
-            return new PythonBytesEnumerator<Bytes>(bytes, b => Bytes.FromByte(b));
+            return new PythonBytesIterator(bytes);
         }
 
-        internal static IEnumerable BytesIntEnumerable(IList<byte> bytes) {
-            return new PythonBytesEnumerator<int>(bytes, b => (int)b);
-        }
-
-        internal static IEnumerator<Bytes> BytesEnumerator(IList<byte> bytes) {
-            return new PythonBytesEnumerator<Bytes>(bytes, b => Bytes.FromByte(b));
-        }
-
-        internal static IEnumerator<int> BytesIntEnumerator(IList<byte> bytes) {
-            return new PythonBytesEnumerator<int>(bytes, b => (int)b);
+        internal static IEnumerator<int> BytesEnumerator(IList<byte> bytes) {
+            return new PythonBytesIterator(bytes);
         }
 
         #endregion

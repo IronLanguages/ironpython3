@@ -450,7 +450,7 @@ namespace IronPython.Runtime.Binding {
                 return ((CallSite<Func<CallSite, Bytes, IEnumerable>>)site).Update(site, value);
             }
 
-            return PythonOps.BytesIntEnumerable(value);
+            return PythonOps.BytesEnumerable(value);
         }
 
         public IEnumerator BytesToIEnumeratorConversion(CallSite site, Bytes value) {
@@ -458,7 +458,7 @@ namespace IronPython.Runtime.Binding {
                 return ((CallSite<Func<CallSite, Bytes, IEnumerator>>)site).Update(site, value);
             }
 
-            return PythonOps.BytesIntEnumerator(value).Key;
+            return PythonOps.BytesEnumerator(value).Key;
         }
 
         public IEnumerable ObjectToIEnumerableConversion(CallSite site, object value) {
@@ -466,7 +466,7 @@ namespace IronPython.Runtime.Binding {
                 if (value is string) {
                     return PythonOps.StringEnumerable((string)value);
                 } else if (value.GetType() == typeof(Bytes)) {
-                    return PythonOps.BytesIntEnumerable((Bytes)value);
+                    return PythonOps.BytesEnumerable((Bytes)value);
                 }
             }
 
@@ -478,7 +478,7 @@ namespace IronPython.Runtime.Binding {
                 if (value is string) {
                     return PythonOps.StringEnumerator((string)value).Key;
                 } else if (value.GetType() == typeof(Bytes)) {
-                    return PythonOps.BytesIntEnumerator((Bytes)value).Key;
+                    return PythonOps.BytesEnumerator((Bytes)value).Key;
                 }
             }
 

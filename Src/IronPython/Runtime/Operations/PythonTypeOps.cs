@@ -761,10 +761,7 @@ namespace IronPython.Runtime.Operations {
                     nt = NameType.Property;
                 }
 
-                if (!(pt is ExtensionPropertyTracker ept)) {
-                    ReflectedPropertyTracker rpt = pt as ReflectedPropertyTracker;
-                    Debug.Assert(rpt != null);
-
+                if (pt is ReflectedPropertyTracker rpt) {
                     if (PythonBinder.IsExtendedType(pt.DeclaringType) ||
                         PythonHiddenAttribute.IsHidden(rpt.Property, true)) {
                         nt = NameType.Property;
@@ -800,9 +797,10 @@ namespace IronPython.Runtime.Operations {
                         }
                         rp = new ReflectedProperty(rpt.Property, getters.ToArray(), setters.ToArray(), nt);
                     } else {
-                        rp = new ReflectedIndexer(((ReflectedPropertyTracker)pt).Property, NameType.Property, privateBinding);
+                        rp = new ReflectedIndexer(rpt.Property, NameType.Property, privateBinding);
                     }
                 } else {
+                    Debug.Assert(pt is ExtensionPropertyTracker);
                     rp = new ReflectedExtensionProperty(new ExtensionPropertyInfo(pt.DeclaringType, getter ?? setter), nt);
                 }
 

@@ -1940,10 +1940,6 @@ namespace IronPython.Runtime.Operations {
             return new KeyValuePair<IEnumerator, IDisposable>(IListOfByteOps.BytesEnumerator(bytes), null);
         }
 
-        public static KeyValuePair<IEnumerator, IDisposable> BytesIntEnumerator(IList<byte> bytes) {
-            return new KeyValuePair<IEnumerator, IDisposable>(IListOfByteOps.BytesIntEnumerator(bytes), null);
-        }
-
         public static KeyValuePair<IEnumerator, IDisposable> GetEnumeratorFromEnumerable(IEnumerable enumerable) {
             IEnumerator enumerator = enumerable.GetEnumerator();
             return new KeyValuePair<IEnumerator, IDisposable>(enumerator, enumerator as IDisposable);
@@ -1955,10 +1951,6 @@ namespace IronPython.Runtime.Operations {
 
         public static IEnumerable BytesEnumerable(IList<byte> bytes) {
             return IListOfByteOps.BytesEnumerable(bytes);
-        }
-
-        public static IEnumerable BytesIntEnumerable(IList<byte> bytes) {
-            return IListOfByteOps.BytesIntEnumerable(bytes);
         }
 
         #region Exception handling

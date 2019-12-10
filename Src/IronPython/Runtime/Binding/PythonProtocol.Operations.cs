@@ -456,7 +456,7 @@ namespace IronPython.Runtime.Binding {
 
                 return new DynamicMetaObject(
                     Expression.Call(
-                        typeof(PythonOps).GetMethod(nameof(PythonOps.BytesIntEnumerator)),
+                        typeof(PythonOps).GetMethod(nameof(PythonOps.BytesEnumerator)),
                         self.Expression
                     ),
                     self.Restrictions

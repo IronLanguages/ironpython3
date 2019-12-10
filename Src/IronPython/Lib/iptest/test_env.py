@@ -11,7 +11,8 @@ import sys, os
 is_cli =         sys.implementation.name == 'ironpython'
 is_ironpython =  is_cli
 is_cpython    =  not is_ironpython
-is_posix      =  sys.platform == 'posix'
+is_windows    =  sys.platform == 'win32'
+is_posix      =  sys.platform == 'posix' or sys.platform == 'linux'
 is_osx        =  sys.platform == 'darwin'
 is_netcoreapp =  False
 is_netcoreapp21 = False
@@ -38,12 +39,9 @@ if is_ironpython:
 
 is_32, is_64 = is_cli32, is_cli64
 if not is_ironpython:
-    cpu = os.environ["PROCESSOR_ARCHITECTURE"]
-    if cpu.lower()=="x86":
-        is_32 = True
-    elif cpu.lower()=="amd64":
-        is_64 = True
-    
+    import struct
+    ptr_size = struct.calcsize('P')
+    is_32, is_64 = (ptr_size == 4), (ptr_size == 8)    
 
 #--CLR version we're running on (if any)
 

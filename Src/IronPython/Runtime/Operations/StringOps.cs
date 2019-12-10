@@ -1869,8 +1869,8 @@ namespace IronPython.Runtime.Operations {
         }
 
 #if FEATURE_ENCODING
-        private static class CodecsInfo {
-            public static readonly Dictionary<string, Lazy<Encoding>> Codecs = MakeCodecsDict();
+        internal static class CodecsInfo {
+            internal static readonly Dictionary<string, Lazy<Encoding>> Codecs = MakeCodecsDict();
 
             private static Dictionary<string, Lazy<Encoding>> MakeCodecsDict() {
                 Dictionary<string, Lazy<Encoding>> d = new Dictionary<string, Lazy<Encoding>>();
@@ -1937,6 +1937,26 @@ namespace IronPython.Runtime.Operations {
                     Debug.Assert(kvp.Key.IndexOf('-') < 0);
                 }
 #endif
+                return d;
+            }
+
+            internal static Dictionary<string, object> MakeErrorHandlersDict() {
+                var d = new Dictionary<string, object>();
+
+                d["strict"] = BuiltinFunction.MakeFunction(
+                    "strict_errors", 
+                    ReflectionUtils.GetMethodInfos(typeof(StringOps).GetMember(nameof(StrictErrors), BindingFlags.Static | BindingFlags.NonPublic)), 
+                    typeof(StringOps));
+
+                // TODO: Implement remaining error handlers
+                d["ignore"] = null;
+
+                d["replace"] = null;
+
+                d["xmlcharrefreplace"] = null;
+
+                d["backslashreplace"] = null;
+
                 return d;
             }
         }
@@ -2677,6 +2697,16 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
+        private static object StrictErrors(object unicodeError) {
+            if (unicodeError is PythonExceptions.BaseException be) {
+                unicodeError = be.GetClrException();
+            }
+            switch (unicodeError) {
+                case DecoderFallbackException dfe: throw dfe;
+                case EncoderFallbackException efe: throw efe;
+                default: throw PythonOps.TypeError("codec must pass exception instance");
+            }
+        }
 #endif
 
         #endregion

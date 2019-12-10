@@ -454,6 +454,48 @@ class CodecTest(IronPythonTestCase):
         for x in ['iso-8859-1', 'iso8859-1', '8859', 'cp819', 'latin', 'latin1', 'L1']:
             self.assertEqual('abc'.encode(x), b'abc')
 
+    def test_error_handlers(self):
+        ude = UnicodeDecodeError('dummy', b"abcdefgh", 3, 5, "decoding testing purposes")
+        uee = UnicodeEncodeError('dummy', "abcdefgh", 2, 6, "encoding testing purposes")
+        unicode_data = "ab\xff\u20ac\U0001f40d"
+        uee_unicode = UnicodeEncodeError('dummy', unicode_data, 2, len(unicode_data), "encoding testing purposes")
+
+        strict = codecs.lookup_error('strict')
+        self.assertEqual(strict, codecs.strict_errors)
+        with self.assertRaises(UnicodeDecodeError) as cm:
+            strict(ude)
+        self.assertEqual(cm.exception, ude)
+        with self.assertRaises(UnicodeEncodeError) as cm:
+            strict(uee)
+        self.assertEqual(cm.exception, uee)
+        self.assertRaisesRegex(TypeError, "codec must pass exception instance", strict, None)
+        self.assertRaisesRegex(TypeError, "\w+\(\) takes exactly (one|1) argument \(0 given\)", strict)
+        self.assertRaisesRegex(TypeError, "\w+\(\) takes exactly (one|1) argument \(2 given\)", strict, ude, uee)
+        self.assertRaises(LookupError, codecs.lookup_error, "STRICT")
+
+        return # TODO: Implement remaining error handlers
+
+        ignore = codecs.lookup_error('ignore')
+        self.assertEqual(ignore, codecs.ignore_errors)
+        self.assertEqual(ignore(ude), ("", 5))
+        self.assertEqual(ignore(uee), ("", 6))
+
+        replace = codecs.lookup_error('replace')
+        self.assertEqual(replace, codecs.replace_errors)
+        self.assertEqual(replace(ude), ("�", 5))
+        self.assertEqual(replace(uee), ("????", 6))
+
+        backslashreplace = codecs.lookup_error('backslashreplace')
+        self.assertEqual(backslashreplace, codecs.backslashreplace_errors)
+        self.assertRaisesRegex(TypeError, "don't know how to handle UnicodeDecodeError in error callback", backslashreplace, ude)
+        self.assertEqual(backslashreplace(uee), (r"\x63\x64\x65\x66", 6))
+        self.assertEqual(backslashreplace(uee_unicode), (r"\xff\u20ac\U0001f40d", uee_unicode.end))
+
+        xmlcharrefreplace = codecs.lookup_error('xmlcharrefreplace')
+        self.assertEqual(xmlcharrefreplace, codecs.xmlcharrefreplace_errors)
+        self.assertRaisesRegex(TypeError, "don't know how to handle UnicodeDecodeError in error callback", xmlcharrefreplace, ude)
+        self.assertEqual(xmlcharrefreplace(uee), ("&#99;&#100;&#101;&#102;", 6))
+
     #TODO: @skip("multiple_execute")
     def test_lookup_error(self):
         #sanity

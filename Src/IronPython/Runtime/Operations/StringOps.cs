@@ -1392,7 +1392,7 @@ namespace IronPython.Runtime.Operations {
         [SpecialName, ImplicitConversionMethod]
         public static IEnumerable ConvertToIEnumerable(string s) {
             // make an enumerator that produces strings instead of chars
-            return new PythonStringEnumerable(s);
+            return new PythonStrIterator(s);
         }
 
         internal static int Compare(string self, string obj) {
@@ -2145,92 +2145,12 @@ namespace IronPython.Runtime.Operations {
             return false;
         }
 
-        // note: any changes in how this iterator works should also be applied in the
-        //       optimized overloads of Builtins.map()
-        [PythonType("str_iterator")]
-        public class PythonStringEnumerable : IEnumerable, IEnumerator<string> {
-            private readonly string/*!*/ _s;
-            private int _index;
-
-            public PythonStringEnumerable(string s) {
-                Assert.NotNull(s);
-
-                _index = -1;
-                _s = s;
-            }
-
-            public PythonTuple __reduce__(CodeContext/*!*/ context) {
-                object iter;
-                context.TryLookupBuiltin("iter", out iter);
-                return PythonTuple.MakeTuple(
-                    iter,
-                    PythonTuple.MakeTuple(_s),
-                    _index + 1
-                );
-            }
-
-            public void __setstate__(int index) {
-                _index = index - 1;
-            }
-
-            #region IEnumerable Members
-
-            public IEnumerator GetEnumerator() {
-                return this;
-            }
-
-            #endregion
-
-            #region IEnumerator<string> Members
-
-            public string Current {
-                get {
-                    if (_index < 0) {
-                        throw PythonOps.SystemError("Enumeration has not started. Call MoveNext.");
-                    } else if (_index >= _s.Length) {
-                        throw PythonOps.SystemError("Enumeration already finished.");
-                    }
-                    return ScriptingRuntimeHelpers.CharToString(_s[_index]);
-                }
-            }
-
-            #endregion
-
-            #region IDisposable Members
-
-            public void Dispose() { }
-
-            #endregion
-
-            #region IEnumerator Members
-
-            object IEnumerator.Current {
-                get {
-                    return ((IEnumerator<string>)this).Current;
-                }
-            }
-
-            public bool MoveNext() {
-                if (_index >= _s.Length) {
-                    return false;
-                }
-                _index++;
-                return _index != _s.Length;
-            }
-
-            public void Reset() {
-                _index = -1;
-            }
-
-            #endregion
-        }
-
         internal static IEnumerable StringEnumerable(string str) {
-            return new PythonStringEnumerable(str);
+            return new PythonStrIterator(str);
         }
 
         internal static IEnumerator<string> StringEnumerator(string str) {
-            return new PythonStringEnumerable(str);
+            return new PythonStrIterator(str);
         }
 
         #endregion

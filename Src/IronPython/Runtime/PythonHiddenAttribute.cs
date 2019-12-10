@@ -9,7 +9,7 @@ namespace IronPython.Runtime {
     /// <summary>
     /// Marks a member as being hidden from Python code.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Event | AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Event | AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public sealed class PythonHiddenAttribute : PlatformsAttribute {
         public PythonHiddenAttribute(params PlatformID[] hiddenPlatforms) {
             ValidPlatforms = hiddenPlatforms;

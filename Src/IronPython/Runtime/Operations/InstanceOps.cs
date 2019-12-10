@@ -189,7 +189,7 @@ namespace IronPython.Runtime.Operations {
 
         // 3.0-only
         public static object IterMethodForBytes(Bytes self) {
-            return IListOfByteOps.BytesIntEnumerator(self);
+            return IListOfByteOps.BytesEnumerator(self);
         }
 
         public static object IterMethodForEnumerator(IEnumerator self) {

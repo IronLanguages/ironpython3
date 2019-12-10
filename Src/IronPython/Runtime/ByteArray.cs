@@ -1414,7 +1414,7 @@ namespace IronPython.Runtime {
         #endregion
 
         public IEnumerator __iter__() {
-            return PythonOps.BytesIntEnumerator(this).Key;
+            return PythonOps.BytesEnumerator(this).Key;
         }
 
         #region IEnumerable<byte> Members

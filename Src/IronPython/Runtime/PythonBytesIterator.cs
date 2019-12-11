@@ -14,7 +14,7 @@ using IronPython.Runtime.Operations;
 namespace IronPython.Runtime {
     [PythonType("bytes_iterator")]
     public sealed class PythonBytesIterator : IEnumerable, IEnumerator<int> {
-        private readonly IList<byte>/*!*/ _bytes;
+        private readonly IList<byte> _bytes;
         private int _index;
 
         internal PythonBytesIterator(IList<byte> bytes) {

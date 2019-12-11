@@ -18,7 +18,7 @@ namespace IronPython.Runtime {
     //       optimized overloads of Builtins.map()
     [PythonType("str_iterator")]
     public sealed class PythonStrIterator : IEnumerable, IEnumerator<string> {
-        private readonly string/*!*/ _s;
+        private readonly string _s;
         private int _index;
 
         internal PythonStrIterator(string s) {
@@ -28,7 +28,7 @@ namespace IronPython.Runtime {
             _s = s;
         }
 
-        public PythonTuple __reduce__(CodeContext/*!*/ context) {
+        public PythonTuple __reduce__(CodeContext context) {
             object iter;
             context.TryLookupBuiltin("iter", out iter);
             return PythonTuple.MakeTuple(

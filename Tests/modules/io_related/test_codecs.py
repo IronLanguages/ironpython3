@@ -21,10 +21,10 @@ import subprocess
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_cpython, is_mono, is_netcoreapp, is_posix, is_windows, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_cpython, is_mono, is_netcoreapp, is_posix, is_linux, is_windows, run_test, skipUnlessIronPython
 from iptest.misc_util import ip_supported_encodings
 
-if is_cpython and is_posix:
+if is_cpython and is_linux:
     import time
 
 class CodecTest(IronPythonTestCase):
@@ -958,7 +958,7 @@ class CodecTest(IronPythonTestCase):
 
                     f.write("# coding: %s" % (coding))
 
-                if is_cpython and is_posix:
+                if is_cpython and is_linux:
                     time.sleep(0.01)
                 __import__(temp_mod_name)
                 os.remove(os.path.join(self.temporary_dir, "tmp_encodings", temp_mod_name + ".py"))

@@ -800,8 +800,6 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static PythonList Split(this IList<byte> bytes, IList<byte>? sep, int maxsplit, Func<List<byte>, IList<byte>> ctor) {
-            //Debug.Assert(ctor != null);
-
             if (sep == null) {
                 if (maxsplit == 0) {
                     // Corner case for CPython compatibility

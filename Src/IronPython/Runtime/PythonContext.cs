@@ -1782,6 +1782,18 @@ namespace IronPython.Runtime {
             dict["version"] = _initialVersionString ?? GetVersionString();
         }
 
+        internal static string GetPlatform() {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                return "win32";
+            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
+                return "linux";
+            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                return "darwin";
+            } else {
+                return "cli";
+            }
+        }
+
         internal static string GetVersionString() {
             string configuration = Runtime.ClrModule.IsDebug ? " DEBUG" : string.Empty;
             string bitness = (IntPtr.Size * 8).ToString();

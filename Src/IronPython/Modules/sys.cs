@@ -558,16 +558,8 @@ Handle an exception by displaying it with a traceback on sys.stderr._")]
             dict["stdin"] = dict["__stdin__"];
             dict["stdout"] = dict["__stdout__"];
             dict["stderr"] = dict["__stderr__"];
-            
-            if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                dict["platform"] = "win32";
-            } else if(RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
-                dict["platform"] = "posix";
-            } else if(RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                dict["platform"] = "darwin";
-            } else {
-                dict["platform"] = "cli";
-            }
+
+            dict["platform"] = PythonContext.GetPlatform();
 
             // !!! These fields do need to be reset on "reload(sys)". However, the initial value is specified by the 
             // engine elsewhere. For now, we initialize them just once to some default value

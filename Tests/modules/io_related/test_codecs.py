@@ -21,8 +21,11 @@ import subprocess
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_cpython, is_mono, is_netcoreapp, is_posix, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_cpython, is_mono, is_netcoreapp, is_posix, is_linux, is_windows, run_test, skipUnlessIronPython
 from iptest.misc_util import ip_supported_encodings
+
+if is_cpython and is_linux:
+    import time
 
 class CodecTest(IronPythonTestCase):
     def test_escape_decode(self):
@@ -529,13 +532,19 @@ class CodecTest(IronPythonTestCase):
         # takes one or two parameters, not zero or three
         self.assertRaises(TypeError, codecs.unicode_internal_encode)
         self.assertRaises(TypeError, codecs.unicode_internal_encode, 'abc', 'def', 'qrt')
-        self.assertEqual(codecs.unicode_internal_encode('abc'), (b'a\x00b\x00c\x00', 3))
+        if is_cli or is_windows:
+            self.assertEqual(codecs.unicode_internal_encode('abc'), (b'a\x00b\x00c\x00', 3))
+        else:
+            self.assertEqual(codecs.unicode_internal_encode('abc'), (b'a\x00\x00\x00b\x00\x00\x00c\x00\x00\x00', 3))
 
     def test_unicode_internal_decode(self):
         # takes one or two parameters, not zero or three
         self.assertRaises(TypeError, codecs.unicode_internal_decode)
         self.assertRaises(TypeError, codecs.unicode_internal_decode, 'abc', 'def', 'qrt')
-        self.assertEqual(codecs.unicode_internal_decode(b'ab'), ('\u6261', 2))
+        if is_cli or is_windows:
+            self.assertEqual(codecs.unicode_internal_decode(b'ab'), ('\u6261', 2))
+        else:
+            self.assertEqual(codecs.unicode_internal_decode(b'ab\0\0'), ('\u6261', 4))
 
     def test_utf_16_be_decode(self):
         string, num_processed = codecs.utf_16_be_decode(b'\0a\0b\0c')
@@ -949,6 +958,8 @@ class CodecTest(IronPythonTestCase):
 
                     f.write("# coding: %s" % (coding))
 
+                if is_cpython and is_linux:
+                    time.sleep(0.01)
                 __import__(temp_mod_name)
                 os.remove(os.path.join(self.temporary_dir, "tmp_encodings", temp_mod_name + ".py"))
 

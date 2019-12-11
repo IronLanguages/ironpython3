@@ -43,7 +43,7 @@ namespace IronPython.Hosting {
         /// because it is intended to be outputted through the Python I/O system.
         /// </summary>
         public static string GetLogoDisplay() {
-            return "IronPython " + PythonContext.GetVersionString() +
+            return "IronPython " + PythonContext.GetVersionString() + " on " + PythonContext.GetPlatform() +
                    "\nType \"help\", \"copyright\", \"credits\" or \"license\" for more information.\n";
         }
 

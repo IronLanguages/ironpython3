@@ -21,7 +21,7 @@ import subprocess
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, is_cli, is_cpython, is_mono, is_netcoreapp, is_posix, is_windows, is_osx, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_cpython, is_mono, is_netcoreapp, is_posix, is_windows, run_test, skipUnlessIronPython
 from iptest.misc_util import ip_supported_encodings
 
 if is_cpython and is_posix:
@@ -885,7 +885,7 @@ class CodecTest(IronPythonTestCase):
         #Sanity Negative
         self.assertRaises(UnicodeEncodeError, codecs.charmap_encode, "abc", "strict", {})
 
-    @unittest.skipIf(is_posix or is_osx, 'only UTF8 on posix - mbcs_decode/encode only exist on windows versions of python')
+    @unittest.skipIf(is_posix, 'only UTF8 on posix - mbcs_decode/encode only exist on windows versions of python')
     def test_mbcs_decode(self):
         for mode in ['strict', 'replace', 'ignore', 'badmodethatdoesnotexist']:
             if is_netcoreapp and mode == 'badmodethatdoesnotexist': continue # FallbackBuffer created even if not used
@@ -897,7 +897,7 @@ class CodecTest(IronPythonTestCase):
             # round tripping
             self.assertEqual(codecs.mbcs_encode(codecs.mbcs_decode(allchars, mode)[0])[0], allchars)
 
-    @unittest.skipIf(is_posix or is_osx, 'only UTF8 on posix - mbcs_decode/encode only exist on windows versions of python')
+    @unittest.skipIf(is_posix, 'only UTF8 on posix - mbcs_decode/encode only exist on windows versions of python')
     def test_mbcs_encode(self):
         # these are invalid
         invalid = [0x80, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8a, 0x8b, 0x8c, 0x8e, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98, 0x99, 0x9a, 0x9b, 0x9c, 0x9e, 0x9f]
@@ -1029,7 +1029,6 @@ class CodecTest(IronPythonTestCase):
 
     @unittest.skipIf(is_posix, "https://github.com/IronLanguages/ironpython3/issues/541")
     @unittest.skipIf(is_mono, "https://github.com/IronLanguages/main/issues/1608")
-    @unittest.skipIf(is_cpython and is_osx, "PIPE.readlines() hangs")
     def test_cp11334(self):
         def run_python(filename):
             p = subprocess.Popen([sys.executable, os.path.join(self.test_dir, "encoded_files", filename)], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -1112,7 +1111,6 @@ class CodecTest(IronPythonTestCase):
             self.assertRaises(ImportError, __import__, 'encodings')
 
     @unittest.skipIf(is_posix, "https://github.com/IronLanguages/ironpython3/issues/541")
-    @unittest.skipIf(is_cpython and is_osx, "PIPE.readlines() hangs")
     def test_cp1019(self):
         #--Test that bogus encodings fail properly
         # https://github.com/IronLanguages/main/issues/255

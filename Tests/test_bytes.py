@@ -5,7 +5,7 @@
 import sys
 import unittest
 
-from iptest import IronPythonTestCase, ip_supported_encodings, is_cli, is_mono, is_osx, run_test, skipUnlessIronPython
+from iptest import IronPythonTestCase, is_cli, is_cpython, run_test, skipUnlessIronPython
 
 if not is_cli:
     long = int
@@ -338,7 +338,7 @@ class BytesTest(IronPythonTestCase):
             self.assertRaises(ValueError, testType(b'').partition, b'')
             self.assertRaises(ValueError, testType(b'').partition, b'')
 
-            if testType == bytearray:
+            if testType == bytearray and is_cpython and sys.version_info < (3,6): # https://bugs.python.org/issue20047
                 self.assertEqual(testType(b'a\x01c').partition([1]), (b'a', b'\x01', b'c'))
             else:
                 self.assertRaises(TypeError, testType(b'a\x01c').partition, [1])
@@ -405,10 +405,9 @@ class BytesTest(IronPythonTestCase):
         x = b'abc'
         self.assertEqual(id(x.replace(b'foo', b'bar', 0)), id(x))
 
-        if is_cli:
-            # CPython bug in 2.6 - http://bugs.python.org/issue4348
-            x = bytearray(b'abc')
-            self.assertTrue(id(x.replace(b'foo', b'bar', 0)) != id(x))
+        # CPython bug in 2.6 - http://bugs.python.org/issue4348
+        x = bytearray(b'abc')
+        self.assertTrue(id(x.replace(b'foo', b'bar', 0)) != id(x))
 
     def test_remove(self):
         for toremove in (ord('a'), b'a', Indexable(ord('a')), IndexableOC(ord('a'))):
@@ -488,7 +487,7 @@ class BytesTest(IronPythonTestCase):
             self.assertRaises(TypeError, testType(b'').rpartition, None)
             self.assertRaises(ValueError, testType(b'').rpartition, b'')
 
-            if testType == bytearray:
+            if testType == bytearray and is_cpython and sys.version_info < (3,6): # https://bugs.python.org/issue20047
                 self.assertEqual(testType(b'a\x01c').rpartition([1]), (b'a', b'\x01', b'c'))
             else:
                 self.assertRaises(TypeError, testType(b'a\x01c').rpartition, [1])
@@ -757,10 +756,9 @@ class BytesTest(IronPythonTestCase):
         b = b''
         self.assertEqual(id(b.translate(identTable, b'')), id(b))
 
-        if is_cli:
-            # CPython bug 4348 - http://bugs.python.org/issue4348
-            b = bytearray(b'')
-            self.assertTrue(id(b.translate(identTable)) != id(b))
+        # CPython bug 4348 - http://bugs.python.org/issue4348
+        b = bytearray(b'')
+        self.assertTrue(id(b.translate(identTable)) != id(b))
 
         self.assertRaises(TypeError, testType(b'').translate, [])
         self.assertRaises(TypeError, testType(b'').translate, [], [])

@@ -10,9 +10,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
-using Microsoft.Scripting.Runtime;
-using Microsoft.Scripting.Utils;
-
 namespace IronPython.Runtime.Operations {
     internal static class IListOfByteOps {
         internal static int Compare(this IList<byte> self, IList<byte> other) {
@@ -289,7 +286,6 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static List<byte>[] Split(this IList<byte> str, IList<byte>? separators, int maxComponents, StringSplitOptions options) {
-            ContractUtils.RequiresNotNull(str, nameof(str));
             bool keep_empty = (options & StringSplitOptions.RemoveEmptyEntries) != StringSplitOptions.RemoveEmptyEntries;
 
             if (separators == null) {
@@ -325,10 +321,7 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static List<byte>[] SplitOnWhiteSpace(this IList<byte> str, int maxComponents) {
-            ContractUtils.RequiresNotNull(str, nameof(str));
-
-
-            List<List<byte>> result = new List<List<byte>>(maxComponents == Int32.MaxValue ? 1 : maxComponents + 1);
+            var result = new List<List<byte>>(maxComponents == Int32.MaxValue ? 1 : maxComponents + 1);
 
             int i = 0;
             int next;
@@ -732,7 +725,7 @@ namespace IronPython.Runtime.Operations {
             return res;
         }
 
-        internal static PythonList SplitLines(this IList<byte> bytes, bool keepends, Func<List<byte>, object> ctor) {
+        internal static PythonList SplitLines(this IList<byte> bytes, bool keepends, Func<List<byte>, IList<byte>> ctor) {
             PythonList ret = new PythonList();
             int i, linestart;
             for (i = 0, linestart = 0; i < bytes.Count; i++) {
@@ -1135,8 +1128,6 @@ namespace IronPython.Runtime.Operations {
         }
 
         internal static byte ToByte(this IList<byte> self, string name, int pos) {
-            Debug.Assert(name != null);
-
             if (self == null) {
                 throw PythonOps.TypeError(name + "() argument " + pos + " must be char < 256, not None");
             } else if (self.Count != 1) {

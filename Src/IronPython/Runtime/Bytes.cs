@@ -209,9 +209,9 @@ namespace IronPython.Runtime {
         /// characters (e.g. whitespace) and lowercase characters only cased ones. 
         /// return false otherwise.
         /// </summary>
-        public bool istitle => _bytes.IsTitle();
+        public bool istitle() => _bytes.IsTitle();
 
-        public bool isupper => _bytes.IsUpper();
+        public bool isupper() => _bytes.IsUpper();
 
         /// <summary>
         /// Return a string which is the concatenation of the strings 
@@ -301,8 +301,6 @@ namespace IronPython.Runtime {
         }
 
         public static Bytes maketrans([BytesConversion, NotNull]IList<byte> from, [BytesConversion, NotNull]IList<byte> to) {
-            if (from == null) throw PythonOps.TypeError("a bytes-like object is required, not 'NoneType'");
-            if (to == null) throw PythonOps.TypeError("a bytes-like object is required, not 'NoneType'");
             if (from.Count != to.Count) throw PythonOps.ValueError("maketrans arguments must have same length");
 
             var bytes = new byte[256];
@@ -316,9 +314,7 @@ namespace IronPython.Runtime {
         }
 
         public PythonTuple partition([BytesConversion, NotNull]IList<byte> sep) {
-            if (sep == null) {
-                throw PythonOps.TypeError("expected string, got NoneType");
-            } else if (sep.Count == 0) {
+            if (sep.Count == 0) {
                 throw PythonOps.ValueError("empty separator");
             }
 
@@ -402,9 +398,7 @@ namespace IronPython.Runtime {
         }
 
         public PythonTuple rpartition([BytesConversion, NotNull]IList<byte> sep) {
-            if (sep == null) {
-                throw PythonOps.TypeError("expected string, got NoneType");
-            } else if (sep.Count == 0) {
+            if (sep.Count == 0) {
                 throw PythonOps.ValueError("empty separator");
             }
 
@@ -423,7 +417,7 @@ namespace IronPython.Runtime {
         }
 
         public PythonList rsplit() {
-            return _bytes.SplitInternal((byte[]?)null, -1, x => new Bytes(x));
+            return _bytes.SplitInternal(null, -1, x => new Bytes(x));
         }
 
         public PythonList rsplit([BytesConversion]IList<byte>? sep) {
@@ -528,9 +522,7 @@ namespace IronPython.Runtime {
         }
 
         public Bytes translate([BytesConversion]IList<byte>? table, [BytesConversion, NotNull]IList<byte> delete) {
-            if (delete == null) {
-                throw PythonOps.TypeError("expected bytes or bytearray, got None");
-            } else if (Count == 0) {
+            if (Count == 0) {
                 return this;
             }
 

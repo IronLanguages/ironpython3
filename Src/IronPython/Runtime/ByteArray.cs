@@ -527,9 +527,7 @@ namespace IronPython.Runtime {
             => Bytes.maketrans(from, to);
 
         public PythonTuple partition([BytesConversion, NotNull]IList<byte> sep) {
-            if (sep == null) {
-                throw PythonOps.TypeError("expected string, got NoneType");
-            } else if (sep.Count == 0) {
+            if (sep.Count == 0) {
                 throw PythonOps.ValueError("empty separator");
             }
 
@@ -550,9 +548,7 @@ namespace IronPython.Runtime {
         }
 
         public ByteArray replace([BytesConversion, NotNull]IList<byte> old, [BytesConversion, NotNull]IList<byte> @new, int count = -1) {
-            if (old == null) {
-                throw PythonOps.TypeError("expected bytes or bytearray, got NoneType");
-            } else if (count == 0) {
+            if (count == 0) {
                 return CopyThis();
             }
 
@@ -621,9 +617,7 @@ namespace IronPython.Runtime {
         }
 
         public PythonTuple rpartition([BytesConversion, NotNull]IList<byte> sep) {
-            if (sep == null) {
-                throw PythonOps.TypeError("expected string, got NoneType");
-            } else if (sep.Count == 0) {
+            if (sep.Count == 0) {
                 throw PythonOps.ValueError("empty separator");
             }
 
@@ -664,7 +658,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public ByteArray  rstrip([BytesConversion]IList<byte>? chars) {
+        public ByteArray rstrip([BytesConversion]IList<byte>? chars) {
             if (chars == null) return rstrip();
             lock (this) {
                 var res = _bytes.RightStrip(chars);
@@ -770,7 +764,6 @@ namespace IronPython.Runtime {
         }
 
         public ByteArray translate([BytesConversion]IList<byte>? table) {
-
             lock (this) {
                 if (table != null) {
                     if (table.Count != 256) {
@@ -786,12 +779,6 @@ namespace IronPython.Runtime {
 
 
         public ByteArray translate([BytesConversion]IList<byte>? table, [BytesConversion, NotNull]IList<byte> delete) {
-            if (table == null && delete == null) {
-                throw PythonOps.TypeError("expected bytearray or bytes, got NoneType");
-            } else if (delete == null) {
-                throw PythonOps.TypeError("expected bytes or bytearray, got None");
-            }
-
             lock (this) {
                 return new ByteArray(_bytes.Translate(table, delete));
             }
@@ -1030,10 +1017,6 @@ namespace IronPython.Runtime {
                 }
             }
             set {
-                if (slice == null) {
-                    throw PythonOps.TypeError("bytearray indices must be integer or slice, not None");
-                }
-
                 // get a list of the bytes we're going to assign into the slice.  We accept:
                 //      integers, longs, etc... - fill in an array of 0 bytes
                 //      list of bytes, indexables, etc...

@@ -75,7 +75,7 @@ An optional starting value can be specified.  The returned checksum is
 a signed integer.")]
         public static int adler32([BytesConversion]IList<byte> data, long baseValue=1L)
         {
-            return (int)Adler32.GetAdler32Checksum(baseValue, data.ToArray(), 0, data.Count());
+            return (int)Adler32.GetAdler32Checksum(baseValue, data.ToArray(), 0, data.Count);
         }
 
         [Documentation(@"crc32(string[, start]) -- Compute a CRC-32 checksum of string.

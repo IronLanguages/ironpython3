@@ -2377,6 +2377,7 @@ namespace IronPython.Modules {
                 SslProtocols result = SslProtocols.None;
 
                 switch (type & ~PythonSsl.OP_NO_ALL) {
+#pragma warning disable CA5397 // Do not use deprecated SslProtocols values
 #pragma warning disable CS0618 // Type or member is obsolete
                     case PythonSsl.PROTOCOL_SSLv2:
                         result = SslProtocols.Ssl2;
@@ -2394,6 +2395,7 @@ namespace IronPython.Modules {
                     case PythonSsl.PROTOCOL_TLSv1_1:
                         result = SslProtocols.Tls11;
                         break;
+#pragma warning restore CA5397 // Do not use deprecated SslProtocols values
                     case PythonSsl.PROTOCOL_TLSv1_2:
                         result = SslProtocols.Tls12;
                         break;
@@ -2401,6 +2403,7 @@ namespace IronPython.Modules {
                         throw new InvalidOperationException("bad ssl protocol type: " + type);
                 }
                 // Filter out requested protocol exclusions:
+#pragma warning disable CA5397 // Do not use deprecated SslProtocols values
 #pragma warning disable CS0618 // Type or member is obsolete
                 result &= (type & PythonSsl.OP_NO_SSLv3) != 0 ? ~SslProtocols.Ssl3 : ~SslProtocols.None;
                 result &= (type & PythonSsl.OP_NO_SSLv2) != 0 ? ~SslProtocols.Ssl2 : ~SslProtocols.None;
@@ -2408,6 +2411,7 @@ namespace IronPython.Modules {
                 result &= (type & PythonSsl.OP_NO_TLSv1) != 0 ? ~SslProtocols.Tls : ~SslProtocols.None;
                 result &= (type & PythonSsl.OP_NO_TLSv1_1) != 0 ? ~SslProtocols.Tls11 : ~SslProtocols.None;
                 result &= (type & PythonSsl.OP_NO_TLSv1_2) != 0 ? ~SslProtocols.Tls12 : ~SslProtocols.None;
+#pragma warning restore CA5397 // Do not use deprecated SslProtocols values
                 return result;
             }
 
@@ -2424,11 +2428,13 @@ namespace IronPython.Modules {
 
             private string ProtocolToPython() {
                 switch (_sslStream.SslProtocol) {
+#pragma warning disable CA5397 // Do not use deprecated SslProtocols values
 #pragma warning disable CS0618 // Type or member is obsolete
                     case SslProtocols.Ssl2: return "SSLv2";
                     case SslProtocols.Ssl3: return "TLSv1/SSLv3";
 #pragma warning restore CS0618 // Type or member is obsolete
                     case SslProtocols.Tls: return "TLSv1";
+#pragma warning restore CA5397 // Do not use deprecated SslProtocols values
                     default: return _sslStream.SslProtocol.ToString();
                 }
             }

@@ -85,7 +85,7 @@ class DynamicRegressionTest(IronPythonTestCase):
     def test_cp24117(self):
         import IronPythonTest.DynamicRegressions as DR
         self.assertEqual(DR.cp24117(range),    "IronPython.Runtime.Types.PythonType")
-        self.assertEqual(DR.cp24117(range(3)), "IronPython.Runtime.Range")
+        self.assertEqual(DR.cp24117(range(3)), "IronPython.Runtime.PythonRange")
 
     def test_cp24118(self):
         import IronPythonTest.DynamicRegressions as DR

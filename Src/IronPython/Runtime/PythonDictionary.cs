@@ -412,7 +412,7 @@ namespace IronPython.Runtime {
 
         [ClassMethod]
         public static object fromkeys(CodeContext context, PythonType cls, object seq, object value) {
-            if (seq is Range xr) {
+            if (seq is PythonRange xr) {
                 int n = xr.__len__();
                 object ret = context.LanguageContext.CallSplat(cls);
                 if (ret.GetType() == typeof(PythonDictionary)) {

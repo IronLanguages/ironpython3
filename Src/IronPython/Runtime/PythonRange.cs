@@ -21,13 +21,13 @@ namespace IronPython.Runtime {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     [PythonType("range")]
     [DontMapIEnumerableToContains]
-    public sealed class Range : IEnumerable<int>, ICodeFormattable, IList, IReversible {
+    public sealed class PythonRange : IEnumerable<int>, ICodeFormattable, IList, IReversible {
         private int _length;
 
-        public Range(object stop) : this(0, stop, 1) { }
-        public Range(object start, object stop) : this(start, stop, 1) { }
+        public PythonRange(object stop) : this(0, stop, 1) { }
+        public PythonRange(object start, object stop) : this(start, stop, 1) { }
 
-        public Range(object start, object stop, object step) {
+        public PythonRange(object start, object stop, object step) {
             Initialize(start, stop, step);
         }
 
@@ -104,11 +104,11 @@ namespace IronPython.Runtime {
             get {
                 int ostart, ostop, ostep;
                 slice.indices(_length, out ostart, out ostop, out ostep);
-                return new Range(Compute(ostart), Compute(ostop), step * ostep);
+                return new PythonRange(Compute(ostart), Compute(ostop), step * ostep);
             }
         }
 
-        public bool __eq__(Range other) {
+        public bool __eq__(PythonRange other) {
             if (_length != other._length) {
                 return false;
             }
@@ -127,7 +127,7 @@ namespace IronPython.Runtime {
             return step == other.step;
         }
 
-        public bool __ne__(Range other) {
+        public bool __ne__(PythonRange other) {
             return !__eq__(other);
         }
 
@@ -143,19 +143,19 @@ namespace IronPython.Runtime {
             return hash;
         }
 
-        public bool __lt__(Range other) {
+        public bool __lt__(PythonRange other) {
             throw new TypeErrorException("unorderable types: range() < range()");
         }
 
-        public bool __le__(Range other) {
+        public bool __le__(PythonRange other) {
             throw new TypeErrorException("unorderable types: range() <= range()");
         }
 
-        public bool __gt__(Range other) {
+        public bool __gt__(PythonRange other) {
             throw new TypeErrorException("unorderable types: range() > range()");
         }
 
-        public bool __ge__(Range other) {
+        public bool __ge__(PythonRange other) {
             throw new TypeErrorException("unorderable types: range() >= range()");
         }
 
@@ -250,17 +250,17 @@ namespace IronPython.Runtime {
         }
 
         public IEnumerator __reversed__() {
-            return new RangeIterator(new Range(Last(), start - step, -step));
+            return new PythonRangeIterator(new PythonRange(Last(), start - step, -step));
         }
 
         IEnumerator IEnumerable.GetEnumerator() {
-            return new RangeIterator(this);
+            return new PythonRangeIterator(this);
         }
 
         #region IEnumerable<int> Members
 
         IEnumerator<int> IEnumerable<int>.GetEnumerator() {
-            return new RangeIterator(this);
+            return new PythonRangeIterator(this);
         }
 
         #endregion
@@ -276,35 +276,26 @@ namespace IronPython.Runtime {
         #endregion
 
         #region ICollection Members
+
         void ICollection.CopyTo(Array array, int index) {
             foreach (object o in this) {
                 array.SetValue(o, index++);
             }
         }
 
-        int ICollection.Count {
-            get { return _length; }
-        }
+        int ICollection.Count => _length;
 
-        bool ICollection.IsSynchronized {
-            get { return false; }
-        }
+        bool ICollection.IsSynchronized => false;
 
-        object ICollection.SyncRoot {
-            get { return null; }
-        }
+        object ICollection.SyncRoot => null;
 
         #endregion
 
         #region IList Members
 
-        int IList.Add(object value) {
-            throw new InvalidOperationException();
-        }
+        int IList.Add(object value) => throw new InvalidOperationException();
 
-        void IList.Clear() {
-            throw new InvalidOperationException();
-        }
+        void IList.Clear() => throw new InvalidOperationException();
 
         bool IList.Contains(object value) {
             return ((IList)this).IndexOf(value) != -1;
@@ -322,25 +313,15 @@ namespace IronPython.Runtime {
             return -1;
         }
 
-        void IList.Insert(int index, object value) {
-            throw new InvalidOperationException();
-        }
+        void IList.Insert(int index, object value) => throw new InvalidOperationException();
 
-        bool IList.IsFixedSize {
-            get { return true; }
-        }
+        bool IList.IsFixedSize => true;
 
-        bool IList.IsReadOnly {
-            get { return true; }
-        }
+        bool IList.IsReadOnly => true;
 
-        void IList.Remove(object value) {
-            throw new InvalidOperationException();
-        }
+        void IList.Remove(object value) => throw new InvalidOperationException();
 
-        void IList.RemoveAt(int index) {
-            throw new InvalidOperationException();
-        }
+        void IList.RemoveAt(int index) => throw new InvalidOperationException();
 
         object IList.this[int index] {
             get {
@@ -364,22 +345,24 @@ namespace IronPython.Runtime {
     }
 
     [PythonType("range_iterator")]
-    public sealed class RangeIterator : IEnumerable, IEnumerator<int> {
-        private readonly Range _range;
+    public sealed class PythonRangeIterator : IEnumerable, IEnumerator<int> {
+        private readonly PythonRange _range;
         private int _value;
         private int _position;
 
-        public RangeIterator(Range range) {
+        internal PythonRangeIterator(PythonRange range) {
             _range = range;
             _value = range.start - range.step; // this could cause overflow, fine
         }
 
+        [PythonHidden]
         public object Current {
             get {
                 return ScriptingRuntimeHelpers.Int32ToObject(_value);
             }
         }
 
+        [PythonHidden]
         public bool MoveNext() {
             if (_position >= _range.__len__()) {
                 return false;
@@ -390,6 +373,7 @@ namespace IronPython.Runtime {
             return true;
         }
 
+        [PythonHidden]
         public void Reset() {
             _value = _range.start - _range.step;
             _position = 0;
@@ -422,13 +406,14 @@ namespace IronPython.Runtime {
 
         #region IDisposable Members
 
-        public void Dispose() {
-        }
+        [PythonHidden]
+        public void Dispose() { }
 
         #endregion
 
         #region IEnumerable Members
 
+        [PythonHidden]
         public IEnumerator GetEnumerator() {
             return this;
         }

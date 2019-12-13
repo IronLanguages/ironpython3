@@ -1360,7 +1360,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
 
         public static PythonType range {
             get {
-                return DynamicHelpers.GetPythonTypeFromType(typeof(Runtime.Range));
+                return DynamicHelpers.GetPythonTypeFromType(typeof(Runtime.PythonRange));
             }
         }
 

@@ -73,22 +73,6 @@ namespace IronPython.Runtime {
             return ret;
         }
 
-#if !IPY3
-        public static PythonList items(IDictionary<object, object> self) => ToList();
-
-        public static IEnumerator iteritems(IDictionary<object, object> self) {
-            return ((IEnumerable)items(self)).GetEnumerator();
-        }
-
-        public static IEnumerator iterkeys(IDictionary<object, object> self) {
-            return ((IEnumerable)keys(self)).GetEnumerator();
-        }
-
-        public static PythonList keys(IDictionary<object, object> self) {
-            return PythonOps.MakeListFromSequence(self.Keys);
-        }
-#endif
-
         public static object pop(PythonDictionary self, object key) {
             //??? perf won't match expected Python perf
             if (self.TryGetValueNoMissing(key, out object ret)) {

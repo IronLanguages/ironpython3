@@ -1101,11 +1101,7 @@ namespace IronPython.Modules {
                     PythonTuple.MakeTuple(default_factory),
                     null,
                     null,
-#if IPY3
                     Builtin.iter(context, PythonOps.Invoke(context, this, nameof(PythonDictionary.items)))
-#else
-                    iteritems()
-#endif
                 );
             }
         }

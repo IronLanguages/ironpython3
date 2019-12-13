@@ -103,7 +103,7 @@
     <DebugType>portable</DebugType>
     <Optimize>true</Optimize>
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
-    <DefineConstants>$(Features);$(SignedSym);IPY3;TRACE</DefineConstants>
+    <DefineConstants>$(Features);$(SignedSym);TRACE</DefineConstants>
   </PropertyGroup>
 
   <!-- Debug -->
@@ -113,6 +113,6 @@
     <Optimize>false</Optimize>
     <!-- TODO: Python & zlib.net need some work -->
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
-    <DefineConstants>$(Features);$(SignedSym);IPY3;DEBUG;TRACE</DefineConstants>
+    <DefineConstants>$(Features);$(SignedSym);DEBUG;TRACE</DefineConstants>
   </PropertyGroup>
 </Project>

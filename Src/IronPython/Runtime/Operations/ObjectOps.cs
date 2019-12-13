@@ -430,11 +430,7 @@ namespace IronPython.Runtime.Operations {
 
             object dictIterator = null;
             if (self is PythonDictionary) {
-#if IPY3
                 dictIterator = Modules.Builtin.iter(context, PythonOps.Invoke(context, self, nameof(PythonDictionary.items)));
-#else
-                dictIterator = PythonOps.Invoke(context, self, nameof(PythonDictionary.iteritems));
-#endif
             }
 
             return PythonTuple.MakeTuple(func, PythonTuple.MakeTuple(funcArgs), state, listIterator, dictIterator);

@@ -316,13 +316,6 @@ namespace IronPython.Runtime {
             _storage.Clear(ref _storage);
         }
 
-#if !IPY3
-        [Python3Warning("dict.has_key() not supported in 3.x; use the in operator")]
-        public bool has_key(object key) {
-            return DictionaryOps.has_key(this, key);
-        }
-#endif
-
         public object pop(object key) {
             return DictionaryOps.pop(this, key);
         }
@@ -343,50 +336,11 @@ namespace IronPython.Runtime {
             return DictionaryOps.setdefault(this, key, defaultValue);
         }
 
-#if IPY3
         public DictionaryItemView items() => new DictionaryItemView(this);
 
         public DictionaryKeyView keys() => new DictionaryKeyView(this);
 
         public DictionaryValueView values() => new DictionaryValueView(this);
-
-#else
-        public virtual PythonList keys() {
-            PythonList res = new PythonList();
-            foreach (KeyValuePair<object, object> kvp in _storage.GetItems()) {
-                res.append(kvp.Key);
-            }
-            return res;
-        }
-
-        public virtual PythonList values() {
-            PythonList res = new PythonList();
-            foreach (KeyValuePair<object, object> kvp in _storage.GetItems()) {
-                res.append(kvp.Value);
-            }
-            return res;
-        }
-
-        public virtual PythonList items() {
-            PythonList res = new PythonList();
-            foreach (KeyValuePair<object, object> kvp in _storage.GetItems()) {
-                res.append(PythonTuple.MakeTuple(kvp.Key, kvp.Value));
-            }
-            return res;
-        }
-
-        public IEnumerator iteritems() => new DictionaryItemEnumerator(_storage);
-
-        public IEnumerator iterkeys() => new DictionaryKeyEnumerator(_storage);
-
-        public IEnumerator itervalues() => new DictionaryValueEnumerator(_storage);
-
-        public IEnumerable viewitems() => new DictionaryItemView(this);
-
-        public IEnumerable viewkeys() => new DictionaryKeyView(this);
-
-        public IEnumerable viewvalues() => new DictionaryValueView(this);
-#endif
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public void update() {
@@ -458,12 +412,7 @@ namespace IronPython.Runtime {
 
         [ClassMethod]
         public static object fromkeys(CodeContext context, PythonType cls, object seq, object value) {
-#if IPY3
-            Range xr = seq as Range;
-#else
-            XRange xr = seq as XRange;
-#endif
-            if (xr != null) {
+            if (seq is Range xr) {
                 int n = xr.__len__();
                 object ret = context.LanguageContext.CallSplat(cls);
                 if (ret.GetType() == typeof(PythonDictionary)) {
@@ -513,45 +462,6 @@ namespace IronPython.Runtime {
                 !((IStructuralEquatable)this).Equals(other, context.LanguageContext.EqualityComparerNonGeneric)
             );
         }
-
-#if !IPY3
-        [return: MaybeNotImplemented]
-        public object __cmp__(CodeContext context, object other) {
-            IDictionary<object, object> oth = other as IDictionary<object, object>;
-            // CompareTo is allowed to throw (string, int, etc... all do it if they don't get a matching type)
-            if (oth == null) {
-                object len, iteritems;
-                if (!PythonOps.TryGetBoundAttr(context, other, "__len__", out len) ||
-                    !PythonOps.TryGetBoundAttr(context, other, "iteritems", out iteritems)) {
-                    return NotImplementedType.Value;
-                }
-
-                // user-defined dictionary...
-                int lcnt = Count;
-                int rcnt = context.LanguageContext.ConvertToInt32(PythonOps.CallWithContext(context, len));
-
-                if (lcnt != rcnt) return lcnt > rcnt ? 1 : -1;
-
-                return DictionaryOps.CompareToWorker(context, this, new PythonList(PythonOps.CallWithContext(context, iteritems)));
-            }
-
-            CompareUtil.Push(this, oth);
-            try {
-                return DictionaryOps.CompareTo(context, this, oth);
-            } finally {
-                CompareUtil.Pop(this, oth);
-            }
-        }
-
-        public int __cmp__(CodeContext/*!*/ context, [NotNull]PythonDictionary/*!*/ other) {
-            CompareUtil.Push(this, other);
-            try {
-                return DictionaryOps.CompareTo(context, this, other);
-            } finally {
-                CompareUtil.Pop(this, other);
-            }
-        }
-#endif
 
         // these are present in CPython but always return NotImplemented.
         [return: MaybeNotImplemented]
@@ -889,11 +799,7 @@ namespace IronPython.Runtime {
     ///   innerEnum.MoveNext() will throw InvalidOperation even if the values get changed,
     ///   which is supported in python
     /// </summary>
-#if IPY3
     [PythonType("dict_keyiterator")]
-#else
-    [PythonType("dictionary-keyiterator")]
-#endif
     public sealed class DictionaryKeyEnumerator : IEnumerator<object> {
         private readonly int _size;
         private readonly DictionaryStorage _dict;
@@ -937,13 +843,11 @@ namespace IronPython.Runtime {
 
         #region Pickling
 
-#if IPY3
         public object __reduce__(CodeContext context) {
             object iter;
             context.TryLookupBuiltin("iter", out iter);
             return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(PythonList.FromArrayNoCopy(_dict.GetKeys().Skip(_pos + 1).ToArray())));
         }
-#endif
 
         #endregion
     }
@@ -954,11 +858,7 @@ namespace IronPython.Runtime {
     ///   innerEnum.MoveNext() will throw InvalidOperation even if the values get changed,
     ///   which is supported in python
     /// </summary>
-#if IPY3
     [PythonType("dict_valueiterator")]
-#else
-    [PythonType("dictionary-valueiterator")]
-#endif
     public sealed class DictionaryValueEnumerator : IEnumerator<object> {
         private readonly int _size;
         private DictionaryStorage _dict;
@@ -1005,13 +905,11 @@ namespace IronPython.Runtime {
 
         #region Pickling
 
-#if IPY3
         public object __reduce__(CodeContext context) {
             object iter;
             context.TryLookupBuiltin("iter", out iter);
             return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(PythonList.FromArrayNoCopy(_dict.GetItems().Skip(_pos + 1).Select(x => x.Value).ToArray())));
         }
-#endif
 
         #endregion
     }
@@ -1022,11 +920,7 @@ namespace IronPython.Runtime {
     ///   innerEnum.MoveNext() will throw InvalidOperation even if the values get changed,
     ///   which is supported in python
     /// </summary>
-#if IPY3
     [PythonType("dict_itemiterator")]
-#else
-    [PythonType("dictionary-itemiterator")]
-#endif
     public sealed class DictionaryItemEnumerator : IEnumerator<object> {
         private readonly int _size;
         private readonly DictionaryStorage _dict;
@@ -1075,13 +969,11 @@ namespace IronPython.Runtime {
 
         #region Pickling
 
-#if IPY3
         public object __reduce__(CodeContext context) {
             object iter;
             context.TryLookupBuiltin("iter", out iter);
             return PythonTuple.MakeTuple(iter, PythonTuple.MakeTuple(PythonList.FromArrayNoCopy(_dict.GetItems().Skip(_pos + 1).Select(x => x.Value).ToArray())));
         }
-#endif
 
         #endregion
     }
@@ -1541,14 +1433,12 @@ namespace IronPython.Runtime {
 
         #endregion
 
-#if IPY3
         public bool isdisjoint(IEnumerable other) {
             return SetStorage.Intersection(
                 SetStorage.GetItemsWorker(GetEnumerator()),
                 SetStorage.GetItems(other)
             ).Count == 0;
         }
-#endif
 
         public override int GetHashCode() {
             return base.GetHashCode();
@@ -1903,14 +1793,12 @@ namespace IronPython.Runtime {
 
         #endregion
 
-#if IPY3
         public bool isdisjoint(IEnumerable other) {
             return SetStorage.Intersection(
                 SetStorage.GetItemsWorker(GetEnumerator()),
                 SetStorage.GetItems(other)
             ).Count == 0;
         }
-#endif
 
         public override int GetHashCode() {
             return base.GetHashCode();

@@ -324,11 +324,11 @@ namespace IronPython.Runtime {
             // we can call it w/o requiring an explicit conversion.  If the
             // user overrides this we'll place a conversion in the wrapper
             // helper
-            return new ListIterator(this);
+            return new PythonListIterator(this);
         }
 
         public virtual IEnumerator __reversed__() {
-            return new ListReverseIterator(this);
+            return new PythonListReverseIterator(this);
         }
 
         public virtual bool __contains__(object value) {
@@ -1421,12 +1421,12 @@ namespace IronPython.Runtime {
     }
 
     [PythonType("list_iterator")]
-    public sealed class ListIterator : IEnumerator, IEnumerable, IEnumerable<object>, IEnumerator<object> {
+    public sealed class PythonListIterator : IEnumerator, IEnumerable, IEnumerable<object>, IEnumerator<object> {
         private int _index;
         private readonly PythonList _list;
         private bool _iterating;
 
-        public ListIterator(PythonList l) {
+        internal PythonListIterator(PythonList l) {
             _list = l;
             Reset();
         }
@@ -1451,17 +1451,20 @@ namespace IronPython.Runtime {
 
         #region IEnumerator Members
 
+        [PythonHidden]
         public void Reset() {
             _index = -1;
             _iterating = true;
         }
 
+        [PythonHidden]
         public object Current {
             get {
                 return _list._data[_index];
             }
         }
 
+        [PythonHidden]
         public bool MoveNext() {
             if (_iterating) {
                 _index++;
@@ -1474,6 +1477,7 @@ namespace IronPython.Runtime {
 
         #region IEnumerable Members
 
+        [PythonHidden]
         public IEnumerator GetEnumerator() {
             return this;
         }
@@ -1482,8 +1486,8 @@ namespace IronPython.Runtime {
 
         #region IDisposable Members
 
-        public void Dispose() {
-        }
+        [PythonHidden]
+        public void Dispose() { }
 
         #endregion
 
@@ -1501,12 +1505,12 @@ namespace IronPython.Runtime {
     }
 
     [PythonType("list_reverseiterator")]
-    public sealed class ListReverseIterator : IEnumerator, IEnumerable, IEnumerable<object>, IEnumerator<object> {
+    public sealed class PythonListReverseIterator : IEnumerator, IEnumerable, IEnumerable<object>, IEnumerator<object> {
         private int _index;
         private readonly PythonList _list;
         private bool _iterating;
 
-        public ListReverseIterator(PythonList l) {
+        internal PythonListReverseIterator(PythonList l) {
             _list = l;
             Reset();
         }
@@ -1531,17 +1535,20 @@ namespace IronPython.Runtime {
 
         #region IEnumerator Members
 
+        [PythonHidden]
         public void Reset() {
             _index = 0;
             _iterating = true;
         }
 
+        [PythonHidden]
         public object Current {
             get {
                 return _list._data[_list._size - _index];
             }
         }
 
+        [PythonHidden]
         public bool MoveNext() {
             if (_iterating) {
                 _index++;
@@ -1554,6 +1561,7 @@ namespace IronPython.Runtime {
 
         #region IEnumerable Members
 
+        [PythonHidden]
         public IEnumerator GetEnumerator() {
             return this;
         }
@@ -1562,8 +1570,8 @@ namespace IronPython.Runtime {
 
         #region IDisposable Members
 
-        public void Dispose() {
-        }
+        [PythonHidden]
+        public void Dispose() { }
 
         #endregion
 

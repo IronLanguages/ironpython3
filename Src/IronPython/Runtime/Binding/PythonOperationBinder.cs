@@ -127,24 +127,24 @@ namespace IronPython.Runtime.Binding {
         }
 
         private KeyValuePair<IEnumerator, IDisposable> GetListEnumerator(CallSite site, PythonList value) {
-            return new KeyValuePair<IEnumerator,IDisposable>(new ListIterator(value), null);
+            return new KeyValuePair<IEnumerator,IDisposable>(new PythonListIterator(value), null);
         }
 
         private KeyValuePair<IEnumerator, IDisposable> GetListEnumerator(CallSite site, object value) {
             if (value != null && value.GetType() == typeof(PythonList)) {
-                return new KeyValuePair<IEnumerator,IDisposable>(new ListIterator((PythonList)value), null);
+                return new KeyValuePair<IEnumerator,IDisposable>(new PythonListIterator((PythonList)value), null);
             }
 
             return ((CallSite<Func<CallSite, object, KeyValuePair<IEnumerator, IDisposable>>>)site).Update(site, value);
         }
 
         private KeyValuePair<IEnumerator, IDisposable> GetTupleEnumerator(CallSite site, PythonTuple value) {
-            return new KeyValuePair<IEnumerator,IDisposable>(new TupleEnumerator(value), null);
+            return new KeyValuePair<IEnumerator,IDisposable>(new PythonTupleEnumerator(value), null);
         }
 
         private KeyValuePair<IEnumerator, IDisposable> GetTupleEnumerator(CallSite site, object value) {
             if (value != null && value.GetType() == typeof(PythonTuple)) {
-                return new KeyValuePair<IEnumerator, IDisposable>(new TupleEnumerator((PythonTuple)value), null);
+                return new KeyValuePair<IEnumerator, IDisposable>(new PythonTupleEnumerator((PythonTuple)value), null);
             }
 
             return ((CallSite<Func<CallSite, object, KeyValuePair<IEnumerator, IDisposable>>>)site).Update(site, value);

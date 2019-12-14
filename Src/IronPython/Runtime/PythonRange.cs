@@ -108,7 +108,7 @@ namespace IronPython.Runtime {
             }
         }
 
-        public bool __eq__(PythonRange other) {
+        public bool __eq__([NotNull]PythonRange other) {
             if (_length != other._length) {
                 return false;
             }
@@ -127,9 +127,13 @@ namespace IronPython.Runtime {
             return step == other.step;
         }
 
-        public bool __ne__(PythonRange other) {
-            return !__eq__(other);
-        }
+        [return: MaybeNotImplemented]
+        public NotImplementedType __eq__(object other) => NotImplementedType.Value;
+
+        public bool __ne__([NotNull]PythonRange other) => !__eq__(other);
+
+        [return: MaybeNotImplemented]
+        public NotImplementedType __ne__(object other) => NotImplementedType.Value;
 
         public int __hash__() {
             if (_length == 0) {
@@ -143,21 +147,17 @@ namespace IronPython.Runtime {
             return hash;
         }
 
-        public bool __lt__(PythonRange other) {
-            throw new TypeErrorException("unorderable types: range() < range()");
-        }
+        [return: MaybeNotImplemented]
+        public NotImplementedType __lt__(object other) => NotImplementedType.Value;
 
-        public bool __le__(PythonRange other) {
-            throw new TypeErrorException("unorderable types: range() <= range()");
-        }
+        [return: MaybeNotImplemented]
+        public NotImplementedType __le__(object other) => NotImplementedType.Value;
 
-        public bool __gt__(PythonRange other) {
-            throw new TypeErrorException("unorderable types: range() > range()");
-        }
+        [return: MaybeNotImplemented]
+        public NotImplementedType __gt__(object other) => NotImplementedType.Value;
 
-        public bool __ge__(PythonRange other) {
-            throw new TypeErrorException("unorderable types: range() >= range()");
-        }
+        [return: MaybeNotImplemented]
+        public NotImplementedType __ge__(object other) => NotImplementedType.Value;
 
         public bool __contains__(CodeContext context, object item) {
             int intItem;

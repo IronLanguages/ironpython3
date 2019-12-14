@@ -294,8 +294,7 @@ namespace IronPython.Runtime.Binding {
             if (xBf != null) {
                 bool returnsValue = false;
                 foreach (MethodBase mb in xBf.Targets) {
-                    if (mb.GetReturnType() != typeof(NotImplementedType) ||
-                        mb.IsDefined(typeof(Python3WarningAttribute), true)) {
+                    if (mb.GetReturnType() != typeof(NotImplementedType)) {
                         returnsValue = true;
                         break;
                     }

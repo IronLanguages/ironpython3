@@ -547,12 +547,5 @@ namespace IronPython.Runtime {
         public const object __hash__ = null;
 
         #endregion
-
-        [Python3Warning("cell comparisons not supported in 3.x")]
-        public int __cmp__(object other) {
-            if (!(other is ClosureCell cc)) throw PythonOps.TypeError("cell.__cmp__(x,y) expected cell, got {0}", PythonTypeOps.GetName(other));
-
-            return PythonOps.Compare(Value, cc.Value);
-        }
     }
 }

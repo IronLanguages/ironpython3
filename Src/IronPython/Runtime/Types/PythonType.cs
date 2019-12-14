@@ -511,55 +511,6 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             return PythonTypeOps.CallWorker(context, this, kwArgs, args);
         }
 
-        public int __cmp__([NotNull]PythonType other) {
-            if (other != this) {
-                int res = Name.CompareTo(other.Name);
-
-                if (res == 0) {
-                    long thisId = IdDispenser.GetId(this);
-                    long otherId = IdDispenser.GetId(other);
-                    if (thisId > otherId) {
-                        return 1;
-                    } 
-
-                    return -1;
-                }
-
-                return res;
-            }
-            return 0;
-        }
-
-        // Do not override == and != because it causes lots of spurious warnings
-        // TODO Replace those warnings with .ReferenceEquals calls & overload ==/!=
-        public bool __eq__([NotNull]PythonType other) {
-            return __cmp__(other) == 0;
-        }
-
-        public bool __ne__([NotNull]PythonType other) {
-            return this.__cmp__(other) != 0;
-        }
-
-        [Python3Warning("type inequality comparisons not supported in 3.x")]
-        public static bool operator >(PythonType self, PythonType other) {
-            return self.__cmp__(other) > 0;
-        }
-
-        [Python3Warning("type inequality comparisons not supported in 3.x")]
-        public static bool operator <(PythonType self, PythonType other) {
-            return self.__cmp__(other) < 0;
-        }
-
-        [Python3Warning("type inequality comparisons not supported in 3.x")]
-        public static bool operator >=(PythonType self, PythonType other) {
-            return self.__cmp__(other) >= 0;
-        }
-
-        [Python3Warning("type inequality comparisons not supported in 3.x")]
-        public static bool operator <=(PythonType self, PythonType other) {
-            return self.__cmp__(other) <= 0;
-        }
-
         public void __delattr__(CodeContext/*!*/ context, string name) {
             DeleteCustomMember(context, name);
         }

@@ -406,7 +406,7 @@ namespace IronPython.Runtime.Types {
             } else if (IsBinaryOperator && args.Length == 2 && IsThrowException(res.Expression)) {
                 // Binary Operators return NotImplemented on failure.
                 res = new DynamicMetaObject(
-                    Ast.Property(null, typeof(PythonOps), "NotImplemented"),
+                    Ast.Property(null, typeof(PythonOps), nameof(PythonOps.NotImplemented)),
                     res.Restrictions
                 );
             } else if (target.Overload != null) {
@@ -592,30 +592,17 @@ namespace IronPython.Runtime.Types {
             return lres > 0 ? 1 : -1;
         }
 
-        // these are present in CPython but always return NotImplemented.
         [return: MaybeNotImplemented]
-        [Python3Warning("builtin_function_or_method order comparisons not supported in 3.x")]
-        public static NotImplementedType operator >(BuiltinFunction self, BuiltinFunction other) {
-            return PythonOps.NotImplemented;
-        }
+        public NotImplementedType __lt__(object other) => NotImplementedType.Value;
 
         [return: MaybeNotImplemented]
-        [Python3Warning("builtin_function_or_method order comparisons not supported in 3.x")]
-        public static NotImplementedType operator <(BuiltinFunction self, BuiltinFunction other) {
-            return PythonOps.NotImplemented;
-        }
+        public NotImplementedType __le__(object other) => NotImplementedType.Value;
 
         [return: MaybeNotImplemented]
-        [Python3Warning("builtin_function_or_method order comparisons not supported in 3.x")]
-        public static NotImplementedType operator >=(BuiltinFunction self, BuiltinFunction other) {
-            return PythonOps.NotImplemented;
-        }
+        public NotImplementedType __gt__(object other) => NotImplementedType.Value;
 
         [return: MaybeNotImplemented]
-        [Python3Warning("builtin_function_or_method order comparisons not supported in 3.x")]
-        public static NotImplementedType operator <=(BuiltinFunction self, BuiltinFunction other) {
-            return PythonOps.NotImplemented;
-        }
+        public NotImplementedType __ge__(object other) => NotImplementedType.Value;
 
         public int __hash__(CodeContext/*!*/ context) {
             return PythonOps.Hash(context, _instance) ^ PythonOps.Hash(context, _data);

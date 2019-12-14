@@ -437,5 +437,37 @@ namespace IronPython.Runtime.Operations {
         }
 
         #endregion
+
+        #region Rich Comparison
+
+        [return: MaybeNotImplemented]
+        public static object __eq__(object self, object value) {
+            if (ReferenceEquals(self, value)) return ScriptingRuntimeHelpers.True;
+            return NotImplementedType.Value;
+        }
+
+        [return: MaybeNotImplemented]
+        public static object __ne__(CodeContext context, object self, object value) {
+            // TODO: analyze perf on this
+            if (PythonTypeOps.TryInvokeBinaryOperator(context, self, value, "__eq__", out object res))  {
+                if (res is bool b) return b ? ScriptingRuntimeHelpers.False : ScriptingRuntimeHelpers.True;
+                return res;
+            }
+            return NotImplementedType.Value;
+        }
+
+        [return: MaybeNotImplemented]
+        public static NotImplementedType __gt__(object self, object value) => NotImplementedType.Value;
+
+        [return: MaybeNotImplemented]
+        public static NotImplementedType __lt__(object self, object value) => NotImplementedType.Value;
+
+        [return: MaybeNotImplemented]
+        public static NotImplementedType __ge__(object self, object value) => NotImplementedType.Value;
+
+        [return: MaybeNotImplemented]
+        public static NotImplementedType __le__(object self, object value) => NotImplementedType.Value;
+
+        #endregion
     }
 }

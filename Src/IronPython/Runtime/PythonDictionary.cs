@@ -463,30 +463,17 @@ namespace IronPython.Runtime {
             );
         }
 
-        // these are present in CPython but always return NotImplemented.
         [return: MaybeNotImplemented]
-        [Python3Warning("dict inequality comparisons not supported in 3.x")]
-        public static NotImplementedType operator >(PythonDictionary self, PythonDictionary other) {
-            return PythonOps.NotImplemented;
-        }
+        public NotImplementedType __gt__(object other) => NotImplementedType.Value;
 
         [return: MaybeNotImplemented]
-        [Python3Warning("dict inequality comparisons not supported in 3.x")]
-        public static NotImplementedType operator <(PythonDictionary self, PythonDictionary other) {
-            return PythonOps.NotImplemented;
-        }
+        public NotImplementedType __lt__(object other) => NotImplementedType.Value;
 
         [return: MaybeNotImplemented]
-        [Python3Warning("dict inequality comparisons not supported in 3.x")]
-        public static NotImplementedType operator >=(PythonDictionary self, PythonDictionary other) {
-            return PythonOps.NotImplemented;
-        }
+        public NotImplementedType __ge__(object other) => NotImplementedType.Value;
 
         [return: MaybeNotImplemented]
-        [Python3Warning("dict inequality comparisons not supported in 3.x")]
-        public static NotImplementedType operator <=(PythonDictionary self, PythonDictionary other) {
-            return PythonOps.NotImplemented;
-        }
+        public NotImplementedType __le__(object other) => NotImplementedType.Value;
 
         #endregion
 

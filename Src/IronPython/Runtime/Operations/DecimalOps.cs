@@ -9,6 +9,8 @@ using System.Runtime.CompilerServices;
 
 using Microsoft.Scripting.Runtime;
 
+using IronPython.Runtime.Types;
+
 namespace IronPython.Runtime.Operations {
     public static class DecimalOps {
 
@@ -74,7 +76,7 @@ namespace IronPython.Runtime.Operations {
             if (object.ReferenceEquals(y, null)) {
                 return ScriptingRuntimeHelpers.Int32ToObject(+1);
             }
-            return PythonOps.NotImplemented;
+            return NotImplementedType.Value;
         }
 
         public static int __hash__(decimal x) {

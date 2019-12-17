@@ -137,12 +137,10 @@ class _WeakrefTest(IronPythonTestCase):
         x, y = helper_func()
         gc.collect()
 
-        self.assertTrue(not x==3)
+        self.assertRaises(ReferenceError, lambda: x==3)
         self.assertRaises(ReferenceError, lambda: x==y)
 
-    # https://github.com/IronLanguages/ironpython3/issues/697
-    @unittest.expectedFailure
-    def test_equals(self):
+    def test_comparison(self):
         global called
         class C:
             for method, op in [('__eq__', '=='), ('__gt__', '>'), ('__lt__', '<'), ('__ge__', '>='), ('__le__', '<='), ('__ne__', '!=')]:
@@ -153,10 +151,15 @@ def %s(self, *args, **kwargs):
     return True
 """ % (method, op))
 
-        a = C()
-        x = _weakref.proxy(a)
-        for op in ('==', '>', '<', '>=', '<=', '!='):
-            self.assertEqual(eval('a ' + op + ' 3'), True);  self.assertEqual(called, op); called = None
-            self.assertEqual(eval('x ' + op + ' 3'), True);  self.assertEqual(called, op); called = None
+        class D(C):
+            def __call__(self):
+                pass
+
+        A = [ C(), D() ]
+        X = [ _weakref.proxy(a) for a in A ]
+        for (a, x) in zip(A, X):
+            for op in ('==', '>', '<', '>=', '<=', '!='):
+                self.assertEqual(eval('a ' + op + ' 3'), True);  self.assertEqual(called, op); called = None
+                self.assertEqual(eval('x ' + op + ' 3'), True);  self.assertEqual(called, op); called = None
 
 run_test(__name__)

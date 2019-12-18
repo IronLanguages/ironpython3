@@ -1948,9 +1948,12 @@ namespace IronPython.Runtime.Operations {
                     ReflectionUtils.GetMethodInfos(typeof(StringOps).GetMember(nameof(StrictErrors), BindingFlags.Static | BindingFlags.NonPublic)), 
                     typeof(StringOps));
 
-                // TODO: Implement remaining error handlers
-                d["ignore"] = null;
+                d["ignore"] = BuiltinFunction.MakeFunction(
+                    "ignore_errors", 
+                    ReflectionUtils.GetMethodInfos(typeof(StringOps).GetMember(nameof(IgnoreErrors), BindingFlags.Static | BindingFlags.NonPublic)), 
+                    typeof(StringOps));
 
+                // TODO: Implement remaining error handlers
                 d["replace"] = null;
 
                 d["xmlcharrefreplace"] = null;
@@ -2624,6 +2627,20 @@ namespace IronPython.Runtime.Operations {
             switch (unicodeError) {
                 case DecoderFallbackException dfe: throw dfe;
                 case EncoderFallbackException efe: throw efe;
+                default: throw PythonOps.TypeError("codec must pass exception instance");
+            }
+        }
+
+        private static object IgnoreErrors(object unicodeError) {
+            switch (unicodeError) {
+                case PythonExceptions._UnicodeDecodeError ude:
+                    return PythonTuple.MakeTuple(string.Empty, ude.end);
+                case PythonExceptions._UnicodeEncodeError uee:
+                    return PythonTuple.MakeTuple(string.Empty, uee.end);
+                case DecoderFallbackException dfe: 
+                    return PythonTuple.MakeTuple(string.Empty, dfe.Index + dfe.BytesUnknown.Length);
+                case EncoderFallbackException efe: 
+                    return PythonTuple.MakeTuple(string.Empty, efe.Index + (efe.CharUnknownHigh != '\0' ? 2 : 1));
                 default: throw PythonOps.TypeError("codec must pass exception instance");
             }
         }

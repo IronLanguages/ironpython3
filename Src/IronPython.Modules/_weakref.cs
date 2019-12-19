@@ -446,10 +446,6 @@ namespace IronPython.Modules {
 
             public const object __hash__ = null;
 
-            private bool EqualsWorker(weakproxy other) {
-                return PythonOps.EqualRetBool(_context, GetObject(), other.GetObject());
-            }
-
             int IStructuralEquatable.GetHashCode(IEqualityComparer comparer) {
                 object obj;
                 if (TryGetObject(out obj)) {

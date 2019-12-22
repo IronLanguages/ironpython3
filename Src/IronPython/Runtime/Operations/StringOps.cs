@@ -1589,7 +1589,8 @@ namespace IronPython.Runtime.Operations {
             // lazily create the StringBuilder only if necessary.
             StringBuilder b = null;
             int i = start;
-            while (i < count) {
+            int end = start + count;
+            while (i < end) {
                 char ch = s[i++];
                 switch (ch) {
                     case '\\': StringBuilderInit(ref b, s, start, i - 1); b.Append("\\\\"); break;
@@ -1620,15 +1621,16 @@ namespace IronPython.Runtime.Operations {
                 }
             }
 
-            return b?.ToString() ?? s;
+            return b?.ToString() ?? s.Substring(start, count);
         }
 
-        private static string RawUnicodeEscapeEncode(string s, int start, int count) {
+        private static string RawUnicodeEscapeEncode(string s, int start, int count, bool escapeAscii = false) {
             // in the common case we don't need to encode anything, so we
             // lazily create the StringBuilder only if necessary.
             StringBuilder b = null;
             int i = start;
-            while (i < count) {
+            int end = start + count;
+            while (i < end) {
                 char ch = s[i++];
                 if ((ch & 0xFC00) == 0xD800 && i < count && (s[i] & 0xFC00) == 0xDC00) {
                     StringBuilderInit(ref b, s, start, i - 1);
@@ -1636,12 +1638,15 @@ namespace IronPython.Runtime.Operations {
                 } else if (ch > 0xFF) {
                     StringBuilderInit(ref b, s, start, i - 1);
                     b.AppendFormat("\\u{0:x4}", (int)ch);
+                } else if (escapeAscii) {
+                    StringBuilderInit(ref b, s, start, i - 1);
+                    b.AppendFormat("\\x{0:x2}", (int)ch);
                 } else {
                     b?.Append(ch);
                 }
             }
 
-            return b?.ToString() ?? s;
+            return b?.ToString() ?? s.Substring(start, count);
         }
 
         private static void StringBuilderInit(ref StringBuilder sb, string s, int start, int end) {
@@ -1953,12 +1958,20 @@ namespace IronPython.Runtime.Operations {
                     ReflectionUtils.GetMethodInfos(typeof(StringOps).GetMember(nameof(IgnoreErrors), BindingFlags.Static | BindingFlags.NonPublic)), 
                     typeof(StringOps));
 
-                // TODO: Implement remaining error handlers
-                d["replace"] = null;
+                d["replace"] = BuiltinFunction.MakeFunction(
+                    "replace_errors",
+                    ReflectionUtils.GetMethodInfos(typeof(StringOps).GetMember(nameof(ReplaceErrors), BindingFlags.Static | BindingFlags.NonPublic)),
+                    typeof(StringOps));
 
-                d["xmlcharrefreplace"] = null;
+                d["xmlcharrefreplace"] = BuiltinFunction.MakeFunction(
+                    "xmlcharrefreplace_errors",
+                    ReflectionUtils.GetMethodInfos(typeof(StringOps).GetMember(nameof(XmlCharRefReplaceErrors), BindingFlags.Static | BindingFlags.NonPublic)),
+                    typeof(StringOps));
 
-                d["backslashreplace"] = null;
+                d["backslashreplace"] = BuiltinFunction.MakeFunction(
+                    "backslashreplace_errors",
+                    ReflectionUtils.GetMethodInfos(typeof(StringOps).GetMember(nameof(BackslashReplaceErrors), BindingFlags.Static | BindingFlags.NonPublic)),
+                    typeof(StringOps));
 
                 return d;
             }
@@ -2638,10 +2651,96 @@ namespace IronPython.Runtime.Operations {
                 case PythonExceptions._UnicodeEncodeError uee:
                     return PythonTuple.MakeTuple(string.Empty, uee.end);
                 case DecoderFallbackException dfe: 
-                    return PythonTuple.MakeTuple(string.Empty, dfe.Index + dfe.BytesUnknown.Length);
+                    return PythonTuple.MakeTuple(string.Empty, dfe.Index + dfe.BytesUnknown?.Length ?? 0);
                 case EncoderFallbackException efe: 
                     return PythonTuple.MakeTuple(string.Empty, efe.Index + (efe.CharUnknownHigh != '\0' ? 2 : 1));
-                default: throw PythonOps.TypeError("codec must pass exception instance");
+                default:
+                    throw PythonOps.TypeError("codec must pass exception instance");
+            }
+        }
+
+        private static object ReplaceErrors(object unicodeError) {
+            switch (unicodeError) {
+                case PythonExceptions._UnicodeDecodeError ude:
+                    return PythonTuple.MakeTuple("\ufffd", ude.end);
+
+                case PythonExceptions._UnicodeEncodeError uee:
+                    if (uee.@object is string text && uee.start is int start && uee.end is int end) {
+                        start = Math.Max(0, Math.Min(start, text.Length - 1));
+                        end = Math.Max(start, Math.Min(end, text.Length));
+                        return PythonTuple.MakeTuple(new string('?', end - start), end);
+                    }
+                    goto default;
+
+                case DecoderFallbackException dfe:
+                    return PythonTuple.MakeTuple("\ufffd", dfe.Index + dfe.BytesUnknown?.Length ?? 0);
+
+                case EncoderFallbackException efe:
+                    return PythonTuple.MakeTuple("?", efe.Index + (efe.CharUnknownHigh != '\0' ? 2 : 1));
+
+                default:
+                    throw PythonOps.TypeError("codec must pass exception instance");
+            }
+        }
+
+        private static object BackslashReplaceErrors(object unicodeError) {
+            switch (unicodeError) {
+                case PythonExceptions._UnicodeDecodeError ude:
+                    throw PythonOps.TypeError("don't know how to handle UnicodeDecodeError in error callback");
+
+                case PythonExceptions._UnicodeEncodeError uee:
+                    if (uee.@object is string text && uee.start is int start && uee.end is int end) {
+                        start = Math.Max(0, Math.Min(start, text.Length - 1));
+                        end = Math.Max(start, Math.Min(end, text.Length));
+                        return PythonTuple.MakeTuple(RawUnicodeEscapeEncode(text, start, end - start, escapeAscii: true), end);
+                    }
+                    goto default;
+
+                case DecoderFallbackException dfe:
+                    throw PythonOps.TypeError("don't know how to handle DecoderFallbackException in error callback");
+
+                case EncoderFallbackException efe:
+                    string chars = (efe.CharUnknownHigh != '\0') ? new string(new[] { efe.CharUnknownHigh, efe.CharUnknownLow }) : new string(efe.CharUnknown, 1);
+                    return PythonTuple.MakeTuple(RawUnicodeEscapeEncode(chars, 0, chars.Length, escapeAscii: true), efe.Index + chars.Length);
+
+                default:
+                    throw PythonOps.TypeError("codec must pass exception instance");
+            }
+        }
+        private static object XmlCharRefReplaceErrors(object unicodeError) {
+            switch (unicodeError) {
+                case PythonExceptions._UnicodeDecodeError ude:
+                    throw PythonOps.TypeError("don't know how to handle UnicodeDecodeError in error callback");
+
+                case PythonExceptions._UnicodeEncodeError uee:
+                    if (uee.@object is string text && uee.start is int start && uee.end is int end) {
+                        start = Math.Max(0, Math.Min(start, text.Length - 1));
+                        end = Math.Max(start, Math.Min(end, text.Length));
+                        var sb = new StringBuilder(10 * (end - start));
+                        int i = start;
+                        while (i < end) {
+                            sb.Append("&#");
+                            char ch = text[i++];
+                            if (char.IsHighSurrogate(ch) && i < end && char.IsLowSurrogate(text[i])) {
+                                sb.Append(char.ConvertToUtf32(ch, text[i++]));
+                            } else {
+                                sb.Append((uint)ch);
+                            }
+                            sb.Append(';');
+                        }
+                        return PythonTuple.MakeTuple(sb.ToString(), end);
+                    }
+                    goto default;
+
+                case DecoderFallbackException dfe:
+                    throw PythonOps.TypeError("don't know how to handle DecoderFallbackException in error callback");
+
+                case EncoderFallbackException efe:
+                    string chars = (efe.CharUnknownHigh != '\0') ? $"&#{char.ConvertToUtf32(efe.CharUnknownHigh, efe.CharUnknownLow)}" : $"&#{(int)efe.CharUnknown};";
+                    return PythonTuple.MakeTuple(chars, efe.Index + (efe.CharUnknownHigh != '\0' ? 2 : 1));
+
+                default:
+                    throw PythonOps.TypeError("codec must pass exception instance");
             }
         }
 #endif

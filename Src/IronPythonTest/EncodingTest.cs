@@ -29,10 +29,6 @@ namespace IronPythonTest {
             [Test] public void Test256WithPythonAscii() => TestRoundTrip(PythonAsciiEncoding.Instance, _bytes);
             [Test] public void Test256WithUtf8() => TestRoundTrip(Encoding.UTF8, _bytes);
             [Test] public void Test256WithDefault() => TestRoundTrip(Encoding.Default, _bytes);
-            [Test] public void Test256WithUnicode() => TestRoundTrip(Encoding.Unicode, _bytes);
-            [Test] public void Test256WithBigEndianUnicode() => TestRoundTrip(Encoding.BigEndianUnicode, _bytes);
-            [Test] public void Test256WithUtf32() => TestRoundTrip(Encoding.UTF32, _bytes);
-            [Test] public void Test256WithUtf32BE() => TestRoundTrip(new UTF32Encoding(bigEndian: true, byteOrderMark: false), _bytes);
         }
 
         // Test decoding/encoding a valid UTF-8 sequence
@@ -42,7 +38,7 @@ namespace IronPythonTest {
 
             [SetUp]
             public void SetUp() {
-                // 12 bytes, rounded to multiply of 4 for the sake of UTF-32 test
+                // 12 bytes of: Питон!!
                 _bytes = "\xd0\x9f\xd0\xb8\xd1\x82\xd0\xbe\xd0\xbd!!".AsBytes();
             }
 
@@ -50,10 +46,6 @@ namespace IronPythonTest {
             [Test] public void TestValidUtf8WithPythonAscii() => TestRoundTrip(PythonAsciiEncoding.Instance, _bytes);
             [Test] public void TestValidUtf8WithUtf8() => TestRoundTrip(Encoding.UTF8, _bytes);
             [Test] public void TestValidUtf8WithDefault() => TestRoundTrip(Encoding.Default, _bytes);
-            [Test] public void TestValidUtf8WithUnicode() => TestRoundTrip(Encoding.Unicode, _bytes);
-            [Test] public void TestValidUtf8WithBigEndianUnicode() => TestRoundTrip(Encoding.BigEndianUnicode, _bytes);
-            [Test] public void TestValidUtf8WithUtf32() => TestRoundTrip(Encoding.UTF32, _bytes);
-            [Test] public void TestValidUtf8WithUtf32BE() => TestRoundTrip(new UTF32Encoding(bigEndian: true, byteOrderMark: false), _bytes);
         }
 
         // Test decoding/encoding an invalid UTF-8 sequence
@@ -66,20 +58,16 @@ namespace IronPythonTest {
                 // 12 bytes: two valid UTF-8 2-byte chars, one non-decodable byte, 
                 // one UTF-8 2-byte char with a non-decodable byte inserted in between the UTF-8 bytes
                 // and final valid UTF-8 2-byte char
-                _bytes = "\xd0\x9f\xd0\xb8\x80\xd1\x20\x82\xd0\xbe\xd0\xbd".AsBytes();
+                _bytes = "\xd0\x9f\xd0\xb8\x80\xd1\xff\x82\xd0\xbe\xd0\xbd".AsBytes();
             }
 
             [Test] public void TestBrokenUtf8WithAscii() => TestRoundTrip(Encoding.ASCII, _bytes);
             [Test] public void TestBrokenUtf8WithPythonAscii() => TestRoundTrip(PythonAsciiEncoding.Instance, _bytes);
             [Test] public void TestBrokenUtf8WithUtf8() => TestRoundTrip(Encoding.UTF8, _bytes);
             [Test] public void TestBrokenUtf8WithDefault() => TestRoundTrip(Encoding.Default, _bytes);
-            [Test] public void TestBrokenUtf8WithUnicode() => TestRoundTrip(Encoding.Unicode, _bytes);
-            [Test] public void TestBrokenUtf8WithBigEndianUnicode() => TestRoundTrip(Encoding.BigEndianUnicode, _bytes);
-            [Test] public void TestBrokenUtf8WithUtf32() => TestRoundTrip(Encoding.UTF32, _bytes);
-            [Test] public void TestBrokenUtf8WithUtf32BE() => TestRoundTrip(new UTF32Encoding(bigEndian: true, byteOrderMark: false), _bytes);
         }
 
-        // Note: UTF-7 is not round-trip safe in general
+        // Note: UTF-7, UTF-16, and UTF-32 are not round-trip safe in general
         private static void TestRoundTrip(Encoding enc, byte[] bytes) {
 
             Encoding penc = new PythonSurrogateEscapeEncoding(enc);
@@ -344,13 +332,13 @@ namespace IronPythonTest {
             public void TestEndiannessWithtUtf32LE() {
                 Encoding penc = new PythonSurrogateEscapeEncoding(new UTF32Encoding(bigEndian: false, byteOrderMark: false));
                 Assert.AreEqual("\u000a", penc.GetChars(_bytes1));
-                Assert.AreEqual("\udc00\udc00\udc00\udc0a", penc.GetChars(_bytes2));
+                Assert.Throws<DecoderFallbackException>(() => penc.GetChars(_bytes2));
             }
 
             [Test]
             public void TestEndiannessWithtUtf32BE() {
                 Encoding penc = new PythonSurrogateEscapeEncoding(new UTF32Encoding(bigEndian: true, byteOrderMark: false));
-                Assert.AreEqual("\udc0a\udc00\udc00\udc00", penc.GetChars(_bytes1));
+                Assert.Throws<DecoderFallbackException>(() => penc.GetChars(_bytes1));
                 Assert.AreEqual("\u000a", penc.GetChars(_bytes2));
             }
         }

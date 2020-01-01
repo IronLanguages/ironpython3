@@ -546,8 +546,16 @@ namespace IronPython.Runtime {
                         index
                     );
                 }
+                byte b = (byte)(charUnknown & 0xff);
+                if (b < 128) {
+                    throw PythonOps.UnicodeEncodeError(
+                        "'surrogateescape' error handler: bytes below 128 cannot be smuggled (PEP 383)",
+                        charUnknown,
+                        index
+                    );
+                }
 
-                return new[] { (byte)(charUnknown & 0xff) };
+                return new[] { b };
             }
 
         }
@@ -570,10 +578,9 @@ namespace IronPython.Runtime {
                 char[] fallbackChars = new char[charNum];
 
                 for (int i = 0; i < charNum; i++) {
-                    // test for byte below 128
-                    if (bytesUnknown[i] < 128u) {
+                    if (bytesUnknown[i] < 128) {
                         throw new DecoderFallbackException(
-                            $"bytes below 128 cannot be smuggled (PEP 383)",
+                            "'surrogateescape' error handler: bytes below 128 cannot be smuggled (PEP 383)",
                             bytesUnknown,
                             index
                         );

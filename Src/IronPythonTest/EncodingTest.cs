@@ -343,22 +343,23 @@ namespace IronPythonTest {
             }
         }
 
-        public class IncompleteSequenceTests {
+        public class AsciiByteTests {
 
             private char[] _chars;
 
             [SetUp]
             public void SetUp() {
-                // one surrogate escape is not enough for wide-char encodings
+                // surrogate escape carrying byte < 128 is not allowed
                 _chars = "+++\udc41++".ToCharArray();
             }
 
-            [Test] public void TestIncompleteSequenceWithtUtf16LE() => TestIncompleteSequence(Encoding.Unicode, 2);
-            [Test] public void TestIncompleteSequenceWithtUtf16BE() => TestIncompleteSequence(Encoding.BigEndianUnicode, 2);
-            [Test] public void TestIncompleteSequenceWithtUtf32LE() => TestIncompleteSequence(new UTF32Encoding(bigEndian: false, byteOrderMark: false), 4);
-            [Test] public void TestIncompleteSequenceWithtUtf32BE() => TestIncompleteSequence(new UTF32Encoding(bigEndian: true, byteOrderMark: false), 4);
+            [Test] public void TestAsciiByteWithtUtf8() => TestAsciiByte(Encoding.UTF8, 1);
+            [Test] public void TestAsciiByteWithtUtf16LE() => TestAsciiByte(Encoding.Unicode, 2);
+            [Test] public void TestAsciiByteWithtUtf16BE() => TestAsciiByte(Encoding.BigEndianUnicode, 2);
+            [Test] public void TestAsciiByteWithtUtf32LE() => TestAsciiByte(new UTF32Encoding(bigEndian: false, byteOrderMark: false), 4);
+            [Test] public void TestAsciiByteWithtUtf32BE() => TestAsciiByte(new UTF32Encoding(bigEndian: true, byteOrderMark: false), 4);
 
-            public void TestIncompleteSequence(Encoding codec, int charWidth) {
+            public void TestAsciiByte(Encoding codec, int charWidth) {
                 Encoding penc = new PythonSurrogateEscapeEncoding(codec);
 
                 Assert.That(() => penc.GetBytes(_chars),
@@ -378,11 +379,9 @@ namespace IronPythonTest {
 
                 enc.Reset();
 
-                Assert.That(enc.GetByteCount(_chars, 0, 4, flush: false), Is.EqualTo(3 * charWidth));
-                Assert.That(() => enc.GetBytes(_chars, 0, 4, bytes, 0, flush: false), Throws.Nothing);
-                Assert.That(() => enc.GetByteCount(_chars, 4, 1, flush: false),
+                Assert.That(() => enc.GetBytes(_chars, 0, 5, bytes, 3 * charWidth, flush: false),
                             Throws.TypeOf<EncoderFallbackException>()
-                            .With.Property("Index").EqualTo(-1)  // last char from previous increment
+                            .With.Property("Index").EqualTo(3)
                             .And.Property("CharUnknown").EqualTo(_chars[3]));
             }
         }

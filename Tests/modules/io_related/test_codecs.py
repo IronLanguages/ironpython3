@@ -500,6 +500,66 @@ class CodecTest(IronPythonTestCase):
         self.assertEqual(xmlcharrefreplace(uee), ("&#99;&#100;&#101;&#102;", 6))
         self.assertEqual(xmlcharrefreplace(uee_unicode), ("&#255;&#8364;&#128013;&#0;&#9;&#13;&#10;&#122;", uee_unicode.end))
 
+    def test_error_handlers_surrogateescape(self):
+        surrogateescape = codecs.lookup_error('surrogateescape')
+
+        # Decoding with surrogateescape
+
+        self.assertEqual(surrogateescape(UnicodeDecodeError('dummy', b"a\xff\x7fz", 1, 2, "encoding testing purposes")), ("\udcff", 2))
+        self.assertEqual(surrogateescape(UnicodeDecodeError('dummy', b"a\xff\x7fz", 1, 3, "encoding testing purposes")), ("\udcff", 2))
+        self.assertEqual(surrogateescape(UnicodeDecodeError('dummy', b"a\xff\x80z", 1, 3, "encoding testing purposes")), ("\udcff\udc80", 3))
+        self.assertEqual(surrogateescape(UnicodeDecodeError('dummy', b"a\xff\x80\x81z", 1, 3, "encoding testing purposes")), ("\udcff\udc80", 3))
+
+        ude = UnicodeDecodeError('dummy', b"abcd", 1, 3, "ASCII bytes cannot be smuggled (PEP 383)")
+        with self.assertRaises(UnicodeDecodeError) as cm:
+            surrogateescape(ude)
+        self.assertEqual(cm.exception, ude)
+
+        ude = UnicodeDecodeError('dummy', b"a\x7f\xffz", 1, 3, "ASCII bytes cannot be smuggled, 0x7f is withing ASCII range")
+        with self.assertRaises(UnicodeDecodeError) as cm:
+            surrogateescape(ude)
+        self.assertEqual(cm.exception, ude)
+
+        ude = UnicodeDecodeError('utf-16-le', b"a\x00\x00\xdcz\x00", 2, 4, r"although \x00\xdc is \udc00 in utf-16-le, it contains ASCII byte \x00")
+        with self.assertRaises(UnicodeDecodeError) as cm:
+            surrogateescape(ude)
+        self.assertEqual(cm.exception, ude)
+
+        ude = UnicodeDecodeError('utf-16-le', b"a\x00\xff\xdcz\x00", 2, 4, r"\xff\xdc is \udcff in utf-16-le, and each byte is being escaped individually")
+        self.assertEqual(surrogateescape(ude), ("\udcff\udcdc", 4))
+
+        # Encoding with surrogateescape
+
+        self.assertEqual(surrogateescape(UnicodeEncodeError('dummy', "a\udcff\udc7fz", 1, 2, "encoding testing purposes")), (b"\xff", 2))
+        self.assertEqual(surrogateescape(UnicodeEncodeError('dummy', "a\udcff\udc80z", 1, 3, "encoding testing purposes")), (b"\xff\x80", 3))
+        self.assertEqual(surrogateescape(UnicodeEncodeError('dummy', "a\udcff\udc80\udc81z", 1, 3, "encoding testing purposes")), (b"\xff\x80", 3))
+
+        uee = UnicodeEncodeError('dummy', "abcd", 1, 3, "no low surrogates to un-escape")
+        with self.assertRaises(UnicodeEncodeError) as cm:
+            surrogateescape(uee)
+        self.assertEqual(cm.exception, uee)
+
+        uee = UnicodeEncodeError('dummy', "\x80\x81\x82\x83", 1, 3, "no low surrogates to un-escape")
+        with self.assertRaises(UnicodeEncodeError) as cm:
+            surrogateescape(uee)
+        self.assertEqual(cm.exception, uee)
+
+        uee = UnicodeEncodeError('dummy', "a\udcff\udc7fz", 1, 3, r"ASCII bytes cannot be smuggled, \udc7f carries ASCI byte \x7f")
+        with self.assertRaises(UnicodeEncodeError) as cm:
+            surrogateescape(uee)
+        self.assertEqual(cm.exception, uee)
+
+        ude = UnicodeEncodeError('utf-16-le', "a\udc00\udcdcz", 1, 3, r"ASCII bytes cannot be smuggled, \udc00 carries ASCI byte \x00")
+        with self.assertRaises(UnicodeEncodeError) as cm:
+            surrogateescape(ude)
+        self.assertEqual(cm.exception, ude)
+
+        ude = UnicodeEncodeError('utf-16-le', "a\udcff\udcdcz", 1, 3, "encoding testing purposes")
+        self.assertEqual(surrogateescape(ude), (b"\xff\xdc", 3))
+
+        ude = UnicodeEncodeError('utf-16-le', "a\udcff\udcdcz", 1, 2, "one byte at a time for widechar encoding")
+        self.assertEqual(surrogateescape(ude), (b"\xff", 2))
+
     #TODO: @skip("multiple_execute")
     def test_lookup_error(self):
         #sanity

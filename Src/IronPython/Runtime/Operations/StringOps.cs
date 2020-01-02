@@ -1973,6 +1973,11 @@ namespace IronPython.Runtime.Operations {
                     ReflectionUtils.GetMethodInfos(typeof(StringOps).GetMember(nameof(BackslashReplaceErrors), BindingFlags.Static | BindingFlags.NonPublic)),
                     typeof(StringOps));
 
+                d["surrogateescape"] = BuiltinFunction.MakeFunction(
+                    "surrogateescape_errors",
+                    ReflectionUtils.GetMethodInfos(typeof(StringOps).GetMember(nameof(SurrogateEscapeErrors), BindingFlags.Static | BindingFlags.NonPublic)),
+                    typeof(StringOps));
+
                 return d;
             }
         }
@@ -2683,30 +2688,6 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
-        private static object BackslashReplaceErrors(object unicodeError) {
-            switch (unicodeError) {
-                case PythonExceptions._UnicodeDecodeError ude:
-                    throw PythonOps.TypeError("don't know how to handle UnicodeDecodeError in error callback");
-
-                case PythonExceptions._UnicodeEncodeError uee:
-                    if (uee.@object is string text && uee.start is int start && uee.end is int end) {
-                        start = Math.Max(0, Math.Min(start, text.Length - 1));
-                        end = Math.Max(start, Math.Min(end, text.Length));
-                        return PythonTuple.MakeTuple(RawUnicodeEscapeEncode(text, start, end - start, escapeAscii: true), end);
-                    }
-                    goto default;
-
-                case DecoderFallbackException dfe:
-                    throw PythonOps.TypeError("don't know how to handle DecoderFallbackException in error callback");
-
-                case EncoderFallbackException efe:
-                    string chars = (efe.CharUnknownHigh != '\0') ? new string(new[] { efe.CharUnknownHigh, efe.CharUnknownLow }) : new string(efe.CharUnknown, 1);
-                    return PythonTuple.MakeTuple(RawUnicodeEscapeEncode(chars, 0, chars.Length, escapeAscii: true), efe.Index + chars.Length);
-
-                default:
-                    throw PythonOps.TypeError("codec must pass exception instance");
-            }
-        }
         private static object XmlCharRefReplaceErrors(object unicodeError) {
             switch (unicodeError) {
                 case PythonExceptions._UnicodeDecodeError ude:
@@ -2741,6 +2722,96 @@ namespace IronPython.Runtime.Operations {
 
                 default:
                     throw PythonOps.TypeError("codec must pass exception instance");
+            }
+        }
+
+        private static object BackslashReplaceErrors(object unicodeError) {
+            switch (unicodeError) {
+                case PythonExceptions._UnicodeDecodeError ude:
+                    throw PythonOps.TypeError("don't know how to handle UnicodeDecodeError in error callback");
+
+                case PythonExceptions._UnicodeEncodeError uee:
+                    if (uee.@object is string text && uee.start is int start && uee.end is int end) {
+                        start = Math.Max(0, Math.Min(start, text.Length - 1));
+                        end = Math.Max(start, Math.Min(end, text.Length));
+                        return PythonTuple.MakeTuple(RawUnicodeEscapeEncode(text, start, end - start, escapeAscii: true), end);
+                    }
+                    goto default;
+
+                case DecoderFallbackException dfe:
+                    throw PythonOps.TypeError("don't know how to handle DecoderFallbackException in error callback");
+
+                case EncoderFallbackException efe:
+                    string chars = (efe.CharUnknownHigh != '\0') ? new string(new[] { efe.CharUnknownHigh, efe.CharUnknownLow }) : new string(efe.CharUnknown, 1);
+                    return PythonTuple.MakeTuple(RawUnicodeEscapeEncode(chars, 0, chars.Length, escapeAscii: true), efe.Index + chars.Length);
+
+                default:
+                    throw PythonOps.TypeError("codec must pass exception instance");
+            }
+        }
+
+        private static object SurrogateEscapeErrors(object unicodeError) {
+            switch (unicodeError) {
+                case PythonExceptions._UnicodeDecodeError ude:
+                    if (ude.@object is IList<byte> bytes && ude.start is int bstart && ude.end is int bend) {
+                        bstart = Math.Max(0, Math.Min(bstart, bytes.Count - 1));
+                        bend = Math.Max(bstart, Math.Min(bend, bytes.Count));
+                        string res = surrogateEscapeDecode(bytes, bstart, bend);
+                        if (res == null) throw ude.GetClrException();
+                        return PythonTuple.MakeTuple(res, bstart + res.Length);
+                    }
+                    goto default;
+
+                case PythonExceptions._UnicodeEncodeError uee:
+                    if (uee.@object is string text && uee.start is int tstart && uee.end is int tend) {
+                        tstart = Math.Max(0, Math.Min(tstart, text.Length - 1));
+                        tend = Math.Max(tstart, Math.Min(tend, text.Length));
+                        Bytes res = surrogateEscapeEncode(text, tstart, tend);
+                        if (res == null) throw uee.GetClrException();
+                        return PythonTuple.MakeTuple(res, tend);
+                    }
+                    goto default;
+
+                case DecoderFallbackException dfe: {
+                        if (dfe.BytesUnknown == null) throw dfe;
+                        string res = surrogateEscapeDecode(dfe.BytesUnknown, 0, dfe.BytesUnknown.Length);
+                        if (res == null) throw dfe;
+                        return PythonTuple.MakeTuple(res, res.Length);
+                    }
+
+                case EncoderFallbackException efe: {
+                        string chars = new string(efe.CharUnknown, 1);
+                        Bytes res = surrogateEscapeEncode(chars, 0, chars.Length);
+                        return PythonTuple.MakeTuple(res, efe.Index + chars.Length);
+                    }
+
+                default:
+                    throw PythonOps.TypeError("codec must pass exception instance");
+            }
+
+            static string surrogateEscapeDecode(IList<byte> bytes, int start, int end) {
+                var sb = new StringBuilder(end - start);
+                for (int i = start; i < end; i++) {
+                    byte b = bytes[i];
+                    if (b < 0x80) {
+                        if (i > start) break;
+                        else return null;
+                    }
+                    sb.Append((char)(b | 0xDC00));
+                }
+                return sb.ToString();
+            }
+
+            static Bytes surrogateEscapeEncode(string text, int start, int end) {
+                var lst = new List<byte>(end - start);
+                for (int i = start; i < end; i++) {
+                    char c = text[i];
+                    if (!char.IsLowSurrogate(c)) return null;
+                    byte b = (byte)(c & 0xFF);
+                    if (b < 0x80) return null;
+                    lst.Add(b);
+                }
+                return new Bytes(lst);
             }
         }
 #endif

@@ -76,7 +76,7 @@ class FunctionTest(IronPythonTestCase):
             class SubType(t): pass
             return SubType
 
-        self.assertRaisesRegexp(TypeError, ".*\n?.* is not an acceptable base type", CreateSubType, type(foo))
+        self.assertRaisesRegex(TypeError, ".*\n?.* is not an acceptable base type", CreateSubType, type(foo))
 
     def test_varargs(self):
         def a(*args): return args

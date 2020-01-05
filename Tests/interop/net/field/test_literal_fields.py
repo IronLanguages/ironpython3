@@ -105,7 +105,7 @@ class LiteralFieldsTest(IronPythonTestCase):
         def f17(): o.LiteralInterfaceField = None
 
         for f in [f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17]:
-            self.assertRaisesRegexp(AttributeError, "attribute .* of .* object is read-only", f)
+            self.assertRaisesRegex(AttributeError, "attribute .* of .* object is read-only", f)
     
     def _test_set_by_type(self, current_type):
         from Merlin.Testing.TypeSample import EnumUInt32
@@ -130,7 +130,7 @@ class LiteralFieldsTest(IronPythonTestCase):
         def f17(): current_type.LiteralInterfaceField = None
 
         for f in [f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17]:
-            self.assertRaisesRegexp(AttributeError, "attribute '.*' of '.*' object is read-only", f)
+            self.assertRaisesRegex(AttributeError, "attribute '.*' of '.*' object is read-only", f)
 
         
     def _test_delete_via_type(self, current_type):
@@ -155,7 +155,7 @@ class LiteralFieldsTest(IronPythonTestCase):
         def f17(): del current_type.LiteralInterfaceField
         
         for f in [f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17]:
-            self.assertRaisesRegexp(AttributeError, "cannot delete attribute 'Literal.*Field' of builtin type", f)
+            self.assertRaisesRegex(AttributeError, "cannot delete attribute 'Literal.*Field' of builtin type", f)
 
     def _test_delete_via_instance(self, current_type, message="cannot delete attribute 'Literal.*Field' of builtin type"):
         o = current_type()
@@ -180,7 +180,7 @@ class LiteralFieldsTest(IronPythonTestCase):
         def f17(): del o.LiteralInterfaceField
         
         for f in [f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17]:
-            self.assertRaisesRegexp(AttributeError, message, f)
+            self.assertRaisesRegex(AttributeError, message, f)
 
     def test_types(self):
         from Merlin.Testing.FieldTest.Literal import ClassWithLiterals, GenericClassWithLiterals, StructWithLiterals, GenericStructWithLiterals

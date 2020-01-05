@@ -61,8 +61,8 @@ class StructTest(unittest.TestCase):
     def test_ipy2_gh407(self):
         """https://github.com/IronLanguages/ironpython2/issues/407"""
 
-        self.assertRaisesRegexp(struct.error, '^unpack requires', struct.unpack, "H", b"a")
+        self.assertRaisesRegex(struct.error, '^unpack requires', struct.unpack, "H", b"a")
         struct.unpack("H", b"aa")
-        self.assertRaisesRegexp(struct.error, '^unpack requires', struct.unpack, "H", b"aaa")
+        self.assertRaisesRegex(struct.error, '^unpack requires', struct.unpack, "H", b"aaa")
 
 run_test(__name__)

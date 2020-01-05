@@ -1413,7 +1413,7 @@ class MethodDispatchTest(IronPythonTestCase):
 
     def test_max_args(self):
         """verify the correct number of max args are reported, this may need to be updated if file ever takes more args"""
-        self.assertRaisesRegexp(TypeError, '.*takes at most 4 arguments.*', file, 2, 3, 4, 5, 6, 7, 8, 9)
+        self.assertRaisesRegex(TypeError, '.*takes at most 4 arguments.*', file, 2, 3, 4, 5, 6, 7, 8, 9)
 
 
     def test_enumerator_conversions(self):

@@ -635,6 +635,14 @@ namespace IronPython.Runtime.Operations {
             return CompareTypesWorker(context, true, x, y);
         }
 
+        internal static object EqualHelper(CodeContext/*!*/ context, object self, object other) {
+            return InternalCompare(context, PythonOperationKind.Equal, self, other);
+        }
+
+        internal static object NotEqualHelper(CodeContext/*!*/ context, object self, object other) {
+            return InternalCompare(context, PythonOperationKind.NotEqual, self, other);
+        }
+
         public static object GreaterThanHelper(CodeContext/*!*/ context, object self, object other) {
             return InternalCompare(context, PythonOperationKind.GreaterThan, self, other);
         }
@@ -651,9 +659,8 @@ namespace IronPython.Runtime.Operations {
             return InternalCompare(context, PythonOperationKind.LessThanOrEqual, self, other);
         }
 
-        internal static object InternalCompare(CodeContext/*!*/ context, PythonOperationKind op, object self, object other) {
-            object ret;
-            if (PythonTypeOps.TryInvokeBinaryOperator(context, self, other, Symbols.OperatorToSymbol(op), out ret))
+        private static object InternalCompare(CodeContext/*!*/ context, PythonOperationKind op, object self, object other) {
+            if (PythonTypeOps.TryInvokeBinaryOperator(context, self, other, Symbols.OperatorToSymbol(op), out object ret))
                 return ret;
 
             return NotImplementedType.Value;

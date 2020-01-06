@@ -547,5 +547,29 @@ namespace IronPython.Runtime {
         public const object __hash__ = null;
 
         #endregion
+
+        [return: MaybeNotImplemented]
+        public object __eq__(CodeContext context, object other)
+            => other is ClosureCell cell ? PythonOps.EqualHelper(context, Value, cell.Value) : NotImplementedType.Value;
+
+        [return: MaybeNotImplemented]
+        public object __ne__(CodeContext context, object other)
+            => other is ClosureCell cell ? PythonOps.NotEqualHelper(context, Value, cell.Value) : NotImplementedType.Value;
+
+        [return: MaybeNotImplemented]
+        public object __lt__(CodeContext context, object other)
+            => other is ClosureCell cell ? PythonOps.LessThanHelper(context, Value, cell.Value) : NotImplementedType.Value;
+
+        [return: MaybeNotImplemented]
+        public object __le__(CodeContext context, object other)
+            => other is ClosureCell cell ? PythonOps.LessThanOrEqualHelper(context, Value, cell.Value) : NotImplementedType.Value;
+
+        [return: MaybeNotImplemented]
+        public object __ge__(CodeContext context, object other)
+            => other is ClosureCell cell ? PythonOps.GreaterThanOrEqualHelper(context, Value, cell.Value) : NotImplementedType.Value;
+
+        [return: MaybeNotImplemented]
+        public object __gt__(CodeContext context, object other)
+            => other is ClosureCell cell ? PythonOps.GreaterThanHelper(context, Value, cell.Value) : NotImplementedType.Value;
     }
 }

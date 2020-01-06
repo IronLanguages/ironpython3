@@ -56,13 +56,13 @@ class CodecTest(IronPythonTestCase):
         self.assertEqual(value, b"'")
         self.assertEqual(length, 4)
 
-        self.assertEquals(codecs.escape_decode(b"ab\nc"), (b"ab\nc", 4))
-        self.assertEquals(codecs.escape_decode(b"ab\rc"), (b"ab\rc", 4))
-        self.assertEquals(codecs.escape_decode(b"ab\r\nc"), (b"ab\r\nc", 5))
+        self.assertEqual(codecs.escape_decode(b"ab\nc"), (b"ab\nc", 4))
+        self.assertEqual(codecs.escape_decode(b"ab\rc"), (b"ab\rc", 4))
+        self.assertEqual(codecs.escape_decode(b"ab\r\nc"), (b"ab\r\nc", 5))
 
-        self.assertEquals(codecs.escape_decode(b"ab\\\nc"), (b"abc", 5))
-        self.assertEquals(codecs.escape_decode(b"ab\\\rc"), (b"ab\\\rc", 5))
-        self.assertEquals(codecs.escape_decode(b"ab\\\r\\\nc"), (b"ab\\\rc", 7))
+        self.assertEqual(codecs.escape_decode(b"ab\\\nc"), (b"abc", 5))
+        self.assertEqual(codecs.escape_decode(b"ab\\\rc"), (b"ab\\\rc", 5))
+        self.assertEqual(codecs.escape_decode(b"ab\\\r\\\nc"), (b"ab\\\rc", 7))
 
     def test_escape_decode_errors(self):
         self.assertEqual(codecs.escape_decode("abc", None), (b"abc", 3))
@@ -183,32 +183,32 @@ class CodecTest(IronPythonTestCase):
         with self.assertRaises(UnicodeDecodeError) as cm:
             codecs.raw_unicode_escape_decode("abc\\u20klm\xffxyz\u20ac") # Unicode string
 
-        self.assertEquals(cm.exception.encoding, 'rawunicodeescape')
+        self.assertEqual(cm.exception.encoding, 'rawunicodeescape')
         self.assertTrue(cm.exception.reason.startswith("truncated \\uXXXX"))
-        self.assertEquals(cm.exception.start, 3)
-        self.assertEquals(cm.exception.end, 7)
-        self.assertEquals(cm.exception.object, b"abc\\u20klm\xc3\xbfxyz\xe2\x82\xac") # in UTF-8
+        self.assertEqual(cm.exception.start, 3)
+        self.assertEqual(cm.exception.end, 7)
+        self.assertEqual(cm.exception.object, b"abc\\u20klm\xc3\xbfxyz\xe2\x82\xac") # in UTF-8
 
         with self.assertRaises(UnicodeDecodeError) as cm:
             codecs.raw_unicode_escape_decode("abc\\U0001F44xyz")
 
-        self.assertEquals(cm.exception.encoding, 'rawunicodeescape')
+        self.assertEqual(cm.exception.encoding, 'rawunicodeescape')
         if is_cpython and sys.version_info < (3, 6):
-            self.assertEquals(cm.exception.reason, "truncated \\uXXXX")
+            self.assertEqual(cm.exception.reason, "truncated \\uXXXX")
         else:
-            self.assertEquals(cm.exception.reason, "truncated \\UXXXXXXXX escape")
-        self.assertEquals(cm.exception.start, 3)
-        self.assertEquals(cm.exception.end, 12)
-        self.assertEquals(cm.exception.object, b"abc\\U0001F44xyz")
+            self.assertEqual(cm.exception.reason, "truncated \\UXXXXXXXX escape")
+        self.assertEqual(cm.exception.start, 3)
+        self.assertEqual(cm.exception.end, 12)
+        self.assertEqual(cm.exception.object, b"abc\\U0001F44xyz")
 
         with self.assertRaises(UnicodeDecodeError) as cm:
             codecs.raw_unicode_escape_decode("abc\\U00110011xyz")
 
-        self.assertEquals(cm.exception.encoding, 'rawunicodeescape')
-        self.assertEquals(cm.exception.reason, "\\Uxxxxxxxx out of range")
-        self.assertEquals(cm.exception.start, 3)
-        self.assertEquals(cm.exception.end, 13)
-        self.assertEquals(cm.exception.object, b"abc\\U00110011xyz")
+        self.assertEqual(cm.exception.encoding, 'rawunicodeescape')
+        self.assertEqual(cm.exception.reason, "\\Uxxxxxxxx out of range")
+        self.assertEqual(cm.exception.start, 3)
+        self.assertEqual(cm.exception.end, 13)
+        self.assertEqual(cm.exception.object, b"abc\\U00110011xyz")
 
         new_str, num_processed = codecs.raw_unicode_escape_decode(b"abc\\u20klm\\U0001F44nop\\U00110011xyz",'ignore')
         self.assertEqual(new_str, "abcklmnopxyz")
@@ -276,11 +276,11 @@ class CodecTest(IronPythonTestCase):
             with self.assertRaises(UnicodeDecodeError) as cm:
                 codecs.unicode_escape_decode(data)
 
-            self.assertEquals(cm.exception.encoding, 'unicodeescape')
-            self.assertEquals(cm.exception.reason, msg)
-            self.assertEquals(cm.exception.start, start)
-            self.assertEquals(cm.exception.end, end)
-            self.assertEquals(cm.exception.object, ex_data)
+            self.assertEqual(cm.exception.encoding, 'unicodeescape')
+            self.assertEqual(cm.exception.reason, msg)
+            self.assertEqual(cm.exception.start, start)
+            self.assertEqual(cm.exception.end, end)
+            self.assertEqual(cm.exception.object, ex_data)
 
         test_data = [
             ("abc\\xyz", "truncated \\xXX escape", 3, 5, b"abc\\xyz"), # str to bytes

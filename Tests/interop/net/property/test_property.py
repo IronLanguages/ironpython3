@@ -83,10 +83,10 @@ class PropertyTest(IronPythonTestCase):
         ClassWithWriteOnly.StaticProperty = "dlr"
         Flag.Check(12)
         
-        self.assertRaisesRegexp(AttributeError, 
+        self.assertRaisesRegex(AttributeError, 
             "unreadable property", 
             lambda: ClassWithWriteOnly.__dict__['InstanceProperty'].__get__(x))
-        self.assertRaisesRegexp(AttributeError, 
+        self.assertRaisesRegex(AttributeError, 
             "unreadable property", 
             lambda: ClassWithWriteOnly.__dict__['InstanceProperty'].GetValue(x))
     
@@ -178,7 +178,7 @@ class PropertyTest(IronPythonTestCase):
             def w3(): x.StaticSimpleClassProperty = c
             
             for w in [w1, w2, w3]:
-                self.assertRaisesRegexp(AttributeError, 
+                self.assertRaisesRegex(AttributeError, 
                     "static property '.*' of '.*' can only be assigned to through a type, not an instance", 
                     w)
             
@@ -193,16 +193,16 @@ class PropertyTest(IronPythonTestCase):
             #self.assertEqual(a, p.GetValue(None))
 
             # static property against instance        
-            self.assertRaisesRegexp(SystemError, "cannot set property", lambda: p.SetValue(x, a))
-            #self.assertRaisesRegexp(SystemError, "cannot get property", lambda: p.GetValue(x))  # bug 363242
+            self.assertRaisesRegex(SystemError, "cannot set property", lambda: p.SetValue(x, a))
+            #self.assertRaisesRegex(SystemError, "cannot get property", lambda: p.GetValue(x))  # bug 363242
 
             p = t.__dict__['InstanceInt32Property']
             p.SetValue(x, a)
             #self.assertEqual(p.GetValue(x), a)         # value type issue again
 
             # instance property against None
-            self.assertRaisesRegexp(SystemError, "cannot set property", lambda: p.SetValue(None, a))
-            #self.assertRaisesRegexp(SystemError, "cannot get property", lambda: p.GetValue(None))  # bug 363247
+            self.assertRaisesRegex(SystemError, "cannot set property", lambda: p.SetValue(None, a))
+            #self.assertRaisesRegex(SystemError, "cannot get property", lambda: p.GetValue(None))  # bug 363247
             
             p = t.__dict__['StaticSimpleStructProperty']
             p.__set__(None, b)
@@ -231,12 +231,12 @@ class PropertyTest(IronPythonTestCase):
     def test_delete(self):
         from Merlin.Testing.Property import ClassWithProperties, ClassWithReadOnly
         def del_p(): del ClassWithProperties.InstanceSimpleStructProperty
-        self.assertRaisesRegexp(AttributeError, 
+        self.assertRaisesRegex(AttributeError, 
             "cannot delete attribute 'InstanceSimpleStructProperty' of builtin type 'ClassWithProperties'",
             del_p)
 
         def del_p(): del ClassWithReadOnly.InstanceProperty
-        self.assertRaisesRegexp(AttributeError, 
+        self.assertRaisesRegex(AttributeError, 
             "cannot delete attribute 'InstanceProperty' of builtin type 'ClassWithReadOnly'",
             del_p)
 
@@ -249,7 +249,7 @@ class PropertyTest(IronPythonTestCase):
         
         t.StaticInt32Property  # read
         def f(): t.StaticInt32Property = a
-        self.assertRaisesRegexp(AttributeError, 
+        self.assertRaisesRegex(AttributeError, 
             "'DerivedClass' object has no attribute 'StaticInt32Property'", 
             f)   # write
 

@@ -228,21 +228,21 @@ with open(r"%s", "w") as f:
         global andCalled
         andCalled = False
 
-        self.assertRaisesRegexp(_struct.error, "integer out of range for 'L' format code",
+        self.assertRaisesRegex(_struct.error, "integer out of range for 'L' format code",
                             _struct.Struct('L').pack, 4294967296)
-        self.assertRaisesRegexp(_struct.error, "integer out of range for 'L' format code",
+        self.assertRaisesRegex(_struct.error, "integer out of range for 'L' format code",
                             _struct.Struct('L').pack, -1)
-        self.assertRaisesRegexp(Exception, "foo",
+        self.assertRaisesRegex(Exception, "foo",
                             _struct.Struct('L').pack, x(0))
-        self.assertRaisesRegexp(Exception, "foo", _struct.Struct('L').pack, x(-1))
+        self.assertRaisesRegex(Exception, "foo", _struct.Struct('L').pack, x(-1))
 
-        self.assertRaisesRegexp(_struct.error, "integer out of range for 'I' format code",
+        self.assertRaisesRegex(_struct.error, "integer out of range for 'I' format code",
                             _struct.Struct('I').pack, 4294967296)
-        self.assertRaisesRegexp(_struct.error, "integer out of range for 'I' format code",
+        self.assertRaisesRegex(_struct.error, "integer out of range for 'I' format code",
                             _struct.Struct('I').pack, -1)
-        self.assertRaisesRegexp(Exception, "foo",
+        self.assertRaisesRegex(Exception, "foo",
                             _struct.Struct('I').pack, x(0))
-        self.assertRaisesRegexp(Exception, "foo", _struct.Struct('I').pack, x(-1))
+        self.assertRaisesRegex(Exception, "foo", _struct.Struct('I').pack, x(-1))
 
         # __and__ was called in Python2.6 check that this is no longer True
         self.assertTrue(not andCalled)
@@ -513,7 +513,7 @@ with open(r"%s", "w") as f:
         def f(a=None):
             pass
 
-        self.assertRaisesRegexp(TypeError, "f\(\) got multiple values for keyword argument 'a'",
+        self.assertRaisesRegex(TypeError, "f\(\) got multiple values for keyword argument 'a'",
                             lambda: f(1, a=3))
 
     @unittest.skipIf(is_netcoreapp, 'requires System.Drawing.Common dependency')
@@ -1188,7 +1188,7 @@ class C:
         """https://github.com/IronLanguages/ironpython2/issues/463"""
         import plistlib
         x = b'<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>A</key><string>B</string></dict></plist>'
-        self.assertEquals(plistlib.readPlistFromBytes(x), {'A': 'B'})
+        self.assertEqual(plistlib.readPlistFromBytes(x), {'A': 'B'})
 
     def test_gh483(self):
         """https://github.com/IronLanguages/ironpython2/issues/463"""
@@ -1348,7 +1348,7 @@ class C:
         class x(int):
             def __hash__(self): return 42
 
-        self.assertEquals(42, hash(x()))
+        self.assertEqual(42, hash(x()))
 
     def test_main_gh1081(self):
         """https://github.com/IronLanguages/main/issues/1081"""

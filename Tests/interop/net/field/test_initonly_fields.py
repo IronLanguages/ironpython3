@@ -107,7 +107,7 @@ class InitOnlyFieldsTest(IronPythonTestCase):
         self.assertEqual(current_type.__dict__['InitOnlySimpleInterfaceField'].__get__(None, current_type).Flag, 50)
 
         for t in [current_type, SimpleStruct, SimpleClass]:
-            self.assertRaisesRegexp(TypeError, "(expected .*, got type)", lambda: current_type.__dict__['InitOnlySimpleGenericClassField'].__get__(t, current_type))
+            self.assertRaisesRegex(TypeError, "(expected .*, got type)", lambda: current_type.__dict__['InitOnlySimpleGenericClassField'].__get__(t, current_type))
         
         for t in [None, o, SimpleClass, SimpleStruct]:
             self.assertEqual(current_type.__dict__['InitOnlyEnumField'].__get__(None, t), EnumInt16.B)
@@ -144,7 +144,7 @@ class InitOnlyFieldsTest(IronPythonTestCase):
         def f23(): o.InitOnlySimpleInterfaceField = ClassImplementSimpleInterface(40)
 
         for f in [f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17, f18, f19, f20, f21, f22, f23]:
-            self.assertRaisesRegexp(AttributeError, "attribute .* of .* object is read-only", f)
+            self.assertRaisesRegex(AttributeError, "attribute .* of .* object is read-only", f)
     
     def _test_set_by_type(self, current_type, message="attribute '.*' of '.*' object is read-only"):
         import System
@@ -177,7 +177,7 @@ class InitOnlyFieldsTest(IronPythonTestCase):
         def f23(): current_type.InitOnlySimpleInterfaceField = ClassImplementSimpleInterface(40)
 
         for f in [f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17, f18, f19, f20, f21, f22, f23]:
-            self.assertRaisesRegexp(AttributeError, message, f)
+            self.assertRaisesRegex(AttributeError, message, f)
 
     def _test_set_by_descriptor(self, current_type):
         o = current_type()
@@ -189,7 +189,7 @@ class InitOnlyFieldsTest(IronPythonTestCase):
         lambda : current_type.__dict__['InitOnlyBooleanField'].__set__(None, False),
         lambda : current_type.__dict__['InitOnlySimpleClassField'].__set__(None, None),
         ]: 
-            self.assertRaisesRegexp(AttributeError, "'.*' object attribute '.*' is read-only", f)  # ???
+            self.assertRaisesRegex(AttributeError, "'.*' object attribute '.*' is read-only", f)  # ???
             
         for f in [
         lambda : current_type.__dict__['InitOnlySByteField'].__set__(o, 3),
@@ -206,7 +206,7 @@ class InitOnlyFieldsTest(IronPythonTestCase):
         lambda : current_type.__dict__['InitOnlyEnumField'].__set__(current_type, EnumInt32.C),
         lambda : current_type.__dict__['InitOnlySimpleInterfaceField'].__set__(o, None),
         ]: 
-            self.assertRaisesRegexp(AttributeError, "'.*' object attribute 'InitOnly.*Field' is read-only", f)
+            self.assertRaisesRegex(AttributeError, "'.*' object attribute 'InitOnly.*Field' is read-only", f)
         
     def _test_delete_via_type(self, current_type, message="cannot delete attribute 'InitOnly.*' of builtin type"):
         def f1(): del current_type.InitOnlyByteField
@@ -237,7 +237,7 @@ class InitOnlyFieldsTest(IronPythonTestCase):
         def f23(): del current_type.InitOnlySimpleInterfaceField
 
         for f in [f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17, f18, f19, f20, f21, f22, f23]:
-            self.assertRaisesRegexp(AttributeError, message, f)
+            self.assertRaisesRegex(AttributeError, message, f)
 
     def _test_delete_via_instance(self, current_type, message="cannot delete attribute 'InitOnly.*' of builtin type"):
         o = current_type()
@@ -269,7 +269,7 @@ class InitOnlyFieldsTest(IronPythonTestCase):
         def f23(): del o.InitOnlySimpleInterfaceField
 
         for f in [f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17, f18, f19, f20, f21, f22, f23]:
-            self.assertRaisesRegexp(AttributeError, message, f)
+            self.assertRaisesRegex(AttributeError, message, f)
 
     def _test_delete_via_descriptor(self, current_type):
         o = current_type()
@@ -285,7 +285,7 @@ class InitOnlyFieldsTest(IronPythonTestCase):
             if i % 4 == 3: arg = SimpleStruct
             i += 1
 
-            self.assertRaisesRegexp(AttributeError, "cannot delete attribute 'InitOnly.*Field' of builtin type", 
+            self.assertRaisesRegex(AttributeError, "cannot delete attribute 'InitOnly.*Field' of builtin type", 
                 lambda : current_type.__dict__['InitOnly%sField' % x].__delete__(arg))
 
     def test_types(self):

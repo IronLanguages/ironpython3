@@ -12,8 +12,8 @@ class HashTest(IronPythonTestCase):
                 return self is other
 
         x = HashBeforeEq()
-        self.assertNotEquals(x.__hash__, None)
-        self.assertEquals(hash(x), 1)
+        self.assertNotEqual(x.__hash__, None)
+        self.assertEqual(hash(x), 1)
 
     def test_eq_before_hash(self):
         class EqBeforeHash:
@@ -23,8 +23,8 @@ class HashTest(IronPythonTestCase):
                 return 1
 
         x = EqBeforeHash()
-        self.assertNotEquals(x.__hash__, None)
-        self.assertEquals(hash(x), 1)
+        self.assertNotEqual(x.__hash__, None)
+        self.assertEqual(hash(x), 1)
 
     def test_hash_writable_memoryviews(self):
         buffer = array.array('b', [1,2,3])

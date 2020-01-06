@@ -464,8 +464,8 @@ class StaticFieldsTest(IronPythonTestCase):
             def f1(): o.StaticByteField = 1
             def f2(): current_type.StaticByteField = 1
 
-            self.assertRaisesRegexp(AttributeError, "'.*' object has no attribute 'StaticByteField'", f1)
-            self.assertRaisesRegexp(AttributeError, "'.*' object has no attribute 'StaticByteField'", f2)
+            self.assertRaisesRegex(AttributeError, "'.*' object has no attribute 'StaticByteField'", f1)
+            self.assertRaisesRegex(AttributeError, "'.*' object has no attribute 'StaticByteField'", f2)
             
             self.assertTrue('StaticByteField' not in current_type.__dict__)
 

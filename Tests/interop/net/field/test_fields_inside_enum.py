@@ -21,13 +21,13 @@ class FieldsInsideEnumTest(IronPythonTestCase):
         self.assertEqual(EnumInt32.B, desc)
         
         def f(): o.A = 10
-        self.assertRaisesRegexp(AttributeError, "attribute 'A' of 'EnumInt32' object is read-only", f)
+        self.assertRaisesRegex(AttributeError, "attribute 'A' of 'EnumInt32' object is read-only", f)
         
         def f(): EnumInt32.B = 10
-        self.assertRaisesRegexp(AttributeError, "attribute 'B' of 'EnumInt32' object is read-only", f)
+        self.assertRaisesRegex(AttributeError, "attribute 'B' of 'EnumInt32' object is read-only", f)
 
         def f(): EnumInt32.B = EnumInt32.A
-        self.assertRaisesRegexp(AttributeError, "attribute 'B' of 'EnumInt32' object is read-only", f)
+        self.assertRaisesRegex(AttributeError, "attribute 'B' of 'EnumInt32' object is read-only", f)
 
     def test_enum_bool(self):
         from Merlin.Testing.BaseClass import EmptyEnum

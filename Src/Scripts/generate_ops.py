@@ -148,45 +148,6 @@ class Operator(Symbol):
         cw.writeline("case PythonOperationKind.Reverse%s: return \"__r%s__\";" % (titleName, self.name))
         cw.writeline("case PythonOperationKind.InPlace%s: return \"__i%s__\";" % (titleName, self.name))
 
-    def genOldStyleOp(self, cw):
-        if self.isCompare(): return
-
-        cw.writeline('[return: MaybeNotImplemented]')
-        if self.dotnetOp:
-            cw.enter_block("public static object operator %s([NotNull]OldInstance self, object other)" % self.symbol)
-        else:
-            cw.writeline('[SpecialName]')
-            cw.enter_block("public static object %s([NotNull]OldInstance self, object other)" % self.title_name())
-        cw.writeline('object res = InvokeOne(self, other, \"__%s__\");' % self.name)
-        cw.writeline('if (res != NotImplementedType.Value) return res;')
-
-        cw.writeline()
-        cw.writeline("OldInstance otherOc = other as OldInstance;")
-        cw.enter_block("if (otherOc != null)")
-        cw.writeline('return InvokeOne(otherOc, self, \"__r%s__\");' % self.name)
-        cw.exit_block() # end of otherOc != null
-
-        cw.writeline("return NotImplementedType.Value;")
-        cw.exit_block() # end method
-        cw.writeline()
-
-        cw.writeline('[return: MaybeNotImplemented]')
-        if self.dotnetOp:
-            cw.enter_block("public static object operator %s(object other, [NotNull]OldInstance self)" % self.symbol)
-        else:
-            cw.writeline('[SpecialName]')
-            cw.enter_block("public static object %s(object other, [NotNull]OldInstance self)" % self.title_name())
-        cw.writeline("return InvokeOne(self, other, \"__r%s__\");" % self.name)
-        cw.exit_block() # end method
-        cw.writeline()
-
-        cw.writeline('[return: MaybeNotImplemented]')
-        cw.writeline('[SpecialName]')
-        cw.enter_block("public object InPlace%s(object other)" % self.title_name())
-        cw.writeline("return InvokeOne(this, other, \"__i%s__\");" % self.name)
-        cw.exit_block() # end method
-        cw.writeline()
-
     def genWeakRefOperatorNames(self, cw):
         cw.writeline('[SlotField] public static PythonTypeSlot __%s__ = new SlotWrapper(\"__%s__\", ProxyType);' % (self.name, self.name))
 
@@ -210,8 +171,8 @@ class Operator(Symbol):
         if type == 'Complex' and (self.clrName in ['Mod', 'FloorDivide']):
             return
         if self.isCompare():
-            if type != 'Complex' and self.symbol != '<>':
-                cw.writeline('case PythonOperator.%s: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject(%sOps.Compare((%s)constLeft.Value, (%s)constRight.Value) %s 0));' % (self.clrName, type, type, type, self.symbol))
+            if type != 'Complex':
+                cw.writeline('case PythonOperator.%s: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject((%s)constLeft.Value %s (%s)constRight.Value));' % (self.clrName, type, self.symbol, type))
         elif (type !='Double' and type != 'Complex') or not self.is_bitwise():
             cw.writeline('case PythonOperator.%s: return new ConstantExpression(%sOps.%s((%s)constLeft.Value, (%s)constRight.Value));' % (self.clrName, type, self.clrName, type, type))
 
@@ -533,11 +494,6 @@ def weakrefCallabelProxy_operators(cw):
         if not isinstance(op, Operator): continue
         if op.is_comparison(): continue
         op.genWeakRefCallableProxyOperatorNames(cw)
-
-def oldinstance_operators(cw):
-    for op in ops:
-        if not isinstance(op, Operator): continue
-        op.genOldStyleOp(cw)
 
 def operator_reversal(cw):
     for op in ops:

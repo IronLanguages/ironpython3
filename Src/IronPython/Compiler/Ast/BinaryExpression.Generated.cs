@@ -42,12 +42,12 @@ namespace IronPython.Compiler.Ast {
                             case PythonOperator.BitwiseAnd: return new ConstantExpression(Int32Ops.BitwiseAnd((Int32)constLeft.Value, (Int32)constRight.Value));
                             case PythonOperator.BitwiseOr: return new ConstantExpression(Int32Ops.BitwiseOr((Int32)constLeft.Value, (Int32)constRight.Value));
                             case PythonOperator.ExclusiveOr: return new ConstantExpression(Int32Ops.ExclusiveOr((Int32)constLeft.Value, (Int32)constRight.Value));
-                            case PythonOperator.LessThan: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject(Int32Ops.Compare((Int32)constLeft.Value, (Int32)constRight.Value) < 0));
-                            case PythonOperator.GreaterThan: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject(Int32Ops.Compare((Int32)constLeft.Value, (Int32)constRight.Value) > 0));
-                            case PythonOperator.LessThanOrEqual: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject(Int32Ops.Compare((Int32)constLeft.Value, (Int32)constRight.Value) <= 0));
-                            case PythonOperator.GreaterThanOrEqual: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject(Int32Ops.Compare((Int32)constLeft.Value, (Int32)constRight.Value) >= 0));
-                            case PythonOperator.Equals: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject(Int32Ops.Compare((Int32)constLeft.Value, (Int32)constRight.Value) == 0));
-                            case PythonOperator.NotEquals: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject(Int32Ops.Compare((Int32)constLeft.Value, (Int32)constRight.Value) != 0));
+                            case PythonOperator.LessThan: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject((Int32)constLeft.Value < (Int32)constRight.Value));
+                            case PythonOperator.GreaterThan: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject((Int32)constLeft.Value > (Int32)constRight.Value));
+                            case PythonOperator.LessThanOrEqual: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject((Int32)constLeft.Value <= (Int32)constRight.Value));
+                            case PythonOperator.GreaterThanOrEqual: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject((Int32)constLeft.Value >= (Int32)constRight.Value));
+                            case PythonOperator.Equals: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject((Int32)constLeft.Value == (Int32)constRight.Value));
+                            case PythonOperator.NotEquals: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject((Int32)constLeft.Value != (Int32)constRight.Value));
                         }
                     }
                     if (constLeft.Value.GetType() == typeof(Double)) {
@@ -59,12 +59,12 @@ namespace IronPython.Compiler.Ast {
                             case PythonOperator.FloorDivide: return new ConstantExpression(DoubleOps.FloorDivide((Double)constLeft.Value, (Double)constRight.Value));
                             case PythonOperator.TrueDivide: return new ConstantExpression(DoubleOps.TrueDivide((Double)constLeft.Value, (Double)constRight.Value));
                             case PythonOperator.Mod: return new ConstantExpression(DoubleOps.Mod((Double)constLeft.Value, (Double)constRight.Value));
-                            case PythonOperator.LessThan: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject(DoubleOps.Compare((Double)constLeft.Value, (Double)constRight.Value) < 0));
-                            case PythonOperator.GreaterThan: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject(DoubleOps.Compare((Double)constLeft.Value, (Double)constRight.Value) > 0));
-                            case PythonOperator.LessThanOrEqual: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject(DoubleOps.Compare((Double)constLeft.Value, (Double)constRight.Value) <= 0));
-                            case PythonOperator.GreaterThanOrEqual: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject(DoubleOps.Compare((Double)constLeft.Value, (Double)constRight.Value) >= 0));
-                            case PythonOperator.Equals: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject(DoubleOps.Compare((Double)constLeft.Value, (Double)constRight.Value) == 0));
-                            case PythonOperator.NotEquals: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject(DoubleOps.Compare((Double)constLeft.Value, (Double)constRight.Value) != 0));
+                            case PythonOperator.LessThan: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject((Double)constLeft.Value < (Double)constRight.Value));
+                            case PythonOperator.GreaterThan: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject((Double)constLeft.Value > (Double)constRight.Value));
+                            case PythonOperator.LessThanOrEqual: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject((Double)constLeft.Value <= (Double)constRight.Value));
+                            case PythonOperator.GreaterThanOrEqual: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject((Double)constLeft.Value >= (Double)constRight.Value));
+                            case PythonOperator.Equals: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject((Double)constLeft.Value == (Double)constRight.Value));
+                            case PythonOperator.NotEquals: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject((Double)constLeft.Value != (Double)constRight.Value));
                         }
                     }
                     if (constLeft.Value.GetType() == typeof(BigInteger)) {
@@ -81,12 +81,12 @@ namespace IronPython.Compiler.Ast {
                             case PythonOperator.BitwiseAnd: return new ConstantExpression(BigIntegerOps.BitwiseAnd((BigInteger)constLeft.Value, (BigInteger)constRight.Value));
                             case PythonOperator.BitwiseOr: return new ConstantExpression(BigIntegerOps.BitwiseOr((BigInteger)constLeft.Value, (BigInteger)constRight.Value));
                             case PythonOperator.ExclusiveOr: return new ConstantExpression(BigIntegerOps.ExclusiveOr((BigInteger)constLeft.Value, (BigInteger)constRight.Value));
-                            case PythonOperator.LessThan: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject(BigIntegerOps.Compare((BigInteger)constLeft.Value, (BigInteger)constRight.Value) < 0));
-                            case PythonOperator.GreaterThan: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject(BigIntegerOps.Compare((BigInteger)constLeft.Value, (BigInteger)constRight.Value) > 0));
-                            case PythonOperator.LessThanOrEqual: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject(BigIntegerOps.Compare((BigInteger)constLeft.Value, (BigInteger)constRight.Value) <= 0));
-                            case PythonOperator.GreaterThanOrEqual: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject(BigIntegerOps.Compare((BigInteger)constLeft.Value, (BigInteger)constRight.Value) >= 0));
-                            case PythonOperator.Equals: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject(BigIntegerOps.Compare((BigInteger)constLeft.Value, (BigInteger)constRight.Value) == 0));
-                            case PythonOperator.NotEquals: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject(BigIntegerOps.Compare((BigInteger)constLeft.Value, (BigInteger)constRight.Value) != 0));
+                            case PythonOperator.LessThan: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject((BigInteger)constLeft.Value < (BigInteger)constRight.Value));
+                            case PythonOperator.GreaterThan: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject((BigInteger)constLeft.Value > (BigInteger)constRight.Value));
+                            case PythonOperator.LessThanOrEqual: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject((BigInteger)constLeft.Value <= (BigInteger)constRight.Value));
+                            case PythonOperator.GreaterThanOrEqual: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject((BigInteger)constLeft.Value >= (BigInteger)constRight.Value));
+                            case PythonOperator.Equals: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject((BigInteger)constLeft.Value == (BigInteger)constRight.Value));
+                            case PythonOperator.NotEquals: return new ConstantExpression(ScriptingRuntimeHelpers.BooleanToObject((BigInteger)constLeft.Value != (BigInteger)constRight.Value));
                         }
                     }
                     if (constLeft.Value.GetType() == typeof(Complex)) {

@@ -57,7 +57,12 @@ namespace IronPython.Modules {
 
             #endregion
 
-            //[SlotField] public static PythonTypeSlot __cmp__ = new SlotWrapper(Symbols.Cmp, ProxyType);
+            [SlotField] public static PythonTypeSlot __eq__ = new SlotWrapper("__eq__", ProxyType);
+            [SlotField] public static PythonTypeSlot __ne__ = new SlotWrapper("__ne__", ProxyType);
+            [SlotField] public static PythonTypeSlot __lt__ = new SlotWrapper("__lt__", ProxyType);
+            [SlotField] public static PythonTypeSlot __gt__ = new SlotWrapper("__gt__", ProxyType);
+            [SlotField] public static PythonTypeSlot __le__ = new SlotWrapper("__le__", ProxyType);
+            [SlotField] public static PythonTypeSlot __ge__ = new SlotWrapper("__ge__", ProxyType);
             [SlotField] public static PythonTypeSlot __divmod__ = new SlotWrapper("__divmod__", ProxyType);
             [SlotField] public static PythonTypeSlot __float__ = new SlotWrapper("__float__", ProxyType);
             [SlotField] public static PythonTypeSlot __index__ = new SlotWrapper("__index__", ProxyType);
@@ -126,7 +131,12 @@ namespace IronPython.Modules {
 
             #endregion
 
-            //[SlotField] public static PythonTypeSlot __cmp__ = new SlotWrapper(Symbols.Cmp, CallableProxyType);
+            [SlotField] public static PythonTypeSlot __eq__ = new SlotWrapper("__eq__", CallableProxyType);
+            [SlotField] public static PythonTypeSlot __ne__ = new SlotWrapper("__ne__", CallableProxyType);
+            [SlotField] public static PythonTypeSlot __lt__ = new SlotWrapper("__lt__", CallableProxyType);
+            [SlotField] public static PythonTypeSlot __gt__ = new SlotWrapper("__gt__", CallableProxyType);
+            [SlotField] public static PythonTypeSlot __le__ = new SlotWrapper("__le__", CallableProxyType);
+            [SlotField] public static PythonTypeSlot __ge__ = new SlotWrapper("__ge__", CallableProxyType);
             [SlotField] public static PythonTypeSlot __divmod__ = new SlotWrapper("__divmod__", CallableProxyType);
             [SlotField] public static PythonTypeSlot __float__ = new SlotWrapper("__float__", CallableProxyType);
             [SlotField] public static PythonTypeSlot __index__ = new SlotWrapper("__index__", CallableProxyType);

@@ -446,27 +446,6 @@ namespace IronPython.Modules {
 
             public const object __hash__ = null;
 
-            private bool EqualsWorker(weakproxy other) {
-                return PythonOps.EqualRetBool(_context, GetObject(), other.GetObject());
-            }
-
-            /// <summary>
-            /// Special equality function because IStructuralEquatable.Equals is not allowed to throw.
-            /// </summary>
-            [return: MaybeNotImplemented]
-            public object __eq__(object other) {
-                if (!(other is weakproxy)) return NotImplementedType.Value;
-
-                return ScriptingRuntimeHelpers.BooleanToObject(EqualsWorker((weakproxy)other));
-            }
-
-            [return: MaybeNotImplemented]
-            public object __ne__(object other) {
-                if (!(other is weakproxy)) return NotImplementedType.Value;
-
-                return ScriptingRuntimeHelpers.BooleanToObject(!EqualsWorker((weakproxy)other));
-            }
-
             int IStructuralEquatable.GetHashCode(IEqualityComparer comparer) {
                 object obj;
                 if (TryGetObject(out obj)) {
@@ -704,20 +683,6 @@ namespace IronPython.Modules {
             #region IStructuralEquatable Members
 
             public const object __hash__ = null;
-
-            /// <summary>
-            /// Special equality function because IStructuralEquatable.Equals is not allowed to throw.
-            /// </summary>
-            public bool __eq__(object other) {
-                weakcallableproxy wrp = other as weakcallableproxy;
-                if (wrp != null) return GetObject().Equals(wrp.GetObject());
-
-                return PythonOps.EqualRetBool(_context, GetObject(), other);
-            }
-
-            public bool __ne__(object other) {
-                return !__eq__(other);
-            }
 
             int IStructuralEquatable.GetHashCode(IEqualityComparer comparer) {
                 object obj;

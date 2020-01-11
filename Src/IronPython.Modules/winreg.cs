@@ -218,13 +218,17 @@ namespace IronPython.Modules {
             // the .NET APIs don't work with a key name of length 256, use a PInvoke instead
             // unlike in CreateKey(), `subKeyName.Length` on deletion can be greater than 256 if combined with parent key name.
             if (sub_key.Length >= 256) {
+                int result = RegDeleteKey(rootKey.GetKey().Handle, sub_key);
+                if (result != ERROR_SUCCESS) {
+                    throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, result);
+                }
                 return;
             }
 
             try {
                 rootKey.GetKey().DeleteSubKey(sub_key);
             } catch (ArgumentException e) {
-                throw new ExternalException(e.Message);
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, e.HResult);
             }
         }
 

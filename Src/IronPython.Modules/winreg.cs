@@ -216,8 +216,8 @@ namespace IronPython.Modules {
                 throw new InvalidCastException("DeleteKey() argument 2 must be string, not None");
 
             // the .NET APIs don't work with a key name of length 256, use a PInvoke instead
-            if (subKeyName.Length == 256) {
-                RegDeleteKey(rootKey.GetKey().Handle, subKeyName);
+            // unlike in CreateKey(), `subKeyName.Length` on deletion can be greater than 256 if combined with parent key name.
+            if (sub_key.Length >= 256) {
                 return;
             }
 

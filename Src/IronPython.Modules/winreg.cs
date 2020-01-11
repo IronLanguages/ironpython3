@@ -336,7 +336,11 @@ namespace IronPython.Modules {
                     value = list;
                     break;
                 case REG_BINARY:
-                    value = length == 0 ? null : PythonOps.MakeString(data, (int)length);
+                    var tight_fit_data = new byte[length];
+                    for (int i = 0; i < length; i++) {
+                        tight_fit_data[i] = data[i];
+                    }
+                    value = length == 0 ? null : new Bytes(tight_fit_data);
                     break;
                 case REG_EXPAND_SZ:
                 case REG_SZ:
@@ -505,6 +509,8 @@ namespace IronPython.Modules {
                     string strValue = value as string;
                     ASCIIEncoding encoding = new ASCIIEncoding();
                     byteArr = encoding.GetBytes(strValue);
+                } else if (value is Bytes ibytes) {
+                    byteArr = ibytes.UnsafeByteArray;
                 }
                 rootKey.GetKey().SetValue(value_name, byteArr, regKind);
             } else if (regKind == RegistryValueKind.DWord) {

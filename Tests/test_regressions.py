@@ -1435,4 +1435,18 @@ class C:
             result = ET.tostring(ET.fromstring(txt))
             self.assertEqual(txt, result)
 
+    def test_ipy3_gh410(self):
+        """https://github.com/IronLanguages/ironpython3/issues/410"""
+        import threading
+        def test_thread():
+            class Thread(threading.Thread):
+                def run(self):
+                    self.thread_executed = 1
+
+            thread = Thread()
+            thread.start()
+            thread.join()
+            self.assertEqual(thread.thread_executed, 1)
+        test_thread()
+
 run_test(__name__)

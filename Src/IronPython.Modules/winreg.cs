@@ -50,6 +50,8 @@ namespace IronPython.Modules {
         public const int KEY_EXECUTE = 0X20019;
         public const int KEY_READ = 0X20019;
         public const int KEY_WRITE = 0X20006;
+        public const int KEY_WOW64_64KEY = 0X100;
+        public const int KEY_WOW64_32KEY = 0X200;
 
         public const int REG_CREATED_NEW_KEY = 0X1;
         public const int REG_OPENED_EXISTING_KEY = 0X2;
@@ -93,18 +95,18 @@ namespace IronPython.Modules {
             key.Close();
         }
 
-        public static HKEYType CreateKey(object key, string subKeyName) {
+        public static HKEYType CreateKey(object key, string sub_key) {
             // the .NET APIs don't work with a key name of length 256, use CreateKeyEx which PInvokes instead
-            if (subKeyName.Length == 256)
-                return CreateKeyEx(key, subKeyName, 0, KEY_ALL_ACCESS);
+            if (sub_key.Length == 256)
+                return CreateKeyEx(key, sub_key, 0, KEY_ALL_ACCESS);
 
             HKEYType rootKey = GetRootKey(key);
 
             //if key is a system key and no subkey is specified return that.
-            if (key is BigInteger && string.IsNullOrEmpty(subKeyName))
+            if (key is BigInteger && string.IsNullOrEmpty(sub_key))
                 return rootKey;
             
-            HKEYType subKey = new HKEYType(rootKey.GetKey().CreateSubKey(subKeyName));
+            HKEYType subKey = new HKEYType(rootKey.GetKey().CreateSubKey(sub_key));
             return subKey;
         }
 
@@ -112,11 +114,11 @@ namespace IronPython.Modules {
             return new Win32Exception(errorCode).Message;
         }
 
-        public static HKEYType CreateKeyEx(object key, string subKeyName, int res = 0, int sam = KEY_ALL_ACCESS) {
+        public static HKEYType CreateKeyEx(object key, string sub_key, int reserved = 0, int access = KEY_ALL_ACCESS) {
             HKEYType rootKey = GetRootKey(key);
 
             //if key is a system key and no subkey is specified return that.
-            if (key is BigInteger && string.IsNullOrEmpty(subKeyName))
+            if (key is BigInteger && string.IsNullOrEmpty(sub_key))
                 return rootKey;
 
             SafeRegistryHandle handle;
@@ -124,11 +126,11 @@ namespace IronPython.Modules {
             
             int result = RegCreateKeyEx(
                 rootKey.GetKey().Handle,
-                subKeyName,
+                sub_key,
                 0,
                 null,
                 RegistryOptions.None,
-                (RegistryRights)sam,
+                (RegistryRights)access,
                 IntPtr.Zero,
                 out handle,
                 out disposition
@@ -188,6 +190,13 @@ namespace IronPython.Modules {
             string lpSubKey);
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern int RegDeleteKeyEx(
+            SafeRegistryHandle hKey,
+            string lpSubKey,
+            int samDesired,
+            int Reserved);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern int RegDisableReflectionKey(
             SafeRegistryHandle hKey);
 
@@ -200,22 +209,38 @@ namespace IronPython.Modules {
             SafeRegistryHandle hBase,
             out bool bIsReflectionDisabled);
 
-        public static void DeleteKey(object key, string subKeyName) {
+        public static void DeleteKey(object key, string sub_key) {
             HKEYType rootKey = GetRootKey(key);
 
-            if (key is BigInteger && string.IsNullOrEmpty(subKeyName))
+            if (key is BigInteger && string.IsNullOrEmpty(sub_key))
                 throw new InvalidCastException("DeleteKey() argument 2 must be string, not None");
 
             // the .NET APIs don't work with a key name of length 256, use a PInvoke instead
-            if (subKeyName.Length == 256) {
-                RegDeleteKey(rootKey.GetKey().Handle, subKeyName);
+            // unlike in CreateKey(), `subKeyName.Length` on deletion can be greater than 256 if combined with parent key name.
+            if (sub_key.Length >= 256) {
+                int result = RegDeleteKey(rootKey.GetKey().Handle, sub_key);
+                if (result != ERROR_SUCCESS) {
+                    throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, result);
+                }
                 return;
             }
 
             try {
-                rootKey.GetKey().DeleteSubKey(subKeyName);
+                rootKey.GetKey().DeleteSubKey(sub_key);
             } catch (ArgumentException e) {
-                throw new ExternalException(e.Message);
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, e.HResult);
+            }
+        }
+
+        public static void DeleteKeyEx(object key, string sub_key, int access=KEY_WOW64_64KEY, int reserved=0) {
+            HKEYType rootKey = GetRootKey(key);
+
+            if (key is BigInteger && string.IsNullOrEmpty(sub_key))
+                throw new InvalidCastException("DeleteKeyEx() argument 2 must be string, not None");
+
+            int result = RegDeleteKeyEx(rootKey.GetKey().Handle, sub_key, access, reserved);
+            if (result != ERROR_SUCCESS) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, result);
             }
         }
 
@@ -311,7 +336,11 @@ namespace IronPython.Modules {
                     value = list;
                     break;
                 case REG_BINARY:
-                    value = length == 0 ? null : PythonOps.MakeString(data, (int)length);
+                    var tight_fit_data = new byte[length];
+                    for (int i = 0; i < length; i++) {
+                        tight_fit_data[i] = data[i];
+                    }
+                    value = length == 0 ? null : new Bytes(tight_fit_data);
                     break;
                 case REG_EXPAND_SZ:
                 case REG_SZ:
@@ -359,11 +388,11 @@ namespace IronPython.Modules {
             rootKey.GetKey().Flush();
         }
 
-        public static HKEYType OpenKey(object key, string subKeyName) {
-            return OpenKey(key, subKeyName, 0, KEY_READ);
+        public static HKEYType OpenKey(object key, string sub_key) {
+            return OpenKey(key, sub_key, 0, KEY_READ);
         }
 
-        public static HKEYType OpenKey(object key, string subKeyName, int res=0, int sam=KEY_READ) {
+        public static HKEYType OpenKey(object key, string sub_key, int reserved=0, int access=KEY_READ) {
             HKEYType rootKey = GetRootKey(key);
             RegistryKey newKey = null;
 
@@ -377,20 +406,20 @@ namespace IronPython.Modules {
 
             var nativeRootKey = rootKey.GetKey();
             try {
-                if ((sam & KEY_SET_VALUE) == KEY_SET_VALUE ||
-                    (sam & KEY_CREATE_SUB_KEY) == KEY_CREATE_SUB_KEY) {
-                        if (res != 0) {
-                            newKey = nativeRootKey.OpenSubKey(subKeyName, RegistryKeyPermissionCheck.Default, (RegistryRights)res);
+                if ((access & KEY_SET_VALUE) == KEY_SET_VALUE ||
+                    (access & KEY_CREATE_SUB_KEY) == KEY_CREATE_SUB_KEY) {
+                        if (reserved != 0) {
+                            newKey = nativeRootKey.OpenSubKey(sub_key, RegistryKeyPermissionCheck.Default, (RegistryRights)reserved);
                         } else {
-                            newKey = nativeRootKey.OpenSubKey(subKeyName, true);
+                            newKey = nativeRootKey.OpenSubKey(sub_key, true);
                         }
-                } else if ((sam & KEY_QUERY_VALUE) == KEY_QUERY_VALUE ||
-                           (sam & KEY_ENUMERATE_SUB_KEYS) == KEY_ENUMERATE_SUB_KEYS ||
-                           (sam & KEY_NOTIFY) == KEY_NOTIFY) {
-                               if (res != 0) {
-                                   newKey = nativeRootKey.OpenSubKey(subKeyName, RegistryKeyPermissionCheck.ReadSubTree, (RegistryRights)res);
+                } else if ((access & KEY_QUERY_VALUE) == KEY_QUERY_VALUE ||
+                           (access & KEY_ENUMERATE_SUB_KEYS) == KEY_ENUMERATE_SUB_KEYS ||
+                           (access & KEY_NOTIFY) == KEY_NOTIFY) {
+                               if (reserved != 0) {
+                                   newKey = nativeRootKey.OpenSubKey(sub_key, RegistryKeyPermissionCheck.ReadSubTree, (RegistryRights)reserved);
                                } else {
-                                   newKey = nativeRootKey.OpenSubKey(subKeyName, false);
+                                   newKey = nativeRootKey.OpenSubKey(sub_key, false);
                                }
                 } else {
                     throw new Win32Exception("Unexpected mode");
@@ -407,8 +436,8 @@ namespace IronPython.Modules {
             return new HKEYType(newKey);
         }
 
-        public static HKEYType OpenKeyEx(object key, string subKeyName, int res=0, int sam=KEY_READ) {
-            return OpenKey(key, subKeyName, res, sam);
+        public static HKEYType OpenKeyEx(object key, string sub_key, int reserved=0, int access=KEY_READ) {
+            return OpenKey(key, sub_key, reserved, access);
         }
 
         public static PythonTuple QueryInfoKey(object key) {
@@ -436,12 +465,12 @@ namespace IronPython.Modules {
             }
         }
 
-        public static object QueryValue(object key, string subKeyName) {
-            HKEYType pyKey = OpenKey(key, subKeyName);
+        public static object QueryValue(object key, string sub_key) {
+            HKEYType pyKey = OpenKey(key, sub_key);
             return pyKey.GetKey().GetValue(null);
         }
 
-        public static PythonTuple QueryValueEx(object key, string valueName) {
+        public static PythonTuple QueryValueEx(object key, string value_name) {
             HKEYType rootKey = GetRootKey(key);
 
             // it looks like rootKey.GetKey().Handle fails on HKEY_PERFORMANCE_DATA so manually create the handle instead
@@ -449,23 +478,23 @@ namespace IronPython.Modules {
 
             int valueKind;
             object value;
-            QueryValueExImpl(handle, valueName, out valueKind, out value);
+            QueryValueExImpl(handle, value_name, out valueKind, out value);
 
             return PythonTuple.MakeTuple(value, valueKind);
         }
 
-        public static void SetValue(object key, string subKeyName, int type, string value) {
-            HKEYType pyKey = CreateKey(key, subKeyName);
+        public static void SetValue(object key, string sub_key, int type, string value) {
+            HKEYType pyKey = CreateKey(key, sub_key);
             pyKey.GetKey().SetValue(null, value);
         }
 
-        public static void SetValueEx(object key, string valueName, object reserved, int type, object value) {
+        public static void SetValueEx(object key, string value_name, object reserved, int type, object value) {
             HKEYType rootKey = GetRootKey(key);
             RegistryValueKind regKind = (RegistryValueKind)type;
 
             // null is a valid value but RegistryKey.SetValue doesn't like it so PInvoke to set it
             if (value == null) {
-                RegSetValueEx(rootKey.GetKey().Handle, valueName, 0, type, null, 0);
+                RegSetValueEx(rootKey.GetKey().Handle, value_name, 0, type, null, 0);
                 return;
             }
 
@@ -473,46 +502,48 @@ namespace IronPython.Modules {
                 int size = ((PythonList)value)._size;
                 string[] strArray = new string[size];
                 Array.Copy(((PythonList)value)._data, strArray, size);
-                rootKey.GetKey().SetValue(valueName, strArray, regKind);
+                rootKey.GetKey().SetValue(value_name, strArray, regKind);
             } else if (regKind == RegistryValueKind.Binary) {
                 byte[] byteArr = null;
                 if (value is string) {
                     string strValue = value as string;
                     ASCIIEncoding encoding = new ASCIIEncoding();
                     byteArr = encoding.GetBytes(strValue);
+                } else if (value is Bytes ibytes) {
+                    byteArr = ibytes.UnsafeByteArray;
                 }
-                rootKey.GetKey().SetValue(valueName, byteArr, regKind);
+                rootKey.GetKey().SetValue(value_name, byteArr, regKind);
             } else if (regKind == RegistryValueKind.DWord) {
                 // DWORDs are uint but the .NET API requires int
                 if (value is BigInteger) {
                     var val = (uint)(BigInteger)value;
                     value = unchecked((int)val);
                 }
-                rootKey.GetKey().SetValue(valueName, value, regKind);
+                rootKey.GetKey().SetValue(value_name, value, regKind);
             } else if (regKind == RegistryValueKind.QWord) {
                 // QWORDs are ulong but the .NET API requires long
                 if (value is BigInteger) {
                     var val = (ulong)(BigInteger)value;
                     value = unchecked((long)val);
                 }
-                rootKey.GetKey().SetValue(valueName, value, regKind);
+                rootKey.GetKey().SetValue(value_name, value, regKind);
             } else {
-                rootKey.GetKey().SetValue(valueName, value, regKind);
+                rootKey.GetKey().SetValue(value_name, value, regKind);
             }
 
         }
 
-        public static HKEYType ConnectRegistry(string computerName, BigInteger key) {
-            if (string.IsNullOrEmpty(computerName))
-                computerName = string.Empty;
+        public static HKEYType ConnectRegistry(string computer_name, BigInteger key) {
+            if (string.IsNullOrEmpty(computer_name))
+                computer_name = string.Empty;
 
             RegistryKey newKey = null;
             try {
-                if (computerName == string.Empty) {
+                if (computer_name == string.Empty) {
                     newKey = RegistryKey.OpenBaseKey(MapSystemKey(key), RegistryView.Default);
                 }
                 else {
-                    newKey = RegistryKey.OpenRemoteBaseKey(MapSystemKey(key), computerName);
+                    newKey = RegistryKey.OpenRemoteBaseKey(MapSystemKey(key), computer_name);
                 }
             }
             catch (IOException ioe) {

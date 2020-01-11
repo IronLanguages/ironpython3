@@ -23,6 +23,7 @@ namespace IronPython.Modules {
 
         private static readonly object _stackSizeKey = new object();
         private static object _threadCountKey = new object();
+        [ThreadStatic] private static List<@lock> _sentinelLocks;
 
         [SpecialName]
         public static void PerformModuleReload(PythonContext/*!*/ context, PythonDictionary/*!*/ dict) {
@@ -123,8 +124,12 @@ namespace IronPython.Modules {
 
         [Documentation("_set_sentinel() -> lock\n\nSet a sentinel lock that will be released when the current thread\nstate is finalized (after it is untied from the interpreter).\n\nThis is a private API for the threading module.")]
         public static object _set_sentinel(CodeContext context) {
-            // TODO: properly implement this
-            return new @lock();
+            if (_sentinelLocks == null) {
+                _sentinelLocks = new List<@lock>();
+            }
+            var obj = new @lock();
+            _sentinelLocks.Add(obj);
+            return obj;
         }
 
         #endregion
@@ -144,7 +149,6 @@ namespace IronPython.Modules {
             }
             
             public bool acquire(bool blocking=true, int timeout=-1) {
-                // TODO: implement timeout
                 for (; ; ) {
                     if (Interlocked.CompareExchange<Thread>(ref curHolder, Thread.CurrentThread, null) == null) {
                         return true;
@@ -158,7 +162,9 @@ namespace IronPython.Modules {
                         CreateBlockEvent();
                         continue;
                     }
-                    blockEvent.WaitOne();
+                    if (!blockEvent.WaitOne(timeout < 0 ? Timeout.Infinite : timeout)) {
+                        return false;
+                    }
                     GC.KeepAlive(this);
                 }
             }
@@ -234,10 +240,19 @@ namespace IronPython.Modules {
                         int curCount = (int)_context.LanguageContext.GetModuleState(_threadCountKey);
                         _context.LanguageContext.SetModuleState(_threadCountKey, curCount - 1);
                     }
+
+                    // release sentinel locks if locked.
+                    if (_sentinelLocks != null) {
+                        foreach (var obj in _sentinelLocks) {
+                            if (obj.locked()) {
+                                obj.release(_context);
+                            }
+                        }
+                        _sentinelLocks.Clear();
+                    }
                 }
             }
         }
-
         #endregion
 
         private static int GetStackSize(CodeContext/*!*/ context) {

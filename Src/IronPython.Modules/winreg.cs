@@ -50,6 +50,8 @@ namespace IronPython.Modules {
         public const int KEY_EXECUTE = 0X20019;
         public const int KEY_READ = 0X20019;
         public const int KEY_WRITE = 0X20006;
+        public const int KEY_WOW64_64KEY = 0X100;
+        public const int KEY_WOW64_32KEY = 0X200;
 
         public const int REG_CREATED_NEW_KEY = 0X1;
         public const int REG_OPENED_EXISTING_KEY = 0X2;
@@ -188,6 +190,13 @@ namespace IronPython.Modules {
             string lpSubKey);
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        internal static extern int RegDeleteKeyEx(
+            SafeRegistryHandle hKey,
+            string lpSubKey,
+            int samDesired,
+            int Reserved);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern int RegDisableReflectionKey(
             SafeRegistryHandle hKey);
 
@@ -216,6 +225,18 @@ namespace IronPython.Modules {
                 rootKey.GetKey().DeleteSubKey(subKeyName);
             } catch (ArgumentException e) {
                 throw new ExternalException(e.Message);
+            }
+        }
+
+        public static void DeleteKeyEx(object key, string sub_key, int access=KEY_WOW64_64KEY, int reserved=0) {
+            HKEYType rootKey = GetRootKey(key);
+
+            if (key is BigInteger && string.IsNullOrEmpty(sub_key))
+                throw new InvalidCastException("DeleteKeyEx() argument 2 must be string, not None");
+
+            int result = RegDeleteKeyEx(rootKey.GetKey().Handle, sub_key, access, reserved);
+            if (result != ERROR_SUCCESS) {
+                throw PythonExceptions.CreateThrowable(PythonExceptions.OSError, result);
             }
         }
 

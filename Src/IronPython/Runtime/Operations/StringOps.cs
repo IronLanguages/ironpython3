@@ -2750,46 +2750,13 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
+        private delegate string DecodeErrorHandler(IList<byte> bytes, int start, ref int end);
+        private delegate Bytes  EncodeErrorHandler(string text, int start, ref int end);
+
         private static object SurrogateEscapeErrors(object unicodeError) {
-            switch (unicodeError) {
-                case PythonExceptions._UnicodeDecodeError ude:
-                    if (ude.@object is IList<byte> bytes && ude.start is int bstart && ude.end is int bend) {
-                        bstart = Math.Max(0, Math.Min(bstart, bytes.Count - 1));
-                        bend = Math.Max(bstart, Math.Min(bend, bytes.Count));
-                        string res = surrogateEscapeDecode(bytes, bstart, bend);
-                        if (res == null) throw ude.GetClrException();
-                        return PythonTuple.MakeTuple(res, bstart + res.Length);
-                    }
-                    goto default;
+            return SurrogateErrorsImpl(unicodeError, surrogateEscapeDecode, surrogateEscapeEncode);
 
-                case PythonExceptions._UnicodeEncodeError uee:
-                    if (uee.@object is string text && uee.start is int tstart && uee.end is int tend) {
-                        tstart = Math.Max(0, Math.Min(tstart, text.Length - 1));
-                        tend = Math.Max(tstart, Math.Min(tend, text.Length));
-                        Bytes res = surrogateEscapeEncode(text, tstart, tend);
-                        if (res == null) throw uee.GetClrException();
-                        return PythonTuple.MakeTuple(res, tend);
-                    }
-                    goto default;
-
-                case DecoderFallbackException dfe: {
-                        if (dfe.BytesUnknown == null) throw dfe;
-                        string res = surrogateEscapeDecode(dfe.BytesUnknown, 0, dfe.BytesUnknown.Length);
-                        if (res == null) throw dfe;
-                        return PythonTuple.MakeTuple(res, res.Length);
-                    }
-
-                case EncoderFallbackException efe: {
-                        string chars = new string(efe.CharUnknown, 1);
-                        Bytes res = surrogateEscapeEncode(chars, 0, chars.Length);
-                        return PythonTuple.MakeTuple(res, efe.Index + chars.Length);
-                    }
-
-                default:
-                    throw PythonOps.TypeError("codec must pass exception instance");
-            }
-
-            static string surrogateEscapeDecode(IList<byte> bytes, int start, int end) {
+            static string surrogateEscapeDecode(IList<byte> bytes, int start, ref int end) {
                 var sb = new StringBuilder(end - start);
                 for (int i = start; i < end; i++) {
                     byte b = bytes[i];
@@ -2799,10 +2766,12 @@ namespace IronPython.Runtime.Operations {
                     }
                     sb.Append((char)(b | 0xDC00));
                 }
-                return sb.ToString();
+                string res = sb.ToString();
+                end = start + res.Length;
+                return res;
             }
 
-            static Bytes surrogateEscapeEncode(string text, int start, int end) {
+            static Bytes surrogateEscapeEncode(string text, int start, ref int end) {
                 var lst = new List<byte>(end - start);
                 for (int i = start; i < end; i++) {
                     char c = text[i];
@@ -2812,6 +2781,48 @@ namespace IronPython.Runtime.Operations {
                     lst.Add(b);
                 }
                 return new Bytes(lst);
+            }
+        }
+
+        private static object SurrogateErrorsImpl(object unicodeError, DecodeErrorHandler decodeFallback, EncodeErrorHandler encodeFallback) {
+            switch (unicodeError) {
+                case PythonExceptions._UnicodeDecodeError ude:
+                    if (ude.@object is IList<byte> bytes && ude.start is int bstart && ude.end is int bend) {
+                        bstart = Math.Max(0, Math.Min(bstart, bytes.Count - 1));
+                        bend = Math.Max(bstart, Math.Min(bend, bytes.Count));
+                        string res = decodeFallback(bytes, bstart, ref bend);
+                        if (res == null) throw ude.GetClrException();
+                        return PythonTuple.MakeTuple(res, bend);
+                    }
+                    goto default;
+
+                case PythonExceptions._UnicodeEncodeError uee:
+                    if (uee.@object is string text && uee.start is int tstart && uee.end is int tend) {
+                        tstart = Math.Max(0, Math.Min(tstart, text.Length - 1));
+                        tend = Math.Max(tstart, Math.Min(tend, text.Length));
+                        Bytes res = encodeFallback(text, tstart, ref tend);
+                        if (res == null) throw uee.GetClrException();
+                        return PythonTuple.MakeTuple(res, tend);
+                    }
+                    goto default;
+
+                case DecoderFallbackException dfe: {
+                        if (dfe.BytesUnknown == null) throw dfe;
+                        int end = dfe.BytesUnknown.Length;
+                        string res = decodeFallback(dfe.BytesUnknown, 0, ref end);
+                        if (res == null) throw dfe;
+                        return PythonTuple.MakeTuple(res,  dfe.Index + end);
+                    }
+
+                case EncoderFallbackException efe: {
+                        string chars = new string(efe.CharUnknown, 1);
+                        int end = chars.Length;
+                        Bytes res = encodeFallback(chars, 0, ref end);
+                        return PythonTuple.MakeTuple(res, efe.Index + end);
+                    }
+
+                default:
+                    throw PythonOps.TypeError("codec must pass exception instance");
             }
         }
 #endif

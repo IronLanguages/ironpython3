@@ -996,16 +996,7 @@ class C:
             super(two, self).__init__()
             self.cnt += 1
 
-        if is_cli:
-            try:
-                self.assertEqual(two().cnt, 3)
-            except SystemError:
-                # https://github.com/IronLanguages/ironpython3/issues/451
-                pass
-            else:
-                self.fail("delete the try/except when https://github.com/IronLanguages/ironpython3/issues/451 is fixed")
-        else:
-            self.assertEqual(two().cnt, 3)
+        self.assertEqual(two().cnt, 3)
 
     def test_ipy2_gh292(self):
         """https://github.com/IronLanguages/ironpython2/issues/292"""
@@ -1448,5 +1439,33 @@ class C:
             thread.join()
             self.assertEqual(thread.thread_executed, 1)
         test_thread()
+
+    def test_ipy3_gh451(self):
+        """https://github.com/IronLanguages/ironpython3/issues/451"""
+        def test():
+            class two(object):
+                def __init__(self):
+                    super().__init__()
+                    self.cnt = 1
+            return two().cnt
+        self.assertEqual(test(), 1)
+
+        class test__class__keyword(object):
+            def __new__(cls):
+                return super().__new__(cls)
+            def __init__(self):
+                super().__init__()
+            def get_self_class(self):
+                return self.__class__
+            def get_class(self):
+                return __class__
+            @classmethod
+            def get_class_class(cls):
+                return cls
+
+        o = test__class__keyword()
+        self.assertEqual(o.get_self_class(), o.get_class())
+        self.assertEqual(o.get_class(), o.get_class_class())
+
 
 run_test(__name__)

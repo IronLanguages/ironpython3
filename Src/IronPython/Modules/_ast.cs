@@ -548,9 +548,9 @@ namespace IronPython.Modules
                 this.annotation = annotation;
             }
 
-            internal ArgType(Parameter parameter) {
+            internal ArgType(Parameter parameter) : this() {
                 arg = parameter.Name;
-                annotation = Convert(parameter.Annotation);
+                annotation = parameter.Annotation == null ? null : Convert(parameter.Annotation);
             }
 
             public string arg { get; set; }

@@ -4,21 +4,21 @@ https://docs.python.org/3/whatsnew/3.3.html
 
 PEPs
 ====
-- [ ] PEP 405: Virtual Environments
-- [ ] PEP 420: Implicit Namespace Packages
-- [ ] PEP 3118: New `memoryview` implementation and buffer protocol documentation
-- [ ] PEP 393: Flexible String Representation
-- [ ] PEP 397: Python Launcher for Windows
-- [ ] PEP 3151: Reworking the OS and IO exception hierarchy
-- [ ] PEP 380: Syntax for Delegating to a Subgenerator
-- [ ] PEP 409: Suppressing exception context
-- [ ] PEP 414: Explicit Unicode literals
-- [ ] PEP 3155: Qualified name for classes and functions
-- [ ] PEP 412: Key-Sharing Dictionary
-- [ ] PEP 362: Function Signature Object
-- [ ] PEP 421: Adding `sys.implementation`
+- [ ] [PEP 405][]: Virtual Environments
+- [ ] [PEP 420][]: Implicit Namespace Packages
+- [ ] [PEP 3118][]: New `memoryview` implementation and buffer protocol documentation
+- [ ] [PEP 393][]: Flexible String Representation
+- [ ] [PEP 397][]: Python Launcher for Windows
+- [ ] [PEP 3151][]: Reworking the OS and IO exception hierarchy
+- [ ] [PEP 380][]: Syntax for Delegating to a Subgenerator
+- [ ] [PEP 409][]: Suppressing exception context
+- [ ] [PEP 414][]: Explicit Unicode literals
+- [ ] [PEP 3155][]: Qualified name for classes and functions
+- [ ] [PEP 412][]: Key-Sharing Dictionary
+- [ ] [PEP 362][]: Function Signature Object
+- [ ] [PEP 421][]: Adding `sys.implementation`
 
-Using importlib as the Implementation of Import
+Using `importlib` as the Implementation of Import
 ===============================================
 - [ ] See https://docs.python.org/3/whatsnew/3.3.html#using-importlib-as-the-implementation-of-import
 
@@ -112,7 +112,7 @@ Improved Modules
 Deprecated Python modules, functions and methods
 ==============
 - [ ] Passing a non-empty string to `object.__format__()` is deprecated, and will produce a `TypeError` in Python 3.4
-- [ ] The unicode_internal codec has been deprecated because of the PEP 393, use UTF-8, UTF-16 (`utf-16-le` or `utf-16-be`), or UTF-32 (`utf-32-le` or `utf-32-be`)
+- [ ] The unicode_internal codec has been deprecated because of the [PEP 393][], use UTF-8, UTF-16 (`utf-16-le` or `utf-16-be`), or UTF-32 (`utf-32-le` or `utf-32-be`)
 - [ ] `ftplib.FTP.nlst()` and `ftplib.FTP.dir()`: use `ftplib.FTP.mlsd()`
 - [ ] `platform.popen()`: use the `subprocess` module. Check especially the "Replacing Older Functions with the `subprocess` Module" section (issue 11377).
 - [ ] The Windows `bytes` API has been deprecated in the `os` module. Use Unicode filenames, instead of `bytes` filenames, to not depend on the ANSI code page anymore and to support any filename.
@@ -124,3 +124,18 @@ Deprecated Python modules, functions and methods
     + [ ] `abc.abstractclassmethod` has been deprecated, use `classmethod` with `abc.abstractmethod()` instead.
     + [ ] `abc.abstractstaticmethod` has been deprecated, use `staticmethod` with `abc.abstractmethod()` instead.
 - [ ] `importlib.abc.SourceLoader.path_mtime()` is now deprecated in favour of `importlib.abc.SourceLoader.path_stats()` as bytecode files now store both the modification time and size of the source file the bytecode file was compiled from.
+
+[PEP 405]: http://www.python.org/dev/peps/pep-0405
+[PEP 420]: http://www.python.org/dev/peps/pep-0420
+[PEP 3118]: http://www.python.org/dev/peps/pep-3118
+[PEP 393]: http://www.python.org/dev/peps/pep-0393
+[PEP 397]: http://www.python.org/dev/peps/pep-0397
+[PEP 3151]: http://www.python.org/dev/peps/pep-3151
+[PEP 380]: http://www.python.org/dev/peps/pep-0380
+[PEP 409]: http://www.python.org/dev/peps/pep-0409
+[PEP 414]: http://www.python.org/dev/peps/pep-0414
+[PEP 3155]: http://www.python.org/dev/peps/pep-3155
+[PEP 412]: http://www.python.org/dev/peps/pep-0412
+[PEP 362]: http://www.python.org/dev/peps/pep-0362
+[PEP 421]: http://www.python.org/dev/peps/pep-0421
+[PEP 393]: http://www.python.org/dev/peps/pep-0393

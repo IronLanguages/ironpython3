@@ -4,9 +4,9 @@ https://docs.python.org/3/whatsnew/3.4.html
 
 PEPs
 ====
-- [ ] PEP 453: Pip should always be available
-- [ ] PEP 446: Newly created file descriptors are non-inheritable
-- [ ] PEP 451:  A `ModuleSpec` Type for the Import System
+- [ ] [PEP 453][]: Pip should always be available
+- [ ] [PEP 446][]: Newly created file descriptors are non-inheritable
+- [ ] [PEP 451][]:  A `ModuleSpec` Type for the Import System
 
 Other Language Changes
 ======================
@@ -111,3 +111,7 @@ Deprecated Python modules, functions and methods
 - [ ] `inspect.Signature`: positional-only parameters are now required to have a valid name.
 - [ ] `object.__format__()` no longer accepts non-empty format strings, it now raises a `TypeError` instead. Using a non-empty string has been deprecated since Python 3.2
 - [ ] `difflib.SequenceMatcher.isbjunk()` and `difflib.SequenceMatcher.isbpopular()` were deprecated in 3.2, and have now been removed: use `x in sm.bjunk` and `x in sm.bpopular`, where `sm` is a `SequenceMatcher` object
+
+[PEP 453]: https://www.python.org/dev/peps/pep-0453
+[PEP 446]: https://www.python.org/dev/peps/pep-0446
+[PEP 451]: https://www.python.org/dev/peps/pep-0451

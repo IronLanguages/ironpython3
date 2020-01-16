@@ -4,13 +4,13 @@ https://docs.python.org/3/whatsnew/3.2.html
 
 PEPs
 ====
-- [ ] PEP 384: Defining a Stable ABI
-- [ ] PEP 389: Argparse Command Line Parsing Module
-- [ ] PEP 391: Dictionary Based Configuration for Logging
-- [ ] PEP 3148: The concurrent.futures module
-- [ ] PEP 3147: PYC Repository Directories
-- [ ] PEP 3149: ABI Version Tagged .so Files
-- [ ] PEP 3333: Python Web Server Gateway Interface v1.0.1
+- [ ] [PEP 384][]: Defining a Stable ABI
+- [ ] [PEP 389][]: `Argparse` Command Line Parsing Module
+- [ ] [PEP 391][]: Dictionary Based Configuration for Logging
+- [ ] [PEP 3148][]: The `concurrent.futures` module
+- [ ] [PEP 3147][]: PYC Repository Directories
+- [ ] [PEP 3149][]: ABI Version Tagged `.so` Files
+- [ ] [PEP 3333][]: Python Web Server Gateway Interface v1.0.1
 
 Other Language Changes
 ==============
@@ -118,3 +118,11 @@ Porting to Python 3.2
 - [ ] Support for legacy HTTP 0.9 has been removed from `urllib.request` and `http.client`. Such support is still present on the server side (in `http.server`).
 - [ ] SSL sockets in timeout mode now raise `socket.timeout` when a timeout occurs, rather than a generic `SSLError`.
 - [ ] Due to security risks, `asyncore.handle_accept()` has been deprecated, and a new function, `asyncore.handle_accepted()`, was added to replace it.
+
+[PEP 384]: https://python.org/dev/peps/pep-0384
+[PEP 389]: https://python.org/dev/peps/pep-0389
+[PEP 391]: https://python.org/dev/peps/pep-0391
+[PEP 3148]: https://python.org/dev/peps/pep-3148
+[PEP 3147]: https://python.org/dev/peps/pep-3147
+[PEP 3149]: https://python.org/dev/peps/pep-3149
+[PEP 3333]: https://python.org/dev/peps/pep-3333

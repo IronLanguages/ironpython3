@@ -66,8 +66,8 @@ def load_tests(loader, standard_tests, pattern):
         suite.addTest(test.test_codecs.ExceptionChainingTest('test_init_override_is_not_wrapped'))
         suite.addTest(test.test_codecs.ExceptionChainingTest('test_instance_attribute_is_not_wrapped'))
         suite.addTest(test.test_codecs.ExceptionChainingTest('test_multiple_args_is_not_wrapped'))
-        #suite.addTest(test.test_codecs.ExceptionChainingTest('test_new_override_is_not_wrapped')) # unbound variable: $localContext
-        #suite.addTest(test.test_codecs.ExceptionChainingTest('test_non_str_arg_is_not_wrapped')) # unbound variable: $localContext
+        suite.addTest(test.test_codecs.ExceptionChainingTest('test_new_override_is_not_wrapped'))
+        suite.addTest(test.test_codecs.ExceptionChainingTest('test_non_str_arg_is_not_wrapped'))
         #suite.addTest(test.test_codecs.ExceptionChainingTest('test_raise_by_type')) # wrong exception
         #suite.addTest(test.test_codecs.ExceptionChainingTest('test_raise_by_value')) # wrong exception
         #suite.addTest(test.test_codecs.ExceptionChainingTest('test_raise_grandchild_subclass_exact_size')) # wrong exception

@@ -19,9 +19,9 @@ jobs:
     - uses: actions/checkout@v1
       with:
         submodules: true
-    - uses: actions/setup-dotnet@v1
+    - uses: actions/setup-dotnet@v1.4.0
       with:
-        dotnet-version: '3.0.100'
+        dotnet-version: '3.1.100'
     - name: Set Mono Version
       if: matrix.os == 'macos-latest'
       run: echo ::add-path::/Library/Frameworks/Mono.framework/Versions/6.4.0/bin
@@ -38,12 +38,14 @@ jobs:
       with:
         name: packages
         path: Package/Release/Packages
-    - name: Test
-      run: |
-        Write-Host ${env:DOTNET_ROOT}
-        ./make.ps1 -frameworks net45,netcoreapp3.0 test-all
-      env:
-        # Work around https://github.com/actions/setup-dotnet/issues/29
-        DOTNET_ROOT: ${{ runner.tool_cache }}/dncs/3.0.100/x64
+    - name: Test (net45)
+      run: ./make.ps1 -frameworks net45 test-all
       shell: pwsh
-      # TODO: figure out how to also test on netcoreapp2.1
+    - name: Test (netcoreapp2.1)
+      # TODO: figure out how to test on other OSs
+      if: matrix.os == 'windows-latest'
+      run: ./make.ps1 -frameworks netcoreapp2.1 test-all
+      shell: pwsh
+    - name: Test (netcoreapp3.1)
+      run: ./make.ps1 -frameworks netcoreapp3.1 test-all
+      shell: pwsh

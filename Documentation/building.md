@@ -1,12 +1,12 @@
 # Building IronPython3
 
-To build IronPython3 you will need the .NET SDK (minimum 4.5), a [.NET Core SDK (minimum 3.0)](https://dotnet.microsoft.com/download/visual-studio-sdks) and if building on Linux/macOS you will need [Mono](https://mono-project.com).
+To build IronPython3 you will need the .NET SDK (minimum 4.5), a [.NET Core SDK (minimum 3.1)](https://dotnet.microsoft.com/download/visual-studio-sdks) and if building on Linux/macOS you will need [Mono](https://mono-project.com).
 
 See [Getting the Sources](getting-the-sources.md) for information on getting the source for IronPython3.
 
 ## Building from Visual Studio
 
-Visual Studio 16.0(2019) or above is required to build IronPython3.
+Visual Studio 16.4(2019) or above is required to build IronPython3.
 
  * Open `c:\path\to\ironpython3\IronPython.sln` solution file
  * Select the configuration options (Release,Debug, etc)

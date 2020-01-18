@@ -18,13 +18,13 @@ is_posix      =  is_linux or is_osx
 
 is_netcoreapp =  False
 is_netcoreapp21 = False
-is_netcoreapp30 = False
+is_netcoreapp31 = False
 is_mono = False
 if is_ironpython:
     import clr
     is_netcoreapp = clr.IsNetCoreApp
     is_netcoreapp21 = clr.TargetFramework == ".NETCoreApp,Version=v2.1"
-    is_netcoreapp30 = clr.TargetFramework == ".NETCoreApp,Version=v3.0"
+    is_netcoreapp31 = clr.TargetFramework == ".NETCoreApp,Version=v3.1"
     is_mono = clr.IsMono
 
 #--The bittedness of the Python implementation

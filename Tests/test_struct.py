@@ -79,4 +79,19 @@ class StructTest(unittest.TestCase):
                 assertStructError(struct.pack, format, 0)
                 assertStructError(struct.unpack, format, b"")
 
+    def test_iter_unpack(self):
+        import operator
+
+        packed = struct.pack('nnnnnn', 1, 2, 3, 4, 5, 6)
+        it = struct.iter_unpack('nn', packed)
+
+        self.assertEqual(operator.length_hint(it), 3)
+        self.assertEqual(it.__next__(), (1, 2))
+        self.assertEqual(operator.length_hint(it), 2)
+        self.assertEqual(it.__next__(), (3, 4))
+        self.assertEqual(operator.length_hint(it), 1)
+        self.assertEqual(it.__next__(), (5, 6))
+        self.assertEqual(operator.length_hint(it), 0)
+        self.assertRaises(StopIteration, next, it)
+
 run_test(__name__)

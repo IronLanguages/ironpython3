@@ -65,4 +65,18 @@ class StructTest(unittest.TestCase):
         struct.unpack("H", b"aa")
         self.assertRaisesRegex(struct.error, '^unpack requires', struct.unpack, "H", b"aaa")
 
+    def test_nN_code(self):
+        """Copied as-is from AllCPython/test_struct.py because that test is currently ignored."""
+        # n and N don't exist in standard sizes
+        def assertStructError(func, *args, **kwargs):
+            with self.assertRaises(struct.error) as cm:
+                func(*args, **kwargs)
+            self.assertIn("bad char in struct format", str(cm.exception))
+        for code in 'nN':
+            for byteorder in ('=', '<', '>', '!'):
+                format = byteorder+code
+                assertStructError(struct.calcsize, format)
+                assertStructError(struct.pack, format, 0)
+                assertStructError(struct.unpack, format, b"")
+
 run_test(__name__)

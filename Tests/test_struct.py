@@ -82,8 +82,8 @@ class StructTest(unittest.TestCase):
     def test_iter_unpack(self):
         import operator
 
-        packed = struct.pack('nnnnnn', 1, 2, 3, 4, 5, 6)
-        it = struct.iter_unpack('nn', packed)
+        packed = struct.pack('hlhlhl', 1, 2, 3, 4, 5, 6)
+        it = struct.iter_unpack('hl', packed)
 
         self.assertEqual(operator.length_hint(it), 3)
         self.assertEqual(it.__next__(), (1, 2))

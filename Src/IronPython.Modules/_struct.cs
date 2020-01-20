@@ -596,10 +596,10 @@ namespace IronPython.Modules {
             private object _iter_current;
             private int _next_offset;
 
-            private CodeContext _context;
-            private IList<byte> _buffer;
-            private int _start_offset;
-            private Struct _owner;
+            private readonly CodeContext _context;
+            private readonly IList<byte> _buffer;
+            private readonly int _start_offset;
+            private readonly Struct _owner;
 
             private PythonUnpackIterator() { }
 

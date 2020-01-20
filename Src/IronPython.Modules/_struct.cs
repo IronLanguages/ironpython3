@@ -610,6 +610,7 @@ namespace IronPython.Modules {
                 _owner = owner;
 
                 Reset();
+                ValidateBufferLength();
             }
 
             internal PythonUnpackIterator(Struct/*!*/ owner, CodeContext/*!*/ context, ArrayModule.array/*!*/ buffer, int offset) {
@@ -619,6 +620,13 @@ namespace IronPython.Modules {
                 _owner = owner;
 
                 Reset();
+                ValidateBufferLength();
+            }
+
+            private void ValidateBufferLength() {
+                if (_buffer.Count - _start_offset < _owner.size) {
+                    throw Error(_context, $"iterative unpacking requires a buffer of a multiple of {_owner.size} bytes");
+                }
             }
 
             #region IEnumerable

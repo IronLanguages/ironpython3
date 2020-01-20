@@ -94,4 +94,7 @@ class StructTest(unittest.TestCase):
         self.assertEqual(operator.length_hint(it), 0)
         self.assertRaises(StopIteration, next, it)
 
+        # struct.error: iterative unpacking requires a buffer of a multiple of {N} bytes
+        self.assertRaises(struct.error, struct.iter_unpack, "h", b"\0")
+
 run_test(__name__)

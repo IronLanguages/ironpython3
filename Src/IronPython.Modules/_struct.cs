@@ -154,6 +154,16 @@ namespace IronPython.Modules {
                                 WritePointer(res, _isLittleEndian, GetPointer(context, curObj++, values));
                             }
                             break;
+                        case FormatType.SignedSizeT:
+                            for (int j = 0; j < curFormat.Count; j++) {
+                                WriteSignedSizeT(res, _isLittleEndian, GetSignedSizeT(context, curObj++, values));
+                            }
+                            break;
+                        case FormatType.SizeT:
+                            for (int j = 0; j < curFormat.Count; j++) {
+                                WriteSizeT(res, _isLittleEndian, GetSizeT(context, curObj++, values));
+                            }
+                            break;
                         case FormatType.LongLong:
                             for (int j = 0; j < curFormat.Count; j++) {
                                 WriteLong(res, _isLittleEndian, GetLongValue(context, curObj++, values));
@@ -289,6 +299,24 @@ namespace IronPython.Modules {
                                     res[res_idx++] = CreateIntValue(context, ref curIndex, _isLittleEndian, data);
                                 } else {
                                     res[res_idx++] = BigIntegerOps.__int__(CreateLongValue(context, ref curIndex, _isLittleEndian, data));
+                                }
+                            }
+                            break;
+                        case FormatType.SignedSizeT:
+                            for (int j = 0; j < curFormat.Count; j++) {
+                                if (IntPtr.Size == 4) {
+                                    res[res_idx++] = CreateIntValue(context, ref curIndex, _isLittleEndian, data);
+                                } else {
+                                    res[res_idx++] = BigIntegerOps.__int__(CreateLongValue(context, ref curIndex, _isLittleEndian, data));
+                                }
+                            }
+                            break;
+                        case FormatType.SizeT:
+                            for (int j = 0; j < curFormat.Count; j++) {
+                                if (IntPtr.Size == 4) {
+                                    res[res_idx++] = CreateUIntValue(context, ref curIndex, _isLittleEndian, data);
+                                } else {
+                                    res[res_idx++] = BigIntegerOps.__int__(CreateULongValue(context, ref curIndex, _isLittleEndian, data));
                                 }
                             }
                             break;
@@ -450,6 +478,22 @@ namespace IronPython.Modules {
                             res.Add(new Format(FormatType.Pointer, count));
                             count = 1;
                             break;
+                        case 'n': // intptr_t
+                            if (fStandardized) {
+                                // n and N don't exist in standard sizes
+                                throw Error(context, "bad char in struct format");
+                            }
+                            res.Add(new Format(FormatType.SignedSizeT, count));
+                            count = 1;
+                            break;
+                        case 'N': // uintptr_t
+                            if (fStandardized) {
+                                // n and N don't exist in standard sizes
+                                throw Error(context, "bad char in struct format");
+                            }
+                            res.Add(new Format(FormatType.SizeT, count));
+                            count = 1;
+                            break;
                         case ' ':   // white space, ignore
                         case '\t':
                             break;
@@ -567,6 +611,9 @@ namespace IronPython.Modules {
             CString,
             PascalString,
             Pointer,
+
+            SignedSizeT,
+            SizeT,
         }
 
         private static int GetNativeSize(FormatType c) {
@@ -592,7 +639,10 @@ namespace IronPython.Modules {
                 case FormatType.Double:
                     return 8;
                 case FormatType.Pointer:
+                case FormatType.SignedSizeT:
                     return IntPtr.Size;
+                case FormatType.SizeT:
+                    return UIntPtr.Size;
                 default:
                     throw new InvalidOperationException(c.ToString());
             }
@@ -744,6 +794,22 @@ namespace IronPython.Modules {
                 res.WriteByte((byte)((val >> 16) & 0xff));
                 res.WriteByte((byte)((val >> 8) & 0xff));
                 res.WriteByte((byte)(val & 0xff));
+            }
+        }
+
+        private static void WriteSignedSizeT(this MemoryStream res, bool fLittleEndian, IntPtr val) {
+            if (IntPtr.Size == 4) {
+                res.WriteInt(fLittleEndian, val.ToInt32());
+            } else {
+                res.WriteLong(fLittleEndian, val.ToInt64());
+            }
+        }
+
+        private static void WriteSizeT(this MemoryStream res, bool fLittleEndian, UIntPtr val) {
+            if (IntPtr.Size == 4) {
+                res.WriteUInt(fLittleEndian, val.ToUInt32());
+            } else {
+                res.WriteULong(fLittleEndian, val.ToUInt64());
             }
         }
 
@@ -948,6 +1014,34 @@ namespace IronPython.Modules {
 
         private static void OutOfRange(CodeContext context, string type) {
             throw Error(context, $"integer out of range for '{(type == "unsigned long" ? "L" : "I")}' format code");
+        }
+
+        internal static IntPtr GetSignedSizeT(CodeContext/*!*/ context, int index, object[] args) {
+            object val = GetValue(context, index, args);
+            if (IntPtr.Size == 4) {
+                if (Converter.TryConvertToInt32(val, out int res)) {
+                    return new IntPtr(res);
+                }
+            } else {
+                if (Converter.TryConvertToInt64(val, out long res)) {
+                    return new IntPtr(res);
+                }
+            }
+            throw Error(context, "expected signed size_t(aka ssize_t) value");
+        }
+
+        internal static UIntPtr GetSizeT(CodeContext/*!*/ context, int index, object[] args) {
+            object val = GetValue(context, index, args);
+            if (IntPtr.Size == 4) {
+                if (Converter.TryConvertToUInt32(val, out uint res)) {
+                    return new UIntPtr(res);
+                }
+            } else {
+                if (Converter.TryConvertToUInt64(val, out ulong res)) {
+                    return new UIntPtr(res);
+                }
+            }
+            throw Error(context, "expected size_t value");
         }
 
         internal static IntPtr GetPointer(CodeContext/*!*/ context, int index, object[] args) {

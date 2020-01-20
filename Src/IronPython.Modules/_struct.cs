@@ -621,12 +621,18 @@ namespace IronPython.Modules {
                 Reset();
             }
 
+            #region IEnumerable
+            [PythonHidden]
             public System.Collections.IEnumerator GetEnumerator() {
                 return this;
             }
+            #endregion
 
+            #region IEnumerator
+            [PythonHidden]
             public object Current => _iter_current;
 
+            [PythonHidden]
             public bool MoveNext() {
                 if (_buffer.Count - _next_offset < _owner.size) {
                     return false;
@@ -637,10 +643,12 @@ namespace IronPython.Modules {
                 return true;
             }
 
+            [PythonHidden]
             public void Reset() {
                 _iter_current = null;
                 _next_offset = _start_offset;
             }
+            #endregion
 
             public object __iter__() {
                 return this;

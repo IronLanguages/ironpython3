@@ -2371,6 +2371,14 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
             }
             
             foreach (Type iface in interfaces) {
+#if NET45
+                // causes failures on Mono: https://github.com/mono/mono/issues/14712
+                if (iface == typeof(System.Runtime.InteropServices._Type) || iface == typeof(System.Runtime.InteropServices._MethodInfo)) {
+                    nonCollidingInterfaces.Remove(iface);
+                    continue;
+                }
+#endif
+
                 InterfaceMapping mapping = _underlyingSystemType.GetInterfaceMap(iface);
                 
                 // grab all the interface methods which would hide other members

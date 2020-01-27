@@ -2023,10 +2023,10 @@ namespace IronPython.Runtime.Operations {
 
         private static void TryStringOrTuple(object prefix) {
             if (prefix == null) {
-                throw PythonOps.TypeError("expected string or Tuple, got NoneType");
+                throw PythonOps.TypeError("expected string or tuple, got NoneType");
             }
             if (!(prefix is string) && !(prefix is PythonTuple) && !(prefix is Extensible<string>)) {
-                throw PythonOps.TypeError("expected string or Tuple, got {0} Type", prefix.GetType());
+                throw PythonOps.TypeError("expected string or tuple, got {0}", DynamicHelpers.GetPythonType(prefix).Name);
             }
         }
 

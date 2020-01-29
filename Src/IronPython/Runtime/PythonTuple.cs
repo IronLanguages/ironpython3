@@ -281,7 +281,7 @@ namespace IronPython.Runtime {
         #endregion
 
         public virtual IEnumerator __iter__() {
-            return new TupleEnumerator(this);
+            return new PythonTupleEnumerator(this);
         }
 
         #region IEnumerable Members
@@ -320,7 +320,7 @@ namespace IronPython.Runtime {
         #region IEnumerable<object> Members
 
         IEnumerator<object> IEnumerable<object>.GetEnumerator() {
-            return new TupleEnumerator(this);
+            return new PythonTupleEnumerator(this);
         }
 
         #endregion
@@ -614,17 +614,18 @@ namespace IronPython.Runtime {
     /// public class to get optimized
     /// </summary>
     [PythonType("tuple_iterator")]
-    public sealed class TupleEnumerator : IEnumerable, IEnumerator, IEnumerator<object> {
+    public sealed class PythonTupleEnumerator : IEnumerable, IEnumerator, IEnumerator<object> {
         private int _curIndex;
         private PythonTuple _tuple;
 
-        public TupleEnumerator(PythonTuple t) {
+        internal PythonTupleEnumerator(PythonTuple t) {
             _tuple = t;
             _curIndex = -1;
         }
 
         #region IEnumerator Members
 
+        [PythonHidden]
         public object Current {
             get {
                 // access _data directly because this is what CPython does:
@@ -637,6 +638,7 @@ namespace IronPython.Runtime {
             }
         }
 
+        [PythonHidden]
         public bool MoveNext() {
             if ((_curIndex + 1) >= _tuple.Count) {
                 return false;
@@ -645,6 +647,7 @@ namespace IronPython.Runtime {
             return true;
         }
 
+        [PythonHidden]
         public void Reset() {
             _curIndex = -1;
         }
@@ -653,6 +656,7 @@ namespace IronPython.Runtime {
 
         #region IDisposable Members
 
+        [PythonHidden]
         public void Dispose() {
             GC.SuppressFinalize(this);
         }
@@ -661,6 +665,7 @@ namespace IronPython.Runtime {
 
         #region IEnumerable Members
 
+        [PythonHidden]
         public IEnumerator GetEnumerator() {
             return this;
         }

@@ -20,15 +20,17 @@ namespace IronPython.Runtime {
     public sealed class CodeContext {
         private readonly ModuleContext/*!*/ _modContext;
         private readonly PythonDictionary/*!*/ _dict;
+        private readonly CodeContext _maybegrandparent;// can be null.
 
         /// <summary>
         /// Creates a new CodeContext which is backed by the specified Python dictionary.
         /// </summary>
-        public CodeContext(PythonDictionary/*!*/ dict, ModuleContext/*!*/ moduleContext) {
+        public CodeContext(PythonDictionary/*!*/ dict, ModuleContext/*!*/ moduleContext, CodeContext maybegrandparent) {
             ContractUtils.RequiresNotNull(dict, nameof(dict));
             ContractUtils.RequiresNotNull(moduleContext, nameof(moduleContext));
             _dict = dict;
             _modContext = moduleContext;
+            _maybegrandparent = maybegrandparent;
         }
 
         #region Public APIs
@@ -228,6 +230,8 @@ namespace IronPython.Runtime {
                 }
             }
         }
+
+        internal CodeContext GrandParentContext => _maybegrandparent;
 
         #endregion
     }

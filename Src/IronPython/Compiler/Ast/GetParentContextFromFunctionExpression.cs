@@ -45,4 +45,39 @@ namespace IronPython.Compiler.Ast {
             }
         }
     }
+
+
+    internal class GetGrandParentContextFromFunctionExpression : MSAst.Expression, IInstructionProvider {
+        private static readonly MSAst.Expression _gparentContext = MSAst.Expression.Call(AstMethods.GetGrandParentContextFromFunction, FunctionDefinition._functionParam);
+
+        public override bool CanReduce => true;
+
+        public override MSAst.ExpressionType NodeType => MSAst.ExpressionType.Extension;
+
+        public override Type Type => typeof(CodeContext);
+
+        public override MSAst.Expression Reduce() => _gparentContext;
+
+        #region IInstructionProvider Members
+
+        public void AddInstructions(LightCompiler compiler) {
+            compiler.Compile(FunctionDefinition._functionParam);
+            compiler.Instructions.Emit(GetGrandParentContextFromFunctionInstruction.Instance);
+        }
+
+        #endregion
+
+        private class GetGrandParentContextFromFunctionInstruction : Instruction {
+            public static readonly GetGrandParentContextFromFunctionInstruction Instance = new GetGrandParentContextFromFunctionInstruction();
+
+            public override int ProducedStack => 1;
+
+            public override int ConsumedStack => 1;
+
+            public override int Run(InterpretedFrame frame) {
+                frame.Push(PythonOps.GetGrandParentContextFromFunction((PythonFunction)frame.Pop()));
+                return +1;
+            }
+        }
+    }
 }

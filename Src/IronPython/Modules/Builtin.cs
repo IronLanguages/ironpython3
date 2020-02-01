@@ -1802,7 +1802,7 @@ Noteworthy: None is the `nil' object; Ellipsis represents `...' in slices.";
             if (locals == null) {
                 localContext = mc.GlobalContext;
             } else {
-                localContext = new CodeContext(PythonDictionary.FromIAC(context, locals), mc);
+                localContext = new CodeContext(PythonDictionary.FromIAC(context, locals), mc, context);
             }
 
             if (!globals.ContainsKey("__builtins__")) {

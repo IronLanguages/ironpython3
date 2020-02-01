@@ -629,7 +629,7 @@ namespace IronPython.Compiler.Ast {
                 init.Add(
                     AssignValue(
                         GetVariableExpression(pVar),
-                        Ast.Call(AstMethods.LookupName, parent.Parent.LocalContext, Ast.Constant(parent.Name))
+                        Ast.Call(AstMethods.LookupName, new GetGrandParentContextFromFunctionExpression(), Ast.Constant(parent.Name))
                     )
                 );
             }

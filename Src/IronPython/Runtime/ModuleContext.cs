@@ -28,7 +28,7 @@ namespace IronPython.Runtime {
 
             _globals = globals;
             _pyContext = creatingContext;
-            _globalContext = new CodeContext(globals, this);
+            _globalContext = new CodeContext(globals, this, null);
             _module = new PythonModule(globals);
             _module.Scope.SetExtension(_pyContext.ContextId, new PythonScopeExtension(_pyContext, _module, this));
         }
@@ -42,7 +42,7 @@ namespace IronPython.Runtime {
 
             _globals = module.__dict__;
             _pyContext = creatingContext;
-            _globalContext = new CodeContext(_globals, this);
+            _globalContext = new CodeContext(_globals, this, null);
             _module = module;
         }
 

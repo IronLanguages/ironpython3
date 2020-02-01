@@ -65,7 +65,7 @@ namespace IronPython.Runtime {
                 _context = context;
             } else {
                 _module = null;
-                _context = new CodeContext(new PythonDictionary(), new ModuleContext(globals, DefaultContext.DefaultPythonContext));
+                _context = new CodeContext(new PythonDictionary(), new ModuleContext(globals, DefaultContext.DefaultPythonContext), context);
             }
 
             _defaults = defaults == null ? ArrayUtils.EmptyObjects : defaults.ToArray();

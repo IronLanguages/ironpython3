@@ -708,6 +708,21 @@ namespace IronPython.Compiler.Ast {
             return true;
         }
 
+        public override void PostWalk(NameExpression node) {
+            base.PostWalk(node);
+
+            if (node.Parent?.Parent?.Parent != null && node.Name == "__class__") {
+                // if `__class__` keyword is referenced in class function, we need to ensure the class can be referenced through the LocalsDictionary in outer scope.
+                // NameExpression -> FunctionDefinition -> ClassDefinition -> (PythonAST|ClassDefinition|FunctionDefinition|...)
+                //                                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                //                                                                       LocalsDictionary must be generated for these scopes.
+                var outerScope = node.Parent.Parent.Parent;
+                if (!(outerScope is PythonAst)) {
+                    outerScope.NeedsLocalsDictionary = true;
+                }
+            }
+        }
+
 
         // NonlocalStatement
         public override bool Walk(NonlocalStatement node) {

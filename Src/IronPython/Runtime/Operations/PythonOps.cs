@@ -3443,7 +3443,8 @@ namespace IronPython.Runtime.Operations {
                 new PythonDictionary(
                     new RuntimeVariablesDictionaryStorage(boxes, args)
                 ),
-                outerContext.ModuleContext
+                outerContext.ModuleContext,
+                outerContext
             );
         }
 
@@ -3473,6 +3474,10 @@ namespace IronPython.Runtime.Operations {
 
         public static CodeContext/*!*/ GetParentContextFromFunction(PythonFunction/*!*/ function) {
             return function.Context;
+        }
+
+        public static CodeContext/*!*/ GetGrandParentContextFromFunction(PythonFunction/*!*/ function) {
+            return function.Context.GrandParentContext ?? function.Context;
         }
 
         public static CodeContext/*!*/ GetParentContextFromGenerator(PythonGenerator/*!*/ generator) {

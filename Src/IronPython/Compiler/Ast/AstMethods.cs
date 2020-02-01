@@ -60,6 +60,7 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo UnpackIterable = GetMethod((Func<CodeContext, object, int, int, object>)PythonOps.UnpackIterable);
         public static readonly MethodInfo GetGlobalContext = GetMethod((Func<CodeContext, CodeContext>)PythonOps.GetGlobalContext);
         public static readonly MethodInfo GetParentContextFromFunction = GetMethod((Func<PythonFunction, CodeContext>)PythonOps.GetParentContextFromFunction);
+        public static readonly MethodInfo GetGrandParentContextFromFunction = GetMethod((Func<PythonFunction, CodeContext>)PythonOps.GetGrandParentContextFromFunction);
         public static readonly MethodInfo MakeFunction = GetMethod((Func<CodeContext, FunctionCode, object, object[], PythonDictionary, PythonDictionary, object>)PythonOps.MakeFunction);
         public static readonly MethodInfo MakeFunctionDebug = GetMethod((Func<CodeContext/*!*/, FunctionCode, object, object[], PythonDictionary, PythonDictionary, Delegate, object>)PythonOps.MakeFunctionDebug);
         public static readonly MethodInfo MakeClosureCell = GetMethod((Func<ClosureCell>)PythonOps.MakeClosureCell);

@@ -1962,28 +1962,8 @@ namespace IronPython.Compiler {
                     NextToken();
                     string name = (string)t.Value;
                     _sink?.StartName(GetSourceSpan(), name);
-                    var fixedName = FixName(name);
-                    if (ShouldReplaceClassKeyword(fixedName)) {
-                        // if `__class__` variable is used in a class method, replace with `name_of_the_class`.
-                        ret = new NameExpression(CurrentClass.Name);
-                    } else {
-                        ret = new NameExpression(fixedName);
-                    }
+                    ret = new NameExpression(FixName(name));
                     ret.SetLoc(_globalParent, GetStart(), GetEnd());
-
-                    bool ShouldReplaceClassKeyword(string fixedName) {
-                        if (CurrentClass == null || CurrentFunction == null) {
-                            return false;
-                        }
-                        if (PeekToken(TokenKind.Assign)) {
-                            // avoid replacing statement like `__class__ = getproperty(...)`.
-                            return false;
-                        }
-                        if (fixedName != "__class__") {
-                            return false;
-                        }
-                        return true;
-                    }
                     return ret;
                 case TokenKind.Constant:        // literal
                     NextToken();

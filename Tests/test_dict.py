@@ -55,12 +55,10 @@ class DictTest(IronPythonTestCase):
                 super(MyDict, self).__setitem__(*args)
 
         a = MyDict()
-        with self.assertRaises(SystemError): # TODO: remove assertRaises when https://github.com/IronLanguages/ironpython3/issues/456 is fixed
-            a[0] = 'abc'
-            self.assertEqual(a[0], 'abc')
-        with self.assertRaises(SystemError): # TODO: remove assertRaises when https://github.com/IronLanguages/ironpython3/issues/456 is fixed
-            a[None] = 3
-            self.assertEqual(a[None], 3)
+        a[0] = 'abc'
+        self.assertEqual(a[0], 'abc')
+        a[None] = 3
+        self.assertEqual(a[None], 3)
 
         class MyDict(dict):
             def __setitem__(self, *args):

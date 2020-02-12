@@ -159,12 +159,16 @@ namespace IronPython.Compiler.Ast {
             //          exit(None, None, None)
             //******************************************************************
 
+            var previousException = Ast.Variable(typeof(Exception), "$previousException");
+            variables.Add(previousException);
+
             MSAst.ParameterExpression exception;
             statements.Add(
                 // try:
                 AstUtils.Try(
                     AstUtils.Try(// try statement body
                         PushLineUpdated(false, lineUpdated),
+                        Ast.Assign(previousException, Ast.Call(AstMethods.SaveCurrentException)),
                         _var != null ?
                             (MSAst.Expression)Ast.Block(
                 // VAR = value
@@ -182,6 +186,7 @@ namespace IronPython.Compiler.Ast {
                             exception,
                             GlobalParent.AddDebugInfoAndVoid(
                                 Ast.Block(
+                                    Ast.Call(AstMethods.SetCurrentException, Parent.LocalContext, exception),
                 // exc = False
                                     MakeAssignment(
                                         exc,
@@ -216,6 +221,7 @@ namespace IronPython.Compiler.Ast {
                     )
                 // finally:                    
                 ).Finally(
+                    Ast.Call(AstMethods.RestoreCurrentException, previousException),
                 //  if exc:
                 //      exit(None, None, None)
                     AstUtils.IfThen(

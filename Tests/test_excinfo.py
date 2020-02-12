@@ -399,8 +399,6 @@ class ExcInfoTest(unittest.TestCase):
         with M1(self):
             pass
 
-    # https://github.com/IronLanguages/ironpython3/issues/726
-    @unittest.expectedFailure
     def test_with_fail(self):
         """with.__exit__ doesn't see exception in exception case."""
         class M2(ManBase):
@@ -441,8 +439,6 @@ class ExcInfoTest(unittest.TestCase):
                 pass
             self.A(15)
 
-    # https://github.com/IronLanguages/ironpython3/issues/726
-    @unittest.expectedFailure
     # call 'with' from an except block, do failure case
     def test_with_except_fail(self):
         class M2(ManBase):

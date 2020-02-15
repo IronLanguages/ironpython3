@@ -2469,16 +2469,6 @@ namespace IronPython.Runtime.Operations {
             PythonTuple t = GetExceptionInfo(context);
             Debug.Assert(t[1] == GetRawContextException());
             Exception e = MakeExceptionWorker(context, t[0], t[1], t[2], null, suppressContext: false, forRethrow: true);
-            return MakeRethrowExceptionWorker(e);
-        }
-
-        /// <summary>
-        /// helper function for re-raised exception.
-        /// This entry point is used by 'raise' inside 'with' statement
-        /// </summary>
-        /// <param name="e"></param>
-        /// <returns></returns>
-        public static Exception MakeRethrowExceptionWorker(Exception e) {
             e.RemoveTraceBack();
             ExceptionHelpers.UpdateForRethrow(e);
             return e;

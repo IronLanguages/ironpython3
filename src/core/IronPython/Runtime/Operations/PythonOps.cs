@@ -2468,10 +2468,7 @@ namespace IronPython.Runtime.Operations {
         public static Exception MakeRethrownException(CodeContext/*!*/ context) {
             PythonTuple t = GetExceptionInfo(context);
             Debug.Assert(t[1] == GetRawContextException());
-            Exception e = MakeExceptionWorker(context, t[0], t[1], t[2], null, suppressContext: false, forRethrow: true);
-            e.RemoveTraceBack();
-            ExceptionHelpers.UpdateForRethrow(e);
-            return e;
+            return MakeExceptionWorker(context, t[0], t[1], t[2], null, suppressContext: false, forRethrow: true);
         }
 
         public static Exception MakeException(CodeContext/*!*/ context, object exception) {

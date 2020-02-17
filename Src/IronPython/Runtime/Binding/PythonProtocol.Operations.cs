@@ -857,11 +857,6 @@ namespace IronPython.Runtime.Binding {
             }
         }
 
-        private static void MakeNegatedCompareReturn(ConditionalBuilder/*!*/ bodyBuilder, Expression retCondition, Expression/*!*/ retValue, bool isReverse, Type retType) {
-            Expression newRetVal = Ast.Not(Ast.Call(Compiler.Ast.AstMethods.IsTrue, retValue));
-            MakeCompareReturn(bodyBuilder, retCondition, newRetVal, isReverse, retType);
-        }
-
         /// <summary>
         /// Delegate for finishing the comparison.   This takes in a condition and a return value and needs to update the ConditionalBuilder
         /// with the appropriate resulting body.  The condition may be null.
@@ -1003,25 +998,6 @@ namespace IronPython.Runtime.Binding {
 
         #region Comparison Operations
 
-        /// <summary>
-        /// Gets the slot to be used for a given comparison function,
-        /// defaulting to the negated '__eq__' when the '__ne__' slot
-        /// isn't defined.
-        /// </summary>
-        private static SlotOrFunction GetComparisonSlotOrFunction(PythonContext state, string opSym,
-                DynamicMetaObject[] types, out ComparisonHelper helper) {
-
-            SlotOrFunction op = SlotOrFunction.GetSlotOrFunction(state, opSym, types);
-            helper = MakeCompareReturn;
-
-            if ((op == SlotOrFunction.Empty || !op.Success) && opSym == "__ne__") {
-                op = SlotOrFunction.GetSlotOrFunction(state, "__eq__", types);
-                helper = MakeNegatedCompareReturn;
-            }
-
-            return op;
-        }
-
         private static DynamicMetaObject/*!*/ MakeComparisonOperation(DynamicMetaObject/*!*/[]/*!*/ types, DynamicMetaObjectBinder/*!*/ operation, PythonOperationKind op, DynamicMetaObject errorSuggestion) {
             RestrictTypes(types);
 
@@ -1033,8 +1009,8 @@ namespace IronPython.Runtime.Binding {
             // reverse
             DynamicMetaObject[] rTypes = new DynamicMetaObject[] { types[1], types[0] };
 
-            SlotOrFunction fop = GetComparisonSlotOrFunction(state, opSym, types, out ComparisonHelper fHelper);
-            SlotOrFunction rop = GetComparisonSlotOrFunction(state, ropSym, rTypes, out ComparisonHelper rHelper);
+            SlotOrFunction fop = SlotOrFunction.GetSlotOrFunction(state, opSym, types);
+            SlotOrFunction rop = SlotOrFunction.GetSlotOrFunction(state, ropSym, rTypes);
 
             SlotOrFunction cmp = SlotOrFunction.GetSlotOrFunction(state, "__cmp__", types);
             SlotOrFunction rcmp = SlotOrFunction.GetSlotOrFunction(state, "__cmp__", rTypes);
@@ -1056,18 +1032,14 @@ namespace IronPython.Runtime.Binding {
                 rop = fop;
                 fop = tmp;
 
-                ComparisonHelper tmpHelper = fHelper;
-                fHelper = rHelper;
-                rHelper = tmpHelper;
-
                 opReverse = true;
             }
 
             // first try __op__ or __rop__ and return the value
             shouldWarn = fop.ShouldWarn(state, out WarningInfo info);
-            if (MakeOneCompareGeneric(fop, opReverse, types, fHelper, bodyBuilder, typeof(object))) {
+            if (MakeOneCompareGeneric(fop, opReverse, types, MakeCompareReturn, bodyBuilder, typeof(object))) {
                 shouldWarn = shouldWarn || rop.ShouldWarn(state, out info);
-                if (MakeOneCompareGeneric(rop, !opReverse, types, rHelper, bodyBuilder, typeof(object))) {
+                if (MakeOneCompareGeneric(rop, !opReverse, types, MakeCompareReturn, bodyBuilder, typeof(object))) {
 
                     // then try __cmp__ or __rcmp__ and compare the resulting int appropriaetly
                     shouldWarn = shouldWarn || cmp.ShouldWarn(state, out info);

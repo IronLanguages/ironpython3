@@ -225,6 +225,17 @@ namespace IronPython.Runtime.Operations {
             return NotImplementedType.Value;
         }
 
+        [return: MaybeNotImplemented]
+        public static object __ne__(CodeContext context, object self, object other) {
+            if (PythonTypeOps.TryInvokeBinaryOperator(context, self, other, "__eq__", out object res)) {
+                if (res is NotImplementedType) {
+                    return NotImplementedType.Value;
+                }
+                return !PythonOps.IsTrue(res);
+            }
+            return NotImplementedType.Value;
+        }
+
         public static string __format__(CodeContext/*!*/ context, object self, [NotNull]string/*!*/ formatSpec) {
             string text = PythonOps.ToString(context, self);
 

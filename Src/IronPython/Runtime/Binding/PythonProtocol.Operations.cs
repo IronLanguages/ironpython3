@@ -1011,7 +1011,6 @@ namespace IronPython.Runtime.Binding {
 
             SlotOrFunction fop = SlotOrFunction.GetSlotOrFunction(state, opSym, types);
             SlotOrFunction rop = SlotOrFunction.GetSlotOrFunction(state, ropSym, rTypes);
-
             SlotOrFunction cmp = SlotOrFunction.GetSlotOrFunction(state, "__cmp__", types);
             SlotOrFunction rcmp = SlotOrFunction.GetSlotOrFunction(state, "__cmp__", rTypes);
 
@@ -1031,7 +1030,6 @@ namespace IronPython.Runtime.Binding {
                 SlotOrFunction tmp = rop;
                 rop = fop;
                 fop = tmp;
-
                 opReverse = true;
             }
 

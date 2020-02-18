@@ -1728,7 +1728,8 @@ namespace IronPython.Runtime.Types {
 
             // numeric types in python don't define equality, just __cmp__
             if (t == typeof(bool) ||
-                (Converter.IsNumeric(t) && t != typeof(Complex) && t != typeof(double) && t != typeof(float))) {
+                (Converter.IsNumeric(t) && t != typeof(Complex) && t != typeof(double) && t != typeof(float)) &&
+                t != typeof(Decimal)) {
                 switch (op) {
                     case PythonOperationKind.Equal:
                     case PythonOperationKind.NotEqual:

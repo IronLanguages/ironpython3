@@ -1978,6 +1978,11 @@ namespace IronPython.Runtime.Operations {
                     ReflectionUtils.GetMethodInfos(typeof(StringOps).GetMember(nameof(SurrogateEscapeErrors), BindingFlags.Static | BindingFlags.NonPublic)),
                     typeof(StringOps));
 
+                d["surrogatepass"] = BuiltinFunction.MakeFunction(
+                    "surrogatepass_errors",
+                    ReflectionUtils.GetMethodInfos(typeof(StringOps).GetMember(nameof(SurrogatePassErrors), BindingFlags.Static | BindingFlags.NonPublic)),
+                    typeof(StringOps));
+
                 return d;
             }
         }
@@ -2750,46 +2755,13 @@ namespace IronPython.Runtime.Operations {
             }
         }
 
+        private delegate string DecodeErrorHandler(IList<byte> bytes, int start, ref int end);
+        private delegate Bytes  EncodeErrorHandler(string text, int start, ref int end);
+
         private static object SurrogateEscapeErrors(object unicodeError) {
-            switch (unicodeError) {
-                case PythonExceptions._UnicodeDecodeError ude:
-                    if (ude.@object is IList<byte> bytes && ude.start is int bstart && ude.end is int bend) {
-                        bstart = Math.Max(0, Math.Min(bstart, bytes.Count - 1));
-                        bend = Math.Max(bstart, Math.Min(bend, bytes.Count));
-                        string res = surrogateEscapeDecode(bytes, bstart, bend);
-                        if (res == null) throw ude.GetClrException();
-                        return PythonTuple.MakeTuple(res, bstart + res.Length);
-                    }
-                    goto default;
+            return SurrogateErrorsImpl(unicodeError, surrogateEscapeDecode, surrogateEscapeEncode);
 
-                case PythonExceptions._UnicodeEncodeError uee:
-                    if (uee.@object is string text && uee.start is int tstart && uee.end is int tend) {
-                        tstart = Math.Max(0, Math.Min(tstart, text.Length - 1));
-                        tend = Math.Max(tstart, Math.Min(tend, text.Length));
-                        Bytes res = surrogateEscapeEncode(text, tstart, tend);
-                        if (res == null) throw uee.GetClrException();
-                        return PythonTuple.MakeTuple(res, tend);
-                    }
-                    goto default;
-
-                case DecoderFallbackException dfe: {
-                        if (dfe.BytesUnknown == null) throw dfe;
-                        string res = surrogateEscapeDecode(dfe.BytesUnknown, 0, dfe.BytesUnknown.Length);
-                        if (res == null) throw dfe;
-                        return PythonTuple.MakeTuple(res, res.Length);
-                    }
-
-                case EncoderFallbackException efe: {
-                        string chars = new string(efe.CharUnknown, 1);
-                        Bytes res = surrogateEscapeEncode(chars, 0, chars.Length);
-                        return PythonTuple.MakeTuple(res, efe.Index + chars.Length);
-                    }
-
-                default:
-                    throw PythonOps.TypeError("codec must pass exception instance");
-            }
-
-            static string surrogateEscapeDecode(IList<byte> bytes, int start, int end) {
+            static string surrogateEscapeDecode(IList<byte> bytes, int start, ref int end) {
                 var sb = new StringBuilder(end - start);
                 for (int i = start; i < end; i++) {
                     byte b = bytes[i];
@@ -2799,10 +2771,12 @@ namespace IronPython.Runtime.Operations {
                     }
                     sb.Append((char)(b | 0xDC00));
                 }
-                return sb.ToString();
+                string res = sb.ToString();
+                end = start + res.Length;
+                return res;
             }
 
-            static Bytes surrogateEscapeEncode(string text, int start, int end) {
+            static Bytes surrogateEscapeEncode(string text, int start, ref int end) {
                 var lst = new List<byte>(end - start);
                 for (int i = start; i < end; i++) {
                     char c = text[i];
@@ -2812,6 +2786,182 @@ namespace IronPython.Runtime.Operations {
                     lst.Add(b);
                 }
                 return new Bytes(lst);
+            }
+        }
+
+        private static object SurrogatePassErrors(object unicodeError) {
+            const byte Utf8LeadByte = 0b_1110_0000;
+            const byte Utf8LeadBytePayload = 0b_1111;
+            const byte Utf8ContByte = 0b_10_000000;
+            const byte Utf8ContBytePayload = 0b_111111;
+
+            int charWidth = 1;
+            bool isBigEndian = false;
+            if (unicodeError is PythonExceptions._UnicodeDecodeError ude) {
+                if (ude.encoding is string encodingName) {
+                    IdentifyUtfEncoding(encodingName, out charWidth, out isBigEndian);
+                }
+            } else if (unicodeError is PythonExceptions._UnicodeEncodeError uee) {
+                if (uee.encoding is string encodingName) {
+                    IdentifyUtfEncoding(encodingName, out charWidth, out isBigEndian);
+                }
+            }
+            return SurrogateErrorsImpl(unicodeError, surrogatePassDecode, surrogatePassEncode);
+
+            string surrogatePassDecode(IList<byte> bytes, int start, ref int end) {
+                end = start + (charWidth == 1 ? 3 : charWidth); // UTF-8 uses 3 bytes to encode a surrogate
+                if (end > bytes.Count) return null;
+
+                char c;
+                // decode one character only
+                if (charWidth == 1) {  // UTF-8
+                    byte b;
+                    int codepoint;
+
+                    b = bytes[start++];
+                    if ((b & ~Utf8LeadBytePayload) != Utf8LeadByte) return null;
+                    codepoint = b & Utf8LeadBytePayload;
+
+                    b = bytes[start++];
+                    if ((b & ~Utf8ContBytePayload) != Utf8ContByte) return null;
+                    codepoint = (b & Utf8ContBytePayload) | (codepoint << 6);
+
+                    b = bytes[start++];
+                    if ((b & ~Utf8ContBytePayload) != Utf8ContByte) return null;
+                    codepoint = (b & Utf8ContBytePayload) | (codepoint << 6);
+
+                    c = (char)codepoint;
+
+                } else if (isBigEndian) {
+                    if (charWidth == 4) {  // UTF-32BE
+                        if (bytes[start++] != 0) return null;
+                        if (bytes[start++] != 0) return null;
+                    }
+                    c = (char)(bytes[start++] << 8 | bytes[start++]);
+
+                } else {
+                    c = (char)(bytes[start++] | bytes[start++] << 8);
+                    if (charWidth == 4) {  // UTF-32LE
+                        if (bytes[start++] != 0) return null;
+                        if (bytes[start++] != 0) return null;
+                    }
+                }
+                Debug.Assert(start == end);
+
+                if (!char.IsSurrogate(c)) return null;
+                return new string(c, 1);
+            }
+
+            Bytes surrogatePassEncode(string text, int start, ref int end) {
+                var lst = new List<byte>((end - start) * (charWidth == 1 ? 3 : charWidth)); // UTF-8 uses 3 bytes to encode a surrogate
+
+                for (int i = start; i < end; i++) {
+                    char c = text[i];
+                    if (!char.IsSurrogate(c)) return null;
+
+                    if (charWidth == 1) { // UTF-8
+                        lst.Add((byte)(Utf8LeadByte | c >> 12));
+                        lst.Add((byte)(Utf8ContByte | ((c >> 6) & Utf8ContBytePayload)));
+                        lst.Add((byte)(Utf8ContByte | (c & Utf8ContBytePayload)));
+                    } else { // UTF-16 or UTF-32
+                        if (isBigEndian) {
+                            if (charWidth == 4) { // UTF-32
+                                lst.Add(0);
+                                lst.Add(0);
+                            }
+                            lst.Add((byte)(c >> 8));
+                            lst.Add((byte)(c & 0xFF));
+                        } else {
+                            lst.Add((byte)(c & 0xFF));
+                            lst.Add((byte)(c >> 8));
+                            if (charWidth == 4) { // UTF-32
+                                lst.Add(0);
+                                lst.Add(0);
+                            }
+                        }
+                    }
+                }
+                return new Bytes(lst);
+            }
+        }
+
+        private static object SurrogateErrorsImpl(object unicodeError, DecodeErrorHandler decodeFallback, EncodeErrorHandler encodeFallback) {
+            switch (unicodeError) {
+                case PythonExceptions._UnicodeDecodeError ude:
+                    if (ude.@object is IList<byte> bytes && ude.start is int bstart && ude.end is int bend) {
+                        bstart = Math.Max(0, Math.Min(bstart, bytes.Count - 1));
+                        bend = Math.Max(bstart, Math.Min(bend, bytes.Count));
+                        string res = decodeFallback(bytes, bstart, ref bend);
+                        if (res == null) throw ude.GetClrException();
+                        return PythonTuple.MakeTuple(res, bend);
+                    }
+                    goto default;
+
+                case PythonExceptions._UnicodeEncodeError uee:
+                    if (uee.@object is string text && uee.start is int tstart && uee.end is int tend) {
+                        tstart = Math.Max(0, Math.Min(tstart, text.Length - 1));
+                        tend = Math.Max(tstart, Math.Min(tend, text.Length));
+                        Bytes res = encodeFallback(text, tstart, ref tend);
+                        if (res == null) throw uee.GetClrException();
+                        return PythonTuple.MakeTuple(res, tend);
+                    }
+                    goto default;
+
+                case DecoderFallbackException dfe: {
+                        if (dfe.BytesUnknown == null) throw dfe;
+                        int end = dfe.BytesUnknown.Length;
+                        string res = decodeFallback(dfe.BytesUnknown, 0, ref end);
+                        if (res == null) throw dfe;
+                        return PythonTuple.MakeTuple(res,  dfe.Index + end);
+                    }
+
+                case EncoderFallbackException efe: {
+                        string chars = new string(efe.CharUnknown, 1);
+                        int end = chars.Length;
+                        Bytes res = encodeFallback(chars, 0, ref end);
+                        return PythonTuple.MakeTuple(res, efe.Index + end);
+                    }
+
+                default:
+                    throw PythonOps.TypeError("codec must pass exception instance");
+            }
+        }
+
+        internal static void IdentifyUtfEncoding(string encodingName, out int charWidth, out bool isBigEndian) {
+            charWidth = 1;
+            isBigEndian = false;
+            if (encodingName != null && encodingName.StartsWith("utf", StringComparison.OrdinalIgnoreCase)) {
+                int idx = 3;
+                int end = encodingName.Length;
+                if (idx < end && (encodingName[idx] == '-' || encodingName[idx] == '_')) {
+                    idx++;
+                }
+                if (idx + 1 < end) {
+                    if (encodingName[idx] == '3' && encodingName[idx + 1] == '2') {
+                        charWidth = 4;
+                        idx += 2;
+                    } else if (encodingName[idx] == '1' && encodingName[idx + 1] == '6') {
+                        charWidth = 2;
+                        idx += 2;
+                    } else {
+                        return; // UTF-8, UTF-7, or unrecognized
+                    }
+                    if (idx < end && (encodingName[idx] == '-' || encodingName[idx] == '_')) {
+                        idx++;
+                        if (idx + 2 > end) { // missing endianness suffix
+                            charWidth = 1; // fall back to single character
+                            return;
+                        }
+                    }
+                    if (idx < end) {
+                        if (encodingName.Substring(idx).Equals("be", StringComparison.OrdinalIgnoreCase)) {
+                            isBigEndian = true;
+                        } else if (!encodingName.Substring(idx).Equals("le", StringComparison.OrdinalIgnoreCase)) { // incorect suffix
+                            charWidth = 1; // fall back to single character
+                            return;
+                        }
+                    }
+                }
             }
         }
 #endif

@@ -560,6 +560,122 @@ class CodecTest(IronPythonTestCase):
         ude = UnicodeEncodeError('utf-16-le', "a\udcff\udcdcz", 1, 2, "one byte at a time for widechar encoding")
         self.assertEqual(surrogateescape(ude), (b"\xff", 2))
 
+    def test_error_handlers_surrogatepass(self):
+        surrogatepass = codecs.lookup_error('surrogatepass')
+
+        # Decoding with surrogatepass
+
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-8', b'a\xed\xb7\xaez', 1, 4, "encoding testing purposes")), ("\uddee", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('dummy', b'a\xed\xb7\xaez', 1, 4, "for unrecognized encoding fall back to utf-8")), ("\uddee", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-16-lex', b'a\xed\xb7\xaez', 1, 4, "for misspelled encoding fall back to utf-8")), ("\uddee", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-16--le', b'a\xed\xb7\xaez', 1, 4, "for misspelled encoding fall back to utf-8")), ("\uddee", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf--16-le', b'a\xed\xb7\xaez', 1, 4, "for misspelled encoding fall back to utf-8")), ("\uddee", 4))
+
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-8', b'a\xed\xb7\xae\xed\xb7\xbfz', 1, 4, "only one surrogate at a time")), ("\uddee", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-8', b'a\xed\xb7\xae\xed\xb7\xbfz', 1, 7, "only one surrogate at a time")), ("\uddee", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-8', b'a\xed\xb7\xae\xed\xb7\xbfz', 4, 7, "only one surrogate at a time")), ("\uddff", 7))
+
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-16', b"a\0\xff\xdcz\0", 2, 4, "various names for UTF-16")), ("\udcff", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf16', b"a\0\xff\xdcz\0", 2, 4, "various names for UTF-16")), ("\udcff", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-16-le', b"a\0\xff\xdcz\0", 2, 4, "various names for UTF-16")), ("\udcff", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('Utf-16LE', b"a\0\xff\xdcz\0", 2, 4, "various names for UTF-16")), ("\udcff", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('Utf_16LE', b"a\0\xff\xdcz\0", 2, 4, "various names for UTF-16s")), ("\udcff", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('Utf_16_LE', b"a\0\xff\xdcz\0", 2, 4, "various names for UTF-16s")), ("\udcff", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('Utf16Le', b"a\0\xff\xdcz\0", 2, 4, "various names for UTF-16")), ("\udcff", 4))
+
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-16-be', b"\0a\xdc\xff\0z", 2, 4, "various names for UTF-16BE")), ("\udcff", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('Utf-16BE', b"\0a\xdc\xff\0z", 2, 4, "various names for UTF-16BE")), ("\udcff", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('Utf_16BE', b"\0a\xdc\xff\0z", 2, 4, "various names for UTF-16BE")), ("\udcff", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('Utf16Be', b"\0a\xdc\xff\0z", 2, 4, "various names for UTF-16BE")), ("\udcff", 4))
+
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-32', b"a\0\0\0\xff\xdc\0\0z\0\0\0", 4, 8, "various names for UTF-32")), ("\udcff", 8))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf32', b"a\0\0\0\xff\xdc\0\0z\0\0\0", 4, 8, "various names for UTF-32")), ("\udcff", 8))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-32-le', b"a\0\0\0\xff\xdc\0\0z\0\0\0", 4, 8, "various names for UTF-32")), ("\udcff", 8))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('Utf-32LE', b"a\0\0\0\xff\xdc\0\0z\0\0\0", 4, 8, "various names for UTF-32")), ("\udcff", 8))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('Utf_32LE', b"a\0\0\0\xff\xdc\0\0z\0\0\0", 4, 8, "various names for UTF-32")), ("\udcff", 8))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('Utf_32_LE', b"a\0\0\0\xff\xdc\0\0z\0\0\0", 4, 8, "various names for UTF-32")), ("\udcff", 8))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('Utf32Le', b"a\0\0\0\xff\xdc\0\0z\0\0\0", 4, 8, "various names for UTF-32")), ("\udcff", 8))
+
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-32-be', b"\0\0\0a\0\0\xdc\xff\0\0\0z", 4, 8, "various names for UTF-32")), ("\udcff", 8))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('Utf-32BE', b"\0\0\0a\0\0\xdc\xff\0\0\0z", 4, 8, "various names for UTF-32")), ("\udcff", 8))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('Utf_32BE', b"\0\0\0a\0\0\xdc\xff\0\0\0z", 4, 8, "various names for UTF-32")), ("\udcff", 8))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('Utf32Be', b"\0\0\0a\0\0\xdc\xff\0\0\0z", 4, 8, "various names for UTF-32")), ("\udcff", 8))
+
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-8', b'a\xed\xb7\xae\xed\xb7\xbfz', 1, 0, "end index ignored")), ("\uddee", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-8', b'a\xed\xb7\xae\xed\xb7\xbfz', 1, 1, "end index ignored")), ("\uddee", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-8', b'a\xed\xb7\xae\xed\xb7\xbfz', 1, 2, "end index ignored")), ("\uddee", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-8', b'a\xed\xb7\xae\xed\xb7\xbfz', 1, 3, "end index ignored")), ("\uddee", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-8', b'a\xed\xb7\xae\xed\xb7\xbfz', 1, 5, "end index ignored")), ("\uddee", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-8', b'a\xed\xb7\xae\xed\xb7\xbfz', 1, 50, "end index ignored")), ("\uddee", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-8', b'a\xed\xb7\xae\xed\xb7\xbfz', 1, -50, "end index ignored")), ("\uddee", 4))
+
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-16', b"a\0\xff\xdcz\0", 2, 0, "end index ignored")), ("\udcff", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-16', b"a\0\xff\xdcz\0", 2, 2, "end index ignored")), ("\udcff", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-16', b"a\0\xff\xdcz\0", 2, 3, "end index ignored")), ("\udcff", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-16', b"a\0\xff\xdcz\0", 2, 5, "end index ignored")), ("\udcff", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-16', b"a\0\xff\xdcz\0", 2, 50, "end index ignored")), ("\udcff", 4))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-16', b"a\0\xff\xdcz\0", 2, -50, "end index ignored")), ("\udcff", 4))
+
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-32', b"a\0\0\0\xff\xdc\0\0z\0\0\0", 4, 0, "end index ignored")), ("\udcff", 8))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-32', b"a\0\0\0\xff\xdc\0\0z\0\0\0", 4, 2, "end index ignored")), ("\udcff", 8))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-32', b"a\0\0\0\xff\xdc\0\0z\0\0\0", 4, 22, "end index ignored")), ("\udcff", 8))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-32', b"a\0\0\0\xff\xdc\0\0z\0\0\0", 4, -22, "end index ignored")), ("\udcff", 8))
+
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-16', b"a\xff\xdcz", 1, 0, "misaligned bytes")), ("\udcff", 3))
+        self.assertEqual(surrogatepass(UnicodeDecodeError('utf-32', b"a\xff\xdc\0\0z", 1, 0, "misaligned bytes")), ("\udcff", 5))
+
+        ude = UnicodeDecodeError('utf-8', b"abcde", 1, 4, "no surrogate present")
+        with self.assertRaises(UnicodeDecodeError) as cm:
+            surrogatepass(ude)
+        self.assertEqual(cm.exception, ude)
+
+        ude = UnicodeDecodeError('utf-8', b'a\xed\xb7\xed\xb7\xbfz', 1, 4, "incomplete surogate")
+        with self.assertRaises(UnicodeDecodeError) as cm:
+            surrogatepass(ude)
+        self.assertEqual(cm.exception, ude)
+
+        ude = UnicodeDecodeError('utf-8', b'a\xed\xb7', 1, 4, "incomplete surogate")
+        with self.assertRaises(UnicodeDecodeError) as cm:
+            surrogatepass(ude)
+        self.assertEqual(cm.exception, ude)
+
+        ude = UnicodeDecodeError('utf-16', b"abcde", 2, 4, "no surrogate present")
+        with self.assertRaises(UnicodeDecodeError) as cm:
+            surrogatepass(ude)
+        self.assertEqual(cm.exception, ude)
+
+        ude = UnicodeDecodeError('utf-32', b"abcde", 2, 4, "no surrogate present")
+        with self.assertRaises(UnicodeDecodeError) as cm:
+            surrogatepass(ude)
+        self.assertEqual(cm.exception, ude)
+
+        # Encoding with surrogatepass
+
+        self.assertEqual(surrogatepass(UnicodeEncodeError('utf-8', "a\udcff\ud880z", 1, 2, "encoding testing purposes")), (b'\xed\xb3\xbf', 2))
+        self.assertEqual(surrogatepass(UnicodeEncodeError('utf-8', "a\udcff\ud880z", 1, 3, "encoding testing purposes")), (b'\xed\xb3\xbf\xed\xa2\x80', 3))
+        self.assertEqual(surrogatepass(UnicodeEncodeError('utf-8', "a\udcff\ud880\udc81z", 1, 3, "encoding testing purposes")), (b'\xed\xb3\xbf\xed\xa2\x80', 3))
+        self.assertEqual(surrogatepass(UnicodeEncodeError('dummy', "a\udcff\udc80z", 1, 2, "for unrecognized encoding fall back to utf-8")), (b'\xed\xb3\xbf', 2))
+
+        self.assertEqual(surrogatepass(UnicodeEncodeError('utf-16', "a\udcff\ud880z", 1, 2, "encoding testing purposes")), (b'\xff\xdc', 2))
+        self.assertEqual(surrogatepass(UnicodeEncodeError('utf-16', "a\udcff\ud880z", 1, 3, "encoding testing purposes")), (b'\xff\xdc\x80\xd8', 3))
+        self.assertEqual(surrogatepass(UnicodeEncodeError('utf-16', "a\udcff\ud880\udc81z", 1, 3, "encoding testing purposes")), (b'\xff\xdc\x80\xd8', 3))
+        self.assertEqual(surrogatepass(UnicodeEncodeError('utf-16', "a\ud800\udc00z", 1, 3, "encoding testing purposes")), (b'\x00\xd8\x00\xdc', 3))
+
+        self.assertEqual(surrogatepass(UnicodeEncodeError('utf-32', "a\udcff\ud880z", 1, 2, "encoding testing purposes")), (b'\xff\xdc\0\0', 2))
+        self.assertEqual(surrogatepass(UnicodeEncodeError('utf-32', "a\udcff\ud880z", 1, 3, "encoding testing purposes")), (b'\xff\xdc\0\0\x80\xd8\0\0', 3))
+        self.assertEqual(surrogatepass(UnicodeEncodeError('utf-32', "a\udcff\ud880\udc81z", 1, 3, "encoding testing purposes")), (b'\xff\xdc\0\0\x80\xd8\0\0', 3))
+
+        for encoding in ['utf-8', 'utf-16', 'utf-16-le', 'utf-16-be' 'utf-32', 'utf-32-le', 'utf-32-be']:
+            uee = UnicodeEncodeError(encoding, "abcd", 1, 3, "no surrogates to pass")
+            with self.assertRaises(UnicodeEncodeError) as cm:
+                surrogatepass(uee)
+            self.assertEqual(cm.exception, uee)
+
+            uee = UnicodeEncodeError(encoding, "a\uddddcd", 1, 3, "not all surrogates")
+            with self.assertRaises(UnicodeEncodeError) as cm:
+                surrogatepass(uee)
+            self.assertEqual(cm.exception, uee)
+
     #TODO: @skip("multiple_execute")
     def test_lookup_error(self):
         #sanity

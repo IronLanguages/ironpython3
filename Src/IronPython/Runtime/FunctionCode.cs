@@ -1086,11 +1086,9 @@ namespace IronPython.Runtime {
 
                 node.Body.Walk(this);
 
-                if (node.Handlers != null) {
-                    foreach (var handler in node.Handlers) {
-                        HandlerLocations[handler.Span.Start.Line] = false;
-                        handler.Body.Walk(this);
-                    }
+                foreach (var handler in node.Handlers) {
+                    HandlerLocations[handler.Span.Start.Line] = false;
+                    handler.Body.Walk(this);
                 }
 
                 if (node.Finally != null) {

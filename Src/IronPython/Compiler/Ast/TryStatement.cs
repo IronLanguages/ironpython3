@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -23,79 +25,65 @@ namespace IronPython.Compiler.Ast {
     using Ast = MSAst.Expression;
 
     public class TryStatement : Statement {
-        private int _headerIndex;
+        private readonly TryStatementHandler[] _handlers;
+
+        private static readonly TryStatementHandler[] emptyArray = new TryStatementHandler[0];
+
+        public TryStatement(Statement body, TryStatementHandler[]? handlers, Statement? else_, Statement? finally_) {
+            Body = body;
+            _handlers = handlers ?? emptyArray;
+            Else = else_;
+            Finally = finally_;
+        }
+
+        public int HeaderIndex { private get; set; }
+
         /// <summary>
         /// The statements under the try-block.
         /// </summary>
-        private Statement _body;
-
-        /// <summary>
-        /// Array of except (catch) blocks associated with this try. NULL if there are no except blocks.
-        /// </summary>
-        private readonly TryStatementHandler[] _handlers;
+        public Statement Body { get; }
 
         /// <summary>
         /// The body of the optional Else block for this try. NULL if there is no Else block.
         /// </summary>
-        private Statement _else;
+        public Statement? Else { get; }
 
         /// <summary>
         /// The body of the optional finally associated with this try. NULL if there is no finally block.
         /// </summary>
-        private Statement _finally;
+        public Statement? Finally { get; }
 
-        public TryStatement(Statement body, TryStatementHandler[] handlers, Statement else_, Statement finally_) {
-            _body = body;
-            _handlers = handlers;
-            _else = else_;
-            _finally = finally_;
-        }
-
-        public int HeaderIndex {
-            set { _headerIndex = value; }
-        }
-
-        public Statement Body {
-            get { return _body; }
-        }
-
-        public Statement Else {
-            get { return _else; }
-        }
-
-        public Statement Finally {
-            get { return _finally; }
-        }
-
-        public IList<TryStatementHandler> Handlers {
-            get { return _handlers; }
-        }
+        /// <summary>
+        /// Array of except (catch) blocks associated with this try. NULL if there are no except blocks.
+        /// </summary>
+        public IList<TryStatementHandler> Handlers => _handlers;
 
         public override MSAst.Expression Reduce() {
             // allocated all variables here so they won't be shared w/ other 
             // locals allocated during the body or except blocks.
-            MSAst.ParameterExpression lineUpdated = null;
-            MSAst.ParameterExpression runElse = null;
-            MSAst.ParameterExpression previousExceptionContext = null;
+            MSAst.ParameterExpression? lineUpdated = null;
+            MSAst.ParameterExpression? runElse = null;
+            MSAst.ParameterExpression? previousExceptionContext = null;
 
-            if (_else != null || (_handlers != null && _handlers.Length > 0)) {
+            if (Else != null || _handlers.Length > 0) {
                 lineUpdated = Ast.Variable(typeof(bool), "$lineUpdated_try");
-                if (_else != null) {
+                if (Else != null) {
                     runElse = Ast.Variable(typeof(bool), "run_else");
                 }
             }
 
             // don't allocate locals below here...
-            MSAst.Expression body = _body;
-            MSAst.Expression @else = _else;
-            MSAst.Expression @catch, result;
-            MSAst.ParameterExpression exception;
+            MSAst.Expression body = Body;
+            MSAst.Expression? @else = Else;
+            MSAst.Expression? @catch;
+            MSAst.Expression result;
+            MSAst.ParameterExpression? exception;
 
-            if (_handlers != null && _handlers.Length > 0) {
+            if (_handlers.Length > 0) {
                 previousExceptionContext = Ast.Variable(typeof(Exception), "$previousException");
                 exception = Ast.Variable(typeof(Exception), "$exception");
                 @catch = TransformHandlers(exception, previousExceptionContext);
-            } else if (_finally != null) {
+            } else if (Finally != null) {
                 exception = Ast.Variable(typeof(Exception), "$exception");
                 @catch = null;
             } else {
@@ -124,7 +112,7 @@ namespace IronPython.Compiler.Ast {
                         PushLineUpdated(false, lineUpdated),
                         LightExceptions.RewriteExternal(
                             AstUtils.Try(
-                                Parent.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, GlobalParent.IndexToLocation(_headerIndex))),
+                                Parent.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, GlobalParent.IndexToLocation(HeaderIndex))),
                                 Ast.Assign(previousExceptionContext, Ast.Call(AstMethods.SaveCurrentException)),
                                 body,
                                 AstUtils.Constant(null)
@@ -150,10 +138,10 @@ namespace IronPython.Compiler.Ast {
                 //      ... catch handling ...
                 //  }
                 //
-                result = 
+                result =
                     LightExceptions.RewriteExternal(
                         AstUtils.Try(
-                            GlobalParent.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, GlobalParent.IndexToLocation(_headerIndex))),
+                            GlobalParent.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, GlobalParent.IndexToLocation(HeaderIndex))),
                             // save existing line updated
                             PushLineUpdated(false, lineUpdated),
                             Ast.Assign(previousExceptionContext, Ast.Call(AstMethods.SaveCurrentException)),
@@ -178,12 +166,12 @@ namespace IronPython.Compiler.Ast {
             );
         }
 
-        private static ReadOnlyCollectionBuilder<MSAst.ParameterExpression> GetVariables(MSAst.ParameterExpression lineUpdated, MSAst.ParameterExpression runElse, MSAst.ParameterExpression previousExceptionContext) {
+        private static ReadOnlyCollectionBuilder<MSAst.ParameterExpression> GetVariables(MSAst.ParameterExpression? lineUpdated, MSAst.ParameterExpression? runElse, MSAst.ParameterExpression? previousExceptionContext) {
             var paramList = new ReadOnlyCollectionBuilder<MSAst.ParameterExpression>();
-            if(lineUpdated != null) {
+            if (lineUpdated != null) {
                 paramList.Add(lineUpdated);
             }
-            if(runElse != null) {
+            if (runElse != null) {
                 paramList.Add(runElse);
             }
             if (previousExceptionContext != null) {
@@ -193,11 +181,11 @@ namespace IronPython.Compiler.Ast {
         }
 
         private MSAst.Expression AddFinally(MSAst.Expression/*!*/ body) {
-            if (_finally != null) {                
+            if (Finally != null) {
                 MSAst.ParameterExpression tryThrows = Ast.Variable(typeof(Exception), "$tryThrows");
                 MSAst.ParameterExpression locException = Ast.Variable(typeof(Exception), "$localException");
 
-                MSAst.Expression @finally = _finally;
+                MSAst.Expression? @finally = Finally;
 
                 // lots is going on here.  We need to consider:
                 //      1. Exceptions propagating out of try/except/finally.  Here we need to save the line #
@@ -210,7 +198,7 @@ namespace IronPython.Compiler.Ast {
                     // we use a fault to know when we have an exception and when control leaves normally (via
                     // either a return or the body completing successfully).
                     AstUtils.Try(
-                        Parent.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, GlobalParent.IndexToLocation(_headerIndex))),
+                        Parent.AddDebugInfo(AstUtils.Empty(), new SourceSpan(Span.Start, GlobalParent.IndexToLocation(HeaderIndex))),
                         Ast.Assign(tryThrows, AstUtils.Constant(null, typeof(Exception))),
                         body,
                         AstUtils.Empty()
@@ -276,8 +264,8 @@ namespace IronPython.Compiler.Ast {
             MSAst.ParameterExpression extracted = Ast.Variable(typeof(object), "$extracted");
 
             var tests = new List<Microsoft.Scripting.Ast.IfStatementTest>(_handlers.Length);
-            MSAst.ParameterExpression converted = null;
-            MSAst.Expression catchAll = null;
+            MSAst.ParameterExpression? converted = null;
+            MSAst.Expression? catchAll = null;
 
             for (int index = 0; index < _handlers.Length; index++) {
                 TryStatementHandler tsh = _handlers[index];
@@ -389,7 +377,7 @@ namespace IronPython.Compiler.Ast {
                 }
             }
 
-            MSAst.Expression body = null;
+            MSAst.Expression body;
 
             if (tests.Count > 0) {
                 // rethrow the exception if we have no catch-all block
@@ -411,12 +399,12 @@ namespace IronPython.Compiler.Ast {
                 );
             } else {
                 Debug.Assert(catchAll != null);
-                body = catchAll;
+                body = catchAll!;
             }
 
             IList<MSAst.ParameterExpression> args;
             if (converted != null) {
-                args = new ReadOnlyCollectionBuilder<MSAst.ParameterExpression> { converted,  extracted };
+                args = new ReadOnlyCollectionBuilder<MSAst.ParameterExpression> { converted, extracted };
             } else {
                 args = new ReadOnlyCollectionBuilder<MSAst.ParameterExpression> { extracted };
             }
@@ -456,15 +444,13 @@ namespace IronPython.Compiler.Ast {
 
         public override void Walk(PythonWalker walker) {
             if (walker.Walk(this)) {
-                _body?.Walk(walker);
-                if (_handlers != null) {
-                    foreach (TryStatementHandler handler in _handlers) {
-                        handler.Walk(walker);
-                    }
+                Body?.Walk(walker);
+                foreach (TryStatementHandler handler in _handlers) {
+                    handler.Walk(walker);
                 }
 
-                _else?.Walk(walker);
-                _finally?.Walk(walker);
+                Else?.Walk(walker);
+                Finally?.Walk(walker);
             }
             walker.PostWalk(this);
         }

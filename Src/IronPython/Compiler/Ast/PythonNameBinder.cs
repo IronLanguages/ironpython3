@@ -790,12 +790,10 @@ namespace IronPython.Compiler.Ast {
 
             node.Body.Walk(this);
 
-            if (node.Handlers != null) {
-                foreach (TryStatementHandler tsh in node.Handlers) {
-                    tsh.Target?.Walk(_define);
-                    tsh.Parent = _currentScope;
-                    tsh.Walk(this);
-                }
+            foreach (TryStatementHandler tsh in node.Handlers) {
+                tsh.Target?.Walk(_define);
+                tsh.Parent = _currentScope;
+                tsh.Walk(this);
             }
 
             node.Else?.Walk(this);

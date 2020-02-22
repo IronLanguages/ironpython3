@@ -2155,7 +2155,6 @@ namespace IronPython.Compiler {
         private Expression FinishSlice(Expression e0, int start) {
             Expression e1 = null;
             Expression e2 = null;
-            bool stepProvided = false;
 
             switch (PeekToken().Kind) {
                 case TokenKind.Comma:
@@ -2163,7 +2162,6 @@ namespace IronPython.Compiler {
                     break;
                 case TokenKind.Colon:
                     // x[?::?]
-                    stepProvided = true;
                     NextToken();
                     e2 = ParseSliceEnd();
                     break;
@@ -2171,12 +2169,11 @@ namespace IronPython.Compiler {
                     // x[?:val:?]
                     e1 = ParseTest();
                     if (MaybeEat(TokenKind.Colon)) {
-                        stepProvided = true;
                         e2 = ParseSliceEnd();
                     }
                     break;
             }
-            SliceExpression ret = new SliceExpression(e0, e1, e2, stepProvided);
+            var ret = new SliceExpression(e0, e1, e2);
             ret.SetLoc(_globalParent, start, GetEnd());
             return ret;
         }
@@ -2638,7 +2635,7 @@ namespace IronPython.Compiler {
                             return FinishDictComp(e1, e2, oStart, oEnd);
                         }
 
-                        SliceExpression se = new SliceExpression(e1, e2, null, false);
+                        SliceExpression se = new SliceExpression(e1, e2, null);
                         se.SetLoc(_globalParent, e1.StartIndex, e2.EndIndex);
                         dictMembers.Add(se);
                     } else { // set literal

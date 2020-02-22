@@ -1362,8 +1362,7 @@ namespace IronPython.Modules
                     e[i] = new SliceExpression(
                         expr.Revert(keys[i]),
                         expr.Revert(values[i]),
-                        null,
-                        false);
+                        null);
                 }
                 return new DictionaryExpression(e);
             }
@@ -2575,11 +2574,8 @@ namespace IronPython.Modules
                     lower = Convert(expr.SliceStart);
                 if (expr.SliceStop != null)
                     upper = Convert(expr.SliceStop);
-                if (expr.StepProvided)
-                    if (expr.SliceStep != null)
-                        step = Convert(expr.SliceStep); // [x:y:z]
-                    else
-                        step = new Name("None", Load.Instance); // [x:y:]
+                if (expr.SliceStep != null)
+                    step = Convert(expr.SliceStep);
             }
 
             public expr lower { get; set; }
@@ -2691,16 +2687,9 @@ namespace IronPython.Modules
                     if (concreteSlice.upper != null)
                         stop = expr.Revert(concreteSlice.upper);
                     AstExpression step = null;
-                    bool stepProvided = false;
-                    if (concreteSlice.step != null) {
-                        stepProvided = true;
-                        if (concreteSlice.step is Name && ((Name)concreteSlice.step).id == "None") {
-                            // pass
-                        } else {
-                            step = expr.Revert(concreteSlice.step);
-                        }
-                    }
-                    index = new SliceExpression(start, stop, step, stepProvided);
+                    if (concreteSlice.step != null)
+                        step = expr.Revert(concreteSlice.step);
+                    index = new SliceExpression(start, stop, step);
                 } else if (slice is Ellipsis) {
                     index = new ConstantExpression(PythonOps.Ellipsis);
                 } else if (slice is ExtSlice) {
